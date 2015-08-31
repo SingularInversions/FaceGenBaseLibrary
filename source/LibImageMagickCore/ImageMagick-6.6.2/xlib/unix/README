@@ -1,0 +1,3 @@
+This directory contains Unix header files which may be of
+use to those using the X11 stubs library to compile
+ImageMagick on non-Unix systems.

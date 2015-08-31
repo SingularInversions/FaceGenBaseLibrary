@@ -1,0 +1,5 @@
+_log/
+bin/
+source/ipch/
+source/Makefile*
+**/VisualStudio*

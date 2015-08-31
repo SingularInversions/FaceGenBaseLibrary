@@ -1,0 +1,558 @@
+//
+// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Use, modification and distribution is subject to the MIT License,
+// see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
+//
+// Authors:     Andrew Beatty
+// Created:     Feb 22, 2005
+//
+// Constant size (stack based) matrix / vector
+//
+//      USE:
+//
+// A vector is just a matrix with one dimension set to size 1 (thus row and column 
+// vectors are different)
+//
+// elem(row,col) allows access to matrix elements.
+//
+// operator[] allows access to vector elements (or to unrolled matrix elements).
+//
+// Templatable by any copyable type, although some member functions require 
+// mathematical operators.
+//
+//      DESIGN:
+//
+// Due to compiler optimizations such as loop unrolling the code should run pretty much
+// as fast as if we'd written the various cases out separately.
+//
+// Accumulator types were deemed unnecessary for small, constant size matrices.
+//
+
+#ifndef FGMATRIXCBASE_HPP
+#define FGMATRIXCBASE_HPP
+
+#include "FgStdLibs.hpp"
+#include "FgTypes.hpp"
+#include "FgStdVector.hpp"
+#include "FgDiagnostics.hpp"
+#include "FgSerialize.hpp"
+#include "FgOut.hpp"
+
+// Declare only due to mutual dependence; FgMatrixC and FgMatrixV can be constructed
+// from each other:
+template<class T>
+struct  FgMatrixV;
+
+// Only initialize builtins:
+template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
+template<> inline void fgInitializeBuiltinsToZero(char & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uchar & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(schar & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(short & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(ushort & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(int & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uint & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(int64 & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uint64 & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(float & v) {v=0.0f;}
+template<> inline void fgInitializeBuiltinsToZero(double & v) {v=0.0;}
+template<> inline void fgInitializeBuiltinsToZero(bool & v) {v=false;}
+
+template <typename T,uint nrows,uint ncols>
+struct  FgMatrixC
+{
+    T   m[nrows*ncols];
+    FG_SERIALIZE1(m)
+
+    typedef T ValType;
+
+    FgMatrixC() {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            fgInitializeBuiltinsToZero(m[ii]);
+    }
+    
+    // Unfortunately a pointer-based constructor cannot be added without being ambiguous
+    // to the below which is widely used. Use 'fgMatrixC' below instead:
+    explicit
+    FgMatrixC(T x)
+    {setConstant(x); }
+
+    // Value-set constructors; # args must agree with # elements:
+    FgMatrixC(T x,T y) {
+        FG_STATIC_ASSERT(nrows*ncols == 2);
+        m[0] = x; m[1] = y; }
+    FgMatrixC(T x,T y,T z) {
+        FG_STATIC_ASSERT(nrows*ncols == 3);
+        m[0] = x; m[1] = y; m[2] = z; }
+    FgMatrixC(T a,T b,T c,T d) {
+        FG_STATIC_ASSERT(nrows*ncols == 4);
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; }
+    FgMatrixC(T a,T b,T c,T d,T e) {
+        FG_STATIC_ASSERT(nrows*ncols == 5);
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }
+    FgMatrixC(T a,T b,T c,T d,T e,T f) {
+        FG_STATIC_ASSERT(nrows*ncols == 6);
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }
+    FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
+        FG_STATIC_ASSERT(nrows*ncols == 9);
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; }
+    FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T z,T n,T o,T p) {
+        FG_STATIC_ASSERT(nrows*ncols == 16);
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i;  m[9]=j; m[10]=k; m[11]=l; m[12]=z; m[13]=n; m[14]=o; m[15]=p; }
+
+    // CC requires explicit definition due to type conversion constructor below:
+    FgMatrixC(const FgMatrixC & mat) {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            m[ii] = mat.m[ii];
+    }
+
+    // Type conversion constructor. Use 'fgRound' if float->fixed rounding desired:
+    template<class U>
+    explicit
+    FgMatrixC(const FgMatrixC<U,nrows,ncols> & mat) {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            m[ii] = static_cast<T>(mat[ii]);
+    }
+
+    explicit
+    FgMatrixC(const FgMatrixV<T>& mm) {
+        FGASSERT((nrows == mm.numRows()) && (ncols == mm.numCols()));
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            m[ii] = mm[ii];
+    }
+
+    uint
+    numRows() const
+    {return nrows; }
+
+    uint
+    numCols() const
+    {return ncols; }
+
+    uint
+    numElems() const
+    {return nrows*ncols; }
+
+    size_t
+    size() const    // For template interface compatibility with std::vector
+    {return nrows*ncols; }
+
+    // elem is deprecated:
+    T &
+    elem(uint row,uint col)
+    {
+        FGASSERT_FAST((row < nrows) && (col < ncols));
+        return m[row*ncols+col];
+    }
+    const T &
+    elem(uint row,uint col) const
+    {
+        FGASSERT_FAST((row < nrows) && (col < ncols));
+        return m[row*ncols+col];
+    }
+    T &
+    elm(uint col,uint row)
+    {
+        FGASSERT_FAST((row < nrows) && (col < ncols));
+        return m[row*ncols+col];
+    }
+    const T &
+    elm(uint col,uint row) const
+    {
+        FGASSERT_FAST((row < nrows) && (col < ncols));
+        return m[row*ncols+col];
+    }
+    T &
+    operator[](size_t xx)
+    {
+        FGASSERT_FAST(xx < nrows*ncols);
+        return m[xx];
+    }
+    const T &
+    operator[](size_t xx) const
+    {
+        FGASSERT_FAST(xx < nrows*ncols);
+        return m[xx];
+    }
+    T &
+    operator[](FgMatrixC<uint,2,1> crd)
+    {
+        FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
+        return m[crd.m[1]*ncols+crd.m[0]];
+    }
+    const T &
+    operator[](FgMatrixC<uint,2,1> crd) const
+    {
+        FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
+        return m[crd.m[1]*ncols+crd.m[0]];
+    }
+    const T *
+    dataPtr() const
+    {return m; }
+
+    FgMatrixC       operator+(const FgMatrixC<T,nrows,ncols> &) const;
+    FgMatrixC       operator-(const FgMatrixC<T,nrows,ncols> &) const;
+    FgMatrixC       operator-() const;
+    FgMatrixC       operator*(const T &) const;
+    FgMatrixC       operator/(const T &) const;
+
+    FgMatrixC &
+    operator*=(const T & v) {
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            m[ii] = m[ii] * v;      // Avoid operator*= to work around VS2005 bug
+        return *this;
+    }
+
+    FgMatrixC &
+    operator/=(const T & v) {
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            m[ii] = m[ii] / v;
+        return *this;
+    }
+
+    FgMatrixC &
+    operator+=(const FgMatrixC & v) {
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            m[ii] += v.m[ii];
+        return *this;
+    }
+
+    FgMatrixC &
+    operator-=(const FgMatrixC & v) {
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            m[ii] -= v.m[ii];
+        return *this;
+    }
+
+    bool
+    operator==(const FgMatrixC & v) const {
+        bool        retval(true);
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            retval = retval && (m[ii] == v.m[ii]);
+        return retval;
+    }
+
+    bool
+    operator!=(const FgMatrixC<T,nrows,ncols> & rhs) const
+    {return !((*this) == rhs); }
+
+    void
+    setConstant(T v)
+    {
+        for (uint ii=0; ii<nrows*ncols; ii++)
+            m[ii] = v;
+    }
+
+    void
+    setZero()
+    {setConstant(T(0)); }
+
+    void
+    setIdentity();
+
+    template<uint srows,uint scols>
+    FgMatrixC<T,srows,scols>
+    subMatrix(uint firstRow,uint firstCol) const
+    {
+        FGASSERT_FAST((firstRow+srows <= nrows) && (firstCol+scols <= ncols));
+        FgMatrixC<T,srows,scols>    ret;
+        uint                        cnt = 0;
+        for (uint rr=firstRow; rr<firstRow+srows; ++rr)
+            for (uint cc=firstCol; cc<firstCol+scols; ++cc)
+                ret[cnt++] = elem(rr,cc);
+        return ret;
+    }
+
+    template <uint srows,uint scols>
+    FgMatrixC<T,nrows,ncols> &
+    setSubMatrix(const FgMatrixC<T,srows,scols> & sub,uint row,uint col);
+
+    T
+    lengthSqr() const
+    {
+        T   ret = m[0]*m[0];
+        for (uint ii=1; ii<nrows*ncols; ii++)
+            ret += m[ii]*m[ii];
+        return ret;
+    }
+
+    T
+    length() const
+    {return sqrt(lengthSqr()); }
+
+    FgMatrixC<T,ncols,nrows>
+    transpose() const
+    {
+        FgMatrixC<T,ncols,nrows> tMat;
+        for (uint ii=0; ii<nrows; ii++)
+            for (uint jj=0; jj<ncols; jj++)
+                tMat.elem(jj,ii) = elem(ii,jj);
+        return tMat;
+    }
+
+    FgMatrixC<T,nrows,1>
+    colVec(uint col) const
+    {
+        FgMatrixC<T,nrows,1>    ret;
+        FGASSERT_FAST(col < nrows);
+        for (uint rr=0; rr<nrows; rr++)
+            ret[rr] = elem(rr,col);
+        return ret;
+    }
+
+    FgMatrixC<T,1,ncols>
+    rowVec(uint row) const
+    {
+        FgMatrixC<T,1,ncols>    ret;
+        FGASSERT_FAST(row < nrows);
+        for (uint cc=0; cc<ncols; ++cc)
+            ret[cc] = elem(row,cc);
+        return ret;
+    }
+
+    // Convenient creation:
+
+    static FgMatrixC
+    identity();
+
+    // Initialize from array data. This is done via a proxy type (accessed via a convenient
+    // static member) since compilers interpret '0' as either 'int' or pointer, potentially
+    // resulting in either:
+    // 1. Ambiguity with single-value constructor (compile-time error)
+    // 2. Accidental interpretation of '0' value as a pointer (run-time error)
+    struct  FromPtr
+    {
+        FromPtr(const T * p) : _p(p) {}
+        const T * _p;
+    };
+    explicit
+    FgMatrixC(FromPtr p)
+    {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            m[ii] = *(p._p++);
+    }
+    static
+    FgMatrixC
+    fromPtr(const T * p)
+    {return FgMatrixC(FromPtr(p)); }
+
+    // Product of all components:
+    T
+    volume() const
+    {
+        T   acc = m[0];
+        for (uint ii=1; ii<ncols*nrows; ++ii)
+            acc *= m[ii];
+        return acc;
+    }
+};
+
+template <class T,uint nrows, uint ncols>
+FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator+(
+    const FgMatrixC<T,nrows,ncols>& v) const
+{
+    FgMatrixC<T,nrows,ncols>      newMat;
+    for (uint ii=0; ii<nrows*ncols; ii++)
+        newMat.m[ii] = m[ii] + v.m[ii];
+    return newMat;
+}
+
+template <class T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator-(
+    const FgMatrixC<T,nrows,ncols>& v) const
+{
+    FgMatrixC<T,nrows,ncols>      newMat;
+    for (uint ii=0; ii<nrows*ncols; ii++)
+        newMat.m[ii] = m[ii] - v.m[ii];
+    return newMat;
+}
+
+template <class T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator-() const
+{
+    FgMatrixC<T,nrows,ncols>      retval;
+    for (uint ii=0; ii<nrows*ncols; ii++)
+        retval.m[ii] = - m[ii];
+    return retval;
+}
+
+template <class T,uint nrows, uint ncols>
+FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator*(
+    const T &v) const
+{
+    FgMatrixC<T,nrows,ncols>      newMat;
+    for (uint ii=0; ii<nrows*ncols; ii++)
+        newMat.m[ii] = m[ii] * v;
+    return newMat;
+}
+
+template <class T,uint nrows, uint ncols>
+FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator/(
+    const T &v) const
+{
+    FgMatrixC<T,nrows,ncols>      newMat;
+    for (uint ii=0; ii<nrows*ncols; ii++)
+        newMat.m[ii] = m[ii] / v;
+    return newMat;
+}
+
+template <class T,uint nrows,uint ncols>
+void FgMatrixC<T,nrows,ncols>::setIdentity()
+{
+    setConstant(T(0));
+    uint nn = std::min(nrows,ncols);
+    for (uint ii=0; ii<nn; ii++)
+        m[ii*ncols+ii] = T(1);
+}
+
+template <class T,uint nrows,uint ncols>
+template <uint srows,uint scols>
+FgMatrixC<T,nrows,ncols> &
+FgMatrixC<T,nrows,ncols>::setSubMatrix(
+    const FgMatrixC<T,srows,scols> &    sub,
+    uint                                row,
+    uint                                col)
+{
+    FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
+    for (uint rr=0; rr<srows; rr++)
+        for (uint cc=0; cc<scols; cc++)
+            elem(rr+row,cc+col) = sub.elem(rr,cc);
+    return *this;
+}
+
+template <class T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+FgMatrixC<T,nrows,ncols>::identity() 
+{
+    FG_STATIC_ASSERT(nrows == ncols);
+    FgMatrixC<T,nrows,ncols>    ret;
+    for (uint ii=0; ii<nrows; ++ii)
+        ret.elem(ii,ii) = T(1);
+    return ret;
+}
+
+typedef FgMatrixC<float,2,2>        FgMat22F;
+typedef FgMatrixC<double,2,2>       FgMat22D;
+typedef FgMatrixC<int,2,2>          FgMat22I;
+typedef FgMatrixC<uint,2,2>         FgMat22UI;
+typedef FgMatrixC<float,3,3>        FgMat33F;
+typedef FgMatrixC<double,3,3>       FgMat33D;
+typedef FgMatrixC<float,4,4>        FgMat44F;
+typedef FgMatrixC<double,4,4>       FgMat44D;
+
+typedef FgMatrixC<float,2,3>        FgMat23F;
+typedef FgMatrixC<double,2,3>       FgMat23D;
+typedef FgMatrixC<float,3,2>        FgMat32F;
+typedef FgMatrixC<double,3,2>       FgMat32D;
+typedef FgMatrixC<int,3,2>          FgMat32I;
+typedef FgMatrixC<uint,3,2>         FgMat32UI;
+typedef FgMatrixC<double,3,4>       FgMat34D;
+
+typedef FgMatrixC<float,2,1>        FgVect2F;
+typedef FgMatrixC<double,2,1>       FgVect2D;
+typedef FgMatrixC<short,2,1>        FgVect2S;
+typedef FgMatrixC<ushort,2,1>       FgVect2US;
+typedef FgMatrixC<int,2,1>          FgVect2I;
+typedef FgMatrixC<uint,2,1>         FgVect2UI;
+typedef FgMatrixC<uchar,2,1>        FgVect2UC;
+typedef FgMatrixC<bool,2,1>         FgVect2B;
+typedef FgMatrixC<float,3,1>        FgVect3F;
+typedef FgMatrixC<double,3,1>       FgVect3D;
+typedef FgMatrixC<short,3,1>        FgVect3S;
+typedef FgMatrixC<int,3,1>          FgVect3I;
+typedef FgMatrixC<uint,3,1>         FgVect3UI;
+typedef FgMatrixC<int16,3,1>        FgVect3I16;
+typedef FgMatrixC<schar,3,1>        FgVect3SC;
+typedef FgMatrixC<uchar,3,1>        FgVect3UC;
+typedef FgMatrixC<float,4,1>        FgVect4F;
+typedef FgMatrixC<double,4,1>       FgVect4D;
+typedef FgMatrixC<short,4,1>        FgVect4S;
+typedef FgMatrixC<int,4,1>          FgVect4I;
+typedef FgMatrixC<uint,4,1>         FgVect4UI;
+typedef FgMatrixC<schar,4,1>        FgVect4SC;
+typedef FgMatrixC<uchar,4,1>        FgVect4UC;
+typedef FgMatrixC<float,5,1>        FgVect5F;
+typedef FgMatrixC<double,5,1>       FgVect5D;
+typedef FgMatrixC<short,5,1>        FgVect5S;
+typedef FgMatrixC<int,5,1>          FgVect5I;
+typedef FgMatrixC<uint,5,1>         FgVect5UI;
+typedef FgMatrixC<float,6,1>        FgVect6F;
+typedef FgMatrixC<double,6,1>       FgVect6D;
+typedef FgMatrixC<short,6,1>        FgVect6S;
+typedef FgMatrixC<int,6,1>          FgVect6I;
+typedef FgMatrixC<uint,6,1>         FgVect6UI;
+typedef FgMatrixC<double,9,1>       FgVect9D;
+
+typedef FgMatrixC<float,1,2>        FgVectF2;
+typedef FgMatrixC<float,1,3>        FgVectF3;
+typedef FgMatrixC<double,1,2>       FgVectD2;
+typedef FgMatrixC<uint,1,2>         FgVectU2;
+
+typedef vector<FgVect3F>            FgVerts;
+typedef vector<FgVect2F>            FgUvs;
+
+// function 'constructors':
+
+template<typename T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+fgMatrixC(T * const ptr)
+{
+    FgMatrixC<T,nrows,ncols>    ret;
+    for (size_t ii=0; ii<nrows*ncols; ++ii)
+        ret.m[ii] = *ptr++;
+    return ret;
+}
+
+template<typename T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+fgMatrixC(const vector<T> & v)
+{
+    FgMatrixC<T,nrows,ncols>    ret;
+    FGASSERT(v.size() == nrows*ncols);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret.m[ii] = v[ii];
+    return ret;
+}
+
+// Number type conversions are easier with a function for 2 reasons:
+// 1. No repetition of nrows and ncols vals in templates.
+// 2. Can be used in certain instances where constructor conversions would be interpreted as
+//    function delarations.
+template<class T,uint nrows,uint ncols>
+FgMatrixC<double,nrows,ncols>
+fgToDouble(const FgMatrixC<T,nrows,ncols> & m)
+{return FgMatrixC<double,nrows,ncols>(m); }
+
+template<class T,uint nrows,uint ncols>
+FgMatrixC<float,nrows,ncols>
+fgToFloat(const FgMatrixC<T,nrows,ncols> & m)
+{return FgMatrixC<float,nrows,ncols>(m); }
+
+template<class T,uint nrows,uint ncols>
+FgMatrixC<int,nrows,ncols>
+fgToInt(const FgMatrixC<T,nrows,ncols> & m)
+{return FgMatrixC<int,nrows,ncols>(m); }
+
+template<class T,uint nrows,uint ncols>
+vector<FgMatrixC<double,nrows,ncols> >
+fgToDouble(const vector<FgMatrixC<T,nrows,ncols> > & v)
+{
+    vector<FgMatrixC<double,nrows,ncols> >  ret;
+    ret.reserve(v.size());
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret.push_back(FgMatrixC<double,nrows,ncols>(v[ii]));
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+vector<FgMatrixC<float,nrows,ncols> >
+fgToFloat(const vector<FgMatrixC<T,nrows,ncols> > & v)
+{
+    vector<FgMatrixC<float,nrows,ncols> >  ret;
+    ret.reserve(v.size());
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret.push_back(FgMatrixC<float,nrows,ncols>(v[ii]));
+    return ret;
+}
+
+#endif

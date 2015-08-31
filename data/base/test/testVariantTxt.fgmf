@@ -1,0 +1,33 @@
+SIMF0000    
+class : 120000 0 0 < 1000129 0 0 > 
+    array m_data: 4 1
+        class : 1000129 0 0 
+            class *m_poly: 1000130 0 0 < 110013 0 0 > 
+                double this->m_data: 3.14159
+            classEnd
+        classEnd
+        class : 1000129 0 0 
+            class *m_poly: 1000130 0 0 < 1000100 0 0 < 110013 0 0 130002 0 0 130001 0 0 > > 
+                class this->m_data: 1000100 0 0 < 110013 0 0 130002 0 0 130001 0 0 > 
+                    double : 1.23456
+                    double : 2.34567
+                classEnd
+            classEnd
+        classEnd
+        class : 1000129 0 0 
+            class *m_poly: 1000130 0 0 < 120002 0 0 < 110013 0 0 110013 0 0 > > 
+                class this->m_data: 120002 0 0 < 110013 0 0 110013 0 0 > 
+                    double first: 2.71828
+                    double second: 1.41421
+                classEnd
+            classEnd
+        classEnd
+        class : 1000129 0 0 
+            class *m_poly: 1000130 0 0 < 1000075 0 0 > 
+                class this->m_data: 1000075 0 0 
+                    double this->dd: 3.45678
+                classEnd
+            classEnd
+        classEnd
+    arrayEnd
+classEnd
