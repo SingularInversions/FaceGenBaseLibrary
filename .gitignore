@@ -1,5 +1,7 @@
 _log/
 bin/
 source/ipch/
-source/Makefile*
-**/VisualStudio*
+source/VisualStudio*
+!*.sln
+**/Win32
+**/x64

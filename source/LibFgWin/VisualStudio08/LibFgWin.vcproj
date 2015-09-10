@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+    ProjectType="Visual C++"
+    Version="9.00"
+    Name="LibFgWin"
+    ProjectGUID="{1F666F31-FF71-040F-75EF-E65A772D423D}"
+    RootNamespace="LibFgWin"
+    Keyword="Win32Proj"
+    TargetFrameworkVersion="196613"
+    >
+    <Platforms>
+        <Platform
+            Name="Win32"
+        />
+        <Platform
+            Name="x64"
+        />
+    </Platforms>
+    <ToolFiles>
+    </ToolFiles>
+    <Configurations>
+        <Configuration
+            Name="Debug|Win32"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="0"
+                AdditionalIncludeDirectories="..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\"
+                PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                BasicRuntimeChecks="3"
+                RuntimeLibrary="1"
+                UsePrecompiledHeader="2"
+                WarningLevel="4"
+                DebugInformationFormat="3"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Debug|x64"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                TargetEnvironment="3"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="0"
+                AdditionalIncludeDirectories="..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\"
+                PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                BasicRuntimeChecks="3"
+                RuntimeLibrary="1"
+                UsePrecompiledHeader="2"
+                WarningLevel="4"
+                DebugInformationFormat="3"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Release|Win32"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            WholeProgramOptimization="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="2"
+                EnableIntrinsicFunctions="true"
+                AdditionalIncludeDirectories="..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\"
+                PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                RuntimeLibrary="0"
+                EnableFunctionLevelLinking="true"
+                UsePrecompiledHeader="2"
+                WarningLevel="4"
+                DebugInformationFormat="0"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Release|x64"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            WholeProgramOptimization="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                TargetEnvironment="3"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="2"
+                EnableIntrinsicFunctions="true"
+                AdditionalIncludeDirectories="..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\"
+                PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                RuntimeLibrary="0"
+                EnableFunctionLevelLinking="true"
+                UsePrecompiledHeader="2"
+                WarningLevel="4"
+                DebugInformationFormat="0"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+    </Configurations>
+    <References>
+    </References>
+    <Files>
+        <File RelativePath="..\Fg3dOpenGLImpWin.cpp">
+        </File>
+        <File RelativePath="..\FgClWin.cpp">
+        </File>
+        <File RelativePath="..\FgConioWin.cpp">
+        </File>
+        <File RelativePath="..\FgFileSystemWin.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWin.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWin.hpp">
+        </File>
+        <File RelativePath="..\FgGuiWin3dOgl.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinButton.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinCheckbox.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinDialogs.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinGroupbox.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinImage.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinRadio.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSelect.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSlider.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSplit.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSplitAdj.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSplitScroll.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinTabs.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinText.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinTextEdit.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinTextRich.cpp">
+        </File>
+        <File RelativePath="..\FgStdioWin.cpp">
+        </File>
+        <File RelativePath="..\FgSystemInfo.cpp">
+        </File>
+        <File RelativePath="..\FgTcpWin.cpp">
+        </File>
+        <File RelativePath="..\FgThread.cpp">
+        </File>
+        <File RelativePath="..\FgThrowWindows.cpp">
+        </File>
+        <File RelativePath="..\FgThrowWindows.hpp">
+        </File>
+        <File RelativePath="..\FgTimeWin.cpp">
+        </File>
+        <File RelativePath="..\FgWindows.hpp">
+        </File>
+        <File RelativePath="..\stdafx.cpp">
+			<FileConfiguration
+			    Name="Debug|Win32">
+				<Tool
+				    Name="VCCLCompilerTool"
+				    UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+			    Name="Debug|x64">
+				<Tool
+				    Name="VCCLCompilerTool"
+				    UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+			    Name="Release|Win32">
+				<Tool
+				    Name="VCCLCompilerTool"
+				    UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+			    Name="Release|x64">
+				<Tool
+				    Name="VCCLCompilerTool"
+				    UsePrecompiledHeader="1"
+				/>
+			</FileConfiguration>
+		</File>
+        <File RelativePath="..\stdafx.h">
+        </File>
+    </Files>
+    <Globals>
+    </Globals>
+</VisualStudioProject>

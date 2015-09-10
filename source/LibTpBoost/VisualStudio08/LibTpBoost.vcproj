@@ -1,0 +1,387 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+    ProjectType="Visual C++"
+    Version="9.00"
+    Name="LibTpBoost"
+    ProjectGUID="{6E787B72-32E0-AF9C-0934-298452F36B6B}"
+    RootNamespace="LibTpBoost"
+    Keyword="Win32Proj"
+    TargetFrameworkVersion="196613"
+    >
+    <Platforms>
+        <Platform
+            Name="Win32"
+        />
+        <Platform
+            Name="x64"
+        />
+    </Platforms>
+    <ToolFiles>
+    </ToolFiles>
+    <Configurations>
+        <Configuration
+            Name="Debug|Win32"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="0"
+                AdditionalIncludeDirectories="..\boost_1_58_0\"
+                PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_THREAD_BUILD_LIB=1;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                BasicRuntimeChecks="3"
+                RuntimeLibrary="1"
+                UsePrecompiledHeader="0"
+                WarningLevel="2"
+                DebugInformationFormat="3"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Debug|x64"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                TargetEnvironment="3"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="0"
+                AdditionalIncludeDirectories="..\boost_1_58_0\"
+                PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_THREAD_BUILD_LIB=1;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                BasicRuntimeChecks="3"
+                RuntimeLibrary="1"
+                UsePrecompiledHeader="0"
+                WarningLevel="2"
+                DebugInformationFormat="3"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Release|Win32"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            WholeProgramOptimization="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="2"
+                EnableIntrinsicFunctions="true"
+                AdditionalIncludeDirectories="..\boost_1_58_0\"
+                PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_THREAD_BUILD_LIB=1;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                RuntimeLibrary="0"
+                EnableFunctionLevelLinking="true"
+                UsePrecompiledHeader="0"
+                WarningLevel="2"
+                DebugInformationFormat="0"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+        <Configuration
+            Name="Release|x64"
+            OutputDirectory="$(PlatformName)\$(ConfigurationName)"
+            IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+            ConfigurationType="4"
+            CharacterSet="1"
+            WholeProgramOptimization="1"
+            >
+            <Tool
+                Name="VCPreBuildEventTool"
+            />
+            <Tool
+                Name="VCCustomBuildTool"
+            />
+            <Tool
+                Name="VCMIDLTool"
+                TargetEnvironment="3"
+            />
+            <Tool
+                Name="VCCLCompilerTool"
+			    AdditionalOptions="/Zm200 /bigobj"
+                Optimization="2"
+                EnableIntrinsicFunctions="true"
+                AdditionalIncludeDirectories="..\boost_1_58_0\"
+                PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_THREAD_BUILD_LIB=1;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1"
+                RuntimeLibrary="0"
+                EnableFunctionLevelLinking="true"
+                UsePrecompiledHeader="0"
+                WarningLevel="2"
+                DebugInformationFormat="0"
+            />
+            <Tool
+                Name="VCManagedResourceCompilerTool"
+            />
+            <Tool
+                Name="VCResourceCompilerTool"
+            />
+            <Tool
+                Name="VCPreLinkEventTool"
+            />
+            <Tool
+                Name="VCLibrarianTool"
+                AdditionalOptions="/IGNORE:4221"
+            />
+            <Tool
+                Name="VCALinkTool"
+            />
+            <Tool
+                Name="VCXDCMakeTool"
+            />
+            <Tool
+                Name="VCBscMakeTool"
+            />
+            <Tool
+                Name="VCFxCopTool"
+            />
+            <Tool
+                Name="VCPostBuildEventTool"
+            />
+        </Configuration>
+    </Configurations>
+    <References>
+    </References>
+    <Files>
+ 		<Filter
+			Name="filesystem/src/"
+			>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\codecvt_error_category.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\operations.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\path.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\path_traits.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\portability.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\unique_path.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\utf8_codecvt_facet.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\windows_file_codecvt.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\filesystem\src\windows_file_codecvt.hpp">
+        </File>
+ 		</Filter>
+ 		<Filter
+			Name="serialization/src/"
+			>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\archive_exception.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_archive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_iarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_iserializer.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_oarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_oserializer.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_pointer_iserializer.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_pointer_oserializer.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_serializer_map.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_text_iprimitive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_text_oprimitive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_text_wiprimitive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_text_woprimitive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\basic_xml_archive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\binary_iarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\binary_oarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\binary_wiarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\binary_woarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\codecvt_null.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\extended_type_info.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\extended_type_info_no_rtti.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\extended_type_info_typeid.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\polymorphic_iarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\polymorphic_oarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\stl_port.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\text_iarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\text_oarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\text_wiarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\text_woarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\void_cast.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_archive_exception.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_grammar.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_iarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_oarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_wgrammar.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_wiarchive.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\serialization\src\xml_woarchive.cpp">
+        </File>
+ 		</Filter>
+ 		<Filter
+			Name="system/src/"
+			>
+        <File RelativePath="..\boost_1_58_0\libs\system\src\error_code.cpp">
+        </File>
+ 		</Filter>
+ 		<Filter
+			Name="thread/src/"
+			>
+        <File RelativePath="..\boost_1_58_0\libs\thread\src\future.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\thread\src\tss_null.cpp">
+        </File>
+ 		</Filter>
+ 		<Filter
+			Name="thread/src/win32/"
+			>
+        <File RelativePath="..\boost_1_58_0\libs\thread\src\win32\thread.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\thread\src\win32\tss_dll.cpp">
+        </File>
+        <File RelativePath="..\boost_1_58_0\libs\thread\src\win32\tss_pe.cpp">
+        </File>
+ 		</Filter>
+    </Files>
+    <Globals>
+    </Globals>
+</VisualStudioProject>
