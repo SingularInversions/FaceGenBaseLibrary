@@ -35,7 +35,6 @@ struct  FgGuiWinText : public FgGuiOsBase
     {
         FgCreateChild   cc;
         cc.extStyle = extStyle;
-        cc.useFillBrush = true;
         cc.visible = visible;
         fgCreateChild(parentHwnd,ident,this,cc);
     }
@@ -60,7 +59,7 @@ struct  FgGuiWinText : public FgGuiOsBase
         if (g_gg.dg.update(m_api.updateFlagIdx)) {
             const FgString & text = g_gg.getVal(m_api.content);
             m_textDims[1] = text.count('\n')+1;
-            InvalidateRect(m_hwnd,NULL,TRUE);
+            InvalidateRect(m_hwnd,NULL,FALSE);
         }
     }
 

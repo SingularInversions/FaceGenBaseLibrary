@@ -187,7 +187,7 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
             GetScrollInfo(hwnd,SB_VERT,&m_si);
             if (m_si.nPos != tmp) {
                 resize();
-                InvalidateRect(hwnd,NULL,FALSE);
+                InvalidateRect(hwndThis,NULL,TRUE);
             }
             return 0;
         }

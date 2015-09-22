@@ -17,44 +17,38 @@
 
 using namespace std;
 
-void
-FgGridTriangles::init(
-    const std::vector<FgVect2F> &   points,
-    const std::vector<FgVect3UI> &  tris,
-    float                           binSampleRatio)
+FgGridTriangles
+fgGridTriangles(
+    const vector<FgVect2F> &    points,
+    const vector<FgVect3UI> &   tris,
+    float                       binsPerTri)
 {
-    m_points = points;
-    m_tris = tris;
-    FgMat22F bounds = fgBounds(m_points);
-    FgVect2F    lo = bounds.colVec(0),
-                size = bounds.colVec(1)-lo;
-    FGASSERT(fgMinElem(size) > 0.0f);
+    FgGridTriangles         ret;
+    ret.m_points = points;
+    ret.m_tris = tris;
+    FgMat22F    domain = fgBounds(ret.m_points);
+    FgVect2F    domainLo = domain.colVec(0),
+                domainSize = domain.colVec(1)-domainLo;
+    FGASSERT(domainSize.volume() > 0.0f);
     FGASSERT(tris.size() > 0);
-    float       count = float(tris.size()) * binSampleRatio,
-                widHgtRatio = size[0] / size[1];
-    uint        dimX = uint(std::sqrt(count*widHgtRatio) + 0.5f),
-                dimY = uint(std::sqrt(count/widHgtRatio) + 0.5f);
-    FgVect2UI   dims((dimX > 0) ? dimX : 1,(dimY > 0) ? dimY : 1);
-    // Ensure the upper bound points fall into the grid by adding 4 epsilons to ensure
-    // that d/(s+4e) * d < d. Note that it is important that FgAffineCwPre2F applies the
-    // translation before the scaling (instead of premultiplying a post-translation) otherwise
-    // the inequality may no longer hold:
-    size *= 1.0f + 4.0f * std::numeric_limits<float>::epsilon();
-    FgVect2F    scales(float(dims[0])/size[0],float(dims[1])/size[1]);
-    m_clientToGridCoords = FgAffineCwPre2F(-lo,scales);
-    m_grid.resize(dims);
+    float       numBins = float(tris.size()) * binsPerTri;
+    FgVect2F    rangeSizef = domainSize * std::sqrt(numBins/domainSize.volume());
+    FgVect2UI   rangeSize = FgVect2UI(rangeSizef + FgVect2F(0.5f));
+    rangeSize = fgClipLo(rangeSize,1U);
+    FgMat22F    range = fgConcatHoriz(FgVect2F(0.01f),FgVect2F(rangeSize)-FgVect2F(0.01f));
+    // Ensure all points fall into the grid despite rounding error by leaving a 1% pixel boundary:
+    ret.m_clientToGridCoords = FgAffineCwPre2F(domain,range);
+    ret.m_grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
         FgVect3UI       tri = tris[ii];
-        FgMat22UI
-            bounds = 
-                FgMat22UI(
-                    fgBounds(
-                        m_clientToGridCoords * m_points[tri[0]],
-                        m_clientToGridCoords * m_points[tri[1]],
-                        m_clientToGridCoords * m_points[tri[2]]));
+        FgMat22UI       bounds = FgMat22UI(fgBounds(
+            ret.m_clientToGridCoords * ret.m_points[tri[0]],
+            ret.m_clientToGridCoords * ret.m_points[tri[1]],
+            ret.m_clientToGridCoords * ret.m_points[tri[2]]));
         for (FgIter2UI it(bounds); it.valid(); it.next())
-            m_grid[it()].push_back(uint(ii));
+            ret.m_grid[it()].push_back(uint(ii));
     }
+    return ret;
 }
 
 void
@@ -69,11 +63,15 @@ FgGridTriangles::intersects(FgVect2F pos,vector<FgTriPoint> & ret) const
     FgVect2UI           binIdx = FgVect2UI(gridCoord);
     const vector<uint> & bin = m_grid[binIdx];
     for (size_t ii=0; ii<bin.size(); ++ii) {
-        FgVect3UI       tri = m_tris[bin[ii]];
-        FgVect3F        bcoord =
-            FgVect3F(fgBarycentricCoords(pos,m_points[tri[0]],m_points[tri[1]],m_points[tri[2]]).val());
-        if (fgMinElem(bcoord) >= 0.0f)
-            ret.push_back(FgTriPoint(bin[ii],tri,bcoord));
+        FgTriPoint      tp;
+        tp.triInd = bin[ii];
+        tp.pointInds = m_tris[bin[ii]];
+        tp.baryCoord = FgVect3F(fgBarycentricCoords(pos,
+            m_points[tp.pointInds[0]],
+            m_points[tp.pointInds[1]],
+            m_points[tp.pointInds[2]]).val());
+        if (fgMinElem(tp.baryCoord) >= 0.0f)
+            ret.push_back(tp);
     }
 }
 
@@ -87,11 +85,9 @@ fgGridTrianglesTest(const FgArgs &)
     for (FgIter2UI vit(dimp); vit.valid(); vit.next())
         vertImg[vit()] = FgVect2F(vit());
     vector<FgVect3UI>           tris;
-    for (uint row=0; row<dim; ++row)
-    {
+    for (uint row=0; row<dim; ++row) {
         uint    col=0;
-        for (; col<row; ++col)
-        {
+        for (; col<row; ++col) {
             tris.push_back(
                 FgVect3UI(
                     row*dimp+col,
@@ -109,18 +105,14 @@ fgGridTrianglesTest(const FgArgs &)
                 (row+1)*dimp+col,
                 row*dimp+col));
     }
-
     // Create the grid and query:
     const vector<FgVect2F> &    verts = vertImg.dataVec();
-    FgGridTriangles      grid;
-    grid.init(verts,tris);
-    for (uint ii=0; ii<100; ++ii)
-    {
+    FgGridTriangles             grid = fgGridTriangles(verts,tris);
+    for (uint ii=0; ii<100; ++ii) {
         FgVect2D        posd(fgRand(),fgRand());
         FgVect2F        pos = FgVect2F(posd) * 10.0f;
         vector<FgTriPoint> res = grid.intersects(pos);
-        if (pos[0] < pos[1])
-        {
+        if (pos[0] < pos[1]) {
             FGASSERT(res.size() == 1);
             FgTriPoint &   isect(res[0]);
             FgVect2F
@@ -133,7 +125,6 @@ fgGridTrianglesTest(const FgArgs &)
         else
             FGASSERT(res.size() == 0);
     }
-
     // Query outside grid area:
     vector<FgTriPoint> res = grid.intersects(FgVect2F(-0.1f,0.0f));
     FGASSERT(res.size() == 0);

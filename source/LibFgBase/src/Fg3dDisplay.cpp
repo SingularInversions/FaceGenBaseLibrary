@@ -555,21 +555,12 @@ fgDisplayForEdit(const Fg3dMesh & mesh)
     return g_gg.getVal(meshesN)[0];
 }
 
-static
 void
-testmGuiMesh(const FgArgs &)
+fgTestmGuiMesh(const FgArgs &)
 {
     FgString    dir = fgDataDir() + "base/";
     Fg3dMesh    mesh = fgLoadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
     fgDisplayMesh(mesh);
-}
-
-void
-fgCmdTestmGui(const FgArgs & args)
-{
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(testmGuiMesh,"mesh"));
-    fgMenu(args,cmds);
 }
 
 // */

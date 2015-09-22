@@ -55,3 +55,14 @@ operator<<(std::ostream & os,const FgTimer & t)
     double      et = t.read();
     return os << "Elapsed time: " << fgToStringPrecision(et,4) << " s";
 }
+
+bool
+fgTick()
+{
+    static FgTimer  timer;
+    if (timer.read() > 1.0) {
+        timer.start();
+        return true;
+    }
+    return false;
+}

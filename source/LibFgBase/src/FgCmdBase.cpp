@@ -30,6 +30,7 @@ fgCmdBaseTests()
     ADDCMD1(fgExceptionTest,"exception");
     ADDCMD1(fgFileSystemTest,"filesystem");
     ADDCMD1(fgGeometryTest,"geometry");
+    ADDCMD1(fgGridTrianglesTest,"gridTriangles");
     ADDCMD1(fgImageTest,"image");
     ADDCMD1(fgMatrixSolverTest,"matrixSolver");
     ADDCMD1(fgMathTest,"math");
@@ -54,11 +55,22 @@ void
 test(const FgArgs & args)
 {fgMenu(args,fgCmdBaseTests(),true); }
 
+static
+void
+testmGui(const FgArgs & args)
+{
+    vector<FgCmd>   cmds;
+    ADDCMD1(fgImgGuiTestm,"image");
+    ADDCMD1(fgTestmGuiMesh,"mesh");
+    ADDCMD1(fgGuiTestmScroll,"scroll");
+    fgMenu(args,cmds);
+}
+
 vector<FgCmd>
 fgCmdBaseTestms()
 {
     vector<FgCmd>   cmds;
-    ADDCMD1(fgCmdTestmGui,"gui");
+    cmds.push_back(FgCmd(testmGui,"gui"));
     ADDCMD1(fg3dReadWobjTest,"readWobj");
     ADDCMD1(fgRandomTest,"random");
     ADDCMD1(fgGeometryManTest,"geometry");
@@ -81,6 +93,7 @@ FgCmd   fgCmdImgopsInfo();
 FgCmd   fgCmdMeshopsInfo();
 FgCmd   fgCmdMorphInfo();
 FgCmd   fgCmdRenderInfo();
+void    fgCmdCons(const FgArgs &);
 
 vector<FgCmd> fgCmdViewInfos();
 
@@ -96,6 +109,7 @@ fgCmdFgbl(const FgArgs & args)
     cmds.push_back(fgCmdMeshopsInfo());
     cmds.push_back(fgCmdMorphInfo());
     cmds.push_back(fgCmdRenderInfo());
+    cmds.push_back(FgCmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
     cmds.push_back(FgCmd(test,"test","Automated tests"));
     cmds.push_back(FgCmd(testm,"testm","Manual tests"));
     cmds.push_back(FgCmd(view,"view","Interactively view various file types"));

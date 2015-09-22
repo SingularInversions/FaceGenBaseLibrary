@@ -23,7 +23,7 @@ fgCube(T a)
 template <typename T>
 inline T
 fgCbrt(T a)
-{return std::pow(a,T(1)/T(3)); }    // TODO: faster version if required.
+{return T(std::pow(double(a),1.0/3.0)); }    // TODO: faster version if required (eg. C++11 cbrt)
 
 template<typename T>
 T

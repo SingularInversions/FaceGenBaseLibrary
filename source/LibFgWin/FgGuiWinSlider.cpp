@@ -49,7 +49,6 @@ struct  FgGuiWinSlider : public FgGuiOsBase
     {
         FgCreateChild   cc;
         cc.extStyle = extStyle;
-        cc.useFillBrush = true;
         cc.visible = visible;
         fgCreateChild(parentHwnd,ident,this,cc);
     }

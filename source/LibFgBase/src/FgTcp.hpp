@@ -11,36 +11,36 @@
 #ifndef FGTCP_HPP
 #define FGTCP_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgStdString.hpp"
 #include "FgTypes.hpp"
 
 // Returns false if unable to connect to server:
 bool
 fgTcpClient(
-    const std::string & hostname,
+    const string &      hostname,
     uint16              port,
-    const std::string & data,
+    const string &      data,
     bool                getResponse,
-    std::string &       response);
+    string &            response);
 
 inline
 bool
 fgTcpClient(
-    const std::string & hostname,
+    const string &      hostname,
     uint16              port,
-    const std::string & data)
+    const string &      data)
 {
-    std::string     dummy;
+    string     dummy;
     return fgTcpClient(hostname,port,data,false,dummy);
 }
 
 inline
 bool
 fgTcpClient(
-    const std::string & hostname,
+    const string &      hostname,
     uint16              port,
-    const std::string & data,
-    std::string &       response)
+    const string &      data,
+    string &            response)
 {
     return fgTcpClient(hostname,port,data,true,response);
 }
@@ -48,11 +48,13 @@ fgTcpClient(
 void
 fgTcpServer(
     uint16      port,
-    bool        respond,                // Don't disconnect client until handler returns, then respond.
+    // If true, don't disconnect client until handler returns, then respond. Hander must complete
+    // before TCP timeout in this case:
+    bool        respond,
     bool(*handler)(                     // Return false to terminate server
-        const std::string & ipAddr,
-        const std::string & dataIn,
-        std::string &       response),  // No response sent if left empty or if waitForResponse=false
+        const string & ipAddr,
+        const string & dataIn,
+        string &       response),       // No response sent if left empty or if respond == false
     size_t      maxRecvBytes);          // Maximum number of bytes to receive in incomimg message
 
 #endif

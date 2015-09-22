@@ -13,3 +13,13 @@
 int
 fgSizeofPtr()
 {return sizeof(void*); }
+
+bool
+fgIs64bit()
+{
+#ifdef FG_64
+    return true;
+#else
+    return false;
+#endif
+}

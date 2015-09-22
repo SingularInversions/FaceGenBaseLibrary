@@ -36,17 +36,19 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
     {
 //fgout << fgnl << "FgGuiWinGroupbox::create " << m_api.label << fgpush;
         m_store = store;
+        int     flags = WS_CHILD;
+        if (visible)
+            flags = flags | WS_VISIBLE;
         m_hwndGb =
             CreateWindowEx(0,
-                TEXT("button"),     // Standard controls class name for all buttons
+                TEXT("button"),         // Standard controls class name for all buttons
                 m_api.label.as_wstring().c_str(),
-                WS_CHILD | WS_VISIBLE |
-                BS_GROUPBOX,        // Groupbox type button
-                0,0,0,0,            // Will be sent MOVEWINDOW messages.
+                flags | BS_GROUPBOX,    // Groupbox type button
+                0,0,0,0,                // Will be sent MOVEWINDOW messages.
                 parentHwnd,
                 HMENU(0),
                 s_fgGuiWin.hinst,
-                NULL);              // No WM_CREATE parameter
+                NULL);                  // No WM_CREATE parameter
         FGASSERTWIN(m_hwndGb != 0);
         m_contents->create(parentHwnd,1,m_store,extStyle,visible);
 //fgout << fgpop;

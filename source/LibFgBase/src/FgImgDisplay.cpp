@@ -15,6 +15,7 @@
 #include "FgAffine1.hpp"
 #include "FgAffineCwPreC.hpp"
 #include "FgBounds.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -123,4 +124,10 @@ fgImgDisplay(const FgImgRgbaF & img)
     for (size_t ii=0; ii<di.numPixels(); ++ii)
         di[ii] = FgRgbaUB(img[ii]*255.0f + FgRgbaF(0.5f));
     fgImgDisplay(di);
+}
+
+void
+fgImgGuiTestm(const FgArgs &)
+{
+    fgImgDisplay(fgLoadImgAnyFormat(fgDataDir()+"base/trees.jpg"));
 }

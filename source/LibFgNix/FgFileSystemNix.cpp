@@ -25,7 +25,10 @@ fgGetCurrentDir()
     char    buff[512] = {0};
     if (!getcwd(buff,511))
         fgThrow("Unable to get current working directory");
-    return FgString(buff);
+    FgString    ps(buff);
+    if (!ps.empty() && !ps.endsWith("/"))
+        ps += "/";
+    return ps;
 }
 
 bool
@@ -41,14 +44,14 @@ fgSetCurrentDir(
 }
 
 bool
-fgFsCreateDirectory(const FgString & dir)
+fgCreateDirectory(const FgString & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
 }
 
 void
-fgFsRemoveFile(const FgString & fname)
+fgRemoveFile(const FgString & fname)
 {
     string      utf8 = fname.as_utf8_string();
     if (remove(utf8.c_str()) != 0)
@@ -57,10 +60,10 @@ fgFsRemoveFile(const FgString & fname)
 
 void
 fgDeleteFile(const FgString & fname)
-{fgFsRemoveFile(fname); }
+{fgRemoveFile(fname); }
 
 bool
-fgFsRemoveDirectory(
+fgRemoveDirectory(
     const FgString &    dir,
     bool                throwOnFail)
 {

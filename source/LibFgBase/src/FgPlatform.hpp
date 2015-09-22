@@ -64,4 +64,8 @@
 int
 fgSizeofPtr();    // avoid 'conditional expression is constant' errors
 
+// Is current binary 64 bit (avoid 'conditional expression is constant') ?
+bool
+fgIs64bit();
+
 #endif

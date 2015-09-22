@@ -50,7 +50,8 @@ fgCreatePath(const FgPath & p)
         if (fgExists(dir))
             FGASSERT(fgIsDirectory(dir));
         else
-            fgCreateDirectory(dir); }
+            fgCreateDirectory(dir);
+    }
 }
 
 FgString

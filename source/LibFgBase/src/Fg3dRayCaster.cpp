@@ -47,7 +47,7 @@ FgSurfRay::FgSurfRay(
         vertItcs[1] = vertOecs[1] / vertOecs[2];
         vertsIucs[ii] = itcsToIucs * vertItcs;
     }
-    grid.init(vertsIucs,*(rs.vertInds));
+    grid = fgGridTriangles(vertsIucs,*(rs.vertInds));
     fgTransform_(rs.norms->vert,norms,modelview.linear);
 }
 

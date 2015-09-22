@@ -214,7 +214,6 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
                 m_pane0->create(hwnd,0,m_store+"_0",extStyle);
                 m_pane1->create(hwnd,1,m_store+"_1",extStyle);
                 FgCreateChild   cc;
-                cc.useFillBrush = true;
                 cc.cursor = LoadCursor(NULL,m_api.horiz ? IDC_SIZEWE : IDC_SIZENS);
                 m_div.hwnd = fgCreateChild(hwnd,2,&m_div.win,cc);
 //fgout << fgpop;
@@ -249,8 +248,7 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
                     double  reld = double(delta[sd]) / double(sizet);
                     m_relSize += reld;
                     resizePanes();
-                    // No need to erase background here since sub-windows have full coverage:
-                    InvalidateRect(hwnd,NULL,FALSE);
+                    InvalidateRect(hwndThis,NULL,TRUE);
                 }
                 return 0;
             }

@@ -22,22 +22,37 @@
 #include "FgMatrixC.hpp"
 
 template <class T,uint dim>
-class FgAffineCwPreC
+struct  FgAffineCwPreC
 {
-public:
-    // Default constructor sets to identity transform:
+    FgMatrixC<T,dim,1>        m_trans;      // Applied first
+    FgMatrixC<T,dim,1>        m_scales;     // Applied second
+
     FgAffineCwPreC()
     : m_scales(T(1))
     {}
 
     // Construct from form f(x) = Diag(s)(x + b)
     FgAffineCwPreC(
-        const FgMatrixC<T,dim,1> &      trans,
-        const FgMatrixC<T,dim,1> &      scales)
-        :
+        FgMatrixC<T,dim,1>  trans,
+        FgMatrixC<T,dim,1>  scales) :
         m_trans(trans),
         m_scales(scales)
         {}
+
+    FgAffineCwPreC(
+        FgMatrixC<T,dim,2>  domain,
+        FgMatrixC<T,dim,2>  range)
+    {
+        FgMatrixC<T,dim,1>  domainLo = domain.colVec(0),
+                            domainHi = domain.colVec(1),
+                            domainSize = domainHi-domainLo,
+                            rangeLo = range.colVec(0),
+                            rangeHi = range.colVec(1),
+                            rangeSize = rangeHi-rangeLo;
+        FGASSERT(domainSize.volume() > 0);
+        m_scales = fgDivide(rangeSize,domainSize);
+        m_trans = fgDivide(rangeLo,m_scales) - domainLo;
+    }
 
     template<uint ncols>
     FgMatrixC<T,dim,ncols>
@@ -49,18 +64,6 @@ public:
                 ret.elm(col,row) = m_scales[row] * (vec.elm(col,row) + m_trans[row]);
         return ret;
     }
-
-    std::ostream &
-    print(std::ostream & os) const
-    {
-        os  << fgnl << " Translation: " << m_trans
-            << fgnl << " Scales: " << m_scales;
-        return os;
-    }
-
-private:
-    FgMatrixC<T,dim,1>        m_trans;
-    FgMatrixC<T,dim,1>        m_scales;
 };
 
 typedef FgAffineCwPreC<float,2>      FgAffineCwPre2F;
@@ -69,8 +72,11 @@ typedef FgAffineCwPreC<float,3>      FgAffineCwPre3F;
 typedef FgAffineCwPreC<double,3>     FgAffineCwPre3D;
 
 template<class T,uint dim>
-inline std::ostream &
+std::ostream &
 operator<<(std::ostream & os,const FgAffineCwPreC<T,dim> & v)
-{return v.print(os); }
+{
+    os  << fgnl << " Translation: " << v.m_trans << " Scales: " << v.m_scales;
+    return os;
+}
 
 #endif

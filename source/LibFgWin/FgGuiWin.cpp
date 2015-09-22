@@ -59,8 +59,7 @@ struct  FgGuiWinMain
         // (ie. EXE or a DLL):
         WNDCLASSEX  wcl;
         wcl.cbSize = sizeof(wcl);
-        if (GetClassInfoEx(s_fgGuiWin.hinst,fgGuiWinMain,&wcl) == 0)
-        {
+        if (GetClassInfoEx(s_fgGuiWin.hinst,fgGuiWinMain,&wcl) == 0) {
             // 101 is the fgb-generated resource number of the icon images (if provided):
             HICON   icon = LoadIcon(s_fgGuiWin.hinst,MAKEINTRESOURCE(101));
             if (icon == NULL)
@@ -72,21 +71,17 @@ struct  FgGuiWinMain
             wcl.hInstance = s_fgGuiWin.hinst;
             wcl.hIcon = icon;
             wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
-            // Background painting the whole application makes it easy to avoid holes,
-            // and flicker is minimized by the use of 'WS_CLIPCHILDREN' below (very important).
-            wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
+            wcl.hbrBackground = NULL; // GetSysColorBrush(COLOR_BTNFACE);
             wcl.lpszMenuName = NULL;
             wcl.lpszClassName = fgGuiWinMain;
             wcl.hIconSm = NULL;
             FGASSERTWIN(RegisterClassEx(&wcl));
         }
-
         // Retrieve previously saved window state if present and valid:
-
         // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
         // col vec 1 is size. Windows screen coordinates:
         // x - right, y - down, origin - upper left corner of MAIN screen.
-        FgMat22I     posDims(CW_USEDEFAULT,1200,CW_USEDEFAULT,800),
+        FgMat22I        posDims(CW_USEDEFAULT,1200,CW_USEDEFAULT,800),
                         pdTmp;
         if (fgLoadXml(m_store+".xml",pdTmp,false)) {
             FgVect2I    pdAbs = fgAbs(pdTmp.subMatrix<2,1>(0,0));
@@ -95,8 +90,8 @@ struct  FgGuiWinMain
                 (pdAbs[1] < 32000) &&
                 (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
                 (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
-                posDims = pdTmp; }
-
+                posDims = pdTmp;
+        }
 //fgout << fgnl << "CreateWindowEx" << fgpush;
         // CreateWindowEx sends WM_CREATE and certain other messages before returning.
         // This is done so that the caller can send messages to the child window immediately
@@ -104,8 +99,13 @@ struct  FgGuiWinMain
         // after creation, so that dynamic windows can be created and setting can be udpated:
         s_fgGuiWin.hwndMain =
             CreateWindowEx(0,
-                fgGuiWinMain, 
+                fgGuiWinMain,
                 m_title.as_wstring().c_str(),
+                // Windows is too stupid to draw in a backbuffer so to avoid flicker you must draw
+                // on top of the last frame, which means you must ensure you draw over all your
+                // background but to do this you need to avoid drawing over your subwindows using
+                // WS_CLIPCHILDREN. I think this appears to affect InvalidateRect as well, so you
+                // have to recursively call that function (bottom-up) for child windows:
                 WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
                 posDims[0],posDims[2],
                 posDims[1],posDims[3],
@@ -121,7 +121,6 @@ struct  FgGuiWinMain
         // Set the currently selected windows to show, which also causes the WM_SIZE message
         // to be sent (and for the builtin controls, WM_PAINT):
         ShowWindow(s_fgGuiWin.hwndMain,SW_SHOWNORMAL);
-
         MSG         msg;
         HANDLE      dummyEvent = INVALID_HANDLE_VALUE;
         HANDLE      *eventsPtr = (eventHandles.empty() ? &dummyEvent : &eventHandles[0]);

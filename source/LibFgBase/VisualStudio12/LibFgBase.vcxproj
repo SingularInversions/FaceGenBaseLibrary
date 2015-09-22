@@ -199,6 +199,11 @@
     <ClCompile Include="..\src\FgCommand.cpp"  />
     <ClInclude Include="..\src\FgCommand.hpp"  />
     <ClInclude Include="..\src\FgConio.hpp"  />
+    <ClCompile Include="..\src\FgCons.cpp"  />
+    <ClInclude Include="..\src\FgCons.hpp"  />
+    <ClCompile Include="..\src\FgConsMakefiles.cpp"  />
+    <ClCompile Include="..\src\FgConsVisualStudio2008.cpp"  />
+    <ClCompile Include="..\src\FgConsVisualStudio201x.cpp"  />
     <ClInclude Include="..\src\FgCoordSystem.hpp"  />
     <ClInclude Include="..\src\FgDefaultVal.hpp"  />
     <ClCompile Include="..\src\FgDepGraph.cpp"  />
@@ -222,6 +227,7 @@
     <ClCompile Include="..\src\FgGeometryTest.cpp"  />
     <ClCompile Include="..\src\FgGridTriangles.cpp"  />
     <ClInclude Include="..\src\FgGridTriangles.hpp"  />
+    <ClCompile Include="..\src\FgGuiApi.cpp"  />
     <ClInclude Include="..\src\FgGuiApi.hpp"  />
     <ClCompile Include="..\src\FgGuiApi3d.cpp"  />
     <ClInclude Include="..\src\FgGuiApi3d.hpp"  />

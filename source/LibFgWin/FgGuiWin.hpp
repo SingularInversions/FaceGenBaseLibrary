@@ -146,7 +146,7 @@ struct  FgCreateChild
     FgCreateChild() :
         style(NULL),
         extStyle(NULL),
-        useFillBrush(false),
+        useFillBrush(true),
         cursor(LoadCursor(NULL,IDC_ARROW)),
         visible(true)
     {}
@@ -191,7 +191,7 @@ fgCreateChild(
     // CreateWindowEx sends WM_CREATE and certain other messages before returning.
     // This is done so that the caller can send messages to the child window immediately
     // after calling this function.
-    int     flags = WS_CHILDWINDOW | opt.style;
+    int     flags = WS_CHILD | opt.style;   // WS_CHILD == WS_CHILDWINDOW
     // Parent must be visible for child to be visible. Idiomatic approach is to create without
     // visible flag, then call ShowWindow. If created with visible flag, windows sends a WM_SHOWWINDOW:
     if (opt.visible) flags = flags | WS_VISIBLE;

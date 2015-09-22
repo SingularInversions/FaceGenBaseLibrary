@@ -26,11 +26,11 @@ static void     testCurrentDirectory()
     {
         char            centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol (octal values)
         FgString        oldDir = fgGetCurrentDir();
-        FgString        dirName = FgString(centInUtf8);
+        FgString        dirName = FgString(centInUtf8) + fgDirSep();
         fgCreateDirectory(dirName);
         fgSetCurrentDir(dirName);
         FgString        newDir = fgGetCurrentDir();
-        FgString        expected = oldDir + fgDirSep() + dirName;
+        FgString        expected = oldDir + dirName;
         fgSetCurrentDir(oldDir);
         FgString        restored = fgGetCurrentDir();
         FGASSERT(fgRemoveDirectory(dirName));
@@ -86,16 +86,14 @@ static
 void
 testDeleteDirectory()
 {
-    // This doesn't yet work with unicode but should do so with filesystem 3 in
-    // upcoming boost 1.45:
-    //char        centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
-    //FgString    cent = FgString(centInUtf8);
-    FgString    name = "testDeleteDirectory";
+    char        centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
+    FgString    cent = FgString(centInUtf8)+"/";
+    FgString    name = "testDeleteDirectory/";
     fgCreateDirectory(name);
     FGASSERT(fgExists(name));
-    fgCreateDirectory(name+"/tmp");
-    fgSaveXml(name+"/tmp/a",42);
-    fgSaveXml(name+"/b",21);
+    fgCreateDirectory(name+cent);
+    fgSaveXml(name+cent+"a",42);
+    fgSaveXml(name+"b",21);
     fgRemoveAll(name);
     FGASSERT(!fgExists(name));
 }

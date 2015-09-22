@@ -363,6 +363,16 @@
         </File>
         <File RelativePath="..\src\FgConio.hpp">
         </File>
+        <File RelativePath="..\src\FgCons.cpp">
+        </File>
+        <File RelativePath="..\src\FgCons.hpp">
+        </File>
+        <File RelativePath="..\src\FgConsMakefiles.cpp">
+        </File>
+        <File RelativePath="..\src\FgConsVisualStudio2008.cpp">
+        </File>
+        <File RelativePath="..\src\FgConsVisualStudio201x.cpp">
+        </File>
         <File RelativePath="..\src\FgCoordSystem.hpp">
         </File>
         <File RelativePath="..\src\FgDefaultVal.hpp">
@@ -408,6 +418,8 @@
         <File RelativePath="..\src\FgGridTriangles.cpp">
         </File>
         <File RelativePath="..\src\FgGridTriangles.hpp">
+        </File>
+        <File RelativePath="..\src\FgGuiApi.cpp">
         </File>
         <File RelativePath="..\src\FgGuiApi.hpp">
         </File>

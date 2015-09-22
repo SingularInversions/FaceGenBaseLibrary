@@ -67,4 +67,8 @@ struct FgTimeScope
     {fgout << fgpop << fgnl << timer; }
 };
 
+// Returns true at most once per second:
+bool
+fgTick();
+
 #endif

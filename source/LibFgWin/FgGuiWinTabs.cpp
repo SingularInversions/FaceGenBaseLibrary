@@ -122,73 +122,75 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     LRESULT
     wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
-        case WM_CREATE:
-            {
+        if (message == WM_CREATE) {
 //fgout << fgnl << "Tabs::WM_CREATE" << fgpush;
-                hwndThis = hwnd;
-                m_tabHwnd = 
-                    CreateWindowEx(0,
-                        WC_TABCONTROL,
-                        L"",
-                        WS_CHILD | WS_VISIBLE | TCS_FIXEDWIDTH,
-                        0,0,0,0,
-                        hwnd,
-                        0,      // Identifier 0
-                        s_fgGuiWin.hinst,
-                        NULL);
-                TCITEM  tc = {0};
-                tc.mask = TCIF_TEXT;
-                for (size_t ii=0; ii<m_panes.size(); ++ii) {
-                    wstring     wstr = m_api.tabs[ii].label.as_wstring();
-                    wstr += wchar_t(0);
-                    tc.pszText = &wstr[0];
-                    TabCtrl_InsertItem(m_tabHwnd,ii,&tc);
-                    // Set visibility here to avoid sending 'ShowWindow' messages, which also
-                    // send WM_SIZE. The sizing will all be done after creation when ShowWindow
-                    // is called from the client level.
-                    m_panes[ii]->create(hwnd,
-                        int(ii+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
-                        m_store+"_"+fgToString(ii),NULL,ii==m_currPane);
-                }
-                SendMessage(m_tabHwnd,TCM_SETCURSEL,m_currPane,0);
-//fgout << fgpop;
-                return 0;
+            hwndThis = hwnd;
+            // Creating the panes before the tabs fixes the problem of trackbars not being visible
+            // on first paint (almost ... top/bottom arrows don't appear). No idea why.
+            for (size_t ii=0; ii<m_panes.size(); ++ii) {
+                // Set visibility here to avoid sending 'ShowWindow' messages, which also
+                // send WM_SIZE. The sizing will all be done after creation when ShowWindow
+                // is called from the client level.
+                m_panes[ii]->create(hwnd,
+                    int(ii+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
+                    m_store+"_"+fgToString(ii),
+                    NULL,
+                    ii==m_currPane);
             }
-        case WM_SIZE:
-            {
-                m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
-                if (m_client[0] * m_client[1] > 0) {
+            m_tabHwnd = 
+                CreateWindowEx(0,
+                    WC_TABCONTROL,
+                    L"",
+                    WS_CHILD | WS_VISIBLE | TCS_FIXEDWIDTH,
+                    0,0,0,0,
+                    hwnd,
+                    0,      // Identifier 0
+                    s_fgGuiWin.hinst,
+                    NULL);
+            TCITEM  tc = {0};
+            tc.mask = TCIF_TEXT;
+            for (size_t ii=0; ii<m_panes.size(); ++ii) {
+                wstring     wstr = m_api.tabs[ii].label.as_wstring();
+                wstr += wchar_t(0);
+                tc.pszText = &wstr[0];
+                TabCtrl_InsertItem(m_tabHwnd,ii,&tc);
+            }
+            SendMessage(m_tabHwnd,TCM_SETCURSEL,m_currPane,0);
+//fgout << fgpop;
+            return 0;
+        }
+        else if (message == WM_SIZE) {
+            m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
+            if (m_client[0] * m_client[1] > 0) {
 //fgout << fgnl << "Tabs::WM_SIZE: " << m_api.tabs[0].label << " : " << m_client << fgpush;
-                    resize(hwnd);
+                resize(hwnd);
+//fgout << fgpop;
+            }
+            return 0;
+        }
+        else if (message == WM_NOTIFY) {
+            LPNMHDR lpnmhdr = (LPNMHDR)lParam;
+            if (lpnmhdr->code == TCN_SELCHANGE) {
+                int     idx = int(SendMessage(m_tabHwnd,TCM_GETCURSEL,0,0));
+                // This can apparently be -1 for 'no tab selected':
+                if ((idx >= 0) && (size_t(idx) < m_panes.size())) {
+//fgout << fgnl << "Tabs::WM_NOTIFY: " << idx << fgpush;
+                    if (uint(idx) != m_currPane) {
+                        m_panes[m_currPane]->showWindow(false);
+                        m_currPane = uint(idx);
+                        // Must do update check and resize since these are not done when the
+                        // tab is not visible:
+                        m_panes[m_currPane]->updateIfChanged();
+                        resizeCurrPane();
+                        m_panes[m_currPane]->showWindow(true);
+                        InvalidateRect(hwndThis,NULL,TRUE);
+                    }
 //fgout << fgpop;
                 }
-                return 0;
             }
-        case WM_NOTIFY:
-            {
-                LPNMHDR lpnmhdr = (LPNMHDR)lParam;
-                if (lpnmhdr->code == TCN_SELCHANGE) {
-                    int     idx = int(SendMessage(m_tabHwnd,TCM_GETCURSEL,0,0));
-                    // This can apparently be -1 for 'no tab selected':
-                    if ((idx >= 0) && (size_t(idx) < m_panes.size())) {
-                        if (uint(idx) != m_currPane) {
-                            m_panes[m_currPane]->showWindow(false);
-                            m_currPane = uint(idx);
-                            m_panes[m_currPane]->showWindow(true);
-                            resizeCurrPane();
-                            // Must do update check since these are not done when the tab is not visible:
-                            m_panes[m_currPane]->updateIfChanged();
-                            // This is needed only for the first time a tab is selected, and only
-                            // for *some* of the sub-sub windows. No idea why:
-                            InvalidateRect(hwnd,&m_dispArea,FALSE);
-                        }
-                    }
-                }
-                return 0;
-            }
-//case WM_PAINT:
+            return 0;
+        }
+        else if (message == WM_PAINT) {
 //fgout << fgnl << "Tabs::WM_PAINT";
         }
         return DefWindowProc(hwnd,message,wParam,lParam);

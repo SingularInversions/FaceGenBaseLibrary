@@ -46,11 +46,11 @@ initWinsock()
 
 bool
 fgTcpClient(
-    const std::string & hostname,
+    const string &      hostname,
     uint16              port,
-    const std::string & data,
+    const string &      data,
     bool                getResponse,
-    std::string &       response)
+    string &            response)
 {
     initWinsock();
 
@@ -128,7 +128,7 @@ fgTcpClient(
             itmp = recv(socketHandle,buff,sizeof(buff),0);
             FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
             if (itmp > 0)
-                response += std::string(buff,itmp);
+                response += string(buff,itmp);
         }
         while (itmp > 0);
         FGASSERT(itmp == 0);
@@ -143,7 +143,7 @@ void
 fgTcpServer(
     uint16      port,
     bool        respond,
-    bool(*handler)(const std::string & ipAddr,const std::string & dataIn,std::string & response),
+    bool(*handler)(const string & ipAddr,const string & dataIn,string & response),
     size_t      maxRecvBytes)
 {
     initWinsock();
@@ -193,9 +193,9 @@ fgTcpServer(
         }
         char * clientStringPtr = inet_ntoa(sa.sin_addr);
             FGASSERT(clientStringPtr != NULL);
-        std::string     ipAddr = std::string(clientStringPtr);
+        string     ipAddr = string(clientStringPtr);
         //fgout << "receiving from " << ipAddr << " ... " << std::flush;
-        std::string     dataBuff;
+        string     dataBuff;
         int itmp = 0;
         do {
             char    recvbuf[1024];
@@ -205,7 +205,7 @@ fgTcpServer(
             itmp = recv(sockClient,recvbuf,sizeof(recvbuf),0);
             fgout << "." << std::flush;
             if (itmp > 0)
-                dataBuff += std::string(recvbuf,itmp);
+                dataBuff += string(recvbuf,itmp);
         }
         while ((itmp > 0) && (dataBuff.size() <= maxRecvBytes));
         if (itmp != 0) {
@@ -220,7 +220,7 @@ fgTcpServer(
         fgout << ": " << std::flush;
         if (!respond)   // Avoid timeout errors on the data socket for long handlers that don't respond:
             closesocket(sockClient);
-        std::string     response;
+        string     response;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }

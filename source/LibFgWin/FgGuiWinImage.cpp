@@ -33,7 +33,6 @@ struct  FgGuiWinImage : public FgGuiOsBase
         FgCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        cc.useFillBrush = true;
         fgCreateChild(parentHwnd,ident,this,cc);
     }
 

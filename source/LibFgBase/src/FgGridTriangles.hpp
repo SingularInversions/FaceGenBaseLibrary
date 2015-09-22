@@ -25,29 +25,17 @@ struct  FgTriPoint
     uint        triInd;
     FgVect3UI   pointInds;
     FgVect3F    baryCoord;
-
-    FgTriPoint()
-    : triInd(0)
-    {}
-
-    FgTriPoint(uint t,FgVect3UI pinds,FgVect3F b)
-    : triInd(t), pointInds(pinds), baryCoord(b)
-    {}
 };
 
-class   FgGridTriangles
+struct  FgGridTriangles
 {
     vector<FgVect2F>        m_points;           // Client coordinates
     vector<FgVect3UI>       m_tris;             // Indices into m_verts
     FgAffineCwPre2F         m_clientToGridCoords;
     FgImage<vector<uint> >  m_grid;             // Bins of indices into m_tris
 
-public:
     void
-    init(
-        const vector<FgVect2F> &    points,
-        const vector<FgVect3UI> &   tris,
-        float                       binSampleRatio=1.0f);
+    intersects(FgVect2F pos,vector<FgTriPoint> & ret) const;
 
     vector<FgTriPoint>
     intersects(FgVect2F pos) const
@@ -56,11 +44,13 @@ public:
         intersects(pos,ret);
         return ret;
     }
-
-    // Avoid memory allocation:
-    void
-    intersects(FgVect2F pos,vector<FgTriPoint> & ret) const;
 };
+
+FgGridTriangles
+fgGridTriangles(
+    const vector<FgVect2F> &    points,
+    const vector<FgVect3UI> &   tris,
+    float                       binsPerTri=1.0f);
 
 #endif
 

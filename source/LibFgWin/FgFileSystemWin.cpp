@@ -50,7 +50,10 @@ fgGetCurrentDir()
     wchar_t     buff[MAX_PATH]= {0};
     if (!GetCurrentDirectory(MAX_PATH,buff))
         fgThrowWindows("Unable to get current directory");
-    return FgString(buff);
+    FgString    ps(buff);
+    if (!ps.empty() && !ps.endsWith("\\"))
+        ps += "\\";
+    return ps;
 }
 
 // We use OS-specific APIs for this one since boost::filesystem::current_directory

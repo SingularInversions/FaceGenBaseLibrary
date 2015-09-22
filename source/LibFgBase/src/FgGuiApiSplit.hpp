@@ -14,7 +14,7 @@
 #include "FgGuiApiSlider.hpp"
 #include "FgStdVector.hpp"
 
-// Adjustable split window with central pane:
+// Adjustable split window with central divider:
 struct  FgGuiApiSplitAdj : FgGuiApi<FgGuiApiSplitAdj>
 {
     bool                    horiz;
@@ -31,6 +31,8 @@ FgGuiPtr
 fgGuiSplitAdj(bool horiz,FgGuiPtr p0,FgGuiPtr p1)
 {return fgnew<FgGuiApiSplitAdj>(horiz,p0,p1); }
 
+
+// Automatic split window with all contents viewable
 struct  FgGuiApiSplit : FgGuiApi<FgGuiApiSplit>
 {
     bool                    horiz;
@@ -72,7 +74,8 @@ FgGuiPtr
 fgGuiSplit(bool horiz,FgGuiPtr p0,FgGuiPtr p1,FgGuiPtr p2,FgGuiPtr p3,FgGuiPtr p4)
 {return fgGuiSplit(horiz,fgSvec(p0,p1,p2,p3,p4)); }
 
-// Vertical scrollable split window (panes thickness is fixed to minimum):
+
+// Vertically scrollable split window (panes thickness is fixed to minimum):
 struct  FgGuiApiSplitScroll : FgGuiApi<FgGuiApiSplitScroll>
 {
     uint                        updateFlagIdx;  // Has the panes info been updated ?

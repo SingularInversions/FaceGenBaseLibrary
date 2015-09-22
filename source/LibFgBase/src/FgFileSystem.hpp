@@ -108,6 +108,7 @@ struct      FgDirectoryContents
 FgDirectoryContents
 fgDirectoryContents(const FgString & dirName);
 
+// Directory names end with a delimiter:
 FgString
 fgGetCurrentDir();
 
