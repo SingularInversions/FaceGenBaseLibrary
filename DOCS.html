@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<style>
+a {
+    text-decoration: none;
+}
+body {
+    max-width:800px;
+    margin-left:auto;
+    margin-right:auto;
+}
+footer {
+    font-size:75%;
+    max-width:800px;
+    margin-left:auto;
+    margin-right:auto;
+}
+</style>
+<title>FaceGen Base Library</title>
+</head>
+<body>
+
+<h1>FaceGen Base Library Documentation</h1>
+<h2>Requirements</h2>
+    <ul>
+      <li> Windows:
+        <ul>
+          <li>Visual Studio {2008,2010,2012,2013} Professional or higher.</li>
+        </ul>
+      </li>
+      <li>OS/X:
+        <ul>
+          <li> Xcode {4,5}
+            <ul>
+              <li> Menu: Xcode -> Preferences -> Downloads -> Command Line Tools </li>
+              <li> Add to path:
+                <code> $ PATH=$PATH:/Applications/Xcode.app/Contents/Developer/usr/bin/ </code>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+      <li>Ubuntu: <br/>
+        <code>
+          $ sudo apt-get update <br/>
+          $ sudo apt-get install build-essential libc6-dev-i386 g++-multilib make <br/>
+        </code>
+      </li>
+    </ul>
+<h2>Compile</h2>
+    <p>Path in which you have placed this library:</p>
+    <p><code>~fgbl</code></p>
+    <p>Solution files for Visual Studio:</p>
+    <p><code>
+    ~fgbl/source/VisualStudio2008.sln<br/>
+    ~fgbl/source/VisualStudio2010.sln<br/>
+    ~fgbl/source/VisualStudio2012.sln<br/>
+    ~fgbl/source/VisualStudio2013.sln
+    </code></p>
+    <p>Makefiles for OS X / Ubuntu (use 'make' with '-f' flag to select makefile):</p>
+    <p><code>
+    ~fgbl/source/Makefile.osx.gcc.64.debug<br/>
+    ~fgbl/source/Makefile.osx.gcc.64.release<br/>
+    ~fgbl/source/Makefile.ubuntu.gcc.64.debug<br/>
+    ~fgbl/source/Makefile.ubuntu.gcc.64.release<br/>
+    </code>
+<h2>Use</h2>
+    <p>Set up the path ('>' windows. '$' osx,ubuntu) for 64bit release version (VS2012 for Windows):</p>
+    <p><code>
+    > PATH=%PATH%;~fgbl\bin\win\vs12\64\release <br/>
+    $ PATH=$PATH:~fgbl/bin/osx/gcc/64/release <br/>
+    $ PATH=$PATH:~fgbl/bin/ubuntu/gcc/64/release <br/>
+    </code></p>
+    <p>View all available commands:</p>
+    <p><code>$> fgbl</code></p>
+    <p>Run all automated tests:</p>
+    <p><code>$> fgbl test all</code></p>
+    <p>View all manual (interactive) test categories (GUI currently only supported on Windows):</p>
+    <p><code>$> fgbl testm</code></p>
+    <p>Rebuild makefiles, solution files and project files by scanning existing source code files:</p>
+    <p><code>~fgbl$> fgbl cons</code></p>
+<h2>Third Party Open Source</h2>
+    <h3>BOOST</h3>
+    <p>Some of BOOST is included. License:</p>
+    <p><code>~fgbl/source/LibTpBoost/boost_1_58_0/LICENSE_1_0.txt</code></p>
+    <h3>ImageMagick</h3>
+    <p>Some of version 6.6.2 of ImageMagick is included. License:</p>
+    <p><a href="http://www.imagemagick.org/script/license.php">http://www.imagemagick.org/script/license.php</a></p>
+    <p>This library is used only for reading and writing images to various file formats.</p>
+    <h3>Independent JPEG Group (IJG)</h3>
+    <p>Release 6b of the Independent JPEG Group JPEG software. License:</p>
+    <p><code>~fgbl/source/LibJpegIjg6b/README</code></p>
+    <h3>UTF-8</h3>
+    <p>UTF-8 library release 2.1 from Nemanja Trifunovic. License in source code:</p>
+    <code>~Sdk/source/LibUTF-8/*.h</code>
+    <h3>US NIST (TNT)</h3>
+    <p>US NIST Template Numerical Toolkit (TNT) v.1.2.6 and Java Matrix (JAMA) for C++ v.1.2.5. Pursuant to title 17 Section 105 of the United States Code this software is not subject to copyright protection and is in the public domain.</p>
+
+</body>
+<footer>
+<p style="text-align:center">Copyright &copy; 2015 Singular Inversions Inc.</p>
+</footer>
+</html>

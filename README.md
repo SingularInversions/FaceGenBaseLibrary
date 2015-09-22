@@ -9,7 +9,7 @@ A simple cross-platform C++98 library for developing computational 3D graphics a
 * 3D mesh IO, manipulation, hardware and software rendering.
 * Imaging IO, manipulation
 * Linear algebra with solvers
-* Ultra-simple declarative GUI API (currently Windows-only)
+* Ultra-simple declarative GUI (currently only implemented for Windows)
 * Cross platform build file construction tool.
 * Command-line interface tools with pretty-print.
 * Unicode, filesystem, diagnostics, data packaging, etc.
@@ -19,10 +19,12 @@ A simple cross-platform C++98 library for developing computational 3D graphics a
 
 * Emphasis on clear, correct code rather than premature optimization.
 * Functional and declarative design in as much as makes sense for C++.
-  * eg. Use of boost::function instead of class interfaces.
-* Minimal OOP-sfucation; Some member functions and constructors, few private members, no inheritance.
+  * Extensive use of return value elision.
+  * Declarative GUI layout, declarative dependency graph for computations.
+* Minimal OOP-sfucation; Some member functions and constructors, few private members or inheritance.
+  * Prefer boost::function and boost::bind to abstract class interface.
 * Templates are used when they provide clear benefit.
-  * RAII is used throughout.
+  * RAII used throughout.
   * Avoid complex template metaprogramming.
 * Compiles on all platforms out of the box. No install scripts or special make packages required.
 * Different compiler / configuration object files are kept in different directories for fast switching while developing.
