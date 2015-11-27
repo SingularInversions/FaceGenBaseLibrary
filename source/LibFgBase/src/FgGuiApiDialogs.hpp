@@ -18,18 +18,18 @@ fgGuiDialogMessage(
     const FgString & caption,
     const FgString & message);
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileLoad(
     const FgString &            description,
     const vector<std::string> & extensions);
 
 // The extension should be chosen in the GUI before calling this function:
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileSave(
     const FgString &        description,
     const std::string &     extension);
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogDirSelect();
 
 // Arguments: true - advance progress bar, false - do not
@@ -43,5 +43,10 @@ fgGuiDialogProgress(
     const FgString &        title,
     uint                    progressSteps,
     FgGuiActionProgress     actionProgress);
+
+// Uses the embedded icon for the splash screen.
+// Call the returned function to terminate the splash screen:
+boost::function<void(void)>
+fgGuiDialogSplashScreen();
 
 #endif

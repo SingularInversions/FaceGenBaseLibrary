@@ -24,6 +24,9 @@ fgSplitLines(const string & src);
 vector<vector<uint32> >
 fgSplitLines(const vector<uint32> & src,bool includeEmptyLines=false);
 
+vector<FgString>
+fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines=false);
+
 // Quotations not currently supported. White space is kept. CR/LFs removed.
 vector<vector<string> >
 fgReadCsvFile(const FgString & fname);

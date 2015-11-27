@@ -136,7 +136,11 @@ fgCmdViewUvs(const FgArgs & args)
         else
             syntax.error("Unknown file type",fname);
     }
-    fgout << fgnl << "UV Bounds: " << fgBounds(mesh.uvs);
+    FgMat22F            uvb = fgBounds(mesh.uvs);
+    fgout << fgnl << "UV Bounds: " << uvb;
+    FgVectF2            uvbb = fgBounds(uvb);
+    if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
+        fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
     fgImgDisplay(fgUvImage(mesh,img));
 }
 

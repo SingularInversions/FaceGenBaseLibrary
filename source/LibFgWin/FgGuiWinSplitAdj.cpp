@@ -32,16 +32,13 @@ struct  FgGuiWinSplitDivider
     FgVect2UI   parentCursorHi;
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
         // We need to track this because we don't want to adjust if the user
         // initiated the drag in another window. Also it's an easier way of
         // calculating deltas than calling the complicated GetMouseMovePointsEx:
-        case WM_LBUTTONDOWN:
-            if (wParam == MK_LBUTTON)
-            {
+        if (msg == WM_LBUTTONDOWN) {
+            if (wParam == MK_LBUTTON) {
                 SetCapture(hwnd);
                 lastPos = fgScreenPos(hwnd,lParam);
                 drag = true;
@@ -57,24 +54,21 @@ struct  FgGuiWinSplitDivider
                 rect.bottom = parentCursorHi[1] + (point.y - parentCursorLo[1]);
                 FGASSERTWIN(ClipCursor(&rect));
             }
-            return 0;
-        case WM_LBUTTONUP:
-            if (drag)
-            {
+        }
+        else if (msg == WM_LBUTTONUP) {
+            if (drag) {
                 ReleaseCapture();
                 drag = false;
                 ClipCursor(NULL);
             }
-            return 0;
-        case WM_MOUSEMOVE:
-            if (wParam == MK_LBUTTON)
-            {
-                if (drag)
-                {
+        }
+        else if (msg == WM_MOUSEMOVE) {
+            if (wParam == MK_LBUTTON) {
+                if (drag) {
                     FgVect2I    pos = fgScreenPos(hwnd,lParam);
                     FgVect2I    delta = pos-lastPos;
                     lastPos = pos;
-                    // SendMessage doesn't return until message is processed.
+                    // SendMessage doesn't return until msg is processed.
                     // We can't just forward the WM_MOUSEMOVE since the coords
                     // aren't translated and we need to specify which divider:
                     SendMessage(
@@ -84,13 +78,14 @@ struct  FgGuiWinSplitDivider
                         MAKELPARAM(WORD(delta[0]),WORD(delta[1])));
                 }
             }
-            return 0;
-        case WM_CAPTURECHANGED:
+        }
+        else if (msg == WM_CAPTURECHANGED) {
             drag = false;
             ClipCursor(NULL);
-            return 0;
         }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 };
 
@@ -202,69 +197,74 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     }
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
-        case WM_CREATE:
-            {
+        if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitAdj::WM_CREATE" << fgpush;
-                hwndThis = hwnd;
-                DWORD       extStyle = WS_EX_CLIENTEDGE;
-                m_pane0->create(hwnd,0,m_store+"_0",extStyle);
-                m_pane1->create(hwnd,1,m_store+"_1",extStyle);
-                FgCreateChild   cc;
-                cc.cursor = LoadCursor(NULL,m_api.horiz ? IDC_SIZEWE : IDC_SIZENS);
-                m_div.hwnd = fgCreateChild(hwnd,2,&m_div.win,cc);
+            hwndThis = hwnd;
+            DWORD       extStyle = WS_EX_CLIENTEDGE;
+            m_pane0->create(hwnd,0,m_store+"_0",extStyle);
+            m_pane1->create(hwnd,1,m_store+"_1",extStyle);
+            FgCreateChild   cc;
+            cc.cursor = LoadCursor(NULL,m_api.horiz ? IDC_SIZEWE : IDC_SIZENS);
+            m_div.hwnd = fgCreateChild(hwnd,2,&m_div.win,cc);
 //fgout << fgpop;
+        }
+        else if (msg == WM_SIZE) {      // Sends new size of client area:
+            minSizes();     // Upadate cache of subwindow sizes
+            m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
+            if (m_client[0] * m_client[1] == 0)
                 return 0;
-            }
-        case WM_SIZE:   // Sends new size of client area:
-            {
-                minSizes();     // Upadate cache of subwindow sizes
-                m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
-                if (m_client[0] * m_client[1] == 0)
-                    return 0;
 //fgout << fgnl << "SplitAdj::WM_SIZE: " << m_client << fgpush;
-                // Set the adjustment cursor bounds:
-                uint        sd = splitDim(),
-                            nd = 1-sd;
-                m_div.win.parentCursorLo[nd] = borderThickness;
-                m_div.win.parentCursorLo[sd] = m_minSizes[0][sd];
-                m_div.win.parentCursorHi[nd] = m_client[nd] - borderThickness;
-                m_div.win.parentCursorHi[sd] = m_client[sd] - m_minSizes[1][sd];
-                resizePanes();
+            // Set the adjustment cursor bounds:
+            uint        sd = splitDim(),
+                        nd = 1-sd;
+            m_div.win.parentCursorLo[nd] = borderThickness;
+            m_div.win.parentCursorLo[sd] = m_minSizes[0][sd];
+            m_div.win.parentCursorHi[nd] = m_client[nd] - borderThickness;
+            m_div.win.parentCursorHi[sd] = m_client[sd] - m_minSizes[1][sd];
+            resizePanes();
 //fgout << fgpop;
-                return 0;
-            }
-        case WM_USER:   // Divider has been moved:
+        }
+        else if (msg == WM_USER) {      // Divider has been moved:
+            minSizes();     // Upadate cache of subwindow sizes
+            FgVect2I    delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            uint        sd = splitDim();
+            if (delta[sd] != 0)
             {
-                minSizes();     // Upadate cache of subwindow sizes
-                FgVect2I    delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-                uint        sd = splitDim();
-                if (delta[sd] != 0)
-                {
-                    int     sizet = m_client[sd] - dividerThickness;
-                    double  reld = double(delta[sd]) / double(sizet);
-                    m_relSize += reld;
-                    resizePanes();
-                    InvalidateRect(hwndThis,NULL,TRUE);
-                }
-                return 0;
+                int     sizet = m_client[sd] - dividerThickness;
+                double  reld = double(delta[sd]) / double(sizet);
+                m_relSize += reld;
+                resizePanes();
+                InvalidateRect(hwndThis,NULL,TRUE);
             }
+        }
 //case WM_PAINT:
 //fgout << fgnl << "SplitAdj::WM_PAINT";
-        }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 
     uint
     splitDim() const
     {return m_api.horiz ? 0 : 1; }
 
-    void
-    resizePanes()
+    struct  Pos
     {
+        FgVect2I    lo;
+        FgVect2I    sz;
+    };
+    struct  Layout
+    {
+        Pos         pane0;
+        Pos         divider;
+        Pos         pane1;
+    };
+    Layout
+    layout()
+    {
+        Layout      ret;
         uint        sd = splitDim(),
                     nd = 1-sd;
         int         sizei = m_client[sd]-dividerThickness;
@@ -272,7 +272,6 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
         FgVect2I    lo(0),sz(0);
         sz[nd] = m_client[nd];
         sz[sd] = fgRound(m_relSize*sized);
-
         // Adjust relative sizing if window resize hits one of the mins:
         int         min0 = m_minSizes[0][sd],
                     min1 = m_minSizes[1][sd];
@@ -281,15 +280,26 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
         if (sizei-sz[sd] < min1)
             sz[sd] = sizei - min1;
         m_relSize = double(sz[sd]) / sized;
-
-        // Resize:
-        m_pane0->moveWindow(lo,sz);
+        ret.pane0.lo = lo;
+        ret.pane0.sz = sz;
         lo[sd] = sz[sd];
         sz[sd] = dividerThickness;
-        MoveWindow(m_div.hwnd,lo[0],lo[1],sz[0],sz[1],TRUE);
+        ret.divider.lo = lo;
+        ret.divider.sz = sz;
         sz[sd] = sizei - lo[sd];
         lo[sd] += dividerThickness;
-        m_pane1->moveWindow(lo,sz);
+        ret.pane1.lo = lo;
+        ret.pane1.sz = sz;
+        return ret;
+    }
+
+    void
+    resizePanes()
+    {
+        Layout      lt = layout();
+        m_pane0->moveWindow(lt.pane0.lo,lt.pane0.sz);
+        MoveWindow(m_div.hwnd,lt.divider.lo[0],lt.divider.lo[1],lt.divider.sz[0],lt.divider.sz[1],TRUE);
+        m_pane1->moveWindow(lt.pane1.lo,lt.pane1.sz);
     }
 };
 

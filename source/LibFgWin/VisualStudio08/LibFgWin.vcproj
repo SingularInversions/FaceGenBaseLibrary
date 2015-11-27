@@ -277,6 +277,8 @@
         </File>
         <File RelativePath="..\FgGuiWinDialogs.cpp">
         </File>
+        <File RelativePath="..\FgGuiWinDynamic.cpp">
+        </File>
         <File RelativePath="..\FgGuiWinGroupbox.cpp">
         </File>
         <File RelativePath="..\FgGuiWinImage.cpp">
@@ -286,6 +288,8 @@
         <File RelativePath="..\FgGuiWinSelect.cpp">
         </File>
         <File RelativePath="..\FgGuiWinSlider.cpp">
+        </File>
+        <File RelativePath="..\FgGuiWinSpacer.cpp">
         </File>
         <File RelativePath="..\FgGuiWinSplit.cpp">
         </File>
@@ -299,11 +303,9 @@
         </File>
         <File RelativePath="..\FgGuiWinTextEdit.cpp">
         </File>
-        <File RelativePath="..\FgGuiWinTextRich.cpp">
-        </File>
         <File RelativePath="..\FgStdioWin.cpp">
         </File>
-        <File RelativePath="..\FgSystemInfo.cpp">
+        <File RelativePath="..\FgSystemInfoWin.cpp">
         </File>
         <File RelativePath="..\FgTcpWin.cpp">
         </File>

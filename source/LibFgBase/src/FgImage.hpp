@@ -21,6 +21,26 @@
 std::ostream &
 operator<<(std::ostream &,const FgImgRgbaUb &);
 
+inline
+FgAffineCw2F
+fgOicsToIucs()
+{return FgAffineCw2F(FgMat22F(-1,1,-1,1),FgMat22F(0,1,1,0)); }
+
+inline
+FgAffineCw2F
+fgIucsToIpcs(FgVect2UI dims)
+{return FgAffineCw2F(FgMat22F(0,1,0,1),FgMat22F(0,dims[0],0,dims[1])); }
+
+inline
+FgAffineCw2D
+fgIrcsToIucs(FgVect2UI imageDims)
+{return FgAffineCw2D(FgMat22D(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),FgMat22D(0,1,0,1)); }
+
+inline
+FgVect2F
+fgIucsToIrcs(FgVect2UI ircsDims,FgVect2F iucsCoord)
+{return (fgMultiply(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
+
 struct  FgCoordWgt
 {
     FgVect2UI   coordIrcs;
@@ -720,9 +740,9 @@ fgUpsampleToMatch(
     return true;
 }
 
-// Does any pixel contain an alpha value less than 255 ?
+// Does any pixel contain an alpha value less than 254 ?
 bool
-fgUsesAlpha(const FgImgRgbaUb &,uchar minVal=255);
+fgUsesAlpha(const FgImgRgbaUb &,uchar minVal=254);
 
 inline FgVect4UC fgRed() {return FgVect4UC(255,0,0,255); }
 inline FgVect4UC fgGreen() {return FgVect4UC(255,0,0,255); }

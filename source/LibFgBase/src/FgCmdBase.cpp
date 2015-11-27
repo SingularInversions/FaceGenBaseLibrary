@@ -23,7 +23,6 @@ vector<FgCmd>
 fgCmdBaseTests()
 {
     vector<FgCmd>   cmds;
-    ADDCMD1(fg3dTest,"3d");
     ADDCMD1(fgApproxFuncTest,"approxFunc");
     ADDCMD1(fgBoostSerializationTest,"boostSerialization");
     ADDCMD1(fgDepGraphTest,"depGraph");
@@ -62,7 +61,9 @@ testmGui(const FgArgs & args)
     vector<FgCmd>   cmds;
     ADDCMD1(fgImgGuiTestm,"image");
     ADDCMD1(fgTestmGuiMesh,"mesh");
+    ADDCMD1(fgGuiTestmText,"text");
     ADDCMD1(fgGuiTestmScroll,"scroll");
+    ADDCMD1(fgGuiTestmDialogSplashScreen,"splash");
     fgMenu(args,cmds);
 }
 
@@ -71,6 +72,7 @@ fgCmdBaseTestms()
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testmGui,"gui"));
+    ADDCMD1(fg3dTest,"3d");
     ADDCMD1(fg3dReadWobjTest,"readWobj");
     ADDCMD1(fgRandomTest,"random");
     ADDCMD1(fgGeometryManTest,"geometry");

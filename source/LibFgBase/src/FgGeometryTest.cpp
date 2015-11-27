@@ -160,7 +160,7 @@ testBarycentricCoords3D()
                     bc = fgMatRandNormal<3,1>();
         bc /= bc[0] + bc[1] + bc[2];
         FgVect3D    pt = bc[0]*v0 + bc[1]*v1 + bc[2]*v2;
-        FgValidVal<FgVect3D>    ret = fgBarycentricCoords(pt,v0,v1,v2);
+        FgOpt<FgVect3D>    ret = fgBarycentricCoords(pt,v0,v1,v2);
         if (ret.valid()) {
             FgVect3D        res = ret.val(),
                             delta = res-bc;
@@ -273,7 +273,7 @@ testLineFacetIntersect()
     FgVect3D    v0(0,0,0),
                 v1(1,0,0),
                 v2(0,1,0);
-    FgValidVal<FgVect3D>    ret;
+    FgOpt<FgVect3D>    ret;
     ret = fgLineFacetIntersect(FgVect3D(s,s,1),FgVect3D(0,0,-1),v0,v1,v2);
     FGASSERT(ret.val() == FgVect3D(s,s,0));
     ret = fgLineFacetIntersect(FgVect3D(s,s,1),FgVect3D(0,0,1),v0,v1,v2);

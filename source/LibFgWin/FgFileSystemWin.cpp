@@ -17,33 +17,6 @@
 
 using namespace std;
 
-FgDirectoryContents
-fgDirectoryContents(const FgString & dirName)
-{
-    FgPath              dir(dirName);
-    if (!dir.base.empty()) {    // User didn't put delimiter after last dir
-        dir.dirs.push_back(dir.base);
-        dir.base.clear();
-    }
-    FgDirectoryContents ret;
-    WIN32_FIND_DATAW	finddata;
-    FgString            spec = dir.str() + "*";
-    HANDLE hFind = FindFirstFileW(spec.as_wstring().c_str(),&finddata);
-    if (hFind == INVALID_HANDLE_VALUE)
-        return ret;
-    do {
-        if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            wstring     name(finddata.cFileName);
-            if ((name != L".") && (name != L".."))
-                ret.dirnames.push_back(FgString(finddata.cFileName));
-        }
-        else
-            ret.filenames.push_back(FgString(finddata.cFileName));
-    } while	(FindNextFileW(hFind,&finddata) != 0);
-    FindClose(hFind);
-    return ret;
-}
-
 FgString
 fgGetCurrentDir()
 {
@@ -222,16 +195,16 @@ fgPublicDocumentsDirectory()
 }
 
 bool
-fgFileCreationTime(const FgString & filename,uint64 & time)
+fgCreationTime(const FgString & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
-            filename.as_wstring().c_str(),
-            GENERIC_READ,
-            NULL,                           // exclusive access.
+            path.as_wstring().c_str(),
+            NULL,                           // Leaving zero means we're only getting meta-data about the file/dir
+            NULL,                           // no need to specify share mode for meta-data
             NULL,                           // no security options
-            OPEN_EXISTING,                  // do not create if not present.
-            NULL,                           // no attribute options
+            OPEN_EXISTING,                  // Do not create
+            FILE_FLAG_BACKUP_SEMANTICS,     // Must be so to work with directories
             NULL);                          // don't get template info
     if (hndl == INVALID_HANDLE_VALUE)
         return false;
@@ -240,7 +213,7 @@ fgFileCreationTime(const FgString & filename,uint64 & time)
                 lastWrite;
     BOOL    ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
     CloseHandle(hndl);
-    FGASSERT(ret != 0);
+    FGASSERTWIN(ret);
     time = uint64(creation.dwLowDateTime) +
            (uint64(creation.dwHighDateTime) << 32);
     return true;

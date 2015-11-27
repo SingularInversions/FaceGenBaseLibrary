@@ -206,26 +206,6 @@ typedef FgImage<FgVect3F>   FgImg3F;
 typedef FgImage<FgVect4UC>  FgImg4UC;
 typedef vector<FgImgRgbaUb> FgImgs;
 
-inline
-FgAffineCw2F
-fgOicsToIucs()
-{return FgAffineCw2F(FgMat22F(-1,1,-1,1),FgMat22F(0,1,1,0)); }
-
-inline
-FgAffineCw2F
-fgIucsToIpcs(FgVect2UI dims)
-{return FgAffineCw2F(FgMat22F(0,1,0,1),FgMat22F(0,dims[0],0,dims[1])); }
-
-inline
-FgVect2F
-fgIrcsToIucs(FgVect2UI ircsDims,FgVect2F ircsCoord)
-{return fgDivide(ircsCoord + FgVect2F(0.5f),FgVect2F(ircsDims)); }
-
-inline
-FgVect2F
-fgIucsToIrcs(FgVect2UI ircsDims,FgVect2F iucsCoord)
-{return (fgMultiply(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
-
 template<class T>
 std::ostream &
 operator<<(std::ostream & os,const FgImage<T> & img)

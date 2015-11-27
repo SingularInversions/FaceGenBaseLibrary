@@ -16,7 +16,7 @@
 
 #include "FgTypes.hpp"
 #include "FgMatrix.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "Fg3dNormals.hpp"
 
 struct Fg3dTopology
@@ -64,13 +64,15 @@ struct Fg3dTopology
     vector<uint>
     vertNeighbours(uint vertIdx) const;
 
-    // Arrays of vertex indices corresponding to each connected seam.
-    // A seam vertex has >0 (always even number) single-valence edges connected.
-    vector<vector<uint> >
-    seams();
+    // Sets of vertex indices corresponding to each connected seam.
+    // A seam vertex has > 0 (always an even number for valid topologies) single-valence edges connected.
+    vector<std::set<uint> >
+    seams() const;
 
-    vector<uint>
-    traceSeam(vector<FgBool> & done,uint vertIdx) const;
+    // Returns the connected seam containing vertIdx, unless vertIdx is not on a seam in which
+    // case the empty set is returned:
+    std::set<uint>
+    seamContaining(uint vertIdx) const;
 
     // Trace a fold consisting only of edges whose facet normals differ by at least 60 degrees.
     std::set<uint>

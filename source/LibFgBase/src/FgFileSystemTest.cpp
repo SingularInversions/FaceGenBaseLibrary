@@ -17,6 +17,7 @@
 #include "FgTestUtils.hpp"
 #include "FgScopeGuard.hpp"
 #include "FgMetaFormat.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -98,12 +99,30 @@ testDeleteDirectory()
     FGASSERT(!fgExists(name));
 }
 
+static
 void
-fgFileSystemTest(const FgArgs &)
+testRecursiveCopy(const FgArgs & args)
+{
+    FGTESTDIR
+    string          path = "silly-v3.4.7/subdir/";
+    fgCreatePath("tst1/"+path);
+    FgOfstream      ofs("tst1/"+path+"file");
+    ofs << "hello";
+    ofs.close();
+    fgCopyRecursive("tst1","tst2");
+    FgIfstream      ifs("tst2/"+path+"file");
+    string          hello;
+    ifs >> hello;
+    FGASSERT(hello == "hello");
+}
+
+void
+fgFileSystemTest(const FgArgs & args)
 {
     testCurrentDirectory();
     testOfstreamUnicode();
     testReadableFile();
     testIsDirectory();
     testDeleteDirectory();
+    testRecursiveCopy(args);
 }

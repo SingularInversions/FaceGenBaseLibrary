@@ -18,19 +18,6 @@
 
 struct  Fg3dRenderOptions
 {
-    Fg3dRenderOptions()
-    :
-    facets(true),
-    useTexture(true),
-    shiny(false),
-    wireframe(false),
-    flatShaded(false),
-    surfPoints(true),
-    markedVerts(true),
-    allVerts(false),
-    twoSided(true)
-    {}
-
     bool        facets;
     bool        useTexture;
     bool        shiny;

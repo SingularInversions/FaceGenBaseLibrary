@@ -19,10 +19,10 @@
 using namespace std;
 
 std::ostream &
-operator<<(std::ostream & os,const std::vector<FgLinkTime> & ltv)
+operator<<(std::ostream & os,const vector<FgLinkTime> & ltv)
 {
     for (size_t ii=0; ii<ltv.size(); ++ii)
-        os << fgnl << ltv[ii].percentTime << "% : " << ltv[ii].linkNodeNames;
+        os << fgnl << fgToFixed(ltv[ii].percentTime,2) << "% : " << ltv[ii].linkNodeNames;
     return os;
 }
 
@@ -57,11 +57,30 @@ FgDepGraphSt::executeLink(
         snkList[ii] = &(m_linkGraph.nodeData(sinks[ii]).value);
     FgLink                      link = m_linkGraph.linkData(linkInd);
     FGASSERT(link != 0);
-    FgTimer     timer;
-    link(srcList,snkList);
-    s_linkTimes[linkInd] += timer.readMs();
+    FgString        err;
+    try
+    {
+        FgTimer     timer;
+        link(srcList,snkList);
+        s_linkTimes[linkInd] += timer.readMs();
+    }
+    catch(FgException const & e)
+    {
+        err = "ERROR (FG exception): " + e.no_tr_message();
+    }
+    catch(std::exception const & e)
+    {
+        err = "ERROR (std::exception): " + FgString(e.what());
+    }
+    catch(...)
+    {
+        err = "ERROR (unknown type):";
+    }
+    // Mark outputs as clean to avoid repeated throws of same error:
     for (size_t ss=0; ss<sinks.size(); ++ss)
         m_linkGraph.nodeData(sinks[ss]).dirty = false;
+    if (!err.empty())
+        fgThrow("FgDepGraphSt link execution catch:",linkDescription(linkInd)+"\n"+err);
 }
 
 static
@@ -74,10 +93,9 @@ FgDepGraphSt::linkTimes() const
 {
     vector<FgLinkTime>  ret;
     uint64              sum = fgSum(s_linkTimes);
-    string              bn = "L";
     for (uint ii=0; ii<s_linkTimes.size(); ++ii) {
         FgLinkTime      lt;
-        lt.linkNodeNames = bn + fgToString(ii);
+        lt.linkNodeNames = linkDescription(ii);
         lt.percentTime = s_linkTimes[ii] * 100.0 / double(sum);
         ret.push_back(lt);
     }
@@ -121,6 +139,26 @@ FgDepGraphSt::updateNode(uint nodeIdx)
     }
     else
         node.data.dirty = false;
+}
+
+string
+FgDepGraphSt::nodesString(const vector<uint> & nodeInds) const
+{
+    string              ret;
+    FGASSERT(!nodeInds.empty());
+    ret += "(" + m_linkGraph.m_nodes[nodeInds[0]].data.label;
+    for (uint ss=1; ss<nodeInds.size(); ++ss)
+        ret += "," + m_linkGraph.m_nodes[nodeInds[ss]].data.label;
+    ret += ")";
+    return ret;
+}
+
+string
+FgDepGraphSt::linkDescription(uint linkIdx) const
+{
+    return
+        nodesString(m_linkGraph.m_links[linkIdx].sources) + " -> " +
+        nodesString(m_linkGraph.m_links[linkIdx].sinks);
 }
 
 // */

@@ -35,14 +35,14 @@
 #include "FgStdVector.hpp"
 #include "FgLinkGraph.hpp"
 #include "FgVariant.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgCluster.hpp"
 #include "FgSmartPtr.hpp"
 
 typedef
 void (*FgLink)(
-    const std::vector<const FgVariant*> &,
-    const std::vector<FgVariant*> &);
+    const vector<const FgVariant*> &,
+    const vector<FgVariant*> &);
 
 template<class T>
 struct  FgDgn
@@ -76,8 +76,8 @@ struct  FgDgn
 
 #define FGLINK(func)                                        \
     void func(                                              \
-        const std::vector<const FgVariant*> &   inputs,     \
-        const std::vector<FgVariant*> &         outputs)
+        const vector<const FgVariant*> &   inputs,     \
+        const vector<FgVariant*> &         outputs)
 
 #define FGLINKARGS(in,out)                                  \
         FGASSERT((inputs.size() == in) && (outputs.size() == out))
@@ -129,6 +129,9 @@ struct  FgDepNode
 
 class   FgDepGraph
 {
+    FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
+    FgOpt<int(*)()>            m_cancelCheck;  // If valid and returns non-zero, cancel calculations
+
 public:
     explicit
     FgDepGraph(uint num_threads=0);
@@ -142,9 +145,9 @@ public:
 
     void
     addLink(
-        FgLink                      func,
-        const std::vector<uint> &   sources,
-        const std::vector<uint> &   sinks)
+        FgLink                  func,
+        const vector<uint> &    sources,
+        const vector<uint> &    sinks)
     {dirtyLink(m_linkGraph.addLink(func,sources,sinks)); }
 
     void
@@ -243,22 +246,22 @@ public:
     void
     traverseDown(
         uint                nodeIdx,
-        std::vector<bool> & nodesTouched,       // MODIFIED
-        std::vector<bool> & linksTouched)       // MODIFIED
+        vector<bool> & nodesTouched,       // MODIFIED
+        vector<bool> & linksTouched)       // MODIFIED
         const;
 
     void
     traverseUp(
         uint                nodeIdx,
-        std::vector<bool> & nodesTouched,       // MODIFIED
-        std::vector<bool> & linksTouched)       // MODIFIED
+        vector<bool> & nodesTouched,       // MODIFIED
+        vector<bool> & linksTouched)       // MODIFIED
         const;
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSources(uint linkIdx) const
     {return m_linkGraph.linkSources(linkIdx); }
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSinks(uint linkIdx) const
     {return m_linkGraph.linkSinks(linkIdx); }
 
@@ -283,9 +286,6 @@ public:
     {return m_linkGraph; }
 
 private:
-    FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
-    FgValidVal<int(*)()>            m_cancelCheck;  // If valid and returns non-zero, cancel calculations
-
     void
     dirtyNode(uint nodeInd);
 
@@ -317,7 +317,7 @@ private:
         FgException                 exception;
         std::auto_ptr<boost::mutex> guardQueue;
         char                        cachePad0[64-sizeof(std::auto_ptr<boost::mutex>)];
-        std::vector<uint>           queue;
+        vector<uint>           queue;
         char                        cachePad1[64-sizeof(size_t)];
         uint                        lastLink;
         bool                        done;
@@ -331,13 +331,13 @@ private:
     updateNode(uint nodeInd) const;
 
     // Returns: true if links were scheduled that ultimately will update 'nodeIdx':
-    std::vector<uint>
+    vector<uint>
     leafLinks(
         uint                nodeIdx,
-        std::vector<Sync> & linksTraversed) const;
+        vector<Sync> & linksTraversed) const;
 
     void
-    executeLinkTask(std::vector<Sync> *,Update *,bool) const;
+    executeLinkTask(vector<Sync> *,Update *,bool) const;
 };
 
 struct  FgLinkTime
@@ -347,11 +347,13 @@ struct  FgLinkTime
 };
 
 std::ostream &
-operator<<(std::ostream & os,const std::vector<FgLinkTime> & ltv);
+operator<<(std::ostream & os,const vector<FgLinkTime> & ltv);
 
 // Single-threaded depGraph
 class   FgDepGraphSt
 {
+    FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
+
 public:
     template<class T>
     FgDgn<T>
@@ -363,8 +365,8 @@ public:
     void
     addLink(
         FgLink                      func,
-        const std::vector<uint> &   sources,
-        const std::vector<uint> &   sinks)
+        const vector<uint> &   sources,
+        const vector<uint> &   sinks)
     {dirtyLink(m_linkGraph.addLink(func,sources,sinks)); }
 
     void
@@ -456,11 +458,11 @@ public:
         dirtyNode(nodeInd);
     }
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSources(uint linkIdx) const
     {return m_linkGraph.linkSources(linkIdx); }
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSinks(uint linkIdx) const
     {return m_linkGraph.linkSinks(linkIdx); }
 
@@ -480,7 +482,7 @@ public:
     numThreads() const
     {return (fgClusterThreads > 0) ? fgClusterThreads : uint(boost::thread::hardware_concurrency()); }
 
-    std::vector<FgLinkTime>
+    vector<FgLinkTime>
     linkTimes() const;
 
     bool
@@ -492,8 +494,6 @@ public:
     {return m_linkGraph; }
 
 private:
-    FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
-
     typedef FgLinkGraph<FgDepNode,FgLink>::Node  Node;
     typedef FgLinkGraph<FgDepNode,FgLink>::Link  Link;
 
@@ -517,7 +517,7 @@ private:
         Update() :
             done(false)
             {}
-        std::vector<uint>           queue;
+        vector<uint>           queue;
         uint                        lastLink;
         bool                        done;
 
@@ -528,13 +528,21 @@ private:
     updateNode(uint nodeInd);
 
     // Returns: true if links were scheduled that ultimately will update 'nodeIdx':
-    std::vector<uint>
+    vector<uint>
     leafLinks(
         uint                nodeIdx,
-        std::vector<Sync> & linksTraversed) const;
+        vector<Sync> & linksTraversed) const;
 
     void
-    executeLinkTask(std::vector<Sync> *,Update *) const;
+    executeLinkTask(vector<Sync> *,Update *) const;
+
+    // Returns a vector-style string of the node labels of the given node inds:
+    string
+    nodesString(const vector<uint> & nodeInds) const;
+
+    // Returns a string of the source and sink node labels of the given link:
+    string
+    linkDescription(uint linkIdx) const;
 };
 
 // Forces type conversion into uint and easier than typeing 'fgSvec<uint>' every time:
@@ -553,10 +561,10 @@ inline vector<uint> fgUints(uint a,uint b,uint c,uint d,uint e,uint f,uint g,uin
 {return fgSvec(a,b,c,d,e,f,g,h,i); }
 
 template<class T>
-FGLINK(linkCollate)
+FGLINK(fgLinkCollate)
 {
     FGASSERT(outputs.size() == 1);
-    std::vector<T> &        out = outputs[0]->valueRef();
+    vector<T> &        out = outputs[0]->valueRef();
     out.clear();
     for (size_t ii=0; ii<inputs.size(); ++ii)
     {
@@ -566,16 +574,28 @@ FGLINK(linkCollate)
 }
 
 template<class T>
-FgDgn<std::vector<T> >
+FGLINK(fgLinkMerge)
+{
+    FGASSERT(outputs.size() == 1);
+    vector<T> &        out = outputs[0]->valueRef();
+    out.clear();
+    for (size_t ii=0; ii<inputs.size(); ++ii) {
+        const vector<T> &   in = inputs[ii]->valueRef();
+        fgAppend(out,in);
+    }
+}
+
+template<class T>
+FgDgn<vector<T> >
 fgDgCollate(
     FgDepGraphSt &                   dg,
-    const std::vector<FgDgn<T> > &  nodes)
+    const vector<FgDgn<T> > &  nodes)
 {
-    FgDgn<std::vector<T> >  ret = dg.addNode(std::vector<T>());
-    std::vector<uint>       inp(nodes.size());
+    FgDgn<vector<T> >  ret = dg.addNode(vector<T>());
+    vector<uint>       inp(nodes.size());
     for (size_t ii=0; ii<inp.size(); ++ii)
         inp[ii] = nodes[ii].idx();
-    dg.addLink(linkCollate<T>,inp,fgUints(ret));
+    dg.addLink(fgLinkCollate<T>,inp,fgUints(ret));
     return ret;
 }
 
@@ -586,7 +606,7 @@ void
 fgDepGraph2Pdf(
     const FgLinkGraph<FgDepNode,FgLink> &   lg,
     const std::string &                     rootName,
-    const std::vector<uint> &               paramInds=std::vector<uint>());
+    const vector<uint> &               paramInds=vector<uint>());
 
 #endif
 

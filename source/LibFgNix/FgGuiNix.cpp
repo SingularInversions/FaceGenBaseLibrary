@@ -9,18 +9,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApi3d.hpp"
-#include "FgGuiApiButton.hpp"
-#include "FgGuiApiCheckbox.hpp"
-#include "FgGuiApiGroupbox.hpp"
-#include "FgGuiApiImage.hpp"
-#include "FgGuiApiRadio.hpp"
-#include "FgGuiApiSlider.hpp"
-#include "FgGuiApiSplit.hpp"
-#include "FgGuiApiTabs.hpp"
-#include "FgGuiApiDialogs.hpp"
-#include "FgGuiApiText.hpp"
-#include "FgGuiApiSelect.hpp"
+#include "FgGuiApi.hpp"
 #include "FgOut.hpp"
 
 using namespace std;
@@ -37,47 +26,52 @@ fgGuiGetOsInstance(const X &)                               \
 STUB(FgGuiApi3d)
 STUB(FgGuiApiButton)
 STUB(FgGuiApiCheckbox)
+STUB(FgGuiApiDynamic)
 STUB(FgGuiApiGroupbox)
 STUB(FgGuiApiImage)
 STUB(FgGuiApiRadio)
+STUB(FgGuiApiSelect)
 STUB(FgGuiApiSlider)
+STUB(FgGuiApiSpacer)
 STUB(FgGuiApiSplit)
 STUB(FgGuiApiSplitAdj)
 STUB(FgGuiApiSplitScroll)
 STUB(FgGuiApiTabs)
 STUB(FgGuiApiText)
 STUB(FgGuiApiTextEdit)
-STUB(FgGuiApiTextRich)
-STUB(FgGuiApiSelect)
 
 void
 fgGuiDialogMessage(const FgString &,const FgString &)
 {fgThrowNotImplemented(); }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileLoad(const FgString &,const vector<std::string> &)
 {
     fgThrowNotImplemented();
-    return FgValidVal<FgString>();
+    return FgOpt<FgString>();
 }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileSave(const FgString &,const std::string &)
 {
     fgThrowNotImplemented();
-    return FgValidVal<FgString>();
+    return FgOpt<FgString>();
 }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogDirSelect()
 {
     fgThrowNotImplemented();
-    return FgValidVal<FgString>();
+    return FgOpt<FgString>();
 }
 
 void
 fgGuiDialogProgress(const FgString &,uint,FgGuiActionProgress)
 {fgThrowNotImplemented(); }
+
+boost::function<void(void)>
+fgGuiDialogSplashScreen()
+{return boost::function<void(void)>(); }
 
 void
 FgGuiGraph::updateScreen() {}

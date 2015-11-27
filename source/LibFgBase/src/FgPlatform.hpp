@@ -18,7 +18,12 @@
 #ifndef FGPLATFORM_HPP
 #define FGPLATFORM_HPP
 
-#ifdef _MSC_VER     // Compiling with Visual Studio (value is version code)
+// Compiling with Visual Studio (value is version code):
+// 1500 - VS2008
+// 1600 - VS2010
+// 1700 - VS2012
+// 1800 - VS2013
+#ifdef _MSC_VER
 
     // Useful defines:
     // _WIN32       We are compiling for windows (32 or 64 bit)

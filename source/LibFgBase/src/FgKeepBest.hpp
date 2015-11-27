@@ -12,7 +12,7 @@
 #define FGKEEPBEST_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 
 template<class Key,class Val>
 class   FgKeepBest

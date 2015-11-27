@@ -6,8 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     Jan 19, 2007
 //
-// API for platform specific functionality related to system info.
-//
+// Functions defined in OS-specific library
 
 #ifndef FGSYSTEMINFO_HPP
 #define FGSYSTEMINFO_HPP
@@ -16,9 +15,11 @@
 
 #include "FgStdString.hpp"
 
-// Defined in OS-specific library:
 FgString
-fgGetComputerName();
+fgSystemInfo();
+
+FgString
+fgComputerName();
 
 #endif
 

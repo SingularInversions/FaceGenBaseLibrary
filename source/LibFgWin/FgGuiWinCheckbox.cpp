@@ -71,53 +71,45 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
     {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
-            case WM_CREATE:
-                {
+        if (msg == WM_CREATE) {
 //fgout << fgnl << "FgGuiWinCheckbox::WM_CREATE " << m_api.label;
-                    hwndThis = hwnd;
-                    hwndCheckbox =
-                        CreateWindowEx(0,
-                            TEXT("button"),     // Standard controls class name for all buttons
-                            m_api.label.as_wstring().c_str(),
-                            WS_CHILD | WS_VISIBLE |
-                            BS_CHECKBOX,        // Checkbox type button
-                            0,0,0,0,            // Will be sent MOVEWINDOW messages.
-                            hwnd,
-                            HMENU(0),
-                            s_fgGuiWin.hinst,
-                            NULL);              // No WM_CREATE parameter
-                    FGASSERTWIN(hwndCheckbox != 0);
-                    updateCheckbox();
-                }
-                return 0;
-            case WM_SIZE:   // Sends new size of client area:
-                {
-                    int     wid = LOWORD(lParam);
-                    int     hgt = HIWORD(lParam);
-//fgout << fgnl << "FgGuiWinCheckbox::WM_SIZE " << m_api.label << " : " << wid << "," << hgt;
-                    if (wid*hgt > 0)
-                        MoveWindow(hwndCheckbox,0,0,wid,hgt,TRUE);
-                }
-                return 0;
-            case WM_COMMAND:
-                {
-                    WORD    ident = LOWORD(wParam);
-                    WORD    code = HIWORD(wParam);
-                    if (code == 0)      // checkbox clicked
-                    {
-                        FGASSERT(ident == 0);
-                        bool val = !g_gg.getVal(m_api.val);
-                        g_gg.setVal(m_api.val,val);
-                        g_gg.updateScreen();
-                    }
-                }
-                return 0;
+            hwndThis = hwnd;
+            hwndCheckbox =
+                CreateWindowEx(0,
+                    TEXT("button"),     // Standard controls class name for all buttons
+                    m_api.label.as_wstring().c_str(),
+                    WS_CHILD | WS_VISIBLE |
+                    BS_CHECKBOX,        // Checkbox type button
+                    0,0,0,0,            // Will be sent MOVEWINDOW messages.
+                    hwnd,
+                    HMENU(0),
+                    s_fgGuiWin.hinst,
+                    NULL);              // No WM_CREATE parameter
+            FGASSERTWIN(hwndCheckbox != 0);
+            updateCheckbox();
         }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        else if (msg == WM_SIZE) {      // Sends new size of client area:
+            int     wid = LOWORD(lParam);
+            int     hgt = HIWORD(lParam);
+//fgout << fgnl << "FgGuiWinCheckbox::WM_SIZE " << m_api.label << " : " << wid << "," << hgt;
+            if (wid*hgt > 0)
+                MoveWindow(hwndCheckbox,0,0,wid,hgt,TRUE);
+        }
+        else if (msg == WM_COMMAND) {
+            WORD    ident = LOWORD(wParam);
+            WORD    code = HIWORD(wParam);
+            if (code == 0) {            // checkbox clicked
+                FGASSERT(ident == 0);
+                bool val = !g_gg.getVal(m_api.val);
+                g_gg.setVal(m_api.val,val);
+                g_gg.updateScreen();
+            }
+        }
+        else 
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 
     void

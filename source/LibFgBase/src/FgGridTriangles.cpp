@@ -66,12 +66,15 @@ FgGridTriangles::intersects(FgVect2F pos,vector<FgTriPoint> & ret) const
         FgTriPoint      tp;
         tp.triInd = bin[ii];
         tp.pointInds = m_tris[bin[ii]];
-        tp.baryCoord = FgVect3F(fgBarycentricCoords(pos,
+        FgOpt<FgVect3D>    vbc = fgBarycentricCoords(pos,
             m_points[tp.pointInds[0]],
             m_points[tp.pointInds[1]],
-            m_points[tp.pointInds[2]]).val());
-        if (fgMinElem(tp.baryCoord) >= 0.0f)
-            ret.push_back(tp);
+            m_points[tp.pointInds[2]]);
+        if (vbc.valid()) {
+            tp.baryCoord = FgVect3F(vbc.val());
+            if (fgMinElem(tp.baryCoord) >= 0.0f)
+                ret.push_back(tp);
+        }
     }
 }
 

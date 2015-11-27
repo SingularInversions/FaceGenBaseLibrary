@@ -30,14 +30,16 @@ fgDepGraph2Dot(
     ret << "  graph [label=\"" << label << "\"];\n  {\n    node [shape=box]\n";
     for (size_t ii=0; ii<paramInds.size(); ++ii)
         ret << "    \"" << lg.nodeData(paramInds[ii]).name(paramInds[ii]) << "\" [shape=doubleoctagon]\n";
-    for (uint ii=0; ii<lg.numLinks(); ii++)
-    {
-        ret << "    L" << ii << " [shape=oval];\n";
+    for (uint ii=0; ii<lg.numLinks(); ii++) {
         vector<uint>    sources = lg.linkSources(ii);
+        vector<uint>    sinks = lg.linkSinks(ii);
+        // Skip stubs (used by GUI) as they obsfucate:
+        if ((sinks.size() == 1) && (lg.nodeData(sinks[0]).label == "stub"))
+            continue;
+        ret << "    L" << ii << " [shape=oval];\n";
         for (uint jj=0; jj<sources.size(); jj++)
             ret << "    \"" << lg.nodeData(sources[jj]).name(sources[jj]) 
                 << "\" -> L" << ii << ";\n";
-        vector<uint>    sinks = lg.linkSinks(ii);
         for (uint jj=0; jj<sinks.size(); jj++)
             ret << "    L" << ii << " -> \""
                 << lg.nodeData(sinks[jj]).name(sinks[jj]) << "\";\n";

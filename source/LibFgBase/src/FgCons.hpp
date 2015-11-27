@@ -97,9 +97,17 @@ struct  FgConsSolution
         const vector<string> &  defs);
 };
 
+struct  FgConsBase
+{
+    FgConsSolution      sln;
+    vector<string>      defs;
+    vector<string>      incs;
+    vector<string>      lnks;
+};
+
 // Current dir must be ~repo/source/
 // Use of both flags below is for creating distros, not constructing build files:
-FgConsSolution
+FgConsBase
 fgConsBase(
     bool    win,    // Include projects needed for Windows
     bool    nix);   // Include projects needed for *nix

@@ -22,10 +22,10 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
     // Inputs:
     // If meshesN is not a sink, then surface point and marked vertex creation on it is enabled:
     FgDgn<vector<Fg3dMesh> >    meshesN;        // Possibly modified if not a sink
-    FgDgn<vector<FgVerts> >     vertssN;
-    FgDgn<vector<Fg3dNormals> > normssN;
-    FgDgn<vector<FgImgs> >      texssN;
-    FgDgn<FgMat32D>          viewBounds;
+    FgDgn<vector<FgVerts> >     vertssN;        // Must be same size as meshesN
+    FgDgn<vector<Fg3dNormals> > normssN;        // "
+    FgDgn<vector<FgImgs> >      texssN;         // " and each texs can be of any size
+    FgDgn<FgMat32D>             viewBounds;
     FgDgn<size_t>               panTiltMode;    // 0 - pan/tilt, 1 - unconstrained
     FgDgn<FgLighting>           light;
     FgDgn<Fg3dCamera>           xform;
@@ -33,6 +33,10 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
     FgDgn<size_t>               vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam
     FgDgn<FgString>             pointLabel;     // Label for surface point creation
     bool                        panTiltLimits;  // Limit pan and tilt to +/- 90 degrees (default false)
+    // Can be invalid. Can be empty. Must be pow2 square otherwise. Alpha defines foreground transparency:
+    FgDgn<FgImgRgbaUb>          bgImgN;
+    uint                        bgImgUpdateFlag;    // Need not be defined if bgImgN is invalid
+    FgDgn<FgVect2UI>            bgImgOrigDimsN; // Allows display of correct aspect ratio
 
     // Modified:
     FgDgn<FgVect2D>             panTiltDegrees;
@@ -50,13 +54,20 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
         size_t      meshIdx;
         size_t      vertIdx;
     };
-    boost::function<void(bool,VertIdx,FgVect3F)>   ctlDragAction;  // Can be empty
+    // bool: is shift key down as well ?
+    boost::function<void(bool,VertIdx,FgVect3F)>    ctlDragAction;          // Can be empty
+    // bool: is shift key down as well ? FgVect2I: drag delta in pixels
+    boost::function<void(bool,FgVect2I)>            bothButtonsDragAction;  // "
 
     FgGuiApi3d() : panTiltLimits(false) {}
 
     // Implementation:
     void
     panTilt(FgVect2I delta);
+
+    // Used by two-finger rotate gesture. Does nothing in pan-tilt mode:
+    void
+    roll(int delta);
 
     void
     scale(int delta);

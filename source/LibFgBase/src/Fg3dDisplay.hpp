@@ -13,10 +13,35 @@
 #include "Fg3dMesh.hpp"
 #include "FgGuiApi3d.hpp"
 
+struct  FgGuiLighting
+{
+    FgGuiPtr                win;
+    FgDgn<FgLighting>       outN;
+    FgMatrixC<FgDgn<double>,3,1>    dirAxisNs[2];   // Directional lighting axis inputs
+};
+
+FgGuiLighting
+fgGuiLighting();
+
+struct  FgRenderCtrls
+{
+    FgGuiPtr                    win;
+    FgDgn<Fg3dRenderOptions>    optsN;
+    FgDgn<FgImgRgbaUb>          bgImgN;
+    FgDgn<FgVect2UI>            bgImgDimsN;     // Dimensions of original BG image.
+};
+
+FgRenderCtrls
+fgRenderCtrls(
+    // 1 - only color/shiny/flat
+    // 2 - only color/shiny
+    // 3 - only shiny/flat/wireframe
+    uint    simple);
+
 struct FgGui3dCtls
 {
     FgGuiPtr        viewport;
-    FgGuiPtr        viewCtls;
+    FgGuiPtr        cameraGui;
     FgGuiPtr        selectCtls;
     FgGuiPtr        morphCtls;
     FgGuiPtr        editCtls;
@@ -29,7 +54,10 @@ fgGui3dCtls(
     FgDgn<vector<Fg3dMesh> >    meshesN,            // Input
     FgDgn<vector<FgVerts> >     allVertssN,         // Input
     FgDgn<vector<FgImgs> >      texssN,             // Input
-    FgDgn<FgMat32D>          viewBoundsN,        // Input
+    FgDgn<FgMat32D>             viewBoundsN,        // Input
+    FgRenderCtrls               renderCtrls,        // Inputs
+    FgDgn<FgLighting>           lightingN,          // Input
+    boost::function<void(bool,FgVect2I)>    bothButtonsDrag,
     // 1 - only color/shiny/flat/wireframe, 2 - only color/shiny, and limit pan/tilt,
     // 3 - only shiny/flat/wireframe:
     uint                        simple=0);

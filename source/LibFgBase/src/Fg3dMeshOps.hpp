@@ -73,11 +73,15 @@ fgMergeMeshSurfaces(
     const Fg3dMesh &    m0,
     const Fg3dMesh &    m1);
 
-// Only merges in the surfaces from the second mesh:
+// Marked verts and material of second mesh are discarded, all else (including names) are merged:
 Fg3dMesh
 fgMergeMeshes(
     const Fg3dMesh &    m0,
     const Fg3dMesh &    m1);
+
+// As above:
+Fg3dMesh
+fgMergeMeshes(const vector<Fg3dMesh> & meshes);
 
 // Doesn't preserve uvs, surface points or marked verts:
 Fg3dMesh
@@ -85,5 +89,24 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask);
 
 FgImgRgbaUb
 fgUvImage(const Fg3dMesh &,const FgImgRgbaUb & img=FgImgRgbaUb());
+
+// Emboss the given pattern (interpreted as greyscale) onto a mesh with UVs, with max magnitude
+// given by image value 255, corresponding to a displacement (in the direction of surface normal)
+// by 'ratio' times the max bounding box dim of the mesh:
+FgVerts
+fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & pattern,double ratio=0.01);
+
+struct  FgMorphVal
+{
+    FgString        name;
+    float           val;            // 0 - no change, 1 - full application
+
+    FgMorphVal() {}
+    FgMorphVal(const FgString & name_,float val_) : name(name_), val(val_) {}
+};
+
+// Only applies those morphs which mesh supports, ignores the rest:
+FgVerts
+fgApplyExpression(const Fg3dMesh & mesh,const vector<FgMorphVal> &  expression);
 
 #endif

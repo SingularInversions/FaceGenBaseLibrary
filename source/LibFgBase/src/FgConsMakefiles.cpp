@@ -141,8 +141,14 @@ proj(
     for (size_t ii=0; ii<prj.defs.size(); ++ii)
         ofs << " -D" << prj.defs[ii];
     ofs << " -DBOOST_THREAD_POSIX";
-    for (size_t ii=0; ii<prj.incDirs.size(); ++ii)
-        ofs << " -I" << collapse(prj.name,prj.incDirs[ii]);
+    for (size_t ii=0; ii<prj.incDirs.size(); ++ii) {
+        string      libName = collapse(prj.name,prj.incDirs[ii]);
+        if (fgStartsWith(libName,"LibTpBoost"))
+            // Tell gcc/clang to treat as system lib and not give warnings. Doesn't work so well.
+            ofs << " -isystem" << libName;
+        else
+            ofs << " -I" << libName;
+    }
     ofs << lf
         << "SDIR" << prj.name << " = " << prj.name << '/' << prj.srcBaseDir << lf
         << "ODIR" << prj.name << " = " << prj.name << "/$(CONFIG)" << lf

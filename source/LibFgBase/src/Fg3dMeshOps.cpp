@@ -384,12 +384,26 @@ fgMergeMeshes(
     const Fg3dMesh &    m1)
 {
     Fg3dMesh            ret;
-    ret.name = m0.name + m1.name;
+    ret.name = m0.name + "_" + m1.name;
     ret.verts = fgConcat(m0.verts,m1.verts);
     ret.uvs = fgConcat(m0.uvs,m1.uvs);
     ret.surfaces = m0.surfaces;
     for (uint ss=0; ss<m1.surfaces.size(); ++ss)
         ret.surfaces.push_back(m1.surfaces[ss].offset(m0.verts.size(),m0.uvs.size()));
+    if (!(m0.texImages.empty() && m1.texImages.empty())) {
+        for (size_t ss=0; ss<m0.surfaces.size(); ++ss) {
+            if (ss < m0.texImages.size())
+                ret.texImages.push_back(m0.texImages[ss]);
+            else
+                ret.texImages.push_back(FgImgRgbaUb());
+        }
+        for (size_t ss=0; ss<m1.surfaces.size(); ++ss) {
+            if (ss < m1.texImages.size())
+                ret.texImages.push_back(m1.texImages[ss]);
+            else
+                ret.texImages.push_back(FgImgRgbaUb());
+        }
+    }
     for (size_t ii=0; ii<m0.deltaMorphs.size(); ++ii) {
         FgMorph     dm = m0.deltaMorphs[ii];
         dm.verts.resize(m0.verts.size()+m1.verts.size());
@@ -419,6 +433,18 @@ fgMergeMeshes(
         else
             ret.targetMorphs.push_back(im);
     }
+    return ret;
+}
+
+Fg3dMesh
+fgMergeMeshes(const vector<Fg3dMesh> & meshes)
+{
+    Fg3dMesh        ret;
+    if (meshes.empty())
+        return ret;
+    ret = meshes[0];
+    for (size_t mm=1; mm<meshes.size(); ++mm)
+        ret = fgMergeMeshes(ret,meshes[mm]);
     return ret;
 }
 
@@ -468,11 +494,12 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
 FgImgRgbaUb
 fgUvImage(const Fg3dMesh & mesh,const FgImgRgbaUb & in)
 {
+    FgMat22F        uvb = fgBounds(mesh.uvs);
     FgImgRgbaUb     img(2048,2048,FgRgbaUB(128,128,128,255));
     if (!in.empty())
         img = fgImgMagnify(in,2);
     FgRgbaUB        green(0,255,0,255);
-    FgMat22F     domain(0,1,1,0),
+    FgMat22F        domain(floor(uvb[0]),ceil(uvb[1]),floor(uvb[2]),ceil(uvb[3])),
                     range(0,img.width()+1,0,img.height()+1);
     FgAffineCw2F    xf(domain,range);
     const vector<FgVect2F> &    uvs = mesh.uvs;
@@ -492,6 +519,59 @@ fgUvImage(const Fg3dMesh & mesh,const FgImgRgbaUb & in)
     FgImgRgbaUb     final;
     fgImgShrink2(img,final);
     return final;
+}
+
+FgVerts
+fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & img,double val)
+{
+    FgVerts         ret;
+    // Don't check for UV seams, just let the emboss value be the last one traversed:
+    FgVerts         deltas(mesh.verts.size());
+    float           fac = fgMaxElem(fgDims(mesh.verts)) * val;
+    Fg3dNormals     norms = fgNormals(mesh);
+    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+        const Fg3dSurface &     surf = mesh.surfaces[ss];
+        for (size_t ii=0; ii<surf.numTris(); ++ii) {
+            FgVect3UI   uvInds = surf.tris.uvInds[ii],
+                        vtInds = surf.tris.vertInds[ii];
+            for (uint jj=0; jj<3; ++jj) {
+                FgVect2F        uv = mesh.uvs[uvInds[jj]];
+                uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
+                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
+                uint            vtIdx = vtInds[jj];
+                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
+            }
+        }
+        for (size_t ii=0; ii<surf.numQuads(); ++ii) {
+            FgVect4UI   uvInds = surf.quads.uvInds[ii],
+                        vtInds = surf.quads.vertInds[ii];
+            for (uint jj=0; jj<4; ++jj) {
+                FgVect2F        uv = mesh.uvs[uvInds[jj]];
+                uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
+                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
+                uint            vtIdx = vtInds[jj];
+                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
+            }
+        }
+    }
+    ret.resize(mesh.verts.size());
+    for (size_t ii=0; ii<deltas.size(); ++ii)
+        ret[ii] = mesh.verts[ii] + deltas[ii];
+    return ret;
+}
+
+FgVerts
+fgApplyExpression(const Fg3dMesh & mesh,const vector<FgMorphVal> & expression)
+{
+    FgVerts         ret;
+    FgFloats        coord(mesh.numMorphs(),0);
+    for (size_t ii=0; ii<expression.size(); ++ii) {
+        FgValid<size_t>     idx = mesh.findMorph(expression[ii].name);
+        if (idx.valid())
+            coord[idx.val()] = expression[ii].val;
+    }
+    mesh.morph(coord,ret);
+    return ret;
 }
 
 // */

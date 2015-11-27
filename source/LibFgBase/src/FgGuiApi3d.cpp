@@ -39,6 +39,19 @@ FgGuiApi3d::panTilt(FgVect2I delta)
 }
 
 void
+FgGuiApi3d::roll(int delta)
+{
+    size_t          mode = g_gg.getVal(panTiltMode);
+    if (mode == 1) {
+        // Convert from pixels to half the tangent rotation in radians:
+        double          del = double(delta) * 0.005;
+        FgQuaternionD   poseVal = g_gg.getVal(pose);
+        poseVal = FgQuaternionD(1.0,0,0,del) * poseVal;
+        g_gg.setVal(pose,poseVal);
+    }
+}
+
+void
 FgGuiApi3d::scale(int delta)
 {
     double          rs = g_gg.getVal(logRelSize);
@@ -70,7 +83,7 @@ struct  MeshesSurfPoint
 };
 
 static
-FgValidVal<MeshesSurfPoint>
+FgOpt<MeshesSurfPoint>
 intersect(
     FgVect2UI                   winSize,
     FgVect2I                    pos,
@@ -104,7 +117,7 @@ intersect(
                             v1 = FgVect2D(t1.subMatrix<2,1>(0,0)),
                             v2 = FgVect2D(t2.subMatrix<2,1>(0,0));
                 if (fgPointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
-                    FgValidVal<FgVect3D>    vbc = fgBarycentricCoords(pnt,v0,v1,v2);
+                    FgOpt<FgVect3D>    vbc = fgBarycentricCoords(pnt,v0,v1,v2);
                     if (vbc.valid()) {
                         FgVect3D    bc = vbc.val();
                         // Depth value range for unclipped polys is [-1,1]. These correspond to the
@@ -124,8 +137,8 @@ intersect(
         }
     }
     if (minDepth.valid())
-        return FgValidVal<MeshesSurfPoint>(ret);
-    return FgValidVal<MeshesSurfPoint>();
+        return FgOpt<MeshesSurfPoint>(ret);
+    return FgOpt<MeshesSurfPoint>();
 }
 
 void
@@ -138,7 +151,7 @@ FgGuiApi3d::markSurfPoint(
         return;
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgValidVal<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
         MeshesSurfPoint     pt = vpt.val();
         pt.surfPnt.label = g_gg.getVal(pointLabel).as_ascii();
@@ -157,7 +170,7 @@ FgGuiApi3d::markVertex(
         return;
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgValidVal<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
         MeshesSurfPoint     pt = vpt.val();
         uint                facetIdx = fgMaxIdx(pt.surfPnt.weights);
@@ -174,19 +187,18 @@ FgGuiApi3d::markVertex(
             const FgVerts & verts = vertss[pt.meshIdx];
             vector<FgVect3UI>   tris = mesh.getTriEquivs().vertInds;
             Fg3dTopology        topo(verts,tris);
-            vector<FgBool>      done(verts.size(),false);
-            vector<uint>        seam;
+            set<uint>           seam;
             if (vertMarkMode == 1)
-                seam = topo.traceSeam(done,vertIdx);
+                seam = topo.seamContaining(vertIdx);
             else {
-                Fg3dSurface     surf;
+                Fg3dSurface         surf;
                 surf.tris.vertInds = tris;
-                set<uint>       seamSet = topo.traceFold(fgNormals(fgSvec(surf),verts),done,vertIdx);
-                seam = vector<uint>(seamSet.begin(),seamSet.end());
+                vector<FgBool>      done(verts.size(),false);
+                seam = topo.traceFold(fgNormals(fgSvec(surf),verts),done,vertIdx);
             }
-            for (size_t ii=0; ii<seam.size(); ++ii)
-                if (!fgContains(mesh.markedVerts,seam[ii]))
-                    mesh.markedVerts.push_back(FgMarkedVert(seam[ii]));
+            for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
+                if (!fgContains(mesh.markedVerts,*it))
+                    mesh.markedVerts.push_back(FgMarkedVert(*it));
             if (!seam.empty())
                 g_gg.setVal(meshesN,meshes);
         }
@@ -198,7 +210,7 @@ FgGuiApi3d::ctlClick(FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
 {
     const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
     const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgValidVal<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
         MeshesSurfPoint     pt = vpt.val();
         uint                mi = fgMaxIdx(pt.surfPnt.weights);

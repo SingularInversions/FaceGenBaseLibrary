@@ -125,14 +125,16 @@ FgConsSolution::addApp(
     projects.push_back(proj);
 }
 
-FgConsSolution
+FgConsBase
 fgConsBase(bool win,bool nix)
 {
+    FgConsBase      ret;
     // Build platform solutions in current directory:
-    FgConsSolution    sln;
+    FgConsSolution  & sln = ret.sln;
     sln.win = win;
     FGASSERT(win || nix);
-    vector<string>  defs = fgSvec<string>(
+    vector<string>  & defs = ret.defs;
+    defs = fgSvec<string>(
         // This stops boost from automatically flagging the compiler to link to
         // it's default library names. Without this you'll see link errors looking
         // for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
@@ -155,8 +157,8 @@ fgConsBase(bool win,bool nix)
             fgSvec<string>("BOOST_THREAD_BUILD_LIB=1"),
             defs),
         2);
-    vector<string>  incMain,
-                    lnkMain;
+    vector<string> & incMain = ret.incs,
+                   & lnkMain = ret.lnks;
     incMain.push_back("../LibTpBoost/boost_1_58_0/");
     lnkMain.push_back("LibTpBoost");
     // This library is set up such that you run a config script to adapt the source code to
@@ -271,10 +273,11 @@ fgConsBase(bool win,bool nix)
         sln.addLib("LibFgWin",incMain,defs);
         lnkMain.push_back("LibFgWin");
     }
-    // This is down here because libraries must be linked in the right order for stupid gcc:
+    // This is down here because libraries must be linked in the right order for gcc:
     lnkMain.push_back("LibFgBase");
-    sln.addApp("fgbl",incMain,lnkMain,defs);
-    return sln;
+    if (fgExists("fgbl"))
+        sln.addApp("fgbl",incMain,lnkMain,defs);
+    return ret;
 }
 
 void
@@ -284,9 +287,9 @@ fgCmdCons(const FgArgs &)
     FgPushDir       pd;
     if (fgExists("source"))
         pd.push("source");
-    FgConsSolution  sln = fgConsBase(true,false);
+    FgConsSolution  sln = fgConsBase(true,false).sln;
     fgConsVs2008(sln);
     fgConsVs201x(sln);
-    sln = fgConsBase(false,true);
+    sln = fgConsBase(false,true).sln;
     fgConsMakefiles(sln);
 }

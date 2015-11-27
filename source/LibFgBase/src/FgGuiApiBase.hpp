@@ -53,17 +53,29 @@ struct  FgGuiApi : FgGuiApiBase
 
 struct  FgGuiGraph
 {
-    FgDepGraphSt            dg;
-    // Keep a snapshot of what's changed to avoid issues with nodes being marked clean during
-    // the update process:
-    FgString                m_storeBase;
-    vector<boost::function<void()> > m_inputSaves;
+    struct  Input
+    {
+        uint                        nodeIdx;
+        boost::function<void()>     save;
+        FgVariant                   defaultVal;
+    };
+
+    FgDepGraphSt                    dg;
+    FgString                        appName;        // Used for error reporting
+    FgString                        m_storeBase;
+    vector<Input>                   m_inputSaves;
+    // Client-defined error reporting. Can be null.
+    // Accepts error message, returns true if reported, false otherwise (so default dialog can be shown):
+    boost::function<bool(FgString)> reportError;
+    FgString                        reportSuccMsg;  // Displayed if 'reportError' returns true.
+    // Prepended to error message and displayed if 'reportError' == NULL or 'reportError' returns false:
+    FgString                        reportFailMsg;
 
     FgGuiGraph() {}
 
     explicit
     FgGuiGraph(const FgString & storeDir)
-    : m_storeBase(storeDir+"guiInputState")
+    : m_storeBase(storeDir+"gg_"), reportError(NULL)
     {}
 
     template<class T>
@@ -73,11 +85,15 @@ struct  FgGuiGraph
 
     template<class T>
     FgDgn<T>
-    addInput(const T & defaultVal,const std::string & uid,bool binary=false)
+    addInput(const T & defaultVal,const FgString & uid,bool binary=false)
     {
-        FgDgn<T>    node = dg.addNode(defaultVal,uid);
+        FgDgn<T>    node = dg.addNode(defaultVal,uid.as_ascii());
         readNode(node,uid,binary);
-        m_inputSaves.push_back(boost::bind(&FgGuiGraph::writeNode<T>,this,node,uid,binary));
+        Input       inp;
+        inp.nodeIdx = node.idx();
+        inp.save = boost::bind(&FgGuiGraph::writeNode<T>,this,node,uid,binary);
+        inp.defaultVal = FgVariant(defaultVal);
+        m_inputSaves.push_back(inp);
         return node;
     }
 
@@ -87,6 +103,27 @@ struct  FgGuiGraph
         const vector<uint> &    sources,
         const vector<uint> &    sinks)
     {dg.addLink(func,sources,sinks); }
+
+    void
+    addLink(
+        FgLink                  func,
+        uint                    source,
+        const vector<uint> &    sinks)
+    {dg.addLink(func,fgSvec(source),sinks); }
+
+    void
+    addLink(
+        FgLink                  func,
+        const vector<uint> &    sources,
+        uint                    sink)
+    {dg.addLink(func,sources,fgSvec(sink)); }
+
+    void
+    addLink(
+        FgLink                  func,
+        uint                    source,
+        uint                    sink)
+    {dg.addLink(func,fgSvec(source),fgSvec(sink)); }
 
     template<class T>
     FgDgn<vector<T> >
@@ -113,7 +150,7 @@ struct  FgGuiGraph
     saveInputs() const
     {
         for (size_t ii=0; ii<m_inputSaves.size(); ++ii)
-            m_inputSaves[ii]();
+            m_inputSaves[ii].save();
     }
 
     // Defined in os-specific code:
@@ -126,33 +163,31 @@ struct  FgGuiGraph
 
     template<class T>
     void
-    readNode(FgDgn<T> node,const std::string & uid,bool binary)
+    readNode(FgDgn<T> node,const FgString & uid,bool binary)
     {
         T       val;
         if (binary) {
-            if (fgLoadBin(storeName(uid),val,false))
+            if (fgLoadPBin(m_storeBase+uid,val,false))
                 dg.setNodeVal(node,val);
         }
         else {
-            if (fgLoadXml(storeName(uid),val,false))
+            if (fgLoadXml(m_storeBase+uid+".xml",val,false))
                 dg.setNodeVal(node,val);
         }
     }
 
     template<class T>
     void
-    writeNode(FgDgn<T> node,std::string uid,bool binary)
+    writeNode(FgDgn<T> node,FgString uid,bool binary)
     {
+        FgPath      path(m_storeBase+uid);
+        fgCreatePath(path.dir());
         const T & val = dg.nodeVal(node);
         if (binary)
-            fgSaveBin(storeName(uid),val,false);
+            fgSavePBin(path.str(),val,false);
         else
-            fgSaveXml(storeName(uid),val,false);
+            fgSaveXml(path.str()+".xml",val,false);
     }
-
-    FgString
-    storeName(const std::string & uid)
-    {return m_storeBase+uid+".xml"; }
 
     // Returns a no-op dependent node index from the given source. Provides a proxy flag for clients with
     // private state that needs to be updated from that source:
@@ -166,6 +201,10 @@ struct  FgGuiGraph
     uint
     addUpdateFlag(uint srcNodeIdx)
     {return addUpdateFlag(fgSvec(srcNodeIdx)); }
+
+    // Only sets input node values on which nodeIdx depends:
+    void
+    setInputsToDefault(uint nodeIdx);
 };
 
 // Global variable - very convenient as there will only ever be one GUI at a time:
@@ -189,6 +228,13 @@ struct  FgGuiOptions
 {
     vector<FgGuiApiEvent>   events;
     vector<FgGuiKeyHandle>  keyHandlers;
+};
+
+template<class T>
+struct  FgGuiWinVal         // Combine a window and a related node
+{
+    FgGuiPtr    win;
+    FgDgn<T>    valN;
 };
 
 void

@@ -12,7 +12,7 @@
 #include "Fg3dSurface.hpp"
 #include "Fg3dTopology.hpp"
 #include "FgBounds.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgStdString.hpp"
 
 using namespace std;

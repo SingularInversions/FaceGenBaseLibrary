@@ -63,6 +63,14 @@ fgWhiteBreak(const string & str)
     return retval;
 }
 
+string
+fgToFixed(double val,uint fractionalDigits)
+{
+    ostringstream   os;
+    os << std::fixed << std::setprecision(fractionalDigits) << val;
+    return os.str();
+}
+
 std::string
 fgToLower(const std::string & s)
 {

@@ -24,10 +24,18 @@ struct  FgAffineCwC
 
     FgAffineCwC() : m_scales(T(1)) {}
 
+    // Conversion constructor:
+    template<class U>
+    explicit
+    FgAffineCwC(const FgAffineCwC<U,dim> & rhs) :
+        m_scales(FgMatrixC<T,dim,1>(rhs.m_scales)),
+        m_trans(FgMatrixC<T,dim,1>(rhs.m_trans))
+    {}
+
     // Construct from bounding box mapping:
     FgAffineCwC(
-        const FgMatrixC<T,dim,2> & domainBounds,
-        const FgMatrixC<T,dim,2> & rangeBounds)
+        const FgMatrixC<T,dim,2> & domainBounds,    // Column vectors are lo and hi bounds resp.
+        const FgMatrixC<T,dim,2> & rangeBounds)     // "
     {
         FgMatrixC<T,dim,1>
             domainDelta = domainBounds.colVec(1) - domainBounds.colVec(0),

@@ -6,22 +6,67 @@
 // Authors:     Andrew Beatty
 // Created:     May 21, 2009
 //
-// Type extender that remembers if it's been initialized before use.
+// Option Type extender that remembers if it's been initialized before use.
 //
 // USE:
 //
 // To avoid additional memory use for numerical types, use 'FgValid' but note that
 // numeric_limits<T>::max() is the special 'invalid' value.
 //
-// Otherwise, use 'FgValidVal' which adds a bool to keep track.
+// Otherwise, use 'FgOpt' which adds a bool to keep track.
 //
 
-
-#ifndef FGVALIDVAL_HPP
-#define FGVALIDVAL_HPP
+#ifndef FGOPT_HPP
+#define FGOPT_HPP
 
 #include "FgStdLibs.hpp"
 #include "FgSerialize.hpp"
+
+template<typename T>
+class   FgOpt
+{
+public:
+    FgOpt()
+    : m_valid(false)
+    {}
+
+    FgOpt(const T & v)
+    : m_valid(true), m_val(v)
+    {}
+
+    FgOpt &
+    operator=(const T & v)
+    {m_val=v; m_valid=true; return *this; }
+
+    bool
+    valid() const
+    {return m_valid; }
+
+    void
+    invalidate()
+    {m_valid = false; }
+
+    T &
+    ref()
+    {FGASSERT(m_valid); return m_val; }
+
+    const T &
+    val() const
+    {FGASSERT(m_valid); return m_val; }
+
+    template<typename U>
+    FgOpt<U>
+    cast()
+    {
+        if (m_valid)
+            return FgOpt<U>(U(m_val));
+        return FgOpt<U>();
+    }
+
+private:
+    bool        m_valid;
+    T           m_val;
+};
 
 template<typename T>
 struct FgValid
@@ -79,51 +124,5 @@ operator<<(std::ostream & os,const FgValid<T> & v)
     else
         return (os << "<invalid>");
 }
-
-template<typename T>
-class   FgValidVal
-{
-public:
-    FgValidVal()
-    : m_valid(false)
-    {}
-
-    FgValidVal(const T & v)
-    : m_valid(true), m_val(v)
-    {}
-
-    FgValidVal &
-    operator=(const T & v)
-    {m_val=v; m_valid=true; return *this; }
-
-    bool
-    valid() const
-    {return m_valid; }
-
-    void
-    invalidate()
-    {m_valid = false; }
-
-    T &
-    ref()
-    {FGASSERT(m_valid); return m_val; }
-
-    const T &
-    val() const
-    {FGASSERT(m_valid); return m_val; }
-
-    template<typename U>
-    FgValidVal<U>
-    cast()
-    {
-        if (m_valid)
-            return FgValidVal<U>(U(m_val));
-        return FgValidVal<U>();
-    }
-
-private:
-    bool        m_valid;
-    T           m_val;
-};
 
 #endif

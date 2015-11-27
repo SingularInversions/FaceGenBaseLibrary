@@ -122,31 +122,8 @@ struct  Dir
     DIR *   handle;
 };
 
-FgDirectoryContents
-fgDirectoryContents(const FgString & dirName)
-{
-	FgDirectoryContents		ret;
-    Dir     dir(dirName);
-    if (dir.handle == 0)
-        return ret;
-    struct dirent	*dp;
-	struct stat		stat_info;
-    while ((dp = readdir(dir.handle))) {
-		if (S_ISREG(stat_info.st_mode))
-			ret.filenames.push_back(dp->d_name);
-		else if (S_ISDIR(stat_info.st_mode)) {
-			if( !strcmp(dp->d_name, "."))
-				continue;
-			if( !strcmp(dp->d_name, ".."))
-				continue;
-			ret.dirnames.push_back(dp->d_name);
-		}
-	}
-	return ret;
-}
-
 bool
-fgFileCreationTime(const FgString &,uint64 &)
+fgCreationTime(const FgString &,uint64 &)
 {
     fgThrowNotImplemented();
     return false;

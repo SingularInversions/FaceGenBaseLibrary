@@ -36,6 +36,8 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     FgGuiApiSplitScroll         m_api;
     HWND                        hwndThis;
     FgGuiOsPtrs                 m_panes;
+    // Cache current visibility of panes to avoid excessive update calls:
+    vector<FgBool>              m_panesVisible;
     FgVect2I                    m_client;   // doesn't include slider
     FgString                    m_store;
     SCROLLINFO                  m_si;
@@ -74,10 +76,9 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     {
         // Set the minimum scrollable size as the smaller of the maximum element
         // and a fixed maximum min:
-        uint        sd = 1;
         FgVect2UI   ret = m_api.minSize;
         // Add scroll bar width:
-        ret[1-sd] += GetSystemMetrics(SM_CXVSCROLL);
+        ret[0] += GetSystemMetrics(SM_CXVSCROLL);
         return ret;
     }
 
@@ -101,14 +102,18 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
                 m_panes[ii]->destroy();
             FgGuiPtrs            panes = m_api.getPanes();
             m_panes.resize(panes.size());
+            m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,true);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,false);
+                m_panesVisible[ii] = false;
             }
+            resize();   // New windows must be sent a size
 //fgout << fgpop;
         }
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->updateIfChanged();
+            if (m_panesVisible[ii])
+                m_panes[ii]->updateIfChanged();
     }
 
     virtual void
@@ -135,32 +140,32 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     }
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        if (message == WM_CREATE) {
+        if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitScroll::WM_CREATE" << fgpush;
             hwndThis = hwnd;
             FGASSERT(m_panes.empty());
             FgGuiPtrs   panes = m_api.getPanes();
             m_panes.resize(panes.size());
+            m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,true);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,false);
+                m_panesVisible[ii] = false;
             }
             g_gg.dg.update(m_api.updateFlagIdx);
 //fgout << fgpop;
-            return 0;
         }
-        else if (message == WM_SIZE) {
+        else if (msg == WM_SIZE) {
             m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] > 0) {
 //fgout << fgnl << "SplitScroll::WM_SIZE: " << m_client << fgpush;
                 resize();
 //fgout << fgpop;
             }
-            return 0;
         }
-        else if (message == WM_VSCROLL) {
+        else if (msg == WM_VSCROLL) {
 //fgout << "SplitScroll::WM_VSCROLL";
             int     tmp = m_si.nPos;
             // Get the current state, esp. trackbar drag position:
@@ -172,9 +177,9 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
             else if (msg == SB_BOTTOM)
                 m_si.nPos = m_si.nMax;
             else if (msg == SB_LINEUP)
-                m_si.nPos -= 5;
+                m_si.nPos -= 20;
             else if (msg == SB_LINEDOWN)
-                m_si.nPos += 5;
+                m_si.nPos += 20;
             else if (msg == SB_PAGEUP)
                 m_si.nPos -= m_client[1];
             else if (msg == SB_PAGEDOWN)
@@ -189,21 +194,20 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
                 resize();
                 InvalidateRect(hwndThis,NULL,TRUE);
             }
-            return 0;
         }
-        else if (message == WM_PAINT) {
+        else if (msg == WM_MOUSEWHEEL) {
+            short zDelta = (short)HIWORD(wParam);
+            if (zDelta < 0)
+                SendMessage(hwnd,WM_VSCROLL,SB_LINEDOWN,NULL);
+            else
+                SendMessage(hwnd,WM_VSCROLL,SB_LINEUP,NULL);
+        }
+//        else if (msg == WM_PAINT) {
 //fgout << fgnl << "SplitScroll::WM_PAINT";
-        }
-        return DefWindowProc(hwnd,message,wParam,lParam);
-    }
-
-    FgVect2UI
-    sumDims() const
-    {
-        FgVect2UI   sum(0);
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            sum += m_panes[ii]->getMinSize();
-        return sum;
+//        }
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 
     void
@@ -211,26 +215,35 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     {
         // No point in doing this before we have the client size (ie at first construction):
         if (m_client[1] > 0) {
-            uint        sd = 1;
             FgVect2I    pos(0),
                         sz = m_client;
-            pos[sd] = -m_si.nPos;
+            sz[0] -= 5;     // Leave space between content and slider
+            pos[1] = int(m_api.spacing) - m_si.nPos;
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
-                sz[sd] = m_panes[ii]->getMinSize()[sd];
-                if ((pos[sd] > m_client[sd]) || (pos[sd]+sz[sd] < 0))
+                sz[1] = m_panes[ii]->getMinSize()[1];
+                if ((pos[1] > m_client[1]) || (pos[1]+sz[1] < 0)) {
                     m_panes[ii]->showWindow(false);
+                    m_panesVisible[ii] = false;
+                }
                 else {
                     m_panes[ii]->moveWindow(pos,sz);
+                    // Wasn't updated if not visible during previous changes:
+                    if (m_panesVisible[ii] == false)
+                        m_panes[ii]->updateIfChanged();
                     m_panes[ii]->showWindow(true);
+                    m_panesVisible[ii] = true;
                 }
-                pos[sd] += sz[sd];
+                pos[1] += sz[1] + m_api.spacing;
             }
             // Note that Windows wants the total range of the scrollable area,
             // not the effective slider range resulting from subtracting the 
             // currently displayed range:
             m_si.fMask = SIF_DISABLENOSCROLL | SIF_PAGE | SIF_POS | SIF_RANGE;
-            m_si.nMax = sumDims()[sd];
-            m_si.nPage = m_client[sd];
+            uint        totalHeight = 0;
+            for (size_t ii=0; ii<m_panes.size(); ++ii)
+                totalHeight += m_panes[ii]->getMinSize()[1] + m_api.spacing;
+            m_si.nMax = totalHeight;
+            m_si.nPage = m_client[1];
             // Windows will clamp the position and otherwise adjust:
             SetScrollInfo(hwndThis,SB_VERT,&m_si,TRUE);
             m_si.fMask = SIF_ALL;

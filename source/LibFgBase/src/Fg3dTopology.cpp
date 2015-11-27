@@ -11,7 +11,7 @@
 
 #include "FgStdSet.hpp"
 #include "Fg3dTopology.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgStdVector.hpp"
 
 using namespace std;
@@ -202,13 +202,11 @@ Fg3dTopology::edgeFacingVertInds(uint edgeIdx) const
 bool
 Fg3dTopology::vertOnBoundary(uint vertIdx) const
 {
-    const vector<uint> &    edgeInds = m_verts[vertIdx].edgeInds;
+    const vector<uint> &    eis = m_verts[vertIdx].edgeInds;
     // If this vert is unused it is not on a boundary:
-    for (size_t ii=0; ii<edgeInds.size(); ++ii) {
-        const vector<uint> &    triInds = m_edges[edgeInds[ii]].triInds;
-        if (triInds.size() == 1)
+    for (size_t ii=0; ii<eis.size(); ++ii)
+        if (m_edges[eis[ii]].triInds.size() == 1)
             return true;
-    }
     return false;
 }
 
@@ -235,42 +233,78 @@ Fg3dTopology::vertNeighbours(uint vertIdx) const
     return ret;
 }
 
-vector<vector<uint> >
-Fg3dTopology::seams()
+// Had to re-write to avoid using inefficient recursive seam tracing as this actually managed to
+// give a malloc error (on scan data) running 64-bit with 16GB RAM:
+vector<set<uint> >
+Fg3dTopology::seams() const
 {
-    vector<vector<uint> >   ret;
-    vector<uint>            seam;
-    vector<FgBool>          done(m_verts.size(),false);
-    while (!(seam = findSeam(done)).empty())
-        ret.push_back(seam);
+    vector<set<uint> >  ret;
+    vector<uint>        vertLabels(m_tris.size(),0);    // 0 is the label for non-edge vertices
+    // Initialization sweep through edges:
+    uint                currLabel = 1;
+    for (size_t ee=0; ee<m_edges.size(); ++ee) {
+        const Edge &    edge = m_edges[ee];
+        if (edge.triInds.size() == 1) {                 // Boundary edge
+            uint        v0 = edge.vertInds[0],
+                        v1 = edge.vertInds[1];
+            if (vertLabels[v0] == 0) {
+                if (vertLabels[v1] == 0) {
+                    vertLabels[v0] = currLabel;
+                    vertLabels[v1] = currLabel;
+                    ++currLabel;
+                }
+                else
+                    vertLabels[v0] = vertLabels[v1];
+            }
+            else if (vertLabels[v1] == 0)
+                vertLabels[v1] = vertLabels[v0];
+        }
+    }
+    // Iterative merge sweeps through vertices:
+    bool            done = false;
+    while (!done) {
+        done = true;
+        for (size_t ii=0; ii<vertLabels.size(); ++ii) {
+            if (vertLabels[ii] != 0) {
+                const vector<uint> &    edgeInds = m_verts[ii].edgeInds;
+                for (size_t ee=0; ee<edgeInds.size(); ++ee) {
+                    if (m_edges[edgeInds[ee]].triInds.size() == 1) {    // Boundary edge
+                        uint    v = m_edges[edgeInds[ee]].otherVertIdx(uint(ii));
+                        FGASSERT(vertLabels[v] != 0);
+                        if (vertLabels[ii] != vertLabels[v]) {
+                            fgReplace_(vertLabels,vertLabels[v],vertLabels[ii]);
+                            done = false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Collate labelled sets:
+    map<uint,uint>      labToIdx;
+    for (size_t ii=0; ii<vertLabels.size(); ++ii) {
+        if (vertLabels[ii] != 0) {
+            if (labToIdx.find(vertLabels[ii]) == labToIdx.end()) {
+                labToIdx[vertLabels[ii]] = uint(ret.size());
+                ret.push_back(set<uint>());
+                ret.back().insert(uint(ii));
+            }
+            else {
+                ret[labToIdx[vertLabels[ii]]].insert(uint(ii));
+            }
+        }
+    }
     return ret;
 }
 
-vector<uint>
-Fg3dTopology::findSeam(vector<FgBool> & done) const
+set<uint>
+Fg3dTopology::seamContaining(uint vertIdx) const
 {
-    for (size_t ii=0; ii<done.size(); ++ii)
-        if (!done[ii]) {
-            vector<uint>    ret = traceSeam(done,uint(ii));
-            if (!ret.empty())
-                return ret;
-        }
-    return vector<uint>();
-}
-
-vector<uint>
-Fg3dTopology::traceSeam(vector<FgBool> & done,uint vertIdx) const
-{
-    vector<uint>    ret;
-    if (done[vertIdx])
-        return ret;
-    done[vertIdx] = true;
-    if (vertOnBoundary(vertIdx)) {
-        ret.push_back(vertIdx);
-        vector<uint>    bns = vertBoundaryNeighbours(vertIdx);
-        for (size_t ii=0; ii<bns.size(); ++ii)
-            fgAppend(ret,traceSeam(done,bns[ii]));
-    }
+    set<uint>           ret;
+    vector<set<uint> >  sms = seams();
+    for (size_t ii=0; ii<sms.size(); ++ii)
+        if (sms[ii].find(vertIdx) != sms[ii].end())
+            ret = sms[ii];
     return ret;
 }
 

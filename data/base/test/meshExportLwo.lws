@@ -1,0 +1,703 @@
+LWSC
+3
+
+FirstFrame 1
+LastFrame 60
+FrameStep 1
+PreviewFirstFrame 0
+PreviewLastFrame 60
+PreviewFrameStep 1
+CurrentFrame 0
+FramesPerSecond 30
+
+LoadObjectLayer 1 meshExportLwo.lwo
+ShowObject 6 3
+ObjectMotion
+NumChannels 9
+Channel 0
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 1
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 2
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 3
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 4
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 5
+{ Envelope
+  1
+  Key 0 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 6
+{ Envelope
+  1
+  Key 1 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 7
+{ Envelope
+  1
+  Key 1 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+Channel 8
+{ Envelope
+  1
+  Key 1 0 0 0 0 0 0 0 0
+  Behaviors 1 1
+}
+
+Plugin DisplacementHandler 1 LW_MorphMixer
+69
+1
+{ Group
+  69
+  "Miscellaneous"
+}
+{ MorfForm
+  "Expression.Anger"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Baring Teeth"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Chin Raised"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Dimple Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Dimple Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Disgust"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Fear"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Frown"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Hmmm"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Jaw Down"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Jaw Forward"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Jaw Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Jaw Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Kiss"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Mouth Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Mouth Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Puff Cheeks"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Sad"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Smile Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Smile Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.SmileClosed"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.SmileOpen"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Sneer"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Sneer Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Sneer Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Expression.Surprise"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Brow Lowerer (AU04)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Brow Lowerer (AU04) Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Brow Lowerer (AU04) Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Brow Raiser Inner (AU01)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Brow Raiser Outer (AU02)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.BrowIn Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.BrowIn Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.BrowUp Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.BrowUp Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Cheek Puff (AU34)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Chin Raiser (AU17)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Dimpler (AU14) Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Dimpler (AU14) Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Ears Out"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Eyebrows Tented"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Jaw Drop (AU26)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Lip Corner Depressor (AU15)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Lip Pressor (AU24)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Lip Stretcher (AU20)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Lip Suck (AU28)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Lip Tightener (AU23)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Mouth Stretch (AU27)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Nose Wrinkler (AU09)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Smirk Left"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Smirk Right"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Upper Lid Raiser (AU05)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Modifier.Upper Lip Raiser (AU10)"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.B,M,P"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.D,S,T"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.F,V"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.K"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.N"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.R"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.W"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.aah"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.big aah"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.ch,J,sh"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.ee"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.eh"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.i"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.oh"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.ooh,Q"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+{ MorfForm
+  "Phoneme.th"
+  0
+  { Envelope
+    1
+    Key 0 0 0 0 0 0 0 0 0
+    Behaviors 1 1
+  }
+}
+EndPlugin
+ShadowOptions 7
+
+GridSize 50

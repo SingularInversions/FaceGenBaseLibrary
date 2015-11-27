@@ -87,7 +87,7 @@ convert(const vector<uint32> & v)
 }
 
 FgString::FgString(const wchar_t * s)
-    : m_str(convert(s))
+    : m_str(convert(std::wstring(s)))
 {}
 
 FgString::FgString(const std::wstring & s)
@@ -298,4 +298,14 @@ fgGlobMatch(const FgString & globStr,const FgString & str)
     else if (gs.back() == '*')
         return fgBeginsWith(ts,fgHead(gs,gs.size()-1));
     return (str == globStr);
+}
+
+FgString
+fgSubstring(const FgString & str,size_t start,size_t size)
+{
+    FgString        ret;
+    vector<uint>    s = str.as_utf32();
+    s = fgSubvec(s,start,size);
+    ret = FgString(s);
+    return ret;
 }

@@ -74,74 +74,49 @@ struct  FgGuiWinButton : public FgGuiOsBase
     }
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
-            case WM_CREATE:
-            {
+        if (msg == WM_CREATE) {
 //fgout << fgnl << "Button::WM_CREATE";
-                // This is the first place we get the hwnd for this instance since this callback
-                // happens before 'fgCreateChild' above returns:
-                hwndThis = hwnd;
-                hwndButton =
-                    CreateWindowEx(0,
-                        TEXT("button"),     // Standard controls class name for all buttons
-                        m_api.label.as_wstring().c_str(),
-                        WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-                        0,0,0,0,            // Will be sent MOVEWINDOW messages.
-                        hwnd,
-                        HMENU(0),
-                        s_fgGuiWin.hinst,
-                        NULL);              // No WM_CREATE parameter
-                FGASSERTWIN(hwndButton != 0);
-                return 0;
-            }
-            case WM_SIZE:
-            {
-                int     wid = LOWORD(lParam);
-                int     hgt = HIWORD(lParam);
-                if (wid*hgt > 0) {
+            // This is the first place we get the hwnd for this instance since this callback
+            // happens before 'fgCreateChild' above returns:
+            hwndThis = hwnd;
+            hwndButton =
+                CreateWindowEx(0,
+                    TEXT("button"),     // Standard controls class name for all buttons
+                    m_api.label.as_wstring().c_str(),
+                    WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+                    0,0,0,0,            // Will be sent MOVEWINDOW messages.
+                    hwnd,
+                    HMENU(0),
+                    s_fgGuiWin.hinst,
+                    NULL);              // No WM_CREATE parameter
+            FGASSERTWIN(hwndButton != 0);
+        }
+        else if (msg == WM_SIZE) {
+            int     wid = LOWORD(lParam);
+            int     hgt = HIWORD(lParam);
+            if (wid*hgt > 0) {
 //fgout << fgnl << "Button::WM_SIZE: " << wid << "," << hgt;
-                    int     buttonHgt = fgMin(int(getMinSize()[1]),hgt),
-                            vspace = hgt - buttonHgt;
-                    MoveWindow(hwndButton,0,vspace/2,wid,buttonHgt,TRUE);
-                }
-                return 0;
+                int     buttonHgt = fgMin(int(getMinSize()[1]),hgt),
+                        vspace = hgt - buttonHgt;
+                MoveWindow(hwndButton,0,vspace/2,wid,buttonHgt,TRUE);
             }
-            case WM_COMMAND:
-            {
-                WORD    ident = LOWORD(wParam);
-                WORD    code = HIWORD(wParam);
-                if (code == 0) {
-                    FGASSERT(ident == 0);
-                    try {
-                        m_api.action();
-                        g_gg.updateScreen();
-                    }
-                    catch(FgException const & e) {
-                        FgString    txt = e.tr_message() + "\n";
-                        fgout << txt;
-                        MessageBox(hwnd,txt.as_wstring().c_str(),L"Error",MB_OK);
-                    }
-                    catch(std::exception const & e) {
-                        FgString    txt = FgString("Internal Program Error (std::exception):\n") +
-                            e.what() + "\n";
-                        fgout << txt;
-                        MessageBox(hwnd,txt.as_wstring().c_str(),L"Error",MB_OK);
-                    }
-                    catch(...) {
-                        FgString    txt = FgString("Internal Program Error (unknown exception).\n");
-                        fgout << txt;
-                        MessageBox(hwnd,txt.as_wstring().c_str(),L"Error",MB_OK);
-                    }
-                }
-                return 0;
+        }
+        else if (msg == WM_COMMAND) {
+            WORD    ident = LOWORD(wParam);
+            WORD    code = HIWORD(wParam);
+            if (code == 0) {
+                FGASSERT(ident == 0);
+                m_api.action();
+                g_gg.updateScreen();
             }
+        }
 //case WM_PAINT:
 //fgout << fgnl << "Button::WM_PAINT";
-        }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 };
 

@@ -297,6 +297,15 @@ fgContains(
 }
 
 template<class T>
+void
+fgReplace_(vector<T> & v,T a,T b)       // Replace each 'a' with 'b'
+{
+    for (size_t ii=0; ii<v.size(); ++ii)
+        if (v[ii] == a)
+            v[ii] = b;
+}
+
+template<class T>
 vector<T>
 fgReplace(const vector<T> & v,T a,T b) // Replace each 'a' with 'b'
 {
@@ -647,6 +656,17 @@ fgLength(const vector<T> & v)
 
 template<class T>
 T
+fgDot(const vector<T> & v0,const vector<T> & v1)
+{
+    FGASSERT(v0.size() == v1.size());
+    T   acc(0);
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += v1[ii] * v0[ii];
+    return acc;
+}
+
+template<class T>
+T
 fgSsd(const vector<T> & v0,const vector<T> & v1)
 {
     FGASSERT(v0.size() == v1.size());
@@ -778,6 +798,83 @@ fgUnique(const vector<T> & v)
     for (size_t ii=1; ii<v.size(); ++ii)
         if (v[ii] != ret.back())
             ret.push_back(v[ii]);
+    return ret;
+}
+
+// Take a slice of a multi-dimensional array in a vector:
+template<class T>
+vector<T>
+fgSlice(const vector<T> & v,size_t initial,size_t stride)
+{
+    vector<T>       ret;
+    FGASSERT(initial < v.size());
+    ret.reserve((v.size()-initial+stride-1)/stride);
+    for (size_t ii=initial; ii<ret.size(); ii+=stride)
+        ret.push_back(v[ii]);
+    return ret;
+}
+
+// Transpose a row-major contiguous array:
+template<class T>
+vector<T>
+fgTranspose(const vector<T> & v,size_t wid,size_t hgt)
+{
+    vector<T>       ret;
+    FGASSERT(v.size() == wid*hgt);
+    ret.reserve(v.size());
+    for (size_t xx=0; xx<wid; ++xx) {
+        size_t      idx = xx;
+        for (size_t yy=0; yy<hgt; ++yy) {
+            ret.push_back(v[idx]);
+            idx += wid;
+        }
+    }
+    return ret;
+}
+
+template<class T>
+void
+fgFill(vector<T> & vec,T val)
+{
+    for (size_t ii=0; ii<vec.size(); ++ii)
+        vec[ii] = val;
+}
+
+// Flatten vector of vectors into single contiguous vector:
+template<class T>
+vector<T>
+fgFlat(const vector<vector<T> > & v)
+{
+    vector<T>       ret;
+    size_t          sz = 0;
+    for (size_t ii=0; ii<v.size(); ++ii)
+        sz += v[ii].size();
+    ret.reserve(sz);
+    for (size_t ii=0; ii<v.size(); ++ii) {
+        const vector<T> &   src = v[ii];
+        for (size_t jj=0; jj<src.size(); ++jj)
+            ret.push_back(src[jj]);
+    }
+    return ret;       
+}
+
+// Transpose a vector of vectors just like Python 'zip' on lists.
+// All sub-vectors must have the same size():
+template<class T>
+vector<vector<T> >
+fgZip(const vector<vector<T> > & v)
+{
+    vector<vector<T> >  ret;
+    if (v.empty())
+        return ret;
+    for (size_t jj=1; jj<v.size(); ++jj)
+        FGASSERT(v[jj].size() == v[0].size());
+    ret.resize(v[0].size());
+    for (size_t ii=0; ii<ret.size(); ++ii) {
+        ret[ii].reserve(v.size());
+        for (size_t jj=0; jj<v.size(); ++jj)
+            ret[ii].push_back(v[jj][ii]);
+    }
     return ret;
 }
 

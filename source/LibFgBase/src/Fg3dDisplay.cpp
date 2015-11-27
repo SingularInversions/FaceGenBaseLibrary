@@ -20,6 +20,238 @@
 using namespace std;
 
 static
+FGLINK(linkLighting)
+{
+    FGLINKARGS(5,1);
+    const vector<double> &  amb = inputs[0]->valueRef();
+    const vector<double> &  l1 = inputs[1]->valueRef();
+    const vector<double> &  l2 = inputs[2]->valueRef();
+    const vector<double> &  d1 = inputs[3]->valueRef();
+    const vector<double> &  d2 = inputs[4]->valueRef();
+    FGASSERT(amb.size() == 3);
+    FGASSERT(l1.size() == 3);
+    FGASSERT(l2.size() == 3);
+    FGASSERT(d1.size() == 3);
+    FGASSERT(d2.size() == 3);
+    FgLighting &            lighting = outputs[0]->valueRef();
+    lighting.m_ambient = FgVect3F(amb[0],amb[1],amb[2]);
+    lighting.m_lights.resize(2);    // Must always assign both lights since OGL will keep settings for both
+    for (uint ll=0; ll<2; ++ll) {
+        const vector<double> &  ls = (ll == 0) ? l1 : l2;
+        const vector<double> &  ds = (ll == 0) ? d1 : d2;
+        FgLight                 light;
+        light.m_colour = FgVect3F(ls[0],ls[1],ls[2]);
+        light.m_direction = fgNormalize(FgVect3F(ds[0],ds[1],ds[2]));
+        lighting.m_lights[ll] = light;
+    }
+}
+
+static
+FgGuiWinVal<vector<double> >
+colorSliders(const string & relStore,double init,double tickSpacing)
+{
+    FgGuiWinVal<vector<double> >    ret;
+    vector<uint>                    valsN;
+    FgGuiPtrs                       sliders;
+    string                          colors[] = {"Red","Green","Blue"};
+    for (uint ii=0; ii<3; ++ii) {
+        FgDgn<double>   val = g_gg.addInput(init,relStore+colors[ii]);
+        valsN.push_back(val);
+        sliders.push_back(fgGuiSplit(true,
+            fgGuiText(colors[ii],45),       // Fixed width larger than all colors to align sliders
+            fgGuiSlider(val,"",FgVectD2(0,1),tickSpacing)));
+    }
+    ret.valN = g_gg.addNode(vector<double>());
+    g_gg.addLink(fgLinkCollate<double>,valsN,ret.valN);
+    ret.win = fgGuiSplit(false,sliders);
+    return ret;
+}
+
+struct  FgLightDir
+{
+    FgGuiPtr                        win;
+    FgDgn<vector<double> >          dirN;
+    FgMatrixC<FgDgn<double>,3,1>    dirAxisNs;
+};
+
+static
+FgLightDir
+lightDir(const string & relLight)
+{
+    FgLightDir      ret;
+    ret.dirAxisNs[0] = g_gg.addInput(0.0,"Light"+relLight+"X"),
+    ret.dirAxisNs[1] = g_gg.addInput(0.0,"Light"+relLight+"Y"),
+    ret.dirAxisNs[2] = g_gg.addInput(1.0,"Light"+relLight+"Z");
+    FgGuiPtr        x = fgGuiTextEditFloat(ret.dirAxisNs[0],FgVect2D(-100000,100000)),
+                    y = fgGuiTextEditFloat(ret.dirAxisNs[1],FgVect2D(-100000,100000)),
+                    z = fgGuiTextEditFloat(ret.dirAxisNs[2],FgVect2D(-100000,100000));
+    ret.dirN = g_gg.addNode(vector<double>(),"Light"+relLight+"Dir");
+    g_gg.addLink(fgLinkCollate<double>,fgUints(ret.dirAxisNs[0],ret.dirAxisNs[1],ret.dirAxisNs[2]),ret.dirN);
+    ret.win = fgGuiSplit(false,
+        fgGuiText("Direction vector to light (from viewer's point of view):"),
+        fgGuiSplit(true,fgSvec<FgGuiPtr>(fgGuiText("Right:"),x,fgGuiText("Up:"),y,fgGuiText("Backward:"),z)));
+    return ret;
+}
+
+void
+resetLighting(uint lightingIdx)
+{g_gg.setInputsToDefault(lightingIdx); }
+
+FgGuiLighting
+fgGuiLighting()
+{
+    FgGuiLighting   ret;
+    ret.outN = g_gg.addNode(FgLighting(),"Lighting");
+    FgGuiWinVal<vector<double> >    ambient = colorSliders("Ambient",0.4,0.1);
+    FgGuiWinVal<vector<double> >    light1 = colorSliders("Light1",0.6,0.1);
+    FgGuiWinVal<vector<double> >    light2 = colorSliders("Light2",0.0,0.1);
+    FgLightDir                      ld1 = lightDir("1"),
+                                    ld2 = lightDir("2");
+    g_gg.addLink(linkLighting,fgUints(ambient.valN,light1.valN,light2.valN,ld1.dirN,ld2.dirN),ret.outN);
+    ret.dirAxisNs[0] = ld1.dirAxisNs;
+    ret.dirAxisNs[1] = ld2.dirAxisNs;
+    ret.win = fgGuiSplit(false,
+        fgGuiGroupbox("Ambient",ambient.win),
+        fgGuiGroupbox("Light 1",fgGuiSplit(false,light1.win,ld1.win)),
+        fgGuiGroupbox("Light 2",fgGuiSplit(false,light2.win,ld2.win)),
+        fgGuiText("\nInteractively adjust light direction:\n"
+            "Light 1: hold down left and right mouse buttons while dragging\n"
+            "Light 2: As above but also hold down shift key"),
+        fgGuiButton("Reset Lighting",boost::bind(resetLighting,ret.outN.idx()))
+    );
+    return ret;
+}
+
+static
+FGLINK(linkRenderOpts)
+{
+    FGLINKARGS(10,1);
+    bool                facets = inputs[0]->valueRef();
+    bool                useTexture = inputs[1]->valueRef();
+    bool                shiny = inputs[2]->valueRef();
+    bool                wireframe = inputs[3]->valueRef();
+    bool                flatShaded = inputs[4]->valueRef();
+    bool                surfPoints = inputs[5]->valueRef();
+    bool                markedVerts = inputs[6]->valueRef();
+    bool                allVerts = inputs[7]->valueRef();
+    bool                twoSided = inputs[8]->valueRef();
+    FgVect3F            bcolor = inputs[9]->valueRef();
+    Fg3dRenderOptions & ro = outputs[0]->valueRef();
+    ro.facets = facets;
+    ro.useTexture = useTexture;
+    ro.shiny = shiny;
+    ro.wireframe = wireframe;
+    ro.flatShaded = flatShaded;
+    ro.surfPoints = surfPoints;
+    ro.markedVerts = markedVerts;
+    ro.allVerts = allVerts;
+    ro.twoSided = twoSided;
+    ro.backgroundColor = bcolor;
+}
+
+static
+void
+bgImageLoad(FgDgn<FgImgRgbaUb> imgN,FgDgn<FgVect2UI> dimsN)
+{
+    FgOpt<FgString>     fname = fgGuiDialogFileLoad(fgImgCommonFormatsDescription(),fgImgCommonFormats());
+    if (!fname.valid())
+        return;
+    FgImgRgbaUb         orig = fgLoadImgAnyFormat(fname.val());
+    g_gg.setVal(dimsN,orig.dims());
+    FgImgRgbaUb &       img = g_gg.getRef(imgN);
+    img.resize(FgVect2UI(1024));
+    fgImgResize(orig,img);
+}
+
+static
+void
+bgImageClear(FgDgn<FgImgRgbaUb> imgN)
+{g_gg.setVal(imgN,FgImgRgbaUb()); }
+
+static
+FGLINK(linkColSel)
+{
+    FGLINKARGS(1,1);
+    const vector<double> &  cv = inputs[0]->valueRef();
+    FgVect3F &              col = outputs[0]->valueRef();
+    col = FgVect3F(cv[0],cv[1],cv[2]);
+}
+
+static
+FGLINK(lnkSetAlpha)
+{
+    FGLINKARGS(2,1);
+    const FgImgRgbaUb &     imgIn = inputs[0]->valueRef();
+    double                  alpha = inputs[1]->valueRef();
+    FgImgRgbaUb &           imgOut = outputs[0]->valueRef();
+    uchar                   a = uchar(alpha * 255.0 + 0.5);
+    imgOut.resize(imgIn.dims());
+    for (size_t ii=0; ii<imgOut.numPixels(); ++ii) {
+        FgRgbaUB    p = imgIn[ii];
+        p.alpha() = a;
+        imgOut[ii] = p;
+    }
+}
+
+FgRenderCtrls
+fgRenderCtrls(uint simple)
+{
+    FgRenderCtrls       ret;
+    string              uid = "RenderCtrls";
+    FgDgn<bool>         useTexture = g_gg.addInput((simple != 3),uid+"UseTexture"),
+                        shiny = g_gg.addInput(false,uid+"Shiny"),
+                        wireframe = g_gg.addInput(false,uid+"Wireframe"),
+                        flatShaded = g_gg.addInput(false,uid+"FlatShaded"),
+                        facets = g_gg.addInput(true,uid+"Facets"),
+                        surfPoints = g_gg.addInput(false,uid+"SurfPoints"),
+                        markedVerts = g_gg.addInput(false,uid+"MarkedVerts"),
+                        allVerts = g_gg.addInput(false,uid+"AllVerts"),
+                        twoSidedN = g_gg.addInput(true,uid+"TwoSided");
+    FgGuiWinVal<vector<double> >    bgColor = colorSliders(uid+"Background",0.3,0.1);
+    FgDgn<double>       bgAlphaN = g_gg.addInput(0.0,uid+"BgImageAlpha");
+    FgDgn<FgVect3F>     bgColorN(g_gg,"bgColor");
+    g_gg.addLink(linkColSel,bgColor.valN,bgColorN);
+    ret.optsN = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
+    ret.bgImgN = g_gg.addNode(FgImgRgbaUb());
+    ret.bgImgDimsN = g_gg.addNode(FgVect2UI());
+    g_gg.addLink(linkRenderOpts,
+        fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN),
+        ret.optsN);
+    FgGuiPtr            rcColor = fgGuiCheckbox("Color maps",useTexture),
+                        rcShiny = fgGuiCheckbox("Shiny",shiny),
+                        rcWire = fgGuiCheckbox("Wireframe",wireframe),
+                        rcFlat = fgGuiCheckbox("Flat shaded",flatShaded),
+                        rcFacet = fgGuiCheckbox("Facets",facets),
+                        rcSurf = fgGuiCheckbox("Surface points",surfPoints),
+                        rcMark = fgGuiCheckbox("Marked vertices",markedVerts),
+                        rcAll = fgGuiCheckbox("All vertices",allVerts),
+                        rcTwoSided = fgGuiCheckbox("Two sided",twoSidedN),
+                        bgImageSlider = fgGuiSlider(bgAlphaN,"Foreground transparency",FgVectD2(0,1),0.1);
+    FgGuiPtr            renderCtls;
+    if (simple == 0)
+        renderCtls = fgGuiSplit(true,
+            fgGuiSplit(false,rcColor,rcShiny,rcWire),
+            fgGuiSplit(false,rcFlat,rcFacet,rcSurf),
+            fgGuiSplit(false,rcMark,rcAll,rcTwoSided));
+    else if (simple == 1)
+        renderCtls = fgGuiSplit(false,rcColor,rcShiny,rcWire,rcFlat);
+    else if (simple == 3)
+        renderCtls = fgGuiSplit(false,rcShiny,rcWire,rcFlat);
+    else    // simple == 2
+        renderCtls = fgGuiSplit(false,rcColor,rcShiny);
+    FgDgn<FgImgRgbaUb>  bgImgPreAlphaN(g_gg,"bgImgPreAlpha");
+    g_gg.addLink(lnkSetAlpha,fgUints(bgImgPreAlphaN,bgAlphaN),ret.bgImgN);
+    FgGuiPtr        viewCtlRender = fgGuiGroupboxTr("Render",renderCtls),
+                    viewCtlColor = fgGuiGroupboxTr("Background Color",bgColor.win),
+                    bgImageButtons = fgGuiSplit(true,
+                        fgGuiButton("Load Image",boost::bind(bgImageLoad,bgImgPreAlphaN,ret.bgImgDimsN)),
+                        fgGuiButton("Clear Image",boost::bind(bgImageClear,bgImgPreAlphaN))),
+                    bgImageBox = fgGuiGroupbox("Background Image",fgGuiSplit(false,bgImageButtons,bgImageSlider));
+    ret.win = fgGuiSplit(false,viewCtlRender,viewCtlColor,bgImageBox);
+    return ret;
+}
+
+static
 FGLINK(linkNorms)
 {
     FGLINKARGS(2,1);
@@ -64,6 +296,7 @@ resetView(
     FgDgn<double>           logRelSize)
 {
     Fg3dCameraParams        defaultCps;
+    defaultCps.logRelScale = -0.3;
     g_gg.setVal(lensFovDeg,defaultCps.fovMaxDeg);
     g_gg.setVal(panTilt,FgVect2D(0));
     g_gg.setVal(pose,FgQuaternionD());
@@ -72,47 +305,14 @@ resetView(
 }
 
 static
-FGLINK(linkRenderOpts)
-{
-    FGLINKARGS(10,1);
-    bool                facets = inputs[0]->valueRef();
-    bool                useTexture = inputs[1]->valueRef();
-    bool                shiny = inputs[2]->valueRef();
-    bool                wireframe = inputs[3]->valueRef();
-    bool                flatShaded = inputs[4]->valueRef();
-    bool                surfPoints = inputs[5]->valueRef();
-    bool                markedVerts = inputs[6]->valueRef();
-    bool                allVerts = inputs[7]->valueRef();
-    bool                twoSided = inputs[8]->valueRef();
-    FgVect3F            bcolor = inputs[9]->valueRef();
-    Fg3dRenderOptions & ro = outputs[0]->valueRef();
-    ro.facets = facets;
-    ro.useTexture = useTexture;
-    ro.shiny = shiny;
-    ro.wireframe = wireframe;
-    ro.flatShaded = flatShaded;
-    ro.surfPoints = surfPoints;
-    ro.markedVerts = markedVerts;
-    ro.allVerts = allVerts;
-    ro.twoSided = twoSided;
-    ro.backgroundColor = bcolor;
-}
-
-static
 FGLINK(linkMorphNames)
 {
     FGLINKARGS(1,1);
     const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
     vector<FgString> &          morphNames = outputs[0]->valueRef();
-    set<FgString>               ns;
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Fg3dMesh &        mesh = meshes[ii];
-        for (size_t jj=0; jj<mesh.numMorphs(); ++jj)
-            ns.insert(mesh.morphName(jj));
-    }
+    set<FgString>               ns = fgMorphs(meshes);
     morphNames.clear();
-    for (set<FgString>::const_iterator it=ns.begin(); it != ns.end(); ++it)
-        morphNames.push_back(*it);
+    morphNames.assign(ns.begin(),ns.end());
 }
 
 static
@@ -125,7 +325,7 @@ FGLINK(linkMorphs)
     vector<double>              morphVals = inputs[3]->valueRef();
     FGASSERT(meshes.size() == allVertss.size());
     // If morph list has changed but morphVals not yet updated (by GUI), assume all zero.
-    // TODO: Keep morphs vals as a label:val dictionary.
+    // TODO: Keep morphs ls as a label:val dictionary.
     if (morphNames.size() != morphVals.size()) {
         morphVals.clear();
         morphVals.resize(morphNames.size(),0.0);
@@ -169,7 +369,7 @@ saveMesh(FgDgn<vector<Fg3dMesh> > meshesN,FgDgn<vector<FgVerts> > vertssN)
     const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
     FGASSERT(!meshes.empty());
     FGASSERT(meshes.size() == vertss.size());
-    FgValidVal<FgString>        fname = fgGuiDialogFileSave("FaceGen TRI","tri");
+    FgOpt<FgString>        fname = fgGuiDialogFileSave("FaceGen TRI","tri");
     if (fname.valid()) {
         Fg3dMesh                mesh = meshes[0];
         mesh.updateAllVerts(vertss[0]);
@@ -181,30 +381,32 @@ static
 double
 getInput(FgDgn<vector<double> > n,size_t idx)
 {
-    const vector<double> &  vals = g_gg.getVal(n);
-    return vals[idx];
+    const vector<double> &  ls = g_gg.getVal(n);
+    return ls[idx];
 }
 
 static
 void
 setOutput(FgDgn<vector<double> > n,size_t idx,double val)
 {
-    vector<double> &        vals = g_gg.dg.nodeValRef(n);
-    vals[idx] = val;
+    vector<double> &        ls = g_gg.dg.nodeValRef(n);
+    ls[idx] = val;
 }
 
 static
 void
 setAllZero(FgDgn<vector<double> > n)
 {
-    vector<double> &        vals = g_gg.dg.nodeValRef(n);
-    for (size_t ii=0; ii<vals.size(); ++ii)
-        vals[ii] = 0.0;
+    vector<double> &        ls = g_gg.dg.nodeValRef(n);
+    for (size_t ii=0; ii<ls.size(); ++ii)
+        ls[ii] = 0.0;
 }
 
 static 
 FgGuiPtrs
-getPanes(FgDgn<vector<FgString> > in,FgDgn<vector<double> > out)
+getPanes(
+    FgDgn<vector<FgString> >    in,
+    FgDgn<vector<double> >      out)
 {
     vector<FgString>    labels = g_gg.getVal(in);
     vector<double> &    output = g_gg.dg.nodeValRef(out);
@@ -213,17 +415,18 @@ getPanes(FgDgn<vector<FgString> > in,FgDgn<vector<double> > out)
         output.resize(labels.size(),0.0);
     }
     FgGuiPtrs        sliders;
+    sliders.push_back(fgGuiButton("Set All To Zero",boost::bind(setAllZero,out)));
+    sliders.push_back(fgGuiSpacer(0,7));
     for (size_t ii=0; ii<labels.size(); ++ii) {
         FgGuiApiSlider      slider;
-        slider.updateFlagIdx = g_gg.addUpdateFlag(out);
+        slider.updateFlagIdx = g_gg.addUpdateFlag(out);     // Memory leak but what can you do.
         slider.getInput = boost::bind(getInput,out,ii);
         slider.setOutput = boost::bind(setOutput,out,ii,_1);
         slider.label = labels[ii];
         slider.range = FgVectD2(0,1);
-        slider.tickSpacing = 0.5;
+        slider.tickSpacing = 0.1;
         sliders.push_back(fgGuiPtr(slider));
     }
-    sliders.push_back(fgGuiButton("Set All To Zero",boost::bind(setAllZero,out)));
     return sliders;
 }
 
@@ -235,10 +438,11 @@ markAllSeams(FgDgn<vector<Fg3dMesh> > meshesN)
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         Fg3dMesh &          mesh = meshes[ii];
         Fg3dTopology        topo(mesh.verts,mesh.getTriEquivs().vertInds);
-        vector<vector<uint> >   seams = topo.seams();
+        vector<set<uint> >  seams = topo.seams();
         for (size_t ss=0; ss<seams.size(); ++ss) {
-            for (size_t vv=0; vv<seams[ss].size(); ++vv)
-                mesh.markedVerts.push_back(FgMarkedVert(seams[ss][vv]));
+            const set<uint> &   seam = seams[ss];
+            for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
+                mesh.markedVerts.push_back(FgMarkedVert(*it));
         }
     }
 }
@@ -262,33 +466,24 @@ clearAllMarkedVerts(FgDgn<vector<Fg3dMesh> > meshesN)
         meshes[ii].markedVerts.clear();
 }
 
-static
-FGLINK(linkColSel)
-{
-    FGLINKARGS(3,1);
-    double      red = inputs[0]->valueRef();
-    double      green = inputs[1]->valueRef();
-    double      blue = inputs[2]->valueRef();
-    FgVect3F &  col = outputs[0]->valueRef();
-    col = FgVect3F(red,green,blue);
-}
-
 FgGui3dCtls
 fgGui3dCtls(
     FgDgn<vector<Fg3dMesh> >    meshesN,
     FgDgn<vector<FgVerts> >     allVertssN,
     FgDgn<vector<FgImgs> >      texssN,
-    FgDgn<FgMat32D>          viewBoundsN,
+    FgDgn<FgMat32D>             viewBoundsN,
+    FgRenderCtrls               renderCtrls,
+    FgDgn<FgLighting>           lightingN,
+    boost::function<void(bool,FgVect2I)>    bothButtonsDrag,
     uint                        simple)
 {
     FgGui3dCtls                 ret;
     FgDgn<vector<FgString> >    morphNamesN(g_gg,"morphNames");
-    g_gg.addLink(linkMorphNames,fgUints(meshesN),fgUints(morphNamesN));
+    g_gg.addLink(linkMorphNames,meshesN,morphNamesN);
     FgDgn<vector<double> >      morphValsN = g_gg.addInput(vector<double>(),"morphVals");
     ret.morphedVertssN = g_gg.addNode(vector<FgVerts>(),"morphedVertss");
-    g_gg.addLink(linkMorphs,fgUints(meshesN,allVertssN,morphNamesN,morphValsN),fgUints(ret.morphedVertssN));
-    ret.morphCtls =
-        fgGuiSplitScroll(g_gg.addUpdateFlag(morphNamesN.idx()),boost::bind(getPanes,morphNamesN,morphValsN));
+    g_gg.addLink(linkMorphs,fgUints(meshesN,allVertssN,morphNamesN,morphValsN),ret.morphedVertssN);
+    ret.morphCtls = fgGuiSplitScroll(morphNamesN,boost::bind(getPanes,morphNamesN,morphValsN),3);
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
 
     string                  uid = "3d";
@@ -299,9 +494,9 @@ fgGui3dCtls(
     api.texssN = texssN;
     api.viewBounds = viewBoundsN;
     api.panTiltMode = g_gg.addInput(size_t(0),uid+"PanTiltMode");
-    api.light = g_gg.addNode(FgLighting(),"light");
+    api.light = lightingN;
     api.xform = g_gg.addNode(Fg3dCamera(),"xform");
-    api.renderOptions = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
+    api.renderOptions = renderCtrls.optsN;
     api.vertMarkModeN = g_gg.addNode(size_t(0));
     api.pointLabel = g_gg.addNode(FgString());
     if (simple == 2)
@@ -309,78 +504,34 @@ fgGui3dCtls(
     api.panTiltDegrees = g_gg.addInput(FgVect2D(0),uid+"PanTilt");
     api.pose = g_gg.addInput(FgQuaternionD(),uid+"Pose");
     api.trans = g_gg.addInput(FgVect2D(0),uid+"Trans");
-    Fg3dCameraParams    defaultCps;
-    api.logRelSize = g_gg.addInput(defaultCps.logRelScale,uid+"LogRelSize");
+    api.logRelSize = g_gg.addInput(-0.3,uid+"LogRelSize");
     api.viewportDims = g_gg.addNode(FgVect2UI(0),"viewportDims");
+    api.bgImgN = renderCtrls.bgImgN;
+    api.bgImgUpdateFlag = g_gg.addUpdateFlag(api.bgImgN);
+    api.bgImgOrigDimsN = renderCtrls.bgImgDimsN;
     // Including api.viewBounds, api.panTiltDegrees and api.logRelSize in the below caused a feedback
     // issue that broke updates of the other sliders:
-    vector<uint>    apiDeps =
-        fgUints(api.meshesN,api.vertssN,api.normssN,api.texssN,api.light,api.xform,api.renderOptions);
-    api.updateFlagIdx = g_gg.addUpdateFlag(apiDeps);
+    api.updateFlagIdx = g_gg.addUpdateFlag(
+        fgUints(api.meshesN,api.vertssN,api.normssN,api.texssN,api.light,api.xform,renderCtrls.optsN,api.bgImgN));
     api.updateTexFlagIdx = g_gg.addUpdateFlag(api.texssN);
-
-    g_gg.addLink(linkNorms,fgUints(meshesN,ret.morphedVertssN),fgUints(api.normssN));
-    FgDgn<bool>         useTexture = g_gg.addInput((simple != 3),uid+"UseTexture"),
-                        shiny = g_gg.addInput(false,uid+"Shiny"),
-                        wireframe = g_gg.addInput(false,uid+"Wireframe"),
-                        flatShaded = g_gg.addInput(false,uid+"FlatShaded"),
-                        facets = g_gg.addInput(true,uid+"Facets"),
-                        surfPoints = g_gg.addInput(false,uid+"SurfPoints"),
-                        markedVerts = g_gg.addInput(false,uid+"MarkedVerts"),
-                        allVerts = g_gg.addInput(false,uid+"AllVerts"),
-                        twoSidedN = g_gg.addInput(true,uid+"TwoSided");
-    FgDgn<FgVect3F>     bgColorN(g_gg,"bgColor");
-    g_gg.addLink(linkRenderOpts,
-        fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN),
-        fgUints(api.renderOptions));
+    api.bothButtonsDragAction = bothButtonsDrag;
+    g_gg.addLink(linkNorms,fgUints(meshesN,ret.morphedVertssN),api.normssN);
+    Fg3dCameraParams    defaultCps;     // Use default for lensFovDeg:
     FgDgn<double>       lensFovDeg = g_gg.addInput(defaultCps.fovMaxDeg,uid+"LensFovDeg");
     FgVectD2            logScaleRange(log(1.0/5.0),log(5.0));
-    FgGuiPtr            rcColor = fgGuiCheckboxTr("Color maps",useTexture),
-                        rcShiny = fgGuiCheckboxTr("Shiny",shiny),
-                        rcWire = fgGuiCheckboxTr("Wireframe",wireframe),
-                        rcFlat = fgGuiCheckboxTr("Flat shaded",flatShaded),
-                        rcFacet = fgGuiCheckboxTr("Facets",facets),
-                        rcSurf = fgGuiCheckboxTr("Surface points",surfPoints),
-                        rcMark = fgGuiCheckboxTr("Marked vertices",markedVerts),
-                        rcAll = fgGuiCheckboxTr("All vertices",allVerts),
-                        rcTwoSided = fgGuiCheckboxTr("Two sided",twoSidedN);
-    FgGuiPtr            renderCtls;
-    if (simple == 0)
-        renderCtls = fgGuiSplit(true,
-            fgGuiSplit(false,rcColor,rcShiny,rcWire),
-            fgGuiSplit(false,rcFlat,rcFacet,rcSurf),
-            fgGuiSplit(false,rcMark,rcAll,rcTwoSided));
-    else if (simple == 1)
-        renderCtls = fgGuiSplit(false,rcColor,rcShiny,rcWire,rcFlat);
-    else if (simple == 3)
-        renderCtls = fgGuiSplit(false,rcShiny,rcWire,rcFlat);
-    else    // simple == 2
-        renderCtls = fgGuiSplit(false,rcColor,rcShiny);
     g_gg.addLink(linkXform,
         fgUints(viewBoundsN,api.panTiltMode,api.panTiltDegrees,api.pose,api.trans,
                 api.logRelSize,lensFovDeg,api.viewportDims),
-        fgUints(api.xform));
-    FgDgn<double>       redN = g_gg.addInput(0.3,"bgColR"),
-                        greenN = g_gg.addInput(0.3,"bgColG"),
-                        blueN = g_gg.addInput(0.3,"bgColB");
-    g_gg.addLink(linkColSel,fgUints(redN,greenN,blueN),fgUints(bgColorN));
+        api.xform);
     ret.viewport = fgsp(api);
-
     FgGuiPtr        viewCtlText =
-        fgGuiTextRich(
-            "                   Rotate: left-click-drag on head\n"
-            "                   Scale: right-click-drag up/down on head\n"
-            "                   Move: shift-left-click-drag on head");
-    FgGuiPtr        viewCtlRender = fgGuiGroupboxTr("Render",renderCtls);
+        fgGuiText(
+            "  Rotate: left-click-drag (or touch-drag)\n"
+            "  Scale: right-click-drag up/down (or pinch-to-zoom)\n"
+            "  Move: shift-left-click-drag");
     FgGuiPtr        viewCtlRotation =
         fgGuiGroupboxTr("Object rotation",
             fgGuiRadio(api.panTiltMode,fgSvec<FgString>("Pan / tilt","Unconstrained")));
-    FgGuiPtr        viewCtlColor =
-        fgGuiGroupboxTr("Background Color",
-            fgGuiSplit(false,
-                fgGuiSlider(redN,fgTr("Red"),FgVectD2(0,1),0.5),
-                fgGuiSlider(greenN,fgTr("Green"),FgVectD2(0,1),0.5),
-                fgGuiSlider(blueN,fgTr("Blue"),FgVectD2(0,1),0.5)));
     FgGuiPtr        viewCtlFov =
         fgGuiGroupboxTr(
             "Lens field of view (degrees)",
@@ -393,7 +544,8 @@ fgGui3dCtls(
                 fgSvec(
                     FgGuiApiTickLabel(0.0,fgTr("Orthographic")),
                     FgGuiApiTickLabel(30.0,fgTr("Normal")),
-                    FgGuiApiTickLabel(60.0,fgTr("Wide")))
+                    FgGuiApiTickLabel(60.0,fgTr("Wide"))),
+                30      // Lots of room required for "Orthographic" at end of slider
             )
         );
     FgGuiPtr        viewCtlScale =
@@ -407,21 +559,25 @@ fgGui3dCtls(
                 fgSvec(
                     FgGuiApiTickLabel(logScaleRange[0],"0.2"),
                     FgGuiApiTickLabel(0.0,"1.0"),
-                    FgGuiApiTickLabel(logScaleRange[1],"5.0"))));
+                    FgGuiApiTickLabel(logScaleRange[1],"5.0")),
+                vector<FgGuiApiTickLabel>(),
+                30      // Match width of slider above
+            )
+        );
     FgGuiPtr        viewCtlReset = fgGuiButtonTr("Reset Camera",boost::bind(
         resetView,lensFovDeg,api.panTiltDegrees,api.pose,api.trans,api.logRelSize));
     if (simple == 2)
-        ret.viewCtls = fgGuiSplit(false,viewCtlText,viewCtlRender,viewCtlColor,viewCtlScale,viewCtlReset);
+        ret.cameraGui = fgGuiSplit(false,viewCtlText,viewCtlScale,viewCtlReset);
     else
-        ret.viewCtls = fgGuiSplit(false,fgSvec(
-            viewCtlText,viewCtlRender,viewCtlRotation,viewCtlColor,viewCtlFov,viewCtlScale,viewCtlReset));
+        ret.cameraGui = fgGuiSplit(false,fgSvec(
+            viewCtlText,viewCtlRotation,viewCtlFov,viewCtlScale,viewCtlReset));
     ret.editCtls =
         fgGuiSplit(false,fgSvec(
-            fgGuiTextRich("Mark Surface Point: ctrl-shift-left-click on surface\n"),
+            fgGuiText("Mark Surface Point: ctrl-shift-left-click on surface\n"),
             fgGuiSplit(true,
-                fgGuiTextRich("Name:"),
+                fgGuiText("Name:"),
                 fgGuiTextEdit(api.pointLabel)),
-            fgGuiTextRich("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
+            fgGuiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
             fgGuiGroupbox("Vertex Selection Mode",
                 fgGuiRadio(api.vertMarkModeN,fgSvec<FgString>("Single","Edge Seam","Fold Seam"))),
             fgGuiButtonTr("Mark all seam vertices",boost::bind(markAllSeams,meshesN)),
@@ -500,11 +656,11 @@ fgDisplayMeshes(
             for (size_t ii=0; ii<meshes.size(); ++ii)
                 meshNames.push_back(meshes[ii].name);
             FgDgn<size_t>       selN = g_gg.addNode(size_t(0),"selectMesh");
-            g_gg.addLink(linkSelect,fgUints(meshesSrcN,selN),fgUints(selsN));
+            g_gg.addLink(linkSelect,fgUints(meshesSrcN,selN),selsN);
             meshSelect = fgGuiTab("Select",true,fgGuiRadio(selN,meshNames));
         }
         else {
-            meshSelect = fgGuiTab("Select",true,fgGuiTextRich("TODO: part selections"));
+            meshSelect = fgGuiTab("Select",true,fgGuiText("TODO: part selections"));
         }
     }
     FgMat32F                 viewBounds = fgBounds(meshes[0].verts);
@@ -512,12 +668,18 @@ fgDisplayMeshes(
         viewBounds = fgBounds(viewBounds,fgBounds(meshes[ii].verts));
     FgDgn<FgMat32D>          viewBoundsN = g_gg.addNode(fgF2D(viewBounds),"viewBounds");
     FgDgn<FgString>             meshStatsN(g_gg,"meshStats");
-    g_gg.addLink(linkMeshStats2,fgUints(meshesN),fgUints(meshStatsN));
-    FgGui3dCtls         ga3 = fgGui3dCtls(meshesN,allVertsN,texssN,viewBoundsN);
+    g_gg.addLink(linkMeshStats2,meshesN,meshStatsN);
+    FgRenderCtrls       renderOpts = fgRenderCtrls(0);
+    FgGui3dCtls         ga3 = fgGui3dCtls(
+        meshesN,allVertsN,texssN,viewBoundsN,renderOpts,
+        g_gg.addNode(FgLighting(),"Lighting"),NULL);
+    vector<FgGuiTab>    viewTabs = fgSvec(
+        fgGuiTab("Camera",true,ga3.cameraGui),
+        fgGuiTab("Render",true,renderOpts.win));
     vector<FgGuiTab>    tabDefs = fgSvec(
-        fgGuiTab("View",true,ga3.viewCtls),
+        fgGuiTab("View",false,fgGuiTabs(viewTabs)),
         fgGuiTab("Morphs",true,ga3.morphCtls)//,
-        //fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiTextRich(meshStatsN))))
+        //fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(meshStatsN))))
     );
     if (meshes.size() == 1)
         tabDefs.push_back(fgGuiTab("Edit",true,ga3.editCtls));
@@ -539,14 +701,20 @@ fgDisplayForEdit(const Fg3dMesh & mesh)
     FgDgn<vector<FgVerts> >     allVertsN = g_gg.addNode(vector<FgVerts>(1,mesh.allVerts()),"allVerts");
     FgDgn<vector<FgImgs> >      texssN = g_gg.addNode(vector<FgImgs>(1,mesh.texImages),"texss");
     FgGuiTab                    meshSelect;
-    FgDgn<FgMat32D>          viewBoundsN = g_gg.addNode(fgF2D(fgBounds(mesh.verts)),"viewBounds");
+    FgDgn<FgMat32D>             viewBoundsN = g_gg.addNode(fgF2D(fgBounds(mesh.verts)),"viewBounds");
     FgDgn<FgString>             meshStatsN(g_gg,"meshStats");
-    g_gg.addLink(linkMeshStats2,fgUints(meshesN),fgUints(meshStatsN));
-    FgGui3dCtls         ga3 = fgGui3dCtls(meshesN,allVertsN,texssN,viewBoundsN);
+    g_gg.addLink(linkMeshStats2,meshesN,meshStatsN);
+    FgRenderCtrls               renderOpts = fgRenderCtrls(0);
+    FgGui3dCtls         ga3 = fgGui3dCtls(
+        meshesN,allVertsN,texssN,viewBoundsN,renderOpts,
+        g_gg.addNode(FgLighting(),"Lighting"),NULL);
+    vector<FgGuiTab>    viewTabs = fgSvec(
+        fgGuiTab("Camera",true,ga3.cameraGui),
+        fgGuiTab("Render",true,renderOpts.win));
     vector<FgGuiTab>    tabDefs = fgSvec(
-        fgGuiTab("View",true,ga3.viewCtls),
+        fgGuiTab("View",false,fgGuiTabs(viewTabs)),
         fgGuiTab("Morphs",true,ga3.morphCtls),
-        fgGuiTab("Info",true,fgGuiTextRich(meshStatsN)));
+        fgGuiTab("Info",true,fgGuiText(meshStatsN)));
         tabDefs.push_back(fgGuiTab("Edit",true,ga3.editCtls));
     fgGuiImplStart(
         FgString("FaceGen SDK fgDisplayForEdit"),

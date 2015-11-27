@@ -269,11 +269,19 @@
         </File>
         <File RelativePath="..\src\Fg3dMesh.hpp">
         </File>
+        <File RelativePath="..\src\Fg3dMesh3ds.cpp">
+        </File>
         <File RelativePath="..\src\Fg3dMeshFbx.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshIo.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshIo.hpp">
+        </File>
+        <File RelativePath="..\src\Fg3dMeshLegacy.hpp">
+        </File>
+        <File RelativePath="..\src\Fg3dMeshLwo.cpp">
+        </File>
+        <File RelativePath="..\src\Fg3dMeshMa.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshObj.cpp">
         </File>
@@ -281,9 +289,13 @@
         </File>
         <File RelativePath="..\src\Fg3dMeshOps.hpp">
         </File>
+        <File RelativePath="..\src\Fg3dMeshPly.cpp">
+        </File>
         <File RelativePath="..\src\Fg3dMeshTri.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshVrml.cpp">
+        </File>
+        <File RelativePath="..\src\Fg3dMeshXsi.cpp">
         </File>
         <File RelativePath="..\src\Fg3dNormals.cpp">
         </File>
@@ -439,6 +451,8 @@
         </File>
         <File RelativePath="..\src\FgGuiApiDialogs.hpp">
         </File>
+        <File RelativePath="..\src\FgGuiApiDynamic.hpp">
+        </File>
         <File RelativePath="..\src\FgGuiApiGroupbox.hpp">
         </File>
         <File RelativePath="..\src\FgGuiApiImage.cpp">
@@ -456,6 +470,8 @@
         <File RelativePath="..\src\FgGuiApiSlider.cpp">
         </File>
         <File RelativePath="..\src\FgGuiApiSlider.hpp">
+        </File>
+        <File RelativePath="..\src\FgGuiApiSpacer.hpp">
         </File>
         <File RelativePath="..\src\FgGuiApiSplit.cpp">
         </File>
@@ -546,6 +562,8 @@
         <File RelativePath="..\src\FgNormal.hpp">
         </File>
         <File RelativePath="..\src\FgOpenGL.hpp">
+        </File>
+        <File RelativePath="..\src\FgOpt.hpp">
         </File>
         <File RelativePath="..\src\FgOut.cpp">
         </File>
@@ -650,8 +668,6 @@
         <File RelativePath="..\src\FgTokenizer.hpp">
         </File>
         <File RelativePath="..\src\FgTypes.hpp">
-        </File>
-        <File RelativePath="..\src\FgValidVal.hpp">
         </File>
         <File RelativePath="..\src\FgVariant.cpp">
         </File>

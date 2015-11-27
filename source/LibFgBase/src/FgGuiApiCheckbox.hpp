@@ -22,7 +22,7 @@ struct FgGuiApiCheckbox : FgGuiApi<FgGuiApiCheckbox>
 
 inline
 FgGuiPtr
-fgGuiApiCheckbox(const FgString & label,FgDgn<bool> node)
+fgGuiCheckbox(const FgString & label,FgDgn<bool> node)
 {
     FgGuiApiCheckbox    cb;
     cb.label = label;
@@ -31,9 +31,26 @@ fgGuiApiCheckbox(const FgString & label,FgDgn<bool> node)
     return fgsp(cb);
 }
 
-inline
+template<class T>
+FGLINK(fgLinkCheckboxObject)
+{
+    FGLINKARGS(2,1);
+    bool                sel = inputs[0]->valueRef();
+    const T &           obj = inputs[1]->valueRef();
+    vector<T> &         out = outputs[0]->valueRef();
+    if (sel)
+        out = fgSvec(obj);
+    else
+        out.clear();
+}
+
+// Have checkbox select a predefined object by outputting a vector that contains either 0 or 1 instances:
+template<class T>
 FgGuiPtr
-fgGuiCheckboxTr(const string & label,FgDgn<bool> node)
-{return fgGuiApiCheckbox(fgTr(label),node); }
+fgGuiCheckboxObject(const FgString & label,FgDgn<bool> input,const T & object,FgDgn<vector<T> > output)
+{
+    g_gg.addLink(fgLinkCheckboxObject<T>,fgUints(input,g_gg.addNode(object)),output);
+    return fgGuiCheckbox(label,input);
+}
 
 #endif

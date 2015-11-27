@@ -76,7 +76,7 @@ struct  FgString
     friend
     std::istream& operator>>(std::istream&, FgString &);
 
-    // Note that this is encoded according to the native convention for wstring:
+    // Encoded as UTF16 if wstring is 16-bit chars, UTF32 if wstring is 32-bit chars:
     std::wstring
     as_wstring() const;
 
@@ -160,5 +160,8 @@ fgRemoveChars(const FgString & s,uchar c);
 // or for whole glob string:
 bool
 fgGlobMatch(const FgString & globStr,const FgString & str);
+
+FgString
+fgSubstring(const FgString & str,size_t start,size_t size);
 
 #endif // INCLUDED_FGSTRING_HPP

@@ -128,7 +128,7 @@ FgTestDir::FgTestDir(const string & name)
         if (s_annotateTestDir.length() > 0)
             dt += " " + s_annotateTestDir;
         path.dirs.push_back(dt);
-        fgCreatePath(path);
+        fgCreatePath(path.dir());
         pd.push(path.str());
         if (FgTempFile::getKeepTempFiles())
             fgout.logFile("_log.txt");

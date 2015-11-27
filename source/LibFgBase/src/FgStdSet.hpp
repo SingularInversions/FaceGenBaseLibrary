@@ -30,6 +30,11 @@ fgAppend(std::set<T> & s0,const std::set<T> & s1)
 {s0.insert(s1.begin(),s1.end()); }
 
 template<class T>
+void
+fgAppend(std::set<T> & s0,const std::vector<T> & s1)
+{s0.insert(s1.begin(),s1.end()); }
+
+template<class T>
 std::set<T>
 fgUnion(const std::set<T> & s0,const std::set<T> & s1)
 {

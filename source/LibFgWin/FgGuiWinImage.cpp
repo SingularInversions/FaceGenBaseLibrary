@@ -81,111 +81,91 @@ struct  FgGuiWinImage : public FgGuiOsBase
     {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
 
     LRESULT
-    wndProc(
-        HWND    hwnd,
-        UINT    message,
-        WPARAM  wParam,
-        LPARAM  lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        switch (message)
-        {
-            case WM_CREATE:
+        if (msg == WM_CREATE) {
+            m_hwnd = hwnd;
+        }
+        else if (msg == WM_SIZE) {
+            m_size = FgVect2UI(LOWORD(lParam),HIWORD(lParam));
+        }
+        else if (msg == WM_PAINT) {
+            HDC         hdc;
+            PAINTSTRUCT ps;
+            // Validates the invalid region. Doesn't erase background
+            // in this case since brush is NULL:
+            hdc = BeginPaint(hwnd,&ps);
+            struct  FGBMI
             {
-                m_hwnd = hwnd;
-                return 0;
+                BITMAPINFOHEADER    bmiHeader;
+                DWORD               redMask;
+                DWORD               greenMask;
+                DWORD               blueMask;
+            };
+            FgGuiImageDisp          imgd = m_api.disp(m_size);
+            FGBMI                   bmi;
+            memset(&bmi,0,sizeof(bmi));
+            BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
+            bmih.biSize = sizeof(BITMAPINFOHEADER);
+            bmih.biWidth = imgd.width;
+            bmih.biHeight = -int(imgd.height);
+            bmih.biPlanes = 1;                  // Must always be 1
+            bmih.biBitCount = 32;
+            bmih.biCompression = BI_BITFIELDS;  // Uncompressed
+            bmi.redMask = 0xFF;
+            bmi.greenMask = 0xFF00;
+            bmi.blueMask = 0xFF0000;
+            // Windows automatically handles clipping of the image for the bitblt:
+            SetDIBitsToDevice(
+                hdc,
+                imgd.offsetx,imgd.offsety,
+                imgd.width,imgd.height,
+                0,0,
+                0,imgd.height,
+                imgd.dataPtr,
+                (BITMAPINFO*)&bmi,
+                DIB_RGB_COLORS);
+            EndPaint(hwnd,&ps);
+        }
+        else if (msg == WM_LBUTTONDOWN) {
+            m_lastPos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            POINT   point;
+            point.x = 0;
+            point.y = 0;
+            FGASSERTWIN(ClientToScreen(hwnd,&point));
+            RECT    rect;
+            rect.left = point.x;
+            rect.top = point.y;
+            rect.right = point.x + m_size[0];
+            rect.bottom = point.y + m_size[1];
+            FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
+        }
+        else if (msg == WM_LBUTTONUP) {
+            ClipCursor(NULL);
+            FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            if (!dragging) {
+                m_api.click(pos);
+                g_gg.updateScreen();
             }
-            case WM_SIZE:
-            {
-                m_size = FgVect2UI(LOWORD(lParam),HIWORD(lParam));
-                return 0;
+            dragging = false;
+        }
+        else if (msg == WM_MOUSEMOVE) {
+            FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            FgVect2I    delta = pos-m_lastPos;
+            m_lastPos = pos;
+            if (wParam == MK_LBUTTON) {
+                dragging = true;
+                m_api.move(delta);
+                g_gg.updateScreen();
             }
-            case WM_PAINT:
-            {
-                HDC         hdc;
-                PAINTSTRUCT ps;
-                // Validates the invalid region. Doesn't erase background
-                // in this case since brush is NULL:
-                hdc = BeginPaint(hwnd,&ps);
-
-                struct  FGBMI
-                {
-                    BITMAPINFOHEADER    bmiHeader;
-                    DWORD               redMask;
-                    DWORD               greenMask;
-                    DWORD               blueMask;
-                };
-                FgGuiImageDisp          imgd = m_api.disp(m_size);
-                FGBMI                   bmi;
-                memset(&bmi,0,sizeof(bmi));
-                BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
-                bmih.biSize = sizeof(BITMAPINFOHEADER);
-                bmih.biWidth = imgd.width;
-                bmih.biHeight = -int(imgd.height);
-                bmih.biPlanes = 1;                  // Must always be 1
-                bmih.biBitCount = 32;
-                bmih.biCompression = BI_BITFIELDS;  // Uncompressed
-                bmi.redMask = 0xFF;
-                bmi.greenMask = 0xFF00;
-                bmi.blueMask = 0xFF0000;
-
-                // Windows automatically handles clipping of the image for the bitblt:
-                SetDIBitsToDevice(
-                    hdc,
-                    imgd.offsetx,imgd.offsety,
-                    imgd.width,imgd.height,
-                    0,0,
-                    0,imgd.height,
-                    imgd.dataPtr,
-                    (BITMAPINFO*)&bmi,
-                    DIB_RGB_COLORS);
-
-                EndPaint(hwnd,&ps);
-                return 0;
-            }
-            case WM_LBUTTONDOWN:
-            {
-                m_lastPos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-                POINT   point;
-                point.x = 0;
-                point.y = 0;
-                FGASSERTWIN(ClientToScreen(hwnd,&point));
-                RECT    rect;
-                rect.left = point.x;
-                rect.top = point.y;
-                rect.right = point.x + m_size[0];
-                rect.bottom = point.y + m_size[1];
-                FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
-                return 0;
-            }
-            case WM_LBUTTONUP:
-            {
-                ClipCursor(NULL);
-                FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-                if (!dragging) {
-                    m_api.click(pos);
-                    g_gg.updateScreen();
-                }
-                dragging = false;
-                return 0;
-            }
-            case WM_MOUSEMOVE:
-            {
-                FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-                FgVect2I    delta = pos-m_lastPos;
-                m_lastPos = pos;
-                if (wParam == MK_LBUTTON) {
-                    dragging = true;
-                    m_api.move(delta);
-                    g_gg.updateScreen();
-                }
-                else if (wParam == MK_RBUTTON) {
-                    m_api.zoom(delta[1]);
-                    g_gg.updateScreen();
-                }
-                return 0;
+            else if (wParam == MK_RBUTTON) {
+                m_api.zoom(delta[1]);
+                g_gg.updateScreen();
             }
         }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 };
 

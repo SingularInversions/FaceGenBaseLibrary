@@ -24,7 +24,7 @@ std::vector<string>
 fgWhiteBreak(const string &);
 
 // More general than std::to_string since it uses operator<< which can be defined for
-// user-defined types as well:
+// user-defined types as well. Also, to_string can cause ambiguous call errors:
 template<class T>
 string
 fgToString(const T &val)
@@ -65,33 +65,9 @@ fgToStringPrecision(T val,uint precision)
     return oss.str();
 }
 
-// Set the number of digits beyond fixed point
-template<class T>
+// Set the number of digits beyond fixed point:
 string
-fgToFixed(T val,uint fractionalDigits=0)
-{
-    std::ostringstream   ret;
-    if (val > T(std::numeric_limits<size_t>::max()))
-        ret << val;
-    else {
-        size_t      ival;
-        if (fractionalDigits == 0)
-            ival = size_t(val+0.5);
-        else
-            ival = size_t(val);
-        ret << ival << ".";
-        for (uint ii=0; ii<fractionalDigits; ++ii) {
-            val -= double(ival);
-            val *= 10.0;
-            if (ii == fractionalDigits-1)
-                ival = size_t(val+0.5);
-            else
-                ival = size_t(val);
-            ret << ival;
-        }
-    }
-    return ret.str();
-}
+fgToFixed(double val,uint fractionalDigits=0);
 
 string
 fgToLower(const string & s);

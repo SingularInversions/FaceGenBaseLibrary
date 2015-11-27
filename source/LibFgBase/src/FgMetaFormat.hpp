@@ -6,8 +6,12 @@
 // Authors:     Andrew Beatty
 // Created:     June 25, 2009
 //
-// Terminology: load/save is used for whole files, read/write is used for streams.
+// Handy way to serialize to/from files
 //
+// * Terminology: load/save is used for whole files, read/write is used for streams.
+// * All serialization formats can change between boost versions breaking application back-compatibility.
+// * Binary (non-portable) serialization formats differ between 32/64 bit even when bit size of contents
+//   is explicitly specified.
 
 #ifndef FGMETAFORMAT_HPP
 #define FGMETAFORMAT_HPP

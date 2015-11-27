@@ -44,31 +44,26 @@ struct FgGuiApiSlider : FgGuiApi<FgGuiApiSlider>
     // initialization value:
     boost::function<double(void)>   getInput;
     boost::function<void(double)>   setOutput;
-    FgString                label;
+    FgString                label;          // Can be empty
     FgVectD2                range;
     double                  tickSpacing;
     FgGuiApiTickLabels      tickLabels;
     FgGuiApiTickLabels      tockLabels;     // On other side from ticks
+    // Set this to larger values if your tick / tock labels overflow the edges:
+    uint                    edgePadding;
+
+    FgGuiApiSlider() : edgePadding(5) {}
 };
 
 FgGuiPtr
 fgGuiSlider(
     FgDgn<double>   val,
-    uint            updateFlagIdx,
-    FgString        label,
+    FgString        label,                  // Can be empty
     FgVectD2        range,
     double          tickSpacing,
     const FgGuiApiTickLabels & tl = FgGuiApiTickLabels(),
-    const FgGuiApiTickLabels & ul = FgGuiApiTickLabels());
-
-FgGuiPtr
-fgGuiSlider(
-    FgDgn<double>   val,
-    FgString        label,
-    FgVectD2        range,
-    double          tickSpacing,
-    const FgGuiApiTickLabels & tl = FgGuiApiTickLabels(),
-    const FgGuiApiTickLabels & ul = FgGuiApiTickLabels());
+    const FgGuiApiTickLabels & ul = FgGuiApiTickLabels(),
+    uint            edgePadding=5);
 
 // Create a panel of similar sliders with numbered names:
 
@@ -83,6 +78,14 @@ FgGuiSliders
 fgGuiSliders(
     uint                    numSliders,
     FgString                baseLabel,
+    FgVectD2                range,
+    double                  initVal,
+    double                  tickSpacing);
+
+FgGuiWinVal<vector<double> >
+fgGuiSliders(
+    const FgString &        relStore,
+    const vector<FgString> & labels,
     FgVectD2                range,
     double                  initVal,
     double                  tickSpacing);

@@ -32,7 +32,7 @@ addSubdivisions(
 
 static
 void
-test3dMeshSubdivision()
+test3dMeshSubdivision(const FgArgs &)
 {
     Fg3dMesh        meanMesh = fgLoadTri(fgDataDir()+"base/Jane.tri");
     meanMesh.surfaces[0] = meanMesh.surfaces[0].convertToTris();
@@ -122,8 +122,25 @@ fgSubdivisionTest(const FgArgs &)
     fgDisplayMeshes(meshes,true);
 }
 
+void    fgSave3dsTest(const FgArgs &);
+void    fgSaveFbxTest(const FgArgs &);
+void    fgSaveLwoTest(const FgArgs &);
+void    fgSaveMaTest(const FgArgs &);
+void    fgSavePlyTest(const FgArgs &);
+void    fgSaveXsiTest(const FgArgs &);
+
 void
-fg3dTest(const FgArgs &)
-{test3dMeshSubdivision(); }
+fg3dTest(const FgArgs & args)
+{
+    vector<FgCmd>   cmds;
+    cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
+    cmds.push_back(FgCmd(fgSave3dsTest,"3ds"));
+    cmds.push_back(FgCmd(fgSaveFbxTest,"fbx"));
+    cmds.push_back(FgCmd(fgSaveLwoTest,"lwo"));
+    cmds.push_back(FgCmd(fgSaveMaTest,"ma"));
+    cmds.push_back(FgCmd(fgSavePlyTest,"ply"));
+    cmds.push_back(FgCmd(fgSaveXsiTest,"xsi"));
+    fgMenu(args,cmds,true);
+}
 
 // */

@@ -12,6 +12,8 @@
 #include "FgOut.hpp"
 #include "FgStdString.hpp"
 #include "FgSyntax.hpp"
+#include "FgFileSystem.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 
@@ -25,12 +27,8 @@ fgArgs(int argc,const char * argv[])
 }
 
 int
-fgMain(
-    FgCmdFunc       func,
-    int             argc,
-    const char *    argv[])
+fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
 {
-
 // Final EOL required to due fgout idiom of fgnl at beginning of line:
 #ifdef _WIN32
 // Windows cmd.exe automatically adds an EOL so we only need one more:
@@ -91,4 +89,3 @@ fgMain(
         return -3;
     }
 }
-

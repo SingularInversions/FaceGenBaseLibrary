@@ -18,6 +18,7 @@
 #include "FgLighting.hpp"
 #include "Fg3dRenderOptions.hpp"
 #include "Fg3dNormals.hpp"
+#include "FgDefaultVal.hpp"
 
 // Not yet used:
 std::string
@@ -26,22 +27,22 @@ fgOglGetInfo();
 void
 fgOglSetup();
 
+// Returns the OGL texture 'name':
 uint
-fgOglTextureAdd(
-    const FgImgRgbaUb & img);
+fgOglTextureAdd(const FgImgRgbaUb & img);
 
 void
 fgOglTextureUpdate(
-    uint                name,
+    uint                name,       // Existing OGL texture 'name'
     const FgImgRgbaUb & img);
 
-struct  FgOglRendSurf
+struct  FgOglSurf
 {
-    bool    visible;            // Currently selected for viewing ?
-    bool    xray;               // Currently selected for see-through ?
-    //bool    opacity;            // Does the texture image have variable opacity ?
+    FgBoolT         visible;        // Set to false if this surface is not being rendered.
+    FgValid<uint>   name;           // OpenGL texture "name". Invalid if no texture image.
+    FgBoolF         transparency;   // Set to true if the image contains varying alpha values
 
-    FgOglRendSurf() : visible(true), xray(false) {}
+    bool valid() const {return name.valid(); }
 };
 
 struct  FgOglRendModel
@@ -49,8 +50,7 @@ struct  FgOglRendModel
     const Fg3dMesh *            mesh;
     const FgVerts *             verts;
     const Fg3dNormals *         norms;
-    const vector<int> *         texNames;       // < 0 means no texture image available
-    vector<FgOglRendSurf>       rendSurfs;
+    const vector<FgOglSurf> *   oglImages;
 };
 
 void
@@ -59,12 +59,17 @@ fgOglSetLighting(const FgLighting & lt);
 void
 fgOglRender(
     vector<FgOglRendModel>      rendModels,
-    FgMat44F                 oglMvm, // MVM in column-major layout.
+    FgMat44F                    oglMvm, // MVM in column-major layout.
     FgVect6D                    frustum,
-    const Fg3dRenderOptions &   rend);
+    const Fg3dRenderOptions &   rend,
+    FgValid<uint>               bgImgName,
+    FgVect2UI                   bgImgDims);
 
 FgMat44F
 fgOglTransform();
+
+FgImgRgbaUb
+fgOglGetRender();
 
 void
 fgOglTexRelease(uint texName);

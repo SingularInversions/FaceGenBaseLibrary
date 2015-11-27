@@ -63,16 +63,18 @@ struct  RenderArgs
     FgRgbaF                 backgroundColor;
     FgVect2UI               imagePixelSize;
     uint                    antiAliasBitDepth;
-    uint                    showSurfPoints;
+    bool                    showSurfPoints;     // Show marked surface points on models as red dots over final render
+    bool                    saveSurfPointFile;  // Write a text file of image position of marked surface points on models, along with visibility.
     string                  outputFile;
 
     RenderArgs() :
         imagePixelSize(512,512),
         antiAliasBitDepth(3),
-        showSurfPoints(0)
+        showSurfPoints(false),
+        saveSurfPointFile(false)
     {}
 
-    FG_SERIALIZE8(models,cam,lighting,backgroundColor,imagePixelSize,antiAliasBitDepth,showSurfPoints,outputFile)
+    FG_SERIALIZE9(models,cam,lighting,backgroundColor,imagePixelSize,antiAliasBitDepth,showSurfPoints,saveSurfPointFile,outputFile)
 };
 
 /**
@@ -115,7 +117,7 @@ fgCmdRender(const FgArgs & args)
 
     //! Load data from files:
     vector<Fg3dMesh>    meshes(renderArgs.models.size());
-    FgMat33F         rotMatrix = FgMat33F(renderArgs.cam.rotateToHcs.asMatrix());
+    FgMat33F            rotMatrix = FgMat33F(renderArgs.cam.rotateToHcs.asMatrix());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = renderArgs.models[ii];
         meshes[ii] = fgLoadTri(mf.triFilename);
@@ -154,7 +156,7 @@ fgCmdRender(const FgArgs & args)
             cam.itcsToIucs,
             renderArgs.backgroundColor,
             renderArgs.antiAliasBitDepth);
-    if (renderArgs.showSurfPoints != 0) {
+    if (renderArgs.showSurfPoints) {
         FgMat44F     tt = FgMat44F(cam.toIpcsH(renderArgs.imagePixelSize));
         for (size_t mm=0; mm<meshes.size(); ++mm) {
             const Fg3dMesh &    mesh = meshes[mm];
@@ -167,6 +169,37 @@ fgCmdRender(const FgArgs & args)
     }
     fgout << fgnl << "Render time: " << timer.read() << "s ";
     fgSaveImgAnyFormat(FgString(renderArgs.outputFile),image);
+    if (renderArgs.saveSurfPointFile) {
+        FgOfstream      ofs(renderArgs.outputFile+".txt");
+        ofs <<
+            "Image coordinates of marked surface points in render, and visibility (true/false by normal)\n"
+            "(origin at top left of image, X right, Y down, units are pixels):" << endl;
+        FgMat44F        tt = FgMat44F(cam.toIpcsH(renderArgs.imagePixelSize));
+        for (size_t mm=0; mm<meshes.size(); ++mm) {
+            ofs << "Mesh " << mm << endl;
+            const Fg3dMesh &    mesh = meshes[mm];
+            Fg3dNormals         norms = fgNormals(mesh);
+            for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+                ofs << "  Surf " << ss << endl;
+                const Fg3dSurface &     surf = mesh.surfaces[ss];
+                for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
+                    FgSurfPoint     sp = surf.surfPoints[ii];
+                    FgVect3F        spc = surf.getSurfPoint(mesh.verts,ii);
+                    FgVect4F        p0 = tt * fgAsHomogVec(spc);
+                    FgVect2F        p1(p0[0]/p0[3],p0[1]/p0[3]);
+                    ofs << "    " << ii << "(" << sp.label << ")" << ": " << p1 << " ";
+                    FgVect3UI       triVertInds = surf.getTriEquiv(sp.triEquivIdx);
+                    FgVect3F        spNorm = 
+                        norms.vert[triVertInds[0]] * sp.weights[0] +
+                        norms.vert[triVertInds[1]] * sp.weights[1] +
+                        norms.vert[triVertInds[2]] * sp.weights[2];
+                    FgVect4F        spnH(spNorm[0],spNorm[1],spNorm[2],0),
+                                    spnT = tt * spnH;
+                    ofs << ((spnT[3] > 0) ? "false" : "true") << endl;
+                }
+            }
+        }
+    }
 }
 
 FgCmd
@@ -177,22 +210,34 @@ void
 fgRenderTest(const FgArgs & args)
 {
     FGTESTDIR
-    fgTestCopy("base/test/renderArgs.xml");
     fgTestCopy("base/Jane.tri");
     fgTestCopy("base/Jane.jpg");
-    fgCmdRender(fgSplitChar("render renderArgs"));
+    RenderArgs  ra;
+    ra.imagePixelSize = FgVect2UI(120,160);
+    ra.cam.panRadians = fgDegToRad(55.0f);
+    ra.outputFile = "render_test.png";
+    ra.showSurfPoints = true;
+    ra.saveSurfPointFile = true;
+    ModelFiles  mf;
+    mf.triFilename = "Jane.tri";
+    mf.imgFilename = "Jane.jpg";
+    ra.models.push_back(mf);
+    fgSaveXml("render_test.xml",ra);
+    fgCmdRender(fgSplitChar("render render_test"));
     FgImgRgbaUb     base,test;
-    FgString        baseline = fgDataDir()+"base/test/renderArgs_baseline.png";
+    FgString        baseline = fgDataDir()+"base/test/render_test.png";
     if (!fgExists(baseline)) {
-        if (fgRegressOverwrite())
-            fgCopyFile("renderArgs.png",baseline);
+        if (fgRegressOverwrite()) {
+            fgCopyFile("render_test.png",baseline,true);
+            fgCopyFile("render_test.png.txt",baseline+".txt",true);
+            fgout << fgnl << "WARNING: Created regression files";
+            return;
+        }
         else
             fgThrow("Render test missing baseline",baseline);
     }
     fgLoadImgAnyFormat(baseline,base);
-    fgLoadImgAnyFormat("renderArgs.png",test);
-    if (fgRegressOverwrite())
-        fgCopyFile("renderArgs.png",baseline,true);
+    fgLoadImgAnyFormat("render_test.png",test);
     if (fgImgMad(test,base) > 0.1)
         fgThrow("Render test regression failure");
 }

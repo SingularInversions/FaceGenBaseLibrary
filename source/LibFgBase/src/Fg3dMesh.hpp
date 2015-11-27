@@ -37,7 +37,7 @@
 #include "FgImage.hpp"
 #include "FgVariant.hpp"
 #include "FgStdStream.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 
 // Delta morphs and target morphs will have the same effect when applied to the base
 // face on which they were defined but will have very different effects when applied
@@ -130,7 +130,7 @@ struct  Fg3dMesh
     FgVerts                     verts;          // Base shape
     FgUvs                       uvs;            // Texture coordinates in OTCS
     vector<Fg3dSurface>         surfaces;
-    vector<FgImgRgbaUb>         texImages;      // Empty or 1-1 with 'surfaces'.
+    vector<FgImgRgbaUb>         texImages;      // Empty or 1-1 with 'surfaces'. If 1-1, images can be empty.
     vector<FgMorph>             deltaMorphs;
     vector<FgIndexedMorph>      targetMorphs;
     vector<FgMarkedVert>        markedVerts;
@@ -178,6 +178,12 @@ struct  Fg3dMesh
     FgFacetInds<3>
     getTriEquivs() const;               // Over all surfaces
 
+    size_t
+    numTris() const;                    // Just the number of tris over all surfaces
+
+    size_t
+    numQuads() const;                   // Just the number of quads over all surfaces
+
     uint
     numSurfPoints() const;              // Over all surfaces
 
@@ -187,17 +193,33 @@ struct  Fg3dMesh
 
     template<class T>
     FgMatrixC<T,3,1>
-    getSurfPoint(const vector<FgMatrixC<T,3,1> > &verts,uint num) const;
+    getSurfPoint(const vector<FgMatrixC<T,3,1> > &verts,uint num) const
+    {
+        for (uint ss=0; ss<surfaces.size(); ss++) {
+            if (num < surfaces[ss].numSurfPoints())
+                return surfaces[ss].getSurfPoint(verts,num);
+            else
+                num -= surfaces[ss].numSurfPoints();
+        }
+        FGASSERT_FALSE;
+        return FgMatrixC<T,3,1>(0,0,0);        // Avoid warning.
+    }
 
     template<class T>
     vector<FgMatrixC<T,3,1> >
-    getSurfPoints(const vector<FgMatrixC<T,3,1> > & verts) const;
+    getSurfPoints(const vector<FgMatrixC<T,3,1> > & verts) const
+    {
+        vector<FgMatrixC<T,3,1> >  pts(numSurfPoints());
+        for (size_t ii=0; ii<pts.size(); ++ii)
+            pts[ii] = getSurfPoint(verts,uint(ii));
+        return pts;
+    }
 
     vector<FgVect3F>
     getSurfPoints() const
     {return getSurfPoints(verts); }
 
-    FgValidVal<FgVect3F>
+    FgOpt<FgVect3F>
     surfPoint(const string & label) const;
 
     vector<FgVertLabel>
@@ -214,6 +236,9 @@ struct  Fg3dMesh
 
     FgString
     morphName(size_t idx) const;
+
+    vector<FgString>
+    morphNames() const;
 
     FgValid<size_t>
     findDeltaMorph(const FgString & name) const;
@@ -246,6 +271,10 @@ struct  Fg3dMesh
         const FgFloats &    targMorphCoord,
         FgVerts &           outVerts)       // RETURNED
         const;
+
+    // Apply just a single morph by its universal index (ie over deltas & targets):
+    FgVerts
+    morphSingle(size_t idx,float val = 1.0f) const;
 
     FgIndexedMorph
     getMorphAsIndexedDelta(size_t idx) const;
@@ -299,35 +328,8 @@ struct  Fg3dMesh
 Fg3dMesh
 fg3dMesh(const FgVerts &);
 
-template<class T>
-FgMatrixC<T,3,1>
-Fg3dMesh::getSurfPoint(
-    const vector<FgMatrixC<T,3,1> > &		vts,
-    uint                                    num)
-    const
-{
-    for (uint ss=0; ss<surfaces.size(); ss++)
-    {
-        if (num < surfaces[ss].numSurfPoints())
-            return surfaces[ss].getSurfPoint(vts,num);
-        else
-            num -= surfaces[ss].numSurfPoints();
-    }
-    FGASSERT_FALSE;
-    return FgMatrixC<T,3,1>(0,0,0);        // Avoid warning.
-}
-
-template<class T>
-vector<FgMatrixC<T,3,1> >
-Fg3dMesh::getSurfPoints(
-    const vector<FgMatrixC<T,3,1> > &  verts)
-    const
-{
-    vector<FgMatrixC<T,3,1> >  pts(numSurfPoints());
-    for (size_t ii=0; ii<pts.size(); ++ii)
-        pts[ii] = getSurfPoint(verts,uint(ii));
-    return pts;
-}
+std::set<FgString>
+fgMorphs(const vector<Fg3dMesh> & meshes);
 
 std::ostream &
 operator<<(std::ostream &,const Fg3dMesh &);

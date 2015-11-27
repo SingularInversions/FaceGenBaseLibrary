@@ -41,14 +41,18 @@ Fg3dCamera
 Fg3dCameraParams::camera(FgVect2UI imgDims) const
 {
     Fg3dCamera      ret;
-    FGASSERT(fgMinElem(modelBounds.colVec(1)-modelBounds.colVec(0)) > 0);
-    // Hack orthographic by relying on precision:
-    double          fovMaxDegClamp = (fovMaxDeg < 0.0001) ? 0.0001 : fovMaxDeg;
     FgVect3D        min = modelBounds.colVec(0),
                     max = modelBounds.colVec(1),
                     dims = max - min,
                     centre = (min+max) * 0.5,
                     trans(relTrans[0],relTrans[1],0.0);
+    // Handle degenerate model bounds:
+    if (dims == FgVect3D(0))
+        dims = FgVect3D(1);
+    else if (dims.volume() == 0)
+        dims = FgVect3D(fgMaxElem(dims));
+    // Hack orthographic by relying on precision:
+    double          fovMaxDegClamp = (fovMaxDeg < 0.0001) ? 0.0001 : fovMaxDeg;
     double          modelHalfDimMax = fgMaxElem(dims) * 0.5,
                     imgDimMax = fgMaxElem(imgDims),
                     relScale = exp(logRelScale),

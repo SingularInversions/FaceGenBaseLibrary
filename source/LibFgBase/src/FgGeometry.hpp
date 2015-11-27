@@ -35,7 +35,7 @@ fgClosestPointInTri(
 
 // Returns the barycentric coord of point in triangle
 // (invalid if outside of triangle or triangle degenerate):
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgBarycentricCoords(
     FgVect2D            point,
     FgVect2D            v0,
@@ -45,7 +45,7 @@ fgBarycentricCoords(
 // Returns the barycentric coord of a point relative to a triangle in 3D.
 // Only works for planar points.
 // Returns invalid if triangle degenerate.
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgBarycentricCoords(
     FgVect3D point,
     FgVect3D vert0,
@@ -53,7 +53,7 @@ fgBarycentricCoords(
     FgVect3D vert2);
 
 inline
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgBarycentricCoords(FgVect2F point,FgVect2F v0,FgVect2F v1,FgVect2F v2)
 {return fgBarycentricCoords(FgVect2D(point),FgVect2D(v0),FgVect2D(v1),FgVect2D(v2)); }
 
@@ -71,7 +71,7 @@ fgLinePlaneIntersect(FgVect3D ray,FgVect4D plane);
 int
 fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2);
 
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgLineFacetIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2);
 
 inline

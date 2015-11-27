@@ -22,7 +22,7 @@ using namespace std;
 
 static
 void
-clampuvs(const FgArgs & args)
+uvclamp(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
@@ -30,9 +30,31 @@ clampuvs(const FgArgs & args)
         "    <ext1> = " + fgSaveMeshFormatsDescription()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
-    FgMat22F     cb(0,1,0,1);
+    FgMat22F        cb(0,1,0,1);
     for (size_t ii=0; ii<in.uvs.size(); ++ii)
         in.uvs[ii] = fgClamp(in.uvs[ii],cb);
+    if (syntax.more())
+        fgSaveMeshAnyFormat(in,syntax.next());
+    else
+        fgSaveMeshAnyFormat(in,syntax.curr());
+    return;
+}
+
+static
+void
+uvunwrap(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<ext0> [<out>.<ext1>]\n"
+        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsDescription()
+        );
+    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
+    for (size_t ii=0; ii<in.uvs.size(); ++ii) {
+        FgVect2F    uv = in.uvs[ii];
+        in.uvs[ii][0] = fgMod(uv[0],1.0f);
+        in.uvs[ii][1] = fgMod(uv[1],1.0f);
+    }
     if (syntax.more())
         fgSaveMeshAnyFormat(in,syntax.next());
     else
@@ -120,37 +142,7 @@ fgCmdEmboss(const FgArgs & args)
     float           val = fgFromString<float>(syntax.next());
     if (!(val > 0.0f))
         fgThrow("Emboss value must be > 0",fgToString(val));
-    // Emboss. Don't check for UV seams, just let the emboss value be the last one traversed:
-    FgVerts         deltas(mesh.verts.size());
-    float           fac = fgMaxElem(fgDims(mesh.verts)) * val;
-    Fg3dNormals     norms = fgNormals(mesh);
-    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        const Fg3dSurface &     surf = mesh.surfaces[ss];
-        for (size_t ii=0; ii<surf.numTris(); ++ii) {
-            FgVect3UI   uvInds = surf.tris.uvInds[ii],
-                        vtInds = surf.tris.vertInds[ii];
-            for (uint jj=0; jj<3; ++jj) {
-                FgVect2F        uv = mesh.uvs[uvInds[jj]];
-                uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
-                uint            vtIdx = vtInds[jj];
-                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
-            }
-        }
-        for (size_t ii=0; ii<surf.numQuads(); ++ii) {
-            FgVect4UI   uvInds = surf.quads.uvInds[ii],
-                        vtInds = surf.quads.vertInds[ii];
-            for (uint jj=0; jj<4; ++jj) {
-                FgVect2F        uv = mesh.uvs[uvInds[jj]];
-                uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
-                uint            vtIdx = vtInds[jj];
-                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
-            }
-        }
-    }
-    for (size_t ii=0; ii<deltas.size(); ++ii)
-        mesh.verts[ii] += deltas[ii];
+    mesh.verts = fgEmboss(mesh,img,val);
     fgSaveMeshAnyFormat(mesh,syntax.next());
 }
 
@@ -516,7 +508,6 @@ void
 meshops(const FgArgs & args)
 {
     vector<FgCmd>   ops;
-    ops.push_back(FgCmd(clampuvs,"clampuvs","Clamp UV coords to the range [0,1]"));
     ops.push_back(FgCmd(combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"));
     ops.push_back(FgCmd(convert,"convert","Convert the mesh between different formats"));
     ops.push_back(FgCmd(copyuvs,"copyuvs","Copy UVs from one mesh to another with same UV count"));
@@ -532,8 +523,10 @@ meshops(const FgArgs & args)
     ops.push_back(FgCmd(splitObjByMtl,"splitObjByMtl","Split up an OBJ mesh by 'usemtl' name"));
     ops.push_back(FgCmd(splitsurfsbyuvs,"splitSurfsByUvs","Split up surfaces with discontiguous UV mappings"));
     ops.push_back(FgCmd(surfPtsToVerts,"surfPtsToVerts","Convert surface points to labelled vertices"));
+    ops.push_back(FgCmd(uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"));
     ops.push_back(FgCmd(uvimg,"uvimg","Save an image of the  the UV map of the mesh"));
     ops.push_back(FgCmd(uvmask,"uvmask","Mask out geometry for any black areas of a texture image"));
+    ops.push_back(FgCmd(uvunwrap,"uvunwrap","Unwrap wrap-around UV coords to the range [0,1]"));
     ops.push_back(FgCmd(xform,"xform","Create or apply similarity transforms from/to meshes"));
     fgMenu(args,ops);
 }

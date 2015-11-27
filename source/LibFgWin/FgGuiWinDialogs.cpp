@@ -34,13 +34,13 @@ void
 pfdRelease(IFileDialog * pfd)
 {pfd->Release(); }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileLoad(
     const FgString &        description,
     const vector<string> &  extensions)
 {
     FGASSERT(!extensions.empty());
-    FgValidVal<FgString>    ret;
+    FgOpt<FgString>    ret;
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
@@ -72,7 +72,7 @@ fgGuiDialogFileLoad(
         if (SUCCEEDED(hr)) {
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
-            if (SUCCEEDED(hr)) {
+            if (SUCCEEDED(hr) && (pszFilePath != NULL)) {
                 ret = FgString(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
@@ -82,13 +82,13 @@ fgGuiDialogFileLoad(
     return ret;
 }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogFileSave(
     const FgString &    description,
     const string &      extension)
 {
     FGASSERT(!extension.empty());
-    FgValidVal<FgString>    ret;
+    FgOpt<FgString>    ret;
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
@@ -130,10 +130,10 @@ fgGuiDialogFileSave(
     return ret;
 }
 
-FgValidVal<FgString>
+FgOpt<FgString>
 fgGuiDialogDirSelect()
 {
-    FgValidVal<FgString>    ret;
+    FgOpt<FgString>    ret;
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
@@ -193,7 +193,7 @@ progress(HWND hwndPb,bool milestone)
     return false;
 }
 
-struct  Dialog
+struct  FgGuiWinDialogProgress
 {
     uint        progressSteps;
     HWND        hwndThis;
@@ -248,7 +248,7 @@ fgGuiDialogProgress(
     uint                    progressSteps,
     FgGuiActionProgress     actionProgress)
 {
-    Dialog      d;
+    FgGuiWinDialogProgress      d;
     d.progressSteps = progressSteps;
     HWND        h = fgCreateDialog(title,s_fgGuiWin.hwndMain,&d);
     ShowWindow(h,SW_SHOWNORMAL);
@@ -256,6 +256,109 @@ fgGuiDialogProgress(
     s_cancel = false;
     actionProgress(boost::bind(progress,d.hwndPb,_1));
     DestroyWindow(h);
+}
+
+// **************************************** Splash Screen *****************************************
+
+static
+const int s_splashSize = 256;
+
+struct  FgGuiWinDialogSplashScreen
+{
+    HWND            hwndThis;
+    FgImgRgbaUb     img;
+
+    FgGuiWinDialogSplashScreen() : hwndThis(0), img(s_splashSize,s_splashSize,FgRgbaUB(0,255,0,255)) {}
+
+    LRESULT
+    wndProc(HWND hwnd,UINT msg,WPARAM,LPARAM)
+    {
+        if (msg == WM_INITDIALOG) {
+            hwndThis = hwnd;
+            RECT            rect;
+            SystemParametersInfo(SPI_GETWORKAREA,NULL,&rect,0);
+            int             x = (rect.right - rect.left - s_splashSize)/2,
+                            y = (rect.bottom - rect.top - s_splashSize)/2;
+            // Necessary as the DLGTEMPLATE values don't seem to be respected:
+            SetWindowPos(hwnd,0,x,y,s_splashSize,s_splashSize,SWP_NOZORDER);
+            return TRUE;
+        }
+        else if (msg == WM_ERASEBKGND) {
+            return TRUE;    // Don't erase background for cool icon superposition
+        }
+        else if (msg == WM_PAINT) {
+            PAINTSTRUCT     ps;
+            HDC             hdc = BeginPaint(hwnd,&ps);
+            HANDLE          icon = LoadImage(GetModuleHandle(NULL),MAKEINTRESOURCE(101),IMAGE_ICON,s_splashSize,s_splashSize,0);
+            if (icon == NULL) {
+                struct  FGBMI
+                {
+                    BITMAPINFOHEADER    bmiHeader;
+                    DWORD               redMask;
+                    DWORD               greenMask;
+                    DWORD               blueMask;
+                };
+                FGBMI                   bmi;
+                memset(&bmi,0,sizeof(bmi));
+                BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
+                bmih.biSize = sizeof(BITMAPINFOHEADER);
+                bmih.biWidth = img.width();
+                bmih.biHeight = -int(img.height());
+                bmih.biPlanes = 1;                  // Must always be 1
+                bmih.biBitCount = 32;
+                bmih.biCompression = BI_BITFIELDS;  // Uncompressed
+                bmi.redMask = 0xFF;
+                bmi.greenMask = 0xFF00;
+                bmi.blueMask = 0xFF0000;
+                SetDIBitsToDevice(
+                    hdc,
+                    0,0,
+                    img.width(),img.height(),
+                    0,0,
+                    0,img.height(),
+                    img.dataPtr(),      // This pointer is kept after function return
+                    (BITMAPINFO*)&bmi,
+                    DIB_RGB_COLORS);
+            }
+            else {
+                BOOL res = DrawIconEx(hdc,0,0,(HICON)icon,s_splashSize,s_splashSize,0,NULL,DI_NORMAL);
+                FGASSERTWIN(res != 0);
+            }
+            EndPaint(hwnd,&ps);
+            return 0;
+        }
+        return FALSE;
+    }
+};
+
+static
+FgGuiWinDialogSplashScreen  s_fgGuiWinDialogSplashScreen;
+
+static
+INT_PTR CALLBACK
+fgGuiWinDialogFunc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+{return s_fgGuiWinDialogSplashScreen.wndProc(hwndDlg,uMsg,wParam,lParam); }
+
+static
+void
+fgGuiWinDialogSplashClose()
+{
+    if (s_fgGuiWinDialogSplashScreen.hwndThis != 0)
+        EndDialog(s_fgGuiWinDialogSplashScreen.hwndThis,0);
+}
+
+boost::function<void(void)>
+fgGuiDialogSplashScreen()
+{
+    // Need 4 bytes of zero after the DLGTEMPLATE structure for 'CreateDialog...' to work:
+    void *          mem = malloc(sizeof(DLGTEMPLATE)+4);
+    memset(mem,0,sizeof(DLGTEMPLATE)+4);
+    DLGTEMPLATE    *d = (DLGTEMPLATE*)mem;
+    d->style = WS_POPUP | WS_VISIBLE;
+    HWND    res = CreateDialogIndirectParam(NULL,d,NULL,&fgGuiWinDialogFunc,0);
+    free(mem);
+    FGASSERTWIN(res != NULL);
+    return &fgGuiWinDialogSplashClose;
 }
 
 // */

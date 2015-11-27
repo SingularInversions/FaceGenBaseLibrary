@@ -41,8 +41,9 @@ fgLoadWobj(
 // Ignores morphs:
 void
 fgSaveObj(
-    const FgString &    filename,
-    const std::vector<Fg3dMesh> &   meshes);
+    const FgString &            filename,
+    const vector<Fg3dMesh> &    meshes,
+    string                      imgFormat = "png");
 
 inline void
 fgSaveObj(const FgString & filename,const Fg3dMesh & mesh)
@@ -50,14 +51,16 @@ fgSaveObj(const FgString & filename,const Fg3dMesh & mesh)
 
 void
 fgSaveVrml(
-    const FgString &                filename,
-    const std::vector<Fg3dMesh> &   meshes);
+    const FgString &            filename,
+    const vector<Fg3dMesh> &    meshes,
+    string                      imgFormat = "png");
 
 // Texture image not currently supported as Unity will not automatically load anyway:
 void
 fgSaveFbx(
     const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes);
+    const vector<Fg3dMesh> &    meshes,
+    string                      imgFormat = "png");
 
 inline void
 fgSaveFbx(const FgString & filename,const Fg3dMesh & mesh)
@@ -65,7 +68,9 @@ fgSaveFbx(const FgString & filename,const Fg3dMesh & mesh)
 
 // All meshes merged, ignores UVs, textures, morphs, etc:
 void
-fgSaveStl(const FgString & fname,const vector<Fg3dMesh> & meshes);
+fgSaveStl(
+    const FgString &            fname,
+    const vector<Fg3dMesh> &    meshes);
 
 inline void
 fgSaveStl(const FgString & fname,const Fg3dMesh & mesh)
@@ -99,7 +104,45 @@ fgSaveMeshFormatsDescription();
 FgVerts
 fgLoadVerts(const FgString & meshFilename);
 
-//void
-//fgSavePly(const FgString & fname,const Fg3dMesh & mesh);
+// Morph targets are also saved:
+void
+fgSaveLwo(
+    const FgString &        fname,
+    const vector<Fg3dMesh> & meshes,
+    string                  imgFormat = "png");
+
+// Morph targets are also saved:
+void
+fgSaveMa(
+    const FgString &        fname,
+    const vector<Fg3dMesh> & meshes,
+    string                  imgFormat = "png");
+
+// Morph targets are also saved:
+void
+fgSaveXsi(
+    const FgString &        fname,
+    const vector<Fg3dMesh> & meshes,
+    string                  imgFormat = "png");
+
+// 3DS:
+// * No morph targets
+// * No quads
+// * Splits UV seams
+// * 8.3 tex names only
+// * 2^16 max verts & tris
+void
+fgSave3ds(
+    const FgString &        fname,
+    vector<Fg3dMesh>        meshes,
+    string                  imgFormat = "png");
+
+// Vertices & surfaces must be merged to a single list but tex images are specified per facet.
+// Currently saves all facets as tris but can easily be changed to preverve quads:
+void
+fgSavePly(
+    const FgString &        fname,
+    const vector<Fg3dMesh> & meshes,
+    string                  imgFormat = "png");
 
 #endif

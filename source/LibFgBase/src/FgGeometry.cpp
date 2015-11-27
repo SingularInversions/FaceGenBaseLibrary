@@ -102,14 +102,14 @@ fgClosestPointInTri(
     return ret;
 }
     
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgBarycentricCoords(
     FgVect2D            point,
     FgVect2D            v0,
     FgVect2D            v1,
     FgVect2D            v2)
 {
-    FgValidVal<FgVect3D>    ret;
+    FgOpt<FgVect3D>    ret;
     FgVect2D        u0 = v0-point,
                     u1 = v1-point,
                     u2 = v2-point;
@@ -117,20 +117,21 @@ fgBarycentricCoords(
                     c1 = u2[0]*u0[1] - u0[0]*u2[1],
                     c2 = u0[0]*u1[1] - u1[0]*u0[1],
                     d = c0+c1+c2;
-    if (d == 0.0)
+    if (d == 0.0) {     // All segments from point to vertices are colinear
         return ret;
+    }
     ret = FgVect3D(c0/d,c1/d,c2/d);
     return ret;
 }
 
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgBarycentricCoords(
     FgVect3D point,
     FgVect3D v0,
     FgVect3D v1,
     FgVect3D v2)
 {
-    FgValidVal<FgVect3D>    ret;
+    FgOpt<FgVect3D>    ret;
     // Transform into the coordinate system v0 = (0,0), v1 = (1,0), v2 = (0,1) by defining
     // the inverse homogenous transform then inverting and taking only the top 2 rows to
     // form 'xf' below. Converting to barycentric is then trivial, and barycentric coords
@@ -195,10 +196,10 @@ fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2)
     return 0;
 }
 
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgLineFacetIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2)
 {
-    FgValidVal<FgVect3D>    ret;
+    FgOpt<FgVect3D>    ret;
     // First calculate intersection with plane (in CS with 'pnt' as origin):
     FgVect3D                p0 = v0-pnt;
     FgVect4D                planeH = fgPlaneH(p0,v1-pnt,v2-pnt);

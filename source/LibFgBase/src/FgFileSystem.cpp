@@ -16,6 +16,7 @@
 #include "FgStdVector.hpp"
 
 using namespace std;
+using namespace boost::filesystem;
 
 void
 fgCopyFile(const FgString & src,const FgString & dst,bool overwrite)
@@ -30,7 +31,7 @@ fgCopyFile(const FgString & src,const FgString & dst,bool overwrite)
     }
     // Global name conflicts prevent aliasing of some names to unversioned
     // 'filesystem' namespace:
-    boost::filesystem::copy_file(src.ns(),dst.ns());
+    copy_file(src.ns(),dst.ns());
 }
 
 void
@@ -42,11 +43,27 @@ fgMoveFile(const FgString & src,const FgString & dst,bool overwrite)
     fgDeleteFile(src);
 }
 
-void
-fgCreatePath(const FgPath & p)
+FgDirectoryContents
+fgDirectoryContents(const FgString & dirName)
 {
+    FGASSERT(is_directory(dirName.ns()));
+    FgDirectoryContents         ret;
+    directory_iterator      it_end;
+    for (directory_iterator it(dirName.ns()); it != it_end; ++it) {
+        if (is_directory(it->status()))
+            ret.dirnames.push_back(it->path().filename().string());
+        else if (is_regular_file(it->status()))
+            ret.filenames.push_back(it->path().filename().string());
+    }
+    return ret;
+}
+
+void
+fgCreatePath(const FgString & path)
+{
+    FgPath          p(fgAsDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
-        FgString    dir = p.str(ii+1);
+        FgString    dir = p.dir(ii+1);
         if (fgExists(dir))
             FGASSERT(fgIsDirectory(dir));
         else
@@ -57,8 +74,9 @@ fgCreatePath(const FgPath & p)
 FgString
 fgExecutableDirectory()
 {
+    //return fgGetCurrentDir();         // For debugging installed versions
     FgPath      p(fgExecutablePath());
-    return p.dirOnly();
+    return p.dir();
 }
 
 bool
@@ -94,15 +112,15 @@ fgDirUserAppDataLocal(const vector<string> & subPath)
 string
 fgSlurp(const FgString & filename)
 {
-    FgIfstream ifs(filename);
-    std::ostringstream ss;
+    FgIfstream          ifs(filename);
+    ostringstream       ss;
     ss << ifs.rdbuf();
     return ss.str();
 }
 
 void
 fgDump(
-    const std::string & data,
+    const string &      data,
     const FgString &    filename)
 {
     FgOfstream  ofs(filename);
@@ -165,17 +183,16 @@ fgNewer(const vector<FgString> & sources,const vector<FgString> & sinks)
 }
 
 FgDirectoryContents
-fgGlobStartsWith(const FgString & sw)
+fgGlobStartsWith(const FgPath & path)
 {
     FgDirectoryContents ret;
-    FgPath              path(sw);
-    FgDirectoryContents dc = fgDirectoryContents(path.dirOnly());
+    FgDirectoryContents dc = fgDirectoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii)
         if (dc.filenames[ii].beginsWith(path.base))
-            ret.filenames.push_back(path.dirOnly()+dc.filenames[ii]);
+            ret.filenames.push_back(dc.filenames[ii]);
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii)
         if (dc.dirnames[ii].beginsWith(path.base))
-            ret.dirnames.push_back(path.dirOnly()+dc.dirnames[ii]);
+            ret.dirnames.push_back(dc.dirnames[ii]);
     return ret;
 }
 
@@ -183,7 +200,7 @@ FgDirectoryContents
 fgGlobHasExtension(FgPath path)
 {
     FgDirectoryContents ret;
-    FgDirectoryContents dc = fgDirectoryContents(path.dirOnly());
+    FgDirectoryContents dc = fgDirectoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii)
         if (FgPath(dc.filenames[ii]).ext == path.ext)
             ret.filenames.push_back(dc.filenames[ii]);
@@ -197,7 +214,7 @@ vector<FgString>
 fgGlobFiles(const FgPath & path)
 {
     vector<FgString>        ret;
-    FgDirectoryContents     dc = fgDirectoryContents(path.dirOnly());
+    FgDirectoryContents     dc = fgDirectoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         FgPath              fn = dc.filenames[ii];
         if (fgGlobMatch(path.base,fn.base) && (fgGlobMatch(path.ext,fn.ext)))
@@ -209,7 +226,27 @@ fgGlobFiles(const FgPath & path)
 void
 fgCopyToCurrentDir(const FgPath & file)
 {
-    if (fgExists(file.nameOnly()))
-        fgThrow("Attempt to copy to current directory which already contains",file.nameOnly());
-    fgCopyFile(file.str(),file.nameOnly());
+    if (fgExists(file.baseExt()))
+        fgThrow("Attempt to copy to current directory which already contains",file.baseExt());
+    fgCopyFile(file.str(),file.baseExt());
+}
+
+void
+fgCopyRecursive(const FgString & fromDir,const FgString & toDir)
+{
+    FGASSERT(fgIsDirectory(fromDir));
+    fgCreateDirectory(toDir);
+    FgPath                  fromP(fgAsDirectory(fromDir)),
+                            toP(fgAsDirectory(toDir));
+    FgString                from = fromP.str(),     // Ensures delimiter at end when appropriate
+                            to = toP.str();
+    FgDirectoryContents     dc = fgDirectoryContents(fromDir);
+    for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
+        FgString &          fn = dc.filenames[ii];
+        fgCopyFile(from+fn,to+fn);
+    }
+    for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
+        const FgString &    dn = dc.dirnames[ii];
+        fgCopyRecursive(from+dn,to+dn);
+    }
 }

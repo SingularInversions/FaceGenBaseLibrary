@@ -14,5 +14,5 @@ void    fgCmdFgbl(const FgArgs &);
 int
 main(int argc,const char *argv[])
 {
-    return fgMain(fgCmdFgbl,argc,argv);
+    return fgMainConsole(fgCmdFgbl,argc,argv);
 }

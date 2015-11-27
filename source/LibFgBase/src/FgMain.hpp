@@ -21,10 +21,8 @@ fgArgs(int argc,const char * argv[]);
 
 typedef boost::function<void(const FgArgs &)> FgCmdFunc;
 
+// Catches exceptions, outputs error details, returns appropriate value:
 int
-fgMain(
-    FgCmdFunc       func,
-    int             argc,
-    const char *    argv[]);
+fgMainConsole(FgCmdFunc func,int argc,const char * argv[]);
 
 #endif

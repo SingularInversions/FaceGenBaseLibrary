@@ -16,6 +16,7 @@
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
 #include "Fg3dTopology.hpp"
+#include "FgStdSet.hpp"
 
 using namespace std;
 
@@ -166,6 +167,24 @@ Fg3dMesh::getTriEquivs() const
     return ret;
 }
 
+size_t
+Fg3dMesh::numTris() const
+{
+    size_t      ret = 0;
+    for (size_t ss=0; ss<surfaces.size(); ++ss)
+        ret += surfaces[ss].tris.vertInds.size();
+    return ret;
+}
+
+size_t
+Fg3dMesh::numQuads() const
+{
+    size_t      ret = 0;
+    for (size_t ss=0; ss<surfaces.size(); ++ss)
+        ret += surfaces[ss].quads.vertInds.size();
+    return ret;
+}
+
 uint        Fg3dMesh::numSurfPoints() const
 {
     uint        tot = 0;
@@ -174,10 +193,10 @@ uint        Fg3dMesh::numSurfPoints() const
     return tot;
 }
 
-FgValidVal<FgVect3F>
+FgOpt<FgVect3F>
 Fg3dMesh::surfPoint(const string & label) const
 {
-    FgValidVal<FgVect3F>    ret;
+    FgOpt<FgVect3F>    ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss) {
         size_t  idx = fgFindFirstIdx(surfaces[ss].surfPoints,label);
         if (idx < surfaces[ss].surfPoints.size()) {
@@ -215,6 +234,17 @@ Fg3dMesh::morphName(size_t idx) const
     return targetMorphs[idx].name;
 }
 
+vector<FgString>
+Fg3dMesh::morphNames() const
+{
+    vector<FgString>    ret;
+    for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
+        ret.push_back(deltaMorphs[ii].name);
+    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
+        ret.push_back(targetMorphs[ii].name);
+    return ret;
+}
+
 FgValid<size_t>
 Fg3dMesh::findDeltaMorph(const FgString & name) const
 {
@@ -244,8 +274,8 @@ Fg3dMesh::findMorph(const FgString & name) const
 
 void
 Fg3dMesh::morph(
-    const std::vector<float> &  morphCoord,
-    FgVerts &                   outVerts) const
+    const vector<float> &   morphCoord,
+    FgVerts &               outVerts) const
 {
     FGASSERT(morphCoord.size() == numMorphs());
     outVerts = verts;
@@ -270,9 +300,9 @@ Fg3dMesh::morph(
 
 void
 Fg3dMesh::morph(
-    const std::vector<float> &  deltaMorphCoord,
-    const std::vector<float> &  targMorphCoord,
-    FgVerts &                   outVerts) const
+    const vector<float> &   deltaMorphCoord,
+    const vector<float> &   targMorphCoord,
+    FgVerts &               outVerts) const
 {
     FGASSERT(deltaMorphCoord.size() == deltaMorphs.size());
     FGASSERT(targMorphCoord.size() == targetMorphs.size());
@@ -281,6 +311,20 @@ Fg3dMesh::morph(
         deltaMorphs[ii].applyAsDelta(outVerts,deltaMorphCoord[ii]);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
         targetMorphs[ii].applyAsTarget(verts,outVerts,targMorphCoord[ii]);
+}
+
+FgVerts
+Fg3dMesh::morphSingle(size_t idx,float val) const
+{
+    FgVerts     ret = verts;
+    if (idx < deltaMorphs.size())
+        deltaMorphs[idx].applyAsDelta(ret,val);
+    else {
+        idx -= deltaMorphs.size();
+        FGASSERT(idx < targetMorphs.size());
+        targetMorphs[idx].applyAsTarget(verts,ret,val);
+    }
+    return ret;
 }
 
 FgIndexedMorph
@@ -454,6 +498,15 @@ fg3dMesh(const FgVerts & v)
 {
     Fg3dMesh    ret;
     ret.verts = v;
+    return ret;
+}
+
+std::set<FgString>
+fgMorphs(const vector<Fg3dMesh> & meshes)
+{
+    std::set<FgString>  ret;
+    for (size_t ii=0; ii<meshes.size(); ++ii)
+        fgAppend(ret,meshes[ii].morphNames());
     return ret;
 }
 

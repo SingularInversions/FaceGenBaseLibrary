@@ -204,8 +204,8 @@ fgGuiImage(FgDgn<FgImgRgbaUb> imgN,FgDgn<vector<FgVect2F> > ptsIucsN,boost::func
     gai.pointsN = ptsIucsN;
     gai.dispN = g_gg.addNode(FgImgRgbaUb());
     gai.onClick = onClick;
-    g_gg.addLink(linkPyramid,fgUints(gai.imgN),fgUints(gai.pyramidN));
-    g_gg.addLink(linkDisp,fgUints(gai.pyramidN,gai.currLevelN,gai.pointsN),fgUints(gai.dispN));
+    g_gg.addLink(linkPyramid,gai.imgN,gai.pyramidN);
+    g_gg.addLink(linkDisp,fgUints(gai.pyramidN,gai.currLevelN,gai.pointsN),gai.dispN);
     gai.updateNodeIdxFill = g_gg.addUpdateFlag(fgUints(gai.imgN,gai.currLevelN));
     gai.updateNodeIdxNofill = g_gg.addUpdateFlag(fgUints(gai.offsetN,gai.pointsN));
     return fgGuiPtr(gai);

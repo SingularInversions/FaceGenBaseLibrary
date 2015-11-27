@@ -26,6 +26,9 @@ fgTimeMs();
 std::string
 fgDateTime();
 
+std::string
+fgDateTime(time_t rawTime);
+
 // GMT date string in format: yy.mm.dd
 std::string
 fgDate(time_t rawTime);

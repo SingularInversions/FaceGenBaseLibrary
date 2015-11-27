@@ -76,7 +76,8 @@ writeIndices(
 void
 fgSaveVrml(
     const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes)
+    const vector<Fg3dMesh> &    meshes,
+    string                      imgFormat)
 {
     FGASSERT(meshes.size() > 0);
     FgOfstream  ofs(filename);
@@ -84,7 +85,7 @@ fgSaveVrml(
     ofs <<
         "#VRML V2.0 utf8\n"
         "# Copyright 2015 Singular Inversions Inc. (facegen.com)\n"
-        "# For more information, please visit www.FaceGen.com.\n";
+        "# For more information, please visit http://FaceGen.com.\n";
     FgPath      fpath(filename);
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const Fg3dMesh &    mesh = meshes[ii];
@@ -113,11 +114,8 @@ fgSaveVrml(
                 fgThrow("VRML export with multiple texture images not yet implemented");
             // Some software (Meshlab:) can't deal with spaces in the image filename:
             FgString    imgFile = fpath.base.replace(' ','_') + fgToString(ii);
-            if (fgUsesAlpha(mesh.texImages[0]))
-                imgFile += ".png";
-            else
-                imgFile += ".jpg";
-            fgSaveImgAnyFormat(fpath.dirOnly()+imgFile,mesh.texImages[0]);
+            imgFile += "." + imgFormat;
+            fgSaveImgAnyFormat(fpath.dir()+imgFile,mesh.texImages[0]);
             ofs <<
                 "        texture ImageTexture\n"
                 "        {\n"

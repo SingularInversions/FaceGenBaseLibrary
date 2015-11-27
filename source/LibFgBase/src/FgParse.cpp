@@ -51,6 +51,17 @@ fgSplitLines(const vector<uint32> & src,bool incEmpty)
     return ret;
 }
 
+vector<FgString>
+fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
+{
+    vector<FgString>            ret;
+    vector<vector<uint32> >     res = fgSplitLines(FgString(utf8).as_utf32(),includeEmptyLines);
+    ret.resize(res.size());
+    for (size_t ii=0; ii<res.size(); ++ii)
+        ret[ii] = FgString(res[ii]);
+    return ret;
+}
+
 vector<vector<string> >
 fgReadCsvFile(const FgString & filename)
 {

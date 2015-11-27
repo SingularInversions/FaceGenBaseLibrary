@@ -20,7 +20,7 @@
 #include "Fg3dNormals.hpp"
 #include "FgLighting.hpp"
 #include "FgImageBase.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgAffine1.hpp"
 #include "FgAffineCwC.hpp"
@@ -35,20 +35,16 @@ drawWires(const vector<FgOglRendModel> &  rms)
     glDisable(GL_LIGHTING);     // Draw mesh lines in constant colour.
     glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
     glLineWidth(1.0f);
-
-    for (size_t mm=0; mm<rms.size(); ++mm)
-    {
-        const Fg3dMesh &    mesh = *rms[mm].mesh;
-        const FgVerts &     verts = *rms[mm].verts;
-        for (size_t ss=0; ss<mesh.surfaces.size(); ss++)
-        {
-            if (rms[mm].rendSurfs[ss].visible)
-            {
+    for (size_t mm=0; mm<rms.size(); ++mm) {
+        const Fg3dMesh &            mesh = *rms[mm].mesh;
+        const FgVerts &             verts = *rms[mm].verts;
+        const vector<FgOglSurf> &  oglSurf = *rms[mm].oglImages;
+        for (size_t ss=0; ss<mesh.surfaces.size(); ss++) {
+            if (oglSurf[ss].visible) {
                 const Fg3dSurface & surf = mesh.surfaces[ss];
                 glColor3f(0.0f,0.0f,0.4f);
                 glBegin(GL_TRIANGLES);
-                for (uint ii=0; ii<surf.numTris(); ii++)
-                {
+                for (uint ii=0; ii<surf.numTris(); ii++) {
                     FgVect3I   tri(surf.getTri(ii));
                     glVertex3fv(&verts[tri[0]][0]);
                     glVertex3fv(&verts[tri[1]][0]);
@@ -56,8 +52,7 @@ drawWires(const vector<FgOglRendModel> &  rms)
                 }
                 glEnd();
                 glBegin(GL_QUADS);
-                for (uint ii=0; ii<surf.numQuads(); ii++)
-                {
+                for (uint ii=0; ii<surf.numQuads(); ii++) {
                     FgVect4I   quad(surf.getQuad(ii));
                     glVertex3fv(&verts[quad[0]][0]);
                     glVertex3fv(&verts[quad[1]][0]);
@@ -139,7 +134,6 @@ struct  Tri
     FgVect3F        v[3];   // verts
     FgVect3F        n[3];   // norms
     FgVect2F        u[3];   // uvs
-
     FgVect4F
     meanVertH() const
     {return fgAsHomogVec((v[0]+v[1]+v[2]) * 0.33333333f); }
@@ -182,15 +176,14 @@ insertTri(
 static
 void
 drawSurfaces(
-    const Fg3dMesh &            mesh,
-    const FgVerts &             verts,
-    const Fg3dNormals &         norms,
-    const vector<int> &         texNames,
-    const Fg3dRenderOptions &   rend,
-    bool                        xray,
-    const vector<FgOglRendSurf> &   surfs)
+    const Fg3dMesh &                mesh,
+    const FgVerts &                 verts,
+    const Fg3dNormals &             norms,
+    const vector<FgOglSurf> &       images,
+    const Fg3dRenderOptions &       rend,
+    bool                            transparency)   // Opaque or transparent pass ?
 {
-    FGASSERT(mesh.surfaces.size() == surfs.size());
+    FGASSERT(mesh.surfaces.size() == images.size());
     // Get the modelview matrix, remove the translational component,
     // and adjust it so that it converts the result from OICS to OXCS 
     // for sphere mapping.
@@ -210,55 +203,44 @@ drawSurfaces(
     FgAffine3F      oicsToOxcs(FgVect3F(1.0f));
     oicsToOxcs.postScale(0.5f);
     trans = oicsToOxcs * trans;
-    for (uint ss=0; ss<mesh.surfaces.size(); ++ss)
-    {
-        if (!surfs[ss].visible)
+    for (uint ss=0; ss<mesh.surfaces.size(); ++ss) {
+        if (!images[ss].visible)
             continue;
-
-        if ((surfs[ss].xray && !xray) ||
-            (!surfs[ss].xray && xray))
+        if (images[ss].transparency != transparency)
             continue;
-
-        FgValid<uint>   texName;
-        if (rend.useTexture && (ss < texNames.size()) && (texNames[ss] >= 0))
-            texName = uint(texNames[ss]);
-
+        FgValid<uint>       texName;
+        if (rend.useTexture && (ss < images.size()) && (images[ss].valid()))
+            texName = images[ss].name.val();
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
         glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
         glEnable(GL_LIGHTING);
-
         const Fg3dSurface & surf = mesh.surfaces[ss];
-        bool    doTex = (texName.valid() && (surf.hasUvIndices()));
-        if (doTex)
-        {
+        bool                doTex = (texName.valid() && (surf.hasUvIndices()));
+        if (doTex) {
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D,GLuint(texName.val()));
             // If texture is on, we use two-pass rendering for true spectral and
             // we also use the per-object spectral surface properties. If texture
             // mode is off, all objects are rendered the same and in a single pass.
-            float   alpha = xray ? 0.5f : 1.0f;
-            GLfloat     white[]  = {1.0f, 1.0f, 1.0f, alpha},
+            GLfloat     white[]  = {1.0f, 1.0f, 1.0f, 1.0f},
                         black[]  = {0.0f, 0.0f, 0.0f, 1.0f};
             glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,white);
             glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,white);
             glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,black);
         }
-        else
-        {
+        else {
             glDisable(GL_TEXTURE_2D);
             GLfloat     grey[]  = {0.8f, 0.8f, 0.8f, 1.0f},
-                        green[] = {0.0f, 1.0f, 0.0f, 0.5f},
                         black[]  = {0.0f, 0.0f, 0.0f, 1.0f},
-                        *clr = xray ? green : grey;
+                        *clr = grey;
             glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,clr);
             glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,clr);
             glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,black);
         }
-
         // More bins slows things down without helping since depth sort is only approximate anyway:
-        const size_t    numBins = 10000;
-        FgAffine1F      depToBin(FgVectF2(1,-1),FgVectF2(0,numBins));
+        const size_t            numBins = 10000;
+        FgAffine1F              depToBin(FgVectF2(1,-1),FgVectF2(0,numBins));
         vector<vector<Tri> >    tris(numBins);
         for (uint ii=0; ii<surf.numTris(); ii++) {
             Tri             tri;
@@ -304,13 +286,10 @@ drawSurfaces(
             insertTri(tris,tri0,prj,depToBin);
             insertTri(tris,tri1,prj,depToBin);
         }
-
         glShadeModel(GL_SMOOTH);
         drawTris(tris);
-
         // Specular pass:
-        if (rend.shiny)
-        {
+        if (rend.shiny) {
             for (size_t ii=0; ii<tris.size(); ++ii) {
                 vector<Tri> & trs = tris[ii];
                 for (size_t jj=0; jj<trs.size(); ++jj) {
@@ -320,7 +299,6 @@ drawSurfaces(
                         t.u[kk] = FgVect2F(tt[0],tt[1]); }
                 }
             }
-
             // No need to write depth buffer twice and we don't want it written in the
             // case of alpha textures:
             glDepthMask(0);
@@ -340,19 +318,15 @@ string
 fgOglGetInfo()
 {
     FGASSERT(glGetError() == 0);
-
     const char *oglVendor, *oglRenderer, *oglVersion;
     oglVendor = (const char *)glGetString(GL_VENDOR);
     oglRenderer = (const char *)glGetString(GL_RENDERER);
     oglVersion = (const char *)glGetString(GL_VERSION);
-
     std::string oglInfo(oglVendor);
     oglInfo += ", " + std::string(oglRenderer);
     oglInfo += ", " + std::string(oglVersion);
     oglInfo += "\n";
-
     FGASSERT(glGetError() == 0);
-
     return oglInfo;
 }
 
@@ -360,45 +334,33 @@ void
 fgOglSetup()
 {
     FGASSERT(glGetError() == 0);
-
     // Set up OGL rendering preferences:
-
     GLfloat     blackLight[] = {0.0,  0.0,  0.0,  1.0f};
-
     glEnable(GL_POLYGON_OFFSET_FILL);
-
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT,blackLight);  // No global ambient.
     // Calculate spectral reflection approximating viewer at infinity (default):
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,0);
-
     glEnable(GL_DEPTH_TEST);
-
     // Enable rendering of both sides of each polygon as the default by
     // enabling proper lighting calculations for the back (clockwise) side.
     glDisable(GL_CULL_FACE);        // The OGL default
     glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE); // NOT the OGL default
-
     glReadBuffer(GL_BACK);          // Default but just in case, for glAccum().
     glDepthFunc(GL_LEQUAL);         // (default LESS) this allows the second render pass to work.
-
     // We probably don't need this anymore:
     glPixelStorei(GL_UNPACK_ALIGNMENT,8);
-
     // Repeat rather than clamp to avoid use of the border
     // color since some OGL 1.1 drivers (such as ATI) always
     // use the border color.
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
-
     // We use trilinear texturing for quality. To force the use
     // of a single texture map we'd have to keep track of the view
     // window size in pixels.
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
     glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
-
     s_specMapName = fgOglTextureAdd(FgImgRgbaUb(128,128));
-
     FGASSERT(glGetError() == 0);
 }
 
@@ -408,17 +370,14 @@ fgOglTextureUpdate(
     const FgImgRgbaUb & img)
 {
     FGASSERT(glGetError() == 0);
-
     // OGL requires power of 2 dimensioned images, and expects them stored bottom to top:
     FgImgRgbaUb     oglImg;
     fgPower2Ceil(img,oglImg);
     fgImgFlipVertical(oglImg);
     vector<FgImgRgbaUb>     mipmap = fgMipMap(oglImg);
-
     glEnable(GL_TEXTURE_2D);
     // Set this texture "name" as the current 2D texture "target":
     glBindTexture(GL_TEXTURE_2D,name);
-
     // The next line increments jj to the first pyramid level small enough
     // to be supported by this implementation of OGL. Note that we do not
     // attempt to ensure the texture fits in remaining GPU memory, just that it
@@ -432,7 +391,6 @@ fgOglTextureUpdate(
     uint        dimMax = std::max(oglImg.width(),oglImg.height()),
                 jj;
     for (jj=0; dimMax>oglTexMax; jj++) dimMax/=2;
-
     // Load into GPU:
     for (uint ii=jj; ii<=mipmap.size(); ii++) {
         const FgImgRgbaUb  *img;
@@ -450,12 +408,10 @@ fgOglTextureUpdate(
                      GL_UNSIGNED_BYTE,      // Channel type
                      img->dataPtr());
     }
-
     // Note that although glTexSubImage2D can be used to update an already loaded
     // texture image more efficiently, this didn't work properly on some machines -
     // It would not update the texture if too much texture memory was being used 
     // (NT4, Gauss) or it would randomly corrupt all the textures (XP, beta tester).
-
     FGASSERT(glGetError() == 0);
 }
 
@@ -482,7 +438,7 @@ rendSurfaces(
         const Fg3dMesh &    mesh = *(rms[ii].mesh);
         const FgVerts &     verts = *(rms[ii].verts);
         const Fg3dNormals & norms = *(rms[ii].norms);
-        drawSurfaces(mesh,verts,norms,*(rms[ii].texNames),rend,transparentPass,rms[ii].rendSurfs);
+        drawSurfaces(mesh,verts,norms,*(rms[ii].oglImages),rend,transparentPass);
     }
 }
 
@@ -496,8 +452,7 @@ fgOglSetLighting(const FgLighting & lt)
     glLoadIdentity();               // Lights are transformed by the current MVM
     FgVect4F    amb = fgConcatVert(lt.m_ambient,1.0f);
     glLightfv(glLight[0],GL_AMBIENT,amb.dataPtr());
-    for (uint ll=0; (ll<lt.m_lights.size()) && (ll < 4); ll++)
-    {
+    for (uint ll=0; (ll<lt.m_lights.size()) && (ll < 4); ll++) {
         const FgLight & lgt = lt.m_lights[ll];
         glEnable(glLight[ll]);
         FgVect4F        pos = fgConcatVert(lgt.m_direction,0.0f);
@@ -509,39 +464,79 @@ fgOglSetLighting(const FgLighting & lt)
     FGASSERT(glGetError() == 0);
 }
 
+static
+void
+renderBgImg(uint name,FgVect2UI dims,bool transparency)
+{
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D,name);
+	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+	glDepthMask(0);
+    if (transparency) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+    }
+    GLint       x[4];
+    glGetIntegerv(GL_VIEWPORT,x);
+    FgVect2F    vp(x[2],x[3]),
+                im(dims),
+                xr(im[0]*vp[1],im[1]*vp[0]);
+    FgVect2F    rat = FgVect2F(xr) / fgMaxElem(xr);
+
+	glBegin(GL_TRIANGLES);
+	glTexCoord2f(1.0f,1.0f);
+	glVertex3f(rat[0],rat[1],0.0f);
+	glTexCoord2f(0.0f,1.0f);
+	glVertex3f(-rat[0],rat[1],0.0f);
+	glTexCoord2f(0.0f,0.0f);
+	glVertex3f(-rat[0],-rat[1],0.0f);
+	glVertex3f(-rat[0],-rat[1],0.0f);
+	glTexCoord2f(1.0f,0.0f);
+	glVertex3f(rat[0],-rat[1],0.0f);
+	glTexCoord2f(1.0f,1.0f);
+	glVertex3f(rat[0],rat[1],0.0f);
+	glEnd();
+
+    glDisable(GL_BLEND);
+	glEnable(GL_LIGHTING);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(1);                // Restore state
+}
+
 void
 fgOglRender(
     vector<FgOglRendModel>          rms,
-    FgMat44F                     oglMvm, // MVM in column-major layout.
+    FgMat44F                        oglMvm, // MVM in column-major layout.
     FgVect6D                        frustum,
-    const Fg3dRenderOptions &       rend)
+    const Fg3dRenderOptions &       rend,
+    FgValid<uint>                   bgImgName,
+    FgVect2UI                       bgImgDims)
 {
     FGASSERT(glGetError() == 0);
-
+    glClearColor(rend.backgroundColor[0],rend.backgroundColor[1],rend.backgroundColor[2],1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (bgImgName.valid())
+        renderBgImg(bgImgName.val(),bgImgDims,false);
     if (rend.twoSided)
         glDisable(GL_CULL_FACE);        // The OGL default
     else {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
     }
-
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glFrustum(frustum[0],
-              frustum[1],
-              frustum[2],
-              frustum[3],
-              frustum[4],
-              frustum[5]);
+    glFrustum(frustum[0],frustum[1],frustum[2],frustum[3],frustum[4],frustum[5]);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glLoadMatrixf(oglMvm.dataPtr());
-    glClearColor(rend.backgroundColor[0],rend.backgroundColor[1],rend.backgroundColor[2],1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // Using offsets creates cracks in facet rendering so only use when necessary:
     bool    useOffsets = (rend.wireframe || rend.markedVerts || rend.surfPoints);
-
     glEnable(GL_LIGHTING);
     if (rend.facets) {
         if (useOffsets)
@@ -568,7 +563,8 @@ fgOglRender(
         if (useOffsets)
             glPolygonOffset(0.0,0.0);
     }
-
+    if (bgImgName.valid())
+        renderBgImg(bgImgName.val(),bgImgDims,true);
     FGASSERT(glGetError() == 0);
 }
 
@@ -579,6 +575,24 @@ fgOglTransform()
     glGetFloatv(GL_PROJECTION_MATRIX,&prj[0]);
     glGetFloatv(GL_MODELVIEW_MATRIX,&mvm[0]);
     return prj.transpose() * mvm.transpose();
+}
+
+FgImgRgbaUb
+fgOglGetRender()
+{
+    FgImgRgbaUb     ret;
+    GLint           x[4];
+    glGetIntegerv(GL_VIEWPORT,x);
+    FgVect2UI       dims(x[2],x[3]);
+    if (dims.volume() > 0) {
+        ret.resize(dims);
+        FgRgbaUB *          ptr = ret.dataPtr();
+        for (uint yy=0; yy<dims[1]; ++yy) {     // Invert line ordering from OGL:
+            glReadPixels(0,dims[1]-1-yy,dims[0],1,GL_RGBA,GL_UNSIGNED_BYTE,ptr);
+            ptr += dims[0];
+        }
+    }
+    return ret;
 }
 
 void

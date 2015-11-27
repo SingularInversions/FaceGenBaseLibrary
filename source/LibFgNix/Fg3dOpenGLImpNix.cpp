@@ -8,6 +8,10 @@
 //
 
 #include "stdafx.h"
+#include "FgImage.hpp"
+
+FgImgRgbaUb
+fgOglGetRender()
+{}
 
 //#include "Fg3dOpenGLImpl.hpp"
-

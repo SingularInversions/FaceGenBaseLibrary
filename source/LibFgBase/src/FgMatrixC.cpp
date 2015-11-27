@@ -17,10 +17,10 @@
 using namespace std;
 
 // Gaussian elimination can be very simply explicit in this case:
-FgValidVal<FgVect2F>
+FgOpt<FgVect2F>
 fgSolve(FgMat22F A,FgVect2F b)
 {
-    FgValidVal<FgVect2F>    ret;
+    FgOpt<FgVect2F>    ret;
     float                   a0 = A[0]*A[3],
                             a1 = A[1]*A[2],
                             a0s = a0*a0,
@@ -42,37 +42,37 @@ fgSolve(FgMat22F A,FgVect2F b)
     return ret;
 }
 
-FgValidVal<FgVect3D>
+FgOpt<FgVect3D>
 fgSolve(FgMat33D A,FgVect3D b)
 {
     TNT::Array2D<double>    a(3,3,A.m);
     JAMA::LU<double>        lu(a);
     if (lu.isNonsingular()) {
         TNT::Array1D<double>    x = lu.solve(TNT::Array1D<double>(3,b.m));
-        return FgValidVal<FgVect3D>(FgVect3D(x[0],x[1],x[2]));
+        return FgOpt<FgVect3D>(FgVect3D(x[0],x[1],x[2]));
     }
-    return FgValidVal<FgVect3D>();
+    return FgOpt<FgVect3D>();
 }
 
-FgValidVal<FgVect3F>
+FgOpt<FgVect3F>
 fgSolve(FgMat33F A,FgVect3F b)
 {
     return fgSolve(FgMat33D(A),FgVect3D(b)).cast<FgVect3F>();
 }
 
-FgValidVal<FgVect4D>
+FgOpt<FgVect4D>
 fgSolve(FgMat44D A,FgVect4D b)
 {
     TNT::Array2D<double>    a(4,4,A.m);
     JAMA::LU<double>        lu(a);
     if (lu.isNonsingular()) {
         TNT::Array1D<double>    x = lu.solve(TNT::Array1D<double>(4,b.m));
-        return FgValidVal<FgVect4D>(FgVect4D(x[0],x[1],x[2],x[3]));
+        return FgOpt<FgVect4D>(FgVect4D(x[0],x[1],x[2],x[3]));
     }
-    return FgValidVal<FgVect4D>();
+    return FgOpt<FgVect4D>();
 }
 
-FgValidVal<FgVect4F>
+FgOpt<FgVect4F>
 fgSolve(FgMat44F A,FgVect4F b)
 {
     return fgSolve(FgMat44D(A),FgVect4D(b)).cast<FgVect4F>();

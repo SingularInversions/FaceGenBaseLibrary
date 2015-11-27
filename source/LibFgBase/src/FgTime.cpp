@@ -15,10 +15,8 @@
 using namespace std;
 
 std::string
-fgDateTime()
+fgDateTime(time_t rawTime)
 {
-    time_t          rawTime;
-    time(&rawTime);
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
     oss << fmtTime->tm_year+1900 << "."
@@ -33,6 +31,14 @@ fgDateTime()
         << setw(2) << setfill('0') 
         << fmtTime->tm_sec;
     return oss.str();
+}
+
+std::string
+fgDateTime()
+{
+    time_t          rawTime;
+    time(&rawTime);
+    return fgDateTime(rawTime);
 }
 
 std::string

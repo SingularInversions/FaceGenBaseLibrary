@@ -26,6 +26,7 @@
 #include "FgStdLibs.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
+#include "FgOpt.hpp"
 
 // Declared in LibFgBase but defined differently in each OS-specific library:
 struct  FgGuiOsBase
@@ -77,6 +78,15 @@ struct  FgGuiOsBase
     virtual void
     showWindow(bool) = 0;
 
+    // We sometimes need to pass windows messages on to sub-windows (eg. WM_MOUSEWHEEL) so
+    // we need to query their handle. TODO: This approach doesn't work unless we also pass
+    // down the relative position of the cursor so that split windows know which handle to
+    // return !
+    virtual
+    FgOpt<HWND>
+    getHwnd()
+    {return FgOpt<HWND>(); }
+
     virtual void
     saveState()
     {}
@@ -92,18 +102,17 @@ struct  FgGuiWinStatics
 
 extern FgGuiWinStatics s_fgGuiWin;
 
+LRESULT
+fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className);
+
 template<class WinImpl>
 LRESULT CALLBACK
-fgStatWndProc(
-    HWND    hwnd,
-    UINT    message,
-    WPARAM  wParam,
-    LPARAM  lParam)
+fgStatWndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 {
-    if (message == WM_NCCREATE)
-    {
-        // The "this" pointer info passed to CreateWindowEx is returned here
-        // in 'lParam'. Save to the Windows it
+    static string   className = typeid(WinImpl).name();
+    if (message == WM_NCCREATE) {
+        // The "this" pointer passed to CreateWindowEx is returned here in 'lParam'.
+        // Save to the Windows instance user data for retrieval in later calls:
         SetWindowLongPtr(hwnd,0,(LONG_PTR)((LPCREATESTRUCT)lParam)->lpCreateParams);
     }
     // Get object pointer from hwnd:
@@ -111,26 +120,7 @@ fgStatWndProc(
     if (wnd == 0)   // For before WM_NCCREATE
         return DefWindowProc(hwnd,message,wParam,lParam);
     else
-    {
-        LRESULT     ret(0);
-        try
-        {
-            ret = wnd->wndProc(hwnd,message,wParam,lParam);
-        }
-        catch(FgException const & e)
-        {
-            std::cout << e.no_tr_message() << std::endl;
-        }
-        catch(std::exception const & e)
-        {
-            std::cout << e.what() << std::endl;
-        }
-        catch(...)
-        {
-            std::cout << "Unexpected error.\n";
-        }
-        return ret;
-    }
+        return fgWinCallCatch(boost::bind(&WinImpl::wndProc,wnd,hwnd,message,wParam,lParam),className);
 }
 
 struct  FgCreateChild

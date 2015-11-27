@@ -13,36 +13,35 @@
 #include "FgGuiApiBase.hpp"
 #include "FgDepGraph.hpp"
 
-// Possibly obsolete, places text itself by handling WM_PAINT:
 struct FgGuiApiText : FgGuiApi<FgGuiApiText>
 {
     FgDgn<FgString>         content;
     uint                    updateFlagIdx;
+    uint                    minWidth;       // If text is shorter than this, use this. Otherwise ignore.
+
+    FgGuiApiText() : minWidth(0) {}
 };
 
 FgGuiPtr
-fgGuiText(FgDgn<FgString> t);
+fgGuiText(FgDgn<FgString> node,uint minWidth=0);
+
+FgGuiPtr
+fgGuiText(FgString text,uint minWidth=0);
 
 struct  FgGuiApiTextEdit : FgGuiApi<FgGuiApiTextEdit>
 {
     uint                            updateFlagIdx;
     boost::function<FgString(void)> getInput;
     boost::function<void(FgString)> setOutput;
+    uint                            minWidth;
+    bool                            wantStretch;    // Width only.
 };
 
 FgGuiPtr
-fgGuiTextEdit(FgDgn<FgString> t);
+fgGuiTextEdit(FgDgn<FgString> t,bool wantStretch=true);
 
-struct FgGuiApiTextRich : FgGuiApi<FgGuiApiTextRich>
-{
-    FgDgn<FgString>         content;
-    uint                    updateFlagIdx;
-};
-
+// Clips output values to bounds and displays only 6 digits.
 FgGuiPtr
-fgGuiTextRich(FgDgn<FgString> node);
-
-FgGuiPtr
-fgGuiTextRich(FgString text);
+fgGuiTextEditFloat(FgDgn<double> valN,FgVect2D bounds);
 
 #endif

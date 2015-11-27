@@ -10,7 +10,7 @@
 #include "stdafx.h"
 
 #include "FgSampler.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgBounds.hpp"
 #include "FgRgba.hpp"
 

@@ -6,7 +6,7 @@
 // Authors: Andrew Beatty
 // Created: Jan 17, 2014
 //
-// Very basic FBX export
+// Basic FBX export
 
 #include "stdafx.h"
 #include "FgStdStream.hpp"
@@ -15,392 +15,354 @@
 #include "Fg3dMeshOps.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "Fg3dNormals.hpp"
+#include "FgCommand.hpp"
+#include "FgTestUtils.hpp"
 
 using namespace std;
 
-struct  Sects
-{
-    string      objects;
-    string      connections;
-};
+static
+size_t
+idModel(size_t mm)
+{return mm*100+1; }
 
-Sects
-getSects(const Fg3dMesh & mesh,size_t & objCnt)
-{
-    std::ostringstream      o,c;
+static
+size_t
+idGeometry(size_t mm)
+{return mm*100+2; }
 
-    // MODEL:
-    size_t  id_model = ++objCnt,
-            id_material = ++objCnt;
-    o <<
-        "    Model: " << id_model << ", \"Model::" << mesh.name.as_ascii() << "\", \"Mesh\" {\n"
-        "        Version: 232\n"
-        "        Properties70:  {\n"
-        "            P: \"ScalingMax\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "            P: \"DefaultAttributeIndex\", \"int\", \"Integer\", \"\",0\n"
-        "            P: \"Lcl Translation\", \"Lcl Translation\", \"\", \"A\",0,0,0\n"
-        "        }\n"
-        "        Shading: T\n"
-        "        Culling: \"CullingOff\"\n"
-        "    }\n"
-        "    Material: " << id_material << ", \"Material::Skin\", \"\" {\n"
-        "        Version: 102\n"
-        "        ShadingModel: \"phong\"\n"
-        "        MultiLayer: 0\n"
-        "        Properties70:  {\n"
-        "            P: \"ShadingModel\", \"KString\", \"\", \"\", \"phong\"\n"
-        "            P: \"AmbientColor\", \"Color\", \"\", \"A\",1,1,1\n"
-        "            P: \"DiffuseColor\", \"Color\", \"\", \"A\",1,1,1\n"
-        "            P: \"SpecularColor\", \"Color\", \"\", \"A\",0,0,0\n"
-        "            P: \"ShininessExponent\", \"Number\", \"\", \"A\",0.5\n"
-        "            P: \"Emissive\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "            P: \"Ambient\", \"Vector3D\", \"Vector\", \"\",1,1,1\n"
-        "            P: \"Diffuse\", \"Vector3D\", \"Vector\", \"\",1,1,1\n"
-        "            P: \"Specular\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "            P: \"Shininess\", \"double\", \"Number\", \"\",0.5\n"
-        "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
-        "            P: \"Reflectivity\", \"double\", \"Number\", \"\",0\n"
-        "        }\n"
-        "    }\n";
-    c <<
-        "    C: \"OO\"," << id_model << ",0\n"
-        "    C: \"OO\"," << id_material << "," << id_model << "\n";
+static
+size_t
+idGeoExp(size_t mm,size_t ee)
+{return ee*1000+mm*100+7; }
 
-    // BASE GEOMETRY
-    size_t  id_geometry_base = ++objCnt;
-    o <<
-        "    Geometry: " << id_geometry_base << ", \"Geometry::" << mesh.name.as_ascii() << "\" , \"Mesh\" {\n"
-        "        Vertices: *" << mesh.verts.size() * 3 << " {\n"
-        "            a: ";
-    for (size_t ii=0; ii<mesh.verts.size(); ++ii) {
-        FgVect3F        v = mesh.verts[ii];
-        o << v[0] << "," << v[1] << "," << v[2];
-        if (ii != mesh.verts.size() - 1)
-            o << ",";
-    }
-    if (mesh.surfaces.size() > 1)
-        fgThrow("FBX export for multi-surface meshes not yet implemented");
-    const Fg3dSurface &     surf = mesh.surfaces[0];
-    size_t                  numInds = surf.tris.vertInds.size() * 3 + surf.quads.vertInds.size() * 4;
-    o << "\n"
-        "        }\n"
-        "        PolygonVertexIndex: *" << numInds << " {\n"
-        "            a: ";
-    for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
-        FgVect3UI       i = surf.tris.vertInds[ii];
-        o << i[0] << "," << i[1] << "," << -1 - int(i[2]);
-        if ((ii != surf.tris.vertInds.size()-1) || !surf.quads.vertInds.empty())
-            o << ",";
-    }
-    for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
-        FgVect4UI       i = surf.quads.vertInds[ii];
-        o << i[0] << "," << i[1] << "," << i[2] << "," << -1 - int(i[3]);
-        if (ii != surf.quads.vertInds.size()-1)
-            o << ",";
-    }
-    Fg3dNormals     norms = fgNormals(mesh.surfaces,mesh.verts);
-    o << "\n"
-        "        }\n"
-        "        GeometryVersion: 124\n"
-        "        LayerElementNormal: 0 {\n"
-        "            Version: 102\n"
-        "            Name: \"\"\n"
-        "            MappingInformationType: \"ByVertice\"\n"
-        "            ReferenceInformationType: \"Direct\"\n"
-        "            Normals: *" << norms.vert.size() * 3 << " {\n"
-        "                a: ";
-    for (size_t ii=0; ii<norms.vert.size(); ++ii) {
-        FgVect3F    n = norms.vert[ii];
-        o << n[0] << "," << n[1] << "," << n[2];
-        if (ii != norms.vert.size()-1)
-            o << ",";
-    }
-    o << "\n"
-        "            } \n"
-        "        }\n";
-    if (!mesh.uvs.empty()) {
-        o <<
-            "        LayerElementUV: 0 {\n"
-            "            Version: 101\n"
-            "            Name: \"UVs\"\n"
-            "            MappingInformationType: \"ByPolygonVertex\"\n"
-            "            ReferenceInformationType: \"IndexToDirect\"\n"
-            "            UV: *" << mesh.uvs.size() * 2 << " {\n"
-            "                a: ";
-        for (size_t ii=0; ii<mesh.uvs.size(); ++ii) {
-            FgVect2F    uv = mesh.uvs[ii];
-            o << uv[0] << "," << uv[1];
-            if (ii != mesh.uvs.size()-1)
-                o << ",";
-        }
-        numInds = surf.tris.uvInds.size() * 3 + surf.quads.uvInds.size() * 4;
-        o << "\n"
-            "            }\n"
-            "            UVIndex: *" << numInds << " {\n"
-            "                a: ";
-        for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii) {
-            FgVect3UI       i = surf.tris.uvInds[ii];
-            o << i[0] << "," << i[1] << "," << i[2];
-            if ((ii != surf.tris.uvInds.size()-1) || !surf.quads.uvInds.empty())
-                o << ",";
-        }
-        for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii) {
-            FgVect4UI       i = surf.quads.uvInds[ii];
-            o << i[0] << "," << i[1] << "," << i[2] << "," << i[3];
-            if (ii != surf.quads.uvInds.size()-1)
-                o << ",";
-        }
-        o << "\n"
-            "            }\n"
-            "        }\n";
-    }
-    o <<
-        "        LayerElementMaterial: 0 {\n"
-        "            Version: 101\n"
-        "            Name: \"\"\n"
-        "            MappingInformationType: \"AllSame\"\n"
-        "        }\n"
-        "        Layer: 0 {\n"
-        "            Version: 100\n"
-        "            LayerElement:  {\n"
-        "                Type: \"LayerElementNormal\"\n"
-        "                TypedIndex: 0\n"
-        "            }\n"
-        "            LayerElement:  {\n"
-        "                Type: \"LayerElementMaterial\"\n"
-        "                TypedIndex: 0\n"
-        "            }\n"
-        "            LayerElement:  {\n"
-        "                Type: \"LayerElementUV\"\n"
-        "                TypedIndex: 0\n"
-        "            }\n"
-        "        }\n"
-        "    }\n";
-    c << 
-        "    C: \"OO\"," << id_geometry_base << "," << id_model << "\n";
+static
+size_t
+idDeformer(size_t mm,size_t ee)
+{return ee*1000+mm*100+8; }
 
-    // MORPHS:
-    vector<float>       morphCoord(mesh.numMorphs(),0.0f);
-    for (size_t mm=0; mm<mesh.numMorphs(); ++mm) {
-        size_t      id_morph_geometry = ++objCnt,
-                    id_morph_deformer = ++objCnt,
-                    id_morph_channel = ++objCnt;
-        FgIndexedMorph  m = mesh.getMorphAsIndexedDelta(mm);
-        o <<
-            "    Geometry: " << id_morph_geometry << ",  \"Geometry::" << m.name << "\", \"Shape\" {\n"
-            "        Version: 100\n"
-            "        Indexes: *" << m.baseInds.size() << " {\n"
-            "            a: ";
-        for (size_t ii=0; ii<m.baseInds.size(); ++ii) {
-            o << m.baseInds[ii];
-            if (ii != m.baseInds.size()-1)
-                o << ",";
-        }
-        o << "\n"
-            "        }\n"
-            "        Vertices: *" << m.baseInds.size() * 3 << " {\n"
-            "            a: ";
-        for (size_t ii=0; ii<m.verts.size(); ++ii) {
-            FgVect3F    v = m.verts[ii];
-            o << v[0] << "," << v[1] << "," << v[2];
-            if (ii != m.verts.size()-1)
-                o << ",";
-        }
-        morphCoord[mm] = 1.0f;
-        FgVerts         morphVerts;
-        mesh.morph(morphCoord,morphVerts);
-        Fg3dNormals     mn = fgNormals(mesh.surfaces,morphVerts);
-        morphCoord[mm] = 0.0f;
-        o << "\n"
-            "        }\n"
-            "        Normals: *" << m.baseInds.size() * 3 << " {\n"
-            "            a: ";
-        for (size_t ii=0; ii<m.baseInds.size(); ++ii) {
-            FgVect3F    n = mn.vert[m.baseInds[ii]];
-            o << n[0] << "," << n[1] << "," << n[2];
-            if (ii != m.baseInds.size()-1)
-                o << ",";
-        }
-        o << "\n"
-            "        }\n"
-            "    }\n"
-            "    Deformer: " << id_morph_deformer << ", \"Deformer::" << m.name << "\", \"BlendShape\" {\n"
-            "        Version: 100\n"
-            "    }\n"
-            "    Deformer: " << id_morph_channel << ", \"SubDeformer::" << m.name << "\", \"BlendShapeChannel\" {\n"
-            "        Version: 100\n"
-            "        DeformPercent: 0\n"
-            "        FullWeights: *1 {\n"
-            "            a: 10\n"
-            "        }\n"
-            "    }\n";
-        c <<
-            "    C: \"OO\"," << id_morph_deformer << "," << id_geometry_base << "\n"
-            "    C: \"OO\"," << id_morph_channel << "," << id_morph_deformer << "\n"
-            "    C: \"OO\"," << id_morph_geometry << "," << id_morph_channel << "\n";
-    }
+static
+size_t
+idSubdeformer(size_t mm,size_t ee)
+{return ee*1000+mm*100+9; }
 
-    Sects   ret;
-    ret.objects = o.str();
-    ret.connections = c.str();
-    return ret;
-}
+static
+size_t
+idMaterial(size_t mm,size_t tt)
+{return mm*100+tt*10+3; }
+
+static
+size_t
+idTexture(size_t mm,size_t tt)
+{return mm*100+tt*10+4; }
+
+static
+size_t
+idVideo(size_t mm,size_t tt)
+{return mm*100+tt*10+5; }
+
+static
+string
+nmVideo(size_t mm,size_t tt)
+{return "\"Video::Video"+fgToString(mm)+"_"+fgToString(tt)+"\""; }
 
 void
 fgSaveFbx(
     const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes)
+    const vector<Fg3dMesh> &    meshes,
+    string                      imgFormat)
 {
     FGASSERT(!meshes.empty());
-    FgOfstream  ofs(filename);
+    FgPath      path(filename);
+    path.ext = "fbx";
+    FgOfstream  ofs(path.str());
     ofs.precision(7);
     ofs <<
         "; FBX 7.4.0 project file\n"
+        "; Created by FaceGen\n"
         "FBXHeaderExtension:  {\n"
         "    FBXHeaderVersion: 1003\n"
         "    FBXVersion: 7400\n"
-        "    Creator: \"FaceGen\"\n"
         "}\n"
         "Definitions:  {\n"
         "    Version: 100\n"
-        "    Count: 7\n"
-        "    ObjectType: \"GlobalSettings\" {\n"
-        "        Count: 1\n"
+        "    ObjectType: \"Model\" {\n"
         "    }\n"
         "    ObjectType: \"Geometry\" {\n"
-        "        Count: 2\n"
-        "        PropertyTemplate: \"FbxMesh\" {\n"
-        "            Properties70:  {\n"
-        "                P: \"Color\", \"ColorRGB\", \"Color\", \"\",0.8,0.8,0.8\n"
-        "                P: \"BBoxMin\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"BBoxMax\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"Primary Visibility\", \"bool\", \"\", \"\",1\n"
-        "                P: \"Casts Shadows\", \"bool\", \"\", \"\",1\n"
-        "                P: \"Receive Shadows\", \"bool\", \"\", \"\",1\n"
-        "            }\n"
-        "        }\n"
-        "    }\n"
-        "    ObjectType: \"Model\" {\n"
-        "        Count: 1\n"
-        "        PropertyTemplate: \"FbxNode\" {\n"
-        "        }\n"
         "    }\n"
         "    ObjectType: \"Material\" {\n"
-        "        Count: 1\n"
-        "        PropertyTemplate: \"FbxSurfacePhong\" {\n"
-        "            Properties70:  {\n"
-        "                P: \"ShadingModel\", \"KString\", \"\", \"\", \"Phong\"\n"
-        "                P: \"MultiLayer\", \"bool\", \"\", \"\",0\n"
-        "                P: \"EmissiveColor\", \"Color\", \"\", \"A\",0,0,0\n"
-        "                P: \"EmissiveFactor\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"AmbientColor\", \"Color\", \"\", \"A\",0.2,0.2,0.2\n"
-        "                P: \"AmbientFactor\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"DiffuseColor\", \"Color\", \"\", \"A\",0.8,0.8,0.8\n"
-        "                P: \"DiffuseFactor\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"Bump\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"NormalMap\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"BumpFactor\", \"double\", \"Number\", \"\",1\n"
-        "                P: \"TransparentColor\", \"Color\", \"\", \"A\",0,0,0\n"
-        "                P: \"TransparencyFactor\", \"Number\", \"\", \"A\",0\n"
-        "                P: \"DisplacementColor\", \"ColorRGB\", \"Color\", \"\",0,0,0\n"
-        "                P: \"DisplacementFactor\", \"double\", \"Number\", \"\",1\n"
-        "                P: \"VectorDisplacementColor\", \"ColorRGB\", \"Color\", \"\",0,0,0\n"
-        "                P: \"VectorDisplacementFactor\", \"double\", \"Number\", \"\",1\n"
-        "                P: \"SpecularColor\", \"Color\", \"\", \"A\",0.2,0.2,0.2\n"
-        "                P: \"SpecularFactor\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"ShininessExponent\", \"Number\", \"\", \"A\",20\n"
-        "                P: \"ReflectionColor\", \"Color\", \"\", \"A\",0,0,0\n"
-        "                P: \"ReflectionFactor\", \"Number\", \"\", \"A\",1\n"
-        "            }\n"
-        "        }\n"
         "    }\n"
         "    ObjectType: \"Texture\" {\n"
-        "        Count: 3\n"
-        "        PropertyTemplate: \"FbxFileTexture\" {\n"
-        "            Properties70:  {\n"
-        "                P: \"TextureTypeUse\", \"enum\", \"\", \"\",0\n"
-        "                P: \"Texture alpha\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"CurrentMappingType\", \"enum\", \"\", \"\",0\n"
-        "                P: \"WrapModeU\", \"enum\", \"\", \"\",0\n"
-        "                P: \"WrapModeV\", \"enum\", \"\", \"\",0\n"
-        "                P: \"UVSwap\", \"bool\", \"\", \"\",0\n"
-        "                P: \"PremultiplyAlpha\", \"bool\", \"\", \"\",1\n"
-        "                P: \"Translation\", \"Vector\", \"\", \"A\",0,0,0\n"
-        "                P: \"Rotation\", \"Vector\", \"\", \"A\",0,0,0\n"
-        "                P: \"Scaling\", \"Vector\", \"\", \"A\",1,1,1\n"
-        "                P: \"TextureRotationPivot\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"TextureScalingPivot\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"CurrentTextureBlendMode\", \"enum\", \"\", \"\",1\n"
-        "                P: \"UVSet\", \"KString\", \"\", \"\", \"default\"\n"
-        "                P: \"UseMaterial\", \"bool\", \"\", \"\",0\n"
-        "                P: \"UseMipMap\", \"bool\", \"\", \"\",0\n"
-        "            }\n"
-        "        }\n"
-        "    }\n"
-        "    ObjectType: \"LayeredTexture\" {\n"
-        "        Count: 2\n"
-        "        PropertyTemplate: \"FbxLayeredTexture\" {\n"
-        "            Properties70:  {\n"
-        "                P: \"TextureTypeUse\", \"enum\", \"\", \"\",0\n"
-        "                P: \"Texture alpha\", \"Number\", \"\", \"A\",1\n"
-        "                P: \"CurrentMappingType\", \"enum\", \"\", \"\",0\n"
-        "                P: \"WrapModeU\", \"enum\", \"\", \"\",0\n"
-        "                P: \"WrapModeV\", \"enum\", \"\", \"\",0\n"
-        "                P: \"UVSwap\", \"bool\", \"\", \"\",0\n"
-        "                P: \"PremultiplyAlpha\", \"bool\", \"\", \"\",1\n"
-        "                P: \"Translation\", \"Vector\", \"\", \"A\",0,0,0\n"
-        "                P: \"Rotation\", \"Vector\", \"\", \"A\",0,0,0\n"
-        "                P: \"Scaling\", \"Vector\", \"\", \"A\",1,1,1\n"
-        "                P: \"TextureRotationPivot\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"TextureScalingPivot\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
-        "                P: \"CurrentTextureBlendMode\", \"enum\", \"\", \"\",1\n"
-        "                P: \"UVSet\", \"KString\", \"\", \"\", \"default\"\n"
-        "            }\n"
-        "        }\n"
         "    }\n"
         "    ObjectType: \"Video\" {\n"
-        "        Count: 3\n"
-        "        PropertyTemplate: \"FbxVideo\" {\n"
-        "            Properties70:  {\n"
-        "                P: \"ImageSequence\", \"bool\", \"\", \"\",0\n"
-        "                P: \"ImageSequenceOffset\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"FrameRate\", \"double\", \"Number\", \"\",0\n"
-        "                P: \"LastFrame\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"Width\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"Height\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"Path\", \"KString\", \"XRefUrl\", \"\", \"\"\n"
-        "                P: \"StartFrame\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"StopFrame\", \"int\", \"Integer\", \"\",0\n"
-        "                P: \"PlaySpeed\", \"double\", \"Number\", \"\",0\n"
-        "                P: \"Offset\", \"KTime\", \"Time\", \"\",0\n"
-        "                P: \"InterlaceMode\", \"enum\", \"\", \"\",0\n"
-        "                P: \"FreeRunning\", \"bool\", \"\", \"\",0\n"
-        "                P: \"Loop\", \"bool\", \"\", \"\",0\n"
-        "                P: \"AccessMode\", \"enum\", \"\", \"\",0\n"
-        "            }\n"
-        "        }\n"
         "    }\n"
         "    ObjectType: \"Deformer\" {\n"
-        "        Count: 2\n"
         "    }\n"
         "}\n"
         "Objects:  {\n";
-    size_t          objCnt = 2740000;
-    vector<Sects>   sects;
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        sects.push_back(getSects(meshes[ii],objCnt));
-        ofs << sects.back().objects;
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        const Fg3dMesh &    mesh = meshes[mm];
+        ofs <<
+            "    Model: " << idModel(mm) << ", \"Model::" << mesh.name << "\", \"Mesh\" {\n"
+            "        Version: 232\n"
+            "        Properties70:  {\n"
+            "            P: \"ScalingMax\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
+            "            P: \"DefaultAttributeIndex\", \"int\", \"Integer\", \"\",0\n"
+            "            P: \"Lcl Translation\", \"Lcl Translation\", \"\", \"A\",0,0,0\n"
+            "        }\n"
+            "        Shading: T\n"
+            "        Culling: \"CullingOff\"\n"
+            "    }\n"
+            "    Geometry: " << idGeometry(mm) << ", \"Geometry::" << mesh.name << "\" , \"Mesh\" {\n"
+            "        Vertices: *" << mesh.verts.size()*3 << " {\n"
+            "            a: ";
+        for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
+            FgVect3F    v = mesh.verts[vv];
+            if (vv > 0)
+                ofs << ",";
+            ofs << v[0] << "," << v[1] << "," << v[2];
+        }
+        ofs << endl <<
+            "        }\n"
+            "        PolygonVertexIndex: *" << mesh.numTris()*3+mesh.numQuads()*4 << " {\n"
+            "            a: ";
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+            const Fg3dSurface & surf = mesh.surfaces[ss];
+            for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+                FgVect3UI   i = surf.tris.vertInds[tt];
+                if (tt > 0)
+                    ofs << ",";
+                ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
+            }
+            if ((!surf.tris.vertInds.empty()) && (!surf.quads.vertInds.empty()))
+                ofs << ",";
+            for (size_t tt=0; tt<surf.quads.vertInds.size(); ++tt) {
+                FgVect4UI   i = surf.quads.vertInds[tt];
+                if (tt > 0)
+                    ofs << ",";
+                ofs << i[0] << "," << i[1] << "," << i[2] << "," << int(~i[3]);
+            }
+        }
+        ofs << endl <<
+            "        }\n"
+            "        GeometryVersion: 124\n"
+            "        LayerElementNormal: 0 {\n"
+            "            Version: 102\n"
+            "            Name: \"\"\n"
+            "            MappingInformationType: \"ByVertice\"\n"
+            "            ReferenceInformationType: \"Direct\"\n"
+            "            Normals: *" << mesh.verts.size()*3 << " {\n"
+            "                a: ";
+        Fg3dNormals     norms = fgNormals(mesh);
+        for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
+            FgVect3F    n = norms.vert[vv];
+            if (vv > 0)
+                ofs << ",";
+            ofs << n[0] << "," << n[1] << "," << n[2];
+        }
+        ofs << endl <<
+            "            }\n"
+            "        }\n"
+            "        LayerElementUV: 0 {\n"
+            "            Version: 101\n"
+            "            Name: \"UVs" << mm << "\"\n"
+            "            MappingInformationType: \"ByPolygonVertex\"\n"
+            "            ReferenceInformationType: \"IndexToDirect\"\n"
+            "            UV: *" << mesh.uvs.size()*2 << " {\n"
+            "                a: ";
+        for (size_t uu=0; uu<mesh.uvs.size(); ++uu) {
+            FgVect2F    uv = mesh.uvs[uu];
+            if (uu > 0)
+                ofs << ",";
+            ofs << uv[0] << "," << uv[1];
+        }
+        ofs << endl <<
+            "            }\n"
+            "            UVIndex: *" << mesh.numTris()*3+mesh.numQuads()*4 << " {\n"
+            "                a: ";
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+            const Fg3dSurface & surf = mesh.surfaces[ss];
+            for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
+                FgVect3UI   i = surf.tris.uvInds[tt];
+                if (tt > 0)
+                    ofs << ",";
+                ofs << i[0] << "," << i[1] << "," << i[2];
+            }
+            if ((!surf.tris.uvInds.empty()) && (!surf.quads.uvInds.empty()))
+                ofs << ",";
+            for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
+                FgVect4UI   i = surf.quads.uvInds[tt];
+                if (tt > 0)
+                    ofs << ",";
+                ofs << i[0] << "," << i[1] << "," << i[2] << "," << i[3];
+            }
+        }
+        ofs << endl <<
+            "            }\n"
+            "        }\n";
+        ofs <<
+            "        LayerElementMaterial: 0 {\n"
+            "            Version: 101\n"
+            "            Name: \"\"\n"
+            "            MappingInformationType: \"ByPolygon\"\n"
+            "            ReferenceInformationType: \"IndexToDirect\"\n"
+            "            Materials: *" << mesh.numFacets() << " {\n"
+            "                a: ";
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+            const Fg3dSurface & surf = mesh.surfaces[ss];
+            size_t              num = surf.tris.uvInds.size() + surf.quads.uvInds.size();
+            for (size_t ii=0; ii<num; ++ii) {
+                if (ii > 0)
+                    ofs << ",";
+                ofs << ss;
+            }
+        }
+        ofs << endl <<
+            "            }\n"
+            "        }\n"
+            "        Layer: 0 {\n"
+            "            Version: 100\n"
+            "            LayerElement:  {\n"
+            "                Type: \"LayerElementNormal\"\n"
+            "                TypedIndex: 0\n"
+            "            }\n"
+            "            LayerElement:  {\n"
+            "                Type: \"LayerElementUV\"\n"
+            "                TypedIndex: 0\n"
+            "            }\n"
+            "            LayerElement:  {\n"
+            "                Type: \"LayerElementMaterial\"\n"
+            "                TypedIndex: 0\n"
+            "            }\n"
+            "        }\n";
+        ofs <<
+            "    }\n";
+        for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
+            FgIndexedMorph  morph = mesh.getMorphAsIndexedDelta(ee);
+            ofs << 
+                "    Geometry: " << idGeoExp(mm,ee) << ", \"Geometry::" << morph.name << "\", \"Shape\" {\n"
+                "        Version: 100\n"
+                "        Indexes: *" << morph.baseInds.size() << " {\n"
+                "            a: ";
+            for (size_t ii=0; ii<morph.baseInds.size(); ++ii) {
+                if (ii > 0)
+                    ofs << ",";
+                ofs << morph.baseInds[ii];
+            }
+            ofs << endl <<
+                "        }\n"
+                "        Vertices: *" << morph.baseInds.size()*3 << " {\n"
+                "            a: ";
+            for (size_t ii=0; ii<morph.baseInds.size(); ++ii) {
+                if (ii > 0)
+                    ofs << ",";
+                FgVect3F    v = morph.verts[ii];
+                ofs << v[0] << "," << v[1] << "," << v[2];
+            }
+            ofs << endl <<
+                "        }\n"
+                "    }\n"
+                "    Deformer: " << idDeformer(mm,ee) << ", \"Deformer::" << morph.name << "\", \"BlendShape\" {\n"
+                "        Version: 100\n"
+                "    }\n"
+                "    Deformer: " << idSubdeformer(mm,ee) << ", \"SubDeformer::" << morph.name << "\", \"BlendShapeChannel\" {\n"
+                "        Version: 100\n"
+                "        DeformPercent: 0\n"
+                "        FullWeights: *1 {\n"
+                "            a: 10\n"
+                "        }\n"
+                "    }\n";
+        }
+    }
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        const Fg3dMesh &    mesh = meshes[mm];
+        for (size_t tt=0; tt<mesh.texImages.size(); ++tt) {
+            ofs <<
+                "    Material: " << idMaterial(mm,tt) << ", \"Material::Material" << mm << "_" << tt << "\", \"\" {\n"
+                "        Version: 102\n"
+                "        ShadingModel: \"phong\"\n"
+                "        MultiLayer: 0\n"
+                "        Properties70:  {\n"
+                "            P: \"AmbientColor\", \"Color\", \"\", \"A\",0,0,0\n"
+                "            P: \"DiffuseColor\", \"Color\", \"\", \"A\",1,1,1\n"
+                "            P: \"Emissive\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
+                "            P: \"Ambient\", \"Vector3D\", \"Vector\", \"\",0,0,0\n"
+                "            P: \"Diffuse\", \"Vector3D\", \"Vector\", \"\",1,1,1\n"
+                "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
+                "        }\n"
+                "    }\n";
+            FgString    texBaseExt = path.base + fgToString(mm) + "_" + fgToString(tt) + "." + imgFormat;
+            fgSaveImgAnyFormat(path.dir() + texBaseExt,mesh.texImages[tt]);
+            ofs <<
+                "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
+                "        Type: \"TextureVideoClip\"\n"
+                "        Version: 202\n"
+                "        TextureName: \"Texture::Texture" << mm << "_" << tt << "\"\n"
+                "        Properties70:  {\n"
+                "            P: \"CurrentTextureBlendMode\", \"enum\", \"\", \"\",0\n"
+                "            P: \"UVSet\", \"KString\", \"\", \"\", \"UVs" << mm << "\"\n"
+                "            P: \"UseMaterial\", \"bool\", \"\", \"\",1\n"
+                "        }\n"
+                "        Media: " << nmVideo(mm,tt) << "\n"
+                "        FileName: \"" << texBaseExt << "\"\n"
+                "        RelativeFilename: \"" << texBaseExt << "\"\n"
+                "        ModelUVTranslation: 0,0\n"
+                "        ModelUVScaling: 1,1\n"
+                "        Texture_Alpha_Source: \"None\"\n"
+                "        Cropping: 0,0,0,0\n"
+                "    }\n";
+            ofs <<
+                "    Video: " << idVideo(mm,tt) << ", " << nmVideo(mm,tt) << ", \"Clip\" {\n"
+                "        Type: \"Clip\"\n"
+                "        Properties70:  {\n"
+                "            P: \"Path\", \"KString\", \"XRefUrl\", \"\", \"" << texBaseExt << "\"\n"
+                "        }\n"
+                "        UseMipMap: 0\n"
+                "        Filename: \"" << texBaseExt << "\"\n"
+                "        RelativeFilename: \"" << texBaseExt << "\"\n"
+                "    }\n";
+        }
     }
     ofs <<
         "}\n"
-        "Connections:  {\n";
-    for (size_t ii=0; ii<sects.size(); ++ii)
-        ofs << sects[ii].connections;
-    ofs <<
-        "}\n"
-        "Takes:  {\n"
-        "    Current: \"\"\n"
-        "}\n";
+        "Connections: {\n";
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        const Fg3dMesh &    mesh = meshes[mm];
+        ofs << "    C: \"OO\", " << idModel(mm) << ",0\n";
+        for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
+            ofs << "    C: \"OO\", " << idGeoExp(mm,ee) << "," << idSubdeformer(mm,ee) << "\n";
+            ofs << "    C: \"OO\", " << idSubdeformer(mm,ee) << "," << idDeformer(mm,ee) << "\n";
+            ofs << "    C: \"OO\", " << idDeformer(mm,ee) << "," << idGeometry(mm) << "\n";
+
+        }
+    }
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        const Fg3dMesh &    mesh = meshes[mm];
+        ofs << "    C: \"OO\", " << idGeometry(mm) << "," << idModel(mm) << "\n";
+        for (size_t tt=0; tt<mesh.texImages.size(); ++tt) {
+            ofs <<
+                "    C: \"OO\", " << idMaterial(mm,tt) << "," << idModel(mm) << "\n"
+                "    C: \"OP\", " << idTexture(mm,tt) << "," << idMaterial(mm,tt) << ", \"DiffuseColor\"\n"
+                "    C: \"OO\", " << idVideo(mm,tt) << "," << idTexture(mm,tt) << "\n";
+        }
+    }
+    ofs << "}\n";
+}
+
+void
+fgSaveFbxTest(const FgArgs & args)
+{
+    FGTESTDIR
+    FgString            dd = fgDataDir();
+    string              rd = "csam/Animate/";
+    vector<Fg3dMesh>    meshes;
+    meshes.push_back(fgLoadTri(dd+rd+"Head/Mouth.tri"));
+    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Head/Mouth.tga"));
+    meshes.push_back(fgLoadTri(dd+rd+"Accessories/Glasses.tri"));
+    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Accessories/Glasses.tga"));
+    fgSaveFbx("meshExportFbx",meshes);
+    fgRegressFile("meshExportFbx.fbx","base/test/");
+    fgRegressFile("meshExportFbx0_0.png","base/test/");
+    fgRegressFile("meshExportFbx1_0.png","base/test/");
 }
 
 // */

@@ -141,9 +141,10 @@ inline void
 fgFsCreateSetDirectory(const FgString & d) 
     {fgCreateDirectory(d); fgSetCurrentDir(d); }
 
-// Create all non-existing directories in given path:
+// Create all non-existing directories in given path.
+// An undelimited name will be created as a directory:
 void
-fgCreatePath(const FgPath &);
+fgCreatePath(const FgString &);
 
 FgString                        // Return the full path of the executable
 fgExecutablePath();
@@ -170,9 +171,10 @@ fgBinaryFileCompare(
     const FgString & file1,
     const FgString & file2);
 
-// Returns false if the file cannot be read:
+// Returns false if the given file or directory cannot be read.
+// The returned time is NOT compatible with std raw time and will in fact crash fgDateTime():
 bool
-fgFileCreationTime(const FgString & filename,uint64 & time);
+fgCreationTime(const FgString & path,uint64 & time);
 
 // Works for both files and directories:
 inline
@@ -214,9 +216,9 @@ struct  FgPushDir
         orig.resize(orig.size()-1); }
 };
 
-// Returns full path of each matching file:
+// Returns name of each matching file & dir:
 FgDirectoryContents
-fgGlobStartsWith(const FgString & path);
+fgGlobStartsWith(const FgPath & path);
 
 // If 'path' has a base name it's ignored.
 // Extension matching is case sensitive and includes null string.
@@ -235,5 +237,11 @@ fgGlobFiles(const FgPath & path);
 // Throws an exception if the filename already exists in the current directory:
 void
 fgCopyToCurrentDir(const FgPath & file);
+
+// WARNING: Does not check if dirs are sym/hard links so be careful.
+// The tip of 'toDir' will be created.
+// Will throw on overwrite of any file or directory:
+void
+fgCopyRecursive(const FgString & fromDir,const FgString & toDir);
 
 #endif

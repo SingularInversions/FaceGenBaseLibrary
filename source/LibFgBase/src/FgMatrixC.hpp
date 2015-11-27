@@ -17,7 +17,7 @@
 #include "FgVariant.hpp"
 #include "FgRandom.hpp"
 #include "FgAlgs.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 
 template<class T,uint nrows,uint ncols>
 struct  FgTraits<FgMatrixC<T,nrows,ncols> >
@@ -672,13 +672,13 @@ fgFindFirstIdx(FgMatrixC<T,nrows,1> m,T v)
 }
 
 // Solve matrix equation of the form Ax = b. Returns x if solvable, invalid if degenerate:
-FgValidVal<FgVect2F>
+FgOpt<FgVect2F>
 fgSolve(FgMat22F A,FgVect2F b);
-FgValidVal<FgVect3F>
+FgOpt<FgVect3F>
 fgSolve(FgMat33F A,FgVect3F b);
-FgValidVal<FgVect4D>
+FgOpt<FgVect4D>
 fgSolve(FgMat44D A,FgVect4D b);
-FgValidVal<FgVect4F>
+FgOpt<FgVect4F>
 fgSolve(FgMat44F A,FgVect4F b);
 
 // Elements must all be non-zero:

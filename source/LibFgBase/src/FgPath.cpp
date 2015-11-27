@@ -38,7 +38,7 @@ FgPath::FgPath(const FgString & path)
         drive = FgString(fgHead(p,2));
         p = fgRest(p,2);
     }
-    if (p[0] == '/') {
+    if (!p.empty() && (p[0] == '/')) {
         root = true;
         p = fgRest(p,1);
     }
@@ -74,7 +74,7 @@ FgPath::FgPath(const FgString & path)
 FgString
 FgPath::str() const
 {
-    FgString    ret = str(dirs.size());
+    FgString    ret = dir();
     ret += base;
     if (!ext.empty())
         ret += FgString(".") + ext;
@@ -82,7 +82,7 @@ FgPath::str() const
 }
 
 FgString
-FgPath::str(size_t n) const
+FgPath::dir(size_t n) const
 {
     FGASSERT(n <= dirs.size());
 #ifndef _WIN32
@@ -97,7 +97,7 @@ FgPath::str(size_t n) const
 }
 
 FgString
-FgPath::nameOnly() const
+FgPath::baseExt() const
 {
     FgString        ret(base);
     if (!ext.empty())
@@ -142,7 +142,7 @@ fgPathToExt(const std::string & p)
 
 FgString
 fgPathToName(const FgString & f)
-{return FgPath(f).nameOnly(); }
+{return FgPath(f).baseExt(); }
 
 bool
 fgCheckSetExtension(
@@ -155,6 +155,23 @@ fgCheckSetExtension(
     else if (fgToLower(p.ext.ascii()) != fgToLower(extension))
         return false;
     return true;
+}
+
+FgString
+fgAsDirectory(const FgString & path)
+{
+    FgString        ret = path;
+    if (path.empty())
+        return ret;
+    vector<uint>    str = path.as_utf32();
+    if (str.back() == uint('/'))
+        return ret;
+    if (str.back() == uint('\\'))
+        return ret;
+    if (str.back() == uint(':'))
+        return  ret;
+    ret.m_str += '/';
+    return ret;
 }
 
 void

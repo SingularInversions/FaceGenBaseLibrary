@@ -45,6 +45,7 @@ fgBounds(const std::vector<T> & data)
     return ret;
 }
 
+// Column 0 is the lower bounds vector and column 1 is the upper bounds vector:
 template<typename T,uint dim>
 FgMatrixC<T,dim,2>
 fgBounds(const std::vector<FgMatrixC<T,dim,1> > & data)
@@ -53,10 +54,8 @@ fgBounds(const std::vector<FgMatrixC<T,dim,1> > & data)
     FgMatrixC<T,dim,2>     ret;
     ret.setSubMatrix(data[0],0,0);
     ret.setSubMatrix(data[0],0,1);
-    for (size_t ii=1; ii<data.size(); ++ii)
-    {
-        for (uint dd=0; dd<dim; ++dd)
-        {
+    for (size_t ii=1; ii<data.size(); ++ii) {
+        for (uint dd=0; dd<dim; ++dd) {
             fgSetIfLess     (ret.elm(0,dd),data[ii][dd]);
             fgSetIfGreater  (ret.elm(1,dd),data[ii][dd]);
         }

@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "FgGuiApiSlider.hpp"
+#include "FgGuiApiSplit.hpp"
 
 using namespace std;
 
@@ -46,15 +47,15 @@ setOutput(FgDgn<double> n,double v)
 FgGuiPtr
 fgGuiSlider(
     FgDgn<double>   valN,
-    uint            updateFlagIdx,
     FgString        label,
     FgVectD2        range,
     double          tickSpacing,
     const FgGuiApiTickLabels & tl,
-    const FgGuiApiTickLabels & ul)
+    const FgGuiApiTickLabels & ul,
+    uint            edgePadding)
 {
     FgGuiApiSlider ret;
-    ret.updateFlagIdx = updateFlagIdx;
+    ret.updateFlagIdx = g_gg.addUpdateFlag(valN);
     ret.getInput = boost::bind(getInput,valN);
     ret.setOutput = boost::bind(setOutput,valN,_1);
     ret.label = label;
@@ -62,19 +63,8 @@ fgGuiSlider(
     ret.tickSpacing = tickSpacing;
     ret.tickLabels = tl;
     ret.tockLabels = ul;
+    ret.edgePadding = edgePadding;
     return fgnew<FgGuiApiSlider>(ret);
-}
-
-FgGuiPtr
-fgGuiSlider(
-    FgDgn<double>   valN,
-    FgString        label,
-    FgVectD2        range,
-    double          tickSpacing,
-    const FgGuiApiTickLabels & tl,
-    const FgGuiApiTickLabels & ul)
-{
-    return fgGuiSlider(valN,g_gg.addUpdateFlag(valN),label,range,tickSpacing,tl,ul);
 }
 
 FgGuiSliders
@@ -99,6 +89,29 @@ fgGuiSliders(
         slidersN.push_back(val);
     }
     ret.outputIdx = g_gg.collate(slidersN);
+    return ret;
+}
+
+FgGuiWinVal<vector<double> >
+fgGuiSliders(
+    const FgString &        relStore,
+    const vector<FgString> & labels,
+    FgVectD2                range,
+    double                  initVal,
+    double                  tickSpacing)
+{
+    FgGuiWinVal<vector<double> >    ret;
+    FGASSERT(!labels.empty());
+    vector<uint>                    inputNs;
+    FgGuiPtrs                       sliders;
+    for (size_t ii=0; ii<labels.size(); ++ii) {
+        FgDgn<double>   valN = g_gg.addInput(initVal,relStore+labels[ii]);
+        inputNs.push_back(valN);
+        sliders.push_back(fgGuiSlider(valN,labels[ii],range,tickSpacing));
+    }
+    ret.valN = g_gg.addNode(vector<double>(),relStore.as_ascii());
+    g_gg.addLink(fgLinkCollate<double>,inputNs,ret.valN);
+    ret.win = fgGuiSplit(false,sliders);
     return ret;
 }
 

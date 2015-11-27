@@ -8,7 +8,7 @@
 //
 // Terminology:
 //
-// Path - any string identifying a directory or file, with relative of absolute path
+// Path - any string identifying a directory or file, with relative or absolute path
 // Base - the filename without directory or extension
 // Dir - the directory (relative or absolute) without the filename. Must end with delimiter.
 // Ext - the filename extension (or null string of none) without the period.
@@ -33,8 +33,8 @@
 #endif
 
 // Native directory separator converter:
-inline std::string
-fgNs(const std::string & path)
+inline string
+fgNs(const string & path)
 {
 #ifdef _WIN32
     return fgReplace(path,'/','\\');
@@ -53,17 +53,17 @@ fgNfs(const FgString & path)
 #endif
 }
 
-std::string
+string
 fgDirSep();                         // Directory separator ('/' on Unix, '\' on Windows)
 
 // Doesn't handle double-delim paths (eg. //server/share) or non-root dirs on different
-// drive letters (eg. C:reldir):
+// drive letters (eg. C:reldir). CLI '.' and '..' abbreviations are also not handled:
 struct  FgPath
 {
     // Empty string for relative path. If non-empty, must end in '/':
     FgString                drive;  // Only non-empty on Windows (eg C:)
     bool                    root;   // Path starts at root ? (otherwise relative)
-    std::vector<FgString>   dirs;   // No delimiters in in dir names. Can begin with '..' entries.
+    vector<FgString>        dirs;   // No delimiters in in dir names. Can begin with '..' entries.
     FgString                base;   // Base filename
     FgString                ext;    // Filename extension (no '.')
 
@@ -83,20 +83,21 @@ struct  FgPath
     FgString
     str() const;
 
-    // Only the first N directories with no filename:
+    // Only the first N directories with no filename, terminated with a delimiter:
     FgString
-    str(size_t n) const;
+    dir(size_t n) const;
+
+    // Directory terminated with a delimiter:
+    FgString
+    dir() const
+    {return dir(dirs.size()); }
 
     FgString
-    dirOnly() const
-    {return str(dirs.size()); }
-
-    FgString
-    nameOnly() const;
+    baseExt() const;
 
     FgString
     dirBase() const
-    {return dirOnly() + base; }
+    {return dir() + base; }
 
     FgPath
     operator+(const FgPath &  rhs) const;
@@ -113,8 +114,8 @@ fgPathToDirBase(const FgString & path);
 
 FgString
 fgPathToExt(const FgString & path);
-std::string
-fgPathToExt(const std::string & path);
+string
+fgPathToExt(const string & path);
 
 FgString
 fgPathToName(const FgString & path);
@@ -122,7 +123,11 @@ fgPathToName(const FgString & path);
 // Returns false if there is an existing extension not equal to the specified one:
 bool
 fgCheckSetExtension(
-    std::string &       path,
-    const std::string & ext);
+    string &       path,
+    const string & ext);
+
+// Ensure the path ends with a delimiter if it ends with a (directory) name:
+FgString
+fgAsDirectory(const FgString & path);
 
 #endif

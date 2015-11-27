@@ -43,6 +43,15 @@ T
 fgSign(T val)
 {return (val < T(0)) ? T(-1) : T(1); }
 
+// std::fmod gives a remainder not a modulus (ie it can be negative):
+template<typename T>
+T
+fgMod(T val,T divisor)
+{
+    T       div = std::floor(val / divisor);
+    return val - divisor * div;
+}
+
 inline double   fgPi()         {return 3.141592653589793237462643; }
 inline double   fgLn_pi()      {return 1.144729885849400173825117; }
 inline double   fgLn_2()       {return 0.693147180559945309417232; }

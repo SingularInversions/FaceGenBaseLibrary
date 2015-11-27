@@ -8,17 +8,21 @@
 //
 // DESIGN NOTES:
 //
-// The main window paints a background color to make it easy to avoid holes.
-// The flicker resulting from this is minimized by 'WS_CLIPCHILDREN'.
-// The tab control appears to do something similar to its entire client area.
-// The standard way of handling WM_SIZE is to invalidate sub-wins as they are resized.
-// This works because windows defers creating WM_PAINT messages when a WM_SIZE message is sent
-//      to a wndProc until that wndProc has returned and perhaps longer.
+// Since Windows GUI doesn't draw to a backbuffer, flicker during resize is inevitable.
+// This can in theory be minimized by 'WS_CLIPCHILDREN', however this flag also makes it
+// effectively impossible to ensure that everything is redrawn properly. Again, in theory
+// you could do so by recursively calling InvalidateWindow for all child windows, but this
+// doesn't seem to work. These problem are mostly apparent in tab sub-windows.
+//
+// The standard way of handling WM_SIZE is to invalidate the window after resizing.
+// Windows defers creating WM_PAINT messages a short while to avoid extra work from multiple
+// invalidations or other changes. To bypass this when animation is required, use UpdateWindow
+// for immediate redraw.
+//
 // When MoveWindow is called, Windows only generates a WM_SIZE message if there is a change.
 // Calling a MoveWindow on itself doesn't work because the parent window itself hasn't moved and
-//       Windows will thus ignore the call.
-// The solution is to turn off repainting in all resize handlers, then trigger a repaint after all
-//      resizing is done.
+// Windows will thus ignore the call.
+//
 
 #include "stdafx.h"
 
@@ -28,6 +32,8 @@
 #include "FgThrowWindows.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgHex.hpp"
+#include "FgSystemInfo.hpp"
+#include "FgGuiApiDialogs.hpp"
 
 using namespace std;
 
@@ -38,9 +44,9 @@ static wchar_t fgGuiWinMain[] = L"FgGuiWinMain";
 struct  FgGuiWinMain
 {
     FgString                    m_title;
-    FgString                    m_store;    // Base filename for state storage
+    FgString                    m_store;        // Base filename for state storage
     FgSharedPtr<FgGuiOsBase>    m_win;
-    FgVect2UI                   m_size;     // Current size of client area
+    FgVect2UI                   m_size;         // Current size of client area
     vector<HANDLE>              eventHandles;   // Client event handles to trigger message loop
     vector<void(*)()>           eventHandlers;  // Respective event handlers
     vector<FgGuiKeyHandle>      keyHandlers;
@@ -71,7 +77,7 @@ struct  FgGuiWinMain
             wcl.hInstance = s_fgGuiWin.hinst;
             wcl.hIcon = icon;
             wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
-            wcl.hbrBackground = NULL; // GetSysColorBrush(COLOR_BTNFACE);
+            wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
             wcl.lpszMenuName = NULL;
             wcl.lpszClassName = fgGuiWinMain;
             wcl.hIconSm = NULL;
@@ -101,12 +107,7 @@ struct  FgGuiWinMain
             CreateWindowEx(0,
                 fgGuiWinMain,
                 m_title.as_wstring().c_str(),
-                // Windows is too stupid to draw in a backbuffer so to avoid flicker you must draw
-                // on top of the last frame, which means you must ensure you draw over all your
-                // background but to do this you need to avoid drawing over your subwindows using
-                // WS_CLIPCHILDREN. I think this appears to affect InvalidateRect as well, so you
-                // have to recursively call that function (bottom-up) for child windows:
-                WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+                WS_OVERLAPPEDWINDOW,
                 posDims[0],posDims[2],
                 posDims[1],posDims[3],
                 NULL,NULL,
@@ -121,6 +122,9 @@ struct  FgGuiWinMain
         // Set the currently selected windows to show, which also causes the WM_SIZE message
         // to be sent (and for the builtin controls, WM_PAINT):
         ShowWindow(s_fgGuiWin.hwndMain,SW_SHOWNORMAL);
+        // The first draw doesn't work properly without this; for some reason the initial
+        // window isn't fully invalidated, especially within windows using win32 controls:
+        InvalidateRect(s_fgGuiWin.hwndMain,NULL,TRUE);
         MSG         msg;
         HANDLE      dummyEvent = INVALID_HANDLE_VALUE;
         HANDLE      *eventsPtr = (eventHandles.empty() ? &dummyEvent : &eventHandles[0]);
@@ -154,18 +158,13 @@ struct  FgGuiWinMain
     }
 
     LRESULT
-    wndProc(
-        HWND    hwnd,
-        UINT    msg,
-        WPARAM  wParam,
-        LPARAM  lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
 //fgout << fgnl <<  "Main::WM_CREATE" << fgpush;
             m_win->create(hwnd,0,m_store+"_s");
             m_win->updateIfChanged();
 //fgout << fgpop;
-            return 0;
         }
         // Enforce minimum windows sizes. This only works on the main window so
         // we must calculate the minimum size from that of all sub-windows:
@@ -176,7 +175,6 @@ struct  FgGuiWinMain
             pnt.x = min[0];
             pnt.y = min[1];
             mmi->ptMinTrackSize = pnt;
-            return 0;
         }
         else if (msg == WM_SIZE) {  // Doesn't send 0 size like sub-windows get at creation.
             m_size[0] = LOWORD(lParam);
@@ -189,7 +187,6 @@ struct  FgGuiWinMain
                 m_win->moveWindow(FgVect2I(0),FgVect2I(m_size));
 //fgout << fgpop;
             }
-            return 0;
         }
         // R. Chen: WM_WINDOWPOSCHANGED catches all possible size/move changes (added later).
         // Sent for each move and also for maximize/minimize/restore:
@@ -207,7 +204,6 @@ struct  FgGuiWinMain
                 if (wkey == wchar_t(kh.key))
                     kh.handler();
             }
-            return 0;
         }
         // This msg is sent by FgGuiGraph::updateScreen() which is called whenever an 
         // input has been changed:
@@ -215,10 +211,8 @@ struct  FgGuiWinMain
 //fgout << fgnl << "Main::WM_USER (updateIfChanged)" << fgpush;
             m_win->updateIfChanged();
 //fgout << fgpop;
-            return 0;
         }
-        else if (msg == WM_DESTROY)         // User is closing application
-        {
+        else if (msg == WM_DESTROY) {       // User is closing application
             WINDOWPLACEMENT     wp;
             wp.length = sizeof(wp);
             // Don't use GetWindowRect here as it's affected by minimization and maximization:
@@ -228,9 +222,15 @@ struct  FgGuiWinMain
             fgSaveXml(m_store+".xml",dims,false);
             m_win->saveState();
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
-            return 0;
         }
-        return DefWindowProc(hwnd,msg,wParam,lParam);
+        //else if (msg == WM_MOUSEWHEEL) {
+        //    FgOpt<HWND>     child = m_win->getHwnd();
+        //    if (child.valid())
+        //        SendMessage(child.val(),msg,wParam,lParam);
+        //}
+        else
+            return DefWindowProc(hwnd,msg,wParam,lParam);
+        return 0;
     }
 };
 
@@ -258,7 +258,7 @@ fgGuiImplStart(
     s_fgGuiWin.hinst = GetModuleHandle(NULL);
     FgGuiWinMain    gui;
     gui.m_title = title;
-    gui.m_store = storeDir + "guiWindowState";
+    gui.m_store = storeDir + "win_";
     gui.m_win = def->getInstance();
     for (size_t ii=0; ii<opts.events.size(); ++ii) {
         gui.eventHandles.push_back(opts.events[ii].handle);
@@ -294,4 +294,60 @@ fgNcSize(HWND hwnd)
         FgVect2UI(
             (rectW.right-rectW.left)-(rectC.right-rectC.left),
             (rectW.bottom-rectW.top)-(rectC.bottom-rectC.top));
+}
+
+LRESULT
+fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
+{
+    FgString    msg;
+    try
+    {
+        return func();
+    }
+    catch(FgException const & e)
+    {
+        msg = "ERROR (FG exception): " + e.no_tr_message();
+    }
+    catch(std::bad_alloc const &)
+    {
+        msg = "ERROR (std::bad_alloc): OUT OF MEMORY";
+    }
+    catch(std::exception const & e)
+    {
+        msg = "ERROR (std::exception): " + FgString(e.what());
+    }
+    catch(...)
+    {
+        msg = "ERROR (unknown type):";
+    }
+    FgString        caption = "ERROR";
+    try
+    {
+        msg += "\n" + g_gg.appName + "\n";
+        FgString        dd = fgDataDir();
+        msg += fgSystemInfo() + "\n" + className + "\n";
+        if ((g_gg.reportError != NULL) && g_gg.reportError(msg))
+            fgGuiDialogMessage(caption,g_gg.reportSuccMsg);
+        else
+            fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg);
+        return LRESULT(0);
+    }
+    catch(FgException const & e)
+    {
+        msg += "ERROR (FG exception): " + e.no_tr_message();
+    }
+    catch(std::bad_alloc const &)
+    {
+        msg += "ERROR (std::bad_alloc): OUT OF MEMORY";
+    }
+    catch(std::exception const & e)
+    {
+        msg += "ERROR (std::exception): " + FgString(e.what());
+    }
+    catch(...)
+    {
+        msg += "ERROR (unknown type):";
+    }
+    fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg);
+    return LRESULT(0);
 }

@@ -120,9 +120,9 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     }
 
     LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
-        if (message == WM_CREATE) {
+        if (msg == WM_CREATE) {
 //fgout << fgnl << "Tabs::WM_CREATE" << fgpush;
             hwndThis = hwnd;
             // Creating the panes before the tabs fixes the problem of trackbars not being visible
@@ -141,7 +141,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                 CreateWindowEx(0,
                     WC_TABCONTROL,
                     L"",
-                    WS_CHILD | WS_VISIBLE | TCS_FIXEDWIDTH,
+                    WS_CHILD | WS_VISIBLE,
                     0,0,0,0,
                     hwnd,
                     0,      // Identifier 0
@@ -156,10 +156,12 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                 TabCtrl_InsertItem(m_tabHwnd,ii,&tc);
             }
             SendMessage(m_tabHwnd,TCM_SETCURSEL,m_currPane,0);
+            if (m_api.tabs[m_currPane].onSelect != NULL)
+                m_api.tabs[m_currPane].onSelect();
 //fgout << fgpop;
             return 0;
         }
-        else if (message == WM_SIZE) {
+        else if (msg == WM_SIZE) {
             m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] > 0) {
 //fgout << fgnl << "Tabs::WM_SIZE: " << m_api.tabs[0].label << " : " << m_client << fgpush;
@@ -168,7 +170,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
             }
             return 0;
         }
-        else if (message == WM_NOTIFY) {
+        else if (msg == WM_NOTIFY) {
             LPNMHDR lpnmhdr = (LPNMHDR)lParam;
             if (lpnmhdr->code == TCN_SELCHANGE) {
                 int     idx = int(SendMessage(m_tabHwnd,TCM_GETCURSEL,0,0));
@@ -183,6 +185,8 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                         m_panes[m_currPane]->updateIfChanged();
                         resizeCurrPane();
                         m_panes[m_currPane]->showWindow(true);
+                        if (m_api.tabs[m_currPane].onSelect != NULL)
+                            m_api.tabs[m_currPane].onSelect();
                         InvalidateRect(hwndThis,NULL,TRUE);
                     }
 //fgout << fgpop;
@@ -190,10 +194,10 @@ struct  FgGuiWinTabs : public FgGuiOsBase
             }
             return 0;
         }
-        else if (message == WM_PAINT) {
+        else if (msg == WM_PAINT) {
 //fgout << fgnl << "Tabs::WM_PAINT";
         }
-        return DefWindowProc(hwnd,message,wParam,lParam);
+        return DefWindowProc(hwnd,msg,wParam,lParam);
     }
 
     void

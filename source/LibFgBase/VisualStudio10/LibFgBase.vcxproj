@@ -148,14 +148,20 @@
     <ClInclude Include="..\src\Fg3dDisplay.hpp"  />
     <ClCompile Include="..\src\Fg3dMesh.cpp"  />
     <ClInclude Include="..\src\Fg3dMesh.hpp"  />
+    <ClCompile Include="..\src\Fg3dMesh3ds.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshFbx.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshIo.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshIo.hpp"  />
+    <ClInclude Include="..\src\Fg3dMeshLegacy.hpp"  />
+    <ClCompile Include="..\src\Fg3dMeshLwo.cpp"  />
+    <ClCompile Include="..\src\Fg3dMeshMa.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshObj.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshOps.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshOps.hpp"  />
+    <ClCompile Include="..\src\Fg3dMeshPly.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshTri.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshVrml.cpp"  />
+    <ClCompile Include="..\src\Fg3dMeshXsi.cpp"  />
     <ClCompile Include="..\src\Fg3dNormals.cpp"  />
     <ClInclude Include="..\src\Fg3dNormals.hpp"  />
     <ClInclude Include="..\src\Fg3dOpenGL.hpp"  />
@@ -233,6 +239,7 @@
     <ClInclude Include="..\src\FgGuiApiButton.hpp"  />
     <ClInclude Include="..\src\FgGuiApiCheckbox.hpp"  />
     <ClInclude Include="..\src\FgGuiApiDialogs.hpp"  />
+    <ClInclude Include="..\src\FgGuiApiDynamic.hpp"  />
     <ClInclude Include="..\src\FgGuiApiGroupbox.hpp"  />
     <ClCompile Include="..\src\FgGuiApiImage.cpp"  />
     <ClInclude Include="..\src\FgGuiApiImage.hpp"  />
@@ -242,6 +249,7 @@
     <ClInclude Include="..\src\FgGuiApiSelect.hpp"  />
     <ClCompile Include="..\src\FgGuiApiSlider.cpp"  />
     <ClInclude Include="..\src\FgGuiApiSlider.hpp"  />
+    <ClInclude Include="..\src\FgGuiApiSpacer.hpp"  />
     <ClCompile Include="..\src\FgGuiApiSplit.cpp"  />
     <ClInclude Include="..\src\FgGuiApiSplit.hpp"  />
     <ClInclude Include="..\src\FgGuiApiTabs.hpp"  />
@@ -287,6 +295,7 @@
     <ClCompile Include="..\src\FgNormal.cpp"  />
     <ClInclude Include="..\src\FgNormal.hpp"  />
     <ClInclude Include="..\src\FgOpenGL.hpp"  />
+    <ClInclude Include="..\src\FgOpt.hpp"  />
     <ClCompile Include="..\src\FgOut.cpp"  />
     <ClInclude Include="..\src\FgOut.hpp"  />
     <ClCompile Include="..\src\FgParse.cpp"  />
@@ -339,7 +348,6 @@
     <ClInclude Include="..\src\FgTime.hpp"  />
     <ClInclude Include="..\src\FgTokenizer.hpp"  />
     <ClInclude Include="..\src\FgTypes.hpp"  />
-    <ClInclude Include="..\src\FgValidVal.hpp"  />
     <ClCompile Include="..\src\FgVariant.cpp"  />
     <ClInclude Include="..\src\FgVariant.hpp"  />
     <ClCompile Include="..\src\FgVariantTest.cpp"  />

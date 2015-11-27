@@ -23,7 +23,7 @@
 #define FGLINKGRAPH_HPP
 
 #include "FgVariant.hpp"
-#include "FgValidVal.hpp"
+#include "FgOpt.hpp"
 #include "FgStdString.hpp"
 
 template<class NodeData,class LinkData>
@@ -31,33 +31,33 @@ struct  FgLinkGraph
 {
     struct  Link
     {
-        std::vector<uint>       sources;    // Indices into m_nodes
-        std::vector<uint>       sinks;      // "
-        LinkData                data;
+        vector<uint>        sources;    // Indices into m_nodes
+        vector<uint>        sinks;      // "
+        LinkData            data;
 
         Link() {};
-        Link(const std::vector<uint> &src,const std::vector<uint> &snk,LinkData d) : 
+        Link(const vector<uint> &src,const vector<uint> &snk,LinkData d) : 
             sources(src), sinks(snk), data(d) {}
     };
     struct  Node
     {
         FgValid<uint>       incomingLink;
-        std::vector<uint>   outgoingLinks;
+        vector<uint>        outgoingLinks;
         NodeData            data;
 
         Node(const NodeData & d) : data(d) {}
     };
-    std::vector<Link>       m_links;
-    std::vector<Node>       m_nodes;
+    vector<Link>            m_links;
+    vector<Node>            m_nodes;
 
     uint
     addNode(const NodeData & data);
 
     uint
     addLink(
-        const LinkData &            data,
-        const std::vector<uint> &   inputs,
-        const std::vector<uint> &   outputs);
+        const LinkData &        data,
+        const vector<uint> &    inputs,
+        const vector<uint> &    outputs);
 
     void
     appendSource(uint sourceIdx,uint linkIdx);
@@ -90,7 +90,7 @@ struct  FgLinkGraph
     linkData(uint linkIdx)
     {return m_links[linkIdx].data; }
 
-    const std::vector<uint> &
+    const vector<uint> &
     outgoingLinks(uint nodeIdx) const
     {return m_nodes[nodeIdx].outgoingLinks; }
 
@@ -101,11 +101,11 @@ struct  FgLinkGraph
     uint
     incomingLink(uint sinkInd) const;
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSources(uint linkIdx) const
     {return m_links[linkIdx].sources; }
 
-    const std::vector<uint> &
+    const vector<uint> &
     linkSinks(uint linkIdx) const
     {return m_links[linkIdx].sinks; }
 
@@ -126,25 +126,23 @@ FgLinkGraph<NodeData,LinkData>::addNode(
 template<class NodeData,class LinkData>
 uint
 FgLinkGraph<NodeData,LinkData>::addLink(
-    const LinkData &            data,
-    const std::vector<uint> &   sources,
-    const std::vector<uint> &   sinks)
+    const LinkData &        data,
+    const vector<uint> &    sources,
+    const vector<uint> &    sinks)
 {
     FGASSERT(sinks.size() > 0);           // A Link must have at least 1 sink
     uint        linkIdx = uint(m_links.size());
     m_links.push_back(Link(sources,sinks,data));
-
     // Update the node cross-referencing:
-    for (size_t ii=0; ii<sinks.size(); ii++)
-    {
+    for (size_t ii=0; ii<sinks.size(); ii++) {
         FGASSERT(sinks[ii] < uint(m_nodes.size()));
+        FGASSERT(!fgContains(sources,sinks[ii]));       // Causes nasty bugs later
         Node &  node = m_nodes[sinks[ii]];
         if (node.incomingLink.valid())
             fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",fgToString(ii));
         node.incomingLink = linkIdx;
     }
-    for (size_t ii=0; ii<sources.size(); ii++)
-    {
+    for (size_t ii=0; ii<sources.size(); ii++) {
         FGASSERT(sources[ii] < uint(m_nodes.size()));
         Node &  node = m_nodes[sources[ii]];
         node.outgoingLinks.push_back(linkIdx);
@@ -179,18 +177,16 @@ void
 fgTraverseDown(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    std::vector<bool> & nodesTouched,       // MODIFIED
-    std::vector<bool> & linksTouched)       // MODIFIED
+    vector<bool> &      nodesTouched,       // MODIFIED
+    vector<bool> &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
-    const std::vector<uint> &    outLinks = lg.outgoingLinks(nodeIdx);
-    for (size_t ll=0; ll<outLinks.size(); ++ll)
-    {
+    const vector<uint> &    outLinks = lg.outgoingLinks(nodeIdx);
+    for (size_t ll=0; ll<outLinks.size(); ++ll) {
         uint    linkIdx = outLinks[ll];
-        if (!linksTouched[linkIdx])
-        {
+        if (!linksTouched[linkIdx]) {
             linksTouched[linkIdx] = true;
-            const std::vector<uint> &    sinks = lg.linkSinks(linkIdx);
+            const vector<uint> &    sinks = lg.linkSinks(linkIdx);
             for (size_t nn=0; nn<sinks.size(); ++nn)
                 if (!nodesTouched[sinks[nn]])
                     fgTraverseDown(lg,sinks[nn],nodesTouched,linksTouched);
@@ -203,23 +199,22 @@ void
 fgTraverseUp(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    std::vector<bool> & nodesTouched,       // MODIFIED
-    std::vector<bool> & linksTouched)       // MODIFIED
+    vector<bool> &      nodesTouched,       // MODIFIED
+    vector<bool> &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
     if (!lg.hasIncomingLink(nodeIdx))
         return;
     uint    linkIdx = lg.incomingLink(nodeIdx);
-    if (!linksTouched[linkIdx])
-    {
+    if (!linksTouched[linkIdx]) {
         linksTouched[linkIdx] = true;
         // We include all sink nodes of a traversed link even if they're not part
         // of the traversal, since running the link will write to all sinks:
-        const std::vector<uint> &   sinks = lg.linkSinks(linkIdx);
+        const vector<uint> &   sinks = lg.linkSinks(linkIdx);
         for (size_t nn=0; nn<sinks.size(); ++nn)
             nodesTouched[sinks[nn]] = true;
         // Continue traverse:
-        const std::vector<uint> &   sources = lg.linkSources(linkIdx);
+        const vector<uint> &   sources = lg.linkSources(linkIdx);
         for (size_t nn=0; nn<sources.size(); ++nn)
             if (!nodesTouched[sources[nn]])
                 fgTraverseUp(lg,sources[nn],nodesTouched,linksTouched);

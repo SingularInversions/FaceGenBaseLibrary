@@ -164,7 +164,14 @@ struct  Fg3dSurface
 
     template<class T>
     FgMatrixC<T,3,1>
-    getSurfPoint(const vector<FgMatrixC<T,3,1> > & verts,size_t idx) const;
+    getSurfPoint(const vector<FgMatrixC<T,3,1> > & verts,size_t idx) const
+    {
+        FgVect3UI  vertInds = getTriEquiv(surfPoints[idx].triEquivIdx);
+        FgVect3F   vertWeights = surfPoints[idx].weights;
+        return (verts[vertInds[0]] * static_cast<T>(vertWeights[0]) +
+                verts[vertInds[1]] * static_cast<T>(vertWeights[1]) +
+                verts[vertInds[2]] * static_cast<T>(vertWeights[2]));
+    }
 
     vector<FgVertLabel>
     surfPointsAsVertLabels(const FgVerts &) const;
@@ -215,20 +222,6 @@ private:
     void
     checkInternalConsistency();
 };
-
-template<class T>
-FgMatrixC<T,3,1>
-Fg3dSurface::getSurfPoint(
-    const vector<FgMatrixC<T,3,1> > &  verts,
-    size_t                                  idx)
-    const
-{
-    FgVect3UI  vertInds = getTriEquiv(surfPoints[idx].triEquivIdx);
-    FgVect3F   vertWeights = surfPoints[idx].weights;
-    return (verts[vertInds[0]] * static_cast<T>(vertWeights[0]) +
-            verts[vertInds[1]] * static_cast<T>(vertWeights[1]) +
-            verts[vertInds[2]] * static_cast<T>(vertWeights[2]));
-}
 
 std::ostream& operator<<(std::ostream&,const Fg3dSurface&);
 

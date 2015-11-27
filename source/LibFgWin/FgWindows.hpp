@@ -11,9 +11,9 @@
 #ifndef FGWINDOWS_HPP
 #define FGWINDOWS_HPP
 
-// This code does not support versions of Windows prior to Vista (0x0600), in order 
-// to make use of features of that and later OSes (eg. InetNtop)
-#define WINVER 0x0600
+// This code does not support versions of Windows prior to 7 in order to make use of features of that
+// and later OSes (eg. InetNtop requires Vista and gestures require 7):
+#define WINVER 0x0601
 
 // The rest of the code needs to live with NOMINMAX defined, but
 // GDIplus needs these macros

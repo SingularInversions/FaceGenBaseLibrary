@@ -43,7 +43,11 @@ struct  FgGuiWinSplit : public FgGuiOsBase
         m_hwndParent = parentHwnd;
         // Since this is not a win32 window, we create the sub-windows here within the parent
         // WM_CREATE handler:
-        createPanes(visible);
+        m_panes.resize(m_api.panes.size());
+        for (size_t ii=0; ii<m_api.panes.size(); ++ii) {
+            m_panes[ii] = m_api.panes[ii]->getInstance();
+            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+fgToString(ii),NULL,visible);
+        }
 //fgout << fgpop;
     }
 
@@ -80,6 +84,21 @@ struct  FgGuiWinSplit : public FgGuiOsBase
         ret[nd] = ndMax;
         return ret;
     }
+        // Here's how it would look for a grid layout ... but resizing more complex:
+        //FgVect2UI           gd = m_api.grid;
+        //vector<uint>        maxMinWid(gd[1],0),
+        //                    maxMinHgt(gd[0],0);
+        //for (uint yy=0; yy<gd[1]; ++yy) {
+        //    for (uint xx=0; xx<gd[0]; ++xx) {
+        //        FgVect2UI   minSize = m_panes[yy*gd[0]+xx]->getMinSize();
+        //        maxMinWid[yy] = fgMax(maxMinWid[yy],minSize[0]);
+        //        maxMinHgt[xx] = fgMax(maxMinHgt[xx],minSize[1]);
+        //    }
+        //}
+        //FgVect2UI           minSize = FgVect2UI(fgSum(maxMinWid),fgSum(maxMinHgt));
+        //FgVect2UI           padding = (m_api.grid-FgVect2UI(1)) * 8;
+        //return minSize+padding;
+
 
     virtual FgVect2B
     wantStretch() const
@@ -90,30 +109,9 @@ struct  FgGuiWinSplit : public FgGuiOsBase
         return ret;
     }
 
-    void
-    createPanes(bool visible)
-    {
-        // call DestroyWindow in all created sub-windows:
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->destroy();
-        FgGuiPtrs            panes = m_api.getPanes();
-        m_panes.resize(panes.size());
-        for (size_t ii=0; ii<m_panes.size(); ++ii) {
-            m_panes[ii] = panes[ii]->getInstance();
-            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+fgToString(ii),NULL,visible);
-        }
-    }
-
     virtual void
     updateIfChanged()
     {
-        if (g_gg.dg.update(m_api.updateFlagIdx)) {
-            // This function is only called by the parent if this window is visible:
-            createPanes(true);
-            // Must tell the panels what size to be before they can be displayed:
-            minSizes();
-            resize();
-        }
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             m_panes[ii]->updateIfChanged();
     }

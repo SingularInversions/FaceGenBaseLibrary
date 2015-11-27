@@ -94,16 +94,6 @@ fgRegressionBaseline(
     return base;
 }
 
-inline
-void
-fgRegressBinary(
-    const FgString & f0,
-    const FgString & f1)
-{
-    if (!fgBinaryFileCompare(f0,f1))
-        fgThrow("Binary Regression failure",f0 + " != " + f1);
-}
-
 void
 fgRegressImage(
     const std::string & testFile,
@@ -124,5 +114,9 @@ inline
 bool
 fgRegressOverwrite()
 {return fgExists(fgDataDir()+"overwrite_baselines.flag"); }
+
+// Works best with FGTESTDIR:
+void
+fgRegressFile(const FgString & name,const FgString & relDir);
 
 #endif

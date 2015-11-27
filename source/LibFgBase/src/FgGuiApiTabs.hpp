@@ -22,19 +22,21 @@ struct  FgGuiTab
     uint            padRight;
     uint            padTop;
     uint            padBottom;
+    boost::function<void()>     onSelect;   // If non-null, called when this tab is selected
 
     FgGuiTab()
-        : padLeft(1), padRight(1), padTop(1), padBottom(1)
+        : padLeft(1), padRight(1), padTop(1), padBottom(1), onSelect(NULL)
     {}
 
     FgGuiTab(const FgString & l,FgGuiPtr w)
-    : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1)
+    : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1), onSelect(NULL)
     {}
 
     FgGuiTab(const FgString & l,bool spacer,FgGuiPtr w)
     :   label(l), win(w),
         padLeft(spacer ? 5 : 1), padRight(spacer ? 5 : 1),
-        padTop(spacer ? 10 : 1), padBottom(1)
+        padTop(spacer ? 10 : 1), padBottom(1),
+        onSelect(NULL)
     {}
 };
 
@@ -50,17 +52,17 @@ fgGuiTab(const string & l,bool s,FgGuiPtr w)
 
 struct  FgGuiApiTabs : FgGuiApi<FgGuiApiTabs>
 {
-    vector<FgGuiTab>    tabs;
-
-    explicit
-    FgGuiApiTabs(const vector<FgGuiTab> & t) :
-        tabs(t)
-    {}
+    vector<FgGuiTab>        tabs;
 };
 
 inline
 FgGuiPtr
 fgGuiTabs(const vector<FgGuiTab> & tabs)
-{return fgnew<FgGuiApiTabs>(tabs); }
+{
+    FGASSERT(!tabs.empty());
+    FgGuiApiTabs        gat;
+    gat.tabs = tabs;
+    return fgsp(gat);
+}
 
 #endif

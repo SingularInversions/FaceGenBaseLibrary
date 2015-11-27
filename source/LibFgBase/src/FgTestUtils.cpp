@@ -136,6 +136,31 @@ fgRegressUpdateQuery(const std::string & relPath)
     cin >> choice;
     if (std::tolower(choice) == 'y') {
         FgPath      path(fgDataDir()+relPath);
-        fgCopyFile(path.nameOnly(),path.str(),true);
+        fgCopyFile(path.baseExt(),path.str(),true);
+    }
+}
+
+void
+fgRegressFile(const FgString & name,const FgString & relDir)
+{
+    FgString        baselinePath = fgDataDir()+relDir+name;
+    if (!fgExists(name))
+        fgThrow("Regression file not created by test",name);
+    if (fgRegressOverwrite()) {
+        if (fgExists(baselinePath)) {       // Otherwise we are creating a new test
+            bool    succ = fgBinaryFileCompare(name,baselinePath);
+            fgCopyFile(name,baselinePath,true);
+            if (!succ) 
+                // Don't throw in dev mode so remaining regressions still get run:
+                fgout << fgnl << "WARNING: Regression failure" << relDir << name;
+        }
+        else {
+            fgCopyFile(name,baselinePath);
+            fgout << fgnl << "New regression baseline saved:" << relDir+name;
+        }
+    }
+    else {
+        if (!fgBinaryFileCompare(name,baselinePath))
+            fgThrow("Regression failure",fgGetCurrentDir()+name+" != "+relDir+name);
     }
 }
