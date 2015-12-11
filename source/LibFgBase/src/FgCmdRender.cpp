@@ -78,7 +78,7 @@ struct  RenderArgs
 };
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to render a mesh and colour map to an image.
  */
 void

@@ -291,6 +291,8 @@
         </File>
         <File RelativePath="..\src\Fg3dMeshPly.cpp">
         </File>
+        <File RelativePath="..\src\Fg3dMeshStl.cpp">
+        </File>
         <File RelativePath="..\src\Fg3dMeshTri.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshVrml.cpp">

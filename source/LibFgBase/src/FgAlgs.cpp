@@ -15,31 +15,6 @@
 
 using namespace std;
 
-// Without a hardware nlz (number of leading zeros) instruction, this function has
-// to be iterative (C / C++ doesn't have any keyword for this operator):
-uint
-fgNumLeadingZeros(uint32 x)
-{
-   uint     n = 0;
-   if (x == 0) return(32);
-   if (x <= 0x0000FFFF) {n = n +16; x = x <<16;}
-   if (x <= 0x00FFFFFF) {n = n + 8; x = x << 8;}
-   if (x <= 0x0FFFFFFF) {n = n + 4; x = x << 4;}
-   if (x <= 0x3FFFFFFF) {n = n + 2; x = x << 2;}
-   if (x <= 0x7FFFFFFF) {n = n + 1;}
-   return n;
-}
-
-uint
-fgLog2Ceil(uint32 xx)
-{
-    uint    logFloor = fgLog2Floor(xx);
-    if (xx == (1u << logFloor))
-        return (fgLog2Floor(xx));
-    else
-        return (fgLog2Floor(xx) + 1u);
-}
-
 vector<double>
 fgConvolve(
     const vector<double> &     data,

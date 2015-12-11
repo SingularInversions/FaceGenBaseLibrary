@@ -30,7 +30,7 @@ struct  FgGuiApiImage : public FgGuiApi<FgGuiApiImage>
     // window size is given by the image and is non-adjustable:
     bool                    allowMouseCtls;     // The below are only used when true:
     uint                    updateNodeIdxNofill;
-    FgDgn<vector<FgImgRgbaUb> > pyramidN;       // Powers of 2 views up to 4096 max dim
+    FgDgn<vector<FgImgRgbaUb> > pyramidN;       // Powers of 2 views up to 2048 max dim
     FgDgn<FgVect2I>         offsetN;            // In pixels (regardless of pyramid level)
     FgDgn<int>              zoomN;
     FgDgn<uint>             currLevelN;         // Which level of pyramid are we looking at ? 0 - uninitialized

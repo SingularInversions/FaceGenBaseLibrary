@@ -159,6 +159,7 @@
     <ClCompile Include="..\src\Fg3dMeshOps.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshOps.hpp"  />
     <ClCompile Include="..\src\Fg3dMeshPly.cpp"  />
+    <ClCompile Include="..\src\Fg3dMeshStl.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshTri.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshVrml.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshXsi.cpp"  />

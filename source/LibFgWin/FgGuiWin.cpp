@@ -308,10 +308,6 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     {
         msg = "ERROR (FG exception): " + e.no_tr_message();
     }
-    catch(std::bad_alloc const &)
-    {
-        msg = "ERROR (std::bad_alloc): OUT OF MEMORY";
-    }
     catch(std::exception const & e)
     {
         msg = "ERROR (std::exception): " + FgString(e.what());
@@ -335,10 +331,6 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     catch(FgException const & e)
     {
         msg += "ERROR (FG exception): " + e.no_tr_message();
-    }
-    catch(std::bad_alloc const &)
-    {
-        msg += "ERROR (std::bad_alloc): OUT OF MEMORY";
     }
     catch(std::exception const & e)
     {

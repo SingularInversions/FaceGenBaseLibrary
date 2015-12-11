@@ -167,6 +167,13 @@ FGLINK(linkDisp)
     uint                        lev = inputs[1]->valueRef();
     const vector<FgVect2F> &    pts = inputs[2]->valueRef();
     FgImgRgbaUb &               img = outputs[0]->valueRef();
+    if (pyr.empty()) {
+        img = FgImgRgbaUb();
+        return;
+    }
+    uint                        maxLev = uint(pyr.size())-1;
+    if (lev > maxLev)
+        lev = maxLev;
     img = pyr[lev];
     for (size_t ii=0; ii<pts.size(); ++ii){
         int     xx = int(pts[ii][0] * img.width()),
@@ -199,10 +206,10 @@ fgGuiImage(FgDgn<FgImgRgbaUb> imgN,FgDgn<vector<FgVect2F> > ptsIucsN,boost::func
     gai.allowMouseCtls = true;
     gai.offsetN = g_gg.addNode(FgVect2I());
     gai.zoomN = g_gg.addNode(0);
-    gai.currLevelN = g_gg.addNode(uint(0));
-    gai.pyramidN = g_gg.addNode(vector<FgImgRgbaUb>());
+    gai.currLevelN = g_gg.addNode(uint(0),"imgCurrLevel");
+    gai.pyramidN = g_gg.addNode(vector<FgImgRgbaUb>(),"imgPyramid");
     gai.pointsN = ptsIucsN;
-    gai.dispN = g_gg.addNode(FgImgRgbaUb());
+    gai.dispN = g_gg.addNode(FgImgRgbaUb(),"imgDisp");
     gai.onClick = onClick;
     g_gg.addLink(linkPyramid,gai.imgN,gai.pyramidN);
     g_gg.addLink(linkDisp,fgUints(gai.pyramidN,gai.currLevelN,gai.pointsN),gai.dispN);

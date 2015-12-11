@@ -49,7 +49,7 @@ template<class T>
 FgGuiPtr
 fgGuiCheckboxObject(const FgString & label,FgDgn<bool> input,const T & object,FgDgn<vector<T> > output)
 {
-    g_gg.addLink(fgLinkCheckboxObject<T>,fgUints(input,g_gg.addNode(object)),output);
+    g_gg.addLink(fgLinkCheckboxObject<T>,fgUints(input,g_gg.addNode(object,string("checkbox_")+typeid(T).name())),output);
     return fgGuiCheckbox(label,input);
 }
 

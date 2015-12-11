@@ -117,6 +117,9 @@ fgSetCurrentDir(
     const FgString &    dir,        // Accepts full path or relative path
     bool throwOnFail=true);
 
+bool                                // true if successful
+fgSetCurrentDirUp();
+
 // Doesn't remove read-only files:
 void
 fgRemoveFile(const FgString &);
@@ -182,15 +185,20 @@ std::time_t
 fgLastWriteTime(const FgString & path)
 {return boost::filesystem::last_write_time(path.as_utf8_string()); }
 
-// Return true if source has a 'last write time' newer than sink, or the sink doesn't exist:
-inline
-bool
-fgNewer(const FgString & source,const FgString & sink)
-{return (!fgExists(sink) || (fgLastWriteTime(source) > fgLastWriteTime(sink))); }
-
 // Return true if any of the sources have a 'last write time' newer than any of the sinks:
 bool
 fgNewer(const vector<FgString> & sources,const vector<FgString> & sinks);
+
+inline
+bool
+fgNewer(const FgString & src,const FgString & dst)
+{return fgNewer(fgSvec(src),fgSvec(dst)); }
+
+// Usually only need to include the one last output of a code chunk as 'dst':
+inline
+bool
+fgNewer(const vector<FgString> & sources,const FgString & dst)
+{return fgNewer(sources,fgSvec(dst)); }
 
 struct  FgPushDir
 {

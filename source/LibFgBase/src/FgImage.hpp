@@ -217,8 +217,7 @@ fgImgFlipVertical(FgImage<T> & img)
 {
     uint    wid = img.width(),
             halfHgt = img.height()/2;
-    for (uint row=0; row<halfHgt; row++)
-    {
+    for (uint row=0; row<halfHgt; row++) {
         T * ptr1 = img.rowPtr(row);
         T * ptr2 = img.rowPtr(img.height()-1-row);
         for (uint col=0; col<wid; col++)
@@ -506,7 +505,7 @@ fgResampleSimple(
 
 template<class T>
 void
-fgPower2Ceil(
+fgResizePow2Ceil(
     const FgImage<T> &  in,
     FgImage<T> &        out)
 {
@@ -755,6 +754,6 @@ fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC color=fgRed(),uint radius=3
 // Smallest is when the largest dimension is of size 1 (smallest dim clamped to size 1).
 // Non power-of-2 dimensions are truncated when subsampled.
 vector<FgImgRgbaUb>
-fgMipMap(const FgImgRgbaUb & img);
+fgOglMipMap(const FgImgRgbaUb & img);
 
 #endif

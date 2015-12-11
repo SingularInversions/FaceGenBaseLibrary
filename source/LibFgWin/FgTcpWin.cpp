@@ -126,7 +126,12 @@ fgTcpClient(
             // we'll continue to receive data until server closes connection causing
             // the zero message:
             itmp = recv(socketHandle,buff,sizeof(buff),0);
-            FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
+            // This can happen for many reasons (eg. connection interrupted) so don't throw:
+            if (itmp == SOCKET_ERROR) {
+                //fgToString(WSAGetLastError()));
+                closesocket(socketHandle);
+                return false;
+            }
             if (itmp > 0)
                 response += string(buff,itmp);
         }

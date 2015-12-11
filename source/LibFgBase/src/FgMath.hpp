@@ -17,6 +17,37 @@
 
 template <typename T>
 inline T
+fgSqr(T a)
+{return (a*a); }
+
+inline
+bool
+fgIsPow2(uint xx)
+{return ((xx != 0) && ((xx & (xx-1)) == 0)); }
+
+uint
+fgNumLeadingZeros(uint32 xx);                   // 0 returns 32.
+
+inline
+uint
+fgLog2Floor(uint32 xx)                          // Not valid for 0.
+{return (31-fgNumLeadingZeros(xx)); }
+
+uint
+fgLog2Ceil(uint32 xx);                          // Not valid for 0.
+
+inline
+uint
+fgPower2Floor(uint32 xx)                        // Not valid for 0.
+{return (1 << fgLog2Floor(xx)); }
+
+inline
+uint
+fgPower2Ceil(uint32 xx)
+{return (1 << fgLog2Ceil(xx)); }                // Not valid for 0.
+
+template <typename T>
+inline T
 fgCube(T a)
 {return (a*a*a); }
 

@@ -254,7 +254,13 @@ fgGuiDialogProgress(
     ShowWindow(h,SW_SHOWNORMAL);
     UpdateWindow(h);
     s_cancel = false;
-    actionProgress(boost::bind(progress,d.hwndPb,_1));
+    try {
+        actionProgress(boost::bind(progress,d.hwndPb,_1));
+    }
+    catch (...) {
+        DestroyWindow(h);
+        throw;
+    }
     DestroyWindow(h);
 }
 

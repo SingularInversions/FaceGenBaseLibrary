@@ -143,18 +143,27 @@ intersect(
 
 void
 FgGuiApi3d::markSurfPoint(
-    FgVect2UI               winSize,
-    FgVect2I                pos,
-    FgMat44F             toOics)     // Transforms frustum to [-1,1] cube (depth & y inverted)
+    FgVect2UI           winSize,
+    FgVect2I            pos,
+    FgMat44F            toOics)         // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
     if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
         return;
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    FgOpt<MeshesSurfPoint>      vpt = intersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
         MeshesSurfPoint     pt = vpt.val();
         pt.surfPnt.label = g_gg.getVal(pointLabel).as_ascii();
+        vector<FgSurfPoint> &   surfPoints =  meshes[pt.meshIdx].surfaces[pt.surfIdx].surfPoints;
+        for (size_t ii=0; ii<surfPoints.size(); ++ii) {
+            if (surfPoints[ii].label == pt.surfPnt.label) {     // Replace SPs of same name:
+                surfPoints[ii] = pt.surfPnt;
+                g_gg.setVal(meshesN,meshes);
+                return;
+            }
+        }
+        // Add new SP:
         meshes[pt.meshIdx].surfaces[pt.surfIdx].surfPoints.push_back(pt.surfPnt);
         g_gg.setVal(meshesN,meshes);
     }

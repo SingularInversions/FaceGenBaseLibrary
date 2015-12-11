@@ -10,6 +10,7 @@
 #include "FgStdStream.hpp"
 #include "FgException.hpp"
 #include "FgImage.hpp"
+#include "FgStdString.hpp"
 
 #ifdef _MSC_VER
 // _setjmp and C++ object destruction is non-portable.
@@ -61,7 +62,9 @@ loadJpeg(
     cinfo.err = jpeg_std_error(&jerr.pub);
     jerr.pub.error_exit = fgIJGErrorExit;
 
-    bool succeeded = false;
+    bool                succeeded = false;
+    bool                allocError = false;
+    FgVect2UI           allocErrorSz;
 
     vector<uchar>       buff;
 
@@ -69,16 +72,14 @@ loadJpeg(
     {
         case 0:
         {
-            // DO NOT ALLOCATE ANY C++ OBJECTS HERE ELSE
-            // THERE COULD BE A MEMORY LEAK
+            // DO NOT ALLOCATE ANY C++ OBJECTS HERE OR ELSE THERE COULD BE A MEMORY LEAK
             jpeg_create_decompress(&cinfo);
             jpeg_mem_src(&cinfo,&jpgBuffer[0],jpgBuffer.size());
             jpeg_read_header(&cinfo,TRUE);
 
-                // We need to do this because libjpeg does not do
-                // a very good job at guessing. Unfortunately, I think that
-                // this means if we have a 3 component JPEG with RGB components,
-                // that it will be severely misinterpreted.
+            // We need to do this because libjpeg does not do a very good job at guessing.
+            // Unfortunately, I think that this means if we have a 3 component JPEG with RGB components,
+            // that it will be severely misinterpreted.
             switch(cinfo.num_components)
             {
             case 1:
@@ -91,26 +92,32 @@ loadJpeg(
                 cinfo.jpeg_color_space = JCS_UNKNOWN;
                 break;
             }
-                // We always want RGB out
+            // We always want RGB out
             cinfo.out_color_space = JCS_RGB;
             jpeg_start_decompress(&cinfo);
-
-                // Here we use the library's state variable cinfo.output_scanline as the
-                // loop counter, so that we don't have to keep track ourselves.
-                //
-            img.resize(cinfo.output_width,cinfo.output_height);
-            buff.resize(img.width()*3);
+            // Must try-catch C++ allocations to avoid memory leaks here:
+            try {
+                img.resize(cinfo.output_width,cinfo.output_height);
+                buff.resize(img.width()*3);
+            }
+            catch(...)
+            {
+                succeeded = false;
+                allocError = true;
+                allocErrorSz = FgVect2UI(cinfo.output_width,cinfo.output_height);
+                goto cleanup;
+            }
             uchar*              buffer = &buff[0];
             uint                row = 0;
-            while (cinfo.output_scanline < cinfo.output_height)
-            {
-                    // jpeg_read_scanlines expects an array of pointers to scanlines.
-                    // Here the array is only one element long, but you could ask for
-                    // more than one scanline at a time if that's more convenient.
+            // Here we use the library's state variable cinfo.output_scanline as the
+            // loop counter, so that we don't have to keep track ourselves:
+            while (cinfo.output_scanline < cinfo.output_height) {
+                // jpeg_read_scanlines expects an array of pointers to scanlines.
+                // Here the array is only one element long, but you could ask for
+                // more than one scanline at a time if that's more convenient:
                 jpeg_read_scanlines(&cinfo,&buffer,1);
                 uchar         *ptr = buffer;
-                for (uint col=0; col<img.width(); col++)
-                {
+                for (uint col=0; col<img.width(); col++) {
                     img.elem(col,row).red() = *ptr++;
                     img.elem(col,row).green() = *ptr++;
                     img.elem(col,row).blue() = *ptr++;
@@ -137,6 +144,8 @@ ok:
     goto cleanup;
 cleanup:
     jpeg_destroy_decompress(&cinfo);
+    if (allocError)
+        fgThrow("Allocation error in loadJpeg for size: "+fgToString(allocErrorSz));
     return succeeded;
 }
 

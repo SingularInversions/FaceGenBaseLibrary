@@ -61,7 +61,7 @@ colorSliders(const string & relStore,double init,double tickSpacing)
             fgGuiText(colors[ii],45),       // Fixed width larger than all colors to align sliders
             fgGuiSlider(val,"",FgVectD2(0,1),tickSpacing)));
     }
-    ret.valN = g_gg.addNode(vector<double>());
+    ret.valN = g_gg.addNode(vector<double>(),"RGB");
     g_gg.addLink(fgLinkCollate<double>,valsN,ret.valN);
     ret.win = fgGuiSplit(false,sliders);
     return ret;
@@ -212,7 +212,7 @@ fgRenderCtrls(uint simple)
     FgDgn<FgVect3F>     bgColorN(g_gg,"bgColor");
     g_gg.addLink(linkColSel,bgColor.valN,bgColorN);
     ret.optsN = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
-    ret.bgImgN = g_gg.addNode(FgImgRgbaUb());
+    ret.bgImgN = g_gg.addNode(FgImgRgbaUb(),"bgImage");
     ret.bgImgDimsN = g_gg.addNode(FgVect2UI());
     g_gg.addLink(linkRenderOpts,
         fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN),
@@ -528,7 +528,7 @@ fgGui3dCtls(
         fgGuiText(
             "  Rotate: left-click-drag (or touch-drag)\n"
             "  Scale: right-click-drag up/down (or pinch-to-zoom)\n"
-            "  Move: shift-left-click-drag");
+            "  Move: shift-left-click-drag (or middle-click-drag)");
     FgGuiPtr        viewCtlRotation =
         fgGuiGroupboxTr("Object rotation",
             fgGuiRadio(api.panTiltMode,fgSvec<FgString>("Pan / tilt","Unconstrained")));
@@ -573,7 +573,10 @@ fgGui3dCtls(
             viewCtlText,viewCtlRotation,viewCtlFov,viewCtlScale,viewCtlReset));
     ret.editCtls =
         fgGuiSplit(false,fgSvec(
-            fgGuiText("Mark Surface Point: ctrl-shift-left-click on surface\n"),
+            fgGuiText(
+                "Mark Surface Point: ctrl-shift-left-click on surface.\n"
+                "A point with an identical name will be overwritten"
+            ),
             fgGuiSplit(true,
                 fgGuiText("Name:"),
                 fgGuiTextEdit(api.pointLabel)),

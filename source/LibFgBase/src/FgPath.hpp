@@ -130,4 +130,7 @@ fgCheckSetExtension(
 FgString
 fgAsDirectory(const FgString & path);
 
+string
+fgAsDirectory(const string & path);
+
 #endif

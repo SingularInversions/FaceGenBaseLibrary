@@ -43,7 +43,6 @@ void
 setText(FgDgn<FgString> n,FgString v)
 {
     g_gg.setVal(n,v);
-    g_gg.updateScreen();
 }
 
 FgGuiPtr
@@ -78,7 +77,6 @@ textToVal(const FgString & text,FgDgn<double> valN,FgVect2D bounds)
     if (userVal > bounds[1])
         userVal = bounds[1];
     g_gg.setVal(valN,userVal);
-    g_gg.updateScreen();
 }
 
 FgGuiPtr

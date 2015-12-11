@@ -351,20 +351,18 @@ Fg3dTopology::isManifold() const
 {
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
         Edge    edge = m_edges[ee];
-        if (edge.triInds.size() == 1)
-            break;
-        if (edge.triInds.size() > 2)
+        if (edge.triInds.size() != 2)
             return false;
+        // Check that winding directions of the two facets are opposite on this edge:
         Tri     tri0 = m_tris[edge.triInds[0]],
                 tri1 = m_tris[edge.triInds[1]];
         uint    edgeIdx0 = fgFindFirstIdx(tri0.edgeInds,uint(ee)),
                 edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
-        bool    in0 = (tri0.edge(edgeIdx0) == edge.vertInds),
-                in1 = (tri1.edge(edgeIdx1) == edge.vertInds);
-        if (in0 && in1)
+        if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
             return false;
-        if (!in0 && !in1)
-            return false;
+        // Worked on all 3DP meshes in testing so commented out for speed:
+        //FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
+        //FGASSERT(tri0.edge(edgeIdx0)[1] == tri1.edge(edgeIdx1)[0]);
     }
     return true;
 }

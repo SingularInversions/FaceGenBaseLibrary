@@ -6,6 +6,10 @@
 // Authors: Andrew Beatty
 // Created: July 15, 2015
 //
+/**
+   \defgroup Base_Commands
+   Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
+ */
 
 #include "stdafx.h"
 
@@ -95,6 +99,7 @@ FgCmd   fgCmdImgopsInfo();
 FgCmd   fgCmdMeshopsInfo();
 FgCmd   fgCmdMorphInfo();
 FgCmd   fgCmdRenderInfo();
+FgCmd   fgCmdTriexportInfo();
 void    fgCmdCons(const FgArgs &);
 
 vector<FgCmd> fgCmdViewInfos();
@@ -111,6 +116,7 @@ fgCmdFgbl(const FgArgs & args)
     cmds.push_back(fgCmdMeshopsInfo());
     cmds.push_back(fgCmdMorphInfo());
     cmds.push_back(fgCmdRenderInfo());
+    cmds.push_back(fgCmdTriexportInfo());
     cmds.push_back(FgCmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
     cmds.push_back(FgCmd(test,"test","Automated tests"));
     cmds.push_back(FgCmd(testm,"testm","Manual tests"));

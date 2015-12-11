@@ -102,6 +102,15 @@ struct  FgException
     no_tr_message() const;
 };
 
+// Should be caught in an end-user context as a failed operation, rather than reported
+// as an internal error. Examples include reading from a corrupt file, lack of drive space, etc.
+struct  FgExceptionUserError : public FgException
+{
+    explicit
+    FgExceptionUserError(const std::string & msg,const FgString & data) : FgException(msg,data)
+    {}
+};
+
 struct  FgExceptionUserCancel : public FgException
 {
     FgExceptionUserCancel()

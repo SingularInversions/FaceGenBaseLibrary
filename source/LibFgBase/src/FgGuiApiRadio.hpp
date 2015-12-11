@@ -56,7 +56,7 @@ fgGuiRadioObjects(
     FgGuiOutput<T>              ret;
     FGASSERT(objects.size() == labels.size());
     FGASSERT(initVal < labels.size());
-    FgDgn<vector<T> >           objectsN = g_gg.addNode(objects);
+    FgDgn<vector<T> >           objectsN = g_gg.addNode(objects,string("radio_")+typeid(T).name());
     FgDgn<size_t>               selN;
     if (saveLabel.empty())
         selN = g_gg.addNode(initVal);

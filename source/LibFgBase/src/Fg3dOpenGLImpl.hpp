@@ -27,6 +27,43 @@
 
 using namespace std;
 
+string
+fgOglGetInfo()
+{
+    const char  *oglVendor = (const char *)glGetString(GL_VENDOR),
+                *oglRenderer = (const char *)glGetString(GL_RENDERER),
+                *oglVersion = (const char *)glGetString(GL_VERSION);
+    return string(oglVendor) + "," + string(oglRenderer) + "," + string(oglVersion);
+}
+
+static
+string
+oglErrString(GLenum err)
+{
+    string        msg;
+    if (err == GL_INVALID_ENUM) msg += "GL_INVALID_ENUM";
+    else if (err == GL_INVALID_VALUE) msg += "GL_INVALID_VALUE";
+    else if (err == GL_INVALID_OPERATION) msg += "GL_INVALID_OPERATION";
+    else if (err == GL_STACK_OVERFLOW) msg += "GL_STACK_OVERFLOW";
+    else if (err == GL_STACK_UNDERFLOW) msg += "GL_STACK_UNDERFLOW";
+    else if (err == GL_OUT_OF_MEMORY) msg += "GL_OUT_OF_MEMORY";
+    msg += " : " + fgOglGetInfo();
+    return msg;
+}
+
+static
+void
+checkOglError(const char * fname,int line)
+{
+    GLenum  err = glGetError();
+    if (err != 0) {
+        FgString        msg = string(fname) + " line " + fgToString(line) + "\n" + oglErrString(err);
+        fgThrow("OpenGL Error",msg);
+    }
+}
+
+#define CHECKOGLERROR checkOglError(__FILE__,__LINE__)
+
 static
 void
 drawWires(const vector<FgOglRendModel> &  rms)
@@ -314,26 +351,10 @@ drawSurfaces(
     }
 }
 
-string
-fgOglGetInfo()
-{
-    FGASSERT(glGetError() == 0);
-    const char *oglVendor, *oglRenderer, *oglVersion;
-    oglVendor = (const char *)glGetString(GL_VENDOR);
-    oglRenderer = (const char *)glGetString(GL_RENDERER);
-    oglVersion = (const char *)glGetString(GL_VERSION);
-    std::string oglInfo(oglVendor);
-    oglInfo += ", " + std::string(oglRenderer);
-    oglInfo += ", " + std::string(oglVersion);
-    oglInfo += "\n";
-    FGASSERT(glGetError() == 0);
-    return oglInfo;
-}
-
 void
 fgOglSetup()
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     // Set up OGL rendering preferences:
     GLfloat     blackLight[] = {0.0,  0.0,  0.0,  1.0f};
     glEnable(GL_POLYGON_OFFSET_FILL);
@@ -361,7 +382,7 @@ fgOglSetup()
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
     glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
     s_specMapName = fgOglTextureAdd(FgImgRgbaUb(128,128));
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
 }
 
 void
@@ -369,12 +390,9 @@ fgOglTextureUpdate(
     uint                name,
     const FgImgRgbaUb & img)
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     // OGL requires power of 2 dimensioned images, and expects them stored bottom to top:
-    FgImgRgbaUb     oglImg;
-    fgPower2Ceil(img,oglImg);
-    fgImgFlipVertical(oglImg);
-    vector<FgImgRgbaUb>     mipmap = fgMipMap(oglImg);
+    vector<FgImgRgbaUb>     mipmap = fgOglMipMap(img);
     glEnable(GL_TEXTURE_2D);
     // Set this texture "name" as the current 2D texture "target":
     glBindTexture(GL_TEXTURE_2D,name);
@@ -382,44 +400,43 @@ fgOglTextureUpdate(
     // to be supported by this implementation of OGL. Note that we do not
     // attempt to ensure the texture fits in remaining GPU memory, just that it
     // is of a supported size.
-    GLint tmp;
+    GLint           tmp;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE,&tmp);
     // In order to avoid running out of memory (which has happened here since I gues the max
-    // texture size can be such that it takes most memory, and resulting in NVIDIA driver
-    // shutting down the application!) reduce by one pow2:
-    uint        oglTexMax = static_cast<uint>(tmp/2);
-    uint        dimMax = std::max(oglImg.width(),oglImg.height()),
-                jj;
-    for (jj=0; dimMax>oglTexMax; jj++) dimMax/=2;
-    // Load into GPU:
-    for (uint ii=jj; ii<=mipmap.size(); ii++) {
-        const FgImgRgbaUb  *img;
-        if (ii == 0)
-            img = &oglImg;
-        else
-            img = &(mipmap[ii-1]);
-        glTexImage2D(GL_TEXTURE_2D,
-                     ii-jj,                 // Mipmap level being specified.
-                     4,                     // 4 Channels
-                     img->width(),
-                     img->height(),
-                     0,                     // No border colour
-                     GL_RGBA,               // Channel order
-                     GL_UNSIGNED_BYTE,      // Channel type
-                     img->dataPtr());
+    // texture size can be such that it takes most memory, reduce by one pow2:
+    uint        oglTexMax = uint(tmp/2),
+                ll = 0;
+    for (uint mm=0; mm<mipmap.size(); ++mm) {
+        const FgImgRgbaUb & mi = mipmap[mm];
+        if (fgMaxElem(mi.dims()) <= oglTexMax) {
+            glTexImage2D(GL_TEXTURE_2D,
+                         ll,                    // Mipmap level being specified.
+                         4,                     // 4 Channels
+                         mi.width(),
+                         mi.height(),
+                         0,                     // No border colour
+                         GL_RGBA,               // Channel order
+                         GL_UNSIGNED_BYTE,      // Channel type
+                         mi.dataPtr());
+            GLenum err = glGetError();          // glGetError() resets the error code to GL_NO_ERROR
+            if (err == GL_NO_ERROR)
+                ++ll;
+            else if ((err != GL_OUT_OF_MEMORY) || (ll > 0)) {
+                fgThrow("OpenGL error in glTexImage",oglErrString(err));
+            }
+        }
     }
     // Note that although glTexSubImage2D can be used to update an already loaded
-    // texture image more efficiently, this didn't work properly on some machines -
-    // It would not update the texture if too much texture memory was being used 
-    // (NT4, Gauss) or it would randomly corrupt all the textures (XP, beta tester).
-    FGASSERT(glGetError() == 0);
+    // texture image sligly faster, this didn't work properly on some machines, and further
+    // doesn't work if the image size changes.
+    CHECKOGLERROR;
 }
 
 uint
 fgOglTextureAdd(
     const FgImgRgbaUb & img)
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     glEnable(GL_TEXTURE_2D);
     uint name;
     glGenTextures(1,&name);
@@ -445,7 +462,7 @@ rendSurfaces(
 void
 fgOglSetLighting(const FgLighting & lt)
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     GLint       glLight[] = {GL_LIGHT0,GL_LIGHT1,GL_LIGHT2,GL_LIGHT3};
     glEnable(GL_LIGHTING);
     glMatrixMode(GL_MODELVIEW);
@@ -461,7 +478,7 @@ fgOglSetLighting(const FgLighting & lt)
         glLightfv(glLight[ll],GL_DIFFUSE,clr.dataPtr());
     }
     fgOglTextureUpdate(s_specMapName,lt.createSpecularMap());
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
 }
 
 static
@@ -518,7 +535,7 @@ fgOglRender(
     FgValid<uint>                   bgImgName,
     FgVect2UI                       bgImgDims)
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     glClearColor(rend.backgroundColor[0],rend.backgroundColor[1],rend.backgroundColor[2],1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (bgImgName.valid())
@@ -565,7 +582,7 @@ fgOglRender(
     }
     if (bgImgName.valid())
         renderBgImg(bgImgName.val(),bgImgDims,true);
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
 }
 
 FgMat44F
@@ -580,6 +597,7 @@ fgOglTransform()
 FgImgRgbaUb
 fgOglGetRender()
 {
+    glReadBuffer(GL_FRONT);
     FgImgRgbaUb     ret;
     GLint           x[4];
     glGetIntegerv(GL_VIEWPORT,x);
@@ -592,16 +610,17 @@ fgOglGetRender()
             ptr += dims[0];
         }
     }
+    glReadBuffer(GL_BACK);          // Restore to default
     return ret;
 }
 
 void
 fgOglTexRelease(uint texName)
 {
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
     glEnable(GL_TEXTURE_2D);
     glDeleteTextures(1,&texName);
-    FGASSERT(glGetError() == 0);
+    CHECKOGLERROR;
 }
 
 // */

@@ -174,6 +174,10 @@ fgAsDirectory(const FgString & path)
     return ret;
 }
 
+string
+fgAsDirectory(const string & path)
+{return fgAsDirectory(FgString(path)).m_str; }
+
 void
 fgPathTest(const FgArgs &)
 {

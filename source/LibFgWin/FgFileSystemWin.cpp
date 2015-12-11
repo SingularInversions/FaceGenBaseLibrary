@@ -97,9 +97,9 @@ fgCreateDirectory(const FgString & dirname)
 {
     wstring     curr = fgGetCurrentDir().as_wstring(),
                 dirn = dirname.as_wstring();
-    if (CreateDirectoryExW(&curr[0],&dirn[0],NULL) == 0)
-    {
-        if (GetLastError() == ERROR_ALREADY_EXISTS) return false;
+    if (CreateDirectoryExW(&curr[0],&dirn[0],NULL) == 0) {
+        if (GetLastError() == ERROR_ALREADY_EXISTS)
+            return false;
         else
             fgThrowWindows("Unable to create directory",dirname);
     }

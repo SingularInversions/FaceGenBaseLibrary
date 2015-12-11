@@ -16,7 +16,7 @@
 #include "FgMatrixCBase.hpp"
 #include "FgVariant.hpp"
 #include "FgRandom.hpp"
-#include "FgAlgs.hpp"
+#include "FgMath.hpp"
 #include "FgOpt.hpp"
 
 template<class T,uint nrows,uint ncols>
@@ -741,5 +741,14 @@ template<uint nrows,uint ncols>
 FgMatrixC<float,nrows,ncols>
 fgD2F(const FgMatrixC<double,nrows,ncols> & m)
 {return FgMatrixC<float,nrows,ncols>(m); }
+
+//template<uint nrows,uint ncols>
+//FgMatrixC<uint,nrows,ncols>
+//fgPow2Ceil(const FgMatrixC<uint,nrows,ncols> & m)
+//{
+//    FgMatrixC<uint,nrows,ncols>     ret;
+//    for (uint ii=0; ii<nrows*ncols; ++ii)
+//        ret[ii] = fgPow2Ceil(m[ii]);
+//}
 
 #endif

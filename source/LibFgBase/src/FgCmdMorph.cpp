@@ -18,7 +18,7 @@
 using namespace std;
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to apply animation morphs to a mesh.
  */
 static
@@ -73,7 +73,7 @@ apply(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to remove all animation morphs in a mesh
  */
 static
@@ -89,7 +89,7 @@ clear(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to copy animation morphs between meshes with corresponding vertex lists
  */
 static
@@ -141,7 +141,7 @@ copymorphs(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to create animation morphs for a mesh.
  */
 static
@@ -191,7 +191,7 @@ create(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to list animation morphs in a mesh.
  */
 static
@@ -219,7 +219,7 @@ morphList(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to remove animation morphs from a mesh.
  */
 static
@@ -240,7 +240,7 @@ removebrackets(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to remove animation morphs from a mesh.
  */
 static
@@ -293,7 +293,7 @@ removemorphs(const FgArgs & args)
 }
 
 /**
-   \ingroup Main_Commands
+   \ingroup Base_Commands
    Command to rename an animation morph in a mesh.
  */
 static

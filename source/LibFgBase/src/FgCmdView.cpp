@@ -68,7 +68,7 @@ viewMesh(const FgArgs & args)
             }
             else {
                 FgImgRgbaUb     texPow;
-                fgPower2Ceil(texture,texPow);
+                fgResizePow2Ceil(texture,texPow);
                 mesh.texImages.push_back(texPow);
             }
         }

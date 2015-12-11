@@ -91,7 +91,9 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             config.dwWant = GC_ROTATE;
             config.dwID = GID_ROTATE;
             config.dwBlock = 0;
-            FGASSERTWIN(SetGestureConfig(hwnd,0,1,&config,sizeof(GESTURECONFIG)));
+            // This function returned a "not implemented" error on a German Windows 7 64bit SP1 system,
+            // so don't throw on error, just continue and presumably no gesture messages will be received:
+            SetGestureConfig(hwnd,0,1,&config,sizeof(GESTURECONFIG));
 #endif
         }
         else if (msg == WM_SIZE) {
@@ -150,6 +152,10 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
                 g_gg.updateScreen();
             }
             else if (wParam == (MK_LBUTTON | MK_SHIFT)) {
+                m_api.translate(delta);
+                g_gg.updateScreen();
+            }
+            else if (wParam == MK_MBUTTON) {
                 m_api.translate(delta);
                 g_gg.updateScreen();
             }

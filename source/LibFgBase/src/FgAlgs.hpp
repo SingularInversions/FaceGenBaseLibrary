@@ -59,24 +59,6 @@ fgClamp(T val,T lo,T hi)
     return val;
 }
 
-template <typename T>
-inline T
-fgSqr(T a)
-{return (a*a); }
-
-inline
-bool
-fgIsPow2(uint xx)
-{return ((xx != 0) && ((xx & (xx-1)) == 0)); }
-
-uint
-fgNumLeadingZeros(uint32 xx);                                               // 0 returns 32.
-
-inline uint fgLog2Floor(uint32 xx) {return (31-fgNumLeadingZeros(xx)); }    // Not valid for 0.
-uint        fgLog2Ceil(uint32 xx);                                          // Not valid for 0.
-inline uint fgPower2Floor(uint32 xx) {return (1 << fgLog2Floor(xx)); }      // Not valid for 0.
-inline uint fgPower2Ceil(uint32 xx) {return (1 << fgLog2Ceil(xx)); }        // Not valid for 0.
-
 // 1D convolution with zero-value boundary handling (non-optimized):
 std::vector<double>
 fgConvolve(

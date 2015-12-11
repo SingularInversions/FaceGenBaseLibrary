@@ -139,6 +139,8 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                     if (txt != m_currText) {
                         m_currText = txt;
                         m_api.setOutput(txt);
+                        if (m_keyboardFocus)        // In this case the change is due to user interaction
+                            g_gg.updateScreen();    // Won't affect this text edit box while focus is on
                     }
                 }
                 else if (nc == EN_SETFOCUS) {

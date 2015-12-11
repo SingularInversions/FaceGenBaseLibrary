@@ -451,11 +451,14 @@ fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC c,uint radius)
             img.paint(ircs+FgVect2I(xx,yy),clr);
 }
 
+// Creates an OpenGL compatible mipmap from the given image; the original will be upsampled
+// to a power of 2 if necessary and storage order reversed to bottom-to-top:
 vector<FgImgRgbaUb>
-fgMipMap(const FgImgRgbaUb & img)
+fgOglMipMap(const FgImgRgbaUb & img)
 {
-    vector<FgImgRgbaUb>     ret(fgLog2Floor(fgMaxElem(img.dims())));
-    ret[0] = fgImgShrink2(img);
+    vector<FgImgRgbaUb>     ret(fgLog2Ceil(fgMaxElem(img.dims()))+1);
+    fgResizePow2Ceil(img,ret[0]);   // Just copies if already pow2 dims
+    fgImgFlipVertical(ret[0]);
     for (size_t sl=1; sl<ret.size(); ++sl) {
         const FgImgRgbaUb & src = ret[sl-1];
         if (fgMinElem(src.dims()) > 1)

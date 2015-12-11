@@ -34,7 +34,7 @@ fgOglTextureAdd(const FgImgRgbaUb & img);
 void
 fgOglTextureUpdate(
     uint                name,       // Existing OGL texture 'name'
-    const FgImgRgbaUb & img);
+    const FgImgRgbaUb & img);       // Send power of 2 images whenever possible or slow resizing will have to be done.
 
 struct  FgOglSurf
 {

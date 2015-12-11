@@ -58,6 +58,16 @@ fgDirectoryContents(const FgString & dirName)
     return ret;
 }
 
+bool
+fgSetCurrentDirUp()
+{
+    FgPath      cd = fgAsDirectory(fgGetCurrentDir());
+    if (cd.dirs.empty())
+        return false;
+    fgSetCurrentDir(cd.dir(cd.dirs.size()-1));
+    return true;
+}
+
 void
 fgCreatePath(const FgString & path)
 {
