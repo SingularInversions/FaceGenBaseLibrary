@@ -77,8 +77,9 @@ fgImageTestm(const FgArgs & args)
 
 static
 void
-testConvolve()
+testConvolve(const FgArgs &)
 {
+    fgRandSeedRepeatable();
     FgImgF          tst(16,16);
     for (size_t ii=0; ii<tst.numPixels(); ++ii)
         tst[ii] = float(fgRand());
@@ -89,9 +90,13 @@ testConvolve()
     FGASSERT(fgApproxEqual(i0.m_data,i1.m_data));
 }
 
+void    fgImgTestWrite(const FgArgs &);
+
 void
-fgImageTest(const FgArgs &)
+fgImageTest(const FgArgs & args)
 {
-    fgRandSeedRepeatable();
-    testConvolve();
+    vector<FgCmd>       cmds;
+    cmds.push_back(FgCmd(testConvolve,"conv"));
+    cmds.push_back(FgCmd(fgImgTestWrite,"write"));
+    fgMenu(args,cmds,true,false,true);
 }

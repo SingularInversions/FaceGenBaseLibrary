@@ -52,7 +52,7 @@ struct  FgMorph
     void
     applyAsDelta(FgVerts & accVerts,float val) const
     {
-        FGASSERT(verts.size() <= accVerts.size());
+        FGASSERT(verts.size() == accVerts.size());
         for (size_t ii=0; ii<verts.size(); ++ii)
             accVerts[ii] += verts[ii] * val;
     }
@@ -76,12 +76,17 @@ struct  FgIndexedMorph
             accVerts[idx] += del * val;
         }
     }
+
+    // Name of morph does not affect equality:
+    bool
+    operator==(const FgIndexedMorph & rhs) const
+    {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
 };
 
 void
 fgAccDeltaMorphs(
     const vector<FgMorph> &     deltaMorphs,
-    const FgFloats &            coord,
+    const FgFlts &              coord,
     FgVerts &                   accVerts);  // MODIFIED: morphing delta accumualted here
 
 // This version of target morph application is more suited to SSM dataflow, where the
@@ -90,7 +95,7 @@ void
 fgAccTargetMorphs(
     const FgVerts &             allVerts,   // Base verts plus all target morph verts
     const vector<FgIndexedMorph> & targMorphs,  // Only 'baseInds' is used.
-    const FgFloats &            coord,      // morph coefficient for each target morph
+    const FgFlts &              coord,      // morph coefficient for each target morph
     FgVerts &                   accVerts);  // MODIFIED: target morphing delta accumulated here
 
 struct  FgMarkedVert
@@ -141,18 +146,18 @@ struct  Fg3dMesh
     {}
 
     Fg3dMesh(
-        const FgVerts &                     verts,
-        const Fg3dSurface &                 surf);
+        const FgVerts &                 verts,
+        const Fg3dSurface &             surf);
 
     Fg3dMesh(
-        const FgVerts &                     verts,
-        const vector<Fg3dSurface> &    surfaces);
+        const FgVerts &                 verts,
+        const vector<Fg3dSurface> &     surfaces);
 
     Fg3dMesh(
-        const FgVerts &                     verts,
-        const vector<FgVect2F> &       uvs,
-        const vector<Fg3dSurface> &    surfaces,
-        const vector<FgMorph> &        morphs=vector<FgMorph>());
+        const FgVerts &                 verts,
+        const vector<FgVect2F> &        uvs,
+        const vector<Fg3dSurface> &     surfaces,
+        const vector<FgMorph> &         morphs=vector<FgMorph>());
 
     // Total number of verts including target morph verts:
     size_t
@@ -225,6 +230,10 @@ struct  Fg3dMesh
     vector<FgVertLabel>
     surfPointsAsVertLabels() const;
 
+    FgVect3F
+    markedVertPos(const string & name) const
+    {return verts[fgFindFirst(markedVerts,name).idx]; }
+
     // MORPHS:
 
     size_t
@@ -252,7 +261,7 @@ struct  Fg3dMesh
     // Morph using member base and target vertices:
     void
     morph(
-        const FgFloats &    coord,
+        const FgFlts &      coord,
         FgVerts &           outVerts)       // RETURNED
         const;
 
@@ -260,16 +269,15 @@ struct  Fg3dMesh
     void
     morph(
         const FgVerts &     allVerts,       // Must have same number of verts as base plus targets
-        const FgFloats &    coord,
+        const FgFlts &      coord,
         FgVerts &           outVerts)       // RETURNED. Same size as base verts
         const;
 
     // Morph using member base and target vertices:
-    void
+    FgVerts
     morph(
-        const FgFloats &    deltaMorphCoord,
-        const FgFloats &    targMorphCoord,
-        FgVerts &           outVerts)       // RETURNED
+        const FgFlts &      deltaMorphCoord,
+        const FgFlts &      targMorphCoord)
         const;
 
     // Apply just a single morph by its universal index (ie over deltas & targets):
@@ -306,15 +314,6 @@ struct  Fg3dMesh
     void
     transform(FgAffine3F xform);
 
-    Fg3dMesh
-    subdivideFlat() const;
-
-    Fg3dMesh
-    subdivideLoop() const;
-
-    Fg3dSurface
-    mergedSurfaces() const;
-
     void
     mergeAllSurfaces();
 
@@ -333,5 +332,16 @@ fgMorphs(const vector<Fg3dMesh> & meshes);
 
 std::ostream &
 operator<<(std::ostream &,const Fg3dMesh &);
+
+inline
+FgAffineCw2F
+fgOtcsToIpcs(FgVect2UI imgDims)
+{return FgAffineCw2F(FgMat22F(0,1,1,0),FgMat22F(0,imgDims[0],0,imgDims[1])); }
+
+Fg3dMesh
+fgSubdivideFlat(const Fg3dMesh &);
+
+Fg3dMesh
+fgSubdivideLoop(const Fg3dMesh &);
 
 #endif

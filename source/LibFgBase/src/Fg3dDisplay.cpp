@@ -110,7 +110,7 @@ fgGuiLighting()
     g_gg.addLink(linkLighting,fgUints(ambient.valN,light1.valN,light2.valN,ld1.dirN,ld2.dirN),ret.outN);
     ret.dirAxisNs[0] = ld1.dirAxisNs;
     ret.dirAxisNs[1] = ld2.dirAxisNs;
-    ret.win = fgGuiSplit(false,
+    ret.win = fgGuiSplitScroll(fgSvec(
         fgGuiGroupbox("Ambient",ambient.win),
         fgGuiGroupbox("Light 1",fgGuiSplit(false,light1.win,ld1.win)),
         fgGuiGroupbox("Light 2",fgGuiSplit(false,light2.win,ld2.win)),
@@ -118,7 +118,7 @@ fgGuiLighting()
             "Light 1: hold down left and right mouse buttons while dragging\n"
             "Light 2: As above but also hold down shift key"),
         fgGuiButton("Reset Lighting",boost::bind(resetLighting,ret.outN.idx()))
-    );
+    ));
     return ret;
 }
 
@@ -156,7 +156,14 @@ bgImageLoad(FgDgn<FgImgRgbaUb> imgN,FgDgn<FgVect2UI> dimsN)
     FgOpt<FgString>     fname = fgGuiDialogFileLoad(fgImgCommonFormatsDescription(),fgImgCommonFormats());
     if (!fname.valid())
         return;
-    FgImgRgbaUb         orig = fgLoadImgAnyFormat(fname.val());
+    FgImgRgbaUb         orig;
+    try {
+        orig = fgLoadImgAnyFormat(fname.val());
+    }
+    catch (const FgException & e) {
+        fgGuiDialogMessage("Unable to load image",e.no_tr_message());
+        return;
+    }
     g_gg.setVal(dimsN,orig.dims());
     FgImgRgbaUb &       img = g_gg.getRef(imgN);
     img.resize(FgVect2UI(1024));
@@ -511,9 +518,10 @@ fgGui3dCtls(
     api.bgImgOrigDimsN = renderCtrls.bgImgDimsN;
     // Including api.viewBounds, api.panTiltDegrees and api.logRelSize in the below caused a feedback
     // issue that broke updates of the other sliders:
-    api.updateFlagIdx = g_gg.addUpdateFlag(
-        fgUints(api.meshesN,api.vertssN,api.normssN,api.texssN,api.light,api.xform,renderCtrls.optsN,api.bgImgN));
-    api.updateTexFlagIdx = g_gg.addUpdateFlag(api.texssN);
+    api.updateFlagIdx = g_gg.addUpdateFlag(fgUints(
+        api.meshesN,api.vertssN,api.normssN,api.texssN,api.light,api.xform,renderCtrls.optsN,api.bgImgN));
+    // The OGL texture update process depends on the meshes as well as the textures:
+    api.updateTexFlagIdx = g_gg.addUpdateFlag(fgUints(api.texssN,api.meshesN));
     api.bothButtonsDragAction = bothButtonsDrag;
     g_gg.addLink(linkNorms,fgUints(meshesN,ret.morphedVertssN),api.normssN);
     Fg3dCameraParams    defaultCps;     // Use default for lensFovDeg:

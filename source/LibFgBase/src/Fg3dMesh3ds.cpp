@@ -76,7 +76,7 @@ static bool    fffSave3dsFile(const FgString &name, const FffMultiObjectC &model
     path.ext = "3ds";
     FgString    fname = path.str();
 #ifdef _WIN32
-    FILE *fptr = fopen(fname.m_str.c_str(),"wb, ccs=UTF-8");
+    FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
     FILE *fptr = fopen(fname.m_str.c_str(),"wb");
 #endif
@@ -640,7 +640,7 @@ fgSave3dsTest(const FgArgs & args)
 {
     FGTESTDIR
     FgString    dd = fgDataDir();
-    string      rd = "csam/Animate/Head/";
+    string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSave3ds("mshX3ds",fgSvec(mesh),"jpg");

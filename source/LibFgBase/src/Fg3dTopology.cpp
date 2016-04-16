@@ -110,10 +110,9 @@ Fg3dTopology::Fg3dTopology(
     const FgVerts &             verts,
     const vector<FgVect3UI> &   tris)
 {
-    // Remove null or duplicate tris so algorithms below work properly:
+    // Detect null or duplicate tris:
     uint                    duplicates = 0,
                             nulls = 0;
-    m_tris.clear();
     set<TriVerts>           vset;
     for (size_t ii=0; ii<tris.size(); ++ii) {
         FgVect3UI           vis = tris[ii];
@@ -135,10 +134,6 @@ Fg3dTopology::Fg3dTopology(
         fgout << fgnl << "WARNING: Duplicate tris: " << duplicates;
     if (nulls > 0)
         fgout << fgnl << "WARNING: Null tris: " << nulls;
-    // m_verts triInds
-    // m_tris vertInds
-    // edgesToTris
-    m_verts.clear();
     m_verts.resize(verts.size());
     std::map<EdgeVerts,vector<uint> >    edgesToTris;
     for (size_t ii=0; ii<m_tris.size(); ++ii) {
@@ -150,8 +145,6 @@ Fg3dTopology::Fg3dTopology(
             edgesToTris[edge].push_back(uint(ii));
         }
     }
-    // m_edges
-    m_edges.clear();
     for (map<EdgeVerts,vector<uint> >::const_iterator it=edgesToTris.begin(); it!=edgesToTris.end(); ++it) {
         EdgeVerts       edgeVerts = it->first;
         Edge            edge;
@@ -159,13 +152,11 @@ Fg3dTopology::Fg3dTopology(
         edge.triInds = it->second;
         m_edges.push_back(edge);
     }
-    // m_verts edgeInds:
-    // m_tris edgeInds:
     for (size_t ii=0; ii<m_edges.size(); ++ii) {
         FgVect2UI               verts = m_edges[ii].vertInds;
         m_verts[verts[0]].edgeInds.push_back(uint(ii));
         m_verts[verts[1]].edgeInds.push_back(uint(ii));
-        EdgeVerts                    edge(verts[0],verts[1]);
+        EdgeVerts               edge(verts[0],verts[1]);
         const vector<uint> &    triInds = edgesToTris.find(edge)->second;
         for (size_t jj=0; jj<triInds.size(); ++jj) {
             uint                triIdx = triInds[jj];
@@ -239,7 +230,7 @@ vector<set<uint> >
 Fg3dTopology::seams() const
 {
     vector<set<uint> >  ret;
-    vector<uint>        vertLabels(m_tris.size(),0);    // 0 is the label for non-edge vertices
+    vector<uint>        vertLabels(m_verts.size(),0);   // 0 is the label for non-edge vertices
     // Initialization sweep through edges:
     uint                currLabel = 1;
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
@@ -375,6 +366,42 @@ Fg3dTopology::unusedVerts() const
         if (m_verts[ii].triInds.empty())
             ++ret;
     return ret;
+}
+
+vector<float>
+Fg3dTopology::edgeDistanceMap(const FgVerts & verts,size_t vertIdx) const
+{
+    vector<float>       ret(verts.size(),std::numeric_limits<float>::max());
+    FGASSERT(vertIdx < verts.size());
+    ret[vertIdx] = 0;
+    edgeDistanceMap(verts,ret);
+    return ret;
+}
+
+void
+Fg3dTopology::edgeDistanceMap(const FgVerts & verts,vector<float> & vertDists) const
+{
+    FGASSERT(verts.size() == m_verts.size());
+    FGASSERT(vertDists.size() == verts.size());
+    bool                done = false;
+    while (!done) {
+        done = true;
+        for (size_t vv=0; vv<vertDists.size(); ++vv) {
+            // Important: check each vertex each time since the topology will often result in 
+            // the first such assignment not being the optimal:
+            if (vertDists[vv] < std::numeric_limits<float>::max()) {
+                const vector<uint> &    edges = m_verts[vv].edgeInds;
+                for (size_t ee=0; ee<edges.size(); ++ee) {
+                    uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));
+                    float               neighDist = vertDists[vv] + (verts[neighVertIdx]-verts[vv]).length();
+                    if (neighDist < vertDists[neighVertIdx]) {
+                        vertDists[neighVertIdx] = neighDist;
+                        done = false;
+                    }
+                }
+            }
+        }
+    }
 }
 
 // */

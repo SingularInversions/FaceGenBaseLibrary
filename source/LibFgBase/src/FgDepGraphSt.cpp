@@ -80,7 +80,7 @@ FgDepGraphSt::executeLink(
     for (size_t ss=0; ss<sinks.size(); ++ss)
         m_linkGraph.nodeData(sinks[ss]).dirty = false;
     if (!err.empty())
-        fgThrow("FgDepGraphSt link execution catch:",linkDescription(linkInd)+"\n"+err);
+        fgThrow("FgDepGraphSt link execution catch",linkDescription(linkInd)+"\n"+err);
 }
 
 static

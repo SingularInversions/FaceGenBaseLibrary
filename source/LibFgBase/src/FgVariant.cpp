@@ -23,13 +23,4 @@ FgVariant::operator=(
     return *this;
 }
 
-std::ostream &
-FgVariant::print(std::ostream & ss) const
-{
-    ss << m_poly->typeName() << ": " << fgpush;
-    m_poly->print(ss);
-    ss << fgpop;
-    return ss;
-}
-
 // */

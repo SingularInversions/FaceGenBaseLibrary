@@ -23,7 +23,7 @@ using namespace std;
 void
 fgAccDeltaMorphs(
     const vector<FgMorph> &     deltaMorphs,
-    const FgFloats &            coord,
+    const FgFlts &              coord,
     FgVerts &                   accVerts)
 {
     FGASSERT(deltaMorphs.size() == coord.size());
@@ -39,7 +39,7 @@ void
 fgAccTargetMorphs(
     const FgVerts &             allVerts,
     const vector<FgIndexedMorph> & targMorphs,
-    const vector<float> &       coord,
+    const FgFlts &              coord,
     FgVerts &                   accVerts)
 {
     FGASSERT(targMorphs.size() == coord.size());
@@ -274,8 +274,8 @@ Fg3dMesh::findMorph(const FgString & name) const
 
 void
 Fg3dMesh::morph(
-    const vector<float> &   morphCoord,
-    FgVerts &               outVerts) const
+    const FgFlts &      morphCoord,
+    FgVerts &           outVerts) const
 {
     FGASSERT(morphCoord.size() == numMorphs());
     outVerts = verts;
@@ -289,7 +289,7 @@ Fg3dMesh::morph(
 void
 Fg3dMesh::morph(
     const FgVerts &     allVerts,
-    const FgFloats &    coord,
+    const FgFlts &      coord,
     FgVerts &           outVerts) const
 {
     outVerts = fgHead(allVerts,verts.size());
@@ -298,19 +298,21 @@ Fg3dMesh::morph(
     fgAccTargetMorphs(allVerts,targetMorphs,fgRest(coord,ndms),outVerts);
 }
 
-void
+FgVerts
 Fg3dMesh::morph(
-    const vector<float> &   deltaMorphCoord,
-    const vector<float> &   targMorphCoord,
-    FgVerts &               outVerts) const
+    const FgFlts &      deltaMorphCoord,
+    const FgFlts &      targMorphCoord) const
 {
+    FgVerts     ret = verts;
     FGASSERT(deltaMorphCoord.size() == deltaMorphs.size());
     FGASSERT(targMorphCoord.size() == targetMorphs.size());
-    outVerts = verts;
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        deltaMorphs[ii].applyAsDelta(outVerts,deltaMorphCoord[ii]);
+        if (deltaMorphCoord[ii] != 0.0f)
+            deltaMorphs[ii].applyAsDelta(ret,deltaMorphCoord[ii]);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        targetMorphs[ii].applyAsTarget(verts,outVerts,targMorphCoord[ii]);
+        if (targMorphCoord[ii] != 0.0f)
+            targetMorphs[ii].applyAsTarget(verts,ret,targMorphCoord[ii]);
+    return ret;
 }
 
 FgVerts
@@ -440,32 +442,6 @@ Fg3dMesh::transform(FgAffine3F xform)
         fgTransform_(targetMorphs[ii].verts,targetMorphs[ii].verts,xform);
 }
 
-Fg3dMesh
-Fg3dMesh::subdivideFlat() const
-{
-    // Subdividing multi-surface meshes is complex and unnecessary for our needs:
-    FGASSERT(surfaces.size() == 1);
-    FgVerts             newVerts = verts;
-    return Fg3dMesh(newVerts,surfaces[0].subdivideFlat(newVerts));
-}
-
-Fg3dMesh
-Fg3dMesh::subdivideLoop() const
-{
-    FGASSERT(surfaces.size() == 1);
-    FgVerts             newVerts;
-    return Fg3dMesh(newVerts,surfaces[0].subdivideLoop(verts,newVerts));
-}
-
-Fg3dSurface
-Fg3dMesh::mergedSurfaces() const
-{
-    Fg3dSurface     ret;
-    for (size_t ii=0; ii<surfaces.size(); ++ii)
-        ret.merge(surfaces[ii]);
-    return ret;
-}
-
 void
 Fg3dMesh::mergeAllSurfaces()
 {
@@ -533,18 +509,30 @@ operator<<(std::ostream & os,const Fg3dMesh & m)
     os << fgpop;
     for (size_t ss=0; ss<m.surfaces.size(); ss++) {
         const Fg3dSurface &     surf = m.surfaces[ss];
-        os << fgnl << "Surface " << ss << ": " << fgpush << fgnl
-           << "Tris: " << surf.numTris() << "  Quads: " << surf.numQuads() << fgnl
-           << "Surf Points: " << surf.numSurfPoints() << fgpush;
-        for (uint ii=0; ii<surf.numSurfPoints(); ++ii)
-            os << fgnl << ii << ": " << surf.surfPoints[ii].label << "  " << surf.getSurfPoint(m.verts,ii);
-        os << fgpop;
-        os << fgpop;
+        os << fgnl << "Surface " << ss << ": " << fgpush << surf << fgpop;
     }
     Fg3dTopology            topo(m.verts,m.getTriEquivs().vertInds);
     os << fgnl
-        << "Manifold: " << (topo.isManifold() ? "yes" : "no")
+        << "Manifold: " << (topo.isManifold() ? "YES" : "NO")
         << " Seams: " << topo.seams().size()
         << " Unused verts: " << topo.unusedVerts();
     return os;
 }
+
+Fg3dMesh
+fgSubdivideFlat(const Fg3dMesh & mesh)
+{
+    // Subdividing multi-surface meshes is complex and unnecessary for our needs:
+    FGASSERT(mesh.surfaces.size() == 1);
+    FgVerts             newVerts = mesh.verts;
+    return Fg3dMesh(newVerts,fgSubdivideFlat(mesh.surfaces[0],newVerts));
+}
+
+Fg3dMesh
+fgSubdivideLoop(const Fg3dMesh & mesh)
+{
+    FGASSERT(mesh.surfaces.size() == 1);
+    FgVerts             newVerts;
+    return Fg3dMesh(newVerts,fgSubdivideLoop(mesh.surfaces[0],mesh.verts,newVerts));
+}
+

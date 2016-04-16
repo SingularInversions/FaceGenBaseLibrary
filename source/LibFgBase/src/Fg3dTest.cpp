@@ -16,6 +16,8 @@
 #include "Fg3dDisplay.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgCommand.hpp"
+#include "Fg3dTopology.hpp"
+#include "FgAffine1.hpp"
 
 using namespace std;
 
@@ -27,7 +29,7 @@ addSubdivisions(
 {
     meshes.push_back(mesh);
     for (uint ii=0; ii<5; ++ii)
-        meshes.push_back(meshes.back().subdivideLoop());
+        meshes.push_back(fgSubdivideLoop(meshes.back()));
 }
 
 static
@@ -42,7 +44,7 @@ test3dMeshSubdivision(const FgArgs &)
     vector<FgVect3F>    surfPoints0(numPts);
     for (uint ii=0; ii<numPts; ++ii)
         surfPoints0[ii] = meanMesh.getSurfPoint(ii);
-    meanMesh = meanMesh.subdivideFlat();
+    meanMesh = fgSubdivideFlat(meanMesh);
     vector<FgVect3F>    surfPoints1(numPts);
     for (uint ii=0; ii<numPts; ++ii) {
         surfPoints1[ii] = meanMesh.getSurfPoint(ii);
@@ -122,6 +124,40 @@ fgSubdivisionTest(const FgArgs &)
     fgDisplayMeshes(meshes,true);
 }
 
+static
+void
+edgeDist(const FgArgs &)
+{
+    Fg3dMesh        mesh = fgLoadTri(fgDataDir()+"base/Jane.tri");
+    Fg3dSurface     surf = fgMergeSurfaces(mesh.surfaces).convertToTris();
+    Fg3dTopology    topo(mesh.verts,surf.tris.vertInds);
+    size_t          vertIdx = 0;    // Randomly choose the first
+    vector<float>   edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
+    float           distMax = 0;
+    for (size_t ii=0; ii<edgeDists.size(); ++ii)
+        if (edgeDists[ii] < numeric_limits<float>::max())
+            fgSetIfGreater(distMax,edgeDists[ii]);
+    float           distToCol = 255.99f / distMax;
+    vector<uchar>   colVal(edgeDists.size(),255);
+    for (size_t ii=0; ii<colVal.size(); ++ii)
+        if (edgeDists[ii] < numeric_limits<float>::max())
+            colVal[ii] = uint(distToCol * edgeDists[ii]);
+    FgImgRgbaUb     colMap(128,128,FgRgbaUB(255));
+    FgAffineCw2F    otcsToIpcs = fgOtcsToIpcs(colMap.dims());
+    for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+        FgVect3UI   vertInds = surf.tris.vertInds[tt];
+        FgVect3UI   uvInds = surf.tris.uvInds[tt];
+        for (uint ii=0; ii<3; ++ii) {
+            FgRgbaUB    col(255);
+            col.red() = colVal[vertInds[ii]];
+            col.green() = 255 - col.red();
+            colMap.paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+        }
+    }
+    mesh.texImages.push_back(colMap);
+    fgDisplayMesh(mesh);
+}
+
 void    fgSave3dsTest(const FgArgs &);
 void    fgSaveFbxTest(const FgArgs &);
 void    fgSaveLwoTest(const FgArgs &);
@@ -130,9 +166,10 @@ void    fgSavePlyTest(const FgArgs &);
 void    fgSaveXsiTest(const FgArgs &);
 
 void
-fg3dTest(const FgArgs & args)
+fg3dTestMan(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
+    cmds.push_back(FgCmd(edgeDist,"edgeDist"));
     cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
     cmds.push_back(FgCmd(fgSave3dsTest,"3ds"));
     cmds.push_back(FgCmd(fgSaveFbxTest,"fbx"));
@@ -140,7 +177,7 @@ fg3dTest(const FgArgs & args)
     cmds.push_back(FgCmd(fgSaveMaTest,"ma"));
     cmds.push_back(FgCmd(fgSavePlyTest,"ply"));
     cmds.push_back(FgCmd(fgSaveXsiTest,"xsi"));
-    fgMenu(args,cmds,true);
+    fgMenu(args,cmds,true,false,true);
 }
 
 // */

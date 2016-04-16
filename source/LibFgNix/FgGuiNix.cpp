@@ -74,9 +74,9 @@ fgGuiDialogSplashScreen()
 {return boost::function<void(void)>(); }
 
 void
-FgGuiGraph::updateScreen() {}
+FgGuiGraph::quit() {}
 
 void
-FgGuiGraph::quit() {}
+FgGuiGraph::updateScreenImpl() {}
 
 // */

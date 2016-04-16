@@ -88,19 +88,8 @@ fgMatSumPrecise(const FgMatrixD & mat);     // Experimental, do not use.
 
 template<class T>
 T
-fgDot(
-    const FgMatrixV<T> &    lhs,
-    const FgMatrixV<T> &    rhs)
-{
-    uint        nrows = lhs.numRows(),
-                ncols = lhs.numCols(),
-                nelems = nrows*ncols;
-    FGASSERT((nrows == rhs.numRows()) && (ncols == rhs.numCols()));
-    typename FgTraits<T>::Accumulator    tot = 0;
-    for (uint ii=0; ii<nelems; ++ii)
-        tot += lhs[ii] * rhs[ii];
-    return T(tot);
-}
+fgDot(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
+{return fgDot(lhs.m_data,rhs.m_data); }
 
 template <class T>
 FgMatrixV<T>
@@ -234,19 +223,22 @@ fgMatRandNormal(uint nrows,uint ncols)
 
 template<class T>
 FgMatrixV<T>
+fgNormalize(const FgMatrixV<T> & m)
+{return m * (1/std::sqrt(m.lengthSqr())); }
+
+template<class T>
+FgMatrixV<T>
 fgMatRandOrtho(uint dim)
 {
     FGASSERT(dim > 1);
     FgMatrixV<T>    ret(dim,dim);
-    for (uint row=0; row<dim; ++row)
-    {
+    for (uint row=0; row<dim; ++row) {
         FgMatrixV<T>    vec = fgMatRandNormal<T>(1,dim);
-        for (uint rr=0; rr<row; ++rr)
-        {
+        for (uint rr=0; rr<row; ++rr) {
             FgMatrixV<T>    axis = ret.rowVector(rr);
             vec -=  axis * fgDot(vec,axis);
         }
-        ret.setSubMatrix(row,0,vec * (1.0/vec.length()));
+        ret.setSubMat(row,0,fgNormalize(vec));
     }
     return ret;
 }
@@ -292,6 +284,18 @@ bool    fgCholesky(const FgMatrixD& mat)
     }
 }
 */
+
+template<class T>
+FgMatrixV<T>
+fgOuterProduct(const vector<T> & rowFacs,const vector<T> & colFacs)
+{
+    FgMatrixV<T>        ret(rowFacs.size(),colFacs.size());
+    size_t              cnt = 0;
+    for (size_t rr=0; rr<rowFacs.size(); ++rr)
+        for (size_t cc=0; cc<colFacs.size(); ++cc)
+            ret[cnt++] = rowFacs[rr] * colFacs[cc];
+    return ret;
+}
 
 FgMatrixD
 fgRelDiff(const FgMatrixD & a,const FgMatrixD & b);

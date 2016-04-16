@@ -133,7 +133,9 @@ proj(
     else
         ofs << " -Wall";
     if (prj.warn == 4) {
-        if (!osx) {
+        if (osx)
+            ofs << " -Wno-unused-local-typedef";    // boost static assert issue with clang
+        else {
             ofs << " -Wextra";              // causes boost 'unused-parameter' warnings with clang
             ofs << " -Wno-unused-result";   // This flag doesn't exist in gcc4.2 (OSX)
         }

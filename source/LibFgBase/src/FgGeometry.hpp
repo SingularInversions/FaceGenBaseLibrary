@@ -27,30 +27,18 @@ fgClosestPointInSegment(FgVect3D p0,FgVect3D p1);
 
 // Returns delta from point to tri:
 FgVecMag
-fgClosestPointInTri(
-    FgVect3D point,
-    FgVect3D vert0,
-    FgVect3D vert1,
-    FgVect3D vert2);
+fgClosestPointInTri(FgVect3D point,FgVect3D vert0,FgVect3D vert1,FgVect3D vert2);
 
 // Returns the barycentric coord of point in triangle
 // (invalid if outside of triangle or triangle degenerate):
 FgOpt<FgVect3D>
-fgBarycentricCoords(
-    FgVect2D            point,
-    FgVect2D            v0,
-    FgVect2D            v1,
-    FgVect2D            v2);
+fgBarycentricCoords(FgVect2D point,FgVect2D v0,FgVect2D v1,FgVect2D v2);
 
 // Returns the barycentric coord of a point relative to a triangle in 3D.
 // Only works for planar points.
 // Returns invalid if triangle degenerate.
 FgOpt<FgVect3D>
-fgBarycentricCoords(
-    FgVect3D point,
-    FgVect3D vert0,
-    FgVect3D vert1,
-    FgVect3D vert2);
+fgBarycentricCoords(FgVect3D point,FgVect3D vert0,FgVect3D vert1,FgVect3D vert2);
 
 inline
 FgOpt<FgVect3D>

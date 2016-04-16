@@ -39,6 +39,7 @@ fgCreateSphere(float radius,uint subdivisions);
 Fg3dMesh
 fgRemoveDuplicateFacets(const Fg3dMesh &);
 
+// Removes vertices & uvs that are not referenced by a surface or marked vertex:
 Fg3dMesh
 fgRemoveUnusedVerts(const Fg3dMesh &);
 
@@ -57,11 +58,17 @@ fgOctahedron();
 Fg3dMesh
 fgNTent(uint nn);
 
+//Fg3dMesh
+//fgFddCage(float size,float thick);
+
 Fg3dMesh
 fgMergeSameNameSurfaces(const Fg3dMesh &);
 
 Fg3dMesh
-fgMergeIdenticalUvInds(const Fg3dMesh &);
+fgUnifyIdenticalVerts(const Fg3dMesh &);
+
+Fg3dMesh
+fgUnifyIdenticalUvs(const Fg3dMesh &);
 
 Fg3dMesh
 fgSplitSurfsByUvs(const Fg3dMesh &);

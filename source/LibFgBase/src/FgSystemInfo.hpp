@@ -12,9 +12,15 @@
 #define FGSYSTEMINFO_HPP
 
 #include "FgStdLibs.hpp"
-
 #include "FgStdString.hpp"
 
+// Is the OS we're currently running on a 64-bit version ?
+bool
+fg64bitOS();
+
+// Note that this will return the EMULATED OS version if the install manifest is for an earlier
+// version of Windows. For example, building with vs2012 will return Windows 8 for Win8.1 and Win10
+// hosts:
 FgString
 fgSystemInfo();
 

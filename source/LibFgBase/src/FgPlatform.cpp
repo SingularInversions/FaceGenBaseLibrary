@@ -23,3 +23,13 @@ fgIs64bit()
     return false;
 #endif
 }
+
+std::string
+fgBitsString()
+{
+#ifdef FG_64
+    return "64";
+#else
+    return "32";
+#endif
+}

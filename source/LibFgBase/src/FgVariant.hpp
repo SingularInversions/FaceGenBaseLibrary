@@ -14,7 +14,8 @@
 //
 // Uses the copy-on-copy idiom for heap object ownership.
 // Types must have a copy constructor.
-// In retrospect, could have used boost::any I suppose.
+// boost::any could not be used since it was deemed necessary to make this compatible with serialization.
+// boost::variant perhaps could have been used; not sure.
 
 #ifndef FGVARIANT_HPP
 #define FGVARIANT_HPP
@@ -27,21 +28,50 @@
 #include "FgStdPair.hpp"
 #include "FgSharedPtr.hpp"
 
-// Default print statement to avoid forcing all variant types to define one. Use macro 
-// below to link fgPrint to each class which supports operator<<(ostream &,const T &):
-template<class T>
-std::ostream &
-fgPrint(std::ostream & os,const T &)
-{return os << " fgPrint() not defined."; }
-
-#define FG_VARIANT_PRINT(T)                     \
-    inline                                      \
-    std::ostream &                              \
-    fgPrint(std::ostream & os,const T & v)      \
-    {return os << v; }
-
 class FgVariant
 {
+    struct PolyBase
+    {
+        virtual ~PolyBase() {};
+
+        // Returns a pointer to a *new* copy of the object:
+        virtual 
+        FgSharedPtr<PolyBase>          
+        clone() const = 0;
+
+        virtual
+        std::string 
+        typeName() const = 0;
+    };
+
+    FgSharedPtr<PolyBase>   m_poly;
+
+    // The data container makes use of the default copy constructor and (virtual) destructor.
+    template<class T>
+    struct Poly : public PolyBase
+    {
+        T       m_data;
+
+        Poly() {}
+
+        explicit
+        Poly(const T & val) : m_data(val) {}
+
+        virtual 
+        FgSharedPtr<PolyBase>
+        clone() const 
+        {return FgSharedPtr<PolyBase>(new Poly(m_data)); }
+
+        virtual 
+        std::string 
+        typeName() const 
+        {return typeid(T).name(); }
+
+        const T &
+        getCRef() const
+        {return m_data; }
+    };
+
 public:
     FgVariant()
     {}
@@ -53,11 +83,11 @@ public:
     {}
 
     // Copy constructor is a deep copy:
-    FgVariant(const FgVariant &var)
+    FgVariant(const FgVariant & var)
     {
         if (var.m_poly)
             m_poly = var.m_poly->clone();
-    };
+    }
 
     template<class T>
     void
@@ -156,80 +186,9 @@ public:
     valueRef()
     { return ValueProxy(this); }
     
-    std::ostream &
-    print(std::ostream & ss) const;
-
     std::string
     typeName() const
     {return m_poly->typeName(); }
-
-private:
-    class PolyBase
-    {
-    public:
-        virtual ~PolyBase() {};
-
-            // Returns a pointer to a *new* copy of the object
-        virtual 
-        FgSharedPtr<PolyBase>          
-        clone() const = 0;
-
-        virtual std::string 
-        typeName() const = 0;
-
-        virtual std::ostream&
-        print(std::ostream& s) const = 0;
-    };
-
-    // The data container makes use of the default copy constructor and (virtual) destructor.
-    template<class T>
-    class Poly : public PolyBase
-    {
-    public:
-        Poly() {};
-        explicit Poly(const T& val) : m_data(val) {};
-
-        virtual 
-        FgSharedPtr<PolyBase>
-        clone() const 
-        {
-            return FgSharedPtr<PolyBase>(new Poly(m_data));
-        }
-
-        virtual 
-        std::string 
-        typeName() const 
-        {
-            return typeid(T).name(); 
-        }
-
-        virtual 
-        std::ostream&   
-        print(std::ostream & os) const
-        {return fgPrint(os,m_data); }
-
-        const T &
-        getCRef() const
-        {return m_data; };
-
-    private:
-        // This is a temporary(?) workaround for gcc 4.0 which is
-        // used with OSX: Somewhere, a combination of temporaries,
-        // returning by value and overloaded operators cause a
-        // const type to be put here which should generally never
-        // be the case.
-        typename boost::remove_const<T>::type    m_data;
-    };
-
-    FgSharedPtr<PolyBase> m_poly;
 };
-
-inline std::ostream &
-operator<<(std::ostream & ss,const FgVariant & vv)
-{return vv.print(ss); }
-
-FG_VARIANT_PRINT(float)
-FG_VARIANT_PRINT(int)
-FG_VARIANT_PRINT(double)
 
 #endif

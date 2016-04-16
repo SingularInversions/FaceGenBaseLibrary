@@ -52,8 +52,8 @@ fgBounds(const std::vector<FgMatrixC<T,dim,1> > & data)
 {
     FGASSERT(data.size() > 0);
     FgMatrixC<T,dim,2>     ret;
-    ret.setSubMatrix(data[0],0,0);
-    ret.setSubMatrix(data[0],0,1);
+    ret.setSubMat(data[0],0,0);
+    ret.setSubMat(data[0],0,1);
     for (size_t ii=1; ii<data.size(); ++ii) {
         for (uint dd=0; dd<dim; ++dd) {
             fgSetIfLess     (ret.elm(0,dd),data[ii][dd]);

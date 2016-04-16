@@ -21,13 +21,17 @@
 
 using namespace std;
 
-static void     testCurrentDirectory()
+static
+void
+testCurrentDirectory(const FgArgs & args)
 {
+    FGTESTDIR
     try
     {
-        char            centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol (octal values)
+        wstring         chin = L"\u4EE5";
+        FgString        chinese(chin);
         FgString        oldDir = fgGetCurrentDir();
-        FgString        dirName = FgString(centInUtf8) + fgDirSep();
+        FgString        dirName = chinese + fgDirSep();
         fgCreateDirectory(dirName);
         fgSetCurrentDir(dirName);
         FgString        newDir = fgGetCurrentDir();
@@ -47,8 +51,11 @@ static void     testCurrentDirectory()
     }
 }
 
-static void testOfstreamUnicode()
+static
+void
+testOfstreamUnicode(const FgArgs & args)
 {
+    FGTESTDIR
     char            centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
     FgString        test = FgString(centInUtf8);
     FgOfstream      ofs(test);
@@ -59,8 +66,9 @@ static void testOfstreamUnicode()
 
 static
 void
-testReadableFile()
+testReadableFile(const FgArgs & args)
 {
+    FGTESTDIR
     FgTempFile tempfile("testReadableFile.txt");
     std::ofstream ofs(tempfile.filename().c_str());
     FGASSERT(ofs);
@@ -72,21 +80,21 @@ testReadableFile()
 
 static
 void
-testIsDirectory()
+testIsDirectory(const FgArgs & args)
 {
+    FGTESTDIR
     FgString realdir("this_is_a_real_directory");
     fgCreateDirectory(realdir);
-
-    FgScopeGuard guard(boost::bind(fgRemoveDirectory,boost::ref(realdir),false));
-
+    FgScopeGuard guard(boost::bind(fgRemoveDirectory,realdir,false));
     FGASSERT(fgIsDirectory(realdir));
     FGASSERT(!fgIsDirectory(FgString("lalaIdontexist")));
 }
 
 static
 void
-testDeleteDirectory()
+testDeleteDirectory(const FgArgs & args)
 {
+    FGTESTDIR
     char        centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
     FgString    cent = FgString(centInUtf8)+"/";
     FgString    name = "testDeleteDirectory/";
@@ -119,10 +127,12 @@ testRecursiveCopy(const FgArgs & args)
 void
 fgFileSystemTest(const FgArgs & args)
 {
-    testCurrentDirectory();
-    testOfstreamUnicode();
-    testReadableFile();
-    testIsDirectory();
-    testDeleteDirectory();
-    testRecursiveCopy(args);
+    vector<FgCmd>   cmds;
+    cmds.push_back(FgCmd(testCurrentDirectory,"curDir"));
+    cmds.push_back(FgCmd(testOfstreamUnicode,"ofsUni"));
+    cmds.push_back(FgCmd(testReadableFile,"readable"));
+    cmds.push_back(FgCmd(testIsDirectory,"isDir"));
+    cmds.push_back(FgCmd(testDeleteDirectory,"delDir"));
+    cmds.push_back(FgCmd(testRecursiveCopy,"recurseCopy"));
+    fgMenu(args,cmds,true,true,true);
 }

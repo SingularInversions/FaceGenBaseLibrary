@@ -67,6 +67,7 @@ fgDataDir();
 //                          OPERATIONS ON THE FILESYSTEM
 // **************************************************************************************
 
+// Both 'src' and 'dst' must be file paths; 'dst' should not be a directory:
 void
 fgCopyFile(const FgString & src,const FgString & dst,bool overwrite = false);
 
@@ -137,9 +138,10 @@ fgRemoveDirectory(
 void
 fgDeleteDirectory(const FgString &);      // Full recursive delete
 
+// Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
-fgCreateDirectory(const FgString &);  // Accepts full or relative path,
-                                        // but only creates last delimited directory
+fgCreateDirectory(const FgString &);
+
 inline void
 fgFsCreateSetDirectory(const FgString & d) 
     {fgCreateDirectory(d); fgSetCurrentDir(d); }

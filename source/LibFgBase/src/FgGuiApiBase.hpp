@@ -64,6 +64,7 @@ struct  FgGuiGraph
     FgString                        appName;        // Used for error reporting
     FgString                        m_storeBase;
     vector<Input>                   m_inputSaves;
+    vector<uint>                    ensureUpdatedWithScreen;
     // Client-defined error reporting. Can be null.
     // Accepts error message, returns true if reported, false otherwise (so default dialog can be shown):
     boost::function<bool(FgString)> reportError;
@@ -153,9 +154,17 @@ struct  FgGuiGraph
             m_inputSaves[ii].save();
     }
 
+    void
+    updateScreen()
+    {
+        updateScreenImpl();
+        for (size_t ii=0; ii<ensureUpdatedWithScreen.size(); ++ii)
+            dg.update(ensureUpdatedWithScreen[ii]);
+    }
+
     // Defined in os-specific code:
     void
-    updateScreen();
+    updateScreenImpl();
 
     // Defined in os-specfiic code:
     void

@@ -89,6 +89,15 @@ struct Fg3dTopology
     size_t
     unusedVerts() const;
 
+    // Returns the minimum edge distance to the given vertex for each vertex.
+    // Unconnected verts will have value float_max.
+    vector<float>
+    edgeDistanceMap(const FgVerts & verts,size_t vertIdx) const;
+
+    // As above where 'init' has at least 1 distance defined, the rest set to float_max:
+    void
+    edgeDistanceMap(const FgVerts & verts,vector<float> & init) const;
+
 private:
 
     vector<uint>

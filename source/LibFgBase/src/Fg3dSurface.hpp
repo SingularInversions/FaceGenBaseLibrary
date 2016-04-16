@@ -14,8 +14,6 @@
 #include "FgTypes.hpp"
 #include "FgMatrix.hpp"
 
-struct  Fg3dTopology;
-
 struct  FgVertLabel
 {
     FgVect3F    vert;
@@ -25,8 +23,8 @@ struct  FgVertLabel
 struct FgSurfPoint
 {
     uint            triEquivIdx;
-    FgVect3F        weights;
-    string          label;      // Optional
+    FgVect3F        weights;        // Barycentric coordinate of point in triangle
+    string          label;          // Optional
 
     FG_SERIALIZE3(triEquivIdx,weights,label)
 
@@ -37,6 +35,16 @@ struct FgSurfPoint
     operator==(const string & rhs) const
     {return (label == rhs); }
 };
+
+inline
+FgVect3F
+fgBarycentricPos(FgVect3UI inds,FgVect3F weights,const FgVerts & verts)
+{
+    return
+        verts[inds[0]] * weights[0] +
+        verts[inds[1]] * weights[1] +
+        verts[inds[2]] * weights[2];
+}
 
 template<uint dim>
 struct  FgFacetInds
@@ -136,6 +144,9 @@ struct  Fg3dSurface
     numTriEquivs() const
     {return numTris() + 2*numQuads(); }
 
+    uint
+    vertIdxMax() const;
+
     std::set<uint>
     vertsUsed() const;
 
@@ -173,17 +184,15 @@ struct  Fg3dSurface
                 verts[vertInds[2]] * static_cast<T>(vertWeights[2]));
     }
 
+    // Label must correspond to a surface point:
+    FgVect3F
+    surfPointPos(const FgVerts & verts,const string & label) const;
+
     vector<FgVertLabel>
     surfPointsAsVertLabels(const FgVerts &) const;
 
     Fg3dSurface
     convertToTris() const;
-
-    Fg3dSurface
-    subdivideFlat(FgVerts & verts) const;
-
-    Fg3dSurface
-    subdivideLoop(const FgVerts & vertsIn,FgVerts & vertsOut) const;
 
     void
     merge(const Fg3dSurface & surf);
@@ -212,14 +221,6 @@ struct  Fg3dSurface
 
 private:
     void
-    subdivideTris(
-        const Fg3dTopology &        topo,
-        uint                        newVertsBaseIdx,
-        vector<FgVect3UI> &    tris,           // RETURNED
-        vector<FgSurfPoint> &  surfPoints)     // RETURNED
-        const;
-
-    void
     checkInternalConsistency();
 };
 
@@ -231,5 +232,18 @@ fgSelectTris(const Fg3dSurface & surf,const vector<FgBool> & sel);
 
 Fg3dSurface
 fgRemoveDuplicateFacets(const Fg3dSurface &);
+
+Fg3dSurface
+fgMergeSurfaces(const vector<Fg3dSurface> & surfs);
+
+// Split a surface into a series of 1 or more discontiguous surfaces
+vector<Fg3dSurface>
+fgSplitSurface(const Fg3dSurface & surf);
+
+Fg3dSurface
+fgSubdivideFlat(const Fg3dSurface & surf,FgVerts & verts);
+
+Fg3dSurface
+fgSubdivideLoop(const Fg3dSurface & surf,const FgVerts & vertsIn,FgVerts & vertsOut);
 
 #endif

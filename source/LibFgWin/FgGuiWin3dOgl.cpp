@@ -111,6 +111,10 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             // in this case since brush is NULL:
             BeginPaint(hwnd,&ps);
             render();
+            // One customer had a Windows termination ('the program has stopped working and will now close' -
+            // Win 10 Pro, NVIDIA GeForce GTX 760)
+            // here, even though 'm_hdc' was valid and a face was already displayed on the screen (just once,
+            // when the program first started). Buggy video driver (perhaps OpenGL specific).
             SwapBuffers(m_hdc);
             EndPaint(hwnd,&ps);
         }
@@ -285,10 +289,13 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
         if (g_gg.dg.update(m_api.updateTexFlagIdx)) {
             // Release all textures:
             for (size_t ii=0; ii<m_oglImgs.size(); ++ii) {
-                const vector<FgOglSurf> &  tns = m_oglImgs[ii];
-                for (size_t jj=0; jj<tns.size(); ++jj)
-                    if (tns[jj].valid())
+                vector<FgOglSurf> &     tns = m_oglImgs[ii];
+                for (size_t jj=0; jj<tns.size(); ++jj) {
+                    if (tns[jj].valid()) {
                         fgOglTexRelease(tns[jj].name.val());
+                        tns[jj].name.invalidate();
+                    }
+                }
             }
             // Load new ones:
             const vector<FgImgs> &      texss = g_gg.getVal(m_api.texssN);

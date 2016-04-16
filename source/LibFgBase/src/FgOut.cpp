@@ -112,8 +112,8 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
             m_mutex.unlock(); }
         else if (manip == fgpop) {
             m_mutex.lock();
-            FGASSERT(m_indent > 0);
-            m_indent--;
+            if (m_indent > 0)       // Don't throw or warn (output issues), just ignore
+                m_indent--;
             m_mutex.unlock(); }
         else if (manip == fgnl) {
             if (m_stream)

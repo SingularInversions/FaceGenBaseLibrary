@@ -17,6 +17,7 @@
 #include "FgString.hpp"
 
 // Split a string into non-empty lines at CR/LF and remove all CR/LF characters.
+// Respects backslash+CR/LF line continuation.
 // Use this instead of useless std::getline which leaves in CR characters on Windows.
 vector<string>
 fgSplitLines(const string & src);

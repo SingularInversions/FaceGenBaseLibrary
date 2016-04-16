@@ -68,20 +68,16 @@ FgDepGraph::executeLink(
     const vector<uint> & sources = m_linkGraph.linkSources(linkInd);
     for (size_t ii=0; ii<sources.size(); ii++)
         FGASSERT(!(m_linkGraph.nodeData(sources[ii]).dirty));
-
     vector<const FgVariant*>    srcList(sources.size());
     for (size_t ii=0; ii<sources.size(); ii++)
         srcList[ii] = &(m_linkGraph.nodeData(sources[ii]).value);
-
     const vector<uint> &        sinks = m_linkGraph.linkSinks(linkInd);
     vector<FgVariant*>          snkList(sinks.size());
     for (uint ii=0; ii<sinks.size(); ii++)
         snkList[ii] = &(m_linkGraph.nodeData(sinks[ii]).value);
-
     FgLink      link = m_linkGraph.linkData(linkInd);
     FGASSERT(link != 0);
     link(srcList,snkList);
-
     for (size_t ss=0; ss<sinks.size(); ++ss)
         m_linkGraph.nodeData(sinks[ss]).dirty = false;
 }
@@ -92,12 +88,10 @@ FgDepGraph::dirtyNode(uint nodeInd)
     // All dirty nodes have been up-propagated
     if (m_linkGraph.nodeData(nodeInd).dirty)
         return;
-
     // Dirty this node and propagate up
     m_linkGraph.nodeData(nodeInd).dirty = true;
     const vector<uint> &    dirtyLinks = m_linkGraph.outgoingLinks(nodeInd);
-    for (size_t ii=0; ii<dirtyLinks.size(); ii++)
-    {
+    for (size_t ii=0; ii<dirtyLinks.size(); ii++) {
         const vector<uint> &    dirtyNodes = m_linkGraph.linkSinks(dirtyLinks[ii]);
         for (size_t jj=0; jj<dirtyNodes.size(); jj++)
             dirtyNode(dirtyNodes[jj]);
@@ -127,7 +121,8 @@ FgDepGraph::updateNode(uint nodeIdx) const
         threads[tt] = new boost::thread(boost::bind(
             &FgDepGraph::executeLinkTask,this,&linksSync,&update,(tt == 0)));
     do {
-        boost::thread::yield(); }
+        boost::thread::yield();
+    }
     while (!update.done);
     for (size_t tt=0; tt<threads.size(); ++tt)
         threads[tt]->join();
@@ -149,7 +144,8 @@ FgDepGraph::leafLinks(
         return vector<uint>();
     if (!m_linkGraph.hasIncomingLink(nodeIdx)) {
         nd.dirty = false;
-        return vector<uint>(); }
+        return vector<uint>();
+    }
     uint                linkIdx = m_linkGraph.incomingLink(nodeIdx);
     Sync &              sync = linksSync[linkIdx];
     if (sync.traversed)
@@ -173,7 +169,8 @@ FgDepGraph::leafLinks(
     else {
         // Set up scheduling for this link:
         sync.incomingRemaining = incomingRemaining;
-        sync.mtxPtr = new boost::mutex; }
+        sync.mtxPtr = new boost::mutex;
+    }
     // Continue the traverse (even for leaf nodes since we need to mark sources clean):
     for (size_t ii=0; ii<srcNodes.size(); ++ii)
         fgAppend(ret,leafLinks(srcNodes[ii],linksSync));
@@ -199,11 +196,13 @@ FgDepGraph::executeLinkTask(
             bool    empty = updPtr->queue.empty();
             if (!empty) {
                 linkInd = updPtr->queue.back();
-                updPtr->queue.pop_back(); }
+                updPtr->queue.pop_back();
+            }
             updPtr->guardQueue->unlock();
             if (empty) {
                 boost::thread::yield();
-                continue; }
+                continue;
+            }
             bool    followNext = false;
             // This loop follows the last output link (if any) and schedules the
             // rest. This optimization saves about a per-cent by reducing contention
@@ -212,7 +211,8 @@ FgDepGraph::executeLinkTask(
                 executeLink(linkInd);
                 if (linkInd == updPtr->lastLink) {
                     updPtr->done = true;
-                    return; }
+                    return;
+                }
                 vector<uint>            todo;
                 const vector<uint> &    sinkNodes = m_linkGraph.linkSinks(linkInd);
                 for (size_t ii=0; ii<sinkNodes.size(); ++ii) {
@@ -243,7 +243,8 @@ FgDepGraph::executeLinkTask(
                     if (!todo.empty()) {
                         updPtr->guardQueue->lock();
                         fgAppend(updPtr->queue,todo);
-                        updPtr->guardQueue->unlock(); }
+                        updPtr->guardQueue->unlock();
+                    }
                 }
                 else
                     followNext = false;
@@ -251,11 +252,14 @@ FgDepGraph::executeLinkTask(
         }
     }
     catch(FgException const & e) {
-        updPtr->set(e,linkInd); }
+        updPtr->set(e,linkInd);
+    }
     catch(std::exception const & e) {
-        updPtr->set(FgException("Standard library exception",e.what()),linkInd); }
+        updPtr->set(FgException("Standard library exception",e.what()),linkInd);
+    }
     catch(...) {
-        updPtr->set(FgException("Unknown exception type"),linkInd); }
+        updPtr->set(FgException("Unknown exception type"),linkInd);
+    }
 }
 
 void
@@ -286,8 +290,10 @@ FgDepGraph::Update::cancelCheck(int(*func)())
         guardException->unlock();
         if (!prior) {   // If another thread hasn't already reported an exception:
             done = true;
-            userCancelled = true; }
-        return true; }
+            userCancelled = true;
+        }
+        return true;
+    }
     return false;
 }
 

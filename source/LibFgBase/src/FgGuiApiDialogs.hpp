@@ -18,6 +18,10 @@ fgGuiDialogMessage(
     const FgString & caption,
     const FgString & message);
 
+// NB Windows:
+// * Will sometimes return UNC path (eg. Windows Server) for network drive, rather than LFS drive letter.
+// * Although only extension-matching files are shown, users can (and will) type in filenames with non-matching
+//   which dialog will then accept.
 FgOpt<FgString>
 fgGuiDialogFileLoad(
     const FgString &            description,

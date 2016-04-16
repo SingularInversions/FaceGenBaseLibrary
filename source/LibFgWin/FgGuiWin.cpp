@@ -208,9 +208,9 @@ struct  FgGuiWinMain
         // This msg is sent by FgGuiGraph::updateScreen() which is called whenever an 
         // input has been changed:
         else if (msg == WM_USER) {
-//fgout << fgnl << "Main::WM_USER (updateIfChanged)" << fgpush;
+//fgout << fgnl << "Main::WM_USER " << flush << fgpush;
             m_win->updateIfChanged();
-//fgout << fgpop;
+//fgout << fgnl << "updateIfChanged done " << flush << fgpop;
         }
         else if (msg == WM_DESTROY) {       // User is closing application
             WINDOWPLACEMENT     wp;
@@ -235,9 +235,12 @@ struct  FgGuiWinMain
 };
 
 void
-FgGuiGraph::updateScreen()
+FgGuiGraph::updateScreenImpl()
 {
+//fgout << fgnl << "s_fgGuiWin.hwndMain: " << s_fgGuiWin.hwndMain << flush;
     SendMessage(s_fgGuiWin.hwndMain,WM_USER,0,0);
+//    LRESULT     ret = SendMessage(s_fgGuiWin.hwndMain,WM_USER,0,0);
+//fgout << fgnl << "SendMessage returned: " << ret << flush;
 }
 
 void
@@ -308,6 +311,14 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     {
         msg = "ERROR (FG exception): " + e.no_tr_message();
     }
+    catch(std::bad_alloc const &)
+    {
+        msg = "OUT OF MEMORY";
+#ifndef FG_64
+        if (fg64bitOS())
+            msg += "\nInstall the 64-bit version, if applicable";
+#endif
+    }
     catch(std::exception const & e)
     {
         msg = "ERROR (std::exception): " + FgString(e.what());
@@ -316,16 +327,15 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     {
         msg = "ERROR (unknown type):";
     }
-    FgString        caption = "ERROR";
+    FgString        caption = "ERROR",
+                    sysInfo;
     try
     {
-        msg += "\n" + g_gg.appName + "\n";
-        FgString        dd = fgDataDir();
-        msg += fgSystemInfo() + "\n" + className + "\n";
-        if ((g_gg.reportError != NULL) && g_gg.reportError(msg))
-            fgGuiDialogMessage(caption,g_gg.reportSuccMsg);
+        sysInfo = "\n" + g_gg.appName + "\n" + fgSystemInfo() + "\n" + className + "\n";
+        if ((g_gg.reportError != NULL) && g_gg.reportError(msg+sysInfo))
+            fgGuiDialogMessage(caption,g_gg.reportSuccMsg+"\n"+msg);
         else
-            fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg);
+            fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg+sysInfo);
         return LRESULT(0);
     }
     catch(FgException const & e)
@@ -340,6 +350,6 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     {
         msg += "ERROR (unknown type):";
     }
-    fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg);
+    fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg+sysInfo);
     return LRESULT(0);
 }

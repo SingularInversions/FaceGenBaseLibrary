@@ -9,9 +9,22 @@
 
 #include "stdafx.h"
 
+#include "FgStdString.hpp"
 #include "FgString.hpp"
 
 using namespace std;
+
+bool
+fg64bitOS()
+{
+#ifdef FG_64
+    return true;
+#else
+    BOOL        is64;
+    IsWow64Process(GetCurrentProcess(),&is64);
+    return bool(is64);
+#endif
+}
 
 FgString
 fgSystemInfo()
@@ -20,7 +33,10 @@ fgSystemInfo()
     ZeroMemory(&osvi,sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     GetVersionEx(LPOSVERSIONINFOW(&osvi));
-    FgString            verStr;
+    FgString            verStr,
+                        unknown = fgToString(osvi.dwMajorVersion) + "." + fgToString(osvi.dwMinorVersion);
+    if (osvi.wProductType != VER_NT_WORKSTATION)
+        unknown += " (server)";
     if (osvi.dwMajorVersion == 6) {
         if (osvi.dwMinorVersion == 0) {
             if (osvi.wProductType == VER_NT_WORKSTATION)
@@ -28,23 +44,26 @@ fgSystemInfo()
             else
                 verStr = "Server 2008";
         }
-        if (osvi.dwMinorVersion == 1) {
+        else if (osvi.dwMinorVersion == 1) {
             if (osvi.wProductType == VER_NT_WORKSTATION)
                 verStr = "7";
             else
                 verStr = "Server 2008 R2";
         }
-        if (osvi.dwMinorVersion == 2) {
+        else if (osvi.dwMinorVersion == 2) {
             if (osvi.wProductType == VER_NT_WORKSTATION)
                 verStr = "8";
             else
                 verStr = "Server 2012";
         }
-        if (osvi.dwMinorVersion == 3) {
+        else if (osvi.dwMinorVersion == 3) {
             if (osvi.wProductType == VER_NT_WORKSTATION)
                 verStr = "8.1";
             else
                 verStr = "Server 2012 R2";
+        }
+        else {
+            verStr = unknown;
         }
     }
     else if (osvi.dwMajorVersion == 10) {
@@ -54,22 +73,18 @@ fgSystemInfo()
             else
                 verStr = "Server 2016 TP";
         }
+        else {
+            verStr = unknown;
+        }
     }
-#ifdef FG_64
-    verStr += " 64bit ";
-#else
-    BOOL        is64;
-    IsWow64Process(GetCurrentProcess(),&is64);
-    if (is64)
+    else {
+        verStr = unknown;
+    }
+    if (fg64bitOS())
         verStr += " 64bit ";
     else
         verStr += " 32bit ";
-#endif
-    verStr += FgString(wstring(osvi.szCSDVersion));
-    if (verStr.empty())
-        return "Windows Unknown Version";
-    else
-        return "Windows " + verStr;
+    return "Windows " + verStr + FgString(wstring(osvi.szCSDVersion));
 }
 
 FgString

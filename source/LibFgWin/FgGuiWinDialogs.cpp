@@ -156,11 +156,7 @@ fgGuiDialogDirSelect()
             if (SUCCEEDED(hr)) {
                 FgString    str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
-                // Ensure the string ends with a delimiter (Windows does not):
-                vector<uint>    str2 = str.as_utf32();
-                if (str2.back() != '\\')
-                    str2.push_back('\\');
-                ret = FgString(str2);
+                return fgAsDirectory(str);
             }
             psiResult->Release();
         }

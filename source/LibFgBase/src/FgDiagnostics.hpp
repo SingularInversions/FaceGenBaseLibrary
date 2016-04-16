@@ -83,23 +83,23 @@ fgAssert(
 
 // Convenient for debugging:
 
-#define FG_HI                                                      \
+#define FG_HI_                                                      \
 std::cout << std::endl << "HI ! (" << __FILE__ << ": " << __LINE__       \
         << ")" << std::flush
 
-#define FG_HI1(X)                                                  \
+#define FG_HI_1(X)                                                  \
     std::cout << std::endl << #X ": " << (X) << std::flush
 
-#define FG_HI2(X,Y)                                                \
+#define FG_HI_2(X,Y)                                                \
 	std::cout << std::endl << #X ": " << (X) << " "                 \
         << #Y ": " << (Y) << std::flush
 
-#define FG_HI3(X,Y,Z)                                              \
+#define FG_HI_3(X,Y,Z)                                              \
     std::cout << std::endl << #X ": " << (X) << " "                 \
          << #Y ": " << (Y) << " "                                   \
          << #Z ": " << (Z) << std::flush
 
-#define FG_HI4(X,Y,Z,A)                                            \
+#define FG_HI_4(X,Y,Z,A)                                            \
     std::cout << std::endl << #X ": " << (X) << " "                 \
          << #Y ": " << (Y) << " "                                   \
          << #Z ": " << (Z) << " "                                   \

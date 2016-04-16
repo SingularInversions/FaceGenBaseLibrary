@@ -12,6 +12,7 @@
 #include "FgFileSystem.hpp"
 #include "FgScopeGuard.hpp"
 #include "FgSmartPtr.hpp"
+#include "FgCommand.hpp"
 
 // Don't let ImageMagick redeclare malloc:
 #define HAVE_STDLIB_H
@@ -50,8 +51,8 @@ fgLoadImgAnyFormat(
     // TODO: Do we need to convert into a specific colourspace?
     Image *imgPtr = ReadImage(image_info.get(),exception.get());
     if (imgPtr == 0)
-        // exception.description is NULL
-        fgThrow("Unable to read image file",fname + ": " + exception->reason);
+        // exception.description is NULL. exception->reason includes the filename:
+        fgThrow("Unable to read image file",exception->reason);
     FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
     img.resize(uint(imgPtr->columns),uint(imgPtr->rows));
@@ -81,8 +82,8 @@ fgLoadImg4UC(const FgString & fname)
     // TODO: Do we need to convert into a specific colourspace?
     Image *imgPtr = ReadImage(image_info.get(),exception.get());
     if (imgPtr == 0)
-        // exception.description is NULL
-        fgThrow("Unable to read image file",fname + ": " + exception->reason);
+        // exception.description is NULL. exception->reason includes the filename:
+        fgThrow("Unable to read image file",exception->reason);
     FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
     ret.resize(uint(imgPtr->columns),uint(imgPtr->rows));
@@ -107,25 +108,18 @@ fgLoadImgAnyFormat(
 {
     if (!fgFileReadable(fname))
         fgThrow("Unable to read file",fname);
-
     fgEnsureMagick();
-
     FgScopePtr<ExceptionInfo>   exception(AcquireExceptionInfo(),DestroyExceptionInfo);
     FgScopePtr<ImageInfo>       image_info(CloneImageInfo(0),DestroyImageInfo);
-
     (void) strcpy(image_info->filename,fname.as_utf8_string().c_str());
-
     // TODO: Do we need to convert into a specific colourspace?
     Image *imgPtr = ReadImage(image_info.get(),exception.get());
     if (imgPtr == 0)
-        // exception.description is NULL
-        fgThrow("Unable to read image file",fname + ": " + exception->reason);
+        // exception.description is NULL. exception->reason includes the filename:
+        fgThrow("Unable to read image file",exception->reason);
     FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
-
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
-
     img.resize(uint(imgPtr->columns),uint(imgPtr->rows));
-
     for(uint row = 0; row < imgPtr->rows; ++row) {
         for(uint column = 0; column < imgPtr->columns; ++column) {
             PixelPacket pixel;
@@ -142,7 +136,6 @@ fgSaveImgAnyFormat(
     const FgImgRgbaUb & img)
 {
     FGASSERT(fname.length() > 0);
-
     fgEnsureMagick();
     FgScopePtr<ImageInfo>       image_info(CloneImageInfo(0),DestroyImageInfo);
     FgScopePtr<ExceptionInfo>   exception(AcquireExceptionInfo(),DestroyExceptionInfo);
@@ -152,9 +145,10 @@ fgSaveImgAnyFormat(
                                                    exception.get()),
                                    DestroyImage);
     (void) strcpy(image_info->filename,fname.as_utf8_string().c_str());
-    FGASSERT(
-        MagickTrue == 
-            WriteImages(image_info.get(),image.get(),fname.as_utf8_string().c_str(),exception.get()));
+    MagickBooleanType   res = WriteImages(image_info.get(),image.get(),fname.as_utf8_string().c_str(),exception.get());
+    if (res != MagickTrue)
+        // Filename already included in 'exception->reason':
+        fgThrow("Unable to save image to file",exception->reason);
 }
 
 vector<string>
@@ -221,4 +215,15 @@ fgImgFindLoadAnyFormat(const FgString & baseName,FgImgRgbaUb & img)
         fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
     fgLoadImgAnyFormat(fname,img);
     return true;
+}
+
+void
+fgImgTestWrite(const FgArgs & args)
+{
+    FGTESTDIR
+    wstring         chin = L"\u4EE5";       // Chinese symbol in unicode
+    FgString        chinese(chin);
+    FgImgRgbaUb     redImg(16,16,FgRgbaUB(255,0,0,255));
+    fgSaveImgAnyFormat(chinese+"0.jpg",redImg);
+    fgSaveImgAnyFormat(chinese+"0.png",redImg);
 }

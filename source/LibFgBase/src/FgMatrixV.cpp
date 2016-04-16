@@ -18,14 +18,10 @@
 
 using namespace std;
 
-FgMatrixD&      operator/=(FgMatrixD& mat,double div)
-{
-    return (mat *= (1.0/div));
-}
-
 // The simple accumulator method has identical precision as more complex methods such as 
 // 'fgMatSumPrecise' below on test sets with 1M identical irrationals under VS2008.
-double      fgMatSumElems(const FgMatrixD & mat)
+double
+fgMatSumElems(const FgMatrixD & mat)
 {
     double      acc = 0.0;
     for (uint ii=0; ii<mat.numElems(); ii++)

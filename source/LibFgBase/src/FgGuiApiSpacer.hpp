@@ -9,7 +9,7 @@
 // Layout space
 
 #ifndef FGGUIAPISPACER_HPP
-#define FGGUIAPISPACEF_HPP
+#define FGGUIAPISPACER_HPP
 
 #include "FgGuiApiBase.hpp"
 

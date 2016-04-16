@@ -40,6 +40,19 @@ Fg3dSurface::Fg3dSurface(
     checkInternalConsistency();
 }
 
+uint
+Fg3dSurface::vertIdxMax() const
+{
+    uint        ret = 0;
+    for(size_t qq=0; qq<quads.vertInds.size(); ++qq)
+        for(uint ii=0; ii<4; ++ii)
+            fgSetIfGreater(ret,quads.vertInds[qq][ii]);
+    for(size_t tt=0; tt<tris.vertInds.size(); ++tt)
+        for(uint ii=0; ii<3; ++ii)
+            fgSetIfGreater(ret,tris.vertInds[tt][ii]);
+    return ret;
+}
+
 std::set<uint>
 Fg3dSurface::vertsUsed() const
 {
@@ -109,6 +122,14 @@ convToTris(const vector<FgVect4UI> & quads)
     return ret;
 }
 
+FgVect3F
+Fg3dSurface::surfPointPos(const FgVerts & verts,const string & label) const
+{
+    const FgSurfPoint & sp = fgFindFirst(surfPoints,label);
+    FgVect3UI           tri = getTriEquiv(sp.triEquivIdx);
+    return fgBarycentricPos(tri,sp.weights,verts);
+}
+
 vector<FgVertLabel>
 Fg3dSurface::surfPointsAsVertLabels(const FgVerts & verts) const
 {
@@ -133,101 +154,6 @@ Fg3dSurface::convertToTris() const
     ret.tris.uvInds = fgConcat(tris.uvInds,convToTris(quads.uvInds));
     ret.surfPoints = surfPoints;
     return ret;
-}
-
-Fg3dSurface
-Fg3dSurface::subdivideFlat(
-    FgVerts &       verts) const
-{
-    FGASSERT(numQuads() == 0);              // Quads not supported.
-    Fg3dTopology    topo(verts,tris.vertInds);
-
-    // Add the edge-split verts:
-    uint        newVertsBaseIdx = uint(verts.size());
-    for (size_t ii=0; ii<topo.m_edges.size(); ++ii) {
-        FgVect2UI   vertInds = topo.m_edges[ii].vertInds;
-        verts.push_back((verts[vertInds[0]]+verts[vertInds[1]])*0.5);
-    }
-
-    vector<FgVect3UI>       tris;
-    vector<FgSurfPoint>     surfPoints;
-    subdivideTris(topo,newVertsBaseIdx,tris,surfPoints);
-
-    return Fg3dSurface(
-        tris,
-        std::vector<FgVect4UI>(),
-        std::vector<FgVect3UI>(),
-        std::vector<FgVect4UI>(),
-        surfPoints);
-}
-
-Fg3dSurface
-Fg3dSurface::subdivideLoop(
-    const FgVerts &     vertsIn,
-    FgVerts &           vertsOut) const
-{
-    FGASSERT(numQuads() == 0);
-    vertsOut.resize(vertsIn.size());
-    Fg3dTopology    topo(vertsIn,tris.vertInds);
-
-    // Add the edge-split "odd" verts:
-    uint        newVertsBaseIdx = uint(vertsIn.size());
-    for (uint ii=0; ii<topo.m_edges.size(); ++ii) {
-        FgVect2UI   vertInds0 = topo.m_edges[ii].vertInds;
-        if (topo.m_edges[ii].triInds.size() == 1) {     // Boundary
-            vertsOut.push_back((
-                vertsIn[vertInds0[0]] + 
-                vertsIn[vertInds0[1]])*0.5f);
-        }
-        else {
-            FgVect2UI   vertInds1 = topo.edgeFacingVertInds(ii);
-            vertsOut.push_back((
-                vertsIn[vertInds0[0]] * 3.0f +
-                vertsIn[vertInds0[1]] * 3.0f +
-                vertsIn[vertInds1[0]] +
-                vertsIn[vertInds1[1]]) * 0.125f);
-        }
-    }
-    // Modify the original "even" verts:
-    for (uint ii=0; ii<newVertsBaseIdx; ++ii) {
-        if (topo.vertOnBoundary(ii)) {
-            vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
-            if (vertInds.size() != 2)
-                fgThrow(
-                    "Cannot subdivide non-manifold mesh, invalid boundary vertex neighbour count at index",
-                    fgToString(vertInds.size()) + fgToString(ii));
-            vertsOut[ii] = (vertsIn[ii] * 6.0 +
-                            vertsIn[vertInds[0]] +
-                            vertsIn[vertInds[1]]) * 0.125f;
-        }
-        else {
-            // Note that there will always be at least 3 neighbours since 
-            // this is not a boundary vertex:
-            const vector<uint> &    neighbours = topo.vertNeighbours(ii);
-            FgVect3F    acc;
-            for (size_t jj=0; jj<neighbours.size(); ++jj)
-                acc += vertsIn[neighbours[jj]];
-            if (neighbours.size() == 3)
-                vertsOut[ii] = vertsIn[ii] * 0.4375f + acc * 0.1875f;
-            else if (neighbours.size() == 4)
-                vertsOut[ii] = vertsIn[ii] * 0.515625f + acc * 0.12109375f;
-            else if (neighbours.size() == 5)
-                vertsOut[ii] = vertsIn[ii] * 0.579534f + acc * 0.0840932f;
-            else
-                vertsOut[ii] = vertsIn[ii] * 0.625f + acc * 0.375f / float(neighbours.size());
-        }
-    }
-
-    vector<FgVect3UI>       tris;
-    vector<FgSurfPoint>     surfPoints;
-    subdivideTris(topo,newVertsBaseIdx,tris,surfPoints);
-
-    return Fg3dSurface(
-        tris,
-        std::vector<FgVect4UI>(),
-        std::vector<FgVect3UI>(),
-        std::vector<FgVect4UI>(),
-        surfPoints);
 }
 
 void
@@ -261,78 +187,13 @@ Fg3dSurface::checkMeshConsistency(
     uint    uvsSize)
 {
     if (tris.vertInds.size() > 0)
-        {FGASSERT(fgBounds(fgBounds(tris.vertInds))[1] < coordsSize); }
+        {FGASSERT(fgMaxElem(fgBounds(tris.vertInds)) < coordsSize); }
     if (quads.vertInds.size() > 0)
-        {FGASSERT(fgBounds(fgBounds(quads.vertInds))[1] < coordsSize); }
+        {FGASSERT(fgMaxElem(fgBounds(quads.vertInds)) < coordsSize); }
     if (tris.uvInds.size() > 0)
-        {FGASSERT(fgBounds(fgBounds(tris.uvInds))[1] < uvsSize); }
+        {FGASSERT(fgMaxElem(fgBounds(tris.uvInds)) < uvsSize); }
     if (quads.uvInds.size() > 0)
-        {FGASSERT(fgBounds(fgBounds(quads.uvInds))[1] < uvsSize); }
-}
-
-void
-Fg3dSurface::subdivideTris(
-    const Fg3dTopology &    topo,
-    uint                    newVertsBaseIdx,
-    vector<FgVect3UI> &     newTris,           // RETURNED
-    vector<FgSurfPoint> &   newSurfPoints)     // RETURNED
-    const
-{
-    for (uint ii=0; ii<numTriEquivs(); ii++) {
-        FgVect3UI   vertInds = getTriEquiv(ii);
-        FgVect3UI   edgeInds = topo.m_tris[ii].edgeInds;
-        uint        ni0 = newVertsBaseIdx + edgeInds[0],
-                    ni1 = newVertsBaseIdx + edgeInds[1],
-                    ni2 = newVertsBaseIdx + edgeInds[2];
-        newTris.push_back(FgVect3UI(vertInds[0],ni0,ni2));
-        newTris.push_back(FgVect3UI(vertInds[1],ni1,ni0));
-        newTris.push_back(FgVect3UI(vertInds[2],ni2,ni1));
-        newTris.push_back(FgVect3UI(ni0,ni1,ni2));
-    }
-
-    // Set up surface point weight transforms:
-    FgMat33F     wgtXform(1.0),
-                    wgtXform0,
-                    wgtXform1,
-                    wgtXform2;
-
-    wgtXform.elm(2,0) = -1.0;
-    wgtXform.elm(0,1) = -1.0;
-    wgtXform.elm(1,2) = -1.0;
-
-    wgtXform0[0] = 1.0f;
-    wgtXform0[1] = -1.0f;
-    wgtXform0[2] = -1.0f;
-    wgtXform0.elm(1,1) = 2;
-    wgtXform0.elm(2,2) = 2;
-
-    wgtXform1[0] = -1.0f;
-    wgtXform1[1] = 1.0f;
-    wgtXform1[2] = -1.0f;
-    wgtXform1.elm(2,1) = 2;
-    wgtXform1.elm(0,2) = 2;
-
-    wgtXform2[0] = -1.0f;
-    wgtXform2[1] = -1.0f;
-    wgtXform2[2] = 1.0f;
-    wgtXform2.elm(0,1) = 2;
-    wgtXform2.elm(1,2) = 2;
-
-    // Update surface points:
-    for (size_t ii=0; ii<surfPoints.size(); ++ii)
-    {
-        uint        facetIdx = surfPoints[ii].triEquivIdx * 4;
-        FgVect3F    weights = surfPoints[ii].weights,
-                    wgtCentre = wgtXform * weights;
-        if (wgtCentre[0] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+2,wgtXform2*weights));
-        else if (wgtCentre[1] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx,wgtXform0*weights));
-        else if (wgtCentre[2] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+1,wgtXform1*weights));
-        else
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+3,wgtCentre));
-    }
+        {FGASSERT(fgMaxElem(fgBounds(quads.uvInds)) < uvsSize); }
 }
 
 void
@@ -351,14 +212,16 @@ Fg3dSurface::clear()
     *this = Fg3dSurface();
 }
 
-std::ostream &
-operator<<(
-    std::ostream &      os,
-    const Fg3dSurface & surf)
+ostream &
+operator<<(ostream & os,const Fg3dSurface & surf)
 {
-    os << "Tris: " << surf.numTris()
-       << "  Quads: " << surf.numQuads()
-       << "  Surf Points: " << surf.numSurfPoints();
+    os << fgnl << "Tris: " << surf.numTris()
+        << "  Quads: " << surf.numQuads()
+        << "  UVs: " << (surf.hasUvIndices() ? "YES" : "NO")
+        << fgnl << "Surf Points: " << surf.numSurfPoints() << fgpush;
+        for (uint ii=0; ii<surf.numSurfPoints(); ++ii)
+            os << fgnl << ii << ": " << surf.surfPoints[ii].label;
+        os << fgpop;
     return os;
 }
 
@@ -494,6 +357,231 @@ fgRemoveDuplicateFacets(const Fg3dSurface & s)
     fgout << fgnl << numTris << " duplicate tris removed, "
         << numQuads << " duplicate quads removed.";
     return ret;
+}
+
+Fg3dSurface
+fgMergeSurfaces(const vector<Fg3dSurface> & surfs)
+{
+    Fg3dSurface     ret;
+    for (size_t ii=0; ii<surfs.size(); ++ii)
+        ret.merge(surfs[ii]);
+    return ret;
+}
+
+vector<Fg3dSurface>
+fgSplitSurface(const Fg3dSurface & surf)
+{
+    vector<Fg3dSurface>     ret;
+    FGASSERT(!surf.empty());
+    // Construct a map from vert inds back to triEquivs (FgTopology is overkill for this):
+    uint                    idxBnd = surf.vertIdxMax() + 1;
+    vector<vector<uint> >   vertIdxToTriIdx(idxBnd);
+    for (uint tt=0; tt<surf.numTriEquivs(); ++tt) {
+        FgVect3UI           vertInds = surf.getTriEquiv(tt);
+        for (uint jj=0; jj<3; ++jj)
+            vertIdxToTriIdx[vertInds[jj]].push_back(tt);
+    }
+    // Start with separate group for each tri, then merge until no change:
+    vector<uint>            groups(surf.numTriEquivs());
+    for (uint ii=0; ii<groups.size(); ++ii)
+        groups[ii] = ii;
+    bool                    done = false;
+    while (!done) {
+        done = true;
+        for (uint tt=0; tt<surf.numTriEquivs(); ++tt) {
+            FgVect3UI       vertInds = surf.getTriEquiv(tt);
+            for (uint jj=0; jj<3; ++jj) {
+                const vector<uint> & triInds = vertIdxToTriIdx[vertInds[jj]];
+                for (uint kk=0; kk<triInds.size(); ++kk) {
+                    uint    ntt = triInds[kk];
+                    if (groups[tt] != groups[ntt]) {
+                        fgReplace_(groups,groups[ntt],groups[tt]);
+                        done = false;
+                    }
+                }
+            }
+        }
+    }
+    set<uint>           surfGroups(groups.begin(),groups.end());
+    for (set<uint>::const_iterator it(surfGroups.begin()); it != surfGroups.end(); ++it) {
+        uint            groupVal = *it;
+        Fg3dSurface     s;
+        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
+            if (groups[ii] == groupVal) {
+                s.tris.vertInds.push_back(surf.tris.vertInds[ii]);
+                if (!surf.tris.uvInds.empty())
+                    s.tris.uvInds.push_back(surf.tris.uvInds[ii]);
+            }
+        }
+        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
+            uint        triEquiv = uint(surf.tris.vertInds.size() + 2 * ii);
+            if (groups[triEquiv] == groupVal) {
+                s.quads.vertInds.push_back(surf.quads.vertInds[ii]);
+                if (!surf.quads.uvInds.empty())
+                    s.quads.uvInds.push_back(surf.quads.uvInds[ii]);
+            }
+        }
+        ret.push_back(s);
+    }
+    return ret;
+}
+
+static
+void
+subdivideTris(
+    const Fg3dSurface &     surf,
+    const Fg3dTopology &    topo,
+    uint                    newVertsBaseIdx,
+    vector<FgVect3UI> &     newTris,           // RETURNED
+    vector<FgSurfPoint> &   newSurfPoints)     // RETURNED
+{
+    for (uint ii=0; ii<surf.numTriEquivs(); ii++) {
+        FgVect3UI   vertInds = surf.getTriEquiv(ii);
+        FgVect3UI   edgeInds = topo.m_tris[ii].edgeInds;
+        uint        ni0 = newVertsBaseIdx + edgeInds[0],
+                    ni1 = newVertsBaseIdx + edgeInds[1],
+                    ni2 = newVertsBaseIdx + edgeInds[2];
+        newTris.push_back(FgVect3UI(vertInds[0],ni0,ni2));
+        newTris.push_back(FgVect3UI(vertInds[1],ni1,ni0));
+        newTris.push_back(FgVect3UI(vertInds[2],ni2,ni1));
+        newTris.push_back(FgVect3UI(ni0,ni1,ni2));
+    }
+
+    // Set up surface point weight transforms:
+    FgMat33F     wgtXform(1.0),
+                    wgtXform0,
+                    wgtXform1,
+                    wgtXform2;
+
+    wgtXform.elm(2,0) = -1.0;
+    wgtXform.elm(0,1) = -1.0;
+    wgtXform.elm(1,2) = -1.0;
+
+    wgtXform0[0] = 1.0f;
+    wgtXform0[1] = -1.0f;
+    wgtXform0[2] = -1.0f;
+    wgtXform0.elm(1,1) = 2;
+    wgtXform0.elm(2,2) = 2;
+
+    wgtXform1[0] = -1.0f;
+    wgtXform1[1] = 1.0f;
+    wgtXform1[2] = -1.0f;
+    wgtXform1.elm(2,1) = 2;
+    wgtXform1.elm(0,2) = 2;
+
+    wgtXform2[0] = -1.0f;
+    wgtXform2[1] = -1.0f;
+    wgtXform2[2] = 1.0f;
+    wgtXform2.elm(0,1) = 2;
+    wgtXform2.elm(1,2) = 2;
+
+    // Update surface points:
+    for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
+    {
+        uint        facetIdx = surf.surfPoints[ii].triEquivIdx * 4;
+        FgVect3F    weights = surf.surfPoints[ii].weights,
+                    wgtCentre = wgtXform * weights;
+        if (wgtCentre[0] < 0.0)
+            newSurfPoints.push_back(FgSurfPoint(facetIdx+2,wgtXform2*weights));
+        else if (wgtCentre[1] < 0.0)
+            newSurfPoints.push_back(FgSurfPoint(facetIdx,wgtXform0*weights));
+        else if (wgtCentre[2] < 0.0)
+            newSurfPoints.push_back(FgSurfPoint(facetIdx+1,wgtXform1*weights));
+        else
+            newSurfPoints.push_back(FgSurfPoint(facetIdx+3,wgtCentre));
+    }
+}
+
+Fg3dSurface
+fgSubdivideFlat(const Fg3dSurface & surf,FgVerts & verts)
+{
+    FGASSERT(surf.numQuads() == 0);              // Quads not supported.
+    Fg3dTopology    topo(verts,surf.tris.vertInds);
+
+    // Add the edge-split verts:
+    uint        newVertsBaseIdx = uint(verts.size());
+    for (size_t ii=0; ii<topo.m_edges.size(); ++ii) {
+        FgVect2UI   vertInds = topo.m_edges[ii].vertInds;
+        verts.push_back((verts[vertInds[0]]+verts[vertInds[1]])*0.5);
+    }
+
+    vector<FgVect3UI>       tris;
+    vector<FgSurfPoint>     surfPoints;
+    subdivideTris(surf,topo,newVertsBaseIdx,tris,surfPoints);
+
+    return Fg3dSurface(
+        tris,
+        std::vector<FgVect4UI>(),
+        std::vector<FgVect3UI>(),
+        std::vector<FgVect4UI>(),
+        surfPoints);
+}
+
+Fg3dSurface
+fgSubdivideLoop(const Fg3dSurface & surf,const FgVerts & vertsIn,FgVerts & vertsOut)
+{
+    FGASSERT(surf.numQuads() == 0);
+    vertsOut.resize(vertsIn.size());
+    Fg3dTopology    topo(vertsIn,surf.tris.vertInds);
+
+    // Add the edge-split "odd" verts:
+    uint        newVertsBaseIdx = uint(vertsIn.size());
+    for (uint ii=0; ii<topo.m_edges.size(); ++ii) {
+        FgVect2UI   vertInds0 = topo.m_edges[ii].vertInds;
+        if (topo.m_edges[ii].triInds.size() == 1) {     // Boundary
+            vertsOut.push_back((
+                vertsIn[vertInds0[0]] + 
+                vertsIn[vertInds0[1]])*0.5f);
+        }
+        else {
+            FgVect2UI   vertInds1 = topo.edgeFacingVertInds(ii);
+            vertsOut.push_back((
+                vertsIn[vertInds0[0]] * 3.0f +
+                vertsIn[vertInds0[1]] * 3.0f +
+                vertsIn[vertInds1[0]] +
+                vertsIn[vertInds1[1]]) * 0.125f);
+        }
+    }
+    // Modify the original "even" verts:
+    for (uint ii=0; ii<newVertsBaseIdx; ++ii) {
+        if (topo.vertOnBoundary(ii)) {
+            vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
+            if (vertInds.size() != 2)
+                fgThrow(
+                    "Cannot subdivide non-manifold mesh, invalid boundary vertex neighbour count at index",
+                    fgToString(vertInds.size()) + fgToString(ii));
+            vertsOut[ii] = (vertsIn[ii] * 6.0 +
+                            vertsIn[vertInds[0]] +
+                            vertsIn[vertInds[1]]) * 0.125f;
+        }
+        else {
+            // Note that there will always be at least 3 neighbours since 
+            // this is not a boundary vertex:
+            const vector<uint> &    neighbours = topo.vertNeighbours(ii);
+            FgVect3F    acc;
+            for (size_t jj=0; jj<neighbours.size(); ++jj)
+                acc += vertsIn[neighbours[jj]];
+            if (neighbours.size() == 3)
+                vertsOut[ii] = vertsIn[ii] * 0.4375f + acc * 0.1875f;
+            else if (neighbours.size() == 4)
+                vertsOut[ii] = vertsIn[ii] * 0.515625f + acc * 0.12109375f;
+            else if (neighbours.size() == 5)
+                vertsOut[ii] = vertsIn[ii] * 0.579534f + acc * 0.0840932f;
+            else
+                vertsOut[ii] = vertsIn[ii] * 0.625f + acc * 0.375f / float(neighbours.size());
+        }
+    }
+
+    vector<FgVect3UI>       tris;
+    vector<FgSurfPoint>     surfPoints;
+    subdivideTris(surf,topo,newVertsBaseIdx,tris,surfPoints);
+
+    return Fg3dSurface(
+        tris,
+        std::vector<FgVect4UI>(),
+        std::vector<FgVect3UI>(),
+        std::vector<FgVect4UI>(),
+        surfPoints);
 }
 
 // */

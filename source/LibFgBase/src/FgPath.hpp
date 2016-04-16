@@ -56,12 +56,12 @@ fgNfs(const FgString & path)
 string
 fgDirSep();                         // Directory separator ('/' on Unix, '\' on Windows)
 
-// Doesn't handle double-delim paths (eg. //server/share) or non-root dirs on different
-// drive letters (eg. C:reldir). CLI '.' and '..' abbreviations are also not handled:
+// '.' and '..' are only handled relative to given path string, not 'current' path:
 struct  FgPath
 {
-    // Empty string for relative path. If non-empty, must end in '/':
-    FgString                drive;  // Only non-empty on Windows (eg C:)
+    // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
+    // OR drive letter on Windows (eg C:), in which case 'root' can be either.
+    FgString                drive;
     bool                    root;   // Path starts at root ? (otherwise relative)
     vector<FgString>        dirs;   // No delimiters in in dir names. Can begin with '..' entries.
     FgString                base;   // Base filename

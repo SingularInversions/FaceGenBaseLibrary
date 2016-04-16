@@ -24,12 +24,13 @@
 
 using std::vector;      // please god spare me from ever typing 'std::' again.
 
-// Shorthands:
-
-typedef vector<double>      FgDoubles;
-typedef vector<float>       FgFloats;
-typedef vector<uint>        FgUints;
-typedef vector<size_t>      FgSizes;
+// Frequently used shorthands:
+typedef vector<double>                  FgDbls;
+typedef vector<float>                   FgFlts;
+typedef vector<uint>                    FgUints;
+typedef vector<size_t>                  FgSizes;
+typedef vector<double>::iterator        FgDblsIt;
+typedef vector<double>::const_iterator  FgDblsCit;
 
 // Acts just like bool for use with vector but avoids use of broken
 // vector<bool> specialization:
@@ -157,20 +158,20 @@ fgConvertElems(const vector<U> & rhs)
 }
 
 inline
-FgDoubles
+FgDbls
 fgToDouble(const vector<float> & v)
 {
-    FgDoubles   ret(v.size());
+    FgDbls   ret(v.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii] = double(v[ii]);
     return ret;
 }
 
 inline
-FgFloats
+FgFlts
 fgToFloat(const vector<double> & v)
 {
-    FgFloats    ret(v.size());
+    FgFlts    ret(v.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii] = float(v[ii]);
     return ret;
@@ -858,6 +859,17 @@ fgFlat(const vector<vector<T> > & v)
     return ret;       
 }
 
+// Turn each element of a vector into a vector of size 1:
+template<class T>
+vector<vector<T> >
+fgUnflat(const vector<T> & v)
+{
+    vector<vector<T> >  ret(v.size());
+    for (size_t ii=0; ii<ret.size(); ++ii)
+        ret[ii].push_back(v[ii]);
+    return ret;
+}
+
 // Transpose a vector of vectors just like Python 'zip' on lists.
 // All sub-vectors must have the same size():
 template<class T>
@@ -882,12 +894,20 @@ template<class T>
 std::ostream &
 operator<<(std::ostream & ss,const vector<T> & vv)
 {
+    std::ios::fmtflags
+        oldFlag = ss.setf(
+            std::ios::fixed |
+            std::ios::showpos |
+            std::ios::right);
+    std::streamsize oldPrec = ss.precision(6);
     ss << "[" << fgpush;
     if (vv.size() > 0)
         ss << vv[0];
 	for (uint ii=1; ii<vv.size(); ii++)
 		ss << "," << vv[ii];
     ss << fgpop << "]";
+    ss.flags(oldFlag);
+    ss.precision(oldPrec);
 	return ss;
 }
 

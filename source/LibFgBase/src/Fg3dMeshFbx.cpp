@@ -353,12 +353,12 @@ fgSaveFbxTest(const FgArgs & args)
 {
     FGTESTDIR
     FgString            dd = fgDataDir();
-    string              rd = "csam/Animate/";
+    string              rd = "base/";
     vector<Fg3dMesh>    meshes;
-    meshes.push_back(fgLoadTri(dd+rd+"Head/Mouth.tri"));
-    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Head/Mouth.tga"));
-    meshes.push_back(fgLoadTri(dd+rd+"Accessories/Glasses.tri"));
-    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Accessories/Glasses.tga"));
+    meshes.push_back(fgLoadTri(dd+rd+"Mouth.tri"));
+    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
+    meshes.push_back(fgLoadTri(dd+rd+"Glasses.tri"));
+    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
     fgSaveFbx("meshExportFbx",meshes);
     fgRegressFile("meshExportFbx.fbx","base/test/");
     fgRegressFile("meshExportFbx0_0.png","base/test/");

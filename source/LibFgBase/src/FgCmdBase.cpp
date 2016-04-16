@@ -76,7 +76,7 @@ fgCmdBaseTestms()
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testmGui,"gui"));
-    ADDCMD1(fg3dTest,"3d");
+    ADDCMD1(fg3dTestMan,"3d");
     ADDCMD1(fg3dReadWobjTest,"readWobj");
     ADDCMD1(fgRandomTest,"random");
     ADDCMD1(fgGeometryManTest,"geometry");

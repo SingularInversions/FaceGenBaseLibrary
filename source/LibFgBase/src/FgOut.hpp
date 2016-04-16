@@ -182,4 +182,17 @@ struct  FgIndent
     {fgout << fgpop; }
 };
 
+#define FG_HI fgout << fgnl << "HI ! (" << __FILE__ << ": " << __LINE__ << ")" << std::flush
+
+#define FG_HI1(X) fgout << fgnl << #X ": " << (X) << std::flush
+
+#define FG_HI2(X,Y) fgout << fgnl << #X ": " << (X) << " " << #Y ": " << (Y) << std::flush
+
+#define FG_HI3(X,Y,Z) fgout << fgnl << #X ": " << (X) << " " << #Y ": " << (Y) << " " << #Z ": " << (Z) << std::flush
+
+#define FG_HI4(X,Y,Z,A) fgout << fgnl << #X ": " << (X) << " "     \
+         << #Y ": " << (Y) << " "                                   \
+         << #Z ": " << (Z) << " "                                   \
+         << #A ": " << (A) << std::flush
+
 #endif

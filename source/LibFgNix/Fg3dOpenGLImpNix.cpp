@@ -6,12 +6,13 @@
 // Authors:     Andrew Beatty
 // Created:     July 8, 2010
 //
+// Not yet implemented on this platform.
 
 #include "stdafx.h"
-#include "FgImage.hpp"
+#include "Fg3dOpenGL.hpp"
+
+//#include "Fg3dOpenGLImpl.hpp"
 
 FgImgRgbaUb
 fgOglGetRender()
-{}
-
-//#include "Fg3dOpenGLImpl.hpp"
+{return FgImgRgbaUb(); }

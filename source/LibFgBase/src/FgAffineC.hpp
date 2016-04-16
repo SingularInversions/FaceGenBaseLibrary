@@ -119,8 +119,8 @@ struct  FgAffineC
     asHomogenous() const
     {
         FgMatrixC<T,dim+1,dim+1>    ret;
-        ret.setSubMatrix(linear,0,0);
-        ret.setSubMatrix(translation,0,dim);
+        ret.setSubMat(linear,0,0);
+        ret.setSubMat(translation,0,dim);
         ret.elm(dim,dim) = T(1);
         return ret;
     }

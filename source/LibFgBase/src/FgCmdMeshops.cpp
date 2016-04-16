@@ -17,6 +17,8 @@
 #include "FgMetaFormat.hpp"
 #include "Fg3dNormals.hpp"
 #include "FgSimilarity.hpp"
+#include "Fg3dTopology.hpp"
+#include "Fg3dDisplay.hpp"
 
 using namespace std;
 
@@ -410,20 +412,6 @@ mergenamedsurfs(const FgArgs & args)
 
 static
 void
-mergeuvs(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
-        );
-    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
-    mesh = fgMergeIdenticalUvInds(mesh);
-    fgSaveMeshAnyFormat(mesh,syntax.next());
-}
-
-static
-void
 splitObjByMtl(const FgArgs & args)
 {
     FgSyntax    syntax(args,
@@ -451,6 +439,30 @@ splitsurfsbyuvs(const FgArgs & args)
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgSplitSurfsByUvs(mesh);
     fgSaveMeshAnyFormat(mesh,syntax.next());
+}
+
+static
+void
+splitsurface(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn>\n"
+        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "COMMENTS:\n"
+        "    * Splits surfaces by connected vertex indices.\n"
+        "    * Stores results to separate meshes with suffix '_<num>.tri'"
+        );
+    Fg3dMesh                mesh = fgLoadMeshAnyFormat(syntax.next());
+    FgString                base = fgPathToBase(syntax.curr());
+    uint                    idx = 0;
+    Fg3dMesh                out = mesh;
+    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+        vector<Fg3dSurface>     surfs = fgSplitSurface(mesh.surfaces[ss]);
+        for (size_t ii=0; ii<surfs.size(); ++ii) {
+            out.surfaces = fgSvec(surfs[ii]);
+            fgSaveTri(base+"_"+fgToString(idx++)+".tri",out);
+        }
+    }
 }
 
 static
@@ -489,6 +501,34 @@ surfPtsToVerts(const FgArgs & args)
 
 static
 void
+unifyuvs(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn> <out>.<extOut>\n"
+        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        );
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
+    mesh = fgUnifyIdenticalUvs(mesh);
+    fgSaveMeshAnyFormat(mesh,syntax.next());
+}
+
+static
+void
+unifyverts(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn> <out>.<extOut>\n"
+        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        );
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
+    mesh = fgUnifyIdenticalVerts(mesh);
+    fgSaveMeshAnyFormat(mesh,syntax.next());
+}
+
+static
+void
 uvimg(const FgArgs & args)
 {
     FgSyntax    syntax(args,
@@ -517,12 +557,14 @@ meshops(const FgArgs & args)
     ops.push_back(FgCmd(mmerge,"merge","Merge multiple meshes into one. No optimization is done"));
     ops.push_back(FgCmd(mergenamedsurfs,"mergeNamedSurfs","Merge surfaces with identical names"));
     ops.push_back(FgCmd(mergesurfs,"mergeSurfs","Merge all surfaces in a mesh into one"));
-    ops.push_back(FgCmd(mergeuvs,"mergeUVs","Merge identical UV coordinates"));
     ops.push_back(FgCmd(rdf,"rdf","Remove Duplicate Facets within each surface"));
-    ops.push_back(FgCmd(ruv,"ruv","Remove Unused Vertices which are not part of surfaces"));
+    ops.push_back(FgCmd(ruv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"));
     ops.push_back(FgCmd(splitObjByMtl,"splitObjByMtl","Split up an OBJ mesh by 'usemtl' name"));
+    ops.push_back(FgCmd(splitsurface,"splitSurface","Split up surface by connected vertex indices"));
     ops.push_back(FgCmd(splitsurfsbyuvs,"splitSurfsByUvs","Split up surfaces with discontiguous UV mappings"));
     ops.push_back(FgCmd(surfPtsToVerts,"surfPtsToVerts","Convert surface points to labelled vertices"));
+    ops.push_back(FgCmd(unifyuvs,"unifyUVs","Unify identical UV coordinates"));
+    ops.push_back(FgCmd(unifyverts,"unifyVerts","Unify identical vertices"));
     ops.push_back(FgCmd(uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"));
     ops.push_back(FgCmd(uvimg,"uvimg","Save an image of the  the UV map of the mesh"));
     ops.push_back(FgCmd(uvmask,"uvmask","Mask out geometry for any black areas of a texture image"));

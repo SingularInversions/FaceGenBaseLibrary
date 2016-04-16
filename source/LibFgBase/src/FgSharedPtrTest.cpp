@@ -10,9 +10,6 @@
 #include "FgSharedPtr.hpp"
 #include "FgTestUtils.hpp"
 
-#define DEFINE_TEST(fn) void testSharedPtr_##fn()
-#define TEST(fn) void testSharedPtr_##fn(); testSharedPtr_##fn();
-
 // Note that the types are now complete!
 struct incomplete_type
 {
@@ -51,26 +48,6 @@ get_incomplete_child_instances()
     return incomplete_child::counter;
 }
 
-void
-fgSharedPtrTest(const FgArgs &)
-{
-    FgMemoryLeakDetector m;
-    {
-        TEST(deref);
-        TEST(destructor);
-        TEST(copy);
-        TEST(assign);
-        TEST(poly);
-        TEST(vector);
-        TEST(null);
-        TEST(reset);
-        TEST(fgnew);
-        TEST(incomplete_type);
-        TEST(copy_default_constructed);
-    }
-    return m.throw_if_leaked("SharedPtr");
-}
-
 struct a_struct
 {
     static int counter;
@@ -87,7 +64,7 @@ int a_struct::counter = 0;
 
 typedef FgSharedPtr<a_struct> ptr_t;
 
-DEFINE_TEST(deref)
+static void test_deref()
 {
     {
         ptr_t p1(fgnew<a_struct>());
@@ -96,7 +73,7 @@ DEFINE_TEST(deref)
     FGASSERT(a_struct::counter==0);
 }
 
-DEFINE_TEST(destructor)
+static void test_destructor()
 {
     FGASSERT(a_struct::counter==0);
     {
@@ -115,7 +92,7 @@ DEFINE_TEST(destructor)
     FGASSERT(a_struct::counter==0);
 }
 
-DEFINE_TEST(copy)
+static void test_copy()
 {
     FGASSERT(a_struct::counter==0);
     {
@@ -134,7 +111,7 @@ DEFINE_TEST(copy)
     FGASSERT(a_struct::counter==0);
 }
 
-DEFINE_TEST(assign)
+static void test_assign()
 {
     FGASSERT(a_struct::counter==0);
     {
@@ -196,7 +173,7 @@ foo()
     return fgnew<child>();
 }
 
-DEFINE_TEST(poly)
+static void test_poly()
 {
     {
         child_ptr_t c1(fgnew<child>());
@@ -224,7 +201,7 @@ DEFINE_TEST(poly)
     FGASSERT(base::counter == 0);
 }
 
-DEFINE_TEST(vector)
+static void test_vector()
 {
     base_ptr_t p1(fgnew<child>());
     {
@@ -238,7 +215,7 @@ DEFINE_TEST(vector)
     FGASSERT(p1.use_count()==1);
 }
 
-DEFINE_TEST(null)
+static void test_null()
 {
     {
         FGASSERT(child::counter == 0);
@@ -268,7 +245,7 @@ DEFINE_TEST(null)
     }
 }
 
-DEFINE_TEST(reset)
+static void test_reset()
 {
     {
         base_ptr_t b1(fgnew<child>());
@@ -307,7 +284,7 @@ struct f
     f(int,int,int,int,int,int,int){}
 };
 
-DEFINE_TEST(fgnew)
+static void test_fgnew()
 {
     int a=5;
     FGASSERT(fgnew<f>());
@@ -344,7 +321,7 @@ get_incomplete_child_instances();
 // This test tests that incomplete types can be deleted
 // safely so long as the delete is instantiated when we
 // have a complete object
-DEFINE_TEST(incomplete_type)
+static void test_incomplete_type()
 {
     FGASSERT(get_incomplete_type_instances() == 0);
     FGASSERT(get_incomplete_child_instances() == 0);
@@ -357,18 +334,28 @@ DEFINE_TEST(incomplete_type)
     FGASSERT(get_incomplete_child_instances() == 0);
 }
 
-// This shouldn't compile because incomplete_type is incomplete but there is
-// no way to to test that in the current infrastructure. Worked as of May 14, 2008
-
-/*
-DEFINE_TEST(incomplete_doesnt_compile)
-{
-    FgSharedPtr<incomplete_type> p((incomplete_type *)0);
-}
-*/
-
-DEFINE_TEST(copy_default_constructed)
+static void test_copy_default_constructed()
 {
     FgSharedPtr<base> p;
     FgSharedPtr<base> p2(p);
+}
+
+void
+fgSharedPtrTest(const FgArgs &)
+{
+    FgMemoryLeakDetector m;
+    {
+        test_deref();
+        test_destructor();
+        test_copy();
+        test_assign();
+        test_poly();
+        test_vector();
+        test_null();
+        test_reset();
+        test_fgnew();
+        test_incomplete_type();
+        test_copy_default_constructed();
+    }
+    return m.throw_if_leaked("SharedPtr");
 }

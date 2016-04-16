@@ -90,7 +90,7 @@ fgCreateSphere(
     for (uint ss=0; ss<subdivisions; ss++) {
         for (uint ii=0; ii<mesh.verts.size(); ii++)
             mesh.verts[ii] *= radius / mesh.verts[ii].length();
-        mesh = mesh.subdivideFlat();
+        mesh = fgSubdivideFlat(mesh);
     }
     for (uint ii=0; ii<mesh.verts.size(); ii++)
         mesh.verts[ii] *= radius / mesh.verts[ii].length();
@@ -110,44 +110,107 @@ fgRemoveDuplicateFacets(const Fg3dMesh & mesh)
 Fg3dMesh
 fgRemoveUnusedVerts(const Fg3dMesh & mesh)
 {
-    Fg3dMesh        ret = mesh;
-    vector<bool>    vertUsed(mesh.verts.size(),false);
+    Fg3dMesh            ret;
+    ret.name = mesh.name;
+    ret.material = mesh.material;
+    ret.surfaces = mesh.surfaces;
+    // Which vertices & uvs are referenced by a surface or marked vertex:
+    vector<bool>        vertUsed(mesh.verts.size(),false);
+    vector<bool>        uvsUsed(mesh.uvs.size(),false);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface & surf = mesh.surfaces[ss];
-        uint    num = surf.numTriEquivs();
-        for (uint jj=0; jj<num; ++jj) {
-            FgVect3UI   verts = surf.getTriEquiv(jj);
-            vertUsed[verts[0]] = true;
-            vertUsed[verts[1]] = true;
-            vertUsed[verts[2]] = true;
+        for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+            FgVect3UI   v = surf.tris.vertInds[tt];
+            for (uint ii=0; ii<3; ++ii)
+                vertUsed[v[ii]] = true;
+        }
+        for (size_t tt=0; tt<surf.quads.vertInds.size(); ++tt) {
+            FgVect4UI   v = surf.quads.vertInds[tt];
+            for (uint ii=0; ii<4; ++ii)
+                vertUsed[v[ii]] = true;
+        }
+        for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
+            FgVect3UI   u = surf.tris.uvInds[tt];
+            for (uint ii=0; ii<3; ++ii)
+                uvsUsed[u[ii]] = true;
+        }
+        for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
+            FgVect4UI   u = surf.quads.uvInds[tt];
+            for (uint ii=0; ii<4; ++ii)
+                uvsUsed[u[ii]] = true;
         }
     }
-    vector<uint>    remapIndices(mesh.verts.size(),0);
-    FgVerts         verts;
+    for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii)
+        vertUsed[mesh.markedVerts[ii].idx] = true;
+    // Create the new vertex list:
+    vector<uint>    mapVerts(mesh.verts.size(),numeric_limits<uint>::max());
     uint            cnt = 0;
     for (size_t ii=0; ii<vertUsed.size(); ++ii) {
         if (vertUsed[ii]) {
-            verts.push_back(mesh.verts[ii]);
-            remapIndices[ii] = cnt++;
+            ret.verts.push_back(mesh.verts[ii]);
+            mapVerts[ii] = cnt++;
         }
     }
-    ret.verts = verts;
+    // Create the new uv list:
+    vector<uint>    mapUvs(mesh.uvs.size(),numeric_limits<uint>::max());
+    cnt = 0;
+    for (size_t ii=0; ii<uvsUsed.size(); ++ii) {
+        if (uvsUsed[ii]) {
+            ret.uvs.push_back(mesh.uvs[ii]);
+            mapUvs[ii] = cnt++;
+        }
+    }
+    // Remap the surfaces and marked verts, which we know all map to valid indices in the new list:
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         Fg3dSurface &           surf = ret.surfaces[ss];
         for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii)
             for (uint jj=0; jj<3; ++jj)
-                surf.tris.vertInds[ii][jj] = remapIndices[surf.tris.vertInds[ii][jj]];
+                surf.tris.vertInds[ii][jj] = mapVerts[surf.tris.vertInds[ii][jj]];
         for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii)
             for (uint jj=0; jj<4; ++jj)
-                surf.quads.vertInds[ii][jj] = remapIndices[surf.quads.vertInds[ii][jj]];
+                surf.quads.vertInds[ii][jj] = mapVerts[surf.quads.vertInds[ii][jj]];
+        for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii)
+            for (uint jj=0; jj<3; ++jj)
+                surf.tris.uvInds[ii][jj] = mapUvs[surf.tris.uvInds[ii][jj]];
+        for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii)
+            for (uint jj=0; jj<4; ++jj)
+                surf.quads.uvInds[ii][jj] = mapUvs[surf.quads.uvInds[ii][jj]];
     }
-    for (size_t ii=0; ii<ret.targetMorphs.size(); ++ii) {
-        FgIndexedMorph &    im = ret.targetMorphs[ii];
-        for (size_t jj=0; jj<im.baseInds.size(); ++jj)
-            im.baseInds[jj] = remapIndices[im.baseInds[jj]];
-    }
+    ret.markedVerts = mesh.markedVerts;
     for (size_t ii=0; ii<ret.markedVerts.size(); ++ii)
-        ret.markedVerts[ii].idx = remapIndices[ret.markedVerts[ii].idx];
+        ret.markedVerts[ii].idx = mapVerts[ret.markedVerts[ii].idx];
+    // Remap only those delta morphs which contain non-zero deltas:
+    FgVect3F            zero(0);
+    for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {
+        const FgMorph & src = mesh.deltaMorphs[ii];
+        FgMorph         dst;
+        dst.name = src.name;
+        bool            keep = false;
+        for (size_t jj=0; jj<src.verts.size(); ++jj) {
+            if (mapVerts[jj] != numeric_limits<uint>::max()) {
+                dst.verts.push_back(src.verts[jj]);
+                if (src.verts[jj] != zero)
+                    keep = true;
+            }
+        }
+        if (keep)
+            ret.deltaMorphs.push_back(dst);
+    }
+    // Remap only those target morphs that reference retained vertices:
+    for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
+        const FgIndexedMorph &      src = mesh.targetMorphs[ii];
+        FgIndexedMorph              dst;
+        dst.name = src.name;
+        for (size_t jj=0; jj<src.baseInds.size(); ++jj) {
+            uint    idx = mapVerts[src.baseInds[jj]];
+            if (idx != numeric_limits<uint>::max()) {
+                dst.baseInds.push_back(idx);
+                dst.verts.push_back(src.verts[jj]);
+            }
+        }
+        if (!dst.baseInds.empty())
+            ret.targetMorphs.push_back(dst);
+    }
     return  ret;
 }
 
@@ -261,6 +324,24 @@ fgNTent(uint nn)
     return Fg3dMesh(verts,Fg3dSurface(tris));
 }
 
+//Fg3dMesh
+//fgFddCage(float size,float thick)
+//{
+//    Fg3dMesh            ret;
+//    vector<FgVect3F>    sqrVerts;
+//    sqrVerts.push_back(FgVect3F(-thick,-thick,0));
+//    sqrVerts.push_back(FgVect3F(-thick,thick,0));
+//    sqrVerts.push_back(FgVect3F(thick,thick,0));
+//    sqrVerts.push_back(FgVect3F(thick,-thick,0));
+//    FgVect4UI           sqrInds(0,1,2,3);
+//    //fgAppend(ret.verts,fgMap(sqrVerts
+//    for (uint axis=0; axis<3; ++axis) {
+//        FgVect3F    l(0);
+//        for (int aa=-1; aa<2; aa+=2)
+//            for (int bb=
+//    }
+//}
+
 Fg3dMesh
 fgMergeSameNameSurfaces(const Fg3dMesh & in)
 {
@@ -284,25 +365,90 @@ fgMergeSameNameSurfaces(const Fg3dMesh & in)
     return ret;
 }
 
-// Only currently works on quads:
 Fg3dMesh
-fgMergeIdenticalUvInds(const Fg3dMesh & in)
+fgUnifyIdenticalVerts(const Fg3dMesh & mesh)
 {
-    Fg3dMesh    ret = in;
+    Fg3dMesh            ret(mesh);
+    FgVerts             verts;
+    vector<uint>        map;
+    map.reserve(mesh.verts.size());
+    uint                cnt = 0;
+    for (uint vv=0; vv<mesh.verts.size(); ++vv) {
+        bool            dup = false;
+        FgVect3F        v = mesh.verts[vv];
+        for (uint ww=0; ww<verts.size(); ++ww) {
+            if (verts[ww] == v) {
+                dup = true;
+                map.push_back(ww);
+                break;
+            }
+        }
+        if (!dup) {
+            verts.push_back(mesh.verts[vv]);
+            map.push_back(cnt);
+            ++cnt;
+        }
+    }
+    FGASSERT(mesh.verts.size() == map.size());
+    for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
+        Fg3dSurface &           surf = ret.surfaces[ss];
+        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii)
+            for (uint jj=0; jj<3; ++jj)
+                surf.tris.vertInds[ii][jj] = map[surf.tris.vertInds[ii][jj]];
+        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii)
+            for (uint jj=0; jj<4; ++jj)
+                surf.quads.vertInds[ii][jj] = map[surf.quads.vertInds[ii][jj]];
+    }
+    for (size_t ii=0; ii<ret.deltaMorphs.size(); ++ii) {
+        const FgMorph &     src = mesh.deltaMorphs[ii];
+        FgMorph &           dst = ret.deltaMorphs[ii];
+        FGASSERT(dst.verts.size() == map.size());
+        for (size_t jj=0; jj<dst.verts.size(); ++jj)
+            dst.verts[jj] = src.verts[map[jj]];
+    }
+    for (size_t ii=0; ii<ret.targetMorphs.size(); ++ii) {
+        FgIndexedMorph &    im = ret.targetMorphs[ii];
+        for (size_t jj=0; jj<im.baseInds.size(); ++jj)
+            im.baseInds[jj] = map[im.baseInds[jj]];
+    }
+    for (size_t ii=0; ii<ret.markedVerts.size(); ++ii)
+        ret.markedVerts[ii].idx = map[ret.markedVerts[ii].idx];
+    ret.verts = verts;
+    return ret;
+}
+
+Fg3dMesh
+fgUnifyIdenticalUvs(const Fg3dMesh & in)
+{
+    Fg3dMesh                    ret(in);
     const vector<FgVect2F> &    uvs = ret.uvs;
     vector<FgValid<uint> >      merge(uvs.size());
-    uint                        cnt0 = 0, cnt1 = 0;
+    size_t                      cnt0 = 0,
+                                cnt1 = 0;
     for (size_t ii=1; ii<uvs.size(); ++ii)
         for (size_t jj=0; jj<ii-1; ++jj)
             if (uvs[ii] == uvs[jj])
                 merge[ii] = uint(jj), ++cnt0;
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
-        Fg3dSurface &           surf = const_cast<Fg3dSurface&>(ret.surfaces[ss]);
-        vector<FgVect4UI> &     uvInds = const_cast<vector<FgVect4UI>&>(surf.quads.uvInds);
-        for (size_t ii=0; ii<uvInds.size(); ++ii)
-            for (uint jj=0; jj<4; ++jj)
-                if (merge[uvInds[ii][jj]].valid())
-                    uvInds[ii][jj] = merge[uvInds[ii][jj]].val(), ++cnt1;
+        Fg3dSurface &           surf = ret.surfaces[ss];
+        vector<FgVect3UI> &     triUvInds = surf.tris.uvInds;
+        for (size_t ii=0; ii<triUvInds.size(); ++ii) {
+            for (uint jj=0; jj<3; ++jj) {
+                if (merge[triUvInds[ii][jj]].valid()) {
+                    triUvInds[ii][jj] = merge[triUvInds[ii][jj]].val();
+                    ++cnt1;
+                }
+            }
+        }
+        vector<FgVect4UI> &     quadUvInds = surf.quads.uvInds;
+        for (size_t ii=0; ii<quadUvInds.size(); ++ii) {
+            for (uint jj=0; jj<4; ++jj) {
+                if (merge[quadUvInds[ii][jj]].valid()) {
+                    quadUvInds[ii][jj] = merge[quadUvInds[ii][jj]].val();
+                    ++cnt1;
+                }
+            }
+        }
     }
     fgout << fgnl << cnt0 << " UVs merged " << cnt1 << " UV indices redirected" << endl;
     return ret;
@@ -453,10 +599,8 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
 {
     // Make a list of which vertices have UVs that only fall in the excluded regions:
     vector<FgBool>      keep(mesh.verts.size(),false);
-    FgAffineCw2F        otcsToRasterOffset(
-                            FgMat22F(0,1,1,0),
-                            FgMat22F(0,mask.width(),0,mask.height()));
-    FgMat22UI        clampVal(0,mask.width()-1,0,mask.height()-1);
+    FgAffineCw2F        otcsToIpcs = fgOtcsToIpcs(mask.dims());
+    FgMat22UI           clampVal(0,mask.width()-1,0,mask.height()-1);
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         const Fg3dSurface & surf = mesh.surfaces[ii];
         if (!surf.quads.uvInds.empty())
@@ -467,7 +611,7 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
             FgVect3UI   uvInd = surf.tris.uvInds[jj];
             FgVect3UI   vtInd = surf.tris.vertInds[jj];
             for (uint kk=0; kk<3; ++kk) {
-                bool    valid = mask[fgClamp(FgVect2UI(otcsToRasterOffset * mesh.uvs[uvInd[kk]]),clampVal)];
+                bool    valid = mask[fgClamp(FgVect2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
             }
         }
@@ -499,7 +643,8 @@ fgUvImage(const Fg3dMesh & mesh,const FgImgRgbaUb & in)
     if (!in.empty())
         img = fgImgMagnify(in,2);
     FgRgbaUB        green(0,255,0,255);
-    FgMat22F        domain(floor(uvb[0]),ceil(uvb[1]),floor(uvb[2]),ceil(uvb[3])),
+    // Bounds are normally (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
+    FgMat22F        domain(floor(uvb[0]),ceil(uvb[1]),ceil(uvb[3]),floor(uvb[2])),
                     range(0,img.width()+1,0,img.height()+1);
     FgAffineCw2F    xf(domain,range);
     const vector<FgVect2F> &    uvs = mesh.uvs;
@@ -564,7 +709,7 @@ FgVerts
 fgApplyExpression(const Fg3dMesh & mesh,const vector<FgMorphVal> & expression)
 {
     FgVerts         ret;
-    FgFloats        coord(mesh.numMorphs(),0);
+    FgFlts        coord(mesh.numMorphs(),0);
     for (size_t ii=0; ii<expression.size(); ++ii) {
         FgValid<size_t>     idx = mesh.findMorph(expression[ii].name);
         if (idx.valid())

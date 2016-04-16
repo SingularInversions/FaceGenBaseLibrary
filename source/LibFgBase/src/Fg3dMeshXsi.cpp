@@ -770,7 +770,7 @@ fgSaveXsiTest(const FgArgs & args)
 {
     FGTESTDIR
     FgString    dd = fgDataDir();
-    string      rd = "csam/Animate/Head/";
+    string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveXsi("meshExportXsi",fgSvec(mesh));

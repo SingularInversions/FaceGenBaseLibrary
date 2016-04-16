@@ -100,6 +100,7 @@ drawWires(const vector<FgOglRendModel> &  rms)
             }
         }
     }
+    CHECKOGLERROR;
 }
 
 static
@@ -119,6 +120,7 @@ drawVerts(const vector<FgOglRendModel> &  rms)
             glVertex3fv(verts[ii].dataPtr());
         glEnd();
     }
+    CHECKOGLERROR;
 }
 
 static
@@ -140,6 +142,7 @@ drawMarkedVerts(const vector<FgOglRendModel> &  rms)
         }
     }
     glEnd();
+    CHECKOGLERROR;
 }
 
 static
@@ -161,6 +164,7 @@ drawPoints(const vector<FgOglRendModel> &  rms)
         }
     }
     glEnd();
+    CHECKOGLERROR;
 }
 
 static uint                     s_specMapName;
@@ -193,6 +197,7 @@ drawTris(const vector<vector<Tri> > & tris)
         }
     }
     glEnd();
+    CHECKOGLERROR;
 }
 
 static
@@ -220,6 +225,7 @@ drawSurfaces(
     const Fg3dRenderOptions &       rend,
     bool                            transparency)   // Opaque or transparent pass ?
 {
+    CHECKOGLERROR;
     FGASSERT(mesh.surfaces.size() == images.size());
     // Get the modelview matrix, remove the translational component,
     // and adjust it so that it converts the result from OICS to OXCS 
@@ -236,7 +242,7 @@ drawSurfaces(
     //    float   d = v[2] / v[3];
     //    fgSetIfLess(bnds[0],d);
     //    fgSetIfGreater(bnds[1],d); }
-    //FG_HI1(bnds);
+    //FG_HI_1(bnds);
     FgAffine3F      oicsToOxcs(FgVect3F(1.0f));
     oicsToOxcs.postScale(0.5f);
     trans = oicsToOxcs * trans;
@@ -349,6 +355,7 @@ drawSurfaces(
         }
         glDisable(GL_BLEND);
     }
+    CHECKOGLERROR;
 }
 
 void
@@ -440,6 +447,7 @@ fgOglTextureAdd(
     glEnable(GL_TEXTURE_2D);
     uint name;
     glGenTextures(1,&name);
+    CHECKOGLERROR;
     fgOglTextureUpdate(name,img);
     return name;
 }
@@ -477,14 +485,15 @@ fgOglSetLighting(const FgLighting & lt)
         FgVect4F        clr = fgConcatVert(lgt.m_colour,1.0f);
         glLightfv(glLight[ll],GL_DIFFUSE,clr.dataPtr());
     }
-    fgOglTextureUpdate(s_specMapName,lt.createSpecularMap());
     CHECKOGLERROR;
+    fgOglTextureUpdate(s_specMapName,lt.createSpecularMap());
 }
 
 static
 void
 renderBgImg(uint name,FgVect2UI dims,bool transparency)
 {
+    CHECKOGLERROR;
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
@@ -524,6 +533,7 @@ renderBgImg(uint name,FgVect2UI dims,bool transparency)
 	glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
     glDepthMask(1);                // Restore state
+    CHECKOGLERROR;
 }
 
 void
@@ -580,8 +590,16 @@ fgOglRender(
         if (useOffsets)
             glPolygonOffset(0.0,0.0);
     }
-    if (bgImgName.valid())
+    if (bgImgName.valid()) {
         renderBgImg(bgImgName.val(),bgImgDims,true);
+        // Restore transform state so projection oeprations work properly (eg. point-on-surface):
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glFrustum(frustum[0],frustum[1],frustum[2],frustum[3],frustum[4],frustum[5]);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glLoadMatrixf(oglMvm.dataPtr());
+    }
     CHECKOGLERROR;
 }
 
@@ -592,11 +610,13 @@ fgOglTransform()
     glGetFloatv(GL_PROJECTION_MATRIX,&prj[0]);
     glGetFloatv(GL_MODELVIEW_MATRIX,&mvm[0]);
     return prj.transpose() * mvm.transpose();
+    CHECKOGLERROR;
 }
 
 FgImgRgbaUb
 fgOglGetRender()
 {
+    CHECKOGLERROR;
     glReadBuffer(GL_FRONT);
     FgImgRgbaUb     ret;
     GLint           x[4];
@@ -611,6 +631,7 @@ fgOglGetRender()
         }
     }
     glReadBuffer(GL_BACK);          // Restore to default
+    CHECKOGLERROR;
     return ret;
 }
 

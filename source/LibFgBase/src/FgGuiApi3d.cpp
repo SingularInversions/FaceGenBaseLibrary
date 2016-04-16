@@ -57,7 +57,9 @@ FgGuiApi3d::scale(int delta)
     double          rs = g_gg.getVal(logRelSize);
     rs += double(delta)/200.0;
     static double   rsMin = std::log(0.05);
-    static double   rsMax = std::log(5.0);
+    // The effective limit is due to avoiding clipping in creation of the MVM and projection matrices,
+    // not due to this value which well exceeds it:
+    static double   rsMax = std::log(20.0);
     if (rs < rsMin)
         rs = rsMin;
     if (rs > rsMax)

@@ -265,7 +265,7 @@ struct  FgMatrixC
 
     template <uint srows,uint scols>
     FgMatrixC<T,nrows,ncols> &
-    setSubMatrix(const FgMatrixC<T,srows,scols> & sub,uint row,uint col);
+    setSubMat(const FgMatrixC<T,srows,scols> & sub,uint row,uint col);
 
     T
     lengthSqr() const
@@ -408,7 +408,7 @@ void FgMatrixC<T,nrows,ncols>::setIdentity()
 template <class T,uint nrows,uint ncols>
 template <uint srows,uint scols>
 FgMatrixC<T,nrows,ncols> &
-FgMatrixC<T,nrows,ncols>::setSubMatrix(
+FgMatrixC<T,nrows,ncols>::setSubMat(
     const FgMatrixC<T,srows,scols> &    sub,
     uint                                row,
     uint                                col)
@@ -486,6 +486,7 @@ typedef FgMatrixC<double,9,1>       FgVect9D;
 typedef FgMatrixC<float,1,2>        FgVectF2;
 typedef FgMatrixC<float,1,3>        FgVectF3;
 typedef FgMatrixC<double,1,2>       FgVectD2;
+typedef FgMatrixC<double,1,3>       FgVectD3;
 typedef FgMatrixC<uint,1,2>         FgVectU2;
 
 typedef vector<FgVect3F>            FgVerts;

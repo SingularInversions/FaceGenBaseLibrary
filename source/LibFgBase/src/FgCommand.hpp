@@ -23,23 +23,27 @@ struct FgCmd
     std::string     description;
 
     FgCmd() : func(0) {}
-    FgCmd(FgCmdFunc f,const char * n)
-        : func(f), name(n) {}
-    FgCmd(FgCmdFunc f,const char * n,const char * d)
-        : func(f), name(n), description(d) {}
+
+    FgCmd(FgCmdFunc func_,const char * name_)
+        : func(func_), name(name_) {}
+
+    FgCmd(FgCmdFunc func_,const char * name_,const char * description_)
+        : func(func_), name(name_), description(description_) {}
 
     bool
     operator<(const FgCmd & rhs) const
     {return (name < rhs.name); }
 };
 
+typedef std::vector<FgCmd> FgCmds;
+
 void
 fgMenu(
-    FgArgs                      args,
-    const std::vector<FgCmd> &  cmds,
-    bool                        optionAll=false,    // Give the 'all' and 'automated' options (for tests)
-    bool                        optionQuiet=false,  // Give option to silence console output
-    bool                        optionKeep=false);  // Give option to keep test files
+    FgArgs              args,
+    const FgCmds &      cmds,
+    bool                optionAll=false,    // Give the 'all' and 'automated' options (for tests)
+    bool                optionQuiet=false,  // Give option to silence console output
+    bool                optionKeep=false);  // Give option to keep test files
 
 struct FgTestDir
 {

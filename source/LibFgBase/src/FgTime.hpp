@@ -44,12 +44,13 @@ struct  FgTimer
     start()
     {m_startTime = fgTimeMs(); }
 
+    // Returns the time since 'start()' (or object construction) in seconds.
     double
-    read() const        // Returns the time since 'start()' in seconds.
+    read() const
     {
         uint64  stopTime = fgTimeMs();
         return (double(stopTime - m_startTime) / 1000.0);
-    };
+    }
 
     uint64
     readMs() const

@@ -594,9 +594,30 @@ template<class T,uint sz>
 FgMatrixC<T,sz,sz>
 fgDiagonal(FgMatrixC<T,sz,1> vec)
 {
-    FgMatrixC<T,sz,sz>      ret;
+    FgMatrixC<T,sz,sz>      ret(0);
     for (uint ii=0; ii<sz; ++ii)
         ret.elem(ii,ii) = vec[ii];
+    return ret;
+}
+
+template<class T>
+FgMatrixC<T,2,2>
+fgDiagonal(T v0,T v1)
+{
+    FgMatrixC<T,2,2>    ret(0);
+    ret[0] = v0;
+    ret[3] = v1;
+    return ret;
+}
+
+template<class T>
+FgMatrixC<T,3,3>
+fgDiagonal(T v0,T v1,T v2)
+{
+    FgMatrixC<T,3,3>    ret(0);
+    ret[0] = v0;
+    ret[4] = v1;
+    ret[8] = v2;
     return ret;
 }
 
@@ -742,13 +763,42 @@ FgMatrixC<float,nrows,ncols>
 fgD2F(const FgMatrixC<double,nrows,ncols> & m)
 {return FgMatrixC<float,nrows,ncols>(m); }
 
-//template<uint nrows,uint ncols>
-//FgMatrixC<uint,nrows,ncols>
-//fgPow2Ceil(const FgMatrixC<uint,nrows,ncols> & m)
-//{
-//    FgMatrixC<uint,nrows,ncols>     ret;
-//    for (uint ii=0; ii<nrows*ncols; ++ii)
-//        ret[ii] = fgPow2Ceil(m[ii]);
-//}
+template<class T,uint nrows,uint ncols>
+vector<T>
+fgFlat(const vector<FgMatrixC<T,nrows,ncols> > & v)
+{
+    vector<T>   ret;
+    ret.reserve(v.size()*nrows*ncols);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        for (uint jj=0; jj<nrows*ncols; ++jj)
+            ret.push_back(v[ii][jj]);
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,1>
+fgSumOverCols(FgMatrixC<T,nrows,ncols> m)
+{
+    FgMatrixC<T,nrows,1>    r(0);
+    for (uint rr=0; rr<nrows; ++rr)
+        for (uint cc=0; cc<ncols; ++cc)
+            r.elem(rr,0) += m.elem(rr,cc);
+    return r;
+}
+
+template<class T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+fgMapSqr(FgMatrixC<T,nrows,ncols> m)
+{
+    FgMatrixC<T,nrows,ncols>    r;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        r[ii] = fgSqr(m[ii]);
+    return r;
+}
+
+template<class T,uint nrows,uint ncols>
+T
+fgMag(FgMatrixC<T,nrows,ncols> m)
+{return m.lengthSqr(); }
 
 #endif

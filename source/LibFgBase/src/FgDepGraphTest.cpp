@@ -218,16 +218,16 @@ testCalcMulti(uint threads)
     m_graph.addLink(add,sources,fgSvec(idxNF));
 
     std::size_t sum = m_graph.valueCRef(idxNF);
-    fgout << "N*F(n) = " << sum << fgnl;
+    fgout << fgnl << "N*F(n) = " << sum;
     double secs = timer.read();
-    fgout << "Test took " << secs << " seconds " << fgnl;
+    fgout << fgnl << "Test took " << secs << " seconds ";
     FGASSERT(sum == N*fib(40));
 }
 
 static void
 testDepGraphMulti(uint num_threads)
 {
-    fgout << "Running multi-threaded test with " << num_threads << " thread(s)." << fgnl;
+    fgout << fgnl << "Running multi-threaded test with " << num_threads << " thread(s).";
     fgout.push();
     testCalcMulti(num_threads);
     fgout.pop();
@@ -238,11 +238,11 @@ testDepGraphMulti()
 {
     testDepGraphMulti(1);
     testDepGraphMulti(2);
-    uint num_real_procs = boost::thread::hardware_concurrency();
-    if(num_real_procs > 2)
-    {
-        testDepGraphMulti(num_real_procs);
-    }
+    uint    hthreads = boost::thread::hardware_concurrency(),
+            hcores = boost::thread::physical_concurrency();
+    fgout << fgnl << "Hardware threads: " << hthreads << " cores: " << hcores;
+    if(hthreads > 2)
+        testDepGraphMulti(hthreads);
 }
 
 static void
@@ -299,7 +299,7 @@ static void
 testDepGraphExceptionsMulti()
 {
     FgTestDir   td("depGraphExceptionsMulti");
-    fgout << "Running exceptions from multiple threads test.";
+    fgout << fgnl << "Running exceptions from multiple threads test.";
     FgDepGraph      m_graph(2);
     uint            t1 = m_graph.addNode<std::size_t>(0,"t1"),
                     t1t1 = m_graph.addNode<std::size_t>(0,"t1(t1)");

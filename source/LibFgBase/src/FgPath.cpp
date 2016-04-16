@@ -34,14 +34,32 @@ FgPath::FgPath(const FgString & path)
         return;
     vector<uint>    p = path.as_utf32();
     p = fgReplace(p,uint('\\'),uint('/'));
-    if ((p.size() > 1) && (p[1] == ':')) {
-        drive = FgString(fgHead(p,2));
-        p = fgRest(p,2);
+    if (p.size() > 1) {
+        if ((p[0] == '/') && (p[1] == '/')) {
+            root = true;
+            vector<uint>::const_iterator    it = find(p.begin()+2,p.end(),'/');
+            if (it == p.end()) {
+                drive = FgString(p);
+                return;
+            }
+            size_t      slashPos = it-p.begin();
+            drive = FgString(fgHead(p,slashPos));
+            p = fgRest(p,slashPos);
+        }
+        // Strictly else since we don't combine UNC and LFS:
+        else if (p[1] == ':') {
+            drive = FgString(fgHead(p,2));
+            p = fgRest(p,2);
+        }
     }
-    if (!p.empty() && (p[0] == '/')) {
+    if (p.empty())
+        return;
+    if (p[0] == '/') {
         root = true;
         p = fgRest(p,1);
     }
+    if (p.empty())
+        return;
     if (fgContains(p,uint('/'))) {
         vector<vector<uint> >   s = fgSplit(p,uint('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
@@ -60,15 +78,15 @@ FgPath::FgPath(const FgString & path)
         else
             p.clear();
     }
-    if (!p.empty()) {
-        if (fgContains(p,uint('.'))) {
-            size_t  idx = fgFindLastIdx(p,uint('.'));
-            base = FgString(fgHead(p,idx));
-            ext = FgString(fgRest(p,idx+1));    // Don't include the dot
-        }
-        else
-            base = FgString(p);
+    if (p.empty())
+        return;
+    if (fgContains(p,uint('.'))) {
+        size_t  idx = fgFindLastIdx(p,uint('.'));
+        base = FgString(fgHead(p,idx));
+        ext = FgString(fgRest(p,idx+1));    // Don't include the dot
     }
+    else
+        base = FgString(p);
 }
 
 FgString
@@ -85,9 +103,6 @@ FgString
 FgPath::dir(size_t n) const
 {
     FGASSERT(n <= dirs.size());
-#ifndef _WIN32
-    FGASSERT(drive.empty());
-#endif
     FgString    ret(drive);
     if (root)
         ret += fgDirSep();
@@ -242,4 +257,11 @@ fgPathTest(const FgArgs &)
     FGASSERT(p.dirs[0] == "..");
     FGASSERT(p.base.empty());
     FGASSERT(p.ext.empty());
+
+    p = FgPath("//computer");
+    FGASSERT(p.drive == "//computer");
+
+    p = FgPath("//computer/some/path/");
+    FGASSERT(p.drive == "//computer");
+    FGASSERT(p.dirs.size() == 2);
 }

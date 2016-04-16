@@ -164,13 +164,7 @@ fgLoadTri(istream & istr)
         targVertsStart += numTargVerts;
         mesh.targetMorphs.push_back(tm);
     }
-    mesh.surfaces = fgSvec(
-        Fg3dSurface(
-            tris,
-            quads,
-            triUvInds,
-            quadUvInds,
-            surfPoints));
+    mesh.surfaces = fgSvec(Fg3dSurface(tris,quads,triUvInds,quadUvInds,surfPoints));
     return mesh;
 }
 

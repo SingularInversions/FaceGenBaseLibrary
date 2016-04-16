@@ -16,13 +16,27 @@
 
 using namespace std;
 
+static
+bool
+isCrOrLf(char c)
+{
+    return ((c == 0x0A) || (c == 0x0D));    // LF or CR resp.
+}
+
 vector<string>
 fgSplitLines(const string & src)
 {
     vector<string>  ret;
     string          acc;
     for (size_t ii=0; ii<src.size(); ++ii) {
-        if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
+        if (src[ii] == '\\') {              // Check for line continuation
+            if ((ii+1 < src.size()) && (isCrOrLf(src[ii+1]))) {
+                ++ii;
+                while ((ii+1 < src.size()) && (isCrOrLf(src[ii])))
+                    ++ii;
+            }
+        }
+        if (isCrOrLf(src[ii])) {
             if (!acc.empty()) {
                 ret.push_back(acc);
                 acc.clear();

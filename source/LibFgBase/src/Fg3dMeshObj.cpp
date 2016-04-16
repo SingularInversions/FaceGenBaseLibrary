@@ -167,7 +167,7 @@ fgLoadWobj(
             if (!surfSeparator.empty() && fgStartsWith(line,surfSeparator)) {
                 vector<string>  words = fgSplitAtSeparators(line,' ');
                 if (words.size() != 2) {
-                    fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii;
+                    fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii << " of " << fname;
                     break;
                 }
                 string          name = words[1];
@@ -186,12 +186,12 @@ fgLoadWobj(
                 continue;
         }
         catch(const FgException & e) {
-            fgout << fgnl << "WARNING: Error in line " << ii+1 << ": " << e.tr_message() << fgpush
+            fgout << fgnl << "WARNING: Error in line " << ii+1 << " of " << fname << ": " << e.tr_message() << fgpush
                 << fgnl << lines[ii] << fgpop;
         }
     }
     if (numNgons > 0)
-        fgout << fgnl << "WARNING: " << numNgons << " N-gons broken into tris";
+        fgout << fgnl << "WARNING: " << numNgons << " N-gons broken into tris in " << fname;
     if (!surf.empty()) {
         if (surfs.find(currName) == surfs.end())
             surfs[currName] = surf;
@@ -204,7 +204,7 @@ fgLoadWobj(
         if (!srf.tris.valid() || !srf.quads.valid()) {
             srf.tris.uvInds.clear();
             srf.quads.uvInds.clear();
-            fgout << fgnl << "WARNING: Partial UV indices ignored";
+            fgout << fgnl << "WARNING: Partial UV indices ignored in " << fname << " surface " << it->first;
         }
         srf.name = it->first;
         mesh.surfaces.push_back(srf);

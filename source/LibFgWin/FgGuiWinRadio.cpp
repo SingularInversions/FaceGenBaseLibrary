@@ -140,9 +140,13 @@ struct  FgGuiWinRadio : public FgGuiOsBase
                     WORD    ident = LOWORD(wParam);
                     WORD    code = HIWORD(wParam);
                     if (code == 0) {    // radio box clicked
+//fgout << fgnl << "FgGuiWinRadio::WM_COMMAND clicked " << m_api.labels[0];
                         size_t      sel = ident;
+//fgout << " val: " << sel << " m_api.selection " << m_api.selection;
                         g_gg.setVal(m_api.selection,sel);
+//fgout << fgnl << "Update screen: " << flush << fgpush;
                         g_gg.updateScreen();
+//fgout << fgpop << fgnl << "Updated " << flush;
                     }
                     return 0;
                 }

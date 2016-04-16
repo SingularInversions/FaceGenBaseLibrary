@@ -227,12 +227,12 @@ static bool saveLwoLwsFile(
     FgString        lwoName = path.base + ".lwo";
     FgString        fullLwoName = path.dirBase() + ".lwo";
 #ifdef _WIN32
-    FILE *fptr = fopen(fullLwoName.m_str.c_str(),"wb, ccs=UTF-8");
+    FILE *fptr = _wfopen(fullLwoName.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
     FILE *fptr = fopen(fullLwoName.m_str.c_str(),"wb");
 #endif
     if (!fptr) {
-        fgThrow("Unable to write to file",fullLwoName);
+        fgThrow("Unable to write to LWO file",fullLwoName);
         return false;
     }
 
@@ -2388,7 +2388,7 @@ fgSaveLwoTest(const FgArgs & args)
 {
     FGTESTDIR
     FgString    dd = fgDataDir();
-    string      rd = "csam/Animate/Head/";
+    string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveLwo("meshExportLwo",fgSvec(mesh));

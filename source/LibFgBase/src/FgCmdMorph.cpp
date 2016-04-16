@@ -56,16 +56,14 @@ apply(const FgArgs & args)
             deltas[idx] = val;
         }
         else if (arg == "t") {
-            if (idx > targets.size())
+            if (idx >= targets.size())
                 fgThrow("Target morph index out of bounds",fgToString(idx));
             targets[idx] = val;
         }
         else
             syntax.error("Invalid morph type",arg);
     }
-    FgVerts     morphedVerts;
-    mesh.morph(deltas,targets,morphedVerts);
-    mesh.verts = morphedVerts;
+    mesh.verts = mesh.morph(deltas,targets);
     // The morphs are invalidated once the base verts are changed:
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();

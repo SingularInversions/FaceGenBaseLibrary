@@ -533,9 +533,6 @@ private:
         uint                nodeIdx,
         vector<Sync> & linksTraversed) const;
 
-    void
-    executeLinkTask(vector<Sync> *,Update *) const;
-
     // Returns a vector-style string of the node labels of the given node inds:
     string
     nodesString(const vector<uint> & nodeInds) const;

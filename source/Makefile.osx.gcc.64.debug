@@ -903,7 +903,7 @@ $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o: $(SDIRLibImageMagickCore)tiff
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_write.c
 $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o: $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c $(INCSLibImageMagickCore)
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c
-CFLAGSLibFgBase = $(CFLAGS) -Wall -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
+CFLAGSLibFgBase = $(CFLAGS) -Wall -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
 SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = LibFgBase/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgBase))
@@ -1117,7 +1117,7 @@ $(ODIRLibFgBase)portable_binary_oarchive.o: $(SDIRLibFgBase)portable_binary_oarc
 	$(CC) -o $(ODIRLibFgBase)portable_binary_oarchive.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_oarchive.cpp
 $(ODIRLibFgBase)stdafx.o: $(SDIRLibFgBase)stdafx.cpp $(INCSLibFgBase)
 	$(CC) -o $(ODIRLibFgBase)stdafx.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)stdafx.cpp
-CFLAGSLibFgNix = $(CFLAGS) -Wall -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSLibFgNix = $(CFLAGS) -Wall -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRLibFgNix = LibFgNix/
 ODIRLibFgNix = LibFgNix/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgNix))
@@ -1147,7 +1147,7 @@ $(ODIRLibFgNix)FgTimeNix.o: $(SDIRLibFgNix)FgTimeNix.cpp $(INCSLibFgNix)
 	$(CC) -o $(ODIRLibFgNix)FgTimeNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTimeNix.cpp
 $(ODIRLibFgNix)stdafx.o: $(SDIRLibFgNix)stdafx.cpp $(INCSLibFgNix)
 	$(CC) -o $(ODIRLibFgNix)stdafx.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)stdafx.cpp
-CFLAGSfgbl = $(CFLAGS) -Wall -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSfgbl = $(CFLAGS) -Wall -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_58_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRfgbl = fgbl/
 ODIRfgbl = fgbl/$(CONFIG)
 $(shell mkdir -p $(ODIRfgbl))
