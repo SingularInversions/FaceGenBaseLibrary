@@ -123,3 +123,25 @@ fgMatrixCTest(const FgArgs &)
     }
     testFgMatRotateAxis();
 }
+
+FgMat32D
+fgTanSphere(FgVect3D v)
+{
+    // Find permutation that sorts 'v' smallest to largest:
+    FgVect3UI           p(0,1,2);
+    FgVect3D            m = fgMapSqr(v);
+    if (m[0] > m[1])
+        std::swap(p[0],p[1]);
+    if (m[p[1]] > m[p[2]])
+        std::swap(p[1],p[2]);
+    if (m[p[0]] > m[p[1]])
+        std::swap(p[0],p[1]);
+    // Gram-Schmidt starting with least co-linear axes:
+    FgVect3D        r0(0),
+                    vn = fgNormalize(v);
+    r0[p[0]] = 1.0;
+    r0 -= vn * fgDot(vn,r0);
+    r0 /= r0.length();
+    FgVect3D        r1 = fgCrossProduct(vn,r0);
+    return fgConcatHoriz(r0,r1);
+}

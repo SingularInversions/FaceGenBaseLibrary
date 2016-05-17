@@ -12,48 +12,30 @@
 #define FGNC_HPP
 
 #include "FgStdString.hpp"
+#include "FgStdVector.hpp"
 #include "FgSerialize.hpp"
 #include "FgBuild.hpp"
 #include "FgFileSystem.hpp"
 
-// Path to the build server share:
+// Location of network computing share root location as specified on given operating system:
+string
+fgNcShare(const string & os);
 
-inline
-std::string
-fgBuildShareWin()
-{return "N:\\"; }
-
-inline
-std::string
-fgBuildShareOsx()
-{return "/Volumes/share/"; }
-
-inline
-std::string
-fgBuildShareUbuntu()
-{return "/mnt/share/"; }
-
-inline
-std::string
-fgNcShare()
-{
-#if defined _WIN32
-    return fgBuildShareWin();
-#elif defined __APPLE__
-    return fgBuildShareOsx();
-#else
-    return fgBuildShareUbuntu();
-#endif
-}
-
-std::string
-fgNcShare(const std::string & os);
+// As above for current host OS:
+string
+fgNcShare();
 
 struct  FgNcScript
 {
-    std::string                 logFile;
-    std::vector<std::string>    cmds;
-    FG_SERIALIZE2(logFile,cmds);
+    // An HTML log of given commands and outputs will be appended to 'logFile' and a 32x32 image
+    // will be written to <logFileBaseName>.jpg, green for success of all commands, red for a fail:
+    string              logFile;
+    string              title;      // Title line of log file
+    // Each such command will be shell executed in order. In addition some builtin commands are supported:
+    // fgPush <dir>     - push <dir> to current for this process
+    // fgPop            - pop back to previous dir for this process
+    vector<string>      cmds;
+    FG_SERIALIZE3(logFile,title,cmds);
 };
 
 inline
@@ -62,23 +44,23 @@ fgNcServerPort()
 {return 59405; }
 
 inline
-std::string
+string
 fgCiShareBoot()
 {return fgNcShare() + fgNs("ci/boot/"); }
 
 inline
-std::string
-fgCiShareBoot(const std::string & os)
+string
+fgCiShareBoot(const string & os)
 {return fgNcShare(os) + fgNsOs("ci/boot/",os); }
 
 inline
-std::string
+string
 fgCiShareRepo()
 {return fgNcShare() + fgNs("ci/root/"); }
 
 inline
-std::string
-fgCiShareRepo(const std::string & os)
+string
+fgCiShareRepo(const string & os)
 {return fgNcShare(os) + fgNsOs("ci/root/",os); }
 
 #endif

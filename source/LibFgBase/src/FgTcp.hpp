@@ -45,16 +45,19 @@ fgTcpClient(
     return fgTcpClient(hostname,port,data,true,response);
 }
 
+typedef boost::function<bool        // Return false to terminate server
+    (const string &,                // IP Address of the client
+     const string &,                // Data from the client
+     string &)>                     // Data to be returned to client (ignored if server not supposed to respond)
+     FgFuncTcpHandler;
+
 void
 fgTcpServer(
-    uint16      port,
+    uint16              port,
     // If true, don't disconnect client until handler returns, then respond. Hander must complete
     // before TCP timeout in this case:
-    bool        respond,
-    bool(*handler)(                     // Return false to terminate server
-        const string & ipAddr,
-        const string & dataIn,
-        string &       response),       // No response sent if left empty or if respond == false
-    size_t      maxRecvBytes);          // Maximum number of bytes to receive in incomimg message
+    bool                respond,
+    FgFuncTcpHandler    handler,
+    size_t              maxRecvBytes);  // Maximum number of bytes to receive in incomimg message
 
 #endif

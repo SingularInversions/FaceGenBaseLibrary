@@ -14,15 +14,24 @@
 #include "FgStdVector.hpp"
 #include "FgStdString.hpp"
 
+// Can contain UTF-8 strings (due to legacy):
 typedef vector<string> FgArgs;
 
 FgArgs
 fgArgs(int argc,const char * argv[]);
+
+// UTF-16 versions:
+FgArgs
+fgArgs(int argc,const wchar_t * argv[]);
 
 typedef boost::function<void(const FgArgs &)> FgCmdFunc;
 
 // Catches exceptions, outputs error details, returns appropriate value:
 int
 fgMainConsole(FgCmdFunc func,int argc,const char * argv[]);
+
+// UTF-16 version for Windows:
+int
+fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[]);
 
 #endif

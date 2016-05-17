@@ -24,7 +24,7 @@ struct  FgTraits<FgMatrixC<T,nrows,ncols> >
 {
     typedef FgMatrixC<typename FgTraits<T>::Accumulator,nrows,ncols>  Accumulator;
     typedef FgMatrixC<typename FgTraits<T>::Floating,nrows,ncols>     Floating;
-    typedef T                                                               Scalar;
+    typedef T                                                         Scalar;
 };
 
 template<class T,uint nrows,uint ncols>
@@ -140,8 +140,12 @@ T
 fgDeterminant(const FgMatrixC<T,3,3> & mat)
 {
     return (
-        mat[0]*mat[4]*mat[8] + mat[1]*mat[5]*mat[6] + mat[2]*mat[3]*mat[7]
-        - mat[2]*mat[4]*mat[6] - mat[1]*mat[3]*mat[8] - mat[0]*mat[5]*mat[7]);
+        mat[0]*mat[4]*mat[8] +
+        mat[1]*mat[5]*mat[6] +
+        mat[2]*mat[3]*mat[7] -
+        mat[2]*mat[4]*mat[6] -
+        mat[1]*mat[3]*mat[8] -
+        mat[0]*mat[5]*mat[7]);
 }
 
 // Concatenate an element onto a column vector:
@@ -800,5 +804,9 @@ template<class T,uint nrows,uint ncols>
 T
 fgMag(FgMatrixC<T,nrows,ncols> m)
 {return m.lengthSqr(); }
+
+// Give a tangent coordinate system for a point on a sphere centred at origin:
+FgMat32D
+fgTanSphere(FgVect3D p);
 
 #endif

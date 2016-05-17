@@ -20,7 +20,7 @@ class   FgIter
 {
     FgMatrixC<T,dim,1>  m_bndsLoIncl;   // Inclusive lower bounds
     FgMatrixC<T,dim,1>  m_bndsHiExcl;   // Exclusive upper bounds
-    FgMatrixC<T,dim,1>  m_step;         // Step size is per-dimension. Wraps around to lower bound.
+    FgMatrixC<T,dim,1>  m_strides;      // Strides (Step sizes) for each dimension. Wraps around to lower bound.
     FgMatrixC<T,dim,1>  m_idx;
     FgBoolT             m_inBounds;     // Not redundant since m_idx wraps around.
 
@@ -29,7 +29,7 @@ public:
     FgIter(FgMatrixC<T,dim,2> inclusiveRange)
     :   m_bndsLoIncl(inclusiveRange.colVec(0)),
         m_bndsHiExcl(inclusiveRange.colVec(1)+FgMatrixC<T,dim,1>(1)),
-        m_step(FgMatrixC<T,dim,1>(1)),
+        m_strides(FgMatrixC<T,dim,1>(1)),
         m_idx(inclusiveRange.colVec(0))
     {setValid(); }
 
@@ -38,7 +38,7 @@ public:
         FgMatrixC<T,dim,1>      exclusiveUpperBounds)
         :   m_bndsLoIncl(lowerBounds),
             m_bndsHiExcl(exclusiveUpperBounds),
-            m_step(FgMatrixC<T,dim,1>(1)),
+            m_strides(FgMatrixC<T,dim,1>(1)),
             m_idx(lowerBounds)
     {setValid(); }
 
@@ -47,28 +47,28 @@ public:
     FgIter(
         FgMatrixC<T,dim,1>      lowerBounds,
         FgMatrixC<T,dim,1>      exclusiveUpperBounds,
-        FgMatrixC<T,dim,1>      stride)
+        FgMatrixC<T,dim,1>      strides)
         :   m_bndsLoIncl(lowerBounds),
             m_bndsHiExcl(exclusiveUpperBounds),
-            m_step(stride),
+            m_strides(strides),
             m_idx(lowerBounds)
     {setValid(); }
 
-    // Lower bounds implicitly zero, stride implicitly 1:
+    // Lower bounds implicitly zero, strides implicitly 1:
     explicit
     FgIter(FgMatrixC<T,dim,1> dims)
     :   m_bndsLoIncl(0),
         m_bndsHiExcl(dims),
-        m_step(1),
+        m_strides(1),
         m_idx(0)
     {setValid(); }
 
-    // Lower bounds implicitly zero, upper bounds all the same, stride 1:
+    // Lower bounds implicitly zero, upper bounds all the same, strides 1:
     explicit
     FgIter(T exclusiveUpperBound)
     :   m_bndsLoIncl(0),
         m_bndsHiExcl(exclusiveUpperBound),
-        m_step(1),
+        m_strides(1),
         m_idx(0)
     {setValid(); }
 
@@ -77,7 +77,7 @@ public:
     {
         FGASSERT(m_inBounds);
         for (uint dd=0; dd<dim; ++dd) {
-            m_idx[dd] += m_step[dd];
+            m_idx[dd] += m_strides[dd];
             if (m_idx[dd] >= m_bndsHiExcl[dd])
                 m_idx[dd] = m_bndsLoIncl[dd];
             else
@@ -150,6 +150,7 @@ private:
     setValid()
     {
         FGASSERT(validRange());
+        FGASSERT(m_strides.volume() > 0);
         m_inBounds = fgLt(m_idx,m_bndsHiExcl);
     }
     FgTypeAttributeFixedS<T>    fixed_point_types_only; // Do not instantiate with floating

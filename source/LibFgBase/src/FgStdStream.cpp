@@ -16,10 +16,10 @@ using namespace std;
 bool
 FgOfstream::open(
     const FgString &        fname,
-    bool                    throwOnFail,
-    ios::openmode           mode)
+    bool                    append,
+    bool                    throwOnFail)
 {
-    // Use try-catch in case client has enabled ios::exceptions (not enabled by default):
+    // Opening a file can throw if ios::exceptions have been enabled (not the default):
     try
     {
 #ifdef _WIN32
@@ -27,7 +27,10 @@ FgOfstream::open(
 #else       // Any sane OS will use UTF-8:
         string      fn = fname.as_utf8_string();
 #endif
-        ofstream::open(fn.c_str(),mode);
+        ios::openmode   om = ios::binary;
+        if (append)
+            om = om | ios::app;
+        ofstream::open(fn.c_str(),om);
     }
     catch (...)
     {}
@@ -56,6 +59,13 @@ FgIfstream::open(
     if (!is_open() && throwOnFail)
         fgThrow("Unable to open file for reading",fname);
     return is_open();
+}
+
+void
+fgWriteFile(const FgString & fname,const std::string & data,bool append)
+{
+    FgOfstream  ofs(fname,append);
+    ofs << data;
 }
 
 // */

@@ -36,7 +36,6 @@
 #include "FgLinkGraph.hpp"
 #include "FgVariant.hpp"
 #include "FgOpt.hpp"
-#include "FgCluster.hpp"
 #include "FgSmartPtr.hpp"
 
 typedef
@@ -130,7 +129,8 @@ struct  FgDepNode
 class   FgDepGraph
 {
     FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
-    FgOpt<int(*)()>            m_cancelCheck;  // If valid and returns non-zero, cancel calculations
+    FgOpt<int(*)()>                 m_cancelCheck;  // If valid and returns non-zero, cancel calculations
+    uint                            m_numThreads;   // Defaults to number of hardware supported threads
 
 public:
     explicit
@@ -279,7 +279,7 @@ public:
 
     uint
     numThreads() const
-    {return (fgClusterThreads > 0) ? fgClusterThreads : uint(boost::thread::hardware_concurrency()); }
+    {return m_numThreads; }
 
     const FgLinkGraph<FgDepNode,FgLink> &
     linkGraph() const
@@ -477,10 +477,6 @@ public:
     std::string
     nodeName(uint nodeIdx) const
     {return m_linkGraph.nodeData(nodeIdx).name(nodeIdx); }
-
-    uint
-    numThreads() const
-    {return (fgClusterThreads > 0) ? fgClusterThreads : uint(boost::thread::hardware_concurrency()); }
 
     vector<FgLinkTime>
     linkTimes() const;

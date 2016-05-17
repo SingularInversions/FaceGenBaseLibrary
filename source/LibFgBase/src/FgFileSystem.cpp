@@ -21,17 +21,20 @@ using namespace boost::filesystem;
 void
 fgCopyFile(const FgString & src,const FgString & dst,bool overwrite)
 {
-    // copy_option::overwrite_if_exists  should not be used as the resulting size of the
-    // file is max(size(src),size(dst)):
     if (fgExists(dst)) {
-        if (overwrite)
-            fgRemove(dst);
+        if (overwrite) {
+            // 'copy_option::overwrite_if_exists' leaves file of size max(size(src),size(dst)) but
+            // explicit removal is not always reflected quickly in filesystem leading to an error if we
+            // don't use it, and possibly an error even if we do (attempt to overwrite non-existing file):
+            copy_file(src.ns(),dst.ns(),copy_option::overwrite_if_exists);
+        }
         else
             fgThrow("Attempt to copy over existing file",dst);
     }
-    // Global name conflicts prevent aliasing of some names to unversioned
-    // 'filesystem' namespace:
-    copy_file(src.ns(),dst.ns());
+    else
+        // Global name conflicts prevent aliasing of some names to unversioned
+        // 'filesystem' namespace:
+        copy_file(src.ns(),dst.ns());
 }
 
 void
@@ -259,4 +262,20 @@ fgCopyRecursive(const FgString & fromDir,const FgString & toDir)
         const FgString &    dn = dc.dirnames[ii];
         fgCopyRecursive(from+dn,to+dn);
     }
+}
+
+void
+fgMirrorFile(const FgPath & src,const FgPath & dst)
+{
+    FGASSERT(!src.base.empty());
+    FGASSERT(!dst.base.empty());
+    for (size_t ii=0; ii<dst.dirs.size(); ++ii) {
+        FgString    dir = dst.dir(ii+1);
+        if (fgExists(dir))
+            FGASSERT(fgIsDirectory(dir));
+        else
+            fgCreateDirectory(dir);
+    }
+    if (fgNewer(src.str(),dst.str()))
+        fgCopyFile(src.str(),dst.str(),true);
 }

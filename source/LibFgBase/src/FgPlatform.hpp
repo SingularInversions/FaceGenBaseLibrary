@@ -34,8 +34,6 @@
     // even if not directly referenced.
     #define FG_USED __declspec(dllexport)
 
-    typedef std::wstring FgNativeString;    // The native string type for Unicode
-
     #define FG_RESTRICT __restrict
 
     #ifdef _WIN64
@@ -51,8 +49,6 @@
     // __ppc64__    ppc 64 bit instruction set
 
     #define FG_USED __attribute__((used))
-
-    typedef std::string FgNativeString;
 
     #define FG_RESTRICT __restrict__
 

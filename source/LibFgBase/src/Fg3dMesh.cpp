@@ -362,7 +362,7 @@ Fg3dMesh::addDeltaMorph(const FgMorph & morph)
 {
     FgValid<size_t>         idx = findDeltaMorph(morph.name);
     if (idx.valid()) {
-        fgout << fgnl << "WARNING: Overwriting existing morph " + morph.name.as_ascii();
+        fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
         deltaMorphs[idx.val()] = morph;
     }
     else
@@ -384,7 +384,7 @@ Fg3dMesh::addTargMorph(const FgIndexedMorph & morph)
     FGASSERT(fgMax(morph.baseInds) < verts.size());
     FgValid<size_t>     idx = findTargMorph(morph.name);
     if (idx.valid()) {
-        fgout << fgnl << "WARNING: Overwriting existing morph " + morph.name.as_ascii();
+        fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
         targetMorphs[idx.val()] = morph;
     }
     else

@@ -15,7 +15,6 @@
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
 #include "FgSyntax.hpp"
-#include "FgCluster.hpp"
 #include "FgBuild.hpp"
 #include "FgTestUtils.hpp"
 
@@ -34,7 +33,7 @@ fgMenu(
     bool                    optionQuiet,
     bool                    optionKeep)
 {
-    s_breadcrumb += fgToLower(fgPathToBase(args[0]).ascii()) + "_";
+    s_breadcrumb += fgToLower(fgPathToBase(args[0]).m_str) + "_";
     string      cl,desc;
     if (optionQuiet) {
         cl +=   "[-s] ";
@@ -75,20 +74,6 @@ fgMenu(
         }
         else if ((opt == "-a") && optionAll)
             fgCommandAutomated = true;
-        else if ((opt == "-c") || (opt == "-caws")) {
-            fgClusterContext = CLUSTER_MASTER;
-            fgClusterCommand = args[0];
-            for (size_t jj=1; jj<args.size(); ++jj)
-                fgClusterCommand += string(" ") + args[jj];
-            if (opt == "-caws")
-                fgClusterAws = true;
-            else
-                fgClusterAws = false;
-        }
-        else if (opt == "-cluster-slave")
-            fgClusterContext = CLUSTER_SLAVE;
-        else if (opt.substr(0,2) == "-t")
-            fgClusterThreads = fgFromString<uint>(opt.substr(2));
         else
             syntax.error("Invalid option");
     }

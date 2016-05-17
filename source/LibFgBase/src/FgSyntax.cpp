@@ -44,7 +44,7 @@ FgSyntax::error(const string & errMsg)
 }
 
 void
-FgSyntax::error(const string & errMsg,const string & data)
+FgSyntax::error(const string & errMsg,const FgString & data)
 {
     fgout.setCout(true);
     fgout << endl << errMsg << ": " << data;
@@ -58,12 +58,10 @@ FgSyntax::incorrectNumArgs()
 }
 
 void
-FgSyntax::checkExtension(
-    const string & fname,
-    const string & ext)
+FgSyntax::checkExtension(const FgString & fname,const string & ext)
 {
-    if (fgToLower(fgPathToExt(fname)) != fgToLower(ext))
-        error("Filename did not have required extension",fname + " : " + ext);
+    if (!fgCheckExt(fname,ext))
+        error("File must have extension "+ext,fname);
 }
 
 void

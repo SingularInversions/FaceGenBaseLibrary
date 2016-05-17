@@ -57,7 +57,9 @@ fgCurrentCompiler()
 	#elif (_MSC_VER == 1800)
 		return "vs13";
     #endif
-#elif defined __GNUC__
+#elif defined __clang__
+    return "clang";
+#elif defined __GNUC__      // Must be second as it's also defined by CLANG
     return "gcc";
 #else
     FGASSERT_FALSE;
@@ -80,7 +82,7 @@ fgCompilersSyntax()
 std::vector<std::string>
 fgBuildBits(const std::string & compiler)
 {
-    if (compiler == "gcc")
+    if ((compiler == "gcc") || (compiler == "clang"))
         return fgSvec<string>("64");
     else
         return fgSvec<string>("32","64");

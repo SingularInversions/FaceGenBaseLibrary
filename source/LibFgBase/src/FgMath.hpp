@@ -168,4 +168,31 @@ lnNormalIsotropic(
 
 }   // namespace
 
+struct   FgModulo
+{
+    size_t      val;        // Invariant: [0,mod)
+    size_t      mod;
+
+    FgModulo(size_t v,size_t m) : val(v), mod(m)
+    {FGASSERT(val < mod); }
+
+    FgModulo &
+    operator++()
+    {
+        ++val;
+        if (val == mod)
+            val = 0;
+        return *this;
+    }
+
+    FgModulo &
+    operator--()
+    {
+        if (val == 0)
+            val = mod;
+        --val;
+        return *this;
+    }
+};
+
 #endif

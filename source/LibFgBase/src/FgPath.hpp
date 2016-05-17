@@ -114,17 +114,16 @@ fgPathToDirBase(const FgString & path);
 
 FgString
 fgPathToExt(const FgString & path);
+
 string
 fgPathToExt(const string & path);
 
+// Returns true if 'path' specifies a name with extension 'ext':
+bool
+fgCheckExt(const FgString & path,const string & ext);
+
 FgString
 fgPathToName(const FgString & path);
-
-// Returns false if there is an existing extension not equal to the specified one:
-bool
-fgCheckSetExtension(
-    string &       path,
-    const string & ext);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
 FgString

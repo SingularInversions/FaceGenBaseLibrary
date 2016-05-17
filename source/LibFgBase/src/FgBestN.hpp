@@ -6,54 +6,13 @@
 // Authors:     Andrew Beatty
 // Created:     March 9, 2010
 //
-// Simplify common idiom where best (or N best) key/val pair needs to be retained in a loop.
+// Simplify common case where up to N best key/val pairs need to be retained.
 
-#ifndef FGKEEPBEST_HPP
-#define FGKEEPBEST_HPP
+#ifndef FGBESTN_HPP
+#define FGBESTN_HPP
 
 #include "FgStdLibs.hpp"
 #include "FgOpt.hpp"
-
-template<class Key,class Val>
-class   FgKeepBest
-{
-    bool    m_valid;
-    Key     m_key;
-    Val     m_val;
-
-public:
-    FgKeepBest()
-    : m_valid(false),
-      m_key(Key()),         // Avoid initialization warnings
-      m_val(Val())
-    {}
-
-    void
-    update(const Key & key,const Val & val)
-    {
-        if (!m_valid) {
-            m_key = key;
-            m_val = val;
-            m_valid = true;
-        }
-        else if (key > m_key) {
-            m_key = key;
-            m_val = val;
-        }
-    }
-
-    bool
-    valid() const
-    {return m_valid; }
-
-    const Key &
-    key() const
-    {FGASSERT(m_valid); return m_key; }
-
-    const Val &
-    value() const
-    {FGASSERT(m_valid); return m_val; }
-};
 
 template<class Key,class Val>
 struct FgKeyVal
@@ -63,10 +22,13 @@ struct FgKeyVal
 };
 
 template<class Key,class Val,uint nvals>
-class FgKeepBestN
+class   FgBestN
 {
+    uint                m_num;          // How many valid values do we have ?
+    FgKeyVal<Key,Val>   m_best[nvals];
+
 public:
-    FgKeepBestN()
+    FgBestN()
     : m_num(0)
     {}
 
@@ -108,10 +70,6 @@ public:
             ret[ii] = m_best[ii].val;
         return ret;
     }
-
-private:
-    uint                m_num;          // How many valid values do we have ?
-    FgKeyVal<Key,Val>   m_best[nvals];
 };
 
 #endif

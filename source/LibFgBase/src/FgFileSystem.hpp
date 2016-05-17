@@ -6,6 +6,8 @@
 // Authors:     Andrew Beatty
 // Created:     May 5, 2005
 //
+// Makes use of boost::filesystem which requires native unicode representation arguments for unicode support
+// ie. UTF-16 wstring on Windows, UTF-8 string on *nix.
 
 #ifndef FGFILESYSTEM_HPP
 #define FGFILESYSTEM_HPP
@@ -185,9 +187,10 @@ fgCreationTime(const FgString & path,uint64 & time);
 inline
 std::time_t
 fgLastWriteTime(const FgString & path)
-{return boost::filesystem::last_write_time(path.as_utf8_string()); }
+{return boost::filesystem::last_write_time(path.ns()); }
 
-// Return true if any of the sources have a 'last write time' newer than any of the sinks:
+// Return true if any of the sources have a 'last write time' newer than any of the sinks,
+// of if any of the sinks don't exist (an error results if any of the sources don't exist):
 bool
 fgNewer(const vector<FgString> & sources,const vector<FgString> & sinks);
 
@@ -253,5 +256,10 @@ fgCopyToCurrentDir(const FgPath & file);
 // Will throw on overwrite of any file or directory:
 void
 fgCopyRecursive(const FgString & fromDir,const FgString & toDir);
+
+// Copy 'src' to 'dst' if 'src' is newer or 'dst' (or its path) doesn't exist.
+// Doesn't work reliably across network shares due to time differences.
+void
+fgMirrorFile(const FgPath & src,const FgPath & dst);
 
 #endif

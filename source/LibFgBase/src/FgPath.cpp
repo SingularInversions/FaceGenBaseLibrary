@@ -13,6 +13,7 @@
 #include "FgDiagnostics.hpp"
 #include "FgStdVector.hpp"
 #include "FgMain.hpp"
+#include "FgString.hpp"
 
 using namespace std;
 
@@ -153,24 +154,18 @@ fgPathToExt(const FgString & p)
 
 std::string
 fgPathToExt(const std::string & p)
-{return fgPathToExt(FgString(p)).ascii(); }
+{return fgPathToExt(FgString(p)).m_str; }
+
+bool
+fgCheckExt(const FgString & path,const string & ext)
+{
+    FgPath      p(path);
+    return (p.ext.toLower() == fgToLower(ext));
+}
 
 FgString
 fgPathToName(const FgString & f)
 {return FgPath(f).baseExt(); }
-
-bool
-fgCheckSetExtension(
-    std::string &       filename,
-    const std::string & extension)
-{
-    FgPath      p(filename);
-    if (p.ext.empty())
-        filename = filename + "." + extension;
-    else if (fgToLower(p.ext.ascii()) != fgToLower(extension))
-        return false;
-    return true;
-}
 
 FgString
 fgAsDirectory(const FgString & path)

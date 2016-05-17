@@ -14,7 +14,6 @@
 #include "FgDepGraph.hpp"
 #include "FgStdVector.hpp"
 #include "FgDefaultVal.hpp"
-#include "FgCluster.hpp"
 #include "FgTime.hpp"
 
 using namespace std;
@@ -22,7 +21,9 @@ using namespace std;
 FgDepGraph::FgDepGraph(uint num_threads)
 {
     if (num_threads > 0)
-        fgClusterThreads = num_threads;
+        m_numThreads = num_threads;
+    else
+        m_numThreads = uint(boost::thread::hardware_concurrency());
 }
 
 void

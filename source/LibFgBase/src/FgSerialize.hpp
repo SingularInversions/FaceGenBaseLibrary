@@ -78,7 +78,6 @@ fgSerialize(const T & val,std::string & blob)
 }
 
 template<class T>
-inline
 std::string
 fgSerialize(const T & val)
 {

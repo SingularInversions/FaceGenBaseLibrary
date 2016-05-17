@@ -14,14 +14,32 @@
 
 using namespace std;
 
-std::string
-fgNcShare(const std::string & os)
+string
+fgNcShare(const string & os)
 {
+    string      ret;
     if (os == "win")
-        return fgBuildShareWin();
+        ret = "N:\\";
     else if (os == "osx")
-        return fgBuildShareOsx();
+        ret =  "/Volumes/share/";
+    else if (os == "ubuntu")
+        ret = "/mnt/share/";
     else
-        FGASSERT(os == "ubuntu");
-    return fgBuildShareUbuntu();
+        FGASSERT_FALSE1(os);
+    return ret;
 }
+
+string
+fgNcShare()
+{
+    string      ret;
+#if defined _WIN32
+    ret = "N:\\";
+#elif defined __APPLE__
+    ret =  "/Volumes/share/";
+#else
+    ret = "/mnt/share/";
+#endif
+    return ret;
+}
+

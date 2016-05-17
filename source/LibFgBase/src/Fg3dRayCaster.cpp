@@ -55,10 +55,10 @@ FgRgbaF
 Fg3dRayCaster::operator()(FgVect2F posIucs) const
 {
     // Find closest ray intersection:
-    FgKeepBestN<float,Best,8>   bestAll;
+    FgBestN<float,Best,8>   bestAll;
     for (size_t ii=0; ii<m_surfs.size(); ++ii)
     {
-        FgKeepBestN<float,FgTriPoint,8>
+        FgBestN<float,FgTriPoint,8>
             best = m_surfs[ii].cast(posIucs);
         for (uint jj=0; jj<best.num(); ++jj)
             if (!bestAll.update(best[jj].key,Best(ii,best[jj].val)))
@@ -72,11 +72,11 @@ Fg3dRayCaster::operator()(FgVect2F posIucs) const
     return acc;
 }
 
-FgKeepBestN<float,FgTriPoint,8>
+FgBestN<float,FgTriPoint,8>
 FgSurfRay::cast(FgVect2F posIucs)
     const
 {
-    FgKeepBestN<float,FgTriPoint,8> retval;
+    FgBestN<float,FgTriPoint,8> retval;
     std::vector<FgTriPoint>  intersects = grid.intersects(posIucs);
     for (size_t ii=0; ii<intersects.size(); ++ii)
     {

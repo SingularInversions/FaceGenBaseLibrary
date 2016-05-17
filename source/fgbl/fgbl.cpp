@@ -11,8 +11,12 @@
 
 void    fgCmdFgbl(const FgArgs &);
 
-int
-main(int argc,const char *argv[])
-{
-    return fgMainConsole(fgCmdFgbl,argc,argv);
-}
+#ifdef _MSC_VER
+    int
+    wmain(int argc,const wchar_t *argv[])
+    {return fgMainConsole(fgCmdFgbl,argc,argv); }
+#else
+    int
+    main(int argc,const char *argv[])
+    {return fgMainConsole(fgCmdFgbl,argc,argv); }
+#endif

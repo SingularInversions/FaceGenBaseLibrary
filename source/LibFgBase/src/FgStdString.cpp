@@ -71,6 +71,10 @@ fgToFixed(double val,uint fractionalDigits)
     return os.str();
 }
 
+string
+fgToPercent(double val,uint fractionalDigits)
+{return fgToFixed(val*100.0,fractionalDigits) + "%"; }
+
 std::string
 fgToLower(const std::string & s)
 {

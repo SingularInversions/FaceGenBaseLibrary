@@ -5,7 +5,7 @@
 //
 // Authors: Sohail Somani, Andrew Beatty
 //
-// Unicode string
+// A UTF-8 string, typed in order to make explicit this is not ASCII.
 
 #ifndef INCLUDED_FGSTRING_HPP
 #define INCLUDED_FGSTRING_HPP
@@ -18,8 +18,7 @@ struct  FgString
 {
     std::string     m_str;      // UTF-8 unicode
 
-    FgString()
-        {};
+    FgString() {};
 
     FgString(const char * utf8_c_string)
         : m_str(utf8_c_string) {};
@@ -87,15 +86,16 @@ struct  FgString
     std::vector<uint32>
     as_utf32() const;
 
-    inline FgNativeString
-    ns() const
-    {
+    // Return native unicode string (UTF-16 for Win, UTF-8 for Nix):
 #ifdef _MSC_VER
-        return as_wstring();
-#else   // Unix
-        return as_utf8_string();
+    std::wstring
+    ns() const
+    {return as_wstring(); }
+#else
+    std::string
+    ns() const
+    {return as_utf8_string(); }
 #endif
-    }
 
     bool
     is_ascii() const;

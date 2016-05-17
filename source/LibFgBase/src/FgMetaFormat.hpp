@@ -38,8 +38,10 @@ fgLoadDeserial(
     }
     catch(FgException &)
     {
-        if (throwOnFail) throw;
-        else return false;
+        if (throwOnFail)
+            throw;
+        else
+            return false;
     }
     catch(...)
     {

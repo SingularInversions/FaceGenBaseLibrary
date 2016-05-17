@@ -6,16 +6,16 @@
 // Authors:     Andrew Beatty
 // Created:     June 28, 2007
 //
-// Unicode filename fstreams and other conveniences.
+// Cross-platform unicode filename fstreams and other conveniences.
 //
 // NOTES:
 //
-// In C++ the '\n' character has value 0x0A (LF) on both windows and *nix.
-//
-// When using text mode ostream on Windows this is converted to the 2 byte code CR LF
-// (0x0D 0x0A) or ('\r' '\n'). On *nix it is left unchanged.
-//
-// When using text mode istream on either platform, any of the various EOL formats are converted to '\n'.
+// * More convenient to select exception throwing on a per-call basis.
+// * Always use binary mode due to complexity of text mode some of which is:
+// * In C++ the '\n' character has value 0x0A (LF) on both windows and *nix.
+// * When using text mode ostream on Windows this is converted to the 2 byte code CR LF
+//   (0x0D 0x0A) or ('\r' '\n'). On *nix it is left unchanged.
+// * When using text mode istream on either platform, any of the various EOL formats are converted to '\n'.
 //
 
 #ifndef FGSTDSTREAM_HPP
@@ -32,21 +32,15 @@ struct  FgOfstream : public std::ofstream
     explicit
     FgOfstream(
         const FgString &        fname,
-        bool                    throwOnFail=true,
-        // ios::app     Append
-        // ios::out     Default (specify to negate ios::binary)
-        // ios::binary  Don't do obscure text conversions
-        std::ios::openmode      mode = std::ios::binary)
-    {open(fname,throwOnFail,mode); }
+        bool                    append = false,
+        bool                    throwOnFail = true)
+    {open(fname,append,throwOnFail); }
 
     bool
     open(
         const FgString &        fname,
-        bool                    throwOnFail=true,
-        // ios::app     Append
-        // ios::out     Default (no need to specify)
-        // ios::binary  Don't do obscure text conversions
-        std::ios::openmode      mode = std::ios::binary);
+        bool                    append = false,
+        bool                    throwOnFail = true);
 
     template<class T>
     void
@@ -109,6 +103,9 @@ inline std::ostream &                                                           
 operator<<(std::ostream & ss,const Class & obj)                                 \
 {return obj.print(ss); }
 
+// Handy for open-write-close. Binary mode of course:
+void
+fgWriteFile(const FgString & fname,const std::string & data,bool append=true);
 
 #endif
 

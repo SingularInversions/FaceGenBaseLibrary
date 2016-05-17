@@ -70,10 +70,7 @@ FgOut::logFile(const FgString & fname,bool append)
     m_mutex.lock();
     if (m_ofstream.is_open())
         m_ofstream.close();
-    if (append)
-        m_ofstream.open(fname,true,std::ios::app | std::ios::binary);
-    else
-        m_ofstream.open(fname,true);
+    m_ofstream.open(fname,append,true);
     m_ofstream.precision(9);
     m_ofstream << '\n' << fgDateTimeString() << endl;
     m_mutex.unlock();

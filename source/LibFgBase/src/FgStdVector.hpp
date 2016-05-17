@@ -32,6 +32,14 @@ typedef vector<size_t>                  FgSizes;
 typedef vector<double>::iterator        FgDblsIt;
 typedef vector<double>::const_iterator  FgDblsCit;
 
+template<class T>
+struct FgTraits<vector<T> >
+{
+    typedef vector<typename FgTraits<T>::Accumulator>   Accumulator;
+    typedef vector<typename FgTraits<T>::Floating>      Floating;
+    typedef typename FgTraits<T>::Scalar                Scalar;
+};
+
 // Acts just like bool for use with vector but avoids use of broken
 // vector<bool> specialization:
 struct FgBool
@@ -630,13 +638,6 @@ operator*=(
         lhs[ii] *= rhs;
 }
 
-template<class T>
-struct FgTraits<vector<T> >
-{
-    typedef vector<typename FgTraits<T>::Accumulator>    Accumulator;
-    typedef vector<typename FgTraits<T>::Floating>       Floating;
-};
-
 // Sum of squares:
 template<class T>
 T
@@ -909,6 +910,16 @@ operator<<(std::ostream & ss,const vector<T> & vv)
     ss.flags(oldFlag);
     ss.precision(oldPrec);
 	return ss;
+}
+
+template<class T>
+typename FgTraits<T>::Scalar
+fgMag(const vector<T> & v)
+{
+    typename FgTraits<T>::Scalar    ret(0);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret += fgMag(v[ii]);
+    return ret;
 }
 
 #endif

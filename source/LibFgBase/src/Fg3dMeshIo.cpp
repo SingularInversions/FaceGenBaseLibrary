@@ -118,8 +118,8 @@ triexport(const FgArgs & args)
     vector<Fg3dMesh>    meshes;
     while (syntax.more()) {
         string          triFile(syntax.next());
-        if (!fgCheckSetExtension(triFile,"tri"))
-            syntax.error("Invalid .TRI file extension: ",triFile);
+        if (!fgCheckExt(triFile,"tri"))
+            syntax.error("Not a .TRI file",triFile);
         Fg3dMesh        mesh = fgLoadTri(triFile);
         while (syntax.more() && fgToLower(fgPathToExt(syntax.peekNext())) != "tri") {
             string                      imgFile(syntax.next()),

@@ -185,14 +185,13 @@
     <ClCompile Include="..\src\FgApproxFunc.cpp"  />
     <ClInclude Include="..\src\FgApproxFunc.hpp"  />
     <ClInclude Include="..\src\FgArray.hpp"  />
+    <ClInclude Include="..\src\FgBestN.hpp"  />
     <ClInclude Include="..\src\FgBoostLibs.hpp"  />
     <ClInclude Include="..\src\FgBounds.hpp"  />
     <ClCompile Include="..\src\FgBuild.cpp"  />
     <ClInclude Include="..\src\FgBuild.hpp"  />
     <ClCompile Include="..\src\FgCl.cpp"  />
     <ClInclude Include="..\src\FgCl.hpp"  />
-    <ClCompile Include="..\src\FgCluster.cpp"  />
-    <ClInclude Include="..\src\FgCluster.hpp"  />
     <ClCompile Include="..\src\FgCmdBase.cpp"  />
     <ClCompile Include="..\src\FgCmdImgops.cpp"  />
     <ClCompile Include="..\src\FgCmdMeshops.cpp"  />
@@ -270,7 +269,6 @@
     <ClInclude Include="..\src\FgImgDisplay.hpp"  />
     <ClCompile Include="..\src\FgImgJpeg.cpp"  />
     <ClInclude Include="..\src\FgIter.hpp"  />
-    <ClInclude Include="..\src\FgKeepBest.hpp"  />
     <ClCompile Include="..\src\FgLighting.cpp"  />
     <ClInclude Include="..\src\FgLighting.hpp"  />
     <ClInclude Include="..\src\FgLinkGraph.hpp"  />

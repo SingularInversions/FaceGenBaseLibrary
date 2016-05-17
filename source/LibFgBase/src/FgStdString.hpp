@@ -69,6 +69,10 @@ fgToStringPrecision(T val,uint precision)
 string
 fgToFixed(double val,uint fractionalDigits=0);
 
+// Multiply by 100 and put a percent sign after:
+string
+fgToPercent(double val,uint fractionalDigits=0);
+
 string
 fgToLower(const string & s);
 

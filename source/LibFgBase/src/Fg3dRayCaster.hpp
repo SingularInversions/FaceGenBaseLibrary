@@ -13,7 +13,7 @@
 #include "FgSampler.hpp"
 #include "Fg3dNormals.hpp"
 #include "FgGridTriangles.hpp"
-#include "FgKeepBest.hpp"
+#include "FgBestN.hpp"
 #include "FgAffineCwC.hpp"
 
 struct  FgShader
@@ -52,7 +52,7 @@ struct  FgSurfRay
         FgAffine3F              modelview,
         FgAffineCw2F            itcsToIucs);
 
-    FgKeepBestN<float,FgTriPoint,8>
+    FgBestN<float,FgTriPoint,8>
     cast(FgVect2F posIucs) const;
 
     FgRgbaF

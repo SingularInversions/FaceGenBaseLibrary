@@ -39,7 +39,7 @@ apply(const FgArgs & args)
 
     string      inFile = syntax.next(),
                 outFile = syntax.next();
-    if (!fgCheckSetExtension(inFile,"tri"))
+    if (!fgCheckExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
     Fg3dMesh        mesh = fgLoadTri(inFile);
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
@@ -202,7 +202,7 @@ morphList(const FgArgs & args)
     if (args.size() != 2)
         syntax.incorrectNumArgs();
     string      inFile = syntax.next();
-    if (!fgCheckSetExtension(inFile,"tri"))
+    if (!fgCheckExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
     Fg3dMesh    mesh = fgLoadTri(inFile);
     const vector<FgMorph> & dmorphs = mesh.deltaMorphs;
@@ -254,9 +254,9 @@ removemorphs(const FgArgs & args)
 
     string      inFile = syntax.next(),
                 outFile = syntax.next();
-    if (!fgCheckSetExtension(inFile,"tri"))
+    if (!fgCheckExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
-    if (!fgCheckSetExtension(outFile,"tri"))
+    if (!fgCheckExt(outFile,"tri"))
         syntax.error("Not a TRI file",outFile);
     Fg3dMesh    mesh = fgLoadTri(inFile);
     vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
@@ -305,7 +305,7 @@ renameMorph(const FgArgs & args)
         "    <index>    - Morph index number (see 'morph list' command)"
         );
     string      fname = syntax.next();
-    if (!fgCheckSetExtension(fname,"tri"))
+    if (!fgCheckExt(fname,"tri"))
         syntax.error("Not a TRI file",fname);
     Fg3dMesh    mesh = fgLoadTri(fname);
     string      arg = syntax.nextLower();

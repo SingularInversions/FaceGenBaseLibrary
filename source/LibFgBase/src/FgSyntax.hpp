@@ -12,7 +12,7 @@
 #define FGSYNTAX_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgStdString.hpp"
+#include "FgString.hpp"
 #include "FgMain.hpp"
 
 struct  FgExceptionCommandSyntax
@@ -20,18 +20,20 @@ struct  FgExceptionCommandSyntax
 
 struct  FgSyntax
 {
-    FgSyntax(const FgArgs & args,const std::string & syntax);
+    FgSyntax(
+        const FgArgs &  args,   // Accepts UTF-8 here
+        const string &  syntax);
 
     ~FgSyntax();
 
-    const std::string &
+    const string &
     next();
 
-    std::string
+    string
     nextLower()             // As above but lower case
     {return fgToLower(next()); }
 
-    const std::string &
+    const string &
     curr() const
     {return m_args[m_idx]; }
 
@@ -39,7 +41,7 @@ struct  FgSyntax
     more() const
     {return (m_idx+1 < m_args.size()); }
 
-    const std::string &
+    const string &
     peekNext();
 
     FgArgs
@@ -50,10 +52,10 @@ struct  FgSyntax
     {throwSyntax(); }
 
     void
-    error(const std::string & errMsg);
+    error(const string & errMsg);
 
     void
-    error(const std::string & errMsg,const std::string & data);
+    error(const string & errMsg,const FgString & data);
 
     void
     incorrectNumArgs();
@@ -61,21 +63,21 @@ struct  FgSyntax
     // Throws appropriate syntax error:
     void
     checkExtension(
-        const std::string & fname,
-        const std::string & ext);
+        const FgString & fname,
+        const string & ext);
     void
     checkExtension(
-        const std::string &                 fname,
-        const std::vector<std::string> &    exts);
+        const string &                 fname,
+        const std::vector<string> &    exts);
 
     // Throws appropriate syntax error if different:
     void
     numArgsMustBe(uint numArgsNotIncludingCommand);
 
 private:
-    std::string                 m_syntax;
-    std::vector<std::string>    m_args;
-    size_t                      m_idx;
+    string                 m_syntax;
+    std::vector<string>    m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
+    size_t                 m_idx;
 
     void
     throwSyntax();

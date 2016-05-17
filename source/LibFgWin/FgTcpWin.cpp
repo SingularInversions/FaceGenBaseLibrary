@@ -53,19 +53,16 @@ fgTcpClient(
     string &            response)
 {
     initWinsock();
-
     SOCKET              socketHandle;
     struct addrinfo *   addressInfo;
     socketHandle = INVALID_SOCKET;
     addressInfo = NULL;
     struct addrinfo     hints;
     int                 itmp;
-
     ZeroMemory(&hints,sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
-
     // Resolve the server address and port.
     itmp = getaddrinfo(
         hostname.c_str(),           // Hostname or IP #
@@ -74,7 +71,6 @@ fgTcpClient(
         &addressInfo);              // RETURNED
     if (itmp != 0)
         return false;               // Server does not appear to exist
-
     struct addrinfo *ptr = NULL;
     // Attempt to connect to an IP address until one succeeds. It's possible
     // for more than 1 to be returned if there are more than 1 namespace service
@@ -106,17 +102,14 @@ fgTcpClient(
     freeaddrinfo(addressInfo);
     if (socketHandle == INVALID_SOCKET)
         return false;               // Unable to connect, server not listening ?
-
     // 'send' will block for buffering since we've created a blocking socket, so the
     // value returned is always either the data size or an error:
     itmp = send(socketHandle,data.data(),int(data.size()),0);
     FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
-
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
     itmp = shutdown(socketHandle,SD_SEND);
     FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
-
     if (getResponse) {
         response.clear();
         do {
@@ -138,7 +131,6 @@ fgTcpClient(
         while (itmp > 0);
         FGASSERT(itmp == 0);
     }
-
     // Couldn't use scope guard due to compile issues:
     closesocket(socketHandle);
     return true;
@@ -146,10 +138,10 @@ fgTcpClient(
 
 void
 fgTcpServer(
-    uint16      port,
-    bool        respond,
-    bool(*handler)(const string & ipAddr,const string & dataIn,string & response),
-    size_t      maxRecvBytes)
+    uint16              port,
+    bool                respond,
+    FgFuncTcpHandler    handler,
+    size_t              maxRecvBytes)
 {
     initWinsock();
     SOCKET      sockListen = INVALID_SOCKET;

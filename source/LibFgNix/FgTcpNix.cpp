@@ -40,41 +40,39 @@ fgTcpClient(
     bool                getResponse,
     std::string &       response)
 {
-    int     clientSock =
-        socket(
-            AF_INET,            // IPv4 protocol family
-            SOCK_STREAM,        // "stream socket"
-            IPPROTO_TCP);       // TCP transport protocol
+    int     clientSock = socket(
+                AF_INET,            // IPv4 protocol family
+                SOCK_STREAM,        // "stream socket"
+                IPPROTO_TCP);       // TCP transport protocol
     FGASSERT(clientSock >= 0);
-    FgScopeGuard    closeSocket(boost::bind(close,clientSock));
-
+    FgScopeGuard        closeSocket(boost::bind(close,clientSock));
     struct hostent *    remoteHost = gethostbyname(hostname.c_str());
-    if (remoteHost == NULL)
-        fgThrow("Unknown host",hostname);
-
+    if (remoteHost == NULL) {
+        //fgout << fgnl << "Unable to resolve " << hostname;
+        return false;
+    }
     sockaddr_in  		client;
     std::memset(&client,0,sizeof(client));
     client.sin_family = AF_INET;
     memmove(&client.sin_addr,remoteHost->h_addr_list[0],remoteHost->h_length);
     client.sin_port = htons(port);  // "host to network short" converts byte order
-
-    int status = connect(clientSock,(struct sockaddr*)&client,sizeof(client));
-    FGASSERT(status == 0);
-
+    int                 status = connect(clientSock,(struct sockaddr*)&client,sizeof(client));
+    if (status != 0) {
+        //fgout << fgnl << "Unable to connect to " << hostname;
+        return false;
+    }
     //fgout << fgnl << "Sending data ... " << std::flush;
     // write() is same as send() with flag=0:
     int nBytes = write(clientSock,data.data(),int(data.size()));
     if (nBytes < int(data.size()))
         FGASSERT_FALSE1(fgToString(nBytes));
     //fgout << "done" << std::flush;
-
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
     // An alternative design, if multiple back-and-forth is ever required, is to
     // send the amount of data before sending the data so the receiver knows when
     // to stop calling recv():
     shutdown(clientSock,1);
-
     if (getResponse) {
         response.clear();
         char    buff[1024];
@@ -83,10 +81,11 @@ fgTcpClient(
             nBytes = read(clientSock,buff,sizeof(buff));
             FGASSERT(nBytes >= 0);
             if (nBytes > 0)
-                response += std::string(buff,nBytes); }
+                response += std::string(buff,nBytes);
+        }
         while (nBytes > 0);
-        FGASSERT(nBytes == 0); }
-
+        FGASSERT(nBytes == 0);
+    }
     return true;
 }
 
@@ -108,10 +107,10 @@ void *get_in_addr(struct sockaddr *sa)
 
 void
 fgTcpServer(
-    uint16      port,
-    bool        respond,
-    bool(*handler)(const std::string &,const std::string &,std::string &),
-    size_t      maxRecvBytes)
+    uint16              port,
+    bool                respond,
+    FgFuncTcpHandler    handler,
+    size_t              maxRecvBytes)
 {
     struct sockaddr_storage clientAddress;
     int                 listenSockFd;
