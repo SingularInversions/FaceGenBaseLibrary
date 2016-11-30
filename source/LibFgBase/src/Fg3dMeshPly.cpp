@@ -34,10 +34,10 @@ fgSavePly(
         "format ascii 1.0\n"
         "comment created by FaceGen\n";
     size_t      imgCnt = 0;
-    for (size_t ii=0; ii<mesh.texImages.size(); ++ii) {
-        if (!mesh.texImages.empty()) {
+    for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
+        if (mesh.surfaces[ii].albedoMap) {
             FgString    texFile = path.base + fgToString(ii) + "." + imgFormat;
-            fgSaveImgAnyFormat(path.dir()+texFile,mesh.texImages[ii]);
+            fgSaveImgAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].albedoMap);
             ofs << "comment TextureFile " << texFile << endl;
         }
     }
@@ -77,7 +77,7 @@ fgSavePly(
             }
             ofs << imgCnt << endl;
         }
-        if ((ss < mesh.texImages.size()) && (!mesh.texImages[ss].empty()))
+        if (mesh.surfaces[ss].albedoMap)
             ++imgCnt;
     }
 }
@@ -90,9 +90,9 @@ fgSavePlyTest(const FgArgs & args)
     string              rd = "base/";
     vector<Fg3dMesh>    meshes;
     meshes.push_back(fgLoadTri(dd+rd+"Mouth.tri"));
-    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
+    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     meshes.push_back(fgLoadTri(dd+rd+"Glasses.tri"));
-    meshes.back().texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
     fgSavePly("meshExportPly",meshes);
     fgRegressFile("meshExportPly.ply","base/test/");
     fgRegressFile("meshExportPly0.png","base/test/");

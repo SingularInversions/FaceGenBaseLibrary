@@ -65,10 +65,10 @@ fgSplitLines(const vector<uint32> & src,bool incEmpty)
     return ret;
 }
 
-vector<FgString>
+FgStrings
 fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
 {
-    vector<FgString>            ret;
+    FgStrings            ret;
     vector<vector<uint32> >     res = fgSplitLines(FgString(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
@@ -114,4 +114,53 @@ fgSplitChar(const string & str,char ch,bool ie)
     if (!curr.empty() || ie)
         ret.push_back(curr);
     return ret;
+}
+
+vector<string>
+fgWhiteBreak(const string & str)
+{
+    vector<string>  retval;
+    bool            symbolFlag = false,
+                    quoteFlag = false;
+    string          currSymbol;
+    for (size_t ii=0; ii<str.size(); ++ii)
+    {
+        if (quoteFlag)
+        {
+            if (str[ii] == '\"')
+            {
+                retval.push_back(currSymbol);
+                currSymbol.clear();
+                quoteFlag = false;
+            }
+            else
+                currSymbol.push_back(str[ii]);
+        }
+        else if (isspace(str[ii]))
+        {
+            if (symbolFlag)
+            {
+                retval.push_back(currSymbol);
+                currSymbol.clear();
+                symbolFlag = false;
+            }
+        }
+        else if (str[ii] == '\"')
+        {
+            if (symbolFlag)
+            {
+                retval.push_back(currSymbol);
+                currSymbol.clear();
+            }
+            quoteFlag = true;
+        }
+        else
+        {
+            currSymbol.push_back(str[ii]);
+            symbolFlag = true;
+        }
+    }
+    if (symbolFlag)
+        retval.push_back(currSymbol);
+    return retval;
 }

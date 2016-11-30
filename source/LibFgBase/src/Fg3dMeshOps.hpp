@@ -97,11 +97,11 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask);
 FgImgRgbaUb
 fgUvImage(const Fg3dMesh &,const FgImgRgbaUb & img=FgImgRgbaUb());
 
-// Emboss the given pattern (interpreted as greyscale) onto a mesh with UVs, with max magnitude
-// given by image value 255, corresponding to a displacement (in the direction of surface normal)
-// by 'ratio' times the max bounding box dim of the mesh:
+// Emboss the given pattern onto a mesh with UVs, with max magnitude given by image value 255,
+// corresponding to a displacement (in the direction of surface normal) by 'ratio' times the
+// max bounding box dimensions of all vertices whose UV coordinate in 'pattern' sample to non-zero:
 FgVerts
-fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & pattern,double ratio=0.01);
+fgEmboss(const Fg3dMesh & mesh,const FgImgUC & pattern,double ratio=0.05);
 
 struct  FgMorphVal
 {
@@ -115,5 +115,27 @@ struct  FgMorphVal
 // Only applies those morphs which mesh supports, ignores the rest:
 FgVerts
 fgApplyExpression(const Fg3dMesh & mesh,const vector<FgMorphVal> &  expression);
+
+void
+fgSurfPointsToMarkedVerts(const Fg3dMesh & in,Fg3dMesh & out);
+
+struct  FgMeshMirror
+{
+    Fg3dMesh        mesh;
+    // For each vertex, contains the index of it's mirror vertex (which is itself for vertices on saggital plane):
+    vector<uint>    mirrorInds;
+};
+// Mirrors geometry around X=0 plane. All input verts must have X>=0. Tris only.
+// Surface points preserved but not mirrored:
+FgMeshMirror
+fgMeshMirrorX(const Fg3dMesh &);
+
+// Copy the surface assignment (tris only) between aligned meshes of different topology:
+Fg3dMesh
+fgCopySurfaceStructure(const Fg3dMesh & from,const Fg3dMesh & to);
+
+// Merge all surface facets converted to tris:
+vector<FgVect3UI>
+fgMeshSurfacesAsTris(const Fg3dMesh &);
 
 #endif

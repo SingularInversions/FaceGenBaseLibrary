@@ -154,6 +154,7 @@
     <ClInclude Include="..\src\Fg3dMesh.hpp"  />
     <ClCompile Include="..\src\Fg3dMesh3ds.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshFbx.cpp"  />
+    <ClCompile Include="..\src\Fg3dMeshFgmesh.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshIo.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshIo.hpp"  />
     <ClInclude Include="..\src\Fg3dMeshLegacy.hpp"  />
@@ -196,10 +197,12 @@
     <ClInclude Include="..\src\FgBuild.hpp"  />
     <ClCompile Include="..\src\FgCl.cpp"  />
     <ClInclude Include="..\src\FgCl.hpp"  />
+    <ClInclude Include="..\src\FgCmd.hpp"  />
     <ClCompile Include="..\src\FgCmdBase.cpp"  />
     <ClCompile Include="..\src\FgCmdImgops.cpp"  />
     <ClCompile Include="..\src\FgCmdMeshops.cpp"  />
     <ClCompile Include="..\src\FgCmdMorph.cpp"  />
+    <ClCompile Include="..\src\FgCmdNcServer.cpp"  />
     <ClCompile Include="..\src\FgCmdRender.cpp"  />
     <ClCompile Include="..\src\FgCmdView.cpp"  />
     <ClCompile Include="..\src\FgCommand.cpp"  />
@@ -241,6 +244,7 @@
     <ClInclude Include="..\src\FgGuiApiBase.hpp"  />
     <ClCompile Include="..\src\FgGuiApiButton.cpp"  />
     <ClInclude Include="..\src\FgGuiApiButton.hpp"  />
+    <ClCompile Include="..\src\FgGuiApiCheckbox.cpp"  />
     <ClInclude Include="..\src\FgGuiApiCheckbox.hpp"  />
     <ClInclude Include="..\src\FgGuiApiDialogs.hpp"  />
     <ClInclude Include="..\src\FgGuiApiDynamic.hpp"  />
@@ -353,7 +357,6 @@
     <ClInclude Include="..\src\FgTypes.hpp"  />
     <ClCompile Include="..\src\FgVariant.cpp"  />
     <ClInclude Include="..\src\FgVariant.hpp"  />
-    <ClCompile Include="..\src\FgVariantTest.cpp"  />
     <ClCompile Include="..\src\FgViz.cpp"  />
     <ClInclude Include="..\src\FgViz.hpp"  />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp"  />

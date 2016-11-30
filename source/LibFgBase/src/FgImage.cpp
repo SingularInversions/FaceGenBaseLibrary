@@ -44,7 +44,7 @@ fgAnd(const FgImage<FgBool> & lhs,const FgImage<FgBool> & rhs)
 }
 
 FgArray<FgCoordWgt,4>
-fgInterpolateCull(FgVect2UI dims,FgVect2F coordIucs)
+fgLerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs)
 {
     FgArray<FgCoordWgt,4>   ret;
     float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
@@ -91,17 +91,17 @@ fgInterpolateCull(FgVect2UI dims,FgVect2F coordIucs)
 }
 
 FgRgbaF
-fgInterpolate(const FgImgRgbaUb & img,FgVect2F coordIucs)
+fgLerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs)
 {
     FgRgbaF                 ret(0);
-    FgArray<FgCoordWgt,4>   ics = fgInterpolateCull(img.dims(),coordIucs);
+    FgArray<FgCoordWgt,4>   ics = fgLerpCoordsCull(img.dims(),coordIucs);
     for (uint ii=0; ii<ics.size(); ++ii)
         ret += FgRgbaF(img[ics[ii].coordIrcs]) * ics[ii].wgt;
     return ret;
 }
 
 FgMatrixC<FgCoordWgt,4,1>
-fgInterpolateClamp(FgVect2UI dims,FgVect2F coordIucs)
+fgLerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs)
 {
     FgMatrixC<FgCoordWgt,4,1>   ret;
     float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
@@ -132,10 +132,10 @@ fgInterpolateClamp(FgVect2UI dims,FgVect2F coordIucs)
 }
 
 //FgRgbaF
-//fgInterpolateClamp(const FgImgRgbaUb & img,FgVect2F coordIucs)
+//fgLerpClip(const FgImgRgbaUb & img,FgVect2F coordIucs)
 //{
 //    FgRgbaF     ret(0);
-//    FgInterp    itp = fgInterpolateClamp(img.dims(),coordIucs);
+//    FgInterp    itp = fgLerpClip(img.dims(),coordIucs);
 //    ret += FgRgbaF(img.elem(itp.coords[0],itp.coords[2])) * itp.weights[0];
 //    ret += FgRgbaF(img.elem(itp.coords[1],itp.coords[2])) * itp.weights[1];
 //    ret += FgRgbaF(img.elem(itp.coords[0],itp.coords[3])) * itp.weights[2];
@@ -249,14 +249,14 @@ fgImgShrinkHgt2(const FgImgRgbaUb & src)
 
 // RGBA -> mono uses rec709
 void
-fgImgConvert(const FgImgRgbaUb &src,FgImgUb &dst)
+fgImgConvert(const FgImgRgbaUb &src,FgImgUC &dst)
 {
     dst.resize(src.width(),src.height());
     for (size_t ii=0; ii<dst.numPixels(); ++ii)
         dst[ii] = src[ii].rec709();
 }
 
-void    fgImgConvert(const FgImgUb &src,FgImgRgbaUb &dst)
+void    fgImgConvert(const FgImgUC &src,FgImgRgbaUb &dst)
 {
     dst.resize(src.width(),src.height());
     for (size_t ii=0; ii<dst.numPixels(); ++ii) {
@@ -268,7 +268,7 @@ void    fgImgConvert(const FgImgUb &src,FgImgRgbaUb &dst)
 void
 fgImgPntRescaleConvert(
     const FgImgD    &src,
-    FgImgUb         &dst)
+    FgImgUC         &dst)
 {
     FgVectD2        bounds = fgBounds(src.dataVec());
     double          scale = bounds[1] - bounds[0];
@@ -283,7 +283,7 @@ fgImgPntRescaleConvert(
     const FgImgD    &src,
     FgImgRgbaUb     &dst)
 {
-    FgImgUb         tmp;
+    FgImgUC         tmp;
     fgImgPntRescaleConvert(src,tmp);
     fgImgConvert(tmp,dst);
 }
@@ -311,82 +311,64 @@ fgImgResize(
     FGASSERT(!dst.empty());
     typedef FgImgRgbaUb          ImageType;
     typedef ImageType::PixelType PixelType;
-
 	uint        swid = src.width(),
                 shgt = src.height(),
                 wid = dst.width(),
                 hgt = dst.height();
-    if ((wid == swid) && (hgt == shgt))
-	{
+    if ((wid == swid) && (hgt == shgt)) {
         dst = src;
 		return;
 	}
-
-	float sx = (float)wid / (float)swid,
-        sy   = (float)hgt / (float)shgt;
-
+	float   sx = (float)wid / (float)swid,
+            sy   = (float)hgt / (float)shgt;
 	const PixelType *srcPtr = src.dataPtr();
 	PixelType       *dstPtr	= dst.dataPtr();
-
-	uint srcStep = src.width(),
-        dstStep  = dst.width();
-
-	float ex    = 1.0f / sx,
-        ey      = 1.0f / sy,
-        invArea	= 1.0f / (ex * ey);
-
-	for	(uint yDstRcs=0; yDstRcs<hgt; yDstRcs++)
-	{
-			// Calculate the y pixel bounds in the source image IRCS
-			// Note that we need to check the upper bound since
-			// this algorithm will want to add an out of bounds pixel
-			// with weight 0. This still works with the weighting
-			// algorithm in the inner loop since the float value
-			// will only ever just hit the out of bounds integer
-			// value and not exceed it.
-			//
+	uint        srcStep = src.width(),
+                dstStep  = dst.width();
+	float       ex    = 1.0f / sx,
+                ey      = 1.0f / sy,
+                invArea	= 1.0f / (ex * ey);
+	for	(uint yDstRcs=0; yDstRcs<hgt; yDstRcs++) {
+		// Calculate the y pixel bounds in the source image IRCS
+		// Note that we need to check the upper bound since
+		// this algorithm will want to add an out of bounds pixel
+		// with weight 0. This still works with the weighting
+		// algorithm in the inner loop since the float value
+		// will only ever just hit the out of bounds integer
+		// value and not exceed it.
 		float	yblo = (float)yDstRcs * ey,
 				ybhi = yblo + ey;
 		uint	yblob = (uint)yblo,
 				ybhib = (uint)ybhi;
-		if (ybhib >= shgt) ybhib--;
-
-		for (uint xDstRcs=0; xDstRcs<wid; xDstRcs++)
-		{
-				// Calculate the x pixel bounds in the source image IRCS
-				//
+		if (ybhib >= shgt)
+            --ybhib;
+		for (uint xDstRcs=0; xDstRcs<wid; xDstRcs++) {
+            // Calculate the x pixel bounds in the source image IRCS
 			float	xblo = (float)xDstRcs * ex,
 					xbhi = xblo + ex;
 			uint	xblob = (uint)xblo,
 					xbhib = (uint)xbhi;
-			if (xbhib >= swid) xbhib--;
-
-				// Now sum up the contributions of the source pixels
-				// that fall within this back-projected window.
-				//
+			if (xbhib >= swid)
+                --xbhib;
+            // Now sum up the contributions of the source pixels
+            // that fall within this back-projected window.
 			FgRgba<float> acc, fpix;
-
-			for (uint yy=yblob; yy<=ybhib; yy++)
-			{
+			for (uint yy=yblob; yy<=ybhib; yy++) {
 				float	yfac = 1.0f;
 				if (yy == yblob)
 					yfac -= yblo - (float)yblob;
 				if (yy == ybhib)
 					yfac -= (float)(ybhib+1) - ybhi;
-
-				for (uint xx=xblob; xx<=xbhib; xx++)
-				{
+				for (uint xx=xblob; xx<=xbhib; xx++) {
 					float	xfac = 1.0f;
 					if (xx == xblob)
 						xfac -= xblo - (float)xblob;
 					if (xx == xbhib)
 						xfac -= (float)(xbhib+1) - xbhi;
-
 					fgConvert_(srcPtr[yy*srcStep + xx],fpix);
 					acc += fpix * xfac * yfac;
 				}
 			}
-
             // Divide by the area of the back-project and convert
             // back to fixed point.
             fgRound(acc * invArea,dstPtr[xDstRcs]);
@@ -423,7 +405,7 @@ fgResample(
         if (map[it()] != noVal) {
             FgVect2F    pos = map[it()];
             pos[1] = 1.0f - pos[1];         // OTCS to UICS
-            ret[it()] = FgRgbaUB(fgInterpolateClamp(src,pos) + FgRgbaD(0.5));
+            ret[it()] = FgRgbaUB(fgLerpClip(src,pos) + FgRgbaD(0.5));
         }
     }
     return ret;
@@ -441,14 +423,34 @@ fgUsesAlpha(const FgImgRgbaUb & img,uchar minVal)
 }
 
 void
-fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC c,uint radius)
+fgPaintCrossHair(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC c,uint thickness)
 {
-    FgVect2I    ircs = FgVect2I(fgFloor(ipcs));
+    FgRgbaUB    clr(c[0],c[1],c[2],c[3]);
+    int         rad = int((thickness+1)/2);
+    // Horizontal stroke:
+    for (int yy=-rad; yy<=rad; ++yy)
+        for (int xx=-rad*4; xx<=rad*4; ++xx)
+            img.paint(ircs+FgVect2I(xx,yy),clr);
+    // Vertical stroke:
+    for (int yy=-rad*4; yy<=rad*4; ++yy)
+        for (int xx=-rad; xx<=rad; ++xx)
+            img.paint(ircs+FgVect2I(xx,yy),clr);
+}
+
+void
+fgPaintDot(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC c,uint radius)
+{
     FgRgbaUB    clr(c[0],c[1],c[2],c[3]);
     int         rad = int(radius);
     for (int yy=-rad; yy<=rad; ++yy)
         for (int xx=-rad; xx<=rad; ++xx)
             img.paint(ircs+FgVect2I(xx,yy),clr);
+}
+
+void
+fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC c,uint radius)
+{
+    fgPaintDot(img,FgVect2I(fgFloor(ipcs)),c,radius);
 }
 
 // Creates an OpenGL compatible mipmap from the given image; the original will be upsampled

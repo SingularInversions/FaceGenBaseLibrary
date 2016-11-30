@@ -16,13 +16,13 @@
 struct  FgGuiApiSelect : FgGuiApi<FgGuiApiSelect>
 {
     vector<FgGuiPtr>        wins;
-    FgDgn<uint>             selection;
+    FgDgn<size_t>           selection;
     uint                    updateNodeIdx;
 };
 
 inline
 FgGuiPtr
-fgGuiSelect(FgDgn<uint> select,const vector<FgGuiPtr> & wins)
+fgGuiSelect(FgDgn<size_t> select,const vector<FgGuiPtr> & wins)
 {
     FgGuiApiSelect  ret;
     ret.wins = wins;

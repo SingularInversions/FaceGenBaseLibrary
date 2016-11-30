@@ -22,8 +22,8 @@ using namespace std;
 struct  FgGuiWinSelect : public FgGuiOsBase
 {
     FgGuiApiSelect                  m_api;
-    vector<FgSharedPtr<FgGuiOsBase> >   m_panes;
-    uint                            m_currPane;     // Which one is Windows currently displaying ?
+    vector<FgPtr<FgGuiOsBase> >     m_panes;
+    size_t                          m_currPane;     // Which one is Windows currently displaying ?
     FgVect2I                        m_lo,m_sz;
     FgString                        m_store;
 
@@ -76,7 +76,7 @@ struct  FgGuiWinSelect : public FgGuiOsBase
     updateIfChanged()
     {
         if (g_gg.dg.update(m_api.updateNodeIdx)) {
-            uint    currPane = g_gg.getVal(m_api.selection);
+            size_t      currPane = g_gg.getVal(m_api.selection);
             if (currPane != m_currPane) {
                 m_panes[m_currPane]->showWindow(false);
                 m_currPane = currPane;
@@ -111,6 +111,6 @@ struct  FgGuiWinSelect : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSelect & api)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSelect(api)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSelect(api)); }

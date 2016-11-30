@@ -72,4 +72,65 @@ public:
     }
 };
 
+// Keep the value corresponding to the minimum key:
+template<class Key,class Val>
+class   FgMin
+{
+    Key     m_key;
+    Val     m_val;
+
+public:
+    FgMin() : m_key(std::numeric_limits<Key>::max()) {}
+
+    void
+    update(Key key,const Val & val)
+    {
+        if (key < m_key) {
+            m_key = key;
+            m_val = val;
+        }
+    }
+
+    bool
+    valid() const
+    {return (m_key != std::numeric_limits<Key>::max()); }
+
+    const Val &
+    val()
+    {
+        FGASSERT(valid());
+        return m_val;
+    }
+};
+
+template<class Key,class Val>
+class   FgMax
+{
+    Key     m_key;
+    Val     m_val;
+
+public:
+    FgMax() : m_key(std::numeric_limits<Key>::min()) {}
+
+    void
+    update(Key key,const Val & val)
+    {
+        if (key > m_key) {
+            m_key = key;
+            m_val = val;
+        }
+    }
+
+    bool
+    valid() const
+    {return (m_key != std::numeric_limits<Key>::min()); }
+
+    const Val &
+    val()
+    {
+        FGASSERT(valid());
+        return m_val;
+    }
+};
+
 #endif

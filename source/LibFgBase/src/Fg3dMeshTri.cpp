@@ -24,7 +24,7 @@ string
 readString(istream & istr,bool wchar)
 {
     uint        size;
-    fgRead(istr,size);
+    fgReadb(istr,size);
     string      str;
     if (size == 0)
         return str;
@@ -32,7 +32,7 @@ readString(istream & istr,bool wchar)
     for (uint ii=0; ii<size; ++ii) {
         if (wchar) {
             wchar_t     wch;
-            fgRead(istr,wch);
+            fgReadb(istr,wch);
             str[ii] = char(wch);
         }
         else
@@ -66,16 +66,16 @@ fgLoadTri(istream & istr)
                 numStatMorph,
                 numStatMorphVerts;
     char        buff[16];
-    fgRead(istr,numVerts);
-    fgRead(istr,numTris);
-    fgRead(istr,numQuads);
-    fgRead(istr,numLabVerts);
-    fgRead(istr,numSurfPts);
-    fgRead(istr,numUvs);
-    fgRead(istr,texExt);
-    fgRead(istr,numDiffMorph);
-    fgRead(istr,numStatMorph);
-    fgRead(istr,numStatMorphVerts);
+    fgReadb(istr,numVerts);
+    fgReadb(istr,numTris);
+    fgReadb(istr,numQuads);
+    fgReadb(istr,numLabVerts);
+    fgReadb(istr,numSurfPts);
+    fgReadb(istr,numUvs);
+    fgReadb(istr,texExt);
+    fgReadb(istr,numDiffMorph);
+    fgReadb(istr,numStatMorph);
+    fgReadb(istr,numStatMorphVerts);
     istr.read(buff,16);
     bool    texs = ((texExt & 0x01) != 0),
             wchar = ((texExt & 0x02) != 0);
@@ -107,8 +107,8 @@ fgLoadTri(istream & istr)
     std::vector<FgSurfPoint>   surfPoints;
     for (uint ii=0; ii<numSurfPts; ii++) {
         FgSurfPoint     sp;
-        fgRead(istr,sp.triEquivIdx);
-        fgRead(istr,sp.weights);
+        fgReadb(istr,sp.triEquivIdx);
+        fgReadb(istr,sp.weights);
         sp.label = readString(istr,wchar);
         surfPoints.push_back(sp);
     }
@@ -143,10 +143,10 @@ fgLoadTri(istream & istr)
         mesh.deltaMorphs[mm].name = readString(istr,wchar);
         mesh.deltaMorphs[mm].verts.resize(numVerts);
         float       scale;
-        fgRead(istr,scale);
+        fgReadb(istr,scale);
         for (uint vv=0; vv<numVerts; vv++) {
             FgVect3S    sval;
-            fgRead(istr,sval);
+            fgReadb(istr,sval);
             mesh.deltaMorphs[mm].verts[vv] = FgVect3F(sval) * scale;
         }
     }
@@ -157,12 +157,14 @@ fgLoadTri(istream & istr)
         FgIndexedMorph       tm;
         tm.name = readString(istr,wchar);
         uint32                      numTargVerts;
-        fgRead(istr,numTargVerts);
-        tm.baseInds.resize(numTargVerts);
-        istr.read((char*)&tm.baseInds[0],4*numTargVerts);
-        tm.verts = fgSubvec(targVerts,targVertsStart,numTargVerts);
-        targVertsStart += numTargVerts;
-        mesh.targetMorphs.push_back(tm);
+        fgReadb(istr,numTargVerts);
+        if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
+            tm.baseInds.resize(numTargVerts);
+            istr.read((char*)&tm.baseInds[0],4*numTargVerts);
+            tm.verts = fgSubvec(targVerts,targVertsStart,numTargVerts);
+            targVertsStart += numTargVerts;
+            mesh.targetMorphs.push_back(tm);
+        }
     }
     mesh.surfaces = fgSvec(Fg3dSurface(tris,quads,triUvInds,quadUvInds,surfPoints));
     return mesh;
@@ -190,9 +192,7 @@ fgLoadTri(
     const FgString &    texImage)
 {
     Fg3dMesh        mesh = fgLoadTri(meshFile);
-    FgImgRgbaUb     image;
-    fgLoadImgAnyFormat(texImage,image);
-    mesh.texImages.push_back(image);
+    fgLoadImgAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
     return mesh;
 }
 
@@ -201,7 +201,7 @@ void
 writeLabel(ostream & ostr,const string & str)
 {
     // The spec requires writing a null terminator after the string:
-    fgWrite(ostr,uint32(str.length()+1));
+    fgWriteb(ostr,uint32(str.length()+1));
     ostr.write(str.c_str(),str.length()+1);
 }
 
@@ -221,62 +221,62 @@ fgSaveTri(
                         numBaseVerts = mesh.verts.size();
     FgOfstream          ff(fname);
     ff.write(triIdent.data(),8);
-    fgWrite(ff,int32(numBaseVerts));               // V
-    fgWrite(ff,int32(surf.numTris()));             // T
-    fgWrite(ff,int32(surf.numQuads()));            // Q
-    fgWrite(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
-    fgWrite(ff,int32(surfPoints.size()));          // numSurfPts (LS)
+    fgWriteb(ff,int32(numBaseVerts));               // V
+    fgWriteb(ff,int32(surf.numTris()));             // T
+    fgWriteb(ff,int32(surf.numQuads()));            // Q
+    fgWriteb(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
+    fgWriteb(ff,int32(surfPoints.size()));          // numSurfPts (LS)
     int32       numUvs = int32(mesh.uvs.size());
-    fgWrite(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
+    fgWriteb(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
     if (surf.hasUvIndices())
-        fgWrite(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
+        fgWriteb(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
     else
-        fgWrite(ff,int32(0));
-    fgWrite(ff,int32(mesh.deltaMorphs.size()));    // numDiffMorph
-    fgWrite(ff,int32(mesh.targetMorphs.size()));   // numStatMorph
-    fgWrite(ff,int32(numTargetMorphVerts));        // numStatMorphVerts
-    fgWrite(ff,int32(0));
-    fgWrite(ff,int32(0));
-    fgWrite(ff,int32(0));
-    fgWrite(ff,int32(0));
+        fgWriteb(ff,int32(0));
+    fgWriteb(ff,int32(mesh.deltaMorphs.size()));    // numDiffMorph
+    fgWriteb(ff,int32(mesh.targetMorphs.size()));   // numStatMorph
+    fgWriteb(ff,int32(numTargetMorphVerts));        // numStatMorphVerts
+    fgWriteb(ff,int32(0));
+    fgWriteb(ff,int32(0));
+    fgWriteb(ff,int32(0));
+    fgWriteb(ff,int32(0));
 
     // Verts:
     for (uint ii=0; ii<mesh.verts.size(); ++ii)
-        fgWrite(ff,mesh.verts[ii]);
+        fgWriteb(ff,mesh.verts[ii]);
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const FgIndexedMorph &   tm = mesh.targetMorphs[ii];
         for (size_t jj=0; jj<tm.verts.size(); ++jj)
-            fgWrite(ff,tm.verts[jj]);
+            fgWriteb(ff,tm.verts[jj]);
     }
 
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
-        fgWrite(ff,surf.getTri(ii));
+        fgWriteb(ff,surf.getTri(ii));
     for (uint ii=0; ii<surf.numQuads(); ++ii)
-        fgWrite(ff,surf.getQuad(ii));
+        fgWriteb(ff,surf.getQuad(ii));
 
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
-        fgWrite(ff,mesh.markedVerts[ii].idx);
+        fgWriteb(ff,mesh.markedVerts[ii].idx);
         writeLabel(ff,mesh.markedVerts[ii].label);
     }
 
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
         const FgSurfPoint &     sp = surfPoints[ii];
-        fgWrite(ff,sp.triEquivIdx);
-        fgWrite(ff,sp.weights);
+        fgWriteb(ff,sp.triEquivIdx);
+        fgWriteb(ff,sp.weights);
         writeLabel(ff,sp.label);
     }
     // UV list and per-facet UV indices if present:
     if (surf.hasUvIndices())
     {
         for(size_t ii=0; ii < mesh.uvs.size(); ++ii)
-            fgWrite(ff,mesh.uvs[ii]);
+            fgWriteb(ff,mesh.uvs[ii]);
         for(size_t ii=0; ii < surf.tris.uvInds.size(); ++ii)
-            fgWrite(ff,surf.tris.uvInds[ii]);
+            fgWriteb(ff,surf.tris.uvInds[ii]);
         for(uint ii=0; ii < surf.quads.uvInds.size(); ++ii)
-            fgWrite(ff,surf.quads.uvInds[ii]);
+            fgWriteb(ff,surf.quads.uvInds[ii]);
     }
 
     // Delta morphs:
@@ -287,18 +287,18 @@ fgSaveTri(
         float   scale =
             float(numeric_limits<short>::max()-1) /
             fgMaxElem(fgAbs(fgBounds(morph.verts)));
-        fgWrite(ff,1.0f/scale);
+        fgWriteb(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)
-                fgWrite(ff,short(std::floor(morph.verts[jj][kk]*scale)+0.5f));
+                fgWriteb(ff,short(std::floor(morph.verts[jj][kk]*scale)+0.5f));
     }
 
     // Target morphs:
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const FgIndexedMorph &   morph = mesh.targetMorphs[ii];
         writeLabel(ff,morph.name.as_ascii());
-        fgWrite(ff,uint32(morph.baseInds.size()));
+        fgWriteb(ff,uint32(morph.baseInds.size()));
         for (size_t jj=0; jj<morph.baseInds.size(); ++jj)
-            fgWrite(ff,uint32(morph.baseInds[jj]));
+            fgWriteb(ff,uint32(morph.baseInds[jj]));
     }
 }

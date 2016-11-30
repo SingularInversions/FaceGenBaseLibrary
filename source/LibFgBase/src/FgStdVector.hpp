@@ -22,23 +22,24 @@
 #include "FgDiagnostics.hpp"
 #include "FgOut.hpp"
 
-using std::vector;      // please god spare me from ever typing 'std::' again.
-
-// Frequently used shorthands:
-typedef vector<double>                  FgDbls;
-typedef vector<float>                   FgFlts;
-typedef vector<uint>                    FgUints;
-typedef vector<size_t>                  FgSizes;
-typedef vector<double>::iterator        FgDblsIt;
-typedef vector<double>::const_iterator  FgDblsCit;
+using std::vector;
 
 template<class T>
 struct FgTraits<vector<T> >
 {
+    typedef typename FgTraits<T>::Scalar                Scalar;
     typedef vector<typename FgTraits<T>::Accumulator>   Accumulator;
     typedef vector<typename FgTraits<T>::Floating>      Floating;
-    typedef typename FgTraits<T>::Scalar                Scalar;
 };
+
+// Frequently used shorthands:
+typedef vector<double>              FgDbls;
+typedef vector<float>               FgFlts;
+typedef vector<uint>                FgUints;
+
+typedef vector<FgDbls>              FgDblss;
+typedef vector<FgFlts>              FgFltss;
+typedef vector<FgUints>             FgUintss;
 
 // Acts just like bool for use with vector but avoids use of broken
 // vector<bool> specialization:
@@ -154,14 +155,110 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
     return vec;
 }
 
-template<class T,class U>
+template<class T>
 vector<T>
-fgConvertElems(const vector<U> & rhs)
+operator-(
+    const vector<T> &  lhs,
+    const vector<T> &  rhs)
 {
     vector<T>   ret;
-    ret.reserve(rhs.size());
-    for (size_t ii=0; ii<rhs.size(); ++ii)
-        ret.push_back(T(rhs[ii]));
+    ret.reserve(lhs.size());
+    FGASSERT(lhs.size() == rhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        ret.push_back(lhs[ii] - rhs[ii]);
+    return ret;
+}
+
+template<class T>
+vector<T>
+operator+(
+    const vector<T> &  lhs,
+    const vector<T> &  rhs)
+{
+    vector<T>       ret;
+    FGASSERT(lhs.size() == rhs.size());
+    ret.reserve(lhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        ret.push_back(lhs[ii] + rhs[ii]);
+    return ret;
+}
+
+template<class T>
+void
+operator-=(
+    vector<T> &         lhs,
+    const vector<T> &   rhs)
+{
+    FGASSERT(lhs.size() == rhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        lhs[ii] -= rhs[ii];
+}
+
+template<class T>
+void
+operator+=(
+    vector<T> &         lhs,
+    const vector<T> &   rhs)
+{
+    FGASSERT(lhs.size() == rhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        lhs[ii] += rhs[ii];
+}
+
+template<class T,class U>
+vector<T>
+operator*(
+    const vector<T> &   lhs,
+    const U &           rhs)    // Different type useful for eg. vector<FgVect> * float
+{
+    vector<T>   ret;
+    ret.reserve(lhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        ret.push_back(lhs[ii] * rhs);
+    return ret;
+}
+
+template<class T,class U>
+vector<T>
+operator/(
+    const vector<T> &   lhs,
+    const U &           rhs)
+{
+    vector<T>   ret;
+    ret.reserve(lhs.size());
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        ret.push_back(lhs[ii] / rhs);
+    return ret;
+}
+
+template<class T,class U>
+void
+operator*=(
+    vector<T> &     lhs,
+    U               rhs)        // Different type useful for eg. vector<FgVect> * float
+{
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        lhs[ii] *= rhs;
+}
+
+template<class T,class U>
+void
+operator/=(
+    vector<T> &     lhs,
+    U               rhs)
+{
+    for (size_t ii=0; ii<lhs.size(); ++ii)
+        lhs[ii] /= rhs;
+}
+
+template<class T,class U>
+vector<U>
+fgMapConvert(const vector<T> & in)
+{
+    vector<U>   ret;
+    ret.reserve(in.size());
+    for (typename vector<T>::const_iterator it=in.begin(); it != in.end(); ++it)
+        ret.push_back(U(*it));
     return ret;
 }
 
@@ -240,16 +337,24 @@ fgAppend(
 
 template<class T>
 vector<T>
-fgConcat(
-    const vector<T> &  v0,
-    const vector<T> &  v1)
+fgConcat(const vector<T> &  v0,const vector<T> &  v1)
+{
+    vector<T>   ret;
+    ret.reserve(v0.size()+v1.size());
+    ret.insert(ret.end(),v0.begin(),v0.end());
+    ret.insert(ret.end(),v1.begin(),v1.end());
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgConcat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2)
 {
     vector<T>  ret;
-    ret.reserve(v0.size()+v1.size());
-    for (size_t ii=0; ii<v0.size(); ++ii)
-        ret.push_back(v0[ii]);
-    for (size_t jj=0; jj<v1.size(); ++jj)
-        ret.push_back(v1[jj]);
+    ret.reserve(v0.size()+v1.size()+v2.size());
+    ret.insert(ret.end(),v0.begin(),v0.end());
+    ret.insert(ret.end(),v1.begin(),v1.end());
+    ret.insert(ret.end(),v2.begin(),v2.end());
     return ret;
 }
 
@@ -293,6 +398,18 @@ fgFindLastIdx(const vector<T> & vec,const T & val)
     return vec.size();
 }
 
+// Return first index of 'val' in 'vec' or if not found append and return index:
+template<class T>
+size_t
+fgFindOrAppend(vector<T> & vec,const T & val)
+{
+    for (size_t ii=0; ii<vec.size(); ++ii)
+        if (vec[ii] == val)
+            return ii;
+    vec.push_back(val);
+    return vec.size()-1;
+}
+
 template<class T,class U>
 bool
 fgContains(
@@ -301,6 +418,18 @@ fgContains(
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
+            return true;
+    return false;
+}
+
+template<class T,class U>
+bool
+fgContainsAny(
+    const vector<T> &   ctr,
+    const vector<U> &   vals)
+{
+    for (size_t ii=0; ii<vals.size(); ++ii)
+        if (fgContains(ctr,vals[ii]))
             return true;
     return false;
 }
@@ -449,33 +578,15 @@ fgConvert_(
         rhs[ii] = static_cast<U>(lhs[ii]);
 }
 
-template<class In,class Op,class Out>
-void
-fgMap_(const vector<In> & in,Op op,vector<Out> & out)
-{
-    out.resize(in.size());
-    for (size_t ii=0; ii<out.size(); ++ii)
-        out[ii] = op(in[ii]);
-}
-
-template<class In,class Op,class Out>
+template<class Out,class In>
 vector<Out>
-fgMap(const vector<In> & in,Op op)
+fgMap(const vector<In> & in,boost::function<Out(const In &)> func)
 {
-    vector<Out>    ret(in.size());
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii] = op(in[ii]);
+    vector<Out>    ret;
+    ret.reserve(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        ret.push_back(func(in[ii]));
     return ret;
-}
-
-template<class In,class Op,class Out>
-void
-fgMap2_(const vector<In> & in0,const vector<In> & in1,Op op,vector<Out> & out)
-{
-    FGASSERT(in0.size() == in1.size());
-    out.resize(in0.size());
-    for (size_t ii=0; ii<out.size(); ++ii)
-        out[ii] = op(in0[ii],in1[ii]);
 }
 
 // Transform using an operator*() :
@@ -523,11 +634,33 @@ T
 fgSum(const vector<T> & v)
 {
     typedef typename FgTraits<T>::Accumulator Acc;
-    FGASSERT(v.size() > 0);
-    Acc     acc = Acc(v[0]);
-    for (size_t ii=1; ii<v.size(); ++ii)
+    Acc         acc(0);
+    for (size_t ii=0; ii<v.size(); ++ii)
         acc += Acc(v[ii]);
     return T(acc);
+}
+
+// Easier to do this as special case than to have global templated traits for casting
+// vector to accumulator type and back. Plus we want things to work a little differently
+// in this case:
+template<class T>
+vector<T>
+fgSum(const vector<vector<T> > & v)
+{
+    vector<T>       ret;
+    if (v.empty())
+        return ret;
+    typedef typename FgTraits<T>::Accumulator   Acc;
+    vector<Acc>     acc(v[0].size(),Acc(0));
+    for (size_t ii=0; ii<v.size(); ++ii) {
+        FGASSERT(v[ii].size() == acc.size());
+        for (size_t jj=0; jj<acc.size(); ++jj)
+            acc[jj] += Acc(v[ii][jj]);
+    }
+    ret.reserve(acc.size());
+    for (size_t ii=0; ii<acc.size(); ++ii)
+        ret.push_back(T(acc[ii]));
+    return ret;
 }
 
 template<class T>
@@ -553,7 +686,19 @@ fgSubtract(
 
 template<class T>
 vector<T>
-fgDivide(
+fgMapAddConst(const vector<T> & in,const T & val)
+{
+    vector<T>       ret;
+    ret.reserve(in.size());
+    for (typename vector<T>::const_iterator it=in.begin(); it != in.end(); ++it)
+        ret.push_back(*it + val);
+    return ret;
+}
+
+// Element-wise division:
+template<class T>
+vector<T>
+fgMapDiv(
     const vector<T> &   lhs,
     const vector<T> &   rhs)
 {
@@ -563,79 +708,6 @@ fgDivide(
     for (size_t ii=0; ii<lhs.size(); ++ii)
         ret.push_back(lhs[ii]/rhs[ii]);
     return ret;
-}
-
-template<class T>
-vector<T>
-operator-(
-    const vector<T> &  lhs,
-    const vector<T> &  rhs)
-{
-    vector<T>   ret;
-    ret.reserve(lhs.size());
-    FGASSERT(lhs.size() == rhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        ret.push_back(lhs[ii] - rhs[ii]);
-    return ret;
-}
-
-template<class T>
-vector<T>
-operator+(
-    const vector<T> &  lhs,
-    const vector<T> &  rhs)
-{
-    vector<T>       ret;
-    FGASSERT(lhs.size() == rhs.size());
-    ret.reserve(lhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        ret.push_back(lhs[ii] + rhs[ii]);
-    return ret;
-}
-
-template<class T>
-void
-operator-=(
-    vector<T> &         lhs,
-    const vector<T> &   rhs)
-{
-    FGASSERT(lhs.size() == rhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        lhs[ii] -= rhs[ii];
-}
-
-template<class T>
-void
-operator+=(
-    vector<T> &         lhs,
-    const vector<T> &   rhs)
-{
-    FGASSERT(lhs.size() == rhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        lhs[ii] += rhs[ii];
-}
-
-template<class T,class U>
-vector<T>
-operator*(
-    const vector<T> &   lhs,
-    const U &           rhs)
-{
-    vector<T>   ret;
-    ret.reserve(lhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        ret.push_back(lhs[ii] * rhs);
-    return ret;
-}
-
-template<class T,class U>
-void
-operator*=(
-    vector<T> &     lhs,
-    U               rhs)    // Different type useful for eg. vector<FgVect> * float
-{
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        lhs[ii] *= rhs;
 }
 
 // Sum of squares:
@@ -711,21 +783,6 @@ fgMapSqr(const vector<T> & v)
 }
 
 template<typename T>
-size_t
-fgMinIdx(const vector<T> & v)
-{
-    size_t  ret = 0;
-    FGASSERT(!v.empty());
-    T       min = v[0];
-    for (size_t ii=1; ii<v.size(); ++ii)
-        if (v[ii] < min) {
-            min = v[ii];
-            ret = ii;
-        }
-    return ret;
-}
-
-template<typename T>
 T
 fgMin(const vector<T> & v)
 {
@@ -750,11 +807,42 @@ fgMax(const vector<T> & v)
 }
 
 template<class T>
+T
+fgMinIdx(const vector<T> & v)
+{
+    FGASSERT(!v.empty());
+    size_t  ret = 0;
+    T       min = v[0];
+    for (size_t ii=1; ii<v.size(); ++ii) {
+        if (v[ii] < min) {
+            min = v[ii];
+            ret = ii;
+        }
+    }
+    return ret;
+}
+
+template<class T>
+T
+fgMaxIdx(const vector<T> & v)
+{
+    FGASSERT(!v.empty());
+    size_t  ret = 0;
+    T       max = v[0];
+    for (size_t ii=1; ii<v.size(); ++ii) {
+        if (v[ii] > max) {
+            max = v[ii];
+            ret = ii;
+        }
+    }
+    return ret;
+}
+
+// Functional version of std::sort
+template<class T>
 vector<T>
 fgSort(const vector<T> & v)
 {
-    if (v.size() < 2)
-        return v;
     vector<T>  ret(v);
     std::sort(ret.begin(),ret.end());
     return ret;
@@ -762,7 +850,7 @@ fgSort(const vector<T> & v)
 
 template<class T>
 bool
-fgSortIndsComparator(const T * v,size_t l,size_t r)
+fgSortIndsLt(const T * v,size_t l,size_t r)
 {return (v[l] < v[r]); }
 
 // Return a list of the permuted indices instead of the sorted list itself:
@@ -774,19 +862,58 @@ fgSortInds(const vector<T> & v)
     for (size_t ii=0; ii<inds.size(); ++ii)
         inds[ii] = ii;
     if (!inds.empty())
-        std::sort(inds.begin(),inds.end(),boost::bind(&fgSortIndsComparator<T>,&v[0],_1,_2));
+        std::sort(inds.begin(),inds.end(),boost::bind(fgSortIndsLt<T>,&v[0],_1,_2));
     return inds;
 }
 
-// Make use of a permuted indices list to re-order a list:
+template<class T>
+bool
+fgSortIndsGt(const T * v,size_t l,size_t r)
+{return (v[l] > v[r]); }
+
+// Reverse sort.
+// Define as separate function to avoid forcing T to require definitions for both LT and GT:
+// Note that !(a < b) is not the same as (a > b) and (a == b) may not be defined either:
+template<class T>
+vector<size_t>
+fgSortIndsRev(const vector<T> & v)
+{
+    vector<size_t>  inds(v.size());
+    for (size_t ii=0; ii<inds.size(); ++ii)
+        inds[ii] = ii;
+    if (!inds.empty())
+        std::sort(inds.begin(),inds.end(),boost::bind(fgSortIndsGt<T>,&v[0],_1,_2));
+    return inds;
+}
+
+// Make use of a permuted indices list to re-order a list (or subset thereof):
 template<class T>
 vector<T>
 fgReorder(const vector<T> & v,const vector<size_t> & inds)
 {
-    vector<T>       ret(v.size());
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii] = v[inds[ii]];
+    vector<T>       ret;
+    ret.reserve(inds.size());
+    for (size_t ii=0; ii<inds.size(); ++ii)
+        ret.push_back(v[inds[ii]]);
     return ret;
+}
+
+// Sort key / data in separate std::vectors:
+template<class Key,class Data>
+void
+fgSortKey(vector<Key> & k,vector<Data> & d)
+{
+    vector<size_t>  order = fgSortInds(k);
+    k = fgReorder(k,order);
+    d = fgReorder(d,order);
+}
+template<class Key,class Data>
+void
+fgSortKeyRev(vector<Key> & k,vector<Data> & d)
+{
+    vector<size_t>  order = fgSortIndsRev(k);
+    k = fgReorder(k,order);
+    d = fgReorder(d,order);
 }
 
 template<class T>
@@ -913,12 +1040,24 @@ operator<<(std::ostream & ss,const vector<T> & vv)
 }
 
 template<class T>
-typename FgTraits<T>::Scalar
+double
 fgMag(const vector<T> & v)
 {
-    typename FgTraits<T>::Scalar    ret(0);
+    double      ret(0);
     for (size_t ii=0; ii<v.size(); ++ii)
         ret += fgMag(v[ii]);
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgFilter(const vector<bool> & accept,const vector<T> & in)
+{
+    vector<T>       ret;
+    FGASSERT(accept.size() == in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        if (accept[ii])
+            ret.push_back(in[ii]);
     return ret;
 }
 

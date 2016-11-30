@@ -140,10 +140,10 @@ fgSampler(
         const FgRgbaF & fpix = fimg[it()];
         img[it()] = 
             FgRgbaUB(
-                uchar(fgClamp(fpix.red(),0.0f,255.0f)),
-                uchar(fgClamp(fpix.green(),0.0f,255.0f)),
-                uchar(fgClamp(fpix.blue(),0.0f,255.0f)),
-                uchar(fgClamp(fpix.alpha(),0.0f,255.0f)));
+                uchar(fgClip(fpix.red(),0.0f,255.0f)),
+                uchar(fgClip(fpix.green(),0.0f,255.0f)),
+                uchar(fgClip(fpix.blue(),0.0f,255.0f)),
+                uchar(fgClip(fpix.alpha(),0.0f,255.0f)));
     }
 }
 

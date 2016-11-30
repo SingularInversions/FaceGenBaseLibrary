@@ -55,59 +55,56 @@ template<> struct FgTypeAttributeFixedS<int64> {};
 template<> struct FgTypeAttributeFixedS<uint64> {};
 
 template<class T> struct FgTraits;
+
 template<> struct FgTraits<uchar>
 {
+    typedef uchar   Scalar;             // Stub for scalar type of templated vector/matrix types
     typedef uint    Accumulator;
-    typedef double  Floating;
+    typedef double  Floating;           // Stub for conversion of templated vec/mat to floating point
 };
 template<> struct FgTraits<schar>
 {
+    typedef schar   Scalar;
     typedef int     Accumulator;
-    typedef double  Floating;
-};
-template<> struct FgTraits<short>
-{
-    typedef int64   Accumulator;
-    typedef double  Floating;
-};
-template<> struct FgTraits<ushort>
-{
-    typedef uint64  Accumulator;
     typedef double  Floating;
 };
 template<> struct FgTraits<int>
 {
+    typedef int     Scalar;
     typedef int64   Accumulator;
     typedef double  Floating;
 };
 template<> struct FgTraits<uint>
 {
+    typedef uint    Scalar;
     typedef uint64  Accumulator;
     typedef double  Floating;
 };
 template<> struct FgTraits<uint64>
 {
+    typedef uint64  Scalar;
     typedef uint64  Accumulator;
     typedef double  Floating;
 };
 template<> struct FgTraits<float>
 {
+    typedef float   Scalar;
     typedef double  Accumulator;
     typedef double  Floating;
-    typedef float   Scalar;
 };
 template<> struct FgTraits<double>
 {
+    typedef double  Scalar;
     typedef double  Accumulator;
     typedef double  Floating;
-    typedef double  Scalar;
 };
 
 // Handy within templated algorithms:
 
+inline double fgMag(double v) {return v*v; }    // Template stub
+
 inline void fgRound_(float in,int & out) {out = static_cast<int>(std::floor(in + 0.5f)); }
 inline void fgRound_(float in,uchar & out) {out = static_cast<uchar>(in + 0.5f); }
-
 inline int fgRound(double v) {return static_cast<int>(std::floor(v+0.5)); }
 inline uint fgRoundU(double v) {return static_cast<uint>(v+0.5); }
 

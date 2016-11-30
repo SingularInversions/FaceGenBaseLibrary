@@ -109,7 +109,7 @@ public:
     bool            // false if zero magnitude
     normalize()     // Useful for deserialization of user data
     {
-        T   mag = m_real*m_real + m_comp.lengthSqr();
+        T   mag = m_real*m_real + m_comp.mag();
         if (mag == T(0))
             return false;
         T   fac = T(1) / sqrt(mag);

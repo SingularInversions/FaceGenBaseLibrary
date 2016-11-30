@@ -80,10 +80,10 @@ struct Fg3dTopology
         const Fg3dNormals & norms,  // Must be created from a single (unified) tri-only surface
         vector<FgBool> &    done,
         uint                vertIdx) const;
-
-    // Returns true if all edges are either boundaries or the connection of exactly 2
-    // tris with opposite winding on that edge:
-    bool
+    
+    // Returns number of boundary edges, intersection edges and reversed edges respectively.
+    // If all are zero the mesh is watertight. If the last 2 are zero the mesh is manifold.
+    FgVect3UI
     isManifold() const;
 
     size_t

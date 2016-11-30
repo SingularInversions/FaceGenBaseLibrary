@@ -35,7 +35,7 @@ std::vector<std::string>
 fgBuildCompilers(const std::string & os)
 {
     if (os == "win")
-        return fgSvec<string>("vs10","vs08","vs12","vs13");    // First is default
+        return fgSvec<string>("vs12","vs08","vs10","vs13");    // First is default
     else if (os == "ubuntu")
         return fgSvec<string>("gcc");
     else if (os == "osx")

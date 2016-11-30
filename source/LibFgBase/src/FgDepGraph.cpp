@@ -189,10 +189,14 @@ FgDepGraph::executeLinkTask(
         while (!updPtr->done) {
             // This check cannot depend on whether there are currently jobs
             // in the queue, since only one thread is doing the checking:
-            if (doCancelCheck)
-                if (m_cancelCheck.valid())
-                    if (updPtr->cancelCheck(m_cancelCheck.val()))
+            if (doCancelCheck) {
+                if (m_cancelCheck) {
+                    if (m_cancelCheck() != 0) {
+                        updPtr->cancel();
                         return;
+                    }
+                }
+            }
             updPtr->guardQueue->lock();
             bool    empty = updPtr->queue.empty();
             if (!empty) {
@@ -234,10 +238,14 @@ FgDepGraph::executeLinkTask(
                 if (!todo.empty()) {
                     if (updPtr->done)
                         return;
-                    if (doCancelCheck)
-                        if (m_cancelCheck.valid())
-                            if (updPtr->cancelCheck(m_cancelCheck.val()))
+                    if (doCancelCheck) {
+                        if (m_cancelCheck) {
+                            if (m_cancelCheck() != 0) {
+                                updPtr->cancel();
                                 return;
+                            }
+                        }
+                    }
                     linkInd = todo.back();
                     followNext = true;
                     todo.pop_back();
@@ -279,23 +287,6 @@ FgDepGraph::Update::set(
             "A computation within an FgDepGraph has generated an exception on link",
             fgToString(linkIdx));
     }
-}
-
-bool
-FgDepGraph::Update::cancelCheck(int(*func)())
-{
-    if (func() != 0) {
-        guardException->lock();
-        bool prior = flag;
-        flag = true;
-        guardException->unlock();
-        if (!prior) {   // If another thread hasn't already reported an exception:
-            done = true;
-            userCancelled = true;
-        }
-        return true;
-    }
-    return false;
 }
 
 // */

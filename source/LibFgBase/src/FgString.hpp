@@ -140,6 +140,13 @@ struct  FgString
     FG_SERIALIZE1(m_str)
 };
 
+typedef std::vector<FgString>   FgStrings;
+
+inline
+FgString
+fgToLower(const FgString & str)
+{return str.toLower(); }
+
 inline
 FgString
 operator+(const std::string & lhs,const FgString & rhs)
@@ -154,7 +161,11 @@ fgTr(const std::string & message);
 
 // Remove all instances of a given character:
 FgString
-fgRemoveChars(const FgString & s,uchar c);
+fgRemoveChars(const FgString & str,uchar chr);
+
+// Remove all instances of any of the given characters:
+FgString
+fgRemoveChars(const FgString & str,FgString chrs);
 
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
@@ -163,5 +174,14 @@ fgGlobMatch(const FgString & globStr,const FgString & str);
 
 FgString
 fgSubstring(const FgString & str,size_t start,size_t size);
+
+// Inspired by Python join():
+FgString
+fgConcat(const FgStrings & strings,const FgString & separator);
+
+// Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
+// Non-ASCII characters are projected down to ASCII to minimize ambiguities:
+std::string
+fgToVariableName(const FgString & str);
 
 #endif // INCLUDED_FGSTRING_HPP

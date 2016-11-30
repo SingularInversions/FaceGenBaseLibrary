@@ -70,7 +70,16 @@ struct  FgOut
     {return ((!m_mute) && (m_stream == &std::cout)); }
 
     void
-    logFile(const FgString & fname,bool append=true);
+    logFile(const FgString & fname,bool append=true,bool prependDate=true);
+
+    void
+    logFileClose()
+    {
+        m_mutex.lock();
+        if (m_ofstream.is_open())
+            m_ofstream.close();
+        m_mutex.unlock();
+    }
 
     void
     push()

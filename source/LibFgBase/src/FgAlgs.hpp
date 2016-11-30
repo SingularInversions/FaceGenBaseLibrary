@@ -50,15 +50,6 @@ template<class T>
 const T &  fgMin(const T &x1,const T &x2,const T &x3)
 {return std::min(std::min(x1,x2),x3); }
 
-template<class T>
-T
-fgClamp(T val,T lo,T hi)
-{
-    if (val < lo) return lo;
-    if (val > hi) return hi;
-    return val;
-}
-
 // 1D convolution with zero-value boundary handling (non-optimized):
 std::vector<double>
 fgConvolve(

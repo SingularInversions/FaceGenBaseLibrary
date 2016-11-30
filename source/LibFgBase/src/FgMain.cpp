@@ -17,6 +17,7 @@
 
 using namespace std;
 
+static
 FgArgs
 fgArgs(int argc,const char * argv[])
 {
@@ -26,6 +27,7 @@ fgArgs(int argc,const char * argv[])
     return args;
 }
 
+static
 FgArgs
 fgArgs(int argc,const wchar_t * argv[])
 {
@@ -37,9 +39,6 @@ fgArgs(int argc,const wchar_t * argv[])
     return args;
 }
 
-int
-fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
-{
 // Final EOL required to due fgout idiom of fgnl at beginning of line:
 #ifdef _WIN32
 // Windows cmd.exe automatically adds an EOL so we only need one more:
@@ -48,6 +47,9 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
 #define FLUSH fgout << endl << endl
 #endif
 
+int
+fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
+{
     try
     {
         FgArgs  args = fgArgs(argc,argv);

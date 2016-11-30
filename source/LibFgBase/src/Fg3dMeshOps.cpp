@@ -17,6 +17,7 @@
 #include "FgBounds.hpp"
 #include "FgDraw.hpp"
 #include "FgAffineCwPreC.hpp"
+#include "FgBestN.hpp"
 
 using namespace std;
 
@@ -90,7 +91,7 @@ fgCreateSphere(
     for (uint ss=0; ss<subdivisions; ss++) {
         for (uint ii=0; ii<mesh.verts.size(); ii++)
             mesh.verts[ii] *= radius / mesh.verts[ii].length();
-        mesh = fgSubdivideFlat(mesh);
+        mesh = fgSubdivide(mesh,false);
     }
     for (uint ii=0; ii<mesh.verts.size(); ii++)
         mesh.verts[ii] *= radius / mesh.verts[ii].length();
@@ -530,26 +531,16 @@ fgMergeMeshes(
     const Fg3dMesh &    m1)
 {
     Fg3dMesh            ret;
-    ret.name = m0.name + "_" + m1.name;
+    if (!m0.name.empty() && !m1.name.empty())
+        ret.name = m0.name + "_" + m1.name;
+    else
+        ret.name = m0.name + m1.name;
     ret.verts = fgConcat(m0.verts,m1.verts);
     ret.uvs = fgConcat(m0.uvs,m1.uvs);
-    ret.surfaces = m0.surfaces;
-    for (uint ss=0; ss<m1.surfaces.size(); ++ss)
-        ret.surfaces.push_back(m1.surfaces[ss].offset(m0.verts.size(),m0.uvs.size()));
-    if (!(m0.texImages.empty() && m1.texImages.empty())) {
-        for (size_t ss=0; ss<m0.surfaces.size(); ++ss) {
-            if (ss < m0.texImages.size())
-                ret.texImages.push_back(m0.texImages[ss]);
-            else
-                ret.texImages.push_back(FgImgRgbaUb());
-        }
-        for (size_t ss=0; ss<m1.surfaces.size(); ++ss) {
-            if (ss < m1.texImages.size())
-                ret.texImages.push_back(m1.texImages[ss]);
-            else
-                ret.texImages.push_back(FgImgRgbaUb());
-        }
-    }
+    ret.surfaces = fgEnsureNamed(m0.surfaces,m0.name);
+    vector<Fg3dSurface>     s1s = fgEnsureNamed(m1.surfaces,m1.name);
+    for (uint ss=0; ss<s1s.size(); ++ss)
+        ret.surfaces.push_back(s1s[ss].offset(m0.verts.size(),m0.uvs.size()));
     for (size_t ii=0; ii<m0.deltaMorphs.size(); ++ii) {
         FgMorph     dm = m0.deltaMorphs[ii];
         dm.verts.resize(m0.verts.size()+m1.verts.size());
@@ -611,7 +602,7 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
             FgVect3UI   uvInd = surf.tris.uvInds[jj];
             FgVect3UI   vtInd = surf.tris.vertInds[jj];
             for (uint kk=0; kk<3; ++kk) {
-                bool    valid = mask[fgClamp(FgVect2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
+                bool    valid = mask[fgClipVol(FgVect2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
             }
         }
@@ -667,12 +658,12 @@ fgUvImage(const Fg3dMesh & mesh,const FgImgRgbaUb & in)
 }
 
 FgVerts
-fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & img,double val)
+fgEmboss(const Fg3dMesh & mesh,const FgImgUC & logoImg,double val)
 {
     FgVerts         ret;
     // Don't check for UV seams, just let the emboss value be the last one traversed:
     FgVerts         deltas(mesh.verts.size());
-    float           fac = fgMaxElem(fgDims(mesh.verts)) * val;
+    vector<size_t>  embossedVertInds;
     Fg3dNormals     norms = fgNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface &     surf = mesh.surfaces[ss];
@@ -682,9 +673,11 @@ fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & img,double val)
             for (uint jj=0; jj<3; ++jj) {
                 FgVect2F        uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
+                float           imgSamp = fgLerpClip(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
-                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
+                deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
+                if (imgSamp > 0)
+                    embossedVertInds.push_back(vtIdx);
             }
         }
         for (size_t ii=0; ii<surf.numQuads(); ++ii) {
@@ -693,15 +686,18 @@ fgEmboss(const Fg3dMesh & mesh,const FgImgRgbaUb & img,double val)
             for (uint jj=0; jj<4; ++jj) {
                 FgVect2F        uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgInterpolateClamp(img,uv).rec709() / 255.0f;
+                float           imgSamp = fgLerpClip(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
-                deltas[vtIdx] = norms.vert[vtIdx] * fac * imgSamp;
+                deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
+                if (imgSamp > 0)
+                    embossedVertInds.push_back(vtIdx);
             }
         }
     }
+    float       fac = fgMaxElem(fgDims(fgReorder(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
-        ret[ii] = mesh.verts[ii] + deltas[ii];
+        ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
     return ret;
 }
 
@@ -716,6 +712,103 @@ fgApplyExpression(const Fg3dMesh & mesh,const vector<FgMorphVal> & expression)
             coord[idx.val()] = expression[ii].val;
     }
     mesh.morph(coord,ret);
+    return ret;
+}
+
+void
+fgSurfPointsToMarkedVerts(const Fg3dMesh & in,Fg3dMesh & out)
+{
+    for (size_t ii=0; ii<in.surfaces.size(); ++ii) {
+        const Fg3dSurface &     surf = in.surfaces[ii];
+        for (size_t jj=0; jj<surf.surfPoints.size(); ++jj) {
+            FgVect3F        pos = surf.surfPointPos(in.verts,jj);
+            FgMarkedVert    mv;
+            mv.idx = uint(out.verts.size());
+            mv.label = surf.surfPoints[jj].label;
+            out.markedVerts.push_back(mv);
+            out.verts.push_back(pos);
+        }
+    }
+}
+
+FgMeshMirror
+fgMeshMirrorX(const Fg3dMesh & in)
+{
+    FgMeshMirror    ret;
+    ret.mesh = in;
+    ret.mesh.deltaMorphs.clear();
+    // Mirror the vertices not on the saggital plane. Track this by index not position
+    // since lip touch may have co-incident (but different) verts:
+    ret.mirrorInds.resize(in.verts.size());
+    for (size_t ii=0; ii<in.verts.size(); ++ii) {
+        FgVect3F    pos = in.verts[ii];
+        if (pos[0] == 0)
+            ret.mirrorInds[ii] = uint(ii);
+        else {
+            ret.mirrorInds[ii] = uint(ret.mesh.verts.size());
+            pos[0] *= -1;
+            ret.mesh.verts.push_back(pos);
+            ret.mirrorInds.push_back(uint(ii));
+        }
+    }
+    for (size_t ss=0; ss<ret.mesh.surfaces.size(); ++ss) {
+        const Fg3dSurface &     si = in.surfaces[ss];
+        Fg3dSurface &           so = ret.mesh.surfaces[ss];
+        FGASSERT(si.quads.empty());
+        for (size_t ff=0; ff<si.tris.vertInds.size(); ++ff) {
+            FgVect3UI           tri = si.tris.vertInds[ff],
+                                ntri;
+            for (uint ii=0; ii<3; ++ii) {
+                FgVect3F        p = in.verts[tri[ii]];
+                if (p[0] == 0)
+                    ntri[ii] = tri[ii];
+                else
+                    ntri[ii] = ret.mirrorInds[tri[ii]];
+            }
+            std::swap(ntri[1],ntri[2]);     // Avoid mirrored winding
+            so.tris.vertInds.push_back(ntri);
+        }
+    }
+    return ret;
+}
+
+Fg3dMesh
+fgCopySurfaceStructure(const Fg3dMesh & from,const Fg3dMesh & to)
+{
+    Fg3dMesh        ret(to);
+    ret.mergeAllSurfaces();
+    Fg3dSurface     surf = ret.surfaces[0];
+    if (!surf.quads.vertInds.empty())
+        fgThrow("Quads not supported");
+    const vector<FgVect3UI> & tris = surf.tris.vertInds;
+    ret.surfaces.clear();
+    ret.surfaces.resize(from.surfaces.size());
+    for (size_t ss=0; ss<ret.surfaces.size(); ++ss)
+        ret.surfaces[ss].name = from.surfaces[ss].name;
+    for (size_t ii=0; ii<tris.size(); ++ii) {
+        FgVect3UI   inds = tris[ii];
+        FgVect3F    tpos = (ret.verts[inds[0]] + ret.verts[inds[1]] + ret.verts[inds[2]]) / 3;
+        FgMin<float,size_t>     minSurf;
+        for (size_t ss=0; ss<from.surfaces.size(); ++ss) {
+            const Fg3dSurface &     fs = from.surfaces[ss];
+            for (size_t jj=0; jj<fs.tris.vertInds.size(); ++jj) {
+                FgVect3UI   fi = fs.tris.vertInds[jj];
+                FgVect3F    fpos = (from.verts[fi[0]] + from.verts[fi[1]] + from.verts[fi[2]]) / 3;
+                float       mag = (fpos-tpos).mag();
+                minSurf.update(mag,ss);
+            }
+        }
+        ret.surfaces[minSurf.val()].tris.vertInds.push_back(inds);
+    }
+    return ret;
+}
+
+vector<FgVect3UI>
+fgMeshSurfacesAsTris(const Fg3dMesh & m)
+{
+    vector<FgVect3UI>   ret;
+    for (size_t ss=0; ss<m.surfaces.size(); ++ss)
+        fgAppend(ret,m.surfaces[ss].convertToTris().tris.vertInds);
     return ret;
 }
 

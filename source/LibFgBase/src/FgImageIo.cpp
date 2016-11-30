@@ -68,6 +68,14 @@ fgLoadImgAnyFormat(
         }
     }
 }
+void
+fgLoadImgAnyFormat(const FgString & fname,FgImgUC & ret)
+{
+    FgImgRgbaUb     img = fgLoadImgAnyFormat(fname);
+    ret.resize(img.dims());
+    for (size_t ii=0; ii<ret.numPixels(); ++ii)
+        ret[ii] = img[ii].rec709();
+}
 
 FgImg4UC
 fgLoadImg4UC(const FgString & fname)

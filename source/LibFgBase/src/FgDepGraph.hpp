@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     Dec 7, 2006
 //
-// Dependency graph - lazy updates in a dependency graph (acyclic) of calculations.
+// Dependency graph - lazy dataflow updates in an acyclic directed bipartite graph of computations.
 //
 // USE:
 //
@@ -38,10 +38,7 @@
 #include "FgOpt.hpp"
 #include "FgSmartPtr.hpp"
 
-typedef
-void (*FgLink)(
-    const vector<const FgVariant*> &,
-    const vector<FgVariant*> &);
+typedef boost::function<void(const vector<const FgVariant *> &,const vector<FgVariant*> &)> FgLink;
 
 template<class T>
 struct  FgDgn
@@ -53,12 +50,6 @@ struct  FgDgn
     explicit
     FgDgn(uint idx)
     : m_idx(idx)
-    {}
-
-    // Convenient way to declare and create without duplication:
-    template<class DepGraph>
-    FgDgn(DepGraph & dg,const string & label)
-    : m_idx(dg.addNode(T(),label))
     {}
 
     operator uint () const
@@ -81,27 +72,37 @@ struct  FgDgn
 #define FGLINKARGS(in,out)                                  \
         FGASSERT((inputs.size() == in) && (outputs.size() == out))
 
-template<class I0,class O0,O0 (*F)(const I0 &)>
-FGLINK(fgLink11)
+template<class In,class Out>
+void fgLink11(
+    boost::function<void(const In &,Out &)> func,
+    const vector<const FgVariant*> &    inputs,
+    const vector<FgVariant*> &          outputs)
 {
     FGLINKARGS(1,1);
-    const I0 &  i0 = inputs[0]->valueRef();
-    O0 &        o0 = outputs[0]->valueRef();
-    o0 = F(i0);
+    const In &  in = inputs[0]->valueRef();
+    Out &       out = outputs[0]->valueRef();
+    func(in,out);
 }
 
-template<class I0,class I1,class O0,O0 (*F)(const I0 &,const I1 &)>
-FGLINK(fgLink21)
+template<class In0,class In1,class Out>
+void fgLink21(
+    boost::function<void(const In0 &,const In1 &,Out &)> func,
+    const vector<const FgVariant*> &    inputs,
+    const vector<FgVariant*> &          outputs)
 {
     FGLINKARGS(2,1);
-    const I0 &  i0 = inputs[0]->valueRef();
-    const I1 &  i1 = inputs[1]->valueRef();
-    O0 &        o0 = outputs[0]->valueRef();
-    o0 = F(i0,i1);
+    const In0 & in0 = inputs[0]->valueRef();
+    const In1 & in1 = inputs[1]->valueRef();
+    Out &       out = outputs[0]->valueRef();
+    func(in0,in1,out);
 }
 
 struct  FgDepNode
 {
+    string              label;
+    mutable FgVariant   value;
+    mutable bool        dirty;
+
     FgDepNode() : dirty(true) {}
 
     explicit
@@ -120,16 +121,12 @@ struct  FgDepNode
         else
             return fgToString(idx)+": "+label;
     }
-
-    string              label;
-    mutable FgVariant   value;
-    mutable bool        dirty;
 };
 
 class   FgDepGraph
 {
     FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
-    FgOpt<int(*)()>                 m_cancelCheck;  // If valid and returns non-zero, cancel calculations
+    boost::function<int()>          m_cancelCheck;  // If valid and returns non-zero, cancel calculations
     uint                            m_numThreads;   // Defaults to number of hardware supported threads
 
 public:
@@ -145,26 +142,30 @@ public:
 
     void
     addLink(
-        FgLink                  func,
+        const FgLink &          func,
         const vector<uint> &    sources,
         const vector<uint> &    sinks)
-    {dirtyLink(m_linkGraph.addLink(func,sources,sinks)); }
+    {
+        FGASSERT(func);
+        dirtyLink(m_linkGraph.addLink(func,sources,sinks));
+    }
 
     void
     changeLink(
-        FgLink  func,
-        uint    linkIdx)
-    {m_linkGraph.linkData(linkIdx) = func; dirtyLink(linkIdx); }
+        const FgLink &      func,
+        uint                linkIdx)
+    {
+        FGASSERT(func);
+        m_linkGraph.linkData(linkIdx) = func; dirtyLink(linkIdx);
+    }
 
     void
     appendSource(uint sourceInd,uint sinkInd);
 
+    // Set to null function to disable:
     void
-    setUserCancelCallback(int(*cancelCheck)())
-    {
-        FGASSERT(cancelCheck != 0);
-        m_cancelCheck = cancelCheck;
-    }
+    setUserCancelCallback(const boost::function<int()> & cancelCheck)
+    {m_cancelCheck = cancelCheck; }
 
     uint
     numNodes() const
@@ -269,7 +270,7 @@ public:
     incomingLink(uint nodeIdx) const
     {return m_linkGraph.incomingLink(nodeIdx); }
 
-    FgLink
+    const FgLink &
     getLink(uint linkIdx) const
     {return m_linkGraph.getLink(linkIdx); }
 
@@ -317,14 +318,27 @@ private:
         FgException                 exception;
         std::auto_ptr<boost::mutex> guardQueue;
         char                        cachePad0[64-sizeof(std::auto_ptr<boost::mutex>)];
-        vector<uint>           queue;
+        vector<uint>                queue;
         char                        cachePad1[64-sizeof(size_t)];
         uint                        lastLink;
         bool                        done;
         bool                        userCancelled;
 
-        void set(const FgException &,uint);
-        bool cancelCheck(int(*)());                 // Not MT safe, only call from 1 thread.
+        void
+        set(const FgException &,uint);
+
+        void
+        cancel()        // Not MT safe, only call from 1 thread.
+        {
+            guardException->lock();
+            bool prior = flag;
+            flag = true;
+            guardException->unlock();
+            if (!prior) {   // If another thread hasn't already reported an exception:
+                done = true;
+                userCancelled = true;
+            }
+        }
     };
 
     void
@@ -364,10 +378,13 @@ public:
 
     void
     addLink(
-        FgLink                      func,
-        const vector<uint> &   sources,
-        const vector<uint> &   sinks)
-    {dirtyLink(m_linkGraph.addLink(func,sources,sinks)); }
+        const FgLink &          func,
+        const vector<uint> &    sources,
+        const vector<uint> &    sinks)
+    {
+        FGASSERT(func);
+        dirtyLink(m_linkGraph.addLink(func,sources,sinks));
+    }
 
     void
     appendSource(uint sourceInd,uint sinkInd);
@@ -470,7 +487,7 @@ public:
     incomingLink(uint nodeIdx) const
     {return m_linkGraph.incomingLink(nodeIdx); }
 
-    FgLink
+    const FgLink &
     getLink(uint linkIdx) const
     {return m_linkGraph.getLink(linkIdx); }
 
@@ -554,13 +571,24 @@ inline vector<uint> fgUints(uint a,uint b,uint c,uint d,uint e,uint f,uint g,uin
 {return fgSvec(a,b,c,d,e,f,g,h,i); }
 
 template<class T>
+vector<uint>
+fgUints(const vector<FgDgn<T> > & nodes)
+{
+    vector<uint>    ret;
+    ret.reserve(nodes.size());
+    for (size_t ii=0; ii<nodes.size(); ++ii)
+        ret.push_back(nodes[ii].idx());
+    return ret;
+}
+
+template<class T>
 FGLINK(fgLinkCollate)
 {
     FGASSERT(outputs.size() == 1);
     vector<T> &        out = outputs[0]->valueRef();
     out.clear();
-    for (size_t ii=0; ii<inputs.size(); ++ii)
-    {
+    out.reserve(inputs.size());
+    for (size_t ii=0; ii<inputs.size(); ++ii) {
         const T &           in = inputs[ii]->valueRef();
         out.push_back(in);
     }
@@ -579,10 +607,19 @@ FGLINK(fgLinkMerge)
 }
 
 template<class T>
+FGLINK(fgLnkSelect)
+{
+    FGLINKARGS(2,1);
+    const vector<T> &       vals = inputs[0]->valueRef();
+    size_t                  idx = inputs[1]->valueRef();
+    outputs[0]->set(vals.at(idx));
+}
+
+template<class T>
 FgDgn<vector<T> >
 fgDgCollate(
-    FgDepGraphSt &                   dg,
-    const vector<FgDgn<T> > &  nodes)
+    FgDepGraphSt &              dg,
+    const vector<FgDgn<T> > &   nodes)
 {
     FgDgn<vector<T> >  ret = dg.addNode(vector<T>());
     vector<uint>       inp(nodes.size());
@@ -592,7 +629,20 @@ fgDgCollate(
     return ret;
 }
 
-FGLINK(fgLinkNoop);
+FGLINK(fgLnkNoop);
+
+template<class T>
+FGLINK(fgLnkCollateNonempty)
+{
+    FGASSERT(outputs.size() == 1);
+    vector<T> &        out = outputs[0]->valueRef();
+    out.clear();
+    for (size_t ii=0; ii<inputs.size(); ++ii) {
+        const T &           in = inputs[ii]->valueRef();
+        if (!in.empty())
+            out.push_back(in);
+    }
+}
 
 // The 'dot' executable from Graphviz must be in the path for this to work:
 void

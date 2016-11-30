@@ -6,16 +6,14 @@
 // Authors:     Andrew Beatty
 // Created:     Nov 16, 2005
 //
-// Runtime polymorphic encapsulation of any copy-constructible type for C++.
+// Dynamic type for C++.
 //
-//      USE:
+// Uses the shared_ptr idiom for heap object ownership. Use 'clone()' to explicitly copy.
 //
-// See Libfgen/tests/FgVariant.cpp
-//
-// Uses the copy-on-copy idiom for heap object ownership.
 // Types must have a copy constructor.
-// boost::any could not be used since it was deemed necessary to make this compatible with serialization.
-// boost::variant perhaps could have been used; not sure.
+//
+// boost::any could perhaps have been used but it was easier to ensure compatibility with serialization
+// mechansims this way.
 
 #ifndef FGVARIANT_HPP
 #define FGVARIANT_HPP
@@ -34,9 +32,9 @@ class FgVariant
     {
         virtual ~PolyBase() {};
 
-        // Returns a pointer to a *new* copy of the object:
+        // Returns a pointer to a new copy of the object:
         virtual 
-        FgSharedPtr<PolyBase>          
+        FgPtr<PolyBase>          
         clone() const = 0;
 
         virtual
@@ -44,7 +42,7 @@ class FgVariant
         typeName() const = 0;
     };
 
-    FgSharedPtr<PolyBase>   m_poly;
+    FgPtr<PolyBase>   m_poly;
 
     // The data container makes use of the default copy constructor and (virtual) destructor.
     template<class T>
@@ -58,9 +56,9 @@ class FgVariant
         Poly(const T & val) : m_data(val) {}
 
         virtual 
-        FgSharedPtr<PolyBase>
+        FgPtr<PolyBase>
         clone() const 
-        {return FgSharedPtr<PolyBase>(new Poly(m_data)); }
+        {return FgPtr<PolyBase>(new Poly(m_data)); }
 
         virtual 
         std::string 
@@ -82,19 +80,14 @@ public:
     : m_poly(new Poly<T>(val))
     {}
 
-    // Copy constructor is a deep copy:
     FgVariant(const FgVariant & var)
-    {
-        if (var.m_poly)
-            m_poly = var.m_poly->clone();
-    }
+    : m_poly(var.m_poly)
+    {}
 
     template<class T>
     void
     operator=(const T & val)
-    {
-        m_poly.reset(new Poly<T>(val));
-    }
+    {m_poly.reset(new Poly<T>(val)); }
 
     template<class T>
     void
@@ -104,9 +97,9 @@ public:
         tv = val;
     }
 
-    // Assigning from an FgVariant copies the value within:
-    FgVariant &
-    operator=(const FgVariant & var);
+    void
+    operator=(const FgVariant & var)
+    {m_poly = var.m_poly; }
 
     template<class T>
     bool

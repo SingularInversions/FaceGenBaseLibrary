@@ -58,12 +58,13 @@ struct FgGuiApiSlider : FgGuiApi<FgGuiApiSlider>
 FgGuiPtr
 fgGuiSlider(
     FgDgn<double>   val,
-    FgString        label,                  // Can be empty
+    FgString        label,               // Can be empty
     FgVectD2        range,
     double          tickSpacing,
     const FgGuiApiTickLabels & tl = FgGuiApiTickLabels(),
     const FgGuiApiTickLabels & ul = FgGuiApiTickLabels(),
-    uint            edgePadding=5);
+    uint            edgePadding=5,
+    bool            editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
 
 // Create a panel of similar sliders with numbered names:
 
@@ -76,7 +77,7 @@ struct  FgGuiSliders
 
 FgGuiSliders
 fgGuiSliders(
-    uint                    numSliders,
+    size_t                  numSliders,
     FgString                baseLabel,
     FgVectD2                range,
     double                  initVal,
@@ -85,7 +86,7 @@ fgGuiSliders(
 FgGuiWinVal<vector<double> >
 fgGuiSliders(
     const FgString &        relStore,
-    const vector<FgString> & labels,
+    const FgStrings & labels,
     FgVectD2                range,
     double                  initVal,
     double                  tickSpacing);

@@ -85,19 +85,18 @@ fgSaveVrml(
     ofs <<
         "#VRML V2.0 utf8\n"
         "# Copyright 2015 Singular Inversions Inc. (facegen.com)\n"
-        "# For more information, please visit http://FaceGen.com.\n";
-    FgPath      fpath(filename);
+        "# For more information, please visit https://facegen.com\n";
+    FgPath          fpath(filename);
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const Fg3dMesh &    mesh = meshes[ii];
-        FgString            name;
-        // Some VRML parsers (Meshlab) cannot handle spaces in names:
+        FgString            nameUtf;
         if (mesh.name.empty())
-            name = fpath.base.replace(' ','_') + fgToString(ii);
+            nameUtf = fpath.base + fgToString(ii);
         else
-            name = mesh.name.replace(' ','_');
-        // Some VRML parsers (Meshlab) cannot handle a DEF name starting with a digit:
-        if (fgIsDigit(name.m_str[0]))
-            name = FgString("_") + name;
+            nameUtf = mesh.name;
+        // Some VRML parsers (Meshlab) require DEF variable names to be strictly alphanumeric starting
+        // with a letter:
+        string              name = fgToVariableName(nameUtf);
         ofs << "\n"
             "DEF " << name << " Shape\n"
             "{\n"
@@ -109,13 +108,13 @@ fgSaveVrml(
             "            diffuseColor        0.8 0.8 0.8\n"
             "            specularColor       0 0 0\n"
             "        }\n";
-        if (!mesh.texImages.empty()) {
-            if (mesh.texImages.size() > 1)
+        if (mesh.numValidAlbedoMaps() > 0) {
+            if (mesh.numValidAlbedoMaps() > 1)
                 fgThrow("VRML export with multiple texture images not yet implemented");
             // Some software (Meshlab:) can't deal with spaces in the image filename:
             FgString    imgFile = fpath.base.replace(' ','_') + fgToString(ii);
             imgFile += "." + imgFormat;
-            fgSaveImgAnyFormat(fpath.dir()+imgFile,mesh.texImages[0]);
+            fgSaveImgAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].albedoMap);
             ofs <<
                 "        texture ImageTexture\n"
                 "        {\n"

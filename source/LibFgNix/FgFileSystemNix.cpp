@@ -98,7 +98,7 @@ fgDirUserAppDataRoamingRoot()
 }
 
 FgString
-fgUserDocumentsDirectory()
+fgUserDocumentsDirectory(bool)
 {
     fgThrowNotImplemented();
     return FgString();

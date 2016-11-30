@@ -273,6 +273,8 @@
         </File>
         <File RelativePath="..\src\Fg3dMeshFbx.cpp">
         </File>
+        <File RelativePath="..\src\Fg3dMeshFgmesh.cpp">
+        </File>
         <File RelativePath="..\src\Fg3dMeshIo.cpp">
         </File>
         <File RelativePath="..\src\Fg3dMeshIo.hpp">
@@ -357,6 +359,8 @@
         </File>
         <File RelativePath="..\src\FgCl.hpp">
         </File>
+        <File RelativePath="..\src\FgCmd.hpp">
+        </File>
         <File RelativePath="..\src\FgCmdBase.cpp">
         </File>
         <File RelativePath="..\src\FgCmdImgops.cpp">
@@ -364,6 +368,8 @@
         <File RelativePath="..\src\FgCmdMeshops.cpp">
         </File>
         <File RelativePath="..\src\FgCmdMorph.cpp">
+        </File>
+        <File RelativePath="..\src\FgCmdNcServer.cpp">
         </File>
         <File RelativePath="..\src\FgCmdRender.cpp">
         </File>
@@ -446,6 +452,8 @@
         <File RelativePath="..\src\FgGuiApiButton.cpp">
         </File>
         <File RelativePath="..\src\FgGuiApiButton.hpp">
+        </File>
+        <File RelativePath="..\src\FgGuiApiCheckbox.cpp">
         </File>
         <File RelativePath="..\src\FgGuiApiCheckbox.hpp">
         </File>
@@ -670,8 +678,6 @@
         <File RelativePath="..\src\FgVariant.cpp">
         </File>
         <File RelativePath="..\src\FgVariant.hpp">
-        </File>
-        <File RelativePath="..\src\FgVariantTest.cpp">
         </File>
         <File RelativePath="..\src\FgViz.cpp">
         </File>

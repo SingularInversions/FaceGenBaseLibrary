@@ -87,7 +87,7 @@ struct      FgRgba
 
     FgRgba
     operator*(const FgRgba &rhs) const
-    {return FgRgba(fgMultiply(m_c,rhs.m_c)); }
+    {return FgRgba(fgMapMul(m_c,rhs.m_c)); }
 
     FgRgba
     operator*(T val) const

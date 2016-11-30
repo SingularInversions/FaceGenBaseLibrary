@@ -27,11 +27,9 @@ fgDiagString(const char *fname,int line);
 // dealt with but I haven't bothered; currently the source will not compile properly in a
 // non-ascii path.
 
+// If you're trying to pass a UTF-8 'msg' here, you should probably be using 'fgThrow' instead:
 void
-fgAssert(
-    const char *        fname,
-    int line,
-    const std::string & msg = "");
+fgAssert(const char * fname,int line,const std::string & msg = "");
 
 // We use an 'if' 'else' structure for the macro to avoid the dangling 'else' bug.
 // Leave off the semi-colon on the second line to force a compile error:

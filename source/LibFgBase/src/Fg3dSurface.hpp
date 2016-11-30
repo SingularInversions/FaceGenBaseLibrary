@@ -13,6 +13,7 @@
 #include "FgStdString.hpp"
 #include "FgTypes.hpp"
 #include "FgMatrix.hpp"
+#include "FgImage.hpp"
 
 struct  FgVertLabel
 {
@@ -26,8 +27,6 @@ struct FgSurfPoint
     FgVect3F        weights;        // Barycentric coordinate of point in triangle
     string          label;          // Optional
 
-    FG_SERIALIZE3(triEquivIdx,weights,label)
-
     FgSurfPoint() {};
     FgSurfPoint(uint t,const FgVect3F & w) : triEquivIdx(t), weights(w) {}
 
@@ -35,6 +34,11 @@ struct FgSurfPoint
     operator==(const string & rhs) const
     {return (label == rhs); }
 };
+
+void    fgReadp(std::istream &,FgSurfPoint &);
+void    fgWritep(std::ostream &,const FgSurfPoint &);
+
+typedef std::vector<FgSurfPoint>    FgSurfPoints;
 
 inline
 FgVect3F
@@ -52,7 +56,6 @@ struct  FgFacetInds
     typedef FgMatrixC<uint,dim,1>   Ind;
     vector<Ind>                vertInds;   // CC winding
     vector<Ind>                uvInds;     // size() == 0 || vertInds.size()
-    FG_SERIALIZE2(vertInds,uvInds)
 
     FgFacetInds() {}
     FgFacetInds(const vector<Ind> & v, const vector<Ind> & u)
@@ -85,6 +88,22 @@ struct  FgFacetInds
 
 template<uint dim>
 void
+fgReadp(std::istream & is,FgFacetInds<dim> & fi)
+{
+    fgReadp(is,fi.vertInds);
+    fgReadp(is,fi.uvInds);
+}
+
+template<uint dim>
+void
+fgWritep(std::ostream & os,const FgFacetInds<dim> & fi)
+{
+    fgWritep(os,fi.vertInds);
+    fgWritep(os,fi.uvInds);
+}
+
+template<uint dim>
+void
 fgAppend(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
 {
     // Avoid 'hasUvs()' compare if one is empty:
@@ -103,14 +122,14 @@ fgAppend(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
         fgAppend(lhs.uvInds,rhs.uvInds);
 }
 
+// A grouping of facets (tri and quad) sharing material properties:
 struct  Fg3dSurface
 {
     FgString                    name;
-    FgString                    material;
     FgFacetInds<3>              tris;
     FgFacetInds<4>              quads;
-    vector<FgSurfPoint>         surfPoints;
-    FG_SERIALIZE5(name,material,tris,quads,surfPoints)
+    FgSurfPoints                surfPoints;
+    boost::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be empty. Not serialized.
 
     Fg3dSurface() {}
     Fg3dSurface(
@@ -122,7 +141,7 @@ struct  Fg3dSurface
         const vector<FgVect4UI> & quads = vector<FgVect4UI>(),
         const vector<FgVect3UI> & tris_uvinds = vector<FgVect3UI>(),
         const vector<FgVect4UI> & quads_uvinds = vector<FgVect4UI>(),
-        const vector<FgSurfPoint> & surfPoints = vector<FgSurfPoint>());
+        const FgSurfPoints &      surfPoints = FgSurfPoints());
 
     bool
     empty() const
@@ -169,20 +188,8 @@ struct  Fg3dSurface
     hasUvIndices() const
     {return !(tris.uvInds.empty() && quads.uvInds.empty()); }
 
-    uint
-    numSurfPoints() const
-    {return uint(surfPoints.size()); };
-
-    template<class T>
-    FgMatrixC<T,3,1>
-    getSurfPoint(const vector<FgMatrixC<T,3,1> > & verts,size_t idx) const
-    {
-        FgVect3UI  vertInds = getTriEquiv(surfPoints[idx].triEquivIdx);
-        FgVect3F   vertWeights = surfPoints[idx].weights;
-        return (verts[vertInds[0]] * static_cast<T>(vertWeights[0]) +
-                verts[vertInds[1]] * static_cast<T>(vertWeights[1]) +
-                verts[vertInds[2]] * static_cast<T>(vertWeights[2]));
-    }
+    FgVect3F
+    surfPointPos(const FgVerts & verts,size_t idx) const;
 
     // Label must correspond to a surface point:
     FgVect3F
@@ -219,12 +226,33 @@ struct  Fg3dSurface
     operator==(const FgString & str) const
     {return (name == str); }
 
+    void
+    setAlbedoMap(const FgImgRgbaUb & img)
+    {albedoMap = boost::make_shared<FgImgRgbaUb>(img); }
+
+    FgImgRgbaUb &
+    albedoMapRef()
+    {
+        if (!albedoMap)
+            albedoMap = boost::make_shared<FgImgRgbaUb>();
+        return *albedoMap;
+    }
+
+    // Only implemented for tri-only surfaces:
+    void
+    removeTri(size_t triIdx);
+
 private:
     void
     checkInternalConsistency();
 };
 
+void    fgReadp(std::istream &,Fg3dSurface &);
+void    fgWritep(std::ostream &,const Fg3dSurface &);
+
 std::ostream& operator<<(std::ostream&,const Fg3dSurface&);
+
+typedef std::vector<Fg3dSurface>    Fg3dSurfaces;
 
 // Return a surface with only the selected tris (no quads), and any surface points that remain valid:
 Fg3dSurface
@@ -234,16 +262,15 @@ Fg3dSurface
 fgRemoveDuplicateFacets(const Fg3dSurface &);
 
 Fg3dSurface
-fgMergeSurfaces(const vector<Fg3dSurface> & surfs);
+fgMergeSurfaces(const Fg3dSurfaces & surfs);
 
-// Split a surface into a series of 1 or more discontiguous surfaces
+// Split a surface into its (one or more) discontiguous surfaces
 vector<Fg3dSurface>
 fgSplitSurface(const Fg3dSurface & surf);
 
-Fg3dSurface
-fgSubdivideFlat(const Fg3dSurface & surf,FgVerts & verts);
-
-Fg3dSurface
-fgSubdivideLoop(const Fg3dSurface & surf,const FgVerts & vertsIn,FgVerts & vertsOut);
+// Name any unnamed surfaces as numbered extensions of the given base name,
+// or just the base name if there is only a single (unnamed) surface:
+Fg3dSurfaces
+fgEnsureNamed(const Fg3dSurfaces & surfs,const FgString & baseName);
 
 #endif

@@ -43,7 +43,7 @@ viewMesh(const FgArgs & args)
     }
     vector<Fg3dMesh>    meshes;
     while (syntax.more()) {
-        string          fname = syntax.next(),
+        FgString        fname = syntax.next(),
                         ext = fgToLower(fgPathToExt(fname));
         Fg3dMesh        mesh = fgLoadMeshAnyFormat(fname);
         fgout << fgnl << "Mesh " << meshes.size() << ": " << fgpush << mesh;
@@ -64,21 +64,16 @@ viewMesh(const FgArgs & args)
                 FgImgRgbaUb     trans;
                 fgout << fgnl << "Transparency image:" << trans;
                 fgLoadImgAnyFormat(syntax.next(),trans);
-                mesh.texImages.push_back(fgImgApplyTransparencyPow2(texture,trans));
+                mesh.surfaces[0].setAlbedoMap(fgImgApplyTransparencyPow2(texture,trans));
             }
             else {
-                FgImgRgbaUb     texPow;
-                fgResizePow2Ceil(texture,texPow);
-                mesh.texImages.push_back(texPow);
+                fgResizePow2Ceil(texture,mesh.surfaces[0].albedoMapRef());
             }
         }
         meshes.push_back(mesh);
         fgout << fgpop;
     }
-    if (compare && (meshes.size() > 1))
-        fgDisplayMeshes(meshes,true);
-    else
-        fgDisplayMeshes(meshes,false);
+    fgDisplayMeshes(meshes,compare);
 }
 
 void

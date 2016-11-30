@@ -50,8 +50,8 @@ struct  FgAffineCwPreC
                             rangeHi = range.colVec(1),
                             rangeSize = rangeHi-rangeLo;
         FGASSERT(domainSize.volume() > 0);
-        m_scales = fgDivide(rangeSize,domainSize);
-        m_trans = fgDivide(rangeLo,m_scales) - domainLo;
+        m_scales = fgMapDiv(rangeSize,domainSize);
+        m_trans = fgMapDiv(rangeLo,m_scales) - domainLo;
     }
 
     template<uint ncols>

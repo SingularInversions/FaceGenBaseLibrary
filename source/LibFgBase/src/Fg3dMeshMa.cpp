@@ -1976,7 +1976,7 @@ static void connectAttributes(
 }
 
 FgMeshLegacy
-fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string & imgFormat)
+fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string & imgFormat,uint maxLen)
 {
     FgMeshLegacy                    ret;
     FgPath                          path(fname);
@@ -1996,23 +1996,27 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
         else {
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
                 const Fg3dSurface &         surf = mesh.surfaces[ss];
-                FgString                    texName;
-                if (ss < mesh.texImages.size()) {
-                    texName = path.base + fgToString(imgIdx++) + "." + imgFormat;
-                    fgSaveImgAnyFormat(path.dir()+texName,mesh.texImages[ss]);
+                string                      texBase;
+                if (surf.albedoMap) {
+                    string                  baseName = path.base.as_ascii();
+                    if (maxLen > 0)
+                        if (baseName.length() > maxLen)
+                            baseName.resize(maxLen);
+                    texBase = baseName + fgToString(imgIdx++) + "." + imgFormat;
+                    fgSaveImgAnyFormat(path.dir()+texBase,*surf.albedoMap);
                 }
                 od.triList = surf.tris.vertInds;
                 od.quadList = surf.quads.vertInds;
                 od.texTriList = surf.tris.uvInds;
                 od.texQuadList = surf.quads.uvInds;
-                od.textureFile = texName.m_str;
+                od.textureFile = texBase;
                 ret.base.m_objs.push_back(od);
                 meshesInds.push_back(ii);
             }
         }
     }
     set<FgString>           morphSet = fgMorphs(meshes);
-    vector<FgString>        morphs(morphSet.begin(),morphSet.end());
+    FgStrings        morphs(morphSet.begin(),morphSet.end());
     ret.morphs.resize(morphs.size(),ret.base);
     for (size_t mm=0; mm<morphs.size(); ++mm) {
         vector<FffMultiObjectC::objData> &  ods = ret.morphs[mm].m_objs;
@@ -2048,7 +2052,7 @@ fgSaveMaTest(const FgArgs & args)
     FgString    dd = fgDataDir();
     string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
+    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveMa("meshExportMa",fgSvec(mesh));
     fgRegressFile("meshExportMa.ma","base/test/");
     fgRegressFile("meshExportMa0.png","base/test/");

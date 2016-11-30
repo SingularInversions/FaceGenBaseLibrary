@@ -31,46 +31,61 @@ string
 fgLoadMeshFormatsDescription();
 
 // Note that meshes and/or surfaces may be merged and other data may be lost
-// depending on the format (see comments below per-format):
+// depending on the format (see comments below per-format).
 void
-fgSaveMeshesAnyFormat(const vector<Fg3dMesh> & meshes,const FgString & fname);
+fgSaveMeshesAnyFormat(const vector<Fg3dMesh> & meshes,const FgString & fname,const string & imgFormat="png");
 
 inline
 void
 fgSaveMeshAnyFormat(const Fg3dMesh & mesh,const FgString & fname)
 {fgSaveMeshesAnyFormat(fgSvec(mesh),fname); }
 
-std::string
-fgSaveMeshFormatsDescription();
+// Does not include FaceGen formats:
+const vector<string> &
+fgMeshExportFormatsExts();
 
-FgVerts
-fgLoadVerts(const FgString & meshFilename);
+// 1-1 with above
+const vector<string> &
+fgMeshExportFormatsDescriptions();
+
+const vector<string> &
+fgMeshExportFormatsWithMorphs();
+
+// Includes 'tri':
+std::string
+fgMeshSaveFormatsString();
+
+// FaceGen mesh format load / save:
+
+Fg3dMesh
+fgLoadFgmesh(const FgString & fname);
+void
+fgSaveFgmesh(const FgString & fname,const Fg3dMesh & mesh);
+void
+fgSaveFgmesh(const FgString & fname,const Fg3dMeshes & meshes);
+
+// FaceGen legacy mesh format load / save:
 
 Fg3dMesh
 fgLoadTri(std::istream & is);
-
 Fg3dMesh
 fgLoadTri(const FgString & fname);
-
 Fg3dMesh
 fgLoadTri(const FgString & meshFile,const FgString & texFile);
-
 // Merges all surfaces:
 void
-fgSaveTri(
-    const FgString &    fname,
-    const Fg3dMesh &    mesh);
-
-// Merges all meshes and surfaces:
+fgSaveTri(const FgString & fname,const Fg3dMesh & mesh);
+// Merges all meshes and surfaces. Texture images not saved.
 inline
 void
 fgSaveTri(const FgString & fname,const vector<Fg3dMesh> & meshes)
 {return fgSaveTri(fname,fgMergeMeshes(meshes)); }
 
-void
+// Third party mesh formats:
+
+Fg3dMesh
 fgLoadWobj(
     const FgString &    filename,
-    Fg3dMesh &          mesh,
     // Break up the surfaces by the given WOBJ separator. Valid values are 'usemtl', 'o' and 'g':
     string              surfSeparator=string());
 
@@ -81,13 +96,16 @@ fgSaveObj(
     const vector<Fg3dMesh> &    meshes,
     string                      imgFormat = "png");
 
+// Ignores morphs:
 void
 fgSaveVrml(
     const FgString &            filename,
     const vector<Fg3dMesh> &    meshes,
     string                      imgFormat = "png");
 
-// Texture image not currently supported as Unity will not automatically load anyway:
+// Meshes with shared morphs must be merged as different surfaces into a single Fg3dMesh for the
+// morphs to be unified in FBX (as imported into Unity). Unity will ignore albedo map file 
+// references so they must be manually added:
 void
 fgSaveFbx(
     const FgString &            filename,

@@ -13,7 +13,7 @@
 
 #include "stdafx.h"
 
-#include "FgCommand.hpp"
+#include "FgCmd.hpp"
 #include "FgSyntax.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
@@ -21,35 +21,33 @@
 
 using namespace std;
 
-#define ADDCMD1(fn,handle) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,handle))
-
 vector<FgCmd>
 fgCmdBaseTests()
 {
     vector<FgCmd>   cmds;
-    ADDCMD1(fgApproxFuncTest,"approxFunc");
-    ADDCMD1(fgBoostSerializationTest,"boostSerialization");
-    ADDCMD1(fgDepGraphTest,"depGraph");
-    ADDCMD1(fgExceptionTest,"exception");
-    ADDCMD1(fgFileSystemTest,"filesystem");
-    ADDCMD1(fgGeometryTest,"geometry");
-    ADDCMD1(fgGridTrianglesTest,"gridTriangles");
-    ADDCMD1(fgImageTest,"image");
-    ADDCMD1(fgMatrixSolverTest,"matrixSolver");
-    ADDCMD1(fgMathTest,"math");
-    ADDCMD1(fgMatrixCTest,"matrixC");
-    ADDCMD1(fgMatrixVTest,"matrixV");
-    ADDCMD1(fgMetaFormatTest,"metaFormat");
-    ADDCMD1(fgMorphTest,"morph");
-    ADDCMD1(fgPathTest,"path");
-    ADDCMD1(fgQuaternionTest,"quaternion");
-    ADDCMD1(fgRenderTest,"render");
-    ADDCMD1(fgSerializeTest,"serialize");
-    ADDCMD1(fgSharedPtrTest,"sharedPtr");
-    ADDCMD1(fgSimilarityTest,"similarity");
-    ADDCMD1(fgSimilarityApproxTest,"similarityApprox");
-    ADDCMD1(fgStringTest,"string");
-    ADDCMD1(fgVariantTest,"variant");
+    FGADDCMD1(fgApproxFuncTest,"approxFunc");
+    FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
+    FGADDCMD1(fgDepGraphTest,"depGraph");
+    FGADDCMD1(fgExceptionTest,"exception");
+    FGADDCMD1(fgFileSystemTest,"filesystem");
+    FGADDCMD1(fgGeometryTest,"geometry");
+    FGADDCMD1(fgGridTrianglesTest,"gridTriangles");
+    FGADDCMD1(fgImageTest,"image");
+    FGADDCMD1(fgMatrixSolverTest,"matrixSolver");
+    FGADDCMD1(fgMathTest,"math");
+    FGADDCMD1(fgMatrixCTest,"matrixC");
+    FGADDCMD1(fgMatrixVTest,"matrixV");
+    FGADDCMD1(fgMetaFormatTest,"metaFormat");
+    FGADDCMD1(fgMorphTest,"morph");
+    FGADDCMD1(fgPathTest,"path");
+    FGADDCMD1(fgQuaternionTest,"quaternion");
+    FGADDCMD1(fgRenderTest,"render");
+    FGADDCMD1(fgSerializeTest,"serialize");
+    FGADDCMD1(fgSharedPtrTest,"sharedPtr");
+    FGADDCMD1(fgSimilarityTest,"similarity");
+    FGADDCMD1(fgSimilarityApproxTest,"similarityApprox");
+    FGADDCMD1(fgStringTest,"string");
+    FGADDCMD1(fgVariantTest,"variant");
     return cmds;
 }
 
@@ -63,11 +61,11 @@ void
 testmGui(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
-    ADDCMD1(fgImgGuiTestm,"image");
-    ADDCMD1(fgTestmGuiMesh,"mesh");
-    ADDCMD1(fgGuiTestmText,"text");
-    ADDCMD1(fgGuiTestmScroll,"scroll");
-    ADDCMD1(fgGuiTestmDialogSplashScreen,"splash");
+    FGADDCMD1(fgImgGuiTestm,"image");
+    FGADDCMD1(fgTestmGuiMesh,"mesh");
+    FGADDCMD1(fgGuiTestmText,"text");
+    FGADDCMD1(fgGuiTestmScroll,"scroll");
+    FGADDCMD1(fgGuiTestmDialogSplashScreen,"splash");
     fgMenu(args,cmds);
 }
 
@@ -76,13 +74,13 @@ fgCmdBaseTestms()
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testmGui,"gui"));
-    ADDCMD1(fg3dTestMan,"3d");
-    ADDCMD1(fg3dReadWobjTest,"readWobj");
-    ADDCMD1(fgRandomTest,"random");
-    ADDCMD1(fgGeometryManTest,"geometry");
-    ADDCMD1(fgSubdivisionTest,"subdivision");
-    ADDCMD1(fgTextureImageMappingRenderTest,"texturemap");
-    ADDCMD1(fgImageTestm,"image");
+    FGADDCMD1(fg3dTestMan,"3d");
+    FGADDCMD1(fg3dReadWobjTest,"readWobj");
+    FGADDCMD1(fgRandomTest,"random");
+    FGADDCMD1(fgGeometryManTest,"geometry");
+    FGADDCMD1(fgSubdivisionTest,"subdivision");
+    FGADDCMD1(fgTextureImageMappingRenderTest,"texturemap");
+    FGADDCMD1(fgImageTestm,"image");
     return cmds;
 }
 
@@ -94,15 +92,6 @@ testm(const FgArgs & args)
 void
 fgCmdBaseTest(const FgArgs & args)
 {fgMenu(args,fgCmdBaseTests(),true); }
-
-FgCmd   fgCmdImgopsInfo();
-FgCmd   fgCmdMeshopsInfo();
-FgCmd   fgCmdMorphInfo();
-FgCmd   fgCmdRenderInfo();
-FgCmd   fgCmdTriexportInfo();
-void    fgCmdCons(const FgArgs &);
-
-vector<FgCmd> fgCmdViewInfos();
 
 void
 view(const FgArgs & args)

@@ -218,8 +218,12 @@ struct  FgMeshLegacy
     std::vector<std::string>        morphNames;
 };
 
-// Saves the texture images to appropriate filenames:
+// Also saves the texture images to appropriate filenames:
 FgMeshLegacy
-fgMeshLegacy(const std::vector<Fg3dMesh> & meshes,const FgString & fname,const std::string & imgFormat);
+fgMeshLegacy(
+    const std::vector<Fg3dMesh> &   meshes,
+    const FgString &                fname,
+    const std::string &             imgFormat,
+    uint                            maxLen=0);      // If non-zero, maxmum base filename length allowed (eg. 3DS)
 
 #endif

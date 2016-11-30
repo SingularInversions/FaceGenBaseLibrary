@@ -22,12 +22,24 @@ FgGuiApi3d::panTilt(FgVect2I delta)
 {
     size_t          mode = g_gg.getVal(panTiltMode);
     if (mode == 0) {
-        FgVect2D    panTilt = g_gg.getVal(panTiltDegrees);
+        FgVect2D    panTilt;
+        panTilt[0] = g_gg.getVal(panDegrees);
+        panTilt[1] = g_gg.getVal(tiltDegrees);
         panTilt += FgVect2D(delta) / 3.0;
-        if (panTiltLimits)
+        if (panTiltLimits) {
             for (uint dd=0; dd<2; ++dd)
-                panTilt[dd] = fgClamp(panTilt[dd],-90.0,90.0);
-        g_gg.setVal(panTiltDegrees,panTilt);
+                panTilt[dd] = fgClip(panTilt[dd],-90.0,90.0);
+        }
+        else {
+            for (uint dd=0; dd<2; ++dd) {
+                if (panTilt[dd] < -180)
+                    panTilt[dd] += 360;
+                if (panTilt[dd] > 180)
+                    panTilt[dd] -= 360;
+            }
+        }
+        g_gg.setVal(panDegrees,panTilt[0]);
+        g_gg.setVal(tiltDegrees,panTilt[1]);
     }
     else {
         // Convert from pixels to half the tangent rotation in radians:
@@ -77,23 +89,10 @@ FgGuiApi3d::translate(FgVect2I delta)
     g_gg.setVal(trans,tr);
 }
 
-struct  MeshesSurfPoint
+FgOpt<FgMeshesIntersect>
+fgMeshesIntersect(FgVect2UI winSize,FgVect2I pos,FgMat44F toOics,const vector<Fg3dMesh> & meshes,const FgVertss & vertss)
 {
-    size_t          meshIdx;
-    size_t          surfIdx;
-    FgSurfPoint     surfPnt;
-};
-
-static
-FgOpt<MeshesSurfPoint>
-intersect(
-    FgVect2UI                   winSize,
-    FgVect2I                    pos,
-    FgMat44F                 toOics, // Transforms frustum to [-1,1] cube (depth & y inverted)
-    const vector<Fg3dMesh> &    meshes,
-    const vector<FgVerts> &     vertss)
-{
-    MeshesSurfPoint     ret;
+    FgMeshesIntersect   ret;
     FgValid<float>      minDepth;
     FgVect2D            pnt(pos);
     FgMat32F         oics(-1,1,1,-1,0,1);
@@ -139,8 +138,8 @@ intersect(
         }
     }
     if (minDepth.valid())
-        return FgOpt<MeshesSurfPoint>(ret);
-    return FgOpt<MeshesSurfPoint>();
+        return FgOpt<FgMeshesIntersect>(ret);
+    return FgOpt<FgMeshesIntersect>();
 }
 
 void
@@ -152,21 +151,23 @@ FgGuiApi3d::markSurfPoint(
     if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
         return;
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
-    const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgOpt<MeshesSurfPoint>      vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    const FgVertss &            vertss = g_gg.getVal(vertssN);
+    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
-        MeshesSurfPoint     pt = vpt.val();
+        FgMeshesIntersect       pt = vpt.val();
         pt.surfPnt.label = g_gg.getVal(pointLabel).as_ascii();
         vector<FgSurfPoint> &   surfPoints =  meshes[pt.meshIdx].surfaces[pt.surfIdx].surfPoints;
-        for (size_t ii=0; ii<surfPoints.size(); ++ii) {
-            if (surfPoints[ii].label == pt.surfPnt.label) {     // Replace SPs of same name:
-                surfPoints[ii] = pt.surfPnt;
-                g_gg.setVal(meshesN,meshes);
-                return;
+        if (!pt.surfPnt.label.empty()) {
+            for (size_t ii=0; ii<surfPoints.size(); ++ii) {
+                if (surfPoints[ii].label == pt.surfPnt.label) {     // Replace SPs of same name:
+                    surfPoints[ii] = pt.surfPnt;
+                    g_gg.setVal(meshesN,meshes);
+                    return;
+                }
             }
         }
         // Add new SP:
-        meshes[pt.meshIdx].surfaces[pt.surfIdx].surfPoints.push_back(pt.surfPnt);
+        surfPoints.push_back(pt.surfPnt);
         g_gg.setVal(meshesN,meshes);
     }
 }
@@ -180,10 +181,10 @@ FgGuiApi3d::markVertex(
     if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
         return;
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
-    const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    const FgVertss &            vertss = g_gg.getVal(vertssN);
+    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
-        MeshesSurfPoint     pt = vpt.val();
+        FgMeshesIntersect   pt = vpt.val();
         uint                facetIdx = fgMaxIdx(pt.surfPnt.weights);
         Fg3dMesh &          mesh = meshes[pt.meshIdx];
         uint                vertIdx = mesh.surfaces[pt.surfIdx].getTriEquiv(pt.surfPnt.triEquivIdx)[facetIdx];
@@ -220,37 +221,68 @@ void
 FgGuiApi3d::ctlClick(FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
 {
     const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
-    const vector<FgVerts> &     vertss = g_gg.getVal(vertssN);
-    FgOpt<MeshesSurfPoint> vpt = intersect(winSize,pos,toOics,meshes,vertss);
+    const FgVertss &            vertss = g_gg.getVal(vertssN);
+    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
     if (vpt.valid()) {
-        MeshesSurfPoint     pt = vpt.val();
-        uint                mi = fgMaxIdx(pt.surfPnt.weights);
+        FgMeshesIntersect       pt = vpt.val();
+        uint                    mi = fgMaxIdx(pt.surfPnt.weights);
         lastCtlClick.meshIdx = pt.meshIdx;
         lastCtlClick.vertIdx = meshes[pt.meshIdx].surfaces[pt.surfIdx].getTriEquiv(pt.surfPnt.triEquivIdx)[mi];
+        lastCtlClick.valid = true;
     }
+    else
+        lastCtlClick.valid = false;
 }
 
 void
 FgGuiApi3d::ctlDrag(bool left, FgVect2UI winSize,FgVect2I delta,FgMat44F toOics)
 {
-    // Interestingly, the concept of a delta vector doesn't work in projective space;
-    // a homogenous component equal to zero is a direction. Conceptually, we can't
-    // transform a delta in OICS to HCS without knowing it's absolute position since. Hence
-    // we transform the end point back into HCS and take the difference:
-    const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
-    FgVect3F                    vertPos0Hcs = meshes[lastCtlClick.meshIdx].verts[lastCtlClick.vertIdx];
-    FgVect4F                    vertPos0Oics = toOics * fgAsHomogVec(vertPos0Hcs);
-    // Convert delta to OICS. Y inverted and Viewport aspect (compensated for in frustum)
-    // is ratio to largest dimension:
-    FgVect2F                    delOics2 = 2.0f * FgVect2F(delta) / float(fgMaxElem(winSize));
-    FgVect4F                    delOics(delOics2[0],-delOics2[1],0,0),
-                                // Normalize vector for valid addition of delta:
-                                vertPos1Oics = vertPos0Oics / vertPos0Oics[3] + delOics,
-                                // We don't expect toOics to be singular:
-                                vertPos1HcsH = fgSolve(toOics,vertPos1Oics).val();
-    FgVect3F                    vertPos1Hcs = vertPos1HcsH.subMatrix<3,1>(0,0) / vertPos1HcsH[3],
-                                delHcs = vertPos1Hcs - vertPos0Hcs;
-    ctlDragAction(left,lastCtlClick,delHcs);
+    if (lastCtlClick.valid) {
+        // Interestingly, the concept of a delta vector doesn't work in projective space;
+        // a homogenous component equal to zero is a direction. Conceptually, we can't
+        // transform a delta in OICS to HCS without knowing it's absolute position since. Hence
+        // we transform the end point back into HCS and take the difference:
+        const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
+        FgVect3F                    vertPos0Hcs = meshes[lastCtlClick.meshIdx].verts[lastCtlClick.vertIdx];
+        FgVect4F                    vertPos0Oics = toOics * fgAsHomogVec(vertPos0Hcs);
+        // Convert delta to OICS. Y inverted and Viewport aspect (compensated for in frustum)
+        // is ratio to largest dimension:
+        FgVect2F                    delOics2 = 2.0f * FgVect2F(delta) / float(fgMaxElem(winSize));
+        FgVect4F                    delOics(delOics2[0],-delOics2[1],0,0),
+                                    // Normalize vector for valid addition of delta:
+                                    vertPos1Oics = vertPos0Oics / vertPos0Oics[3] + delOics,
+                                    // We don't expect toOics to be singular:
+                                    vertPos1HcsH = fgSolve(toOics,vertPos1Oics).val();
+        FgVect3F                    vertPos1Hcs = vertPos1HcsH.subMatrix<3,1>(0,0) / vertPos1HcsH[3],
+                                    delHcs = vertPos1Hcs - vertPos0Hcs;
+        ctlDragAction(left,lastCtlClick,delHcs);
+    }
+}
+
+void
+FgGuiApi3d::ctrlShiftLeftDrag(FgVect2UI winSize,FgVect2I delta)
+{
+    if (bgImg.imgN.valid()) {
+        const FgImgRgbaUb & img = g_gg.getVal(bgImg.imgN);
+        if (!img.empty()) {
+            FgVect2F    del = fgMapDiv(FgVect2F(delta),FgVect2F(winSize));
+            FgVect2F &  offset = g_gg.getRef(bgImg.offset);
+            offset += del;
+        }
+    }
+}
+
+void
+FgGuiApi3d::ctrlShiftRightDrag(FgVect2UI winSize,FgVect2I delta)
+{
+    if (bgImg.imgN.valid()) {
+        const FgImgRgbaUb & img = g_gg.getVal(bgImg.imgN);
+        if (!img.empty()) {
+            double      lnScale = g_gg.getVal(bgImg.lnScale);
+            lnScale += double(delta[1]) / double(winSize[1]);
+            g_gg.setVal(bgImg.lnScale,lnScale);
+        }
+    }
 }
 
 // */

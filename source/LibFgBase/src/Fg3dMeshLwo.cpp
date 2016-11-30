@@ -2390,7 +2390,7 @@ fgSaveLwoTest(const FgArgs & args)
     FgString    dd = fgDataDir();
     string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
+    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveLwo("meshExportLwo",fgSvec(mesh));
     fgRegressFile("meshExportLwo.lwo","base/test/");
     fgRegressFile("meshExportLwo.lws","base/test/");

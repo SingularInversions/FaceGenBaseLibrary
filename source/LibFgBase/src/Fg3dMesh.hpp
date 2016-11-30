@@ -35,7 +35,6 @@
 #include "FgMatrix.hpp"
 #include "Fg3dSurface.hpp"
 #include "FgImage.hpp"
-#include "FgVariant.hpp"
 #include "FgStdStream.hpp"
 #include "FgOpt.hpp"
 
@@ -47,7 +46,10 @@ struct  FgMorph
 {
     FgString            name;
     FgVerts             verts;      // 1-1 correspondence with base verts
-    FG_SERIALIZE2(name,verts)
+
+    FgMorph() {}
+    FgMorph(const FgString & n,const FgVerts & v)
+        : name(n), verts(v) {}
 
     void
     applyAsDelta(FgVerts & accVerts,float val) const
@@ -58,6 +60,9 @@ struct  FgMorph
     }
 };
 
+void    fgReadp(std::istream &,FgMorph &);
+void    fgWritep(std::ostream &,const FgMorph &);
+
 struct  FgIndexedMorph
 {
     FgString            name;
@@ -65,7 +70,6 @@ struct  FgIndexedMorph
     // Can represent target position or delta depending on type of morph.
     // Must be same size() as baseInds.:
     FgVerts             verts;
-    FG_SERIALIZE3(name,baseInds,verts)
 
     void
     applyAsTarget(const FgVerts & baseVerts,FgVerts & accVerts,float val) const
@@ -82,6 +86,9 @@ struct  FgIndexedMorph
     operator==(const FgIndexedMorph & rhs) const
     {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
 };
+
+void    fgReadp(std::istream &,FgIndexedMorph &);
+void    fgWritep(std::ostream &,const FgIndexedMorph &);
 
 void
 fgAccDeltaMorphs(
@@ -102,9 +109,8 @@ struct  FgMarkedVert
 {
     uint        idx;
     string      label;
-    FG_SERIALIZE2(idx,label)
 
-    FgMarkedVert() : idx(0) {}
+    FgMarkedVert() {}
 
     explicit
     FgMarkedVert(uint i) : idx(i) {}
@@ -118,15 +124,15 @@ struct  FgMarkedVert
     {return (label == rhs); }
 };
 
+void    fgReadp(std::istream &,FgMarkedVert &);
+void    fgWritep(std::ostream &,const FgMarkedVert &);
+
+typedef vector<FgMarkedVert>    FgMarkedVerts;
+
 struct  FgMaterial 
 {
     bool    shiny;
-
-    FG_SERIALIZE1(shiny)
-
-    FgMaterial()
-    : shiny(false)
-    {}
+    FgMaterial() : shiny(false) {}
 };
 
 struct  Fg3dMesh
@@ -135,12 +141,10 @@ struct  Fg3dMesh
     FgVerts                     verts;          // Base shape
     FgUvs                       uvs;            // Texture coordinates in OTCS
     vector<Fg3dSurface>         surfaces;
-    vector<FgImgRgbaUb>         texImages;      // Empty or 1-1 with 'surfaces'. If 1-1, images can be empty.
     vector<FgMorph>             deltaMorphs;
     vector<FgIndexedMorph>      targetMorphs;
-    vector<FgMarkedVert>        markedVerts;
+    FgMarkedVerts               markedVerts;
     FgMaterial                  material;
-    FG_SERIALIZE8(verts,uvs,surfaces,texImages,deltaMorphs,targetMorphs,markedVerts,material)
 
     Fg3dMesh()
     {}
@@ -189,43 +193,18 @@ struct  Fg3dMesh
     size_t
     numQuads() const;                   // Just the number of quads over all surfaces
 
-    uint
-    numSurfPoints() const;              // Over all surfaces
+    size_t
+    surfPointNum() const;              // Over all surfaces
 
     FgVect3F
-    getSurfPoint(uint num) const
-    {return getSurfPoint(verts,num); }
+    surfPointPos(const FgVerts & verts,size_t num) const;
 
-    template<class T>
-    FgMatrixC<T,3,1>
-    getSurfPoint(const vector<FgMatrixC<T,3,1> > &verts,uint num) const
-    {
-        for (uint ss=0; ss<surfaces.size(); ss++) {
-            if (num < surfaces[ss].numSurfPoints())
-                return surfaces[ss].getSurfPoint(verts,num);
-            else
-                num -= surfaces[ss].numSurfPoints();
-        }
-        FGASSERT_FALSE;
-        return FgMatrixC<T,3,1>(0,0,0);        // Avoid warning.
-    }
-
-    template<class T>
-    vector<FgMatrixC<T,3,1> >
-    getSurfPoints(const vector<FgMatrixC<T,3,1> > & verts) const
-    {
-        vector<FgMatrixC<T,3,1> >  pts(numSurfPoints());
-        for (size_t ii=0; ii<pts.size(); ++ii)
-            pts[ii] = getSurfPoint(verts,uint(ii));
-        return pts;
-    }
-
-    vector<FgVect3F>
-    getSurfPoints() const
-    {return getSurfPoints(verts); }
+    FgVect3F
+    surfPointPos(size_t num) const
+    {return surfPointPos(verts,num); }
 
     FgOpt<FgVect3F>
-    surfPoint(const string & label) const;
+    surfPointPos(const string & label) const;
 
     vector<FgVertLabel>
     surfPointsAsVertLabels() const;
@@ -233,6 +212,40 @@ struct  Fg3dMesh
     FgVect3F
     markedVertPos(const string & name) const
     {return verts[fgFindFirst(markedVerts,name).idx]; }
+
+    vector<boost::shared_ptr<FgImgRgbaUb> >
+    albedoMaps() const
+    {
+        vector<boost::shared_ptr<FgImgRgbaUb> > ret;
+        ret.reserve(surfaces.size());
+        for (size_t ss=0; ss<surfaces.size(); ++ss)
+            ret.push_back(surfaces[ss].albedoMap);
+        return ret;
+    }
+
+    uint
+    numValidAlbedoMaps() const
+    {
+        uint        ret = 0;
+        for (size_t ss=0; ss<surfaces.size(); ++ss)
+            if (surfaces[ss].albedoMap)
+                ++ret;
+        return ret;
+    }
+
+    vector<FgImgRgbaUb>
+    albedoMapsOld() const
+    {
+        vector<FgImgRgbaUb>     ret;
+        ret.reserve(surfaces.size());
+        for (size_t ss=0; ss<surfaces.size(); ++ss) {
+            if (surfaces[ss].albedoMap)
+                ret.push_back(*surfaces[ss].albedoMap);
+            else
+                ret.push_back(FgImgRgbaUb());
+        }
+        return ret;
+    }
 
     // MORPHS:
 
@@ -246,7 +259,7 @@ struct  Fg3dMesh
     FgString
     morphName(size_t idx) const;
 
-    vector<FgString>
+    FgStrings
     morphNames() const;
 
     FgValid<size_t>
@@ -324,6 +337,11 @@ struct  Fg3dMesh
     checkConsistency();
 };
 
+void    fgReadp(std::istream &,Fg3dMesh &);
+void    fgWritep(std::ostream &,const Fg3dMesh &);
+
+typedef std::vector<Fg3dMesh>   Fg3dMeshes;
+
 Fg3dMesh
 fg3dMesh(const FgVerts &);
 
@@ -333,15 +351,16 @@ fgMorphs(const vector<Fg3dMesh> & meshes);
 std::ostream &
 operator<<(std::ostream &,const Fg3dMesh &);
 
+std::ostream &
+operator<<(std::ostream &,const Fg3dMeshes &);
+
 inline
 FgAffineCw2F
 fgOtcsToIpcs(FgVect2UI imgDims)
 {return FgAffineCw2F(FgMat22F(0,1,1,0),FgMat22F(0,imgDims[0],0,imgDims[1])); }
 
+// If 'loop' not selected then just do flat subdivision:
 Fg3dMesh
-fgSubdivideFlat(const Fg3dMesh &);
-
-Fg3dMesh
-fgSubdivideLoop(const Fg3dMesh &);
+fgSubdivide(const Fg3dMesh &,bool loop = true);
 
 #endif

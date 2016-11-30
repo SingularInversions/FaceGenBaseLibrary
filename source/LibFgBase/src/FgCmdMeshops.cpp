@@ -19,6 +19,7 @@
 #include "FgSimilarity.hpp"
 #include "Fg3dTopology.hpp"
 #include "Fg3dDisplay.hpp"
+#include "FgBestN.hpp"
 
 using namespace std;
 
@@ -29,12 +30,12 @@ uvclamp(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgSaveMeshFormatsDescription()
+        "    <ext1> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     FgMat22F        cb(0,1,0,1);
     for (size_t ii=0; ii<in.uvs.size(); ++ii)
-        in.uvs[ii] = fgClamp(in.uvs[ii],cb);
+        in.uvs[ii] = fgClipVol(in.uvs[ii],cb);
     if (syntax.more())
         fgSaveMeshAnyFormat(in,syntax.next());
     else
@@ -49,7 +50,7 @@ uvunwrap(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgSaveMeshFormatsDescription()
+        "    <ext1> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     for (size_t ii=0; ii<in.uvs.size(); ++ii) {
@@ -71,7 +72,7 @@ combinesurfs(const FgArgs & args)
     FgSyntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
         "    All input meshes must have identical vertex lists.\n"
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
@@ -88,12 +89,12 @@ combinesurfs(const FgArgs & args)
 
 static
 void
-copyuvs(const FgArgs & args)
+copyUvList(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgSaveMeshFormatsDescription()
+        "    <ext1> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     Fg3dMesh        out = fgLoadMeshAnyFormat(syntax.next());
@@ -106,12 +107,39 @@ copyuvs(const FgArgs & args)
 
 static
 void
+copyUvs(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<from>.<ext0> <to>.<ext1>\n"
+        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext1> = " + fgMeshSaveFormatsString()
+        );
+    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
+    Fg3dMesh        out = fgLoadMeshAnyFormat(syntax.next());
+    out.uvs = in.uvs;
+    if (in.surfaces.size() != out.surfaces.size())
+        fgThrow("Incompatible number of surfaces");
+    for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
+        const Fg3dSurface &     sin = in.surfaces[ss];
+        Fg3dSurface &           sout = out.surfaces[ss];
+        if ((sin.tris.vertInds.size() != sout.tris.vertInds.size()) ||
+            (sin.quads.vertInds.size() != sout.quads.vertInds.size()))
+            fgThrow("Incompatible facet counts");
+        sout.tris.uvInds = sin.tris.uvInds;
+        sout.quads.uvInds = sin.quads.uvInds;
+    }
+    fgSaveMeshAnyFormat(out,syntax.curr());
+    return;
+}
+
+static
+void
 copyverts(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgSaveMeshFormatsDescription() + "\n"
+        "    <ext1> = " + fgMeshSaveFormatsString() + "\n"
         "    <out> is modified to have the vertex list from <in>"
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
@@ -132,10 +160,10 @@ fgCmdEmboss(const FgArgs & args)
         "    <img>     = " + fgImgCommonFormatsDescription() + "\n"
         "    <ext0>    = " + fgLoadMeshFormatsDescription() + "\n"
         "    <val>     = Embossing factor as ratio of the max bounding box dimension.\n"
-        "    <ext1>    = " + fgSaveMeshFormatsDescription()
+        "    <ext1>    = " + fgMeshSaveFormatsString()
         );
-    FgImgRgbaUb     img;    // Pretend it's greyscale (hack:)
-    fgLoadImgAnyFormat(syntax.next(),img);
+    FgImgUC         img;
+    fgLoadImgAnyFormat(syntax.next(),img);      // Treat as greyscale
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
     if (mesh.uvs.empty())
         fgThrow("Mesh has no UVs",syntax.curr());
@@ -155,7 +183,7 @@ invWind(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
         "    Inverts the winding of all facets in <in> and saves to <out>"
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
@@ -175,12 +203,52 @@ invWind(const FgArgs & args)
 
 static
 void
+markVerts(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.tri <verts>.<ext> <out>.tri\n"
+        "    <ext> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <out>.tri will be saved after marking a vertex in <in>.tri that is closest to each vertex in <verts>.<ext>."
+        );
+    Fg3dMesh    mesh = fgLoadTri(syntax.next());
+    FgVerts     verts = fgLoadMeshAnyFormat(syntax.next()).verts;
+    float       dim = fgMaxElem(fgDims(mesh.verts));
+    uint        poorMatches = 0,
+                totalMatches = 0;
+    for (size_t vv=0; vv<verts.size(); ++vv) {
+        FgVect3F        v = verts[vv];
+        float           bestMag = numeric_limits<float>::max();
+        uint            bestIdx = 0;
+        for (size_t ii=0; ii<mesh.verts.size(); ++ii) {
+            float       mag = fgMag(mesh.verts[ii]-v);
+            if (mag < bestMag) {
+                bestMag = mag;
+                bestIdx = uint(ii);
+            }
+        }
+        if (sqrt(bestMag) / dim > 0.00001f)
+            ++poorMatches;
+        if (!fgContains(mesh.markedVerts,bestIdx)) {
+            mesh.markedVerts.push_back(FgMarkedVert(bestIdx));
+            ++totalMatches;
+        }
+    }
+    if (poorMatches > 0)
+        fgout << fgnl << "WARNING: " << poorMatches << " poor matches.";
+    if (totalMatches < verts.size())
+        fgout << fgnl << "WARNING: duplicate matches.";
+    fgout << fgnl << totalMatches << " vertices marked.";
+    fgSaveTri(syntax.next(),mesh);
+}
+
+static
+void
 xformApply(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgSaveMeshFormatsDescription()
+        "    <ext1> = " + fgMeshSaveFormatsString()
         );
     FgSimilarity    xform;
     fgLoadXml(syntax.next(),xform);
@@ -315,7 +383,7 @@ uvmask(const FgArgs & args)
         "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
         "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
         "    <ext1> = " + fgImgCommonFormatsDescription() + "\n"
-        "    <ext2> = " + fgSaveMeshFormatsDescription()
+        "    <ext2> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
     FgImgRgbaUb     img;
@@ -336,7 +404,7 @@ mmerge(const FgArgs & args)
     FgSyntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     while (syntax.more()) {
@@ -355,7 +423,7 @@ mergesurfs(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     if (mesh.surfaces.size() == 1)
@@ -389,7 +457,7 @@ ruv(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgRemoveUnusedVerts(mesh);
@@ -403,7 +471,7 @@ mergenamedsurfs(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgMergeSameNameSurfaces(mesh);
@@ -417,8 +485,7 @@ splitObjByMtl(const FgArgs & args)
     FgSyntax    syntax(args,
         "<mesh>.[w]obj <base>\n"
         "    Creates a <base>_<name>.tri file for each 'usemtl' name referenced");
-    Fg3dMesh    mesh;
-    fgLoadWobj(syntax.next(),mesh,"usemtl");
+    Fg3dMesh    mesh = fgLoadWobj(syntax.next(),"usemtl");
     string      base = syntax.next();
     Fg3dMesh    m = mesh;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
@@ -434,7 +501,7 @@ splitsurfsbyuvs(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgSplitSurfsByUvs(mesh);
@@ -472,7 +539,7 @@ convert(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     fgSaveMeshAnyFormat(mesh,syntax.next());
@@ -480,7 +547,122 @@ convert(const FgArgs & args)
 
 static
 void
-surfPtsToVerts(const FgArgs & args)
+surfAdd(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<in>.<ext> <name> <out>.fgmesh\n"
+        "    <ext>  - " + fgLoadMeshFormatsDescription() + "\n"
+        "    <name> - Surface name"
+        );
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
+    Fg3dSurface     surf;
+    surf.name = syn.next();
+    mesh.surfaces.push_back(surf);
+    fgSaveFgmesh(syn.next(),mesh);
+}
+
+static
+void
+surfCopy(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
+        "    <ext>  - " + fgLoadMeshFormatsDescription() + "\n"
+        " * tris only, uvs not preserved."
+        );
+    Fg3dMesh        from = fgLoadFgmesh(syn.next()),
+                    to = fgLoadMeshAnyFormat(syn.next());
+    fgSaveFgmesh(syn.next(),fgCopySurfaceStructure(from,to));
+}
+
+static
+void
+surfList(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<in>.<ext>\n"
+        "    <ext> - " + fgLoadMeshFormatsDescription()
+        );
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syn.next());
+    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+        const Fg3dSurface & surf = mesh.surfaces[ss];
+        fgout << fgnl << ss << ": " << surf.name;
+    }
+}
+
+static
+void
+surfRen(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<in>.fgmesh <idx> <name>\n"
+        "   <idx>  - Which surface\n"
+        "   <name> - Surface name"
+        );
+    FgString        meshFname = syn.next();
+    Fg3dMesh        mesh = fgLoadFgmesh(meshFname);
+    size_t          idx = fgFromString<size_t>(syn.next());
+    if (idx >= mesh.surfaces.size())
+        fgThrow("Index value larger than available surfaces");
+    mesh.surfaces[idx].name = syn.next();
+    fgSaveFgmesh(meshFname,mesh);
+}
+
+static
+void
+spCopy(const FgArgs & args)
+{
+    FgSyntax    syn(args,"<from>.fgmesh <to>.fgmesh <out>.fgmesh");
+    Fg3dMesh    from = fgLoadFgmesh(syn.next()),
+                to = fgLoadFgmesh(syn.next());
+    if (from.surfaces.size() != to.surfaces.size())
+        fgThrow("'from' and 'to' meshes have different surface counts");
+    for (size_t ss=0; ss<to.surfaces.size(); ++ss)
+        fgAppend(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
+    fgSaveFgmesh(syn.next(),to);
+}
+
+static
+void
+spList(const FgArgs & args)
+{
+    FgSyntax    syn(args,"<in>.fgmesh");
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syn.next());
+    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+        const Fg3dSurface & surf = mesh.surfaces[ss];
+        fgout << fgnl << "Surface " << ss << ": " << surf.name << fgpush;
+        for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
+            fgout << fgnl << ii << " : " << surf.surfPoints[ii].label;
+        fgout << fgpop;
+    }
+}
+
+static
+void
+spRen(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
+        "   <surfIdx> - Which surface\n"
+        "   <spIdx>   - Which point on that surface\n"
+        "   <name>    - Name"
+        );
+    FgString        meshFname = syn.next();
+    Fg3dMesh        mesh = fgLoadFgmesh(meshFname);
+    size_t          ss = fgFromString<size_t>(syn.next()),
+                    ii = fgFromString<size_t>(syn.next());
+    if (ss >= mesh.surfaces.size())
+        fgThrow("Surface index value larger than available surfaces");
+    Fg3dSurface &   surf = mesh.surfaces[ss];
+    if (ii >= surf.surfPoints.size())
+        fgThrow("Point index value larger than availables points");
+    surf.surfPoints[ii].label = syn.next();
+    fgSaveFgmesh(meshFname,mesh);
+}
+
+static
+void
+spsToVerts(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.tri <out>.tri\n"
@@ -488,15 +670,26 @@ surfPtsToVerts(const FgArgs & args)
         );
     Fg3dMesh    in = fgLoadTri(syntax.next());
     Fg3dMesh    out = fgLoadTri(syntax.next());
-    for (size_t ii=0; ii<in.surfaces.size(); ++ii) {
-        const Fg3dSurface &     surf = in.surfaces[ii];
-        for (size_t jj=0; jj<surf.surfPoints.size(); ++jj) {
-            FgVect3F    pos = surf.getSurfPoint(in.verts,uint(jj));
-            out.markedVerts.push_back(FgMarkedVert(uint(out.verts.size()),surf.surfPoints[jj].label));
-            out.verts.push_back(pos);
-        }
-    }
+    fgSurfPointsToMarkedVerts(in,out);
     fgSaveTri(syntax.curr(),out);
+}
+
+static
+void
+surf(const FgArgs & args)
+{
+    vector<FgCmd>   ops;
+    ops.push_back(FgCmd(surfAdd,"add","Add an empty surface to a mesh"));
+    ops.push_back(FgCmd(surfCopy,"copy","Copy surface structure between aligned meshes"));
+    ops.push_back(FgCmd(surfList,"list","List surfaces in mesh"));
+    ops.push_back(FgCmd(mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"));
+    ops.push_back(FgCmd(mergesurfs,"merge","Merge all surfaces in a mesh into one"));
+    ops.push_back(FgCmd(surfRen,"ren","Rename a surface in a mesh"));
+    ops.push_back(FgCmd(spCopy,"spCopy","Copy surf points between meshes with identical surface topology"));
+    ops.push_back(FgCmd(spList,"spList","List surface points in each surface"));
+    ops.push_back(FgCmd(spRen,"spRen","Rename a surface point"));
+    ops.push_back(FgCmd(spsToVerts,"spVert","Convert surface points to marked vertices"));
+    fgMenu(args,ops);
 }
 
 static
@@ -506,7 +699,7 @@ unifyuvs(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgUnifyIdenticalUvs(mesh);
@@ -520,7 +713,7 @@ unifyverts(const FgArgs & args)
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription()
+        "    <extOut> = " + fgMeshSaveFormatsString()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgUnifyIdenticalVerts(mesh);
@@ -550,24 +743,24 @@ meshops(const FgArgs & args)
     vector<FgCmd>   ops;
     ops.push_back(FgCmd(combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"));
     ops.push_back(FgCmd(convert,"convert","Convert the mesh between different formats"));
-    ops.push_back(FgCmd(copyuvs,"copyuvs","Copy UVs from one mesh to another with same UV count"));
+    ops.push_back(FgCmd(copyUvList,"copyUvList","Copy UV list from one mesh to another with same UV count"));
+    ops.push_back(FgCmd(copyUvs,"copyUvs","Copy UVs from one mesh to another with identical facet structure"));
     ops.push_back(FgCmd(copyverts,"copyverts","Copy verts from one mesh to another with same vertex count"));
     ops.push_back(FgCmd(fgCmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"));
     ops.push_back(FgCmd(invWind,"invWind","Invert facet winding of a mesh"));
+    ops.push_back(FgCmd(markVerts,"markVerts","Mark vertices in a .TRI file from a given list"));
     ops.push_back(FgCmd(mmerge,"merge","Merge multiple meshes into one. No optimization is done"));
-    ops.push_back(FgCmd(mergenamedsurfs,"mergeNamedSurfs","Merge surfaces with identical names"));
-    ops.push_back(FgCmd(mergesurfs,"mergeSurfs","Merge all surfaces in a mesh into one"));
     ops.push_back(FgCmd(rdf,"rdf","Remove Duplicate Facets within each surface"));
     ops.push_back(FgCmd(ruv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"));
     ops.push_back(FgCmd(splitObjByMtl,"splitObjByMtl","Split up an OBJ mesh by 'usemtl' name"));
     ops.push_back(FgCmd(splitsurface,"splitSurface","Split up surface by connected vertex indices"));
     ops.push_back(FgCmd(splitsurfsbyuvs,"splitSurfsByUvs","Split up surfaces with discontiguous UV mappings"));
-    ops.push_back(FgCmd(surfPtsToVerts,"surfPtsToVerts","Convert surface points to labelled vertices"));
+    ops.push_back(FgCmd(surf,"surf","Operations on mesh surface structure"));
     ops.push_back(FgCmd(unifyuvs,"unifyUVs","Unify identical UV coordinates"));
     ops.push_back(FgCmd(unifyverts,"unifyVerts","Unify identical vertices"));
     ops.push_back(FgCmd(uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"));
     ops.push_back(FgCmd(uvimg,"uvimg","Save an image of the  the UV map of the mesh"));
-    ops.push_back(FgCmd(uvmask,"uvmask","Mask out geometry for any black areas of a texture image"));
+    ops.push_back(FgCmd(uvmask,"uvmask","Mask out geometry for any black areas of a texture image (auto symmetrized)"));
     ops.push_back(FgCmd(uvunwrap,"uvunwrap","Unwrap wrap-around UV coords to the range [0,1]"));
     ops.push_back(FgCmd(xform,"xform","Create or apply similarity transforms from/to meshes"));
     fgMenu(args,ops);

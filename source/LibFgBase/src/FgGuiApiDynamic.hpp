@@ -6,6 +6,9 @@
 // Authors:     Andrew Beatty
 // Created:     Oct 26, 2015
 //
+// This approach didn't work so well since the dynamically created window often has
+// to modify depgraph state during creation, but any dependent nodes may already
+// have been updated.
 
 #ifndef FGGUIAPIDYNAMIC_HPP
 #define FGGUIAPIDYNAMIC_HPP

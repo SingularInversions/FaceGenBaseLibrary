@@ -56,14 +56,21 @@ struct  FgOglRendModel
 void
 fgOglSetLighting(const FgLighting & lt);
 
+struct  FgBgImage
+{
+    FgValid<uint>               texName;
+    FgVect2UI                   origDims;
+    FgVect2F                    offset;     // Relative to image max dimension
+    float                       scale;      // Relative to image max dimension
+};
+
 void
 fgOglRender(
     vector<FgOglRendModel>      rendModels,
     FgMat44F                    oglMvm, // MVM in column-major layout.
     FgVect6D                    frustum,
     const Fg3dRenderOptions &   rend,
-    FgValid<uint>               bgImgName,
-    FgVect2UI                   bgImgDims);
+    FgBgImage                   bgImage);
 
 FgMat44F
 fgOglTransform();

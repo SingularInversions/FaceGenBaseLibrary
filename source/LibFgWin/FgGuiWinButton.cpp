@@ -120,6 +120,6 @@ struct  FgGuiWinButton : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiButton & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinButton(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinButton(def)); }

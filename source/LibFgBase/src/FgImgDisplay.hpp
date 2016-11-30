@@ -18,7 +18,7 @@
 #include "FgImageIo.hpp"
 
 void    fgImgDisplay(const FgImgRgbaUb &,vector<FgVect2F> pts=vector<FgVect2F>());
-void    fgImgDisplay(const FgImgUb &);
+void    fgImgDisplay(const FgImgUC &);
 void    fgImgDisplay(const FgImage<ushort> &);
 void    fgImgDisplay(const FgImgF &);
 void    fgImgDisplay(const FgImgD &);

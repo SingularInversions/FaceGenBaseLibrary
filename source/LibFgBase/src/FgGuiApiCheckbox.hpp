@@ -20,16 +20,8 @@ struct FgGuiApiCheckbox : FgGuiApi<FgGuiApiCheckbox>
     uint            updateFlagIdx;
 };
 
-inline
 FgGuiPtr
-fgGuiCheckbox(const FgString & label,FgDgn<bool> node)
-{
-    FgGuiApiCheckbox    cb;
-    cb.label = label;
-    cb.val = node;
-    cb.updateFlagIdx = g_gg.addUpdateFlag(node);
-    return fgsp(cb);
-}
+fgGuiCheckbox(const FgString & label,FgDgn<bool> node);
 
 template<class T>
 FGLINK(fgLinkCheckboxObject)
@@ -52,5 +44,8 @@ fgGuiCheckboxObject(const FgString & label,FgDgn<bool> input,const T & object,Fg
     g_gg.addLink(fgLinkCheckboxObject<T>,fgUints(input,g_gg.addNode(object,string("checkbox_")+typeid(T).name())),output);
     return fgGuiCheckbox(label,input);
 }
+
+FgGuiPtr
+fgGuiCheckboxes(const FgStrings & labels,FgDgn<vector<bool> > output);
 
 #endif

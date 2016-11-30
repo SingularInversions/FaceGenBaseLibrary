@@ -30,7 +30,7 @@ struct incomplete_child :
 };
 std::size_t incomplete_child::counter = 0;
 
-FgSharedPtr<incomplete_type>
+FgPtr<incomplete_type>
 make_it()
 {
     return fgnew<incomplete_child>();
@@ -62,7 +62,7 @@ struct a_struct
 };
 int a_struct::counter = 0;
 
-typedef FgSharedPtr<a_struct> ptr_t;
+typedef FgPtr<a_struct> ptr_t;
 
 static void test_deref()
 {
@@ -164,10 +164,10 @@ struct child : public base
 };
 int child::counter = 0;
 
-typedef FgSharedPtr<base> base_ptr_t;
-typedef FgSharedPtr<child> child_ptr_t;
+typedef FgPtr<base> base_ptr_t;
+typedef FgPtr<child> child_ptr_t;
 
-FgSharedPtr<base>
+FgPtr<base>
 foo()
 {
     return fgnew<child>();
@@ -303,11 +303,11 @@ struct child2 : public base
 {
     void make_abc(){}
 };
-typedef FgSharedPtr<child2> child2_ptr_t;
+typedef FgPtr<child2> child2_ptr_t;
 
 // Defined in incomplete_type.cpp
 struct incomplete_type;
-typedef FgSharedPtr<incomplete_type> incomplete_type_ptr_t;
+typedef FgPtr<incomplete_type> incomplete_type_ptr_t;
 
 incomplete_type_ptr_t
 make_it();
@@ -336,8 +336,8 @@ static void test_incomplete_type()
 
 static void test_copy_default_constructed()
 {
-    FgSharedPtr<base> p;
-    FgSharedPtr<base> p2(p);
+    FgPtr<base> p;
+    FgPtr<base> p2(p);
 }
 
 void

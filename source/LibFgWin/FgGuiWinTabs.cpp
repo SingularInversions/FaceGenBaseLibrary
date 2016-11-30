@@ -226,6 +226,6 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiTabs & api)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinTabs(api)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinTabs(api)); }

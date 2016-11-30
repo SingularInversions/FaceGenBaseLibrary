@@ -60,6 +60,6 @@ struct  FgGuiWinSpacer : public FgGuiOsBase
     {}
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSpacer & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSpacer(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSpacer(def)); }

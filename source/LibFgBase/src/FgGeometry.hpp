@@ -45,13 +45,17 @@ FgOpt<FgVect3D>
 fgBarycentricCoords(FgVect2F point,FgVect2F v0,FgVect2F v1,FgVect2F v2)
 {return fgBarycentricCoords(FgVect2D(point),FgVect2D(v0),FgVect2D(v1),FgVect2D(v2)); }
 
-// Homogenous plane representation from 3 points:
+// Homogenous plane representation from 3 points on plane:
 FgVect4D
 fgPlaneH(FgVect3D p0,FgVect3D p1,FgVect3D p2);
 
-// A ray is a line through the origin (Homog not necessary), intersected with a homog plane:
+// Returns the homogeneous coordinate of the intersection of a line through the origin with a plane.
+// The homogeneous component will be zero if there is no intersection. Otherwise, the dot product
+// of the intersection and the ray will determine the direction (along ray) to intersection.
 FgVect4D
-fgLinePlaneIntersect(FgVect3D ray,FgVect4D plane);
+fgLinePlaneIntersect(
+    FgVect3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
+    FgVect4D        plane);     // Homogenous representation
 
 // Returns: 0: point not in triangle or degenerate triangle.
 //          1: point in triangle, CC winding
@@ -59,15 +63,21 @@ fgLinePlaneIntersect(FgVect3D ray,FgVect4D plane);
 int
 fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2);
 
+// Returns the intersection point of a line and a triangle, if it exists:
 FgOpt<FgVect3D>
-fgLineFacetIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2);
+fgLineTriIntersect(
+    FgVect3D        point,      // Point on line
+    FgVect3D        ray,        // Direction of ray emanating from point. Does not need to be normalized
+    FgVect3D        v0,         // Vertices of triangle
+    FgVect3D        v1,         // "
+    FgVect3D        v2);        // "
 
 inline
 double
 pointToPlaneDistSqr(FgVect3D pnt,FgVect4D planeH)
 {
     FgVect3D    planeN(planeH[0],planeH[1],planeH[2]);
-    return (fgSqr(fgDot(pnt,planeN) + planeH[3]) / planeN.lengthSqr());
+    return (fgSqr(fgDot(pnt,planeN) + planeH[3]) / planeN.mag());
 }
 
 #endif

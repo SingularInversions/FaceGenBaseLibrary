@@ -47,8 +47,8 @@ fgGuiTab(const string & l,FgGuiPtr w)
 
 inline
 FgGuiTab
-fgGuiTab(const string & l,bool s,FgGuiPtr w)
-{return FgGuiTab(fgTr(l),s,w); }
+fgGuiTab(const string & label,bool spacer,FgGuiPtr w)
+{return FgGuiTab(fgTr(label),spacer,w); }
 
 struct  FgGuiApiTabs : FgGuiApi<FgGuiApiTabs>
 {

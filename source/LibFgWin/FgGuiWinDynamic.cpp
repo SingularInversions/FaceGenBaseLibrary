@@ -90,6 +90,6 @@ struct  FgGuiWinDynamic : public FgGuiOsBase
     {m_win->saveState(); }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiDynamic & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinDynamic(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinDynamic(def)); }

@@ -40,7 +40,7 @@ struct  ShaderBasic : FgShader
     {
         FgVect3F        acc(0.0f);
         FgRgbaF         texSample = (img) ?
-            FgRgbaF(fgInterpolateClamp(*img,uvIucs)) :
+            FgRgbaF(fgLerpClip(*img,uvIucs)) :
             FgRgbaF(230.0f,230.0f,230.0f,255.0f);
 		float	aw = texSample.alpha() / 255.0f;
         FgVect3F        surfColour = texSample.m_c.subMatrix<3,1>(0,0) * aw;
@@ -48,7 +48,7 @@ struct  ShaderBasic : FgShader
             FgLight     lgt = m_lighting.m_lights[ll];
             float       fac = fgDot(normOecs,lgt.m_direction);
             if (fac > 0.0f) {
-                acc += fgMultiply(surfColour,lgt.m_colour) * fac;
+                acc += fgMapMul(surfColour,lgt.m_colour) * fac;
                 if (material.shiny) {
                     FgVect3F    reflectDir = normOecs * fac * 2.0f - lgt.m_direction;
                     if (reflectDir[2] > 0.0f) {
@@ -59,7 +59,7 @@ struct  ShaderBasic : FgShader
                 }
             }
         }
-        acc += fgMultiply(surfColour,m_lighting.m_ambient);
+        acc += fgMapMul(surfColour,m_lighting.m_ambient);
         return FgRgbaF(acc[0],acc[1],acc[2],texSample.alpha());
     }
 };
@@ -82,7 +82,6 @@ fgSoftRender(
     vector<Fg3dNormals>     norms(meshes.size());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const Fg3dMesh &    mesh = meshes[ii];
-        FGASSERT(mesh.texImages.size() < 2);
         FGASSERT(mesh.surfaces.size() == 1);
         fgCalcNormals(mesh.surfaces,mesh.verts,norms[ii]);
         surfs[ii] = mesh.surfaces[0].convertToTris();
@@ -93,7 +92,7 @@ fgSoftRender(
         rs.norms = &norms[ii];
         rs.uvs = &mesh.uvs;
         rs.uvInds = &surfs[ii].tris.uvInds;
-        rs.texImg = (mesh.texImages.size() == 0) ? NULL : &(mesh.texImages[0]);
+        rs.texImg = (mesh.surfaces[0].albedoMap ? mesh.surfaces[0].albedoMap.get() : NULL);
     }
     ShaderBasic     shader(light);
     Fg3dRayCaster

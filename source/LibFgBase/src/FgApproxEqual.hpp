@@ -78,10 +78,10 @@ fgApproxEqualMatrix(
     double      relTolerance)
 {
     typedef typename T::ValType Scalar;
-    Scalar  delSqr = (m1-m0).lengthSqr();
+    Scalar  delSqr = (m1-m0).mag();
     if (delSqr == 0)
         return true;
-    Scalar  relDiff = Scalar(4) * delSqr / (m0+m1).lengthSqr();
+    Scalar  relDiff = Scalar(4) * delSqr / (m0+m1).mag();
     return (fgSqr(relTolerance) >= relDiff);
 }
 

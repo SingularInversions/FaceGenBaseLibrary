@@ -142,8 +142,10 @@ struct  FgGuiWinRadio : public FgGuiOsBase
                     if (code == 0) {    // radio box clicked
 //fgout << fgnl << "FgGuiWinRadio::WM_COMMAND clicked " << m_api.labels[0];
                         size_t      sel = ident;
+                        if (sel >= m_api.vals.size())
+                            sel = 0;
 //fgout << " val: " << sel << " m_api.selection " << m_api.selection;
-                        g_gg.setVal(m_api.selection,sel);
+                        g_gg.setVal(m_api.selection,m_api.vals[sel]);
 //fgout << fgnl << "Update screen: " << flush << fgpush;
                         g_gg.updateScreen();
 //fgout << fgpop << fgnl << "Updated " << flush;
@@ -157,8 +159,9 @@ struct  FgGuiWinRadio : public FgGuiOsBase
     void
     updateRadio()
     {
-        size_t  val = g_gg.getVal(m_api.selection);
-        if (val >= m_api.labels.size())
+        const FgString &    sel = g_gg.getVal(m_api.selection);
+        size_t              val = fgFindFirstIdx(m_api.vals,sel);
+        if (val >= m_api.vals.size())
             val = 0;
         for (size_t ii=0; ii<m_hwnds.size(); ++ii) {
             if (ii == val)
@@ -169,6 +172,6 @@ struct  FgGuiWinRadio : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiRadio & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinRadio(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinRadio(def)); }

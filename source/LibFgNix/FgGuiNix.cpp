@@ -19,9 +19,9 @@ fgGuiImplStart(const FgString &,FgGuiPtr,const FgString &,const FgGuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \
-FgSharedPtr<FgGuiOsBase>                                    \
+FgPtr<FgGuiOsBase>                                    \
 fgGuiGetOsInstance(const X &)                               \
-{return FgSharedPtr<FgGuiOsBase>(); }
+{return FgPtr<FgGuiOsBase>(); }
 
 STUB(FgGuiApi3d)
 STUB(FgGuiApiButton)

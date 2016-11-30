@@ -14,55 +14,6 @@
 
 using namespace std;
 
-vector<string>
-fgWhiteBreak(const string & str)
-{
-    vector<string>  retval;
-    bool            symbolFlag = false,
-                    quoteFlag = false;
-    string          currSymbol;
-    for (size_t ii=0; ii<str.size(); ++ii)
-    {
-        if (quoteFlag)
-        {
-            if (str[ii] == '\"')
-            {
-                retval.push_back(currSymbol);
-                currSymbol.clear();
-                quoteFlag = false;
-            }
-            else
-                currSymbol.push_back(str[ii]);
-        }
-        else if (isspace(str[ii]))
-        {
-            if (symbolFlag)
-            {
-                retval.push_back(currSymbol);
-                currSymbol.clear();
-                symbolFlag = false;
-            }
-        }
-        else if (str[ii] == '\"')
-        {
-            if (symbolFlag)
-            {
-                retval.push_back(currSymbol);
-                currSymbol.clear();
-            }
-            quoteFlag = true;
-        }
-        else
-        {
-            currSymbol.push_back(str[ii]);
-            symbolFlag = true;
-        }
-    }
-    if (symbolFlag)
-        retval.push_back(currSymbol);
-    return retval;
-}
-
 string
 fgToFixed(double val,uint fractionalDigits)
 {
@@ -179,5 +130,30 @@ fgConcat(const vector<string> & strings,const string & separator)
         if (ii < strings.size()-1)
             ret += separator;
     }
+    return ret;
+}
+
+FgOpt<int>
+fgStoI(const string & str)
+{
+    FgOpt<int>              ret;
+    if (str.empty())
+        return ret;
+    bool                    neg = false;
+    string::const_iterator  it = str.begin();
+    if (*it == '-') {
+        neg = true;
+        ++it;
+    }
+    else if (*it == '+')
+        ++it;
+    int                     acc = 0;
+    while (it != str.end()) {
+        int                 digit = int(*it++) - int('0');
+        if ((digit < 0) || (digit > 9))
+            return ret;
+        acc = 10 * acc + digit;
+    }
+    ret = neg ? -acc : acc;
     return ret;
 }

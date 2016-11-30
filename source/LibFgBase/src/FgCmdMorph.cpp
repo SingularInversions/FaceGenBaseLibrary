@@ -27,7 +27,7 @@ apply(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
-        "    <ext>      - " + fgSaveMeshFormatsDescription() + "\n"
+        "    <ext>      - " + fgMeshSaveFormatsString() + "\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)\n"
@@ -45,7 +45,7 @@ apply(const FgArgs & args)
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
                     targets(mesh.targetMorphs.size(),0.0f);
     while (syntax.more()) {
-        string      arg = syntax.nextLower();
+        FgString    arg = syntax.nextLower();
         uint        idx = fgFromString<uint>(syntax.next());
         float       val = fgFromString<float>(syntax.next());
 
@@ -149,7 +149,7 @@ create(const FgArgs & args)
     FgSyntax    syntax(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
         "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
         "    -i         - Ignore very small morphs (ie. do not create)\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -186,6 +186,38 @@ create(const FgArgs & args)
     else
         syntax.error("Unrecognized morph type",type);
     fgSaveTri(baseName,base);
+}
+
+/**
+   \ingroup Base_Commands
+   Command to extract all morphs to named OBJ files
+ */
+static
+void
+extract(const FgArgs & args)
+{
+    FgSyntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
+        "    <ext> - Output format " + fgMeshSaveFormatsString() + "\n"
+        "OUTPUTS:\n"
+        "    <mesh>_<name>.<ext> for each morph target, or\n"
+        "    <base>_<name>.<ext> if <base> is specified.\n"
+        "NOTES:\n"
+        "    ':', '(' and ')' characters are stripped from the morph names."
+    );
+    string      meshName = syntax.next(),
+                ext = syntax.next();
+    FgString    baseName = fgPathToBase(meshName);
+    if (syntax.more())
+        baseName = syntax.next();
+    Fg3dMesh    base = fgLoadTri(meshName),
+                out = base;
+    out.deltaMorphs.clear();
+    out.targetMorphs.clear();
+    for (size_t ii=0; ii<base.numMorphs(); ++ii) {
+        out.verts = base.morphSingle(ii);
+        FgString    morphName = fgRemoveChars(base.morphName(ii),":()");
+        fgSaveMeshAnyFormat(out,baseName+"_"+morphName+"."+ext);
+    }
 }
 
 /**
@@ -262,7 +294,7 @@ removemorphs(const FgArgs & args)
     vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
                     targets(mesh.targetMorphs.size(),true);
     while (syntax.more()) {
-        string      arg = syntax.nextLower();
+        FgString    arg = syntax.nextLower();
         uint        idx = fgFromString<uint>(syntax.next());
 
         if (arg == "d") {
@@ -308,7 +340,7 @@ renameMorph(const FgArgs & args)
     if (!fgCheckExt(fname,"tri"))
         syntax.error("Not a TRI file",fname);
     Fg3dMesh    mesh = fgLoadTri(fname);
-    string      arg = syntax.nextLower();
+    FgString    arg = syntax.nextLower();
     uint        idx = fgFromString<uint>(syntax.next());
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
@@ -334,6 +366,7 @@ morph(const FgArgs & args)
     cmds.push_back(FgCmd(clear,"clear","Clear all morphs from a mesh"));
     cmds.push_back(FgCmd(copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"));
     cmds.push_back(FgCmd(create,"create","Create morphs for a mesh"));
+    cmds.push_back(FgCmd(extract,"extract","Extract all morphs to named files"));
     cmds.push_back(FgCmd(morphList,"list","List available morphs in a mesh"));
     cmds.push_back(FgCmd(removemorphs,"remove","Remove morphs from a mesh"));
     cmds.push_back(FgCmd(removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"));
@@ -350,7 +383,7 @@ fgMorphTest(const FgArgs & args)
 {
     FGTESTDIR
     fgTestCopy("base/Jane.tri");
-    fgTestCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
+    fgRunCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
     FgString        baseline = fgDataDir()+"base/test/JaneMorphBaseline.tri";
     if (!fgExists(baseline) || !fgBinaryFileCompare("tmp.tri",baseline)) {
         if (fgRegressOverwrite())

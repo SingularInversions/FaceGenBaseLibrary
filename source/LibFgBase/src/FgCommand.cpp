@@ -17,6 +17,7 @@
 #include "FgSyntax.hpp"
 #include "FgBuild.hpp"
 #include "FgTestUtils.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 
@@ -142,4 +143,12 @@ fgTestCopy(const string & relPath)
         fgThrow("Test copy filename collision",name);
     FgString        source = fgDataDir() + relPath;
     fgCopyFile(source,name);
+}
+
+void
+fgRunCmd(const FgCmdFunc & func,const string & argStr)
+{
+    fgout << fgnl << argStr << " " << fgpush;
+    func(fgSplitChar(argStr));
+    fgout << fgpop;
 }

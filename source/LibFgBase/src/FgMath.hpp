@@ -134,7 +134,7 @@ normalCholesky(
     return (
         std::pow(2.0 * fgPi(),double(dim) * -0.5) *
         std::sqrt(det) *
-        fgExp(-0.5 * mhlbs.lengthSqr()));
+        fgExp(-0.5 * mhlbs.mag()));
 }
 
 template<uint dim>
@@ -150,7 +150,7 @@ lnNormalCholesky(
     FgMatrixC<double,dim,1> mhlbs = chol * (pos-mean);
     return (0.5 * std::log(det) -               // Cholesky has all diagonals > 0
             0.5 * double(dim) * fgLn_2pi() -
-            0.5 * mhlbs.lengthSqr());
+            0.5 * mhlbs.mag());
 }
 
 template<typename T,uint dim>
@@ -163,7 +163,7 @@ lnNormalIsotropic(
     FGASSERT_FAST(stdev > T(0));
     return (-0.5 * fgLn_2pi() * dim
             - std::log(stdev) * dim
-            - 0.5 * (val-mean).lengthSqr() / fgSqr(stdev));
+            - 0.5 * (val-mean).mag() / fgSqr(stdev));
 }
 
 }   // namespace
@@ -176,22 +176,20 @@ struct   FgModulo
     FgModulo(size_t v,size_t m) : val(v), mod(m)
     {FGASSERT(val < mod); }
 
-    FgModulo &
+    void
     operator++()
     {
         ++val;
         if (val == mod)
             val = 0;
-        return *this;
     }
 
-    FgModulo &
+    void
     operator--()
     {
         if (val == 0)
             val = mod;
         --val;
-        return *this;
     }
 };
 

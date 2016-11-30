@@ -130,13 +130,13 @@ static void Compare()
 static void Split()
 {
     {   FgString a("a/b/c");
-        std::vector<FgString> comps = a.split('/');
+        FgStrings comps = a.split('/');
         FGASSERT(comps.size() == 3);
         FGASSERT(comps[0] == FgString("a"));
         FGASSERT(comps[1] == FgString("b"));
         FGASSERT(comps[2] == FgString("c")); }
     {   FgString a("noseparator");
-        std::vector<FgString> comps = a.split(' ');
+        FgStrings comps = a.split(' ');
         FGASSERT(comps.size() == 1);
         FGASSERT(comps[0] == a); }
 }

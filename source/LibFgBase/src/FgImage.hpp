@@ -39,7 +39,7 @@ fgIrcsToIucs(FgVect2UI imageDims)
 inline
 FgVect2F
 fgIucsToIrcs(FgVect2UI ircsDims,FgVect2F iucsCoord)
-{return (fgMultiply(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
+{return (fgMapMul(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
 
 struct  FgCoordWgt
 {
@@ -47,22 +47,24 @@ struct  FgCoordWgt
     double      wgt;
 };
 
-// Variable-size samples required when pixel values don't have alpha:
+// Return value can contain between 0 and 4 samples depending on how many are culled
+// (due to being outside the image):
 FgArray<FgCoordWgt,4>
-fgInterpolateCull(FgVect2UI dims,FgVect2F coordIucs);
-
-// Source points outside image considered to have alpha zero:
-FgRgbaF
-fgInterpolate(const FgImgRgbaUb & img,FgVect2F coordIucs);
+fgLerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs);
 
 // Return value structure much easier to use than a terser bounds-based representation:
 FgMatrixC<FgCoordWgt,4,1>
-fgInterpolateClamp(FgVect2UI dims,FgVect2F coordIucs);
+fgLerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs);
 
-// Clamps sample point to image boundary:
+// Returns alpha-weighted linear-interpolated value.
+// Source points outside image considered to have alpha zero:
+FgRgbaF
+fgLerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
+
+// Clips sample point coordinates in image:
 template<class T>
 typename FgTraits<T>::Floating
-fgInterpolateClamp(
+fgLerpClip(
     const FgImage<T> &  img,
     FgVect2F            coordIucs)
 {
@@ -180,10 +182,10 @@ fgImgMagnify(const FgImage<T> & img,size_t fac)
 }
 
 void
-fgImgConvert(const FgImgRgbaUb & src,FgImgUb & dst);
+fgImgConvert(const FgImgRgbaUb & src,FgImgUC & dst);
 
 void
-fgImgConvert(const FgImgUb & src,FgImgRgbaUb & dst);
+fgImgConvert(const FgImgUC & src,FgImgRgbaUb & dst);
 
 // Resize to the destination image dimensions, by shrinking or expanding in each dimension.
 // Samples the exact proportional amount of the source image covered by the destination image
@@ -195,7 +197,7 @@ fgImgResize(
     FgImgRgbaUb &       dst);   // MODIFIED
 
 void
-fgImgPntRescaleConvert(const FgImgD & src,FgImgUb & dst);
+fgImgPntRescaleConvert(const FgImgD & src,FgImgUC & dst);
 
 void
 fgImgPntRescaleConvert(const FgImgD & src,FgImgRgbaUb & dst);
@@ -454,36 +456,7 @@ fgConvolveFloat(
     fgConvolveFloatHoriz(srcPtrs,krn,dst.rowPtr(dst.height()-1),wid,borderPolicy);
 }
 
-// Scales the max absolute value to 255, greens are positive, reds are negative, black is zero:
-template<class T>
-void
-fgMatrixToImage(
-    const FgMatrixV<T> &    mat,
-    FgImgRgbaUb &           img,
-    uint                    blockSize=5,
-    uint                    bright=1)
-{
-    FGASSERT(mat.numCols() * mat.numRows() > 0);
-    img.resize(mat.numCols()*blockSize,mat.numRows()*blockSize);
-    T           minVal,maxVal;
-    mat.getMinMax(minVal,maxVal);
-    T           absMax = max(abs(minVal),abs(maxVal));
-    double      fac = double(bright) * 255.0 / double(absMax);
-    for (uint ii=0; ii<mat.numRows(); ii++) {
-        for (uint jj=0; jj<mat.numCols(); jj++) {
-            T           elm = mat.elem(ii,jj);
-            FgRgbaUB   val(0,0,0,255);
-            if (elm > 0)
-                val.green() = static_cast<uchar>(fgClamp(fac * double(elm),0.0,255.0));
-            else
-                val.red() = static_cast<uchar>(fgClamp(-fac * double(elm),0.0,255.0));
-            for (uint kk=0; kk<blockSize; kk++)
-                for (uint ll=0; ll<blockSize; ll++)
-                    img.elem(ii*blockSize+kk,jj*blockSize+ll) = val;
-        }
-    }
-}
-
+// Resample 'in' at the centre of each pixel in 'out' (assuming images are spatially 1-1):
 template<class T>
 void
 fgResampleSimple(
@@ -492,15 +465,23 @@ fgResampleSimple(
 {
     FGASSERT(fgMinElem(in.dims()) > 0);
     FGASSERT(fgMinElem(out.dims()) > 0);
-    FgMat22F     inBoundsIucs( 0.0f,1.0f,    // fgInterpolateClamp takes UICS
+    FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgLerpClip takes UICS
                                   0.0f,1.0f),
                     outBoundsIrcs(-0.5f,float(out.width())-0.5f,
                                   -0.5f,float(out.height())-0.5f);
     FgAffineCw2F    o2i(outBoundsIrcs,inBoundsIucs);
     for (FgIter2UI it(out.dims()); it.valid(); it.next()) {
         FgVect2F    pt = o2i * FgVect2F(it());
-        fgRound(fgInterpolateClamp(in,pt),out[it]);
+        fgRound(fgLerpClip(in,pt),out[it]);
     }
+}
+template<class T>
+FgImage<T>
+fgResampleSimple(const FgImage<T> & in,FgVect2UI dims)
+{
+    FgImage<T>      ret(dims);
+    fgResampleSimple(in,ret);
+    return ret;
 }
 
 template<class T>
@@ -530,7 +511,7 @@ fgImgSsd(
         FgVect4D        p0,p1;
         fgConvert_(im0[it].m_c,p0);
         fgConvert_(im1[it].m_c,p1);
-        acc += (p0-p1).lengthSqr();
+        acc += (p0-p1).mag();
     }
     return acc;
 }
@@ -746,6 +727,13 @@ fgUsesAlpha(const FgImgRgbaUb &,uchar minVal=254);
 inline FgVect4UC fgRed() {return FgVect4UC(255,0,0,255); }
 inline FgVect4UC fgGreen() {return FgVect4UC(255,0,0,255); }
 inline FgVect4UC fgBlue() {return FgVect4UC(255,0,0,255); }
+
+// Thickness must be and odd number:
+void
+fgPaintCrossHair(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC color=fgRed(),uint thickness=1);
+
+void
+fgPaintDot(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC color=fgRed(),uint radius=3);
 
 void
 fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC color=fgRed(),uint radius=3);

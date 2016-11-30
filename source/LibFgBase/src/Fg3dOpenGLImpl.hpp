@@ -158,8 +158,8 @@ drawPoints(const vector<FgOglRendModel> &  rms)
     for (size_t mm=0; mm<rms.size(); ++mm) {
         const Fg3dMesh &    mesh = *rms[mm].mesh;
         const FgVerts &     verts = *rms[mm].verts;
-        for (uint ii=0; ii<mesh.numSurfPoints(); ii++) {
-            point = mesh.getSurfPoint(verts,ii);
+        for (size_t ii=0; ii<mesh.surfPointNum(); ii++) {
+            point = mesh.surfPointPos(verts,ii);
             glVertex3fv(&point[0]);
         }
     }
@@ -216,6 +216,18 @@ insertTri(
 }
 
 static
+FgVect4F
+cycleColors(uint v)
+{
+    FgVect4F    ret(0.5f,0.5f,0.5f,1);
+    for (uint dd=0; dd<3; ++dd) {
+        if (v & (1 << dd))
+            ret[dd] += 0.5f;
+    }
+    return ret;
+}
+
+static
 void
 drawSurfaces(
     const Fg3dMesh &                mesh,
@@ -246,6 +258,10 @@ drawSurfaces(
     FgAffine3F      oicsToOxcs(FgVect3F(1.0f));
     oicsToOxcs.postScale(0.5f);
     trans = oicsToOxcs * trans;
+    FgVect4F    white(1,1,1,1),
+                grey(0.8f,0.8f,0.8f,1),
+                black(0,0,0,1),
+                color;
     for (uint ss=0; ss<mesh.surfaces.size(); ++ss) {
         if (!images[ss].visible)
             continue;
@@ -259,6 +275,7 @@ drawSurfaces(
         glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
         glEnable(GL_LIGHTING);
         const Fg3dSurface & surf = mesh.surfaces[ss];
+        GLfloat             *colDiffAmb,*colSpec;
         bool                doTex = (texName.valid() && (surf.hasUvIndices()));
         if (doTex) {
             glEnable(GL_TEXTURE_2D);
@@ -266,21 +283,21 @@ drawSurfaces(
             // If texture is on, we use two-pass rendering for true spectral and
             // we also use the per-object spectral surface properties. If texture
             // mode is off, all objects are rendered the same and in a single pass.
-            GLfloat     white[]  = {1.0f, 1.0f, 1.0f, 1.0f},
-                        black[]  = {0.0f, 0.0f, 0.0f, 1.0f};
-            glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,white);
-            glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,white);
-            glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,black);
+            colDiffAmb = &white[0];
+            colSpec = &black[0];
         }
         else {
             glDisable(GL_TEXTURE_2D);
-            GLfloat     grey[]  = {0.8f, 0.8f, 0.8f, 1.0f},
-                        black[]  = {0.0f, 0.0f, 0.0f, 1.0f},
-                        *clr = grey;
-            glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,clr);
-            glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,clr);
-            glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,black);
+            colDiffAmb = &grey[0];
+            colSpec = &black[0];
         }
+        if (rend.colorBySurface) {
+            color = cycleColors(ss);
+            colDiffAmb = &color[0];
+        }
+        glMaterialfv(GL_FRONT_AND_BACK,GL_DIFFUSE,colDiffAmb);
+        glMaterialfv(GL_FRONT_AND_BACK,GL_AMBIENT,colDiffAmb);
+        glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,colSpec);
         // More bins slows things down without helping since depth sort is only approximate anyway:
         const size_t            numBins = 10000;
         FgAffine1F              depToBin(FgVectF2(1,-1),FgVectF2(0,numBins));
@@ -491,7 +508,7 @@ fgOglSetLighting(const FgLighting & lt)
 
 static
 void
-renderBgImg(uint name,FgVect2UI dims,bool transparency)
+renderBgImg(FgBgImage bgImg,bool transparency)
 {
     CHECKOGLERROR;
 	glMatrixMode(GL_MODELVIEW);
@@ -501,9 +518,10 @@ renderBgImg(uint name,FgVect2UI dims,bool transparency)
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D,name);
+	glBindTexture(GL_TEXTURE_2D,bgImg.texName.val());
 	glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
 	glDepthMask(0);
+    glColor3f(1.0f,1.0f,1.0f);  // Surface color weightings
     if (transparency) {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
@@ -511,22 +529,27 @@ renderBgImg(uint name,FgVect2UI dims,bool transparency)
     GLint       x[4];
     glGetIntegerv(GL_VIEWPORT,x);
     FgVect2F    vp(x[2],x[3]),
-                im(dims),
+                im(bgImg.origDims),
                 xr(im[0]*vp[1],im[1]*vp[0]);
-    FgVect2F    rat = FgVect2F(xr) / fgMaxElem(xr);
-
+    FgVect2F    sz = FgVect2F(xr) / fgMaxElem(xr) * bgImg.scale;
+    float       xo = bgImg.offset[0] * 2.0f,
+                yo = -bgImg.offset[1] * 2.0f,
+                xh = sz[0] + xo,
+                xl = -sz[0] + xo,
+                yh = sz[1] + yo,
+                yl = -sz[1] + yo;
 	glBegin(GL_TRIANGLES);
 	glTexCoord2f(1.0f,1.0f);
-	glVertex3f(rat[0],rat[1],0.0f);
+	glVertex3f(xh,yh,0.0f);
 	glTexCoord2f(0.0f,1.0f);
-	glVertex3f(-rat[0],rat[1],0.0f);
+	glVertex3f(xl,yh,0.0f);
 	glTexCoord2f(0.0f,0.0f);
-	glVertex3f(-rat[0],-rat[1],0.0f);
-	glVertex3f(-rat[0],-rat[1],0.0f);
+	glVertex3f(xl,yl,0.0f);
+	glVertex3f(xl,yl,0.0f);
 	glTexCoord2f(1.0f,0.0f);
-	glVertex3f(rat[0],-rat[1],0.0f);
+	glVertex3f(xh,yl,0.0f);
 	glTexCoord2f(1.0f,1.0f);
-	glVertex3f(rat[0],rat[1],0.0f);
+	glVertex3f(xh,yh,0.0f);
 	glEnd();
 
     glDisable(GL_BLEND);
@@ -542,14 +565,13 @@ fgOglRender(
     FgMat44F                        oglMvm, // MVM in column-major layout.
     FgVect6D                        frustum,
     const Fg3dRenderOptions &       rend,
-    FgValid<uint>                   bgImgName,
-    FgVect2UI                       bgImgDims)
+    FgBgImage                       bgImg)
 {
     CHECKOGLERROR;
     glClearColor(rend.backgroundColor[0],rend.backgroundColor[1],rend.backgroundColor[2],1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (bgImgName.valid())
-        renderBgImg(bgImgName.val(),bgImgDims,false);
+    if (bgImg.texName.valid())
+        renderBgImg(bgImg,false);
     if (rend.twoSided)
         glDisable(GL_CULL_FACE);        // The OGL default
     else {
@@ -590,8 +612,8 @@ fgOglRender(
         if (useOffsets)
             glPolygonOffset(0.0,0.0);
     }
-    if (bgImgName.valid()) {
-        renderBgImg(bgImgName.val(),bgImgDims,true);
+    if (bgImg.texName.valid()) {
+        renderBgImg(bgImg,true);
         // Restore transform state so projection oeprations work properly (eg. point-on-surface):
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -616,9 +638,9 @@ fgOglTransform()
 FgImgRgbaUb
 fgOglGetRender()
 {
+    FgImgRgbaUb     ret;
     CHECKOGLERROR;
     glReadBuffer(GL_FRONT);
-    FgImgRgbaUb     ret;
     GLint           x[4];
     glGetIntegerv(GL_VIEWPORT,x);
     FgVect2UI       dims(x[2],x[3]);
@@ -632,6 +654,9 @@ fgOglGetRender()
     }
     glReadBuffer(GL_BACK);          // Restore to default
     CHECKOGLERROR;
+    // Alpha channel contains results of last pass, set to 255:
+    for (size_t ii=0; ii<ret.numPixels(); ++ii)
+        ret[ii].alpha() = uchar(255);
     return ret;
 }
 

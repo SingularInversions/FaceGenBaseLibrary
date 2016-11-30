@@ -140,6 +140,18 @@ FgPath::popDirs(uint n)
     dirs.resize(dirs.size()-n);
 }
 
+FgPath
+fgPathFromDir(const FgString & directory)
+{
+    FgPath      ret(directory);
+    if (!ret.base.empty()) {
+        ret.dirs.push_back(ret.baseExt());
+        ret.base.clear();
+        ret.ext.clear();
+    }
+    return ret;
+}
+
 FgString
 fgPathToBase(const FgString & f)
 {return FgPath(f).base; }

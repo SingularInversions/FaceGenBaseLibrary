@@ -22,7 +22,6 @@
 #ifndef FGLINKGRAPH_HPP
 #define FGLINKGRAPH_HPP
 
-#include "FgVariant.hpp"
 #include "FgOpt.hpp"
 #include "FgStdString.hpp"
 
@@ -109,7 +108,7 @@ struct  FgLinkGraph
     linkSinks(uint linkIdx) const
     {return m_links[linkIdx].sinks; }
 
-    LinkData
+    const LinkData &
     getLink(uint linkIdx) const
     {return m_links[linkIdx].data; }
 };

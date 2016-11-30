@@ -28,6 +28,8 @@ struct  Fg3dRenderOptions
     bool        allVerts;
     bool        twoSided;
     FgVect3F    backgroundColor;
+    // Set by render impl not by client:
+    FgBoolF     colorBySurface;
 };
 
 #endif

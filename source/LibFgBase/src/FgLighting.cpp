@@ -41,7 +41,7 @@ FgLighting::createSpecularMap() const
                 FgRgbaF         pix(0,0,0,255);
                 for (uint ll=0; ll<m_lights.size(); ll++)
                 {
-                    float       diffSqr = (r - m_lights[ll].m_direction).lengthSqr(),
+                    float       diffSqr = (r - m_lights[ll].m_direction).mag(),
                                 bright = exp(-diffSqr * invVar) * fresnel * 255.0f;
                     pix.red() += m_lights[ll].m_colour[0] * bright;
                     pix.green() += m_lights[ll].m_colour[1] * bright;

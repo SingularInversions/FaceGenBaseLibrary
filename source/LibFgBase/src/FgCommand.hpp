@@ -67,4 +67,11 @@ fgTestCopy(const std::string & nameRelativeToDataDir);
 
 extern bool     fgCommandAutomated;     // No user interactivity
 
+// fgout the desired command, parse 'argStr' into an FgArgs, and run with indent:
+void
+fgRunCmd(const FgCmdFunc & func,const string & argStr);
+
+// Useful for writing command dispatch commands - as long as vector<FgCmd> is named 'cmds':
+#define FGADDCMD1(fn,name) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,name))
+
 #endif

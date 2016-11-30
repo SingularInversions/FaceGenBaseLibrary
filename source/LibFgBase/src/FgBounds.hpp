@@ -167,6 +167,22 @@ fgMaxIdx(const FgMatrixC<T,nrows,ncols> & mat)
     return idx;
 }
 
+template<typename T,uint nrows,uint ncols>
+uint
+fgMinIdx(const FgMatrixC<T,nrows,ncols> & mat)
+{
+    uint        idx(0);
+    T           min(mat[0]);
+    uint        sz = mat.numElems();
+    for (uint ii=1; ii<sz; ++ii) {
+        if (mat[ii] < min) {
+            min = mat[ii];
+            idx = ii;
+        }
+    }
+    return idx;
+}
+
 // Element-wise max:
 template<class T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
@@ -271,43 +287,49 @@ fgCubeBounds(const vector<FgMatrixC<T,dim,1> > & verts,T padRatio=1)
     return ret;
 }
 
-inline
-uint
-fgClip(int val,uint exclusiveUpperBound)
+template<typename T>
+T
+fgClip(T val,T inclusiveLowerBound,T inclusiveUpperBound)
 {
-    FGASSERT_FAST(exclusiveUpperBound > 0);
-    if (val < 0)
-        return 0;
-    uint    ret(val);
-    if (ret >= exclusiveUpperBound)
-        return exclusiveUpperBound-1;
+    if (val < inclusiveLowerBound)
+        return inclusiveLowerBound;
+    if (val > inclusiveUpperBound)
+        return inclusiveUpperBound;
+    return val;
+}
+
+template<class T,uint nrows>
+FgMatrixC<T,nrows,1>
+fgClipElems(const FgMatrixC<T,nrows,1> & vals,T minInclusive,T maxInclusive)
+{
+    FgMatrixC<T,nrows,1>    ret(vals);
+    for (uint ii=0; ii<nrows; ++ii) {
+        if (ret[ii] < minInclusive)
+            ret[ii] = minInclusive;
+        if (ret[ii] > maxInclusive)
+            ret[ii] = maxInclusive;
+    }
+    return ret;
+}
+
+template<class T,uint dim>
+FgMatrixC<T,dim,1>
+fgClipVol(const FgMatrixC<T,dim,1> & pos,const FgMatrixC<T,dim,2> & volBoundsInclusive)
+{
+    FgMatrixC<T,dim,1>  ret;
+    for (uint ii=0; ii<dim; ++ii)
+        ret[ii] = fgClip(pos[ii],volBoundsInclusive.elem(ii,0),volBoundsInclusive.elem(ii,1));
     return ret;
 }
 
 template<uint dim>
 FgMatrixC<uint,dim,1>
-fgClip(FgMatrixC<int,dim,1> coord,FgMatrixC<uint,dim,1> exclusiveUpperBounds)
+fgClipVolHi(FgMatrixC<int,dim,1> coord,FgMatrixC<uint,dim,1> exclusiveUpperBounds)
 {
     FgMatrixC<uint,dim,1>   ret;
     for (uint dd=0; dd<dim; ++dd)
-        ret[dd] = fgClip(coord[dd],exclusiveUpperBounds[dd]);
+        ret[dd] = uint(fgClip(coord[dd],0,int(exclusiveUpperBounds[dd]-1)));
     return ret;
-}
-
-template<typename T,uint dim>
-FgMatrixC<T,dim,1>
-fgClip(
-    FgMatrixC<T,dim,1>  coord,
-    FgMatrixC<T,dim,1>  inclusiveLowerBound,
-    FgMatrixC<T,dim,1>  inclusiveUpperBound)
-{
-    for (uint dd=0; dd<dim; ++dd) {
-        if (coord[dd] < inclusiveLowerBound[dd])
-            coord[dd] = inclusiveLowerBound[dd];
-        else if (coord[dd] > inclusiveUpperBound[dd])
-            coord[dd] = inclusiveUpperBound[dd];
-    }
-    return coord;
 }
 
 template<typename T>

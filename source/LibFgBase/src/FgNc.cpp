@@ -19,9 +19,9 @@ fgNcShare(const string & os)
 {
     string      ret;
     if (os == "win")
-        ret = "N:\\";
+        ret = "Z:\\";
     else if (os == "osx")
-        ret =  "/Volumes/share/";
+        ret =  "/Volumes/Zeus_share/";
     else if (os == "ubuntu")
         ret = "/mnt/share/";
     else
@@ -34,9 +34,9 @@ fgNcShare()
 {
     string      ret;
 #if defined _WIN32
-    ret = "N:\\";
+    ret = "Z:\\";
 #elif defined __APPLE__
-    ret =  "/Volumes/share/";
+    ret =  "/Volumes/Zeus_share/";
 #else
     ret = "/mnt/share/";
 #endif

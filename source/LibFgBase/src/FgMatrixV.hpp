@@ -224,7 +224,7 @@ fgMatRandNormal(uint nrows,uint ncols)
 template<class T>
 FgMatrixV<T>
 fgNormalize(const FgMatrixV<T> & m)
-{return m * (1/std::sqrt(m.lengthSqr())); }
+{return m * (1/std::sqrt(m.mag())); }
 
 template<class T>
 FgMatrixV<T>

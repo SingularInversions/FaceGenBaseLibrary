@@ -93,8 +93,8 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
 {
     FgGuiApiSplitAdj                m_api;
     HWND                            hwndThis;   // Must receive user messages from divider
-    FgSharedPtr<FgGuiOsBase>        m_pane0;
-    FgSharedPtr<FgGuiOsBase>        m_pane1;
+    FgPtr<FgGuiOsBase>        m_pane0;
+    FgPtr<FgGuiOsBase>        m_pane1;
     double                          m_relSize;
     struct  Div
     {
@@ -303,6 +303,6 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSplitAdj & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSplitAdj(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSplitAdj(def)); }

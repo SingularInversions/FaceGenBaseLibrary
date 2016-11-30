@@ -267,8 +267,8 @@ struct  FgMatrixV
     void            setZero() {setConst(T(0)); };
     void            setIdentity();
     FgMatrixV      transpose() const;
-    T               length() const {return sqrt(lengthSqr());}
-    T               lengthSqr() const;
+    T               length() const {return sqrt(mag());}
+    T               mag() const;
     T               mean() const {return fgMean(m_data); };
     bool            isVector() const {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
     FgMatrixV      subMatrix(uint firstRow,uint firstCol,uint numRows,uint numCols) const;
@@ -314,7 +314,7 @@ FgMatrixV<T> FgMatrixV<T>::transpose() const
 }
 
 template <class T>
-T   FgMatrixV<T>::lengthSqr() const
+T   FgMatrixV<T>::mag() const
 {
     typename FgTraits<T>::Accumulator    tot = 0;
     for (uint ii=0; ii<m_data.size(); ii++)

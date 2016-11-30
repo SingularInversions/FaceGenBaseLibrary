@@ -31,7 +31,7 @@ fgImgDisplay(const FgImgRgbaUb & img,vector<FgVect2F> pts)
 }
 
 void
-fgImgDisplay(const FgImgUb &img)
+fgImgDisplay(const FgImgUC &img)
 {
     FgImgRgbaUb        dispImg;
     fgImgConvert(img,dispImg);

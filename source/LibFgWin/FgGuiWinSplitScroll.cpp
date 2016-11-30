@@ -252,6 +252,6 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSplitScroll & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSplitScroll(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSplitScroll(def)); }

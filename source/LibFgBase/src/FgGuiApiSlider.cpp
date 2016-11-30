@@ -11,6 +11,7 @@
 
 #include "FgGuiApiSlider.hpp"
 #include "FgGuiApiSplit.hpp"
+#include "FgGuiApiText.hpp"
 
 using namespace std;
 
@@ -52,24 +53,28 @@ fgGuiSlider(
     double          tickSpacing,
     const FgGuiApiTickLabels & tl,
     const FgGuiApiTickLabels & ul,
-    uint            edgePadding)
+    uint            edgePadding,
+    bool            editBox)
 {
-    FgGuiApiSlider ret;
-    ret.updateFlagIdx = g_gg.addUpdateFlag(valN);
-    ret.getInput = boost::bind(getInput,valN);
-    ret.setOutput = boost::bind(setOutput,valN,_1);
-    ret.label = label;
-    ret.range = range;
-    ret.tickSpacing = tickSpacing;
-    ret.tickLabels = tl;
-    ret.tockLabels = ul;
-    ret.edgePadding = edgePadding;
-    return fgnew<FgGuiApiSlider>(ret);
+    FgGuiApiSlider sldr;
+    sldr.updateFlagIdx = g_gg.addUpdateFlag(valN);
+    sldr.getInput = boost::bind(getInput,valN);
+    sldr.setOutput = boost::bind(setOutput,valN,_1);
+    sldr.label = label;
+    sldr.range = range;
+    sldr.tickSpacing = tickSpacing;
+    sldr.tickLabels = tl;
+    sldr.tockLabels = ul;
+    sldr.edgePadding = edgePadding;
+    FgGuiPtr        ret = fgGuiPtr(sldr);
+    if (editBox)
+        ret = fgGuiSplit(true,ret,fgGuiTextEditFixed(valN,range));
+    return ret;
 }
 
 FgGuiSliders
 fgGuiSliders(
-    uint                    numSliders,
+    size_t                  numSliders,
     FgString                baseLabel,
     FgVectD2                range,
     double                  initVal,
@@ -78,7 +83,7 @@ fgGuiSliders(
     FgGuiSliders            ret;
     uint                    digits = (numSliders > 10 ? 2 : 1);
     vector<FgDgn<double> >  slidersN;
-    for (uint ii=0; ii<numSliders; ++ii) {
+    for (size_t ii=0; ii<numSliders; ++ii) {
         FgDgn<double>       val = g_gg.addNode(initVal);
         ret.inputInds.push_back(val);
         ret.sliders.push_back(
@@ -95,7 +100,7 @@ fgGuiSliders(
 FgGuiWinVal<vector<double> >
 fgGuiSliders(
     const FgString &        relStore,
-    const vector<FgString> & labels,
+    const FgStrings & labels,
     FgVectD2                range,
     double                  initVal,
     double                  tickSpacing)

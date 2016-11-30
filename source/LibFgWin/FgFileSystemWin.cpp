@@ -163,7 +163,7 @@ fgDirUserAppDataLocalRoot()
 }
 
 FgString
-fgUserDocumentsDirectory()
+fgUserDocumentsDirectory(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -173,8 +173,12 @@ fgUserDocumentsDirectory()
             NULL,                                   // Current user
             SHGFP_TYPE_CURRENT,
             path);
-    if (retval != S_OK)
-        fgThrowWindows("Unable to retrieve user documents directory");
+    if (retval != S_OK) {
+        if (throwOnFail)
+            fgThrowWindows("Unable to retrieve user documents directory");
+        else
+            return FgString();
+    }
     return FgString(path) + "\\";
 }
 

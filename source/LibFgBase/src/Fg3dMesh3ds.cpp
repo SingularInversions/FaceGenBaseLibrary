@@ -68,72 +68,6 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr, long &chunkLen,
 
 
 //****************************************************************************
-//                              fffSave3dsFile
-//****************************************************************************
-static bool    fffSave3dsFile(const FgString &name, const FffMultiObjectC &model)
-{
-    FgPath      path(name);
-    path.ext = "3ds";
-    FgString    fname = path.str();
-#ifdef _WIN32
-    FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
-#else
-    FILE *fptr = fopen(fname.m_str.c_str(),"wb");
-#endif
-
-    if (!fptr)
-    {
-        return false;
-    }
-
-    unsigned short id = M3DMAGIC;
-    long chunkSize = sizeof(unsigned short) + sizeof(long);
-    long chunkStartPos = ftell(fptr);
-    if (!fffWriteChunkHeader_local(fptr,id,chunkSize))
-    {
-        fclose(fptr);
-        return false;
-    }
-
-    {
-        id = M3D_VERSION;
-        long version = 3;
-        long verChunkSize = sizeof(unsigned short) + sizeof(long)
-                          + sizeof(long);
-        if (!fffWriteChunkHeader_local(fptr,id,verChunkSize))
-        {
-            fclose(fptr);
-            return false;
-        }
-        if (fwrite(&version,sizeof(long),1,fptr) != 1)
-        {
-            fclose(fptr);
-            return false;
-        }
-        chunkSize += verChunkSize;
-    }
-
-    long mdataChunkSize=0;
-    if (!fffWriteMdataChunk_local(fptr,mdataChunkSize,model))
-    {
-        fclose(fptr);
-        return false;
-    }
-    chunkSize += mdataChunkSize;
-
-    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos))
-    {
-        fclose(fptr);
-        return false;
-    }
-
-    fclose(fptr);
-
-    return true;
-}
-
-
-//****************************************************************************
 // Local                fffMdlNameTo3dsName
 //****************************************************************************
 static string fffMdlNameTo3dsName(
@@ -621,6 +555,59 @@ static bool fffWriteTriObjectChunk_local(
     return true;
 }
 
+static
+bool
+fffSave3dsFile(const FgString &name, const FffMultiObjectC &model)
+{
+    FgPath      path(name);
+    path.ext = "3ds";
+    FgString    fname = path.str();
+#ifdef _WIN32
+    FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
+#else
+    FILE *fptr = fopen(fname.m_str.c_str(),"wb");
+#endif
+    if (!fptr) {
+        return false;
+    }
+    unsigned short id = M3DMAGIC;
+    long chunkSize = sizeof(unsigned short) + sizeof(long);
+    long chunkStartPos = ftell(fptr);
+    if (!fffWriteChunkHeader_local(fptr,id,chunkSize)) {
+        fclose(fptr);
+        return false;
+    }
+    {
+        id = M3D_VERSION;
+        long version = 3;
+        long verChunkSize = sizeof(unsigned short) + sizeof(long)
+                          + sizeof(long);
+        if (!fffWriteChunkHeader_local(fptr,id,verChunkSize))
+        {
+            fclose(fptr);
+            return false;
+        }
+        if (fwrite(&version,sizeof(long),1,fptr) != 1)
+        {
+            fclose(fptr);
+            return false;
+        }
+        chunkSize += verChunkSize;
+    }
+    long mdataChunkSize=0;
+    if (!fffWriteMdataChunk_local(fptr,mdataChunkSize,model)) {
+        fclose(fptr);
+        return false;
+    }
+    chunkSize += mdataChunkSize;
+    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos)) {
+        fclose(fptr);
+        return false;
+    }
+    fclose(fptr);
+    return true;
+}
+
 void
 fgSave3ds(
     const FgString &        fname,
@@ -631,7 +618,8 @@ fgSave3ds(
         meshes[ii].deltaMorphs.clear();
         meshes[ii].targetMorphs.clear();
     }
-    FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat);
+    // 3DS internal filenames have 8 chars max so leave 1 for tex number:
+    FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat,7);
     fffSave3dsFile(fname,ml.base);
 }
 
@@ -642,7 +630,7 @@ fgSave3dsTest(const FgArgs & args)
     FgString    dd = fgDataDir();
     string      rd = "base/";
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.texImages.push_back(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
+    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSave3ds("mshX3ds",fgSvec(mesh),"jpg");
     fgRegressFile("mshX3ds.3ds","base/test/");
     fgRegressFile("mshX3ds0.jpg","base/test/");

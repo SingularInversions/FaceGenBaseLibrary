@@ -29,9 +29,9 @@ struct  FgSyntax
     const string &
     next();
 
-    string
+    FgString
     nextLower()             // As above but lower case
-    {return fgToLower(next()); }
+    {return fgToLower(FgString(next())); }
 
     const string &
     curr() const

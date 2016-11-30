@@ -28,12 +28,32 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
     FgVect2I                m_lastPos;          // Last mouse position in CC (only valid if drag!=None)
     vector<vector<FgOglSurf> > m_oglImgs;       // by mesh, by image, < 0 for no texture
     ULONGLONG               m_lastGestureVal;   // Need to keep last gesture val to calc differences.
-    FgValid<uint>           m_bgImgName;        // If valid, OGL 'name' of BG image
-    FgVect2UI               m_bgImgDims;
+    FgBgImage               m_bgImg;            // Background image. If valid, OGL 'name' of BG image
+    uint                    m_update;           // Re-render required
+    uint                    m_updateBgImg;      // Additional check to avoid excess BG image GPU xfer
+    uint                    m_updateTexs;       // Additional check to avoid excess texture image GPU xfer
 
     FgGuiWin3dOgl(const FgGuiApi3d & api)
     : m_api(api)
-    {}
+    {
+        // Including api.viewBounds, api.pan/tiltDegrees and api.logRelSize in the below caused a feedback
+        // issue that broke updates of the other sliders:
+        vector<uint>    renderDeps;
+        renderDeps.push_back(api.meshesN);
+        renderDeps.push_back(api.vertssN);
+        renderDeps.push_back(api.normssN);
+        renderDeps.push_back(api.texssN);
+        renderDeps.push_back(api.light);
+        renderDeps.push_back(api.xform);
+        renderDeps.push_back(api.renderOptions);
+        if (api.colorBySurface.valid())
+            renderDeps.push_back(api.colorBySurface);
+        fgAppend(renderDeps,api.bgImg.deps());
+        m_update = g_gg.addUpdateFlag(renderDeps);
+        m_updateBgImg = g_gg.addUpdateFlag(api.bgImg.deps());
+        // The OGL texture update process depends on the meshes as well as the textures:
+        m_updateTexs = g_gg.addUpdateFlag(fgUints(api.texssN,api.meshesN));
+    }
 
     virtual void
     create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
@@ -60,7 +80,7 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
     virtual void
     updateIfChanged()
     {
-        if (g_gg.dg.update(m_api.updateFlagIdx)) {
+        if (g_gg.dg.update(m_update)) {
             // This flips the dirty bit (QS_PAINT) for the render window but Windows will not
             // actually send a WM_PAINT message until the message queue is empty for a fraction
             // of a second (regardless of background paint flag):
@@ -167,6 +187,12 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
                 m_api.scale(delta[1]);
                 g_gg.updateScreen();
             }
+            else if (wParam == (MK_RBUTTON | MK_SHIFT)) {
+                if (m_api.shiftRightDragAction) {
+                    m_api.shiftRightDragAction(m_size,pos,fgOglTransform());
+                    g_gg.updateScreen();
+                }
+            }
             else if (wParam == (MK_LBUTTON | MK_CONTROL)) {
                 if (m_api.ctlDragAction) {
                     m_api.ctlDrag(true,m_size,delta,fgOglTransform());
@@ -190,6 +216,14 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
                     m_api.bothButtonsDragAction(true,delta);
                     g_gg.updateScreen();
                 }
+            }
+            else if (wParam == (MK_LBUTTON | MK_SHIFT | MK_CONTROL)) {
+                m_api.ctrlShiftLeftDrag(m_size,delta);
+                g_gg.updateScreen();
+            }
+            else if (wParam == (MK_RBUTTON | MK_SHIFT | MK_CONTROL)) {
+                m_api.ctrlShiftRightDrag(m_size,delta);
+                g_gg.updateScreen();
             }
             m_lastPos = pos;
         }
@@ -270,23 +304,25 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
     void
     render()
     {
-        if (m_api.bgImgN.valid()) {
-            if (g_gg.dg.update(m_api.bgImgUpdateFlag)) {
-                if (m_bgImgName.valid()) {
-                    fgOglTexRelease(m_bgImgName.val());
-                    m_bgImgName.invalidate();
+        if (m_api.bgImg.imgN.valid()) {
+            if (g_gg.dg.update(m_updateBgImg)) {
+                if (m_bgImg.texName.valid()) {
+                    fgOglTexRelease(m_bgImg.texName.val());
+                    m_bgImg.texName.invalidate();
                 }
-                const FgImgRgbaUb &     img = g_gg.getVal(m_api.bgImgN);
+                const FgImgRgbaUb &     img = g_gg.getVal(m_api.bgImg.imgN);
                 if (!img.empty()) {
                     FGASSERT(fgIsPow2(img.dims()[0]));
                     FGASSERT(fgIsPow2(img.dims()[1]));
-                    m_bgImgDims = g_gg.getVal(m_api.bgImgOrigDimsN);
-                    m_bgImgName = fgOglTextureAdd(img);
+                    m_bgImg.origDims = g_gg.getVal(m_api.bgImg.origDimsN);
+                    m_bgImg.texName = fgOglTextureAdd(img);
+                    m_bgImg.offset = g_gg.getVal(m_api.bgImg.offset);
+                    m_bgImg.scale = float(std::exp(g_gg.getVal(m_api.bgImg.lnScale)));
                 }
             }
         }
         const vector<Fg3dMesh> &        meshes = g_gg.getVal(m_api.meshesN);
-        if (g_gg.dg.update(m_api.updateTexFlagIdx)) {
+        if (g_gg.dg.update(m_updateTexs)) {
             // Release all textures:
             for (size_t ii=0; ii<m_oglImgs.size(); ++ii) {
                 vector<FgOglSurf> &     tns = m_oglImgs[ii];
@@ -333,19 +369,21 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             rendModels.push_back(rm);
         }
         const Fg3dCamera &          camera = g_gg.getVal(m_api.xform);
-        const Fg3dRenderOptions &   render = g_gg.getVal(m_api.renderOptions);
+        Fg3dRenderOptions           render = g_gg.getVal(m_api.renderOptions);
+        render.colorBySurface = false;
+        if (m_api.colorBySurface.valid())
+            render.colorBySurface = g_gg.getVal(m_api.colorBySurface);
         fgOglRender(
             rendModels,
             FgMat44F(camera.modelview.asHomogenous().transpose()),
             camera.frustum,
             render,
-            m_bgImgName,
-            m_bgImgDims);
+            m_bgImg);
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApi3d & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWin3dOgl(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWin3dOgl(def)); }
 
 // */

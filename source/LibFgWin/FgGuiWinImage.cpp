@@ -20,7 +20,8 @@ struct  FgGuiWinImage : public FgGuiOsBase
     HWND            m_hwnd;
     FgGuiApiImage   m_api;
     FgVect2UI       m_size;
-    FgVect2I        m_lastPos;  // Last mouse position in CC
+    FgVect2I        m_posWhenLButtonClicked;
+    FgVect2I        m_lastPos;                  // Last mouse position in CC
     bool            dragging;
 
     FgGuiWinImage(const FgGuiApiImage & api)
@@ -128,7 +129,8 @@ struct  FgGuiWinImage : public FgGuiOsBase
             EndPaint(hwnd,&ps);
         }
         else if (msg == WM_LBUTTONDOWN) {
-            m_lastPos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            m_posWhenLButtonClicked = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            m_lastPos = m_posWhenLButtonClicked;
             POINT   point;
             point.x = 0;
             point.y = 0;
@@ -154,9 +156,15 @@ struct  FgGuiWinImage : public FgGuiOsBase
             FgVect2I    delta = pos-m_lastPos;
             m_lastPos = pos;
             if (wParam == MK_LBUTTON) {
-                dragging = true;
-                m_api.move(delta);
-                g_gg.updateScreen();
+                if (dragging == false) {
+                    // Add hysteresis to avoid annoying missed clicks due to very slight movement:
+                    if (fgMaxElem(fgAbs(pos-m_posWhenLButtonClicked)) > 1)
+                        dragging = true;
+                }
+                if (dragging) {
+                    m_api.move(delta);
+                    g_gg.updateScreen();
+                }
             }
             else if (wParam == MK_RBUTTON) {
                 m_api.zoom(delta[1]);
@@ -169,8 +177,8 @@ struct  FgGuiWinImage : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiImage & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinImage(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinImage(def)); }
 
 // */

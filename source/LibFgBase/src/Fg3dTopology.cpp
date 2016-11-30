@@ -337,25 +337,30 @@ Fg3dTopology::oppositeVert(uint triIdx,uint edgeIdx) const
     return 0;
 }
 
-bool
+FgVect3UI
 Fg3dTopology::isManifold() const
 {
+    FgVect3UI   ret(0);
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
-        Edge    edge = m_edges[ee];
-        if (edge.triInds.size() != 2)
-            return false;
-        // Check that winding directions of the two facets are opposite on this edge:
-        Tri     tri0 = m_tris[edge.triInds[0]],
-                tri1 = m_tris[edge.triInds[1]];
-        uint    edgeIdx0 = fgFindFirstIdx(tri0.edgeInds,uint(ee)),
-                edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
-        if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
-            return false;
-        // Worked on all 3DP meshes in testing so commented out for speed:
-        //FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
-        //FGASSERT(tri0.edge(edgeIdx0)[1] == tri1.edge(edgeIdx1)[0]);
+        const Edge &    edge = m_edges[ee];
+        if (edge.triInds.size() == 1)
+            ++ret[0];
+        else if (edge.triInds.size() > 2)
+            ++ret[1];
+        else {
+            // Check that winding directions of the two facets are opposite on this edge:
+            Tri         tri0 = m_tris[edge.triInds[0]],
+                        tri1 = m_tris[edge.triInds[1]];
+            uint        edgeIdx0 = fgFindFirstIdx(tri0.edgeInds,uint(ee)),
+                        edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
+            if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
+                ++ret[2];
+            // Worked on all 3DP meshes in testing so commented out for speed:
+            FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
+            FGASSERT(tri0.edge(edgeIdx0)[1] == tri1.edge(edgeIdx1)[0]);
+        }
     }
-    return true;
+    return ret;
 }
 
 size_t

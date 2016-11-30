@@ -222,7 +222,7 @@ fgTcpServer(
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
         catch(FgException const & e) {
-            fgout << "Handler exception (FG4 exception): " << e.no_tr_message();
+            fgout << "Handler exception (FG exception): " << e.no_tr_message();
         }
         catch(std::exception const & e) {
             fgout << "Handler exception (std::exception): " << e.what();

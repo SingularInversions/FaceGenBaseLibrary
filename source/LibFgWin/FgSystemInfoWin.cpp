@@ -66,7 +66,7 @@ fgSystemInfo()
             verStr = unknown;
         }
     }
-    else if (osvi.dwMajorVersion == 10) {
+    else if (osvi.dwMajorVersion == 10) {   // Doesn't work, Win10 appears as Win8. VS2015 libs required to detect.
         if (osvi.dwMinorVersion == 0) {
             if (osvi.wProductType == VER_NT_WORKSTATION)
                 verStr = "10";

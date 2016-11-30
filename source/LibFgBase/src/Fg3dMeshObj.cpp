@@ -51,12 +51,22 @@ parseFloat(const string & str)
 
 static
 FgVect3F
-parseVert(const string & str)
+parseVert(
+    const string &  str,
+    bool &          homogenous, // Set to true if there is a homogenous coord (which is ignored)
+    bool &          vertColors) // Set to true if there is a vertex color specified (which is ignored)
 {
     vector<string>  nums = fgSplitChar(str,' ');
-    // A fourth homogenous coord value can also be specified but is only used for rational
-    // cureves so we ignore:
-    FGASSERT((nums.size() > 2) && (nums.size() < 5));
+    if (nums.size() < 3)
+        FGASSERT_FALSE1("Too few values specifying vertex");
+    else if (nums.size() == 4)
+        // A fourth homogenous coord value can also be specified but is only used for rational
+        // cureves so we ignore:
+        homogenous = true;
+    else if (nums.size() == 6)
+        vertColors = true;
+    else if (nums.size() != 3)
+        FGASSERT_FALSE1("Invalid number of arguments for vertex");
     FgVect3F        ret;
     for (uint ii=0; ii<3; ++ii)
         ret[ii] = parseFloat(nums[ii]);
@@ -136,24 +146,25 @@ parseFacet(
     return ret;
 }
 
-void
+Fg3dMesh
 fgLoadWobj(
     const FgString &    fname,
-    Fg3dMesh &          meshRef,
     string              surfSeparator)
 {
+    Fg3dMesh                    mesh;
     string                      currName;
     map<string,Fg3dSurface>     surfs;
-    vector<string>      lines = fgSplitLines(fgSlurp(fname));
-    Fg3dMesh            mesh;
-    Fg3dSurface         surf;
-    size_t              numNgons = 0;
+    vector<string>              lines = fgSplitLines(fgSlurp(fname));
+    Fg3dSurface                 surf;
+    size_t                      numNgons = 0;
+    bool                        vertexColors = false,
+                                vertexHomogenous = false;
     for (size_t ii=0; ii<lines.size(); ++ii) {
         try {
             const string &  line = lines[ii];
             if (line[0] == 'v') {
                 if (line[1] == ' ')
-                    mesh.verts.push_back(parseVert(line.substr(2)));
+                    mesh.verts.push_back(parseVert(line.substr(2),vertexHomogenous,vertexColors));
                 if (line[1] == 't')
                     if (line[2] == ' ')
                         mesh.uvs.push_back(parseUv(line.substr(3)));
@@ -192,6 +203,10 @@ fgLoadWobj(
     }
     if (numNgons > 0)
         fgout << fgnl << "WARNING: " << numNgons << " N-gons broken into tris in " << fname;
+    if (vertexHomogenous)
+        fgout << fgnl << "WARNING: Vertex homogenous coordinates ignored.";
+    if (vertexColors)
+        fgout << fgnl << "WARNING: Vertex color values ignored.";
     if (!surf.empty()) {
         if (surfs.find(currName) == surfs.end())
             surfs[currName] = surf;
@@ -209,7 +224,20 @@ fgLoadWobj(
         srf.name = it->first;
         mesh.surfaces.push_back(srf);
     }
-    meshRef = mesh;
+    // Some OBJ meshes make use of wrap aliasing in their UVs (eg. Daz Gen 3):
+    bool        uvsWrapped = false;
+    for (size_t ii=0; ii<mesh.uvs.size(); ++ii) {
+        FgVect2F &  uv = mesh.uvs[ii];
+        for (uint xx=0; xx<2; ++xx) {
+            if ((uv[xx] < 0.0f) || (uv[xx] > 1.0f)) {
+                uvsWrapped = true;
+                uv[xx] = uv[xx] - floor(uv[xx]);
+            }
+        }
+    }
+    if (uvsWrapped)
+        fgout << fgnl << "WARNING: UV indices unwrapped.";
+    return mesh;
 }
 
 struct  Offsets
@@ -295,14 +323,16 @@ writeMesh(
         FgVect3F    n = norms.vert[ii];
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << endl;
     }
-    for (uint tt=0; tt<mesh.texImages.size(); ++tt) {
-        string  idxString = fgToString(offsets.mat+tt);
-        // Some OBJ parsers (Meshlab) can't handle spaces in filename:
-        FgString        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
-        fgSaveImgAnyFormat(fpath.dir()+imgName,mesh.texImages[tt]);
-        if (ofsMtl) {
-            writeMtlBase(ofsMtl,offsets.mat+tt);
-            ofsMtl << "    map_Kd " << imgName << endl;
+    for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
+        if (mesh.surfaces[tt].albedoMap) {
+            string  idxString = fgToString(offsets.mat+tt);
+            // Some OBJ parsers (Meshlab) can't handle spaces in filename:
+            FgString        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
+            fgSaveImgAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].albedoMap);
+            if (ofsMtl) {
+                writeMtlBase(ofsMtl,offsets.mat+tt);
+                ofsMtl << "    map_Kd " << imgName << endl;
+            }
         }
     }
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
@@ -315,7 +345,7 @@ writeMesh(
     }
     offsets.vert += uint(mesh.verts.size());
     offsets.uv += uint(mesh.uvs.size());
-    offsets.mat += uint(mesh.texImages.size());
+    offsets.mat += uint(mesh.surfaces.size());
     return offsets;
 }
 
@@ -328,14 +358,14 @@ fgSaveObj(
     FgPath      fpath(filename);
     bool        texImage = false;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        if (!meshes[ii].texImages.empty())
+        if (meshes[ii].numValidAlbedoMaps() > 0)
             texImage = true;
     FgOfstream  ofs(fpath.dirBase()+".obj");
     FgOfstream  ofsMtl;
     ofs.precision(7);
     ofs <<
         "# Wavefront OBJ format.\n"
-        "# Generated by FaceGen, for more information visit http://FaceGen.com.\n";
+        "# Generated by FaceGen, for more information visit https://facegen.com\n";
     // Some OBJ parsers (MeshLab) can't handle spaces in filenames:
     if (texImage) {
         FgString    mtlBaseExt = fpath.base.replace(' ','_') + ".mtl";

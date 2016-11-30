@@ -5,6 +5,7 @@
 //
 // Authors: Sohail Somani, Andrew Beatty
 //
+// Reference-counted pointer similar to shared_ptr. Not multithread safe.
 
 #ifndef FGSHAREDPTR_HPP
 #define FGSHAREDPTR_HPP
@@ -12,13 +13,13 @@
 #include "FgStdLibs.hpp"
 #include "FgDiagnostics.hpp"
 
-// This function ensures that delete is only called on a complete type
-// as sizeof can only be called on a complete type
 template<typename T>
 inline
 void
 fg_checked_delete(void *p)
 {
+    // This mechanism ensures that delete is only called on a complete type
+    // (ie defined when compiling this code, rather than just declared):
     typedef char type_must_be_complete[ sizeof(T) ? 1: -1];
     (void) sizeof(type_must_be_complete);
     delete static_cast<T*>(p);
@@ -29,60 +30,48 @@ void
 fg_null_deleter(void *)
 {}
 
-// Like boost::shared_ptr
 template<typename T>
-class   FgSharedPtr
+class   FgPtr
 {
     typedef void(*deleter_fn_t)(void *);
     T *             m_p;
     std::size_t *   m_ref;
+    // This is necessary in case the client casts this pointer to a parent class, as this will
+    // otherwise result in compiler warnings upon deletion, and corruption if the parent does
+    // not have a virtual destructor:
     deleter_fn_t    m_deleter;
 
 public:
     template<typename Y>
-    friend class FgSharedPtr;
+    friend class FgPtr;
 
-    FgSharedPtr():
-        m_p(0),
-        m_ref(0),
-        m_deleter(fg_null_deleter)
+    FgPtr()
+    : m_p(0), m_ref(0), m_deleter(fg_null_deleter)
     {}
 
-    explicit FgSharedPtr(T * p):
-        m_p(p),
-        m_ref(new std::size_t(1)),
-        m_deleter(fg_checked_delete<T>)
+    // Only pass a 'new' pointer here; never a pointer into a pre-existing object:
+    explicit
+    FgPtr(T * p)
+    : m_p(p), m_ref(new std::size_t(1)), m_deleter(fg_checked_delete<T>)
     {}
 
-    FgSharedPtr(FgSharedPtr<T> const & rhs)
-        :m_p(0),
-         m_ref(0),
-         m_deleter(0)
-    {
-        copyFrom(rhs);
-    }
+    FgPtr(FgPtr<T> const & rhs)
+    : m_p(0),m_ref(0),m_deleter(0)
+    {copyFrom(rhs); }
 
     // Allow implicit conversion as long as the pointers themselves support implicit conversion.
     // For example child -> base ptr. This is one of the few cases where implicit conversion is OK.
     template<typename Y>
-    FgSharedPtr(FgSharedPtr<Y> const & rhs)
-        :m_p(0),
-         m_ref(0),
-         m_deleter(0)
+    FgPtr(FgPtr<Y> const & rhs)
+    : m_p(0),m_ref(0),m_deleter(0)
+    {copyFrom(rhs); }
 
-    {
-        copyFrom(rhs);
-    }
-
-    ~FgSharedPtr()
-    {
-        reset();
-    }
+    ~FgPtr()
+    {reset(); }
 
     void reset()
     {
-        if(m_ref && 0==decRef())
-        {
+        if(m_ref && 0==decRef()) {
             delete m_ref;
             m_deleter(m_p);
             m_ref = 0;
@@ -90,7 +79,7 @@ public:
         }
     }
 
-    void swap(FgSharedPtr<T> & other)
+    void swap(FgPtr<T> & other)
     {
         std::swap(m_p,other.m_p);
         std::swap(m_ref,other.m_ref);
@@ -101,7 +90,7 @@ public:
     void reset(Y * p)
     {
         FGASSERT_FAST(p == 0 || p != m_p);
-        FgSharedPtr<T>(p).swap(*this);
+        FgPtr<T>(p).swap(*this);
     }
 
     T * get() const
@@ -122,16 +111,16 @@ public:
         return *m_p;
     }
 
-    FgSharedPtr<T> &
-    operator=(FgSharedPtr<T> const & rhs)
+    FgPtr<T> &
+    operator=(FgPtr<T> const & rhs)
     {
         copyFrom(rhs);
         return *this;
     }
 
     template<typename Y>
-    FgSharedPtr<T> &
-    operator=(FgSharedPtr<Y> const & rhs)
+    FgPtr<T> &
+    operator=(FgPtr<Y> const & rhs)
     {
         copyFrom(rhs);
         return *this;
@@ -152,7 +141,7 @@ public:
 
 private:
     template<typename Y>
-    void copyFrom(FgSharedPtr<Y> const & rhs)
+    void copyFrom(FgPtr<Y> const & rhs)
     {
         reset();
         this->m_ref = rhs.m_ref;
@@ -172,42 +161,42 @@ private:
 };
 
 template<typename T>
-FgSharedPtr<T>
+FgPtr<T>
 fgsp(const T & v)
-{return FgSharedPtr<T>(new T(v)); }
+{return FgPtr<T>(new T(v)); }
 
 template<typename T>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew()
 {
-    return FgSharedPtr<T>(new T);
+    return FgPtr<T>(new T);
 }
 
 template<typename T,
          typename A1>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1)
 {
-    return FgSharedPtr<T>(new T(a1));
+    return FgPtr<T>(new T(a1));
 }
 
 template<typename T,
          typename A1,
          typename A2>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1,const A2 & a2)
 {
-    return FgSharedPtr<T>(new T(a1,a2));
+    return FgPtr<T>(new T(a1,a2));
 }
 
 template<typename T,
          typename A1,
          typename A2,
          typename A3>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1,const A2 & a2,const A3 & a3)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3));
+    return FgPtr<T>(new T(a1,a2,a3));
 }
 
 template<typename T,
@@ -215,10 +204,10 @@ template<typename T,
          typename A2,
          typename A3,
          typename A4>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4));
+    return FgPtr<T>(new T(a1,a2,a3,a4));
 }
 
 template<typename T,
@@ -227,10 +216,10 @@ template<typename T,
          typename A3,
          typename A4,
          typename A5>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5));
 }
 
 template<typename T,
@@ -240,60 +229,60 @@ template<typename T,
          typename A4,
          typename A5,
          typename A6>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6));
 }
 
 template<typename T,typename A1,typename A2,typename A3,typename A4,typename A5,
          typename A6,typename A7>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(
     const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6,
     const A7 & a7)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7));
 }
 
 template<typename T,typename A1,typename A2,typename A3,typename A4,typename A5,
          typename A6,typename A7,typename A8>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(
     const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6,
     const A7 & a7,const A8 & a8)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8));
 }
 
 template<typename T,typename A1,typename A2,typename A3,typename A4,typename A5,
          typename A6,typename A7,typename A8,typename A9>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(
     const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6,
     const A7 & a7,const A8 & a8,const A9 & a9)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9));
 }
 
 template<typename T,typename A1,typename A2,typename A3,typename A4,typename A5,
          typename A6,typename A7,typename A8,typename A9,typename A10>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(
     const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6,
     const A7 & a7,const A8 & a8,const A9 & a9,const A10 & a10)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10));
 }
 
 template<typename T,typename A1,typename A2,typename A3,typename A4,typename A5,
          typename A6,typename A7,typename A8,typename A9,typename A10,typename A11>
-FgSharedPtr<T>
+FgPtr<T>
 fgnew(
     const A1 & a1,const A2 & a2,const A3 & a3,const A4 & a4,const A5 & a5,const A6 & a6,
     const A7 & a7,const A8 & a8,const A9 & a9,const A10 & a10,const A11 & a11)
 {
-    return FgSharedPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11));
+    return FgPtr<T>(new T(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11));
 }
 
 #endif

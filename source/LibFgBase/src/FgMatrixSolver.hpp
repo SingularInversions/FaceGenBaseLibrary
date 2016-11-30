@@ -14,71 +14,71 @@
 #include "FgMatrix.hpp"
 #include "jama_eig.h"
 
+// Eigenvalues of a square symmetric matrix.
 // Runs in O(dim^3) time, with residual error O(dim^2).
 // Runtime is almost identical the equivalent NRC function (37s for 1000x1000 random),
-// but yields larger residual errors (10 x dim^2 x epsilon() for 1000x1000 versus 
-// 5x for NRC).
-template<class T>
+// but yields larger residual errors (10 x dim^2 x epsilon() for 1000x1000 versus 5x for NRC).
 void
-fgRealSymmEigs(
-    const FgMatrixV<T>    &rsm,
-    FgMatrixV<T>          &val, // RETURNED: Col vector of eigenvalues, smallest to largest
-    FgMatrixV<T>          &vec) // RETURNED: Col vectors are respective eigenvectors
+fgSymmEigs(
+    const FgMatrixD &   rsm,
+    FgMatrixD &         val,    // RETURNED: Col vector of eigenvalues, smallest to largest
+    FgMatrixD &         vec);   // RETURNED: Col vectors are respective eigenvectors
+
+struct  FgEigs
 {
-    // JAMA enters an infinite loop with NaNs:
-    for (size_t ii=0; ii<rsm.m_data.size(); ++ii)
-        FGASSERT(boost::math::isfinite(rsm.m_data[ii]));
-    uint                    dim = rsm.numRows();
-    FGASSERT(rsm.numCols() == dim);
-        // We use a const cast since we know 'solver' will not modify the elements, even though
-        // the Array2D object holds a non-const pointer to our data.
-    JAMA::Eigenvalue<T>
-        solver(TNT::Array2D<T>(rsm.numRows(),rsm.numCols(),const_cast<T*>(rsm.dataPtr())));
-    TNT::Array2D<T>         vecs;
-    TNT::Array1D<T>         vals;
-    solver.getV(vecs);
-    solver.getRealEigenvalues(vals);
-    val.resize(dim,1);
-    vec.resize(dim,dim);
-    int                     idim = static_cast<int>(dim);
-    for (int row=0; row<idim; row++) {
-        val[row] = vals[row];
-        for (uint col=0; col<dim; col++)
-            vec.elem(row,col) = vecs[row][col];
-    }
-}
+    FgDbls              real;   // Eigenvalue real components
+    FgDbls              imag;   // Eigenvalue imaginary components
+    FgMatrixD           vecs;   // Column vectors are the respective eigenvectors
+};
+
+// Eigvenvalues of a square nonsymmetric matrix. Resulting eigenvalues are not ordered
+// and eigenvectors are not normalized:
+FgEigs
+fgEigs(const FgMatrixD & mat);
 
 template<typename T,uint dim>
-struct FgEigs
+struct FgEigsC
 {
-    FgMatrixC<T,dim,dim>        vals;   // Diagonal matrix of eigenvalues from smallest to largest.
+    FgMatrixC<T,dim,1>          real;   // Eigenvalue real components.
+    FgMatrixC<T,dim,1>          imag;   // Eigenvalue imaginary components.
     FgMatrixC<T,dim,dim>        vecs;   // Column vectors are the respective eigenvectors.
 };
 
-// As above for FgMatrixC
-template<class T,uint dim>
-FgEigs<T,dim>
-fgRealSymmEigs(const FgMatrixC<T,dim,dim> & rsm)
+template<typename T,uint dim>
+std::ostream &
+operator<<(std::ostream & os,const FgEigsC<T,dim> & e)
 {
-    FgEigs<T,dim>       ret;
+    os << fgnl << "Eigval real components: " << e.real.transpose()
+        << fgnl << "Eigval imag components: " << e.imag.transpose()
+        << fgnl << "Eigvecs as columns: " << e.vecs;
+    return os;
+}
+
+// If the given matrix is symmetric, eigenvalues will be ordered from smallest to largest.
+// Otherwise they are not ordered as they could be complex.
+// NB: The returned eigenvectors are not normalized !
+template<class T,uint dim>
+FgEigsC<T,dim>
+fgEigs(const FgMatrixC<T,dim,dim> & rsm)
+{
+    FgEigsC<T,dim>       ret;
     // JAMA enters an infinite loop with NaNs:
     for (uint ii=0; ii<dim*dim; ++ii)
         FGASSERT(boost::math::isfinite(rsm[ii]));
         // We use a const cast since we know 'solver' will not modify the elements, even though
         // the Array2D object holds a non-const pointer to our data.
     JAMA::Eigenvalue<T>     solver(TNT::Array2D<T>(dim,dim,const_cast<T*>(rsm.dataPtr())));
-    TNT::Array2D<T>         vecs;
-    TNT::Array1D<T>         vals;
-    solver.getV(vecs);
-    solver.getRealEigenvalues(vals);
-    for (uint row=0; row<dim; row++) {
-        for (uint col=0; col<dim; col++) {
-            ret.vals.elem(row,col) = T(0);
-            ret.vecs.elem(row,col) = vecs[int(row)][int(col)];
-        }
-        ret.vals.elem(row,row) = vals[int(row)];
+    for (uint rr=0; rr<dim; ++rr) {
+        ret.real[rr] = solver.d[rr];
+        ret.imag[rr] = solver.e[rr];
+        for (uint cc=0; cc<dim; ++cc)
+            ret.vecs.elem(rr,cc) = solver.V[rr][cc];
     }
     return ret;
 }
+
+// Special case speedup for nonsymmetric 3x3:
+FgEigsC<double,3>
+fgEigs(const FgMat33D & mat);
 
 #endif

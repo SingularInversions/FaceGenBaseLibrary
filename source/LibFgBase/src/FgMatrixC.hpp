@@ -14,18 +14,9 @@
 #include "FgStdLibs.hpp"
 
 #include "FgMatrixCBase.hpp"
-#include "FgVariant.hpp"
 #include "FgRandom.hpp"
 #include "FgMath.hpp"
 #include "FgOpt.hpp"
-
-template<class T,uint nrows,uint ncols>
-struct  FgTraits<FgMatrixC<T,nrows,ncols> >
-{
-    typedef FgMatrixC<typename FgTraits<T>::Accumulator,nrows,ncols>  Accumulator;
-    typedef FgMatrixC<typename FgTraits<T>::Floating,nrows,ncols>     Floating;
-    typedef T                                                         Scalar;
-};
 
 template<class T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
@@ -237,19 +228,19 @@ fgAsHomogMat(const FgMatrixC<T,dims,1> & translation)
 
 // RETURNS: The inverse of an invertible matrix. Throws an FGASSERT if not invertible.
 template <class T>
-FgMatrixC<T,2,2> fgMatInverse(
-    const FgMatrixC<T,2,2>&      m)
+FgMatrixC<T,2,2>
+fgMatInverse(const FgMatrixC<T,2,2> & m)
 {
     FgTypeAttributeFloatingS<T>();
-    FgMatrixC<T,2,2>     retval;
+    FgMatrixC<T,2,2>     ret;
     T   fac = (m.elem(0,0) * m.elem(1,1) - m.elem(0,1) * m.elem(1,0));
     FGASSERT(fac != T(0));
     fac = T(1) / fac;
-    retval.elem(0,0) = m.elem(1,1) * fac;
-    retval.elem(0,1) = - m.elem(0,1) * fac;
-    retval.elem(1,0) = - m.elem(1,0) * fac;
-    retval.elem(1,1) = m.elem(0,0) * fac;
-    return retval;
+    ret.elem(0,0) = m.elem(1,1) * fac;
+    ret.elem(0,1) = - m.elem(0,1) * fac;
+    ret.elem(1,0) = - m.elem(1,0) * fac;
+    ret.elem(1,1) = m.elem(0,0) * fac;
+    return ret;
 }
 template <class T>
 FgMatrixC<T,3,3> fgMatInverse(
@@ -287,9 +278,10 @@ fgDot(
 }
 
 template<typename T>
-FgMatrixC<T,3,1> fgCrossProduct(
-    const FgMatrixC<T,3,1>& v1,
-    const FgMatrixC<T,3,1>& v2)
+FgMatrixC<T,3,1>
+fgCrossProduct(
+    const FgMatrixC<T,3,1> & v1,
+    const FgMatrixC<T,3,1> & v2)
 {
     FgMatrixC<T,3,1>      r;
     r[0] = v1[1] * v2[2] - v1[2] * v2[1];
@@ -298,10 +290,10 @@ FgMatrixC<T,3,1> fgCrossProduct(
     return r;
 }
 
-// Component-wise multiply:
+// Element-wise multiplication (aka Hadamard product):
 template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
-fgMultiply(
+fgMapMul(
     const FgMatrixC<T,nrows,ncols> &    lhs,
     const FgMatrixC<T,nrows,ncols> &    rhs)
 {
@@ -311,10 +303,10 @@ fgMultiply(
     return ret;
 }
 
-// Component-wise divide:
+// Element-wise division:
 template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
-fgDivide(
+fgMapDiv(
     const FgMatrixC<T,nrows,ncols> &    lhs,
     const FgMatrixC<T,nrows,ncols> &    rhs)
 {
@@ -527,13 +519,13 @@ FG_MATRIXC_ELEMWISE(fgExp,std::exp)
 FG_MATRIXC_ELEMWISE(fgSqrt,std::sqrt)
 
 template<class T,uint nrows,uint ncols>
-typename FgTraits<T>::Accumulator
+double
 fgDot(
     const vector<FgMatrixC<T,nrows,ncols> > & v0,
     const vector<FgMatrixC<T,nrows,ncols> > & v1)
 {
     FGASSERT(v0.size() == v1.size());
-    typename FgTraits<T>::Accumulator acc(0);
+    double  acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
         acc += fgDot(v0[ii],v1[ii]);
     return acc;
@@ -642,15 +634,6 @@ fgMap(FgMatrixC<T,nrows,ncols> m,T(*func)(T))
     return ret;
 }
 
-template<class T,uint dim>
-FgMatrixC<T,dim,1>
-fgClamp(FgMatrixC<T,dim,1> val,FgMatrixC<T,dim,2> bounds)
-{
-    for (uint ii=0; ii<dim; ++ii)
-        val[ii] = fgClamp(val[ii],bounds.elem(ii,0),bounds.elem(ii,1));
-    return val;
-}
-
 template<class T,uint nrows,uint ncols>
 vector<T>
 fgMapMag(const vector<FgMatrixC<T,nrows,ncols> > & v)
@@ -670,7 +653,7 @@ fgSsd(
     FGASSERT(v0.size() == v1.size());
     double      acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += (v1[ii]-v0[ii]).lengthSqr();
+        acc += (v1[ii]-v0[ii]).mag();
     return T(acc);
 }
 
@@ -680,7 +663,7 @@ fgRms(const vector<FgMatrixC<T,nrows,ncols> > & v)
 {
     T       acc(0);
     for (size_t ii=0; ii<v.size(); ++ii)
-        acc += v[ii].lengthSqr();
+        acc += v[ii].mag();
     acc /= T(v.size());
     return acc;
 }
@@ -801,9 +784,9 @@ fgMapSqr(FgMatrixC<T,nrows,ncols> m)
 }
 
 template<class T,uint nrows,uint ncols>
-T
+double
 fgMag(FgMatrixC<T,nrows,ncols> m)
-{return m.lengthSqr(); }
+{return m.mag(); }
 
 // Give a tangent coordinate system for a point on a sphere centred at origin:
 FgMat32D

@@ -20,21 +20,21 @@ fgClosestPointInSegment(FgVect3D p0,FgVect3D p1)
 {
     FgVecMag    ret;
     FgVect3D    segment = p1-p0;
-    double      lenSqr = segment.lengthSqr();
+    double      lenSqr = segment.mag();
     if (lenSqr == 0.0) {
         ret.vec = p0;
-        ret.mag = p0.lengthSqr();
+        ret.mag = p0.mag();
         return ret;
     }
     double      b0 = fgDot(segment,p0),
                 b1 = fgDot(segment,p1);
     if (b0*b1 <= 0.0) {
         ret.vec = p0 - (b0*segment)/lenSqr;
-        ret.mag = ret.vec.lengthSqr();
+        ret.mag = ret.vec.mag();
         return ret;
     }
-    double      l0 = p0.lengthSqr(),
-                l1 = p1.lengthSqr();
+    double      l0 = p0.mag(),
+                l1 = p1.mag();
     if (l0 < l1) {
         ret.vec = p0;
         ret.mag = l0;
@@ -59,12 +59,12 @@ fgClosestPointInTri(
                 e12 = vert2 - vert1,
                 e02 = vert2 - vert0,
                 norm = fgCrossProduct(e01,e02);
-    double      normLensqr = norm.lengthSqr();
+    double      normLensqr = norm.mag();
     // Degenerate case:
     if (normLensqr == 0.0) {
-        double  mag01 = e01.lengthSqr(),
-                mag12 = e12.lengthSqr(),
-                mag02 = e02.lengthSqr();
+        double  mag01 = e01.mag(),
+                mag12 = e12.mag(),
+                mag02 = e02.mag();
         if (mag01 > mag12) {
             if (mag01 > mag02)
                 return fgClosestPointInSegment(v0,v1);
@@ -82,9 +82,9 @@ fgClosestPointInTri(
     FgVect3D    clipn0 = fgCrossProduct(norm,e01),
                 clipn1 = fgCrossProduct(norm,e12),
                 clipn2 = fgCrossProduct(norm,-e02);
-    double      p0ls = v0.lengthSqr(),
-                p1ls = v1.lengthSqr(),
-                p2ls = v2.lengthSqr(),
+    double      p0ls = v0.mag(),
+                p1ls = v1.mag(),
+                p2ls = v2.mag(),
                 clipb0 = fgDot(clipn0,(p1ls > p0ls) ? v1 : v0),
                 clipb1 = fgDot(clipn1,(p2ls > p1ls) ? v2 : v1),
                 clipb2 = fgDot(clipn2,(p0ls > p2ls) ? v0 : v2);
@@ -159,7 +159,7 @@ FgVect4D
 fgPlaneH(FgVect3D p0,FgVect3D p1,FgVect3D p2)
 {
     FgVect3D    nrm = fgCrossProduct(p1-p0,p2-p0);
-    FGASSERT(nrm.lengthSqr() > 0.0);
+    FGASSERT(nrm.mag() > 0.0);
     double      w = -fgDot(nrm,p0);
     FGASSERT(w != 0.0);
     FgVect4D    ph(nrm[0],nrm[1],nrm[2],w);
@@ -197,9 +197,9 @@ fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2)
 }
 
 FgOpt<FgVect3D>
-fgLineFacetIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2)
+fgLineTriIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2)
 {
-    FgOpt<FgVect3D>    ret;
+    FgOpt<FgVect3D>         ret;
     // First calculate intersection with plane (in CS with 'pnt' as origin):
     FgVect3D                p0 = v0-pnt;
     FgVect4D                planeH = fgPlaneH(p0,v1-pnt,v2-pnt);

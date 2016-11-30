@@ -14,7 +14,7 @@
 using namespace std;
 
 void
-fgLinkNoop(
+fgLnkNoop(
     const std::vector<const FgVariant*> &,
     const std::vector<FgVariant*> &)
 {}
@@ -54,6 +54,7 @@ fgDotToPdf(
     const std::string &     dotFile,
     const std::string &     pdfFile)
 {
+    // Uses 'dot.exe' from Graphviz (2.38 as of last test use):
     string      cmd = "dot -Tpdf -o" + pdfFile + " " + dotFile;
     system(cmd.c_str());
 }

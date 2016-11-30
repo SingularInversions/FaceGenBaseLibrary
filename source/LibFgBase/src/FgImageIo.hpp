@@ -19,10 +19,11 @@
 #include "FgMatrixV.hpp"
 
 void
-fgLoadImgAnyFormat(
-    const FgString &    fname,
-    FgImgRgbaUb &       img);
-
+fgLoadImgAnyFormat(const FgString & fname,FgImgRgbaUb & img);
+void
+fgLoadImgAnyFormat(const FgString & fname,FgImgF & img);
+void
+fgLoadImgAnyFormat(const FgString & fname,FgImgUC & img);
 inline
 FgImgRgbaUb
 fgLoadImgAnyFormat(const FgString & fname)
@@ -34,11 +35,6 @@ fgLoadImgAnyFormat(const FgString & fname)
 
 FgImg4UC
 fgLoadImg4UC(const FgString & fname);
-
-void
-fgLoadImgAnyFormat(
-    const FgString &    fname,
-    FgImgF &            img);
 
 void
 fgSaveImgAnyFormat(

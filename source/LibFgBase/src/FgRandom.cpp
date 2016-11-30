@@ -34,7 +34,10 @@ struct      RNG
     RNG() :
         genReal(mt19937(42u),uniform_real<>()),
         genInt(mt19937(42u),uniform_int<unsigned int>(0,numeric_limits<uint>::max()))
-    {}
+    {
+        genReal.engine().seed(clock());
+        genInt.engine().seed(clock());
+    }
 };
 
 static RNG rng;
@@ -84,10 +87,11 @@ fgRandNormal(double mean,double stdev)
     return (mean + (stdev * y * sqrt (-2.0 * log (r2) / r2)));
 }
 
-static char
+static
+char
 randChar()
 {
-    uint    val = rand() % (26+26+10);
+    uint    val = fgRandUint(26+26+10);
     if (val < 10)
         return char(48+val);
     val -= 10;
@@ -101,7 +105,6 @@ randChar()
 string
 fgRandString(uint numChars)
 {
-    srand(clock());
     string  ret;
     for (uint ii=0; ii<numChars; ++ii)
         ret = ret + randChar();

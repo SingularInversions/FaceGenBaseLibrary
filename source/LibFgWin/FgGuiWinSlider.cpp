@@ -234,6 +234,6 @@ struct  FgGuiWinSlider : public FgGuiOsBase
     {return (m_client[0] - 2*m_api.edgePadding); }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSlider & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSlider(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSlider(def)); }

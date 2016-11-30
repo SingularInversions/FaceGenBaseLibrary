@@ -23,7 +23,7 @@ const uint padBot = 5;
 struct  FgGuiWinGroupbox : public FgGuiOsBase
 {
     FgGuiApiGroupbox            m_api;
-    FgSharedPtr<FgGuiOsBase>    m_contents;
+    FgPtr<FgGuiOsBase>    m_contents;
     HWND                        m_hwndGb;
     FgString                    m_store;
 
@@ -93,6 +93,6 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiGroupbox & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinGroupbox(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinGroupbox(def)); }

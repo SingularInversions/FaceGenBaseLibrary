@@ -49,8 +49,9 @@ fgMoveFile(const FgString & src,const FgString & dst,bool overwrite)
 FgDirectoryContents
 fgDirectoryContents(const FgString & dirName)
 {
-    FGASSERT(is_directory(dirName.ns()));
-    FgDirectoryContents         ret;
+    if (!is_directory(dirName.ns()))
+        fgThrow("Not a directory",dirName);
+    FgDirectoryContents     ret;
     directory_iterator      it_end;
     for (directory_iterator it(dirName.ns()); it != it_end; ++it) {
         if (is_directory(it->status()))
@@ -77,8 +78,10 @@ fgCreatePath(const FgString & path)
     FgPath          p(fgAsDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
         FgString    dir = p.dir(ii+1);
-        if (fgExists(dir))
-            FGASSERT(fgIsDirectory(dir));
+        if (fgExists(dir)) {
+            if (!fgIsDirectory(dir))
+                fgThrow("Not a directory (unable to create)",dir);
+        }
         else
             fgCreateDirectory(dir);
     }
@@ -150,6 +153,8 @@ fgBinaryFileCompare(
     return contents1 == contents2;
 }
 
+static bool s_dataDirFromPath = false;
+
 const FgString &
 fgDataDir()
 {
@@ -161,7 +166,11 @@ fgDataDir()
     static FgString     ret;
     if (!ret.empty())
         return ret;
-    FgPath      path(fgExecutableDirectory());
+    FgPath      path;
+    if (s_dataDirFromPath)
+        path = fgGetCurrentDir();
+    else
+        path = fgExecutableDirectory();
     string      data("data"+ fgDirSep());
     for (size_t ii=0; ii<6; ++ii) {
         FgString    dd = path.str()+data;
@@ -175,8 +184,12 @@ fgDataDir()
     return ret;
 }
 
+void
+fgDataDirFromCurrent()
+{s_dataDirFromPath = true; }
+
 bool
-fgNewer(const vector<FgString> & sources,const vector<FgString> & sinks)
+fgNewer(const FgStrings & sources,const FgStrings & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
     time_t      srcTime = fgLastWriteTime(sources[0]);
@@ -223,15 +236,34 @@ fgGlobHasExtension(FgPath path)
     return ret;
 }
 
-vector<FgString>
+FgStrings
 fgGlobFiles(const FgPath & path)
 {
-    vector<FgString>        ret;
+    FgStrings        ret;
     FgDirectoryContents     dc = fgDirectoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         FgPath              fn = dc.filenames[ii];
         if (fgGlobMatch(path.base,fn.base) && (fgGlobMatch(path.ext,fn.ext)))
             ret.push_back(dc.filenames[ii]);
+    }
+    return ret;
+}
+
+bool
+fgCopyAllFiles(const FgString & fromDir_,const FgString & toDir_,bool overwrite)
+{
+    bool                    ret = false;
+    FgString                fromDir = fgAsDirectory(fromDir_),  // Ensure ends with delim
+                            toDir = fgAsDirectory(toDir_);
+    FgDirectoryContents     dc = fgDirectoryContents(fromDir);
+    for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
+        FgString            fn = dc.filenames[ii];
+        if (fgExists(toDir+fn)) {
+            ret = true;
+            if (!overwrite)
+                continue;
+        }
+        fgCopyFile(fromDir+fn,toDir+fn,overwrite);
     }
     return ret;
 }
@@ -247,7 +279,8 @@ fgCopyToCurrentDir(const FgPath & file)
 void
 fgCopyRecursive(const FgString & fromDir,const FgString & toDir)
 {
-    FGASSERT(fgIsDirectory(fromDir));
+    if (!fgIsDirectory(fromDir))
+        fgThrow("Not a directory (unable to copy)",fromDir);
     fgCreateDirectory(toDir);
     FgPath                  fromP(fgAsDirectory(fromDir)),
                             toP(fgAsDirectory(toDir));
@@ -271,8 +304,10 @@ fgMirrorFile(const FgPath & src,const FgPath & dst)
     FGASSERT(!dst.base.empty());
     for (size_t ii=0; ii<dst.dirs.size(); ++ii) {
         FgString    dir = dst.dir(ii+1);
-        if (fgExists(dir))
-            FGASSERT(fgIsDirectory(dir));
+        if (fgExists(dir)) {
+            if (!fgIsDirectory(dir))
+                fgThrow("Not a directory (unable to mirror)",dir);
+        }
         else
             fgCreateDirectory(dir);
     }

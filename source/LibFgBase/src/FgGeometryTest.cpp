@@ -121,7 +121,7 @@ testBarycentricCoords()
             FgVect3D    res = fgBarycentricCoords(pnt,v0,v1,v2).val();
             FGASSERT(fgMinElem(res)>=0.0f);     // Inside.
             FgVect2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(fgApproxEqual(pnt,chk,64));
+            FGASSERT(fgApproxEqual(pnt,chk,128));
             FGASSERT(fgApproxEqual(res[0]+res[1]+res[2],1.0,64));
         }
     }
@@ -142,7 +142,7 @@ testBarycentricCoords()
             FgVect3D        res = fgBarycentricCoords(pnt,v0,v1,v2).val();
             FGASSERT(fgMinElem(res)<0.0f);     // Outside
             FgVect2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(fgApproxEqual(pnt,chk,64));
+            FGASSERT(fgApproxEqual(pnt,chk,128));
             FGASSERT(fgApproxEqual(res[0]+res[1]+res[2],1.0,64));
         }
     }
@@ -165,7 +165,7 @@ testBarycentricCoords3D()
             FgVect3D        res = ret.val(),
                             delta = res-bc;
             //fgout << fgnl << bc << " -> " << res << " delta: " << res-bc;
-            FGASSERT(delta.lengthSqr() < fgSqr(0.000001));
+            FGASSERT(delta.mag() < fgSqr(0.000001));
         }
     }
     fgout << fgpop;
@@ -187,7 +187,7 @@ testPlaneH()
                     c = 1.0 - a - b;
         FgVect3D    pt = s * (v0*a + v1*b + v2*c);
         double      r = fgDot(pt,pln.subMatrix<3,1>(0,0)),
-                    mag = sqrt(pln.lengthSqr());
+                    mag = sqrt(pln.mag());
         FGASSERT(fgApproxEqualMag(-r,pln[3],mag));
     }
 }
@@ -274,15 +274,15 @@ testLineFacetIntersect()
                 v1(1,0,0),
                 v2(0,1,0);
     FgOpt<FgVect3D>    ret;
-    ret = fgLineFacetIntersect(FgVect3D(s,s,1),FgVect3D(0,0,-1),v0,v1,v2);
+    ret = fgLineTriIntersect(FgVect3D(s,s,1),FgVect3D(0,0,-1),v0,v1,v2);
     FGASSERT(ret.val() == FgVect3D(s,s,0));
-    ret = fgLineFacetIntersect(FgVect3D(s,s,1),FgVect3D(0,0,1),v0,v1,v2);
+    ret = fgLineTriIntersect(FgVect3D(s,s,1),FgVect3D(0,0,1),v0,v1,v2);
     FGASSERT(ret.val() == FgVect3D(s,s,0));
-    ret = fgLineFacetIntersect(FgVect3D(-s,-s,1),FgVect3D(0,0,1),v0,v1,v2);
+    ret = fgLineTriIntersect(FgVect3D(-s,-s,1),FgVect3D(0,0,1),v0,v1,v2);
     FGASSERT(!ret.valid());
-    ret = fgLineFacetIntersect(FgVect3D(0,0,1),FgVect3D(-s,-s,-1),v0,v1,v2);
+    ret = fgLineTriIntersect(FgVect3D(0,0,1),FgVect3D(-s,-s,-1),v0,v1,v2);
     FGASSERT(!ret.valid());
-    ret = fgLineFacetIntersect(FgVect3D(0,0,1),FgVect3D(s,s,-1),v0,v1,v2);
+    ret = fgLineTriIntersect(FgVect3D(0,0,1),FgVect3D(s,s,-1),v0,v1,v2);
     FGASSERT(ret.val() == FgVect3D(s,s,0));
 }
 

@@ -12,7 +12,8 @@
 
 using namespace std;
 
-FgGuiGraph  g_gg;
+FgGuiDiagHandler        g_guiDiagHandler;
+FgGuiGraph              g_gg;
 
 void
 FgGuiGraph::setInputsToDefault(uint nodeIdx)

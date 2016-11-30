@@ -94,16 +94,6 @@ fgRegressionBaseline(
     return base;
 }
 
-void
-fgRegressImage(
-    const std::string & testFile,
-    const std::string & refPath,
-    uint                maxDelta=2);
-
-// Print the command args to fgout, split by whitespace and call the function to be tested:
-void
-fgTestCmd(FgCmdFunc,const std::string &);
-
 // Returns true if the user updates the regression baseline, false otherwise:
 void
 fgRegressUpdateQuery(const std::string & relPath);
@@ -115,8 +105,21 @@ bool
 fgRegressOverwrite()
 {return fgExists(fgDataDir()+"overwrite_baselines.flag"); }
 
-// Works best with FGTESTDIR:
+// Takes two filenames as input and returns true for regression passed and false for failure:
+typedef boost::function<bool(const FgString &,const FgString &)> FgRegressTest;
+
+// Best used with FGTESTDIR macro to create and make current a test dir:
 void
-fgRegressFile(const FgString & name,const FgString & relDir);
+fgRegressFile(
+    const FgString &    name,       // The test-created file to be regressed. Must exist in current directory.
+    const FgString &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    const FgRegressTest & testFunc = fgBinaryFileCompare);
+
+// As above but regression failure when max pixel diff greater than given:
+void
+fgRegressImage(
+    const std::string & name,
+    const std::string & relDir,
+    uint                maxDelta=2);
 
 #endif

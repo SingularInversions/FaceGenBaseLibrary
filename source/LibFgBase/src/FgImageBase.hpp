@@ -76,6 +76,10 @@ struct  FgImage
     : m_dims(dims), m_data(pixels,pixels+dims[0]*dims[1])
     {}
 
+    void
+    clear()
+    {m_data.clear(); m_dims = FgVect2UI(0); }
+
     // WARNING: This does not adjust any existing image data, just allocated dimensions and memory:
     void
     resize(uint wid,uint hgt)
@@ -196,7 +200,7 @@ struct  FgImage
     {return m_data; }
 };
 
-typedef FgImage<uchar>      FgImgUb;
+typedef FgImage<uchar>      FgImgUC;
 typedef FgImage<float>      FgImgF;
 typedef FgImage<double>     FgImgD;
 typedef FgImage<FgRgbaUB>   FgImgRgbaUb;
@@ -204,7 +208,10 @@ typedef FgImage<FgRgbaUS>   FgImgRgbaUs;
 typedef FgImage<FgRgbaF>    FgImgRgbaF;
 typedef FgImage<FgVect3F>   FgImg3F;
 typedef FgImage<FgVect4UC>  FgImg4UC;
+
 typedef vector<FgImgRgbaUb> FgImgs;
+typedef vector<FgImgs>      FgImgss;
+typedef vector<FgImg3F>     FgImg3Fs;
 
 template<class T>
 std::ostream &

@@ -158,6 +158,6 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiTextEdit & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinTextEdit(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinTextEdit(def)); }

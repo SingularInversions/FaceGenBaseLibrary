@@ -17,6 +17,22 @@
 
 using namespace std;
 
+void
+fgReadp(std::istream & is,FgSurfPoint & sp)
+{
+    fgReadp(is,sp.triEquivIdx);
+    fgReadp(is,sp.weights);
+    fgReadp(is,sp.label);
+}
+
+void
+fgWritep(std::ostream & os,const FgSurfPoint & sp)
+{
+    fgWritep(os,sp.triEquivIdx);
+    fgWritep(os,sp.weights);
+    fgWritep(os,sp.label);
+}
+
 Fg3dSurface::Fg3dSurface(
     const std::vector<FgVect3UI> & tris_,
     const std::vector<FgVect4UI> & quads_,
@@ -123,6 +139,16 @@ convToTris(const vector<FgVect4UI> & quads)
 }
 
 FgVect3F
+Fg3dSurface::surfPointPos(const FgVerts & verts,size_t idx) const
+{
+    FgVect3UI   vertInds = getTriEquiv(surfPoints[idx].triEquivIdx);
+    FgVect3F    vertWeights = surfPoints[idx].weights;
+    return (verts[vertInds[0]] * vertWeights[0] +
+            verts[vertInds[1]] * vertWeights[1] +
+            verts[vertInds[2]] * vertWeights[2]);
+}
+
+FgVect3F
 Fg3dSurface::surfPointPos(const FgVerts & verts,const string & label) const
 {
     const FgSurfPoint & sp = fgFindFirst(surfPoints,label);
@@ -138,7 +164,7 @@ Fg3dSurface::surfPointsAsVertLabels(const FgVerts & verts) const
     for (size_t ii=0; ii<surfPoints.size(); ++ii) {
         FgVertLabel         vl;
         vl.label = surfPoints[ii].label;
-        vl.vert = getSurfPoint(verts,ii);
+        vl.vert = surfPointPos(verts,ii);
         ret.push_back(vl);
     }
     return ret;
@@ -149,7 +175,6 @@ Fg3dSurface::convertToTris() const
 {
     Fg3dSurface     ret;
     ret.name = name;
-    ret.material = material;
     ret.tris.vertInds = fgConcat(tris.vertInds,convToTris(quads.vertInds));
     ret.tris.uvInds = fgConcat(tris.uvInds,convToTris(quads.uvInds));
     ret.surfPoints = surfPoints;
@@ -212,14 +237,32 @@ Fg3dSurface::clear()
     *this = Fg3dSurface();
 }
 
+void
+fgReadp(std::istream & is,Fg3dSurface & s)
+{
+    fgReadp(is,s.name);
+    fgReadp(is,s.tris);
+    fgReadp(is,s.quads);
+    fgReadp(is,s.surfPoints);
+}
+
+void
+fgWritep(std::ostream & os,const Fg3dSurface & s)
+{
+    fgWritep(os,s.name);
+    fgWritep(os,s.tris);
+    fgWritep(os,s.quads);
+    fgWritep(os,s.surfPoints);
+}
+
 ostream &
 operator<<(ostream & os,const Fg3dSurface & surf)
 {
     os << fgnl << "Tris: " << surf.numTris()
         << "  Quads: " << surf.numQuads()
         << "  UVs: " << (surf.hasUvIndices() ? "YES" : "NO")
-        << fgnl << "Surf Points: " << surf.numSurfPoints() << fgpush;
-        for (uint ii=0; ii<surf.numSurfPoints(); ++ii)
+        << fgnl << "Surf Points: " << surf.surfPoints.size() << fgpush;
+        for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
             os << fgnl << ii << ": " << surf.surfPoints[ii].label;
         os << fgpop;
     return os;
@@ -296,7 +339,6 @@ fgSelectTris(const Fg3dSurface & surf,const vector<FgBool> & sel)
 {
     Fg3dSurface     ret;
     ret.name = surf.name;
-    ret.material = surf.material;
     FGASSERT(surf.tris.vertInds.size() == sel.size());
     vector<uint>    remap(surf.tris.vertInds.size());
     uint            idx = 0;
@@ -426,162 +468,37 @@ fgSplitSurface(const Fg3dSurface & surf)
     return ret;
 }
 
-static
+vector<Fg3dSurface>
+fgEnsureNamed(const vector<Fg3dSurface> & surfs,const FgString & baseName)
+{
+    vector<Fg3dSurface>     ret = surfs;
+    if ((ret.size() == 1) && (ret[0].name.empty()))
+        ret[0].name = baseName;
+    else {
+        size_t                  cnt = 0;
+        for (size_t ss=0; ss<ret.size(); ++ss)
+            if (ret[ss].name.empty())
+                ret[ss].name = baseName + fgToString(cnt++);
+    }
+    return ret;
+}
+
 void
-subdivideTris(
-    const Fg3dSurface &     surf,
-    const Fg3dTopology &    topo,
-    uint                    newVertsBaseIdx,
-    vector<FgVect3UI> &     newTris,           // RETURNED
-    vector<FgSurfPoint> &   newSurfPoints)     // RETURNED
+Fg3dSurface::removeTri(size_t triIdx)
 {
-    for (uint ii=0; ii<surf.numTriEquivs(); ii++) {
-        FgVect3UI   vertInds = surf.getTriEquiv(ii);
-        FgVect3UI   edgeInds = topo.m_tris[ii].edgeInds;
-        uint        ni0 = newVertsBaseIdx + edgeInds[0],
-                    ni1 = newVertsBaseIdx + edgeInds[1],
-                    ni2 = newVertsBaseIdx + edgeInds[2];
-        newTris.push_back(FgVect3UI(vertInds[0],ni0,ni2));
-        newTris.push_back(FgVect3UI(vertInds[1],ni1,ni0));
-        newTris.push_back(FgVect3UI(vertInds[2],ni2,ni1));
-        newTris.push_back(FgVect3UI(ni0,ni1,ni2));
-    }
-
-    // Set up surface point weight transforms:
-    FgMat33F     wgtXform(1.0),
-                    wgtXform0,
-                    wgtXform1,
-                    wgtXform2;
-
-    wgtXform.elm(2,0) = -1.0;
-    wgtXform.elm(0,1) = -1.0;
-    wgtXform.elm(1,2) = -1.0;
-
-    wgtXform0[0] = 1.0f;
-    wgtXform0[1] = -1.0f;
-    wgtXform0[2] = -1.0f;
-    wgtXform0.elm(1,1) = 2;
-    wgtXform0.elm(2,2) = 2;
-
-    wgtXform1[0] = -1.0f;
-    wgtXform1[1] = 1.0f;
-    wgtXform1[2] = -1.0f;
-    wgtXform1.elm(2,1) = 2;
-    wgtXform1.elm(0,2) = 2;
-
-    wgtXform2[0] = -1.0f;
-    wgtXform2[1] = -1.0f;
-    wgtXform2[2] = 1.0f;
-    wgtXform2.elm(0,1) = 2;
-    wgtXform2.elm(1,2) = 2;
-
-    // Update surface points:
-    for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
-    {
-        uint        facetIdx = surf.surfPoints[ii].triEquivIdx * 4;
-        FgVect3F    weights = surf.surfPoints[ii].weights,
-                    wgtCentre = wgtXform * weights;
-        if (wgtCentre[0] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+2,wgtXform2*weights));
-        else if (wgtCentre[1] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx,wgtXform0*weights));
-        else if (wgtCentre[2] < 0.0)
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+1,wgtXform1*weights));
-        else
-            newSurfPoints.push_back(FgSurfPoint(facetIdx+3,wgtCentre));
-    }
-}
-
-Fg3dSurface
-fgSubdivideFlat(const Fg3dSurface & surf,FgVerts & verts)
-{
-    FGASSERT(surf.numQuads() == 0);              // Quads not supported.
-    Fg3dTopology    topo(verts,surf.tris.vertInds);
-
-    // Add the edge-split verts:
-    uint        newVertsBaseIdx = uint(verts.size());
-    for (size_t ii=0; ii<topo.m_edges.size(); ++ii) {
-        FgVect2UI   vertInds = topo.m_edges[ii].vertInds;
-        verts.push_back((verts[vertInds[0]]+verts[vertInds[1]])*0.5);
-    }
-
-    vector<FgVect3UI>       tris;
-    vector<FgSurfPoint>     surfPoints;
-    subdivideTris(surf,topo,newVertsBaseIdx,tris,surfPoints);
-
-    return Fg3dSurface(
-        tris,
-        std::vector<FgVect4UI>(),
-        std::vector<FgVect3UI>(),
-        std::vector<FgVect4UI>(),
-        surfPoints);
-}
-
-Fg3dSurface
-fgSubdivideLoop(const Fg3dSurface & surf,const FgVerts & vertsIn,FgVerts & vertsOut)
-{
-    FGASSERT(surf.numQuads() == 0);
-    vertsOut.resize(vertsIn.size());
-    Fg3dTopology    topo(vertsIn,surf.tris.vertInds);
-
-    // Add the edge-split "odd" verts:
-    uint        newVertsBaseIdx = uint(vertsIn.size());
-    for (uint ii=0; ii<topo.m_edges.size(); ++ii) {
-        FgVect2UI   vertInds0 = topo.m_edges[ii].vertInds;
-        if (topo.m_edges[ii].triInds.size() == 1) {     // Boundary
-            vertsOut.push_back((
-                vertsIn[vertInds0[0]] + 
-                vertsIn[vertInds0[1]])*0.5f);
-        }
-        else {
-            FgVect2UI   vertInds1 = topo.edgeFacingVertInds(ii);
-            vertsOut.push_back((
-                vertsIn[vertInds0[0]] * 3.0f +
-                vertsIn[vertInds0[1]] * 3.0f +
-                vertsIn[vertInds1[0]] +
-                vertsIn[vertInds1[1]]) * 0.125f);
+    FGASSERT(quads.vertInds.empty());
+    FgSurfPoints        nsps;
+    for (size_t ii=0; ii<surfPoints.size(); ++ii) {
+        FgSurfPoint     sp = surfPoints[ii];
+        if (sp.triEquivIdx < triIdx)
+            nsps.push_back(sp);
+        else if (sp.triEquivIdx > triIdx) {
+            --sp.triEquivIdx;
+            nsps.push_back(sp);
         }
     }
-    // Modify the original "even" verts:
-    for (uint ii=0; ii<newVertsBaseIdx; ++ii) {
-        if (topo.vertOnBoundary(ii)) {
-            vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
-            if (vertInds.size() != 2)
-                fgThrow(
-                    "Cannot subdivide non-manifold mesh, invalid boundary vertex neighbour count at index",
-                    fgToString(vertInds.size()) + fgToString(ii));
-            vertsOut[ii] = (vertsIn[ii] * 6.0 +
-                            vertsIn[vertInds[0]] +
-                            vertsIn[vertInds[1]]) * 0.125f;
-        }
-        else {
-            // Note that there will always be at least 3 neighbours since 
-            // this is not a boundary vertex:
-            const vector<uint> &    neighbours = topo.vertNeighbours(ii);
-            FgVect3F    acc;
-            for (size_t jj=0; jj<neighbours.size(); ++jj)
-                acc += vertsIn[neighbours[jj]];
-            if (neighbours.size() == 3)
-                vertsOut[ii] = vertsIn[ii] * 0.4375f + acc * 0.1875f;
-            else if (neighbours.size() == 4)
-                vertsOut[ii] = vertsIn[ii] * 0.515625f + acc * 0.12109375f;
-            else if (neighbours.size() == 5)
-                vertsOut[ii] = vertsIn[ii] * 0.579534f + acc * 0.0840932f;
-            else
-                vertsOut[ii] = vertsIn[ii] * 0.625f + acc * 0.375f / float(neighbours.size());
-        }
-    }
-
-    vector<FgVect3UI>       tris;
-    vector<FgSurfPoint>     surfPoints;
-    subdivideTris(surf,topo,newVertsBaseIdx,tris,surfPoints);
-
-    return Fg3dSurface(
-        tris,
-        std::vector<FgVect4UI>(),
-        std::vector<FgVect3UI>(),
-        std::vector<FgVect4UI>(),
-        surfPoints);
+    surfPoints = nsps;
+    tris.vertInds.erase(tris.vertInds.begin()+triIdx);
 }
 
 // */

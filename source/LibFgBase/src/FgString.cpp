@@ -194,10 +194,10 @@ FgString::replace(char a, char b) const
     return ret;
 }
 
-vector<FgString>
+FgStrings
 FgString::split(char ch) const
 {
-    vector<FgString>    ret;
+    FgStrings    ret;
     vector<uint32>      str = as_utf32();
     vector<uint32>      ss;
     for (size_t ii=0; ii<str.size(); ++ii) {
@@ -273,13 +273,25 @@ fgTr(const std::string & msg)
 }
 
 FgString
-fgRemoveChars(const FgString & s,uchar c)
+fgRemoveChars(const FgString & str,uchar chr)
 {
-    FGASSERT(c < 128);
-    vector<uint32>  s32 = s.as_utf32(),
+    FGASSERT(chr < 128);
+    vector<uint32>  s32 = str.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
-        if (s32[ii] != c)
+        if (s32[ii] != chr)
+            r32.push_back(s32[ii]);
+    return FgString(r32);
+}
+
+FgString
+fgRemoveChars(const FgString & str,FgString chrs)
+{
+    vector<uint32>  s32 = str.as_utf32(),
+                    c32 = chrs.as_utf32(),
+                    r32;
+    for (size_t ii=0; ii<s32.size(); ++ii)
+        if (!fgContains(c32,s32[ii]))
             r32.push_back(s32[ii]);
     return FgString(r32);
 }
@@ -307,5 +319,36 @@ fgSubstring(const FgString & str,size_t start,size_t size)
     vector<uint>    s = str.as_utf32();
     s = fgSubvec(s,start,size);
     ret = FgString(s);
+    return ret;
+}
+
+FgString
+fgConcat(const FgStrings & strings,const FgString & separator)
+{
+    FgString        ret;
+    for (size_t ii=0; ii<strings.size(); ++ii) {
+        ret += strings[ii];
+        if (ii < strings.size()-1)
+            ret += separator;
+    }
+    return ret;
+}
+
+string
+fgToVariableName(const FgString & str)
+{
+    string          ret;
+    vector<uint>    str32 = str.as_utf32();
+    // First character must be alphabetical or underscore:
+    if (isalpha(char(str32[0])))
+        ret += char(str32[0]);
+    else
+        ret += '_';
+    for (size_t ii=1; ii<str32.size(); ++ii) {
+        if (isalnum(char(str32[ii])))
+            ret += char(str32[ii]);
+        else
+            ret += '_';
+    }
     return ret;
 }

@@ -65,14 +65,15 @@ FgOut::setCout(bool b)
 }
 
 void
-FgOut::logFile(const FgString & fname,bool append)
+FgOut::logFile(const FgString & fname,bool append,bool prependDate)
 {
     m_mutex.lock();
     if (m_ofstream.is_open())
         m_ofstream.close();
     m_ofstream.open(fname,append,true);
     m_ofstream.precision(9);
-    m_ofstream << '\n' << fgDateTimeString() << endl;
+    if (prependDate)
+        m_ofstream << '\n' << fgDateTimeString() << endl;
     m_mutex.unlock();
 }
 

@@ -37,11 +37,22 @@ struct  FgGuiApiTextEdit : FgGuiApi<FgGuiApiTextEdit>
     bool                            wantStretch;    // Width only.
 };
 
+// String text edit box:
 FgGuiPtr
 fgGuiTextEdit(FgDgn<FgString> t,bool wantStretch=true);
 
-// Clips output values to bounds and displays only 6 digits.
+// Fixed-point numerical text edit box with specified fractional digits, clips output values to bounds:
 FgGuiPtr
-fgGuiTextEditFloat(FgDgn<double> valN,FgVect2D bounds);
+fgGuiTextEditFixed(FgDgn<double> valN,FgVectD2 bounds,uint numFraction=2);
+
+typedef boost::function<double(double)>     FgFuncD2D;
+
+// Floating-point numerical text edit box clips output values to bounds:
+FgGuiPtr
+fgGuiTextEditFloat(FgDgn<double> valN,
+    FgVectD2        bounds,                 // Bounds of the internal representation (see v2t and t2v below)
+    uint            numDigits=6,
+    FgFuncD2D       v2t=FgFuncD2D(),        // Convert the internal value for display
+    FgFuncD2D       t2v=FgFuncD2D());       // Invert the displayed value for internal (must be inverse of above)
 
 #endif

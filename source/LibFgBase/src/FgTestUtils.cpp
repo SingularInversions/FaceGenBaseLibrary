@@ -106,27 +106,6 @@ fgRegressFail(
 }
 
 void
-fgRegressImage(
-    const std::string & testFile,
-    const std::string & refPath,
-    uint                maxDelta)
-{
-    FgImgRgbaUb     test,ref;
-    fgLoadImgAnyFormat(testFile,test);
-    fgLoadImgAnyFormat(fgDataDir() + refPath,ref);
-    if (!fgCompareImages(test,ref,maxDelta))
-        fgRegressFail(testFile,refPath);
-}
-
-void
-fgTestCmd(FgCmdFunc func,const std::string & args)
-{
-    fgout << fgnl << args << fgpush;
-    func(fgWhiteBreak(args));
-    fgout << fgpop;
-}
-
-void
 fgRegressUpdateQuery(const std::string & relPath)
 {
     fgout << fgnl << "REGRESS FAILURE: " << relPath;
@@ -141,26 +120,52 @@ fgRegressUpdateQuery(const std::string & relPath)
 }
 
 void
-fgRegressFile(const FgString & name,const FgString & relDir)
+fgRegressFile(
+    const FgString &        name,
+    const FgString &        relDir,
+    const FgRegressTest &   testFunc)
 {
     FgString        baselinePath = fgDataDir()+relDir+name;
     if (!fgExists(name))
         fgThrow("Regression file not created by test",name);
     if (fgRegressOverwrite()) {
         if (fgExists(baselinePath)) {       // Otherwise we are creating a new test
-            bool    succ = fgBinaryFileCompare(name,baselinePath);
+            bool    succ = testFunc(name,baselinePath);
             fgCopyFile(name,baselinePath,true);
             if (!succ) 
                 // Don't throw in dev mode so remaining regressions still get run:
-                fgout << fgnl << "WARNING: Regression failure" << relDir << name;
+                fgout << fgnl << "WARNING: Regression failure: " << relDir << name;
         }
         else {
             fgCopyFile(name,baselinePath);
-            fgout << fgnl << "New regression baseline saved:" << relDir+name;
+            fgout << fgnl << "New regression baseline saved: " << relDir+name;
         }
     }
     else {
-        if (!fgBinaryFileCompare(name,baselinePath))
+        if (!testFunc(name,baselinePath))
             fgThrow("Regression failure",fgGetCurrentDir()+name+" != "+relDir+name);
     }
+}
+
+static
+bool
+compareImages(
+    const FgString &    f1,
+    const FgString &    f2,
+    uint                maxDelta)
+{
+    FgImgRgbaUb         i1,i2;
+    fgLoadImgAnyFormat(f1,i1);
+    fgLoadImgAnyFormat(f2,i2);
+    return fgCompareImages(i1,i2,maxDelta);
+}
+
+void
+fgRegressImage(
+    const string &      testFile,
+    const string &      refPath,
+    uint                maxDelta)
+{
+    FgRegressTest       rt = boost::bind(compareImages,_1,_2,maxDelta);
+    fgRegressFile(testFile,refPath,rt);
 }

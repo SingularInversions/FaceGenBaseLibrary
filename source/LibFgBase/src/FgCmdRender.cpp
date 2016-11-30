@@ -121,11 +121,8 @@ fgCmdRender(const FgArgs & args)
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = renderArgs.models[ii];
         meshes[ii] = fgLoadTri(mf.triFilename);
-        if (!mf.imgFilename.empty()) {
-            FgImgRgbaUb             image;
-            fgLoadImgAnyFormat(FgString(mf.imgFilename),image);
-            meshes[ii].texImages.push_back(image);
-        }
+        if (!mf.imgFilename.empty())
+            fgLoadImgAnyFormat(FgString(mf.imgFilename),meshes[ii].surfaces[0].albedoMapRef());
         meshes[ii].transform(rotMatrix);
         meshes[ii].material.shiny = mf.shiny;
     }
@@ -160,8 +157,8 @@ fgCmdRender(const FgArgs & args)
         FgMat44F     tt = FgMat44F(cam.toIpcsH(renderArgs.imagePixelSize));
         for (size_t mm=0; mm<meshes.size(); ++mm) {
             const Fg3dMesh &    mesh = meshes[mm];
-            for (uint ii=0; ii<mesh.numSurfPoints(); ++ii) {
-                FgVect4F    p0 = tt * fgAsHomogVec(mesh.getSurfPoint(ii));
+            for (size_t ii=0; ii<mesh.surfPointNum(); ++ii) {
+                FgVect4F    p0 = tt * fgAsHomogVec(mesh.surfPointPos(ii));
                 FgVect2F    p1(p0[0]/p0[3],p0[1]/p0[3]);
                 image.paint(FgVect2I(fgFloor(p1)),FgRgbaUB(255,0,0,255));
             }
@@ -184,7 +181,7 @@ fgCmdRender(const FgArgs & args)
                 const Fg3dSurface &     surf = mesh.surfaces[ss];
                 for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
                     FgSurfPoint     sp = surf.surfPoints[ii];
-                    FgVect3F        spc = surf.getSurfPoint(mesh.verts,ii);
+                    FgVect3F        spc = surf.surfPointPos(mesh.verts,ii);
                     FgVect4F        p0 = tt * fgAsHomogVec(spc);
                     FgVect2F        p1(p0[0]/p0[3],p0[1]/p0[3]);
                     ofs << "    " << ii << "(" << sp.label << ")" << ": " << p1 << " ";
@@ -238,6 +235,11 @@ fgRenderTest(const FgArgs & args)
     }
     fgLoadImgAnyFormat(baseline,base);
     fgLoadImgAnyFormat("render_test.png",test);
-    if (fgImgMad(test,base) > 0.1)
+    if (fgImgMad(test,base) > 0.1) {
+        if (fgRegressOverwrite()) {
+            fgCopyFile("render_test.png",baseline,true);
+            fgCopyFile("render_test.png.txt",baseline+".txt",true);
+        }
         fgThrow("Render test regression failure");
+    }
 }

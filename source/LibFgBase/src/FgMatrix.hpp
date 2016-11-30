@@ -80,7 +80,7 @@ fgLengthSqr(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
 {
     T   ret(0);
     for (size_t ii=0; ii<v.size(); ++ii)
-        ret += v[ii].lengthSqr();
+        ret += v[ii].mag();
     return ret;
 }
 
@@ -109,7 +109,7 @@ fgVariance(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
 template<class T,uint nrows,uint ncols>
 T
 fgLengthSqr(const FgMatrixC<T,nrows,ncols> & m)
-{return m.lengthSqr(); }
+{return m.mag(); }
 
 template<class T>
 typename FgTraits<T>::Scalar

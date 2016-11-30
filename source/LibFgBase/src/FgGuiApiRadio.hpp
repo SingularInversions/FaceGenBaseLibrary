@@ -6,6 +6,17 @@
 // Authors:     Andrew Beatty
 // Created:     April 23, 2011
 //
+// USE:
+//
+// When deciding to use string or size_t output below, choose string only if you need to actually use
+// the string. There is no win if you're just switching based on the value since manual validation is
+// required in either case and string comparisons are vulnerable to failure if you change the text.
+//
+// DESIGN:
+//
+// Selections are represented by string nodes because it makes save / load of input nodes more robust to
+// changes and user-friendly for customization. However it does require the strings to be unique.
+//
 
 #ifndef FGGUIAPIRADIO_HPP
 #define FGGUIAPIRADIO_HPP
@@ -16,60 +27,40 @@
 struct FgGuiApiRadio : FgGuiApi<FgGuiApiRadio>
 {
     bool                    horiz;
-    vector<FgString>        labels;     // Can be of size zero
-    FgDgn<size_t>           selection;
+    FgStrings        vals;       // The output values for each selection. Must be non-empty.
+    FgStrings        labels;     // Must be same size as 'val'. Each must be unique.
+    FgDgn<FgString>         selection;
     // Node idx for updating can be different from selection (must be exclusive):
     uint                    updateIdx;
 };
 
 FgGuiPtr
-fgGuiRadio(FgDgn<size_t> selN,const vector<FgString> & labels);
+fgGuiRadio(FgDgn<FgString> selN,const FgStrings & vals,const FgStrings & labels);
 
-template<class T>
-FGLINK(fgLinkSelect)
-{
-    FGLINKARGS(2,1);
-    const vector<T> &   objects = inputs[0]->valueRef();
-    size_t              sel = inputs[1]->valueRef();
-    // Invalid sel value is not an error since invalid selection can be loaded during restore:
-    if (sel >= objects.size())
-        sel = 0;
-    T &                 val = outputs[0]->valueRef();
-    val = objects[sel];
-}
+// When 'vals' and 'labels' are the same:
+inline
+FgGuiPtr
+fgGuiRadio(FgDgn<FgString> selN,const FgStrings & vals)
+{return fgGuiRadio(selN,vals,vals); }
 
-template<class T>
-struct  FgGuiOutput
+struct  FgGuiRadio
 {
-    FgGuiPtr        window;
-    FgDgn<T>        output;
+    FgDgn<FgString>     strN;       // Currently selected string. Input node.
+    FgDgn<size_t>       idxN;       // Currently selected index. Derived from above.
+    FgGuiPtr            win;
 };
 
-template<class T>
-FgGuiOutput<T>
-fgGuiRadioObjects(
-    const vector<T> &           objects,
-    const vector<FgString> &    labels,
-    size_t                      initVal,
-    const FgString &            saveLabel="")   // State saved if label assigned
-{
-    FgGuiOutput<T>              ret;
-    FGASSERT(objects.size() == labels.size());
-    FGASSERT(initVal < labels.size());
-    FgDgn<vector<T> >           objectsN = g_gg.addNode(objects,string("radio_")+typeid(T).name());
-    FgDgn<size_t>               selN;
-    if (saveLabel.empty())
-        selN = g_gg.addNode(initVal);
-    else {
-        selN = g_gg.addInput(initVal,saveLabel);
-        // Reset selection if restored value invalid:
-        if (g_gg.getVal(selN) >= labels.size())
-            g_gg.setVal(selN,initVal);
-    }
-    ret.output = g_gg.addNode(T());
-    g_gg.addLink(fgLinkSelect<T>,fgUints(objectsN,selN),ret.output);
-    ret.window = fgGuiRadio(selN,labels);
-    return ret;
-}
+// When you just need indices into 'labels'.
+// 'labels' must be unique.
+// The selection will be a stored input if 'store' is non-empty.
+// If 'defVal' is empty, the first element in 'vals' will be the default.
+FgGuiRadio
+fgGuiRadio(const FgStrings & vals,const FgStrings & labels,FgString store="",FgString defVal="");
+
+// When 'vals' and 'labels' are the same:
+inline
+FgGuiRadio
+fgGuiRadio(const FgStrings & vals,const FgString & store="")
+{return fgGuiRadio(vals,vals,store); }
 
 #endif

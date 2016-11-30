@@ -60,10 +60,9 @@ fgSimilarityRand()
             fgMatRandNormal<3,1>());
 }
 
-// Uses approach originally from [Horn '87 "Closed-Form Solution of Absolute
-// Orientation..." (taken from [Jain '95 "machine vision" 12.3]) to find an approximate
-// similarity transform between two sets of corresponding points:
-// FROM the domain points TO the range points.
+// Uses approach originally from [Horn '87 "Closed-Form Solution of Absolute Orientation..."
+// (taken from [Jain '95 "machine vision" 12.3]) to find an approximate similarity transform
+// between two sets of corresponding points, FROM the domain points TO the range points:
 FgSimilarity
 fgSimilarityApprox(
     const vector<FgVect3D> &    domainPts,
@@ -73,24 +72,21 @@ fgSimilarityApprox(
     FGASSERT(domainPts.size() > 2);     // Not solvable with only 2 points.
     uint                    numPts = uint(domainPts.size());
     FGASSERT(numPts == rangePts.size());
-
     // Compute the sufficient statistics for scale & rotation
     FgVect3D        domMean = fgMean(domainPts),
                     ranMean = fgMean(rangePts);
     double          domRayMag = 0.0,
                     ranRayMag = 0.0;
     FgMat33D     S(0.0);
-    for (uint ii=0; ii<numPts; ii++)
-    {
+    for (uint ii=0; ii<numPts; ii++) {
         FgVect3D    domRay = domainPts[ii] - domMean,
                     ranRay = rangePts[ii] - ranMean;
-        domRayMag += domRay.lengthSqr();
-        ranRayMag += ranRay.lengthSqr();
-
+        domRayMag += domRay.mag();
+        ranRayMag += ranRay.mag();
         S += domRay * ranRay.transpose();
     }
     double          scale = sqrt(ranRayMag / domRayMag );
-    FgMat44D     N(0.0);
+    FgMat44D        N(0.0);
     double  Sxx = S.elm(0,0),   Sxy = S.elm(1,0),   Sxz = S.elm(2,0),
             Syx = S.elm(0,1),   Syy = S.elm(1,1),   Syz = S.elm(2,1),
             Szx = S.elm(0,2),   Szy = S.elm(1,2),   Szz = S.elm(2,2);
@@ -105,32 +101,24 @@ fgSimilarityApprox(
     N.elm(1,1) = Sxx-Syy-Szz;
     N.elm(2,2) = Syy-Sxx-Szz;
     N.elm(3,3) = Szz-Sxx-Syy;
-
-    // Calculate the rotation from N as per [Jain '95]
-    // fgRealSymmEigs() Leaves largest eigVal in last index
-    FgQuaternionD   pose(fgRealSymmEigs(N).vecs.colVec(3));
-
+    // Calculate rotation from N per [Jain '95] fgEigs() Leaves largest eigVal in last index:
+    FgQuaternionD   pose(fgEigs(N).vecs.colVec(3));
     // Calculate the 'trans' term: The transform is given by:
-    // X = SR(d-dm)+rm
-    //   = SR(d)-SR(dm)+rm
+    // X = SR(d-dm)+rm = SR(d)-SR(dm)+rm
     FgVect3D        trans = -scale * (pose.asMatrix() * domMean) + ranMean;
     ret = FgSimilarity(scale,pose,trans);
-
     // Measure residual:
     double  resid = fgRms(rangePts-fgTransform(domainPts,ret.asAffine())) / fgMaxElem(fgDims(rangePts));
     fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
-
     return ret;
 }
 
 void
 fgSimilarityTest(const FgArgs &)
 {
-    FgSimilarity    sim(fgExp(fgRandNormal()),
-                        FgQuaternionD(fgMatRandNormal<4,1>()),
-                        fgMatRandNormal<3,1>());
-    FgSimilarity        id = sim * sim.inverse();
-    FgMat33D         diff = id.xformCoord(FgMat33D::identity()) - FgMat33D::identity();
+    FgSimilarity    sim(fgExp(fgRandNormal()),FgQuaternionD(fgMatRandNormal<4,1>()),fgMatRandNormal<3,1>());
+    FgSimilarity    id = sim * sim.inverse();
+    FgMat33D        diff = id.xformCoord(FgMat33D::identity()) - FgMat33D::identity();
     FGASSERT(fgApproxEqual(1.0+diff.length(),1.0,10));
 }
 
@@ -145,10 +133,7 @@ fgSimilarityApproxTest(const FgArgs &)
         for (uint ii=0; ii<numPts; ii++)
             domain[ii] = fgMatRandNormal<3,1>();
         for (uint mm=0; mm<10; mm++) {
-            FgSimilarity    simRef(
-                                fgExp(3.0 * fgRandNormal()),
-                                fgQuaternionRand(),
-                                fgMatRandNormal<3,1>());
+            FgSimilarity    simRef(fgExp(3.0 * fgRandNormal()),fgQuaternionRand(),fgMatRandNormal<3,1>());
             fgTransform_(domain,range,simRef.asAffine());
             FgSimilarity    sim = fgSimilarityApprox(domain,range);
             fgTransform_(domain,sim.asAffine());

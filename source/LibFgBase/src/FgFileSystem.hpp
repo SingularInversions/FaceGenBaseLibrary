@@ -55,15 +55,20 @@ FgString
 fgDirUserAppDataLocalFaceGen(const string & subd0,const string & subd1)
 {return fgDirUserAppDataLocal(fgSvec<string>("FaceGen",subd0,subd1)); }
 
+// Can and does sometimes fail, possibly when using Windows roaming identities.
+// If it fails but 'throwOnFail' is false, it returns the empty string:
 FgString
-fgUserDocumentsDirectory();
+fgUserDocumentsDirectory(bool throwOnFail=true);
 
+// This has not been known to fail:
 FgString
 fgPublicDocumentsDirectory();
 
-// Find SDK data directory from path of current executable:
-const FgString &
-fgDataDir();
+// Find data directory from path of current executable:
+const FgString & fgDataDir();
+
+// Force above to use current directory rather than executable location; useful for debugging:
+void fgDataDirFromCurrent();
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
@@ -101,8 +106,8 @@ fgIsDirectory(const FgString & name)
 
 struct      FgDirectoryContents
 {
-    vector<FgString>    filenames;
-    vector<FgString>    dirnames;   // Not including separators
+    FgStrings    filenames;
+    FgStrings    dirnames;   // Not including separators
 };
 
 // If dirName is a relative path, the current directory is used as the base point.
@@ -143,10 +148,6 @@ fgDeleteDirectory(const FgString &);      // Full recursive delete
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
 fgCreateDirectory(const FgString &);
-
-inline void
-fgFsCreateSetDirectory(const FgString & d) 
-    {fgCreateDirectory(d); fgSetCurrentDir(d); }
 
 // Create all non-existing directories in given path.
 // An undelimited name will be created as a directory:
@@ -192,7 +193,7 @@ fgLastWriteTime(const FgString & path)
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
 // of if any of the sinks don't exist (an error results if any of the sources don't exist):
 bool
-fgNewer(const vector<FgString> & sources,const vector<FgString> & sinks);
+fgNewer(const FgStrings & sources,const FgStrings & sinks);
 
 inline
 bool
@@ -202,12 +203,12 @@ fgNewer(const FgString & src,const FgString & dst)
 // Usually only need to include the one last output of a code chunk as 'dst':
 inline
 bool
-fgNewer(const vector<FgString> & sources,const FgString & dst)
+fgNewer(const FgStrings & sources,const FgString & dst)
 {return fgNewer(sources,fgSvec(dst)); }
 
 struct  FgPushDir
 {
-    std::vector<FgString>    orig;
+    FgStrings    orig;
 
     // Often need to create in different scope from 'push':
     FgPushDir() {}
@@ -216,17 +217,26 @@ struct  FgPushDir
     FgPushDir(const FgString & dir)
     {push(dir); }
 
-    ~FgPushDir() {
+    ~FgPushDir()
+    {
         if (!orig.empty())
-            fgSetCurrentDir(orig[0]); }
+            fgSetCurrentDir(orig[0]);
+    }
 
-    void push(const FgString & dir) {
+    void push(const FgString & dir)
+    {
         orig.push_back(fgGetCurrentDir());
-        fgSetCurrentDir(dir); }
+        fgSetCurrentDir(dir);
+    }
 
-    void pop() {
+    void pop()
+    {
         fgSetCurrentDir(orig.back());
-        orig.resize(orig.size()-1); }
+        orig.resize(orig.size()-1);
+    }
+
+    void change(const FgString & dir)
+    {fgSetCurrentDir(dir); }
 };
 
 // Returns name of each matching file & dir:
@@ -244,8 +254,13 @@ fgGlobHasExtension(FgPath path);
 // A single '*' does not glob with base and extension.
 // Does not glob on input directory name.
 // RETURNS: Matching filenames without directory:
-vector<FgString>
+FgStrings
 fgGlobFiles(const FgPath & path);
+
+// 'toDir' must exist.
+// Returns true if there were any files in 'toDir' with the same name as a 'fromDir' file:
+bool
+fgCopyAllFiles(const FgString & fromDir,const FgString & toDir,bool overwrite=false);
 
 // Throws an exception if the filename already exists in the current directory:
 void

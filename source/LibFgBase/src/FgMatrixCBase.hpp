@@ -66,13 +66,17 @@ struct  FgMatrixC
 
     typedef T ValType;
 
-    FgMatrixC() {
+    // Auto-initialization of builtins to zero is deprecated, avoid depending on it by using
+    // constant-value initialization constructor below:
+    FgMatrixC()
+    {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             fgInitializeBuiltinsToZero(m[ii]);
     }
-    
-    // Unfortunately a pointer-based constructor cannot be added without being ambiguous
-    // to the below which is widely used. Use 'fgMatrixC' below instead:
+
+    // Constant-value initialization constructor:
+    // (unfortunately a pointer-based constructor cannot be added without being ambiguous
+    // to the below which is widely used. Use 'fgMatrixC' below instead)
     explicit
     FgMatrixC(T x)
     {setConstant(x); }
@@ -190,51 +194,84 @@ struct  FgMatrixC
     dataPtr() const
     {return m; }
 
-    FgMatrixC       operator+(const FgMatrixC<T,nrows,ncols> &) const;
-    FgMatrixC       operator-(const FgMatrixC<T,nrows,ncols> &) const;
-    FgMatrixC       operator-() const;
-    FgMatrixC       operator*(const T &) const;
-    FgMatrixC       operator/(const T &) const;
-
-    FgMatrixC &
-    operator*=(const T & v) {
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            m[ii] = m[ii] * v;      // Avoid operator*= to work around VS2005 bug
-        return *this;
+    FgMatrixC
+    operator+(const FgMatrixC & rhs) const
+    {
+        FgMatrixC           ret;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret.m[ii] = m[ii] + rhs.m[ii];
+        return ret;
     }
 
-    FgMatrixC &
-    operator/=(const T & v) {
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            m[ii] = m[ii] / v;
-        return *this;
+    FgMatrixC
+    operator-(const FgMatrixC & rhs) const
+    {
+        FgMatrixC           ret;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret.m[ii] = m[ii] - rhs.m[ii];
+        return ret;
     }
 
-    FgMatrixC &
-    operator+=(const FgMatrixC & v) {
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            m[ii] += v.m[ii];
-        return *this;
+    FgMatrixC
+    operator-() const
+    {
+        FgMatrixC           ret;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret.m[ii] = -m[ii];
+        return ret;
     }
 
-    FgMatrixC &
-    operator-=(const FgMatrixC & v) {
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            m[ii] -= v.m[ii];
-        return *this;
+    FgMatrixC
+    operator*(T val) const
+    {
+        FgMatrixC           ret;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret.m[ii] = m[ii] * val;
+        return ret;
+    }
+
+    FgMatrixC
+    operator/(T val) const
+    {
+        FgMatrixC           ret;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret.m[ii] = m[ii] / val;
+        return ret;
+    }
+
+    void
+    operator*=(T val)
+    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] *= val; }
+
+    void
+    operator/=(T val)
+    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] /= val; }
+
+    void
+    operator+=(const FgMatrixC & rhs)
+    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] += rhs.m[ii]; }
+
+    void
+    operator-=(const FgMatrixC & rhs)
+    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] -= rhs.m[ii]; }
+
+    bool
+    operator==(const FgMatrixC & rhs) const
+    {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            if (!(m[ii] == rhs.m[ii]))
+                return false;
+        return true;
     }
 
     bool
-    operator==(const FgMatrixC & v) const {
-        bool        retval(true);
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            retval = retval && (m[ii] == v.m[ii]);
-        return retval;
+    operator!=(const FgMatrixC & rhs) const
+    {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            if (m[ii] != rhs.m[ii])
+                return true;
+        return false;
     }
-
-    bool
-    operator!=(const FgMatrixC<T,nrows,ncols> & rhs) const
-    {return !((*this) == rhs); }
 
     void
     setConstant(T v)
@@ -248,7 +285,13 @@ struct  FgMatrixC
     {setConstant(T(0)); }
 
     void
-    setIdentity();
+    setIdentity()
+    {
+        setConstant(T(0));
+        uint nn = std::min(nrows,ncols);
+        for (uint ii=0; ii<nn; ++ii)
+            m[ii*ncols+ii] = T(1);
+    }
 
     template<uint srows,uint scols>
     FgMatrixC<T,srows,scols>
@@ -264,21 +307,27 @@ struct  FgMatrixC
     }
 
     template <uint srows,uint scols>
-    FgMatrixC<T,nrows,ncols> &
-    setSubMat(const FgMatrixC<T,srows,scols> & sub,uint row,uint col);
+    void
+    setSubMat(const FgMatrixC<T,srows,scols> & sub,uint row,uint col)
+    {
+        FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
+        for (uint rr=0; rr<srows; rr++)
+            for (uint cc=0; cc<scols; cc++)
+                elem(rr+row,cc+col) = sub.elem(rr,cc);
+    }
 
     T
-    lengthSqr() const
+    mag() const         // Squared magnitude
     {
         T   ret = m[0]*m[0];
-        for (uint ii=1; ii<nrows*ncols; ii++)
+        for (uint ii=1; ii<nrows*ncols; ++ii)
             ret += m[ii]*m[ii];
         return ret;
     }
 
     T
     length() const
-    {return sqrt(lengthSqr()); }
+    {return sqrt(mag()); }
 
     FgMatrixC<T,ncols,nrows>
     transpose() const
@@ -310,10 +359,16 @@ struct  FgMatrixC
         return ret;
     }
 
-    // Convenient creation:
-
-    static FgMatrixC
-    identity();
+    static
+    FgMatrixC
+    identity()
+    {
+        FG_STATIC_ASSERT(nrows == ncols);
+        FgMatrixC               ret(T(0));
+        for (uint ii=0; ii<nrows; ++ii)
+            ret.elem(ii,ii) = T(1);
+        return ret;
+    }
 
     // Initialize from array data. This is done via a proxy type (accessed via a convenient
     // static member) since compilers interpret '0' as either 'int' or pointer, potentially
@@ -347,89 +402,13 @@ struct  FgMatrixC
     }
 };
 
-template <class T,uint nrows, uint ncols>
-FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator+(
-    const FgMatrixC<T,nrows,ncols>& v) const
+template<class T,uint nrows,uint ncols>
+struct  FgTraits<FgMatrixC<T,nrows,ncols> >
 {
-    FgMatrixC<T,nrows,ncols>      newMat;
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        newMat.m[ii] = m[ii] + v.m[ii];
-    return newMat;
-}
-
-template <class T,uint nrows,uint ncols>
-FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator-(
-    const FgMatrixC<T,nrows,ncols>& v) const
-{
-    FgMatrixC<T,nrows,ncols>      newMat;
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        newMat.m[ii] = m[ii] - v.m[ii];
-    return newMat;
-}
-
-template <class T,uint nrows,uint ncols>
-FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator-() const
-{
-    FgMatrixC<T,nrows,ncols>      retval;
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        retval.m[ii] = - m[ii];
-    return retval;
-}
-
-template <class T,uint nrows, uint ncols>
-FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator*(
-    const T &v) const
-{
-    FgMatrixC<T,nrows,ncols>      newMat;
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        newMat.m[ii] = m[ii] * v;
-    return newMat;
-}
-
-template <class T,uint nrows, uint ncols>
-FgMatrixC<T,nrows,ncols> FgMatrixC<T,nrows,ncols>::operator/(
-    const T &v) const
-{
-    FgMatrixC<T,nrows,ncols>      newMat;
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        newMat.m[ii] = m[ii] / v;
-    return newMat;
-}
-
-template <class T,uint nrows,uint ncols>
-void FgMatrixC<T,nrows,ncols>::setIdentity()
-{
-    setConstant(T(0));
-    uint nn = std::min(nrows,ncols);
-    for (uint ii=0; ii<nn; ii++)
-        m[ii*ncols+ii] = T(1);
-}
-
-template <class T,uint nrows,uint ncols>
-template <uint srows,uint scols>
-FgMatrixC<T,nrows,ncols> &
-FgMatrixC<T,nrows,ncols>::setSubMat(
-    const FgMatrixC<T,srows,scols> &    sub,
-    uint                                row,
-    uint                                col)
-{
-    FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
-    for (uint rr=0; rr<srows; rr++)
-        for (uint cc=0; cc<scols; cc++)
-            elem(rr+row,cc+col) = sub.elem(rr,cc);
-    return *this;
-}
-
-template <class T,uint nrows,uint ncols>
-FgMatrixC<T,nrows,ncols>
-FgMatrixC<T,nrows,ncols>::identity() 
-{
-    FG_STATIC_ASSERT(nrows == ncols);
-    FgMatrixC<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows; ++ii)
-        ret.elem(ii,ii) = T(1);
-    return ret;
-}
+    typedef typename FgTraits<T>::Scalar                                Scalar;
+    typedef FgMatrixC<typename FgTraits<T>::Accumulator,nrows,ncols>    Accumulator;
+    typedef FgMatrixC<typename FgTraits<T>::Floating,nrows,ncols>       Floating;
+};
 
 typedef FgMatrixC<float,2,2>        FgMat22F;
 typedef FgMatrixC<double,2,2>       FgMat22D;
@@ -491,6 +470,24 @@ typedef FgMatrixC<uint,1,2>         FgVectU2;
 
 typedef vector<FgVect3F>            FgVerts;
 typedef vector<FgVect2F>            FgUvs;
+
+typedef vector<FgVerts>             FgVertss;
+
+template<class T,uint nrows,uint ncols>
+void
+fgReadp(std::istream & is,FgMatrixC<T,nrows,ncols> & m)
+{
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        fgReadp(is,m[ii]);
+}
+
+template<class T,uint nrows,uint ncols>
+void
+fgWritep(std::ostream & os,const FgMatrixC<T,nrows,ncols> & m)
+{
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        fgWritep(os,m[ii]);
+}
 
 // function 'constructors':
 

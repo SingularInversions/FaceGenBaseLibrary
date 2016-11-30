@@ -180,6 +180,6 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiText & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinTextRich(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinTextRich(def)); }

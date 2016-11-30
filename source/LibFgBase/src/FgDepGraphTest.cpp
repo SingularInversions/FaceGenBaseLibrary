@@ -176,17 +176,17 @@ static FGLINK(add)
 }
 
 static std::size_t
-fib(std::size_t n)
+s_fib(std::size_t n)
 {
     if(n <= 2) return 1;
-    else return fib(n-1) + fib(n-2);
+    else return s_fib(n-1) + s_fib(n-2);
 }
 
 static FGLINK(fib)
 {
     FGASSERT(inputs.size() == 1);
     FGASSERT(outputs.size() == 1);
-    *outputs[0] = fib(inputs[0]->getCRef<std::size_t>());
+    *outputs[0] = s_fib(inputs[0]->getCRef<std::size_t>());
 }
 
 static void
@@ -221,7 +221,7 @@ testCalcMulti(uint threads)
     fgout << fgnl << "N*F(n) = " << sum;
     double secs = timer.read();
     fgout << fgnl << "Test took " << secs << " seconds ";
-    FGASSERT(sum == N*fib(40));
+    FGASSERT(sum == N*s_fib(40));
 }
 
 static void

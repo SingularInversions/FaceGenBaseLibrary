@@ -30,6 +30,8 @@ fgLoadMeshAnyFormat(
             path.ext = "wobj";
         else if (fgExists(fname + ".obj"))
             path.ext = "obj";
+        else if (fgExists(fname + ".fgmesh"))
+            path.ext = "fgmesh";
         else
             return false;
     }
@@ -37,7 +39,9 @@ fgLoadMeshAnyFormat(
     if(ext == "tri")
         mesh = fgLoadTri(path.str());
     else if ((ext == "obj") || (ext == "wobj"))
-        fgLoadWobj(path.str(),mesh);
+        mesh = fgLoadWobj(path.str());
+    else if (ext == "fgmesh")
+        mesh = fgLoadFgmesh(path.str());
     else
         fgThrow("Not a readable 3D mesh format",fname);
     return true;
@@ -54,51 +58,69 @@ fgLoadMeshAnyFormat(const FgString & fname)
 
 vector<string>
 fgLoadMeshFormats()
-{return fgSvec<string>("obj","wobj","tri"); }
+{return fgSvec<string>("fgmesh","obj","wobj","tri"); }
 
 string
 fgLoadMeshFormatsDescription()
-{return string("([w]obj | tri)"); }
+{return string("(fgmesh | [w]obj | tri)"); }
 
 void
 fgSaveMeshesAnyFormat(
     const vector<Fg3dMesh> &    meshes,
-    const FgString &            fname)
+    const FgString &            fname,
+    const string &              imgFormat)
 {
     FgString    ext = fgPathToExt(fname).toLower();
     if(ext == "tri")
         fgSaveTri(fname,meshes);
     else if ((ext == "obj") || (ext == "wobj"))
-        fgSaveObj(fname,meshes);
+        fgSaveObj(fname,meshes,imgFormat);
     else if (ext == "wrl")
-        fgSaveVrml(fname,meshes);
+        fgSaveVrml(fname,meshes,imgFormat);
     else if (ext == "fbx")
-        fgSaveFbx(fname,meshes);
+        fgSaveFbx(fname,meshes,imgFormat);
     else if (ext == "stl")
         fgSaveStl(fname,meshes);
     else if (ext == "lwo")
-        fgSaveLwo(fname,meshes);
+        fgSaveLwo(fname,meshes,imgFormat);
     else if (ext == "ma")
-        fgSaveMa(fname,meshes);
+        fgSaveMa(fname,meshes,imgFormat);
     else if (ext == "xsi")
-        fgSaveXsi(fname,meshes);
+        fgSaveXsi(fname,meshes,imgFormat);
     else if (ext == "3ds")
-        fgSave3ds(fname,meshes);
+        fgSave3ds(fname,meshes,imgFormat);
     else if (ext == "ply")
-        fgSavePly(fname,meshes);
+        fgSavePly(fname,meshes,imgFormat);
+    else if (ext == "fgmesh")
+        fgSaveFgmesh(fname,meshes);
     else
         fgThrow("Not a writeable 3D mesh format",fname);
 }
 
+const vector<string> &
+fgMeshExportFormatsExts()
+{
+    static vector<string> ret = fgSvec<string>("obj","wrl","stl","3ds","fbx","ma","lwo","xsi");
+    return ret;
+}
+
+const vector<string> &
+fgMeshExportFormatsDescriptions()
+{
+    static vector<string> ret = fgSvec<string>(
+        "Wavefront OBJ","VRML 97","STL","Autodesk 3DS","Filmbox ASCII","Maya ASCII","Lightwave Object","Softimage XSI");
+    return ret;
+}
+
 std::string
-fgSaveMeshFormatsDescription()
+fgMeshSaveFormatsString()
 {return string("(tri | [w]obj | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
-FgVerts
-fgLoadVerts(const FgString & meshFilename)
+const vector<string> &
+fgMeshExportFormatsWithMorphs()
 {
-    Fg3dMesh    mesh = fgLoadMeshAnyFormat(meshFilename);
-    return mesh.allVerts();
+    static vector<string> ret = fgSvec<string>("fbx","ma","lwo","xsi");
+    return ret;
 }
 
 /**
@@ -111,7 +133,7 @@ triexport(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"
-        "    <meshExt>      - " + fgSaveMeshFormatsDescription() + "\n"
+        "    <meshExt>      - " + fgMeshSaveFormatsString() + "\n"
         "    <imgExt>       - " + fgImgCommonFormatsDescription()
         );
     string              outFile(syntax.next());
@@ -121,6 +143,7 @@ triexport(const FgArgs & args)
         if (!fgCheckExt(triFile,"tri"))
             syntax.error("Not a .TRI file",triFile);
         Fg3dMesh        mesh = fgLoadTri(triFile);
+        size_t          cnt = 0;
         while (syntax.more() && fgToLower(fgPathToExt(syntax.peekNext())) != "tri") {
             string                      imgFile(syntax.next()),
                                         ext = fgPathToExt(imgFile);
@@ -128,9 +151,10 @@ triexport(const FgArgs & args)
             vector<string>::iterator    it = find(exts.begin(),exts.end(),ext);
             if (it == exts.end())
                 syntax.error("Unknown image file type",imgFile);
-            FgImgRgbaUb     img;
-            fgLoadImgAnyFormat(imgFile,img);
-            mesh.texImages.push_back(img);
+            if (cnt < mesh.surfaces.size())
+                fgLoadImgAnyFormat(imgFile,mesh.surfaces[cnt++].albedoMapRef());
+            else
+                syntax.error("More albedo map images specified than surfaces in",mesh.name);
         }
         meshes.push_back(mesh);
     }

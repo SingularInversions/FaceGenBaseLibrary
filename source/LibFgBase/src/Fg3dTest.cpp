@@ -29,7 +29,7 @@ addSubdivisions(
 {
     meshes.push_back(mesh);
     for (uint ii=0; ii<5; ++ii)
-        meshes.push_back(fgSubdivideLoop(meshes.back()));
+        meshes.push_back(fgSubdivide(meshes.back()));
 }
 
 static
@@ -40,14 +40,14 @@ test3dMeshSubdivision(const FgArgs &)
     meanMesh.surfaces[0] = meanMesh.surfaces[0].convertToTris();
     fgout << meanMesh;
     // Test subdivision of surface points:
-    uint                numPts = meanMesh.numSurfPoints();
+    size_t              numPts = meanMesh.surfPointNum();
     vector<FgVect3F>    surfPoints0(numPts);
     for (uint ii=0; ii<numPts; ++ii)
-        surfPoints0[ii] = meanMesh.getSurfPoint(ii);
-    meanMesh = fgSubdivideFlat(meanMesh);
+        surfPoints0[ii] = meanMesh.surfPointPos(ii);
+    meanMesh = fgSubdivide(meanMesh,false);
     vector<FgVect3F>    surfPoints1(numPts);
-    for (uint ii=0; ii<numPts; ++ii) {
-        surfPoints1[ii] = meanMesh.getSurfPoint(ii);
+    for (size_t ii=0; ii<numPts; ++ii) {
+        surfPoints1[ii] = meanMesh.surfPointPos(ii);
         FGASSERT(
             fgApproxEqual(surfPoints0[ii][0],surfPoints1[ii][0]) &&
             fgApproxEqual(surfPoints0[ii][1],surfPoints1[ii][1]) &&
@@ -74,8 +74,7 @@ fg3dReadWobjTest(const FgArgs &)
         "f 1/1 2/2 3/3 4/4\n"
         ;
     ofs.close();
-    Fg3dMesh    mesh;
-    fgLoadWobj("square.obj",mesh);
+    Fg3dMesh    mesh = fgLoadWobj("square.obj");
     fgDisplayMesh(mesh);
 }
 
@@ -97,12 +96,9 @@ fgTextureImageMappingRenderTest(const FgArgs &)
         "f 1/1 2/2 3/3 4/4\n"
         ;
     ofs.close();
-    Fg3dMesh    mesh;
-    fgLoadWobj("square.obj",mesh);
-    string      textureFile("base/test/TextureMapOrdering.jpg");    
-    FgImgRgbaUb texture;
-    fgLoadImgAnyFormat(fgDataDir()+textureFile,texture);
-    mesh.texImages.push_back(texture);
+    Fg3dMesh    mesh = fgLoadWobj("square.obj");
+    string      textureFile("base/test/TextureMapOrdering.jpg");
+    fgLoadImgAnyFormat(fgDataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
     fgDisplayMesh(mesh);
 }
 
@@ -142,8 +138,8 @@ edgeDist(const FgArgs &)
     for (size_t ii=0; ii<colVal.size(); ++ii)
         if (edgeDists[ii] < numeric_limits<float>::max())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
-    FgImgRgbaUb     colMap(128,128,FgRgbaUB(255));
-    FgAffineCw2F    otcsToIpcs = fgOtcsToIpcs(colMap.dims());
+    mesh.surfaces[0].setAlbedoMap(FgImgRgbaUb(128,128,FgRgbaUB(255)));
+    FgAffineCw2F    otcsToIpcs = fgOtcsToIpcs(FgVect2UI(128));
     for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
         FgVect3UI   vertInds = surf.tris.vertInds[tt];
         FgVect3UI   uvInds = surf.tris.uvInds[tt];
@@ -151,15 +147,15 @@ edgeDist(const FgArgs &)
             FgRgbaUB    col(255);
             col.red() = colVal[vertInds[ii]];
             col.green() = 255 - col.red();
-            colMap.paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+            mesh.surfaces[0].albedoMap->paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
     }
-    mesh.texImages.push_back(colMap);
     fgDisplayMesh(mesh);
 }
 
 void    fgSave3dsTest(const FgArgs &);
 void    fgSaveFbxTest(const FgArgs &);
+void    fgSaveFgmeshTest(const FgArgs &);
 void    fgSaveLwoTest(const FgArgs &);
 void    fgSaveMaTest(const FgArgs &);
 void    fgSavePlyTest(const FgArgs &);
@@ -173,6 +169,7 @@ fg3dTestMan(const FgArgs & args)
     cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
     cmds.push_back(FgCmd(fgSave3dsTest,"3ds"));
     cmds.push_back(FgCmd(fgSaveFbxTest,"fbx"));
+    cmds.push_back(FgCmd(fgSaveFgmeshTest,"fgmesh"));
     cmds.push_back(FgCmd(fgSaveLwoTest,"lwo"));
     cmds.push_back(FgCmd(fgSaveMaTest,"ma"));
     cmds.push_back(FgCmd(fgSavePlyTest,"ply"));

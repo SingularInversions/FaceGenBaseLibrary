@@ -45,7 +45,7 @@ struct  FgGuiWinMain
 {
     FgString                    m_title;
     FgString                    m_store;        // Base filename for state storage
-    FgSharedPtr<FgGuiOsBase>    m_win;
+    FgPtr<FgGuiOsBase>    m_win;
     FgVect2UI                   m_size;         // Current size of client area
     vector<HANDLE>              eventHandles;   // Client event handles to trigger message loop
     vector<void(*)()>           eventHandlers;  // Respective event handlers
@@ -254,7 +254,7 @@ FgGuiGraph::quit()
 void
 fgGuiImplStart(
     const FgString &            title,
-    FgSharedPtr<FgGuiApiBase>   def,
+    FgPtr<FgGuiApiBase>   def,
     const FgString &            storeDir,
     const FgGuiOptions &        opts)
 {
@@ -331,11 +331,12 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
                     sysInfo;
     try
     {
-        sysInfo = "\n" + g_gg.appName + "\n" + fgSystemInfo() + "\n" + className + "\n";
-        if ((g_gg.reportError != NULL) && g_gg.reportError(msg+sysInfo))
-            fgGuiDialogMessage(caption,g_gg.reportSuccMsg+"\n"+msg);
+        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
+            + fgSystemInfo() + "\n" + className + "\n";
+        if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
+            fgGuiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else
-            fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg+sysInfo);
+            fgGuiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
         return LRESULT(0);
     }
     catch(FgException const & e)
@@ -350,6 +351,6 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     {
         msg += "ERROR (unknown type):";
     }
-    fgGuiDialogMessage(caption,g_gg.reportFailMsg+"\n"+msg+sysInfo);
+    fgGuiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
     return LRESULT(0);
 }

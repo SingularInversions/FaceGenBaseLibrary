@@ -15,13 +15,9 @@
 #include "FgStdLibs.hpp"
 #include "FgTypes.hpp"
 #include "FgStdVector.hpp"
+#include "FgOpt.hpp"
 
 using std::string;
-
-// Breaks the given string into a vector of strings according to any whitespace, which is 
-// removed. Quotation marks can be used to enclose symbols containing whitespace.
-std::vector<string>
-fgWhiteBreak(const string &);
 
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors:
@@ -109,5 +105,26 @@ fgPad(const string & str,size_t len,char ch=' ');
 // Inspired by Python join():
 string
 fgConcat(const vector<string> & strings,const string & separator);
+
+// std::stoi doesn't tell if you your string is a valid integer representation.
+// Not currently safe for overflow values:
+FgOpt<int>
+fgStoI(const string & str);
+
+// C++98 doesn't support .back() for strings:
+inline
+char
+fgBack(const string & s)
+{
+    FGASSERT(!s.empty());
+    return *(--s.end());
+}
+inline
+char &
+fgBack(string & s)
+{
+    FGASSERT(!s.empty());
+    return *(--s.end());
+}
 
 #endif

@@ -25,7 +25,7 @@ fgSplitLines(const string & src);
 vector<vector<uint32> >
 fgSplitLines(const vector<uint32> & src,bool includeEmptyLines=false);
 
-vector<FgString>
+FgStrings
 fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines=false);
 
 // Quotations not currently supported. White space is kept. CR/LFs removed.
@@ -37,5 +37,10 @@ fgReadCsvFile(const FgString & fname);
 // More convenient than boost::split
 vector<string>
 fgSplitChar(const string & str,char sep=' ',bool includeEmptyStrings=false);
+
+// Breaks the given string into a vector of strings according to any whitespace, which is 
+// removed. Quotation marks can be used to enclose symbols containing whitespace.
+vector<string>
+fgWhiteBreak(const string &);
 
 #endif

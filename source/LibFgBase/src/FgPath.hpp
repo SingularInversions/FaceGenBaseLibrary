@@ -61,11 +61,11 @@ struct  FgPath
 {
     // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
     // OR drive letter on Windows (eg C:), in which case 'root' can be either.
-    FgString                drive;
-    bool                    root;   // Path starts at root ? (otherwise relative)
-    vector<FgString>        dirs;   // No delimiters in in dir names. Can begin with '..' entries.
-    FgString                base;   // Base filename
-    FgString                ext;    // Filename extension (no '.')
+    FgString            drive;
+    bool                root;   // Path starts at root ? (otherwise relative)
+    FgStrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
+    FgString            base;   // Base filename
+    FgString            ext;    // Filename extension (no '.')
 
     FgPath() : root(false) {}
 
@@ -74,7 +74,7 @@ struct  FgPath
     FgPath(const FgString & path);
 
     FgPath(
-        const FgString & d,bool r,const std::vector<FgString> & ds,
+        const FgString & d,bool r,const FgStrings & ds,
         const FgString & b,const FgString & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}
@@ -105,6 +105,10 @@ struct  FgPath
     void
     popDirs(uint);
 };
+
+// Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
+FgPath
+fgPathFromDir(const FgString & directory);
 
 FgString
 fgPathToBase(const FgString & path);

@@ -120,6 +120,6 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
     }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiCheckbox & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinCheckbox(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinCheckbox(def)); }

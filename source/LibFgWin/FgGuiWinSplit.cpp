@@ -192,6 +192,6 @@ struct  FgGuiWinSplit : public FgGuiOsBase
     {return (padBetween() * (uint(m_panes.size())-1)); }
 };
 
-FgSharedPtr<FgGuiOsBase>
+FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiSplit & def)
-{return FgSharedPtr<FgGuiOsBase>(new FgGuiWinSplit(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinSplit(def)); }
