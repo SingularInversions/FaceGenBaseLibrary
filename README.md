@@ -1,8 +1,8 @@
 # FaceGen Base Library
 
-Copyright (c) 2016 Singular Inversions Inc.
+Copyright (c) 2017 Singular Inversions Inc.
 
-A simple cross-platform C++98 library for developing computational 3D graphics applications.
+A simple cross-platform C++11 library for developing computational 3D graphics applications.
 
 ## Features
 
@@ -13,7 +13,7 @@ A simple cross-platform C++98 library for developing computational 3D graphics a
 * Cross platform build file construction tool.
 * Command-line interface tools with pretty-print.
 * Unicode, filesystem, diagnostics, data packaging, etc.
-* Support for VS2008,2010,2012,2013 on Win, gcc & clang on Ubuntu and OSX. Warning-free compiles on -Wall.
+* Support for VS2012,2013,2015 on Win, gcc & clang on Ubuntu and OSX. Warning-free compiles on -Wall.
 
 ## Design
 
@@ -21,7 +21,7 @@ A simple cross-platform C++98 library for developing computational 3D graphics a
 * Functional and declarative design in as much as makes sense for C++.
   * Extensive use of return value elision.
   * Declarative GUI layout, declarative dependency graph for computations.
-* Minimal OOP-sfucation; Some member functions and constructors, few private members or inheritance.
+* Minimal OOP-fuscation; Some member functions and constructors, few private members, no inheritance.
   * Prefer boost::function and boost::bind to abstract class interface.
 * Templates are used when they provide clear benefit.
   * RAII used throughout.
