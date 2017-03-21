@@ -49,7 +49,7 @@
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/array.hpp>
-#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/config.hpp>
 #include <boost/cstdint.hpp>
@@ -59,11 +59,10 @@
 #include <boost/functional/hash.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/item_version_type.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/map.hpp> 
-#include <boost/serialization/pfto.hpp>
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/throw_exception.hpp>
 #include <boost/serialization/vector.hpp>

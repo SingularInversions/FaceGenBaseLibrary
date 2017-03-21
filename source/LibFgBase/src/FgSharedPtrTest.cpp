@@ -189,8 +189,6 @@ static void test_poly()
                 FGASSERT(base::counter == 1);
                 FGASSERT(b1.use_count() == 2);
                 FGASSERT(c1.use_count() == 2);
-
-                FGASSERT(typeid(*b1) == typeid(*c1));
                 FGASSERT(dynamic_cast<child*>(b1.get()));
             }
             FGASSERT(child::counter == 1);

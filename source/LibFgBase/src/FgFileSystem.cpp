@@ -49,11 +49,14 @@ fgMoveFile(const FgString & src,const FgString & dst,bool overwrite)
 FgDirectoryContents
 fgDirectoryContents(const FgString & dirName)
 {
-    if (!is_directory(dirName.ns()))
+    FgString        dn = dirName;
+    if (dn.empty())     // Interpret this as current directory, which boost filesystem does not
+        dn = FgString(".");
+    if (!is_directory(dn.ns()))
         fgThrow("Not a directory",dirName);
     FgDirectoryContents     ret;
     directory_iterator      it_end;
-    for (directory_iterator it(dirName.ns()); it != it_end; ++it) {
+    for (directory_iterator it(dn.ns()); it != it_end; ++it) {
         if (is_directory(it->status()))
             ret.dirnames.push_back(it->path().filename().string());
         else if (is_regular_file(it->status()))

@@ -44,7 +44,7 @@ struct  FgAffineCwC
         FGASSERT(fgNoZeros(domainDelta) && fgNoZeros(rangeDelta));
         for (uint dd=0; dd<dim; ++dd) {
             m_scales[dd] = rangeDelta[dd] / domainDelta[dd];
-            m_trans[dd] = rangeBounds.elm(0,dd) - domainBounds.elm(0,dd) * m_scales[dd];
+            m_trans[dd] = rangeBounds.cr(0,dd) - domainBounds.cr(0,dd) * m_scales[dd];
         }
     }
 
@@ -79,7 +79,7 @@ struct  FgAffineCwC
     {
         FgMatrixC<T,dim,dim>    scales;
         for (uint ii=0; ii<dim; ++ii)
-            scales.elm(ii,ii) = m_scales[ii];
+            scales.cr(ii,ii) = m_scales[ii];
         return FgAffineC<T,dim>(scales,m_trans);
     }
 
@@ -100,6 +100,8 @@ typedef FgAffineCwC<float,2>        FgAffineCw2F;
 typedef FgAffineCwC<double,2>       FgAffineCw2D;
 typedef FgAffineCwC<float,3>        FgAffineCw3F;
 typedef FgAffineCwC<double,3>       FgAffineCw3D;
+
+typedef vector<FgAffineCw2F>        FgAffineCw2Fs;
 
 template<class T,uint dim>
 inline std::ostream &

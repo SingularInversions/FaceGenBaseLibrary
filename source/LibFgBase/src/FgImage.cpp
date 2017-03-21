@@ -24,8 +24,8 @@ operator<<(std::ostream & os,const FgImgRgbaUb & img)
     for (FgIter2UI it(img.dims()); it.next(); it.valid()) {
         FgRgbaUB    pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {
-            fgSetIfLess(bounds.elem(cc,0),pix.m_c[cc]);
-            fgSetIfGreater(bounds.elem(cc,1),pix.m_c[cc]);
+            fgSetIfLess(bounds.rc(cc,0),pix.m_c[cc]);
+            fgSetIfGreater(bounds.rc(cc,1),pix.m_c[cc]);
         }
     }
     return
@@ -44,7 +44,7 @@ fgAnd(const FgImage<FgBool> & lhs,const FgImage<FgBool> & rhs)
 }
 
 FgArray<FgCoordWgt,4>
-fgLerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs)
+fgBlerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs)
 {
     FgArray<FgCoordWgt,4>   ret;
     float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
@@ -91,57 +91,37 @@ fgLerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs)
 }
 
 FgRgbaF
-fgLerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs)
+fgBlerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs)
 {
     FgRgbaF                 ret(0);
-    FgArray<FgCoordWgt,4>   ics = fgLerpCoordsCull(img.dims(),coordIucs);
+    FgArray<FgCoordWgt,4>   ics = fgBlerpCoordsCull(img.dims(),coordIucs);
     for (uint ii=0; ii<ics.size(); ++ii)
         ret += FgRgbaF(img[ics[ii].coordIrcs]) * ics[ii].wgt;
     return ret;
 }
 
 FgMatrixC<FgCoordWgt,4,1>
-fgLerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs)
+fgBlerpCoordsClip(FgVect2UI dims,FgVect2F iucs)
 {
     FgMatrixC<FgCoordWgt,4,1>   ret;
-    float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
-                yf = coordIucs[1] * float(dims[1]) - 0.5f;
-    int         xil = int(std::floor(xf)),
-                yil = int(std::floor(yf)),
-                xih = xil + 1,
-                yih = yil + 1;
-    float       wxh = xf - float(xil),
-                wyh = yf - float(yil),
-                wxl = 1.0f - wxh,
-                wyl = 1.0f - wyh;
-    ret[0].wgt = wxl * wyl;
-    ret[1].wgt = wxh * wyl;
-    ret[2].wgt = wxl * wyh;
-    ret[3].wgt = wxh * wyh;
-    uint        xmax = dims[0]-1,
-                ymax = dims[1]-1;
-    uint        xl = xil < 0 ? 0 : (xil > int(xmax) ? xmax : uint(xil)),
-                yl = yil < 0 ? 0 : (yil > int(ymax) ? ymax : uint(yil)),
-                xh = xih < 0 ? 0 : (xih > int(xmax) ? xmax : uint(xih)),
-                yh = yih < 0 ? 0 : (yih > int(ymax) ? ymax : uint(yih));
-    ret[0].coordIrcs = FgVect2UI(xl,yl);
-    ret[1].coordIrcs = FgVect2UI(xh,yl);
-    ret[2].coordIrcs = FgVect2UI(xl,yh);
-    ret[3].coordIrcs = FgVect2UI(xh,yh);
+    FgVect2F        ircs = fgMapMul(iucs,FgVect2F(dims)) - FgVect2F(0.5f);
+    FgVect2I        loRcs = FgVect2I(fgFloor(ircs)),
+                    hiRcs = loRcs + FgVect2I(1);
+    FgVect2F        wgtHi = ircs - FgVect2F(loRcs),
+                    wgtLo = FgVect2F(1) - wgtHi;
+    ret[0].wgt = wgtLo[0] * wgtLo[1];
+    ret[1].wgt = wgtHi[0] * wgtLo[1];
+    ret[2].wgt = wgtLo[0] * wgtHi[1];
+    ret[3].wgt = wgtHi[0] * wgtHi[1];
+    FgVect2I        max = FgVect2I(dims) - FgVect2I(1);
+    loRcs = fgClipElems(loRcs,0,max);
+    hiRcs = fgClipElems(hiRcs,0,max);
+    ret[0].coordIrcs = FgVect2UI(loRcs);
+    ret[1].coordIrcs = FgVect2UI(hiRcs[0],loRcs[1]);
+    ret[2].coordIrcs = FgVect2UI(loRcs[0],hiRcs[1]);
+    ret[3].coordIrcs = FgVect2UI(hiRcs);
     return ret;
 }
-
-//FgRgbaF
-//fgLerpClip(const FgImgRgbaUb & img,FgVect2F coordIucs)
-//{
-//    FgRgbaF     ret(0);
-//    FgInterp    itp = fgLerpClip(img.dims(),coordIucs);
-//    ret += FgRgbaF(img.elem(itp.coords[0],itp.coords[2])) * itp.weights[0];
-//    ret += FgRgbaF(img.elem(itp.coords[1],itp.coords[2])) * itp.weights[1];
-//    ret += FgRgbaF(img.elem(itp.coords[0],itp.coords[3])) * itp.weights[2];
-//    ret += FgRgbaF(img.elem(itp.coords[1],itp.coords[3])) * itp.weights[3];
-//    return ret;
-//}
 
 void
 fgImgShrink2(
@@ -192,12 +172,12 @@ fgExpand2(const FgImgRgbaUb & src)
             uint    wxl = 1 + 2 * (xx & 1),
                     wxh = 4 - wxl;
             FgRgbaUS    acc =
-                FgRgbaUS(src.elem(sxl,syl)) * wxl * wyl +
-                FgRgbaUS(src.elem(sxh,syl)) * wxh * wyl +
-                FgRgbaUS(src.elem(sxl,syh)) * wxl * wyh +
-                FgRgbaUS(src.elem(sxh,syh)) * wxh * wyh +
+                FgRgbaUS(src.xy(sxl,syl)) * wxl * wyl +
+                FgRgbaUS(src.xy(sxh,syl)) * wxh * wyl +
+                FgRgbaUS(src.xy(sxl,syh)) * wxl * wyh +
+                FgRgbaUS(src.xy(sxh,syh)) * wxh * wyh +
                 FgRgbaUS(7,7,7,7);      // Account for rounding bias
-            dst.elem(xx,yy) = FgRgbaUB(acc / 16);
+            dst.xy(xx,yy) = FgRgbaUB(acc / 16);
         }
     }
     return dst;
@@ -275,7 +255,7 @@ fgImgPntRescaleConvert(
     scale = (scale > 0) ? scale : 1.0;
     FgImgD          adjusted;
     fgImgPntAffine(src,adjusted,-bounds[0],255.0/scale);
-    fgConvert_(adjusted,dst);
+    fgCast_(adjusted,dst);
 }
 
 void
@@ -295,8 +275,8 @@ fgImgGetIrcsToBounds(
     const FgMat22D   &bounds)
 {
     FGASSERT(wid*hgt>0);
-    double          scaleX = (bounds.elem(0,1)-bounds.elem(0,0)) / double(wid),
-                    scaleY = (bounds.elem(1,1)-bounds.elem(1,0)) / double(hgt);
+    double          scaleX = (bounds.rc(0,1)-bounds.rc(0,0)) / double(wid),
+                    scaleY = (bounds.rc(1,1)-bounds.rc(1,0)) / double(hgt);
     FgMat22D     linear(scaleX,0.0,0.0,scaleY);
     FgVect2D        centre = FgVect2D(wid-1,hgt-1) * -0.5;
     return FgAffine2D(centre,linear);
@@ -365,7 +345,7 @@ fgImgResize(
 						xfac -= xblo - (float)xblob;
 					if (xx == xbhib)
 						xfac -= (float)(xbhib+1) - xbhi;
-					fgConvert_(srcPtr[yy*srcStep + xx],fpix);
+					fgCast_(srcPtr[yy*srcStep + xx],fpix);
 					acc += fpix * xfac * yfac;
 				}
 			}
@@ -383,7 +363,7 @@ fgImgApplyTransparencyPow2(
     const FgImgRgbaUb & transparency)
 {
     FGASSERT(!colour.empty() && !transparency.empty());
-    FgVect2UI       dims = fgPower2Ceil(fgMax(colour.dims(),transparency.dims()));
+    FgVect2UI       dims = fgPow2Ceil(fgMax(colour.dims(),transparency.dims()));
     FgImgRgbaUb     ctmp(dims),
                     ttmp(dims);
     fgImgResize(colour,ctmp);
@@ -405,7 +385,7 @@ fgResample(
         if (map[it()] != noVal) {
             FgVect2F    pos = map[it()];
             pos[1] = 1.0f - pos[1];         // OTCS to UICS
-            ret[it()] = FgRgbaUB(fgLerpClip(src,pos) + FgRgbaD(0.5));
+            ret[it()] = FgRgbaUB(fgBlerpClipIucs(src,pos) + FgRgbaD(0.5));
         }
     }
     return ret;
@@ -426,13 +406,14 @@ void
 fgPaintCrossHair(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC c,uint thickness)
 {
     FgRgbaUB    clr(c[0],c[1],c[2],c[3]);
-    int         rad = int((thickness+1)/2);
+    int         rad = int(thickness/2),
+                hlen = int(thickness)*4;
     // Horizontal stroke:
     for (int yy=-rad; yy<=rad; ++yy)
-        for (int xx=-rad*4; xx<=rad*4; ++xx)
+        for (int xx=-hlen; xx<=hlen; ++xx)
             img.paint(ircs+FgVect2I(xx,yy),clr);
     // Vertical stroke:
-    for (int yy=-rad*4; yy<=rad*4; ++yy)
+    for (int yy=-hlen; yy<=hlen; ++yy)
         for (int xx=-rad; xx<=rad; ++xx)
             img.paint(ircs+FgVect2I(xx,yy),clr);
 }
@@ -472,6 +453,46 @@ fgOglMipMap(const FgImgRgbaUb & img)
                 ret[sl] = fgImgShrinkHgt2(src);
         }
     }
+    return ret;
+}
+
+FgImg3F
+fgImgToF3(const FgImgRgbaUb & img)
+{
+    FgImg3F     ret(img.dims());
+    for (size_t pp=0; pp<ret.numPixels(); ++pp) {
+        FgVect4UC       p = img[pp].m_c;
+        ret[pp] = FgVect3F(p[0],p[1],p[2]);
+    }
+    return ret;
+}
+
+FgImg3Fs
+fgSsi(const FgImg3F & img,uchar borderPolicy)
+{
+    FgImg3Fs        ret(fgLog2Floor(fgMinElem(img.dims()))+1);
+    ret[0] = img;
+    for (size_t ii=0; ii<ret.size()-1; ++ii) {
+        fgSmoothFloat(ret[ii],ret[ii],borderPolicy);
+        fgSmoothFloat(ret[ii],ret[ii],borderPolicy);
+        fgShrink2Float(ret[ii],ret[ii+1]);
+    }
+    return ret;
+}
+
+FgAffineCw2Fs
+fgSsiItcsToIpcs(FgVect2UI dims,FgVect2F principalPointIpcs,FgVect2F fovItcs)
+{
+    FgAffineCw2Fs       ret;
+    do {
+        FgVect2F        pixPerTan = fgMapDiv(FgVect2F(dims),fovItcs);
+        ret.push_back(FgAffineCw2F(pixPerTan,principalPointIpcs));
+        for (uint dd=0; dd<2; ++dd)
+            if (dims[dd] & 1)
+                fovItcs[dd] *= float(dims[dd]-1)/float(dims[dd]);
+        dims /= 2U;
+        principalPointIpcs *= 0.5f;
+    } while (fgMinElem(dims) > 1);
     return ret;
 }
 

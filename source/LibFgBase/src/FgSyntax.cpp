@@ -32,7 +32,7 @@ FgSyntax::~FgSyntax()
     size_t      unused = m_args.size() - m_idx - 1;
     if ((unused > 0) && (!std::uncaught_exception()))
         fgout << fgnl << "WARNING: last " << unused
-            << " argument(s) not used : " << fgConcat(fgTail(m_args,unused)," ");
+            << " argument(s) not used : " << fgCat(fgTail(m_args,unused)," ");
 }
 
 void

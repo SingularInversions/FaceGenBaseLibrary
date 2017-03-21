@@ -24,14 +24,18 @@ fgTimeMs();
 
 // GMT date and time string in format: yyyy.mm.dd hh:mm:ss
 std::string
-fgDateTime();
+fgDateTimeString();
 
 std::string
-fgDateTime(time_t rawTime);
+fgDateTimeString(time_t rawTime);
 
 // GMT date string in format: yy.mm.dd
 std::string
 fgDate(time_t rawTime);
+
+// Handy way of naming log files using current date and time (does not append a suffix):
+std::string
+fgDateTimePath();
 
 struct  FgTimer
 {

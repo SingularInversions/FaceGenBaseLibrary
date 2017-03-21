@@ -19,6 +19,9 @@
 #pragma comment (lib, "Mswsock.lib")
 #pragma comment (lib, "AdvApi32.lib")
 
+// Don't warn about deprecation ('inet_ntoa'). TODO: Upgrade TCP stuff for IPV6
+#  pragma warning(disable:4996)
+
 struct  WinsockDll
 {
     WSADATA     wsaData;
@@ -188,28 +191,28 @@ fgTcpServer(
             closesocket(sockListen);
             FGASSERT_FALSE1(fgToString(WSAGetLastError()));
         }
-        char * clientStringPtr = inet_ntoa(sa.sin_addr);
+		char * clientStringPtr = inet_ntoa(sa.sin_addr);
             FGASSERT(clientStringPtr != NULL);
         string     ipAddr = string(clientStringPtr);
         //fgout << "receiving from " << ipAddr << " ... " << std::flush;
         string     dataBuff;
-        int itmp = 0;
+        int retVal = 0;
         do {
             char    recvbuf[1024];
             // recv() will return when either it has filled the buffer, copied over everthing
             // from the socket input buffer (only if non-empty), or when the the read connection
             // is closed by the client. Otherwise it will block (ie if input buffer empty):
-            itmp = recv(sockClient,recvbuf,sizeof(recvbuf),0);
+            retVal = recv(sockClient,recvbuf,sizeof(recvbuf),0);
             fgout << "." << std::flush;
-            if (itmp > 0)
-                dataBuff += string(recvbuf,itmp);
+            if (retVal > 0)
+                dataBuff += string(recvbuf,retVal);
         }
-        while ((itmp > 0) && (dataBuff.size() <= maxRecvBytes));
-        if (itmp != 0) {
+        while ((retVal > 0) && (dataBuff.size() <= maxRecvBytes));
+        if (retVal != 0) {
             closesocket(sockClient);
-            if (itmp < 0)
-                fgout << "TCP RECV ERROR: " << itmp;
-            else if (itmp > 0)
+            if (retVal < 0)
+                fgout << "TCP RECV ERROR: " << retVal;
+            else if (retVal > 0)
                 fgout << " OVERSIZE MESSAGE IGNORED.";
             fgout << std::flush;
             continue;

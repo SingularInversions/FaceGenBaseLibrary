@@ -197,7 +197,7 @@ FgString::replace(char a, char b) const
 FgStrings
 FgString::split(char ch) const
 {
-    FgStrings    ret;
+    FgStrings           ret;
     vector<uint32>      str = as_utf32();
     vector<uint32>      ss;
     for (size_t ii=0; ii<str.size(); ++ii) {
@@ -323,7 +323,7 @@ fgSubstring(const FgString & str,size_t start,size_t size)
 }
 
 FgString
-fgConcat(const FgStrings & strings,const FgString & separator)
+fgCat(const FgStrings & strings,const FgString & separator)
 {
     FgString        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {

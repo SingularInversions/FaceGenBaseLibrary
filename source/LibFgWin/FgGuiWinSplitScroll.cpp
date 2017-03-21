@@ -171,20 +171,20 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
             // Get the current state, esp. trackbar drag position:
             m_si.fMask = SIF_ALL;
             GetScrollInfo(hwnd,SB_VERT,&m_si);
-            int     msg = LOWORD(wParam);
-            if (msg == SB_TOP)
+            int     wprml = LOWORD(wParam);
+            if (wprml == SB_TOP)
                 m_si.nPos = m_si.nMin;
-            else if (msg == SB_BOTTOM)
+            else if (wprml == SB_BOTTOM)
                 m_si.nPos = m_si.nMax;
-            else if (msg == SB_LINEUP)
+            else if (wprml == SB_LINEUP)
                 m_si.nPos -= 20;
-            else if (msg == SB_LINEDOWN)
+            else if (wprml == SB_LINEDOWN)
                 m_si.nPos += 20;
-            else if (msg == SB_PAGEUP)
+            else if (wprml == SB_PAGEUP)
                 m_si.nPos -= m_client[1];
-            else if (msg == SB_PAGEDOWN)
+            else if (wprml == SB_PAGEDOWN)
                 m_si.nPos += m_client[1];
-            else if (msg == SB_THUMBTRACK)
+            else if (wprml == SB_THUMBTRACK)
                 m_si.nPos = m_si.nTrackPos;
             m_si.fMask = SIF_POS;
             SetScrollInfo(hwnd,SB_VERT,&m_si,TRUE);

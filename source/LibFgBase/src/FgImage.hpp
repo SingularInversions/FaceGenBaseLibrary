@@ -47,31 +47,32 @@ struct  FgCoordWgt
     double      wgt;
 };
 
+// Bilinear interpolation co-efficients with sample culling.
 // Return value can contain between 0 and 4 samples depending on how many are culled
 // (due to being outside the image):
 FgArray<FgCoordWgt,4>
-fgLerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs);
+fgBlerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs);
 
+// Bilinear interpolation co-efficients with coordinate clipping.
 // Return value structure much easier to use than a terser bounds-based representation:
 FgMatrixC<FgCoordWgt,4,1>
-fgLerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs);
+fgBlerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs);
 
-// Returns alpha-weighted linear-interpolated value.
+// Bilinear interpolation. Returns alpha-weighted linear-interpolated value.
 // Source points outside image considered to have alpha zero:
 FgRgbaF
-fgLerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
+fgBlerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
 
-// Clips sample point coordinates in image:
+// Bilinear interpolation on floating point channel images.
+// Clips sample point coordinates to image boundaries.
 template<class T>
 typename FgTraits<T>::Floating
-fgLerpClip(
-    const FgImage<T> &  img,
-    FgVect2F            coordIucs)
+fgBlerpClipIpcs(const FgImage<T> & img,FgVect2F coordIpcs)
 {
     typedef typename FgTraits<T>::Floating    Acc;
     Acc                 acc(0.0);
-    float               xf = coordIucs[0] * float(img.width()) - 0.5f,     // RCS
-                        yf = coordIucs[1] * float(img.height()) - 0.5f;
+    float               xf = coordIpcs[0] - 0.5f,     // to IRCS
+                        yf = coordIpcs[1] - 0.5f;
     int                 xi = int(std::floor(xf)),
                         yi = int(std::floor(yf));
     float               wxh = xf - float(xi),
@@ -88,12 +89,16 @@ fgLerpClip(
     yl = (yl > ym) ? ym : yl;
     xh = (xh > xm) ? xm : xh;
     yh = (yh > ym) ? ym : yh;
-    acc += Acc(img.elem(xl,yl)) * wxl * wyl;
-    acc += Acc(img.elem(xh,yl)) * wxh * wyl;
-    acc += Acc(img.elem(xl,yh)) * wxl * wyh;
-    acc += Acc(img.elem(xh,yh)) * wxh * wyh;
+    acc += Acc(img.xy(xl,yl)) * wxl * wyl;
+    acc += Acc(img.xy(xh,yl)) * wxh * wyl;
+    acc += Acc(img.xy(xl,yh)) * wxl * wyh;
+    acc += Acc(img.xy(xh,yh)) * wxh * wyh;
     return acc;
 }
+template<class T>
+typename FgTraits<T>::Floating
+fgBlerpClipIucs(const FgImage<T> & img,FgVect2F coordIucs)
+{return fgBlerpClipIpcs(img,fgMapMul(coordIucs,FgVect2F(img.dims()))); }
 
 template<class T>
 FgMatrixC<T,2,2>
@@ -111,7 +116,7 @@ fgSampleFdd1Clamp(const FgImage<T> & img,FgVect2UI coord)
                 pos = max;
             FgVect2UI   crd = coord;
             crd[dim] = uint(pos);
-            ret.elm((xx+1)/2,dim) = img[crd];
+            ret.cr((xx+1)/2,dim) = img[crd];
         }
     }
     return ret;
@@ -146,11 +151,11 @@ fgShrink2Float(
     dst.resize(src.dims()/2);
     for (uint yy=0; yy<dst.height(); ++yy)
         for (uint xx=0; xx<dst.width(); ++xx)
-            dst.elem(xx,yy) = (
-                src.elem(2*xx,2*yy) +
-                src.elem(2*xx+1,2*yy) +
-                src.elem(2*xx+1,2*yy+1) +
-                src.elem(2*xx,2*yy+1)) / 4;
+            dst.xy(xx,yy) = (
+                src.xy(2*xx,2*yy) +
+                src.xy(2*xx+1,2*yy) +
+                src.xy(2*xx+1,2*yy+1) +
+                src.xy(2*xx,2*yy+1)) / 4;
 }
 
 template<class T>
@@ -235,7 +240,7 @@ fgFlipHoriz(const FgImage<T> & img)
     uint        xh = img.width()-1;
     for (uint yy=0; yy<img.height(); ++yy) {
         for (uint xx=0; xx<img.width(); ++xx)
-            ret.elem(xh-xx,yy) = img.elem(xx,yy); }
+            ret.xy(xh-xx,yy) = img.xy(xx,yy); }
     return ret;
 }
 
@@ -262,11 +267,11 @@ fgImgPntAffine(const FgImage<T>& in,FgImage<T>& out,T trans,T scale)
 
 template<class T,class U>
 void
-fgConvert_(const FgImage<T> & in,FgImage<U> & out)
+fgCast_(const FgImage<T> & in,FgImage<U> & out)
 {
     out.resize(in.dims());
     for (size_t ii=0; ii<out.numPixels(); ++ii)
-        fgConvert_(in[ii],out[ii]);
+        fgCast_(in[ii],out[ii]);
 }
 
 // Accumulators for convolution:
@@ -407,19 +412,19 @@ fgConvolveFloatHoriz(
 {
     dstPtr[0] = Pixel(0);
     for (uint jj=0; jj<3; ++jj)
-        dstPtr[0] += srcPtrs[jj][0] * (krn.elem(jj,0)*borderPolicy + krn.elem(jj,1)) +
-                     srcPtrs[jj][1] * krn.elem(jj,2);
+        dstPtr[0] += srcPtrs[jj][0] * (krn.rc(jj,0)*borderPolicy + krn.rc(jj,1)) +
+                     srcPtrs[jj][1] * krn.rc(jj,2);
     for (uint ii=1; ii<sz-1; ++ii) {
         dstPtr[ii] = Pixel(0);
         for (uint jj=0; jj<3; ++jj)
-            dstPtr[ii] += srcPtrs[jj][ii-1] * krn.elem(jj,0) +
-                          srcPtrs[jj][ii]   * krn.elem(jj,1) +
-                          srcPtrs[jj][ii+1] * krn.elem(jj,2);
+            dstPtr[ii] += srcPtrs[jj][ii-1] * krn.rc(jj,0) +
+                          srcPtrs[jj][ii]   * krn.rc(jj,1) +
+                          srcPtrs[jj][ii+1] * krn.rc(jj,2);
     }
     dstPtr[sz-1] = Pixel(0);
     for (uint jj=0; jj<3; ++jj)
-        dstPtr[sz-1] += srcPtrs[jj][sz-2] * krn.elem(jj,0) +
-                        srcPtrs[jj][sz-1] * (krn.elem(jj,1)+krn.elem(jj,2)*borderPolicy);
+        dstPtr[sz-1] += srcPtrs[jj][sz-2] * krn.rc(jj,0) +
+                        srcPtrs[jj][sz-1] * (krn.rc(jj,1)+krn.rc(jj,2)*borderPolicy);
 }
 template<class Pixel>
 void
@@ -465,14 +470,14 @@ fgResampleSimple(
 {
     FGASSERT(fgMinElem(in.dims()) > 0);
     FGASSERT(fgMinElem(out.dims()) > 0);
-    FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgLerpClip takes UICS
+    FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgBlerpClipIucs takes UICS
                                   0.0f,1.0f),
                     outBoundsIrcs(-0.5f,float(out.width())-0.5f,
                                   -0.5f,float(out.height())-0.5f);
     FgAffineCw2F    o2i(outBoundsIrcs,inBoundsIucs);
     for (FgIter2UI it(out.dims()); it.valid(); it.next()) {
         FgVect2F    pt = o2i * FgVect2F(it());
-        fgRound(fgLerpClip(in,pt),out[it]);
+        fgRound(fgBlerpClipIucs(in,pt),out[it]);
     }
 }
 template<class T>
@@ -491,7 +496,7 @@ fgResizePow2Ceil(
     FgImage<T> &        out)
 {
     if (!fgIsPow2(in.dims())) {
-        out.resize(fgPower2Ceil(in.dims()));
+        out.resize(fgPow2Ceil(in.dims()));
         fgResampleSimple(in,out);
     }
     else
@@ -509,8 +514,8 @@ fgImgSsd(
     for (FgIter2UI it(im0.dims()); it.valid(); it.next())
     {
         FgVect4D        p0,p1;
-        fgConvert_(im0[it].m_c,p0);
-        fgConvert_(im1[it].m_c,p1);
+        fgCast_(im0[it].m_c,p0);
+        fgCast_(im1[it].m_c,p1);
         acc += (p0-p1).mag();
     }
     return acc;
@@ -536,8 +541,8 @@ fgImgSad(
     for (FgIter2UI it(im0.dims()); it.valid(); it.next())
     {
         FgVect4D        p0,p1;
-        fgConvert_(im0[it].m_c,p0);
-        fgConvert_(im1[it].m_c,p1);
+        fgCast_(im0[it].m_c,p0);
+        fgCast_(im1[it].m_c,p1);
         acc +=
             std::abs(p0[0]-p1[0]) +
             std::abs(p0[1]-p1[1]) +
@@ -638,10 +643,10 @@ fgCropPad(
 {
     FgImage<T>      ret(dims,fill);
     if (src.empty()) return ret;
-    FgMat22I     srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
+    FgMat22I        srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
                     dstBnds = FgMat22I(fgRangeToBounds(dims)),
                     range = fgBoundsIntersection(srcBnds-fgConcatHoriz(offset,offset),dstBnds);
-    for (FgIter2I it(range); it.valid(); it.next())
+    for (FgIter2I it(fgInclToExcl(range)); it.valid(); it.next())
         ret[FgVect2UI(it())] = src[FgVect2UI(it()+offset)];
     return ret;
 }
@@ -682,7 +687,7 @@ fgRotate90(
                     ys = (clockwise ? 1 : -1);
     for (uint yy=0; yy<dims[1]; ++yy)
         for (uint xx=0; xx<dims[0]; ++xx)
-            out.elem(xx,yy) = in.elem(size_t(yh+ys*yy),size_t(xh+xs*xx));
+            out.xy(xx,yy) = in.xy(size_t(yh+ys*yy),size_t(xh+xs*xx));
 }
 
 // Alpha-weight the pixels (assuming they are initially NOT):
@@ -743,5 +748,21 @@ fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC color=fgRed(),uint radius=3
 // Non power-of-2 dimensions are truncated when subsampled.
 vector<FgImgRgbaUb>
 fgOglMipMap(const FgImgRgbaUb & img);
+
+// Convert, no scaling:
+FgImg3F
+fgImgToF3(const FgImgRgbaUb &);
+
+// Scale space image (3 channel float). Returns image pyramid from largest (same as source but smoothed)
+// to smallest dimension equal to 2. Non power of 2 dimensions are simply rounded down at each level:
+FgImg3Fs
+fgSsi(
+    const FgImg3F & img,                // Source image
+    uchar           borderPolicy=0);    // 0: border is value 0, 1: border is mirrored
+
+// Returns the transforms from ITCS to IPCS for each corresponding SSI level given the original image dims,
+// principal point and FOV. Takes into account the dimension rounding for non power of 2 dimensions:
+FgAffineCw2Fs
+fgSsiItcsToIpcs(FgVect2UI dims,FgVect2F principalPointIpcs,FgVect2F fovItcs);
 
 #endif

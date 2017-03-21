@@ -43,15 +43,3 @@ fgAssert(
 {
     fgThrow("Internal program error", fgDiagString(fname,line,msg));
 }
-
-std::string
-fgDateTimeString()
-{
-    time_t          rawtime;
-    time(&rawtime);
-    const int       buffSize = 256;
-    char            buffer[buffSize] = {0};
-    tm              *timeinfo = localtime(&rawtime);
-    strftime(buffer,buffSize-1,"%y%m%d_%H%M%S",timeinfo);
-    return string(buffer);
-}

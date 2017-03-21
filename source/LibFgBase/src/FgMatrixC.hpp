@@ -48,8 +48,8 @@ fgMatRotate(T radians)
     FgTypeAttributeFloatingS<T>();
     T ct = T(cos(radians));
     T st = T(sin(radians));
-    mat.elem(0,0)=ct;    mat.elem(0,1)=-st;
-    mat.elem(1,0)=st;    mat.elem(1,1)=ct;
+    mat.rc(0,0)=ct;    mat.rc(0,1)=-st;
+    mat.rc(1,0)=st;    mat.rc(1,1)=ct;
     return mat;
 }
 
@@ -61,9 +61,9 @@ fgMatRotateX(T radians)        // RHR rotation around X axis
     FgTypeAttributeFloatingS<T>();
     T ct = (T)cos(radians);
     T st = (T)sin(radians);
-    mat.elem(0,0)=1.0;   mat.elem(0,1)=0.0;   mat.elem(0,2)=0.0;
-    mat.elem(1,0)=0.0;   mat.elem(1,1)=ct;    mat.elem(1,2)=-st;
-    mat.elem(2,0)=0.0;   mat.elem(2,1)=st;    mat.elem(2,2)=ct;
+    mat.rc(0,0)=1.0;   mat.rc(0,1)=0.0;   mat.rc(0,2)=0.0;
+    mat.rc(1,0)=0.0;   mat.rc(1,1)=ct;    mat.rc(1,2)=-st;
+    mat.rc(2,0)=0.0;   mat.rc(2,1)=st;    mat.rc(2,2)=ct;
     return mat;
 }
 
@@ -75,9 +75,9 @@ fgMatRotateY(T radians)        // RHR rotation around Y axis
     FgTypeAttributeFloatingS<T>();
     T ct = (T)cos(radians);
     T st = (T)sin(radians);
-    mat.elem(0,0)=ct;    mat.elem(0,1)=0.0;   mat.elem(0,2)=st;
-    mat.elem(1,0)=0.0;   mat.elem(1,1)=1.0;   mat.elem(1,2)=0.0;
-    mat.elem(2,0)=-st;   mat.elem(2,1)=0.0;   mat.elem(2,2)=ct;
+    mat.rc(0,0)=ct;    mat.rc(0,1)=0.0;   mat.rc(0,2)=st;
+    mat.rc(1,0)=0.0;   mat.rc(1,1)=1.0;   mat.rc(1,2)=0.0;
+    mat.rc(2,0)=-st;   mat.rc(2,1)=0.0;   mat.rc(2,2)=ct;
     return mat;
 }
 
@@ -89,9 +89,9 @@ fgMatRotateZ(T radians)        // RHR rotation around Z axis
     FgTypeAttributeFloatingS<T>();
     T ct = (T)cos(radians);
     T st = (T)sin(radians);
-    mat.elem(0,0)=ct;    mat.elem(0,1)=-st;   mat.elem(0,2)=0.0;
-    mat.elem(1,0)=st;    mat.elem(1,1)=ct;    mat.elem(1,2)=0.0;
-    mat.elem(2,0)=0.0;   mat.elem(2,1)=0.0;   mat.elem(2,2)=1.0;
+    mat.rc(0,0)=ct;    mat.rc(0,1)=-st;   mat.rc(0,2)=0.0;
+    mat.rc(1,0)=st;    mat.rc(1,1)=ct;    mat.rc(1,2)=0.0;
+    mat.rc(2,0)=0.0;   mat.rc(2,1)=0.0;   mat.rc(2,2)=1.0;
     return mat;
 }
 
@@ -109,15 +109,15 @@ fgMatRotateAxis(                   // RHR rotation around an arbitrary axis
     T           ct = (T)cos(radians);
     T           st = (T)sin(radians);
     T           vt = T(1)-ct;
-    mat.elem(0,0) = ax[0]*ax[0]*vt + ct;
-    mat.elem(0,1) = ax[0]*ax[1]*vt - ax[2]*st;
-    mat.elem(0,2) = ax[0]*ax[2]*vt + ax[1]*st;
-    mat.elem(1,0) = ax[0]*ax[1]*vt + ax[2]*st;
-    mat.elem(1,1) = ax[1]*ax[1]*vt + ct;
-    mat.elem(1,2) = ax[1]*ax[2]*vt - ax[0]*st;
-    mat.elem(2,0) = ax[0]*ax[2]*vt - ax[1]*st;
-    mat.elem(2,1) = ax[1]*ax[2]*vt + ax[0]*st;
-    mat.elem(2,2) = ax[2]*ax[2]*vt + ct;
+    mat.rc(0,0) = ax[0]*ax[0]*vt + ct;
+    mat.rc(0,1) = ax[0]*ax[1]*vt - ax[2]*st;
+    mat.rc(0,2) = ax[0]*ax[2]*vt + ax[1]*st;
+    mat.rc(1,0) = ax[0]*ax[1]*vt + ax[2]*st;
+    mat.rc(1,1) = ax[1]*ax[1]*vt + ct;
+    mat.rc(1,2) = ax[1]*ax[2]*vt - ax[0]*st;
+    mat.rc(2,0) = ax[0]*ax[2]*vt - ax[1]*st;
+    mat.rc(2,1) = ax[1]*ax[2]*vt + ax[0]*st;
+    mat.rc(2,2) = ax[2]*ax[2]*vt + ct;
     return mat;
 }
 
@@ -142,7 +142,7 @@ fgDeterminant(const FgMatrixC<T,3,3> & mat)
 // Concatenate an element onto a column vector:
 template<class T,uint dim>
 FgMatrixC<T,dim+1,1>
-fgConcat(FgMatrixC<T,dim,1> vec,T val)
+fgCat(FgMatrixC<T,dim,1> vec,T val)
 {
     FgMatrixC<T,dim+1,1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -153,7 +153,7 @@ fgConcat(FgMatrixC<T,dim,1> vec,T val)
 // Concatenate an element onto a row vector:
 template<class T,uint dim>
 FgMatrixC<T,1,dim+1>
-fgConcat(FgMatrixC<T,1,dim> vec,T val)
+fgCat(FgMatrixC<T,1,dim> vec,T val)
 {
     FgMatrixC<T,1,dim+1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -194,10 +194,10 @@ fgAsHomogMat(
     FgMatrixC<T,dims+1,dims+1>    ret;
     for (uint rr=0; rr<dims; rr++)
         for (uint cc=0; cc<dims; cc++)
-            ret.elem(rr,cc) = linTrans.elem(rr,cc);
+            ret.rc(rr,cc) = linTrans.rc(rr,cc);
     for (uint rr=0; rr<dims; rr++)
-        ret.elem(rr,dims) = translation[rr];
-    ret.elem(dims,dims) = 1;
+        ret.rc(rr,dims) = translation[rr];
+    ret.rc(dims,dims) = 1;
     return ret;
 }
 
@@ -209,8 +209,8 @@ fgAsHomogMat(const FgMatrixC<T,dims,dims> & linear)
     FgMatrixC<T,dims+1,dims+1>    ret;
     for (uint rr=0; rr<dims; ++rr)
         for (uint cc=0; cc<dims; ++cc)
-            ret.elem(rr,cc) = linear.elem(rr,cc);
-    ret.elem(dims,dims) = T(1);
+            ret.rc(rr,cc) = linear.rc(rr,cc);
+    ret.rc(dims,dims) = T(1);
     return ret;
 }
 
@@ -222,7 +222,7 @@ fgAsHomogMat(const FgMatrixC<T,dims,1> & translation)
     FgMatrixC<T,dims+1,dims+1>    ret;
     ret.setIdentity();
     for (uint rr=0; rr<dims; rr++)
-        ret.elem(rr,dims) = translation[rr];
+        ret.rc(rr,dims) = translation[rr];
     return ret;
 }
 
@@ -233,13 +233,13 @@ fgMatInverse(const FgMatrixC<T,2,2> & m)
 {
     FgTypeAttributeFloatingS<T>();
     FgMatrixC<T,2,2>     ret;
-    T   fac = (m.elem(0,0) * m.elem(1,1) - m.elem(0,1) * m.elem(1,0));
+    T   fac = (m.rc(0,0) * m.rc(1,1) - m.rc(0,1) * m.rc(1,0));
     FGASSERT(fac != T(0));
     fac = T(1) / fac;
-    ret.elem(0,0) = m.elem(1,1) * fac;
-    ret.elem(0,1) = - m.elem(0,1) * fac;
-    ret.elem(1,0) = - m.elem(1,0) * fac;
-    ret.elem(1,1) = m.elem(0,0) * fac;
+    ret.rc(0,0) = m.rc(1,1) * fac;
+    ret.rc(0,1) = - m.rc(0,1) * fac;
+    ret.rc(1,0) = - m.rc(1,0) * fac;
+    ret.rc(1,1) = m.rc(0,0) * fac;
     return ret;
 }
 template <class T>
@@ -248,19 +248,19 @@ FgMatrixC<T,3,3> fgMatInverse(
 {
     FgTypeAttributeFloatingS<T>();
     FgMatrixC<T,3,3>     r;
-    T   fac = (m.elem(0,0)*m.elem(1,1)*m.elem(2,2) - m.elem(0,0)*m.elem(1,2)*m.elem(2,1) +
-               m.elem(1,0)*m.elem(0,2)*m.elem(2,1) - m.elem(1,0)*m.elem(0,1)*m.elem(2,2) +
-               m.elem(2,0)*m.elem(0,1)*m.elem(1,2) - m.elem(2,0)*m.elem(1,1)*m.elem(0,2));
+    T   fac = (m.rc(0,0)*m.rc(1,1)*m.rc(2,2) - m.rc(0,0)*m.rc(1,2)*m.rc(2,1) +
+               m.rc(1,0)*m.rc(0,2)*m.rc(2,1) - m.rc(1,0)*m.rc(0,1)*m.rc(2,2) +
+               m.rc(2,0)*m.rc(0,1)*m.rc(1,2) - m.rc(2,0)*m.rc(1,1)*m.rc(0,2));
     FGASSERT(fac != T(0));
-    r.elem(0,0) = m.elem(1,1) * m.elem(2,2) - m.elem(1,2) * m.elem(2,1);
-    r.elem(0,1) = m.elem(0,2) * m.elem(2,1) - m.elem(0,1) * m.elem(2,2);
-    r.elem(0,2) = m.elem(0,1) * m.elem(1,2) - m.elem(0,2) * m.elem(1,1);
-    r.elem(1,0) = m.elem(1,2) * m.elem(2,0) - m.elem(1,0) * m.elem(2,2);
-    r.elem(1,1) = m.elem(0,0) * m.elem(2,2) - m.elem(0,2) * m.elem(2,0);
-    r.elem(1,2) = m.elem(0,2) * m.elem(1,0) - m.elem(0,0) * m.elem(1,2);
-    r.elem(2,0) = m.elem(1,0) * m.elem(2,1) - m.elem(1,1) * m.elem(2,0);
-    r.elem(2,1) = m.elem(0,1) * m.elem(2,0) - m.elem(0,0) * m.elem(2,1);
-    r.elem(2,2) = m.elem(0,0) * m.elem(1,1) - m.elem(1,0) * m.elem(0,1);
+    r.rc(0,0) = m.rc(1,1) * m.rc(2,2) - m.rc(1,2) * m.rc(2,1);
+    r.rc(0,1) = m.rc(0,2) * m.rc(2,1) - m.rc(0,1) * m.rc(2,2);
+    r.rc(0,2) = m.rc(0,1) * m.rc(1,2) - m.rc(0,2) * m.rc(1,1);
+    r.rc(1,0) = m.rc(1,2) * m.rc(2,0) - m.rc(1,0) * m.rc(2,2);
+    r.rc(1,1) = m.rc(0,0) * m.rc(2,2) - m.rc(0,2) * m.rc(2,0);
+    r.rc(1,2) = m.rc(0,2) * m.rc(1,0) - m.rc(0,0) * m.rc(1,2);
+    r.rc(2,0) = m.rc(1,0) * m.rc(2,1) - m.rc(1,1) * m.rc(2,0);
+    r.rc(2,1) = m.rc(0,1) * m.rc(2,0) - m.rc(0,0) * m.rc(2,1);
+    r.rc(2,2) = m.rc(0,0) * m.rc(1,1) - m.rc(1,0) * m.rc(0,1);
     r *= T(1) / fac;
     return r;
 }
@@ -302,6 +302,30 @@ fgMapMul(
         ret[ii] = lhs[ii] * rhs[ii];
     return ret;
 }
+template<typename T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+fgMapMul(const FgMatrixC<T,nrows,ncols> & m0,const FgMatrixC<T,nrows,ncols> & m1,const FgMatrixC<T,nrows,ncols> & m2)
+{
+    FgMatrixC<T,nrows,ncols>    ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = m0[ii] * m1[ii] * m2[ii];
+    return ret;
+}
+
+// Faster equivalent to lhs^T * rhs:
+template<typename T,uint n0,uint n1,uint n2>
+FgMatrixC<T,n0,n1>
+fgTransposeMul(
+    const FgMatrixC<T,n2,n0> &    lhs,
+    const FgMatrixC<T,n2,n1> &    rhs)
+{
+    FgMatrixC<T,n0,n1>      ret(T(0));
+    for (uint i0=0; i0<n0; ++i0)
+        for (uint i1=0; i1<n1; ++i1)
+            for (uint i2=0; i2<n2; ++i2)
+                ret.rc(i0,i1) += lhs.rc(i2,i0) * rhs.rc(i2,i1);
+    return ret;
+}
 
 // Element-wise division:
 template<typename T,uint nrows,uint ncols>
@@ -334,6 +358,33 @@ fgMatRandUniform(double lo,double hi)
     for (uint ii=0; ii<nrows*ncols; ++ii)
         vec[ii] = fgRandUniform(lo,hi);
     return vec;
+}
+
+// Exponentiated normal distributed elements:
+template<uint nrows,uint ncols>
+FgMatrixC<double,nrows,ncols>
+fgMatRandExp(double mean,double stdev)
+{
+    FgMatrixC<double,nrows,ncols>   ret;
+    for (uint ii=0; ii<ret.numElems(); ++ii)
+        ret[ii] = std::exp(fgRandNormal(mean,stdev));
+    return ret;
+}
+
+template<uint dim>
+FgMatrixC<double,dim,dim>
+fgMatRandOrtho()
+{
+    FgMatrixC<double,dim,dim>       ret;
+    for (uint row=0; row<dim; ++row) {
+        FgMatrixC<double,dim,1>     vec = fgMatRandNormal<double,dim,1>();
+        for (uint rr=0; rr<row; ++rr) {
+            FgMatrixC<double,dim,1> axis = ret.rowVec(rr);
+            vec -=  axis * fgDot(vec,axis);
+        }
+        ret.setSubMat(row,0,fgNormalize(vec));
+    }
+    return ret;
 }
 
 template<typename T,uint nrows,uint ncols>
@@ -408,9 +459,9 @@ fgConcatHoriz(
     {
         uint    col=0;
         for (uint cc=0; cc<ncols1; ++cc)
-            ret.elem(row,col++) = lhs.elem(row,cc);
+            ret.rc(row,col++) = lhs.rc(row,cc);
         for (uint cc=0; cc<ncols2; ++cc)
-            ret.elem(row,col++) = rhs.elem(row,cc);
+            ret.rc(row,col++) = rhs.rc(row,cc);
     }
     return ret;
 }
@@ -428,11 +479,11 @@ fgConcatHoriz(
     {
         uint    col=0;
         for (uint cc=0; cc<ncols1; ++cc)
-            ret.elem(row,col++) = m1.elem(row,cc);
+            ret.rc(row,col++) = m1.rc(row,cc);
         for (uint cc=0; cc<ncols2; ++cc)
-            ret.elem(row,col++) = m2.elem(row,cc);
+            ret.rc(row,col++) = m2.rc(row,cc);
         for (uint cc=0; cc<ncols3; ++cc)
-            ret.elem(row,col++) = m3.elem(row,cc);
+            ret.rc(row,col++) = m3.rc(row,cc);
     }
     return ret;
 }
@@ -447,10 +498,10 @@ fgConcatVert(
     FgMatrixC<T,nrows1+nrows2,ncols>    ret;
     for (uint rr=0; rr<nrows1; ++rr)
         for (uint cc=0; cc<ncols; ++cc)
-            ret.elem(rr,cc) = upper.elem(rr,cc);
+            ret.rc(rr,cc) = upper.rc(rr,cc);
     for (uint rr=0; rr<nrows2; ++rr)
         for (uint cc=0; cc<ncols; ++cc)
-            ret.elem(nrows1+rr,cc) = lower.elem(rr,cc);
+            ret.rc(nrows1+rr,cc) = lower.rc(rr,cc);
     return ret;
 }
 
@@ -474,7 +525,7 @@ fgPermuteAxes(uint axisToBecomeX)
 {
     FgMatrixC<T,3,3>    ret;
     for (uint ii=0; ii<3; ++ii)
-        ret.elem(ii,(ii+axisToBecomeX)%3) = T(1);
+        ret.rc(ii,(ii+axisToBecomeX)%3) = T(1);
     return ret;
 }
 
@@ -511,7 +562,8 @@ fgMean(const FgMatrixC<T,nrows,ncols> & mat)
         return ret;                                         \
     }
 
-FG_MATRIXC_ELEMWISE(fgPower2Ceil,fgPower2Ceil)
+FG_MATRIXC_ELEMWISE(fgPow2Floor,fgPow2Floor)
+FG_MATRIXC_ELEMWISE(fgPow2Ceil,fgPow2Ceil)
 FG_MATRIXC_ELEMWISE(fgAbs,std::abs)
 FG_MATRIXC_ELEMWISE(fgSquare,fgSqr)
 FG_MATRIXC_ELEMWISE(fgLog,std::log)
@@ -528,6 +580,22 @@ fgDot(
     double  acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
         acc += fgDot(v0[ii],v1[ii]);
+    return acc;
+}
+
+// Weighted dot product:
+template<class T,uint nrows,uint ncols>
+double
+fgDotWgt(
+    const vector<FgMatrixC<T,nrows,ncols> > & v0,
+    const vector<FgMatrixC<T,nrows,ncols> > & v1,
+    const vector<T> &                         w)    // Weight to apply to each dot product
+{
+    FGASSERT(v0.size() == v1.size());
+    FGASSERT(v0.size() == w.size());
+    double  acc(0);
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += fgDot(v0[ii],v1[ii]) * w[ii];
     return acc;
 }
 
@@ -564,6 +632,8 @@ fgUninterpolate(
     coordLo = FgMatrixC<Int,dim,1>(coordL);
 }
 
+// Provide an ordering by axis order
+// (without making it the default operator as this may not be desired):
 template<typename T,uint nrows,uint ncols>
 bool
 fgLt(
@@ -592,7 +662,7 @@ fgDiagonal(FgMatrixC<T,sz,1> vec)
 {
     FgMatrixC<T,sz,sz>      ret(0);
     for (uint ii=0; ii<sz; ++ii)
-        ret.elem(ii,ii) = vec[ii];
+        ret.rc(ii,ii) = vec[ii];
     return ret;
 }
 
@@ -751,25 +821,13 @@ fgD2F(const FgMatrixC<double,nrows,ncols> & m)
 {return FgMatrixC<float,nrows,ncols>(m); }
 
 template<class T,uint nrows,uint ncols>
-vector<T>
-fgFlat(const vector<FgMatrixC<T,nrows,ncols> > & v)
-{
-    vector<T>   ret;
-    ret.reserve(v.size()*nrows*ncols);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        for (uint jj=0; jj<nrows*ncols; ++jj)
-            ret.push_back(v[ii][jj]);
-    return ret;
-}
-
-template<class T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,1>
 fgSumOverCols(FgMatrixC<T,nrows,ncols> m)
 {
     FgMatrixC<T,nrows,1>    r(0);
     for (uint rr=0; rr<nrows; ++rr)
         for (uint cc=0; cc<ncols; ++cc)
-            r.elem(rr,0) += m.elem(rr,cc);
+            r.rc(rr,0) += m.rc(rr,cc);
     return r;
 }
 
@@ -791,5 +849,13 @@ fgMag(FgMatrixC<T,nrows,ncols> m)
 // Give a tangent coordinate system for a point on a sphere centred at origin:
 FgMat32D
 fgTanSphere(FgVect3D p);
+
+template<class T,class U,uint nrows,uint ncols>
+void
+fgCast_(const FgMatrixC<T,nrows,ncols> & i,FgMatrixC<U,nrows,ncols> & o)
+{
+    for (size_t ii=0; ii<i.numElems(); ++ii)
+        fgCast_(i[ii],o[ii]);
+}
 
 #endif

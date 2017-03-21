@@ -129,6 +129,10 @@ fgCreationTime(const FgString &,uint64 &)
     return false;
 }
 
+void
+fgMakeWritableByAll(const FgString &)
+{fgThrowNotImplemented(); }
+
 #if defined(__APPLE__)
 
 #include <CoreFoundation/CFBundle.h>
@@ -170,3 +174,5 @@ fgExecutablePath()
 }
 
 #endif
+
+// */

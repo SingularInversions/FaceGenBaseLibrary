@@ -39,7 +39,9 @@ struct  FgConsProj
     vector<FgConsSrcGroup>    srcGroups;
     vector<string>      incDirs;    // Relative to project dir.
     vector<string>      defs;       // Define statements specific to this project
-    vector<string>      lnkDeps;    // Dependencies on other projects by name
+    // Dependencies on other projects by name. Must be in order of dependencies, from base lib
+    // to most dependent lib, so they can be put in right order in makefiles for gcc:
+    vector<string>      lnkDeps;
     vector<string>      dllDeps;    // Dependencies on binary DLLs by name (no ext)
     uint                warn;       // Warning level [0 - 4]
     FgBoolF             app;        // Is there a main() ?
@@ -116,16 +118,7 @@ fgConsBase(
 void
 fgConsMakefiles(FgConsSolution sln);
 
-string
-fgConsVsPreprocessorDefs(
-    bool                release,
-    const FgConsProj &  proj);
-
-// Create Visual Studio 2008 solution & project files for given solution in current directory tree:
-void
-fgConsVs2008(FgConsSolution sln);
-
-// Create Visual Studio 2010 & 2012 solution & project files for given solution in current directory tree:
+// Create Visual Studio 201x solution & project files for given solution in current directory tree:
 void
 fgConsVs201x(FgConsSolution sln);
 

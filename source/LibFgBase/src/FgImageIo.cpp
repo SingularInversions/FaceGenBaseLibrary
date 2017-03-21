@@ -61,10 +61,10 @@ fgLoadImgAnyFormat(
             PixelPacket pixel;
             FGASSERT(MagickTrue == 
                     GetOneCacheViewAuthenticPixel(view.get(),column,row,&pixel,exception.get()));
-            img.elem(column,row).red() = uchar(pixel.red);
-            img.elem(column,row).green() = uchar(pixel.green);
-            img.elem(column,row).blue() = uchar(pixel.blue);
-            img.elem(column,row).alpha() =  255 - uchar(pixel.opacity);
+            img.xy(column,row).red() = uchar(pixel.red);
+            img.xy(column,row).green() = uchar(pixel.green);
+            img.xy(column,row).blue() = uchar(pixel.blue);
+            img.xy(column,row).alpha() =  255 - uchar(pixel.opacity);
         }
     }
 }
@@ -100,10 +100,10 @@ fgLoadImg4UC(const FgString & fname)
             PixelPacket pixel;
             FGASSERT(MagickTrue == 
                     GetOneCacheViewAuthenticPixel(view.get(),column,row,&pixel,exception.get()));
-            ret.elem(column,row)[0] = uchar(pixel.red);
-            ret.elem(column,row)[1] = uchar(pixel.green);
-            ret.elem(column,row)[2] = uchar(pixel.blue);
-            ret.elem(column,row)[3] =  255 - uchar(pixel.opacity);
+            ret.xy(column,row)[0] = uchar(pixel.red);
+            ret.xy(column,row)[1] = uchar(pixel.green);
+            ret.xy(column,row)[2] = uchar(pixel.blue);
+            ret.xy(column,row)[3] =  255 - uchar(pixel.opacity);
         }
     }
     return ret;
@@ -133,7 +133,7 @@ fgLoadImgAnyFormat(
             PixelPacket pixel;
             FGASSERT(MagickTrue == 
                     GetOneCacheViewAuthenticPixel(view.get(),column,row,&pixel,exception.get()));
-            img.elem(column,row) = pixel.red;   // All channels same value if single-channel read
+            img.xy(column,row) = pixel.red;   // All channels same value if single-channel read
         }
     }
 }

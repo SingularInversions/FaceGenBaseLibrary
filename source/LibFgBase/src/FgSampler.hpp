@@ -13,24 +13,18 @@
 
 #include "FgImage.hpp"
 
-struct  FgSample
-{
-    virtual ~FgSample() {}
+typedef boost::function<FgRgbaF(FgVect2F)>  FgFuncSample;
 
-    virtual FgRgbaF
-    operator()(FgVect2F posIucs) const = 0;
-};
+FgImgRgbaF
+fgSamplerF(
+    FgVect2UI           dims,               // Must be non-zero
+    FgFuncSample        sample,
+    uint                antiAliasBitDepth); // Must be in [1,16]
 
-void
+FgImgRgbaUb
 fgSampler(
-    const FgSample &    sample,
-    FgImgRgbaF &        img,    // Contents modified. Must be square power of 2 dimensions
-    uint                antiAliasBitDepth); // Must be in [1,8]
-
-void
-fgSampler(
-    const FgSample &    sample,
-    FgImgRgbaUb &       img,    // Contents modified. Must be square power of 2 dimensions
+    FgVect2UI           dims,               // Must be non-zero
+    FgFuncSample        sample,
     uint                antiAliasBitDepth); // Must be in [1,8]
 
 #endif

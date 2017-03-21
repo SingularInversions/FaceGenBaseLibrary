@@ -36,6 +36,7 @@ struct FgTraits<vector<T> >
 typedef vector<double>              FgDbls;
 typedef vector<float>               FgFlts;
 typedef vector<uint>                FgUints;
+typedef vector<size_t>              FgSizes;
 
 typedef vector<FgDbls>              FgDblss;
 typedef vector<FgFlts>              FgFltss;
@@ -286,10 +287,7 @@ fgToFloat(const vector<double> & v)
 
 template<class T>
 vector<T>
-fgSubvec(
-    const vector<T> &  vec,
-    size_t                  start,
-    size_t                  size)
+fgSubvec(const vector<T> & vec,size_t start,size_t size)
 {
     FGASSERT(start+size <= vec.size());
     return  vector<T>(vec.begin()+start,vec.begin()+start+size);
@@ -297,9 +295,7 @@ fgSubvec(
 
 template<class T>
 vector<T>
-fgHead(
-    const vector<T> &   vec,
-    size_t              size)
+fgHead(const vector<T> & vec,size_t size)
 {
     FGASSERT(size <= vec.size());
     return vector<T>(vec.begin(),vec.begin()+size);
@@ -307,9 +303,7 @@ fgHead(
 
 template<class T>
 vector<T>
-fgRest(
-    const vector<T> &   vec,
-    size_t              start=1)
+fgRest(const vector<T> & vec,size_t start=1)
 {
     FGASSERT(start <= vec.size());      // Can be size zero
     return vector<T>(vec.begin()+start,vec.end());
@@ -317,27 +311,21 @@ fgRest(
 
 template<class T>
 vector<T>
-fgTail(
-    const vector<T> &   vec,
-    size_t              size)
+fgTail(const vector<T> & vec,size_t size)
 {
     FGASSERT(size <= vec.size());
     return vector<T>(vec.end()-size,vec.end());
 }
 
 template<class T>
-vector<T> &
-fgAppend(
-    vector<T> &        base,
-    const vector<T> &  app)
-{
-    base.insert(base.end(),app.begin(),app.end());
-    return base;
-}
+inline void
+fgAppend(vector<T> & base,const vector<T> & app)
+{base.insert(base.end(),app.begin(),app.end()); }
 
+// Concatenation in several forms:
 template<class T>
 vector<T>
-fgConcat(const vector<T> &  v0,const vector<T> &  v1)
+fgCat(const vector<T> &  v0,const vector<T> &  v1)
 {
     vector<T>   ret;
     ret.reserve(v0.size()+v1.size());
@@ -345,10 +333,9 @@ fgConcat(const vector<T> &  v0,const vector<T> &  v1)
     ret.insert(ret.end(),v1.begin(),v1.end());
     return ret;
 }
-
 template<class T>
 vector<T>
-fgConcat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2)
+fgCat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2)
 {
     vector<T>  ret;
     ret.reserve(v0.size()+v1.size()+v2.size());
@@ -356,6 +343,32 @@ fgConcat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2)
     ret.insert(ret.end(),v1.begin(),v1.end());
     ret.insert(ret.end(),v2.begin(),v2.end());
     return ret;
+}
+template<class T>
+vector<T>
+fgCat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2,const vector<T> & v3)
+{
+    vector<T>  ret;
+    ret.reserve(v0.size()+v1.size()+v2.size()+v3.size());
+    ret.insert(ret.end(),v0.begin(),v0.end());
+    ret.insert(ret.end(),v1.begin(),v1.end());
+    ret.insert(ret.end(),v2.begin(),v2.end());
+    ret.insert(ret.end(),v3.begin(),v3.end());
+    return ret;
+}
+// Flatten vector of vectors into single contiguous vector:
+template<class T>
+vector<T>
+fgCat(const vector<vector<T> > & v)
+{
+    vector<T>       ret;
+    size_t          sz = 0;
+    for (size_t ii=0; ii<v.size(); ++ii)
+        sz += v[ii].size();
+    ret.reserve(sz);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret.insert(ret.end(),v[ii].begin(),v[ii].end());
+    return ret;       
 }
 
 // Like std::find except it returns index rather than iterator of first occurance.
@@ -388,9 +401,9 @@ fgFindFirst(
     return vec[0];
 }
 
-template<class T>
+template<class T,class U>
 size_t
-fgFindLastIdx(const vector<T> & vec,const T & val)
+fgFindLastIdx(const vector<T> & vec,const U & val)
 {
     for (size_t ii=vec.size(); ii!=0; --ii)
         if (vec[ii-1] == val)
@@ -475,7 +488,7 @@ fgSplit(const vector<T> & str,T ch)
 
 template<class T>
 void
-fgSetSubvec(vector<T> & mod,const vector<T> & sub,size_t pos=0)
+fgSetSubVec(vector<T> & mod,size_t pos,const vector<T> & sub)
 {
     FGASSERT(sub.size() + pos <= mod.size());
     for (size_t ii=0; ii<sub.size(); ++ii)
@@ -569,13 +582,11 @@ fgOrOfAnd(                          // Equivalent to but more efficient than fgO
 
 template<class T,class U>
 void
-fgConvert_(
-    const vector<T> &  lhs,
-    vector<U> &        rhs)
+fgCast_(const vector<T> & lhs,vector<U> & rhs)
 {
     rhs.resize(lhs.size());
     for (size_t ii=0; ii<lhs.size(); ++ii)
-        rhs[ii] = static_cast<U>(lhs[ii]);
+        fgCast_(lhs[ii],rhs[ii]);
 }
 
 template<class Out,class In>
@@ -685,6 +696,14 @@ fgSubtract(
 }
 
 template<class T>
+void
+fgMapAddConst_(vector<T> & v,const T & val)
+{
+    for (size_t ii=0; ii<v.size(); ++ii)
+        v[ii] += val;
+}
+
+template<class T>
 vector<T>
 fgMapAddConst(const vector<T> & in,const T & val)
 {
@@ -729,13 +748,13 @@ fgLength(const vector<T> & v)
 {return std::sqrt(fgLengthSqr(v)); }
 
 template<class T>
-T
+double
 fgDot(const vector<T> & v0,const vector<T> & v1)
 {
+    double      acc(0);
     FGASSERT(v0.size() == v1.size());
-    T   acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += v1[ii] * v0[ii];
+        acc += fgDot(v0[ii],v1[ii]);
     return acc;
 }
 
@@ -943,6 +962,17 @@ fgSlice(const vector<T> & v,size_t initial,size_t stride)
     return ret;
 }
 
+template<class T,class U>
+vector<U>
+fgSliceMember(const vector<T> & ts,U T::*m)
+{
+    vector<U>       ret;
+    ret.reserve(ts.size());
+    for (size_t ii=0; ii<ts.size(); ++ii)
+        ret.push_back(ts[ii].*m);
+    return ret;
+}
+
 // Transpose a row-major contiguous array:
 template<class T>
 vector<T>
@@ -967,35 +997,6 @@ fgFill(vector<T> & vec,T val)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         vec[ii] = val;
-}
-
-// Flatten vector of vectors into single contiguous vector:
-template<class T>
-vector<T>
-fgFlat(const vector<vector<T> > & v)
-{
-    vector<T>       ret;
-    size_t          sz = 0;
-    for (size_t ii=0; ii<v.size(); ++ii)
-        sz += v[ii].size();
-    ret.reserve(sz);
-    for (size_t ii=0; ii<v.size(); ++ii) {
-        const vector<T> &   src = v[ii];
-        for (size_t jj=0; jj<src.size(); ++jj)
-            ret.push_back(src[jj]);
-    }
-    return ret;       
-}
-
-// Turn each element of a vector into a vector of size 1:
-template<class T>
-vector<vector<T> >
-fgUnflat(const vector<T> & v)
-{
-    vector<vector<T> >  ret(v.size());
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii].push_back(v[ii]);
-    return ret;
 }
 
 // Transpose a vector of vectors just like Python 'zip' on lists.
@@ -1058,6 +1059,36 @@ fgFilter(const vector<bool> & accept,const vector<T> & in)
     for (size_t ii=0; ii<in.size(); ++ii)
         if (accept[ii])
             ret.push_back(in[ii]);
+    return ret;
+}
+
+template<class T>
+vector<size_t>
+fgJaggedDims(const vector<vector<T> > & v)
+{
+    vector<size_t>      ret(v.size());
+    for (size_t ii=0; ii<ret.size(); ++ii)
+        ret[ii] = v[ii].size();
+    return ret;
+}
+
+template<class T>
+vector<vector<T> >
+fgJaggedVec(const vector<size_t> & dims,const T & initVal)
+{
+    vector<vector<T> >      ret(dims.size());
+    for (size_t ii=0; ii<ret.size(); ++ii)
+        ret[ii].resize(dims[ii],initVal);
+    return ret;
+}
+
+template<class T>
+vector<vector<T> >
+fgVecOfVecs(size_t dim0,size_t dim1,const T & initVal)
+{
+    vector<vector<T> >      ret(dim0);
+    for (size_t ii=0; ii<ret.size(); ++ii)
+        ret[ii].resize(dim1,initVal);
     return ret;
 }
 

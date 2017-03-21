@@ -21,36 +21,6 @@
 using namespace std;
 
 void
-fgReadp(std::istream & is,FgMorph & m)
-{
-    fgReadp(is,m.name);
-    fgReadp(is,m.verts);
-}
-
-void
-fgWritep(std::ostream & os,const FgMorph & m)
-{
-    fgWritep(os,m.name);
-    fgWritep(os,m.verts);
-}
-
-void
-fgReadp(std::istream & is,FgIndexedMorph & m)
-{
-    fgReadp(is,m.name);
-    fgReadp(is,m.baseInds);
-    fgReadp(is,m.verts);
-}
-
-void
-fgWritep(std::ostream & os,const FgIndexedMorph & m)
-{
-    fgWritep(os,m.name);
-    fgWritep(os,m.baseInds);
-    fgWritep(os,m.verts);
-}
-
-void
 fgReadp(std::istream & is,FgMarkedVert & m)
 {
     fgReadp(is,m.idx);
@@ -62,78 +32,6 @@ fgWritep(std::ostream & os,const FgMarkedVert & m)
 {
     fgWritep(os,m.idx);
     fgWritep(os,m.label);
-}
-
-void
-fgAccDeltaMorphs(
-    const vector<FgMorph> &     deltaMorphs,
-    const FgFlts &              coord,
-    FgVerts &                   accVerts)
-{
-    FGASSERT(deltaMorphs.size() == coord.size());
-    for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
-        const FgMorph &     morph = deltaMorphs[ii];
-        FGASSERT(morph.verts.size() == accVerts.size());
-        for (size_t jj=0; jj<accVerts.size(); ++jj)
-            accVerts[jj] += morph.verts[jj] * coord[ii];
-    }
-}
-
-void
-fgAccTargetMorphs(
-    const FgVerts &             allVerts,
-    const vector<FgIndexedMorph> & targMorphs,
-    const FgFlts &              coord,
-    FgVerts &                   accVerts)
-{
-    FGASSERT(targMorphs.size() == coord.size());
-    size_t          numTargVerts = 0;
-    for (size_t ii=0; ii<targMorphs.size(); ++ii)
-        numTargVerts += targMorphs[ii].baseInds.size();
-    FGASSERT(accVerts.size() + numTargVerts == allVerts.size());
-    size_t          idx = accVerts.size();
-    for (size_t ii=0; ii<targMorphs.size(); ++ii) {
-        const FgUints &     inds = targMorphs[ii].baseInds;
-        for (size_t jj=0; jj<inds.size(); ++jj) {
-            size_t          baseIdx = inds[jj];
-            FgVect3F        del = allVerts[idx++] - allVerts[baseIdx];
-            accVerts[baseIdx] += del * coord[ii];
-        }
-    }
-}
-
-Fg3dMesh::Fg3dMesh(
-    const FgVerts &                     verts,
-    const Fg3dSurface &                 surf)
-    :
-    verts(verts),
-    surfaces(fgSvec(surf))
-{
-    checkConsistency();
-}
-
-Fg3dMesh::Fg3dMesh(
-    const FgVerts &                     verts,
-    const std::vector<Fg3dSurface> &    surfaces)
-    :
-    verts(verts)
-{
-    addSurfaces(surfaces);
-    checkConsistency();
-}
-
-Fg3dMesh::Fg3dMesh(
-    const FgVerts &                     verts,
-    const std::vector<FgVect2F> &       uvs,
-    const std::vector<Fg3dSurface> &    surfaces,
-    const std::vector<FgMorph> &        morphs)
-    : 
-    verts(verts),
-    uvs(uvs),
-    deltaMorphs(morphs)
-{
-    addSurfaces(surfaces);
-    checkConsistency();
 }
 
 size_t
@@ -239,11 +137,11 @@ Fg3dMesh::surfPointNum() const
 }
 
 FgVect3F
-Fg3dMesh::surfPointPos(const FgVerts & verts,size_t num) const
+Fg3dMesh::surfPointPos(const FgVerts & verts_,size_t num) const
 {
     for (size_t ss=0; ss<surfaces.size(); ss++) {
         if (num < surfaces[ss].surfPoints.size())
-            return surfaces[ss].surfPointPos(verts,num);
+            return surfaces[ss].surfPointPos(verts_,num);
         else
             num -= surfaces[ss].surfPoints.size();
     }
@@ -274,15 +172,6 @@ Fg3dMesh::surfPointsAsVertLabels() const
     return ret;
 }
 
-size_t
-Fg3dMesh::numTargetMorphVerts() const
-{
-    size_t      ret = 0;
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        ret += targetMorphs[ii].verts.size();
-    return ret;
-}
-
 FgString
 Fg3dMesh::morphName(size_t idx) const
 {
@@ -304,28 +193,28 @@ Fg3dMesh::morphNames() const
 }
 
 FgValid<size_t>
-Fg3dMesh::findDeltaMorph(const FgString & name) const
+Fg3dMesh::findDeltaMorph(const FgString & name_) const
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        if (FgString(deltaMorphs[ii].name) == name)
+        if (FgString(deltaMorphs[ii].name) == name_)
             return FgValid<size_t>(ii);
     return FgValid<size_t>();
 }
 
 FgValid<size_t>
-Fg3dMesh::findTargMorph(const FgString & name) const
+Fg3dMesh::findTargMorph(const FgString & name_) const
 {
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        if (targetMorphs[ii].name == name)
+        if (targetMorphs[ii].name == name_)
             return FgValid<size_t>(ii);
     return FgValid<size_t>();
 }
 
 FgValid<size_t>
-Fg3dMesh::findMorph(const FgString & name) const
+Fg3dMesh::findMorph(const FgString & name_) const
 {
     for (size_t ii=0; ii<numMorphs(); ++ii)
-        if (morphName(ii) == name)
+        if (morphName(ii) == name_)
             return FgValid<size_t>(ii);
     return FgValid<size_t>();
 }
@@ -341,7 +230,7 @@ Fg3dMesh::morph(
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
         deltaMorphs[ii].applyAsDelta(outVerts,morphCoord[cnt++]);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        targetMorphs[ii].applyAsTarget(verts,outVerts,morphCoord[cnt++]);
+        targetMorphs[ii].applyAsTarget_(verts,morphCoord[cnt++],outVerts);
 }
 
 void
@@ -369,7 +258,7 @@ Fg3dMesh::morph(
             deltaMorphs[ii].applyAsDelta(ret,deltaMorphCoord[ii]);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
         if (targMorphCoord[ii] != 0.0f)
-            targetMorphs[ii].applyAsTarget(verts,ret,targMorphCoord[ii]);
+            targetMorphs[ii].applyAsTarget_(verts,targMorphCoord[ii],ret);
     return ret;
 }
 
@@ -382,7 +271,7 @@ Fg3dMesh::morphSingle(size_t idx,float val) const
     else {
         idx -= deltaMorphs.size();
         FGASSERT(idx < targetMorphs.size());
-        targetMorphs[idx].applyAsTarget(verts,ret,val);
+        targetMorphs[idx].applyAsTarget_(verts,val,ret);
     }
     return ret;
 }
@@ -428,10 +317,10 @@ Fg3dMesh::addDeltaMorph(const FgMorph & morph)
 }
 
 void
-Fg3dMesh::addDeltaMorphFromTarget(const FgString & name,const FgVerts & targetShape)
+Fg3dMesh::addDeltaMorphFromTarget(const FgString & name_,const FgVerts & targetShape)
 {
     FgMorph                 dm;
-    dm.name = name;
+    dm.name = name_;
     dm.verts = targetShape - verts;
     addDeltaMorph(dm);
 }
@@ -450,11 +339,11 @@ Fg3dMesh::addTargMorph(const FgIndexedMorph & morph)
 }
 
 void
-Fg3dMesh::addTargMorph(const FgString & name,const FgVerts & targetShape)
+Fg3dMesh::addTargMorph(const FgString & name_,const FgVerts & targetShape)
 {
     FGASSERT(targetShape.size() == verts.size());
     FgIndexedMorph       tm;
-    tm.name = name;
+    tm.name = name_;
     FgVerts             deltas = targetShape - verts;
     float               maxMag = 0.0f;
     for (size_t ii=0; ii<deltas.size(); ++ii)
@@ -471,13 +360,23 @@ Fg3dMesh::addTargMorph(const FgString & name,const FgVerts & targetShape)
     addTargMorph(tm);
 }
 
+FgVerts
+Fg3dMesh::poseShape(const FgVerts & allVerts,const std::map<FgString,float> & poseVals) const
+{
+    FgVerts     ret = fgHead(allVerts,verts.size()),
+                base = ret;
+    fgPoseDeltas(poseVals,deltaMorphs,ret);
+    fgPoseDeltas(poseVals,targetMorphs,base,fgRest(allVerts,verts.size()),ret);
+    return ret;
+}
+
 void
 Fg3dMesh::addSurfaces(
     const std::vector<Fg3dSurface> & surfs)
 {
     for (size_t ss=0; ss<surfs.size(); ++ss)
         surfaces.push_back(surfs[ss]);
-    checkConsistency();
+    checkValidity();
 }
 
 void
@@ -518,7 +417,7 @@ Fg3dMesh::convertToTris()
 }
 
 void
-Fg3dMesh::checkConsistency()
+Fg3dMesh::checkValidity()
 {
     uint    numVerts = uint(verts.size());
     for (size_t ss=0; ss<surfaces.size(); ++ss)
@@ -550,20 +449,31 @@ fgWritep(std::ostream & os,const Fg3dMesh & mesh)
 }
 
 Fg3dMesh
-fg3dMesh(const FgVerts & v)
+fg3dMesh(const FgVect3UIs & tris,const FgVerts & verts)
 {
-    Fg3dMesh    ret;
-    ret.verts = v;
+    Fg3dMesh        ret;
+    ret.surfaces.resize(1);
+    ret.surfaces[0].tris.vertInds = tris;
+    ret.verts = verts;
     return ret;
 }
 
 std::set<FgString>
-fgMorphs(const vector<Fg3dMesh> & meshes)
+fgMorphs(const Fg3dMeshes & meshes)
 {
     std::set<FgString>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
         fgAppend(ret,meshes[ii].morphNames());
     return ret;
+}
+
+FgPoses
+fgPoses(const Fg3dMeshes & meshes)
+{
+    std::set<FgPose>    ps;
+    for (size_t ii=0; ii<meshes.size(); ++ii)
+        fgAppend(ps,fgPoses(meshes[ii]));
+    return vector<FgPose>(ps.begin(),ps.end());
 }
 
 static
@@ -660,24 +570,24 @@ subdivideTris(
                     wgtXform0(0),
                     wgtXform1(0),
                     wgtXform2(0);
-    wgtXform.elm(2,0) = -1.0;
-    wgtXform.elm(0,1) = -1.0;
-    wgtXform.elm(1,2) = -1.0;
+    wgtXform.cr(2,0) = -1.0;
+    wgtXform.cr(0,1) = -1.0;
+    wgtXform.cr(1,2) = -1.0;
     wgtXform0[0] = 1.0f;
     wgtXform0[1] = -1.0f;
     wgtXform0[2] = -1.0f;
-    wgtXform0.elm(1,1) = 2;
-    wgtXform0.elm(2,2) = 2;
+    wgtXform0.cr(1,1) = 2;
+    wgtXform0.cr(2,2) = 2;
     wgtXform1[0] = -1.0f;
     wgtXform1[1] = 1.0f;
     wgtXform1[2] = -1.0f;
-    wgtXform1.elm(2,1) = 2;
-    wgtXform1.elm(0,2) = 2;
+    wgtXform1.cr(2,1) = 2;
+    wgtXform1.cr(0,2) = 2;
     wgtXform2[0] = -1.0f;
     wgtXform2[1] = -1.0f;
     wgtXform2[2] = 1.0f;
-    wgtXform2.elm(0,1) = 2;
-    wgtXform2.elm(1,2) = 2;
+    wgtXform2.cr(0,1) = 2;
+    wgtXform2.cr(1,2) = 2;
     // Update surface points:
     for (size_t ii=0; ii<sps.size(); ++ii) {
         uint        facetIdx = sps[ii].triEquivIdx * 4;

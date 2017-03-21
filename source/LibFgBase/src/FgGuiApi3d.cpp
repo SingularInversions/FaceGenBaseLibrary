@@ -240,8 +240,8 @@ FgGuiApi3d::ctlDrag(bool left, FgVect2UI winSize,FgVect2I delta,FgMat44F toOics)
     if (lastCtlClick.valid) {
         // Interestingly, the concept of a delta vector doesn't work in projective space;
         // a homogenous component equal to zero is a direction. Conceptually, we can't
-        // transform a delta in OICS to HCS without knowing it's absolute position since. Hence
-        // we transform the end point back into HCS and take the difference:
+        // transform a delta in OICS to FHCS without knowing it's absolute position since. Hence
+        // we transform the end point back into FHCS and take the difference:
         const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
         FgVect3F                    vertPos0Hcs = meshes[lastCtlClick.meshIdx].verts[lastCtlClick.vertIdx];
         FgVect4F                    vertPos0Oics = toOics * fgAsHomogVec(vertPos0Hcs);

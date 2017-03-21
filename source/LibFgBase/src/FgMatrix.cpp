@@ -14,15 +14,15 @@
 using namespace std;
 
 FgMatrixC<FgMatrixD,2,2>
-fgPartition(const FgMatrixD & m,uint loSize)
+fgPartition(const FgMatrixD & m,size_t loSize)
 {
     FgMatrixC<FgMatrixD,2,2>    ret;
     FGASSERT(m.nrows == m.ncols);
-    uint                        hiSize = m.ncols - loSize;
-    ret.elem(0,0) = m.subMatrix(0,0,loSize,loSize);
-    ret.elem(0,1) = m.subMatrix(0,loSize,loSize,hiSize);
-    ret.elem(1,0) = m.subMatrix(loSize,0,hiSize,loSize);
-    ret.elem(1,1) = m.subMatrix(loSize,loSize,hiSize,hiSize);
+    size_t                      hiSize = m.ncols - loSize;
+    ret.rc(0,0) = m.subMatrix(0,0,loSize,loSize);
+    ret.rc(0,1) = m.subMatrix(0,loSize,loSize,hiSize);
+    ret.rc(1,0) = m.subMatrix(loSize,0,hiSize,loSize);
+    ret.rc(1,1) = m.subMatrix(loSize,loSize,hiSize,hiSize);
     return ret;
 }
 

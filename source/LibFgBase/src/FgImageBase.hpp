@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     Aug 27, 2004
 //
-// Simple left-to-right, top-to-bottom, tightly-packed, unaligned image templated by pixel type.
+// Simple left-to-right, top-to-bottom (row major), tightly-packed, unaligned image templated by pixel type.
 // 
 // INVARIANTS:
 //
@@ -29,6 +29,10 @@
 //    X - viewer’s right
 //    Y - viewer’s down 
 //
+// USAGE NOTES:
+//
+// * posIrcs = posIpcs - 0.5 (thus floor(posIpcs) rounds to nearest int posIpcs)
+// * posIpcs = fgMapMul(posIucs,image.dims())
 
 #ifndef FGIMGBASE_HPP
 #define FGIMGBASE_HPP
@@ -119,15 +123,15 @@ struct  FgImage
     empty() const
     {return (m_data.empty()); }
 
+    // Element access by (X,Y) / (column,row):
     T &
-    elem(size_t ircs_x,size_t ircs_y)
+    xy(size_t ircs_x,size_t ircs_y)
     {
         FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
         return m_data[ircs_y*m_dims[0]+ircs_x];
     }
-
     const T &
-    elem(size_t ircs_x,size_t ircs_y) const
+    xy(size_t ircs_x,size_t ircs_y) const
     {
         FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
         return m_data[ircs_y*m_dims[0]+ircs_x];
@@ -144,21 +148,21 @@ struct  FgImage
 
     T &
     operator[](FgVect2UI ircsPos)
-    {return elem(ircsPos[0],ircsPos[1]); }
+    {return xy(ircsPos[0],ircsPos[1]); }
 
     const T &
     operator[](FgVect2UI ircsPos) const
-    {return elem(ircsPos[0],ircsPos[1]); }
+    {return xy(ircsPos[0],ircsPos[1]); }
 
     template<typename U>
     T &
     operator[](const FgIter<U,2> & it)
-    {return elem(it()[0],it()[1]); }
+    {return xy(it()[0],it()[1]); }
 
     template<typename U>
     const T &
     operator[](const FgIter<U,2> & it) const
-    {return elem(it()[0],it()[1]); }
+    {return xy(it()[0],it()[1]); }
 
     T *
     rowPtr(uint row)
@@ -173,7 +177,7 @@ struct  FgImage
     paint(uint ircs_x,uint ircs_y,T val)
     {
         if ((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]))
-            elem(ircs_x,ircs_y) = val;
+            xy(ircs_x,ircs_y) = val;
     }
     void
     paint(FgVect2UI ircs,T val)
@@ -207,6 +211,7 @@ typedef FgImage<FgRgbaUB>   FgImgRgbaUb;
 typedef FgImage<FgRgbaUS>   FgImgRgbaUs;
 typedef FgImage<FgRgbaF>    FgImgRgbaF;
 typedef FgImage<FgVect3F>   FgImg3F;
+typedef FgImage<FgVect4F>   FgImg4F;
 typedef FgImage<FgVect4UC>  FgImg4UC;
 
 typedef vector<FgImgRgbaUb> FgImgs;

@@ -13,6 +13,8 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 
+typedef FgMatrixV<FgVect3D>     FgMatV3D;
+
 template<class Matrix>
 std::ostream &
 fgMatOstream(std::ostream& ss,const Matrix & mm)
@@ -38,7 +40,7 @@ fgMatOstream(std::ostream& ss,const Matrix & mm)
             ss << fgnl;
             ss << "[ ";
             for (uint col=0; col<mm.numCols(); col++)
-                ss << mm.elem(row,col) << "  ";
+                ss << mm.rc(row,col) << "  ";
             ss << "]";
         }
         ss << fgpop;
@@ -124,7 +126,7 @@ fgRmsd(const vector<T> & a,const vector<T> & b)
 
 // Partition a square matrix into 4 matrices symmetrically:
 FgMatrixC<FgMatrixD,2,2>
-fgPartition(const FgMatrixD & m,uint loSize);
+fgPartition(const FgMatrixD & m,size_t loSize);
 
 // Join 4 matrices into a single matrix (oppposite of partition):
 FgMatrixD

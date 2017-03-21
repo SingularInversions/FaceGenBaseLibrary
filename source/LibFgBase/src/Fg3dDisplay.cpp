@@ -337,44 +337,36 @@ resetView(
 }
 
 static
-FGLINK(linkMorphNames)
+FGLINK(lnkPoses)
 {
     FGLINKARGS(1,1);
     const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    FgStrings &          morphNames = outputs[0]->valueRef();
-    set<FgString>               ns = fgMorphs(meshes);
-    morphNames.clear();
-    morphNames.assign(ns.begin(),ns.end());
+    FgPoses &                   poses = outputs[0]->valueRef();
+    poses = fgPoses(meshes);
 }
 
 static
-FGLINK(linkMorphs)
+FGLINK(lnkPoseShape)
 {
     FGLINKARGS(4,1);
     const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    const FgVertss &     allVertss = inputs[1]->valueRef();
-    const FgStrings &    morphNames = inputs[2]->valueRef();
-    vector<double>              morphVals = inputs[3]->valueRef();
+    const FgVertss &            allVertss = inputs[1]->valueRef();
+    const FgPoses &             poses = inputs[2]->valueRef();
+    vector<double>              poseVals = inputs[3]->valueRef();
+    FgVertss &                  vertss = outputs[0]->valueRef();
     FGASSERT(meshes.size() == allVertss.size());
-    // If morph list has changed but morphVals not yet updated (by GUI), assume all zero.
-    // TODO: Keep morphs ls as a label:val dictionary.
-    if (morphNames.size() != morphVals.size()) {
-        morphVals.clear();
-        morphVals.resize(morphNames.size(),0.0);
+    // If pose list has changed but poseVals not yet updated (by GUI), assume all zero.
+    // TODO: Keep poses as a label:val dictionary.
+    if (poses.size() != poseVals.size()) {
+        poseVals.clear();
+        poseVals.resize(poses.size(),0.0);
     }
-    FgVertss &           vertss = outputs[0]->valueRef();
+    map<FgString,float>     poseMap;
+    for (size_t ii=0; ii<poses.size(); ++ii)
+        poseMap[poses[ii].name] = poseVals[ii];
     vertss.resize(meshes.size());
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Fg3dMesh &        mesh = meshes[ii];
-        const FgVerts &         allVerts = allVertss[ii];
-        vector<float>           morphCoord(mesh.numMorphs(),0.0f);
-        for (size_t jj=0; jj<morphNames.size(); ++jj) {
-            FgValid<size_t>     idx = mesh.findMorph(morphNames[jj]);
-            if (idx.valid())
-                morphCoord[idx.val()] = morphVals[jj];
-        }
-        mesh.morph(allVerts,morphCoord,vertss[ii]);
-    }
+    for (size_t ii=0; ii<meshes.size(); ++ii)
+        vertss[ii] = meshes[ii].poseShape(allVertss[ii],poseMap);
 }
 
 static
@@ -453,18 +445,18 @@ morphSetTxt(FgDgn<vector<double> > valsN,size_t idx,const FgString & str)
 
 static
 void
-expr_load(FgDgn<FgStrings > labelsN,FgDgn<vector<double> > valsN)
+expr_load(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
 {
     FgOpt<FgString> fname = fgGuiDialogFileLoad("FaceGen XML expression file",fgSvec<string>("xml"));
     if (fname.valid()) {
-        const FgStrings &        labels = g_gg.getVal(labelsN);
-        vector<double> &                vals = g_gg.getRef(valsN);
-        FGASSERT(labels.size() == vals.size());
+        const FgPoses &         poses = g_gg.getVal(posesN);
+        vector<double> &        vals = g_gg.getRef(valsN);
+        FGASSERT(poses.size() == vals.size());
         vector<pair<FgString,double> >  lvs;
         fgLoadXml(fname.val(),lvs);
         for (size_t ii=0; ii<lvs.size(); ++ii) {
-            size_t      idx = fgFindFirstIdx(labels,lvs[ii].first);
-            if (idx < labels.size())
+            size_t      idx = fgFindFirstIdx(poses,lvs[ii].first);
+            if (idx < poses.size())
                 vals[idx] = lvs[ii].second;
         }
     }
@@ -472,17 +464,17 @@ expr_load(FgDgn<FgStrings > labelsN,FgDgn<vector<double> > valsN)
 
 static
 void
-expr_save(FgDgn<FgStrings > labelsN,FgDgn<vector<double> > valsN)
+expr_save(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
 {
     FgOpt<FgString> fname = fgGuiDialogFileSave("FaceGen XML expression file","xml");
     if (fname.valid()) {
-        const FgStrings &        labels = g_gg.getVal(labelsN);
-        const vector<double> &          vals = g_gg.getVal(valsN);
-        FGASSERT(labels.size() == vals.size());
+        const FgPoses &             poses = g_gg.getVal(posesN);
+        const vector<double> &      vals = g_gg.getVal(valsN);
+        FGASSERT(poses.size() == vals.size());
         vector<pair<FgString,double> >  lvs;
-        lvs.reserve(labels.size());
-        for (size_t ii=0; ii<labels.size(); ++ii)
-            lvs.push_back(make_pair(labels[ii],vals[ii]));
+        lvs.reserve(poses.size());
+        for (size_t ii=0; ii<poses.size(); ++ii)
+            lvs.push_back(make_pair(poses[ii].name,vals[ii]));
         fgSaveXml(fname.val(),lvs);
     }
 }
@@ -490,34 +482,34 @@ expr_save(FgDgn<FgStrings > labelsN,FgDgn<vector<double> > valsN)
 // Called by FgGuiSplitScroll when 'labelsN' changes:
 static 
 FgGuiPtrs
-getPanes(
-    FgDgn<FgStrings >    labelsN,
-    FgDgn<vector<double> >      valsN,
-    bool                        textEditBoxes)
+getPanes(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN,bool textEditBoxes)
 {
     // Since this window is dynamic, its values are stored as a vector in a single node, to
     // avoid having to edit the depgraph with each update.
     // Do not use const ref as DG may re-allocate:
-    FgStrings            labels = g_gg.getVal(labelsN);
-    vector<double> &            output = g_gg.dg.nodeValRef(valsN);
-    if (output.size() != labels.size()) {   // past value is stale
+    const FgPoses &         poses = g_gg.getVal(posesN);
+    vector<double> &        output = g_gg.dg.nodeValRef(valsN);
+    if (output.size() != poses.size()) {   // past value is stale
         output.clear();
-        output.resize(labels.size(),0.0);
+        output.resize(poses.size());
+        for (size_t ii=0; ii<output.size(); ++ii)
+            output[ii] = poses[ii].neutral;
     }
     FgGuiPtrs       buttons;
     buttons.push_back(fgGuiButton("Set All Zero",boost::bind(setAllZero,valsN)));
-    buttons.push_back(fgGuiButton("Load File",boost::bind(expr_load,labelsN,valsN)));
-    buttons.push_back(fgGuiButton("Save File",boost::bind(expr_save,labelsN,valsN)));
+    buttons.push_back(fgGuiButton("Load File",boost::bind(expr_load,posesN,valsN)));
+    buttons.push_back(fgGuiButton("Save File",boost::bind(expr_save,posesN,valsN)));
     FgGuiPtrs       sliders;
     sliders.push_back(fgGuiSplit(true,buttons));
     sliders.push_back(fgGuiSpacer(0,7));
-    for (size_t ii=0; ii<labels.size(); ++ii) {
+    for (size_t ii=0; ii<poses.size(); ++ii) {
         FgGuiApiSlider      slider;
         slider.updateFlagIdx = g_gg.addUpdateFlag(valsN);     // Node leak but what can you do.
         slider.getInput = boost::bind(getInput,valsN,ii);
         slider.setOutput = boost::bind(setOutput,valsN,ii,_1);
-        slider.label = labels[ii];
-        slider.range = FgVectD2(0,1);
+        slider.label = poses[ii].name;
+        slider.range[0] = poses[ii].bounds[0];
+        slider.range[1] = poses[ii].bounds[1];
         slider.tickSpacing = 0.1;
         if (textEditBoxes) {
             FgGuiApiTextEdit    te;
@@ -601,6 +593,37 @@ assignTri(
     }
 }
 
+// Currently only works on tri facets:
+static
+void
+assignPaint(
+    FgDgn<Fg3dMeshes> meshesN,FgDgn<FgVertss> allVertssN,FgDgn<size_t> surfIdx,
+    FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
+{
+    if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
+        return;
+    vector<Fg3dMesh> &          meshes = g_gg.getRef(meshesN);
+    const FgVertss &            vertss = g_gg.getVal(allVertssN);
+    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
+    if (vpt.valid()) {
+        FgMeshesIntersect       isct = vpt.val();
+        size_t                  dstSurfIdx = g_gg.getVal(surfIdx);
+        Fg3dMesh &              mesh = meshes[isct.meshIdx];
+        if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < mesh.surfaces.size())) {
+            FgVect3UI           tri = mesh.surfaces[isct.surfIdx].getTriEquiv(isct.surfPnt.triEquivIdx);
+            vector<Fg3dSurface> surfs = fgSplitSurface(mesh.surfaces[isct.surfIdx]);
+            for (size_t ss=0; ss<surfs.size(); ++ss) {
+                if (fgContains(surfs[ss].tris.vertInds,tri)) {
+                    mesh.surfaces[dstSurfIdx].merge(surfs[ss]);
+                    surfs.erase(surfs.begin()+ss);
+                    mesh.surfaces[isct.surfIdx] = fgMergeSurfaces(surfs);
+                    return;
+                }
+            }
+        }
+    }
+}
+
 // Modifies 'api' to add it's hooks:
 static
 FgGuiPtr
@@ -640,8 +663,10 @@ fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDg
     }
     FgGuiRadio          surfChoice = fgGuiRadio(surfNames);
     api.shiftRightDragAction = boost::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
+    api.ctrlShiftMiddleClickAction = boost::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
     FgGuiPtr            facets = fgGuiSplit(false,
-        fgGuiText("Assign tri to surface selection: shift-right-drag"),
+        fgGuiText("Assign tri to surface selection: shift-right-drag\n"
+            "Assign connected tris to surface: shift-middle-click"),
         fgGuiGroupbox("Surface Selection",surfChoice.win),
         fgGuiCheckbox("Color by surface",api.colorBySurface));
     tabs.push_back(FgGuiTab("Points",true,points));
@@ -666,12 +691,13 @@ fgGui3dCtls(
     bool                        textEditBoxes)
 {
     FgGui3dCtls                 ret;
-    FgDgn<FgStrings>            morphNamesN = g_gg.addNode(FgStrings(),"morphNames");
-    g_gg.addLink(linkMorphNames,meshesN,morphNamesN);
+    FgDgn<FgPoses>              posesN = g_gg.addNode(FgPoses(),"morphNames");
+    g_gg.addLink(lnkPoses,meshesN,posesN);
     FgDgn<vector<double> >      morphValsN = g_gg.addInput(vector<double>(),"morphVals");
     ret.morphedVertssN = g_gg.addNode(FgVertss(),"morphedVertss");
-    g_gg.addLink(linkMorphs,fgUints(meshesN,allVertssN,morphNamesN,morphValsN),ret.morphedVertssN);
-    ret.morphCtls = fgGuiSplitScroll(morphNamesN,boost::bind(getPanes,morphNamesN,morphValsN,textEditBoxes),3);
+    g_gg.addLink(lnkPoseShape,fgUints(meshesN,allVertssN,posesN,morphValsN),ret.morphedVertssN);
+    ret.morphCtls = fgGuiSplitScroll(g_gg.addUpdateFlag(posesN),
+        boost::bind(getPanes,posesN,morphValsN,textEditBoxes),3);
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     string                      uid = "3d";
     FgStrings            panTiltOptions = fgSvec<FgString>("Pan / Tilt","Unconstrained");

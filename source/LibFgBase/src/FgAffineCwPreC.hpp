@@ -61,7 +61,7 @@ struct  FgAffineCwPreC
         FgMatrixC<T,dim,ncols> ret;
         for (uint row=0; row<dim; ++row)
             for (uint col=0; col<ncols; ++col)
-                ret.elm(col,row) = m_scales[row] * (vec.elm(col,row) + m_trans[row]);
+                ret.cr(col,row) = m_scales[row] * (vec.cr(col,row) + m_trans[row]);
         return ret;
     }
 };

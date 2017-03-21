@@ -19,6 +19,8 @@
 
 using std::string;
 
+typedef std::vector<std::string>    FgStrs;
+
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors:
 template<class T>
@@ -104,7 +106,26 @@ fgPad(const string & str,size_t len,char ch=' ');
 
 // Inspired by Python join():
 string
-fgConcat(const vector<string> & strings,const string & separator);
+fgCat(const vector<string> & strings,const string & separator);
+
+inline
+string
+fgCat(const string & s0,const string & s1)
+{
+    string      ret(s0);
+    ret.append(s1);
+    return ret;
+}
+
+inline
+string
+fgCat(const string & s0,const string & s1,const string & s2)
+{
+    string      ret(s0);
+    ret.append(s1);
+    ret.append(s2);
+    return ret;
+}
 
 // std::stoi doesn't tell if you your string is a valid integer representation.
 // Not currently safe for overflow values:
@@ -126,5 +147,13 @@ fgBack(string & s)
     FGASSERT(!s.empty());
     return *(--s.end());
 }
+
+bool
+fgContains(const std::string & str,char c);
+
+inline
+bool
+fgContains(const std::string & str,const std::string & pattern)
+{return (str.find(pattern) != string::npos); }
 
 #endif

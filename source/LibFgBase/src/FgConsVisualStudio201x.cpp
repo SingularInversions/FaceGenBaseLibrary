@@ -17,15 +17,44 @@
 
 using namespace std;
 
+static
 string
-fgConsVsPreprocessorDefs(bool,const FgConsProj &);
+fgConsVsPreprocessorDefs(
+    bool                release,
+    const FgConsProj &  proj)
+{
+    string  ret = "WIN32";
+    if (release)
+        ret += ";NDEBUG";
+    else
+        ret += ";_DEBUG";
+    if (proj.app) {
+        if (proj.pureGui)
+            ret += ";_WINDOWS";
+        else
+            ret += ";_CONSOLE";
+    }
+    else {
+        if (proj.dll)
+            ret += ";_WINDOWS;_USRDLL;TESTDLL_EXPORTS";
+        else
+            ret += ";_LIB";
+    }
+    ret +=
+        ";_CRT_SECURE_NO_DEPRECATE=1"
+        ";_SCL_SECURE_NO_DEPRECATE=1"
+        ";_CRT_SECURE_NO_WARNINGS";
+    for (size_t ii=0; ii<proj.defs.size(); ++ii)
+        ret += ";" + proj.defs[ii];
+    return ret;
+}
 
 static
 void
 writeVcxproj(
     const FgConsProj &          proj,
     const map<string,string> &  guidMap,
-    uint                        vsver)      // 10 - VS2010, 12 - VS2012, 13 - VS2013
+    uint                        vsver)      // 10 - VS2010, 12 - VS2012, 13 - VS2013, 15 = VS2015
 {
     if (proj.srcGroups.empty())
         fgThrow("Project has no source files",proj.name);
@@ -39,6 +68,8 @@ writeVcxproj(
     string      toolsVersion = "4";
     if (vsver == 13)
         toolsVersion = "12";
+    else if (vsver == 15)
+        toolsVersion = "14";
     ofs << 
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
         "<Project DefaultTargets=\"Build\" ToolsVersion=\""+toolsVersion+".0\" xmlns=\""
@@ -80,6 +111,8 @@ writeVcxproj(
                 ofs << "    <PlatformToolset>v110</PlatformToolset>\n";
             else if (vsver == 13)
                 ofs << "    <PlatformToolset>v120</PlatformToolset>\n";
+            else if (vsver == 15)
+                ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
             ofs <<
                 "    <CharacterSet>" << (proj.unicode ? "Unicode" : "MultiByte") << "</CharacterSet>\n";
             if (cc == 1)
@@ -325,7 +358,7 @@ static
 void
 writeSln(
     const FgConsSolution &  sln,
-    uint                    vsver)  // 10, 12, 13
+    uint                    vsver)  // 10, 12, 13, 15
 {
     // Create solution file:
     string          rootName("VisualStudio"),
@@ -387,10 +420,12 @@ fgConsVs201x(FgConsSolution sln)
         writeVcxproj(sln.projects[ii],guidMap,10);
         writeVcxproj(sln.projects[ii],guidMap,12);
         writeVcxproj(sln.projects[ii],guidMap,13);
+        writeVcxproj(sln.projects[ii],guidMap,15);
     }
     writeSln(sln,10);
     writeSln(sln,12);
     writeSln(sln,13);
+    writeSln(sln,15);
 }
 
 // */

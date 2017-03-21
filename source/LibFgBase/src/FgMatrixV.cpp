@@ -62,12 +62,12 @@ double      fgMatSumPrecise(const FgMatrixD & mat)
 }
 
 FgMatrixD
-fgRelDiff(const FgMatrixD & a,const FgMatrixD & b)
+fgRelDiff(const FgMatrixD & a,const FgMatrixD & b,double minAbs)
 {
     FgMatrixD   ret;
     FGASSERT(a.dims() == b.dims());
     ret.resize(a.dims());
-    ret.m_data = fgRelDiff(a.m_data,b.m_data);
+    ret.m_data = fgRelDiff(a.m_data,b.m_data,minAbs);
     return ret;
 }
 

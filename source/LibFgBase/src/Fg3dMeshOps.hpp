@@ -39,7 +39,8 @@ fgCreateSphere(float radius,uint subdivisions);
 Fg3dMesh
 fgRemoveDuplicateFacets(const Fg3dMesh &);
 
-// Removes vertices & uvs that are not referenced by a surface or marked vertex:
+// Removes vertices & uvs that are not referenced by a surface or marked vertex.
+// Retains only those morphs which affect the remaining vertices:
 Fg3dMesh
 fgRemoveUnusedVerts(const Fg3dMesh &);
 
@@ -126,7 +127,7 @@ struct  FgMeshMirror
     vector<uint>    mirrorInds;
 };
 // Mirrors geometry around X=0 plane. All input verts must have X>=0. Tris only.
-// Surface points preserved but not mirrored:
+// Surface points preserved but not mirrored. Morphs removed.
 FgMeshMirror
 fgMeshMirrorX(const Fg3dMesh &);
 

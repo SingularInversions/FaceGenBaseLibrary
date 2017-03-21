@@ -87,20 +87,20 @@ fgSimilarityApprox(
     }
     double          scale = sqrt(ranRayMag / domRayMag );
     FgMat44D        N(0.0);
-    double  Sxx = S.elm(0,0),   Sxy = S.elm(1,0),   Sxz = S.elm(2,0),
-            Syx = S.elm(0,1),   Syy = S.elm(1,1),   Syz = S.elm(2,1),
-            Szx = S.elm(0,2),   Szy = S.elm(1,2),   Szz = S.elm(2,2);
+    double  Sxx = S.cr(0,0),   Sxy = S.cr(1,0),   Sxz = S.cr(2,0),
+            Syx = S.cr(0,1),   Syy = S.cr(1,1),   Syz = S.cr(2,1),
+            Szx = S.cr(0,2),   Szy = S.cr(1,2),   Szz = S.cr(2,2);
     // Set the upper triangular elements of N not including the diagonal:
-    N.elm(1,0)=Syz-Szy;         N.elm(2,0)=Szx-Sxz;      N.elm(3,0)=Sxy-Syx;
-                                N.elm(2,1)=Sxy+Syx;      N.elm(3,1)=Szx+Sxz;
-                                                         N.elm(3,2)=Syz+Szy;
+    N.cr(1,0)=Syz-Szy;         N.cr(2,0)=Szx-Sxz;      N.cr(3,0)=Sxy-Syx;
+                                N.cr(2,1)=Sxy+Syx;      N.cr(3,1)=Szx+Sxz;
+                                                         N.cr(3,2)=Syz+Szy;
     // Since it's symmetric, set the lower triangular (not including diagonal) by:
     N += N.transpose();
     // And set the diagonal elements:
-    N.elm(0,0) = Sxx+Syy+Szz;
-    N.elm(1,1) = Sxx-Syy-Szz;
-    N.elm(2,2) = Syy-Sxx-Szz;
-    N.elm(3,3) = Szz-Sxx-Syy;
+    N.cr(0,0) = Sxx+Syy+Szz;
+    N.cr(1,1) = Sxx-Syy-Szz;
+    N.cr(2,2) = Syy-Sxx-Szz;
+    N.cr(3,3) = Szz-Sxx-Syy;
     // Calculate rotation from N per [Jain '95] fgEigs() Leaves largest eigVal in last index:
     FgQuaternionD   pose(fgEigs(N).vecs.colVec(3));
     // Calculate the 'trans' term: The transform is given by:

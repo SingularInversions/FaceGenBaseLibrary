@@ -110,8 +110,4 @@ std::cout << std::endl << "HI ! (" << __FILE__ << ": " << __LINE__       \
 #define FG_DBG_STR(str) ""
 #endif
 
-// Handy way of naming log files using current date and time (does not append a suffix):
-std::string
-fgDateTimeString();
-
 #endif

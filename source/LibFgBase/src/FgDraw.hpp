@@ -50,7 +50,7 @@ fgGraph(const std::vector<T> & data)
 {
     FgImgRgbaUb         img;
     std::vector<double> dt;
-    fgConvert_(data,dt);
+    fgCast_(data,dt);
     fgDrawBarGraph(img,dt);
     return img;
 }

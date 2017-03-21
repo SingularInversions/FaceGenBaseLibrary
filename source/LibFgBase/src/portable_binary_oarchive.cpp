@@ -62,7 +62,7 @@ void
 portable_binary_oarchive::init(unsigned int flags) {
     if(m_flags == (endian_big | endian_little)){
         boost::serialization::throw_exception(
-            portable_binary_oarchive_exception()
+            portable_binary_oarchive_exception(portable_binary_oarchive_exception::invalid_flags)
         );
     }
     if(0 == (flags & boost::archive::no_header)){

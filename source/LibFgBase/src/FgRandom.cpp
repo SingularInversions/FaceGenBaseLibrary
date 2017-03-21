@@ -24,58 +24,51 @@
 #include "FgMain.hpp"
 
 using namespace std;
-using namespace boost;
 
 struct      RNG
 {
-    variate_generator<mt19937,uniform_real<> >              genReal;
-    variate_generator<mt19937,uniform_int<unsigned int> >   genInt;
-
-    RNG() :
-        genReal(mt19937(42u),uniform_real<>()),
-        genInt(mt19937(42u),uniform_int<unsigned int>(0,numeric_limits<uint>::max()))
-    {
-        genReal.engine().seed(clock());
-        genInt.engine().seed(clock());
-    }
+    boost::random::mt19937      gen;
+    RNG() : gen(42u) {}
 };
 
 static RNG rng;
 
-double  fgRand()
-{
-    return double(rng.genReal());
-}
+uint32
+fgRandUint32()
+{return rng.gen(); }
 
 uint
 fgRandUint(uint size)
 {
-    return uint(rng.genInt()) % size;
+    uint    lim = numeric_limits<uint>::max(),
+            max = lim - (lim%size),
+            ret;
+    while ((ret = rng.gen()) > max) {}
+    return ret % size;
 }
 
 uint64
 fgRandUint64()
 {
-    uint64  hi = rng.genInt(),
-            lo = rng.genInt();
+    uint64  hi = rng.gen(),
+            lo = rng.gen();
     return (lo + (hi << 32));
 }
 
+double
+fgRand()
+{return double(fgRandUint64()) / double(numeric_limits<uint64>::max()); }
+
 void
 fgRandSeedRepeatable(uint seed)
-{
-    // seed() is stupidly defined requiring explicit uint casting below:
-    rng.genReal.engine().seed(boost::uint32_t(seed));
-    rng.genInt.engine().seed(boost::uint32_t(seed));
-}
+{rng.gen = boost::random::mt19937(seed); }
 
 double
 fgRandNormal(double mean,double stdev)
 {
     // Polar (Box-Muller) method; See Knuth v2, 3rd ed, p122.
     double  x, y, r2;
-    do
-    {
+    do {
         x = -1 + 2 * fgRand();
         y = -1 + 2 * fgRand();
         // see if it is in the unit circle:
@@ -85,6 +78,15 @@ fgRandNormal(double mean,double stdev)
 
     // Box-Muller transform:
     return (mean + (stdev * y * sqrt (-2.0 * log (r2) / r2)));
+}
+
+FgDbls
+fgRandNormals(size_t num,double mean,double stdev)
+{
+    FgDbls      ret(num);
+    for (size_t ii=0; ii<num; ++ii)
+        ret[ii] = fgRandNormal(mean,stdev);
+    return ret;
 }
 
 static
@@ -109,12 +111,6 @@ fgRandString(uint numChars)
     for (uint ii=0; ii<numChars; ++ii)
         ret = ret + randChar();
     return ret;
-}
-
-bool
-randFlip()
-{
-    return (rng.genInt() > (numeric_limits<uint>::max()/2));
 }
 
 void
@@ -142,14 +138,14 @@ fgRandomTest(const FgArgs &)
     for (size_t xx=0; xx<sz; ++xx) {
         size_t      hgt = fgRound(histogram[xx] * sz * hgtRatio / binScale);
         for (size_t yy=0; yy<hgt; ++yy)
-            img.elem(xx,yy) = FgRgbaUB(255); }
+            img.xy(xx,yy) = FgRgbaUB(255); }
 
     // Superimpose a similarly scaled Gaussian:
     FgAffine1D      histToRand = randToHist.inverse();
     for (size_t xx=0; xx<sz; ++xx) {
         double      val = std::exp(-0.5 * fgSqr(histToRand * (xx + 0.5)));
         size_t      hgt = fgRound(val * sz * hgtRatio);
-        img.elem(xx,hgt) = FgRgbaUB(255,0,0,255); }
+        img.xy(xx,hgt) = FgRgbaUB(255,0,0,255); }
 
     // Display:
     fgImgFlipVertical(img);

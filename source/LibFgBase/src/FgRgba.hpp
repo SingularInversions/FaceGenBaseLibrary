@@ -215,4 +215,9 @@ FgRgbaUB
 fgRoundU(FgRgbaF v)
 {return FgRgbaUB(FgVect4UC(fgRoundU(v.m_c))); }
 
+template<class T,class U>
+void
+fgCast_(const FgRgba<T> & i,FgRgba<U> & o)
+{fgCast_(i.m_c,o.m_c); }
+
 #endif

@@ -58,9 +58,11 @@ struct  FgFacetInds
     vector<Ind>                uvInds;     // size() == 0 || vertInds.size()
 
     FgFacetInds() {}
-    FgFacetInds(const vector<Ind> & v, const vector<Ind> & u)
-    : vertInds(v), uvInds(u)
-    {FGASSERT(valid()); }
+
+    explicit
+    FgFacetInds(const vector<Ind> & vtInds) : vertInds(vtInds) {}
+
+    FgFacetInds(const vector<Ind> & vtInds, const vector<Ind> & uvIds) : vertInds(vtInds), uvInds(uvIds) {}
 
     void
     offset(size_t vertsOff,size_t uvsOff)
@@ -132,16 +134,14 @@ struct  Fg3dSurface
     boost::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be empty. Not serialized.
 
     Fg3dSurface() {}
-    Fg3dSurface(
-        const vector<FgVect4UI> &  quads,
-        const vector<FgVect4UI> &  texs);
+
     explicit
-    Fg3dSurface(
-        const vector<FgVect3UI> & tris,
-        const vector<FgVect4UI> & quads = vector<FgVect4UI>(),
-        const vector<FgVect3UI> & tris_uvinds = vector<FgVect3UI>(),
-        const vector<FgVect4UI> & quads_uvinds = vector<FgVect4UI>(),
-        const FgSurfPoints &      surfPoints = FgSurfPoints());
+    Fg3dSurface(const FgVect3UIs & ts) : tris(ts) {}
+
+    explicit
+    Fg3dSurface(const FgVect4UIs & ts) : quads(ts) {}
+
+    Fg3dSurface(const vector<FgVect4UI> & verts,const vector<FgVect4UI> & uvs) : quads(verts,uvs) {}
 
     bool
     empty() const
@@ -272,5 +272,25 @@ fgSplitSurface(const Fg3dSurface & surf);
 // or just the base name if there is only a single (unnamed) surface:
 Fg3dSurfaces
 fgEnsureNamed(const Fg3dSurfaces & surfs,const FgString & baseName);
+
+bool
+fgHasUnusedVerts(const FgVect3UIs & tris,const FgVerts & verts);
+
+FgUints
+fgRemoveUnusedVertsRemap(const FgVect3UIs & tris,const FgVerts & verts);
+
+// Handy for very simple surfaces:
+struct  FgTriSurf
+{
+    FgVect3UIs          tris;
+    FgVerts             verts;
+
+    bool
+    hasUnusedVerts() const
+    {return fgHasUnusedVerts(tris,verts); }
+};
+
+FgTriSurf
+fgRemoveUnusedVerts(const FgTriSurf &);
 
 #endif

@@ -79,7 +79,7 @@ FgSimilarity::xformCoord(
     FgMatrixC<double,3,ncols>   tmp = (m_rot * coords) * m_scale;
     for (uint rr=0; rr<3; rr++)
         for (uint cc=0; cc<ncols; cc++)
-            tmp.elem(rr,cc) += m_trans[rr];
+            tmp.rc(rr,cc) += m_trans[rr];
     return tmp;
 }
 

@@ -110,7 +110,7 @@ FgTestDir::FgTestDir(const string & name)
         path = FgPath(fgDataDir());
         path.dirs.back() = "_log";      // replace 'data' with 'log'
         path.dirs.push_back(s_breadcrumb+name);
-        string          dt = fgDateTimeString();
+        string          dt = fgDateTimePath();
         if (s_annotateTestDir.length() > 0)
             dt += " " + s_annotateTestDir;
         path.dirs.push_back(dt);

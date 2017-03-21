@@ -113,7 +113,7 @@ fgTcpServer(
     size_t              maxRecvBytes)
 {
     struct sockaddr_storage clientAddress;
-    int                 listenSockFd;
+    int                 listenSockFd = -1;  // Avoid uninitialized warning
     struct addrinfo     hints,
                         *servinfo,
                         *p;

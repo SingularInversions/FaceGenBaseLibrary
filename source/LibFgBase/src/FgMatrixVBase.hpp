@@ -83,28 +83,28 @@ struct  FgMatrixV
     uint            numElems() const {return (nrows*ncols); };
     bool            empty() const {return (numElems() == 0); }
 
-    // elem is deprecated:
+    // Element access by (row,column):
     T &
-    elem(size_t row,size_t col)
+    rc(size_t row,size_t col)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
     const T &
-    elem(size_t row,size_t col) const
+    rc(size_t row,size_t col) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
-
+    // Element access by (column,row):
     T &
-    elm(size_t col,size_t row)
+    cr(size_t col,size_t row)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
     const T &
-    elm(size_t col,size_t row) const
+    cr(size_t col,size_t row) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
@@ -120,15 +120,23 @@ struct  FgMatrixV
 
     T &
     operator[](FgVect2UI coord)
-    {return elm(coord[0],coord[1]); }
+    {return cr(coord[0],coord[1]); }
 
     const T &
     operator[](FgVect2UI coord) const
-    {return elm(coord[0],coord[1]); }
+    {return cr(coord[0],coord[1]); }
 
     const T *
     dataPtr() const
     {FGASSERT_FAST(!m_data.empty()); return &m_data[0]; }
+
+    const T *
+    rowPtr(size_t row) const
+    {
+        FGASSERT_FAST(!m_data.empty());
+        FGASSERT_FAST(row < nrows);
+        return &m_data[row*ncols];
+    }
 
     const vector<T> &
     dataVec() const
@@ -151,9 +159,9 @@ struct  FgMatrixV
         FGASSERT(ncols == m.nrows);
         for (uint ii=0; ii<nrows; ii++) {
             for (uint jj=0; jj<m.ncols; jj++) {
-                newMat.elem(ii,jj) = 0.0;
+                newMat.rc(ii,jj) = 0.0;
                 for (uint kk=0; kk<ncols; kk++)
-                    newMat.elem(ii,jj) += this->elem(ii,kk) * m.elem(kk,jj);
+                    newMat.rc(ii,jj) += this->rc(ii,kk) * m.rc(kk,jj);
             }
         }
         return newMat;
@@ -220,7 +228,7 @@ struct  FgMatrixV
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
             for (uint cc=0; cc<m.ncols; ++cc)
-                elem(row+rr,col+cc) = m.elem(rr,cc);
+                rc(row+rr,col+cc) = m.rc(rr,cc);
     }
 
     // Set submatrix from the transpose of the given matrix (saves an allocation and a copy):
@@ -230,17 +238,7 @@ struct  FgMatrixV
         FGASSERT((m.ncols+row <= nrows) && (m.nrows+col <= ncols));
         for (uint rr=0; rr<m.ncols; ++rr)
             for (uint cc=0; cc<m.nrows; ++cc)
-                elem(row+rr,col+cc) = m.elem(cc,rr);
-    }
-
-    // Set submatrix and it's tranpose mirror submatrix from the given:
-    void
-    setSubMatMirror(size_t row,size_t col,const FgMatrixV & m)
-    {
-        // Ensure the submatrix doesn't intersect its mirror:
-        FGASSERT((col >= (row + m.nrows)) || (row >= (col + m.ncols)));
-        setSubMat(row,col,m);
-        setSubMatTr(col,row,m);
+                rc(row+rr,col+cc) = m.rc(cc,rr);
     }
 
     // Accumulate in sub-matrix:
@@ -250,7 +248,7 @@ struct  FgMatrixV
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
             for (uint cc=0; cc<m.ncols; ++cc)
-                elem(row+rr,col+cc) += m.elem(rr,cc);
+                rc(row+rr,col+cc) += m.rc(rr,cc);
     }
     template<uint mrows,uint mcols>
     void
@@ -259,24 +257,78 @@ struct  FgMatrixV
         FGASSERT((mrows+row <= nrows) && (mcols+col <= ncols));
         for (uint rr=0; rr<mrows; ++rr)
             for (uint cc=0; cc<mcols; ++cc)
-                elem(row+rr,col+cc) += m.elem(rr,cc);
+                rc(row+rr,col+cc) += m.rc(rr,cc);
     }
 
-    // Other
-    void            setConst(T val);
-    void            setZero() {setConst(T(0)); };
-    void            setIdentity();
-    FgMatrixV      transpose() const;
-    T               length() const {return sqrt(mag());}
-    T               mag() const;
-    T               mean() const {return fgMean(m_data); };
-    bool            isVector() const {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
-    FgMatrixV      subMatrix(uint firstRow,uint firstCol,uint numRows,uint numCols) const;
-    FgMatrixV      colVec(uint n) const {return subMatrix(0,n,nrows,1); };
-    FgMatrixV      rowVector(uint n) const {return subMatrix(n,0,1,ncols); };
-    FgMatrixV      diagMatrix() const;
-    FgMatrixV      colAdd(const FgMatrixV &colVec) const;
-    FgMatrixV      colSubtract(const FgMatrixV &colVec) const;
+    void            setConst(T v)
+    {
+        for (uint ii=0; ii<m_data.size(); ii++)
+            m_data[ii] = v;
+    }
+
+    void
+    setZero()
+    {setConst(T(0)); }
+
+    void
+    setIdentity()
+    {
+        setZero();
+        uint nn = (nrows < ncols) ? nrows : ncols;
+        for (uint ii=0; ii<nn; ii++)
+            this->rc(ii,ii) = T(1);
+    }
+
+    FgMatrixV
+    transpose() const
+    {
+        FgMatrixV<T> tMat(ncols,nrows);
+        for (uint ii=0; ii<nrows; ii++)
+            for (uint jj=0; jj<ncols; jj++)
+                tMat.rc(jj,ii) = rc(ii,jj);
+        return tMat;
+    }
+
+    T
+    length() const
+    {return sqrt(mag()); }
+
+    T
+    mag() const
+    {
+        typename FgTraits<T>::Accumulator    tot = 0;
+        for (uint ii=0; ii<m_data.size(); ii++)
+            tot += m_data[ii] * m_data[ii];
+        return T(tot);
+    }
+
+    T
+    mean() const
+    {return fgMean(m_data); }
+
+    bool
+    isVector() const
+    {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
+
+    FgMatrixV
+    subMatrix(size_t firstRow,size_t firstCol,size_t numRows_,size_t numCols_) const
+    {
+        FGASSERT(((firstCol + numCols_) <= ncols) && 
+                 ((firstRow + numRows_) <= nrows));
+        FgMatrixV<T> retval(numRows_,numCols_);
+        for (size_t ii=0; ii<numRows_; ii++)
+            for (size_t jj=0; jj<numCols_; jj++)
+                retval.rc(ii,jj) = this->rc(ii+firstRow,jj+firstCol);
+        return retval;
+    }
+
+    FgMatrixV
+    colVec(uint n) const
+    {return subMatrix(0,n,nrows,1); }
+
+    FgMatrixV
+    rowVec(uint n) const
+    {return subMatrix(n,0,1,ncols); }
 
     typedef T ValType;
 };
@@ -286,96 +338,21 @@ typedef FgMatrixV<int>      FgMatrixI;
 typedef FgMatrixV<uint>     FgMatrixUI;
 typedef FgMatrixV<float>    FgMatrixF;
 typedef FgMatrixV<double>   FgMatrixD;
-
-template <class T>
-void    FgMatrixV<T>::setConst(T v)
-{
-    for (uint ii=0; ii<m_data.size(); ii++)
-        m_data[ii] = v;
-}
-
-template <class T>
-void FgMatrixV<T>::setIdentity()
-{
-    setZero();
-    uint nn = (nrows < ncols) ? nrows : ncols;
-    for (uint ii=0; ii<nn; ii++)
-        this->elem(ii,ii) = T(1);
-}
-
-template <class T>
-FgMatrixV<T> FgMatrixV<T>::transpose() const
-{
-    FgMatrixV<T> tMat(ncols,nrows);
-    for (uint ii=0; ii<nrows; ii++)
-        for (uint jj=0; jj<ncols; jj++)
-            tMat.elem(jj,ii) = elem(ii,jj);
-    return tMat;
-}
-
-template <class T>
-T   FgMatrixV<T>::mag() const
-{
-    typename FgTraits<T>::Accumulator    tot = 0;
-    for (uint ii=0; ii<m_data.size(); ii++)
-        tot += m_data[ii] * m_data[ii];
-    return T(tot);
-}
-
-template <class T>
-FgMatrixV<T> FgMatrixV<T>::subMatrix(uint firstRow,uint firstCol,
-                                         uint numRows_,uint numCols_) const
-{
-    FGASSERT(((firstCol + numCols_) <= ncols) && 
-             ((firstRow + numRows_) <= nrows));
-    FgMatrixV<T> retval(numRows_,numCols_);
-    for (uint ii=0; ii<numRows_; ii++)
-        for (uint jj=0; jj<numCols_; jj++)
-            retval.elem(ii,jj) = this->elem(ii+firstRow,jj+firstCol);
-    return retval;
-}
-
-    // Creates a diagonal matrix of the same dimension as a vector, using its
-    // values as the diagonal elements.
-template<class T>
-FgMatrixV<T>  FgMatrixV<T>::diagMatrix() const
-{
-    FGASSERT(nrows*ncols > 0);
-    FGASSERT((nrows == 1) || (ncols == 1));
-    FgMatrixV<T>  retval(nrows*ncols,nrows*ncols,0);
-    for (uint ii=0; ii<nrows*ncols; ii++)
-        retval.elem(ii,ii) = m_data[ii];
-    return retval;
-}
-
-template<class T>
-FgMatrixV<T>   FgMatrixV<T>::colAdd(const FgMatrixV &colVec) const
-{
-    FGASSERT(colVec.numCols() == 1);
-    FGASSERT(colVec.numRows() == numRows());
-    FgMatrixV<T>   ret(numRows(),numCols());
-    for (uint row=0; row<numRows(); row++)
-        for (uint col=0; col<numCols(); col++)
-            ret.elem(row,col) = elem(row,col) + colVec[row];
-    return ret;
-}
-
-template<class T>
-FgMatrixV<T>   FgMatrixV<T>::colSubtract(const FgMatrixV &colVec) const
-{
-    FGASSERT(colVec.numCols() == 1);
-    FGASSERT(colVec.numRows() == numRows());
-    FgMatrixV<T>   ret(numRows(),numCols());
-    for (uint row=0; row<numRows(); row++)
-        for (uint col=0; col<numCols(); col++)
-            ret.elem(row,col) = elem(row,col) - colVec[row];
-    return ret;
-}
+typedef std::vector<FgMatrixD>  FgMatrixDs;
+typedef FgMatrixV<FgMatrixD>    FgMatrixDz;
 
 template<class T>
 FgMatrixV<T>
 operator*(const T & lhs,const FgMatrixV<T> & rhs)
 {return (rhs*lhs); }
+
+template<class T,class U>
+void
+operator*=(FgMatrixV<T> & mat,const U & rhs)
+{
+    for (size_t ii=0; ii<mat.numElems(); ++ii)
+        mat[ii] *= rhs;
+}
 
 template<typename T>
 FgMatrixV<T>

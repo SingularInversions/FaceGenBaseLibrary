@@ -5,7 +5,18 @@
 //
 // Authors: Andrew Beatty
 //
-// NB. Binary serialize doesn't work for large map<>s (as of Boost 1.52)
+// Make working with boost::serialize easier.
+//
+// NOTES:
+//
+// * boost::serialize binary (& portable) is not forward-compatible between versions, breaking any
+// deployed servers. (ie older binaries won't read data from newer binaries even if structures are identical).
+// It is back-compatible as long as data structures are identical (and presumably identically named).
+//
+// * boost::serialize XML is forward compatible as well as back compatible, given identical structure.
+// Have not experimented with whether they can handle name or structure changes.
+//
+// * boost::serialize binary doesn't work for large map<>s (as of Boost 1.52)
 //
 
 #ifndef FGSERIALIZE_HPP

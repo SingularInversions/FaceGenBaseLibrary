@@ -18,12 +18,16 @@ struct FgGuiApiText : FgGuiApi<FgGuiApiText>
     FgDgn<FgString>         content;
     uint                    updateFlagIdx;
     uint                    minWidth;       // If text is shorter than this, use this. Otherwise ignore.
+    // Set this to false to avoid bug in Win10 RichEdit that causes copy operations from this richedit
+    // to hang on paste (in any other context) until this main window regains focus. Note that
+    // newlines and hyptertext links are not supported with RichEdit:
+    FgBoolT                 rich;
 
     FgGuiApiText() : minWidth(0) {}
 };
 
 FgGuiPtr
-fgGuiText(FgDgn<FgString> node,uint minWidth=0);
+fgGuiText(FgDgn<FgString> node,uint minWidth=0,bool rich=true);
 
 FgGuiPtr
 fgGuiText(FgString text,uint minWidth=0);

@@ -19,10 +19,26 @@
 // Runtime is almost identical the equivalent NRC function (37s for 1000x1000 random),
 // but yields larger residual errors (10 x dim^2 x epsilon() for 1000x1000 versus 5x for NRC).
 void
-fgSymmEigs(
+fgSymmEigs_(
     const FgMatrixD &   rsm,
-    FgMatrixD &         val,    // RETURNED: Col vector of eigenvalues, smallest to largest
-    FgMatrixD &         vec);   // RETURNED: Col vectors are respective eigenvectors
+    FgDbls &            vals,   // RETURNED: Eigenvalues, smallest to largest
+    FgMatrixD &         vecs);  // RETURNED: Col vectors are respective eigenvectors
+
+struct  FgRealEigs
+{
+    FgDbls              vals;   // Eigenvalues
+    FgMatrixD           vecs;   // Column vectors are the respective eigenvectors
+};
+
+// As above:
+inline
+FgRealEigs
+fgSymmEigs(const FgMatrixD & rsm)
+{
+    FgRealEigs      ret;
+    fgSymmEigs_(rsm,ret.vals,ret.vecs);
+    return ret;
+}
 
 struct  FgEigs
 {
@@ -30,11 +46,6 @@ struct  FgEigs
     FgDbls              imag;   // Eigenvalue imaginary components
     FgMatrixD           vecs;   // Column vectors are the respective eigenvectors
 };
-
-// Eigvenvalues of a square nonsymmetric matrix. Resulting eigenvalues are not ordered
-// and eigenvectors are not normalized:
-FgEigs
-fgEigs(const FgMatrixD & mat);
 
 template<typename T,uint dim>
 struct FgEigsC
@@ -69,10 +80,10 @@ fgEigs(const FgMatrixC<T,dim,dim> & rsm)
         // the Array2D object holds a non-const pointer to our data.
     JAMA::Eigenvalue<T>     solver(TNT::Array2D<T>(dim,dim,const_cast<T*>(rsm.dataPtr())));
     for (uint rr=0; rr<dim; ++rr) {
-        ret.real[rr] = solver.d[rr];
+        ret.real[rr] = solver.m_d[rr];
         ret.imag[rr] = solver.e[rr];
         for (uint cc=0; cc<dim; ++cc)
-            ret.vecs.elem(rr,cc) = solver.V[rr][cc];
+            ret.vecs.rc(rr,cc) = solver.V[rr][cc];
     }
     return ret;
 }

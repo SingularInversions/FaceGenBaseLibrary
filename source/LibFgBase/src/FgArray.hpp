@@ -26,19 +26,18 @@ struct FgArray
     size() const
     {return sz; }
 
-    // Unchecked !
     const T &
     operator[](uint i) const
-    {FGASSERT_FAST(i < sz); return m[i]; }
+    {FGASSERT(i < sz); return m[i]; }
 
     T &
     operator[](uint i)
-    {FGASSERT_FAST(i < sz); return m[i]; }
+    {FGASSERT(i < sz); return m[i]; }
 
     void
     add(const T & v)
     {
-        FGASSERT_FAST(sz < maxSize);
+        FGASSERT(sz < maxSize);
         m[sz] = v;
         ++sz;
     }

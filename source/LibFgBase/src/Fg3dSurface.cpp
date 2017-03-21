@@ -33,29 +33,6 @@ fgWritep(std::ostream & os,const FgSurfPoint & sp)
     fgWritep(os,sp.label);
 }
 
-Fg3dSurface::Fg3dSurface(
-    const std::vector<FgVect3UI> & tris_,
-    const std::vector<FgVect4UI> & quads_,
-    const std::vector<FgVect3UI> & tris_uvinds,
-    const std::vector<FgVect4UI> & quads_uvinds,
-    const std::vector<FgSurfPoint> & surfPoints_)
-    :
-    tris(tris_,tris_uvinds),
-    quads(quads_,quads_uvinds),
-    surfPoints(surfPoints_)
-{
-    checkInternalConsistency();
-}
-
-Fg3dSurface::Fg3dSurface(
-    const std::vector<FgVect4UI> &  quads_,
-    const std::vector<FgVect4UI> &  texs)
-    :
-    quads(quads_,texs)
-{
-    checkInternalConsistency();
-}
-
 uint
 Fg3dSurface::vertIdxMax() const
 {
@@ -175,8 +152,8 @@ Fg3dSurface::convertToTris() const
 {
     Fg3dSurface     ret;
     ret.name = name;
-    ret.tris.vertInds = fgConcat(tris.vertInds,convToTris(quads.vertInds));
-    ret.tris.uvInds = fgConcat(tris.uvInds,convToTris(quads.uvInds));
+    ret.tris.vertInds = fgCat(tris.vertInds,convToTris(quads.vertInds));
+    ret.tris.uvInds = fgCat(tris.uvInds,convToTris(quads.uvInds));
     ret.surfPoints = surfPoints;
     return ret;
 }
@@ -184,26 +161,18 @@ Fg3dSurface::convertToTris() const
 void
 Fg3dSurface::merge(const Fg3dSurface & surf)
 {
-    tris.vertInds.insert(
-        tris.vertInds.end(),
-        surf.tris.vertInds.begin(),
-        surf.tris.vertInds.end());
-    quads.vertInds.insert(
-        quads.vertInds.end(),
-        surf.quads.vertInds.begin(),
-        surf.quads.vertInds.end());
-    tris.uvInds.insert(
-        tris.uvInds.end(),
-        surf.tris.uvInds.begin(),
-        surf.tris.uvInds.end());
-    quads.uvInds.insert(
-        quads.uvInds.end(),
-        surf.quads.uvInds.begin(),
-        surf.quads.uvInds.end());
-    surfPoints.insert(
-        surfPoints.end(),
-        surf.surfPoints.begin(),
-        surf.surfPoints.end());
+    for (size_t pp=0; pp<surf.surfPoints.size(); ++pp) {
+        FgSurfPoint     sp = surf.surfPoints[pp];
+        if (sp.triEquivIdx < surf.tris.vertInds.size())
+            sp.triEquivIdx += uint(tris.vertInds.size());
+        else
+            sp.triEquivIdx += uint(tris.vertInds.size() + 2*quads.vertInds.size());
+        surfPoints.push_back(sp);
+    }
+    fgAppend(tris.vertInds,surf.tris.vertInds);
+    fgAppend(tris.uvInds,surf.tris.uvInds);
+    fgAppend(quads.vertInds,surf.quads.vertInds);
+    fgAppend(quads.uvInds,surf.quads.uvInds);
 }
 
 void
@@ -499,6 +468,48 @@ Fg3dSurface::removeTri(size_t triIdx)
     }
     surfPoints = nsps;
     tris.vertInds.erase(tris.vertInds.begin()+triIdx);
+}
+
+bool
+fgHasUnusedVerts(const FgVect3UIs & tris,const FgVerts & verts)
+{
+    vector<bool>    unused(verts.size(),true);
+    for (size_t ii=0; ii<tris.size(); ++ii)
+        for (size_t xx=0; xx<3; ++xx)
+            unused.at(tris[ii][xx]) = false;
+    for (vector<bool>::const_iterator it=unused.begin(); it != unused.end(); ++it)
+        if (*it)
+            return true;
+    return false;
+}
+
+FgUints
+fgRemoveUnusedVertsRemap(const FgVect3UIs & tris,const FgVerts & verts)
+{
+    FgUints         remap(verts.size(),numeric_limits<uint>::max());
+    for (size_t ii=0; ii<tris.size(); ++ii)
+        for (uint xx=0; xx<3; ++xx)
+            remap.at(tris[ii][xx]) = 0;
+    uint            cnt = 0;
+    for (size_t ii=0; ii<remap.size(); ++ii)
+        if (remap[ii] == 0)
+            remap[ii] = cnt++;
+    return remap;
+}
+
+FgTriSurf
+fgRemoveUnusedVerts(const FgTriSurf & in)
+{
+    FgTriSurf       ret;
+    FgUints         remap = fgRemoveUnusedVertsRemap(in.tris,in.verts);
+    for (size_t ii=0; ii<in.verts.size(); ++ii)
+        if (remap[ii] != numeric_limits<uint>::max())
+            ret.verts.push_back(in.verts[ii]);
+    ret.tris.resize(in.tris.size());
+    for (size_t ii=0; ii<in.tris.size(); ++ii)
+        for (uint xx=0; xx<3; ++xx)
+            ret.tris[ii][xx] = remap[in.tris[ii][xx]];
+    return ret;
 }
 
 // */

@@ -13,8 +13,8 @@
 using namespace std;
 
 Fg3dRayCaster::Fg3dRayCaster(
-    std::vector<FgSurfPtr>        rs,
-    const FgShader *            shader,
+    vector<FgSurfPtr>           rs,
+    FgFuncShader                shader,
     FgAffine3F                  modelview,
     FgAffineCw2F                itcsToIucs,
     FgRgbaF                     background)
@@ -28,7 +28,7 @@ Fg3dRayCaster::Fg3dRayCaster(
 }
 
 FgSurfRay::FgSurfRay(
-    FgSurfPtr                 rs,
+    FgSurfPtr               rs,
     FgAffine3F              modelview,
     FgAffineCw2F            itcsToIucs)
     :
@@ -36,7 +36,7 @@ FgSurfRay::FgSurfRay(
 {
     const FgVerts &         verts = *(surf.verts);
     depth.resize(verts.size());
-    std::vector<FgVect2F>   vertsIucs(verts.size());
+    vertsIucs.resize(verts.size());
     for (size_t ii=0; ii<verts.size(); ++ii) {
         FgVect3F    vertOecs = modelview * verts[ii];
         FGASSERT(vertOecs[2] < 0.0f);
@@ -56,8 +56,7 @@ Fg3dRayCaster::operator()(FgVect2F posIucs) const
 {
     // Find closest ray intersection:
     FgBestN<float,Best,8>   bestAll;
-    for (size_t ii=0; ii<m_surfs.size(); ++ii)
-    {
+    for (size_t ii=0; ii<m_surfs.size(); ++ii) {
         FgBestN<float,FgTriPoint,8>
             best = m_surfs[ii].cast(posIucs);
         for (uint jj=0; jj<best.num(); ++jj)
@@ -77,9 +76,8 @@ FgSurfRay::cast(FgVect2F posIucs)
     const
 {
     FgBestN<float,FgTriPoint,8> retval;
-    std::vector<FgTriPoint>  intersects = grid.intersects(posIucs);
-    for (size_t ii=0; ii<intersects.size(); ++ii)
-    {
+    std::vector<FgTriPoint>  intersects = grid.intersects(*(surf.vertInds),vertsIucs,posIucs);
+    for (size_t ii=0; ii<intersects.size(); ++ii) {
         FgTriPoint  isect = intersects[ii];
         float   newDepth =
             isect.baryCoord[0] * depth[isect.pointInds[0]] +
@@ -92,7 +90,7 @@ FgSurfRay::cast(FgVect2F posIucs)
 
 FgRgbaF
 FgSurfRay::shade(
-    const FgShader *                    shader,
+    FgFuncShader        shader,
     const FgTriPoint &  intersect)
     const
 {
@@ -107,7 +105,7 @@ FgSurfRay::shade(
                      bCoord[1] * (*surf.uvs)[uvInds[1]] +
                      bCoord[2] * (*surf.uvs)[uvInds[2]];
     uv[1] = 1.0f - uv[1];   // OTCS to IUCS
-    return (*shader)(norm,uv,surf.material,surf.texImg);
+    return shader(norm,uv,surf.material,surf.texImg);
 }
 
 // */

@@ -26,11 +26,11 @@ class   FgIter
 
 public:
     explicit
-    FgIter(FgMatrixC<T,dim,2> inclusiveRange)
-    :   m_bndsLoIncl(inclusiveRange.colVec(0)),
-        m_bndsHiExcl(inclusiveRange.colVec(1)+FgMatrixC<T,dim,1>(1)),
+    FgIter(FgMatrixC<T,dim,2> inclLowerExclUpperBounds)
+    :   m_bndsLoIncl(inclLowerExclUpperBounds.colVec(0)),
+        m_bndsHiExcl(inclLowerExclUpperBounds.colVec(1)),
         m_strides(FgMatrixC<T,dim,1>(1)),
-        m_idx(inclusiveRange.colVec(0))
+        m_idx(inclLowerExclUpperBounds.colVec(0))
     {setValid(); }
 
     FgIter(

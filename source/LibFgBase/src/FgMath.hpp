@@ -38,12 +38,12 @@ fgLog2Ceil(uint32 xx);                          // Not valid for 0.
 
 inline
 uint
-fgPower2Floor(uint32 xx)                        // Not valid for 0.
+fgPow2Floor(uint32 xx)                        // Not valid for 0.
 {return (1 << fgLog2Floor(xx)); }
 
 inline
 uint
-fgPower2Ceil(uint32 xx)
+fgPow2Ceil(uint32 xx)
 {return (1 << fgLog2Ceil(xx)); }                // Not valid for 0.
 
 template <typename T>
@@ -129,7 +129,7 @@ normalCholesky(
 {
     double  det = 1.0;
     for (uint ii=0; ii<dim; ii++)
-        det *= chol.elem(ii,ii);                // Cholesky is upper or lower triangular.
+        det *= chol.rc(ii,ii);                // Cholesky is upper or lower triangular.
     FgMatrixC<double,dim,1> mhlbs = chol * (pos-mean);
     return (
         std::pow(2.0 * fgPi(),double(dim) * -0.5) *
@@ -146,7 +146,7 @@ lnNormalCholesky(
 {
     double  det = 1.0;
     for (uint ii=0; ii<dim; ii++)
-        det *= chol.elem(dim,dim);
+        det *= chol.rc(dim,dim);
     FgMatrixC<double,dim,1> mhlbs = chol * (pos-mean);
     return (0.5 * std::log(det) -               // Cholesky has all diagonals > 0
             0.5 * double(dim) * fgLn_2pi() -

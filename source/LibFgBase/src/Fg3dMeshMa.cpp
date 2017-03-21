@@ -1237,21 +1237,21 @@ static int writeShadingMaterialPhong(
         {
             string mphName = (*morphNames)[tt];
 
-            string shading = getObjMorphShadingEngName(model,mm,mphName);
-            string material = getObjMorphMaterialName(model,mm,mphName);
-            string phong = getObjMorphPhongName(model,mm,mphName);
-            string shade = getObjMorphShadeGrpIdName(model,mm,mphName);
-            string node = getObjMorphNodeGrpIdName(model,mm,mphName);
+            string shadingEngine = getObjMorphShadingEngName(model,mm,mphName);
+            string materialName = getObjMorphMaterialName(model,mm,mphName);
+            string phongName = getObjMorphPhongName(model,mm,mphName);
+            string shadeName = getObjMorphShadeGrpIdName(model,mm,mphName);
+            string nodeName = getObjMorphNodeGrpIdName(model,mm,mphName);
 
-            ofs << "createNode shadingEngine -n \"" << shading << "\";\n";
+            ofs << "createNode shadingEngine -n \"" << shadingEngine << "\";\n";
             ofs << "\tsetAttr \".ihi\" 0;\n";
             ofs << "\tsetAttr \".ro\" yes;\n";
-            ofs << "createNode materialInfo -n \"" << material << "\";\n";
-            ofs << "createNode groupId -n \"" << shade << "\";\n";
+            ofs << "createNode materialInfo -n \"" << materialName << "\";\n";
+            ofs << "createNode groupId -n \"" << shadeName << "\";\n";
             ofs << "\tsetAttr \".ihi\" 0;\n";
-            ofs << "createNode groupId -n \"" << node << "\";\n";
+            ofs << "createNode groupId -n \"" << nodeName << "\";\n";
             ofs << "\tsetAttr \".ihi\" 0;\n";
-            ofs << "createNode phong -n \"" << phong << "\";\n";
+            ofs << "createNode phong -n \"" << phongName << "\";\n";
         }
     }
 
@@ -1493,16 +1493,16 @@ static void connectAttributes(
     {
         string mphName = (*morphNames)[nt];
 
-        for (unsigned long mm=0; mm<model.numObjs(); ++mm)
+        for (unsigned long nn=0; nn<model.numObjs(); ++nn)
         {
-            string texFname = model.getTextureFilename(mm);
+            string texFname = model.getTextureFilename(nn);
             if (texFname.length() == 0 || texFname == "")
                 continue;
 
-            string mphShapeName = getObjMorphShapeName(model,mm,mphName);
-            string mphGrpId = getObjMorphNodeGrpIdName(model,mm,mphName);
-            string mphShadeEng = getObjMorphShadingEngName(model,mm,mphName);
-            string mphShadeGrpId = getObjMorphShadeGrpIdName(model,mm,mphName);
+            string mphShapeName = getObjMorphShapeName(model,nn,mphName);
+            string mphGrpId = getObjMorphNodeGrpIdName(model,nn,mphName);
+            string mphShadeEng = getObjMorphShadingEngName(model,nn,mphName);
+            string mphShadeGrpId = getObjMorphShadeGrpIdName(model,nn,mphName);
 
             ofs << "connectAttr \""
                     << mphGrpId << ".id\" \"" 
@@ -1628,20 +1628,20 @@ static void connectAttributes(
         {
             string mphName = (*morphNames)[tt];
 
-            string objPhong = getObjMorphPhongName(model,mm,mphName);
-            string objShadingEng = getObjMorphShadingEngName(model,mm,mphName);
+            string objPhongName = getObjMorphPhongName(model,mm,mphName);
+            string objShadingEngName = getObjMorphShadingEngName(model,mm,mphName);
 
             ofs << "connectAttr \""
-                << objPhong << ".oc\" \""
-                << objShadingEng << ".ss\";\n";
+                << objPhongName << ".oc\" \""
+                << objShadingEngName << ".ss\";\n";
             ofs << "connectAttr \""
                 << getObjMorphNodeGrpIdName(model,mm,mphName) << ".msg\" \""
-                << objShadingEng << ".gn\" -na;\n";
+                << objShadingEngName << ".gn\" -na;\n";
             ofs << "connectAttr \""
                 << getObjMorphShapeName(model,mm,mphName) << ".iog.og[1]\" \""
-                << objShadingEng << ".dsm\" -na;\n";
+                << objShadingEngName << ".dsm\" -na;\n";
             ofs << "connectAttr \""
-                << objShadingEng << ".msg\" \""
+                << objShadingEngName << ".msg\" \""
                 << getObjMorphMaterialName(model,mm,mphName) << ".sg\";\n";
         }
     }

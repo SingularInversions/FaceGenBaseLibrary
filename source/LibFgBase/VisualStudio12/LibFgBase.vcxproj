@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F78A4180-7879-7056-2B3A-F28B62308C5A}</ProjectGuid>
+    <ProjectGuid>{DA030838-0440-62BB-9D1A-F6BFD917B1E0}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -77,7 +77,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -96,7 +96,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -113,7 +113,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -133,7 +133,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -172,6 +172,8 @@
     <ClInclude Include="..\src\Fg3dNormals.hpp"  />
     <ClInclude Include="..\src\Fg3dOpenGL.hpp"  />
     <ClInclude Include="..\src\Fg3dOpenGLImpl.hpp"  />
+    <ClCompile Include="..\src\Fg3dPose.cpp"  />
+    <ClInclude Include="..\src\Fg3dPose.hpp"  />
     <ClCompile Include="..\src\Fg3dRayCaster.cpp"  />
     <ClInclude Include="..\src\Fg3dRayCaster.hpp"  />
     <ClInclude Include="..\src\Fg3dRenderOptions.hpp"  />
@@ -211,7 +213,6 @@
     <ClCompile Include="..\src\FgCons.cpp"  />
     <ClInclude Include="..\src\FgCons.hpp"  />
     <ClCompile Include="..\src\FgConsMakefiles.cpp"  />
-    <ClCompile Include="..\src\FgConsVisualStudio2008.cpp"  />
     <ClCompile Include="..\src\FgConsVisualStudio201x.cpp"  />
     <ClInclude Include="..\src\FgCoordSystem.hpp"  />
     <ClInclude Include="..\src\FgDefaultVal.hpp"  />
@@ -231,6 +232,8 @@
     <ClCompile Include="..\src\FgFileSystem.cpp"  />
     <ClInclude Include="..\src\FgFileSystem.hpp"  />
     <ClCompile Include="..\src\FgFileSystemTest.cpp"  />
+    <ClCompile Include="..\src\FgFileUtils.cpp"  />
+    <ClInclude Include="..\src\FgFileUtils.hpp"  />
     <ClCompile Include="..\src\FgGeometry.cpp"  />
     <ClInclude Include="..\src\FgGeometry.hpp"  />
     <ClCompile Include="..\src\FgGeometryTest.cpp"  />
@@ -320,6 +323,7 @@
     <ClInclude Include="..\src\FgSampler.hpp"  />
     <ClInclude Include="..\src\FgScopeGuard.hpp"  />
     <ClInclude Include="..\src\FgSerialize.hpp"  />
+    <ClInclude Include="..\src\FgSerialSimple.hpp"  />
     <ClInclude Include="..\src\FgSharedPtr.hpp"  />
     <ClCompile Include="..\src\FgSharedPtrTest.cpp"  />
     <ClCompile Include="..\src\FgSimilarity.cpp"  />

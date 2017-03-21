@@ -30,10 +30,10 @@ Fg3dCamera::toIpcsH(FgVect2UI dims) const
         0,              0,              1,              0,
         0,              0,              0,              1);
     FgMat44D     oecsToItcsH;
-    oecsToItcsH.elem(0,0) = 1;
-    oecsToItcsH.elem(1,1) = -1;
-    oecsToItcsH.elem(2,3) = 1;
-    oecsToItcsH.elem(3,2) = -1;
+    oecsToItcsH.rc(0,0) = 1;
+    oecsToItcsH.rc(1,1) = -1;
+    oecsToItcsH.rc(2,3) = 1;
+    oecsToItcsH.rc(3,2) = -1;
     return itcsToIpcs3H * oecsToItcsH * modelview.asHomogenous();
 }
 

@@ -8,17 +8,14 @@
 //
 // 2D grid spatial index for point-triangle intersections
 //
-// POSSIBLE SPEEDUPS:
+// * Possible optimization: use a bin container that only allocates beyond a certain bin size.
 //
-// * Use a rasterization algorithm to only store tris in precisly intersected bins
-//   rather than all bins in vertex bounds.
-// * Store the tris directly by duplicating the vert values.
 
 #ifndef FG_GRIDTRIANGLES_HPP
 #define FG_GRIDTRIANGLES_HPP
 
 #include "FgImage.hpp"
-#include "FgAffineCwPreC.hpp"
+#include "FgAffineCwC.hpp"
 
 struct  FgTriPoint
 {
@@ -29,28 +26,42 @@ struct  FgTriPoint
 
 struct  FgGridTriangles
 {
-    vector<FgVect2F>        m_points;           // Client coordinates
-    vector<FgVect3UI>       m_tris;             // Indices into m_verts
-    FgAffineCwPre2F         m_clientToGridCoords;
-    FgImage<vector<uint> >  m_grid;             // Bins of indices into m_tris
+    FgAffineCw2F            clientToGridIpcs;
+    FgImage<FgUints>        grid;               // Bins of indices into client triangle array
 
+    FgOpt<FgTriPoint>
+    nearestIntersect(
+        const FgVect3UIs &  tris,       // Must be same list used to initialize index
+        const FgVect2Fs &   verts,      // "
+        const FgFlts &      depths,     // Must be 1-1 with 'verts'
+        FgVect2F            pos) const;
+
+    // NB: If 'pos' lies outside the bounds specified during construction no intersections will be computed:
     void
-    intersects(FgVect2F pos,vector<FgTriPoint> & ret) const;
+    intersects(
+        const FgVect3UIs &  tris,       // Must be same list used to initialize index
+        const FgVect2Fs &   verts,      // "
+        FgVect2F            pos,
+        vector<FgTriPoint> & ret) const;
 
     vector<FgTriPoint>
-    intersects(FgVect2F pos) const
+    intersects(
+        const FgVect3UIs &  tris,       // Must be same list used to initialize index
+        const FgVect2Fs &   verts,      // "
+        FgVect2F pos) const
     {
         vector<FgTriPoint>   ret;
-        intersects(pos,ret);
+        intersects(tris,verts,pos,ret);
         return ret;
     }
 };
 
 FgGridTriangles
 fgGridTriangles(
-    const vector<FgVect2F> &    points,
-    const vector<FgVect3UI> &   tris,
-    float                       binsPerTri=1.0f);
+    // tris containing invalid verts [max,max] will not be indexed:
+    const FgVect2Fs &   verts,
+    const FgVect3UIs &  tris,       // Indices into 'verts'
+    float               binsPerTri=1.0f);
 
 #endif
 

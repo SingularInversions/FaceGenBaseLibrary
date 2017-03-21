@@ -118,10 +118,10 @@ loadJpeg(
                 jpeg_read_scanlines(&cinfo,&buffer,1);
                 uchar         *ptr = buffer;
                 for (uint col=0; col<img.width(); col++) {
-                    img.elem(col,row).red() = *ptr++;
-                    img.elem(col,row).green() = *ptr++;
-                    img.elem(col,row).blue() = *ptr++;
-                    img.elem(col,row).alpha() = 255;
+                    img.xy(col,row).red() = *ptr++;
+                    img.xy(col,row).green() = *ptr++;
+                    img.xy(col,row).blue() = *ptr++;
+                    img.xy(col,row).alpha() = 255;
                 }
                 row++;
             }
@@ -197,9 +197,9 @@ saveJpeg(
             {
                 for(uint xx=0; xx<img.width(); xx++)
                 {
-                    *imgPtr++ = img.elem(xx,yy).red();
-                    *imgPtr++ = img.elem(xx,yy).green();
-                    *imgPtr++ = img.elem(xx,yy).blue();
+                    *imgPtr++ = img.xy(xx,yy).red();
+                    *imgPtr++ = img.xy(xx,yy).green();
+                    *imgPtr++ = img.xy(xx,yy).blue();
                 }
             }
 

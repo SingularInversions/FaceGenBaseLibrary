@@ -624,6 +624,24 @@ spCopy(const FgArgs & args)
 
 static
 void
+spDel(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<in>.tri <ptIdx>\n"
+        "   <spIdx>   - Which point on that surface to delete"
+        );
+    FgString        meshFname = syn.next();
+    Fg3dMesh        mesh = fgLoadTri(meshFname);
+    size_t          ii = fgFromString<size_t>(syn.next());
+    Fg3dSurface &   surf = mesh.surfaces[0];
+    if (ii >= surf.surfPoints.size())
+        fgThrow("Point index value larger than availables points");
+    surf.surfPoints.erase(surf.surfPoints.begin() + ii);
+    fgSaveTri(meshFname,mesh);
+}
+
+static
+void
 spList(const FgArgs & args)
 {
     FgSyntax    syn(args,"<in>.fgmesh");
@@ -686,6 +704,7 @@ surf(const FgArgs & args)
     ops.push_back(FgCmd(mergesurfs,"merge","Merge all surfaces in a mesh into one"));
     ops.push_back(FgCmd(surfRen,"ren","Rename a surface in a mesh"));
     ops.push_back(FgCmd(spCopy,"spCopy","Copy surf points between meshes with identical surface topology"));
+    ops.push_back(FgCmd(spDel,"spDel","Delete a surface point"));
     ops.push_back(FgCmd(spList,"spList","List surface points in each surface"));
     ops.push_back(FgCmd(spRen,"spRen","Rename a surface point"));
     ops.push_back(FgCmd(spsToVerts,"spVert","Convert surface points to marked vertices"));

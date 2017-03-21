@@ -8,12 +8,9 @@
 //
 // min/max bounds of n-D data structures, and operations on bounds.
 //
-// Bounds differ from Ranges in that the latter is strictly integer with inclusive/exclusive
-// lower/upper bounds (resp.).
-//
-// USE:
-//
-// Bounds are row vectors (per column dimension [min,max]).
+// * bounds matrices (or vectors) always have 2 columns: [min,max]
+// * min values are always treated as inclusive
+// * max values are documented as either inclusive or exclusive
 
 #ifndef FGBOUNDS_HPP
 #define FGBOUNDS_HPP
@@ -45,7 +42,7 @@ fgBounds(const std::vector<T> & data)
     return ret;
 }
 
-// Column 0 is the lower bounds vector and column 1 is the upper bounds vector:
+// Returns inclusive bounds of vectors:
 template<typename T,uint dim>
 FgMatrixC<T,dim,2>
 fgBounds(const std::vector<FgMatrixC<T,dim,1> > & data)
@@ -56,49 +53,47 @@ fgBounds(const std::vector<FgMatrixC<T,dim,1> > & data)
     ret.setSubMat(data[0],0,1);
     for (size_t ii=1; ii<data.size(); ++ii) {
         for (uint dd=0; dd<dim; ++dd) {
-            fgSetIfLess     (ret.elm(0,dd),data[ii][dd]);
-            fgSetIfGreater  (ret.elm(1,dd),data[ii][dd]);
+            fgSetIfLess     (ret.cr(0,dd),data[ii][dd]);
+            fgSetIfGreater  (ret.cr(1,dd),data[ii][dd]);
         }
     }
     return ret;
 }
 
-// Bounds of 2 bounds:
+// Returns combined bounds of two bounds (inclusive or exclusive):
 template<typename T,uint dim>
 FgMatrixC<T,dim,2>
 fgBounds(const FgMatrixC<T,dim,2> & b1,const FgMatrixC<T,dim,2> & b2)
 {
     FgMatrixC<T,dim,2>     ret(b1);
-    for (uint dd=0; dd<dim; ++dd)
-    {
-        fgSetIfLess     (ret.elm(0,dd),b2.elm(0,dd));
-        fgSetIfGreater  (ret.elm(1,dd),b2.elm(1,dd));
+    for (uint dd=0; dd<dim; ++dd) {
+        fgSetIfLess     (ret.cr(0,dd),b2.cr(0,dd));
+        fgSetIfGreater  (ret.cr(1,dd),b2.cr(1,dd));
     }
     return ret;
 }
 
+// Returns inclusive bounds of all elements of the given matrix:
 template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,1,2>
 fgBounds(const FgMatrixC<T,nrows,ncols> & mat)
 {
     FGASSERT(mat.numElems() > 0);
     FgMatrixC<T,1,2>    ret(mat[0]);
-    for (uint ii=0; ii<mat.numElems(); ++ii)
-    {
+    for (uint ii=0; ii<mat.numElems(); ++ii) {
         fgSetIfLess     (ret[0],mat[ii]);
         fgSetIfGreater  (ret[1],mat[ii]);
     }
     return ret;
 }
 
+// Returns inclusive bounds of all elements of 'mat':
 template<typename T>
 inline FgMatrixC<T,1,2>
 fgBounds(const FgMatrixV<T> & mat)
-{
-    return fgBounds(mat.dataVec());
-}
+{return fgBounds(mat.dataVec()); }
 
-// Bounds of 3 vectors:
+// Returns inclusive bounds of 3 column vectors:
 template<typename T,uint dim>
 FgMatrixC<T,dim,2>
 fgBounds(
@@ -108,11 +103,11 @@ fgBounds(
 {
     FgMatrixC<T,dim,2>  ret;
     for (uint dd=0; dd<dim; ++dd) {
-        ret.elm(0,dd) = ret.elm(1,dd) = v0[dd];
-        fgSetIfLess(ret.elm(0,dd),v1[dd]);
-        fgSetIfLess(ret.elm(0,dd),v2[dd]);
-        fgSetIfGreater(ret.elm(1,dd),v1[dd]);
-        fgSetIfGreater(ret.elm(1,dd),v2[dd]);
+        ret.cr(0,dd) = ret.cr(1,dd) = v0[dd];
+        fgSetIfLess(ret.cr(0,dd),v1[dd]);
+        fgSetIfLess(ret.cr(0,dd),v2[dd]);
+        fgSetIfGreater(ret.cr(1,dd),v1[dd]);
+        fgSetIfGreater(ret.cr(1,dd),v2[dd]);
     }
     return ret;
 }
@@ -125,7 +120,7 @@ fgMaxColwise(const FgMatrixC<T,nrows,ncols> & mat)
     FgMatrixC<T,nrows,1>    ret(mat.colVec(0));
     for (uint row=0; row<nrows; ++row)
         for (uint col=1; col<ncols; ++col)
-            fgSetIfGreater(ret[row],mat.elm(col,row));
+            fgSetIfGreater(ret[row],mat.cr(col,row));
     return ret;
 }
 
@@ -214,20 +209,20 @@ bool
 fgBoundsIntersect(
     const FgMatrixC<T,dim,2> &  bnds1,
     const FgMatrixC<T,dim,2> &  bnds2,
-    FgMatrixC<T,dim,2> &        retval)
+    FgMatrixC<T,dim,2> &        retval)     // Not assigned if bounds do not intersect
 {
     FgMatrixC<T,dim,2>      tmp;
-    for (uint dd=0; dd<dim; ++dd)
-    {
-        tmp.elm(0,dd) = std::max(bnds1.elm(0,dd),bnds2.elm(0,dd));
-        tmp.elm(1,dd) = std::min(bnds1.elm(1,dd),bnds2.elm(1,dd));
-        if (tmp.elm(0,dd) > tmp.elm(1,dd))
+    for (uint dd=0; dd<dim; ++dd) {
+        tmp.cr(0,dd) = std::max(bnds1.cr(0,dd),bnds2.cr(0,dd));
+        tmp.cr(1,dd) = std::min(bnds1.cr(1,dd),bnds2.cr(1,dd));
+        if (tmp.cr(0,dd) > tmp.cr(1,dd))
             return false;
     }
     retval = tmp;
     return true;
 }
 
+// The returned bounds will have negative area if the bounds do not intersect:
 template<typename T,uint dim>
 FgMatrixC<T,dim,2>
 fgBoundsIntersection(
@@ -235,10 +230,9 @@ fgBoundsIntersection(
     const FgMatrixC<T,dim,2> &  b2)
 {
     FgMatrixC<T,dim,2>      ret(b1);
-    for (uint dd=0; dd<dim; ++dd)
-    {
-        fgSetIfGreater(ret.elm(0,dd),b2.elm(0,dd));
-        fgSetIfLess(ret.elm(1,dd),b2.elm(1,dd));
+    for (uint dd=0; dd<dim; ++dd) {
+        fgSetIfGreater(ret.cr(0,dd),b2.cr(0,dd));
+        fgSetIfLess(ret.cr(1,dd),b2.cr(1,dd));
     }
     return ret;
 }
@@ -250,9 +244,22 @@ fgBoundsIncludes(
     const FgMatrixC<T,dim,1> &  point)
 {
     for (uint dd=0; dd<dim; ++dd) {
-        if ((inclusiveBounds.elm(1,dd) < point[dd]) ||
-            (inclusiveBounds.elm(0,dd) > point[dd]))
+        if ((inclusiveBounds.cr(1,dd) < point[dd]) ||
+            (inclusiveBounds.cr(0,dd) > point[dd]))
            return false;
+    }
+    return true;
+}
+
+template<typename T,uint dim>
+bool
+fgBoundsIncludes(FgMatrixC<uint,dim,1> dims,FgMatrixC<T,dim,1> pnt)
+{
+    for (uint dd=0; dd<dim; ++dd) {
+        if (pnt[dd] < T(0))
+            return false;
+        if (uint(pnt[dd]) >= T(dims[dd]))
+            return false;
     }
     return true;
 }
@@ -300,15 +307,21 @@ fgClip(T val,T inclusiveLowerBound,T inclusiveUpperBound)
 
 template<class T,uint nrows>
 FgMatrixC<T,nrows,1>
+fgClipElems(const FgMatrixC<T,nrows,1> & vals,T minInclusive,FgMatrixC<T,nrows,1> maxInclusive)
+{
+    FgMatrixC<T,nrows,1>    ret(vals);
+    for (uint ii=0; ii<nrows; ++ii)
+        ret[ii] = (vals[ii] < minInclusive ? minInclusive : (vals[ii] > maxInclusive[ii] ? maxInclusive[ii] : ret[ii]));
+    return ret;
+}
+
+template<class T,uint nrows>
+FgMatrixC<T,nrows,1>
 fgClipElems(const FgMatrixC<T,nrows,1> & vals,T minInclusive,T maxInclusive)
 {
     FgMatrixC<T,nrows,1>    ret(vals);
-    for (uint ii=0; ii<nrows; ++ii) {
-        if (ret[ii] < minInclusive)
-            ret[ii] = minInclusive;
-        if (ret[ii] > maxInclusive)
-            ret[ii] = maxInclusive;
-    }
+    for (uint ii=0; ii<nrows; ++ii)
+        ret[ii] = (vals[ii] < minInclusive ? minInclusive : (vals[ii] > maxInclusive ? maxInclusive : ret[ii]));
     return ret;
 }
 
@@ -318,7 +331,7 @@ fgClipVol(const FgMatrixC<T,dim,1> & pos,const FgMatrixC<T,dim,2> & volBoundsInc
 {
     FgMatrixC<T,dim,1>  ret;
     for (uint ii=0; ii<dim; ++ii)
-        ret[ii] = fgClip(pos[ii],volBoundsInclusive.elem(ii,0),volBoundsInclusive.elem(ii,1));
+        ret[ii] = fgClip(pos[ii],volBoundsInclusive.rc(ii,0),volBoundsInclusive.rc(ii,1));
     return ret;
 }
 
@@ -344,6 +357,19 @@ fgClipLo(FgMatrixC<T,nrows,ncols> m,T inclusiveLowerBound)
     FgMatrixC<T,nrows,ncols>    ret(m);
     for (uint ii=0; ii<nrows*ncols; ++ii)
         fgClipLo(ret.m[ii],inclusiveLowerBound);
+    return ret;
+}
+
+// Convert bounds from inclusive upper to exclusive upper:
+template<class T,uint nrows>
+FgMatrixC<T,nrows,2>
+fgInclToExcl(FgMatrixC<T,nrows,2> boundsInclusiveUpper)
+{
+    FgMatrixC<T,nrows,2>    ret;
+    for (uint rr=0; rr<nrows; ++rr) {
+        ret.rc(rr,0) = boundsInclusiveUpper.rc(rr,0);
+        ret.rc(rr,1) = boundsInclusiveUpper.rc(rr,1) + T(1);
+    }
     return ret;
 }
 

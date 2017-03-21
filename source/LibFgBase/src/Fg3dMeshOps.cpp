@@ -24,18 +24,18 @@ using namespace std;
 Fg3dMesh
 fgMeshFromImage(const FgImgD & img)
 {
+    Fg3dMesh                ret;
     FGASSERT((img.height() > 1) && (img.width() > 1));
-    FgMat22D             imgIdxBounds(0,img.width()-1,0,img.height()-1);
-    FgAffineCw2D          imgIdxToSpace(imgIdxBounds,FgMat22D(0,1,0,1)),
+    FgMat22D                imgIdxBounds(0,img.width()-1,0,img.height()-1);
+    FgAffineCw2D            imgIdxToSpace(imgIdxBounds,FgMat22D(0,1,0,1)),
                             imgIdxToOtcs(imgIdxBounds,FgMat22D(0,1,1,0));
-    FgAffine1D         imgValToSpace(fgBounds(img.dataVec()),FgVectD2(0,1));
-    FgVerts                 verts;
-    std::vector<FgVect2F>   uvs;
+    FgAffine1D              imgValToSpace(fgBounds(img.dataVec()),FgVectD2(0,1));
     for (FgIter2UI it(img.dims()); it.valid(); it.next()) {
         FgVect2D            imgCrd = FgVect2D(it()),
                             xy = imgIdxToSpace * imgCrd;
-        verts.push_back(FgVect3F(xy[0],xy[1],imgValToSpace * img[it()]));
-        uvs.push_back(FgVect2F(imgIdxToOtcs * imgCrd)); }
+        ret.verts.push_back(FgVect3F(xy[0],xy[1],imgValToSpace * img[it()]));
+        ret.uvs.push_back(FgVect2F(imgIdxToOtcs * imgCrd));
+    }
     std::vector<FgVect4UI>  quads,
                             texInds;
     uint                    w = img.width();
@@ -46,9 +46,10 @@ fgMeshFromImage(const FgImgD & img)
                             y1 = y + w;
         FgVect4UI           inds(x1+y,x+y,x+y1,x1+y1);      // CC winding
         quads.push_back(inds);
-        texInds.push_back(inds); }
-    Fg3dSurface      surf(quads,texInds);
-    return Fg3dMesh(verts,uvs,fgSvec(surf));
+        texInds.push_back(inds);
+    }
+    ret.surfaces.push_back(Fg3dSurface(quads,texInds));
+    return ret;
 }
 
 Fg3dMesh
@@ -480,7 +481,8 @@ traverse(
 Fg3dMesh
 fgSplitSurfsByUvs(const Fg3dMesh & in)
 {
-    Fg3dMesh                    mesh = in;
+    Fg3dMesh                    ret,
+                                mesh = in;
     mesh.mergeAllSurfaces();
     const Fg3dSurface &         surf = mesh.surfaces[0];
     if (!surf.tris.uvInds.empty())
@@ -502,11 +504,12 @@ fgSplitSurfsByUvs(const Fg3dMesh & in)
         newVertInds[colourMap[ii]-1].push_back(quadInds[ii]);
         newUvInds[colourMap[ii]-1].push_back(uvInds[ii]);
     }
-    vector<Fg3dSurface>         surfs;
+    ret.verts = mesh.verts;
+    ret.uvs = mesh.uvs;
     for (size_t ii=0; ii<numColours; ++ii)
-        surfs.push_back(Fg3dSurface(newVertInds[ii],newUvInds[ii]));
+        ret.surfaces.push_back(Fg3dSurface(newVertInds[ii],newUvInds[ii]));
     fgout << fgnl << numColours << " separate UV-contiguous surfaces created" << endl;
-    return Fg3dMesh(mesh.verts,mesh.uvs,surfs);
+    return ret;
 }
 
 Fg3dMesh
@@ -514,15 +517,16 @@ fgMergeMeshSurfaces(
     const Fg3dMesh &    m0,
     const Fg3dMesh &    m1)
 {
+    Fg3dMesh        ret;
+    ret.verts = m0.verts;
+    ret.uvs = m0.uvs;
     FGASSERT(m0.verts != m1.verts);
     FGASSERT(m0.uvs != m1.uvs);
-    vector<Fg3dSurface> surfs;
     for (size_t ss=0; ss<m0.surfaces.size(); ++ss)
-        surfs.push_back(m0.surfaces[ss]);
+        ret.surfaces.push_back(m0.surfaces[ss]);
     for (size_t ss=0; ss<m1.surfaces.size(); ++ss)
-        surfs.push_back(m1.surfaces[ss]);
-    return
-        Fg3dMesh(m0.verts,m0.uvs,surfs);
+        ret.surfaces.push_back(m1.surfaces[ss]);
+    return ret;
 }
 
 Fg3dMesh
@@ -535,8 +539,8 @@ fgMergeMeshes(
         ret.name = m0.name + "_" + m1.name;
     else
         ret.name = m0.name + m1.name;
-    ret.verts = fgConcat(m0.verts,m1.verts);
-    ret.uvs = fgConcat(m0.uvs,m1.uvs);
+    ret.verts = fgCat(m0.verts,m1.verts);
+    ret.uvs = fgCat(m0.uvs,m1.uvs);
     ret.surfaces = fgEnsureNamed(m0.surfaces,m0.name);
     vector<Fg3dSurface>     s1s = fgEnsureNamed(m1.surfaces,m1.name);
     for (uint ss=0; ss<s1s.size(); ++ss)
@@ -551,9 +555,9 @@ fgMergeMeshes(
         // Search m0 not ret in case of duplicate morph names in m1:
         FgValid<size_t>     idx = m0.findDeltaMorph(dm.name);
         if (idx.valid())
-            ret.deltaMorphs[idx.val()].verts = fgConcat(m0.deltaMorphs[idx.val()].verts,dm.verts);
+            ret.deltaMorphs[idx.val()].verts = fgCat(m0.deltaMorphs[idx.val()].verts,dm.verts);
         else {
-            dm.verts = fgConcat(FgVerts(m0.verts.size()),dm.verts);
+            dm.verts = fgCat(FgVerts(m0.verts.size()),dm.verts);
             ret.deltaMorphs.push_back(dm);
         }
     }
@@ -673,7 +677,7 @@ fgEmboss(const Fg3dMesh & mesh,const FgImgUC & logoImg,double val)
             for (uint jj=0; jj<3; ++jj) {
                 FgVect2F        uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgLerpClip(logoImg,uv) / 255.0f;
+                float           imgSamp = fgBlerpClipIucs(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
@@ -686,7 +690,7 @@ fgEmboss(const Fg3dMesh & mesh,const FgImgUC & logoImg,double val)
             for (uint jj=0; jj<4; ++jj) {
                 FgVect2F        uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = fgLerpClip(logoImg,uv) / 255.0f;
+                float           imgSamp = fgBlerpClipIucs(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
@@ -737,6 +741,7 @@ fgMeshMirrorX(const Fg3dMesh & in)
     FgMeshMirror    ret;
     ret.mesh = in;
     ret.mesh.deltaMorphs.clear();
+    ret.mesh.targetMorphs.clear();
     // Mirror the vertices not on the saggital plane. Track this by index not position
     // since lip touch may have co-incident (but different) verts:
     ret.mirrorInds.resize(in.verts.size());

@@ -122,7 +122,7 @@ fgPad(const string & str,size_t len,char ch)
 }
 
 string
-fgConcat(const vector<string> & strings,const string & separator)
+fgCat(const vector<string> & strings,const string & separator)
 {
     string      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -157,3 +157,14 @@ fgStoI(const string & str)
     ret = neg ? -acc : acc;
     return ret;
 }
+
+bool
+fgContains(const std::string & str,char c)
+{
+    for (size_t ii=0; ii<str.size(); ++ii)
+        if (str[ii] == c)
+            return true;
+    return false;
+}
+
+// */

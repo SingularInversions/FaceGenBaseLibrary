@@ -14,12 +14,13 @@
 using namespace std;
 
 FgGuiPtr
-fgGuiText(FgDgn<FgString> node,uint minWidth)
+fgGuiText(FgDgn<FgString> node,uint minWidth,bool rich)
 {
     FgGuiApiText    gt;
     gt.content = node;
     gt.updateFlagIdx = g_gg.addUpdateFlag(node);
     gt.minWidth = minWidth;
+    gt.rich = rich;
     return fgsp(gt);
 }
 

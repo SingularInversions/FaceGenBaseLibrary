@@ -148,15 +148,15 @@ fgCreateChild(
     HWND            parentHwnd,
     // WinImpl window identifier. Must be unique per instantiation for given parent if messages from
     // child to parent need to be processed:
-    int             ident,
+    size_t          ident,
     // Passed back in windows callback function and used to map to object's wndProc:
     ChildImpl *     thisPtr,
     FgCreateChild   opt)
 {
     std::string     classNameA = typeid(ChildImpl).name();
     // Different class options mean different classes:
-    classNameA +=   fgToString(uint(opt.cursor)) + "_" +
-                    fgToString(uint(opt.useFillBrush));
+    classNameA +=   fgToString(size_t(opt.cursor)) + "_" +
+                    fgToString(size_t(opt.useFillBrush));
     std::wstring    className = FgString(classNameA).as_wstring();
     FGASSERT(className.length() < 256);     // Windows limit
     WNDCLASSEX  wcl;

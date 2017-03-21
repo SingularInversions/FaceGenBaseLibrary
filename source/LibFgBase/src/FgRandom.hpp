@@ -16,9 +16,12 @@
 void
 fgRandSeedRepeatable(uint seed=42);
 
-// Returns a uniform random number in the range [0,1)
+// Returns a uniform random number in the range [0,1]
 double
 fgRand();
+
+uint32
+fgRandUint32();
 
 // Returns a uniform random uint in the range [0,size)
 uint
@@ -35,6 +38,9 @@ fgRandUniform(double lo,double hi)
 double
 fgRandNormal(double mean=0.0,double stdev=1.0);
 
+std::vector<double>
+fgRandNormals(size_t num,double mean=0.0,double stdev=1.0);
+
 // Exponential distribution:
 inline double
 fgRandExp()
@@ -42,9 +48,5 @@ fgRandExp()
 
 std::string
 fgRandString(uint numChars);
-
-// Flip a coin:
-bool
-randFlip();
 
 #endif

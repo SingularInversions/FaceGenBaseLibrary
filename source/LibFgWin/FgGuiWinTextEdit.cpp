@@ -88,12 +88,12 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                 hwndThis = hwnd;
                 hwndText = 
                     CreateWindowEx(0,
-                        TEXT("edit"),
+                        L"edit",
                         NULL,
                         WS_CHILD | WS_VISIBLE | WS_BORDER | ES_LEFT,
                         0,0,0,0,            // Will be sent MOVEWINDOW messages.
                         hwnd,
-                        HMENU(1),
+                        HMENU(1),           // Assign identifier 1 to this child window
                         s_fgGuiWin.hinst,
                         NULL);              // No WM_CREATE parameter
                 FGASSERTWIN(hwndText != 0);
@@ -151,7 +151,6 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                     const FgString &    txt = m_api.getInput();
                     SetWindowText(hwndText,txt.as_wstring().c_str());
                 }
-                return 0;
             }
         }
         return DefWindowProc(hwnd,message,wParam,lParam);

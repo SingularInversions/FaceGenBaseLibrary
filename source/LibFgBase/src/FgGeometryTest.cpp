@@ -318,9 +318,9 @@ fgGeometryManTest(const FgArgs &)
     uint            sz = ns-2;
     FgMatrixD       derivs(sz,3);
     for (uint ii=0; ii<sz; ++ii) {
-        derivs.elem(ii,0) = func[ii+1];
-        derivs.elem(ii,1) = func[ii+2]-func[ii];
-        derivs.elem(ii,2) = func[ii+2] + func[ii] - 2.0 * func[ii+1];
+        derivs.rc(ii,0) = func[ii+1];
+        derivs.rc(ii,1) = func[ii+2]-func[ii];
+        derivs.rc(ii,2) = func[ii+2] + func[ii] - 2.0 * func[ii+1];
     }
     fgDrawFunctions(derivs);
 }

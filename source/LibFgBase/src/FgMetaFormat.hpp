@@ -73,6 +73,15 @@ inline bool
 fgLoadPBin(const FgString & filename,T & val,bool throwOnFail=true)
 {return fgLoadDeserial<portable_binary_iarchive>(filename,val,throwOnFail); }
 
+template<class T>
+T
+fgLoadBinT(const FgString & fname)
+{
+    T       ret;
+    fgLoadBin(fname,ret,true);
+    return ret;
+}
+
 template<class Archive,class T>
 bool
 fgSaveSerial(

@@ -15,7 +15,7 @@
 using namespace std;
 
 std::string
-fgDateTime(time_t rawTime)
+fgDateTimeString(time_t rawTime)
 {
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
@@ -34,11 +34,11 @@ fgDateTime(time_t rawTime)
 }
 
 std::string
-fgDateTime()
+fgDateTimeString()
 {
     time_t          rawTime;
     time(&rawTime);
-    return fgDateTime(rawTime);
+    return fgDateTimeString(rawTime);
 }
 
 std::string
@@ -53,6 +53,18 @@ fgDate(time_t rawTime)
         << setw(2) << setfill('0') 
         << fmtTime->tm_mday << " ";
     return oss.str();
+}
+
+std::string
+fgDateTimePath()
+{
+    time_t          rawtime;
+    time(&rawtime);
+    const int       buffSize = 256;
+    char            buffer[buffSize] = {0};
+    tm              *timeinfo = localtime(&rawtime);
+    strftime(buffer,buffSize-1,"%y%m%d_%H%M%S",timeinfo);
+    return string(buffer);
 }
 
 std::ostream &

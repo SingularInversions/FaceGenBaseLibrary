@@ -86,7 +86,7 @@ struct  FgAffineC
         FgMatrixC<T,dim,ncols> ret = linear * vec;
         for (uint col=0; col<ncols; col++)
             for (uint row=0; row<dim; row++)
-                ret.elm(col,row) += translation[row];
+                ret.cr(col,row) += translation[row];
         return ret;
     }
 
@@ -121,7 +121,7 @@ struct  FgAffineC
         FgMatrixC<T,dim+1,dim+1>    ret;
         ret.setSubMat(linear,0,0);
         ret.setSubMat(translation,0,dim);
-        ret.elm(dim,dim) = T(1);
+        ret.cr(dim,dim) = T(1);
         return ret;
     }
 };

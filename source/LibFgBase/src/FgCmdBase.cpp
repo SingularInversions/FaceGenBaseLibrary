@@ -25,7 +25,7 @@ vector<FgCmd>
 fgCmdBaseTests()
 {
     vector<FgCmd>   cmds;
-    FGADDCMD1(fgApproxFuncTest,"approxFunc");
+    //FGADDCMD1(fgApproxFuncTest,"approxFunc");
     FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
     FGADDCMD1(fgDepGraphTest,"depGraph");
     FGADDCMD1(fgExceptionTest,"exception");

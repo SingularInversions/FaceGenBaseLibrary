@@ -63,10 +63,37 @@ public:
         return FgOpt<U>();
     }
 
+    bool
+    operator==(const FgOpt<T> & rhs) const
+    {
+        if (m_valid && rhs.m_valid)
+            return (m_val == rhs.m_val);
+        return (!m_valid && !rhs.m_valid);
+    }
+
+    bool
+    operator!=(const FgOpt<T> & rhs) const
+    {
+        if (m_valid && rhs.m_valid)
+            return (m_val != rhs.m_val);
+        return (m_valid || rhs.m_valid);
+    }
+
 private:
     bool        m_valid;
     T           m_val;
 };
+
+template<typename T>
+std::ostream &
+operator<<(ostream & os,const FgOpt<T> & v)
+{
+    if (v.valid())
+        os << v.val();
+    else
+        os << "Invalid";
+    return os;
+}
 
 template<typename T>
 struct FgValid

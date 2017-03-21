@@ -43,6 +43,7 @@
 #include <iterator>
 #include <limits>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <stack>

@@ -32,9 +32,13 @@
 //#include <tchar.h>
 //#include <conio.h>
 #include <commctrl.h>
+#  pragma warning(push)
+#  pragma warning(disable:4458)		// Declaration hides class member
 #include <Gdiplus.h>
+#  pragma warning(pop)
 #include <Shlobj.h>
 #include <sys/stat.h>
+#include <Aclapi.h>
 //#pragma comment(lib, "gdiplus.lib") // Tells the linker to look for this library
 
 #undef max                          // These are defined in windows.h and interfere with

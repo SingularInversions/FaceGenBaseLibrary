@@ -26,6 +26,9 @@ fg64bitOS()
 #endif
 }
 
+// Don't warn about deprecation ('GetVersionEx'). TODO: Make os version detection actually work.
+#  pragma warning(disable:4996)
+
 FgString
 fgSystemInfo()
 {

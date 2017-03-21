@@ -45,6 +45,12 @@ FgOpt<FgVect3D>
 fgBarycentricCoords(FgVect2F point,FgVect2F v0,FgVect2F v1,FgVect2F v2)
 {return fgBarycentricCoords(FgVect2D(point),FgVect2D(v0),FgVect2D(v1),FgVect2D(v2)); }
 
+// Return the position of the barycentric coordinate given the triangle indices and vertex list:
+inline
+FgVect3F
+fgBarycentricToPos(const FgVect3Fs & verts,FgVect3UI vertInds,FgVect3F baryCoord)
+{return (baryCoord[0]*verts[vertInds[0]] + baryCoord[1]*verts[vertInds[1]] + baryCoord[2]*verts[vertInds[2]]); }
+
 // Homogenous plane representation from 3 points on plane:
 FgVect4D
 fgPlaneH(FgVect3D p0,FgVect3D p1,FgVect3D p2);

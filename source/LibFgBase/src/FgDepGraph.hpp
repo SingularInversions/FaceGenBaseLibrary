@@ -313,11 +313,11 @@ private:
             done(false),
             userCancelled(false)
             {}
-        std::auto_ptr<boost::mutex> guardException; // Guard 2 members below:
+        std::unique_ptr<boost::mutex> guardException; // Guard 2 members below:
         bool                        flag;           // Error or cancellation exception has occurred
         FgException                 exception;
-        std::auto_ptr<boost::mutex> guardQueue;
-        char                        cachePad0[64-sizeof(std::auto_ptr<boost::mutex>)];
+        std::unique_ptr<boost::mutex> guardQueue;
+        char                        cachePad0[64-sizeof(std::unique_ptr<boost::mutex>)];
         vector<uint>                queue;
         char                        cachePad1[64-sizeof(size_t)];
         uint                        lastLink;

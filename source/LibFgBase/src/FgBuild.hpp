@@ -34,9 +34,6 @@ fgCompilers()
 std::string
 fgCurrentCompiler();
 
-std::string
-fgCompilersSyntax();
-
 // Supported build bit sizes for given compiler:
 std::vector<std::string>
 fgBuildBits(const std::string & compiler);

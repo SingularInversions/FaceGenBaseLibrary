@@ -19,8 +19,7 @@
 // since several smoothly connected surfaces may be segemented for different
 // texture images.
 //
-// Floats are used for vertex positions due to size but the design tries to stay agnostic
-// in case we need other implementations (fixed point or double). Note that in a 1 metre 
+// Floats are used for vertex positions due to size. Note that in a 1 metre 
 // square volume, float precision gives at least 1 micron resolution. Since the thinnest human
 // hairs are 17 microns (the thickest 180) float is adequate for most applications.
 //
@@ -30,80 +29,7 @@
 
 #include "FgStdLibs.hpp"
 
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
-#include "FgMatrix.hpp"
-#include "Fg3dSurface.hpp"
-#include "FgImage.hpp"
-#include "FgStdStream.hpp"
-#include "FgOpt.hpp"
-
-// Delta morphs and target morphs will have the same effect when applied to the base
-// face on which they were defined but will have very different effects when applied
-// to a face created by an statistical shape model:
-
-struct  FgMorph
-{
-    FgString            name;
-    FgVerts             verts;      // 1-1 correspondence with base verts
-
-    FgMorph() {}
-    FgMorph(const FgString & n,const FgVerts & v)
-        : name(n), verts(v) {}
-
-    void
-    applyAsDelta(FgVerts & accVerts,float val) const
-    {
-        FGASSERT(verts.size() == accVerts.size());
-        for (size_t ii=0; ii<verts.size(); ++ii)
-            accVerts[ii] += verts[ii] * val;
-    }
-};
-
-void    fgReadp(std::istream &,FgMorph &);
-void    fgWritep(std::ostream &,const FgMorph &);
-
-struct  FgIndexedMorph
-{
-    FgString            name;
-    FgUints             baseInds;   // Indices of base vertices to be morphed.
-    // Can represent target position or delta depending on type of morph.
-    // Must be same size() as baseInds.:
-    FgVerts             verts;
-
-    void
-    applyAsTarget(const FgVerts & baseVerts,FgVerts & accVerts,float val) const
-    {
-        for (size_t ii=0; ii<baseInds.size(); ++ii) {
-            uint        idx = baseInds[ii];
-            FgVect3F    del = verts[ii] - baseVerts[idx];
-            accVerts[idx] += del * val;
-        }
-    }
-
-    // Name of morph does not affect equality:
-    bool
-    operator==(const FgIndexedMorph & rhs) const
-    {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
-};
-
-void    fgReadp(std::istream &,FgIndexedMorph &);
-void    fgWritep(std::ostream &,const FgIndexedMorph &);
-
-void
-fgAccDeltaMorphs(
-    const vector<FgMorph> &     deltaMorphs,
-    const FgFlts &              coord,
-    FgVerts &                   accVerts);  // MODIFIED: morphing delta accumualted here
-
-// This version of target morph application is more suited to SSM dataflow, where the
-// target positions have been transformed as part of the 'allVerts' array:
-void
-fgAccTargetMorphs(
-    const FgVerts &             allVerts,   // Base verts plus all target morph verts
-    const vector<FgIndexedMorph> & targMorphs,  // Only 'baseInds' is used.
-    const FgFlts &              coord,      // morph coefficient for each target morph
-    FgVerts &                   accVerts);  // MODIFIED: target morphing delta accumulated here
+#include "Fg3dPose.hpp"
 
 struct  FgMarkedVert
 {
@@ -129,7 +55,7 @@ void    fgWritep(std::ostream &,const FgMarkedVert &);
 
 typedef vector<FgMarkedVert>    FgMarkedVerts;
 
-struct  FgMaterial 
+struct  FgMaterial
 {
     bool    shiny;
     FgMaterial() : shiny(false) {}
@@ -139,29 +65,26 @@ struct  Fg3dMesh
 {
     FgString                    name;           // Optional
     FgVerts                     verts;          // Base shape
-    FgUvs                       uvs;            // Texture coordinates in OTCS
+    FgVect2Fs                   uvs;            // Texture coordinates in OTCS
     vector<Fg3dSurface>         surfaces;
     vector<FgMorph>             deltaMorphs;
     vector<FgIndexedMorph>      targetMorphs;
     FgMarkedVerts               markedVerts;
     FgMaterial                  material;
 
-    Fg3dMesh()
-    {}
+    Fg3dMesh() {}
 
-    Fg3dMesh(
-        const FgVerts &                 verts,
-        const Fg3dSurface &             surf);
+    explicit
+    Fg3dMesh(const FgVerts & vts) : verts(vts) {}
 
-    Fg3dMesh(
-        const FgVerts &                 verts,
-        const vector<Fg3dSurface> &     surfaces);
+    explicit
+    Fg3dMesh(const FgTriSurf & ts) : verts(ts.verts), surfaces(fgSvec(Fg3dSurface(ts.tris))) {}
 
-    Fg3dMesh(
-        const FgVerts &                 verts,
-        const vector<FgVect2F> &        uvs,
-        const vector<Fg3dSurface> &     surfaces,
-        const vector<FgMorph> &         morphs=vector<FgMorph>());
+    Fg3dMesh(const FgVerts & vts,const FgVect3UIs & ts) : verts(vts), surfaces(fgSvec(Fg3dSurface(ts))) {}
+
+    Fg3dMesh(const FgVerts & vts,const Fg3dSurface & surf) : verts(vts), surfaces(fgSvec(surf)) {}
+
+    Fg3dMesh(const FgVerts & vts,const Fg3dSurfaces & surfs) : verts(vts), surfaces(surfs) {}
 
     // Total number of verts including target morph verts:
     size_t
@@ -210,8 +133,8 @@ struct  Fg3dMesh
     surfPointsAsVertLabels() const;
 
     FgVect3F
-    markedVertPos(const string & name) const
-    {return verts[fgFindFirst(markedVerts,name).idx]; }
+    markedVertPos(const string & name_) const
+    {return verts[fgFindFirst(markedVerts,name_).idx]; }
 
     vector<boost::shared_ptr<FgImgRgbaUb> >
     albedoMaps() const
@@ -248,9 +171,6 @@ struct  Fg3dMesh
     }
 
     // MORPHS:
-
-    size_t
-    numTargetMorphVerts() const;
 
     size_t
     numMorphs() const
@@ -316,6 +236,9 @@ struct  Fg3dMesh
     void
     addTargMorph(const FgString & name,const FgVerts & targetShape);
 
+    FgVerts
+    poseShape(const FgVerts & allVerts,const std::map<FgString,float> & poseVals) const;
+
     // EDITING:
 
     void
@@ -333,26 +256,32 @@ struct  Fg3dMesh
     void
     convertToTris();
 
+    // Throws if the mesh is not valid:
     void
-    checkConsistency();
+    checkValidity();
 };
+
+std::ostream &
+operator<<(std::ostream &,const Fg3dMesh &);
 
 void    fgReadp(std::istream &,Fg3dMesh &);
 void    fgWritep(std::ostream &,const Fg3dMesh &);
 
 typedef std::vector<Fg3dMesh>   Fg3dMeshes;
 
-Fg3dMesh
-fg3dMesh(const FgVerts &);
+std::ostream &
+operator<<(std::ostream &,const Fg3dMeshes &);
 
 std::set<FgString>
 fgMorphs(const vector<Fg3dMesh> & meshes);
 
-std::ostream &
-operator<<(std::ostream &,const Fg3dMesh &);
+inline
+FgPoses
+fgPoses(const Fg3dMesh & mesh)
+{return fgCat(fgPoses(mesh.deltaMorphs),fgPoses(mesh.targetMorphs)); }
 
-std::ostream &
-operator<<(std::ostream &,const Fg3dMeshes &);
+FgPoses
+fgPoses(const vector<Fg3dMesh> & meshes);
 
 inline
 FgAffineCw2F

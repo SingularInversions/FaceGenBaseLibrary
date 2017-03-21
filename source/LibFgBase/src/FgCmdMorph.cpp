@@ -159,15 +159,15 @@ create(const FgArgs & args)
     Fg3dMesh    target = fgLoadMeshAnyFormat(syntax.next());
     if (base.verts.size() != target.verts.size())
         fgThrow("Different number of vertices between base and target");
-    bool        ignore = false;
+    bool        ignoreSmall = false;
     if (syntax.peekNext() == "-i") {
-        ignore = true;
+        ignoreSmall = true;
         syntax.next();
     }
     float       baseSz = fgMaxElem(fgDims(base.verts)),
                 delSz = fgMaxElem(fgDims(target.verts-base.verts));
     if ((delSz / baseSz) < 0.00001) {
-        if (ignore) {
+        if (ignoreSmall) {
             fgout << "Very small or zero morph ignored";
             return;
         }

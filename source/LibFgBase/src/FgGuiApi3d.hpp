@@ -75,6 +75,10 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
     // FgVect2I: final position
     // FgMat44F: transform verts to OICS
     boost::function<void(FgVect2UI,FgVect2I,FgMat44F)>  shiftRightDragAction;
+    // FgVect2UI: viewport size
+    // FgVect2I: click position
+    // FgMat44F: transform verts to OICS
+    boost::function<void(FgVect2UI,FgVect2I,FgMat44F)>  ctrlShiftMiddleClickAction;
 
     FgGuiApi3d() : panTiltLimits(false) {}
 

@@ -67,6 +67,9 @@ struct  FgString
     bool operator<(const FgString & other) const
     {return m_str < other.m_str; }
 
+    int compare(const FgString & rhs) const
+    {return m_str.compare(rhs.m_str); }
+
     // The narrow-character stream operators do *not* do any
     // character set conversion:
     friend 
@@ -177,7 +180,7 @@ fgSubstring(const FgString & str,size_t start,size_t size);
 
 // Inspired by Python join():
 FgString
-fgConcat(const FgStrings & strings,const FgString & separator);
+fgCat(const FgStrings & strings,const FgString & separator);
 
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:

@@ -32,7 +32,7 @@ FgLighting::createSpecularMap() const
             float   xx = ((float)px - 63.5f) / 64.0f,
                     sq = xx*xx + yy*yy;
             if (sq > 1.0f)                    // Outside valid spherical region.
-                img.elem(px,py) = FgRgbaUB(0,0,0,1);
+                img.xy(px,py) = FgRgbaUB(0,0,0,1);
             else {
                 float   aa = 2.0f * sqrt(1.0f - sq),
                         sr = sqrt(sq),
@@ -50,7 +50,7 @@ FgLighting::createSpecularMap() const
                 if (pix.red() > 255.0f) pix.red() = 255.0f;
                 if (pix.green() > 255.0f) pix.green() = 255.0f;
                 if (pix.blue() > 255.0f) pix.blue() = 255.0f;
-                fgConvert_(pix,img.elem(px,py));
+                fgCast_(pix,img.xy(px,py));
             }
         }
     }

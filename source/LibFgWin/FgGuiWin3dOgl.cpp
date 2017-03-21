@@ -104,7 +104,6 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
         if (msg == WM_CREATE) {
             m_hwnd = hwnd;
             initOgl(hwnd);
-#if (_MSC_VER >= 1600)  // Gestures not defined in VS08
             // The pinch-to-zoom gesture is enabled by default but not the rotate gesture, which we
             // must explicitly enable:
             GESTURECONFIG   config = {0};
@@ -114,7 +113,6 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             // This function returned a "not implemented" error on a German Windows 7 64bit SP1 system,
             // so don't throw on error, just continue and presumably no gesture messages will be received:
             SetGestureConfig(hwnd,0,1,&config,sizeof(GESTURECONFIG));
-#endif
         }
         else if (msg == WM_SIZE) {
             int         sx = LOWORD(lParam),
@@ -137,6 +135,15 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             // when the program first started). Buggy video driver (perhaps OpenGL specific).
             SwapBuffers(m_hdc);
             EndPaint(hwnd,&ps);
+        }
+        else if (msg == WM_MBUTTONDOWN) {
+            if (wParam == (MK_SHIFT | MK_MBUTTON)) {
+                FgVect2I    pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+                if (m_api.ctrlShiftMiddleClickAction) {
+                    m_api.ctrlShiftMiddleClickAction(m_size,pos,fgOglTransform());
+                    g_gg.updateScreen();
+                }
+            }
         }
         else if ((msg == WM_LBUTTONDOWN) || (msg == WM_RBUTTONDOWN)) {
             m_lastPos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
@@ -241,7 +248,6 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
                 m_hdc = NULL;
             }
         }
-#if (_MSC_VER >= 1600)  // Gestures not defined in VS08
         else if (msg == WM_GESTURE){ 
             GESTUREINFO     gi;
             ZeroMemory(&gi,sizeof(GESTUREINFO));
@@ -270,7 +276,6 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
                 }
             }
         }
-#endif
         else
             return DefWindowProc(hwnd,msg,wParam,lParam);
         return 0;

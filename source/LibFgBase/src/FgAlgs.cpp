@@ -57,13 +57,13 @@ fgConvolveGauss(
 }
 
 vector<double>
-fgRelDiff(const vector<double> & a,const vector<double> & b)
+fgRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
 {
     vector<double>      ret;
     FGASSERT(a.size() == b.size());
     ret.resize(a.size());
     for (size_t ii=0; ii<a.size(); ++ii)
-        ret[ii] = fgRelDiff(a[ii],b[ii]);
+        ret[ii] = fgRelDiff(a[ii],b[ii],minAbs);
     return ret;
 }
 

@@ -13,7 +13,7 @@
 // A vector is just a matrix with one dimension set to size 1 (thus row and column 
 // vectors are different)
 //
-// elem(row,col) allows access to matrix elements.
+// rc(row,col) allows access to matrix elements.
 //
 // operator[] allows access to vector elements (or to unrolled matrix elements).
 //
@@ -141,27 +141,28 @@ struct  FgMatrixC
     size() const    // For template interface compatibility with std::vector
     {return nrows*ncols; }
 
-    // elem is deprecated:
+    // Element access by (row,column):
     T &
-    elem(uint row,uint col)
+    rc(uint row,uint col)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
     const T &
-    elem(uint row,uint col) const
+    rc(uint row,uint col) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
+    // Element access by (column,row):
     T &
-    elm(uint col,uint row)
+    cr(uint col,uint row)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
     const T &
-    elm(uint col,uint row) const
+    cr(uint col,uint row) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
@@ -273,6 +274,19 @@ struct  FgMatrixC
         return false;
     }
 
+    // Ternary compare to match STL containers. Ordering by axis:
+    int
+    compare(const FgMatrixC & rhs) const
+    {
+        for (uint ii=0; ii<nrows*ncols; ++ii) {
+            if (m[ii] < rhs.m[ii])
+                return -1;
+            else if (rhs.m[ii] < m[ii])
+                return 1;
+        }
+        return 0;
+    }
+
     void
     setConstant(T v)
     {
@@ -302,7 +316,7 @@ struct  FgMatrixC
         uint                        cnt = 0;
         for (uint rr=firstRow; rr<firstRow+srows; ++rr)
             for (uint cc=firstCol; cc<firstCol+scols; ++cc)
-                ret[cnt++] = elem(rr,cc);
+                ret[cnt++] = rc(rr,cc);
         return ret;
     }
 
@@ -313,7 +327,7 @@ struct  FgMatrixC
         FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
         for (uint rr=0; rr<srows; rr++)
             for (uint cc=0; cc<scols; cc++)
-                elem(rr+row,cc+col) = sub.elem(rr,cc);
+                rc(rr+row,cc+col) = sub.rc(rr,cc);
     }
 
     T
@@ -335,7 +349,7 @@ struct  FgMatrixC
         FgMatrixC<T,ncols,nrows> tMat;
         for (uint ii=0; ii<nrows; ii++)
             for (uint jj=0; jj<ncols; jj++)
-                tMat.elem(jj,ii) = elem(ii,jj);
+                tMat.rc(jj,ii) = rc(ii,jj);
         return tMat;
     }
 
@@ -345,7 +359,7 @@ struct  FgMatrixC
         FgMatrixC<T,nrows,1>    ret;
         FGASSERT_FAST(col < nrows);
         for (uint rr=0; rr<nrows; rr++)
-            ret[rr] = elem(rr,col);
+            ret[rr] = rc(rr,col);
         return ret;
     }
 
@@ -355,7 +369,7 @@ struct  FgMatrixC
         FgMatrixC<T,1,ncols>    ret;
         FGASSERT_FAST(row < nrows);
         for (uint cc=0; cc<ncols; ++cc)
-            ret[cc] = elem(row,cc);
+            ret[cc] = rc(row,cc);
         return ret;
     }
 
@@ -366,7 +380,7 @@ struct  FgMatrixC
         FG_STATIC_ASSERT(nrows == ncols);
         FgMatrixC               ret(T(0));
         for (uint ii=0; ii<nrows; ++ii)
-            ret.elem(ii,ii) = T(1);
+            ret.rc(ii,ii) = T(1);
         return ret;
     }
 
@@ -468,10 +482,19 @@ typedef FgMatrixC<double,1,2>       FgVectD2;
 typedef FgMatrixC<double,1,3>       FgVectD3;
 typedef FgMatrixC<uint,1,2>         FgVectU2;
 
+typedef vector<FgVect2F>            FgVect2Fs;
+typedef vector<FgVect2D>            FgVect2Ds;
 typedef vector<FgVect3F>            FgVerts;
-typedef vector<FgVect2F>            FgUvs;
+typedef vector<FgVect3F>            FgVect3Fs;
+typedef vector<FgVect3UI>           FgVect3UIs;
+typedef vector<FgVect3D>            FgVect3Ds;
+typedef vector<FgVect4F>            FgVect4Fs;
+typedef vector<FgVect4UI>           FgVect4UIs;
+typedef vector<FgVect4D>            FgVect4Ds;
 
 typedef vector<FgVerts>             FgVertss;
+typedef vector<FgVect3Ds>           FgVect3Dss;
+typedef vector<FgVect3Dss>          FgVect3Dsss;
 
 template<class T,uint nrows,uint ncols>
 void

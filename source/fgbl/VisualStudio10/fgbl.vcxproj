@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A2C1531D-5037-BAC3-75B8-94CAD02218A5}</ProjectGuid>
+    <ProjectGuid>{D36CB6AF-825E-F625-04F6-9B4B44D2668A}</ProjectGuid>
     <RootNamespace>fgbl</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -77,7 +77,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -100,7 +100,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -121,7 +121,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -145,7 +145,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_58_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_63_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -163,27 +163,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\LibTpBoost\VisualStudio10\LibTpBoost.vcxproj">
-      <Project>{6E787B72-32E0-AF9C-0934-298452F36B6B}</Project>
+      <Project>{DC26A103-A0E9-7D45-8508-60D40E98571A}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibJpegIjg6b\VisualStudio10\LibJpegIjg6b.vcxproj">
-      <Project>{2F374165-0475-422D-E68D-B4C118757DDC}</Project>
+      <Project>{29BCF574-364F-F77B-B1FB-298BE269CB08}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibImageMagickCore\VisualStudio10\LibImageMagickCore.vcxproj">
-      <Project>{2145626E-FB9E-7768-1217-D389285852CC}</Project>
+      <Project>{E94B98C3-5ED2-8F57-C235-9FA369756963}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgWin\VisualStudio10\LibFgWin.vcxproj">
-      <Project>{1F666F31-FF71-040F-75EF-E65A772D423D}</Project>
+      <Project>{40A8BE92-400F-9E58-A54B-930FB8637051}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgBase\VisualStudio10\LibFgBase.vcxproj">
-      <Project>{F78A4180-7879-7056-2B3A-F28B62308C5A}</Project>
+      <Project>{DA030838-0440-62BB-9D1A-F6BFD917B1E0}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>

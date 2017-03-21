@@ -1493,7 +1493,7 @@ static bool writeClipChunks(
             // STIL sub-chunk
             /////////////////
 
-            unsigned short ln = uint(strlen(texFname.c_str())) + 1;
+            unsigned short ln = ushort(strlen(texFname.c_str())) + 1;
             unsigned short stilSubSize = (ln + 1) & ~0x0001;
             if (!writeSubChunkHdr(fptr,ID_STIL,stilSubSize))
                 return false;

@@ -16,17 +16,7 @@
 #include "FgBestN.hpp"
 #include "FgAffineCwC.hpp"
 
-struct  FgShader
-{
-    virtual ~FgShader() {}
-
-    virtual FgRgbaF
-    operator()(
-        FgVect3F            normOecs,
-        FgVect2F            uvIucs,
-        FgMaterial          material,
-        const FgImgRgbaUb * img = NULL) const = 0;
-};
+typedef boost::function<FgRgbaF(FgVect3F,FgVect2F,FgMaterial,const FgImgRgbaUb *)>   FgFuncShader;
 
 struct  FgSurfPtr
 {
@@ -45,6 +35,7 @@ struct  FgSurfRay
     FgGridTriangles             grid;       // IUCS
     vector<float>               depth;      // CCS Z
     vector<FgVect3F>            norms;
+    FgVect2Fs                   vertsIucs;
 
     FgSurfRay() {}
     FgSurfRay(
@@ -57,25 +48,29 @@ struct  FgSurfRay
 
     FgRgbaF
     shade(
-        const FgShader *        shader,
+        FgFuncShader            shader,
         const FgTriPoint &      intersect) const;
 };
 
-struct  Fg3dRayCaster : public FgSample
+struct  Fg3dRayCaster
 {
     vector<FgSurfRay>           m_surfs;
-    const FgShader *            m_shader;
+    FgFuncShader                m_shader;
     FgRgbaF                     m_background;
 
     Fg3dRayCaster(
         vector<FgSurfPtr>       rs,
-        const FgShader *        shader,
+        FgFuncShader            shader,
         FgAffine3F              modelview,
         FgAffineCw2F            itcsToIucs,
         FgRgbaF                 background);
 
     virtual FgRgbaF
     operator()(FgVect2F posIucs) const;
+
+    FgRgbaF
+    cast(FgVect2F p) const
+    {return this->operator()(p); }
 
     struct Best
     {

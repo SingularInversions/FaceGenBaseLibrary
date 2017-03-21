@@ -127,14 +127,19 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
             {
 //fgout << fgnl << "FgGuiWinTextRich::WM_CREATE";
                 hwndThis = hwnd;
+                wstring         winClass;
+                if (m_api.rich)
+                    winClass = RICHEDIT_CLASSW;
+                else
+                    winClass = L"edit";
                 hwndText = 
                     CreateWindowExW(0,
-                        RICHEDIT_CLASSW,
-                        L"HI",
+                        winClass.c_str(),
+                        NULL,
                         WS_CHILD | WS_VISIBLE | ES_LEFT | ES_MULTILINE | ES_READONLY,
                         0,0,0,0,
                         hwnd,
-                        NULL,
+                        HMENU(1),           // Assign identifier 1 to this child window
                         s_fgGuiWin.hinst,
                         NULL);              // No WM_CREATE parameter
                 FGASSERTWIN(hwndText != 0);

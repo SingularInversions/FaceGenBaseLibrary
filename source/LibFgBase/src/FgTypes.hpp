@@ -80,10 +80,28 @@ template<> struct FgTraits<uint>
     typedef uint64  Accumulator;
     typedef double  Floating;
 };
-template<> struct FgTraits<uint64>
+template<> struct FgTraits<long>
 {
-    typedef uint64  Scalar;
+    typedef long    Scalar;
+    typedef int64   Accumulator;
+    typedef double  Floating;
+};
+template<> struct FgTraits<ulong>
+{
+    typedef ulong   Scalar;
     typedef uint64  Accumulator;
+    typedef double  Floating;
+};
+template<> struct FgTraits<long long>
+{
+    typedef long long   Scalar;
+    typedef long long   Accumulator;
+    typedef double      Floating;
+};
+template<> struct FgTraits<unsigned long long>
+{
+    typedef unsigned long long  Scalar;
+    typedef unsigned long long  Accumulator;
     typedef double  Floating;
 };
 template<> struct FgTraits<float>
@@ -99,20 +117,26 @@ template<> struct FgTraits<double>
     typedef double  Floating;
 };
 
-// Handy within templated algorithms:
+// Template stubs:
 
-inline double fgMag(double v) {return v*v; }    // Template stub
+inline double fgMag(double v) {return v*v; }
+inline double fgDot(double a,double b) {return a*b; }
+
+inline void fgCast_(float  i,uchar &  o) {o = static_cast<uchar>(i); }
+inline void fgCast_(uchar  i,float &  o) {o = static_cast<float>(i); }
+inline void fgCast_(ushort i,float &  o) {o = static_cast<float>(i); }
+inline void fgCast_(double i,float &  o) {o = static_cast<float>(i); }
+inline void fgCast_(uchar  i,double & o) {o = static_cast<double>(i); }
+inline void fgCast_(ushort i,double & o) {o = static_cast<double>(i); }
+inline void fgCast_(float  i,double & o) {o = static_cast<double>(i); }
+inline void fgCast_(unsigned int i,double & o) {o = static_cast<double>(i); }
+inline void fgCast_(unsigned long i,double & o) {o = static_cast<double>(i); }
+inline void fgCast_(unsigned long long i,double & o) {o = static_cast<double>(i); }
 
 inline void fgRound_(float in,int & out) {out = static_cast<int>(std::floor(in + 0.5f)); }
 inline void fgRound_(float in,uchar & out) {out = static_cast<uchar>(in + 0.5f); }
 inline int fgRound(double v) {return static_cast<int>(std::floor(v+0.5)); }
 inline uint fgRoundU(double v) {return static_cast<uint>(v+0.5); }
-
-// Useful for implicit typing in type conversion:
-template<class T,class U>
-inline void
-fgConvert_(const T & in,U & out)
-{out = static_cast<U>(in); }
 
 #endif
 

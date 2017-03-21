@@ -180,7 +180,7 @@ fgBinaryFileCompare(
     const FgString & file2);
 
 // Returns false if the given file or directory cannot be read.
-// The returned time is NOT compatible with std raw time and will in fact crash fgDateTime():
+// The returned time is NOT compatible with std raw time and will in fact crash fgDateTimeString():
 bool
 fgCreationTime(const FgString & path,uint64 & time);
 
@@ -276,5 +276,10 @@ fgCopyRecursive(const FgString & fromDir,const FgString & toDir);
 // Doesn't work reliably across network shares due to time differences.
 void
 fgMirrorFile(const FgPath & src,const FgPath & dst);
+
+// Modify permissions to allow all users to write to given file (not directory).
+// Of course client must have right to do this:
+void
+fgMakeWritableByAll(const FgString & name);
 
 #endif

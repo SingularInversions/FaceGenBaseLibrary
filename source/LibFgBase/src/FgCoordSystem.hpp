@@ -15,66 +15,60 @@
 #include "FgAffineCwC.hpp"
 #include "FgMath.hpp"
 
-//CCS := Camera CS
-//    Origin at effective pinhole
-//    X - camera’s right
-//    Y - camera’s down
-//    Z - camera’s facing 
-//
-//HCS := Head CS
+// FHCS := FaceGen head CS
 //    Origin in face centre on saggital plane
 //    Units are base head millimetres ie. an IPD of ~ 63.5mm on the base head.
 //    X - Head’s left.
 //    Y - Head’s up.
 //    Z - Head’s forward. 
 //
-//PRCS := Projected CS
-//    Origin at principal point, X and Y tangent of view angle.
-//    X - viewer's right
-//    Y - viewer's down
-//    Z - units of inverse distance in front of camera
+// CCS := Camera CS
+//    Origin at effective pinhole, no units specified
+//    X - camera’s right
+//    Y - camera’s down
+//    Z - camera’s facing 
 //
-//ITCS := Image Tangent CS - PRCS without Z axis
+// ITCS := Image Tangent CS
 //    Origin at principal point, units are tangent of view angle.
 //    X - viewer’s right
 //    Y - viewer’s down 
 //
-//OpenGL Overview:
+// OpenGL Overview:
 //    modelview: World frame -> OECS
 //    projection matrix: OECS -> ONDCS
 //    viewport transform: ONDCS -> OWCS 
 //
-//OECS := OpenGL Eye CS / Camera Frame
-//    Origin at pinhole, no units specified.
+// OECS := OpenGL Eye CS / Camera Frame
+//    Origin at effective pinhole, no units specified.
 //    X - viewer’s right
 //    Y - viewer’s up
 //    Z - opposite of camera viewing direction
 //
-//ONDCS := OpenGL Normalized Device CS / Canonical Clipping Volume
+// ONDCS := OpenGL Normalized Device CS / Canonical Clipping Volume
 //    The view volume (frustum) is transformed into (x,y,z) in the range [-1,1].
-//    Note that the Z values are inverted, so the most distant objects have the largest Z values and the values are non-linear (one over the distance from the camera). 
+//    Note that the Z values are inverted, so the most distant objects have the largest Z values
+//    and the values are non-linear (one over the distance from the camera). 
 //
-//OWCS := OpenGL Window CS (Screen Coordinates once z is dropped)
+// OWCS := OpenGL Window CS (Screen Coordinates once z is dropped)
 //    Origin: Bottom left corner of image area, (1,1) top right corner of image area
 //    X - viewer’s right
 //    Y - viewer’s up
 //    Z - Negative inverse of the depth in frustum, used for z-buffer. 
 //
-//OTCS := OGL Texture CS
+// OTCS := OGL Texture CS
 //    Origin at bottom left corner of image area, (1,1) at top right corner.
 //    X - viewer’s right
 //    Y - viewer’s up 
 //
-//VSCS := Venus Sample CS
-//    Origin: ?
-//    Units: ?
-//    X,Y,Z: ? 
-//
-//WCS := Windows CS, same as IRCS 
+
+inline
+FgMat33D
+fgHcsToCcs()
+{return FgMat33D(1,0,0,0,-1,0,0,0,-1); }
 
 inline
 FgMat44D
-fgHcsToCcs()
+fgHcsToCcsH()
 {
     double  m[] = {
         1.0,  0.0,  0.0,  0.0,

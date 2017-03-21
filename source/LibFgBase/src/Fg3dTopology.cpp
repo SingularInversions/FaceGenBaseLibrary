@@ -153,10 +153,10 @@ Fg3dTopology::Fg3dTopology(
         m_edges.push_back(edge);
     }
     for (size_t ii=0; ii<m_edges.size(); ++ii) {
-        FgVect2UI               verts = m_edges[ii].vertInds;
-        m_verts[verts[0]].edgeInds.push_back(uint(ii));
-        m_verts[verts[1]].edgeInds.push_back(uint(ii));
-        EdgeVerts               edge(verts[0],verts[1]);
+        FgVect2UI               vts = m_edges[ii].vertInds;
+        m_verts[vts[0]].edgeInds.push_back(uint(ii));
+        m_verts[vts[1]].edgeInds.push_back(uint(ii));
+        EdgeVerts               edge(vts[0],vts[1]);
         const vector<uint> &    triInds = edgesToTris.find(edge)->second;
         for (size_t jj=0; jj<triInds.size(); ++jj) {
             uint                triIdx = triInds[jj];

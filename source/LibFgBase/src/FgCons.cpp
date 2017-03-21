@@ -150,16 +150,16 @@ fgConsBase(bool win,bool nix)
     if (win) srcDirs.push_back("thread/src/win32/");
     sln.addLib(
         "LibTpBoost",
-        "boost_1_58_0/libs/",
+        "boost_1_63_0/libs/",
         srcDirs,
-        fgSvec<string>("boost_1_58_0/"),
-        fgConcat(
+        fgSvec<string>("boost_1_63_0/"),
+        fgCat(
             fgSvec<string>("BOOST_THREAD_BUILD_LIB=1"),
             defs),
         2);
     vector<string> & incMain = ret.incs,
                    & lnkMain = ret.lnks;
-    incMain.push_back("../LibTpBoost/boost_1_58_0/");
+    incMain.push_back("../LibTpBoost/boost_1_63_0/");
     lnkMain.push_back("LibTpBoost");
     // This library is set up such that you run a config script to adapt the source code to
     // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
@@ -288,7 +288,6 @@ fgCmdCons(const FgArgs &)
     if (fgExists("source"))
         pd.push("source");
     FgConsSolution  sln = fgConsBase(true,false).sln;
-    fgConsVs2008(sln);
     fgConsVs201x(sln);
     sln = fgConsBase(false,true).sln;
     fgConsMakefiles(sln);

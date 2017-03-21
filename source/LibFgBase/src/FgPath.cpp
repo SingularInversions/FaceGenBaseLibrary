@@ -129,7 +129,7 @@ FgPath::operator+(const FgPath &  rhs) const
     return
         FgPath(
             drive,root,
-            fgConcat(dirs,rhs.dirs),
+            fgCat(dirs,rhs.dirs),
             rhs.base,rhs.ext);
 }
 

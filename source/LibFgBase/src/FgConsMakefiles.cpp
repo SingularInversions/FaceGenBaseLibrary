@@ -230,7 +230,7 @@ consGcc(
         ofs << "CC = gcc " << lf
             << "LINK = g++ " << lf
             // Avoid the verbose errors from boost when compiling without C++11 support:
-            << "CFLAGS = -Wno-c++11-extensions ";
+            << "CFLAGS = ";
         // Ensures no common symbols across all libraries, required for all files which
         // are part of a DLL so we just always use it (OSX specific)
         ofs << "-fno-common ";
@@ -244,7 +244,7 @@ consGcc(
             // libraries so it's easier. It uses shared libaries by default and
             // static linking is apparently quite difficult to get right:
             << "LINK = g++" << lf
-            << "CFLAGS = ";
+            << "CFLAGS = -std=c++11 ";
         // -fPIC: (position indepdent code) is required for all object files which are 
         // part of a DLL, so we just always use it (except on OSX where it's the default)
         ofs << "-fPIC ";

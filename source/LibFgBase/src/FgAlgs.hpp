@@ -63,13 +63,20 @@ fgConvolveGauss(
     const vector<double> &     in,
     double                          stdev); // Kernel stdev relative to sample spacing.
 
-// Gives a relative different for similar values, maxes out at +/- 2 for very different values:
+// Gives relative difference for similar values, limit values of +/- 2 for very different values.
+// If 'minAbs' is specified, that will be used as the minimum for determining relative difference
+// (useful when one value may be zero but we know the scale of the comparison):
 inline
 double
-fgRelDiff(double a,double b)
-{return (a*b == 0) ? 0 : (b-a) * 2.0 / (std::abs(b)+std::abs(a)); }
+fgRelDiff(double a,double b,double minAbs=0.0)
+{
+    double      del = b-a,
+                denom = std::abs(b)+std::abs(a);
+    denom = (denom < minAbs) ? minAbs : denom;
+    return (del == 0) ? 0 : del * 2.0 / denom;
+}
 
 vector<double>
-fgRelDiff(const vector<double> & a,const vector<double> & b);
+fgRelDiff(const vector<double> & a,const vector<double> & b,double minAbs=0.0);
 
 #endif

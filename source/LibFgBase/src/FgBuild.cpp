@@ -35,7 +35,7 @@ std::vector<std::string>
 fgBuildCompilers(const std::string & os)
 {
     if (os == "win")
-        return fgSvec<string>("vs12","vs08","vs10","vs13");    // First is default
+        return fgSvec<string>("vs15","vs13","vs12");        // First is default for releases
     else if (os == "ubuntu")
         return fgSvec<string>("gcc");
     else if (os == "osx")
@@ -48,14 +48,14 @@ std::string
 fgCurrentCompiler()
 {
 #if defined _MSC_VER
-    #if (_MSC_VER == 1500)
-        return "vs08";
-    #elif (_MSC_VER == 1600)
+    #if (_MSC_VER == 1600)
         return "vs10";
     #elif (_MSC_VER == 1700)
         return "vs12";
 	#elif (_MSC_VER == 1800)
 		return "vs13";
+    #elif(_MSC_VER == 1900)
+        return "vs15";
     #endif
 #elif defined __clang__
     return "clang";
@@ -63,20 +63,8 @@ fgCurrentCompiler()
     return "gcc";
 #else
     FGASSERT_FALSE;
-    return "";
+    return "";              // Not supported
 #endif
-}
-
-string
-fgCompilersSyntax()
-{
-    vector<string>  compilers = fgCompilers();
-    string  ret = "    <compiler> = (";
-    ret += compilers[0];
-    for (size_t ii=1; ii<compilers.size(); ++ii)
-        ret = ret + " | " + compilers[ii];
-    ret = ret + ")\n";
-    return ret;
 }
 
 std::vector<std::string>

@@ -91,12 +91,14 @@ fgLoadTri(istream & istr)
         istr.read(reinterpret_cast<char*>(&targVerts[0]),int(12*numStatMorphVerts));
 
     // Read in the surface (a TRI has only one):
-    std::vector<FgVect3UI>  tris(numTris);
+    mesh.surfaces.resize(1);
+    Fg3dSurface &           surf = mesh.surfaces[0];
+    surf.tris.vertInds.resize(numTris);
     if (numTris > 0)
-        istr.read(reinterpret_cast<char*>(&tris[0]),int(12*numTris));
-    std::vector<FgVect4UI>  quads(numQuads);
+        istr.read(reinterpret_cast<char*>(&surf.tris.vertInds[0]),int(12*numTris));
+    surf.quads.vertInds.resize(numQuads);
     if (numQuads > 0)
-        istr.read(reinterpret_cast<char*>(&quads[0]),int(16*numQuads));
+        istr.read(reinterpret_cast<char*>(&surf.quads.vertInds[0]),int(16*numQuads));
     // Marked verts:
     mesh.markedVerts.resize(numLabVerts);
     for (uint jj=0; jj<numLabVerts; jj++) {
@@ -104,38 +106,35 @@ fgLoadTri(istream & istr)
         mesh.markedVerts[jj].label = readString(istr,wchar);
     }
     // Surface points:
-    std::vector<FgSurfPoint>   surfPoints;
     for (uint ii=0; ii<numSurfPts; ii++) {
         FgSurfPoint     sp;
         fgReadb(istr,sp.triEquivIdx);
         fgReadb(istr,sp.weights);
         sp.label = readString(istr,wchar);
-        surfPoints.push_back(sp);
+        surf.surfPoints.push_back(sp);
     }
     // Texture coordinates:
-    vector<FgVect3UI>   triUvInds;
-    vector<FgVect4UI>   quadUvInds;
     if (numUvs > 0) {
-        triUvInds.resize(tris.size());
-        quadUvInds.resize(quads.size());
+        surf.tris.uvInds.resize(surf.tris.vertInds.size());
+        surf.quads.uvInds.resize(surf.quads.vertInds.size());
         mesh.uvs.resize(numUvs);
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numUvs));
-        if (tris.size() > 0)
-            istr.read(reinterpret_cast<char*>(&triUvInds[0]),int(12*numTris));
-        if (quads.size() > 0)
-            istr.read(reinterpret_cast<char*>(&quadUvInds[0]),int(16*numQuads));
+        if (surf.tris.vertInds.size() > 0)
+            istr.read(reinterpret_cast<char*>(&surf.tris.uvInds[0]),int(12*numTris));
+        if (surf.quads.vertInds.size() > 0)
+            istr.read(reinterpret_cast<char*>(&surf.quads.uvInds[0]),int(16*numQuads));
     }
     else if (texs) { // In the case of per vertex UVs we have to convert to indexed UVs
-        triUvInds.resize(tris.size());
-        quadUvInds.resize(quads.size());
+        surf.tris.uvInds.resize(surf.tris.vertInds.size());
+        surf.quads.uvInds.resize(surf.quads.vertInds.size());
         mesh.uvs.resize(mesh.verts.size());
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numVerts));
-        for (uint ii=0; ii<tris.size(); ii++)
+        for (uint ii=0; ii<surf.tris.vertInds.size(); ii++)
             for (uint jj=0; jj<3; jj++)
-                triUvInds[ii][jj] = tris[ii][jj];
-        for (uint ii=0; ii<quads.size(); ii++)
+                surf.tris.uvInds[ii][jj] = surf.tris.vertInds[ii][jj];
+        for (uint ii=0; ii<surf.quads.vertInds.size(); ii++)
             for (uint jj=0; jj<4; jj++)
-                quadUvInds[ii][jj] = quads[ii][jj];
+                surf.quads.uvInds[ii][jj] = surf.quads.vertInds[ii][jj];
     }
     // Delta morphs:
     mesh.deltaMorphs.resize(numDiffMorph);
@@ -166,7 +165,6 @@ fgLoadTri(istream & istr)
             mesh.targetMorphs.push_back(tm);
         }
     }
-    mesh.surfaces = fgSvec(Fg3dSurface(tris,quads,triUvInds,quadUvInds,surfPoints));
     return mesh;
 }
 
@@ -217,7 +215,7 @@ fgSaveTri(
         (mesh.surfaces.size() > 0) ? mesh.surfaces[0] : Fg3dSurface();
     const vector<FgSurfPoint> & surfPoints = surf.surfPoints;
 
-    size_t              numTargetMorphVerts = mesh.numTargetMorphVerts(),
+    size_t              numTargetMorphVerts = fgSumVerts(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
     FgOfstream          ff(fname);
     ff.write(triIdent.data(),8);

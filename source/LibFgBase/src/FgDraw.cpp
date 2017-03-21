@@ -34,14 +34,14 @@ fgDrawDotIrcs(
     for (int yy=ylo; yy<=yhi; yy++) {
         for (int xx=xlo; xx<=xhi; xx++) {
             if ((fgSqr(yy-pos[1]) + fgSqr(xx-pos[0])) <= rr)
-                img.elem(xx,yy) = val;
+                img.xy(xx,yy) = val;
         }
     }
 }
 
 // Simple (aliased) Bresenham line draw, single-pixel thickness. Efficiency could be greatly
 // improved by clippping begin/end points to valid image area, updating 'acc' appropriately,
-// and then calling 'elem' instead of 'paint':
+// and then calling 'xy' instead of 'paint':
 void
 fgDrawLineIrcs(
     FgImgRgbaUb &       img,
@@ -82,7 +82,7 @@ fgPaintRectangle(
 {
     for (size_t yy=yIrcs; yy<yIrcs+hgt; ++yy)
         for (size_t xx=xIrcs; xx<xIrcs+wid; ++xx)
-            img.elem(xx,yy) = clr;
+            img.xy(xx,yy) = clr;
 }
 
 double
@@ -102,7 +102,7 @@ fgDrawBarGraph(
     for (uint xx=0; xx<img.width(); xx++) {
         uint    hgt = fgRoundU(data[xx] * vscale);
         for (uint yy=0; yy<hgt; yy++)
-            img.elem(xx,img.height()-1-yy) = colour;
+            img.xy(xx,img.height()-1-yy) = colour;
     }
     return vscale;
 }
@@ -176,8 +176,8 @@ fgDrawFunctions(
     uint                margin = fgRoundU(double(dim)*0.02)+1;
     for (uint ii=0; ii<dim; ++ii) {
         for (uint jj=0; jj<num; ++jj) {
-            double      hgt = (funcs.elem(ii,jj) - fbounds[jj][0]) * fscale[jj];
-            img.elem(ii,dim-margin-fgRoundU(hgt)) = colour[jj];
+            double      hgt = (funcs.rc(ii,jj) - fbounds[jj][0]) * fscale[jj];
+            img.xy(ii,dim-margin-fgRoundU(hgt)) = colour[jj];
         }
     }
     fgImgDisplay(img);
