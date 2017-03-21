@@ -69,23 +69,24 @@ namespace JAMA
 **/
 
 template <class Real>
-class Eigenvalue
+struct  Eigenvalue
 {
 
 
    /** Row and column dimension (square matrix).  */
-    int n;
+    int m_n;
 
-   int issymmetric; /* boolean*/
+   bool     issymmetric; /* boolean*/
 
    /** Arrays for internal storage of eigenvalues. */
 
-   TNT::Array1D<Real> d;         /* real part */
+   TNT::Array1D<Real> m_d;         /* real part */
    TNT::Array1D<Real> e;         /* img part */
 
    /** Array for internal storage of eigenvectors. */
     TNT::Array2D<Real> V;
 
+private:
    /** Array for internal storage of nonsymmetric Hessenberg form.
    @serial internal storage of nonsymmetric Hessenberg form.
    */
@@ -107,25 +108,25 @@ class Eigenvalue
    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
    //  Fortran subroutine in EISPACK.
 
-      for (int j = 0; j < n; j++) {
-         d[j] = V[n-1][j];
+      for (int j = 0; j < m_n; j++) {
+         m_d[j] = V[m_n-1][j];
       }
 
       // Householder reduction to tridiagonal form.
    
-      for (int i = n-1; i > 0; i--) {
+      for (int i = m_n-1; i > 0; i--) {
    
          // Scale to avoid under/overflow.
    
          Real scale = 0.0;
          Real h = 0.0;
          for (int k = 0; k < i; k++) {
-            scale = scale + abs(d[k]);
+            scale = scale + abs(m_d[k]);
          }
          if (scale == 0.0) {
-            e[i] = d[i-1];
+            e[i] = m_d[i-1];
             for (int j = 0; j < i; j++) {
-               d[j] = V[i-1][j];
+               m_d[j] = V[i-1][j];
                V[i][j] = 0.0;
                V[j][i] = 0.0;
             }
@@ -134,17 +135,17 @@ class Eigenvalue
             // Generate Householder vector.
    
             for (int k = 0; k < i; k++) {
-               d[k] /= scale;
-               h += d[k] * d[k];
+               m_d[k] /= scale;
+               h += m_d[k] * m_d[k];
             }
-            Real f = d[i-1];
+            Real f = m_d[i-1];
             Real g = sqrt(h);
             if (f > 0) {
                g = -g;
             }
             e[i] = scale * g;
             h = h - f * g;
-            d[i-1] = f - g;
+            m_d[i-1] = f - g;
             for (int j = 0; j < i; j++) {
                e[j] = 0.0;
             }
@@ -152,11 +153,11 @@ class Eigenvalue
             // Apply similarity transformation to remaining columns.
    
             for (int j = 0; j < i; j++) {
-               f = d[j];
+               f = m_d[j];
                V[j][i] = f;
                g = e[j] + V[j][j] * f;
                for (int k = j+1; k <= i-1; k++) {
-                  g += V[k][j] * d[k];
+                  g += V[k][j] * m_d[k];
                   e[k] += V[k][j] * f;
                }
                e[j] = g;
@@ -164,34 +165,34 @@ class Eigenvalue
             f = 0.0;
             for (int j = 0; j < i; j++) {
                e[j] /= h;
-               f += e[j] * d[j];
+               f += e[j] * m_d[j];
             }
             Real hh = f / (h + h);
             for (int j = 0; j < i; j++) {
-               e[j] -= hh * d[j];
+               e[j] -= hh * m_d[j];
             }
             for (int j = 0; j < i; j++) {
-               f = d[j];
+               f = m_d[j];
                g = e[j];
                for (int k = j; k <= i-1; k++) {
-                  V[k][j] -= (f * e[k] + g * d[k]);
+                  V[k][j] -= (f * e[k] + g * m_d[k]);
                }
-               d[j] = V[i-1][j];
+               m_d[j] = V[i-1][j];
                V[i][j] = 0.0;
             }
          }
-         d[i] = h;
+         m_d[i] = h;
       }
    
       // Accumulate transformations.
    
-      for (int i = 0; i < n-1; i++) {
-         V[n-1][i] = V[i][i];
+      for (int i = 0; i < m_n-1; i++) {
+         V[m_n-1][i] = V[i][i];
          V[i][i] = 1.0;
-         Real h = d[i+1];
+         Real h = m_d[i+1];
          if (h != 0.0) {
             for (int k = 0; k <= i; k++) {
-               d[k] = V[k][i+1] / h;
+               m_d[k] = V[k][i+1] / h;
             }
             for (int j = 0; j <= i; j++) {
                Real g = 0.0;
@@ -199,7 +200,7 @@ class Eigenvalue
                   g += V[k][i+1] * V[k][j];
                }
                for (int k = 0; k <= i; k++) {
-                  V[k][j] -= g * d[k];
+                  V[k][j] -= g * m_d[k];
                }
             }
          }
@@ -207,11 +208,11 @@ class Eigenvalue
             V[k][i+1] = 0.0;
          }
       }
-      for (int j = 0; j < n; j++) {
-         d[j] = V[n-1][j];
-         V[n-1][j] = 0.0;
+      for (int j = 0; j < m_n; j++) {
+         m_d[j] = V[m_n-1][j];
+         V[m_n-1][j] = 0.0;
       }
-      V[n-1][n-1] = 1.0;
+      V[m_n-1][m_n-1] = 1.0;
       e[0] = 0.0;
    } 
 
@@ -224,23 +225,23 @@ class Eigenvalue
    //  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
    //  Fortran subroutine in EISPACK.
    
-      for (int i = 1; i < n; i++) {
+      for (int i = 1; i < m_n; i++) {
          e[i-1] = e[i];
       }
-      e[n-1] = 0.0;
+      e[m_n-1] = 0.0;
    
       Real f = 0.0;
       Real tst1 = 0.0;
       Real eps = pow(2.0,-52.0);
-      for (int l = 0; l < n; l++) {
+      for (int l = 0; l < m_n; l++) {
 
          // Find small subdiagonal element
    
-         tst1 = max(tst1,abs(d[l]) + abs(e[l]));
+         tst1 = max(tst1,abs(m_d[l]) + abs(e[l]));
          int m = l;
 
         // Original while-loop from Java code
-         while (m < n) {
+         while (m < m_n) {
             if (abs(e[m]) <= eps*tst1) {
                break;
             }
@@ -248,7 +249,7 @@ class Eigenvalue
          }
 
    
-         // If m == l, d[l] is an eigenvalue,
+         // If m == l, m_d[l] is an eigenvalue,
          // otherwise, iterate.
    
          if (m > l) {
@@ -258,24 +259,24 @@ class Eigenvalue
    
                // Compute implicit shift
    
-               Real g = d[l];
-               Real p = (d[l+1] - g) / (Real(2) * e[l]);
+               Real g = m_d[l];
+               Real p = (m_d[l+1] - g) / (Real(2) * e[l]);
                Real r = TNT::hypot(p,Real(1));
                if (p < 0) {
                   r = -r;
                }
-               d[l] = e[l] / (p + r);
-               d[l+1] = e[l] * (p + r);
-               Real dl1 = d[l+1];
-               Real h = g - d[l];
-               for (int i = l+2; i < n; i++) {
-                  d[i] -= h;
+               m_d[l] = e[l] / (p + r);
+               m_d[l+1] = e[l] * (p + r);
+               Real dl1 = m_d[l+1];
+               Real h = g - m_d[l];
+               for (int i = l+2; i < m_n; i++) {
+                  m_d[i] -= h;
                }
                f = f + h;
    
                // Implicit QL transformation.
    
-               p = d[m];
+               p = m_d[m];
                Real c = 1.0;
                Real c2 = c;
                Real c3 = c;
@@ -292,12 +293,12 @@ class Eigenvalue
                   e[i+1] = s * r;
                   s = e[i] / r;
                   c = p / r;
-                  p = c * d[i] - s * g;
-                  d[i+1] = h + s * (c * g + s * d[i]);
+                  p = c * m_d[i] - s * g;
+                  m_d[i+1] = h + s * (c * g + s * m_d[i]);
    
                   // Accumulate transformation.
    
-                  for (int k = 0; k < n; k++) {
+                  for (int k = 0; k < m_n; k++) {
                      h = V[k][i+1];
                      V[k][i+1] = s * V[k][i] + c * h;
                      V[k][i] = c * V[k][i] - s * h;
@@ -305,31 +306,31 @@ class Eigenvalue
                }
                p = -s * s2 * c3 * el1 * e[l] / dl1;
                e[l] = s * p;
-               d[l] = c * p;
+               m_d[l] = c * p;
    
                // Check for convergence.
    
             } while (abs(e[l]) > eps*tst1);
          }
-         d[l] = d[l] + f;
+         m_d[l] = m_d[l] + f;
          e[l] = 0.0;
       }
      
       // Sort eigenvalues and corresponding vectors.
    
-      for (int i = 0; i < n-1; i++) {
+      for (int i = 0; i < m_n-1; i++) {
          int k = i;
-         Real p = d[i];
-         for (int j = i+1; j < n; j++) {
-            if (d[j] < p) {
+         Real p = m_d[i];
+         for (int j = i+1; j < m_n; j++) {
+            if (m_d[j] < p) {
                k = j;
-               p = d[j];
+               p = m_d[j];
             }
          }
          if (k != i) {
-            d[k] = d[i];
-            d[i] = p;
-            for (int j = 0; j < n; j++) {
+            m_d[k] = m_d[i];
+            m_d[i] = p;
+            for (int j = 0; j < m_n; j++) {
                p = V[j][i];
                V[j][i] = V[j][k];
                V[j][k] = p;
@@ -348,7 +349,7 @@ class Eigenvalue
       //  Fortran subroutines in EISPACK.
    
       int low = 0;
-      int high = n-1;
+      int high = m_n-1;
    
       for (int m = low+1; m <= high-1; m++) {
    
@@ -377,7 +378,7 @@ class Eigenvalue
             // Apply Householder similarity transformation
             // H = (I-u*u'/h)*H*(I-u*u')/h)
    
-            for (int j = m; j < n; j++) {
+            for (int j = m; j < m_n; j++) {
                Real f = 0.0;
                for (int i = high; i >= m; i--) {
                   f += ort[i]*H[i][j];
@@ -405,8 +406,8 @@ class Eigenvalue
    
       // Accumulate transformations (Algol's ortran).
 
-      for (int i = 0; i < n; i++) {
-         for (int j = 0; j < n; j++) {
+      for (int i = 0; i < m_n; i++) {
+         for (int j = 0; j < m_n; j++) {
             V[i][j] = (i == j ? 1.0 : 0.0);
          }
       }
@@ -462,7 +463,7 @@ class Eigenvalue
    
       // Initialize
    
-      int nn = this->n;
+      int nn = m_n;
       int n = nn-1;
       int low = 0;
       int high = nn-1;
@@ -475,7 +476,7 @@ class Eigenvalue
       Real norm = 0.0;
       for (int i = 0; i < nn; i++) {
          if ((i < low) || (i > high)) {
-            d[i] = H[i][i];
+            m_d[i] = H[i][i];
             e[i] = 0.0;
          }
          for (int j = max(i-1,0); j < nn; j++) {
@@ -507,7 +508,7 @@ class Eigenvalue
    
          if (l == n) {
             H[n][n] = H[n][n] + exshift;
-            d[n] = H[n][n];
+            m_d[n] = H[n][n];
             e[n] = 0.0;
             n--;
             iter = 0;
@@ -531,10 +532,10 @@ class Eigenvalue
                } else {
                   z = p - z;
                }
-               d[n-1] = x + z;
-               d[n] = d[n-1];
+               m_d[n-1] = x + z;
+               m_d[n] = m_d[n-1];
                if (z != 0.0) {
-                  d[n] = x - w / z;
+                  m_d[n] = x - w / z;
                }
                e[n-1] = 0.0;
                e[n] = 0.0;
@@ -573,8 +574,8 @@ class Eigenvalue
             // Complex pair
    
             } else {
-               d[n-1] = x + p;
-               d[n] = x + p;
+               m_d[n-1] = x + p;
+               m_d[n] = x + p;
                e[n-1] = z;
                e[n] = -z;
             }
@@ -742,7 +743,7 @@ class Eigenvalue
       }
    
       for (n = nn-1; n >= 0; n--) {
-         p = d[n];
+         p = m_d[n];
          q = e[n];
    
          // Real vector
@@ -773,7 +774,7 @@ class Eigenvalue
                   } else {
                      x = H[i][i+1];
                      y = H[i+1][i];
-                     q = (d[i] - p) * (d[i] - p) + e[i] * e[i];
+                     q = (m_d[i] - p) * (m_d[i] - p) + e[i] * e[i];
                      t = (x * s - z * r) / q;
                      H[i][n] = t;
                      if (abs(x) > abs(z)) {
@@ -837,8 +838,8 @@ class Eigenvalue
    
                      x = H[i][i+1];
                      y = H[i+1][i];
-                     vr = (d[i] - p) * (d[i] - p) + e[i] * e[i] - q * q;
-                     vi = (d[i] - p) * 2.0 * q;
+                     vr = (m_d[i] - p) * (m_d[i] - p) + e[i] * e[i] - q * q;
+                     vi = (m_d[i] - p) * 2.0 * q;
                      if ((vr == 0.0) && (vi == 0.0)) {
                         vr = eps * norm * (abs(w) + abs(q) +
                         abs(x) + abs(y) + abs(z));
@@ -901,21 +902,24 @@ public:
    */
 
    Eigenvalue(const TNT::Array2D<Real> &A) {
-      n = A.dim2();
-      V = Array2D<Real>(n,n);
-      d = Array1D<Real>(n);
-      e = Array1D<Real>(n);
+      m_n = A.dim2();
+      V = Array2D<Real>(m_n,m_n);
+      m_d = Array1D<Real>(m_n);
+      e = Array1D<Real>(m_n);
 
-      issymmetric = 1;
-      for (int j = 0; (j < n) && issymmetric; j++) {
-         for (int i = 0; (i < n) && issymmetric; i++) {
-            issymmetric = (A[i][j] == A[j][i]);
+      issymmetric = true;
+      for (int j = 0; issymmetric && (j < m_n); j++) {
+         for (int i = 0; (i < j); i++) {
+             if (A[i][j] != A[j][i]) {
+                 issymmetric = false;
+                 break;
+             }
          }
       }
 
       if (issymmetric) {
-         for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
+         for (int i = 0; i < m_n; i++) {
+            for (int j = 0; j < m_n; j++) {
                V[i][j] = A[i][j];
             }
          }
@@ -927,11 +931,11 @@ public:
          tql2();
 
       } else {
-         H = TNT::Array2D<Real>(n,n);
-         ort = TNT::Array1D<Real>(n);
+         H = TNT::Array2D<Real>(m_n,m_n);
+         ort = TNT::Array1D<Real>(m_n);
          
-         for (int j = 0; j < n; j++) {
-            for (int i = 0; i < n; i++) {
+         for (int j = 0; j < m_n; j++) {
+            for (int i = 0; i < m_n; i++) {
                H[i][j] = A[i][j];
             }
          }
@@ -959,7 +963,7 @@ public:
    */
 
    void getRealEigenvalues (TNT::Array1D<Real> &d_) {
-      d_ = d;
+      d_ = m_d;
       return ;
    }
 
@@ -1008,12 +1012,12 @@ public:
 	
 */
    void getD (TNT::Array2D<Real> &D) {
-      D = Array2D<Real>(n,n);
-      for (int i = 0; i < n; i++) {
-         for (int j = 0; j < n; j++) {
+      D = Array2D<Real>(m_n,m_n);
+      for (int i = 0; i < m_n; i++) {
+         for (int j = 0; j < m_n; j++) {
             D[i][j] = 0.0;
          }
-         D[i][i] = d[i];
+         D[i][i] = m_d[i];
          if (e[i] > 0) {
             D[i][i+1] = e[i];
          } else if (e[i] < 0) {

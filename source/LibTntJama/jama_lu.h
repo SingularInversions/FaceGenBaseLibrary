@@ -51,9 +51,9 @@ class LU
 	}
 
    Array1D<Real> permute_copy(const Array1D<Real> &A, 
-   		const Array1D<int> &piv)
+   		const Array1D<int> &piv_)
 	{
-		int piv_length = piv.dim();
+		int piv_length = piv_.dim();
 		if (piv_length != A.dim())
 			return Array1D<Real>();
 
@@ -61,7 +61,7 @@ class LU
 
 
          for (int i = 0; i < piv_length; i++) 
-               x[i] = A[piv[i]];
+               x[i] = A[piv_[i]];
 
 		return x;
 	}
