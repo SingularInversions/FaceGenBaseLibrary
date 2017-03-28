@@ -22,7 +22,7 @@ A simple cross-platform C++11 library for developing computational 3D graphics a
   * Extensive use of return value elision.
   * Declarative GUI layout, declarative dependency graph for computations.
 * Minimal OOP-fuscation; Some member functions and constructors, few private members, no inheritance.
-  * Prefer boost::function and boost::bind to abstract class interface.
+  * Prefer std::function and std::bind to abstract class interface.
 * Templates are used when they provide clear benefit.
   * RAII used throughout.
   * Avoid complex template metaprogramming.
