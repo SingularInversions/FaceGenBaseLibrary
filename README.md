@@ -13,7 +13,7 @@ A simple cross-platform C++11 library for developing computational 3D graphics a
 * Cross platform build file construction tool.
 * Command-line interface tools with pretty-print.
 * Unicode, filesystem, diagnostics, data packaging, etc.
-* Support for VS2012,2013,2015 on Win, gcc & clang on Ubuntu and OSX. Warning-free compiles on -Wall.
+* Support for VS2012,2013,2015 on Win, gcc & clang on Ubuntu and macOS. Warning-free compiles on -Wall.
 
 ## Design
 
