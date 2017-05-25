@@ -3,5 +3,5 @@ bin/
 source/ipch/
 source/VisualStudio*
 !*.sln
-**/Win32
-**/x64
+source/*/VisualStudio*/Win32
+source/*/VisualStudio*/x64
