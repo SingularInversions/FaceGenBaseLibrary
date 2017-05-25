@@ -1,7 +1,11 @@
+# git ignore is case INsensitive on windows
 _log/
 bin/
-source/ipch/
-source/VisualStudio*
-!*.sln
+source/ipch
+source/.vs
+source/VisualStudio*.db
+source/VisualStudio*.opendb
+source/VisualStudio*.suo
+source/PredictedInputCache*
 source/*/VisualStudio*/Win32
 source/*/VisualStudio*/x64
