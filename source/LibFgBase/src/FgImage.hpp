@@ -41,6 +41,12 @@ FgVect2F
 fgIucsToIrcs(FgVect2UI ircsDims,FgVect2F iucsCoord)
 {return (fgMapMul(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
 
+template<uint dim>
+inline
+FgAffineCwC<float,dim>
+fgIrcsToIpcs()
+{return FgAffineCwC<float,dim>(FgMatrixC<float,dim,1>(1),FgMatrixC<float,dim,1>(0.5f)); }
+
 struct  FgCoordWgt
 {
     FgVect2UI   coordIrcs;
@@ -67,8 +73,11 @@ fgBlerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
 // Clips sample point coordinates to image boundaries.
 template<class T>
 typename FgTraits<T>::Floating
-fgBlerpClipIpcs(const FgImage<T> & img,FgVect2F coordIpcs)
+fgBlerpClipIpcs(
+    const FgImage<T> &  img,        // Must not be empty
+    FgVect2F            coordIpcs)
 {
+    FGASSERT(!img.empty());         // Required for algorithm below
     typedef typename FgTraits<T>::Floating    Acc;
     Acc                 acc(0.0);
     float               xf = coordIpcs[0] - 0.5f,     // to IRCS

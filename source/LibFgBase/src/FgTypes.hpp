@@ -6,12 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     July 23, 2004
 //
-// Basic builtin-type abbreviations and attributes
-//
-// DESIGN
-//
-// For x64 support we make use of 'long long', which is not in the C++98 standard but
-// is widely supported (being in the C99 and C++0x standards).
+// Basic type abbreviations and attributes
 //
 
 #ifndef FGTYPES_HPP
@@ -21,7 +16,7 @@
 #include "FgBoostLibs.hpp"
 #include "FgPlatform.hpp"
 
-// C++ builtin type aliases:
+// Shorter names for C++98 builtin types:
 typedef signed char     schar;      // The C/C++ Standard does not specify whether 'char' is
                                     // signed  or unsigned. MSVC defaults 'char' to unsigned.
                                     // char is >= 1 bytes by the C++ standard.
@@ -32,12 +27,13 @@ typedef unsigned long   ulong;      // long is >= 4 bytes >= int by the C++ stan
 typedef long long       int64;      // C99 / C++0x but widely supported.
 typedef unsigned long long uint64;  // "
 
-typedef boost::uint8_t  uint8;
-typedef boost::int8_t   int8;
-typedef boost::int16_t  int16;
-typedef boost::uint16_t uint16;
-typedef boost::int32_t  int32;
-typedef boost::uint32_t uint32;
+// Shorter names for C++11 fixed size integers:
+typedef std::uint8_t  uint8;
+typedef std::int8_t   int8;
+typedef std::int16_t  int16;
+typedef std::uint16_t uint16;
+typedef std::int32_t  int32;
+typedef std::uint32_t uint32;
 
 template<typename T> struct FgTypeAttributeFloatingS;   // Type must be floating point.
 template<> struct FgTypeAttributeFloatingS<float> {};

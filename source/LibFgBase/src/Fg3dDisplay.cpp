@@ -126,7 +126,7 @@ fgGuiLighting()
 static
 FGLINK(linkRenderOpts)
 {
-    FGLINKARGS(10,1);
+    FGLINKARGS(11,1);
     bool                facets = inputs[0]->valueRef();
     bool                useTexture = inputs[1]->valueRef();
     bool                shiny = inputs[2]->valueRef();
@@ -137,6 +137,7 @@ FGLINK(linkRenderOpts)
     bool                allVerts = inputs[7]->valueRef();
     bool                twoSided = inputs[8]->valueRef();
     FgVect3F            bcolor = inputs[9]->valueRef();
+    bool                showAxes = inputs[10]->valueRef();
     Fg3dRenderOptions & ro = outputs[0]->valueRef();
     ro.facets = facets;
     ro.useTexture = useTexture;
@@ -148,6 +149,7 @@ FGLINK(linkRenderOpts)
     ro.allVerts = allVerts;
     ro.twoSided = twoSided;
     ro.backgroundColor = bcolor;
+    ro.showAxes = showAxes;
 }
 
 static
@@ -239,13 +241,14 @@ fgRenderCtrls(uint simple)
                         surfPoints = g_gg.addInput((simple == 0),uid+"SurfPoints"),
                         markedVerts = g_gg.addInput((simple == 0),uid+"MarkedVerts"),
                         allVerts = g_gg.addInput(false,uid+"AllVerts"),
-                        twoSidedN = g_gg.addInput(true,uid+"TwoSided");
+                        twoSidedN = g_gg.addInput(true,uid+"TwoSided"),
+                        showAxesN = g_gg.addInput(false,uid+"ShowAxes");
     FgGuiWinVal<vector<double> >    bgColor = colorSliders(uid+"Background",0.3,0.1);
     FgDgn<FgVect3F>     bgColorN = g_gg.addNode(FgVect3F(),"bgColor");
     g_gg.addLink(linkColSel,bgColor.valN,bgColorN);
     ret.optsN = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
     g_gg.addLink(linkRenderOpts,
-        fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN),
+        fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN,showAxesN),
         ret.optsN);
     FgGuiPtr            rcColor = fgGuiCheckbox("Color maps",useTexture),
                         rcShiny = fgGuiCheckbox("Shiny",shiny),
@@ -255,7 +258,8 @@ fgRenderCtrls(uint simple)
                         rcSurf = fgGuiCheckbox("Surface points",surfPoints),
                         rcMark = fgGuiCheckbox("Marked vertices",markedVerts),
                         rcAll = fgGuiCheckbox("All vertices",allVerts),
-                        rcTwoSided = fgGuiCheckbox("Two sided",twoSidedN);
+                        rcTwoSided = fgGuiCheckbox("Two sided",twoSidedN),
+                        rcAxes = fgGuiCheckbox("Show origin and axes (red:X green:Y blue: Z)",showAxesN);
     FgGuiPtr            renderCtls;
     if (simple == 1)
         renderCtls = fgGuiSplit(true,
@@ -267,10 +271,10 @@ fgRenderCtrls(uint simple)
     else if (simple == 3)
         renderCtls = fgGuiSplit(false,rcShiny,rcWire,rcFlat);
     else    // simple == 0 or default to all controls:
-        renderCtls = fgGuiSplit(true,
+        renderCtls = fgGuiSplit(false,fgGuiSplit(true,
             fgGuiSplit(false,rcColor,rcShiny,rcWire),
             fgGuiSplit(false,rcFlat,rcFacet,rcSurf),
-            fgGuiSplit(false,rcMark,rcAll,rcTwoSided));
+            fgGuiSplit(false,rcMark,rcAll,rcTwoSided)),rcAxes);
     FgGuiPtr        viewCtlRender = fgGuiGroupboxTr("Render",renderCtls),
                     viewCtlColor = fgGuiGroupboxTr("Background Color",bgColor.win);
     FgBgImageCtrls  bgImageCtrls = fgBgImageCtrls();
@@ -723,7 +727,8 @@ fgGui3dCtls(
     api.pose = g_gg.addInput(FgQuaternionD(),uid+"Pose");
     api.trans = g_gg.addInput(FgVect2D(0),uid+"Trans");
     api.logRelSize = g_gg.addInput(-0.3,uid+"LogRelSize");
-    api.viewportDims = g_gg.addNode(FgVect2UI(0),"viewportDims");
+    // Give non-zero viewport initial val to avoid NaNs in initial dependency calc for rendering:
+    api.viewportDims = g_gg.addNode(FgVect2UI(1),"viewportDims");
     api.bgImg = renderCtrls.bgImgApi;
     api.bothButtonsDragAction = bothButtonsDrag;
     g_gg.addLink(linkNorms,fgUints(meshesN,ret.morphedVertssN),api.normssN);
@@ -879,9 +884,7 @@ fgDisplayMeshes(
             meshSelect = fgGuiTab("Select",true,fgGuiCheckboxes(meshNames,selsN));
         }
     }
-    FgMat32F                viewBounds = fgBounds(meshes[0].verts);
-    for (size_t ii=1; ii<meshes.size(); ++ii)
-        viewBounds = fgBounds(viewBounds,fgBounds(meshes[ii].verts));
+    FgMat32F                viewBounds = fgBounds(meshes);
     FgDgn<FgMat32D>         viewBoundsN = g_gg.addNode(fgF2D(viewBounds),"viewBounds");
     FgDgn<FgString>         meshStatsN = g_gg.addNode(FgString(),"meshStats");
     g_gg.addLink(linkMeshStats2,meshesN,meshStatsN);

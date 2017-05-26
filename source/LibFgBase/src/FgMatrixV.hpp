@@ -115,9 +115,6 @@ operator*(const vector<T> & lhs,const FgMatrixV<T> & rhs)
 double
 fgMatSumElems(const FgMatrixD & mat);
 
-double
-fgMatSumPrecise(const FgMatrixD & mat);     // Experimental, do not use.
-
 template<class T>
 T
 fgDot(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)

@@ -77,15 +77,6 @@ convert(std::string const & s)
 # error Unknown value for WCHAR_MAX
 #endif
 
-static
-std::string
-convert(const vector<uint32> & v)
-{
-    std::string s;
-    utf8::utf32to8(v.begin(),v.end(),std::back_inserter(s));
-    return s;
-}
-
 FgString::FgString(const wchar_t * s)
     : m_str(convert(std::wstring(s)))
 {}
@@ -95,7 +86,7 @@ FgString::FgString(const std::wstring & s)
 {}
 
 FgString::FgString(const vector<uint32> & utf32_string)
-: m_str(convert(utf32_string))
+: m_str(fgUtf32ToUtf8(utf32_string))
 {}
 
 FgString&
@@ -240,6 +231,22 @@ FgString::beginsWith(const FgString & s) const
 bool
 FgString::endsWith(const FgString & str) const
 {return fgEndsWith(as_utf32(),str.as_utf32()); }
+
+FgUints
+fgUtf8ToUtf32(const string & in)
+{
+    FgUints         ret;
+    utf8::utf8to32(in.begin(),in.end(),std::back_inserter(ret));
+    return ret;
+}
+
+string
+fgUtf32ToUtf8(const FgUints & in)
+{
+    string          ret;
+    utf8::utf32to8(in.begin(),in.end(),std::back_inserter(ret));
+    return ret;
+}
 
 FgString
 FgString::toLower() const

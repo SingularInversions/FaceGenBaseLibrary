@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     Nov 1, 2011
 //
-// Using Posix sockets, which are essentially Berkely sockets.
+// Using Posix sockets, which are essentially Berkeley sockets.
 
 #include "stdafx.h"
 #include <stdio.h>
@@ -21,6 +21,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 #include <signal.h>
 #include <time.h>
 #include "FgTcp.hpp"
@@ -46,6 +47,12 @@ fgTcpClient(
                 IPPROTO_TCP);       // TCP transport protocol
     FGASSERT(clientSock >= 0);
     FgScopeGuard        closeSocket(boost::bind(close,clientSock));
+    // Set the timeout so the user doesn't have to wait forever if the connection fails:
+    timeval         timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    if (setsockopt(clientSock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
+        FGASSERT_FALSE;
     struct hostent *    remoteHost = gethostbyname(hostname.c_str());
     if (remoteHost == NULL) {
         //fgout << fgnl << "Unable to resolve " << hostname;
@@ -135,9 +142,6 @@ fgTcpServer(
         }
         if (setsockopt(listenSockFd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes)) == -1)
             FGASSERT_FALSE;
-        //int     timeout = 1000;     // milliseconds
-        //if (setsockopt(listenSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
-        //    FGASSERT_FALSE;
         if (bind(listenSockFd,p->ai_addr,p->ai_addrlen) == -1) {
             close(listenSockFd);
             fgout << fgnl << "server_failed_bind_call " << std::flush;
@@ -161,11 +165,20 @@ fgTcpServer(
     int         dataSockFd;
     bool        handlerRetval;
     do {
-        // Get incoming message socketFd. Will block until a message arrives since the
-        // listen socket does not have the O_NONBLOCK option set:
         socklen_t   sz = sizeof(clientAddress);
+        // Get incoming message socketFd. Will block until a message arrives since the
+        // listen socket does not have the O_NONBLOCK option set.
+        // The data socket is unique to the client IP:PORT, so multiple TCP connections can
+        // take place simultaneously (not made use of here):
         dataSockFd = accept(listenSockFd,(struct sockaddr *)&clientAddress,&sz);
         FGASSERT(dataSockFd >= 0);
+        // Set the timeout. Very important since the default is to never time out so in some
+        // cases a broken connection causes 'recv' below to block forever:
+        timeval         timeout;
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+        if (setsockopt(dataSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
+            FGASSERT_FALSE;
         // Convert IP address to string:
         char                sbuf[INET6_ADDRSTRLEN];
         inet_ntop(
@@ -180,9 +193,9 @@ fgTcpServer(
         fgout << fgnl << "> " << std::flush;
         do {
             char        buffer[1024];
-            // read() will return when either it has filled the buffer, copied over everthing
-            // from the socket input buffer (only if non-empty), or when the the read connection
-            // is closed by the client. Otherwise it will block (ie if input buffer empty):
+            // read() will return when either it has filled the buffer, copied over everything
+            // from the socket input buffer (only if non-empty), or when the the connection
+            // is closed by the client. Otherwise it will block (ie if input buffer empty).
             bytesRecvd = read(dataSockFd,buffer,sizeof(buffer));
             fgout << "." << std::flush;
             if (bytesRecvd > 0)
@@ -190,11 +203,12 @@ fgTcpServer(
         }
         while ((bytesRecvd > 0) && (dataBuff.size() <= maxRecvBytes));
         if (bytesRecvd != 0) {
+            fgout << "RECEIVE ERROR: ";
             close(dataSockFd);
             if (bytesRecvd > 0)
-                fgout << " OVERSIZE MESSAGE IGNORED.";
-            else if (bytesRecvd < 0)
-                fgout << " TCP READ ERROR: " << bytesRecvd;
+                fgout << "OVERSIZE MESSAGE IGNORED.";
+            if (bytesRecvd < 0)
+                fgout << "TCP READ ERROR: " << bytesRecvd;
             fgout << std::flush;
             continue;
         }

@@ -36,7 +36,6 @@ fgCmdBaseTests()
     FGADDCMD1(fgMatrixSolverTest,"matrixSolver");
     FGADDCMD1(fgMathTest,"math");
     FGADDCMD1(fgMatrixCTest,"matrixC");
-    FGADDCMD1(fgMatrixVTest,"matrixV");
     FGADDCMD1(fgMetaFormatTest,"metaFormat");
     FGADDCMD1(fgMorphTest,"morph");
     FGADDCMD1(fgPathTest,"path");

@@ -33,6 +33,19 @@ fgWritep(std::ostream & os,const FgSurfPoint & sp)
     fgWritep(os,sp.label);
 }
 
+vector<FgVect3UI>
+fgQuadsToTris(const vector<FgVect4UI> & quads)
+{
+    vector<FgVect3UI>   ret;
+    for (size_t ii=0; ii<quads.size(); ++ii) {
+        const FgVect4UI &   quad = quads[ii];
+        // Ordering must match triEquiv ordering for surface point to remain valid:
+        ret.push_back(FgVect3UI(quad[0],quad[1],quad[2]));
+        ret.push_back(FgVect3UI(quad[2],quad[3],quad[0]));
+    }
+    return ret;
+}
+
 uint
 Fg3dSurface::vertIdxMax() const
 {
@@ -101,20 +114,6 @@ Fg3dSurface::getTriEquivs() const
     return ret;
 }
 
-static
-vector<FgVect3UI>
-convToTris(const vector<FgVect4UI> & quads)
-{
-    vector<FgVect3UI>   ret;
-    for (size_t ii=0; ii<quads.size(); ++ii) {
-        const FgVect4UI &   quad = quads[ii];
-        // Ordering must match triEquiv ordering for surface point to remain valid:
-        ret.push_back(FgVect3UI(quad[0],quad[1],quad[2]));
-        ret.push_back(FgVect3UI(quad[2],quad[3],quad[0]));
-    }
-    return ret;
-}
-
 FgVect3F
 Fg3dSurface::surfPointPos(const FgVerts & verts,size_t idx) const
 {
@@ -133,15 +132,15 @@ Fg3dSurface::surfPointPos(const FgVerts & verts,const string & label) const
     return fgBarycentricPos(tri,sp.weights,verts);
 }
 
-vector<FgVertLabel>
+FgLabelledVerts
 Fg3dSurface::surfPointsAsVertLabels(const FgVerts & verts) const
 {
-    vector<FgVertLabel>     ret;
+    FgLabelledVerts     ret;
     ret.reserve(surfPoints.size());
     for (size_t ii=0; ii<surfPoints.size(); ++ii) {
-        FgVertLabel         vl;
+        FgLabelledVert         vl;
         vl.label = surfPoints[ii].label;
-        vl.vert = surfPointPos(verts,ii);
+        vl.pos = surfPointPos(verts,ii);
         ret.push_back(vl);
     }
     return ret;
@@ -152,8 +151,8 @@ Fg3dSurface::convertToTris() const
 {
     Fg3dSurface     ret;
     ret.name = name;
-    ret.tris.vertInds = fgCat(tris.vertInds,convToTris(quads.vertInds));
-    ret.tris.uvInds = fgCat(tris.uvInds,convToTris(quads.uvInds));
+    ret.tris.vertInds = fgCat(tris.vertInds,fgQuadsToTris(quads.vertInds));
+    ret.tris.uvInds = fgCat(tris.uvInds,fgQuadsToTris(quads.uvInds));
     ret.surfPoints = surfPoints;
     return ret;
 }
@@ -498,17 +497,17 @@ fgRemoveUnusedVertsRemap(const FgVect3UIs & tris,const FgVerts & verts)
 }
 
 FgTriSurf
-fgRemoveUnusedVerts(const FgTriSurf & in)
+fgRemoveUnusedVerts(const FgVerts & verts,const FgVect3UIs & tris)
 {
     FgTriSurf       ret;
-    FgUints         remap = fgRemoveUnusedVertsRemap(in.tris,in.verts);
-    for (size_t ii=0; ii<in.verts.size(); ++ii)
+    FgUints         remap = fgRemoveUnusedVertsRemap(tris,verts);
+    for (size_t ii=0; ii<verts.size(); ++ii)
         if (remap[ii] != numeric_limits<uint>::max())
-            ret.verts.push_back(in.verts[ii]);
-    ret.tris.resize(in.tris.size());
-    for (size_t ii=0; ii<in.tris.size(); ++ii)
+            ret.verts.push_back(verts[ii]);
+    ret.tris.resize(tris.size());
+    for (size_t ii=0; ii<tris.size(); ++ii)
         for (uint xx=0; xx<3; ++xx)
-            ret.tris[ii][xx] = remap[in.tris[ii][xx]];
+            ret.tris[ii][xx] = remap[tris[ii][xx]];
     return ret;
 }
 

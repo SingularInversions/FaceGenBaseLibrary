@@ -129,12 +129,22 @@ struct  Fg3dMesh
     FgOpt<FgVect3F>
     surfPointPos(const string & label) const;
 
-    vector<FgVertLabel>
+    FgLabelledVerts
     surfPointsAsVertLabels() const;
+
+    FgVerts
+    surfPointPositions(const FgStrs & labels) const;
 
     FgVect3F
     markedVertPos(const string & name_) const
     {return verts[fgFindFirst(markedVerts,name_).idx]; }
+
+    void
+    addMarkedVert(FgVect3F pos,const string & label)
+    {
+        markedVerts.push_back(FgMarkedVert(uint(verts.size()),label));
+        verts.push_back(pos);
+    }
 
     vector<boost::shared_ptr<FgImgRgbaUb> >
     albedoMaps() const
@@ -169,6 +179,9 @@ struct  Fg3dMesh
         }
         return ret;
     }
+
+    FgTriSurf
+    asTriSurf() const;
 
     // MORPHS:
 
@@ -271,6 +284,9 @@ typedef std::vector<Fg3dMesh>   Fg3dMeshes;
 
 std::ostream &
 operator<<(std::ostream &,const Fg3dMeshes &);
+
+FgMat32F
+fgBounds(const Fg3dMeshes & meshes);
 
 std::set<FgString>
 fgMorphs(const vector<Fg3dMesh> & meshes);

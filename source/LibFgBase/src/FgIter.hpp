@@ -6,7 +6,8 @@
 // Authors:     Andrew Beatty
 // Created:     Feb 29, 2012
 //
-// Multi-dimensional index iterator.
+// Multi-dimensional index iterator with offset and stride.
+//
 // If necessary it might be made faster by hard-coding 2D and 3D versions separately.
 
 #ifndef FGITER_HPP
@@ -16,15 +17,15 @@
 #include "FgDefaultVal.hpp"
 
 template<typename T,uint dim>
-class   FgIter
+struct  FgIter
 {
     FgMatrixC<T,dim,1>  m_bndsLoIncl;   // Inclusive lower bounds
     FgMatrixC<T,dim,1>  m_bndsHiExcl;   // Exclusive upper bounds
-    FgMatrixC<T,dim,1>  m_strides;      // Strides (Step sizes) for each dimension. Wraps around to lower bound.
+    // Strides (Step sizes) for each dimension. MUST NOT be larger than difference between bounds:
+    FgMatrixC<T,dim,1>  m_strides;
     FgMatrixC<T,dim,1>  m_idx;
     FgBoolT             m_inBounds;     // Not redundant since m_idx wraps around.
 
-public:
     explicit
     FgIter(FgMatrixC<T,dim,2> inclLowerExclUpperBounds)
     :   m_bndsLoIncl(inclLowerExclUpperBounds.colVec(0)),
@@ -79,7 +80,7 @@ public:
         for (uint dd=0; dd<dim; ++dd) {
             m_idx[dd] += m_strides[dd];
             if (m_idx[dd] >= m_bndsHiExcl[dd])
-                m_idx[dd] = m_bndsLoIncl[dd];
+                m_idx[dd] = m_bndsLoIncl[dd] + m_idx[dd] % m_strides[dd];
             else
                 return true;
         }
@@ -155,6 +156,18 @@ private:
     }
     FgTypeAttributeFixedS<T>    fixed_point_types_only; // Do not instantiate with floating
 };
+
+template<typename T,uint dim>
+ostream &
+operator<<(ostream & os,const FgIter<T,dim> & it)
+{
+    return os
+        << "lo: " << it.m_bndsLoIncl
+        << " hi: " << it.m_bndsHiExcl
+        << " stride: " << it.m_strides
+        << " idx: " << it.m_idx
+        << " valid: " << it.m_inBounds;
+}
 
 typedef FgIter<int,2>   FgIter2I;
 typedef FgIter<int,3>   FgIter3I;

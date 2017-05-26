@@ -90,11 +90,11 @@ fgTcpClient(
             freeaddrinfo(addressInfo);
             FGASSERT_FALSE1(fgToString(WSAGetLastError()));
         }
+        // Set the timeout so the user isn't waiting for ages if the connection fails:
+        DWORD           timeout = 5000;     // 5 seconds
+        setsockopt(socketHandle,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
         // Try to connect to the server
-        itmp = connect(
-            socketHandle,
-            ptr->ai_addr,
-            (int)ptr->ai_addrlen);
+        itmp = connect(socketHandle,ptr->ai_addr,(int)ptr->ai_addrlen);
         if (itmp == 0)
             break;
         else {
@@ -191,6 +191,10 @@ fgTcpServer(
             closesocket(sockListen);
             FGASSERT_FALSE1(fgToString(WSAGetLastError()));
         }
+        // Set the timeout. Very important since the default is to never time out so in some
+        // cases a broken connection causes 'recv' below to block forever:
+        DWORD           timeout = 5000;     // 5 seconds
+        setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
 		char * clientStringPtr = inet_ntoa(sa.sin_addr);
             FGASSERT(clientStringPtr != NULL);
         string     ipAddr = string(clientStringPtr);

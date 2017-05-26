@@ -52,7 +52,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/bind.hpp>
 #include <boost/config.hpp>
-#include <boost/cstdint.hpp>
 #include <boost/detail/endian.hpp>
 #include <boost/function.hpp>
 #include <boost/functional.hpp>

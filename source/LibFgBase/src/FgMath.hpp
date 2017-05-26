@@ -173,6 +173,8 @@ struct   FgModulo
     size_t      val;        // Invariant: [0,mod)
     size_t      mod;
 
+    FgModulo() {}
+
     FgModulo(size_t v,size_t m) : val(v), mod(m)
     {FGASSERT(val < mod); }
 
@@ -192,5 +194,7 @@ struct   FgModulo
         --val;
     }
 };
+
+typedef std::vector<FgModulo> FgModulos;
 
 #endif

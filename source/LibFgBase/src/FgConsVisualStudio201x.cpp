@@ -66,10 +66,12 @@ writeVcxproj(
     string      config[] = {"Debug","Release"};
     string      bits[] = {"Win32","x64"};
     string      toolsVersion = "4";
-    if (vsver == 13)
-        toolsVersion = "12";
-    else if (vsver == 15)
-        toolsVersion = "14";
+	if (vsver == 13)
+		toolsVersion = "12";
+	else if (vsver == 15)
+		toolsVersion = "14";
+	else if (vsver == 17)
+		toolsVersion = "15";
     ofs << 
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
         "<Project DefaultTargets=\"Build\" ToolsVersion=\""+toolsVersion+".0\" xmlns=\""
@@ -113,11 +115,10 @@ writeVcxproj(
                 ofs << "    <PlatformToolset>v120</PlatformToolset>\n";
             else if (vsver == 15)
                 ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
+			else if (vsver == 17)
+				ofs << "    <PlatformToolset>v141</PlatformToolset>\n";
             ofs <<
                 "    <CharacterSet>" << (proj.unicode ? "Unicode" : "MultiByte") << "</CharacterSet>\n";
-            if (cc == 1)
-                ofs <<
-                    "    <WholeProgramOptimization>true</WholeProgramOptimization>\n";
             ofs <<
                 "  </PropertyGroup>\n";
         }
@@ -204,12 +205,13 @@ writeVcxproj(
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
             ofs <<
-                "      <PrecompiledHeader>" << (pch ? "Use" : "") << "</PrecompiledHeader>\n"
+                "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
                 "      <WarningLevel>"
                     << ((proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToString(proj.warn))
                     << "</WarningLevel>\n"
-                "      <DebugInformationFormat>" << ((cc == 0) ? "ProgramDatabase" : "")
-                    << "</DebugInformationFormat>\n"
+                "      <DebugInformationFormat>" << ((cc == 0) ? "ProgramDatabase" : "\n      ") << "</DebugInformationFormat>\n"
+                "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
+                "      <FloatingPointModel>Fast</FloatingPointModel>\n"
                 "    </ClCompile>\n";
             if (proj.app || proj.dll) {
                 ofs <<
@@ -358,7 +360,7 @@ static
 void
 writeSln(
     const FgConsSolution &  sln,
-    uint                    vsver)  // 10, 12, 13, 15
+    uint                    vsver)  // 10, 12, 13, 15, 17
 {
     // Create solution file:
     string          rootName("VisualStudio"),
@@ -411,21 +413,23 @@ fgConsVs201x(FgConsSolution sln)
 {
     // Create project files:
     map<string,string>  guidMap;
+    string              hashPrepend = "FaceGenConsVS20";
     for (size_t ii=0; ii<sln.projects.size(); ++ii) {
         FgConsProj &    proj = sln.projects[ii];
-        proj.guid = fgCreateMicrosoftGuid(proj.name);
+        // Prepend proj name to ensure at least 16 characters for GUID creation:
+        proj.guid = fgCreateMicrosoftGuid(hashPrepend+proj.name);
         guidMap.insert(make_pair(proj.name,proj.guid));
     }
     for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        writeVcxproj(sln.projects[ii],guidMap,10);
         writeVcxproj(sln.projects[ii],guidMap,12);
         writeVcxproj(sln.projects[ii],guidMap,13);
         writeVcxproj(sln.projects[ii],guidMap,15);
+        writeVcxproj(sln.projects[ii],guidMap,17);
     }
-    writeSln(sln,10);
     writeSln(sln,12);
     writeSln(sln,13);
     writeSln(sln,15);
+    writeSln(sln,17);
 }
 
 // */

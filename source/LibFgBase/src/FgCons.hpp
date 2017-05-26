@@ -7,6 +7,10 @@
 // Created:     Nov 29, 2011
 //
 // Construct makefiles / solution files / project files
+//
+// Release versions use fast floating point optimizations to ensure SSE2 vectorization of doubles can be done
+// (SSE2 introduced double precision ops but only has 64bit registers).
+//
 
 #ifndef FGCONS_HPP
 #define FGCONS_HPP

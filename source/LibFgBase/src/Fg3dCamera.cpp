@@ -24,11 +24,15 @@ Fg3dCamera::toIpcsH(FgVect2UI dims) const
 {
     FgAffineCw2D    iucsToIpcs(FgMat22D(0,1,0,1),FgMat22D(0,dims[0],0,dims[1])),
                     itcsToIpcs = iucsToIpcs * itcsToIucs;
-    FgMat44D     itcsToIpcs3H(
-    itcsToIpcs.m_scales[0], 0,          0,              itcsToIpcs.m_trans[0],
-        0,  itcsToIpcs.m_scales[1],     0,              itcsToIpcs.m_trans[1],
-        0,              0,              1,              0,
-        0,              0,              0,              1);
+    FgMat44D        itcsToIpcs3H(0);
+    // Diagonals:
+    itcsToIpcs3H.cr(0,0) = itcsToIpcs.m_scales[0];
+    itcsToIpcs3H.cr(1,1) = itcsToIpcs.m_scales[1];
+    itcsToIpcs3H.cr(2,2) = 1;
+    itcsToIpcs3H.cr(3,3) = 1;
+    // Translational:
+    itcsToIpcs3H.cr(0,3) = itcsToIpcs.m_trans[0];
+    itcsToIpcs3H.cr(1,3) = itcsToIpcs.m_trans[1];
     FgMat44D     oecsToItcsH;
     oecsToItcsH.rc(0,0) = 1;
     oecsToItcsH.rc(1,1) = -1;
@@ -61,6 +65,8 @@ Fg3dCameraParams::camera(FgVect2UI imgDims) const
                     zCentreFillImage = modelHalfDimMax / halfFovMaxItcs,
                     // Adjust the distance to relatively scale the object:
                     zCentre = zCentreFillImage / relScale;
+    if (fgMinElem(imgDims) == 0)
+        imgDims = FgVect2UI(1);     // Avoid NaNs
     FgVect2D        aspect = FgVect2D(imgDims) / imgDimMax;
     // Limit how close the object can be to the camera, to avoid clipping while still keeping the
     // near clip plane just far enough from the camera that depth precision isn't compromised:

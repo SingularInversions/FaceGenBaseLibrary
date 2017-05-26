@@ -128,9 +128,7 @@ fgCmdRender(const FgArgs & args)
     }
 
     //! Calculate view transforms:
-    FgMat32F     bounds = fgBounds(meshes[0].verts);
-    for (size_t ii=1; ii<meshes.size(); ++ii)
-        bounds = fgBounds(bounds,fgBounds(meshes[ii].verts));
+    FgMat32F            bounds = fgBounds(meshes);
     Fg3dCameraParams    cps(fgF2D(bounds));
     cps.pose =
         fgRotateY(renderArgs.cam.panRadians) *

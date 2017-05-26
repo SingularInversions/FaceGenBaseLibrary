@@ -38,7 +38,7 @@ FgPath::FgPath(const FgString & path)
     if (p.size() > 1) {
         if ((p[0] == '/') && (p[1] == '/')) {
             root = true;
-            vector<uint>::const_iterator    it = find(p.begin()+2,p.end(),'/');
+            vector<uint>::const_iterator    it = find(p.begin()+2,p.end(),uint('/'));
             if (it == p.end()) {
                 drive = FgString(p);
                 return;

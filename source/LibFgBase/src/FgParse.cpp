@@ -13,6 +13,7 @@
 #include "FgException.hpp"
 #include "FgParse.hpp"
 #include "FgFileSystem.hpp"
+#include "FgSyntax.hpp"
 
 using namespace std;
 
@@ -23,10 +24,10 @@ isCrOrLf(char c)
     return ((c == 0x0A) || (c == 0x0D));    // LF or CR resp.
 }
 
-vector<string>
+FgStrs
 fgSplitLines(const string & src)
 {
-    vector<string>  ret;
+    FgStrs          ret;
     string          acc;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if (src[ii] == '\\') {              // Check for line continuation
@@ -76,30 +77,137 @@ fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
     return ret;
 }
 
-vector<vector<string> >
-fgReadCsvFile(const FgString & filename)
+bool
+isCrLf(uint ch)
+{return ((ch == '\r') || (ch == '\n')); }
+
+static
+void
+consumeCrLf(const FgUints & in,size_t & idx)    // Current idx must point to CR or LF
 {
-    vector<vector<string> >  ret;
-    vector<string>      lines = fgSplitLines(fgSlurp(filename));
-    for (size_t ii=0; ii<lines.size(); ++ii) {
-        const string & line = lines[ii];
-        vector<string>          csvLine;
-        string                  field;
-        for (uint idx=0; idx<line.size(); idx++) {
-            if (line[idx] == ',') {
-                csvLine.push_back(field);
-                field.clear(); }
+    uint        ch0 = in[idx++];
+    if (idx == in.size())
+        return;
+    uint        ch1 = in[idx];
+    if (isCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
+        ++idx;
+    return;
+}
+
+static
+string
+csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
+{
+    string      ret;
+    if (in[idx] == '"') {               // Quoted field
+        ++idx;
+        for (;;) {
+            if (idx == in.size())
+                return ret;
+            uint    ch = in[idx++];
+            if (ch == '"') {
+                if ((idx < in.size()) && (in[idx] == '"')) {    // Double quote inside quoted field
+                    ret.push_back('"');
+                    ++idx;
+                }
+                else
+                    return ret;         // End of quoted field
+            }
             else
-                field.push_back(line[idx]); }
-        csvLine.push_back(field);
-        ret.push_back(csvLine); }
+                ret += fgUtf32ToUtf8(fgSvec(ch));
+        }
+    }
+    else {                             // Unquoted field
+        for (;;) {
+            if (idx == in.size())
+                return ret;
+            uint    ch = in[idx];
+            if ((ch == ',') || (isCrLf(ch)))
+                return ret;
+            ret += fgUtf32ToUtf8(fgSvec(ch));
+            ++idx;
+        }
+    }
+}
+
+static
+FgStrs
+csvGetLine(
+    const FgUints & in,
+    size_t &        idx)    // idx must initially point to valid data but may point to end on return
+{
+    FgStrs      ret;
+    if (isCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
+        consumeCrLf(in,idx);
+        return ret;
+    }
+    for (;;) {
+        ret.push_back(csvGetField(in,idx));
+        if (idx == in.size())
+            return ret;
+        if (isCrLf(in[idx])) {
+            consumeCrLf(in,idx);
+            return ret;
+        }
+        if (in[idx] == ',')
+            ++idx;
+        if (idx == in.size()) {
+            ret.push_back(string());
+            return ret;
+        }
+    }
     return ret;
 }
 
-vector<string>
+FgStrss
+fgLoadCsv(const FgString & fname)
+{
+    FgStrss     ret;
+    FgUints     data = fgUtf8ToUtf32(fgSlurp(fname));
+    size_t      idx = 0;
+    while (idx < data.size()) {
+        FgStrs  line = csvGetLine(data,idx);
+        if (!line.empty())                      // Ignore empty lines
+            ret.push_back(line);
+    }
+    return ret;
+}
+
+static
+string
+csvField(const string & data)
+{
+    string      ret = "\"";
+    FgUints     utf32 = fgUtf8ToUtf32(data);
+    for (uint ch32 : utf32) {
+        if (ch32 == uint('"'))
+            ret += "\"\"";
+        else
+            ret += fgUtf32ToUtf8(fgSvec(ch32));
+    }
+    ret += "\"";
+    return ret;
+}
+
+void
+fgSaveCsv(const FgString & fname,const FgStrss & csvLines)
+{
+    FgOfstream      ofs(fname);
+    for (FgStrs line : csvLines) {
+        if (!line.empty()) {
+            ofs << csvField(line[0]);
+            for (size_t ii=1; ii<line.size(); ++ii) {
+                ofs << "," << csvField(line[ii]);
+            }
+            ofs << endl;
+        }
+    }
+}
+
+FgStrs
 fgSplitChar(const string & str,char ch,bool ie)
 {
-    vector<string>  ret;
+    FgStrs  ret;
     string          curr;
     for (size_t ii=0; ii<str.size(); ++ii) {
         if (str[ii] == ch) {
@@ -116,10 +224,10 @@ fgSplitChar(const string & str,char ch,bool ie)
     return ret;
 }
 
-vector<string>
+FgStrs
 fgWhiteBreak(const string & str)
 {
-    vector<string>  retval;
+    FgStrs  retval;
     bool            symbolFlag = false,
                     quoteFlag = false;
     string          currSymbol;
@@ -163,4 +271,81 @@ fgWhiteBreak(const string & str)
     if (symbolFlag)
         retval.push_back(currSymbol);
     return retval;
+}
+
+void
+fgTestmLoadCsv(const FgArgs & args)
+{
+    FgSyntax        syn(args,"<file>.csv");
+    FgStrss         data = fgLoadCsv(syn.next());
+    for (size_t rr=0; rr<data.size(); ++rr) {
+        const FgStrs &  fields = data[rr];
+        fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
+        for (size_t ff=0; ff<fields.size(); ++ff)
+            fgout << fgnl << "Field " << ff << ": " << fields[ff];
+        fgout << fgpop;
+    }
+}
+
+string
+fgAsciify(const string & in)
+{
+    string          ret;
+    map<uint,char>  hg;     // homoglyph map
+    hg[166] = ':';
+    hg[167] = 'S';
+    hg[168] = '"';
+    hg[183] = '.';
+    hg[193] = 'A';
+    hg[194] = 'A';
+    hg[195] = 'A';
+    hg[199] = 'C';
+    hg[211] = 'o';
+    hg[216] = 'o';
+    hg[223] = 'B';
+    hg[224] = 'a';
+    hg[225] = 'a';
+    hg[226] = 'a';
+    hg[227] = 'a';
+    hg[228] = 'a';
+    hg[230] = 'a';
+    hg[231] = 'c';
+    hg[232] = 'e';
+    hg[233] = 'e';
+    hg[236] = 'i';
+    hg[237] = 'i';
+    hg[239] = 'i';
+    hg[241] = 'n';
+    hg[242] = 'o';
+    hg[243] = 'o';
+    hg[246] = 'o';
+    hg[248] = 'o';
+    hg[250] = 'u';
+    hg[252] = 'u';
+    hg[304] = 'I';
+    hg[305] = '1';
+    hg[351] = 's';
+    hg[402] = 'f';
+    hg[732] = '"';
+    hg[8211] = '-';
+    hg[8216] = '\'';
+    hg[8218] = ',';
+    hg[8220] = '"';
+    hg[8221] = '"';
+    hg[8230] = '-';
+    hg[65381] = '\'';
+    FgUints     utf32 = fgUtf8ToUtf32(in);
+    for (uint ch32 : utf32) {
+        string  utf8 = fgUtf32ToUtf8(fgSvec(ch32));
+        if (utf8.size() == 1)
+            ret.push_back(utf8[0]);
+        else {
+            auto    it = hg.find(ch32);
+            if (it == hg.end())
+                ret.push_back('?');
+            else
+                ret.push_back(it->second);
+        }
+    }
+    return ret;
 }

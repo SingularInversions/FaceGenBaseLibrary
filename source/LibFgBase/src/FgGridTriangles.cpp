@@ -103,7 +103,7 @@ fgGridTriangles(const FgVect2Fs & verts,const FgVect3UIs & tris,float binsPerTri
     float       numBins = numValid * binsPerTri;
     FgVect2F    rangeSizef = domainSz * sqrt(numBins/domainSz.volume());
     FgVect2UI   rangeSize = FgVect2UI(rangeSizef + FgVect2F(0.5f));
-    rangeSize = fgClipLo(rangeSize,1U);
+    rangeSize = fgClipElemsLo(rangeSize,1U);
     FgMat22F    range(0,rangeSize[0],0,rangeSize[1]);
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're

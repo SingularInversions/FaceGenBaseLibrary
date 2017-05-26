@@ -23,6 +23,7 @@
 
 using namespace std;
 
+static
 FgRgbaF
 shader(
     const FgLighting &  lighting,
@@ -32,7 +33,7 @@ shader(
     const FgImgRgbaUb * img = NULL)
 {
     FgVect3F        acc(0.0f);
-    FgRgbaF         texSample = (img) ?
+    FgRgbaF         texSample = (img && (!img->empty())) ?
         FgRgbaF(fgBlerpClipIucs(*img,uvIucs)) :
         FgRgbaF(230.0f,230.0f,230.0f,255.0f);
 	float	        aw = texSample.alpha() / 255.0f;

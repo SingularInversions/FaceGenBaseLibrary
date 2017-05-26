@@ -6,14 +6,9 @@
 // Authors:     Andrew Beatty
 // Created:     July 6, 2005
 //
-// Holds a normalized quaternion.
+// Keeps a normalized quaternion.
 //
-// USE:
-//
-// Default constructor is identity.
-//
-// The tangential rotation described by a quaternion's 3 complex components are 
-// RHR rotations around the X, Y and Z axes resp, in radians times 2.0.
+// If you must access members directly, keep normalized or some functions won't work.
 //
 
 #ifndef FGQUATERNION_HPP
@@ -26,54 +21,48 @@
 #include "FgRandom.hpp"
 
 template<typename T>
-class FgQuaternion
+struct  FgQuaternion
 {
-    T                   m_real;       // Real component
-    FgMatrixC<T,3,1>    m_comp;       // Complex components
+    // Real component, identity when 1 (with quaternion normalized):
+    T                   m_real;
+    // Complex components. Direction is rotation axis (RHR) and length (when quaternion is normalized)
+    // is twice the rotation in radians for small values (tangent rotations):
+    FgMatrixC<T,3,1>    m_comp;
+    FG_SERIALIZE2(m_real,m_comp);
 
-public:
-    FgQuaternion() : m_real(T(1)) {}
+    // Default constructor is identity:
+    FgQuaternion() : m_real(1), m_comp(FgMatrixC<T,3,1>(0)) {}
+
+    FgQuaternion(T real,FgMatrixC<T,3,1> complex) : m_real(real), m_comp(complex) 
+    {normalizeP(); }
+
+    FgQuaternion(T real,T rotAxisX,T rotAxisY,T rotAxisZ) : m_real(real), m_comp(rotAxisX,rotAxisY,rotAxisZ)
+    {normalizeP(); }
 
     // Create a rotation around a coordinate axis (0 - X, 1 - Y, 2 - Z):
     FgQuaternion(T radians,uint axis) :
-        m_real(std::cos(radians*T(0.5)))
+        m_real(std::cos(radians/2))
     {
         FGASSERT(axis < 3);
-        m_comp[axis] = std::sin(radians*T(0.5));
+        m_comp[axis] = std::sin(radians/2);
     }
 
-    // The two constructors below are tangent (an approx to twice the 'r' value in radians)
-    // rotations around the given axis:
-    FgQuaternion(T r,FgMatrixC<T,3,1> rotAxis) :
-        m_real(r),
-        m_comp(rotAxis) 
-    {normalizeP(); }
-    FgQuaternion(T r,T rotX,T rotY,T rotZ) :
-        m_real(r),
-        m_comp(rotX,rotY,rotZ)
-    {normalizeP(); }
-
     explicit 
-    FgQuaternion(const FgMatrixC<T,4,1> & v) :
-        m_real(v[0]),
-        m_comp(v[1],v[2],v[3])
+    FgQuaternion(const FgMatrixC<T,4,1> & v) : m_real(v[0]), m_comp(v[1],v[2],v[3])
     {normalizeP(); }
 
-    T
-    real() const 
-    {return m_real; }
+    bool
+    operator==(const FgQuaternion & rhs) const
+    {return ((m_real == rhs.m_real) && (m_comp == rhs.m_comp)); }
 
-    FgQuaternion &
-    setIdentity()
-    { m_real=T(1); m_comp.setConstant(0); return *this; }
-
-    // operator* in this context means composition
+    // Composition operator:
     FgQuaternion
-    operator*(const FgQuaternion &rhs) const
+    operator*(const FgQuaternion & rhs) const
     {
-        return FgQuaternion(
-            m_real*(rhs.m_real) - fgDot(m_comp,rhs.m_comp),
-            m_real*(rhs.m_comp) + (rhs.m_real)*m_comp + fgCrossProduct(m_comp,rhs.m_comp));
+        FgQuaternion    ret;
+        ret.m_real = m_real*(rhs.m_real) - fgDot(m_comp,rhs.m_comp);
+        ret.m_comp = m_real*(rhs.m_comp) + (rhs.m_real)*m_comp + fgCrossProduct(m_comp,rhs.m_comp);
+        return ret;
     }
 
     FgQuaternion
@@ -104,8 +93,6 @@ public:
     asVector() const
     {return FgMatrixC<T,4,1>(m_real,m_comp[0],m_comp[1],m_comp[2]); }
 
-    FG_SERIALIZE2(m_real,m_comp);
-
     bool            // false if zero magnitude
     normalize()     // Useful for deserialization of user data
     {
@@ -118,7 +105,20 @@ public:
         return true;
     }
 
-private:
+    // Returns tangent distance magnitude between rotations in radians squared
+    // (only accurate for small diffs):
+    double
+    deltaRadiansMag(const FgQuaternion & rhs) const
+    {
+        FgMatrixC<T,4,1>    lv = asVector(),
+                            rv = rhs.asVector();
+        // Account for projective identity:
+        if (fgDot(lv,rv) < 0)
+            rv *= -1;
+        // Small differences correspond to twice the difference in radians thus 4 times the magnitude:
+        return (lv-rv).mag()*4;
+    }
+
     void
     normalizeP()
     {FGASSERT(normalize()); }

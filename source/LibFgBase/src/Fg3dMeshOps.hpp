@@ -81,7 +81,7 @@ fgMergeMeshSurfaces(
     const Fg3dMesh &    m0,
     const Fg3dMesh &    m1);
 
-// Marked verts and material of second mesh are discarded, all else (including names) are merged:
+// Material of second mesh is discarded, all else (including names) are merged:
 Fg3dMesh
 fgMergeMeshes(
     const Fg3dMesh &    m0,
@@ -138,5 +138,8 @@ fgCopySurfaceStructure(const Fg3dMesh & from,const Fg3dMesh & to);
 // Merge all surface facets converted to tris:
 vector<FgVect3UI>
 fgMeshSurfacesAsTris(const Fg3dMesh &);
+
+FgTriSurf
+fgTriSurface(const Fg3dMesh & src,size_t surfIdx);
 
 #endif

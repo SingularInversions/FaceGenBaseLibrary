@@ -7,6 +7,7 @@
 // Created: March 24, 2015
 //
 // Stack-based variable-size array with fixed max size.
+// Less verbose than boost::static_vector.
 
 #ifndef FGARRAY_HPP
 #define FGARRAY_HPP
@@ -35,12 +36,25 @@ struct FgArray
     {FGASSERT(i < sz); return m[i]; }
 
     void
-    add(const T & v)
+    add(const T & v)    // 'push_back' too verbose
     {
         FGASSERT(sz < maxSize);
         m[sz] = v;
         ++sz;
     }
+
+    void
+    erase(uint idx)
+    {
+        FGASSERT(idx < sz);
+        for (uint ii=idx; ii<sz-1; ++ii)
+            m[ii] = m[ii+1];
+        --sz;
+    }
+
+    bool
+    empty() const
+    {return (sz == 0); }
 };
 
 #endif

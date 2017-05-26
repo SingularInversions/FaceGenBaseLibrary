@@ -65,18 +65,6 @@ fgAssert(const char * fname,int line,const std::string & msg = "");
 #define FGASSERT_FALSE1(msg)                                         \
     fgAssert(__FILE__,__LINE__,msg)
 
-// Use this when you have to provide a return expression but the code
-// will never be executed:
-#ifdef _MSC_VER
-#  ifdef _DEBUG
-#    define FG_UNREACHABLE_RETURN(x) return x
-#  else
-#    define FG_UNREACHABLE_RETURN(x) (void)x
-#  endif
-#else
-#  define FG_UNREACHABLE_RETURN(x) return x
-#endif
-
 #define FG_STATIC_ASSERT(X) BOOST_STATIC_ASSERT(X)
 
 // Convenient for debugging:

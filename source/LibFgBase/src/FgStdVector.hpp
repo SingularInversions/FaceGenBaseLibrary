@@ -591,7 +591,7 @@ fgCast_(const vector<T> & lhs,vector<U> & rhs)
 
 template<class Out,class In>
 vector<Out>
-fgMap(const vector<In> & in,boost::function<Out(const In &)> func)
+fgMap(const vector<In> & in,std::function<Out(const In &)> func)
 {
     vector<Out>    ret;
     ret.reserve(in.size());
@@ -825,36 +825,17 @@ fgMax(const vector<T> & v)
     return ret;
 }
 
+// To get a min version, just use greater than for 'lessThan':
 template<class T>
-T
-fgMinIdx(const vector<T> & v)
+size_t
+fgMaxIdx(const vector<T> & v,const std::function<bool(const T & lhs,const T & rhs)> & lessThan)
 {
     FGASSERT(!v.empty());
-    size_t  ret = 0;
-    T       min = v[0];
-    for (size_t ii=1; ii<v.size(); ++ii) {
-        if (v[ii] < min) {
-            min = v[ii];
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (lessThan(v[ret],v[ii]))
             ret = ii;
-        }
-    }
-    return ret;
-}
-
-template<class T>
-T
-fgMaxIdx(const vector<T> & v)
-{
-    FGASSERT(!v.empty());
-    size_t  ret = 0;
-    T       max = v[0];
-    for (size_t ii=1; ii<v.size(); ++ii) {
-        if (v[ii] > max) {
-            max = v[ii];
-            ret = ii;
-        }
-    }
-    return ret;
+    return ret;    
 }
 
 // Functional version of std::sort
@@ -1052,7 +1033,18 @@ fgMag(const vector<T> & v)
 
 template<class T>
 vector<T>
-fgFilter(const vector<bool> & accept,const vector<T> & in)
+fgFilter(const vector<T> & vals,const std::function<bool(const T & val)> & fnSelect)
+{
+    vector<T>       ret;
+    for (auto it=vals.begin(); it!=vals.end(); ++it)
+        if (fnSelect(*it))
+            ret.push_back(*it);
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgFilter(const vector<T> & in,const vector<bool> & accept)
 {
     vector<T>       ret;
     FGASSERT(accept.size() == in.size());

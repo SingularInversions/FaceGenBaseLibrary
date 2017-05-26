@@ -100,9 +100,16 @@ struct  FgMatrixC
     FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
         FG_STATIC_ASSERT(nrows*ncols == 9);
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; }
-    FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T z,T n,T o,T p) {
-        FG_STATIC_ASSERT(nrows*ncols == 16);
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i;  m[9]=j; m[10]=k; m[11]=l; m[12]=z; m[13]=n; m[14]=o; m[15]=p; }
+
+    // Initializer lists not supported by VS2012:
+    //explicit
+    //FgMatrixC(std::initializer_list<T> il)
+    //{
+    //    FGASSERT(nrows*ncols == il.size());
+    //    T * dst = &m[0];
+    //    for (auto it=il.begin(); it!=il.end(); ++it)
+    //        *dst++ = *it;
+    //}
 
     // CC requires explicit definition due to type conversion constructor below:
     FgMatrixC(const FgMatrixC & mat) {
@@ -440,6 +447,7 @@ typedef FgMatrixC<double,3,2>       FgMat32D;
 typedef FgMatrixC<int,3,2>          FgMat32I;
 typedef FgMatrixC<uint,3,2>         FgMat32UI;
 typedef FgMatrixC<double,3,4>       FgMat34D;
+typedef FgMatrixC<float,4,3>        FgMat43F;
 
 typedef FgMatrixC<float,2,1>        FgVect2F;
 typedef FgMatrixC<double,2,1>       FgVect2D;
@@ -478,6 +486,7 @@ typedef FgMatrixC<double,9,1>       FgVect9D;
 
 typedef FgMatrixC<float,1,2>        FgVectF2;
 typedef FgMatrixC<float,1,3>        FgVectF3;
+typedef FgMatrixC<float,1,4>        FgVectF4;
 typedef FgMatrixC<double,1,2>       FgVectD2;
 typedef FgMatrixC<double,1,3>       FgVectD3;
 typedef FgMatrixC<uint,1,2>         FgVectU2;

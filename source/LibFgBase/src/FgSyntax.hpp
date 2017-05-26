@@ -12,7 +12,7 @@
 #define FGSYNTAX_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgString.hpp"
+#include "FgStdString.hpp"
 #include "FgMain.hpp"
 
 struct  FgExceptionCommandSyntax
@@ -27,7 +27,22 @@ struct  FgSyntax
     ~FgSyntax();
 
     const string &
-    next();
+    next()
+    {
+        if (m_idx+1 == m_args.size())
+            error("Expected another argument after",m_args[m_idx]);
+        return m_args[++m_idx];
+    }
+
+    template<typename T>
+    uint
+    nextAs()
+    {
+        FgOpt<T>    ret = fgFromStr<T>(next());     // 'FgOpt<T> fgFromStr<T>(const string &)' must be defined.
+        if (!ret.valid())
+            error(string("Invalid ")+string(typeid(T).name()),curr());
+        return ret.val();
+    }
 
     FgString
     nextLower()             // As above but lower case

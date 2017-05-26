@@ -560,6 +560,35 @@ renderBgImg(FgBgImage bgImg,bool transparency)
 }
 
 void
+showAxes()
+{
+    FgMat44F            xform = fgOglTransform();
+    // Projection matrix has negative determinant:
+    float               scale = std::abs(fgDeterminant(xform.subMatrix<3,3>(0,0)/xform.rc(3,3)));
+    scale = 0.3f / fgCbrt(scale);
+    FgVect3F            origin(0),x(scale,0,0),y(0,scale,0),z(0,0,scale);
+    glPolygonOffset(0.0,0.0);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+    glLineWidth(3.0f);
+    glColor3f(1.0f,0.0f,0.0f);
+    glBegin(GL_LINES);
+    glVertex3fv((float *)&origin);
+    glVertex3fv((float *)&x);
+    glEnd();
+    glColor3f(0.0f,1.0f,0.0f);
+    glBegin(GL_LINES);
+    glVertex3fv((float *)&origin);
+    glVertex3fv((float *)&y);
+    glEnd();
+    glColor3f(0.0f,0.0f,1.0f);
+    glBegin(GL_LINES);
+    glVertex3fv((float *)&origin);
+    glVertex3fv((float *)&z);
+    glEnd();
+}
+
+void
 fgOglRender(
     vector<FgOglRendModel>          rms,
     FgMat44F                        oglMvm, // MVM in column-major layout.
@@ -622,6 +651,8 @@ fgOglRender(
         glLoadIdentity();
         glLoadMatrixf(oglMvm.dataPtr());
     }
+    if (rend.showAxes)
+        showAxes();
     CHECKOGLERROR;
 }
 

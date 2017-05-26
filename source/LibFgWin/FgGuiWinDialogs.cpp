@@ -46,6 +46,17 @@ fgGuiDialogFileLoad(
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
     FGASSERTWIN(SUCCEEDED(hr));
     FgScopeGuard            sg(boost::bind(pfdRelease,pfd));
+    // Giving each dialog a GUID based on it's description will allow Windows to remember
+    // previously chosen directories for each dialog (with a different description):
+    GUID                    guid;
+    std::hash<string>       hash;       // VS12 doesn't like this inlined
+    guid.Data1 = ulong(hash(description.m_str));
+    guid.Data2 = ushort(0x7708U);       // Randomly chosen
+    guid.Data3 = ushort(0x20DAU);       // "
+    for (uint ii=0; ii<8; ++ii)
+    guid.Data4[0] = 0;                  // Ensure consistent
+    hr = pfd->SetClientGuid(guid);
+    FGASSERTWIN(SUCCEEDED(hr));
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
@@ -94,6 +105,17 @@ fgGuiDialogFileSave(
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
     FGASSERTWIN(SUCCEEDED(hr));
     FgScopeGuard            sg(boost::bind(pfdRelease,pfd));
+    // Giving each dialog a GUID based on it's description will allow Windows to remember
+    // previously chosen directories for each dialog (with a different description):
+    GUID                    guid;
+    std::hash<string>       hash;       // VS12 doesn't like this inlined
+    guid.Data1 = ulong(hash(description.m_str));
+    guid.Data2 = ushort(0x0F3FU);       // Randomly chosen
+    guid.Data3 = ushort(0x574CU);       // "
+    for (uint ii=0; ii<8; ++ii)
+    guid.Data4[0] = 0;                  // Ensure consistent
+    hr = pfd->SetClientGuid(guid);
+    FGASSERTWIN(SUCCEEDED(hr));
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);

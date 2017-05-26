@@ -145,6 +145,12 @@ struct  FgString
 
 typedef std::vector<FgString>   FgStrings;
 
+std::vector<uint>
+fgUtf8ToUtf32(const std::string &);
+
+std::string
+fgUtf32ToUtf8(const std::vector<uint> &);
+
 inline
 FgString
 fgToLower(const FgString & str)

@@ -30,25 +30,20 @@
     // _WIN64       We are compiling for 64 bit windows
     // _M_AMD64     Defined if targetting 64-bit
 
-    // FG_USED int func; indicates that func will be used
-    // even if not directly referenced.
-    #define FG_USED __declspec(dllexport)
-
     #define FG_RESTRICT __restrict
 
     #ifdef _WIN64
     #define FG_64
     #endif
  
-#elif defined(__GNUC__)
+#elif defined(__GNUC__)     // gcc or clang
 
     // Useful defines:
-    // __GNUC__     We are compiling with gcc
+    // __clang__    We are compiling with clang
+    // __GNUC__     We are compiling with gcc or clang
     // _LP64        LP64 paradigm
     // __x86_64__   64-bit instruction set
     // __ppc64__    ppc 64 bit instruction set
-
-    #define FG_USED __attribute__((used))
 
     #define FG_RESTRICT __restrict__
 

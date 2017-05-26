@@ -15,11 +15,16 @@
 #include "FgMatrix.hpp"
 #include "FgImage.hpp"
 
-struct  FgVertLabel
+struct  FgLabelledVert
 {
-    FgVect3F    vert;
+    FgVect3F    pos;
     string      label;
+
+    // Handy for lookup:
+    bool operator==(const string & lab) const {return (label == lab); }
 };
+
+typedef vector<FgLabelledVert>  FgLabelledVerts;
 
 struct FgSurfPoint
 {
@@ -124,6 +129,9 @@ fgAppend(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
         fgAppend(lhs.uvInds,rhs.uvInds);
 }
 
+vector<FgVect3UI>
+fgQuadsToTris(const vector<FgVect4UI> & quads);
+
 // A grouping of facets (tri and quad) sharing material properties:
 struct  Fg3dSurface
 {
@@ -195,8 +203,12 @@ struct  Fg3dSurface
     FgVect3F
     surfPointPos(const FgVerts & verts,const string & label) const;
 
-    vector<FgVertLabel>
+    FgLabelledVerts
     surfPointsAsVertLabels(const FgVerts &) const;
+
+    FgVect3UIs
+    asTrisOnly() const
+    {return fgCat(tris.vertInds,fgQuadsToTris(quads.vertInds)); }
 
     Fg3dSurface
     convertToTris() const;
@@ -282,8 +294,8 @@ fgRemoveUnusedVertsRemap(const FgVect3UIs & tris,const FgVerts & verts);
 // Handy for very simple surfaces:
 struct  FgTriSurf
 {
-    FgVect3UIs          tris;
     FgVerts             verts;
+    FgVect3UIs          tris;
 
     bool
     hasUnusedVerts() const
@@ -291,6 +303,11 @@ struct  FgTriSurf
 };
 
 FgTriSurf
-fgRemoveUnusedVerts(const FgTriSurf &);
+fgRemoveUnusedVerts(const FgVerts & verts,const FgVect3UIs & tris);
+
+inline
+FgTriSurf
+fgRemoveUnusedVerts(const FgTriSurf & ts)
+{return fgRemoveUnusedVerts(ts.verts,ts.tris); }
 
 #endif

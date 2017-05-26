@@ -44,4 +44,10 @@ fgUnion(const std::set<T> & s0,const std::set<T> & s1)
     return ret;
 }
 
+template<class T>
+inline
+bool
+fgContains(const std::set<T> & s,const T & v)
+{return (s.find(v) != s.end()); }
+
 #endif

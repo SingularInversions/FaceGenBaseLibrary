@@ -1,7 +1,7 @@
-CC = gcc 
+CC = clang 
 LINK = g++ 
-CFLAGS = -fno-common -ftemplate-depth=512 -m64 -g -O0 -D_DEBUG 
-CONFIG = gcc/64/debug/
+CFLAGS = -fno-common -g -O0 -D_DEBUG 
+CONFIG = clang/64/debug/
 BIN = ../bin/osx/$(CONFIG)
 $(shell mkdir -p $(BIN))
 all: $(BIN)fgbl 
@@ -14,111 +14,111 @@ $(BIN)LibTpBoost.a: $(ODIRLibTpBoost)filesystem_src_codecvt_error_category.o $(O
 	ar rc $(BIN)LibTpBoost.a $(ODIRLibTpBoost)filesystem_src_codecvt_error_category.o $(ODIRLibTpBoost)filesystem_src_operations.o $(ODIRLibTpBoost)filesystem_src_path.o $(ODIRLibTpBoost)filesystem_src_path_traits.o $(ODIRLibTpBoost)filesystem_src_portability.o $(ODIRLibTpBoost)filesystem_src_unique_path.o $(ODIRLibTpBoost)filesystem_src_utf8_codecvt_facet_fs.o $(ODIRLibTpBoost)filesystem_src_windows_file_codecvt.o $(ODIRLibTpBoost)serialization_src_archive_exception.o $(ODIRLibTpBoost)serialization_src_basic_archive.o $(ODIRLibTpBoost)serialization_src_basic_iarchive.o $(ODIRLibTpBoost)serialization_src_basic_iserializer.o $(ODIRLibTpBoost)serialization_src_basic_oarchive.o $(ODIRLibTpBoost)serialization_src_basic_oserializer.o $(ODIRLibTpBoost)serialization_src_basic_pointer_iserializer.o $(ODIRLibTpBoost)serialization_src_basic_pointer_oserializer.o $(ODIRLibTpBoost)serialization_src_basic_serializer_map.o $(ODIRLibTpBoost)serialization_src_basic_text_iprimitive.o $(ODIRLibTpBoost)serialization_src_basic_text_oprimitive.o $(ODIRLibTpBoost)serialization_src_basic_text_wiprimitive.o $(ODIRLibTpBoost)serialization_src_basic_text_woprimitive.o $(ODIRLibTpBoost)serialization_src_basic_xml_archive.o $(ODIRLibTpBoost)serialization_src_binary_iarchive.o $(ODIRLibTpBoost)serialization_src_binary_oarchive.o $(ODIRLibTpBoost)serialization_src_binary_wiarchive.o $(ODIRLibTpBoost)serialization_src_binary_woarchive.o $(ODIRLibTpBoost)serialization_src_codecvt_null.o $(ODIRLibTpBoost)serialization_src_extended_type_info.o $(ODIRLibTpBoost)serialization_src_extended_type_info_no_rtti.o $(ODIRLibTpBoost)serialization_src_extended_type_info_typeid.o $(ODIRLibTpBoost)serialization_src_polymorphic_iarchive.o $(ODIRLibTpBoost)serialization_src_polymorphic_oarchive.o $(ODIRLibTpBoost)serialization_src_singleton.o $(ODIRLibTpBoost)serialization_src_stl_port.o $(ODIRLibTpBoost)serialization_src_text_iarchive.o $(ODIRLibTpBoost)serialization_src_text_oarchive.o $(ODIRLibTpBoost)serialization_src_text_wiarchive.o $(ODIRLibTpBoost)serialization_src_text_woarchive.o $(ODIRLibTpBoost)serialization_src_utf8_codecvt_facet.o $(ODIRLibTpBoost)serialization_src_void_cast.o $(ODIRLibTpBoost)serialization_src_xml_archive_exception.o $(ODIRLibTpBoost)serialization_src_xml_grammar.o $(ODIRLibTpBoost)serialization_src_xml_iarchive.o $(ODIRLibTpBoost)serialization_src_xml_oarchive.o $(ODIRLibTpBoost)serialization_src_xml_wgrammar.o $(ODIRLibTpBoost)serialization_src_xml_wiarchive.o $(ODIRLibTpBoost)serialization_src_xml_woarchive.o $(ODIRLibTpBoost)system_src_error_code.o $(ODIRLibTpBoost)thread_src_future.o $(ODIRLibTpBoost)thread_src_tss_null.o $(ODIRLibTpBoost)thread_src_pthread_once.o $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o $(ODIRLibTpBoost)thread_src_pthread_thread.o 
 	ranlib $(BIN)LibTpBoost.a
 $(ODIRLibTpBoost)filesystem_src_codecvt_error_category.o: $(SDIRLibTpBoost)filesystem/src/codecvt_error_category.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_codecvt_error_category.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/codecvt_error_category.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_codecvt_error_category.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/codecvt_error_category.cpp
 $(ODIRLibTpBoost)filesystem_src_operations.o: $(SDIRLibTpBoost)filesystem/src/operations.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_operations.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/operations.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_operations.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/operations.cpp
 $(ODIRLibTpBoost)filesystem_src_path.o: $(SDIRLibTpBoost)filesystem/src/path.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_path.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/path.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_path.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/path.cpp
 $(ODIRLibTpBoost)filesystem_src_path_traits.o: $(SDIRLibTpBoost)filesystem/src/path_traits.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_path_traits.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/path_traits.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_path_traits.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/path_traits.cpp
 $(ODIRLibTpBoost)filesystem_src_portability.o: $(SDIRLibTpBoost)filesystem/src/portability.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_portability.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/portability.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_portability.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/portability.cpp
 $(ODIRLibTpBoost)filesystem_src_unique_path.o: $(SDIRLibTpBoost)filesystem/src/unique_path.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_unique_path.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/unique_path.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_unique_path.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/unique_path.cpp
 $(ODIRLibTpBoost)filesystem_src_utf8_codecvt_facet_fs.o: $(SDIRLibTpBoost)filesystem/src/utf8_codecvt_facet_fs.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_utf8_codecvt_facet_fs.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/utf8_codecvt_facet_fs.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_utf8_codecvt_facet_fs.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/utf8_codecvt_facet_fs.cpp
 $(ODIRLibTpBoost)filesystem_src_windows_file_codecvt.o: $(SDIRLibTpBoost)filesystem/src/windows_file_codecvt.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)filesystem_src_windows_file_codecvt.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/windows_file_codecvt.cpp
+	$(CC) -o $(ODIRLibTpBoost)filesystem_src_windows_file_codecvt.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)filesystem/src/windows_file_codecvt.cpp
 $(ODIRLibTpBoost)serialization_src_archive_exception.o: $(SDIRLibTpBoost)serialization/src/archive_exception.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_archive_exception.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/archive_exception.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_archive_exception.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/archive_exception.cpp
 $(ODIRLibTpBoost)serialization_src_basic_archive.o: $(SDIRLibTpBoost)serialization/src/basic_archive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_archive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_archive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_archive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_archive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_iarchive.o: $(SDIRLibTpBoost)serialization/src/basic_iarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_iarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_iarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_iarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_iarchive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_iserializer.o: $(SDIRLibTpBoost)serialization/src/basic_iserializer.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_iserializer.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_iserializer.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_iserializer.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_iserializer.cpp
 $(ODIRLibTpBoost)serialization_src_basic_oarchive.o: $(SDIRLibTpBoost)serialization/src/basic_oarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_oarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_oarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_oarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_oarchive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_oserializer.o: $(SDIRLibTpBoost)serialization/src/basic_oserializer.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_oserializer.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_oserializer.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_oserializer.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_oserializer.cpp
 $(ODIRLibTpBoost)serialization_src_basic_pointer_iserializer.o: $(SDIRLibTpBoost)serialization/src/basic_pointer_iserializer.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_pointer_iserializer.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_pointer_iserializer.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_pointer_iserializer.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_pointer_iserializer.cpp
 $(ODIRLibTpBoost)serialization_src_basic_pointer_oserializer.o: $(SDIRLibTpBoost)serialization/src/basic_pointer_oserializer.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_pointer_oserializer.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_pointer_oserializer.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_pointer_oserializer.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_pointer_oserializer.cpp
 $(ODIRLibTpBoost)serialization_src_basic_serializer_map.o: $(SDIRLibTpBoost)serialization/src/basic_serializer_map.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_serializer_map.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_serializer_map.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_serializer_map.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_serializer_map.cpp
 $(ODIRLibTpBoost)serialization_src_basic_text_iprimitive.o: $(SDIRLibTpBoost)serialization/src/basic_text_iprimitive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_iprimitive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_iprimitive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_iprimitive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_iprimitive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_text_oprimitive.o: $(SDIRLibTpBoost)serialization/src/basic_text_oprimitive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_oprimitive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_oprimitive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_oprimitive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_oprimitive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_text_wiprimitive.o: $(SDIRLibTpBoost)serialization/src/basic_text_wiprimitive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_wiprimitive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_wiprimitive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_wiprimitive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_wiprimitive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_text_woprimitive.o: $(SDIRLibTpBoost)serialization/src/basic_text_woprimitive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_woprimitive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_woprimitive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_text_woprimitive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_text_woprimitive.cpp
 $(ODIRLibTpBoost)serialization_src_basic_xml_archive.o: $(SDIRLibTpBoost)serialization/src/basic_xml_archive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_xml_archive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_xml_archive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_basic_xml_archive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/basic_xml_archive.cpp
 $(ODIRLibTpBoost)serialization_src_binary_iarchive.o: $(SDIRLibTpBoost)serialization/src/binary_iarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_iarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_iarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_iarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_iarchive.cpp
 $(ODIRLibTpBoost)serialization_src_binary_oarchive.o: $(SDIRLibTpBoost)serialization/src/binary_oarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_oarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_oarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_oarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_oarchive.cpp
 $(ODIRLibTpBoost)serialization_src_binary_wiarchive.o: $(SDIRLibTpBoost)serialization/src/binary_wiarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_wiarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_wiarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_wiarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_wiarchive.cpp
 $(ODIRLibTpBoost)serialization_src_binary_woarchive.o: $(SDIRLibTpBoost)serialization/src/binary_woarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_woarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_woarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_binary_woarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/binary_woarchive.cpp
 $(ODIRLibTpBoost)serialization_src_codecvt_null.o: $(SDIRLibTpBoost)serialization/src/codecvt_null.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_codecvt_null.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/codecvt_null.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_codecvt_null.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/codecvt_null.cpp
 $(ODIRLibTpBoost)serialization_src_extended_type_info.o: $(SDIRLibTpBoost)serialization/src/extended_type_info.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info.cpp
 $(ODIRLibTpBoost)serialization_src_extended_type_info_no_rtti.o: $(SDIRLibTpBoost)serialization/src/extended_type_info_no_rtti.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info_no_rtti.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info_no_rtti.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info_no_rtti.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info_no_rtti.cpp
 $(ODIRLibTpBoost)serialization_src_extended_type_info_typeid.o: $(SDIRLibTpBoost)serialization/src/extended_type_info_typeid.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info_typeid.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info_typeid.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_extended_type_info_typeid.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/extended_type_info_typeid.cpp
 $(ODIRLibTpBoost)serialization_src_polymorphic_iarchive.o: $(SDIRLibTpBoost)serialization/src/polymorphic_iarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_polymorphic_iarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/polymorphic_iarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_polymorphic_iarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/polymorphic_iarchive.cpp
 $(ODIRLibTpBoost)serialization_src_polymorphic_oarchive.o: $(SDIRLibTpBoost)serialization/src/polymorphic_oarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_polymorphic_oarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/polymorphic_oarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_polymorphic_oarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/polymorphic_oarchive.cpp
 $(ODIRLibTpBoost)serialization_src_singleton.o: $(SDIRLibTpBoost)serialization/src/singleton.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_singleton.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/singleton.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_singleton.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/singleton.cpp
 $(ODIRLibTpBoost)serialization_src_stl_port.o: $(SDIRLibTpBoost)serialization/src/stl_port.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_stl_port.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/stl_port.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_stl_port.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/stl_port.cpp
 $(ODIRLibTpBoost)serialization_src_text_iarchive.o: $(SDIRLibTpBoost)serialization/src/text_iarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_iarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_iarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_iarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_iarchive.cpp
 $(ODIRLibTpBoost)serialization_src_text_oarchive.o: $(SDIRLibTpBoost)serialization/src/text_oarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_oarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_oarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_oarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_oarchive.cpp
 $(ODIRLibTpBoost)serialization_src_text_wiarchive.o: $(SDIRLibTpBoost)serialization/src/text_wiarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_wiarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_wiarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_wiarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_wiarchive.cpp
 $(ODIRLibTpBoost)serialization_src_text_woarchive.o: $(SDIRLibTpBoost)serialization/src/text_woarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_woarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_woarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_text_woarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/text_woarchive.cpp
 $(ODIRLibTpBoost)serialization_src_utf8_codecvt_facet.o: $(SDIRLibTpBoost)serialization/src/utf8_codecvt_facet.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_utf8_codecvt_facet.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/utf8_codecvt_facet.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_utf8_codecvt_facet.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/utf8_codecvt_facet.cpp
 $(ODIRLibTpBoost)serialization_src_void_cast.o: $(SDIRLibTpBoost)serialization/src/void_cast.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_void_cast.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/void_cast.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_void_cast.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/void_cast.cpp
 $(ODIRLibTpBoost)serialization_src_xml_archive_exception.o: $(SDIRLibTpBoost)serialization/src/xml_archive_exception.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_archive_exception.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_archive_exception.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_archive_exception.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_archive_exception.cpp
 $(ODIRLibTpBoost)serialization_src_xml_grammar.o: $(SDIRLibTpBoost)serialization/src/xml_grammar.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_grammar.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_grammar.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_grammar.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_grammar.cpp
 $(ODIRLibTpBoost)serialization_src_xml_iarchive.o: $(SDIRLibTpBoost)serialization/src/xml_iarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_iarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_iarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_iarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_iarchive.cpp
 $(ODIRLibTpBoost)serialization_src_xml_oarchive.o: $(SDIRLibTpBoost)serialization/src/xml_oarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_oarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_oarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_oarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_oarchive.cpp
 $(ODIRLibTpBoost)serialization_src_xml_wgrammar.o: $(SDIRLibTpBoost)serialization/src/xml_wgrammar.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_wgrammar.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_wgrammar.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_wgrammar.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_wgrammar.cpp
 $(ODIRLibTpBoost)serialization_src_xml_wiarchive.o: $(SDIRLibTpBoost)serialization/src/xml_wiarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_wiarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_wiarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_wiarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_wiarchive.cpp
 $(ODIRLibTpBoost)serialization_src_xml_woarchive.o: $(SDIRLibTpBoost)serialization/src/xml_woarchive.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_woarchive.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_woarchive.cpp
+	$(CC) -o $(ODIRLibTpBoost)serialization_src_xml_woarchive.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)serialization/src/xml_woarchive.cpp
 $(ODIRLibTpBoost)system_src_error_code.o: $(SDIRLibTpBoost)system/src/error_code.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)system_src_error_code.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)system/src/error_code.cpp
+	$(CC) -o $(ODIRLibTpBoost)system_src_error_code.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)system/src/error_code.cpp
 $(ODIRLibTpBoost)thread_src_future.o: $(SDIRLibTpBoost)thread/src/future.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)thread_src_future.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/future.cpp
+	$(CC) -o $(ODIRLibTpBoost)thread_src_future.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/future.cpp
 $(ODIRLibTpBoost)thread_src_tss_null.o: $(SDIRLibTpBoost)thread/src/tss_null.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)thread_src_tss_null.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/tss_null.cpp
+	$(CC) -o $(ODIRLibTpBoost)thread_src_tss_null.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/tss_null.cpp
 $(ODIRLibTpBoost)thread_src_pthread_once.o: $(SDIRLibTpBoost)thread/src/pthread/once.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_once.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/once.cpp
+	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_once.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/once.cpp
 $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o: $(SDIRLibTpBoost)thread/src/pthread/once_atomic.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/once_atomic.cpp
+	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/once_atomic.cpp
 $(ODIRLibTpBoost)thread_src_pthread_thread.o: $(SDIRLibTpBoost)thread/src/pthread/thread.cpp $(INCSLibTpBoost)
-	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_thread.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/thread.cpp
+	$(CC) -o $(ODIRLibTpBoost)thread_src_pthread_thread.o -c -std=c++11 $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/thread.cpp
 CFLAGSLibJpegIjg6b = $(CFLAGS) -w -DBOOST_THREAD_POSIX
 SDIRLibJpegIjg6b = LibJpegIjg6b/
 ODIRLibJpegIjg6b = LibJpegIjg6b/$(CONFIG)
@@ -916,215 +916,215 @@ $(BIN)LibFgBase.a: $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(
 	ar rc $(BIN)LibFgBase.a $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshFgmesh.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshOps.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dNormals.o $(ODIRLibFgBase)Fg3dPose.o $(ODIRLibFgBase)Fg3dRayCaster.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)Fg3dTopology.o $(ODIRLibFgBase)FgAlgs.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImgops.o $(ODIRLibFgBase)FgCmdMeshops.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdNcServer.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgCons.o $(ODIRLibFgBase)FgConsMakefiles.o $(ODIRLibFgBase)FgConsVisualStudio201x.o $(ODIRLibFgBase)FgDepGraph.o $(ODIRLibFgBase)FgDepGraphSt.o $(ODIRLibFgBase)FgDepGraphTest.o $(ODIRLibFgBase)FgDepGraphUtils.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgDraw.o $(ODIRLibFgBase)FgException.o $(ODIRLibFgBase)FgExceptionTest.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgFileSystemTest.o $(ODIRLibFgBase)FgFileUtils.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGeometryTest.o $(ODIRLibFgBase)FgGridTriangles.o $(ODIRLibFgBase)FgGuiApi.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiBase.o $(ODIRLibFgBase)FgGuiApiButton.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHex.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgImgJpeg.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrix.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgMetaFormat.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgNormal.o $(ODIRLibFgBase)FgOut.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgPath.o $(ODIRLibFgBase)FgPlatform.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSharedPtrTest.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdStream.o $(ODIRLibFgBase)FgStdString.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgSyntax.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTempFile.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgThread.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgVariant.o $(ODIRLibFgBase)FgViz.o $(ODIRLibFgBase)jpeg_mem_dest.o $(ODIRLibFgBase)jpeg_mem_src.o $(ODIRLibFgBase)portable_binary_iarchive.o $(ODIRLibFgBase)portable_binary_oarchive.o $(ODIRLibFgBase)stdafx.o 
 	ranlib $(BIN)LibFgBase.a
 $(ODIRLibFgBase)Fg3dCamera.o: $(SDIRLibFgBase)Fg3dCamera.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dCamera.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dCamera.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dCamera.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dCamera.cpp
 $(ODIRLibFgBase)Fg3dDisplay.o: $(SDIRLibFgBase)Fg3dDisplay.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dDisplay.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dDisplay.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dDisplay.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dDisplay.cpp
 $(ODIRLibFgBase)Fg3dMesh.o: $(SDIRLibFgBase)Fg3dMesh.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMesh.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMesh.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMesh.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMesh.cpp
 $(ODIRLibFgBase)Fg3dMesh3ds.o: $(SDIRLibFgBase)Fg3dMesh3ds.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMesh3ds.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMesh3ds.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMesh3ds.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMesh3ds.cpp
 $(ODIRLibFgBase)Fg3dMeshFbx.o: $(SDIRLibFgBase)Fg3dMeshFbx.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshFbx.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshFbx.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshFbx.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshFbx.cpp
 $(ODIRLibFgBase)Fg3dMeshFgmesh.o: $(SDIRLibFgBase)Fg3dMeshFgmesh.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshFgmesh.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshFgmesh.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshFgmesh.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshFgmesh.cpp
 $(ODIRLibFgBase)Fg3dMeshIo.o: $(SDIRLibFgBase)Fg3dMeshIo.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshIo.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshIo.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshIo.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshIo.cpp
 $(ODIRLibFgBase)Fg3dMeshLwo.o: $(SDIRLibFgBase)Fg3dMeshLwo.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshLwo.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshLwo.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshLwo.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshLwo.cpp
 $(ODIRLibFgBase)Fg3dMeshMa.o: $(SDIRLibFgBase)Fg3dMeshMa.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshMa.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshMa.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshMa.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshMa.cpp
 $(ODIRLibFgBase)Fg3dMeshObj.o: $(SDIRLibFgBase)Fg3dMeshObj.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshObj.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshObj.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshObj.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshObj.cpp
 $(ODIRLibFgBase)Fg3dMeshOps.o: $(SDIRLibFgBase)Fg3dMeshOps.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshOps.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshOps.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshOps.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshOps.cpp
 $(ODIRLibFgBase)Fg3dMeshPly.o: $(SDIRLibFgBase)Fg3dMeshPly.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshPly.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshPly.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshPly.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshPly.cpp
 $(ODIRLibFgBase)Fg3dMeshStl.o: $(SDIRLibFgBase)Fg3dMeshStl.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshStl.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshStl.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshStl.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshStl.cpp
 $(ODIRLibFgBase)Fg3dMeshTri.o: $(SDIRLibFgBase)Fg3dMeshTri.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshTri.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshTri.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshTri.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshTri.cpp
 $(ODIRLibFgBase)Fg3dMeshVrml.o: $(SDIRLibFgBase)Fg3dMeshVrml.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshVrml.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshVrml.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshVrml.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshVrml.cpp
 $(ODIRLibFgBase)Fg3dMeshXsi.o: $(SDIRLibFgBase)Fg3dMeshXsi.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dMeshXsi.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshXsi.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dMeshXsi.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshXsi.cpp
 $(ODIRLibFgBase)Fg3dNormals.o: $(SDIRLibFgBase)Fg3dNormals.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dNormals.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dNormals.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dNormals.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dNormals.cpp
 $(ODIRLibFgBase)Fg3dPose.o: $(SDIRLibFgBase)Fg3dPose.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dPose.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dPose.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dPose.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dPose.cpp
 $(ODIRLibFgBase)Fg3dRayCaster.o: $(SDIRLibFgBase)Fg3dRayCaster.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dRayCaster.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dRayCaster.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dRayCaster.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dRayCaster.cpp
 $(ODIRLibFgBase)Fg3dSurface.o: $(SDIRLibFgBase)Fg3dSurface.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dSurface.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dSurface.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dSurface.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dSurface.cpp
 $(ODIRLibFgBase)Fg3dTest.o: $(SDIRLibFgBase)Fg3dTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dTest.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dTest.cpp
 $(ODIRLibFgBase)Fg3dTopology.o: $(SDIRLibFgBase)Fg3dTopology.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)Fg3dTopology.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dTopology.cpp
+	$(CC) -o $(ODIRLibFgBase)Fg3dTopology.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)Fg3dTopology.cpp
 $(ODIRLibFgBase)FgAlgs.o: $(SDIRLibFgBase)FgAlgs.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgAlgs.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgAlgs.cpp
+	$(CC) -o $(ODIRLibFgBase)FgAlgs.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgAlgs.cpp
 $(ODIRLibFgBase)FgApproxFunc.o: $(SDIRLibFgBase)FgApproxFunc.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgApproxFunc.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgApproxFunc.cpp
+	$(CC) -o $(ODIRLibFgBase)FgApproxFunc.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgApproxFunc.cpp
 $(ODIRLibFgBase)FgBuild.o: $(SDIRLibFgBase)FgBuild.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgBuild.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgBuild.cpp
+	$(CC) -o $(ODIRLibFgBase)FgBuild.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgBuild.cpp
 $(ODIRLibFgBase)FgCl.o: $(SDIRLibFgBase)FgCl.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCl.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCl.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCl.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCl.cpp
 $(ODIRLibFgBase)FgCmdBase.o: $(SDIRLibFgBase)FgCmdBase.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdBase.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdBase.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdBase.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdBase.cpp
 $(ODIRLibFgBase)FgCmdImgops.o: $(SDIRLibFgBase)FgCmdImgops.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdImgops.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdImgops.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdImgops.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdImgops.cpp
 $(ODIRLibFgBase)FgCmdMeshops.o: $(SDIRLibFgBase)FgCmdMeshops.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdMeshops.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdMeshops.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdMeshops.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdMeshops.cpp
 $(ODIRLibFgBase)FgCmdMorph.o: $(SDIRLibFgBase)FgCmdMorph.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdMorph.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdMorph.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdMorph.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdMorph.cpp
 $(ODIRLibFgBase)FgCmdNcServer.o: $(SDIRLibFgBase)FgCmdNcServer.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdNcServer.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdNcServer.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdNcServer.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdNcServer.cpp
 $(ODIRLibFgBase)FgCmdRender.o: $(SDIRLibFgBase)FgCmdRender.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdRender.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdRender.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdRender.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdRender.cpp
 $(ODIRLibFgBase)FgCmdView.o: $(SDIRLibFgBase)FgCmdView.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCmdView.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdView.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCmdView.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCmdView.cpp
 $(ODIRLibFgBase)FgCommand.o: $(SDIRLibFgBase)FgCommand.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCommand.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCommand.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCommand.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCommand.cpp
 $(ODIRLibFgBase)FgCons.o: $(SDIRLibFgBase)FgCons.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgCons.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCons.cpp
+	$(CC) -o $(ODIRLibFgBase)FgCons.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgCons.cpp
 $(ODIRLibFgBase)FgConsMakefiles.o: $(SDIRLibFgBase)FgConsMakefiles.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgConsMakefiles.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgConsMakefiles.cpp
+	$(CC) -o $(ODIRLibFgBase)FgConsMakefiles.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgConsMakefiles.cpp
 $(ODIRLibFgBase)FgConsVisualStudio201x.o: $(SDIRLibFgBase)FgConsVisualStudio201x.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgConsVisualStudio201x.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgConsVisualStudio201x.cpp
+	$(CC) -o $(ODIRLibFgBase)FgConsVisualStudio201x.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgConsVisualStudio201x.cpp
 $(ODIRLibFgBase)FgDepGraph.o: $(SDIRLibFgBase)FgDepGraph.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDepGraph.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraph.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDepGraph.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraph.cpp
 $(ODIRLibFgBase)FgDepGraphSt.o: $(SDIRLibFgBase)FgDepGraphSt.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDepGraphSt.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphSt.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDepGraphSt.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphSt.cpp
 $(ODIRLibFgBase)FgDepGraphTest.o: $(SDIRLibFgBase)FgDepGraphTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDepGraphTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDepGraphTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphTest.cpp
 $(ODIRLibFgBase)FgDepGraphUtils.o: $(SDIRLibFgBase)FgDepGraphUtils.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDepGraphUtils.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphUtils.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDepGraphUtils.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDepGraphUtils.cpp
 $(ODIRLibFgBase)FgDiagnostics.o: $(SDIRLibFgBase)FgDiagnostics.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDiagnostics.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDiagnostics.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDiagnostics.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDiagnostics.cpp
 $(ODIRLibFgBase)FgDraw.o: $(SDIRLibFgBase)FgDraw.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgDraw.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDraw.cpp
+	$(CC) -o $(ODIRLibFgBase)FgDraw.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgDraw.cpp
 $(ODIRLibFgBase)FgException.o: $(SDIRLibFgBase)FgException.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgException.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgException.cpp
+	$(CC) -o $(ODIRLibFgBase)FgException.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgException.cpp
 $(ODIRLibFgBase)FgExceptionTest.o: $(SDIRLibFgBase)FgExceptionTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgExceptionTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgExceptionTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgExceptionTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgExceptionTest.cpp
 $(ODIRLibFgBase)FgFileSystem.o: $(SDIRLibFgBase)FgFileSystem.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgFileSystem.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileSystem.cpp
+	$(CC) -o $(ODIRLibFgBase)FgFileSystem.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileSystem.cpp
 $(ODIRLibFgBase)FgFileSystemTest.o: $(SDIRLibFgBase)FgFileSystemTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgFileSystemTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileSystemTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgFileSystemTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileSystemTest.cpp
 $(ODIRLibFgBase)FgFileUtils.o: $(SDIRLibFgBase)FgFileUtils.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgFileUtils.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileUtils.cpp
+	$(CC) -o $(ODIRLibFgBase)FgFileUtils.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgFileUtils.cpp
 $(ODIRLibFgBase)FgGeometry.o: $(SDIRLibFgBase)FgGeometry.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGeometry.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGeometry.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGeometry.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGeometry.cpp
 $(ODIRLibFgBase)FgGeometryTest.o: $(SDIRLibFgBase)FgGeometryTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGeometryTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGeometryTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGeometryTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGeometryTest.cpp
 $(ODIRLibFgBase)FgGridTriangles.o: $(SDIRLibFgBase)FgGridTriangles.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGridTriangles.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGridTriangles.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGridTriangles.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGridTriangles.cpp
 $(ODIRLibFgBase)FgGuiApi.o: $(SDIRLibFgBase)FgGuiApi.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApi.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApi.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApi.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApi.cpp
 $(ODIRLibFgBase)FgGuiApi3d.o: $(SDIRLibFgBase)FgGuiApi3d.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApi3d.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApi3d.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApi3d.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApi3d.cpp
 $(ODIRLibFgBase)FgGuiApiBase.o: $(SDIRLibFgBase)FgGuiApiBase.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiBase.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiBase.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiBase.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiBase.cpp
 $(ODIRLibFgBase)FgGuiApiButton.o: $(SDIRLibFgBase)FgGuiApiButton.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiButton.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiButton.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiButton.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiButton.cpp
 $(ODIRLibFgBase)FgGuiApiCheckbox.o: $(SDIRLibFgBase)FgGuiApiCheckbox.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiCheckbox.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiCheckbox.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiCheckbox.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiCheckbox.cpp
 $(ODIRLibFgBase)FgGuiApiImage.o: $(SDIRLibFgBase)FgGuiApiImage.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiImage.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiImage.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiImage.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiImage.cpp
 $(ODIRLibFgBase)FgGuiApiRadio.o: $(SDIRLibFgBase)FgGuiApiRadio.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiRadio.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiRadio.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiRadio.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiRadio.cpp
 $(ODIRLibFgBase)FgGuiApiSlider.o: $(SDIRLibFgBase)FgGuiApiSlider.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiSlider.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiSlider.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiSlider.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiSlider.cpp
 $(ODIRLibFgBase)FgGuiApiSplit.o: $(SDIRLibFgBase)FgGuiApiSplit.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiSplit.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiSplit.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiSplit.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiSplit.cpp
 $(ODIRLibFgBase)FgGuiApiText.o: $(SDIRLibFgBase)FgGuiApiText.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgGuiApiText.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiText.cpp
+	$(CC) -o $(ODIRLibFgBase)FgGuiApiText.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiText.cpp
 $(ODIRLibFgBase)FgHex.o: $(SDIRLibFgBase)FgHex.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgHex.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgHex.cpp
+	$(CC) -o $(ODIRLibFgBase)FgHex.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgHex.cpp
 $(ODIRLibFgBase)FgHistogram.o: $(SDIRLibFgBase)FgHistogram.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgHistogram.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgHistogram.cpp
+	$(CC) -o $(ODIRLibFgBase)FgHistogram.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgHistogram.cpp
 $(ODIRLibFgBase)FgImage.o: $(SDIRLibFgBase)FgImage.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgImage.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImage.cpp
+	$(CC) -o $(ODIRLibFgBase)FgImage.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImage.cpp
 $(ODIRLibFgBase)FgImageIo.o: $(SDIRLibFgBase)FgImageIo.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgImageIo.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImageIo.cpp
+	$(CC) -o $(ODIRLibFgBase)FgImageIo.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImageIo.cpp
 $(ODIRLibFgBase)FgImageTest.o: $(SDIRLibFgBase)FgImageTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgImageTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImageTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgImageTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImageTest.cpp
 $(ODIRLibFgBase)FgImgDisplay.o: $(SDIRLibFgBase)FgImgDisplay.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgImgDisplay.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImgDisplay.cpp
+	$(CC) -o $(ODIRLibFgBase)FgImgDisplay.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImgDisplay.cpp
 $(ODIRLibFgBase)FgImgJpeg.o: $(SDIRLibFgBase)FgImgJpeg.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgImgJpeg.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImgJpeg.cpp
+	$(CC) -o $(ODIRLibFgBase)FgImgJpeg.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgImgJpeg.cpp
 $(ODIRLibFgBase)FgLighting.o: $(SDIRLibFgBase)FgLighting.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgLighting.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgLighting.cpp
+	$(CC) -o $(ODIRLibFgBase)FgLighting.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgLighting.cpp
 $(ODIRLibFgBase)FgMain.o: $(SDIRLibFgBase)FgMain.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMain.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMain.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMain.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMain.cpp
 $(ODIRLibFgBase)FgMath.o: $(SDIRLibFgBase)FgMath.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMath.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMath.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMath.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMath.cpp
 $(ODIRLibFgBase)FgMatrix.o: $(SDIRLibFgBase)FgMatrix.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMatrix.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrix.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMatrix.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrix.cpp
 $(ODIRLibFgBase)FgMatrixC.o: $(SDIRLibFgBase)FgMatrixC.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMatrixC.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixC.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMatrixC.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixC.cpp
 $(ODIRLibFgBase)FgMatrixSolver.o: $(SDIRLibFgBase)FgMatrixSolver.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMatrixSolver.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixSolver.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMatrixSolver.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixSolver.cpp
 $(ODIRLibFgBase)FgMatrixV.o: $(SDIRLibFgBase)FgMatrixV.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMatrixV.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixV.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMatrixV.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMatrixV.cpp
 $(ODIRLibFgBase)FgMetaFormat.o: $(SDIRLibFgBase)FgMetaFormat.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgMetaFormat.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMetaFormat.cpp
+	$(CC) -o $(ODIRLibFgBase)FgMetaFormat.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgMetaFormat.cpp
 $(ODIRLibFgBase)FgNc.o: $(SDIRLibFgBase)FgNc.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgNc.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgNc.cpp
+	$(CC) -o $(ODIRLibFgBase)FgNc.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgNc.cpp
 $(ODIRLibFgBase)FgNormal.o: $(SDIRLibFgBase)FgNormal.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgNormal.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgNormal.cpp
+	$(CC) -o $(ODIRLibFgBase)FgNormal.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgNormal.cpp
 $(ODIRLibFgBase)FgOut.o: $(SDIRLibFgBase)FgOut.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgOut.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgOut.cpp
+	$(CC) -o $(ODIRLibFgBase)FgOut.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgOut.cpp
 $(ODIRLibFgBase)FgParse.o: $(SDIRLibFgBase)FgParse.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgParse.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgParse.cpp
+	$(CC) -o $(ODIRLibFgBase)FgParse.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgParse.cpp
 $(ODIRLibFgBase)FgPath.o: $(SDIRLibFgBase)FgPath.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgPath.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgPath.cpp
+	$(CC) -o $(ODIRLibFgBase)FgPath.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgPath.cpp
 $(ODIRLibFgBase)FgPlatform.o: $(SDIRLibFgBase)FgPlatform.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgPlatform.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgPlatform.cpp
+	$(CC) -o $(ODIRLibFgBase)FgPlatform.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgPlatform.cpp
 $(ODIRLibFgBase)FgQuaternion.o: $(SDIRLibFgBase)FgQuaternion.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgQuaternion.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgQuaternion.cpp
+	$(CC) -o $(ODIRLibFgBase)FgQuaternion.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgQuaternion.cpp
 $(ODIRLibFgBase)FgRandom.o: $(SDIRLibFgBase)FgRandom.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgRandom.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgRandom.cpp
+	$(CC) -o $(ODIRLibFgBase)FgRandom.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgRandom.cpp
 $(ODIRLibFgBase)FgSampler.o: $(SDIRLibFgBase)FgSampler.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgSampler.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSampler.cpp
+	$(CC) -o $(ODIRLibFgBase)FgSampler.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSampler.cpp
 $(ODIRLibFgBase)FgSharedPtrTest.o: $(SDIRLibFgBase)FgSharedPtrTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgSharedPtrTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSharedPtrTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgSharedPtrTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSharedPtrTest.cpp
 $(ODIRLibFgBase)FgSimilarity.o: $(SDIRLibFgBase)FgSimilarity.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgSimilarity.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSimilarity.cpp
+	$(CC) -o $(ODIRLibFgBase)FgSimilarity.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSimilarity.cpp
 $(ODIRLibFgBase)FgSoftRender.o: $(SDIRLibFgBase)FgSoftRender.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgSoftRender.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSoftRender.cpp
+	$(CC) -o $(ODIRLibFgBase)FgSoftRender.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSoftRender.cpp
 $(ODIRLibFgBase)FgStdStream.o: $(SDIRLibFgBase)FgStdStream.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgStdStream.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStdStream.cpp
+	$(CC) -o $(ODIRLibFgBase)FgStdStream.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStdStream.cpp
 $(ODIRLibFgBase)FgStdString.o: $(SDIRLibFgBase)FgStdString.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgStdString.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStdString.cpp
+	$(CC) -o $(ODIRLibFgBase)FgStdString.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStdString.cpp
 $(ODIRLibFgBase)FgString.o: $(SDIRLibFgBase)FgString.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgString.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgString.cpp
+	$(CC) -o $(ODIRLibFgBase)FgString.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgString.cpp
 $(ODIRLibFgBase)FgStringTest.o: $(SDIRLibFgBase)FgStringTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgStringTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStringTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgStringTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgStringTest.cpp
 $(ODIRLibFgBase)FgSyntax.o: $(SDIRLibFgBase)FgSyntax.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgSyntax.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSyntax.cpp
+	$(CC) -o $(ODIRLibFgBase)FgSyntax.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgSyntax.cpp
 $(ODIRLibFgBase)FgTcpTest.o: $(SDIRLibFgBase)FgTcpTest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgTcpTest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTcpTest.cpp
+	$(CC) -o $(ODIRLibFgBase)FgTcpTest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTcpTest.cpp
 $(ODIRLibFgBase)FgTempFile.o: $(SDIRLibFgBase)FgTempFile.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgTempFile.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTempFile.cpp
+	$(CC) -o $(ODIRLibFgBase)FgTempFile.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTempFile.cpp
 $(ODIRLibFgBase)FgTestUtils.o: $(SDIRLibFgBase)FgTestUtils.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgTestUtils.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTestUtils.cpp
+	$(CC) -o $(ODIRLibFgBase)FgTestUtils.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTestUtils.cpp
 $(ODIRLibFgBase)FgThread.o: $(SDIRLibFgBase)FgThread.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgThread.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgThread.cpp
+	$(CC) -o $(ODIRLibFgBase)FgThread.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgThread.cpp
 $(ODIRLibFgBase)FgTime.o: $(SDIRLibFgBase)FgTime.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgTime.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTime.cpp
+	$(CC) -o $(ODIRLibFgBase)FgTime.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgTime.cpp
 $(ODIRLibFgBase)FgVariant.o: $(SDIRLibFgBase)FgVariant.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgVariant.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgVariant.cpp
+	$(CC) -o $(ODIRLibFgBase)FgVariant.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgVariant.cpp
 $(ODIRLibFgBase)FgViz.o: $(SDIRLibFgBase)FgViz.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)FgViz.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgViz.cpp
+	$(CC) -o $(ODIRLibFgBase)FgViz.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)FgViz.cpp
 $(ODIRLibFgBase)jpeg_mem_dest.o: $(SDIRLibFgBase)jpeg_mem_dest.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)jpeg_mem_dest.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)jpeg_mem_dest.cpp
+	$(CC) -o $(ODIRLibFgBase)jpeg_mem_dest.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)jpeg_mem_dest.cpp
 $(ODIRLibFgBase)jpeg_mem_src.o: $(SDIRLibFgBase)jpeg_mem_src.c $(INCSLibFgBase)
 	$(CC) -o $(ODIRLibFgBase)jpeg_mem_src.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)jpeg_mem_src.c
 $(ODIRLibFgBase)portable_binary_iarchive.o: $(SDIRLibFgBase)portable_binary_iarchive.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)portable_binary_iarchive.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_iarchive.cpp
+	$(CC) -o $(ODIRLibFgBase)portable_binary_iarchive.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_iarchive.cpp
 $(ODIRLibFgBase)portable_binary_oarchive.o: $(SDIRLibFgBase)portable_binary_oarchive.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)portable_binary_oarchive.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_oarchive.cpp
+	$(CC) -o $(ODIRLibFgBase)portable_binary_oarchive.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_oarchive.cpp
 $(ODIRLibFgBase)stdafx.o: $(SDIRLibFgBase)stdafx.cpp $(INCSLibFgBase)
-	$(CC) -o $(ODIRLibFgBase)stdafx.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)stdafx.cpp
+	$(CC) -o $(ODIRLibFgBase)stdafx.o -c -std=c++11 $(CFLAGSLibFgBase) $(SDIRLibFgBase)stdafx.cpp
 CFLAGSLibFgNix = $(CFLAGS) -Wall -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRLibFgNix = LibFgNix/
 ODIRLibFgNix = LibFgNix/$(CONFIG)
@@ -1134,27 +1134,27 @@ $(BIN)LibFgNix.a: $(ODIRLibFgNix)Fg3dOpenGLImpNix.o $(ODIRLibFgNix)FgClNix.o $(O
 	ar rc $(BIN)LibFgNix.a $(ODIRLibFgNix)Fg3dOpenGLImpNix.o $(ODIRLibFgNix)FgClNix.o $(ODIRLibFgNix)FgConioNix.o $(ODIRLibFgNix)FgFileSystemNix.o $(ODIRLibFgNix)FgGuiNix.o $(ODIRLibFgNix)FgStdioNix.o $(ODIRLibFgNix)FgSystemInfoNix.o $(ODIRLibFgNix)FgTcpNix.o $(ODIRLibFgNix)FgThreadNix.o $(ODIRLibFgNix)FgTimeNix.o $(ODIRLibFgNix)stdafx.o 
 	ranlib $(BIN)LibFgNix.a
 $(ODIRLibFgNix)Fg3dOpenGLImpNix.o: $(SDIRLibFgNix)Fg3dOpenGLImpNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)Fg3dOpenGLImpNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)Fg3dOpenGLImpNix.cpp
+	$(CC) -o $(ODIRLibFgNix)Fg3dOpenGLImpNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)Fg3dOpenGLImpNix.cpp
 $(ODIRLibFgNix)FgClNix.o: $(SDIRLibFgNix)FgClNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgClNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgClNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgClNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgClNix.cpp
 $(ODIRLibFgNix)FgConioNix.o: $(SDIRLibFgNix)FgConioNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgConioNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgConioNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgConioNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgConioNix.cpp
 $(ODIRLibFgNix)FgFileSystemNix.o: $(SDIRLibFgNix)FgFileSystemNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgFileSystemNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgFileSystemNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgFileSystemNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgFileSystemNix.cpp
 $(ODIRLibFgNix)FgGuiNix.o: $(SDIRLibFgNix)FgGuiNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgGuiNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgGuiNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgGuiNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgGuiNix.cpp
 $(ODIRLibFgNix)FgStdioNix.o: $(SDIRLibFgNix)FgStdioNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgStdioNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgStdioNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgStdioNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgStdioNix.cpp
 $(ODIRLibFgNix)FgSystemInfoNix.o: $(SDIRLibFgNix)FgSystemInfoNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgSystemInfoNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgSystemInfoNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgSystemInfoNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgSystemInfoNix.cpp
 $(ODIRLibFgNix)FgTcpNix.o: $(SDIRLibFgNix)FgTcpNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgTcpNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTcpNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgTcpNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTcpNix.cpp
 $(ODIRLibFgNix)FgThreadNix.o: $(SDIRLibFgNix)FgThreadNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgThreadNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgThreadNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgThreadNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgThreadNix.cpp
 $(ODIRLibFgNix)FgTimeNix.o: $(SDIRLibFgNix)FgTimeNix.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)FgTimeNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTimeNix.cpp
+	$(CC) -o $(ODIRLibFgNix)FgTimeNix.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTimeNix.cpp
 $(ODIRLibFgNix)stdafx.o: $(SDIRLibFgNix)stdafx.cpp $(INCSLibFgNix)
-	$(CC) -o $(ODIRLibFgNix)stdafx.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)stdafx.cpp
+	$(CC) -o $(ODIRLibFgNix)stdafx.o -c -std=c++11 $(CFLAGSLibFgNix) $(SDIRLibFgNix)stdafx.cpp
 CFLAGSfgbl = $(CFLAGS) -Wall -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRfgbl = fgbl/
 ODIRfgbl = fgbl/$(CONFIG)
@@ -1163,15 +1163,15 @@ INCSfgbl := $(wildcard LibTpBoost/boost_1_63_0/*.hpp) $(wildcard LibJpegIjg6b/*.
 $(BIN)fgbl: $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a 
 	$(LINK) -o $(BIN)fgbl $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a  -framework Carbon 
 $(ODIRfgbl)fgbl.o: $(SDIRfgbl)fgbl.cpp $(INCSfgbl)
-	$(CC) -o $(ODIRfgbl)fgbl.o -c $(CFLAGSfgbl) $(SDIRfgbl)fgbl.cpp
+	$(CC) -o $(ODIRfgbl)fgbl.o -c -std=c++11 $(CFLAGSfgbl) $(SDIRfgbl)fgbl.cpp
 .PHONY: clean
 clean: cleanObjs cleanTargs
 cleanObjs:
-	rm -r LibTpBoost/gcc
-	rm -r LibJpegIjg6b/gcc
-	rm -r LibImageMagickCore/gcc
-	rm -r LibFgBase/gcc
-	rm -r LibFgNix/gcc
-	rm -r fgbl/gcc
+	rm -r LibTpBoost/clang
+	rm -r LibJpegIjg6b/clang
+	rm -r LibImageMagickCore/clang
+	rm -r LibFgBase/clang
+	rm -r LibFgNix/clang
+	rm -r fgbl/clang
 cleanTargs:
 	rm -r $(BIN)

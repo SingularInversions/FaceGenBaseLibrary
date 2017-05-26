@@ -22,6 +22,7 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
@@ -49,6 +50,7 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <thread>
 
 #endif
 

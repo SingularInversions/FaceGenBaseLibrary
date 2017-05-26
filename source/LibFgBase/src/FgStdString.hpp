@@ -20,6 +20,7 @@
 using std::string;
 
 typedef std::vector<std::string>    FgStrs;
+typedef std::vector<FgStrs>         FgStrss;
 
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors:
@@ -32,6 +33,7 @@ fgToString(const T &val)
     return msg.str();
 }
 
+// Doesn't tell you when the input is invalid, so use 'fgStrTo*' functions below for that:
 template<class T>
 T
 fgFromString(const string & str)
@@ -127,10 +129,13 @@ fgCat(const string & s0,const string & s1,const string & s2)
     return ret;
 }
 
-// std::stoi doesn't tell if you your string is a valid integer representation.
-// Not currently safe for overflow values:
-FgOpt<int>
-fgStoI(const string & str);
+// Only define fully specialized versions.
+// std::strtol uses 0 as an error code (WTF). std::stol uses strtol (and throws exceptions).
+// ints: Only valid integer representations within the range of int32 will return a valid value.
+// ints: Whitespace is not considered valid:
+template<class T>
+FgOpt<T>
+fgFromStr(const string &);
 
 // C++98 doesn't support .back() for strings:
 inline

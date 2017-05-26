@@ -16,9 +16,11 @@
 struct  FgVecMag
 {
     FgVect3D    vec;
-    double      mag;    // Squared magnitude of vec
+    double      mag;    // Squared magnitude of vec. Initialized to invalid.
 
-    FgVecMag() : mag(0) {}
+    FgVecMag() : mag(std::numeric_limits<double>::max()) {}
+
+    bool valid() const {return (mag != std::numeric_limits<double>::max()); }
 };
 
 // Returns closest point in given line segment from origin:

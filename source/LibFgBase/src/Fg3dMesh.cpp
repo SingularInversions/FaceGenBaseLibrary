@@ -163,12 +163,36 @@ Fg3dMesh::surfPointPos(const string & label) const
     return ret;
 }
 
-vector<FgVertLabel>
+FgLabelledVerts
 Fg3dMesh::surfPointsAsVertLabels() const
 {
-    vector<FgVertLabel>     ret;
+    FgLabelledVerts     ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
         fgAppend(ret,surfaces[ss].surfPointsAsVertLabels(verts));
+    return ret;
+}
+
+FgVerts
+Fg3dMesh::surfPointPositions(const FgStrs & labels) const
+{
+    FgVerts         ret;
+    ret.reserve(labels.size());
+    for (size_t ss=0; ss<labels.size(); ++ss) {
+        FgOpt<FgVect3F>     pos = surfPointPos(labels[ss]);
+        if (!pos.valid())
+            fgThrow("Surface point not found",labels[ss]);
+        ret.push_back(pos.val());
+    }
+    return ret;
+}
+
+FgTriSurf
+Fg3dMesh::asTriSurf() const
+{
+    FgTriSurf   ret;
+    ret.verts = verts;
+    for (size_t ss=0; ss<surfaces.size(); ++ss)
+        fgAppend(ret.tris,surfaces[ss].tris.vertInds);
     return ret;
 }
 
@@ -602,6 +626,16 @@ subdivideTris(
         else
             ret.surfPoints.push_back(FgSurfPoint(facetIdx+3,wgtCentre));
     }
+    return ret;
+}
+
+FgMat32F
+fgBounds(const Fg3dMeshes & meshes)
+{
+    FGASSERT(!meshes.empty());
+    FgMat32F    ret = fgBounds(meshes[0].verts);
+    for (size_t mm=1; mm<meshes.size(); ++mm)
+        ret = fgBounds(ret,fgBounds(meshes[mm].verts));
     return ret;
 }
 

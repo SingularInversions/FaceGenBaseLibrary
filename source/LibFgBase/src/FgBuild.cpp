@@ -12,6 +12,7 @@
 #include "FgStdVector.hpp"
 #include "FgRandom.hpp"
 #include "FgHex.hpp"
+#include "FgSyntax.hpp"
 
 using namespace std;
 
@@ -39,7 +40,7 @@ fgBuildCompilers(const std::string & os)
     else if (os == "ubuntu")
         return fgSvec<string>("gcc");
     else if (os == "osx")
-        return fgSvec<string>("gcc");
+        return fgSvec<string>("clang");
     FGASSERT_FALSE;
     return vector<string>();
 }
@@ -56,6 +57,8 @@ fgCurrentCompiler()
 		return "vs13";
     #elif(_MSC_VER == 1900)
         return "vs15";
+    #elif(_MSC_VER == 1910)
+        return "vs17";
     #endif
 #elif defined __clang__
     return "clang";
@@ -108,21 +111,41 @@ fgCurrentBuildDescription()
         fgCurrentBuildBits() + " " + fgCurrentBuildConfig();
 }
 
-// An MS GUID is composed of 32 hex digits (ie 16 bytes / 128 bits).
-// The hex digits must have letters capitalized and dashes are inserted at
-// certain stupid points:
+uint64
+fgUuidHash64(const string & str)
+{
+    FGASSERT(str.size() >= 8);
+    std::hash<string>   hf;         // Returns size_t
+#ifdef FG_64    // size_t is 64 bits:
+    return hf(str);
+#else           // size_t is 32 bits:
+    size_t      split = str.size() / 2;
+    uint64      lo = hf(str.substr(0,split)),
+                hi = hf(str.substr(split));
+    return (lo | (hi << 32));
+#endif
+}
+
+FgUint128
+fgUuidHash128(const string & str)
+{
+    FgUint128       ret;
+    FGASSERT(str.size() >= 16);
+    uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
+                    *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
+    size_t          split = str.length() / 2;
+    *pLo = fgUuidHash64(str.substr(0,split));
+    *pHi = fgUuidHash64(str.substr(split));
+    return ret;
+}
+
+// A UUID is composed of 32 hex digits (ie 16 bytes / 128 bits) in a specific hyphonated pattern,
+// in which some of the first bits represent time values, which we ignore and replace with has bits:
 string
 fgCreateMicrosoftGuid(const string & name,bool wsb)
 {
-    boost::hash<string>     hashFunc;       // returns size_t
-    size_t                  hashVal = hashFunc(name);
-    fgRandSeedRepeatable(uint(hashVal));
-    uchar           val[16],
-                    *valPtr = &val[0];
-    uint64          *p0 = (uint64*)(&val[0]),
-                    *p1 = (uint64*)(&val[8]);
-    *p0 = fgRandUint64();
-    *p1 = fgRandUint64();
+    FgUint128       val = fgUuidHash128(name);
+    uchar           *valPtr = &val.m[0];
     string          ret;
     if (wsb) ret += '{';
     ret += 
@@ -133,4 +156,10 @@ fgCreateMicrosoftGuid(const string & name,bool wsb)
         fgAsHex(valPtr+10,6);
     if (wsb) ret += '}';
     return ret;
+}
+
+void
+fgTestmCreateMicrosoftGuid(const FgArgs &)
+{
+    fgout << fgCreateMicrosoftGuid("FaceGen library test");
 }

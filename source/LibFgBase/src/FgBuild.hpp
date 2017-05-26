@@ -63,8 +63,27 @@ fgNsOs(
     const std::string & os)
 {return (os == "win") ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
 
+// Fast insecure hash for generating UUIDs from unique strings of at least length 8 based on std::hash.
+// Deterministic for same compiler / bit depth only for purposes of avoiding random seed issues,
+// 64 and 32 bit versions will NOT generate the same value, nor will different compilers (per std::hash).
+// In future may upgrade to use MD5 to ensure fully deterministic mapping:
+uint64
+fgUuidHash64(const string & uniqueString);
+
+struct  FgUint128
+{
+    uchar       m[16];
+};
+
+// As above but requires unique string at least length 16:
+FgUint128
+fgUuidHash128(const string & uniqueString);
+
+// Uses fgUuidHash128 above, filling UUID 'time' fields with random bits rather than actual time:
 string
-fgCreateMicrosoftGuid(const string & name,bool withSquiglyBrackets=true);
+fgCreateMicrosoftGuid(
+    const string &  name,   // Must be at least 16 bytes long.
+    bool            withSquiglyBrackets=true);
 
 #endif
 

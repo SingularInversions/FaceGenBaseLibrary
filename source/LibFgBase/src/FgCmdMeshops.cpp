@@ -35,7 +35,7 @@ uvclamp(const FgArgs & args)
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     FgMat22F        cb(0,1,0,1);
     for (size_t ii=0; ii<in.uvs.size(); ++ii)
-        in.uvs[ii] = fgClipVol(in.uvs[ii],cb);
+        in.uvs[ii] = fgClipToBounds(in.uvs[ii],cb);
     if (syntax.more())
         fgSaveMeshAnyFormat(in,syntax.next());
     else

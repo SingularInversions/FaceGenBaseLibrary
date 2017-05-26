@@ -46,7 +46,7 @@ apply(const FgArgs & args)
                     targets(mesh.targetMorphs.size(),0.0f);
     while (syntax.more()) {
         FgString    arg = syntax.nextLower();
-        uint        idx = fgFromString<uint>(syntax.next());
+        uint        idx = syntax.nextAs<uint>();
         float       val = fgFromString<float>(syntax.next());
 
         //! Apply the morph:
@@ -295,8 +295,7 @@ removemorphs(const FgArgs & args)
                     targets(mesh.targetMorphs.size(),true);
     while (syntax.more()) {
         FgString    arg = syntax.nextLower();
-        uint        idx = fgFromString<uint>(syntax.next());
-
+        uint        idx = syntax.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
                 fgThrow("Delta morph index out of bounds",fgToString(idx));
@@ -341,7 +340,7 @@ renameMorph(const FgArgs & args)
         syntax.error("Not a TRI file",fname);
     Fg3dMesh    mesh = fgLoadTri(fname);
     FgString    arg = syntax.nextLower();
-    uint        idx = fgFromString<uint>(syntax.next());
+    uint        idx = syntax.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
             fgThrow("Delta morph index out of bounds",fgToString(idx));

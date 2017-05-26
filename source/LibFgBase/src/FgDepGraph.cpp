@@ -119,8 +119,8 @@ FgDepGraph::updateNode(uint nodeIdx) const
     update.lastLink = m_linkGraph.incomingLink(nodeIdx);
     vector<FgSinglePtr<boost::thread> > threads(numThreads());
     for (size_t tt=0; tt<threads.size(); ++tt)
-        threads[tt] = new boost::thread(boost::bind(
-            &FgDepGraph::executeLinkTask,this,&linksSync,&update,(tt == 0)));
+        threads[tt] = new boost::thread(
+            &FgDepGraph::executeLinkTask,this,&linksSync,&update,(tt == 0));
     do {
         boost::thread::yield();
     }

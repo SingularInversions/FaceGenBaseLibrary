@@ -30,6 +30,7 @@ struct  Fg3dRenderOptions
     FgVect3F    backgroundColor;
     // Set by render impl not by client:
     FgBoolF     colorBySurface;
+    FgBoolF     showAxes;
 };
 
 #endif

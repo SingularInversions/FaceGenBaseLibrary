@@ -27,7 +27,7 @@ fgApproxEqualScalarRel(T v0,T v1,double relDiff)
 
 template<typename T>
 bool
-fgApproxEqualScalar(T v0,T v1,uint relTolEpsilons=2)
+fgApproxEqualScalar(T v0,T v1,uint relTolEpsilons=8)
 {
     return
         fgApproxEqualScalarRel(

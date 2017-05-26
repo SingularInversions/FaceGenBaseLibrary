@@ -92,14 +92,6 @@ FgSyntax::rest()
     return ret;
 }
 
-const string &
-FgSyntax::next()
-{
-    if (m_idx+1 == m_args.size())
-        error("Expected another argument after",m_args[m_idx]);
-    return m_args[++m_idx];
-}
-
 void
 FgSyntax::throwSyntax()
 {

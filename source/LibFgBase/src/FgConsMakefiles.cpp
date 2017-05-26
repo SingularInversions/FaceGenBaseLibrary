@@ -47,23 +47,20 @@ group(
     const string &          prjName,
     const FgConsSrcGroup &  grp)
 {
-    vector<pair<string,string> >    srcNames;
-    for (size_t ii=0; ii<grp.files.size(); ++ii)
-    {
-        FgPath      p(grp.files[ii]);
-        string      ext = p.ext.ascii();
-        if ((ext == "cpp") || (ext == "c"))
-            srcNames.push_back(make_pair(p.base.ascii(),ext));
-    }
     string  odir = "$(ODIR" + prjName + ")" + fgReplace(grp.dir,'/','_'),
             sdir = "$(SDIR" + prjName + ")" + grp.dir;
-    for (size_t ii=0; ii<srcNames.size(); ++ii)
-    {
-        string  srcName = srcNames[ii].first + '.' + srcNames[ii].second,
-                objName = srcNames[ii].first + ".o";
-        ofs << odir << objName << ": " << sdir << srcName << " $(INCS" << prjName << ")" << lf
-            << "\t$(CC) -o " << odir << objName << " -c $(CFLAGS" << prjName << ") "
-            << sdir << srcName << lf;
+    for (size_t ii=0; ii<grp.files.size(); ++ii) {
+        FgPath      path(grp.files[ii]);
+        string      ext = path.ext.ascii();
+        if ((ext == "cpp") || (ext == "c")) {
+            string      srcName = grp.files[ii],
+                        objName = path.base.ascii() + ".o",
+                        // Can't flag .C files as C++11; error with CLANG:
+                        cpp = (ext == "cpp") ? "-std=c++11 " : "";
+            ofs << odir << objName << ": " << sdir << srcName << " $(INCS" << prjName << ")" << lf
+                << "\t$(CC) -o " << odir << objName << " -c " << cpp << "$(CFLAGS" << prjName << ") "
+                << sdir << srcName << lf;
+        }
     }
 }
 
@@ -214,7 +211,7 @@ proj(
 
 static
 void
-consGcc(
+consMakefile(
     const FgConsSolution &  sln,
     const string &          mfName,
     bool                    x64,
@@ -227,15 +224,16 @@ consGcc(
         // without errors (or get rid of it). As of Yosemite (10.10) g++ is just clang++ and 
         // uses the same libc++, however there's some kind of residual difference causing assignements
         // from void* to <type>* to yield errors if clang++ is used directly:
-        ofs << "CC = gcc " << lf
+        ofs << "CC = clang " << lf
             << "LINK = g++ " << lf
-            // Avoid the verbose errors from boost when compiling without C++11 support:
-            << "CFLAGS = ";
-        // Ensures no common symbols across all libraries, required for all files which
-        // are part of a DLL so we just always use it (OSX specific)
-        ofs << "-fno-common ";
-        // clang default template depth of 256 doesn't work with boost serializtion:
-        ofs << "-ftemplate-depth=512 ";
+            << "CFLAGS = "
+                // Ensures no common symbols across all libraries, required for all files which
+                // are part of a DLL so we just always use it (OSX specific)
+                "-fno-common ";
+        if (debug)
+            ofs << "-g -O0 -D_DEBUG ";  // -g: generate debug info
+        else
+            ofs << "-Ofast ";   // == O3 plus fast floating point opts.
     }
     else {
         // gcc will call gnu c compiler or g++ depending on source type:
@@ -244,25 +242,26 @@ consGcc(
             // libraries so it's easier. It uses shared libaries by default and
             // static linking is apparently quite difficult to get right:
             << "LINK = g++" << lf
-            << "CFLAGS = -std=c++11 ";
-        // -fPIC: (position indepdent code) is required for all object files which are 
-        // part of a DLL, so we just always use it (except on OSX where it's the default)
-        ofs << "-fPIC ";
+            // -fPIC: (position indepdent code) is required for all object files which are 
+            // part of a DLL, so we just always use it (except on OSX where it's the default)
+            << "CFLAGS = -fPIC ";
+        if (x64)
+            ofs << "-m64 ";
+        else
+            ofs << "-m32 ";
+        if (debug)
+            // -g: generate debug info
+            ofs << "-g -O0 -D_DEBUG ";
+        else
+            ofs << "-O3 "           // -march=corei7 actually slowed down nrrjohnverts a smidgen.
+                "-ffast-math ";     // Needed for auto-vectorization as well as minor speedup
     }
-    if (x64)
-        ofs << "-m64 ";
-    else
-        ofs << "-m32 ";
-    if (debug)
-        // -g: generate debug info
-        ofs << "-g -O0 -D_DEBUG ";
-    else
-        ofs << "-O3 ";  // -march=corei7 actually slowed down nrrjohnverts a smidgen.
-    string os = (osx ? "osx" : "ubuntu");
+    string      os = (osx ? "osx" : "ubuntu"),
+                compiler = osx ? "clang" : "gcc",
+                bits = x64 ? "64" : "32",
+                config = debug ? "debug" : "release";
     ofs << lf
-        << "CONFIG = gcc/"
-        << (x64 ? "64/" : "32/")
-        << (debug ? "debug/" : "release/") << lf
+        << "CONFIG = " << compiler << "/" << bits <<  "/" << config << "/" << lf
         << "BIN = ../bin/" << os << "/$(CONFIG)" << lf
         << "$(shell mkdir -p $(BIN))" << lf
         << "all: ";
@@ -276,7 +275,7 @@ consGcc(
         << "clean: cleanObjs cleanTargs" << lf
         << "cleanObjs:" << lf;
     for (size_t ii=0; ii<sln.projects.size(); ++ii)
-        ofs << "\trm -r " << sln.projects[ii].name << "/gcc" << lf;
+        ofs << "\trm -r " << sln.projects[ii].name << "/" << compiler << lf;
     ofs << "cleanTargs:" << lf
         << "\trm -r $(BIN)" << lf;
 }
@@ -287,12 +286,10 @@ fgConsMakefiles(FgConsSolution sln)
     // gcc4.6 has some problem with 32 bit. Ignore for now:
     //cons(sln,"Makefile.ubuntu.gcc.32.release",false,false);
     //cons(sln,"Makefile.ubuntu.gcc.32.debug",false,true);
-    consGcc(sln,"Makefile.ubuntu.gcc.64.debug",true,true,false);
-    consGcc(sln,"Makefile.ubuntu.gcc.64.release",true,false,false);
-    consGcc(sln,"Makefile.osx.gcc.64.debug",true,true,true);
-    consGcc(sln,"Makefile.osx.gcc.64.release",true,false,true);
-    //consClang(sln,"Makefile.osx.clang.64.debug",true,true,true);
-    //consClang(sln,"Makefile.osx.clang.64.release",true,false,true);
+    consMakefile(sln,"Makefile.ubuntu.gcc.64.debug",true,true,false);
+    consMakefile(sln,"Makefile.ubuntu.gcc.64.release",true,false,false);
+    consMakefile(sln,"Makefile.osx.clang.64.debug",true,true,true);
+    consMakefile(sln,"Makefile.osx.clang.64.release",true,false,true);
 }
 
 // */

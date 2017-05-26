@@ -574,6 +574,11 @@ fgMergeMeshes(
         else
             ret.targetMorphs.push_back(im);
     }
+    ret.markedVerts = m0.markedVerts;
+    for (FgMarkedVert mv : m1.markedVerts) {
+        mv.idx += uint(m0.verts.size());
+        ret.markedVerts.push_back(mv);
+    }
     return ret;
 }
 
@@ -606,7 +611,7 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
             FgVect3UI   uvInd = surf.tris.uvInds[jj];
             FgVect3UI   vtInd = surf.tris.vertInds[jj];
             for (uint kk=0; kk<3; ++kk) {
-                bool    valid = mask[fgClipVol(FgVect2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
+                bool    valid = mask[fgClipToBounds(FgVect2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
             }
         }
@@ -726,11 +731,7 @@ fgSurfPointsToMarkedVerts(const Fg3dMesh & in,Fg3dMesh & out)
         const Fg3dSurface &     surf = in.surfaces[ii];
         for (size_t jj=0; jj<surf.surfPoints.size(); ++jj) {
             FgVect3F        pos = surf.surfPointPos(in.verts,jj);
-            FgMarkedVert    mv;
-            mv.idx = uint(out.verts.size());
-            mv.label = surf.surfPoints[jj].label;
-            out.markedVerts.push_back(mv);
-            out.verts.push_back(pos);
+            out.addMarkedVert(pos,surf.surfPoints[jj].label);
         }
     }
 }
@@ -815,6 +816,16 @@ fgMeshSurfacesAsTris(const Fg3dMesh & m)
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
         fgAppend(ret,m.surfaces[ss].convertToTris().tris.vertInds);
     return ret;
+}
+
+FgTriSurf
+fgTriSurface(const Fg3dMesh & src,size_t surfIdx)
+{
+    FgTriSurf       ts;
+    FGASSERT(src.surfaces.size() > surfIdx);
+    ts.tris = src.surfaces[surfIdx].tris.vertInds;
+    ts.verts = src.verts;
+    return fgRemoveUnusedVerts(ts);
 }
 
 // */

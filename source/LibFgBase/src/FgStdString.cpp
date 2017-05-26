@@ -30,8 +30,11 @@ std::string
 fgToLower(const std::string & s)
 {
     string  retval;
-    retval.resize(s.length());
-    std::transform(s.begin(),s.end(),retval.begin(),::tolower);
+    retval.reserve(s.length());
+	// Can't use std::transform since 'tolower' causes warning by converting int->char
+    // std::transform(s.begin(),s.end(),retval.begin(),::tolower);
+	for (char ch : s)
+		retval.push_back(char(std::tolower(ch)));
     return retval;
 }
 
@@ -39,9 +42,12 @@ std::string
 fgToUpper(const std::string & s)
 {
     string  retval;
-    retval.resize(s.length());
-    std::transform(s.begin(),s.end(),retval.begin(),::toupper);
-    return retval;
+    retval.reserve(s.length());
+	// Can't use std::transform since 'tolower' causes warning by converting int->char
+	// std::transform(s.begin(),s.end(),retval.begin(),::toupper);
+	for (char ch : s)
+		retval.push_back(char(std::toupper(ch)));
+	return retval;
 }
 
 std::vector<string>
@@ -133,8 +139,9 @@ fgCat(const vector<string> & strings,const string & separator)
     return ret;
 }
 
+template<>
 FgOpt<int>
-fgStoI(const string & str)
+fgFromStr(const string & str)
 {
     FgOpt<int>              ret;
     if (str.empty())
@@ -147,14 +154,40 @@ fgStoI(const string & str)
     }
     else if (*it == '+')
         ++it;
-    int                     acc = 0;
+    int64                   acc = 0;
     while (it != str.end()) {
         int                 digit = int(*it++) - int('0');
         if ((digit < 0) || (digit > 9))
             return ret;
         acc = 10 * acc + digit;
+        if (acc > numeric_limits<int>::max())   // Negative mag can be one greater but who cares.
+            return ret;
     }
-    ret = neg ? -acc : acc;
+    acc = neg ? -acc : acc;
+    ret = int(acc);
+    return ret;
+}
+
+template<>
+FgOpt<uint>
+fgFromStr<uint>(const string & str)
+{
+    FgOpt<uint>             ret;
+    if (str.empty())
+        return ret;
+    string::const_iterator  it = str.begin();
+    if (*it == '+')
+        ++it;
+    uint64                  acc = 0;
+    while (it != str.end()) {
+        int                 digit = int(*it++) - int('0');
+        if ((digit < 0) || (digit > 9))
+            return ret;
+        acc = 10 * acc + uint64(digit);
+        if (acc > numeric_limits<uint>::max())
+            return ret;
+    }
+    ret = uint(acc);
     return ret;
 }
 
