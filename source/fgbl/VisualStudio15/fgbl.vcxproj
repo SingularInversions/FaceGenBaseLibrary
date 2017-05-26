@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D36CB6AF-825E-F625-04F6-9B4B44D2668A}</ProjectGuid>
+    <ProjectGuid>{FC2C1294-D77D-9C26-11FF-D757BAAC66D5}</ProjectGuid>
     <RootNamespace>fgbl</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -33,7 +33,6 @@
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -44,7 +43,6 @@
     <ConfigurationType>Application</ConfigurationType>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -85,9 +83,12 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -108,9 +109,12 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -129,9 +133,13 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -153,9 +161,13 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -167,27 +179,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\LibTpBoost\VisualStudio15\LibTpBoost.vcxproj">
-      <Project>{DC26A103-A0E9-7D45-8508-60D40E98571A}</Project>
+      <Project>{4CE43A23-E6A2-1634-4F26-830C60F818A6}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibJpegIjg6b\VisualStudio15\LibJpegIjg6b.vcxproj">
-      <Project>{29BCF574-364F-F77B-B1FB-298BE269CB08}</Project>
+      <Project>{4CE43A23-EF22-A2B4-9C10-6F2F03BE8E35}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibImageMagickCore\VisualStudio15\LibImageMagickCore.vcxproj">
-      <Project>{E94B98C3-5ED2-8F57-C235-9FA369756963}</Project>
+      <Project>{1F292497-4C6D-C5FD-EE72-7F7FB19369ED}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgWin\VisualStudio15\LibFgWin.vcxproj">
-      <Project>{40A8BE92-400F-9E58-A54B-930FB8637051}</Project>
+      <Project>{616A9CD3-AFAF-1F04-4BF1-ECFABC86784F}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgBase\VisualStudio15\LibFgBase.vcxproj">
-      <Project>{DA030838-0440-62BB-9D1A-F6BFD917B1E0}</Project>
+      <Project>{4CE43A23-E6A2-1634-4F26-830C57F801AA}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
