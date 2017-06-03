@@ -23,9 +23,8 @@ A simple cross-platform C++11 library for developing computational 3D graphics a
   * Declarative GUI layout, declarative dependency graph for computations.
 * Minimal OOP-fuscation; Some member functions and constructors, few private members, no inheritance.
   * Prefer std::function and std::bind to abstract class interface.
-* Templates are used when they provide clear benefit.
-  * RAII used throughout.
-  * Avoid complex template metaprogramming.
+* Templates are used when they provide clear benefit; Avoid complex template metaprogramming.
+* Exceptions and RAII used throughout.
 * Compiles on all platforms out of the box. No install scripts or special make packages required.
 * Different compiler / configuration object files are kept in different directories for fast switching while developing.
 * No namespaces; identifiers begin with 'fg', 'Fg' or 'FG_'.
