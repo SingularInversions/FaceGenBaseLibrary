@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1F292497-4C6D-C5FD-EE72-7F7FB19369ED}</ProjectGuid>
+    <ProjectGuid>{668A2EA1-03E9-E325-500C-34456FB322CF}</ProjectGuid>
     <RootNamespace>LibImageMagickCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

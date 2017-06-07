@@ -43,21 +43,6 @@
 template<class T>
 struct  FgMatrixV;
 
-// Only initialize builtins:
-template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
-template<> inline void fgInitializeBuiltinsToZero(char & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uchar & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(schar & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(short & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(ushort & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(int & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uint & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(int64 & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uint64 & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(float & v) {v=0.0f;}
-template<> inline void fgInitializeBuiltinsToZero(double & v) {v=0.0;}
-template<> inline void fgInitializeBuiltinsToZero(bool & v) {v=false;}
-
 template <typename T,uint nrows,uint ncols>
 struct  FgMatrixC
 {

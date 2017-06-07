@@ -17,18 +17,15 @@
 // Returns false if unable to connect to server:
 bool
 fgTcpClient(
-    const string &      hostname,
+    const string &      hostname,       // DNS or IP
     uint16              port,
     const string &      data,
     bool                getResponse,
-    string &            response);
+    string &            response);      // Ignored if 'getResponse' == false
 
 inline
 bool
-fgTcpClient(
-    const string &      hostname,
-    uint16              port,
-    const string &      data)
+fgTcpClient(const string & hostname,uint16 port,const string & data)
 {
     string     dummy;
     return fgTcpClient(hostname,port,data,false,dummy);
@@ -36,14 +33,8 @@ fgTcpClient(
 
 inline
 bool
-fgTcpClient(
-    const string &      hostname,
-    uint16              port,
-    const string &      data,
-    string &            response)
-{
-    return fgTcpClient(hostname,port,data,true,response);
-}
+fgTcpClient(const string & hostname,uint16 port,const string & data,string & response)
+{return fgTcpClient(hostname,port,data,true,response); }
 
 typedef boost::function<bool        // Return false to terminate server
     (const string &,                // IP Address of the client

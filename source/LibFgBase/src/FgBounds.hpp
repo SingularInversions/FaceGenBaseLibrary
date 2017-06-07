@@ -252,9 +252,10 @@ bool
 fgBoundsIncludes(FgMatrixC<uint,dim,1> dims,FgMatrixC<T,dim,1> pnt)
 {
     for (uint dd=0; dd<dim; ++dd) {
-        if (pnt[dd] < T(0))
+        if (pnt[dd] < 0)
             return false;
-        if (uint(pnt[dd]) >= T(dims[dd]))
+        // We can now safely cast T to uint since it's >= 0 (and one hopes smaller than 2Gig):
+        if (uint(pnt[dd]) >= dims[dd])
             return false;
     }
     return true;

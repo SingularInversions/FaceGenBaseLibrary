@@ -72,6 +72,7 @@ public:
     }
 };
 
+
 // Keep the value corresponding to the minimum key:
 template<class Key,class Val>
 class   FgMin
@@ -80,7 +81,10 @@ class   FgMin
     Val     m_val;
 
 public:
-    FgMin() : m_key(std::numeric_limits<Key>::max()) {}
+    FgMin() :
+        m_key(std::numeric_limits<Key>::max()), 
+        m_val(fgDefaultVal<Val>())          // Avoid use before set warnings
+    {} 
 
     void
     update(Key key,const Val & val)
@@ -110,7 +114,10 @@ class   FgMax
     Val     m_val;
 
 public:
-    FgMax() : m_key(std::numeric_limits<Key>::min()) {}
+    FgMax() :
+        m_key(std::numeric_limits<Key>::min()),
+        m_val(fgDefaultVal<Val>())          // Avoid use before set warnings
+    {}
 
     void
     update(Key key,const Val & val)

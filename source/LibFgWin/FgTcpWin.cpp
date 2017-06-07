@@ -22,18 +22,18 @@
 // Don't warn about deprecation ('inet_ntoa'). TODO: Upgrade TCP stuff for IPV6
 #  pragma warning(disable:4996)
 
-struct  WinsockDll
+struct  FgWinsockDll
 {
     WSADATA     wsaData;
 
-    WinsockDll() {
+    FgWinsockDll() {
         // Initialize Winsock DLL version 2.2:
         int         itmp = WSAStartup(MAKEWORD(2,2),&wsaData);
         if(itmp != 0)
             FGASSERT_FALSE1(fgToString(itmp));
     }
 
-    ~WinsockDll() {
+    ~FgWinsockDll() {
         // Every successful call to WSAStartup must be matched by a WSACleanup()
         // (windows uses a counter):
         WSACleanup();
@@ -44,7 +44,7 @@ static
 void
 initWinsock()
 {
-    static  WinsockDll  wsd;
+    static  FgWinsockDll  wsd;
 }
 
 bool

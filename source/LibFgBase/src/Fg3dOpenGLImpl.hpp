@@ -240,7 +240,7 @@ drawSurfaces(
     CHECKOGLERROR;
     FGASSERT(mesh.surfaces.size() == images.size());
     // Get the modelview matrix, remove the translational component,
-    // and adjust it so that it converts the result from OICS to OXCS 
+    // and adjust it so that it converts the result from OICS to OTCS 
     // for sphere mapping.
     FgMat44F     mvm,prj;
     glGetFloatv(GL_MODELVIEW_MATRIX,&mvm[0]);

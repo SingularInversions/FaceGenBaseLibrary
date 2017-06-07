@@ -18,6 +18,8 @@
 #include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
+#include "FgBuild.hpp"
+#include "FgVersion.hpp"
 
 using namespace std;
 
@@ -27,6 +29,7 @@ fgCmdBaseTests()
     vector<FgCmd>   cmds;
     //FGADDCMD1(fgApproxFuncTest,"approxFunc");
     FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
+    FGADDCMD1(fgClusterTest,"cluster");
     FGADDCMD1(fgDepGraphTest,"depGraph");
     FGADDCMD1(fgExceptionTest,"exception");
     FGADDCMD1(fgFileSystemTest,"filesystem");
@@ -74,6 +77,7 @@ fgCmdBaseTestms()
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testmGui,"gui"));
     FGADDCMD1(fg3dTestMan,"3d");
+    FGADDCMD1(fgClusterTestm,"cluster");
     FGADDCMD1(fg3dReadWobjTest,"readWobj");
     FGADDCMD1(fgRandomTest,"random");
     FGADDCMD1(fgGeometryManTest,"geometry");
@@ -99,6 +103,8 @@ view(const FgArgs & args)
 void
 fgCmdFgbl(const FgArgs & args)
 {
+    if (args.size() == 1)
+        fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 
     vector<FgCmd>   cmds;
     cmds.push_back(fgCmdImgopsInfo());
     cmds.push_back(fgCmdMeshopsInfo());

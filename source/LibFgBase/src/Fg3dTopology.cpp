@@ -53,12 +53,11 @@ struct  EdgeVerts
             loIdx = i0;
             hiIdx = i1;
         }
-        else if (i0 > i1) {
+        else {
             loIdx = i1;
             hiIdx = i0;
         }
-        else
-            FGASSERT_FALSE;
+        FGASSERT(i0 != i1);
     }
 
     // Comparison operator to use as a key for std::map:

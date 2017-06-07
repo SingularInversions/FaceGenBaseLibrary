@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4CE43A23-E6A2-1634-4F26-830C57F801AA}</ProjectGuid>
+    <ProjectGuid>{07679436-31CD-43B1-F153-28E7617853C4}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -207,6 +207,9 @@
     <ClInclude Include="..\src\FgBuild.hpp"  />
     <ClCompile Include="..\src\FgCl.cpp"  />
     <ClInclude Include="..\src\FgCl.hpp"  />
+    <ClCompile Include="..\src\FgCluster.cpp"  />
+    <ClInclude Include="..\src\FgCluster.hpp"  />
+    <ClInclude Include="..\src\FgClusterImpl.hpp"  />
     <ClInclude Include="..\src\FgCmd.hpp"  />
     <ClCompile Include="..\src\FgCmdBase.cpp"  />
     <ClCompile Include="..\src\FgCmdImgops.cpp"  />
@@ -369,6 +372,7 @@
     <ClInclude Include="..\src\FgTypes.hpp"  />
     <ClCompile Include="..\src\FgVariant.cpp"  />
     <ClInclude Include="..\src\FgVariant.hpp"  />
+    <ClInclude Include="..\src\FgVersion.hpp"  />
     <ClCompile Include="..\src\FgViz.cpp"  />
     <ClInclude Include="..\src\FgViz.hpp"  />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp"  />

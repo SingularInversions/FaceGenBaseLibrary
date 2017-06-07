@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FC2C1294-D77D-9C26-11FF-D757BAAC66D5}</ProjectGuid>
+    <ProjectGuid>{B01C1D34-E305-DCE8-662D-1859A883437F}</ProjectGuid>
     <RootNamespace>fgbl</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -179,27 +179,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\LibTpBoost\VisualStudio13\LibTpBoost.vcxproj">
-      <Project>{4CE43A23-E6A2-1634-4F26-830C60F818A6}</Project>
+      <Project>{07679436-31CD-43B1-2669-A42ADE8CB651}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibJpegIjg6b\VisualStudio13\LibJpegIjg6b.vcxproj">
-      <Project>{4CE43A23-EF22-A2B4-9C10-6F2F03BE8E35}</Project>
+      <Project>{BC932BBE-9FFE-9CCA-5065-3631BC5D517C}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibImageMagickCore\VisualStudio13\LibImageMagickCore.vcxproj">
-      <Project>{1F292497-4C6D-C5FD-EE72-7F7FB19369ED}</Project>
+      <Project>{668A2EA1-03E9-E325-500C-34456FB322CF}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgWin\VisualStudio13\LibFgWin.vcxproj">
-      <Project>{616A9CD3-AFAF-1F04-4BF1-ECFABC86784F}</Project>
+      <Project>{0B93FE62-D353-5660-BE2D-F6674E47A813}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgBase\VisualStudio13\LibFgBase.vcxproj">
-      <Project>{4CE43A23-E6A2-1634-4F26-830C57F801AA}</Project>
+      <Project>{07679436-31CD-43B1-F153-28E7617853C4}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>

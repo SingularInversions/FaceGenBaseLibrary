@@ -8,7 +8,7 @@
 //
 //	OICS := OpenGL Image CS: Origin at centre of image, lower left corner
 //			of at (-1,-1), upper right corner at (1,1).
-//	OXCS := OpenGL Texture CS: Origin at lower left corner of image, (1,1) at
+//	OTCS := OpenGL Texture CS: Origin at lower left corner of image, (1,1) at
 //			upper right corner.
 
 #ifndef FG3DOPENGL_HPP

@@ -35,6 +35,30 @@ typedef std::uint16_t uint16;
 typedef std::int32_t  int32;
 typedef std::uint32_t uint32;
 
+// Useful if we need to initialize templated members only in the case of builtins:
+template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
+template<> inline void fgInitializeBuiltinsToZero(char & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uchar & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(schar & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(short & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(ushort & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(int & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uint & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(int64 & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(uint64 & v) {v=0;}
+template<> inline void fgInitializeBuiltinsToZero(float & v) {v=0.0f;}
+template<> inline void fgInitializeBuiltinsToZero(double & v) {v=0.0;}
+template<> inline void fgInitializeBuiltinsToZero(bool & v) {v=false;}
+
+// Similar to above but gcc doesn't recognize above as initialization:
+template<typename T> inline T fgDefaultVal() {return T(); }
+template<> inline float fgDefaultVal() {return 0.0f; }
+template<> inline double fgDefaultVal() {return 0.0; }
+template<> inline int fgDefaultVal() {return 0; }
+template<> inline uint fgDefaultVal() {return 0U; }
+template<> inline int64 fgDefaultVal() {return 0LL; }
+template<> inline uint64 fgDefaultVal() {return 0ULL; }
+
 template<typename T> struct FgTypeAttributeFloatingS;   // Type must be floating point.
 template<> struct FgTypeAttributeFloatingS<float> {};
 template<> struct FgTypeAttributeFloatingS<double> {};

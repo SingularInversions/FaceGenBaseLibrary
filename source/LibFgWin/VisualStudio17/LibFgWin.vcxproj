@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{616A9CD3-AFAF-1F04-4BF1-ECFABC86784F}</ProjectGuid>
+    <ProjectGuid>{0B93FE62-D353-5660-BE2D-F6674E47A813}</ProjectGuid>
     <RootNamespace>LibFgWin</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -155,6 +155,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Fg3dOpenGLImpWin.cpp"  />
+    <ClCompile Include="..\FgClusterWin.cpp"  />
     <ClCompile Include="..\FgClWin.cpp"  />
     <ClCompile Include="..\FgConioWin.cpp"  />
     <ClCompile Include="..\FgFileSystemWin.cpp"  />
