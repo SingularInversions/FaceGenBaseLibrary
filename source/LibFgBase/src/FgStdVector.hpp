@@ -41,6 +41,12 @@ typedef vector<size_t>              FgSizes;
 typedef vector<FgDbls>              FgDblss;
 typedef vector<FgFlts>              FgFltss;
 typedef vector<FgUints>             FgUintss;
+typedef vector<FgSizes>             FgSizess;
+
+typedef vector<FgDblss>             FgDblsss;
+typedef vector<FgFltss>             FgFltsss;
+typedef vector<FgUintss>            FgUintsss;
+typedef vector<FgSizess>            FgSizesss;
 
 // Acts just like bool for use with vector but avoids use of broken
 // vector<bool> specialization:
@@ -394,11 +400,15 @@ fgFindFirst(
     const vector<T> &  vec,
     const U &          val)     // Allow for T::operator==(U)
 {
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (vec[ii] == val)
-            return vec[ii];
-    FGASSERT_FALSE;
-    return vec[0];
+    size_t      retIdx = std::numeric_limits<size_t>::max();
+    for (size_t ii=0; ii<vec.size(); ++ii) {
+        if (vec[ii] == val) {
+            retIdx = ii;
+            break;
+        }
+    }
+    FGASSERT(retIdx < std::numeric_limits<size_t>::max());
+    return vec[retIdx];
 }
 
 template<class T,class U>
@@ -659,18 +669,18 @@ vector<T>
 fgSum(const vector<vector<T> > & v)
 {
     vector<T>       ret;
-    if (v.empty())
-        return ret;
-    typedef typename FgTraits<T>::Accumulator   Acc;
-    vector<Acc>     acc(v[0].size(),Acc(0));
-    for (size_t ii=0; ii<v.size(); ++ii) {
-        FGASSERT(v[ii].size() == acc.size());
-        for (size_t jj=0; jj<acc.size(); ++jj)
-            acc[jj] += Acc(v[ii][jj]);
+    if (!v.empty()) {
+        typedef typename FgTraits<T>::Accumulator   Acc;
+        vector<Acc>     acc(v[0].size(),Acc(0));
+        for (size_t ii=0; ii<v.size(); ++ii) {
+            FGASSERT(v[ii].size() == acc.size());
+            for (size_t jj=0; jj<acc.size(); ++jj)
+                acc[jj] += Acc(v[ii][jj]);
+        }
+        ret.reserve(acc.size());
+        for (size_t ii=0; ii<acc.size(); ++ii)
+            ret.push_back(T(acc[ii]));
     }
-    ret.reserve(acc.size());
-    for (size_t ii=0; ii<acc.size(); ++ii)
-        ret.push_back(T(acc[ii]));
     return ret;
 }
 
@@ -916,17 +926,18 @@ fgSortKeyRev(vector<Key> & k,vector<Data> & d)
     d = fgReorder(d,order);
 }
 
+// Removes duplicates from a sorted vector (I don't get std::unique):
 template<class T>
 vector<T>
 fgUnique(const vector<T> & v)
 {
-    if (v.size() < 2)
-        return v;
-    // std::unique is retarded:
-    vector<T>  ret(1,v[0]);
-    for (size_t ii=1; ii<v.size(); ++ii)
-        if (v[ii] != ret.back())
-            ret.push_back(v[ii]);
+    vector<T>       ret;
+    if (!v.empty()) {
+        ret.push_back(v[0]);
+        for (size_t ii=1; ii<v.size(); ++ii)
+            if (v[ii] != ret.back())
+                ret.push_back(v[ii]);
+    }
     return ret;
 }
 
@@ -987,15 +998,15 @@ vector<vector<T> >
 fgZip(const vector<vector<T> > & v)
 {
     vector<vector<T> >  ret;
-    if (v.empty())
-        return ret;
-    for (size_t jj=1; jj<v.size(); ++jj)
-        FGASSERT(v[jj].size() == v[0].size());
-    ret.resize(v[0].size());
-    for (size_t ii=0; ii<ret.size(); ++ii) {
-        ret[ii].reserve(v.size());
-        for (size_t jj=0; jj<v.size(); ++jj)
-            ret[ii].push_back(v[jj][ii]);
+    if (!v.empty()) {
+        for (size_t jj=1; jj<v.size(); ++jj)
+            FGASSERT(v[jj].size() == v[0].size());
+        ret.resize(v[0].size());
+        for (size_t ii=0; ii<ret.size(); ++ii) {
+            ret[ii].reserve(v.size());
+            for (size_t jj=0; jj<v.size(); ++jj)
+                ret[ii].push_back(v[jj][ii]);
+        }
     }
     return ret;
 }
@@ -1081,6 +1092,43 @@ fgVecOfVecs(size_t dim0,size_t dim1,const T & initVal)
     vector<vector<T> >      ret(dim0);
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].resize(dim1,initVal);
+    return ret;
+}
+
+template<class T>
+vector<T>
+// Each vec in 'vs' must be the same size or one less, with the latter all at the end.
+// Ie. the result of interleaving in order:
+fgDeinterleave(const vector<vector<T> > & vs)
+{
+    vector<T>           ret;
+    if (!vs.empty()) {
+        size_t          sz0 = vs[0].size();
+        ret.reserve(vs.size()*sz0);             // Largest possible size of return value
+        for (size_t ii=0; ii<sz0; ++ii) {
+            size_t jj=0;
+            for (; jj<vs.size(); ++jj) {
+                if (vs[jj].size() <= ii)
+                    break;                      // Don't return here for NRVO
+                ret.push_back(vs[jj][ii]);
+            }
+            if (jj < vs.size())
+                break;
+        }
+    }
+    return ret;
+}
+
+template<class T>
+vector<const T *>
+fgMapToConstPtrs(const vector<vector<T> > & v)  // Cannot contain any empty vectors
+{
+    vector<const T *>   ret;
+    ret.reserve(v.size());
+    for (size_t ii=0; ii<v.size(); ++ii) {
+        FGASSERT(!v[ii].empty());
+        ret.push_back(&v[ii][0]);
+    }
     return ret;
 }
 

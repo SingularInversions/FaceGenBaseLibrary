@@ -2,13 +2,13 @@
 // Copyright (c) 2015 Singular Inversions Inc.
 //
 // Authors: Andrew Beatty
-// Created: Jan 17, 2012
+// Created: May 31, 2017
 //
 
 #include "stdafx.h"
 
-#include "FgDiagnostics.hpp"
 #include "FgCluster.hpp"
+#include "FgDiagnostics.hpp"
 #include "FgStdVector.hpp"
 #include "FgPath.hpp"
 #include "FgNc.hpp"
@@ -20,16 +20,80 @@
 #include "FgCommand.hpp"
 #include "FgSyntax.hpp"
 #include "FgParse.hpp"
+#include "FgTcp.hpp"
 
 using namespace std;
 
-// Only one port is needed because we can have simultaneous TCP connections with all workers since:
-// 1. Set keepalive option (defaults to 2 hour interval) and works on non-proxy connection
-// 2. Connections defined by 2 IPs and 2 port number tuple, so unique.
-// This will keep things simpler than having 2-way connection architecture.
-static inline
-uint16
-port() {return 59407; }
+void
+fgClusterDeploy(
+    const string &          name,
+    const FgFuncCrdntor &   crdntor,
+    const FgFuncStr2Str &   worker,
+    const string &          coordIP,
+    const FgStrs &          workIPs,
+    const FgStrings &       files)
+{
+    FgString        exeDir = fgExecutableDirectory();
+    if (fgExists(exeDir+"cluster_worker.flag"))         // Client could be in an arbitrary data subdirectory at this point
+        return fgClustWorker(worker,fgClusterPortDefault());
+    if (fgExists(exeDir+"cluster_coordinator.flag")) {
+        std::shared_ptr<FgClustDispatcher> dispatcher = fgClustDispatcher(workIPs);
+        return crdntor(dispatcher.get());               // Performs all cluster work before returning
+    }
+    // This instance must be deployment:
+    fgout << fgnl <<
+        "Have you built the updated Ubuntu binaries and started the coordinator and worker machines ?\n"
+        "<enter> to confirm, 'q' to quit:";
+    if (uint(fgGetch()) != 13)
+        return;
+    // Use coordinator machine to copy executable to file server via CIFS, preserving executable bit permission:
+    string          filesDirLocal = fgNcShare() + "cc/" + name + '/',
+                    filesDirUbu = fgNcShare("ubuntu") + "cc/" + name + '/';
+    fgCreatePath(filesDirLocal+"data/");
+    FgNcScript      scriptCrdntor;
+    scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
+    scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
+    FgString        binBase = FgPath(fgExecutablePath()).base;
+    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot("ubuntu") + "bin/ubuntu/gcc/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
+    if (!fgTcpClient(coordIP,fgNcServerPort(),fgSerializePort(scriptCrdntor)))
+        fgThrow("Cluster deploy unable to access coordinator",coordIP);
+    // Wait for file to be copied (asynchronous operation):
+    fgSleep(1);
+    // Deploy data files from current repo:
+    FgString        dd = fgDataDir(),
+                    td = filesDirLocal+"data/";
+    for (size_t ff=0; ff<files.size(); ++ff) {
+        FgString    dest = td + files[ff];
+        fgCreatePath(FgPath(dest).dir());
+        fgCopyFile(dd+files[ff],dest,true);
+    }
+    // Start workers:
+    string          args = fgMainArgs();
+    FgStrs          copyData;
+    copyData.push_back("fgPush cc");
+    copyData.push_back("fgPush " + name);
+    copyData.push_back("cp -r " + filesDirUbu + "* .");
+    for (size_t ww=0; ww<workIPs.size(); ++ww) {
+        FgNcScript      script;
+        string          idxStr = fgToStringDigits(ww,3);
+        script.logFile = "cc/" + name + "/_log.html";
+        script.title = name + " worker " + idxStr + " (" + workIPs[ww] + ")";
+        script.cmds = copyData;
+        script.cmds.push_back("> cluster_worker.flag");
+        script.cmds.push_back("./" + args);
+        if (!fgTcpClient(workIPs[ww],fgNcServerPort(),fgSerializePort(script)))
+            fgThrow("Cluster deploy unable to start worker",workIPs[ww]);
+    }
+    // Wait to ensure workers ready to receive (asynchronous operation):
+    fgSleep(1);
+    // Start Coordinator:
+    scriptCrdntor.logFile = "cc/" + name + "/_log.html";
+    scriptCrdntor.cmds = copyData;
+    scriptCrdntor.cmds.push_back("> cluster_coordinator.flag");
+    scriptCrdntor.cmds.push_back("./" + args);
+    if (!fgTcpClient(coordIP,fgNcServerPort(),fgSerializePort(scriptCrdntor)))
+        fgThrow("Cluster deploy unable to start coordinator",coordIP);
+}
 
 static
 string
@@ -43,15 +107,15 @@ testWorkerFunc(const string & msg)
 
 static
 void
-testCoordinator(const FgStrs & workerIPs)
+testCoordinator(const FgClustDispatcher * dispatcher)
 {
-    shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(workerIPs,port(),512);
     FgDbls              vals = fgSvec(3.14,2.72,1.41);
     string              msg = fgSerialize(vals);
-    FgStrs              msgsOut(workerIPs.size(),msg),
-                        msgsIn(workerIPs.size());
+    size_t              sz = dispatcher->numMachines();
+    FgStrs              msgsOut(sz,msg),
+                        msgsIn(sz);
     dispatcher->batchProcess(msgsOut,msgsIn);
-    for (size_t ww=0; ww<workerIPs.size(); ++ww) {
+    for (size_t ww=0; ww<sz; ++ww) {
         double          res;
         fgDeserialize(msgsIn[ww],res);
         fgout << fgnl << "Worker " << ww << " result: " << res;
@@ -60,12 +124,13 @@ testCoordinator(const FgStrs & workerIPs)
 }
 
 // Fully automated test is limited to host computer so can only test with a single worker
-// (TCP connections are only unique to {IP+port <-> IP+port} 4-tuple)
+// (TCP connections are only unique to {IP+fgClusterPortDefault <-> IP+fgClusterPortDefault} 4-tuple)
 void
 fgClusterTest(const FgArgs &)
 {
-    boost::thread       worker(fgClustWorker,port(),testWorkerFunc,256);
-    testCoordinator(fgSvec<string>("127.0.0.1"));    // Local host loop-back IP for testing
+    boost::thread       worker(fgClustWorker,testWorkerFunc,fgClusterPortDefault());
+    shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(fgSvec<string>("127.0.0.1"),fgClusterPortDefault());
+    testCoordinator(dispatcher.get());      // Local host loop-back IP for testing
 }
 
 void
@@ -76,15 +141,38 @@ fgClusterTestm(const FgArgs & args)
         "    c - coordinator. Makes use of the workers at <ip>+"
     );
     if (syn.next() == "w")
-        return fgClustWorker(port(),testWorkerFunc,256);
+        return fgClustWorker(testWorkerFunc,fgClusterPortDefault());
     if (syn.curr() == "c") {
         FgStrs      ips;
         do
             ips.push_back(syn.next());
         while (syn.more());
-        return testCoordinator(ips);
+        shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(ips,fgClusterPortDefault());
+        return testCoordinator(dispatcher.get());
     }
     syn.error("Unknown command",syn.curr());
+}
+
+void
+fgClusterDeployTestm(const FgArgs & args)
+{
+    FgSyntax        syn(args,"<crdntorIP> <workerIP>+\n"
+        "    <IP> - If no periods are entered then '192.168.0' is automatically prepended.\n"
+        "NOTES\n"
+        "    * All <IP> machines must be running fgNcServer under Ubuntu"
+    );
+    string      crdntorIP = syn.next();
+    if (!fgContains(crdntorIP,'.'))
+        crdntorIP = "192.168.0." + crdntorIP;
+    FgStrs      workerIPs;
+    do {
+        string  wip = syn.next();
+        if (!fgContains(wip,'.'))
+            wip = "192.168.0." + wip;
+        workerIPs.push_back(wip);
+    }
+    while (syn.more());
+    fgClusterDeploy("test0",testCoordinator,testWorkerFunc,crdntorIP,workerIPs,FgStrings());
 }
 
 // */

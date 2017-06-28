@@ -10,6 +10,7 @@
 #ifndef FGGUIAPIBASE_HPP
 #define FGGUIAPIBASE_HPP
 
+#include "FgStdFunction.hpp"
 #include "FgSharedPtr.hpp"
 #include "FgDepGraph.hpp"
 #include "FgMetaFormat.hpp"
@@ -250,8 +251,6 @@ struct  FgGuiGraph
 
 // Global variable - very convenient as there will only ever be one GUI at a time:
 extern FgGuiGraph g_gg;
-
-typedef void(*FgFunc)();
 
 struct  FgGuiApiEvent
 {

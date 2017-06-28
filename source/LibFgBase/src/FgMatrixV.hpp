@@ -147,20 +147,23 @@ fgConcatHoriz(
     const FgMatrixV<T> &    left,
     const FgMatrixV<T> &    right)
 {
+    FgMatrixV<T>        retval;
     if (left.empty())
-        return right;
-    if (right.empty())
-        return left;
-    FGASSERT(left.numRows() == right.numRows());
-    uint            numRows = left.numRows(),
-                    numCols = left.numCols() + right.numCols();
-    FgMatrixV<T>    retval(numRows,numCols);
-    for (uint rr=0; rr<numRows; rr++) {
-        uint    col=0;
-        for (uint cc=0; cc<left.numCols(); ++cc)
-            retval.rc(rr,col++) = left.rc(rr,cc);
-        for (uint cc=0; cc<right.numCols(); ++cc)
-            retval.rc(rr,col++) = right.rc(rr,cc);
+        retval = right;
+    else if (right.empty())
+        retval = left;
+    else {
+        FGASSERT(left.numRows() == right.numRows());
+        uint            numRows = left.numRows(),
+                        numCols = left.numCols() + right.numCols();
+        retval.resize(numRows,numCols);
+        for (uint rr=0; rr<numRows; rr++) {
+            uint    col=0;
+            for (uint cc=0; cc<left.numCols(); ++cc)
+                retval.rc(rr,col++) = left.rc(rr,cc);
+            for (uint cc=0; cc<right.numCols(); ++cc)
+                retval.rc(rr,col++) = right.rc(rr,cc);
+        }
     }
     return retval;
 }
@@ -192,17 +195,20 @@ fgConcatVert(
     const FgMatrixV<T> &    upper,
     const FgMatrixV<T> &    lower)
 {
+    FgMatrixV<T>      ret;
     if (upper.empty())
-        return lower;
-    if (lower.empty())
-        return upper;
-    FGASSERT(upper.numCols() == lower.numCols());
-    FgMatrixV<T>      ret(upper.numRows()+lower.numRows(),upper.numCols());
-    for (uint ii=0; ii<upper.numElems(); ++ii)
-        ret[ii] = upper[ii];
-    uint    off = upper.numElems();
-    for (uint ii=0; ii<lower.numElems(); ++ii)
-        ret[off+ii] = lower[ii];
+        ret = lower;
+    else if (lower.empty())
+        ret = upper;
+    else {
+        FGASSERT(upper.numCols() == lower.numCols());
+        ret.resize(upper.numRows()+lower.numRows(),upper.numCols());
+        for (uint ii=0; ii<upper.numElems(); ++ii)
+            ret[ii] = upper[ii];
+        uint    off = upper.numElems();
+        for (uint ii=0; ii<lower.numElems(); ++ii)
+            ret[off+ii] = lower[ii];
+    }
     return ret;
 }
 

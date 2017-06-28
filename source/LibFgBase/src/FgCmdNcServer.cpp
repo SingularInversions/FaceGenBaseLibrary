@@ -5,7 +5,8 @@
 // Created: Dec 7, 2011
 //
 // Network Computing server.
-// Thinnest possible server for handling scripts for CI and CC setup.
+// Simplest possible server for handling scripts remotely for CI and CC setup.
+// Totally insecure, use only on private LAN.
 //
 
 #include "stdafx.h"
@@ -75,7 +76,12 @@ handler(
 {
     FgNcScript      script;
     fgDeserializePort(dataIn,script);
-    string          dirBase = fgPathToDirBase(script.logFile).ascii();
+    FgPath          logPath(script.logFile);
+    if (!logPath.root)                                          // If path is relative
+        logPath = FgPath(fgGetCurrentDir()+script.logFile);     // Make absolute
+    fgCreatePath(logPath.dir());                                // Create path if necessary
+    script.logFile = logPath.str().m_str;
+    string          dirBase = logPath.dirBase().m_str;
     FgImgRgbaUb     img(32,32,FgRgbaUB(255,255,0,255));
     fgSaveImgAnyFormat(dirBase+".jpg",img);
     fgWriteFile(script.logFile,

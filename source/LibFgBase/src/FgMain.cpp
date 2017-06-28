@@ -47,13 +47,15 @@ fgArgs(int argc,const wchar_t * argv[])
 #define FLUSH fgout << endl << endl
 #endif
 
+static FgArgs s_mainArgs;
+
 int
 fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
 {
     try
     {
-        FgArgs  args = fgArgs(argc,argv);
-        func(args);
+        s_mainArgs = fgArgs(argc,argv);
+        func(s_mainArgs);
         FLUSH;
         return 0;
     }
@@ -108,8 +110,8 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
 {
     try
     {
-        FgArgs  args = fgArgs(argc,argv);
-        func(args);
+        s_mainArgs = fgArgs(argc,argv);
+        func(s_mainArgs);
         FLUSH;
         return 0;
     }
@@ -159,3 +161,24 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
     }
 }
 
+string
+fgMainArgs()
+{
+    string      ret;
+    for (size_t aa=0; aa<s_mainArgs.size(); ++aa) {
+        const string &      arg = s_mainArgs[aa];
+        if (fgContains(arg,' ') || fgContains(arg,'"')) {
+            ret += '"';
+            for (size_t cc=0; cc<arg.size(); ++cc) {
+                if (cc == '"')
+                    ret += "\\\"";
+                else
+                    ret += arg[cc];
+            }
+            ret += "\" ";
+        }
+        else
+            ret += arg + " ";
+    }
+    return ret;
+}

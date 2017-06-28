@@ -572,63 +572,72 @@ fgImgMad(
 
 template<class T>
 FgImage<T>
-fgConcatHoriz(
-    const FgImage<T> & l,
-    const FgImage<T> & r)
+fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & r)
 {
-    if (l.empty()) return r;
-    if (r.empty()) return l;
-    FGASSERT(l.height() == r.height());
-    FgImage<T>  ret(l.width()+r.width(),l.height());
-    FgVect2UI   off;
-    for (FgIter2UI it(l.dims()); it.valid(); it.next())
-        ret[it()] = l[it()];
-    off[0] += l.dims()[0];
-    for (FgIter2UI it(r.dims()); it.valid(); it.next())
-        ret[it()+off] = r[it()];
+    FgImage<T>      ret;
+    if (l.empty())
+        ret = r;
+    else if (r.empty())
+        ret = l;
+    else {
+        FGASSERT(l.height() == r.height());
+        ret.resize(l.width()+r.width(),l.height());
+        FgVect2UI       off;
+        for (FgIter2UI it(l.dims()); it.valid(); it.next())
+            ret[it()] = l[it()];
+        off[0] += l.dims()[0];
+        for (FgIter2UI it(r.dims()); it.valid(); it.next())
+            ret[it()+off] = r[it()];
+    }
     return ret;
 }
 
 template<class T>
 FgImage<T>
-fgConcatHoriz(
-    const FgImage<T> & l,
-    const FgImage<T> & c,
-    const FgImage<T> & r)
+fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
 {
-    if (l.empty()) return fgConcatHoriz(c,r);
-    if (c.empty()) return fgConcatHoriz(l,r);
-    if (r.empty()) return fgConcatHoriz(l,c);
-    FGASSERT((l.height() == c.height()) && (c.height() == r.height()));
-    FgImage<T>  ret(l.width()+c.width()+r.width(),l.height());
-    FgVect2UI   off;
-    for (FgIter2UI it(l.dims()); it.valid(); it.next())
-        ret[it()] = l[it()];
-    off[0] += l.dims()[0];
-    for (FgIter2UI it(c.dims()); it.valid(); it.next())
-        ret[it()+off] = c[it()];
-    off[0] += c.dims()[0];
-    for (FgIter2UI it(r.dims()); it.valid(); it.next())
-        ret[it()+off] = r[it()];
+    FgImage<T>      ret;
+    if (l.empty())
+        ret = fgConcatHoriz(c,r);
+    else if (c.empty())
+        ret = fgConcatHoriz(l,r);
+    else if (r.empty())
+        ret = fgConcatHoriz(l,c);
+    else {
+        FGASSERT((l.height() == c.height()) && (c.height() == r.height()));
+        ret.resize(l.width()+c.width()+r.width(),l.height());
+        FgVect2UI   off;
+        for (FgIter2UI it(l.dims()); it.valid(); it.next())
+            ret[it()] = l[it()];
+        off[0] += l.dims()[0];
+        for (FgIter2UI it(c.dims()); it.valid(); it.next())
+            ret[it()+off] = c[it()];
+        off[0] += c.dims()[0];
+        for (FgIter2UI it(r.dims()); it.valid(); it.next())
+            ret[it()+off] = r[it()];
+    }
     return ret;
 }
 
 template<class T>
 FgImage<T>
-fgConcatVert(
-    const FgImage<T> & t,
-    const FgImage<T> & b)
+fgConcatVert(const FgImage<T> & t,const FgImage<T> & b)
 {
-    if (t.empty()) return b;
-    if (b.empty()) return t;
-    FGASSERT(t.width() == b.width());
-    FgImage<T>  ret(t.width(),t.height()+b.height());
-    FgVect2UI   off;
-    for (FgIter2UI it(t.dims()); it.valid(); it.next())
-        ret[it()] = t[it()];
-    off[1] += t.dims()[1];
-    for (FgIter2UI it(b.dims()); it.valid(); it.next())
-        ret[it()+off] = b[it()];
+    FgImage<T>      ret;
+    if (t.empty())
+        ret = b;
+    else if (b.empty())
+        ret = t;
+    else {
+        FGASSERT(t.width() == b.width());
+        ret.resize(t.width(),t.height()+b.height());
+        FgVect2UI   off;
+        for (FgIter2UI it(t.dims()); it.valid(); it.next())
+            ret[it()] = t[it()];
+        off[1] += t.dims()[1];
+        for (FgIter2UI it(b.dims()); it.valid(); it.next())
+            ret[it()+off] = b[it()];
+    }
     return ret;
 }
 
@@ -651,12 +660,13 @@ fgCropPad(
     T                   fill = T())
 {
     FgImage<T>      ret(dims,fill);
-    if (src.empty()) return ret;
-    FgMat22I        srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
-                    dstBnds = FgMat22I(fgRangeToBounds(dims)),
-                    range = fgBoundsIntersection(srcBnds-fgConcatHoriz(offset,offset),dstBnds);
-    for (FgIter2I it(fgInclToExcl(range)); it.valid(); it.next())
-        ret[FgVect2UI(it())] = src[FgVect2UI(it()+offset)];
+    if (!src.empty()) {
+        FgMat22I        srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
+                        dstBnds = FgMat22I(fgRangeToBounds(dims)),
+                        range = fgBoundsIntersection(srcBnds-fgConcatHoriz(offset,offset),dstBnds);
+        for (FgIter2I it(fgInclToExcl(range)); it.valid(); it.next())
+            ret[FgVect2UI(it())] = src[FgVect2UI(it()+offset)];
+    }
     return ret;
 }
 
@@ -713,9 +723,7 @@ fgAlphaWeight(FgImgRgbaUb & img)
 // RETURNS: true if images are valid sizes and now match, false otherwise.
 template<class T>
 bool
-fgUpsampleToMatch(
-    FgImage<T> &    img0,
-    FgImage<T> &    img1)
+fgUpsampleToMatch(FgImage<T> & img0,FgImage<T> & img1)
 {
     if (img0.empty())
         return false;

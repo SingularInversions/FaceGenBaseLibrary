@@ -73,5 +73,6 @@ fgRunCmd(const FgCmdFunc & func,const string & argStr);
 
 // Useful for writing command dispatch commands - as long as vector<FgCmd> is named 'cmds':
 #define FGADDCMD1(fn,name) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,name))
+#define FGADDCMD(fn,name,desc) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,name,desc))
 
 #endif

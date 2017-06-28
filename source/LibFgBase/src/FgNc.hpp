@@ -25,11 +25,11 @@ fgNcShare(const string & os);
 string
 fgNcShare();
 
+// An HTML log of given commands and outputs will be appended to 'logFile' and a 32x32 image
+// will be written to <logFileBaseName>.jpg, green for success of all commands, red for a fail:
 struct  FgNcScript
 {
-    // An HTML log of given commands and outputs will be appended to 'logFile' and a 32x32 image
-    // will be written to <logFileBaseName>.jpg, green for success of all commands, red for a fail:
-    string              logFile;
+    string              logFile;    // Directory path will be created if it doesn't exist
     string              title;      // Title line of log file
     // Each such command will be shell executed in order. In addition some builtin commands are supported:
     // fgPush <dir>     - push <dir> to current for this process

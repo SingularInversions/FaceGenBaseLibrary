@@ -78,6 +78,8 @@ fgCmdBaseTestms()
     cmds.push_back(FgCmd(testmGui,"gui"));
     FGADDCMD1(fg3dTestMan,"3d");
     FGADDCMD1(fgClusterTestm,"cluster");
+    FGADDCMD1(fgClusterDeployTestm,"clusterDeploy");
+    FGADDCMD(fgCmdTestmCpp,"cpp","C++ behaviour tests");
     FGADDCMD1(fg3dReadWobjTest,"readWobj");
     FGADDCMD1(fgRandomTest,"random");
     FGADDCMD1(fgGeometryManTest,"geometry");

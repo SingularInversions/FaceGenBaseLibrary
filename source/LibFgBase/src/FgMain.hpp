@@ -27,4 +27,11 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[]);
 int
 fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[]);
 
+// Return the original command line. Useful for spawning current function on other computers.
+// NB. Since main() only receives the command line as parsed by the shell, double quotes are added
+// around any arguments containing spaces, and double quotes are escaped. This may not work properly
+// on *nix:
+string
+fgMainArgs();
+
 #endif

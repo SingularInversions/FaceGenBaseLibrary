@@ -38,7 +38,7 @@ fgBuildCompilers(const std::string & os)
     if (os == "win")
         return fgSvec<string>("vs15","vs13","vs12");        // First is default for releases
     else if (os == "ubuntu")
-        return fgSvec<string>("gcc");
+        return fgSvec<string>("gcc","clang");
     else if (os == "osx")
         return fgSvec<string>("clang");
     FGASSERT_FALSE;

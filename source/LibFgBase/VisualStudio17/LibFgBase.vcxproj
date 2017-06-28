@@ -217,6 +217,7 @@
     <ClCompile Include="..\src\FgCmdMorph.cpp"  />
     <ClCompile Include="..\src\FgCmdNcServer.cpp"  />
     <ClCompile Include="..\src\FgCmdRender.cpp"  />
+    <ClCompile Include="..\src\FgCmdTestmCpp.cpp"  />
     <ClCompile Include="..\src\FgCmdView.cpp"  />
     <ClCompile Include="..\src\FgCommand.cpp"  />
     <ClInclude Include="..\src\FgCommand.hpp"  />
@@ -342,6 +343,7 @@
     <ClInclude Include="..\src\FgSmartPtr.hpp"  />
     <ClCompile Include="..\src\FgSoftRender.cpp"  />
     <ClInclude Include="..\src\FgSoftRender.hpp"  />
+    <ClInclude Include="..\src\FgStdFunction.hpp"  />
     <ClInclude Include="..\src\FgStdio.hpp"  />
     <ClInclude Include="..\src\FgStdLibs.hpp"  />
     <ClInclude Include="..\src\FgStdPair.hpp"  />

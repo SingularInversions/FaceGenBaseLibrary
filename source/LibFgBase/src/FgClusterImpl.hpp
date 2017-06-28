@@ -4,7 +4,7 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Authors:     Andrew Beatty
-// Created:     Nov 1, 2011
+// Created:     May 31, 2017
 //
 // Implementation file to be included in OS-specific libraries
 
@@ -34,7 +34,7 @@ sendFrame(ip::tcp::socket & sock,const string & msg)
 // Returns 'false' if connection closed by sender
 static
 bool
-recvFrame(ip::tcp::socket & sock,string & msg,size_t maxRecvBytes)
+recvFrame(ip::tcp::socket & sock,string & msg)
 {
     boost::system::error_code err;
     size_t              msgSz,
@@ -45,7 +45,7 @@ recvFrame(ip::tcp::socket & sock,string & msg,size_t maxRecvBytes)
         return false;
     FGASSERT(!err);
     FGASSERT(szRead == 8);
-    FGASSERT(msgSz <= maxRecvBytes);
+    FGASSERT(msgSz <= 0x02000000);      // < 32MB sanity check
     msg.resize(msgSz);
     szRead = read(sock,buffer(&msg[0],msgSz),err);
     if (err == error::eof)
@@ -58,7 +58,7 @@ recvFrame(ip::tcp::socket & sock,string & msg,size_t maxRecvBytes)
 // The worker can receive and send messages in the same thread as the dispatcher won't send
 // another message until it receives its response:
 void
-fgClustWorker(uint16 port,FgFuncStr2Str handler,size_t maxRecvBytes)
+fgClustWorker(FgFuncStr2Str handler,uint16 port)
 {
     io_service              ios;                    // Initialize networking functionality
     ip::tcp::endpoint       ep(ip::tcp::v4(),port);
@@ -68,7 +68,7 @@ fgClustWorker(uint16 port,FgFuncStr2Str handler,size_t maxRecvBytes)
     boost::system::error_code err;
     for (;;) {
         string              msg;
-        if (!recvFrame(sock,msg,maxRecvBytes))      // Can block for a long time
+        if (!recvFrame(sock,msg))                   // Can block for a long time
             return;                                 // Connection closed, terminate
         string              resp = handler(msg);    // Can take a long time before returning
         sendFrame(sock,resp);
@@ -77,11 +77,11 @@ fgClustWorker(uint16 port,FgFuncStr2Str handler,size_t maxRecvBytes)
 
 // If an exception is thrown, store it's details in the message:
 void
-recvFrameThread(ip::tcp::socket & sock,string & msg,size_t maxRecvBytes)
+recvFrameThread(ip::tcp::socket & sock,string & msg)
 {
     bool    connectionOpen = true;
     try {
-        connectionOpen = recvFrame(sock,msg,maxRecvBytes);
+        connectionOpen = recvFrame(sock,msg);
     }
     catch(FgException const & e) {
         msg = e.tr_message().m_str;
@@ -102,10 +102,8 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
 
     io_service              ios;
     vector<SockPtr>         sockPtrs;
-    size_t                  maxRecvBytes;
 
-    FgClustDispatcherImpl(const FgStrs & hosts,const string & port,size_t maxRecvBytes_) :
-        maxRecvBytes(maxRecvBytes_)
+    FgClustDispatcherImpl(const FgStrs & hosts,const string & port)
     {
         sockPtrs.reserve(hosts.size());
         for (size_t hh=0; hh<hosts.size(); ++hh) {
@@ -115,13 +113,18 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
             sockPtrs.emplace_back(std::unique_ptr<ip::tcp::socket>(new ip::tcp::socket(ios)));
             boost::system::error_code       err;
             connect(*sockPtrs[hh],iter,err);
-            FGASSERT(!err);
+            if (err)
+                fgThrow("Cluster dispatch connect failed",hosts[hh]);
         }
     }
 
     virtual
+    size_t numMachines() const
+    {return sockPtrs.size(); }
+
+    virtual
     void
-    batchProcess(const FgStrs & msgsSend,FgStrs & msgsRecv)
+    batchProcess(const FgStrs & msgsSend,FgStrs & msgsRecv) const
     {
         FGASSERT(msgsSend.size() == sockPtrs.size());
         msgsRecv.resize(msgsSend.size());
@@ -132,7 +135,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
         recvThreads.reserve(msgsSend.size());
         for (size_t mm=0; mm<msgsSend.size(); ++mm)
             recvThreads.emplace_back(std::unique_ptr<boost::thread>(new boost::thread(
-                recvFrameThread,boost::ref(*sockPtrs[mm]),boost::ref(msgsRecv[mm]),maxRecvBytes)));
+                recvFrameThread,boost::ref(*sockPtrs[mm]),boost::ref(msgsRecv[mm]))));
         // Since there's only one physical ethernet cable and recipients are close by we just send each
         // message sequentially. A possible future optimization would be to make this asynchronous with some
         // number of threads (via asio):
@@ -149,9 +152,9 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
 };
 
 std::shared_ptr<FgClustDispatcher>
-fgClustDispatcher(const FgStrs & hostnames,uint16 port,size_t maxRecvBytes)
+fgClustDispatcher(const FgStrs & hostnames,uint16 port)
 {
-    return std::make_shared<FgClustDispatcherImpl>(hostnames,fgToString(port),maxRecvBytes);
+    return std::make_shared<FgClustDispatcherImpl>(hostnames,fgToString(port));
 }
 
 // */

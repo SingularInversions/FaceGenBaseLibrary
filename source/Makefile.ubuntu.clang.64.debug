@@ -1,8 +1,8 @@
 CC = clang 
 LINK = g++ 
-CFLAGS = -fno-common -ftemplate-depth=1024 -g -O0 -D_DEBUG 
+CFLAGS = -fno-common -ftemplate-depth=1024 -fPIC -g -O0 -D_DEBUG 
 CONFIG = clang/64/debug/
-BIN = ../bin/osx/$(CONFIG)
+BIN = ../bin/ubuntu/$(CONFIG)
 $(shell mkdir -p $(BIN))
 all: $(BIN)fgbl 
 CFLAGSLibTpBoost = $(CFLAGS) -w -DBOOST_THREAD_BUILD_LIB=1 -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/
@@ -1167,7 +1167,7 @@ ODIRfgbl = fgbl/$(CONFIG)
 $(shell mkdir -p $(ODIRfgbl))
 INCSfgbl := $(wildcard LibTpBoost/boost_1_63_0/*.hpp) $(wildcard LibJpegIjg6b/*.hpp) $(wildcard LibImageMagickCore/ImageMagick-6.6.2/*.hpp) $(wildcard LibUTF-8/*.hpp) $(wildcard LibTntJama/*.hpp) $(wildcard LibFgBase/src/*.hpp) $(wildcard fgbl/*.hpp)
 $(BIN)fgbl: $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a 
-	$(LINK) -o $(BIN)fgbl $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a  -framework Carbon 
+	$(LINK) -o $(BIN)fgbl -pthread -z origin -Wl,-rpath='$$ORIGIN' $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a  -lrt 
 $(ODIRfgbl)fgbl.o: $(SDIRfgbl)fgbl.cpp $(INCSfgbl)
 	$(CC) -o $(ODIRfgbl)fgbl.o -c -std=c++11 $(CFLAGSfgbl) $(SDIRfgbl)fgbl.cpp
 .PHONY: clean

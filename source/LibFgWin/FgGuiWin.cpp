@@ -45,10 +45,10 @@ struct  FgGuiWinMain
 {
     FgString                    m_title;
     FgString                    m_store;        // Base filename for state storage
-    FgPtr<FgGuiOsBase>    m_win;
+    FgPtr<FgGuiOsBase>          m_win;
     FgVect2UI                   m_size;         // Current size of client area
     vector<HANDLE>              eventHandles;   // Client event handles to trigger message loop
-    vector<void(*)()>           eventHandlers;  // Respective event handlers
+    vector<FgFunc>              eventHandlers;  // Respective event handlers
     vector<FgGuiKeyHandle>      keyHandlers;
 
     void

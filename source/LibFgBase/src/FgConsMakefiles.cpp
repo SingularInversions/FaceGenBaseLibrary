@@ -66,19 +66,29 @@ group(
 
 static
 string
-target(const FgConsProj & prj,bool osx)
+dllExt(const string & os)
+{
+    if (os == "osx")
+        return ".dylib";
+    else if (os == "ubuntu")
+        return ".so";
+    else
+        fgThrow("Don't know DLL extension for OS",os);
+    return string();
+}
+
+static
+string
+targetPath(const FgConsProj & prj,const string & os)
 {
     string  path = "$(BIN)" + prj.name;
-    if (prj.app)
-        return path;
-    else {
-        if (prj.dll) {
-            if (osx)
-                return path + ".dylib";
-            else
-                return path + ".so"; }
+    if (!prj.app) {
+        if (prj.dll)
+            path += dllExt(os);
         else
-            return path + ".a"; }
+            path += ".a";
+    }
+    return path;
 }
 
 static
@@ -87,20 +97,16 @@ linkLibs(
     ofstream &              ofs,
     const FgConsProj &      prj,
     const FgConsSolution &  sln,
-    bool                    osx)
+    const string &          os)
 {
     // For unix, order of linkage is actually important, since compiling on unix
     // is a miserable PITA:
-    for (size_t ii=prj.dllDeps.size(); ii>0; --ii) {
-        ofs << "$(BIN)" << prj.dllDeps[ii-1];
-        if (osx)
-            ofs << ".dylib ";
-        else
-            ofs << ".so "; }
+    for (size_t ii=prj.dllDeps.size(); ii>0; --ii)
+        ofs << "$(BIN)" << prj.dllDeps[ii-1] << dllExt(os) << " ";
     for (size_t ii=prj.lnkDeps.size(); ii>0; --ii)
         for (size_t jj=0; jj<sln.projects.size(); ++jj)
             if (sln.projects[jj].name == prj.lnkDeps[ii-1])
-                ofs << target(sln.projects[jj],osx) << " ";
+                ofs << targetPath(sln.projects[jj],os) << " ";
 }
 
 // Collapse common case of 'ThisLib/../OtherLib':
@@ -122,7 +128,8 @@ proj(
     ofstream &          ofs,
     const FgConsProj &  prj,
     const FgConsSolution & sln,
-    bool                osx)    // false = ubuntu
+    const string &      os,
+    const string &      compiler)
 {
     ofs << "CFLAGS" << prj.name << " = $(CFLAGS)";
     if (prj.warn < 3)
@@ -130,12 +137,15 @@ proj(
     else
         ofs << " -Wall";
     if (prj.warn == 4) {
-        if (osx)
+        if (compiler == "clang") {
             ofs << " -Wno-unused-local-typedef";    // boost static assert issue with clang
-        else {
-            ofs << " -Wextra";              // causes boost 'unused-parameter' warnings with clang
-            ofs << " -Wno-unused-result";   // This flag doesn't exist in gcc4.2 (OSX)
         }
+        else if (compiler == "gcc") {
+            ofs << " -Wextra";              // causes boost 'unused-parameter' warnings with clang
+            ofs << " -Wno-unused-result";
+        }
+        else
+            fgThrow("Don't know appropriate warning flags for compiler",compiler);
     }
     for (size_t ii=0; ii<prj.defs.size(); ++ii)
         ofs << " -D" << prj.defs[ii];
@@ -158,28 +168,31 @@ proj(
     for (size_t ii=0; ii<prj.incDirs.size(); ++ii)
         ofs << "$(wildcard " << collapse(prj.name,prj.incDirs[ii]) << "*.hpp) ";
     ofs << "$(wildcard " << prj.name << '/' << prj.srcBaseDir << "*.hpp)" << lf;
-    ofs << target(prj,osx) << ": ";
+    ofs << targetPath(prj,os) << ": ";
     for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
         targets(ofs,prj.name,prj.srcGroups[ii]);
     if (prj.app || prj.dll)
-        linkLibs(ofs,prj,sln,osx);
+        linkLibs(ofs,prj,sln,os);
     ofs << lf;
     if (prj.app || prj.dll)
     {
         ofs << "\t$(LINK) -o $(BIN)" << prj.name;
         if (prj.dll) {
-            if (osx)
+            if (os == "osx")
                 // -Wl, passes the args on to the linker
                 // -install_name tells binaries linking with this dynlib where to look for it at
                 //    runtime. Without this the linker stupidly use the path given in the CL:
                 ofs << ".dylib -dynamiclib -Wl,-install_name,@executable_path/" << prj.name << ".dylib";
-            else
+            else if (os == "ubuntu")
                 // -shared is necessary here even though it's supposedly the default.
                 // -soname is the name that will be used when dependent binaries are linked to
                 //    this dll to search for at run-time. The $ORIGIN method below requires it.
-                ofs << ".so -shared -Wl,-soname," << prj.name << ".so"; }
+                ofs << ".so -shared -Wl,-soname," << prj.name << ".so";
+            else
+                fgThrow("Don't know DLL creation args for OS",os);
+        }
         ofs << " ";
-        if (!osx)
+        if (os == "ubuntu")     // both gcc and clang use g++ linker on ubuntu:
             // -pthread sets gcc flags for both preprocessor and linker for use of pthreads library.
             //     Not used by clang.
             // -z origin is idiotically necessary for -rpath to work at all:
@@ -189,20 +202,22 @@ proj(
             ofs << "-pthread -z origin -Wl,-rpath='$$ORIGIN' ";
         for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
             targets(ofs,prj.name,prj.srcGroups[ii]);
-        linkLibs(ofs,prj,sln,osx);
-        if (osx)
+        linkLibs(ofs,prj,sln,os);
+        if (os == "osx")
             ofs << " -framework Carbon ";
-        else
+        else if (os == "ubuntu")
             // -lrt links to the librt.so 'real-time' shared library (contains clock_gettime)
             ofs << " -lrt ";
+        else
+            fgThrow("Don't know standard lib linkage for OS",os);
     }
     else    // Static library
     {
         // ar options: r - replace .o files in archive, c - create if doesn't exist
-        ofs << "\tar rc " << target(prj,osx) << " ";
+        ofs << "\tar rc " << targetPath(prj,os) << " ";
         for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
             targets(ofs,prj.name,prj.srcGroups[ii]);
-        ofs << lf << "\tranlib " << target(prj,osx);
+        ofs << lf << "\tranlib " << targetPath(prj,os);
     }
     ofs << lf;
     for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
@@ -213,13 +228,16 @@ static
 void
 consMakefile(
     const FgConsSolution &  sln,
-    const string &          mfName,
-    bool                    x64,
-    bool                    debug,
-    bool                    osx)        // false = ubuntu
+    const string &          os,
+    const string &          compiler,
+    bool                    x64,        // 32 bit if false
+    bool                    debug)      // release if false
 {
-    ofstream    ofs(mfName.c_str(),ios::binary);    // ios::binary keeps newline = LF for *nix
-    if (osx) {
+    string      bits = x64 ? "64" : "32",
+                config = debug ? "debug" : "release",
+                makefile = fgCat(fgSvec<string>("Makefile",os,compiler,bits,config),".");
+    ofstream    ofs(makefile.c_str(),ios::binary);    // ios::binary keeps newline = LF for *nix
+    if (compiler == "clang") {
         // Will be changing to 'clang++ -Wno-c++11-extensions' if I can get ImageMagick to compile
         // without errors (or get rid of it). As of Yosemite (10.10) g++ is just clang++ and 
         // uses the same libc++, however there's some kind of residual difference causing assignements
@@ -228,14 +246,19 @@ consMakefile(
             << "LINK = g++ " << lf
             << "CFLAGS = "
                 // Ensures no common symbols across all libraries, required for all files which
-                // are part of a DLL so we just always use it (OSX specific)
-                "-fno-common ";
+                // are part of a DLL so we just always use it:
+                "-fno-common "
+                // clang defaults to 256 which can cause problems with boost::serialization exceeding
+                // template depth limit, so set to same limit used by gcc and vs:
+                "-ftemplate-depth=1024 ";
+        if (os == "ubuntu")
+            ofs << "-fPIC ";
         if (debug)
             ofs << "-g -O0 -D_DEBUG ";  // -g: generate debug info
         else
             ofs << "-Ofast ";   // == O3 plus fast floating point opts.
     }
-    else {
+    else if (compiler == "gcc") {
         // gcc will call gnu c compiler or g++ depending on source type:
         ofs << "CC = gcc" << lf
             // g++ calls ld but it adds arguments for the appropriate standard
@@ -243,7 +266,7 @@ consMakefile(
             // static linking is apparently quite difficult to get right:
             << "LINK = g++" << lf
             // -fPIC: (position indepdent code) is required for all object files which are 
-            // part of a DLL, so we just always use it (except on OSX where it's the default)
+            // part of a shared library, so we just always use it (except on OSX where it's the default)
             << "CFLAGS = -fPIC ";
         if (x64)
             ofs << "-m64 ";
@@ -254,12 +277,11 @@ consMakefile(
             ofs << "-g -O0 -D_DEBUG ";
         else
             ofs << "-O3 "           // -march=corei7 actually slowed down nrrjohnverts a smidgen.
-                "-ffast-math ";     // Needed for auto-vectorization as well as minor speedup
+                "-ffast-math ";     // Needed for auto-vectorization as well as minor speedup.
+                                    // -msse3 made no difference on some speed tests.
     }
-    string      os = (osx ? "osx" : "ubuntu"),
-                compiler = osx ? "clang" : "gcc",
-                bits = x64 ? "64" : "32",
-                config = debug ? "debug" : "release";
+    else
+        fgThrow("Don't know how to create makefile for compiler",compiler);
     ofs << lf
         << "CONFIG = " << compiler << "/" << bits <<  "/" << config << "/" << lf
         << "BIN = ../bin/" << os << "/$(CONFIG)" << lf
@@ -267,10 +289,10 @@ consMakefile(
         << "all: ";
     for (size_t ii=0; ii<sln.projects.size(); ++ii)
         if (sln.projects[ii].app)
-            ofs << target(sln.projects[ii],osx) << " ";
+            ofs << targetPath(sln.projects[ii],os) << " ";
     ofs << lf;
     for (size_t ii=0; ii<sln.projects.size(); ++ii)
-        proj(ofs,sln.projects[ii],sln,osx);
+        proj(ofs,sln.projects[ii],sln,os,compiler);
     ofs << ".PHONY: clean" << lf
         << "clean: cleanObjs cleanTargs" << lf
         << "cleanObjs:" << lf;
@@ -283,13 +305,12 @@ consMakefile(
 void
 fgConsMakefiles(FgConsSolution sln)
 {
-    // gcc4.6 has some problem with 32 bit. Ignore for now:
-    //cons(sln,"Makefile.ubuntu.gcc.32.release",false,false);
-    //cons(sln,"Makefile.ubuntu.gcc.32.debug",false,true);
-    consMakefile(sln,"Makefile.ubuntu.gcc.64.debug",true,true,false);
-    consMakefile(sln,"Makefile.ubuntu.gcc.64.release",true,false,false);
-    consMakefile(sln,"Makefile.osx.clang.64.debug",true,true,true);
-    consMakefile(sln,"Makefile.osx.clang.64.release",true,false,true);
+    consMakefile(sln,"ubuntu","clang",true,true);
+    consMakefile(sln,"ubuntu","clang",true,false);
+    consMakefile(sln,"ubuntu","gcc",true,true);
+    consMakefile(sln,"ubuntu","gcc",true,false);
+    consMakefile(sln,"osx","clang",true,true);
+    consMakefile(sln,"osx","clang",true,false);
 }
 
 // */
