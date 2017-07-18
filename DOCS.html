@@ -25,47 +25,39 @@ footer {
 
 <h1>FaceGen Base Library Documentation</h1>
 <h2>Requirements</h2>
+    <p>{ Windows, Ubuntu, MacOS }</p>
+<h2>Compile</h2>
+<h3>Windows</h3>
+    <p>Visual Studio {2012,2013,2015,2017}:</p>
+    <p><code>
+    ~sdk/source/VisualStudio2012.sln<br/>
+    ~sdk/source/VisualStudio2013.sln<br/>
+    ~sdk/source/VisualStudio2015.sln<br/>
+    ~sdk/source/VisualStudio2017.sln
+    </code></p>
+<h3>MacOS</h3>
+    <p>Xcode 8</p>
     <ul>
-      <li> Windows:
-        <ul>
-          <li>Visual Studio {2008,2010,2012,2013} Professional or higher.</li>
-        </ul>
-      </li>
-      <li>OS/X:
-        <ul>
-          <li> Xcode {4,5}
-            <ul>
-              <li> Menu: Xcode -> Preferences -> Downloads -> Command Line Tools </li>
-              <li> Add to path:
-                <code> $ PATH=$PATH:/Applications/Xcode.app/Contents/Developer/usr/bin/ </code>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-      <li>Ubuntu: <br/>
-        <code>
-          $ sudo apt-get update <br/>
-          $ sudo apt-get install build-essential libc6-dev-i386 g++-multilib make <br/>
-        </code>
+      <li> Menu: Xcode -> Preferences -> Downloads -> Command Line Tools </li>
+      <li> Add to path:
+        <code> $ PATH=$PATH:/Applications/Xcode.app/Contents/Developer/usr/bin/ </code>
       </li>
     </ul>
-<h2>Compile</h2>
-    <p>Path in which you have placed this library:</p>
-    <p><code>~fgbl</code></p>
-    <p>Solution files for Visual Studio:</p>
     <p><code>
-    ~fgbl/source/VisualStudio2008.sln<br/>
-    ~fgbl/source/VisualStudio2010.sln<br/>
-    ~fgbl/source/VisualStudio2012.sln<br/>
-    ~fgbl/source/VisualStudio2013.sln
-    </code></p>
-    <p>Makefiles for OS X / Ubuntu (use 'make' with '-f' flag to select makefile):</p>
+    ~sdk/source/Makefile.osx.clang.64.debug<br/>
+    ~sdk/source/Makefile.osx.clang.64.release<br/>
+    </code>
+<h3>Ubuntu</h3>
+    <code>
+      $ sudo apt install make build-essential clang llvm <br/>
+    </code>
     <p><code>
-    ~fgbl/source/Makefile.osx.gcc.64.debug<br/>
-    ~fgbl/source/Makefile.osx.gcc.64.release<br/>
-    ~fgbl/source/Makefile.ubuntu.gcc.64.debug<br/>
-    ~fgbl/source/Makefile.ubuntu.gcc.64.release<br/>
+    ~sdk/source/Makefile.ubuntu.clang.64.debug<br/>
+    ~sdk/source/Makefile.ubuntu.clang.64.release<br/>
+    ~sdk/source/Makefile.ubuntu.gcc.64.debug<br/>
+    ~sdk/source/Makefile.ubuntu.gcc.64.release<br/>
+    ~sdk/source/Makefile.ubuntu.icpc.64.debug<br/>
+    ~sdk/source/Makefile.ubuntu.icpc.64.release<br/>
     </code>
 <h2>Use</h2>
     <p>Set up the path ('>' windows. '$' osx,ubuntu) for 64bit release version (VS2012 for Windows):</p>
