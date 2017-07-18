@@ -15,35 +15,9 @@
 #include "FgAlgs.hpp"
 #include "FgRandom.hpp"
 
-// Useful in place of constructor since no template specification is required:
 template<class T>
 FgMatrixV<T>
-fgMatrix(uint nrows,uint ncols,T v0)
-{return FgMatrixV<T>(nrows,ncols,v0); }
-
-template<class T>
-FgMatrixV<T>
-fgMatrix(uint nrows,uint ncols,T v0,T v1)
-{return FgMatrixV<T>(nrows,ncols,fgSvec(v0,v1)); }
-
-template<class T>
-FgMatrixV<T>
-fgMatrix(uint nrows,uint ncols,T v0,T v1,T v2)
-{return FgMatrixV<T>(nrows,ncols,fgSvec(v0,v1,v2)); }
-
-template<class T>
-FgMatrixV<T>
-fgMatrix(uint nrows,uint ncols,T v0,T v1,T v2,T v3)
-{return FgMatrixV<T>(nrows,ncols,fgSvec(v0,v1,v2,v3)); }
-
-template<class T>
-FgMatrixV<T>
-fgMatrix(uint nrows,uint ncols,T v0,T v1,T v2,T v3,T v4,T v5)
-{return FgMatrixV<T>(nrows,ncols,fgSvec(v0,v1,v2,v3,v4,v5)); }
-
-template<class T>
-FgMatrixV<T>
-fgIdentity(size_t dim)
+fgMatIdentity(size_t dim)
 {
     FgMatrixV<T>    ret(dim,dim,T(0));
     for (size_t ii=0; ii<dim; ++ii)
@@ -51,40 +25,8 @@ fgIdentity(size_t dim)
     return ret;
 }
 
-template<class T>
-FgMatrixV<T>
-fgVectHoriz(T v0,T v1)
-{return FgMatrixV<T>(1,2,fgSvec(v0,v1)); }
-
-template<class T>
-FgMatrixV<T>
-fgVectHoriz(T v0,T v1,T v2)
-{return FgMatrixV<T>(1,3,fgSvec(v0,v1,v2)); }
-
-template<class T>
-FgMatrixV<T>
-fgVectHoriz(const std::vector<T> & v)
-{return FgMatrixV<T>(1,v.size(),v); }
-
-template<class T>
-FgMatrixV<T>
-fgVectVert(T v0,T v1)
-{return FgMatrixV<T>(2,1,fgSvec(v0,v1)); }
-
-template<class T>
-FgMatrixV<T>
-fgVectVert(T v0,T v1,T v2)
-{return FgMatrixV<T>(3,1,fgSvec(v0,v1,v2)); }
-
-template<class T>
-FgMatrixV<T>
-fgVectVert(const std::vector<T> & v)
-{return FgMatrixV<T>(v.size(),1,v); }
-
 FgMatrixD &
-operator/=(
-    FgMatrixD & mat,
-    double      div);
+operator/=(FgMatrixD & mat,double div);
 
 // FgMatrixV<> * vector<> treats rhs side as a column vector and returns same:
 template<class T>
@@ -407,38 +349,6 @@ fgMatRandOrtho(size_t dim)
     return ret;
 }
 
-/*
-// Outputs the U^T * U Cholesky decomposition of a symmetric positive definite matrix
-// The template can be any type of matrix so in future we can use symmetric-specific data
-// structure matrices and index-reverse-order matrix adapters.
-// NOTES: symmetry of the input matrix is assumed, not checked.
-// RETURNS: true if successful, false if the matrix was not positive definite.
-template<class Matrix>
-bool    fgCholesky(const FgMatrixD& mat)
-{
-    uint    dim = mat.numRows();
-    FGASSERT(dim > 0);
-    FGASSERT(dim == mat.numCols());
-    Matrix  upper(dim,dim);
-    for (uint row=0; row<dim; row++)
-    {
-        double      sum = 0.0;
-        for (uint row2=0; row2<row; row2++)
-            sum += fgSqr(upper.rc(row2,row));
-        double      ref = mat.rc(row,row),
-                    sqv = ref - sum;
-        if (sqv <= 0.0) return false;
-        if ((sqv / (ref+sum)) < (numeric_limits<double>::epsilon()*100.0))
-            return false;
-        upper.rc(row,row) = std::sqrt(sqv);
-        for (uint col=row; col<dim; col++)
-        {
-            
-        }
-    }
-}
-*/
-
 template<class T>
 FgMatrixV<T>
 fgOuterProduct(const vector<T> & rowFacs,const vector<T> & colFacs)
@@ -472,5 +382,29 @@ typedef FgMatrixV<FgVect3D>     FgVect3Dz;
 typedef FgMatrixV<FgVect3Dz>    FgVect3Dzz;
 typedef FgMatrixV<FgMat33D>     FgMat33Dz;
 typedef FgMatrixV<FgMat33Dz>    FgMat33Dzz;
+
+// Form a matrix from a vector of vectors representing each row:
+template<class T>
+FgMatrixV<T>
+fgVecVecToMatrix(const vector<vector<T> > & vss)    // vss must be non-empty with all sub-vects of same size
+{
+    FGASSERT(!vss.empty());
+    size_t          numRows = vss.size(),
+                    numCols = vss[0].size();
+    vector<T>       data = fgFlat(vss);
+    FGASSERT(data.size() == numRows*numCols);
+    return FgMatrixV<T>(numRows,numCols,data);
+}
+
+// Return a vector of vectors for each row in a matrix:
+template<class T>
+vector<vector<T> >
+fgMatrixToVecVec(const FgMatrixV<T> & v)
+{
+    vector<vector<T> >      ret(v.numRows());
+    for (size_t rr=0; rr<ret.size(); ++rr)
+        ret[rr] = v.rowData(uint(rr));
+    return ret;
+}
 
 #endif

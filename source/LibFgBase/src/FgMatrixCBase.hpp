@@ -406,6 +406,18 @@ struct  FgMatrixC
             acc *= m[ii];
         return acc;
     }
+
+    bool
+    operator<(const FgMatrixC & rhs) const      // Useful for putting in a std::map
+    {
+        for (uint ii=0; ii<nrows*ncols; ++ii) {
+            if (m[ii] < rhs[ii])
+                return true;
+            if (rhs[ii] < m[ii])
+                return false;
+        }
+        return false;
+    }
 };
 
 template<class T,uint nrows,uint ncols>
@@ -487,6 +499,8 @@ typedef vector<FgVect4UI>           FgVect4UIs;
 typedef vector<FgVect4D>            FgVect4Ds;
 
 typedef vector<FgVerts>             FgVertss;
+typedef vector<FgVect2Ds>           FgVect2Dss;
+typedef vector<FgVect2Dss>          FgVect2Dsss;
 typedef vector<FgVect3Ds>           FgVect3Dss;
 typedef vector<FgVect3Dss>          FgVect3Dsss;
 

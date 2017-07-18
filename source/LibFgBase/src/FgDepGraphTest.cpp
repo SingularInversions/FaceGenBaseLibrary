@@ -110,7 +110,7 @@ testDepGraphSimple()
     dg.nodeVal(idxJ);
     FGASSERT(m_count - baseCount == 5);
 
-    if (FgTempFile::getKeepTempFiles())
+    if (fgKeepTempFiles())
         fgDepGraph2Pdf(dg.linkGraph(),"testCalcs");
 }
 
@@ -152,7 +152,7 @@ testDepGraphSubset()
                     con3 = m_graph.addNode<std::string>("","concat3");
     m_graph.addLink(concatenate,fgSvec(con1,str4),fgSvec(con3));
 
-    if (FgTempFile::getKeepTempFiles())
+    if (fgKeepTempFiles())
         fgDepGraph2Pdf(m_graph.linkGraph(),"testSubset.pdf");
 
     const std::string & concat2 = m_graph.getNode(con2).valueRef();

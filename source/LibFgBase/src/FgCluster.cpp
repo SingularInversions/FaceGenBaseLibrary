@@ -54,7 +54,7 @@ fgClusterDeploy(
     scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
     FgString        binBase = FgPath(fgExecutablePath()).base;
-    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot("ubuntu") + "bin/ubuntu/gcc/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
+    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot("ubuntu") + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
     if (!fgTcpClient(coordIP,fgNcServerPort(),fgSerializePort(scriptCrdntor)))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):

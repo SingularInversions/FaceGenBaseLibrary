@@ -120,12 +120,45 @@ speedExp(const FgArgs &)
     fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
 }
 
+static
+void
+fgexp(const FgArgs &)
+{
+    double      maxRel = 0,
+                totRel = 0;
+    size_t      cnt = 0;
+    for (double dd=0; dd<5; dd+=0.001) {
+        double  baseline = exp(-dd),
+                test = fgExpFast(-dd),
+                meanVal = (test+baseline) * 0.5,
+                relDel = (test-baseline) / meanVal;
+        maxRel = fgMax(maxRel,relDel);
+        totRel += relDel;
+        ++cnt;
+    }
+    fgout << "Max Rel Del: " << maxRel << " mean rel del: " << totRel / cnt;
+    double      val = 0,
+                inc = 2.718281828,
+                mod = 3.141592653,
+                acc = 0;
+    size_t      reps = 10000000;
+    FgTimer     tm;
+    for (size_t ii=0; ii<reps; ++ii) {
+        acc += fgExpFast(-val);
+        val += inc;
+        if (val > mod)
+            val -= mod;
+    }
+    fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
+}
+
 void
 fgCmdTestmCpp(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(rvo,"rvo","Return value optimization / copy elision"));
-    cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of 10,000 exp calls"));
+    cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of library exp(double)"));
+    cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
     fgMenu(args,cmds);
 }
 

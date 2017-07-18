@@ -8,15 +8,16 @@
 //
 
 #include "stdafx.h"
-#include "FgBuild.hpp"
 #include "FgStdVector.hpp"
+#include "FgStdString.hpp"
+#include "FgBuild.hpp"
 #include "FgRandom.hpp"
 #include "FgHex.hpp"
 #include "FgSyntax.hpp"
 
 using namespace std;
 
-std::vector<std::string>
+FgStrs
 fgBuildOSes()
 {return fgSvec<string>("win","osx","ubuntu"); }
 
@@ -32,20 +33,20 @@ fgCurrentOS()
 #endif
 }
 
-std::vector<std::string>
-fgBuildCompilers(const std::string & os)
+FgStrs
+fgBuildCompilers(const string & os)
 {
     if (os == "win")
-        return fgSvec<string>("vs15","vs13","vs12");        // First is default for releases
+        return fgSvec<string>("vs15","vs13","vs12");    // First is default for releases
     else if (os == "ubuntu")
-        return fgSvec<string>("gcc","clang");
+        return fgSvec<string>("clang","gcc","icpc");    // clang is faster than gcc and can run using the same shared libs
     else if (os == "osx")
         return fgSvec<string>("clang");
     FGASSERT_FALSE;
-    return vector<string>();
+    return FgStrs();
 }
 
-std::string
+string
 fgCurrentCompiler()
 {
 #if defined _MSC_VER
@@ -60,6 +61,8 @@ fgCurrentCompiler()
     #elif(_MSC_VER == 1910)
         return "vs17";
     #endif
+#elif defined _INTEL_COMPILER
+    return "icpc";
 #elif defined __clang__
     return "clang";
 #elif defined __GNUC__      // Must be second as it's also defined by CLANG
@@ -70,16 +73,16 @@ fgCurrentCompiler()
 #endif
 }
 
-std::vector<std::string>
-fgBuildBits(const std::string & compiler)
+FgStrs
+fgBuildBits(const string & compiler)
 {
-    if ((compiler == "gcc") || (compiler == "clang"))
-        return fgSvec<string>("64");
-    else
+    if (fgStartsWith(compiler,"vs"))
         return fgSvec<string>("32","64");
+    else
+        return fgSvec<string>("64");
 }
 
-std::string
+string
 fgCurrentBuildBits()
 {
 #ifdef FG_64
@@ -89,11 +92,11 @@ fgCurrentBuildBits()
 #endif
 }
 
-std::vector<std::string>
+FgStrs
 fgBuildConfigs()
 {return fgSvec<string>("debug","release"); }
 
-std::string
+string
 fgCurrentBuildConfig()
 {
 #ifdef _DEBUG
@@ -103,7 +106,7 @@ fgCurrentBuildConfig()
 #endif
 }
 
-std::string
+string
 fgCurrentBuildDescription()
 {
     return 

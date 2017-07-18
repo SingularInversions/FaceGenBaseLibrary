@@ -243,7 +243,7 @@ fgRenderCtrls(uint simple)
                         allVerts = g_gg.addInput(false,uid+"AllVerts"),
                         twoSidedN = g_gg.addInput(true,uid+"TwoSided"),
                         showAxesN = g_gg.addInput(false,uid+"ShowAxes");
-    FgGuiWinVal<vector<double> >    bgColor = colorSliders(uid+"Background",0.3,0.1);
+    FgGuiWinVal<vector<double> >    bgColor = colorSliders(uid+"Background",0.0,0.1);
     FgDgn<FgVect3F>     bgColorN = g_gg.addNode(FgVect3F(),"bgColor");
     g_gg.addLink(linkColSel,bgColor.valN,bgColorN);
     ret.optsN = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
@@ -837,12 +837,12 @@ FGLINK(linkParts)
 }
 
 Fg3dMesh
-fgDisplayMeshes(
+FgViewMeshes(
     const vector<Fg3dMesh> &    meshes,
     bool                        compare)
 {
     FGASSERT(meshes.size() > 0);
-    FgString                    store = fgDirUserAppDataLocalFaceGen("SDK","fgDisplayMeshes");
+    FgString                    store = fgDirUserAppDataLocalFaceGen("SDK","FgViewMeshes");
     g_gg = FgGuiGraph(store);
     FgDgn<Fg3dMeshes>           meshesN = g_gg.addNode(Fg3dMeshes(),"meshes");
     FgDgn<FgVertss>             allVertsN = g_gg.addNode(FgVertss(),"allVerts");
@@ -859,7 +859,8 @@ fgDisplayMeshes(
     }
     else {
         FgDgn<vector<Fg3dMesh> >    meshesSrcN = g_gg.addNode(meshes,"meshesSrc");
-        FgDgn<vector<bool> >        selsN = g_gg.addNode(vector<bool>(meshes.size(),true),"sels");
+        vector<bool>                sels(meshes.size(),true);
+        FgDgn<vector<bool> >        selsN = g_gg.addNode(sels,"sels");
         g_gg.addLink(linkParts,fgUints(meshesSrcN,selsN),fgUints(meshesN,allVertsN,texssN));
         FgStrings            meshNames;
         for (size_t ii=0; ii<meshes.size(); ++ii) {
@@ -881,7 +882,7 @@ fgDisplayMeshes(
             meshSelect = fgGuiTab("Select",true,selMeshRadio.win);
         }
         else {
-            meshSelect = fgGuiTab("Select",true,fgGuiCheckboxes(meshNames,selsN));
+            meshSelect = fgGuiTab("Select",true,fgGuiCheckboxes(meshNames,sels,selsN));
         }
     }
     FgMat32F                viewBounds = fgBounds(meshes);
@@ -906,7 +907,7 @@ fgDisplayMeshes(
         mainTabs.push_back(meshSelect);
     mainTabs.push_back(fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(fgToString(meshes))))));
     fgGuiImplStart(
-        FgString("FaceGen SDK fgDisplayMeshes"),
+        FgString("FaceGen SDK FgViewMeshes"),
         //fgGuiSplitAdj(true,ga3.viewport,ga3.morphCtls),
         fgGuiSplitAdj(true,ga3.viewport,fgGuiTabs(mainTabs)),
         store);
@@ -922,7 +923,7 @@ simple(const FgArgs &)
 {
     FgString    dir = fgDataDir() + "base/";
     Fg3dMesh    mesh = fgLoadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
-    fgDisplayMesh(mesh);
+    fgViewMesh(mesh);
 }
 
 static
@@ -945,7 +946,7 @@ surfs(const FgArgs &)
     surf.tris.vertInds[0] = FgVect3UI(0,2,3);
     surf.tris.vertInds[1] = FgVect3UI(0,3,5);
     mesh.surfaces.push_back(surf);
-    fgDisplayMesh(mesh);
+    fgViewMesh(mesh);
 }
 
 void

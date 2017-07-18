@@ -15,6 +15,8 @@
 #include "FgStdString.hpp"
 #include "FgImage.hpp"
 #include "FgBuild.hpp"
+#include "FgNc.hpp"
+#include "FgParse.hpp"
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 
@@ -109,7 +111,6 @@ void
 fgRegressUpdateQuery(const std::string & relPath)
 {
     fgout << fgnl << "REGRESS FAILURE: " << relPath;
-    FGASSERT(!fgCommandAutomated);      // Fail if non-interactive
     fgout << fgnl << "UPDATE FILE (Y/N) ?" << flush;
     char        choice;
     cin >> choice;
@@ -121,29 +122,47 @@ fgRegressUpdateQuery(const std::string & relPath)
 
 void
 fgRegressFile(
-    const FgString &        name,
-    const FgString &        relDir,
-    const FgRegressTest &   testFunc)
+    const FgString &            name,
+    const FgString &            relDir,
+    const FgFuncRegressFiles &  testFunc)
 {
-    FgString        baselinePath = fgDataDir()+relDir+name;
-    if (!fgExists(name))
-        fgThrow("Regression file not created by test",name);
-    if (fgRegressOverwrite()) {
-        if (fgExists(baselinePath)) {       // Otherwise we are creating a new test
-            bool    succ = testFunc(name,baselinePath);
-            fgCopyFile(name,baselinePath,true);
-            if (!succ) 
-                // Don't throw in dev mode so remaining regressions still get run:
-                fgout << fgnl << "WARNING: Regression failure: " << relDir << name;
+    fgRegressFiles(fgDataDir()+relDir+name,name,relDir.m_str,testFunc);
+}
+
+void
+fgRegressFiles(const FgString & base,const FgString & regress,const string & relDir,const FgFuncRegressFiles & testFunc)
+{
+    if (!fgExists(regress))
+        fgThrow("Regression file not created by test",relDir+regress);
+    if (!fgExists(base)) {
+        if (fgRegressOverwrite()) {
+            fgCopyFile(regress,base);
+            fgout << fgnl << "New regression baseline saved: " << relDir << base;
+            // Don't return here, run the test to be sure it works.
         }
-        else {
-            fgCopyFile(name,baselinePath);
-            fgout << fgnl << "New regression baseline saved: " << relDir+name;
-        }
+        else
+            fgThrow("Regression baseline not found",relDir+base);
     }
-    else {
-        if (!testFunc(name,baselinePath))
-            fgThrow("Regression failure",fgGetCurrentDir()+name+" != "+relDir+name);
+    if (testFunc(base,regress)) {       // Passed test
+        fgDeleteFile(regress);
+    }
+    else {                              // Failed test
+        if (fgRegressOverwrite()) {
+            fgCopyFile(regress,base,true);
+            fgDeleteFile(regress);
+        }
+        else if (fgExists(fgDataDir()+"ci_build_server_id.txt")) {
+            string          srv = fgSplitLines(fgSlurp(fgDataDir()+"ci_build_server_id.txt"))[0],
+                            srvDir = "_log/" + srv + "/";
+            FGASSERT(!srv.empty());
+            FgString        dir = fgCiShareBoot()+srvDir+relDir;
+            fgCreatePath(dir);
+            FgString        baseName = fgPathToName(base);
+            fgCopyFile(regress,dir+baseName,true);
+            fgDeleteFile(regress);
+            fgout << fgnl << "Regression file uploaded to CI server at " << dir << baseName;
+        }
+        fgThrow("Regression failure",regress+" <> "+base+" in "+relDir);
     }
 }
 
@@ -166,6 +185,6 @@ fgRegressImage(
     const string &      refPath,
     uint                maxDelta)
 {
-    FgRegressTest       rt = boost::bind(compareImages,_1,_2,maxDelta);
+    FgFuncRegressFiles       rt = boost::bind(compareImages,_1,_2,maxDelta);
     fgRegressFile(testFile,refPath,rt);
 }

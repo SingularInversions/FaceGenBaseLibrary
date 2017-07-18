@@ -16,7 +16,7 @@
 #include "FgStdVector.hpp"
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
-#include "FgMatrixCBase.hpp"    // Necessary for representing dimensions 
+#include "FgMatrixCBase.hpp"    // Used to represent dimensions 
 
 template <class T>
 struct  FgMatrixV
@@ -27,9 +27,7 @@ struct  FgMatrixV
 
     FG_SERIALIZE3(nrows,ncols,m_data)
 
-    FgMatrixV()
-    : nrows(0),ncols(0)
-    {}
+    FgMatrixV() : nrows(0),ncols(0) {}
 
     FgMatrixV(size_t numRows,size_t numCols)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(numRows*numCols)
@@ -44,12 +42,12 @@ struct  FgMatrixV
     {}
 
     FgMatrixV(size_t nr,size_t nc,const vector<T> & v)
-        : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
+    : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
     {FGASSERT(nr*nc == v.size()); }
 
     explicit
-    FgMatrixV(FgVect2UI dims)
-    : ncols(dims[0]), nrows(dims[1])
+    FgMatrixV(FgVect2UI cols_rows)
+    : ncols(cols_rows[0]), nrows(cols_rows[1])
     {m_data.resize(ncols*nrows); }
 
     template<uint nr,uint nc>
@@ -74,8 +72,8 @@ struct  FgMatrixV
     {nrows = uint(nr);ncols = uint(nc); m_data.resize(nr*nc,v); }
 
     void
-    resize(FgVect2UI dims)
-    {resize(dims[1],dims[0]); }     // NB Order
+    resize(FgVect2UI cols_rows)
+    {resize(cols_rows[1],cols_rows[0]); }
 
     FgVect2UI       dims() const {return FgVect2UI(ncols,nrows); }  // NB Order
     uint            numRows() const { return nrows; }
@@ -128,19 +126,45 @@ struct  FgMatrixV
 
     const T *
     dataPtr() const
-    {FGASSERT_FAST(!m_data.empty()); return &m_data[0]; }
+    {FGASSERT(!m_data.empty()); return &m_data[0]; }
 
     const T *
     rowPtr(size_t row) const
     {
-        FGASSERT_FAST(!m_data.empty());
-        FGASSERT_FAST(row < nrows);
+        FGASSERT(!m_data.empty());
+        FGASSERT(row < nrows);
         return &m_data[row*ncols];
     }
 
     const vector<T> &
     dataVec() const
     {return m_data; }
+
+    vector<T>
+    rowData(uint row) const
+    {
+        const T *       rPtr = rowPtr(row);
+        return vector<T>(rPtr,rPtr+ncols);
+    }
+
+    vector<T>
+    colData(uint row) const
+    {
+        FGASSERT(row < nrows);
+        vector<T>       ret;
+        ret.reserve(nrows);
+        for (uint cc=0; cc<ncols; ++cc)
+            ret.push_back(rc(row,cc));
+        return ret;
+    }
+
+    void
+    addRow(const vector<T> & data)
+    {
+        FGASSERT(data.size() == ncols);
+        fgAppend(m_data,data);
+        ++nrows;
+    }
 
     // Operators
 
@@ -333,26 +357,17 @@ struct  FgMatrixV
     typedef T ValType;
 };
 
-typedef FgMatrixV<short>    FgMatrixS;
-typedef FgMatrixV<int>      FgMatrixI;
-typedef FgMatrixV<uint>     FgMatrixUI;
-typedef FgMatrixV<float>    FgMatrixF;
-typedef FgMatrixV<double>   FgMatrixD;
-typedef std::vector<FgMatrixD>  FgMatrixDs;
-typedef FgMatrixV<FgMatrixD>    FgMatrixDz;
+typedef FgMatrixV<short>        FgMatrixS;
+typedef FgMatrixV<int>          FgMatrixI;
+typedef FgMatrixV<uint>         FgMatrixUI;
+typedef FgMatrixV<float>        FgMatrixF;
+typedef FgMatrixV<double>       FgMatrixD;
+typedef vector<FgMatrixD>       FgMatrixDs;
 
 template<class T>
 FgMatrixV<T>
 operator*(const T & lhs,const FgMatrixV<T> & rhs)
 {return (rhs*lhs); }
-
-template<class T,class U>
-void
-operator*=(FgMatrixV<T> & mat,const U & rhs)
-{
-    for (size_t ii=0; ii<mat.numElems(); ++ii)
-        mat[ii] *= rhs;
-}
 
 template<typename T>
 FgMatrixV<T>

@@ -21,10 +21,6 @@
 
 using namespace std;
 
-//****************************************************************************
-// 3DS Chunk ID defines
-//****************************************************************************
-#define     M3DMAGIC        0x4d4d
 #define     M3D_VERSION     0x0002
 #define     MDATA           0x3d3d
 #define     COLOUR_RGB_BYTE 0x0011
@@ -49,47 +45,20 @@ using namespace std;
 #define     TRI_SMOOTH      0x4150
 #define     TRI_TRANS       0x4160
 
-
-//****************************************************************************
-// Local function prototypes
-//****************************************************************************
-static string fffMdlNameTo3dsName(const string &mdlName,
-                vector< string > &nameList);
-static bool fffUpdateChunkSizeInfo_local(FILE *fptr, long newChunkSize, 
-                long chunkStartPos);
-static bool fffWriteChunkHeader_local(FILE *fptr, unsigned short id, long ln);
-static bool fffWrite3dsString_local(FILE *fptr, const string &str);
-static bool fffWriteMdataChunk_local(FILE *fptr, long &chunkLen, 
-                const FffMultiObjectC &model);
-static bool fffWriteTriObjectChunk_local(FILE *fptr, long &chunkLen,
-                const map<string,string> &textureInfo, 
-                unsigned long objId,
-                const FffMultiObjectC &model);
-
-
-//****************************************************************************
-// Local                fffMdlNameTo3dsName
-//****************************************************************************
-static string fffMdlNameTo3dsName(
-    const string        &mdlName,
-    vector< string >    &nameList)
+static string fffMdlNameTo3dsName(const string & mdlName,vector<string> & nameList)
 {
     string name = mdlName;
-    if (name.length() > 10)
-    {
+    if (name.length() > 10) {
         name = mdlName.substr(0,10);
         int doAgainCount=0;
-        do
-        {
+        do {
             // Make sure that this name hasn't been used already.
             size_t  ii;
-            for (ii=0; ii<nameList.size(); ++ii)
-            {
+            for (ii=0; ii<nameList.size(); ++ii) {
                 if (name == nameList[ii])
                     break;
             }
-            if (ii != nameList.size())
-            {
+            if (ii != nameList.size()) {
                 ++doAgainCount;
                 char numStr[5];
                 sprintf(numStr,"%d",doAgainCount);
@@ -101,54 +70,31 @@ static string fffMdlNameTo3dsName(
         }
         while (doAgainCount < 50);
     }
-
     nameList.push_back(name);
-
     return name;
 }
 
-
-//****************************************************************************
-// Local                fffUpdateChunkSizeInfo_local
-//****************************************************************************
-static bool fffUpdateChunkSizeInfo_local(
-
-    FILE *fptr, 
-    long newChunkSize, 
-    long chunkStartPos)
+static bool fffUpdateChunkSizeInfo_local(FILE *fptr,int newChunkSize,int chunkStartPos)
 {
-    long currPos = ftell(fptr);
-
+    int currPos = ftell(fptr);
     if (fseek(fptr,chunkStartPos+2,SEEK_SET))
         return false;
-
-    if (fwrite(&newChunkSize,sizeof(long),1,fptr) != 1)
+    if (fwrite(&newChunkSize,sizeof(int),1,fptr) != 1)
         return false;
-
     if (fseek(fptr,currPos,SEEK_SET))
         return false;
-
     return true;
 }
 
-
-//****************************************************************************
-// Local                fffWriteChunkHeader_local
-//****************************************************************************
-static bool fffWriteChunkHeader_local(FILE *fptr,unsigned short id,long ln)
+static bool fffWriteChunkHeader_local(FILE *fptr,unsigned short id,int ln)
 {
     if (fwrite(&id,sizeof(unsigned short),1,fptr) != 1)
         return false;
-    if (fwrite(&ln,sizeof(long),1,fptr) != 1)
+    if (fwrite(&ln,sizeof(int),1,fptr) != 1)
         return false;
-
     return true;
 }
 
-
-//****************************************************************************
-// Local                fffWrite3dsString_local
-//****************************************************************************
 static bool fffWrite3dsString_local(FILE *fptr, const string &str)
 {
     if (fwrite(str.c_str(),sizeof(char),str.length()+1,fptr) !=
@@ -158,39 +104,191 @@ static bool fffWrite3dsString_local(FILE *fptr, const string &str)
         return true;
 }
 
-
-//****************************************************************************
-// Local                fffWriteMdataChunk_local
-//****************************************************************************
-static bool fffWriteMdataChunk_local(
-
-    FILE *fptr, 
-    long &chunkSize, 
-    const FffMultiObjectC &model)
+static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<string,string> &textureInfo,unsigned int objId,const FffMultiObjectC &model)
 {
-    long chunkStartPos = ftell(fptr);
+    int chunkStartPos = ftell(fptr);
+    unsigned short id = TRI_OBJECT;
+    chunkSize = 6;
+    if (!fffWriteChunkHeader_local(fptr,id,chunkSize))
+        return false;
+    unsigned short numVtx = (unsigned short) model.numPoints(objId);
+    if (numVtx != 0) {
+        id = TRI_POINT_ARRAY;
+        int ptChunkSize = 6+sizeof(unsigned short)+numVtx*sizeof(float)*3;
+        if (!fffWriteChunkHeader_local(fptr,id,ptChunkSize))
+            return false;
+        if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
+            return false;
+        const vector<FgVect3F> &ptList = model.getPtList(objId);
+        for (unsigned short ii=0; ii<numVtx; ++ii) {
+            if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
+                return false;
+            if (fwrite(&ptList[ii][1],sizeof(float),1,fptr) != 1)
+                return false;
+            if (fwrite(&ptList[ii][2],sizeof(float),1,fptr) != 1)
+                return false;
+        }
+        chunkSize += ptChunkSize;
+    }
+    // Check if it is per vertex texture
+    bool perVertexTexture = 
+            (model.numPoints(objId) == model.numTxtCoord(objId) &&
+             model.numTxtTris(objId) == 0 &&
+             model.numTxtQuads(objId) == 0);
+    if (!perVertexTexture) {
+        if (model.numTriangles(objId) == model.numTxtTris(objId) && model.numQuads(objId) == model.numTxtQuads(objId)) {
+            if (model.numPoints(objId) == model.numTxtCoord(objId)) {
+                bool identical = true;
+                // Check if the facet lists are identical
+                const vector<FgVect3UI> &triList = 
+                        model.getTriList(objId);
+                const vector<FgVect3UI> &txtTriList = 
+                        model.getTexTriList(objId);
+                for (unsigned int tri=0; identical && tri<model.numTxtTris(objId); ++tri) {
+                    if (triList[tri] != txtTriList[tri])
+                        identical = false;
+                }
+                const vector<FgVect4UI> &quadList =  model.getQuadList(objId);
+                const vector<FgVect4UI> &txtQuadList = model.getTexQuadList(objId);
+                for (unsigned int quad=0; identical && quad<model.numTxtQuads(objId); ++quad) {
+                    if (quadList[quad] != txtQuadList[quad])
+                        identical = false;
+                }
+                perVertexTexture = identical;
+                if (!identical)
+                    cout << "Skipping per-facet texture data\n" << flush;
+            }
+            else if (model.numTxtCoord(objId) != 0)
+                cout << "Skipping per-facet texture data\n" << flush;
+        }
+    }
+    if (perVertexTexture && model.numTxtCoord(objId) != 0) {
+        id = TRI_TEX_COORD;
+        int ptChunkSize = 6+sizeof(unsigned short)+numVtx*sizeof(float)*2;
+        if (!fffWriteChunkHeader_local(fptr,id,ptChunkSize))
+            return false;
+        if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
+            return false;
+        const vector<FgVect2F> &ptList = model.getTextCoord(objId);
+        for (unsigned short ii=0; ii<numVtx; ++ii) {
+            if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
+                return false;
+            if (fwrite(&ptList[ii][1],sizeof(float),1,fptr) != 1)
+                return false;
+        }
+        chunkSize += ptChunkSize;
+    }
+    // Now save facet info.
+    unsigned short numTris = (unsigned short) model.numTriangles(objId);
+    unsigned short numQuads = (unsigned short) model.numQuads(objId);
+    unsigned short totalTris = numTris + numQuads*2;
+    if (totalTris != 0) {
+        int triChunkStartPos = ftell(fptr);
+        // Facet (tris) info.
+        unsigned short fourthNum = 7;   // The first 3 bits turned on.
+        id = TRI_FACE_ARRAY;
+        int smoothGrpChunkSize = totalTris*sizeof(unsigned int)+6;
+        int triChunkSize = 6 + sizeof(unsigned short)
+                          + totalTris*sizeof(unsigned short)*4
+                          + smoothGrpChunkSize;
+        if (!fffWriteChunkHeader_local(fptr,id,triChunkSize))
+            return false;
+        if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
+            return false;
+        const vector<FgVect3UI> &triList = model.getTriList(objId);
+        for (unsigned short ii=0; ii<numTris; ++ii) {
+            unsigned short idx1 = (unsigned short) triList[ii][0];
+            unsigned short idx2 = (unsigned short) triList[ii][1];
+            unsigned short idx3 = (unsigned short) triList[ii][2];
+            if (fwrite(&idx1,sizeof(unsigned short),1,fptr) != 1)
+                return false;
+            if (fwrite(&idx2,sizeof(unsigned short),1,fptr) != 1)
+                return false;
+            if (fwrite(&idx3,sizeof(unsigned short),1,fptr) != 1)
+                return false;
+            if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
+                return false;
+        }
+        const vector<FgVect4UI> &quadList = model.getQuadList(objId);
+        ushort ii;
+        for (ii=0; ii<numQuads; ++ii) {
+            for (int xx=0; xx<2; ++xx) {
+                unsigned short idx1 = (unsigned short) quadList[ii][0];
+                unsigned short idx2 = (unsigned short) quadList[ii][xx+1];
+                unsigned short idx3 = (unsigned short) quadList[ii][xx+2];
+                if (fwrite(&idx1,sizeof(unsigned short),1,fptr) != 1)
+                    return false;
+                if (fwrite(&idx2,sizeof(unsigned short),1,fptr) != 1)
+                    return false;
+                if (fwrite(&idx3,sizeof(unsigned short),1,fptr) != 1)
+                    return false;
+                if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
+                    return false;
+            }
+        }
+        // Define smooth group (this whole surface is one smooth group)
+        id = TRI_SMOOTH;
+        if (!fffWriteChunkHeader_local(fptr,id,smoothGrpChunkSize))
+            return false;
+        unsigned int smoothGrp = objId+1;
+        for (ii=0; ii<totalTris; ++ii) {
+            if (fwrite(&smoothGrp,sizeof(unsigned int),1,fptr) != 1)
+                return false;
+        }
+        // Texture mapping info.
+        string textureFile = model.getTextureFilename(objId);
+        map<string,string>::const_iterator mapItr = 
+            textureInfo.find(textureFile);
+        if (mapItr != textureInfo.end()) {
+            id = TRI_MAT_GROUP;
+            int triMatChunkSize = 6 + int(mapItr->second.length()) + 1
+                                 + sizeof(unsigned short)*(totalTris+1);
+            if (!fffWriteChunkHeader_local(fptr,id,triMatChunkSize))
+                return false;
+            if (!fffWrite3dsString_local(fptr,mapItr->second))
+                return false;
+            if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
+                return false;
+            vector<unsigned short> fList;
+            fList.resize(totalTris);
+            for (ii=0; ii<totalTris; ++ii)
+                fList[ii] = ii;
+            if (fwrite(&fList[0],sizeof(unsigned short),totalTris,fptr)
+                    != totalTris)
+                return false;
+            triChunkSize += triMatChunkSize;
+            if (!fffUpdateChunkSizeInfo_local(fptr,triChunkSize,
+                    triChunkStartPos))
+                return false;
+        }
+        chunkSize += triChunkSize;
+    }
+    // Correct the chunk size info for TRI_OBJECT chunk
+    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos))
+        return false;
+    return true;
+}
+
+static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObjectC &model)
+{
+    int chunkStartPos = ftell(fptr);
     unsigned short id = MDATA;
     chunkSize = 6;
     if (!fffWriteChunkHeader_local(fptr,id,chunkSize))
         return false;
-
     // Build Texture info
     map<string,string> textureInfoMap;  // Key = fname, map = mapName
     vector< string > mapNameList;
-    for (unsigned long objId=0; objId < model.numObjs(); ++objId)
-    {
+    for (unsigned int objId=0; objId < model.numObjs(); ++objId) {
         string textureFile = model.getTextureFilename(objId);
-        if (textureFile != "")
-        {
+        if (textureFile != "") {
             // Make the filename in DOS 8.3 format
             FgPath  upath(textureFile);
             string path=upath.dir().m_str, root=upath.base.m_str, suff=upath.ext.m_str;
-            if (root.length() > 8)
-            {
+            if (root.length() > 8) {
                 textureFile = path + root.substr(0,8) + "." + suff;
             }
-            if (textureInfoMap.find(textureFile) == textureInfoMap.end())
-            {
+            if (textureInfoMap.find(textureFile) == textureInfoMap.end()) {
                 textureInfoMap[textureFile] = 
                     fffMdlNameTo3dsName(model.getModelName(objId),
                                         mapNameList);
@@ -201,15 +299,15 @@ static bool fffWriteMdataChunk_local(
     for (map<string,string>::const_iterator itr = textureInfoMap.begin();
          itr != textureInfoMap.end(); ++itr)
     {
-        long matEntryChunkStartPos = ftell(fptr);
+        int matEntryChunkStartPos = ftell(fptr);
         id = MAT_ENTRY;
-        long matEntryChunkSize=6;
+        int matEntryChunkSize=6;
         if (!fffWriteChunkHeader_local(fptr,id,matEntryChunkSize))
             return false;
 
         id = MAT_NAME;
 
-        long mapNameChunkSize = 6 + long(itr->second.length()) + 1;
+        int mapNameChunkSize = 6 + int(itr->second.length()) + 1;
         if (!fffWriteChunkHeader_local(fptr,id,mapNameChunkSize))
             return false;
         if (!fffWrite3dsString_local(fptr,itr->second))
@@ -217,10 +315,10 @@ static bool fffWriteMdataChunk_local(
 
         matEntryChunkSize += mapNameChunkSize;
 
-        long colourChunkSize = 6 + 3;
+        int colourChunkSize = 6 + 3;
 
         id = MAT_AMBIENT;
-        long mapAmbientColourChunkSize = 6 + colourChunkSize;
+        int mapAmbientColourChunkSize = 6 + colourChunkSize;
         if (!fffWriteChunkHeader_local(fptr,id,mapAmbientColourChunkSize))
             return false;
         id = COLOUR_RGB_BYTE;
@@ -239,7 +337,7 @@ static bool fffWriteMdataChunk_local(
         matEntryChunkSize += mapAmbientColourChunkSize;
 
         id = MAT_DIFFUSE;
-        long mapDiffuseColourChunkSize = 6 + colourChunkSize;
+        int mapDiffuseColourChunkSize = 6 + colourChunkSize;
         if (!fffWriteChunkHeader_local(fptr,id,mapDiffuseColourChunkSize))
             return false;
         id = COLOUR_RGB_BYTE;
@@ -258,7 +356,7 @@ static bool fffWriteMdataChunk_local(
         matEntryChunkSize += mapDiffuseColourChunkSize;
 
         id = MAT_SPECULAR;
-        long mapSpecularColourChunkSize = 6 + colourChunkSize;
+        int mapSpecularColourChunkSize = 6 + colourChunkSize;
         if (!fffWriteChunkHeader_local(fptr,id,mapSpecularColourChunkSize))
             return false;
         id = COLOUR_RGB_BYTE;
@@ -277,8 +375,8 @@ static bool fffWriteMdataChunk_local(
         matEntryChunkSize += mapSpecularColourChunkSize;
 
         id = MAT_TEXMAP;
-        long mapFilenameChunkSize = 6 + long(itr->first.length()) + 1;
-        long textMapChunkSize = 6 + mapFilenameChunkSize;
+        int mapFilenameChunkSize = 6 + int(itr->first.length()) + 1;
+        int textMapChunkSize = 6 + mapFilenameChunkSize;
         if (!fffWriteChunkHeader_local(fptr,id,textMapChunkSize))
             return false;
         id = MAT_MAP_FNAME;
@@ -300,9 +398,9 @@ static bool fffWriteMdataChunk_local(
     ulong objId;
     for (objId=0; objId<model.numObjs(); ++objId)
     {
-        long objChunkStartPos = ftell(fptr);
+        int objChunkStartPos = ftell(fptr);
         id = OBJECT;
-        long    objChunkSize = 6;
+        int    objChunkSize = 6;
         if (!fffWriteChunkHeader_local(fptr,id,objChunkSize))
             return false;
 
@@ -310,9 +408,9 @@ static bool fffWriteMdataChunk_local(
                                              objNameList);
         if (!fffWrite3dsString_local(fptr,objName))
             return false;
-        objChunkSize += long(objName.length())+1;
+        objChunkSize += int(objName.length())+1;
 
-        long triObjChunkSize;
+        int triObjChunkSize;
         if (!fffWriteTriObjectChunk_local(fptr,triObjChunkSize,
                 textureInfoMap,objId,model))
             return false;
@@ -324,231 +422,6 @@ static bool fffWriteMdataChunk_local(
         chunkSize += objChunkSize;
     }
 
-    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos))
-        return false;
-
-    return true;
-}
-
-
-//****************************************************************************
-// Local                fffWriteTriObjectChunk_local
-//****************************************************************************
-static bool fffWriteTriObjectChunk_local(
-
-    FILE                        *fptr, 
-    long                        &chunkSize,
-    const map<string,string>    &textureInfo, 
-    unsigned long               objId,
-    const FffMultiObjectC       &model)
-{
-    long chunkStartPos = ftell(fptr);
-    unsigned short id = TRI_OBJECT;
-    chunkSize = 6;
-    if (!fffWriteChunkHeader_local(fptr,id,chunkSize))
-        return false;
-
-    unsigned short numVtx = (unsigned short) model.numPoints(objId);
-    if (numVtx != 0)
-    {
-        id = TRI_POINT_ARRAY;
-        long ptChunkSize = 6+sizeof(unsigned short)+numVtx*sizeof(float)*3;
-        if (!fffWriteChunkHeader_local(fptr,id,ptChunkSize))
-            return false;
-
-        if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
-            return false;
-
-        const vector<FgVect3F> &ptList = model.getPtList(objId);
-        for (unsigned short ii=0; ii<numVtx; ++ii)
-        {
-            if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
-                return false;
-            if (fwrite(&ptList[ii][1],sizeof(float),1,fptr) != 1)
-                return false;
-            if (fwrite(&ptList[ii][2],sizeof(float),1,fptr) != 1)
-                return false;
-        }
-
-        chunkSize += ptChunkSize;
-    }
-
-    // Check if it is per vertex texture
-    bool perVertexTexture = 
-            (model.numPoints(objId) == model.numTxtCoord(objId) &&
-             model.numTxtTris(objId) == 0 &&
-             model.numTxtQuads(objId) == 0);
-    if (!perVertexTexture)
-    {
-        if (model.numTriangles(objId) == model.numTxtTris(objId) &&
-            model.numQuads(objId) == model.numTxtQuads(objId))
-        {
-            if (model.numPoints(objId) == model.numTxtCoord(objId))
-            {
-                bool identical = true;
-
-                // Check if the facet lists are identical
-                const vector<FgVect3UI> &triList = 
-                        model.getTriList(objId);
-                const vector<FgVect3UI> &txtTriList = 
-                        model.getTexTriList(objId);
-                for (unsigned long tri=0; 
-                     identical && tri<model.numTxtTris(objId); ++tri)
-                {
-                    if (triList[tri] != txtTriList[tri])
-                        identical = false;
-                }
-
-                const vector<FgVect4UI> &quadList = 
-                        model.getQuadList(objId);
-                const vector<FgVect4UI> &txtQuadList =
-                        model.getTexQuadList(objId);
-                for (unsigned long quad=0; 
-                     identical && quad<model.numTxtQuads(objId); ++quad)
-                {
-                    if (quadList[quad] != txtQuadList[quad])
-                        identical = false;
-                }
-
-                perVertexTexture = identical;
-
-                if (!identical)
-                    cout << "Skipping per-facet texture data\n" << flush;
-            }
-            else if (model.numTxtCoord(objId) != 0)
-                cout << "Skipping per-facet texture data\n" << flush;
-        }
-    }
-
-    if (perVertexTexture && model.numTxtCoord(objId) != 0)
-    {
-        id = TRI_TEX_COORD;
-        long ptChunkSize = 6+sizeof(unsigned short)+numVtx*sizeof(float)*2;
-        if (!fffWriteChunkHeader_local(fptr,id,ptChunkSize))
-            return false;
-
-        if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
-            return false;
-
-        const vector<FgVect2F> &ptList = model.getTextCoord(objId);
-        for (unsigned short ii=0; ii<numVtx; ++ii)
-        {
-            if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
-                return false;
-            if (fwrite(&ptList[ii][1],sizeof(float),1,fptr) != 1)
-                return false;
-        }
-
-        chunkSize += ptChunkSize;
-    }
-
-    // Now save facet info.
-    unsigned short numTris = (unsigned short) model.numTriangles(objId);
-    unsigned short numQuads = (unsigned short) model.numQuads(objId);
-    unsigned short totalTris = numTris + numQuads*2;
-    if (totalTris != 0)
-    {
-        long triChunkStartPos = ftell(fptr);
-
-        // Facet (tris) info.
-        unsigned short fourthNum = 7;   // The first 3 bits turned on.
-        id = TRI_FACE_ARRAY;
-        long smoothGrpChunkSize = totalTris*sizeof(unsigned long)+6;
-        long triChunkSize = 6 + sizeof(unsigned short)
-                          + totalTris*sizeof(unsigned short)*4
-                          + smoothGrpChunkSize;
-        if (!fffWriteChunkHeader_local(fptr,id,triChunkSize))
-            return false;
-
-        if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
-            return false;
-
-        const vector<FgVect3UI> &triList = model.getTriList(objId);
-        for (unsigned short ii=0; ii<numTris; ++ii)
-        {
-            unsigned short idx1 = (unsigned short) triList[ii][0];
-            unsigned short idx2 = (unsigned short) triList[ii][1];
-            unsigned short idx3 = (unsigned short) triList[ii][2];
-
-            if (fwrite(&idx1,sizeof(unsigned short),1,fptr) != 1)
-                return false;
-            if (fwrite(&idx2,sizeof(unsigned short),1,fptr) != 1)
-                return false;
-            if (fwrite(&idx3,sizeof(unsigned short),1,fptr) != 1)
-                return false;
-            if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
-                return false;
-        }
-        const vector<FgVect4UI> &quadList = model.getQuadList(objId);
-        ushort ii;
-        for (ii=0; ii<numQuads; ++ii)
-        {
-            for (int xx=0; xx<2; ++xx)
-            {
-                unsigned short idx1 = (unsigned short) quadList[ii][0];
-                unsigned short idx2 = (unsigned short) quadList[ii][xx+1];
-                unsigned short idx3 = (unsigned short) quadList[ii][xx+2];
-
-                if (fwrite(&idx1,sizeof(unsigned short),1,fptr) != 1)
-                    return false;
-                if (fwrite(&idx2,sizeof(unsigned short),1,fptr) != 1)
-                    return false;
-                if (fwrite(&idx3,sizeof(unsigned short),1,fptr) != 1)
-                    return false;
-                if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
-                    return false;
-            }
-        }
-
-        // Define smooth group (this whole surface is one smooth group)
-        id = TRI_SMOOTH;
-        if (!fffWriteChunkHeader_local(fptr,id,smoothGrpChunkSize))
-            return false;
-        unsigned long smoothGrp = objId+1;
-        for (ii=0; ii<totalTris; ++ii)
-        {
-            if (fwrite(&smoothGrp,sizeof(unsigned long),1,fptr) != 1)
-                return false;
-        }
-
-        // Texture mapping info.
-        string textureFile = model.getTextureFilename(objId);
-        map<string,string>::const_iterator mapItr = 
-            textureInfo.find(textureFile);
-        if (mapItr != textureInfo.end())
-        {
-            id = TRI_MAT_GROUP;
-            long triMatChunkSize = 6 + long(mapItr->second.length()) + 1
-                                 + sizeof(unsigned short)*(totalTris+1);
-            if (!fffWriteChunkHeader_local(fptr,id,triMatChunkSize))
-                return false;
-
-            if (!fffWrite3dsString_local(fptr,mapItr->second))
-                return false;
-
-            if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
-                return false;
-
-            vector<unsigned short> fList;
-            fList.resize(totalTris);
-            for (ii=0; ii<totalTris; ++ii)
-                fList[ii] = ii;
-
-            if (fwrite(&fList[0],sizeof(unsigned short),totalTris,fptr)
-                    != totalTris)
-                return false;
-
-            triChunkSize += triMatChunkSize;
-
-            if (!fffUpdateChunkSizeInfo_local(fptr,triChunkSize,
-                    triChunkStartPos))
-                return false;
-        }
-
-        chunkSize += triChunkSize;
-    }
-
-    // Correct the chunk size info for TRI_OBJECT chunk
     if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos))
         return false;
 
@@ -570,31 +443,31 @@ fffSave3dsFile(const FgString &name, const FffMultiObjectC &model)
     if (!fptr) {
         return false;
     }
-    unsigned short id = M3DMAGIC;
-    long chunkSize = sizeof(unsigned short) + sizeof(long);
-    long chunkStartPos = ftell(fptr);
+    unsigned short id = 0x4D4D;     // 3DS magic number
+    int chunkSize = sizeof(unsigned short) + sizeof(int);
+    int chunkStartPos = ftell(fptr);
     if (!fffWriteChunkHeader_local(fptr,id,chunkSize)) {
         fclose(fptr);
         return false;
     }
     {
         id = M3D_VERSION;
-        long version = 3;
-        long verChunkSize = sizeof(unsigned short) + sizeof(long)
-                          + sizeof(long);
+        int version = 3;
+        int verChunkSize = sizeof(unsigned short) + sizeof(int)
+                          + sizeof(int);
         if (!fffWriteChunkHeader_local(fptr,id,verChunkSize))
         {
             fclose(fptr);
             return false;
         }
-        if (fwrite(&version,sizeof(long),1,fptr) != 1)
+        if (fwrite(&version,sizeof(int),1,fptr) != 1)
         {
             fclose(fptr);
             return false;
         }
         chunkSize += verChunkSize;
     }
-    long mdataChunkSize=0;
+    int mdataChunkSize=0;
     if (!fffWriteMdataChunk_local(fptr,mdataChunkSize,model)) {
         fclose(fptr);
         return false;
@@ -620,6 +493,7 @@ fgSave3ds(
     }
     // 3DS internal filenames have 8 chars max so leave 1 for tex number:
     FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat,7);
+    ml.forcePerVertexTextCoord();
     fffSave3dsFile(fname,ml.base);
 }
 

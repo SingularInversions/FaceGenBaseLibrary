@@ -26,28 +26,9 @@ struct FgTempFile :
 
     const std::string &
     filename() const;
-
-    static
-    void
-    setKeepTempFiles(bool b);
-
-    static 
-    bool
-    getKeepTempFiles();
     
 private:
     std::string m_filename;
 };
-
-struct  FgPushTempDir
-{
-    FgPushTempDir(const std::string & name);
-    ~FgPushTempDir();
-
-private:
-    FgString        m_original;
-    std::string     m_new;
-};
-
 
 #endif // FGTEMPFILE_HPP

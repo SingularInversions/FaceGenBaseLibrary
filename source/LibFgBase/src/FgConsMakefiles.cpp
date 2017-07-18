@@ -55,10 +55,9 @@ group(
         if ((ext == "cpp") || (ext == "c")) {
             string      srcName = grp.files[ii],
                         objName = path.base.ascii() + ".o",
-                        // Can't flag .C files as C++11; error with CLANG:
-                        cpp = (ext == "cpp") ? "-std=c++11 " : "";
+                        compile = (ext == "cpp") ? "$(CPPC)" : "$(CC)";
             ofs << odir << objName << ": " << sdir << srcName << " $(INCS" << prjName << ")" << lf
-                << "\t$(CC) -o " << odir << objName << " -c " << cpp << "$(CFLAGS" << prjName << ") "
+                << "\t" << compile << " -o " << odir << objName << " -c $(CFLAGS" << prjName << ") "
                 << sdir << srcName << lf;
         }
     }
@@ -133,19 +132,16 @@ proj(
 {
     ofs << "CFLAGS" << prj.name << " = $(CFLAGS)";
     if (prj.warn < 3)
-        ofs << " -w";
+        ofs << " -w";                   // disables warnings (for all compilers)
     else
-        ofs << " -Wall";
+        ofs << " -Wextra";
     if (prj.warn == 4) {
         if (compiler == "clang") {
             ofs << " -Wno-unused-local-typedef";    // boost static assert issue with clang
         }
         else if (compiler == "gcc") {
-            ofs << " -Wextra";              // causes boost 'unused-parameter' warnings with clang
             ofs << " -Wno-unused-result";
         }
-        else
-            fgThrow("Don't know appropriate warning flags for compiler",compiler);
     }
     for (size_t ii=0; ii<prj.defs.size(); ++ii)
         ofs << " -D" << prj.defs[ii];
@@ -153,7 +149,7 @@ proj(
     for (size_t ii=0; ii<prj.incDirs.size(); ++ii) {
         string      libName = collapse(prj.name,prj.incDirs[ii]);
         if (fgStartsWith(libName,"LibTpBoost"))
-            // Tell gcc/clang to treat as system lib and not give warnings. Doesn't work so well.
+            // Tell gcc/clang/icpc to treat as system lib and not give warnings. Doesn't work so well.
             ofs << " -isystem" << libName;
         else
             ofs << " -I" << libName;
@@ -242,7 +238,8 @@ consMakefile(
         // without errors (or get rid of it). As of Yosemite (10.10) g++ is just clang++ and 
         // uses the same libc++, however there's some kind of residual difference causing assignements
         // from void* to <type>* to yield errors if clang++ is used directly:
-        ofs << "CC = clang " << lf
+        ofs << "CPPC = clang -std=c++11 " << lf
+            << "CC = clang " << lf
             << "LINK = g++ " << lf
             << "CFLAGS = "
                 // Ensures no common symbols across all libraries, required for all files which
@@ -260,7 +257,8 @@ consMakefile(
     }
     else if (compiler == "gcc") {
         // gcc will call gnu c compiler or g++ depending on source type:
-        ofs << "CC = gcc" << lf
+        ofs << "CPPC = gcc -std=c++11 " << lf
+            << "CC = gcc " << lf
             // g++ calls ld but it adds arguments for the appropriate standard
             // libraries so it's easier. It uses shared libaries by default and
             // static linking is apparently quite difficult to get right:
@@ -279,6 +277,22 @@ consMakefile(
             ofs << "-O3 "           // -march=corei7 actually slowed down nrrjohnverts a smidgen.
                 "-ffast-math ";     // Needed for auto-vectorization as well as minor speedup.
                                     // -msse3 made no difference on some speed tests.
+    }
+    else if (compiler == "icpc") {
+        ofs << "CPPC = icpc -std=c++11 " << lf
+            << "CC = icc " << lf
+            << "LINK = icpc" << lf
+            << "CFLAGS = -fPIC "
+               "-diag-disable=11074,"   // Disable remark: Inlining inhibited by limit max-size / max-total-size
+               "11076 ";                // Disable remark: To get full report use -qopt-report=4 -qopt-report-phase ipo
+        if (x64)
+            ofs << "-mavx ";            // Use AVX and all of SSE. This build is for server-side only !
+        else
+            ofs << "-m32 ";
+        if (debug)
+            ofs << "-g -D_DEBUG";
+        else
+            ofs << "-Ofast ";           // -fast-transcendentals made no diff on model corr speed test
     }
     else
         fgThrow("Don't know how to create makefile for compiler",compiler);
@@ -309,6 +323,8 @@ fgConsMakefiles(FgConsSolution sln)
     consMakefile(sln,"ubuntu","clang",true,false);
     consMakefile(sln,"ubuntu","gcc",true,true);
     consMakefile(sln,"ubuntu","gcc",true,false);
+    consMakefile(sln,"ubuntu","icpc",true,true);
+    consMakefile(sln,"ubuntu","icpc",true,false);
     consMakefile(sln,"osx","clang",true,true);
     consMakefile(sln,"osx","clang",true,false);
 }

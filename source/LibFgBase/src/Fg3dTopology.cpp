@@ -354,9 +354,9 @@ Fg3dTopology::isManifold() const
                         edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
             if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
                 ++ret[2];
-            // Worked on all 3DP meshes in testing so commented out for speed:
-            FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
-            FGASSERT(tri0.edge(edgeIdx0)[1] == tri1.edge(edgeIdx1)[0]);
+            // Worked on all 3DP meshes but doesn't work for some screwy input (eg. frameforge base):
+            // FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
+            // FGASSERT(tri0.edge(edgeIdx0)[1] == tri1.edge(edgeIdx1)[0]);
         }
     }
     return ret;

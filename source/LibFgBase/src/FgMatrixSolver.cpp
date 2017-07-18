@@ -38,6 +38,16 @@ fgSymmEigs_(const FgMatrixD & rsm,FgDbls & vals,FgMatrixD & vecs)
     }
 }
 
+FgMatrixD
+FgRealEigs::matrix() const
+{
+    FgMatrixD       rhs = vecs.transpose();
+    for (size_t rr=0; rr<rhs.nrows; ++rr)
+        for (size_t cc=0; cc<rhs.ncols; ++cc)
+            rhs.rc(rr,cc) *= vals[cc];
+    return vecs * rhs;
+}
+
 // Complex division. Returns [real,imag]
 static
 FgVect2D

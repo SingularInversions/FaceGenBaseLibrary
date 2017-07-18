@@ -69,6 +69,11 @@ fgExp(T val,bool clamp=false)
     return std::numeric_limits<T>::max();
 }
 
+// Fast exp with no check for NaNs, overflow or underflow.
+// This was necessary as GNU's libm 'exp' (used by gcc and clang) is very slow.
+// (Microsoft's is actually a bit faster than this one).
+double fgExpFast(double x);
+
 template<typename T>
 T
 fgSign(T val)

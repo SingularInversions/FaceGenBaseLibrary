@@ -24,13 +24,15 @@ fgGuiCheckbox(const FgString & label,FgDgn<bool> node)
 }
 
 FgGuiPtr
-fgGuiCheckboxes(const FgStrings & labels,FgDgn<vector<bool> > output)
+fgGuiCheckboxes(const FgStrings & labels,const vector<bool> & defaults,FgDgn<vector<bool> > output)
 {
     FGASSERT(!labels.empty());
+    FGASSERT(labels.size() == defaults.size());
     vector<FgGuiPtr>        wins;
     vector<FgDgn<bool> >    selNs;
     for (size_t ii=0; ii<labels.size(); ++ii) {
-        selNs.push_back(g_gg.addNode(true));
+        bool                sel = defaults[ii];     // need an actual bool for by reference arg below
+        selNs.push_back(g_gg.addNode(sel));
         wins.push_back(fgGuiCheckbox(labels[ii],selNs.back()));
     }
     g_gg.addLink(fgLinkCollate<bool>,fgUints(selNs),fgUints(output));

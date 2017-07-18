@@ -18,6 +18,7 @@
 #include "FgMetaFormat.hpp"
 #include "FgImageBase.hpp"
 #include "FgMain.hpp"
+#include "FgCommand.hpp"
 
 struct FgMemoryLeakDetector
 {
@@ -87,7 +88,7 @@ fgRegressionBaseline(
     const std::string & path,
     const std::string & name)
 {
-    if (FgTempFile::getKeepTempFiles())
+    if (fgKeepTempFiles())
         fgSaveXml(name+"_baseline.xml",val);
     T       base;
     fgLoadXml(fgDataDir()+path+name+"_baseline.xml",base);
@@ -106,14 +107,28 @@ fgRegressOverwrite()
 {return fgExists(fgDataDir()+"overwrite_baselines.flag"); }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef boost::function<bool(const FgString &,const FgString &)> FgRegressTest;
+typedef boost::function<bool(const FgString &,const FgString &)> FgFuncRegressFiles;
 
 // Best used with FGTESTDIR macro to create and make current a test dir:
 void
 fgRegressFile(
     const FgString &    name,       // The test-created file to be regressed. Must exist in current directory.
     const FgString &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
-    const FgRegressTest & testFunc = fgBinaryFileCompare);
+    // File regression defaults to binary file compare:
+    const FgFuncRegressFiles & testFunc = fgBinaryFileCompare);
+
+// Calls the given regression check and removes the regress file if successful. If unsuccessful then:
+// 'overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
+// 'ci_build_server.flag': move regress file to CI server in relative path, otherwise:
+// leave the regress file in place.
+void
+fgRegressFiles(
+    const FgString &    base,
+    const FgString &    regress,
+    // Directory containing 'baes' and 'regress' relative to ~/data (for feedback and CI server copy):
+    const string &      relDir,
+    // File regression defaults to binary file compare:
+    const FgFuncRegressFiles & testFunc = fgBinaryFileCompare);
 
 // As above but regression failure when max pixel diff greater than given:
 void

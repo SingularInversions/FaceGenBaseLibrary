@@ -71,24 +71,20 @@ fgGuiSlider(
 struct  FgGuiSliders
 {
     vector<FgGuiPtr>        sliders;
-    FgDgn<vector<double> >  outputIdx;
     vector<FgDgn<double> >  inputInds;
+    FgDgn<vector<double> >  outputIdx;      // Collated output if you need it
 };
 
 FgGuiSliders
 fgGuiSliders(
-    size_t                  numSliders,
-    FgString                baseLabel,
+    const FgStrings &       labels,
     FgVectD2                range,
     double                  initVal,
-    double                  tickSpacing);
+    double                  tickSpacing,
+    const FgString &        relStore="");   // Relative store name for saving state (null if no save)
 
-FgGuiWinVal<vector<double> >
-fgGuiSliders(
-    const FgString &        relStore,
-    const FgStrings & labels,
-    FgVectD2                range,
-    double                  initVal,
-    double                  tickSpacing);
+// Use to auto create labels for above. Labels will have numbers appended:
+FgStrings
+fgNumberedLabels(const FgString & baseLabel,size_t num);
 
 #endif

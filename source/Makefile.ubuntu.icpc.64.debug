@@ -1,9 +1,9 @@
-CPPC = clang -std=c++11 
-CC = clang 
-LINK = g++ 
-CFLAGS = -fno-common -ftemplate-depth=1024 -Ofast 
-CONFIG = clang/64/release/
-BIN = ../bin/osx/$(CONFIG)
+CPPC = icpc -std=c++11 
+CC = icc 
+LINK = icpc
+CFLAGS = -fPIC -diag-disable=11074,11076 -mavx -g -D_DEBUG
+CONFIG = icpc/64/debug/
+BIN = ../bin/ubuntu/$(CONFIG)
 $(shell mkdir -p $(BIN))
 all: $(BIN)fgbl 
 CFLAGSLibTpBoost = $(CFLAGS) -w -DBOOST_THREAD_BUILD_LIB=1 -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/
@@ -908,7 +908,7 @@ $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o: $(SDIRLibImageMagickCore)tiff
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_write.c
 $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o: $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c $(INCSLibImageMagickCore)
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c
-CFLAGSLibFgBase = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
+CFLAGSLibFgBase = $(CFLAGS) -Wextra -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
 SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = LibFgBase/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgBase))
@@ -1134,7 +1134,7 @@ $(ODIRLibFgBase)portable_binary_oarchive.o: $(SDIRLibFgBase)portable_binary_oarc
 	$(CPPC) -o $(ODIRLibFgBase)portable_binary_oarchive.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_oarchive.cpp
 $(ODIRLibFgBase)stdafx.o: $(SDIRLibFgBase)stdafx.cpp $(INCSLibFgBase)
 	$(CPPC) -o $(ODIRLibFgBase)stdafx.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)stdafx.cpp
-CFLAGSLibFgNix = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSLibFgNix = $(CFLAGS) -Wextra -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRLibFgNix = LibFgNix/
 ODIRLibFgNix = LibFgNix/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgNix))
@@ -1166,23 +1166,23 @@ $(ODIRLibFgNix)FgTimeNix.o: $(SDIRLibFgNix)FgTimeNix.cpp $(INCSLibFgNix)
 	$(CPPC) -o $(ODIRLibFgNix)FgTimeNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgTimeNix.cpp
 $(ODIRLibFgNix)stdafx.o: $(SDIRLibFgNix)stdafx.cpp $(INCSLibFgNix)
 	$(CPPC) -o $(ODIRLibFgNix)stdafx.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)stdafx.cpp
-CFLAGSfgbl = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSfgbl = $(CFLAGS) -Wextra -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_63_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRfgbl = fgbl/
 ODIRfgbl = fgbl/$(CONFIG)
 $(shell mkdir -p $(ODIRfgbl))
 INCSfgbl := $(wildcard LibTpBoost/boost_1_63_0/*.hpp) $(wildcard LibJpegIjg6b/*.hpp) $(wildcard LibImageMagickCore/ImageMagick-6.6.2/*.hpp) $(wildcard LibUTF-8/*.hpp) $(wildcard LibTntJama/*.hpp) $(wildcard LibFgBase/src/*.hpp) $(wildcard fgbl/*.hpp)
 $(BIN)fgbl: $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a 
-	$(LINK) -o $(BIN)fgbl $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a  -framework Carbon 
+	$(LINK) -o $(BIN)fgbl -pthread -z origin -Wl,-rpath='$$ORIGIN' $(ODIRfgbl)fgbl.o $(BIN)LibFgBase.a $(BIN)LibFgNix.a $(BIN)LibImageMagickCore.a $(BIN)LibJpegIjg6b.a $(BIN)LibTpBoost.a  -lrt 
 $(ODIRfgbl)fgbl.o: $(SDIRfgbl)fgbl.cpp $(INCSfgbl)
 	$(CPPC) -o $(ODIRfgbl)fgbl.o -c $(CFLAGSfgbl) $(SDIRfgbl)fgbl.cpp
 .PHONY: clean
 clean: cleanObjs cleanTargs
 cleanObjs:
-	rm -r LibTpBoost/clang
-	rm -r LibJpegIjg6b/clang
-	rm -r LibImageMagickCore/clang
-	rm -r LibFgBase/clang
-	rm -r LibFgNix/clang
-	rm -r fgbl/clang
+	rm -r LibTpBoost/icpc
+	rm -r LibJpegIjg6b/icpc
+	rm -r LibImageMagickCore/icpc
+	rm -r LibFgBase/icpc
+	rm -r LibFgNix/icpc
+	rm -r fgbl/icpc
 cleanTargs:
 	rm -r $(BIN)

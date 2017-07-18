@@ -165,6 +165,7 @@
     <ClCompile Include="..\src\Fg3dMeshFgmesh.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshIo.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshIo.hpp"  />
+    <ClCompile Include="..\src\Fg3dMeshLegacy.cpp"  />
     <ClInclude Include="..\src\Fg3dMeshLegacy.hpp"  />
     <ClCompile Include="..\src\Fg3dMeshLwo.cpp"  />
     <ClCompile Include="..\src\Fg3dMeshMa.cpp"  />
@@ -346,6 +347,7 @@
     <ClInclude Include="..\src\FgStdFunction.hpp"  />
     <ClInclude Include="..\src\FgStdio.hpp"  />
     <ClInclude Include="..\src\FgStdLibs.hpp"  />
+    <ClInclude Include="..\src\FgStdMap.hpp"  />
     <ClInclude Include="..\src\FgStdPair.hpp"  />
     <ClInclude Include="..\src\FgStdSet.hpp"  />
     <ClCompile Include="..\src\FgStdStream.cpp"  />
@@ -364,6 +366,8 @@
     <ClCompile Include="..\src\FgTcpTest.cpp"  />
     <ClCompile Include="..\src\FgTempFile.cpp"  />
     <ClInclude Include="..\src\FgTempFile.hpp"  />
+    <ClCompile Include="..\src\FgTensor.cpp"  />
+    <ClInclude Include="..\src\FgTensor.hpp"  />
     <ClCompile Include="..\src\FgTestUtils.cpp"  />
     <ClInclude Include="..\src\FgTestUtils.hpp"  />
     <ClCompile Include="..\src\FgThread.cpp"  />

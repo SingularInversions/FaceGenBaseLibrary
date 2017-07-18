@@ -28,6 +28,9 @@ struct  FgRealEigs
 {
     FgDbls              vals;   // Eigenvalues
     FgMatrixD           vecs;   // Column vectors are the respective eigenvectors
+
+    FgMatrixD
+    matrix() const;             // Return the matrix formed from this eigen system
 };
 
 // As above:

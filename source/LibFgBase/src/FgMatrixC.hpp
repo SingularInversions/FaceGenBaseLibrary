@@ -142,7 +142,7 @@ fgDeterminant(const FgMatrixC<T,3,3> & mat)
 // Concatenate an element onto a column vector:
 template<class T,uint dim>
 FgMatrixC<T,dim+1,1>
-fgCat(FgMatrixC<T,dim,1> vec,T val)
+fgCat(const FgMatrixC<T,dim,1> & vec,T val)
 {
     FgMatrixC<T,dim+1,1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -153,12 +153,25 @@ fgCat(FgMatrixC<T,dim,1> vec,T val)
 // Concatenate an element onto a row vector:
 template<class T,uint dim>
 FgMatrixC<T,1,dim+1>
-fgCat(FgMatrixC<T,1,dim> vec,T val)
+fgCat(const FgMatrixC<T,1,dim> & vec,T val)
 {
     FgMatrixC<T,1,dim+1>    ret;
     for (uint ii=0; ii<dim; ++ii)
-        ret[ii] = val[ii];
+        ret[ii] = vec[ii];
     ret[dim] = val;
+    return ret;
+}
+
+// Flatten a vector of matrices into a vector of scalars:
+template<class T,uint nrows,uint ncols>
+vector<T>
+fgFlat(const vector<FgMatrixC<T,nrows,ncols> > & ms)
+{
+    vector<T>       ret;
+    ret.reserve(ms.size()*nrows*ncols);
+    for (size_t ii=0; ii<ms.size(); ++ii)
+        for (uint jj=0; jj<nrows*ncols; ++jj)
+            ret.push_back(ms[ii].m[jj]);
     return ret;
 }
 
@@ -856,6 +869,46 @@ fgCast_(const FgMatrixC<T,nrows,ncols> & i,FgMatrixC<U,nrows,ncols> & o)
 {
     for (size_t ii=0; ii<i.numElems(); ++ii)
         fgCast_(i[ii],o[ii]);
+}
+
+// Transpose a matrix stored as an array of arrays. All sub-arrays must have same size:
+template<class T,uint nrows,uint ncols>
+FgMatrixC<std::vector<T>,nrows,ncols>
+fgZip(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
+{
+    FgMatrixC<std::vector<T>,nrows,ncols>   ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii].resize(v.size());
+    for (size_t jj=0; jj<v.size(); ++jj) {
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret[ii][jj] = v[jj][ii];
+    }
+    return ret;
+}
+
+template<uint dim>
+bool
+fgIsValidPermutation(FgMatrixC<uint,dim,1> perm)
+{
+    FgMatrixC<uint,dim,1>  chk(0);
+    for (uint dd=0; dd<dim; ++dd) {
+        if (perm[dd] >= dim)
+            return false;
+        chk[perm[dd]] = 1;
+    }
+    if (fgMinElem(chk) == 1)
+        return true;
+    return false;
+}
+
+template<class T,uint dim>
+FgMatrixC<T,dim,1>
+fgPermute(const FgMatrixC<T,dim,1> & v,FgMatrixC<uint,dim,1> perm)  // Assumes a valid permutation, use above to check
+{
+    FgMatrixC<T,dim,1>      ret;
+    for (uint dd=0; dd<dim; ++dd)
+        ret[dd] = v[perm[dd]];
+    return ret;
 }
 
 #endif

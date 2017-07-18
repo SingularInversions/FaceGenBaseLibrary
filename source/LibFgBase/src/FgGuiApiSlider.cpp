@@ -74,49 +74,39 @@ fgGuiSlider(
 
 FgGuiSliders
 fgGuiSliders(
-    size_t                  numSliders,
-    FgString                baseLabel,
+    const FgStrings &       labels,
     FgVectD2                range,
     double                  initVal,
-    double                  tickSpacing)
+    double                  tickSpacing,
+    const FgString &        relStore)
 {
     FgGuiSliders            ret;
-    uint                    digits = (numSliders > 10 ? 2 : 1);
     vector<FgDgn<double> >  slidersN;
-    for (size_t ii=0; ii<numSliders; ++ii) {
-        FgDgn<double>       val = g_gg.addNode(initVal);
+    for (size_t ii=0; ii<labels.size(); ++ii) {
+        FgDgn<double>       val;
+        if (relStore.empty())
+            val = g_gg.addNode(initVal);
+        else
+            val = g_gg.addInput(initVal,relStore+labels[ii]);
         ret.inputInds.push_back(val);
-        ret.sliders.push_back(
-            fgGuiSlider(val,
-                baseLabel+fgToStringDigits(ii,digits),
-                range,
-                tickSpacing));
+        ret.sliders.push_back(fgGuiSlider(val,labels[ii],range,tickSpacing));
         slidersN.push_back(val);
     }
     ret.outputIdx = g_gg.collate(slidersN);
     return ret;
 }
 
-FgGuiWinVal<vector<double> >
-fgGuiSliders(
-    const FgString &        relStore,
-    const FgStrings & labels,
-    FgVectD2                range,
-    double                  initVal,
-    double                  tickSpacing)
+FgStrings
+fgNumberedLabels(const FgString & baseLabel,size_t num)
 {
-    FgGuiWinVal<vector<double> >    ret;
-    FGASSERT(!labels.empty());
-    vector<uint>                    inputNs;
-    FgGuiPtrs                       sliders;
-    for (size_t ii=0; ii<labels.size(); ++ii) {
-        FgDgn<double>   valN = g_gg.addInput(initVal,relStore+labels[ii]);
-        inputNs.push_back(valN);
-        sliders.push_back(fgGuiSlider(valN,labels[ii],range,tickSpacing));
-    }
-    ret.valN = g_gg.addNode(vector<double>(),relStore.as_ascii());
-    g_gg.addLink(fgLinkCollate<double>,inputNs,ret.valN);
-    ret.win = fgGuiSplit(false,sliders);
+    FgStrings       ret;
+    ret.reserve(num);
+    uint            numDigits = 1;
+    size_t          tmp = num;
+    while ((tmp/=10) > 9)
+        ++numDigits;
+    for (size_t ii=0; ii<num; ++ii)
+        ret.push_back(baseLabel+fgToStringDigits(ii,numDigits));
     return ret;
 }
 

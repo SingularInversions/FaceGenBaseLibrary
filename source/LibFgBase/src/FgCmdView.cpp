@@ -73,7 +73,7 @@ viewMesh(const FgArgs & args)
         meshes.push_back(mesh);
         fgout << fgpop;
     }
-    fgDisplayMeshes(meshes,compare);
+    FgViewMeshes(meshes,compare);
 }
 
 void

@@ -168,16 +168,7 @@ struct  FffMultiObjectC
 
         void            clear() { m_objs.clear(); }
 
-        void            clearExceptVtxData();
-        bool            copyVtxData(const FffMultiObjectC &data);
-
-        bool            forcePerVertexTextCoord();
-        bool            forceObjectPerVertexTextCoord(int objId,
-                            std::vector<int> *newVtxToOldVtxMap=0);
-
-        void            optimizeVertexList();
-        void            optimizeObjectVertexList(int objId);
-
+        void            forcePerVertexTextCoord();
 
         // Functions for adding new objects or setting data to a
         // specific obhect.
@@ -216,6 +207,14 @@ struct  FgMeshLegacy
     FffMultiObjectC                 base;
     std::vector<FffMultiObjectC>    morphs;
     std::vector<std::string>        morphNames;
+
+    void
+    forcePerVertexTextCoord()
+    {
+        base.forcePerVertexTextCoord();
+        for (size_t ii=0; ii<morphs.size(); ++ii)
+            morphs[ii].forcePerVertexTextCoord();
+    }
 };
 
 // Also saves the texture images to appropriate filenames:

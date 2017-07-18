@@ -90,13 +90,13 @@ fgGui3dCtls(
 // If only one mesh is provided then edit controls will also be available and the resulting mesh
 // will be returned. Otherwise an empty mesh is returned:
 Fg3dMesh
-fgDisplayMeshes(
+FgViewMeshes(
     const vector<Fg3dMesh> &    meshesOecs,
     bool                        compare=false);     // Radio button selects between meshes (if more than one)
 
 inline
 Fg3dMesh
-fgDisplayMesh(const Fg3dMesh & mesh)
-{return fgDisplayMeshes(fgSvec(mesh)); }
+fgViewMesh(const Fg3dMesh & mesh)
+{return FgViewMeshes(fgSvec(mesh)); }
 
 #endif

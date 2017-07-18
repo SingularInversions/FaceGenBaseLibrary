@@ -28,6 +28,7 @@ fgCmdBaseTests()
 {
     vector<FgCmd>   cmds;
     //FGADDCMD1(fgApproxFuncTest,"approxFunc");
+    FGADDCMD1(fg3dTest,"3d");
     FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
     FGADDCMD1(fgClusterTest,"cluster");
     FGADDCMD1(fgDepGraphTest,"depGraph");
@@ -49,6 +50,7 @@ fgCmdBaseTests()
     FGADDCMD1(fgSimilarityTest,"similarity");
     FGADDCMD1(fgSimilarityApproxTest,"similarityApprox");
     FGADDCMD1(fgStringTest,"string");
+    FGADDCMD1(fgTensorTest,"tensor");
     FGADDCMD1(fgVariantTest,"variant");
     return cmds;
 }

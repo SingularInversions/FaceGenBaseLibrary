@@ -36,11 +36,9 @@
     #define FG_64
     #endif
  
-#elif defined(__GNUC__)     // gcc or clang
+#elif defined(__GNUC__)     // gcc, clang or icpc
 
     // Useful defines:
-    // __clang__    We are compiling with clang
-    // __GNUC__     We are compiling with gcc or clang
     // _LP64        LP64 paradigm
     // __x86_64__   64-bit instruction set
     // __ppc64__    ppc 64 bit instruction set
@@ -51,6 +49,9 @@
     #define FG_64
     #endif
 
+// If we need compiler-specific behaviour, check for
+// __clang__            clang compiler
+// __INTEL_COMPILER     Intel's icc and icpc compilers
 #else
 
     compiler_definitions_here;          // Put your compiler's equivalents here (in an #elif).

@@ -75,7 +75,7 @@ fg3dReadWobjTest(const FgArgs &)
         ;
     ofs.close();
     Fg3dMesh    mesh = fgLoadWobj("square.obj");
-    fgDisplayMesh(mesh);
+    fgViewMesh(mesh);
 }
 
 void
@@ -99,7 +99,7 @@ fgTextureImageMappingRenderTest(const FgArgs &)
     Fg3dMesh    mesh = fgLoadWobj("square.obj");
     string      textureFile("base/test/TextureMapOrdering.jpg");
     fgLoadImgAnyFormat(fgDataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
-    fgDisplayMesh(mesh);
+    fgViewMesh(mesh);
 }
 
 void
@@ -117,7 +117,7 @@ fgSubdivisionTest(const FgArgs &)
     addSubdivisions(meshes,fgNTent(6));
     addSubdivisions(meshes,fgNTent(7));
     addSubdivisions(meshes,fgNTent(8));
-    fgDisplayMeshes(meshes,true);
+    FgViewMeshes(meshes,true);
 }
 
 static
@@ -150,16 +150,18 @@ edgeDist(const FgArgs &)
             mesh.surfaces[0].albedoMap->paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
     }
-    fgDisplayMesh(mesh);
+    fgViewMesh(mesh);
 }
 
-void    fgSave3dsTest(const FgArgs &);
-void    fgSaveFbxTest(const FgArgs &);
-void    fgSaveFgmeshTest(const FgArgs &);
-void    fgSaveLwoTest(const FgArgs &);
-void    fgSaveMaTest(const FgArgs &);
-void    fgSavePlyTest(const FgArgs &);
-void    fgSaveXsiTest(const FgArgs &);
+void
+fg3dTest(const FgArgs & args)
+{
+    vector<FgCmd>   cmds;
+    FGADDCMD(fgSave3dsTest,"3ds",".3DS file format export");
+    FGADDCMD(fgSaveLwoTest,"lwo","Lightwve object file format export");
+    FGADDCMD(fgSaveMaTest,"ma","Maya ASCII file format export");
+    fgMenu(args,cmds,true,false,true);
+}
 
 void
 fg3dTestMan(const FgArgs & args)
@@ -167,13 +169,10 @@ fg3dTestMan(const FgArgs & args)
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(edgeDist,"edgeDist"));
     cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
-    cmds.push_back(FgCmd(fgSave3dsTest,"3ds"));
-    cmds.push_back(FgCmd(fgSaveFbxTest,"fbx"));
-    cmds.push_back(FgCmd(fgSaveFgmeshTest,"fgmesh"));
-    cmds.push_back(FgCmd(fgSaveLwoTest,"lwo"));
-    cmds.push_back(FgCmd(fgSaveMaTest,"ma"));
-    cmds.push_back(FgCmd(fgSavePlyTest,"ply"));
-    cmds.push_back(FgCmd(fgSaveXsiTest,"xsi"));
+    FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
+    FGADDCMD(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export");
+    FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");    // Precision differences with gcc & clang
+    FGADDCMD(fgSaveXsiTest,"xsi",".XSI file format export");
     fgMenu(args,cmds,true,false,true);
 }
 

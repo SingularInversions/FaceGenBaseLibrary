@@ -49,5 +49,5 @@ fgSaveFgmeshTest(const FgArgs & args)
 {
     FGTESTDIR;
     fgSaveFgmesh("Mouth.tri",fgLoadTri(fgDataDir()+"base/Mouth.tri"));
-    fgDisplayMesh(fgLoadFgmesh("Mouth.tri"));
+    fgViewMesh(fgLoadFgmesh("Mouth.tri"));
 }

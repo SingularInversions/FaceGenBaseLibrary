@@ -45,7 +45,8 @@ fgGuiCheckboxObject(const FgString & label,FgDgn<bool> input,const T & object,Fg
     return fgGuiCheckbox(label,input);
 }
 
+// Currently no flag for serializing defaults:
 FgGuiPtr
-fgGuiCheckboxes(const FgStrings & labels,FgDgn<vector<bool> > output);
+fgGuiCheckboxes(const FgStrings & labels,const vector<bool> & defaults,FgDgn<vector<bool> > output);
 
 #endif

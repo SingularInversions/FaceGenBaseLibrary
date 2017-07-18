@@ -204,11 +204,11 @@ writeVcxproj(
             if (cc == 1)
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
+            // Tried "EnableAllWarnings" but got tons of warning from boost include files:
+            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToString(proj.warn);
             ofs <<
                 "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
-                "      <WarningLevel>"
-                    << ((proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToString(proj.warn))
-                    << "</WarningLevel>\n"
+                "      <WarningLevel>" << warnStr << "</WarningLevel>\n"
                 "      <DebugInformationFormat>" << ((cc == 0) ? "ProgramDatabase" : "\n      ") << "</DebugInformationFormat>\n"
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
                 "      <FloatingPointModel>Fast</FloatingPointModel>\n"

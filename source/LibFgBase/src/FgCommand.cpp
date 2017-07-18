@@ -11,7 +11,6 @@
 #include "FgStdString.hpp"
 #include "FgStdVector.hpp"
 #include "FgCommand.hpp"
-#include "FgTempFile.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
 #include "FgSyntax.hpp"
@@ -21,16 +20,15 @@
 
 using namespace std;
 
-bool    fgCommandAutomated = false;
-
 static string       s_breadcrumb;
 static string       s_annotateTestDir;
+static bool         s_keepTempFiles = false;
 
 void
 fgMenu(
     vector<string>          args,
     const vector<FgCmd> &   cmdsUnsorted,
-    bool                    optionAll,      // also does a try-catch for automated tests
+    bool                    optionAll,
     bool                    optionQuiet,
     bool                    optionKeep)
 {
@@ -45,7 +43,7 @@ fgMenu(
         desc += "    -k[<desc>]      - Keep test files in dated test directory [suffixed with <desc>].\n";
     }
     if (optionAll) {
-        cl +=   "[-a] (<command> | all)\n";
+        cl +=   "(<command> | all)\n";
         desc += "    -a              - Automated, no interactive feedback or regression updates\n";
     }
     else
@@ -69,12 +67,10 @@ fgMenu(
         if ((opt == "-s") && optionQuiet)
             fgout.setCout(false);
         else if ((opt.substr(0,2) == "-k") && optionKeep) {
-            FgTempFile::setKeepTempFiles(true);
+            s_keepTempFiles = true;
             if (opt.length() > 2)
                 s_annotateTestDir = opt.substr(2);
         }
-        else if ((opt == "-a") && optionAll)
-            fgCommandAutomated = true;
         else
             syntax.error("Invalid option");
     }
@@ -106,26 +102,25 @@ fgMenu(
 
 FgTestDir::FgTestDir(const string & name)
 {
-    if (!name.empty()) {
-        path = FgPath(fgDataDir());
-        path.dirs.back() = "_log";      // replace 'data' with 'log'
-        path.dirs.push_back(s_breadcrumb+name);
-        string          dt = fgDateTimePath();
-        if (s_annotateTestDir.length() > 0)
-            dt += " " + s_annotateTestDir;
-        path.dirs.push_back(dt);
-        fgCreatePath(path.dir());
-        pd.push(path.str());
-        if (FgTempFile::getKeepTempFiles())
-            fgout.logFile("_log.txt");
-    }
+    FGASSERT(!name.empty());
+    path = FgPath(fgDataDir());
+    path.dirs.back() = "_log";      // replace 'data' with 'log'
+    path.dirs.push_back(s_breadcrumb+name);
+    string          dt = fgDateTimePath();
+    if (s_annotateTestDir.length() > 0)
+        dt += " " + s_annotateTestDir;
+    path.dirs.push_back(dt);
+    fgCreatePath(path.dir());
+    pd.push(path.str());
+    if (s_keepTempFiles)
+        fgout.logFile("_log.txt");
 }
 
 FgTestDir::~FgTestDir()
 {
     if (!pd.orig.empty()) {
         pd.pop();
-        if (!FgTempFile::getKeepTempFiles()) {
+        if (!s_keepTempFiles) {
             // Recursively delete the directory for this test:
             fgRemoveAll(path.str());
             // Remove the test name directory if empty:
@@ -152,3 +147,7 @@ fgRunCmd(const FgCmdFunc & func,const string & argStr)
     func(fgSplitChar(argStr));
     fgout << fgpop;
 }
+
+bool
+fgKeepTempFiles()
+{return s_keepTempFiles; }

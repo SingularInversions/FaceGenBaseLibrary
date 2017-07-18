@@ -35,6 +35,7 @@ struct FgTraits<vector<T> >
 // Frequently used shorthands:
 typedef vector<double>              FgDbls;
 typedef vector<float>               FgFlts;
+typedef vector<int>                 FgInts;
 typedef vector<uint>                FgUints;
 typedef vector<size_t>              FgSizes;
 
@@ -362,10 +363,10 @@ fgCat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2,const vecto
     ret.insert(ret.end(),v3.begin(),v3.end());
     return ret;
 }
-// Flatten vector of vectors into single contiguous vector:
+
 template<class T>
 vector<T>
-fgCat(const vector<vector<T> > & v)
+fgFlat(const vector<vector<T> > & v)
 {
     vector<T>       ret;
     size_t          sz = 0;
@@ -686,6 +687,17 @@ fgSum(const vector<vector<T> > & v)
 
 template<class T>
 T
+fgProduct(const vector<T> & v)
+{
+    typedef typename FgTraits<T>::Accumulator Acc;
+    Acc         acc(1);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        acc *= Acc(v[ii]);
+    return T(acc);
+}
+
+template<class T>
+T
 fgMean(const vector<T> & v)
 {
     typedef typename FgTraits<T>::Scalar      Scal;
@@ -776,6 +788,19 @@ fgSsd(const vector<T> & v0,const vector<T> & v1)
     T   acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii) {
         T   tmp = v1[ii]-v0[ii];
+        acc += tmp*tmp;     // fgSqr not yet defined.
+    }
+    return acc;
+}
+
+// Case where we want magnitude after subtraction by a constant:
+template<class T>
+T
+fgSsd(const vector<T> & vec,T val)
+{
+    T       acc(0);
+    for (size_t ii=0; ii<vec.size(); ++ii) {
+        T   tmp = vec[ii]-val;
         acc += tmp*tmp;     // fgSqr not yet defined.
     }
     return acc;
