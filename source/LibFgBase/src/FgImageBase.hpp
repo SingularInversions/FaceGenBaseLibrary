@@ -210,6 +210,7 @@ typedef FgImage<double>     FgImgD;
 typedef FgImage<FgRgbaUB>   FgImgRgbaUb;
 typedef FgImage<FgRgbaUS>   FgImgRgbaUs;
 typedef FgImage<FgRgbaF>    FgImgRgbaF;
+typedef FgImage<FgVect2F>   FgImg2F;
 typedef FgImage<FgVect3F>   FgImg3F;
 typedef FgImage<FgVect4F>   FgImg4F;
 typedef FgImage<FgVect4UC>  FgImg4UC;

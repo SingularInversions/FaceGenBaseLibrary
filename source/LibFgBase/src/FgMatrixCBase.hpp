@@ -15,7 +15,8 @@
 //
 // rc(row,col) allows access to matrix elements.
 //
-// operator[] allows access to vector elements (or to unrolled matrix elements).
+// operator[] allows access to vector elements (or to unrolled matrix elements),
+// row-major storage.
 //
 // Templatable by any copyable type, although some member functions require 
 // mathematical operators.

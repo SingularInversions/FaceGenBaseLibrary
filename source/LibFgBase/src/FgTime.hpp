@@ -59,6 +59,10 @@ struct  FgTimer
     uint64
     readMs() const
     {return fgTimeMs()-m_startTime; }
+
+    // Outputs 'label' to 'fgout' newline along with the time taken in 'ms', then resets the timer:
+    void
+    report(const string & label);
 };
 
 std::ostream &

@@ -162,7 +162,7 @@ struct  FgMatrixV
     addRow(const vector<T> & data)
     {
         FGASSERT(data.size() == ncols);
-        fgAppend(m_data,data);
+        fgCat_(m_data,data);
         ++nrows;
     }
 
@@ -313,18 +313,13 @@ struct  FgMatrixV
         return tMat;
     }
 
-    T
-    length() const
-    {return sqrt(mag()); }
+    double
+    mag() const                     // Squared magnitude
+    {return fgMag(m_data); }
 
-    T
-    mag() const
-    {
-        typename FgTraits<T>::Accumulator    tot = 0;
-        for (uint ii=0; ii<m_data.size(); ii++)
-            tot += m_data[ii] * m_data[ii];
-        return T(tot);
-    }
+    double
+    length() const                  // Euclidean length
+    {return fgLength(m_data); }
 
     T
     mean() const

@@ -13,18 +13,18 @@
 #include "FgGuiApiBase.hpp"
 #include "FgDepGraph.hpp"
 
-typedef boost::function<void(void)>     FgGuiAction;
+typedef boost::function<void(void)>     FgFnVoid2Void;
 
 struct FgGuiApiButton : FgGuiApi<FgGuiApiButton>
 {
     FgString                label;
-    FgGuiAction             action;
+    FgFnVoid2Void           action;
 };
 
 FgGuiPtr
-fgGuiButton(const FgString & label,FgGuiAction action);
+fgGuiButton(const FgString & label,FgFnVoid2Void action);
 
 FgGuiPtr
-fgGuiButtonTr(const std::string & label,FgGuiAction action);
+fgGuiButtonTr(const std::string & label,FgFnVoid2Void action);
 
 #endif

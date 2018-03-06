@@ -186,6 +186,7 @@
     <ClInclude Include="..\FgThrowWindows.hpp"  />
     <ClCompile Include="..\FgTimeWin.cpp"  />
     <ClInclude Include="..\FgWindows.hpp"  />
+    <ClCompile Include="..\fgWinSpecificWin.cpp"  />
     <ClCompile Include="..\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

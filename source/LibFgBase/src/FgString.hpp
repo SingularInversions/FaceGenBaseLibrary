@@ -111,11 +111,8 @@ struct  FgString
     std::string
     as_ascii() const;
 
-    // Replace all occurrences of a in this string with b.  Note
-    // that this algorithm is incredibly slow due to utf32<->utf8
-    // conversions. Also, the input characters are expected to be
-    // ASCII encoded, or at-least their integral value is the
-    // expected unicode code point.
+    // Replace all occurrences of 'a' with 'b'. Slow due to utf32<->utf8 conversions.
+    // 'a' and 'b' are considered as unsigned values when comparing with UTF code points:
     FgString
     replace(char a, char b) const;
 

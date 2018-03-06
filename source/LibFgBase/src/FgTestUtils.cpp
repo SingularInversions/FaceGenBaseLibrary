@@ -63,20 +63,6 @@ void FgMemoryLeakDetector::throw_if_leaked(const char * /*whichfn*/){}
 using namespace std;
 
 bool
-fgIsRegressBuild()
-{
-    if (fgCurrentOS() != "win")
-        return false;
-    if (fgCurrentCompiler() != "vs12")
-        return false;
-    if (fgCurrentBuildBits() != "64")
-        return false;
-    if (fgCurrentBuildConfig() != "release")
-        return false;
-    return true;
-}
-
-bool
 fgCompareImages(
     const FgImgRgbaUb & test,
     const FgImgRgbaUb & ref,
@@ -105,19 +91,6 @@ fgRegressFail(
     const FgString & refName)
 {
     fgThrow("Regression failure",testName + " != " + refName);
-}
-
-void
-fgRegressUpdateQuery(const std::string & relPath)
-{
-    fgout << fgnl << "REGRESS FAILURE: " << relPath;
-    fgout << fgnl << "UPDATE FILE (Y/N) ?" << flush;
-    char        choice;
-    cin >> choice;
-    if (std::tolower(choice) == 'y') {
-        FgPath      path(fgDataDir()+relPath);
-        fgCopyFile(path.baseExt(),path.str(),true);
-    }
 }
 
 void

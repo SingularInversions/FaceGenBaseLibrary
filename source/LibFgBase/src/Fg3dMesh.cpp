@@ -48,7 +48,7 @@ Fg3dMesh::allVerts() const
 {
     FgVerts     ret = verts;
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        fgAppend(ret,targetMorphs[ii].verts);
+        fgCat_(ret,targetMorphs[ii].verts);
     return ret;
 }
 
@@ -105,7 +105,7 @@ Fg3dMesh::getTriEquivs() const
         return ret;
     ret = surfaces[0].getTriEquivs();
     for (size_t ii=1; ii<surfaces.size(); ++ii)
-        fgAppend(ret,surfaces[ii].getTriEquivs());
+        fgCat_(ret,surfaces[ii].getTriEquivs());
     return ret;
 }
 
@@ -114,7 +114,7 @@ Fg3dMesh::numTris() const
 {
     size_t      ret = 0;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        ret += surfaces[ss].tris.vertInds.size();
+        ret += surfaces[ss].tris.size();
     return ret;
 }
 
@@ -123,7 +123,7 @@ Fg3dMesh::numQuads() const
 {
     size_t      ret = 0;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        ret += surfaces[ss].quads.vertInds.size();
+        ret += surfaces[ss].quads.size();
     return ret;
 }
 
@@ -168,7 +168,7 @@ Fg3dMesh::surfPointsAsVertLabels() const
 {
     FgLabelledVerts     ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        fgAppend(ret,surfaces[ss].surfPointsAsVertLabels(verts));
+        fgCat_(ret,surfaces[ss].surfPointsAsVertLabels(verts));
     return ret;
 }
 
@@ -192,7 +192,7 @@ Fg3dMesh::asTriSurf() const
     FgTriSurf   ret;
     ret.verts = verts;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        fgAppend(ret.tris,surfaces[ss].tris.vertInds);
+        fgCat_(ret.tris,surfaces[ss].tris.vertInds);
     return ret;
 }
 
@@ -487,7 +487,7 @@ fgMorphs(const Fg3dMeshes & meshes)
 {
     std::set<FgString>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        fgAppend(ret,meshes[ii].morphNames());
+        fgUnion_(ret,meshes[ii].morphNames());
     return ret;
 }
 
@@ -496,7 +496,7 @@ fgPoses(const Fg3dMeshes & meshes)
 {
     std::set<FgPose>    ps;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        fgAppend(ps,fgPoses(meshes[ii]));
+        fgUnion_(ps,fgPoses(meshes[ii]));
     return vector<FgPose>(ps.begin(),ps.end());
 }
 
@@ -652,7 +652,7 @@ fgSubdivide(const Fg3dMesh & in,bool loop)
             sp.triEquivIdx += uint(allTris.size());
             allSps.push_back(sp);
         }
-        fgAppend(allTris,surf.tris.vertInds);
+        fgCat_(allTris,surf.tris.vertInds);
     }
     ret.verts = in.verts;   // Modified later in case of Loop:
     ret.surfaces.resize(in.surfaces.size());
@@ -714,8 +714,8 @@ fgSubdivide(const Fg3dMesh & in,bool loop)
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         Fg3dSurface & surf = ret.surfaces[ss];
         const Fg3dSurface & inSurf = in.surfaces[ss];
-        size_t      num = inSurf.tris.vertInds.size() * 4;
-        fgAppend(surf.tris.vertInds,fgSubvec(ssurf.tris.vertInds,sidx,num));    // Clearer (and slower) than iterators
+        size_t      num = inSurf.tris.size() * 4;
+        fgCat_(surf.tris.vertInds,fgSubvec(ssurf.tris.vertInds,sidx,num));    // Clearer (and slower) than iterators
         for (size_t ii=0; ii<inSurf.surfPoints.size(); ++ii) {
             FgSurfPoint     sp = ssurf.surfPoints[spidx+ii];
             sp.triEquivIdx -= uint(sidx);

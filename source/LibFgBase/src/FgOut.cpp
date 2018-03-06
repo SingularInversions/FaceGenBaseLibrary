@@ -27,7 +27,7 @@ fgnl(ostream & ss)
     ss << endl;                         // includes a flush
     uint    il = fgout.indentLevel();
     for (uint ii=0; ii<il; ii++)
-        ss << "    ";
+        ss << "|   ";
     return ss;
 }
 
@@ -122,9 +122,9 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
                 m_ofstream << endl;
             for (uint ii=0; ii<indentLevel(); ii++) {
                 if (m_stream)
-                    *m_stream << "    ";
+                    *m_stream << "|   ";
                 if (m_ofstream.is_open())
-                    m_ofstream << "    "; }
+                    m_ofstream << "|   "; }
         }
         else {
             if (m_stream)

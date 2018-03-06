@@ -49,6 +49,7 @@ fgCmdBaseTests()
     FGADDCMD1(fgSharedPtrTest,"sharedPtr");
     FGADDCMD1(fgSimilarityTest,"similarity");
     FGADDCMD1(fgSimilarityApproxTest,"similarityApprox");
+    FGADDCMD1(fgStdVectorTest,"vector");
     FGADDCMD1(fgStringTest,"string");
     FGADDCMD1(fgTensorTest,"tensor");
     FGADDCMD1(fgVariantTest,"variant");

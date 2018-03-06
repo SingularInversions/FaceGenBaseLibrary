@@ -32,9 +32,9 @@ fgIucsToIpcs(FgVect2UI dims)
 {return FgAffineCw2F(FgMat22F(0,1,0,1),FgMat22F(0,dims[0],0,dims[1])); }
 
 inline
-FgAffineCw2D
+FgAffineCw2F
 fgIrcsToIucs(FgVect2UI imageDims)
-{return FgAffineCw2D(FgMat22D(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),FgMat22D(0,1,0,1)); }
+{return FgAffineCw2F(FgMat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),FgMat22F(0,1,0,1)); }
 
 inline
 FgVect2F
@@ -53,9 +53,8 @@ struct  FgCoordWgt
     double      wgt;
 };
 
-// Bilinear interpolation co-efficients with sample culling.
-// Return value can contain between 0 and 4 samples depending on how many are culled
-// (due to being outside the image):
+// Bilinear interpolation co-efficients culling samples outside bounds.
+// Return value can contain between 0 and 4 samples depending on how many are culled:
 FgArray<FgCoordWgt,4>
 fgBlerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs);
 
@@ -69,10 +68,10 @@ fgBlerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs);
 FgRgbaF
 fgBlerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
 
-// Bilinear interpolation on floating point channel images.
+// Bilinear interpolation.
 // Clips sample point coordinates to image boundaries.
 template<class T>
-typename FgTraits<T>::Floating
+typename FgTraits<T>::Floating      // 'float' for scalars, 'float' components for vectors
 fgBlerpClipIpcs(
     const FgImage<T> &  img,        // Must not be empty
     FgVect2F            coordIpcs)
@@ -128,6 +127,16 @@ fgSampleFdd1Clamp(const FgImage<T> & img,FgVect2UI coord)
             ret.cr((xx+1)/2,dim) = img[crd];
         }
     }
+    return ret;
+}
+
+template<class T>
+FgImage<T>
+fgThreshold(const FgImage<T> & img,T minRoundUp)
+{
+    FgImage<T>      ret(img.dims());
+    for (size_t ii=0; ii<ret.m_data.size(); ++ii)
+        ret.m_data[ii] = (img.m_data[ii] < minRoundUp) ? T(0) : std::numeric_limits<T>::max();
     return ret;
 }
 
@@ -288,9 +297,6 @@ template<class T> struct FgConvTraits;
 template<> struct FgConvTraits<uchar>       {typedef ushort     Acc; };
 template<> struct FgConvTraits<FgRgbaUB>    {typedef FgRgbaUS   Acc; };
 template<class T>
-// Applies a [1 2 1] outer product 2D kernel smoothing using border replication to an
-// UNISGNED INTEGER channel image in a preicsion-friendly, cache-friendly way.
-// The Source and desination images can be the same, for in-place convolution.
 void
 fgSmoothUint1D(
     const T             *srcPtr,
@@ -304,6 +310,9 @@ fgSmoothUint1D(
         dstPtr[ii] = Acc(srcPtr[ii-1]) + Acc(srcPtr[ii])*2 + Acc(srcPtr[ii+1]);
     dstPtr[num-1] = Acc(srcPtr[num-2]) + Acc(srcPtr[num-1])*(2+borderPolicy);
 }
+// Applies a [1 2 1] outer product 2D kernel smoothing using border replication to an
+// UNISGNED INTEGER channel image in a preicsion-friendly, cache-friendly way.
+// The Source and desination images can be the same, for in-place convolution:
 template<class T>
 void
 fgSmoothUint(
@@ -340,6 +349,14 @@ fgSmoothUint(
     dstPtr = dst.rowPtr(dst.height()-1);
     for (uint xx=0; xx<dst.width(); ++xx)
         dstPtr[xx] = T((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + Acc(7)) / 16);
+}
+template<class T>
+FgImage<T>
+fgSmoothUint(const FgImage<T> & src,uchar borderPolicy=1)
+{
+    FgImage<T>      ret;
+    fgSmoothUint(src,ret,borderPolicy);
+    return ret;
 }
 
 // Use of the __restrict keyword for the pointer args below made no speed difference here (msvc2012).
@@ -405,6 +422,17 @@ fgSmoothFloat(
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
     fgSmoothFloat2D(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
+}
+
+// Only defined for binarized images, output is binarized:
+template<class T>
+FgImage<T>
+fgDilate(const FgImage<T> & img)
+{
+    FgImage<T>      ret = fgSmoothUint(img);
+    for (T & p : ret.m_data)
+        p = (p > 0) ? std::numeric_limits<T>::max() : 0;
+    return ret;
 }
 
 // Applies a 3x3 non-separable kernel to a floating-point channel image. (technically a correlation
@@ -500,9 +528,7 @@ fgResampleSimple(const FgImage<T> & in,FgVect2UI dims)
 
 template<class T>
 void
-fgResizePow2Ceil(
-    const FgImage<T> &  in,
-    FgImage<T> &        out)
+fgResizePow2Ceil_(const FgImage<T> & in,FgImage<T> & out)
 {
     if (!fgIsPow2(in.dims())) {
         out.resize(fgPow2Ceil(in.dims()));
@@ -510,6 +536,15 @@ fgResizePow2Ceil(
     }
     else
         out = in;
+}
+
+template<class T>
+FgImage<T>
+fgResizePow2Ceil(const FgImage<T> & img)
+{
+    FgImage<T>      ret;
+    fgResizePow2Ceil_(img,ret);
+    return ret;
 }
 
 template<class T>
@@ -716,30 +751,6 @@ fgAlphaWeight(FgImgRgbaUb & img)
 {
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii].alphaWeight();
-}
-
-// Upsample whichever image is smaller to match the dimensions of both images.
-// Only works on image sizes with matching aspect ratios.
-// RETURNS: true if images are valid sizes and now match, false otherwise.
-template<class T>
-bool
-fgUpsampleToMatch(FgImage<T> & img0,FgImage<T> & img1)
-{
-    if (img0.empty())
-        return false;
-    if (img0.width()*img1.height() != img0.height()*img1.width())
-        return false;
-    if (img0.dims()[0] < img1.dims()[0]) {
-        FgImage<T>      i0(img1.dims());
-        fgResampleSimple(img0,i0);
-        img0 = i0;
-    }
-    else if (img0.dims()[0] > img1.dims()[0]) {
-        FgImgRgbaUb     i1(img0.dims());
-        fgResampleSimple(img1,i1);
-        img1 = i1;
-    }
-    return true;
 }
 
 // Does any pixel contain an alpha value less than 254 ?

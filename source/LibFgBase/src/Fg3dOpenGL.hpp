@@ -39,10 +39,8 @@ fgOglTextureUpdate(
 struct  FgOglSurf
 {
     FgBoolT         visible;        // Set to false if this surface is not being rendered.
-    FgValid<uint>   name;           // OpenGL texture "name". Invalid if no texture image.
+    FgOpt<uint>     name;           // OpenGL texture "name". Invalid if no texture image.
     FgBoolF         transparency;   // Set to true if the image contains varying alpha values
-
-    bool valid() const {return name.valid(); }
 };
 
 struct  FgOglRendModel
@@ -58,7 +56,7 @@ fgOglSetLighting(const FgLighting & lt);
 
 struct  FgBgImage
 {
-    FgValid<uint>               texName;
+    FgOpt<uint>                 texName;
     FgVect2UI                   origDims;
     FgVect2F                    offset;     // Relative to image max dimension
     float                       scale;      // Relative to image max dimension

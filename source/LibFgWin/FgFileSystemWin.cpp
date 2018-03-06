@@ -131,6 +131,18 @@ fgDirSystemAppDataRoot()
 }
 
 FgString
+fgDirSystemAppData(
+    FgString const & groupName,
+    FgString const & appName)
+{
+    FgString    appDir = fgDirSystemAppDataRoot() + groupName;
+    fgCreateDirectory(appDir);
+    appDir = appDir + fgDirSep() + appName;
+    fgCreateDirectory(appDir);
+    return appDir + fgDirSep();
+}
+
+FgString
 fgDirUserAppDataRoamingRoot()
 {
     wchar_t     path[MAX_PATH];

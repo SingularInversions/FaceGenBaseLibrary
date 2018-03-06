@@ -149,6 +149,17 @@ fgMinElem(const FgMatrixC<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
+fgMinIdx(const FgMatrixC<T,nrows,ncols> & mat)
+{
+    uint        idx(0);
+    for (uint ii=1; ii<mat.numElems(); ++ii)
+        if (mat[ii] < mat[idx])
+            idx = ii;
+    return idx;
+}
+
+template<typename T,uint nrows,uint ncols>
+uint
 fgMaxIdx(const FgMatrixC<T,nrows,ncols> & mat)
 {
     uint        idx(0);
@@ -384,6 +395,20 @@ fgClipToBounds(const FgMatrixC<T,dim,1> & pos,const FgMatrixC<T,dim,2> & boundsI
     FgMatrixC<T,dim,1>  ret;
     for (uint ii=0; ii<dim; ++ii)
         ret[ii] = fgClip(pos[ii],boundsInclusive.rc(ii,0),boundsInclusive.rc(ii,1));
+    return ret;
+}
+
+// Clip to [0,hiInclBound] with change from signed to unsigned:
+template<uint nrows,uint ncols>
+FgMatrixC<uint,nrows,ncols>
+fgClipElemsZeroHi(FgMatrixC<int,nrows,ncols> m,uint hiInclBound)
+{
+    FgMatrixC<uint,nrows,ncols>     ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii) {
+        int         v = m[ii];
+        uint        vu = uint(v);
+        ret[ii] = v < 0 ? 0U : (vu > hiInclBound ? hiInclBound : vu);
+    }
     return ret;
 }
 

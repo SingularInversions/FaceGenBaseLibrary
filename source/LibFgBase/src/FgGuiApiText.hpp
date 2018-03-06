@@ -17,17 +17,26 @@ struct FgGuiApiText : FgGuiApi<FgGuiApiText>
 {
     FgDgn<FgString>         content;
     uint                    updateFlagIdx;
-    uint                    minWidth;       // If text is shorter than this, use this. Otherwise ignore.
+    // Usually set to true for dynamic text:
+    FgVect2B                wantStretch = FgVect2B(false);
+    // Used to specify a fixed min width for 2D layouts (eg. label - slider lists). Zero ignores.
+    uint                    minWidth = 0;
+    // Given in lines. When you expect overflow from one line, reserve more:
+    uint                    minHeight = 1;
     // Set this to false to avoid bug in Win10 RichEdit that causes copy operations from this richedit
     // to hang on paste (in any other context) until this main window regains focus. Note that
     // newlines and hyptertext links are not supported with RichEdit:
-    FgBoolT                 rich;
+    bool                    rich = true;
 
-    FgGuiApiText() : minWidth(0) {}
+    FgGuiApiText() {}
 };
 
+// Assumes dynamic text and sets 'wantStretch' to true:
 FgGuiPtr
 fgGuiText(FgDgn<FgString> node,uint minWidth=0,bool rich=true);
+
+FgGuiPtr
+fgGuiTextLines(FgDgn<FgString> node,uint minHeight,bool wantStretchVert=false);
 
 FgGuiPtr
 fgGuiText(FgString text,uint minWidth=0);

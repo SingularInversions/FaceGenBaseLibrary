@@ -139,26 +139,23 @@ fgThrow(FgException const & e)
 }
 
 template<typename FgExType>
-inline
-void
-fgThrow(const std::string & msg)
+inline void fgThrow(const std::string & msg)
 {
     throw FgExType(msg);
 }
 
-inline 
-void 
-fgThrow(const std::string & msg,
-        const FgString &str) 
+inline void fgThrow(const std::string & msg,const FgString & str) 
 {
     throw FgException(msg,str); 
 }
 
+inline void fgThrow(const std::string & msg,const FgString & str0,const FgString & str1) 
+{
+    throw FgException(msg,str0+","+str1); 
+}
+
 template<typename FgExType>
-inline
-void
-fgThrow(const std::string & msg,
-        const FgString & str)
+inline void fgThrow(const std::string & msg,const FgString & str)
 {
     throw FgExType(msg,str);
 }

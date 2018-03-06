@@ -602,7 +602,7 @@ FGLINK(fgLinkMerge)
     out.clear();
     for (size_t ii=0; ii<inputs.size(); ++ii) {
         const vector<T> &   in = inputs[ii]->valueRef();
-        fgAppend(out,in);
+        fgCat_(out,in);
     }
 }
 

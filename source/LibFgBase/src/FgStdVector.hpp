@@ -41,6 +41,7 @@ typedef vector<size_t>              FgSizes;
 
 typedef vector<FgDbls>              FgDblss;
 typedef vector<FgFlts>              FgFltss;
+typedef vector<FgInts>              FgIntss;
 typedef vector<FgUints>             FgUintss;
 typedef vector<FgSizes>             FgSizess;
 
@@ -64,31 +65,33 @@ struct FgBool
 template<class T>
 vector<T>
 fgSvec(const T & v1)
-{
-    return vector<T>(1,v1);
-}
+{return vector<T>(1,v1); }
+
 template<class T>
 vector<T>
 fgSvec(const T & v1,const T & v2)
 {
-    vector<T> vec(2);
-    vec[0] = v1; vec[1] = v2;
+    vector<T>   vec;
+    vec.reserve(2);
+    vec.push_back(v1); vec.push_back(v2);
     return vec;
 }
 template<class T>
 vector<T>
 fgSvec(const T & v1,const T & v2,const T & v3)
 {
-    vector<T> vec(3);
-    vec[0] = v1; vec[1] = v2; vec[2] = v3;
+    vector<T>   vec;
+    vec.reserve(3);
+    vec.push_back(v1); vec.push_back(v2); vec.push_back(v3);
     return vec;
 }
 template<class T>
 vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3)
 {
-    vector<T> vec(4);
-    vec[0] = v0; vec[1] = v1; vec[2] = v2; vec[3] = v3;
+    vector<T>   vec;
+    vec.reserve(4);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3);
     return vec;
 }
 
@@ -96,8 +99,9 @@ template<class T>
 vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4)
 {
-    vector<T> vec(5);
-    vec[0] = v0; vec[1] = v1; vec[2] = v2; vec[3] = v3; vec[4] = v4;
+    vector<T> vec;
+    vec.reserve(5);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
     return vec;
 }
 
@@ -105,8 +109,10 @@ template<class T>
 vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5)
 {
-    vector<T> vec(6);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5;
+    vector<T> vec;
+    vec.reserve(6);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5);
     return vec;
 }
 
@@ -114,8 +120,10 @@ template<class T>
 vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,const T & v6)
 {
-    vector<T> vec(7);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5; vec[6]=v6;
+    vector<T> vec;
+    vec.reserve(7);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5); vec.push_back(v6);
     return vec;
 }
 
@@ -124,9 +132,10 @@ vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
          const T & v6,const T & v7)
 {
-    vector<T> vec(8);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5; vec[6]=v6;
-    vec[7]=v7;
+    vector<T> vec;
+    vec.reserve(8);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7);
     return vec;
 }
 
@@ -135,9 +144,10 @@ vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
          const T & v6,const T & v7,const T & v8)
 {
-    vector<T> vec(9);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5; vec[6]=v6;
-    vec[7]=v7; vec[8]=v8;
+    vector<T> vec;
+    vec.reserve(9);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8);
     return vec;
 }
 
@@ -146,9 +156,10 @@ vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
        const T & v6,const T & v7,const T & v8,const T & v9)
 {
-    vector<T> vec(10);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5; vec[6]=v6;
-    vec[7]=v7; vec[8]=v8; vec[9]=v9;
+    vector<T> vec;
+    vec.reserve(10);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8); vec.push_back(v9);
     return vec;
 }
 
@@ -157,9 +168,11 @@ vector<T>
 fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
        const T & v6,const T & v7,const T & v8,const T & v9,const T & vA)
 {
-    vector<T> vec(11);
-    vec[0]=v0; vec[1]=v1; vec[2]=v2; vec[3]=v3; vec[4]=v4; vec[5]=v5; vec[6]=v6;
-    vec[7]=v7; vec[8]=v8; vec[9]=v9; vec[10] = vA;
+    vector<T> vec;
+    vec.reserve(11);
+    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
+    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8); vec.push_back(v9);
+    vec.push_back(vA);
     return vec;
 }
 
@@ -270,9 +283,9 @@ fgMapConvert(const vector<T> & in)
     return ret;
 }
 
-inline
+template<class T>
 FgDbls
-fgToDouble(const vector<float> & v)
+fgToDouble(const vector<T> & v)
 {
     FgDbls   ret(v.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
@@ -287,6 +300,23 @@ fgToFloat(const vector<double> & v)
     FgFlts    ret(v.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii] = float(v[ii]);
+    return ret;
+}
+
+// Returns a vector one larger in size than 'vec', where each element is the integral of all elements of 'vec'
+// up to but not including the current one:
+template<class T>
+vector<T>
+fgIntegrate(const vector<T> & vec)
+{
+    vector<T>       ret;
+    ret.reserve(vec.size()+1);
+    T               acc(0);
+    ret.push_back(acc);
+    for (T v : vec) {
+        acc += v;
+        ret.push_back(acc);
+    }
     return ret;
 }
 
@@ -324,15 +354,49 @@ fgTail(const vector<T> & vec,size_t size)
     return vector<T>(vec.end()-size,vec.end());
 }
 
+// Append is the functional equivalent of push_back:
 template<class T>
-inline void
-fgAppend(vector<T> & base,const vector<T> & app)
-{base.insert(base.end(),app.begin(),app.end()); }
+vector<T>
+fgAppend(const vector<T> & vec,const T & val)
+{
+    vector<T>       ret;
+    ret.reserve(vec.size()+1);
+    ret.insert(ret.begin(),vec.cbegin(),vec.cend());
+    ret.push_back(val);
+    return ret;
+}
+
+template<class T>
+void
+fgAppendIfNotContained_(const T & val,vector<T> & vec)
+{
+    for (const T & v : vec)
+        if (v == val)
+            return;
+    vec.push_back(val);
+}
+
+// Functional equivalent of insert at front:
+template<class T>
+vector<T>
+fgPrepend(const T & val,const vector<T> & vec)
+{
+    vector<T>       ret;
+    ret.reserve(vec.size()+1);
+    ret.push_back(val);
+    ret.insert(ret.end(),vec.begin(),vec.end());
+    return ret;
+}
 
 // Concatenation in several forms:
 template<class T>
+inline void
+fgCat_(vector<T> & base,const vector<T> & app)
+{base.insert(base.end(),app.begin(),app.end()); }
+
+template<class T>
 vector<T>
-fgCat(const vector<T> &  v0,const vector<T> &  v1)
+fgCat(const vector<T> & v0,const vector<T> & v1)
 {
     vector<T>   ret;
     ret.reserve(v0.size()+v1.size());
@@ -361,6 +425,21 @@ fgCat(const vector<T> & v0,const vector<T> & v1,const vector<T> & v2,const vecto
     ret.insert(ret.end(),v1.begin(),v1.end());
     ret.insert(ret.end(),v2.begin(),v2.end());
     ret.insert(ret.end(),v3.begin(),v3.end());
+    return ret;
+}
+
+// Functional version of vector::erase for single element:
+template<class T>
+vector<T>
+fgSnip(const vector<T> & v,size_t idx)
+{
+    FGASSERT(idx < v.size());
+    vector<T>       ret;
+    ret.reserve(v.size()-1);
+    for (size_t ii=0; ii<idx; ++ii)
+        ret.push_back(v[ii]);
+    for (size_t ii=idx+1; ii<v.size(); ++ii)
+        ret.push_back(v[ii]);
     return ret;
 }
 
@@ -436,9 +515,7 @@ fgFindOrAppend(vector<T> & vec,const T & val)
 
 template<class T,class U>
 bool
-fgContains(
-    const vector<T> &  vec,
-    const U &          val)     // Allows for T::operator==(U)
+fgContains(const vector<T> & vec,const U & val)     // Allows for T::operator==(U)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
@@ -448,14 +525,22 @@ fgContains(
 
 template<class T,class U>
 bool
-fgContainsAny(
-    const vector<T> &   ctr,
-    const vector<U> &   vals)
+fgContainsAny(const vector<T> & ctr,const vector<U> & vals)     // Simple and slow: O(ctr * vals)
 {
     for (size_t ii=0; ii<vals.size(); ++ii)
         if (fgContains(ctr,vals[ii]))
             return true;
     return false;
+}
+
+template<class T,class U>
+bool
+fgContainsAll(const vector<T> & ctr,const vector<U> & vals)     // Simple and slow: O(ctr * vals)
+{
+    for (size_t ii=0; ii<vals.size(); ++ii)
+        if (!fgContains(ctr,vals[ii]))
+            return false;
+    return true;
 }
 
 template<class T>
@@ -469,12 +554,16 @@ fgReplace_(vector<T> & v,T a,T b)       // Replace each 'a' with 'b'
 
 template<class T>
 vector<T>
-fgReplace(const vector<T> & v,T a,T b) // Replace each 'a' with 'b'
+fgReplace(const vector<T> & vec,const T & a,const T & b) // Replace each 'a' with 'b'
 {
-    vector<T>  ret(v);
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        if (ret[ii] == a)
-            ret[ii] = b;
+    vector<T>       ret;
+    ret.reserve(vec.size());
+    for (const T & v : vec) {
+        if (v == a)
+            ret.push_back(b);
+        else
+            ret.push_back(v);
+    }
     return ret;
 }
 
@@ -600,9 +689,22 @@ fgCast_(const vector<T> & lhs,vector<U> & rhs)
         fgCast_(lhs[ii],rhs[ii]);
 }
 
+// Map to same type; requires only one template arg (use of std::function requires use of template arg):
+template<class T>
+vector<T>
+fgMap(const vector<T> & in,std::function<T(const T &)> func)
+{
+    vector<T>    ret;
+    ret.reserve(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        ret.push_back(func(in[ii]));
+    return ret;
+}
+
+// Map vector to different types. Requires two explicit template args:
 template<class Out,class In>
 vector<Out>
-fgMap(const vector<In> & in,std::function<Out(const In &)> func)
+fgMap2(const vector<In> & in,std::function<Out(const In &)> func)
 {
     vector<Out>    ret;
     ret.reserve(in.size());
@@ -658,6 +760,19 @@ fgSum(const vector<T> & v)
     typedef typename FgTraits<T>::Accumulator Acc;
     Acc         acc(0);
     for (size_t ii=0; ii<v.size(); ++ii)
+        acc += Acc(v[ii]);
+    return T(acc);
+}
+
+// Partial sum:
+template<class T>
+T
+fgSum(const vector<T> & v,size_t num)
+{
+    FGASSERT(num <= v.size());
+    typedef typename FgTraits<T>::Accumulator Acc;
+    Acc         acc(0);
+    for (size_t ii=0; ii<num; ++ii)
         acc += Acc(v[ii]);
     return T(acc);
 }
@@ -751,23 +866,20 @@ fgMapDiv(
     return ret;
 }
 
-// Sum of squares:
 template<class T>
-T
-fgLengthSqr(const vector<T> & v)
+double
+fgMag(const vector<T> & v)              // Sum of squared magnitude values:
 {
-    typename FgTraits<T>::Accumulator  ret(0);
-    for (size_t ii=0; ii<v.size(); ++ii) {
-        T       tmp = v[ii];
-        ret += tmp * tmp;   // fgSqr not yet defined.
-    }
-    return T(ret);
+    double      ret(0);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret += fgMag(v[ii]);
+    return ret;
 }
 
 template<class T>
-T
-fgLength(const vector<T> & v)
-{return std::sqrt(fgLengthSqr(v)); }
+double
+fgLength(const vector<T> & v)           // Euclidean length (L2 norm)
+{return std::sqrt(fgMag(v)); }
 
 template<class T>
 double
@@ -781,38 +893,30 @@ fgDot(const vector<T> & v0,const vector<T> & v1)
 }
 
 template<class T>
-T
-fgSsd(const vector<T> & v0,const vector<T> & v1)
+double
+fgSsd(const vector<T> & v0,const vector<T> & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
-    T   acc(0);
-    for (size_t ii=0; ii<v0.size(); ++ii) {
-        T   tmp = v1[ii]-v0[ii];
-        acc += tmp*tmp;     // fgSqr not yet defined.
-    }
-    return acc;
-}
-
-// Case where we want magnitude after subtraction by a constant:
-template<class T>
-T
-fgSsd(const vector<T> & vec,T val)
-{
-    T       acc(0);
-    for (size_t ii=0; ii<vec.size(); ++ii) {
-        T   tmp = vec[ii]-val;
-        acc += tmp*tmp;     // fgSqr not yet defined.
-    }
+    double      acc = 0;
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += fgMag(v1[ii]-v0[ii]);
     return acc;
 }
 
 template<class T>
-T
-fgRms(const vector<T> & v)
+double
+fgSsd(const vector<T> & vec,const T & val)          // Sum of square differences with a constant val
 {
-    FGASSERT(v.size() > 0);
-    return std::sqrt(fgLengthSqr(v) / v.size());
+    double      acc = 0;
+    for (size_t ii=0; ii<vec.size(); ++ii)
+        acc += fgMag(vec[ii]-val);
+    return acc;
 }
+
+template<class T>
+double
+fgRms(const vector<T> & v)                          // Root mean squared
+{return std::sqrt(fgMag(v) / v.size()); }
 
 template<class T>
 vector<T>
@@ -857,6 +961,18 @@ fgMax(const vector<T> & v)
     for (size_t ii=1; ii<v.size(); ++ii)
         if (v[ii] > ret)
             ret = v[ii];
+    return ret;
+}
+
+template<class T>
+size_t
+fgMaxIdx(const vector<T> & v)
+{
+    FGASSERT(!v.empty());
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (v[ii] > v[ret])
+            ret = ii;
     return ret;
 }
 
@@ -1058,16 +1174,6 @@ operator<<(std::ostream & ss,const vector<T> & vv)
 }
 
 template<class T>
-double
-fgMag(const vector<T> & v)
-{
-    double      ret(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret += fgMag(v[ii]);
-    return ret;
-}
-
-template<class T>
 vector<T>
 fgFilter(const vector<T> & vals,const std::function<bool(const T & val)> & fnSelect)
 {
@@ -1107,6 +1213,21 @@ fgJaggedVec(const vector<size_t> & dims,const T & initVal)
     vector<vector<T> >      ret(dims.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].resize(dims[ii],initVal);
+    return ret;
+}
+
+// Partition a vector into a jagged vector of the given jagged dimensions:
+template<class T>
+vector<vector<T> >
+fgJaggedVec(const vector<size_t> & dims,const vector<T> & data)
+{
+    vector<vector<T> >      ret(dims.size());
+    size_t                  idx = 0;
+    for (size_t ii=0; ii<ret.size(); ++ii) {
+        FGASSERT(data.size() >= idx + dims[ii]);
+        ret[ii] = vector<T>(data.begin()+idx,data.begin()+idx+dims[ii]);
+        idx += dims[ii];
+    }
     return ret;
 }
 
@@ -1153,6 +1274,85 @@ fgMapToConstPtrs(const vector<vector<T> > & v)  // Cannot contain any empty vect
     for (size_t ii=0; ii<v.size(); ++ii) {
         FGASSERT(!v[ii].empty());
         ret.push_back(&v[ii][0]);
+    }
+    return ret;
+}
+
+// Set intersection with vector containers; ignores duplicates returns intersection of uniques:
+template<class T>
+vector<T>
+fgSetIntersection(const vector<T> & v0,const vector<T> & v1)
+{
+    vector<T>       ret;
+    for (const T & v : v0) {
+        if (fgContains(v1,v) && !fgContains(ret,v))
+            ret.push_back(v);
+    }
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgSetIntersection(const vector<vector<T> > & vs)
+{
+    vector<T>       ret;
+    if (!vs.empty()) {
+        ret = vs[0];
+        for (size_t ii=1; ii<vs.size(); ++ii)
+            ret = fgSetIntersection(ret,vs[ii]);
+    }
+    return ret;
+}
+
+// Multiset intersection with vector containers:
+template<class T>
+vector<T>
+fgIntersection(const vector<T> & v0,vector<T> v1)
+{
+    vector<T>       ret;
+    for (const T & v : v0) {
+        auto        it = find(v1.begin(),v1.end(),v);
+        if (it != v1.end()) {
+            ret.push_back(v);
+            v1.erase(it);
+        }
+    }
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgIntersection(const vector<vector<T> > & vs)
+{
+    vector<T>       ret;
+    if (!vs.empty()) {
+        ret = vs[0];
+        for (size_t ii=1; ii<vs.size(); ++ii)
+            ret = fgIntersection(vs[ii],ret);
+    }
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgRemoveAll(const vector<T> & vec,const T & val)
+{
+    vector<T>       ret;
+    for (const T & v : vec)
+        if (!(v == val))
+            ret.push_back(v);
+    return ret;
+}
+
+// Set subtraction on vector containers (lhs retains ordering):
+template<class T>
+vector<T>
+fgSetwiseSubtract(const vector<T> & lhs,const vector<T> & rhs)
+{
+    vector<T>       ret;
+    for (const T & l : lhs) {
+        if (!fgContains(rhs,l))
+            ret.push_back(l);
     }
     return ret;
 }

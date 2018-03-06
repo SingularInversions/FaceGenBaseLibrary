@@ -29,7 +29,7 @@ struct  Fg3dNormals
 };
 
 void
-fgCalcNormals(
+fgNormals_(
     const vector<Fg3dSurface> & surfs,
     const FgVerts &             verts,
     Fg3dNormals &               norms);     // RETURNED
@@ -41,7 +41,7 @@ fgNormals(
     const FgVerts &             verts)
 {
     Fg3dNormals         norms;
-    fgCalcNormals(surfs,verts,norms);
+    fgNormals_(surfs,verts,norms);
     return norms;
 }
 

@@ -67,6 +67,8 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
         size_t      meshIdx;
         size_t      vertIdx;
     };
+    // WARNING: drag actions are subject to click actions before the drag since click actions
+    // currently take effect on button down, not up:
     // bool: is shift key down as well ?
     boost::function<void(bool,VertIdx,FgVect3F)>    ctlDragAction;          // Can be empty
     // bool: is shift key down as well ? FgVect2I: drag delta in pixels

@@ -220,6 +220,7 @@
     <ClCompile Include="..\src\FgCmdRender.cpp"  />
     <ClCompile Include="..\src\FgCmdTestmCpp.cpp"  />
     <ClCompile Include="..\src\FgCmdView.cpp"  />
+    <ClInclude Include="..\src\FgCmp.hpp"  />
     <ClCompile Include="..\src\FgCommand.cpp"  />
     <ClInclude Include="..\src\FgCommand.hpp"  />
     <ClInclude Include="..\src\FgConio.hpp"  />
@@ -262,6 +263,7 @@
     <ClInclude Include="..\src\FgGuiApiButton.hpp"  />
     <ClCompile Include="..\src\FgGuiApiCheckbox.cpp"  />
     <ClInclude Include="..\src\FgGuiApiCheckbox.hpp"  />
+    <ClCompile Include="..\src\FgGuiApiDialogs.cpp"  />
     <ClInclude Include="..\src\FgGuiApiDialogs.hpp"  />
     <ClInclude Include="..\src\FgGuiApiDynamic.hpp"  />
     <ClInclude Include="..\src\FgGuiApiGroupbox.hpp"  />
@@ -355,6 +357,7 @@
     <ClCompile Include="..\src\FgStdString.cpp"  />
     <ClInclude Include="..\src\FgStdString.hpp"  />
     <ClInclude Include="..\src\FgStdVector.hpp"  />
+    <ClCompile Include="..\src\FgStdVectorTest.cpp"  />
     <ClCompile Include="..\src\FgString.cpp"  />
     <ClInclude Include="..\src\FgString.hpp"  />
     <ClCompile Include="..\src\FgStringTest.cpp"  />
@@ -366,8 +369,9 @@
     <ClCompile Include="..\src\FgTcpTest.cpp"  />
     <ClCompile Include="..\src\FgTempFile.cpp"  />
     <ClInclude Include="..\src\FgTempFile.hpp"  />
-    <ClCompile Include="..\src\FgTensor.cpp"  />
-    <ClInclude Include="..\src\FgTensor.hpp"  />
+    <ClCompile Include="..\src\FgTensorC.cpp"  />
+    <ClInclude Include="..\src\FgTensorC.hpp"  />
+    <ClInclude Include="..\src\FgTensorV.hpp"  />
     <ClCompile Include="..\src\FgTestUtils.cpp"  />
     <ClInclude Include="..\src\FgTestUtils.hpp"  />
     <ClCompile Include="..\src\FgThread.cpp"  />
@@ -381,6 +385,7 @@
     <ClInclude Include="..\src\FgVersion.hpp"  />
     <ClCompile Include="..\src\FgViz.cpp"  />
     <ClInclude Include="..\src\FgViz.hpp"  />
+    <ClInclude Include="..\src\FgWinSpecific.hpp"  />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp"  />
     <ClCompile Include="..\src\jpeg_mem_src.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"></PrecompiledHeader>

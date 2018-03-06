@@ -22,6 +22,12 @@
 #include "FgSerialize.hpp"
 #include "FgStdStream.hpp"
 
+template<class Archive>     string fgArchiveString();
+template<> inline           string fgArchiveString<boost::archive::text_iarchive>() {return "Text"; }
+template<> inline           string fgArchiveString<boost::archive::xml_iarchive>() {return "XML"; }
+template<> inline           string fgArchiveString<boost::archive::binary_iarchive>() {return "Binary"; }
+template<> inline           string fgArchiveString<portable_binary_iarchive>() {return "PBin"; }
+
 // Returns true unless throwOnFail==false and failure occured:
 template<class Archive,class T>
 bool
@@ -46,7 +52,7 @@ fgLoadDeserial(
     catch(...)
     {
         if (throwOnFail)
-            fgThrow("Error while deserializing from file",filename);
+            fgThrow("Error while deserializing "+string(typeid(T).name())+" from "+fgArchiveString<Archive>()+" file",filename);
         else
             return false;
     }
@@ -79,6 +85,15 @@ fgLoadBinT(const FgString & fname)
 {
     T       ret;
     fgLoadBin(fname,ret,true);
+    return ret;
+}
+
+template<class T>
+T
+fgLoadPBinT(const FgString & fname)
+{
+    T       ret;
+    fgLoadPBin(fname,ret,true);
     return ret;
 }
 

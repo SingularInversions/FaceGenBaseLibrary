@@ -124,6 +124,13 @@ testRecursiveCopy(const FgArgs & args)
     FGASSERT(hello == "hello");
 }
 
+static
+void
+testExists(const FgArgs &)
+{
+    FGASSERT(!fgExists("//doesNotExists"));
+}
+
 void
 fgFileSystemTest(const FgArgs & args)
 {
@@ -134,5 +141,6 @@ fgFileSystemTest(const FgArgs & args)
     cmds.push_back(FgCmd(testIsDirectory,"isDir"));
     cmds.push_back(FgCmd(testDeleteDirectory,"delDir"));
     cmds.push_back(FgCmd(testRecursiveCopy,"recurseCopy"));
+    cmds.push_back(FgCmd(testExists,"exists"));
     fgMenu(args,cmds,true,true,true);
 }

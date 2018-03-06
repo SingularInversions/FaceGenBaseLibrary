@@ -33,7 +33,7 @@ fgToString(const T &val)
     return msg.str();
 }
 
-// Doesn't tell you when the input is invalid, so use 'fgStrTo*' functions below for that:
+// Doesn't tell you when the input is invalid, so use 'fgFromStr' functions below for that:
 template<class T>
 T
 fgFromString(const string & str)

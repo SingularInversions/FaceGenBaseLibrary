@@ -105,9 +105,7 @@ struct  TriVerts
     }
 };
 
-Fg3dTopology::Fg3dTopology(
-    const FgVerts &             verts,
-    const vector<FgVect3UI> &   tris)
+Fg3dTopology::Fg3dTopology(const FgVerts & verts,const FgVect3UIs & tris)
 {
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
@@ -317,7 +315,7 @@ Fg3dTopology::traceFold(
             float       dot = fgDot(facetNorms.tri[edge.triInds[0]],facetNorms.tri[edge.triInds[1]]);
             if (dot < 0.5f) {                   // > 60 degrees
                 ret.insert(vertIdx);
-                fgAppend(ret,traceFold(norms,done,edge.otherVertIdx(vertIdx)));
+                fgUnion_(ret,traceFold(norms,done,edge.otherVertIdx(vertIdx)));
             }
         }
     }

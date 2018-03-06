@@ -71,6 +71,8 @@ struct  FgSimilarity
     inverse() const;
 };
 
+typedef std::vector<FgSimilarity>   FgSimilaritys;
+
 template<uint ncols>
 FgMatrixC<double,3,ncols>
 FgSimilarity::xformCoord(

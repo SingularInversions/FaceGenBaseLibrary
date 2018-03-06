@@ -65,11 +65,29 @@ shrink2(const FgArgs & args)
 
 static
 void
+formats(const FgArgs &)
+{
+    FgStrs      fs = fgImgSupportedFormats();
+    fgout << fgnl << fs.size() << " formats supported:" << fgpush;
+    char        previous = 'Z';
+    for (const string & f : fs) {
+        if (f[0] != previous) {
+            previous = f[0];
+            fgout << fgnl;
+        }
+        fgout << f << ", ";
+    }
+    fgout << fgpop;
+}
+
+static
+void
 imgops(const FgArgs & args)
 {
     vector<FgCmd>   ops;
     ops.push_back(FgCmd(addalpha,"addalpha","Add/replace an alpha channel from an another image"));
     ops.push_back(FgCmd(convert,"convert","Convert images between different formats"));
+    ops.push_back(FgCmd(formats,"formats","List all supported formats by file extension"));
     ops.push_back(FgCmd(shrink2,"shrink2","Shrink images by a factor of 2"));
     fgMenu(args,ops);
 }

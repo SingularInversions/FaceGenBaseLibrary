@@ -440,7 +440,7 @@ vector<FgImgRgbaUb>
 fgOglMipMap(const FgImgRgbaUb & img)
 {
     vector<FgImgRgbaUb>     ret(fgLog2Ceil(fgMaxElem(img.dims()))+1);
-    fgResizePow2Ceil(img,ret[0]);   // Just copies if already pow2 dims
+    fgResizePow2Ceil_(img,ret[0]);   // Just copies if already pow2 dims
     fgImgFlipVertical(ret[0]);
     for (size_t sl=1; sl<ret.size(); ++sl) {
         const FgImgRgbaUb & src = ret[sl-1];

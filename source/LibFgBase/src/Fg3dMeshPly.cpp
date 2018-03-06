@@ -63,7 +63,7 @@ fgSavePly(
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface &     surf = mesh.surfaces[ss];
         FgFacetInds<3>          tris = surf.getTriEquivs();
-        for (size_t ii=0; ii<tris.vertInds.size(); ++ii) {
+        for (size_t ii=0; ii<tris.size(); ++ii) {
             FgVect3UI           vinds = tris.vertInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";
             if (surf.tris.uvInds.empty())

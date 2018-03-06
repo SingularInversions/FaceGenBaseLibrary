@@ -30,6 +30,27 @@ fgNumLeadingZeros(uint32 x)
    return n;
 }
 
+
+uint8
+fgNumNonzeroBits8(uint8 xx)
+{
+    return
+        (xx & 1U) + (xx & 2U)/2 + (xx & 4U)/4 + (xx & 8U)/8 +
+        (xx & 16U)/16 + (xx & 32U)/32 + (xx & 64U)/64 + (xx & 128U)/128;
+}
+uint16
+fgNumNonzeroBits16(uint16 xx)
+{
+    return fgNumNonzeroBits8(xx & 255) + fgNumNonzeroBits8(xx >> 8);
+}
+uint
+fgNumNonzeroBits32(uint32 xx)
+{
+    return
+        fgNumNonzeroBits8(xx & 255) + fgNumNonzeroBits8((xx >> 8) & 255) +
+        fgNumNonzeroBits8((xx >> 16) & 255) + fgNumNonzeroBits8((xx >> 24));
+}
+
 uint
 fgLog2Ceil(uint32 xx)
 {
@@ -144,7 +165,7 @@ testFgRand()
 void
 fgMathTest(const FgArgs &)
 {
-    FgIndent    dummy("Testing rand");
+    FgOutPush       op("Testing rand");
     testFgRand();
 }
 

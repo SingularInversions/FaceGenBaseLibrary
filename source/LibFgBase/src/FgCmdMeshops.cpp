@@ -80,7 +80,7 @@ combinesurfs(const FgArgs & args)
         string  name = syntax.next();
         if (syntax.more()) {
             Fg3dMesh    next = fgLoadMeshAnyFormat(name);
-            fgAppend(mesh.surfaces,next.surfaces);
+            fgCat_(mesh.surfaces,next.surfaces);
         }
         else
             fgSaveMeshAnyFormat(mesh,name);
@@ -122,8 +122,8 @@ copyUvs(const FgArgs & args)
     for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
         const Fg3dSurface &     sin = in.surfaces[ss];
         Fg3dSurface &           sout = out.surfaces[ss];
-        if ((sin.tris.vertInds.size() != sout.tris.vertInds.size()) ||
-            (sin.quads.vertInds.size() != sout.quads.vertInds.size()))
+        if ((sin.tris.size() != sout.tris.size()) ||
+            (sin.quads.size() != sout.quads.size()))
             fgThrow("Incompatible facet counts");
         sout.tris.uvInds = sin.tris.uvInds;
         sout.quads.uvInds = sin.quads.uvInds;
@@ -189,11 +189,11 @@ invWind(const FgArgs & args)
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Fg3dSurface &   surf = mesh.surfaces[ss];
-        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.tris.size(); ++ii)
             std::swap(surf.tris.vertInds[ii][1],surf.tris.vertInds[ii][2]);
         for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii)
             std::swap(surf.tris.uvInds[ii][1],surf.tris.uvInds[ii][2]);
-        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.quads.size(); ++ii)
             std::swap(surf.quads.vertInds[ii][1],surf.quads.vertInds[ii][3]);
         for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii)
             std::swap(surf.quads.uvInds[ii][1],surf.quads.uvInds[ii][3]);
@@ -577,6 +577,23 @@ surfCopy(const FgArgs & args)
 
 static
 void
+surfDel(const FgArgs & args)
+{
+    FgSyntax        syn(args,
+        "<in>.<ext> <idx> <out>.<ext>\n"
+        "    <ext> - " + fgLoadMeshFormatsDescription() + "\n"
+        "    <idx> - Which surface index to delete"
+        );
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
+    size_t          idx = syn.nextAs<uint>();
+    if (idx >= mesh.surfaces.size())
+        syn.error("Selected surface index out of range",fgToString(idx));
+    mesh.surfaces.erase(mesh.surfaces.begin()+idx);
+    fgSaveMeshAnyFormat(mesh,syn.next());
+}
+
+static
+void
 surfList(const FgArgs & args)
 {
     FgSyntax    syn(args,
@@ -618,7 +635,7 @@ spCopy(const FgArgs & args)
     if (from.surfaces.size() != to.surfaces.size())
         fgThrow("'from' and 'to' meshes have different surface counts");
     for (size_t ss=0; ss<to.surfaces.size(); ++ss)
-        fgAppend(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
+        fgCat_(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
     fgSaveFgmesh(syn.next(),to);
 }
 
@@ -699,6 +716,7 @@ surf(const FgArgs & args)
     vector<FgCmd>   ops;
     ops.push_back(FgCmd(surfAdd,"add","Add an empty surface to a mesh"));
     ops.push_back(FgCmd(surfCopy,"copy","Copy surface structure between aligned meshes"));
+    ops.push_back(FgCmd(surfDel,"del","Delete a surface in a mesh (leaves verts unchanged)"));
     ops.push_back(FgCmd(surfList,"list","List surfaces in mesh"));
     ops.push_back(FgCmd(mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"));
     ops.push_back(FgCmd(mergesurfs,"merge","Merge all surfaces in a mesh into one"));
@@ -709,6 +727,20 @@ surf(const FgArgs & args)
     ops.push_back(FgCmd(spRen,"spRen","Rename a surface point"));
     ops.push_back(FgCmd(spsToVerts,"spVert","Convert surface points to marked vertices"));
     fgMenu(args,ops);
+}
+
+static
+void
+toTris(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn> <out>.<extOut>\n"
+        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <extOut> = " + fgMeshSaveFormatsString()
+        );
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
+    mesh.convertToTris();
+    fgSaveMeshAnyFormat(mesh,syntax.next());
 }
 
 static
@@ -775,6 +807,7 @@ meshops(const FgArgs & args)
     ops.push_back(FgCmd(splitsurface,"splitSurface","Split up surface by connected vertex indices"));
     ops.push_back(FgCmd(splitsurfsbyuvs,"splitSurfsByUvs","Split up surfaces with discontiguous UV mappings"));
     ops.push_back(FgCmd(surf,"surf","Operations on mesh surface structure"));
+    ops.push_back(FgCmd(toTris,"toTris","Convert all facets to tris"));
     ops.push_back(FgCmd(unifyuvs,"unifyUVs","Unify identical UV coordinates"));
     ops.push_back(FgCmd(unifyverts,"unifyVerts","Unify identical vertices"));
     ops.push_back(FgCmd(uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"));

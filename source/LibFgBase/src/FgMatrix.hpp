@@ -77,19 +77,9 @@ operator*(
 }
 
 template<typename T,uint nrows,uint ncols>
-T
-fgLengthSqr(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
-{
-    T   ret(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret += v[ii].mag();
-    return ret;
-}
-
-template<typename T,uint nrows,uint ncols>
 inline T
 fgLength(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
-{return std::sqrt(fgLengthSqr(v)); }
+{return std::sqrt(fgMag(v)); }
 
 template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
@@ -108,11 +98,6 @@ inline FgMatrixC<T,nrows,ncols>
 fgVariance(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
 {return fgVariance(v,fgMean(v)); }
 
-template<class T,uint nrows,uint ncols>
-T
-fgLengthSqr(const FgMatrixC<T,nrows,ncols> & m)
-{return m.mag(); }
-
 template<class T>
 typename FgTraits<T>::Scalar
 fgRmsd(const vector<T> & a,const vector<T> & b)
@@ -120,7 +105,7 @@ fgRmsd(const vector<T> & a,const vector<T> & b)
     FGASSERT(a.size() == b.size());
     typename FgTraits<T>::Scalar   acc(0);
     for (size_t ii=0; ii<a.size(); ++ii)
-        acc += fgLengthSqr(a[ii]-b[ii]);
+        acc += fgMag(a[ii]-b[ii]);
     return std::sqrt(acc / a.size());
 }
 

@@ -24,6 +24,16 @@ fgIs64bit()
 #endif
 }
 
+bool
+fgIsDebug()
+{
+#ifdef _DEBUG
+    return true;
+#else
+    return false;
+#endif
+}
+
 std::string
 fgBitsString()
 {

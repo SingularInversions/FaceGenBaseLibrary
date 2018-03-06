@@ -116,6 +116,10 @@ struct  Fg3dMesh
     size_t
     numQuads() const;                   // Just the number of quads over all surfaces
 
+    const Fg3dSurface &
+    surface(const FgString & surfName) const
+    {return fgFindFirst(surfaces,surfName); }
+
     size_t
     surfPointNum() const;              // Over all surfaces
 

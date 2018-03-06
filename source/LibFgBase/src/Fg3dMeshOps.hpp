@@ -95,6 +95,11 @@ fgMergeMeshes(const vector<Fg3dMesh> & meshes);
 Fg3dMesh
 fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask);
 
+// Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
+FgImgUC
+fgGetUvCover(const Fg3dMesh & mesh,FgVect2UI dims);
+
+// Wireframe image of UV layout of each facet:
 FgImgRgbaUb
 fgUvImage(const Fg3dMesh &,const FgImgRgbaUb & img=FgImgRgbaUb());
 

@@ -37,7 +37,7 @@ FgStrs
 fgBuildCompilers(const string & os)
 {
     if (os == "win")
-        return fgSvec<string>("vs15","vs13","vs12");    // First is default for releases
+        return fgSvec<string>("vs15","vs13","vs17");    // First is default for releases
     else if (os == "ubuntu")
         return fgSvec<string>("clang","gcc","icpc");    // clang is faster than gcc and can run using the same shared libs
     else if (os == "osx")
@@ -58,7 +58,7 @@ fgCurrentCompiler()
 		return "vs13";
     #elif(_MSC_VER == 1900)
         return "vs15";
-    #elif(_MSC_VER == 1910)
+    #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
         return "vs17";
     #endif
 #elif defined _INTEL_COMPILER

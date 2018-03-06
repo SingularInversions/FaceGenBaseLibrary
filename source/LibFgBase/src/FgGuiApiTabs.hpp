@@ -39,6 +39,7 @@ struct  FgGuiTab
         onSelect(NULL)
     {}
 };
+typedef std::vector<FgGuiTab>   FgGuiTabs;
 
 inline
 FgGuiTab

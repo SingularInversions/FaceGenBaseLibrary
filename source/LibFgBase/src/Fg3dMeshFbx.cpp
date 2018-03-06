@@ -128,7 +128,7 @@ fgSaveFbx(
         bool        start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             const Fg3dSurface & surf = mesh.surfaces[ss];
-            for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+            for (size_t tt=0; tt<surf.tris.size(); ++tt) {
                 FgVect3UI   i = surf.tris.vertInds[tt];
                 if (start)
                     start = false;
@@ -136,7 +136,7 @@ fgSaveFbx(
                     ofs << ",";
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
-            for (size_t tt=0; tt<surf.quads.vertInds.size(); ++tt) {
+            for (size_t tt=0; tt<surf.quads.size(); ++tt) {
                 FgVect4UI   i = surf.quads.vertInds[tt];
                 if (start)
                     start = false;

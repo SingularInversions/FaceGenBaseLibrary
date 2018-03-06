@@ -17,7 +17,7 @@
 #include "FgMatrixV.hpp"
 #include "FgImageIo.hpp"
 
-void    fgImgDisplay(const FgImgRgbaUb &,vector<FgVect2F> pts=vector<FgVect2F>());
+void    fgImgDisplay(const FgImgRgbaUb &,vector<FgVect2F> ptsIucs=vector<FgVect2F>());
 void    fgImgDisplay(const FgImgUC &);
 void    fgImgDisplay(const FgImage<ushort> &);
 void    fgImgDisplay(const FgImgF &);

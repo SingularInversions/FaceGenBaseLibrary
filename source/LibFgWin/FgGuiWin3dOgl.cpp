@@ -48,7 +48,7 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
         renderDeps.push_back(api.renderOptions);
         if (api.colorBySurface.valid())
             renderDeps.push_back(api.colorBySurface);
-        fgAppend(renderDeps,api.bgImg.deps());
+        fgCat_(renderDeps,api.bgImg.deps());
         m_update = g_gg.addUpdateFlag(renderDeps);
         m_updateBgImg = g_gg.addUpdateFlag(api.bgImg.deps());
         // The OGL texture update process depends on the meshes as well as the textures:
@@ -332,9 +332,10 @@ struct  FgGuiWin3dOgl : public FgGuiOsBase
             for (size_t ii=0; ii<m_oglImgs.size(); ++ii) {
                 vector<FgOglSurf> &     tns = m_oglImgs[ii];
                 for (size_t jj=0; jj<tns.size(); ++jj) {
-                    if (tns[jj].valid()) {
+                    FgOglSurf &         surf = tns[jj];
+                    if (surf.name.valid()) {
                         fgOglTexRelease(tns[jj].name.val());
-                        tns[jj].name.invalidate();
+                        surf.name.invalidate();
                     }
                 }
             }

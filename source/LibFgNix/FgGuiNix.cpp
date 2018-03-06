@@ -45,7 +45,7 @@ fgGuiDialogMessage(const FgString &,const FgString &)
 {fgThrowNotImplemented(); }
 
 FgOpt<FgString>
-fgGuiDialogFileLoad(const FgString &,const vector<std::string> &)
+fgGuiDialogFileLoad(const FgString &,const vector<std::string> &,const string &)
 {
     fgThrowNotImplemented();
     return FgOpt<FgString>();
@@ -65,9 +65,9 @@ fgGuiDialogDirSelect()
     return FgOpt<FgString>();
 }
 
-void
-fgGuiDialogProgress(const FgString &,uint,FgGuiActionProgress)
-{fgThrowNotImplemented(); }
+bool
+fgGuiDialogProgress(const FgString &,uint,FgFnCallback2Void)
+{fgThrowNotImplemented(); return false; }
 
 boost::function<void(void)>
 fgGuiDialogSplashScreen()

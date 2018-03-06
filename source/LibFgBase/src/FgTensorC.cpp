@@ -9,7 +9,7 @@
 
 #include "stdafx.h"
 
-#include "FgTensor.hpp"
+#include "FgTensorC.hpp"
 #include "FgCommand.hpp"
 
 using namespace std;

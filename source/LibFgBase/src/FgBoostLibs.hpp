@@ -27,7 +27,7 @@
 // boost function: nonstandard extension used : formal parameter 'function_ptr'
 // was previously defined as a type:
 #pragma warning(disable:4224)
-// VS2010 has problems with boost archive converting from std::streamsize to size_t for 32 bit:
+// Don't want warnings every time a '0' or '1' is used as a float:
 #pragma warning(disable:4244)
 // boost/archive/basic_binary_oprimitive.hpp: warning C4310: cast truncates constant value
 // (occurs only with vs2010 debug 32):
@@ -71,5 +71,6 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/once.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/variant.hpp>
 
 #endif  // FGBOOSTLIBS_HPP

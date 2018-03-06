@@ -175,19 +175,13 @@ struct  FgOutMute
     {release(); }
 };
 
-struct  FgPush
-{
-    FgPush() {fgout << fgpush; }
-    ~FgPush() {fgout << fgpop; }
-};
-
-struct  FgIndent
+struct  FgOutPush
 {
     explicit
-    FgIndent(const std::string & label)
+    FgOutPush(const std::string & label)
     {fgout << fgnl << label << fgpush; }
 
-    ~FgIndent()
+    ~FgOutPush()
     {fgout << fgpop; }
 };
 

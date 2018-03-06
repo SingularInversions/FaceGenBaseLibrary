@@ -64,11 +64,6 @@ private:
         throw std::runtime_error(str.str());  \
     }
 
-// Returns true if this is the OS + compiler + bits + config used for binary regression.
-// This is necessary since floating point optimizations will differ otherwise:
-bool
-fgIsRegressBuild();
-
 bool
 fgCompareImages(
     const FgImgRgbaUb & test,
@@ -94,10 +89,6 @@ fgRegressionBaseline(
     fgLoadXml(fgDataDir()+path+name+"_baseline.xml",base);
     return base;
 }
-
-// Returns true if the user updates the regression baseline, false otherwise:
-void
-fgRegressUpdateQuery(const std::string & relPath);
 
 // Useful to automatically overwite baselines when version control present, for fast
 // comparison and updates. Note that this flag file is excluded from version control:

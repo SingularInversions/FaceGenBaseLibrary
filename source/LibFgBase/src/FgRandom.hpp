@@ -35,8 +35,9 @@ inline double
 fgRandUniform(double lo,double hi) 
 {return (fgRand() * (hi-lo) + lo); }
 
+// Return random number from standard normal distribution:
 double
-fgRandNormal(double mean=0.0,double stdev=1.0);
+fgRandNormal();
 
 std::vector<double>
 fgRandNormals(size_t num,double mean=0.0,double stdev=1.0);

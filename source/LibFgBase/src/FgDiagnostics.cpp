@@ -13,9 +13,7 @@
 using namespace std;
 
 string
-fgDiagString(
-    const char *    fname,
-    int             line)
+fgDiagString(const char * fname,int line)
 {
     ostringstream   retval;
     retval << fname << ": " << line;
@@ -23,10 +21,7 @@ fgDiagString(
 }
 
 string
-fgDiagString(
-    const char *    fname,
-    int             line,
-    const string &  msg)
+fgDiagString(const char * fname,int line,const string & msg)
 {
     ostringstream   retval;
     retval << fname << ": " << line;
@@ -36,10 +31,13 @@ fgDiagString(
 }
 
 void
-fgAssert(
-    const char *    fname,
-    int             line,
-    const string &  msg)
+fgAssert(const char * fname,int line,const string &  msg)
 {
     fgThrow("Internal program error", fgDiagString(fname,line,msg));
+}
+
+void
+fgWarn(const char * fname,int line,const string & msg)
+{
+    cout << endl << "WARNING at : " <<  fgDiagString(fname,line,msg);
 }

@@ -84,6 +84,13 @@ fgDirSystemAppDataRoot()
 }
 
 FgString
+fgDirSystemAppData(FgString const &,FgString const &)
+{
+    fgThrowNotImplemented();
+    return FgString();
+}
+
+FgString
 fgDirUserAppDataLocalRoot()
 {
     fgThrowNotImplemented();

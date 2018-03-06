@@ -153,7 +153,7 @@ FgGuiApi3d::markSurfPoint(
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     const FgVertss &            vertss = g_gg.getVal(vertssN);
     FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
-    if (vpt.valid()) {
+    if (vpt.valid() && pointLabel.valid()) {
         FgMeshesIntersect       pt = vpt.val();
         pt.surfPnt.label = g_gg.getVal(pointLabel).as_ascii();
         vector<FgSurfPoint> &   surfPoints =  meshes[pt.meshIdx].surfaces[pt.surfIdx].surfPoints;
@@ -183,7 +183,7 @@ FgGuiApi3d::markVertex(
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     const FgVertss &            vertss = g_gg.getVal(vertssN);
     FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
-    if (vpt.valid()) {
+    if (vpt.valid() && vertMarkModeN.valid()) {
         FgMeshesIntersect   pt = vpt.val();
         uint                facetIdx = fgMaxIdx(pt.surfPnt.weights);
         Fg3dMesh &          mesh = meshes[pt.meshIdx];

@@ -204,21 +204,21 @@ fgLineTriIntersect(FgVect3D pnt,FgVect3D dir,FgVect3D v0,FgVect3D v1,FgVect3D v2
     FgVect3D                p0 = v0-pnt;
     FgVect4D                planeH = fgPlaneH(p0,v1-pnt,v2-pnt);
     FgVect4D                isectH = fgLinePlaneIntersect(dir,planeH);
-    if (isectH[3] == 0.0)   // line parallel to facet plane
-        return ret;
-    FgVect3D                isect = fgFromHomogVec(isectH);
-    // Now calculate barycentric coords s,t (with axes v1-v0,v2-v0) of intersection point:
-    FgVect3D                u(v1-v0),
-                            v(v2-v0),
-                            w(isect-p0);
-    double                  uv = fgDot(u,v),
-                            wv = fgDot(w,v),
-                            vv = fgDot(v,v),
-                            wu = fgDot(w,u),
-                            uu = fgDot(u,u),
-                            s = (uv*wv-vv*wu) / (uv*uv-uu*vv),
-                            t = (uv*wu-uu*wv) / (uv*uv-uu*vv);
-    if ((s >= 0.0) && (t >= 0.0) && (s+t < 1.0))
-        ret = pnt+isect;
+    if (isectH[3] != 0.0) {     // line can't be parallel to facet plane
+        FgVect3D                isect = fgFromHomogVec(isectH);
+        // Now calculate barycentric coords s,t (with axes v1-v0,v2-v0) of intersection point:
+        FgVect3D                u(v1-v0),
+                                v(v2-v0),
+                                w(isect-p0);
+        double                  uv = fgDot(u,v),
+                                wv = fgDot(w,v),
+                                vv = fgDot(v,v),
+                                wu = fgDot(w,u),
+                                uu = fgDot(u,u),
+                                s = (uv*wv-vv*wu) / (uv*uv-uu*vv),
+                                t = (uv*wu-uu*wv) / (uv*uv-uu*vv);
+        if ((s >= 0.0) && (t >= 0.0) && (s+t < 1.0))
+            ret = pnt+isect;
+    }
     return ret;
 }

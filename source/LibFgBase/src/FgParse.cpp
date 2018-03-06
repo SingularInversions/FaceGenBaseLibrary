@@ -25,12 +25,12 @@ isCrOrLf(char c)
 }
 
 FgStrs
-fgSplitLines(const string & src)
+fgSplitLines(const string & src,bool backslashContinuation)
 {
     FgStrs          ret;
     string          acc;
     for (size_t ii=0; ii<src.size(); ++ii) {
-        if (src[ii] == '\\') {              // Check for line continuation
+        if (backslashContinuation && (src[ii] == '\\')) {
             if ((ii+1 < src.size()) && (isCrOrLf(src[ii+1]))) {
                 ++ii;
                 while ((ii+1 < src.size()) && (isCrOrLf(src[ii])))

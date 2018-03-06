@@ -139,9 +139,7 @@ fgLoadImgAnyFormat(
 }
 
 void
-fgSaveImgAnyFormat(
-    const FgString &    fname,
-    const FgImgRgbaUb & img)
+fgSaveImgAnyFormat(const FgString & fname,const FgImgRgbaUb & img)
 {
     FGASSERT(fname.length() > 0);
     fgEnsureMagick();
@@ -157,6 +155,14 @@ fgSaveImgAnyFormat(
     if (res != MagickTrue)
         // Filename already included in 'exception->reason':
         fgThrow("Unable to save image to file",exception->reason);
+}
+
+void
+fgSaveImgAnyFormat(const FgString & fname,const FgImgUC & img)
+{
+    FgImgRgbaUb         tmp;
+    fgImgConvert(img,tmp);
+    fgSaveImgAnyFormat(fname,tmp);
 }
 
 vector<string>

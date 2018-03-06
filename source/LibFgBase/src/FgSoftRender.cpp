@@ -76,7 +76,7 @@ fgSoftRender(
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const Fg3dMesh &    mesh = meshes[ii];
         FGASSERT(mesh.surfaces.size() == 1);
-        fgCalcNormals(mesh.surfaces,mesh.verts,norms[ii]);
+        fgNormals_(mesh.surfaces,mesh.verts,norms[ii]);
         surfs[ii] = mesh.surfaces[0].convertToTris();
         FgSurfPtr   &       rs = rendSurfs[ii];
         rs.material = mesh.material;

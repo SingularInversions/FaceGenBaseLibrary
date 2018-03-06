@@ -64,7 +64,7 @@ fgRandSeedRepeatable(uint seed)
 {rng.gen = boost::random::mt19937(seed); }
 
 double
-fgRandNormal(double mean,double stdev)
+fgRandNormal()
 {
     // Polar (Box-Muller) method; See Knuth v2, 3rd ed, p122.
     double  x, y, r2;
@@ -75,9 +75,8 @@ fgRandNormal(double mean,double stdev)
         r2 = x * x + y * y;
     }
     while (r2 > 1.0 || r2 == 0);
-
     // Box-Muller transform:
-    return (mean + (stdev * y * sqrt (-2.0 * log (r2) / r2)));
+    return y * sqrt (-2.0 * log (r2) / r2);
 }
 
 FgDbls
@@ -85,7 +84,7 @@ fgRandNormals(size_t num,double mean,double stdev)
 {
     FgDbls      ret(num);
     for (size_t ii=0; ii<num; ++ii)
-        ret[ii] = fgRandNormal(mean,stdev);
+        ret[ii] = mean + stdev * fgRandNormal();
     return ret;
 }
 

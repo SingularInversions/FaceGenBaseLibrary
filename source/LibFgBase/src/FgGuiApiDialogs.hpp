@@ -25,9 +25,20 @@ fgGuiDialogMessage(
 FgOpt<FgString>
 fgGuiDialogFileLoad(
     const FgString &            description,
-    const vector<std::string> & extensions);
+    const FgStrs &              extensions,
+    const string &              storeID=string());  // Remember different directories for same 'description'
 
-// The extension should be chosen in the GUI before calling this function:
+FgGuiPtr
+fgGuiFileLoadButton(
+    const FgString &            buttonText,
+    const FgString &            fileTypesDescription,
+    const FgStrs &              extensions,
+    const string &              storeID,
+    FgDgn<FgString>             output);
+
+// The extension should be chosen in the GUI before calling this function.
+// Windows will allow the user to enter a different extension of 3 characters, but extensions of different
+// character length (or no extension) will have the given extension appended:
 FgOpt<FgString>
 fgGuiDialogFileSave(
     const FgString &        description,
@@ -38,15 +49,16 @@ fgGuiDialogDirSelect();
 
 // Arguments: true - advance progress bar, false - do not
 // Return: true - user cancel, false - continue
-typedef boost::function<bool(bool)>             FgGuiProgress;
+typedef boost::function<bool(bool)>             FgFnBool2Bool;
 
-typedef boost::function<void(FgGuiProgress)>    FgGuiActionProgress;
+typedef boost::function<void(FgFnBool2Bool)>    FgFnCallback2Void;
 
-void
+// Returns false if the computation was cancelled by the user, true otherwise:
+bool
 fgGuiDialogProgress(
     const FgString &        title,
     uint                    progressSteps,
-    FgGuiActionProgress     actionProgress);
+    FgFnCallback2Void       actionProgress);
 
 // Uses the embedded icon for the splash screen.
 // Call the returned function to terminate the splash screen:

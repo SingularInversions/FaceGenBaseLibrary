@@ -60,8 +60,8 @@ fgApproxEqual(
 {
     FGASSERT(lhs.size() == rhs.size());
     FGASSERT(relAccuracy > std::numeric_limits<float>::epsilon());
-    float   mag1 = fgLengthSqr(lhs),
-        mag2 = fgLengthSqr(rhs),
+    float   mag1 = fgMag(lhs),
+        mag2 = fgMag(rhs),
         mag = sqrt((mag1 + mag2) * float(0.5));
     if (mag == float(0))
         return true;
@@ -110,8 +110,8 @@ fgApproxEqual(
 {
     FGASSERT(lhs.size() == rhs.size());
     FGASSERT(relAccuracy > std::numeric_limits<T>::epsilon());
-    T   mag1 = fgLengthSqr(lhs),
-        mag2 = fgLengthSqr(rhs),
+    T   mag1 = fgMag(lhs),
+        mag2 = fgMag(rhs),
         mag = sqrt((mag1 + mag2) * T(0.5));
     if (mag == T(0)) return true;
     T   rdelta = fgLength(lhs-rhs) / mag,

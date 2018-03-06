@@ -74,6 +74,13 @@ operator<<(std::ostream & os,const FgTimer & t)
     return os << "Elapsed time: " << fgToStringPrecision(et,4) << " s";
 }
 
+void
+FgTimer::report(const string & label)
+{
+    fgout << fgnl << label << ": " << readMs() << "ms ";
+    start();
+}
+
 bool
 fgTick()
 {

@@ -16,6 +16,16 @@
 
 using namespace std;
 
+FgVerts
+fgVertsRandNormal(size_t num,float scale)
+{
+    FgVerts         ret;
+    ret.reserve(num);
+    for (size_t ii=0; ii<num; ++ii)
+        ret.push_back(FgVect3F(fgMatRandNormal<3,1>()*scale));
+    return ret;
+}
+
 // Gaussian elimination can be very simply explicit in this case:
 FgOpt<FgVect2F>
 fgSolve(FgMat22F A,FgVect2F b)

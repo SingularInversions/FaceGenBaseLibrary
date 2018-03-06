@@ -305,7 +305,8 @@ writeMesh(
     const Fg3dMesh &    mesh,
     const FgPath &      fpath,
     Offsets             offsets,
-    const string &      imgFormat)
+    const string &      imgFormat,
+    bool                mtlFile)        // Is there an associated MTL file
 {
     if (!mesh.deltaMorphs.empty())
         fgout << endl << "WARNING: OBJ format does not support morphs";
@@ -339,7 +340,8 @@ writeMesh(
         const Fg3dSurface & surf = mesh.surfaces[ii];
         FgString    name = (surf.name.empty() ? FgString("Surf")+fgToString(ii) : surf.name);
         ofs << "g " << name << endl;
-        ofs << "usemtl Texture" << fgToString(offsets.mat+ii) << endl;
+        if (mtlFile)    // Meshlab can't handle 'usemtl' if there is no MTL file:
+            ofs << "usemtl Texture" << fgToString(offsets.mat+ii) << endl;
         writeFacets(ofs,surf.tris.vertInds,surf.tris.uvInds,offsets);
         writeFacets(ofs,surf.quads.vertInds,surf.quads.uvInds,offsets);
     }
@@ -381,7 +383,7 @@ fgSaveObj(
         name = name.replace(' ','_');
         ofs << "o " << name << endl
             << "s 1" << endl;    // Enable smooth shading
-        offsets = writeMesh(ofs,ofsMtl,meshes[ii],fpath,offsets,imgFormat);
+        offsets = writeMesh(ofs,ofsMtl,meshes[ii],fpath,offsets,imgFormat,texImage);
     }
 }
 

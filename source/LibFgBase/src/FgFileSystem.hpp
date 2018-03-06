@@ -28,15 +28,11 @@
 FgString
 fgDirSystemAppDataRoot();
 
-// Get (and create if necessary) the all-users application data directory for the
-// specified application:
-// WARNING: On windows, modifying a file here that was not created by the same user
-// requires administrator privelege, which means that it won't work even for other admins
-// due to UAC. Creating new files within a directory created by other users is OK.
+// Get (and create if necessary) the all-users application data directory for the specified application.
+// Note that for some users, access is not granted. I am unable to replicate this even if these
+// directories are created by an admin user and the file within them is modified by a non-admin user....
 FgString
-fgDirSystemAppData(
-    FgString const &    groupName,
-    FgString const &    appName);
+fgDirSystemAppData(FgString const & groupName,FgString const & appName);
 
 FgString
 fgDirUserAppDataRoamingRoot();
@@ -64,8 +60,9 @@ fgUserDocumentsDirectory(bool throwOnFail=true);
 FgString
 fgPublicDocumentsDirectory();
 
-// Find data directory from path of current executable:
-const FgString & fgDataDir();
+// Find data directory from path of current executable (always given as absolute).
+// If 'throwIfFail' is false, then you must check the return value for the empty string (failure):
+const FgString & fgDataDir(bool throwIfFail=true);
 
 // Force above to use current directory rather than executable location; useful for debugging:
 void fgDataDirFromCurrent();
@@ -82,9 +79,9 @@ fgCopyFile(const FgString & src,const FgString & dst,bool overwrite = false);
 void
 fgMoveFile(const FgString & src,const FgString & dst,bool overwrite = false);
 
-inline bool
-fgExists(const FgString & fname)
-{return boost::filesystem::exists(fname.ns()); }
+// Will not throw, returns false for any kind of failure on 'fname':
+bool
+fgExists(const FgString & fname);
 
 inline bool
 fgRemove(const FgString & fname)

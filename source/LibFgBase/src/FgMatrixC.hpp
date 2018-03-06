@@ -126,6 +126,12 @@ T
 fgDeterminant(const FgMatrixC<T,2,2> & mat)
 {return (mat[0]*mat[3] - mat[1]*mat[2]); }
 
+// Useful for finding the discriminant, for instance of aspect ratios:
+template<class T>
+T
+fgDeterminant(const FgMatrixC<T,2,1> & col0,const FgMatrixC<T,2,1> & col1)
+{return col0[0]*col1[1] - col0[1]*col1[0]; }
+
 template<class T>
 T
 fgDeterminant(const FgMatrixC<T,3,3> & mat)
@@ -363,6 +369,9 @@ fgMatRandNormal()
     return vec;
 }
 
+FgVerts
+fgVertsRandNormal(size_t num,float scale = 1.0f);
+
 template<uint nrows,uint ncols>
 FgMatrixC<double,nrows,ncols> 
 fgMatRandUniform(double lo,double hi)
@@ -380,7 +389,7 @@ fgMatRandExp(double mean,double stdev)
 {
     FgMatrixC<double,nrows,ncols>   ret;
     for (uint ii=0; ii<ret.numElems(); ++ii)
-        ret[ii] = std::exp(fgRandNormal(mean,stdev));
+        ret[ii] = std::exp(fgRandNormal()*stdev+mean);
     return ret;
 }
 
@@ -723,32 +732,8 @@ fgMapMag(const vector<FgMatrixC<T,nrows,ncols> > & v)
 {
     vector<T>   ret(v.size());
     for (size_t ii=0; ii<v.size(); ++ii)
-        ret[ii] = fgLengthSqr(v[ii]);
+        ret[ii] = fgMag(v[ii]);
     return ret;
-}
-
-template<class T,uint nrows,uint ncols>
-T
-fgSsd(
-    const vector<FgMatrixC<T,nrows,ncols> > &  v0,
-    const vector<FgMatrixC<T,nrows,ncols> > &  v1)
-{
-    FGASSERT(v0.size() == v1.size());
-    double      acc(0);
-    for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += (v1[ii]-v0[ii]).mag();
-    return T(acc);
-}
-
-template<typename T,uint nrows,uint ncols>
-T
-fgRms(const vector<FgMatrixC<T,nrows,ncols> > & v)
-{
-    T       acc(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        acc += v[ii].mag();
-    acc /= T(v.size());
-    return acc;
 }
 
 // Find first index of an element in a vector. Return 'size' if not found:
@@ -793,26 +778,6 @@ fgIsIntegerSizeMultiple(FgMatrixC<uint,nrows,ncols> m0,FgMatrixC<uint,nrows,ncol
     return true;
 }
 
-template<uint nrows,uint ncols>
-uint
-fgL1Norm(FgMatrixC<int,nrows,ncols> m)
-{
-    uint        ret(0);
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret += uint(std::abs(m.m[ii]));
-    return ret;
-}
-
-template<uint nrows,uint ncols>
-double
-fgL1Norm(FgMatrixC<double,nrows,ncols> m)
-{
-    double      ret(0);
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret += std::abs(m.m[ii]);
-    return ret;
-}
-
 template<typename T,uint nrows,uint ncols>
 bool
 fgNoZeros(FgMatrixC<T,nrows,ncols> m)
@@ -833,14 +798,27 @@ FgMatrixC<float,nrows,ncols>
 fgD2F(const FgMatrixC<double,nrows,ncols> & m)
 {return FgMatrixC<float,nrows,ncols>(m); }
 
+// Contract columns to row vector:
+template<class T,uint nrows,uint ncols>
+FgMatrixC<T,1,ncols>
+fgSumCols(const FgMatrixC<T,nrows,ncols> & m)
+{
+    FgMatrixC<T,1,ncols>    r(0);
+    for (uint rr=0; rr<nrows; ++rr)
+        for (uint cc=0; cc<ncols; ++cc)
+            r[cc] += m.rc(rr,cc);
+    return r;
+}
+
+// Contract rows to column vector:
 template<class T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,1>
-fgSumOverCols(FgMatrixC<T,nrows,ncols> m)
+fgSumRows(const FgMatrixC<T,nrows,ncols> & m)
 {
     FgMatrixC<T,nrows,1>    r(0);
     for (uint rr=0; rr<nrows; ++rr)
         for (uint cc=0; cc<ncols; ++cc)
-            r.rc(rr,0) += m.rc(rr,cc);
+            r[rr] += m.rc(rr,cc);
     return r;
 }
 

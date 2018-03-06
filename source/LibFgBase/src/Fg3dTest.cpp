@@ -140,7 +140,7 @@ edgeDist(const FgArgs &)
             colVal[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(FgImgRgbaUb(128,128,FgRgbaUB(255)));
     FgAffineCw2F    otcsToIpcs = fgOtcsToIpcs(FgVect2UI(128));
-    for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+    for (size_t tt=0; tt<surf.tris.size(); ++tt) {
         FgVect3UI   vertInds = surf.tris.vertInds[tt];
         FgVect3UI   uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {

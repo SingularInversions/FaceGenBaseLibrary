@@ -16,7 +16,7 @@ using namespace std;
 // Vertex normals are just approximated by a simple average of the facet normals of all
 // facets containing the vertex:
 void
-fgCalcNormals(
+fgNormals_(
     const vector<Fg3dSurface> & surfs,
     const FgVerts &             verts,
     Fg3dNormals &               norms)

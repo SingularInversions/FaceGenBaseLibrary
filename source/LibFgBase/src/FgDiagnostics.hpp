@@ -98,4 +98,10 @@ std::cout << std::endl << "HI ! (" << __FILE__ << ": " << __LINE__       \
 #define FG_DBG_STR(str) ""
 #endif
 
+// Crude warning system outputs to cout. Use when we don't want to throw in release distros:
+void fgWarn(const char * fname,int line,const std::string & msg="");
+
+#define FGWARN fgWarn(__FILE__,__LINE__)
+#define FGWARN1(X) fgWarn(__FILE__,__LINE__,X)
+
 #endif

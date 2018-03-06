@@ -64,11 +64,15 @@ viewMesh(const FgArgs & args)
                 FgImgRgbaUb     trans;
                 fgout << fgnl << "Transparency image:" << trans;
                 fgLoadImgAnyFormat(syntax.next(),trans);
-                mesh.surfaces[0].setAlbedoMap(fgImgApplyTransparencyPow2(texture,trans));
+                texture = fgImgApplyTransparencyPow2(texture,trans);
             }
             else {
-                fgResizePow2Ceil(texture,mesh.surfaces[0].albedoMapRef());
+                texture = fgResizePow2Ceil(texture);
             }
+            // Apply to all surfaces:
+            boost::shared_ptr<FgImgRgbaUb>  map = boost::make_shared<FgImgRgbaUb>(texture);
+            for (size_t ss=0; ss<mesh.surfaces.size(); ++ss)
+                mesh.surfaces[ss].albedoMap = map;
         }
         meshes.push_back(mesh);
         fgout << fgpop;

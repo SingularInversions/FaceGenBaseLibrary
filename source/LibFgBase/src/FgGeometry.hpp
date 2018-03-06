@@ -20,7 +20,8 @@ struct  FgVecMag
 
     FgVecMag() : mag(std::numeric_limits<double>::max()) {}
 
-    bool valid() const {return (mag != std::numeric_limits<double>::max()); }
+    bool valid() const
+    {return (mag != std::numeric_limits<double>::max()); }
 };
 
 // Returns closest point in given line segment from origin:
@@ -71,7 +72,7 @@ fgLinePlaneIntersect(
 int
 fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2);
 
-// Returns the intersection point of a line and a triangle, if it exists:
+// Returns the intersection point of a line and a triangle, if it exists, in either direction:
 FgOpt<FgVect3D>
 fgLineTriIntersect(
     FgVect3D        point,      // Point on line

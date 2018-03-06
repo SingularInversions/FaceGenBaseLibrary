@@ -19,8 +19,21 @@ fgGuiText(FgDgn<FgString> node,uint minWidth,bool rich)
     FgGuiApiText    gt;
     gt.content = node;
     gt.updateFlagIdx = g_gg.addUpdateFlag(node);
+    gt.wantStretch[0] = true;
     gt.minWidth = minWidth;
     gt.rich = rich;
+    return fgsp(gt);
+}
+
+FgGuiPtr
+fgGuiTextLines(FgDgn<FgString> node,uint minHeight,bool wantStretchVert)
+{
+    FgGuiApiText    gt;
+    gt.content = node;
+    gt.updateFlagIdx = g_gg.addUpdateFlag(node);
+    gt.wantStretch[0] = true;
+    gt.wantStretch[1] = wantStretchVert;
+    gt.minHeight = minHeight;
     return fgsp(gt);
 }
 

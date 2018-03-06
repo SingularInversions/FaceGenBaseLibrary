@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     July 14, 2017
 //
-// Heap-based variable-rank tensor
+// Stack-based templated-dimension array (aka templated-rank "tensor").
 //
 
 #ifndef FGTENSOR_HPP
@@ -20,7 +20,7 @@
 #include "FgIter.hpp"
 
 template <class T,uint rank>
-struct  FgTensor
+struct  FgTensorC
 {
     FgMatrixC<uint,rank,1>  m_dims;     // From minor to major
     vector<T>               m_data;     // Always of size fgProduct(m_dims)
@@ -29,16 +29,16 @@ struct  FgTensor
 
     typedef FgMatrixC<uint,rank,1>   Crd;
 
-    FgTensor() {}
+    FgTensorC() {}
 
-    FgTensor(size_t dim0,size_t dim1,size_t dim2,const vector<T> & data)
+    FgTensorC(size_t dim0,size_t dim1,size_t dim2,const vector<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2)), m_data(data)
     {
         FG_STATIC_ASSERT(rank == 3);
         FGASSERT(dim0*dim1*dim2 == m_data.size());
     }
 
-    FgTensor(size_t dim0,size_t dim1,size_t dim2,size_t dim3,const vector<T> & data)
+    FgTensorC(size_t dim0,size_t dim1,size_t dim2,size_t dim3,const vector<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2),uint(dim3)), m_data(data)
     {
         FG_STATIC_ASSERT(rank == 4);
@@ -66,11 +66,11 @@ struct  FgTensor
     operator[](const Crd & crd)                // Index from minor to major
     {return m_data[crdToIdx(crd)]; }
 
-    FgTensor
+    FgTensorC
     reorder(const Crd & perm) const             // Must represent a valid permutation
     {
         FGASSERT(fgIsValidPermutation(perm));
-        FgTensor        ret;
+        FgTensorC        ret;
         ret.m_dims = fgPermute(m_dims,perm);
         ret.m_data.resize(m_data.size());
         // Loop in source tensor order so we can use permuation as forward transform:
@@ -79,11 +79,11 @@ struct  FgTensor
         return ret;
     }
 
-    FgTensor
+    FgTensorC
     transpose(uint d0,uint d1) const
     {
         FGASSERT((d0<rank) && (d1<rank));
-        FgTensor        ret;
+        FgTensorC        ret;
         ret.m_dims = m_dims;
         ret.m_data.resize(m_data.size());
         std::swap(ret.m_dims[d0],ret.m_dims[d1]);
@@ -96,15 +96,15 @@ struct  FgTensor
     }
 
     bool
-    operator==(const FgTensor & rhs) const
+    operator==(const FgTensorC & rhs) const
     {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
 };
 
-typedef FgTensor<int,3>         FgTensor3I;
-typedef FgTensor<int,4>         FgTensor4I;
-typedef FgTensor<float,3>       FgTensor3F;
-typedef FgTensor<float,4>       FgTensor4F;
-typedef FgTensor<double,3>      FgTensor3D;
-typedef FgTensor<double,4>      FgTensor4D;
+typedef FgTensorC<int,3>         FgTensor3I;
+typedef FgTensorC<int,4>         FgTensor4I;
+typedef FgTensorC<float,3>       FgTensor3F;
+typedef FgTensorC<float,4>       FgTensor4F;
+typedef FgTensorC<double,3>      FgTensor3D;
+typedef FgTensorC<double,4>      FgTensor4D;
 
 #endif

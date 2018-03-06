@@ -37,15 +37,16 @@ FgImg4UC
 fgLoadImg4UC(const FgString & fname);
 
 void
-fgSaveImgAnyFormat(
-    const FgString &    fname,
-    const FgImgRgbaUb & img);
+fgSaveImgAnyFormat(const FgString & fname,const FgImgRgbaUb & img);
 
-// List of all supported image file format extensions in capitals:
+void
+fgSaveImgAnyFormat(const FgString & fname,const FgImgUC & img);
+
+// List of all supported image file format extensions in UPPER CASE:
 std::vector<std::string>
 fgImgSupportedFormats();
 
-// List of file extensions of the 6 most commonly used formats:
+// List of file extensions of the 6 most commonly used formats in LOWER CASE:
 std::vector<std::string>
 fgImgCommonFormats();
 

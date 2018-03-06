@@ -14,7 +14,7 @@
 using namespace std;
 
 FgGuiPtr
-fgGuiButton(const FgString & label,FgGuiAction action)
+fgGuiButton(const FgString & label,FgFnVoid2Void action)
 {
     FgGuiApiButton      b;
     b.label = label;
@@ -23,7 +23,7 @@ fgGuiButton(const FgString & label,FgGuiAction action)
 }
 
 FgGuiPtr
-fgGuiButtonTr(const string & label,FgGuiAction action)
+fgGuiButtonTr(const string & label,FgFnVoid2Void action)
 {
     FgGuiApiButton      b;
     b.label = label;

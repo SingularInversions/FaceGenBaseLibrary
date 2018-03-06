@@ -46,6 +46,21 @@ fgMoveFile(const FgString & src,const FgString & dst,bool overwrite)
     fgDeleteFile(src);
 }
 
+bool
+fgExists(const FgString & fname)
+{
+    // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
+    // We don't want that - consider it just not there:
+    bool    ret;
+    try {
+        ret = boost::filesystem::exists(fname.ns());
+    }
+    catch (...) {
+        ret = false;
+    }
+    return ret;
+}
+
 FgDirectoryContents
 fgDirectoryContents(const FgString & dirName)
 {
@@ -107,18 +122,6 @@ fgFileReadable(const FgString & filename)
 }
 
 FgString
-fgDirSystemAppData(
-    FgString const & groupName,
-    FgString const & appName)
-{
-    FgString    appDir = fgDirSystemAppDataRoot() + groupName;
-    fgCreateDirectory(appDir);
-    appDir = appDir + fgDirSep() + appName;
-    fgCreateDirectory(appDir);
-    return appDir + fgDirSep();
-}
-
-FgString
 fgDirUserAppDataLocal(const vector<string> & subPath)
 {
     FgString    ret = fgDirUserAppDataLocalRoot();
@@ -159,7 +162,7 @@ fgBinaryFileCompare(
 static bool s_dataDirFromPath = false;
 
 const FgString &
-fgDataDir()
+fgDataDir(bool throwIfFail)
 {
     // First find the data directory relative to current binary. It can be in one of:
     //  ./data                  (applications & remote execution)
@@ -183,7 +186,8 @@ fgDataDir()
         }
         path.dirs.pop_back();
     }
-    fgThrow("Unable to find FaceGen data directory from executable location",fgExecutableDirectory());
+    if (throwIfFail)
+        fgThrow("Unable to find FaceGen data directory from executable location",fgExecutableDirectory());
     return ret;
 }
 

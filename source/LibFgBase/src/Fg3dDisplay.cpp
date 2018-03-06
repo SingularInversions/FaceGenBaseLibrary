@@ -293,7 +293,7 @@ FGLINK(linkNorms)
     FGASSERT(meshes.size() == vertss.size());
     normss.resize(meshes.size());
     for (size_t ii=0; ii<normss.size(); ++ii)
-        fgCalcNormals(meshes[ii].surfaces,vertss[ii],normss[ii]);
+        fgNormals_(meshes[ii].surfaces,vertss[ii],normss[ii]);
 }
 
 static
@@ -568,7 +568,7 @@ clearAllMarkedVerts(FgDgn<vector<Fg3dMesh> > meshesN)
 
 static
 void
-assignTri(
+assignTri(      // Re-assign a tri (or quad) to a different surface if intersected
     FgDgn<Fg3dMeshes> meshesN,FgDgn<FgVertss> allVertssN,FgDgn<size_t> surfIdx,
     FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
 {
@@ -584,15 +584,40 @@ assignTri(
         if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < mesh.surfaces.size())) {
             Fg3dSurface &           srcSurf = mesh.surfaces[isct.surfIdx];
             Fg3dSurface &           dstSurf = mesh.surfaces[dstSurfIdx];
-            for (size_t pp=0; pp<srcSurf.surfPoints.size(); ++pp) {
-                FgSurfPoint     sp = srcSurf.surfPoints[pp];
-                if (sp.triEquivIdx == isct.surfPnt.triEquivIdx) {
-                    sp.triEquivIdx = uint(dstSurf.tris.vertInds.size());
-                    dstSurf.surfPoints.push_back(sp);
+            if (srcSurf.isTri(isct.surfPnt.triEquivIdx)) {
+                // Copy surface points on selected tri to destination surface:
+                for (FgSurfPoint sp : srcSurf.surfPoints) {
+                    if (sp.triEquivIdx == isct.surfPnt.triEquivIdx) {
+                        sp.triEquivIdx = uint(dstSurf.tris.size());
+                        dstSurf.surfPoints.push_back(sp);
+                    }
                 }
+                // Move selected tri to destination surface:
+                size_t          idx = isct.surfPnt.triEquivIdx;
+                if (dstSurf.tris.hasUvs())
+                    dstSurf.tris.uvInds.push_back(srcSurf.tris.uvInds[idx]);
+                dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[idx]);
+                srcSurf.removeTri(isct.surfPnt.triEquivIdx);
             }
-            dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[isct.surfPnt.triEquivIdx]);
-            srcSurf.removeTri(isct.surfPnt.triEquivIdx);
+            else {                      // It's a quad
+                // Copy surface points on selected quad to destination surface:
+                size_t                  quadIdx = (isct.surfPnt.triEquivIdx - srcSurf.tris.size())/2;
+                for (FgSurfPoint sp : srcSurf.surfPoints) {
+                    size_t              spQuadIdx2 = sp.triEquivIdx - srcSurf.tris.size(),
+                                        spQuadIdx = spQuadIdx2 / 2,
+                                        spQuadMod = spQuadIdx2 % 2;
+                    if (spQuadIdx == quadIdx) {
+                        size_t          idx = dstSurf.tris.size() + 2*dstSurf.quads.size() + spQuadMod;
+                        sp.triEquivIdx = uint(idx);
+                        dstSurf.surfPoints.push_back(sp);
+                    }
+                }
+                // Move selected quad to destination surface:
+                if (dstSurf.quads.hasUvs())
+                    dstSurf.quads.uvInds.push_back(srcSurf.quads.uvInds[quadIdx]);
+                dstSurf.quads.vertInds.push_back(srcSurf.quads.vertInds[quadIdx]);
+                srcSurf.removeQuad(quadIdx);
+            }
         }
     }
 }
@@ -615,7 +640,7 @@ assignPaint(
         Fg3dMesh &              mesh = meshes[isct.meshIdx];
         if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < mesh.surfaces.size())) {
             FgVect3UI           tri = mesh.surfaces[isct.surfIdx].getTriEquiv(isct.surfPnt.triEquivIdx);
-            vector<Fg3dSurface> surfs = fgSplitSurface(mesh.surfaces[isct.surfIdx]);
+            Fg3dSurfaces        surfs = fgSplitSurface(mesh.surfaces[isct.surfIdx]);
             for (size_t ss=0; ss<surfs.size(); ++ss) {
                 if (fgContains(surfs[ss].tris.vertInds,tri)) {
                     mesh.surfaces[dstSurfIdx].merge(surfs[ss]);
@@ -665,14 +690,19 @@ fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDg
             surfs[ss].name = fgToString(ss);
         surfNames.push_back(surfs[ss].name);
     }
-    FgGuiRadio          surfChoice = fgGuiRadio(surfNames);
-    api.shiftRightDragAction = boost::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
-    api.ctrlShiftMiddleClickAction = boost::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
-    FgGuiPtr            facets = fgGuiSplit(false,
-        fgGuiText("Assign tri to surface selection: shift-right-drag\n"
-            "Assign connected tris to surface: shift-middle-click"),
-        fgGuiGroupbox("Surface Selection",surfChoice.win),
-        fgGuiCheckbox("Color by surface",api.colorBySurface));
+    FgGuiPtr            facets;
+    if (surfNames.empty())
+        facets = fgGuiText("There are no surfaces to edit");
+    else {
+        FgGuiRadio          surfChoice = fgGuiRadio(surfNames);
+        api.shiftRightDragAction = boost::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
+        api.ctrlShiftMiddleClickAction = boost::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
+        facets = fgGuiSplit(false,
+            fgGuiText("Assign tri to surface selection: shift-right-drag\n"
+                "Assign connected tris (not quads) to surface: shift-middle-click"),
+            fgGuiGroupbox("Surface Selection",surfChoice.win),
+            fgGuiCheckbox("Color by surface",api.colorBySurface));
+    }
     tabs.push_back(FgGuiTab("Points",true,points));
     tabs.push_back(FgGuiTab("Verts",true,verts));
     tabs.push_back(FgGuiTab("Facets",true,facets));

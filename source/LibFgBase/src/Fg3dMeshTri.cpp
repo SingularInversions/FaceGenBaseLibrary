@@ -115,24 +115,24 @@ fgLoadTri(istream & istr)
     }
     // Texture coordinates:
     if (numUvs > 0) {
-        surf.tris.uvInds.resize(surf.tris.vertInds.size());
-        surf.quads.uvInds.resize(surf.quads.vertInds.size());
+        surf.tris.uvInds.resize(surf.tris.size());
+        surf.quads.uvInds.resize(surf.quads.size());
         mesh.uvs.resize(numUvs);
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numUvs));
-        if (surf.tris.vertInds.size() > 0)
+        if (surf.tris.size() > 0)
             istr.read(reinterpret_cast<char*>(&surf.tris.uvInds[0]),int(12*numTris));
-        if (surf.quads.vertInds.size() > 0)
+        if (surf.quads.size() > 0)
             istr.read(reinterpret_cast<char*>(&surf.quads.uvInds[0]),int(16*numQuads));
     }
     else if (texs) { // In the case of per vertex UVs we have to convert to indexed UVs
-        surf.tris.uvInds.resize(surf.tris.vertInds.size());
-        surf.quads.uvInds.resize(surf.quads.vertInds.size());
+        surf.tris.uvInds.resize(surf.tris.size());
+        surf.quads.uvInds.resize(surf.quads.size());
         mesh.uvs.resize(mesh.verts.size());
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numVerts));
-        for (uint ii=0; ii<surf.tris.vertInds.size(); ii++)
+        for (uint ii=0; ii<surf.tris.size(); ii++)
             for (uint jj=0; jj<3; jj++)
                 surf.tris.uvInds[ii][jj] = surf.tris.vertInds[ii][jj];
-        for (uint ii=0; ii<surf.quads.vertInds.size(); ii++)
+        for (uint ii=0; ii<surf.quads.size(); ii++)
             for (uint jj=0; jj<4; jj++)
                 surf.quads.uvInds[ii][jj] = surf.quads.vertInds[ii][jj];
     }

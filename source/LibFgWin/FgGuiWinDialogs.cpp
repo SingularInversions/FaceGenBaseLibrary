@@ -12,6 +12,7 @@
 #include "FgGuiApiDialogs.hpp"
 #include "FgGuiWin.hpp"
 #include "FgScopeGuard.hpp"
+#include "FgSystemInfo.hpp"
 
 using namespace std;
 
@@ -37,7 +38,8 @@ pfdRelease(IFileDialog * pfd)
 FgOpt<FgString>
 fgGuiDialogFileLoad(
     const FgString &        description,
-    const vector<string> &  extensions)
+    const vector<string> &  extensions,
+    const string &          storeID)
 {
     FGASSERT(!extensions.empty());
     FgOpt<FgString>    ret;
@@ -50,7 +52,7 @@ fgGuiDialogFileLoad(
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
     std::hash<string>       hash;       // VS12 doesn't like this inlined
-    guid.Data1 = ulong(hash(description.m_str));
+    guid.Data1 = ulong(hash(description.m_str+storeID));
     guid.Data2 = ushort(0x7708U);       // Randomly chosen
     guid.Data3 = ushort(0x20DAU);       // "
     for (uint ii=0; ii<8; ++ii)
@@ -188,34 +190,11 @@ fgGuiDialogDirSelect()
 
 static bool s_cancel;
 
-static
-bool
-progress(HWND hwndPb,bool milestone)
-{
-    if (s_cancel)
-        return true;
-    if (milestone)
-        SendMessage(hwndPb,PBM_STEPIT,0,0);
-
-    // Message loop single pass:
-    MSG         msg;
-    while (PeekMessageW(&msg,NULL,0,0,PM_REMOVE)) {
-        // WM_QUIT is only sent to main message loop after WM_DESTROY has been
-        // sent and processed by all sub-windows:
-        if (msg.message == WM_QUIT)
-            return true;
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-
-    return false;
-}
-
 struct  FgGuiWinDialogProgress
 {
     uint        progressSteps;
     HWND        hwndThis;
-    HWND        hwndPb;
+    HWND        hwndProgBar;
     HWND        hwndButton;
 
     LRESULT
@@ -223,15 +202,15 @@ struct  FgGuiWinDialogProgress
     {
         if (message == WM_CREATE) {
             hwndThis = hwnd;
-            hwndPb =
+            hwndProgBar =
                 CreateWindowEx(
                     0,PROGRESS_CLASS,(LPTSTR)NULL,
                     WS_CHILD | WS_BORDER | WS_VISIBLE,
                     100,20,300,50,
                     hwndThis,(HMENU)1,s_fgGuiWin.hinst,NULL);
-            FGASSERTWIN(hwndPb != 0);
-            SendMessage(hwndPb,PBM_SETRANGE,0,MAKELPARAM(0,progressSteps));
-            SendMessage(hwndPb,PBM_SETSTEP,(WPARAM)1,0);
+            FGASSERTWIN(hwndProgBar != 0);
+            SendMessage(hwndProgBar,PBM_SETRANGE,0,MAKELPARAM(0,progressSteps));
+            SendMessage(hwndProgBar,PBM_SETSTEP,(WPARAM)1,0);
             wstring     cancel = L"Cancel";
             hwndButton =
                 CreateWindowEx(0,
@@ -246,8 +225,7 @@ struct  FgGuiWinDialogProgress
             FGASSERTWIN(hwndButton != 0);
             return 0;
         }
-        else if (message == WM_COMMAND)
-        {
+        else if (message == WM_COMMAND) {
             WORD    ident = LOWORD(wParam);
             WORD    code = HIWORD(wParam);
             if (code == 0) {
@@ -260,26 +238,86 @@ struct  FgGuiWinDialogProgress
     }
 };
 
-void
-fgGuiDialogProgress(
-    const FgString &        title,
-    uint                    progressSteps,
-    FgGuiActionProgress     actionProgress)
+static
+bool
+updateDialog(HWND hwndMain,HWND hwndProgBar,bool milestone)
 {
-    FgGuiWinDialogProgress      d;
-    d.progressSteps = progressSteps;
-    HWND        h = fgCreateDialog(title,s_fgGuiWin.hwndMain,&d);
-    ShowWindow(h,SW_SHOWNORMAL);
-    UpdateWindow(h);
-    s_cancel = false;
+    if (s_cancel) {
+        // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
+        // the message queue so the modal message loop below would have no way of knowing when it's
+        // being closed:
+        PostMessage(hwndMain,WM_CLOSE,0,0);
+        return true;
+    }
+    if (milestone)
+        SendMessage(hwndProgBar,PBM_STEPIT,0,0);
+    return false;
+}
+
+static FgString         s_error;
+
+static
+void
+threadWorker(const FgFnCallback2Void & fnWorker,HWND hwndMain,HWND hwndProgBar)
+{
+    FgFnBool2Bool           fnUpdateDialog = boost::bind(updateDialog,hwndMain,hwndProgBar,_1);
     try {
-        actionProgress(boost::bind(progress,d.hwndPb,_1));
+        fnWorker(fnUpdateDialog);
     }
-    catch (...) {
-        DestroyWindow(h);
-        throw;
+    catch(FgException const & e)
+    {
+        s_error = "FG Exception: " + e.no_tr_message();
     }
-    DestroyWindow(h);
+    catch(std::bad_alloc const &)
+    {
+        s_error = "OUT OF MEMORY ";
+#ifndef FG_64
+        if (fg64bitOS())
+            s_error += "(install 64-bit version if possible) ";
+#endif
+    }
+    catch(std::exception const & e)
+    {
+        s_error = "std::exception: " + FgString(e.what());
+    }
+    catch(...)
+    {
+        s_error = "Unknown type: ";
+    }
+    // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
+    // the message queue so the modal message loop below would have no way of knowing when it's
+    // being closed:
+    PostMessage(hwndMain,WM_CLOSE,0,0);
+}
+
+bool
+fgGuiDialogProgress(const FgString & title,uint progressSteps,FgFnCallback2Void fnWorker)
+{
+    FgGuiWinDialogProgress      progBar;
+    progBar.progressSteps = progressSteps;
+    // Create the dialog window with the main window as its parent window:
+    HWND                        hwndMain = fgCreateDialog(title,s_fgGuiWin.hwndMain,&progBar);
+    EnableWindow(s_fgGuiWin.hwndMain,FALSE);    // Disable main window for model dialog
+    ShowWindow(hwndMain,SW_SHOWNORMAL);
+    UpdateWindow(hwndMain);
+    s_cancel = false;
+    s_error = FgString();
+    boost::thread               compute(threadWorker,boost::cref(fnWorker),hwndMain,progBar.hwndProgBar);
+    MSG                         msg;
+    while (GetMessage(&msg,NULL,0,0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+        // 'GetMessage' will never return 0 since that only happens for WM_QUIT, which only happens
+        // for program termination:
+        if (msg.message == WM_CLOSE)
+            break;
+    }
+    compute.join();
+    DestroyWindow(hwndMain);
+    EnableWindow(s_fgGuiWin.hwndMain,TRUE);    // Re-enable main window
+    if (!s_error.empty())
+        fgThrow("ERROR @ fgGuiDialogProgress",s_error);
+    return !s_cancel;
 }
 
 // **************************************** Splash Screen *****************************************

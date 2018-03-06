@@ -16,7 +16,7 @@
 
 using namespace std;
 
-struct  FgGuiWinTextRich : public FgGuiOsBase
+struct  FgGuiWinText : public FgGuiOsBase
 {
     FgGuiApiText        m_api;
     HWND                hwndText;
@@ -30,7 +30,7 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
     static const uint   m_maxMinWid = 300;
     static const uint   m_minHgt = 16;
 
-    FgGuiWinTextRich(const FgGuiApiText & api) :
+    FgGuiWinText(const FgGuiApiText & api) :
         m_api(api),
         // Default to something before we've had a chance to work out real vals:
         m_minSize(m_maxMinWid,m_minHgt)
@@ -44,7 +44,7 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
     virtual void
     create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
     {
-//fgout << fgnl << "FgGuiWinTextRich::create" << fgpush;
+//fgout << fgnl << "FgGuiWinText::create" << fgpush;
         FgCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
@@ -68,17 +68,24 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
 
     virtual FgVect2B
     wantStretch() const
-    {return FgVect2B((m_minSize[0] > m_maxMinWid),false); }
+    {
+        bool        horiz = (m_api.wantStretch[0] || (m_minSize[0] > m_maxMinWid));
+        return FgVect2B(horiz,m_api.wantStretch[1]);
+    }
     
     void
     updateText()
     {
-        SetWindowTextW(hwndText,m_content.c_str());
-        if (m_content.empty())      // Reserve a single line of max min width:
-            m_minSize = FgVect2UI(m_maxMinWid,m_minHgt);
-        else {
-            // First get the size without wraparound. If the width of this is less than
-            // m_maxMinWid then we can safely reduce with minimum width:
+        SetWindowTextW(hwndText,m_content.c_str());     // Update text in window
+        if (m_content.empty())      // Reserve a min lines of max min width:
+            m_minSize = FgVect2UI(m_maxMinWid,m_minHgt*m_api.minHeight);
+        else {                      // Calculate updated text dimensions:
+            // Get single line height (16 on my PC):
+            RECT        rs = {0,0,0,0};
+            DrawText(GetDC(hwndText),L" ",1,&rs,DT_CALCRECT);
+            uint        singleLineHeight = uint(rs.bottom-rs.top);
+            // Get the size without wraparound (but respecting CRLF).
+            // If the width of this is less than m_maxMinWid then we can safely reduce with minimum width:
             RECT        r = {0,0,0,0};
             DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT);
             // Just a guess but without this the calculated size is not quite large enough for the edit
@@ -94,6 +101,11 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
             }
             if (m_minSize[0] < m_api.minWidth)
                 m_minSize[0] = m_api.minWidth;
+            if (singleLineHeight > 0) {         // Shouldn't happen but just in case
+                uint        heightInLines = m_minSize[1] / singleLineHeight;
+                if (heightInLines < m_api.minHeight)
+                    m_minSize[1] = m_api.minHeight * singleLineHeight;
+            }
         }
     }
 
@@ -125,7 +137,7 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
         {
             case WM_CREATE:
             {
-//fgout << fgnl << "FgGuiWinTextRich::WM_CREATE";
+//fgout << fgnl << "FgGuiWinText::WM_CREATE";
                 hwndThis = hwnd;
                 wstring         winClass;
                 if (m_api.rich)
@@ -187,4 +199,4 @@ struct  FgGuiWinTextRich : public FgGuiOsBase
 
 FgPtr<FgGuiOsBase>
 fgGuiGetOsInstance(const FgGuiApiText & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinTextRich(def)); }
+{return FgPtr<FgGuiOsBase>(new FgGuiWinText(def)); }

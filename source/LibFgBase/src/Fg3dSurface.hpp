@@ -26,6 +26,10 @@ struct  FgLabelledVert
 
 typedef vector<FgLabelledVert>  FgLabelledVerts;
 
+// Returns the vertices with the selected labels in that order:
+FgVerts
+fgSelectVerts(const FgLabelledVerts & labVerts,const FgStrs & labels);
+
 struct FgSurfPoint
 {
     uint            triEquivIdx;
@@ -69,20 +73,13 @@ struct  FgFacetInds
 
     FgFacetInds(const vector<Ind> & vtInds, const vector<Ind> & uvIds) : vertInds(vtInds), uvInds(uvIds) {}
 
-    void
-    offset(size_t vertsOff,size_t uvsOff)
-    {
-        Ind     vo = Ind(uint(vertsOff)),
-                uo = Ind(uint(uvsOff));
-        for (size_t ii=0; ii<vertInds.size(); ++ii)
-            vertInds[ii] += vo;
-        for (size_t ii=0; ii<uvInds.size(); ++ii)
-            uvInds[ii] += uo;
-    }
-
     bool
     valid() const
     {return ((uvInds.size() == 0) || (uvInds.size() == vertInds.size())); }
+
+    size_t
+    size() const
+    {return vertInds.size(); }
 
     bool
     empty() const
@@ -91,6 +88,28 @@ struct  FgFacetInds
     bool
     hasUvs() const
     {return (vertInds.size() == uvInds.size()); }
+
+    void
+    erase(size_t idx)       // Erase a facet
+    {
+        FGASSERT(idx < vertInds.size());
+        if (!uvInds.empty()) {
+            FGASSERT(uvInds.size() == vertInds.size());
+            uvInds.erase(uvInds.begin()+idx);
+        }
+        vertInds.erase(vertInds.begin()+idx);
+    }
+
+    void
+    offsetIndices(size_t vertsOff,size_t uvsOff)
+    {
+        Ind     vo = Ind(uint(vertsOff)),
+                uo = Ind(uint(uvsOff));
+        for (size_t ii=0; ii<vertInds.size(); ++ii)
+            vertInds[ii] += vo;
+        for (size_t ii=0; ii<uvInds.size(); ++ii)
+            uvInds[ii] += uo;
+    }
 };
 
 template<uint dim>
@@ -111,7 +130,7 @@ fgWritep(std::ostream & os,const FgFacetInds<dim> & fi)
 
 template<uint dim>
 void
-fgAppend(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
+fgCat_(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
 {
     // Avoid 'hasUvs()' compare if one is empty:
     if (rhs.empty())
@@ -120,13 +139,13 @@ fgAppend(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
         lhs = rhs;
         return;
     }
-    fgAppend(lhs.vertInds,rhs.vertInds);
     if (lhs.hasUvs() != rhs.hasUvs()) {
         fgout << fgnl << "WARNING: Merging surfaces with UVs and without. UVs discarded.";
         lhs.uvInds.clear();
     }
     else
-        fgAppend(lhs.uvInds,rhs.uvInds);
+        fgCat_(lhs.uvInds,rhs.uvInds);
+    fgCat_(lhs.vertInds,rhs.vertInds);
 }
 
 vector<FgVect3UI>
@@ -157,11 +176,11 @@ struct  Fg3dSurface
 
     uint
     numTris() const
-    {return uint(tris.vertInds.size()); }
+    {return uint(tris.size()); }
 
     uint
     numQuads() const
-    {return uint(quads.vertInds.size()); }
+    {return uint(quads.size()); }
 
     uint
     numFacets() const
@@ -191,6 +210,10 @@ struct  Fg3dSurface
 
     FgFacetInds<3>
     getTriEquivs() const;
+
+    bool
+    isTri(size_t triEquivIdx) const
+    {return (triEquivIdx < tris.size()); }
 
     bool
     hasUvIndices() const
@@ -225,15 +248,15 @@ struct  Fg3dSurface
 
     // Return a surface with all indices offset by the given amounts:
     Fg3dSurface
-    offset(size_t vertsOffset,size_t uvsOffset) const
+    offsetIndices(size_t vertsOffset,size_t uvsOffset) const
     {
         Fg3dSurface ret(*this);
-        ret.tris.offset(vertsOffset,uvsOffset);
-        ret.quads.offset(vertsOffset,uvsOffset);
+        ret.tris.offsetIndices(vertsOffset,uvsOffset);
+        ret.quads.offsetIndices(vertsOffset,uvsOffset);
         return ret;
     }
 
-    // Useful for fgFindFirstIdx:
+    // Useful for searching by name:
     bool
     operator==(const FgString & str) const
     {return (name == str); }
@@ -250,9 +273,11 @@ struct  Fg3dSurface
         return *albedoMap;
     }
 
-    // Only implemented for tri-only surfaces:
     void
     removeTri(size_t triIdx);
+
+    void
+    removeQuad(size_t quadIdx);
 
 private:
     void
@@ -309,5 +334,13 @@ inline
 FgTriSurf
 fgRemoveUnusedVerts(const FgTriSurf & ts)
 {return fgRemoveUnusedVerts(ts.verts,ts.tris); }
+
+struct      FgTriSurfFids
+{
+    FgTriSurf       surf;
+    FgVerts         fids;   // When it's handy to have fiducial points explicitly separate from surface
+};
+
+typedef vector<FgTriSurfFids>   FgTriSurfFidss;
 
 #endif

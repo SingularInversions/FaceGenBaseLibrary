@@ -309,24 +309,25 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     }
     catch(FgException const & e)
     {
-        msg = "ERROR (FG exception): " + e.no_tr_message();
+        msg = "FG Exception: " + e.no_tr_message();
     }
     catch(std::bad_alloc const &)
     {
-        msg = "OUT OF MEMORY";
+        msg = "OUT OF MEMORY ";
 #ifndef FG_64
         if (fg64bitOS())
-            msg += "\nInstall the 64-bit version, if applicable";
+            msg += "(install 64-bit version if possible) ";
 #endif
     }
     catch(std::exception const & e)
     {
-        msg = "ERROR (std::exception): " + FgString(e.what());
+        msg = "std::exception: " + FgString(e.what());
     }
     catch(...)
     {
-        msg = "ERROR (unknown type):";
+        msg = "Unknown type: ";
     }
+    msg = "ERROR @ fgWinCallCatch: " + msg;
     FgString        caption = "ERROR",
                     sysInfo;
     try
@@ -341,15 +342,15 @@ fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
     }
     catch(FgException const & e)
     {
-        msg += "ERROR (FG exception): " + e.no_tr_message();
+        msg += "FG Exception: " + e.no_tr_message();
     }
     catch(std::exception const & e)
     {
-        msg += "ERROR (std::exception): " + FgString(e.what());
+        msg += "std::exception: " + FgString(e.what());
     }
     catch(...)
     {
-        msg += "ERROR (unknown type):";
+        msg += "Unknown type: ";
     }
     fgGuiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
     return LRESULT(0);

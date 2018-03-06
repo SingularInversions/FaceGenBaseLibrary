@@ -29,7 +29,7 @@ struct   FgNormal1D
 
     double
     randomSample() const
-    {return fgRandNormal(mean,stdev); }
+    {return mean + stdev * fgRandNormal(); }
 
     double
     lnLikelihood(double val) const

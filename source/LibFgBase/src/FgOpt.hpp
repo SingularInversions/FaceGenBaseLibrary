@@ -21,6 +21,7 @@
 
 #include "FgStdLibs.hpp"
 #include "FgSerialize.hpp"
+#include "FgDiagnostics.hpp"
 
 template<typename T>
 class   FgOpt
@@ -86,7 +87,7 @@ private:
 
 template<typename T>
 std::ostream &
-operator<<(ostream & os,const FgOpt<T> & v)
+operator<<(std::ostream & os,const FgOpt<T> & v)
 {
     if (v.valid())
         os << v.val();

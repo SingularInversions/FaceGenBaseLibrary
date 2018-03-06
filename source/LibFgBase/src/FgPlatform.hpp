@@ -65,6 +65,10 @@ fgSizeofPtr();    // avoid 'conditional expression is constant' errors
 bool
 fgIs64bit();
 
+// As above
+bool
+fgIsDebug();
+
 // Returns "32" if the current EXE is 32-bit, "64" if 64-bit.
 std::string
 fgBitsString();

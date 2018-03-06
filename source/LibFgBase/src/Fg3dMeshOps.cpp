@@ -18,6 +18,7 @@
 #include "FgDraw.hpp"
 #include "FgAffineCwPreC.hpp"
 #include "FgBestN.hpp"
+#include "FgGridTriangles.hpp"
 
 using namespace std;
 
@@ -82,9 +83,9 @@ fgCreateSphere(
     FgAffineCwPre2D     xform(FgVect2D(root3,1.0),FgVect2D(0.5/(1.0+root3)));
     equi = fgTransform(equi,xform);
     vector<FgVect2D>    uvd = equi;
-    fgAppend(uvd,fgTransform(equi,fgTranslate(0.5,0.0)));
-    fgAppend(uvd,fgTransform(equi,fgTranslate(0.5,0.5)));
-    fgAppend(uvd,fgTransform(equi,fgTranslate(0.0,0.5)));
+    fgCat_(uvd,fgTransform(equi,fgTranslate(0.5,0.0)));
+    fgCat_(uvd,fgTransform(equi,fgTranslate(0.5,0.5)));
+    fgCat_(uvd,fgTransform(equi,fgTranslate(0.0,0.5)));
     vector<FgVect2F>    uvs = fgToFloat(uvd);
 
     Fg3dSurface          surf(tris);
@@ -121,12 +122,12 @@ fgRemoveUnusedVerts(const Fg3dMesh & mesh)
     vector<bool>        uvsUsed(mesh.uvs.size(),false);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface & surf = mesh.surfaces[ss];
-        for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+        for (size_t tt=0; tt<surf.tris.size(); ++tt) {
             FgVect3UI   v = surf.tris.vertInds[tt];
             for (uint ii=0; ii<3; ++ii)
                 vertUsed[v[ii]] = true;
         }
-        for (size_t tt=0; tt<surf.quads.vertInds.size(); ++tt) {
+        for (size_t tt=0; tt<surf.quads.size(); ++tt) {
             FgVect4UI   v = surf.quads.vertInds[tt];
             for (uint ii=0; ii<4; ++ii)
                 vertUsed[v[ii]] = true;
@@ -165,10 +166,10 @@ fgRemoveUnusedVerts(const Fg3dMesh & mesh)
     // Remap the surfaces and marked verts, which we know all map to valid indices in the new list:
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         Fg3dSurface &           surf = ret.surfaces[ss];
-        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.tris.size(); ++ii)
             for (uint jj=0; jj<3; ++jj)
                 surf.tris.vertInds[ii][jj] = mapVerts[surf.tris.vertInds[ii][jj]];
-        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.quads.size(); ++ii)
             for (uint jj=0; jj<4; ++jj)
                 surf.quads.vertInds[ii][jj] = mapVerts[surf.quads.vertInds[ii][jj]];
         for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii)
@@ -336,7 +337,7 @@ fgNTent(uint nn)
 //    sqrVerts.push_back(FgVect3F(thick,thick,0));
 //    sqrVerts.push_back(FgVect3F(thick,-thick,0));
 //    FgVect4UI           sqrInds(0,1,2,3);
-//    //fgAppend(ret.verts,fgMap(sqrVerts
+//    //fgCat_(ret.verts,fgMap(sqrVerts
 //    for (uint axis=0; axis<3; ++axis) {
 //        FgVect3F    l(0);
 //        for (int aa=-1; aa<2; aa+=2)
@@ -394,10 +395,10 @@ fgUnifyIdenticalVerts(const Fg3dMesh & mesh)
     FGASSERT(mesh.verts.size() == map.size());
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         Fg3dSurface &           surf = ret.surfaces[ss];
-        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.tris.size(); ++ii)
             for (uint jj=0; jj<3; ++jj)
                 surf.tris.vertInds[ii][jj] = map[surf.tris.vertInds[ii][jj]];
-        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii)
+        for (size_t ii=0; ii<surf.quads.size(); ++ii)
             for (uint jj=0; jj<4; ++jj)
                 surf.quads.vertInds[ii][jj] = map[surf.quads.vertInds[ii][jj]];
     }
@@ -544,7 +545,7 @@ fgMergeMeshes(
     ret.surfaces = fgEnsureNamed(m0.surfaces,m0.name);
     vector<Fg3dSurface>     s1s = fgEnsureNamed(m1.surfaces,m1.name);
     for (uint ss=0; ss<s1s.size(); ++ss)
-        ret.surfaces.push_back(s1s[ss].offset(m0.verts.size(),m0.uvs.size()));
+        ret.surfaces.push_back(s1s[ss].offsetIndices(m0.verts.size(),m0.uvs.size()));
     for (size_t ii=0; ii<m0.deltaMorphs.size(); ++ii) {
         FgMorph     dm = m0.deltaMorphs[ii];
         dm.verts.resize(m0.verts.size()+m1.verts.size());
@@ -568,8 +569,8 @@ fgMergeMeshes(
         im.baseInds = im.baseInds + vector<uint32>(im.baseInds.size(),uint32(m0.verts.size()));
         FgValid<size_t>     idx = m0.findTargMorph(im.name);
         if (idx.valid()) {
-            fgAppend(ret.targetMorphs[idx.val()].baseInds,im.baseInds);
-            fgAppend(ret.targetMorphs[idx.val()].verts,im.verts);
+            fgCat_(ret.targetMorphs[idx.val()].baseInds,im.baseInds);
+            fgCat_(ret.targetMorphs[idx.val()].verts,im.verts);
         }
         else
             ret.targetMorphs.push_back(im);
@@ -633,6 +634,21 @@ fg3dMaskFromUvs(const Fg3dMesh & mesh,const FgImage<FgBool> & mask)
     }
     // Remove unused vertices:
     return fgRemoveUnusedVerts(Fg3dMesh(mesh.verts,nsurfs));
+}
+
+FgImgUC
+fgGetUvCover(const Fg3dMesh & mesh,FgVect2UI dims)
+{
+    FgImgUC                 ret(dims,uchar(0));
+    FgVect3UIs              tris = mesh.getTriEquivs().uvInds;
+    FgGridTriangles         grid = fgGridTriangles(mesh.uvs,tris);
+    FgAffineCw2F            ircsToOtcs(
+        FgMat22F(-0.5f,dims[0]-0.5f,-0.5f,dims[1]-0.5f),
+        FgMat22F(0,1,1,0));
+    for (FgIter2UI it(dims); it.valid(); it.next())
+        if (!grid.intersects(tris,mesh.uvs,ircsToOtcs * FgVect2F(it())).empty())
+            ret[it()] = uchar(255);
+    return ret;
 }
 
 FgImgRgbaUb
@@ -761,7 +777,7 @@ fgMeshMirrorX(const Fg3dMesh & in)
         const Fg3dSurface &     si = in.surfaces[ss];
         Fg3dSurface &           so = ret.mesh.surfaces[ss];
         FGASSERT(si.quads.empty());
-        for (size_t ff=0; ff<si.tris.vertInds.size(); ++ff) {
+        for (size_t ff=0; ff<si.tris.size(); ++ff) {
             FgVect3UI           tri = si.tris.vertInds[ff],
                                 ntri;
             for (uint ii=0; ii<3; ++ii) {
@@ -797,7 +813,7 @@ fgCopySurfaceStructure(const Fg3dMesh & from,const Fg3dMesh & to)
         FgMin<float,size_t>     minSurf;
         for (size_t ss=0; ss<from.surfaces.size(); ++ss) {
             const Fg3dSurface &     fs = from.surfaces[ss];
-            for (size_t jj=0; jj<fs.tris.vertInds.size(); ++jj) {
+            for (size_t jj=0; jj<fs.tris.size(); ++jj) {
                 FgVect3UI   fi = fs.tris.vertInds[jj];
                 FgVect3F    fpos = (from.verts[fi[0]] + from.verts[fi[1]] + from.verts[fi[2]]) / 3;
                 float       mag = (fpos-tpos).mag();
@@ -814,7 +830,7 @@ fgMeshSurfacesAsTris(const Fg3dMesh & m)
 {
     vector<FgVect3UI>   ret;
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
-        fgAppend(ret,m.surfaces[ss].convertToTris().tris.vertInds);
+        fgCat_(ret,m.surfaces[ss].convertToTris().tris.vertInds);
     return ret;
 }
 

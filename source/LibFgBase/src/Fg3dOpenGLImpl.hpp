@@ -267,8 +267,8 @@ drawSurfaces(
             continue;
         if (images[ss].transparency != transparency)
             continue;
-        FgValid<uint>       texName;
-        if (rend.useTexture && (ss < images.size()) && (images[ss].valid()))
+        FgOpt<uint>         texName;
+        if (rend.useTexture && (ss < images.size()) && (images[ss].name.valid()))
             texName = images[ss].name.val();
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);

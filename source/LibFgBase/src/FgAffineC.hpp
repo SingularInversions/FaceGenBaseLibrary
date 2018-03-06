@@ -31,6 +31,8 @@ struct  FgAffineC
     FgMatrixC<T,dim,dim>      linear;           // Applied first
     FgMatrixC<T,dim,1>        translation;      // Applied second
 
+    FG_SERIALIZE2(linear,translation);
+
     FgAffineC() {linear.setIdentity(); }
 
     // Construct from form f(x) = x + b

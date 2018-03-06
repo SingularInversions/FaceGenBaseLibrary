@@ -26,12 +26,12 @@
 
 struct FgGuiApiRadio : FgGuiApi<FgGuiApiRadio>
 {
-    bool                    horiz;
-    FgStrings        vals;       // The output values for each selection. Must be non-empty.
-    FgStrings        labels;     // Must be same size as 'val'. Each must be unique.
-    FgDgn<FgString>         selection;
+    bool                horiz;
+    FgStrings           vals;       // The output values for each selection. Must be non-empty.
+    FgStrings           labels;     // Must be same size as 'val'. Each must be unique.
+    FgDgn<FgString>     selection;
     // Node idx for updating can be different from selection (must be exclusive):
-    uint                    updateIdx;
+    uint                updateIdx;
 };
 
 FgGuiPtr

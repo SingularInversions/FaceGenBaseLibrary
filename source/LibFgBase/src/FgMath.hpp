@@ -28,6 +28,13 @@ fgIsPow2(uint xx)
 uint
 fgNumLeadingZeros(uint32 xx);                   // 0 returns 32.
 
+uint8
+fgNumNonzeroBits8(uint8 xx);
+uint16
+fgNumNonzeroBits16(uint16 xx);
+uint
+fgNumNonzeroBits32(uint32 xx);
+
 inline
 uint
 fgLog2Floor(uint32 xx)                          // Not valid for 0.
@@ -201,5 +208,29 @@ struct   FgModulo
 };
 
 typedef std::vector<FgModulo> FgModulos;
+
+// Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
+template<class T>
+vector<vector<T> >
+fgSubsets(const vector<T> & v,size_t min,size_t max)
+{
+    vector<vector<T> >      ret;
+    if (!v.empty() && (max>=min)) {
+        FGASSERT(v.size() < 30);                            // Sanity check
+        uint32              sv = uint32(v.size());
+        uint32              sz = 1UL << sv;                 // EUB for bit field
+        for (uint32 ii=0; ii<sz; ++ii) {
+            uint32          nzb = fgNumNonzeroBits32(ii);
+            if ((nzb >= min) && (nzb <= max)) {
+                vector<T>       r;
+                for (uint32 jj=0; jj<sv; ++jj)
+                    if (ii & (1 << jj))
+                        r.push_back(v[jj]);
+                ret.push_back(r);
+            }
+        }
+    }
+    return ret;
+}
 
 #endif

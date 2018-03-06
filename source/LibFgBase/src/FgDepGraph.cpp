@@ -174,7 +174,7 @@ FgDepGraph::leafLinks(
     }
     // Continue the traverse (even for leaf nodes since we need to mark sources clean):
     for (size_t ii=0; ii<srcNodes.size(); ++ii)
-        fgAppend(ret,leafLinks(srcNodes[ii],linksSync));
+        fgCat_(ret,leafLinks(srcNodes[ii],linksSync));
     return ret;
 }
 
@@ -251,7 +251,7 @@ FgDepGraph::executeLinkTask(
                     todo.pop_back();
                     if (!todo.empty()) {
                         updPtr->guardQueue->lock();
-                        fgAppend(updPtr->queue,todo);
+                        fgCat_(updPtr->queue,todo);
                         updPtr->guardQueue->unlock();
                     }
                 }
