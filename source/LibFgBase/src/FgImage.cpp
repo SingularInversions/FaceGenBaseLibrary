@@ -123,6 +123,23 @@ fgBlerpCoordsClip(FgVect2UI dims,FgVect2F iucs)
     return ret;
 }
 
+bool
+fgImgApproxEqual(const FgImgRgbaUb & img0,const FgImgRgbaUb & img1,uint maxDelta)
+{
+    if (img0.dims() != img1.dims())
+        return false;
+    int             lim = int(maxDelta * maxDelta);
+    for (FgIter2UI it(img0.dims()); it.valid(); it.next()) {
+        FgVect4I    delta = FgVect4I(img0[it()].m_c) - FgVect4I(img1[it()].m_c);
+        if ((fgSqr(delta[0]) > lim) ||
+            (fgSqr(delta[1]) > lim) ||
+            (fgSqr(delta[2]) > lim) ||
+            (fgSqr(delta[3]) > lim))
+            return false;
+    }
+    return true;
+}
+
 void
 fgImgShrink2(
     const FgImgRgbaUb & src,

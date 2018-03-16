@@ -27,9 +27,17 @@ bool
 run(const string & logFile,const string & cmd)
 {
     fgWriteFile(logFile,"<h3>" + cmd + "</h3>\n<pre>\n");
-    string      cmdLog = cmd + " >> " + logFile + " 2>&1";
-    // Log file must be closed for this command to write to it:
+#ifdef _MSC_VER         // win
+    // The command must have quotes around the entire thing since the 'system' call is the same as typing
+    // 'cmd.exe /c ... ', which strips any initial quote (and its pair) thus making it otherwise impossible
+    // to invoke a command containing a space:
+    string      cmdLog = '\"' + cmd + " >> " + logFile + " 2>&1 " + '\"';
+#else                   // *nix
+    string      cmdLog = cmd + " >> " + logFile + " 2>&1 ";
+#endif
+    // Log file must be closed for this command to write to it.
     int         ret = system(cmdLog.c_str());
+    fgSleep(1);   // VS17 returns before releasing log file
     fgWriteFile(logFile,"</pre>\n");
     return (ret == 0);
 }
@@ -41,8 +49,7 @@ runScript(const string & logFile,const vector<string> & cmds)
     const string    push = "fgPush ",
                     pop = "fgPop";
     FgPushDir       dirStack;
-    for (size_t ii=0; ii<cmds.size(); ++ii) {
-        const string &  cmd = cmds[ii];
+    for (const string & cmd : cmds) {
         if (fgStartsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
             FgOfstream  ofs(logFile,true);
@@ -61,7 +68,7 @@ runScript(const string & logFile,const vector<string> & cmds)
             ofs << "<h3> popd </h3>\n";
             dirStack.pop();
         }
-        else if (!run(logFile,cmds[ii]))
+        else if (!run(logFile,cmd))
             return false;
     }
     return true;
@@ -75,7 +82,7 @@ handler(
     string &)
 {
     FgNcScript      script;
-    fgDeserializePort(dataIn,script);
+    script.dsrMsg(dataIn);
     FgPath          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
         logPath = FgPath(fgGetCurrentDir()+script.logFile);     // Make absolute

@@ -52,7 +52,7 @@ fgSer(const vector<T> & v)
 {
     string      ret = fgSer(uint64(v.size()));
     for (size_t ii=0; ii<v.size(); ++ii)
-        fgCat_(ret,fgSer(v[ii]));
+        ret.append(fgSer(v[ii]));
     return ret;
 }
 

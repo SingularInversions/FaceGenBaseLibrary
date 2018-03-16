@@ -62,29 +62,6 @@ void FgMemoryLeakDetector::throw_if_leaked(const char * /*whichfn*/){}
 
 using namespace std;
 
-bool
-fgCompareImages(
-    const FgImgRgbaUb & test,
-    const FgImgRgbaUb & ref,
-    uint                maxDelta)
-{
-    if (test.dims() != ref.dims())
-        return false;
-    int             lim = int(maxDelta * maxDelta);
-    for (FgIter2UI it(test.dims()); it.valid(); it.next())
-    {
-        FgVect4I delta =
-            FgVect4I(test[it()].m_c) -
-            FgVect4I(ref[it()].m_c);
-        if ((fgSqr(delta[0]) > lim) ||
-            (fgSqr(delta[1]) > lim) ||
-            (fgSqr(delta[2]) > lim) ||
-            (fgSqr(delta[3]) > lim))
-            return false;
-    }
-    return true;
-}
-
 void
 fgRegressFail(
     const FgString & testName,
@@ -94,48 +71,29 @@ fgRegressFail(
 }
 
 void
-fgRegressFile(
-    const FgString &            name,
-    const FgString &            relDir,
-    const FgFuncRegressFiles &  testFunc)
+fgRegressFile(const FgString & baselineRelPath,const FgString & queryPath,const FgFnRegressFiles & fnEqual)
 {
-    fgRegressFiles(fgDataDir()+relDir+name,name,relDir.m_str,testFunc);
-}
-
-void
-fgRegressFiles(const FgString & base,const FgString & regress,const string & relDir,const FgFuncRegressFiles & testFunc)
-{
-    if (!fgExists(regress))
-        fgThrow("Regression file not created by test",relDir+regress);
-    if (!fgExists(base)) {
-        if (fgRegressOverwrite()) {
-            fgCopyFile(regress,base);
-            fgout << fgnl << "New regression baseline saved: " << relDir << base;
+    if (!fgExists(queryPath))
+        fgThrow("Regression query file not found",queryPath);
+    bool                    regressOverwrite = fgExists(fgDataDir()+"overwrite_baselines.flag");
+    FgString                baselinePath = fgDataDir() + baselineRelPath;
+    if (!fgExists(baselinePath)) {
+        if (regressOverwrite) {
+            fgCopyFile(queryPath,baselinePath);
+            fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works.
         }
         else
-            fgThrow("Regression baseline not found",relDir+base);
+            fgThrow("Regression baseline not found",baselinePath);
     }
-    if (testFunc(base,regress)) {       // Passed test
-        fgDeleteFile(regress);
-    }
+    if (fnEqual(baselinePath,queryPath))
+        fgDeleteFile(queryPath);        // Passed test
     else {                              // Failed test
-        if (fgRegressOverwrite()) {
-            fgCopyFile(regress,base,true);
-            fgDeleteFile(regress);
+        if (regressOverwrite) {
+            fgCopyFile(queryPath,baselinePath,true);
+            fgDeleteFile(queryPath);
         }
-        else if (fgExists(fgDataDir()+"ci_build_server_id.txt")) {
-            string          srv = fgSplitLines(fgSlurp(fgDataDir()+"ci_build_server_id.txt"))[0],
-                            srvDir = "_log/" + srv + "/";
-            FGASSERT(!srv.empty());
-            FgString        dir = fgCiShareBoot()+srvDir+relDir;
-            fgCreatePath(dir);
-            FgString        baseName = fgPathToName(base);
-            fgCopyFile(regress,dir+baseName,true);
-            fgDeleteFile(regress);
-            fgout << fgnl << "Regression file uploaded to CI server at " << dir << baseName;
-        }
-        fgThrow("Regression failure",regress+" <> "+base+" in "+relDir);
+        fgThrow("Regression failure",queryPath+" != "+baselineRelPath);
     }
 }
 
@@ -149,7 +107,7 @@ compareImages(
     FgImgRgbaUb         i1,i2;
     fgLoadImgAnyFormat(f1,i1);
     fgLoadImgAnyFormat(f2,i2);
-    return fgCompareImages(i1,i2,maxDelta);
+    return fgImgApproxEqual(i1,i2,maxDelta);
 }
 
 void
@@ -158,6 +116,6 @@ fgRegressImage(
     const string &      refPath,
     uint                maxDelta)
 {
-    FgFuncRegressFiles       rt = boost::bind(compareImages,_1,_2,maxDelta);
-    fgRegressFile(testFile,refPath,rt);
+    FgFnRegressFiles       rt = boost::bind(compareImages,_1,_2,maxDelta);
+    fgRegressFileRel(testFile,refPath,rt);
 }

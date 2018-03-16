@@ -506,8 +506,8 @@ fgSave3dsTest(const FgArgs & args)
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSave3ds("mshX3ds",fgSvec(mesh),"jpg");
-    fgRegressFile("mshX3ds.3ds","base/test/");
-    fgRegressFile("mshX3ds0.jpg","base/test/");
+    fgRegressFileRel("mshX3ds.3ds","base/test/");
+    fgRegressFileRel("mshX3ds0.jpg","base/test/");
 }
 
 // */

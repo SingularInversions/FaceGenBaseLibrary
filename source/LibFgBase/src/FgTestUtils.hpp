@@ -64,12 +64,6 @@ private:
         throw std::runtime_error(str.str());  \
     }
 
-bool
-fgCompareImages(
-    const FgImgRgbaUb & test,
-    const FgImgRgbaUb & ref,
-    uint                maxDelta=0);
-
 void
 fgRegressFail(
     const FgString & testName,
@@ -90,36 +84,26 @@ fgRegressionBaseline(
     return base;
 }
 
-// Useful to automatically overwite baselines when version control present, for fast
-// comparison and updates. Note that this flag file is excluded from version control:
-inline
-bool
-fgRegressOverwrite()
-{return fgExists(fgDataDir()+"overwrite_baselines.flag"); }
-
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef boost::function<bool(const FgString &,const FgString &)> FgFuncRegressFiles;
+typedef boost::function<bool(const FgString &,const FgString &)> FgFnRegressFiles;
 
-// Best used with FGTESTDIR macro to create and make current a test dir:
+// Calls the given regression check and deletes the query file if successful. If unsuccessful then:
+// 'overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
+// leave the query file in place.
 void
 fgRegressFile(
-    const FgString &    name,       // The test-created file to be regressed. Must exist in current directory.
-    const FgString &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
-    // File regression defaults to binary file compare:
-    const FgFuncRegressFiles & testFunc = fgBinaryFileCompare);
+    const FgString &            baselineRelPath,    // Relative (to data dir) path to regression baseline file
+    const FgString &            queryPath,          // Path to query file to be tested
+    const FgFnRegressFiles &    fnEqual = fgBinaryFileCompare); // Defaults to binary equality test
 
-// Calls the given regression check and removes the regress file if successful. If unsuccessful then:
-// 'overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
-// 'ci_build_server.flag': move regress file to CI server in relative path, otherwise:
-// leave the regress file in place.
+// As above when query and baseline have same name:
+inline
 void
-fgRegressFiles(
-    const FgString &    base,
-    const FgString &    regress,
-    // Directory containing 'baes' and 'regress' relative to ~/data (for feedback and CI server copy):
-    const string &      relDir,
-    // File regression defaults to binary file compare:
-    const FgFuncRegressFiles & testFunc = fgBinaryFileCompare);
+fgRegressFileRel(
+    const FgString &    name,       // file name to be regressed. Must exist in current directory and in 'relDir'.
+    const FgString &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    const FgFnRegressFiles & fnEqual = fgBinaryFileCompare)     // Defaults to binary equality test
+{fgRegressFile(relDir+name,name,fnEqual); }
 
 // As above but regression failure when max pixel diff greater than given:
 void

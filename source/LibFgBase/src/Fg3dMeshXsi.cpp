@@ -774,8 +774,8 @@ fgSaveXsiTest(const FgArgs & args)
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveXsi("meshExportXsi",fgSvec(mesh));
-    fgRegressFile("meshExportXsi.xsi","base/test/");
-    fgRegressFile("meshExportXsi0.png","base/test/");
+    fgRegressFileRel("meshExportXsi.xsi","base/test/");
+    fgRegressFileRel("meshExportXsi0.png","base/test/");
 }
 
 // */

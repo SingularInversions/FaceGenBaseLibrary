@@ -2054,8 +2054,8 @@ fgSaveMaTest(const FgArgs & args)
     Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
     mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
     fgSaveMa("meshExportMa",fgSvec(mesh));
-    fgRegressFile("meshExportMa.ma","base/test/");
-    fgRegressFile("meshExportMa0.png","base/test/");
+    fgRegressFileRel("meshExportMa.ma","base/test/");
+    fgRegressFileRel("meshExportMa0.png","base/test/");
 }
 
 // */

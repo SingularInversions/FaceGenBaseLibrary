@@ -18,11 +18,12 @@
 #ifndef FGPLATFORM_HPP
 #define FGPLATFORM_HPP
 
-// Compiling with Visual Studio (value is version code):
-// 1500 - VS2008
-// 1600 - VS2010
-// 1700 - VS2012
-// 1800 - VS2013
+// Visual Studio name - _MSC_VER - vc++ version
+// VS2013 - 1800 - 12.0
+// VS2015 - 1900 - 14.0
+// VS2017 - 1910 - 14.1
+// VS2017 - 1911 - 14.1
+// VS2017 - 1912 - 14.1
 #ifdef _MSC_VER
 
     // Useful defines:

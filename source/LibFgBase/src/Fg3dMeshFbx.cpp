@@ -374,9 +374,9 @@ fgSaveFbxTest(const FgArgs & args)
     meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
     meshes = fgSvec(fgMergeMeshes(meshes));
     fgSaveFbx("meshExportFbx",meshes);
-    fgRegressFile("meshExportFbx.fbx","base/test/");
-    fgRegressFile("meshExportFbx0_0.png","base/test/");
-    fgRegressFile("meshExportFbx0_1.png","base/test/");
+    fgRegressFileRel("meshExportFbx.fbx","base/test/");
+    fgRegressFileRel("meshExportFbx0_0.png","base/test/");
+    fgRegressFileRel("meshExportFbx0_1.png","base/test/");
 }
 
 // */

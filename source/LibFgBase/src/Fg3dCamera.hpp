@@ -22,14 +22,14 @@ struct  Fg3dCamera
     FgVect6D        frustum;        // Defines camera projection for OpenGL
     FgAffineCw2D    itcsToIucs;     // Defines projection for raycasting
 
-    // Total transform into IPCS (homogenous) with depth mapped to negative inverse, as homogeneous matrix:
-    FgMat44D
-    toIpcsH(FgVect2UI dims) const;
+    // Projection from world to IPCS (and depth to inverse depth) for this camera (homogenous representation):
+    FgMat44F
+    projectIpcs(FgVect2UI dims) const;
 };
 
 struct  Fg3dCameraParams
 {
-    FgMat32D     modelBounds;
+    FgMat32D        modelBounds;
     // Model rotation around centre of model bounds:
     FgQuaternionD   pose;
     // Model translation parallel to image plane, relative to half max model bound:

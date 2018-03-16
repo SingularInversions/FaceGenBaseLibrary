@@ -19,26 +19,24 @@
 using namespace std;
 using namespace fgMath;
 
-FgMat44D
-Fg3dCamera::toIpcsH(FgVect2UI dims) const
+FgMat44F
+Fg3dCamera::projectIpcs(FgVect2UI dims) const
 {
+    FgMat44D        projection(0);
+    projection.rc(0,0) = 1;
+    projection.rc(1,1) = -1;    // OECS to ITCS
+    projection.rc(2,3) = 1;
+    projection.rc(3,2) = -1;    // "
     FgAffineCw2D    iucsToIpcs(FgMat22D(0,1,0,1),FgMat22D(0,dims[0],0,dims[1])),
                     itcsToIpcs = iucsToIpcs * itcsToIucs;
-    FgMat44D        itcsToIpcs3H(0);
-    // Diagonals:
-    itcsToIpcs3H.cr(0,0) = itcsToIpcs.m_scales[0];
-    itcsToIpcs3H.cr(1,1) = itcsToIpcs.m_scales[1];
-    itcsToIpcs3H.cr(2,2) = 1;
-    itcsToIpcs3H.cr(3,3) = 1;
-    // Translational:
-    itcsToIpcs3H.cr(0,3) = itcsToIpcs.m_trans[0];
-    itcsToIpcs3H.cr(1,3) = itcsToIpcs.m_trans[1];
-    FgMat44D     oecsToItcsH;
-    oecsToItcsH.rc(0,0) = 1;
-    oecsToItcsH.rc(1,1) = -1;
-    oecsToItcsH.rc(2,3) = 1;
-    oecsToItcsH.rc(3,2) = -1;
-    return itcsToIpcs3H * oecsToItcsH * modelview.asHomogenous();
+    FgMat44D        itcsToIpcs4H(0);
+    itcsToIpcs4H.rc(0,0) = itcsToIpcs.m_scales[0];
+    itcsToIpcs4H.rc(1,1) = itcsToIpcs.m_scales[1];
+    itcsToIpcs4H.rc(0,3) = itcsToIpcs.m_trans[0];
+    itcsToIpcs4H.rc(1,3) = itcsToIpcs.m_trans[1];
+    itcsToIpcs4H.rc(2,2) = 1;
+    itcsToIpcs4H.rc(3,3) = 1;
+    return FgMat44F(itcsToIpcs4H * projection * modelview.asHomogenous());
 }
 
 Fg3dCamera

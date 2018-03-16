@@ -16,6 +16,7 @@
 #include "FgSerialize.hpp"
 #include "FgBuild.hpp"
 #include "FgFileSystem.hpp"
+#include "FgSerialSimple.hpp"
 
 // Location of network computing share root location as specified on given operating system:
 string
@@ -35,7 +36,8 @@ struct  FgNcScript
     // fgPush <dir>     - push <dir> to current for this process
     // fgPop            - pop back to previous dir for this process
     vector<string>      cmds;
-    FG_SERIALIZE3(logFile,title,cmds);
+    FG_SER3(logFile,title,cmds);
+    FG_SER_MSG(0xFE785A765844B8D1ULL);
 };
 
 inline

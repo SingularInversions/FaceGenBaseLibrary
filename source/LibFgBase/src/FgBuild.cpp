@@ -60,17 +60,14 @@ fgCurrentCompiler()
         return "vs15";
     #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
         return "vs17";
-    #endif
+    #endif                  // If you get an error, define the new Visual Studio version here
 #elif defined _INTEL_COMPILER
     return "icpc";
 #elif defined __clang__
     return "clang";
 #elif defined __GNUC__      // Must be second as it's also defined by CLANG
     return "gcc";
-#else
-    FGASSERT_FALSE;
-    return "";              // Not supported
-#endif
+#endif                      // If you get an error, define your compiler here
 }
 
 FgStrs

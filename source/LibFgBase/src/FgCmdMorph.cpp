@@ -383,10 +383,5 @@ fgMorphTest(const FgArgs & args)
     FGTESTDIR
     fgTestCopy("base/Jane.tri");
     fgRunCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
-    FgString        baseline = fgDataDir()+"base/test/JaneMorphBaseline.tri";
-    if (!fgExists(baseline) || !fgBinaryFileCompare("tmp.tri",baseline)) {
-        if (fgRegressOverwrite())
-            fgCopyFile("tmp.tri",baseline,true);
-        fgThrow("Morph test failed");
-    }
+    fgRegressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
 }

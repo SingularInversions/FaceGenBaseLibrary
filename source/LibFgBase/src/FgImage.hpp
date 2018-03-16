@@ -547,6 +547,9 @@ fgResizePow2Ceil(const FgImage<T> & img)
     return ret;
 }
 
+bool
+fgImgApproxEqual(const FgImgRgbaUb & img0,const FgImgRgbaUb & img1,uint maxDelta=0);
+
 template<class T>
 double
 fgImgSsd(
@@ -563,46 +566,6 @@ fgImgSsd(
         acc += (p0-p1).mag();
     }
     return acc;
-}
-
-template<class T>
-double
-fgImgRmsd(
-    const FgImage<FgRgba<T> > & im0,
-    const FgImage<FgRgba<T> > & im1)
-{
-    return sqrt(fgImgSsd(im0,im1) / double(im0.numPixels()));
-}
-
-template<class T>
-double
-fgImgSad(
-    const FgImage<FgRgba<T> > & im0,
-    const FgImage<FgRgba<T> > & im1)
-{
-    FGASSERT(im0.dims() == im1.dims());
-    double      acc = 0.0;
-    for (FgIter2UI it(im0.dims()); it.valid(); it.next())
-    {
-        FgVect4D        p0,p1;
-        fgCast_(im0[it].m_c,p0);
-        fgCast_(im1[it].m_c,p1);
-        acc +=
-            std::abs(p0[0]-p1[0]) +
-            std::abs(p0[1]-p1[1]) +
-            std::abs(p0[2]-p1[2]) +
-            std::abs(p0[3]-p1[3]);
-    }
-    return acc;
-}
-
-template<class T>
-double
-fgImgMad(
-    const FgImage<FgRgba<T> > & im0,
-    const FgImage<FgRgba<T> > & im1)
-{
-    return fgImgSad(im0,im1) / double(im0.numPixels());
 }
 
 template<class T>

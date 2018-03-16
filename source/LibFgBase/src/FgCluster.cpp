@@ -55,7 +55,7 @@ fgClusterDeploy(
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
     FgString        binBase = FgPath(fgExecutablePath()).base;
     scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot("ubuntu") + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
-    if (!fgTcpClient(coordIP,fgNcServerPort(),fgSerializePort(scriptCrdntor)))
+    if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):
     fgSleep(1);
@@ -81,7 +81,7 @@ fgClusterDeploy(
         script.cmds = copyData;
         script.cmds.push_back("> cluster_worker.flag");
         script.cmds.push_back("./" + args);
-        if (!fgTcpClient(workIPs[ww],fgNcServerPort(),fgSerializePort(script)))
+        if (!fgTcpClient(workIPs[ww],fgNcServerPort(),script.serMsg()))
             fgThrow("Cluster deploy unable to start worker",workIPs[ww]);
     }
     // Wait to ensure workers ready to receive (asynchronous operation):
@@ -91,7 +91,7 @@ fgClusterDeploy(
     scriptCrdntor.cmds = copyData;
     scriptCrdntor.cmds.push_back("> cluster_coordinator.flag");
     scriptCrdntor.cmds.push_back("./" + args);
-    if (!fgTcpClient(coordIP,fgNcServerPort(),fgSerializePort(scriptCrdntor)))
+    if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to start coordinator",coordIP);
 }
 

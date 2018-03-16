@@ -94,9 +94,9 @@ fgSavePlyTest(const FgArgs & args)
     meshes.push_back(fgLoadTri(dd+rd+"Glasses.tri"));
     meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
     fgSavePly("meshExportPly",meshes);
-    fgRegressFile("meshExportPly.ply","base/test/");
-    fgRegressFile("meshExportPly0.png","base/test/");
-    fgRegressFile("meshExportPly1.png","base/test/");
+    fgRegressFileRel("meshExportPly.ply","base/test/");
+    fgRegressFileRel("meshExportPly0.png","base/test/");
+    fgRegressFileRel("meshExportPly1.png","base/test/");
 }
 
 // */
