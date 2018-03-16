@@ -1,6 +1,6 @@
 # FaceGen Base Library
 
-Copyright (c) 2017 Singular Inversions Inc.
+Copyright (c) 2018 Singular Inversions Inc.
 
 A simple cross-platform C++11 library for developing computational 3D graphics applications.
 
