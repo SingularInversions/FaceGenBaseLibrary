@@ -11,9 +11,8 @@
 #define FG3DMESHOPS_HPP
 
 #include "FgStdLibs.hpp"
-#include "Fg3dMesh.hpp"
-#include "FgMatrixC.hpp"
 #include "FgBoostLibs.hpp"
+#include "Fg3dMesh.hpp"
 
 struct FgVertexDelta
 {

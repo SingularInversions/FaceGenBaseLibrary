@@ -32,8 +32,9 @@ fgClosestPointInSegment(FgVect3D p0,FgVect3D p1);
 FgVecMag
 fgClosestPointInTri(FgVect3D point,FgVect3D vert0,FgVect3D vert1,FgVect3D vert2);
 
-// Returns the barycentric coord of point in triangle
-// (invalid if outside of triangle or triangle degenerate):
+// Returns the barycentric coord of point relative to triangle.
+// If no valid value, triangle is degenerate.
+// Point is in triangle if all coordinates are positive:
 FgOpt<FgVect3D>
 fgBarycentricCoords(FgVect2D point,FgVect2D v0,FgVect2D v1,FgVect2D v2);
 

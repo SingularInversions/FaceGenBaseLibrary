@@ -6,14 +6,14 @@
 // Authors:     Andrew Beatty
 // Created:     May 21, 2009
 //
-// Option Type extender that remembers if it's been initialized before use.
+// Optional-value type extender.
 //
-// USE:
+// * Simpler than std::optional - carries around a default constructed value when not valid.
 //
-// To avoid additional memory use for numerical types, use 'FgValid' but note that
-// numeric_limits<T>::max() is the special 'invalid' value.
+// * To avoid additional memory use for numerical types, use 'FgValid' but note that
+//   numeric_limits<T>::max() is the special 'invalid' value.
 //
-// Otherwise, use 'FgOpt' which adds a bool to keep track.
+//  * Otherwise, use 'FgOpt' which adds a bool to keep track.
 //
 
 #ifndef FGOPT_HPP

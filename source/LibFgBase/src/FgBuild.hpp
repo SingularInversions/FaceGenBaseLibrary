@@ -10,6 +10,7 @@
 #ifndef FGBUILD_HPP
 #define FGBUILD_HPP
 
+#include "FgStdLibs.hpp"
 #include "FgStdString.hpp"
 
 // Supported build OSes:

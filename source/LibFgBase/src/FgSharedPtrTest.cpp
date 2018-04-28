@@ -9,6 +9,7 @@
 #include "stdafx.h"
 #include "FgSharedPtr.hpp"
 #include "FgTestUtils.hpp"
+#include "FgMain.hpp"
 
 // Note that the types are now complete!
 struct incomplete_type

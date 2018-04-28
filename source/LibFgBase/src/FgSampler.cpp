@@ -88,7 +88,7 @@ fgSamplerF(
     uint                antiAliasBitDepth)
 {
     FgImgRgbaF          img(dims);
-    FGASSERT(dims.volume() > 0);
+    FGASSERT(dims.cmpntsProduct() > 0);
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 16));
     rayCount = (img.width()+1) * (img.height()+1);
     float               widf = float(img.width()),

@@ -15,6 +15,7 @@
 #include "FgBounds.hpp"
 #include "FgAffineC.hpp"
 #include "FgAffineCwC.hpp"
+#include "FgCoordSystem.hpp"
 
 using namespace std;
 using namespace fgMath;
@@ -22,11 +23,7 @@ using namespace fgMath;
 FgMat44F
 Fg3dCamera::projectIpcs(FgVect2UI dims) const
 {
-    FgMat44D        projection(0);
-    projection.rc(0,0) = 1;
-    projection.rc(1,1) = -1;    // OECS to ITCS
-    projection.rc(2,3) = 1;
-    projection.rc(3,2) = -1;    // "
+    FgMat44D        projection = fgProjectOecsToItcs<double>();
     FgAffineCw2D    iucsToIpcs(FgMat22D(0,1,0,1),FgMat22D(0,dims[0],0,dims[1])),
                     itcsToIpcs = iucsToIpcs * itcsToIucs;
     FgMat44D        itcsToIpcs4H(0);
@@ -51,7 +48,7 @@ Fg3dCameraParams::camera(FgVect2UI imgDims) const
     // Handle degenerate model bounds:
     if (dims == FgVect3D(0))
         dims = FgVect3D(1);
-    else if (dims.volume() == 0)
+    else if (dims.cmpntsProduct() == 0)
         dims = FgVect3D(fgMaxElem(dims));
     // Hack orthographic by relying on precision:
     double          fovMaxDegClamp = (fovMaxDeg < 0.0001) ? 0.0001 : fovMaxDeg;

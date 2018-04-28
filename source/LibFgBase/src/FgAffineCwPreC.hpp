@@ -49,7 +49,7 @@ struct  FgAffineCwPreC
                             rangeLo = range.colVec(0),
                             rangeHi = range.colVec(1),
                             rangeSize = rangeHi-rangeLo;
-        FGASSERT(domainSize.volume() > 0);
+        FGASSERT(domainSize.cmpntsProduct() > 0);
         m_scales = fgMapDiv(rangeSize,domainSize);
         m_trans = fgMapDiv(rangeLo,m_scales) - domainLo;
     }

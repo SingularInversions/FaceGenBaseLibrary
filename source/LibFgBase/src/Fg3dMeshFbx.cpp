@@ -300,8 +300,8 @@ fgSaveFbx(
                 "        }\n"
                 "    }\n";
             FgString    texBaseExt = path.base + fgToString(mm) + "_" + fgToString(tt) + "." + imgFormat;
-            if (mesh.surfaces[tt].albedoMap)
-                fgSaveImgAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].albedoMap);
+            if (mesh.surfaces[tt].material.albedoMap)
+                fgSaveImgAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
                 "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
                 "        Type: \"TextureVideoClip\"\n"
@@ -353,7 +353,7 @@ fgSaveFbx(
                 "    C: \"OO\", " << idMaterial(mm,tt) << "," << idModel(mm) << "\n"
                 "    C: \"OP\", " << idTexture(mm,tt) << "," << idMaterial(mm,tt) << ", \"DiffuseColor\"\n"
                 "    C: \"OO\", " << idVideo(mm,tt) << "," << idTexture(mm,tt) << "\n";
-            if (mesh.surfaces[tt].albedoMap && fgUsesAlpha(*mesh.surfaces[tt].albedoMap))
+            if (mesh.surfaces[tt].material.albedoMap && fgUsesAlpha(*mesh.surfaces[tt].material.albedoMap))
                 ofs <<
                 "    C: \"OP\", " << idTexture(mm,tt) << "," << idMaterial(mm,tt) << ", \"TransparentColor\"\n";
         }

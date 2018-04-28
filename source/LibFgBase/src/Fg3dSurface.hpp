@@ -111,6 +111,10 @@ struct  FgFacetInds
             uvInds[ii] += uo;
     }
 };
+typedef FgFacetInds<3>      FgTris;
+typedef FgFacetInds<4>      FgQuads;
+typedef vector<FgTris>      FgTriss;
+typedef vector<FgTriss>     FgTrisss;
 
 template<uint dim>
 void
@@ -151,6 +155,14 @@ fgCat_(FgFacetInds<dim> & lhs,const FgFacetInds<dim> & rhs)
 vector<FgVect3UI>
 fgQuadsToTris(const vector<FgVect4UI> & quads);
 
+struct  FgMaterial
+{
+    bool                shiny = false;
+    boost::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be the empty image.
+};
+typedef vector<FgMaterial>  FgMaterials;
+typedef vector<FgMaterials> FgMaterialss;
+
 // A grouping of facets (tri and quad) sharing material properties:
 struct  Fg3dSurface
 {
@@ -158,7 +170,8 @@ struct  Fg3dSurface
     FgFacetInds<3>              tris;
     FgFacetInds<4>              quads;
     FgSurfPoints                surfPoints;
-    boost::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be empty. Not serialized.
+
+    FgMaterial                  material;       // Not saved with mesh - set dynamically
 
     Fg3dSurface() {}
 
@@ -229,9 +242,8 @@ struct  Fg3dSurface
     FgLabelledVerts
     surfPointsAsVertLabels(const FgVerts &) const;
 
-    FgVect3UIs
-    asTrisOnly() const
-    {return fgCat(tris.vertInds,fgQuadsToTris(quads.vertInds)); }
+    FgFacetInds<3>
+    asTris() const;
 
     Fg3dSurface
     convertToTris() const;
@@ -263,14 +275,14 @@ struct  Fg3dSurface
 
     void
     setAlbedoMap(const FgImgRgbaUb & img)
-    {albedoMap = boost::make_shared<FgImgRgbaUb>(img); }
+    {material.albedoMap = boost::make_shared<FgImgRgbaUb>(img); }
 
     FgImgRgbaUb &
     albedoMapRef()
     {
-        if (!albedoMap)
-            albedoMap = boost::make_shared<FgImgRgbaUb>();
-        return *albedoMap;
+        if (!material.albedoMap)
+            material.albedoMap = boost::make_shared<FgImgRgbaUb>();
+        return *material.albedoMap;
     }
 
     void
@@ -309,6 +321,9 @@ fgSplitSurface(const Fg3dSurface & surf);
 // or just the base name if there is only a single (unnamed) surface:
 Fg3dSurfaces
 fgEnsureNamed(const Fg3dSurfaces & surfs,const FgString & baseName);
+
+FgVerts
+fgVertsUsed(const FgVect3UIs & tris,const FgVerts & verts);
 
 bool
 fgHasUnusedVerts(const FgVect3UIs & tris,const FgVerts & verts);

@@ -22,7 +22,7 @@ struct  FgAffineCwC
     FgMatrixC<T,dim,1>      m_scales;       // Applied first
     FgMatrixC<T,dim,1>      m_trans;
 
-    FgAffineCwC() : m_scales(T(1)) {}
+    FgAffineCwC() : m_scales(T(1)), m_trans(0) {}
 
     // Conversion constructor:
     template<class U>
@@ -53,12 +53,15 @@ struct  FgAffineCwC
         const FgMatrixC<T,dim,1> &  trans)
         : m_scales(scales), m_trans(trans) {}
 
-    FgMatrixC<T,dim,1>
-    operator*(const FgMatrixC<T,dim,1> & vec) const
+    // Matrices are treated as collated column vectors:
+    template<uint numVecs>
+    FgMatrixC<T,dim,numVecs>
+    operator*(const FgMatrixC<T,dim,numVecs> & vec) const
     {
-        FgMatrixC<T,dim,1>  ret;
+        FgMatrixC<T,dim,numVecs>    ret;
         for (uint rr=0; rr<dim; ++rr)
-            ret[rr] = m_scales[rr] * vec[rr] + m_trans[rr];
+            for (uint cc=0; cc<numVecs; ++cc)
+                ret.rc(rr,cc) = m_scales[rr] * vec.rc(rr,cc) + m_trans[rr];
         return ret;
     }
 

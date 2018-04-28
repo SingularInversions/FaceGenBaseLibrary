@@ -191,8 +191,11 @@ Fg3dMesh::asTriSurf() const
 {
     FgTriSurf   ret;
     ret.verts = verts;
-    for (size_t ss=0; ss<surfaces.size(); ++ss)
-        fgCat_(ret.tris,surfaces[ss].tris.vertInds);
+    for (const Fg3dSurface & surf : surfaces) {
+        fgCat_(ret.tris,surf.tris.vertInds);
+        if (!surf.quads.vertInds.empty())
+            fgCat_(ret.tris,fgQuadsToTris(surf.quads.vertInds));
+    }
     return ret;
 }
 
@@ -441,6 +444,17 @@ Fg3dMesh::convertToTris()
 }
 
 void
+Fg3dMesh::removeUVs()
+{
+    for (Fg3dSurface & surf : surfaces) {
+        surf.tris.uvInds.clear();
+        surf.quads.uvInds.clear();
+    }
+    uvs.clear();
+}
+
+
+void
 Fg3dMesh::checkValidity()
 {
     uint    numVerts = uint(verts.size());
@@ -479,6 +493,15 @@ fg3dMesh(const FgVect3UIs & tris,const FgVerts & verts)
     ret.surfaces.resize(1);
     ret.surfaces[0].tris.vertInds = tris;
     ret.verts = verts;
+    return ret;
+}
+
+size_t
+fgNumTriEquivs(const Fg3dMeshes & meshes)
+{
+    size_t      ret = 0;
+    for (const Fg3dMesh & m : meshes)
+        ret += m.numTriEquivs();
     return ret;
 }
 
@@ -534,8 +557,8 @@ operator<<(std::ostream & os,const Fg3dMesh & m)
     for (size_t ss=0; ss<m.surfaces.size(); ss++) {
         const Fg3dSurface &     surf = m.surfaces[ss];
         os << fgnl << "Surface " << ss << ": " << surf.name << fgpush << surf << fgpop;
-        if (surf.albedoMap)
-            os << fgnl << "Albedo: " << *surf.albedoMap;
+        if (surf.material.albedoMap)
+            os << fgnl << "Albedo: " << *surf.material.albedoMap;
     }
     FgVerts             sortVerts = m.verts;
     std::sort(sortVerts.begin(),sortVerts.end(),vertLt);

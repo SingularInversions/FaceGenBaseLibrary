@@ -17,6 +17,40 @@
 
 using namespace std;
 
+bool
+fgIsDirectory(const FgString & name)
+{
+    wstring         nameW = name.as_wstring();
+    DWORD           attr = GetFileAttributesW(nameW.c_str());
+    if (attr == INVALID_FILE_ATTRIBUTES)    // Function failed - path probably doesn't exist.
+        return false;
+    return (attr & FILE_ATTRIBUTE_DIRECTORY);
+}
+
+// Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
+FgDirectoryContents
+fgDirectoryContents(const FgString & dirName)
+{
+    FgPath              dir(fgAsDirectory(dirName));
+    FgDirectoryContents ret;
+    WIN32_FIND_DATAW	finddata;
+    FgString            spec = dir.str() + "*";
+    HANDLE hFind = FindFirstFileW(spec.as_wstring().c_str(),&finddata);
+    if (hFind == INVALID_HANDLE_VALUE)
+        return ret;
+    do {
+        if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            wstring     name(finddata.cFileName);
+            if ((name != L".") && (name != L".."))
+                ret.dirnames.push_back(FgString(finddata.cFileName));
+        }
+        else
+            ret.filenames.push_back(FgString(finddata.cFileName));
+    } while	(FindNextFileW(hFind,&finddata) != 0);
+    FindClose(hFind);
+    return ret;
+}
+
 FgString
 fgGetCurrentDir()
 {

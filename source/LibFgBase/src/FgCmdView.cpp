@@ -72,7 +72,7 @@ viewMesh(const FgArgs & args)
             // Apply to all surfaces:
             boost::shared_ptr<FgImgRgbaUb>  map = boost::make_shared<FgImgRgbaUb>(texture);
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss)
-                mesh.surfaces[ss].albedoMap = map;
+                mesh.surfaces[ss].material.albedoMap = map;
         }
         meshes.push_back(mesh);
         fgout << fgpop;

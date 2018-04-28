@@ -325,11 +325,11 @@ writeMesh(
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << endl;
     }
     for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
-        if (mesh.surfaces[tt].albedoMap) {
+        if (mesh.surfaces[tt].material.albedoMap) {
             string  idxString = fgToString(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
             FgString        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
-            fgSaveImgAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].albedoMap);
+            fgSaveImgAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
             if (ofsMtl) {
                 writeMtlBase(ofsMtl,offsets.mat+tt);
                 ofsMtl << "    map_Kd " << imgName << endl;

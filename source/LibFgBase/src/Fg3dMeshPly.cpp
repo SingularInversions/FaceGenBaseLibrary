@@ -35,9 +35,9 @@ fgSavePly(
         "comment created by FaceGen\n";
     size_t      imgCnt = 0;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
-        if (mesh.surfaces[ii].albedoMap) {
+        if (mesh.surfaces[ii].material.albedoMap) {
             FgString    texFile = path.base + fgToString(ii) + "." + imgFormat;
-            fgSaveImgAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].albedoMap);
+            fgSaveImgAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
             ofs << "comment TextureFile " << texFile << endl;
         }
     }
@@ -77,7 +77,7 @@ fgSavePly(
             }
             ofs << imgCnt << endl;
         }
-        if (mesh.surfaces[ss].albedoMap)
+        if (mesh.surfaces[ss].material.albedoMap)
             ++imgCnt;
     }
 }

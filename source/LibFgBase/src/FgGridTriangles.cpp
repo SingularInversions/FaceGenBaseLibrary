@@ -18,7 +18,7 @@
 using namespace std;
 
 FgOpt<FgTriPoint>
-FgGridTriangles::nearestIntersect(const FgVect3UIs & tris,const FgVect2Fs & verts,const FgFlts & depths,FgVect2F pos) const
+FgGridTriangles::nearestIntersect(const FgVect3UIs & tris,const FgVect2Fs & verts,const FgFlts & invDepths,FgVect2F pos) const
 {
     FgOpt<FgTriPoint>   ret;
     FgVect2F            gridCoord = clientToGridIpcs * pos;
@@ -26,7 +26,7 @@ FgGridTriangles::nearestIntersect(const FgVect3UIs & tris,const FgVect2Fs & vert
         return ret;
     FgVect2UI           binIdx = FgVect2UI(gridCoord);
     const FgUints &     bin = grid[binIdx];
-    float               bestDepth = numeric_limits<float>::max();
+    float               bestInvDepth = 0.0f;
     FgTriPoint          bestTp;
     for (size_t ii=0; ii<bin.size(); ++ii) {
         FgVect3UI           tri = tris[bin[ii]];
@@ -35,24 +35,24 @@ FgGridTriangles::nearestIntersect(const FgVect3UIs & tris,const FgVect2Fs & vert
                             v2 = verts[tri[2]];
         FgOpt<FgVect3D>     vbc = fgBarycentricCoords(pos,v0,v1,v2);
         if (vbc.valid() && (fgMinElem(vbc.val()) >= 0)) {       // We intersect:
-            FgVect3F        dpths(depths[tri[0]],depths[tri[1]],depths[tri[2]]),
+            FgVect3F        ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
                             bc = FgVect3F(vbc.val());
-            float           depth = fgDot(bc,dpths);
-            if (depth < bestDepth) {
-                bestDepth = depth;
+            float           invDepth = fgDot(bc,ids);           // Interpolation in projected values is harmonic
+            if (invDepth > bestInvDepth) {                      // Closer on same ray
+                bestInvDepth = invDepth;
                 bestTp.triInd = bin[ii];
                 bestTp.pointInds = tri;
                 bestTp.baryCoord = bc;
             }
         }
     }
-    if (bestDepth < numeric_limits<float>::max())
+    if (bestInvDepth > 0.0f)
         ret = bestTp;
     return ret;
 }
 
 void
-FgGridTriangles::intersects(const FgVect3UIs & tris,const FgVect2Fs & verts,FgVect2F pos,vector<FgTriPoint> & ret) const
+FgGridTriangles::intersects_(const FgVect3UIs & tris,const FgVect2Fs & verts,FgVect2F pos,vector<FgTriPoint> & ret) const
 {
     ret.clear();
     FgVect2F            gridCoord = clientToGridIpcs * pos;
@@ -101,7 +101,7 @@ fgGridTriangles(const FgVect2Fs & verts,const FgVect3UIs & tris,float binsPerTri
     FgVect2F    domainSz = domainHi - domainLo;
     FGASSERT((domainSz[0] > 0) && (domainSz[1] > 0));
     float       numBins = numValid * binsPerTri;
-    FgVect2F    rangeSizef = domainSz * sqrt(numBins/domainSz.volume());
+    FgVect2F    rangeSizef = domainSz * sqrt(numBins/domainSz.cmpntsProduct());
     FgVect2UI   rangeSize = FgVect2UI(rangeSizef + FgVect2F(0.5f));
     rangeSize = fgClipElemsLo(rangeSize,1U);
     FgMat22F    range(0,rangeSize[0],0,rangeSize[1]);

@@ -29,7 +29,7 @@
 //    Z - camera’s facing 
 //
 // ITCS := Image Tangent CS
-//    Origin at principal point, units are tangent of view angle.
+//    Origin at principal point (where optical axis intersects image plane), units are tangent of view angle.
 //    X - viewer’s right
 //    Y - viewer’s down 
 //
@@ -61,22 +61,38 @@
 //    Y - viewer’s up 
 //
 
-inline
-FgMat33D
+template<typename T>
+FgMatrixC<T,3,3>
 fgHcsToCcs()
-{return FgMat33D(1,0,0,0,-1,0,0,0,-1); }
+{
+    return {
+        1, 0, 0,
+        0,-1, 0,
+        0, 0,-1 };
+}
 
-inline
-FgMat44D
+template<typename T>
+FgMatrixC<T,4,4>
 fgHcsToCcsH()
 {
-    double  m[] = {
-        1.0,  0.0,  0.0,  0.0,
-        0.0, -1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0,  0.0,
-        0.0,  0.0,  0.0,  1.0 };
-    return FgMat44D::fromPtr(m);
+    return {
+        1, 0, 0, 0,
+        0,-1, 0, 0,
+        0, 0,-1, 0,
+        0, 0, 0, 1 };
 }
+
+template<typename T>
+FgMatrixC<T,4,4>
+fgProjectOecsToItcs()
+{
+    return {
+        1, 0, 0, 0,
+        0,-1, 0, 0,
+        0, 0, 0, 1,
+        0, 0,-1, 0 };
+}
+
 
 // */
 

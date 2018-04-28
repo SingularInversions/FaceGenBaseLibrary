@@ -96,10 +96,10 @@ inline void
 fgRename(const FgString & from,const FgString & to)
 {return boost::filesystem::rename(from.ns(),to.ns()); }
 
-// is_directory doesn't throw:
-inline bool
-fgIsDirectory(const FgString & name)
-{return boost::filesystem::is_directory(name.ns()); }
+// We can't use boost::filesystem::is_directory inline here since it doesn't work on Windows 10 as of
+// 18.04 update.
+bool
+fgIsDirectory(const FgString & path);   // Doesn't throw - returns false for invalid path
 
 struct      FgDirectoryContents
 {

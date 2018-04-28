@@ -55,12 +55,6 @@ void    fgWritep(std::ostream &,const FgMarkedVert &);
 
 typedef vector<FgMarkedVert>    FgMarkedVerts;
 
-struct  FgMaterial
-{
-    bool    shiny;
-    FgMaterial() : shiny(false) {}
-};
-
 struct  Fg3dMesh
 {
     FgString                    name;           // Optional
@@ -70,7 +64,6 @@ struct  Fg3dMesh
     vector<FgMorph>             deltaMorphs;
     vector<FgIndexedMorph>      targetMorphs;
     FgMarkedVerts               markedVerts;
-    FgMaterial                  material;
 
     Fg3dMesh() {}
 
@@ -156,7 +149,7 @@ struct  Fg3dMesh
         vector<boost::shared_ptr<FgImgRgbaUb> > ret;
         ret.reserve(surfaces.size());
         for (size_t ss=0; ss<surfaces.size(); ++ss)
-            ret.push_back(surfaces[ss].albedoMap);
+            ret.push_back(surfaces[ss].material.albedoMap);
         return ret;
     }
 
@@ -165,7 +158,7 @@ struct  Fg3dMesh
     {
         uint        ret = 0;
         for (size_t ss=0; ss<surfaces.size(); ++ss)
-            if (surfaces[ss].albedoMap)
+            if (surfaces[ss].material.albedoMap)
                 ++ret;
         return ret;
     }
@@ -176,8 +169,8 @@ struct  Fg3dMesh
         vector<FgImgRgbaUb>     ret;
         ret.reserve(surfaces.size());
         for (size_t ss=0; ss<surfaces.size(); ++ss) {
-            if (surfaces[ss].albedoMap)
-                ret.push_back(*surfaces[ss].albedoMap);
+            if (surfaces[ss].material.albedoMap)
+                ret.push_back(*surfaces[ss].material.albedoMap);
             else
                 ret.push_back(FgImgRgbaUb());
         }
@@ -273,6 +266,9 @@ struct  Fg3dMesh
     void
     convertToTris();
 
+    void
+    removeUVs();
+
     // Throws if the mesh is not valid:
     void
     checkValidity();
@@ -291,6 +287,9 @@ operator<<(std::ostream &,const Fg3dMeshes &);
 
 FgMat32F
 fgBounds(const Fg3dMeshes & meshes);
+
+size_t
+fgNumTriEquivs(const Fg3dMeshes & meshes);
 
 std::set<FgString>
 fgMorphs(const vector<Fg3dMesh> & meshes);

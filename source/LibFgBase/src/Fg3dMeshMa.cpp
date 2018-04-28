@@ -1997,13 +1997,13 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
                 const Fg3dSurface &         surf = mesh.surfaces[ss];
                 string                      texBase;
-                if (surf.albedoMap) {
+                if (surf.material.albedoMap) {
                     string                  baseName = path.base.as_ascii();
                     if (maxLen > 0)
                         if (baseName.length() > maxLen)
                             baseName.resize(maxLen);
                     texBase = baseName + fgToString(imgIdx++) + "." + imgFormat;
-                    fgSaveImgAnyFormat(path.dir()+texBase,*surf.albedoMap);
+                    fgSaveImgAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
                 }
                 od.triList = surf.tris.vertInds;
                 od.quadList = surf.quads.vertInds;

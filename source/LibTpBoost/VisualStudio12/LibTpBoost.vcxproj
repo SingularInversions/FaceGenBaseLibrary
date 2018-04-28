@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{07679436-31CD-43B1-2669-A42ADE8CB651}</ProjectGuid>
+    <ProjectGuid>{4CE43A23-E6A2-1634-4F26-830C60F818A6}</ProjectGuid>
     <RootNamespace>LibTpBoost</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -196,7 +196,7 @@
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\text_oarchive.cpp"  />
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\text_wiarchive.cpp"  />
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\text_woarchive.cpp"  />
-    <ClCompile Include="..\boost_1_66_0\libs\serialization\src\utf8_codecvt_facet.cpp"  />
+    <ClCompile Include="..\boost_1_66_0\libs\serialization\src\utf8_codecvt_facet2.cpp"  />
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\void_cast.cpp"  />
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\xml_archive_exception.cpp"  />
     <ClCompile Include="..\boost_1_66_0\libs\serialization\src\xml_grammar.cpp"  />

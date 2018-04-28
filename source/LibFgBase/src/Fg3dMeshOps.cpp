@@ -115,7 +115,6 @@ fgRemoveUnusedVerts(const Fg3dMesh & mesh)
 {
     Fg3dMesh            ret;
     ret.name = mesh.name;
-    ret.material = mesh.material;
     ret.surfaces = mesh.surfaces;
     // Which vertices & uvs are referenced by a surface or marked vertex:
     vector<bool>        vertUsed(mesh.verts.size(),false);

@@ -156,13 +156,21 @@ Fg3dSurface::surfPointsAsVertLabels(const FgVerts & verts) const
     return ret;
 }
 
+FgFacetInds<3>
+Fg3dSurface::asTris() const
+{
+    FgFacetInds<3>      ret;
+    ret.vertInds = fgCat(tris.vertInds,fgQuadsToTris(quads.vertInds));
+    ret.uvInds = fgCat(tris.uvInds,fgQuadsToTris(quads.uvInds));
+    return ret;
+}
+
 Fg3dSurface
 Fg3dSurface::convertToTris() const
 {
     Fg3dSurface     ret;
     ret.name = name;
-    ret.tris.vertInds = fgCat(tris.vertInds,fgQuadsToTris(quads.vertInds));
-    ret.tris.uvInds = fgCat(tris.uvInds,fgQuadsToTris(quads.uvInds));
+    ret.tris = asTris();
     ret.surfPoints = surfPoints;
     return ret;
 }
@@ -497,13 +505,27 @@ Fg3dSurface::removeQuad(size_t quadIdx)
     quads.erase(quadIdx);
 }
 
+FgVerts
+fgVertsUsed(const FgVect3UIs & tris,const FgVerts & verts)
+{
+    vector<bool>    used(verts.size(),false);
+    for (const FgVect3UI & tri : tris)
+        for (size_t xx=0; xx<3; ++xx)
+            used.at(tri[xx]) = true;
+    FgVerts         ret;
+    for (size_t ii=0; ii<verts.size(); ++ii)
+        if (used[ii])
+            ret.push_back(verts[ii]);
+    return ret;
+}
+
 bool
 fgHasUnusedVerts(const FgVect3UIs & tris,const FgVerts & verts)
 {
     vector<bool>    unused(verts.size(),true);
-    for (size_t ii=0; ii<tris.size(); ++ii)
+    for (const FgVect3UI & tri : tris)
         for (size_t xx=0; xx<3; ++xx)
-            unused.at(tris[ii][xx]) = false;
+            unused.at(tri[xx]) = false;
     for (vector<bool>::const_iterator it=unused.begin(); it != unused.end(); ++it)
         if (*it)
             return true;

@@ -147,7 +147,7 @@ edgeDist(const FgArgs &)
             FgRgbaUB    col(255);
             col.red() = colVal[vertInds[ii]];
             col.green() = 255 - col.red();
-            mesh.surfaces[0].albedoMap->paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+            mesh.surfaces[0].material.albedoMap->paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
     }
     fgViewMesh(mesh);

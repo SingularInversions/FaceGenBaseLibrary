@@ -5,6 +5,7 @@
 //
 // Authors: Andrew Beatty
 //
+// Structures for building nested commands within a single CLI executable
 
 #ifndef FG_COMMAND_HPP
 #define FG_COMMAND_HPP

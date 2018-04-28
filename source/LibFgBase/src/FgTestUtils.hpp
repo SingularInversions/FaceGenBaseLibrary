@@ -11,13 +11,12 @@
 #define INCLUDED_TEST_UTILS_HPP
 
 #include "FgStdLibs.hpp"
+#include "FgBoostLibs.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgTempFile.hpp"
 #include "FgOut.hpp"
-#include "FgMath.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImageBase.hpp"
-#include "FgMain.hpp"
 #include "FgCommand.hpp"
 
 struct FgMemoryLeakDetector
@@ -111,5 +110,70 @@ fgRegressImage(
     const std::string & name,
     const std::string & relDir,
     uint                maxDelta=2);
+
+// Default comparison is equality but this should be overidden when small differences between platforms are
+// acceptable:
+template<class T>
+bool
+fgRegressCompare(const T & lhs,const T & rhs)
+{return (lhs == rhs); }
+
+template<class T>
+T
+fgRegressLoad(const FgString & fname)
+{
+    T       ret;
+    fgLoadXml(fname,ret);
+    return ret;
+}
+
+template<class T>
+void
+fgRegressSave(const FgString & fname,const T & val)
+{fgSaveXml(fname,val); }
+
+template<>
+FgImgRgbaUb
+fgRegressLoad(const FgString &);
+template<>
+void
+fgRegressSave(const FgString &,const FgImgRgbaUb &);
+
+template<class T>
+void
+fgRegress(
+    const T &           query,
+    const FgString &    baselinePath,
+    const boost::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
+{
+    // This flag should be set on a developer's machine (and ignored by source control) for
+    // easy updates & change visualation. It should NOT be set of automated build machines:
+    bool                regressOverwrite = fgExists(fgDataDir()+"overwrite_baselines.flag");
+    if (!fgExists(baselinePath)) {
+        if (regressOverwrite) {
+            fgRegressSave(baselinePath,query);
+            fgout << fgnl << "New regression baseline saved: " << baselinePath;
+            // Don't return here, run the test to be sure it works:
+        }
+        else
+            fgThrow("Regression baseline not found",baselinePath);
+    }
+
+    // Regression file exists, do the test:
+    T       baseline = fgRegressLoad<T>(baselinePath);
+    if (regressCompare(query,baseline)) {   // Passed
+        // If this is the developer machine, further test for exact equality and update the
+        // regression file if not the case:
+        if (regressOverwrite && (!(query == baseline))) {
+            fgRegressSave(baselinePath,query);
+            fgout << fgnl << "Regression baseline updated: " << baselinePath;
+        }
+    }
+    else {      // The test failed:
+        if (regressOverwrite)
+            fgRegressSave(baselinePath,query);
+        fgThrow("Regression failure: ",baselinePath);
+    }
+}
 
 #endif

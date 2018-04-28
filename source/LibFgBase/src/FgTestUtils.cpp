@@ -119,3 +119,13 @@ fgRegressImage(
     FgFnRegressFiles       rt = boost::bind(compareImages,_1,_2,maxDelta);
     fgRegressFileRel(testFile,refPath,rt);
 }
+
+template<>
+FgImgRgbaUb
+fgRegressLoad(const FgString & path)
+{return fgLoadImgAnyFormat(path); }
+
+template<>
+void
+fgRegressSave(const FgString & path,const FgImgRgbaUb & img)
+{fgSaveImgAnyFormat(path,img); }

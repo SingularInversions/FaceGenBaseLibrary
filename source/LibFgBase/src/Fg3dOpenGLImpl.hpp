@@ -675,7 +675,7 @@ fgOglGetRender()
     GLint           x[4];
     glGetIntegerv(GL_VIEWPORT,x);
     FgVect2UI       dims(x[2],x[3]);
-    if (dims.volume() > 0) {
+    if (dims.cmpntsProduct() > 0) {
         ret.resize(dims);
         FgRgbaUB *          ptr = ret.dataPtr();
         for (uint yy=0; yy<dims[1]; ++yy) {     // Invert line ordering from OGL:

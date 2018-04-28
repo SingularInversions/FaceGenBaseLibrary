@@ -11,6 +11,7 @@
 
 #include "FgStdVector.hpp"
 #include "FgTestUtils.hpp"
+#include "FgMain.hpp"
 
 void
 fgStdVectorTest(const FgArgs &)

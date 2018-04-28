@@ -41,13 +41,11 @@ struct  FgMatrixV
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(ptr,ptr+numRows*numCols)
     {}
 
-    FgMatrixV(size_t nr,size_t nc,const vector<T> & v)
-    : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
+    FgMatrixV(size_t nr,size_t nc,const vector<T> & v) : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
     {FGASSERT(nr*nc == v.size()); }
 
     explicit
-    FgMatrixV(FgVect2UI cols_rows)
-    : ncols(cols_rows[0]), nrows(cols_rows[1])
+    FgMatrixV(FgVect2UI cols_rows) : nrows(cols_rows[1]), ncols(cols_rows[0])
     {m_data.resize(ncols*nrows); }
 
     template<uint nr,uint nc>
@@ -58,6 +56,13 @@ struct  FgMatrixV
         for (uint ii=0; ii<nr*nc; ii++)
             (*this)[ii] = mm[ii];
     }
+
+    // initializer_list is just a couple of pointers so pass-by-value is faster:
+    FgMatrixV(uint rows,uint cols,std::initializer_list<T> l) : nrows(rows), ncols(cols), m_data(l)
+    {FGASSERT(nrows*ncols == l.size()); }
+
+    FgMatrixV(FgVect2UI dims,std::initializer_list<T> l) : nrows(dims[1]), ncols(dims[0]), m_data(l)
+    {FGASSERT(nrows*ncols == l.size()); }
 
     void
     clear()

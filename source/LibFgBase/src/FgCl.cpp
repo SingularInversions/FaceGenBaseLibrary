@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "FgCl.hpp"
+#include "FgStdString.hpp"
 #include "FgException.hpp"
 #include "FgOut.hpp"
 
@@ -21,20 +22,19 @@ namespace fgCl
 bool preview = false;
 
 bool
-run(
-    const string & cmd,
-    bool throwIfError)
+run(const string & cmd,bool throwIfError,int rvalMask)
 {
     fgout << fgnl << cmd << endl;   // DOS output lines will always start in zero'th column anyway
     int     retval = 0;
     if (!preview)
         retval = system(cmd.c_str());
-    if (retval != 0)
+    // Some commands such as robocopy have several non-error return codes.
+    if ((retval & rvalMask) != 0)
     {
         if (throwIfError)
-            fgThrow("Error while executing command",cmd);
+            fgThrow("Error exit code from command",fgToString(retval));
         else
-            fgout << fgnl << "Error while executing command: " << cmd;
+            fgout << fgnl << "Error exit code from command: " << retval;
         return false;
     }
     return true;

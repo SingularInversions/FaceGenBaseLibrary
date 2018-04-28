@@ -23,6 +23,8 @@
 
 using namespace std;
 
+FgCmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
+
 vector<FgCmd>
 fgCmdBaseTests()
 {
@@ -44,7 +46,7 @@ fgCmdBaseTests()
     FGADDCMD1(fgMorphTest,"morph");
     FGADDCMD1(fgPathTest,"path");
     FGADDCMD1(fgQuaternionTest,"quaternion");
-    FGADDCMD1(fgRenderTest,"render");
+    FGADDCMD(fgCmdRenderTest,"rendc","render command");
     FGADDCMD1(fgSerializeTest,"serialize");
     FGADDCMD1(fgSharedPtrTest,"sharedPtr");
     FGADDCMD1(fgSimilarityTest,"similarity");
@@ -53,6 +55,7 @@ fgCmdBaseTests()
     FGADDCMD1(fgStringTest,"string");
     FGADDCMD1(fgTensorTest,"tensor");
     FGADDCMD1(fgVariantTest,"variant");
+    cmds.push_back(fgSoftRenderTestInfo());
     return cmds;
 }
 

@@ -47,7 +47,7 @@ struct  FgMatrixV;
 template <typename T,uint nrows,uint ncols>
 struct  FgMatrixC
 {
-    T   m[nrows*ncols];
+    T   m[nrows*ncols];     // Leave as C array since boost::serialize doesn't like std::array
     FG_SERIALIZE1(m)
 
     typedef T ValType;
@@ -87,15 +87,15 @@ struct  FgMatrixC
         FG_STATIC_ASSERT(nrows*ncols == 9);
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; }
 
-    // Initializer lists not supported by VS2012:
-    //explicit
-    //FgMatrixC(std::initializer_list<T> il)
-    //{
-    //    FGASSERT(nrows*ncols == il.size());
-    //    T * dst = &m[0];
-    //    for (auto it=il.begin(); it!=il.end(); ++it)
-    //        *dst++ = *it;
-    //}
+    // Don't make explicit since initializer_list makes it clear we're constructing:
+    FgMatrixC(std::initializer_list<T> l)   // initializer_list is just a couple of pointers so pass-by-value is faster:
+    {
+        FGASSERT(nrows*ncols == l.size());
+        // initializer list construction of 'm' (: m {l} ) didn't work, not sure why.
+        T * ptr = &m[0];
+        for (auto it=l.begin(); it!=l.end(); ++it)
+            *ptr++ = *it;
+    }
 
     // CC requires explicit definition due to type conversion constructor below:
     FgMatrixC(const FgMatrixC & mat) {
@@ -398,9 +398,17 @@ struct  FgMatrixC
     fromPtr(const T * p)
     {return FgMatrixC(FromPtr(p)); }
 
-    // Product of all components:
     T
-    volume() const
+    cmpntsSum() const
+    {
+        T   acc = m[0];
+        for (uint ii=1; ii<ncols*nrows; ++ii)
+            acc += m[ii];
+        return acc;
+    }
+
+    T
+    cmpntsProduct() const
     {
         T   acc = m[0];
         for (uint ii=1; ii<ncols*nrows; ++ii)
@@ -490,6 +498,7 @@ typedef FgMatrixC<double,1,3>       FgVectD3;
 typedef FgMatrixC<uint,1,2>         FgVectU2;
 
 typedef vector<FgVect2F>            FgVect2Fs;
+typedef vector<FgVect2Fs>           FgVect2Fss;
 typedef vector<FgVect2D>            FgVect2Ds;
 typedef vector<FgVect3F>            FgVerts;
 typedef vector<FgVect3F>            FgVect3Fs;

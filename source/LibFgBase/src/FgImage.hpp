@@ -505,16 +505,19 @@ fgResampleSimple(
     const FgImage<T> &  in,
     FgImage<T> &        out)
 {
-    FGASSERT(fgMinElem(in.dims()) > 0);
-    FGASSERT(fgMinElem(out.dims()) > 0);
-    FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgBlerpClipIucs takes UICS
-                                  0.0f,1.0f),
-                    outBoundsIrcs(-0.5f,float(out.width())-0.5f,
-                                  -0.5f,float(out.height())-0.5f);
-    FgAffineCw2F    o2i(outBoundsIrcs,inBoundsIucs);
-    for (FgIter2UI it(out.dims()); it.valid(); it.next()) {
-        FgVect2F    pt = o2i * FgVect2F(it());
-        fgRound(fgBlerpClipIucs(in,pt),out[it]);
+    if (in.dims().cmpntsProduct() == 0)
+        out.clear();
+    else {
+        FGASSERT(fgMinElem(out.dims()) > 0);
+        FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgBlerpClipIucs takes UICS
+                                      0.0f,1.0f),
+                        outBoundsIrcs(-0.5f,float(out.width())-0.5f,
+                                      -0.5f,float(out.height())-0.5f);
+        FgAffineCw2F    o2i(outBoundsIrcs,inBoundsIucs);
+        for (FgIter2UI it(out.dims()); it.valid(); it.next()) {
+            FgVect2F    pt = o2i * FgVect2F(it());
+            fgRound(fgBlerpClipIucs(in,pt),out[it]);
+        }
     }
 }
 template<class T>

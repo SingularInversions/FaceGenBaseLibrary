@@ -184,7 +184,7 @@ fgImgCommonFormats()
 {
     return
         fgSvec(
-            string("png"),string("jpg"),string("bmp"),
+            string("png"),string("jpg"),string("jpeg"),string("bmp"),
             string("gif"),string("tif"),string("tga"));
 }
 

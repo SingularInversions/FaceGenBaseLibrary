@@ -17,38 +17,27 @@
 #include "FgTypes.hpp"
 #include "FgStdVector.hpp"
 
-// Useful for min/max with different types:
-inline
-uint64
-fgMin(uint64 a,uint b)
-{return std::min(a,uint64(b)); }
-
-inline
-uint64
-fgMin(uint a,uint64 b)
-{return std::min(uint64(a),b); }
-
 // Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
 
 template<class T>
-const T &   fgMax(const T &x1,const T& x2)
-{return std::max(x1,x2); }
+inline T fgMax(T x1,T x2) {return std::max(x1,x2); }
 
 template<class T> 
-const T &  fgMax(const T &x1,const T &x2,const T &x3)
-{return std::max(std::max(x1,x2),x3); }
+inline T fgMax(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
 
 template<class T> 
-const T &  fgMax(const T &x1,const T &x2,const T &x3,const T &x4)
-{return std::max(std::max(x1,x2),std::max(x3,x4)); }
+inline T fgMax(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
 
 template<class T>
-const T &  fgMin(const T &x1,const T &x2)
-{return std::min(x1,x2); }
+inline T fgMin(T x1,T x2) {return std::min(x1,x2); }
 
 template<class T>
-const T &  fgMin(const T &x1,const T &x2,const T &x3)
-{return std::min(std::min(x1,x2),x3); }
+inline T fgMin(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
+
+// Useful for min/max with different types:
+inline uint64 fgMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
+
+inline uint64 fgMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
 std::vector<double>

@@ -151,7 +151,7 @@ private:
     setValid()
     {
         FGASSERT(validRange());
-        FGASSERT(m_strides.volume() > 0);
+        FGASSERT(m_strides.cmpntsProduct() > 0);
         m_inBounds = fgLt(m_idx,m_bndsHiExcl);
     }
     FgTypeAttributeFixedS<T>    fixed_point_types_only; // Do not instantiate with floating

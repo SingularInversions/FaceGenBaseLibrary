@@ -10,6 +10,7 @@
 
 #include "FgTestUtils.hpp"
 #include "FgString.hpp"
+#include "FgMain.hpp"
 
 static void Construct()
 {

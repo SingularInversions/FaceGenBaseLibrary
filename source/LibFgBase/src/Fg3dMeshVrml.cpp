@@ -114,7 +114,7 @@ fgSaveVrml(
             // Some software (Meshlab:) can't deal with spaces in the image filename:
             FgString    imgFile = fpath.base.replace(' ','_') + fgToString(ii);
             imgFile += "." + imgFormat;
-            fgSaveImgAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].albedoMap);
+            fgSaveImgAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
             ofs <<
                 "        texture ImageTexture\n"
                 "        {\n"

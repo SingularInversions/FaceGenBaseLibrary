@@ -18,6 +18,31 @@
 #include <boost/scoped_array.hpp>
 
 using namespace std;
+using boost::filesystem::is_directory;
+using boost::filesystem::directory_iterator;
+
+bool
+fgIsDirectory(const FgString & name)
+{return is_directory(name.ns()); }
+
+FgDirectoryContents
+fgDirectoryContents(const FgString & dirName)
+{
+    FgString        dn = dirName;
+    if (dn.empty())     // Interpret this as current directory, which boost filesystem does not
+        dn = FgString(".");
+    if (!is_directory(dn.ns()))
+        fgThrow("Not a directory",dirName);
+    FgDirectoryContents     ret;
+    directory_iterator      it_end;
+    for (directory_iterator it(dn.ns()); it != it_end; ++it) {
+        if (is_directory(it->status()))
+            ret.dirnames.push_back(it->path().filename().string());
+        else if (is_regular_file(it->status()))
+            ret.filenames.push_back(it->path().filename().string());
+    }
+    return ret;
+}
 
 FgString
 fgGetCurrentDir()

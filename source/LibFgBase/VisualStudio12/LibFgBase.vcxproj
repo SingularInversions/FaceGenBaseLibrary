@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{07679436-31CD-43B1-F153-28E7617853C4}</ProjectGuid>
+    <ProjectGuid>{4CE43A23-E6A2-1634-4F26-830C57F801AA}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -251,6 +251,7 @@
     <ClCompile Include="..\src\FgGeometry.cpp"  />
     <ClInclude Include="..\src\FgGeometry.hpp"  />
     <ClCompile Include="..\src\FgGeometryTest.cpp"  />
+    <ClInclude Include="..\src\FgGridIndex.hpp"  />
     <ClCompile Include="..\src\FgGridTriangles.cpp"  />
     <ClInclude Include="..\src\FgGridTriangles.hpp"  />
     <ClCompile Include="..\src\FgGuiApi.cpp"  />
@@ -300,6 +301,7 @@
     <ClInclude Include="..\src\FgLinkGraph.hpp"  />
     <ClCompile Include="..\src\FgMain.cpp"  />
     <ClInclude Include="..\src\FgMain.hpp"  />
+    <ClInclude Include="..\src\FgMap.hpp"  />
     <ClCompile Include="..\src\FgMath.cpp"  />
     <ClInclude Include="..\src\FgMath.hpp"  />
     <ClCompile Include="..\src\FgMatrix.cpp"  />
@@ -333,12 +335,15 @@
     <ClInclude Include="..\src\FgQuaternion.hpp"  />
     <ClCompile Include="..\src\FgRandom.cpp"  />
     <ClInclude Include="..\src\FgRandom.hpp"  />
+    <ClCompile Include="..\src\FgRayCaster.cpp"  />
+    <ClInclude Include="..\src\FgRayCaster.hpp"  />
     <ClInclude Include="..\src\FgRgba.hpp"  />
     <ClCompile Include="..\src\FgSampler.cpp"  />
     <ClInclude Include="..\src\FgSampler.hpp"  />
     <ClInclude Include="..\src\FgScopeGuard.hpp"  />
     <ClInclude Include="..\src\FgSerialize.hpp"  />
     <ClInclude Include="..\src\FgSerialSimple.hpp"  />
+    <ClInclude Include="..\src\FgSet.hpp"  />
     <ClInclude Include="..\src\FgSharedPtr.hpp"  />
     <ClCompile Include="..\src\FgSharedPtrTest.cpp"  />
     <ClCompile Include="..\src\FgSimilarity.cpp"  />

@@ -474,6 +474,18 @@ fgFindFirstIdx(
     return vec.size();
 }
 
+// Search for first occurence of match with a member. Returns vec.size() if not found.
+template<class T,class U>
+size_t
+fgFindFirstMemberIdx(const vector<T> & vec,const U & val,U T::*member,bool throwOnFail=false)
+{
+    for (size_t ii=0; ii<vec.size(); ++ii)
+        if (vec[ii].*member == val)
+            return ii;
+    FGASSERT(!throwOnFail);
+    return vec.size();
+}
+
 template<class T,class U>
 const T &
 fgFindFirst(

@@ -382,9 +382,9 @@ template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols>
 fgClipElemsLo(FgMatrixC<T,nrows,ncols> m,T lo)
 {
-    FgMatrixC<T,nrows,ncols>    ret(m);
+    FgMatrixC<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
-        fgClipLo(ret.m[ii],lo);
+        ret.m[ii] = (m[ii] < lo) ? lo : m[ii];
     return ret;
 }
 

@@ -202,6 +202,10 @@ struct  FgImage
     const vector<T> &
     dataVec() const
     {return m_data; }
+
+    bool
+    operator==(const FgImage & rhs) const
+    {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
 };
 
 typedef FgImage<uchar>      FgImgUC;

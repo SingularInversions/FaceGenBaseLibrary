@@ -1,8 +1,0 @@
-Image coordinates of marked surface points in render, and visibility (true/false by normal)
-(origin at top left of image, X right, Y down, units are pixels):
-Mesh 0
-  Surf 0
-    0(Nose Tip): [+113.238777,+80.487892]^T true
-    1(Exocanthion Right): [+76.606010,+63.033943]^T true
-    2(Mouth Corner Left): [+106.867134,+102.165115]^T true
-    3(Nare Left): [+109.720009,+83.351913]^T false

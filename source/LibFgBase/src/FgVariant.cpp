@@ -13,6 +13,7 @@
 #include "FgDiagnostics.hpp"
 #include "FgMatrix.hpp"
 #include "FgTestUtils.hpp"
+#include "FgMain.hpp"
 
 using namespace std;
 

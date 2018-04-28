@@ -62,7 +62,7 @@ struct  FgGuiWinText : public FgGuiOsBase
     virtual FgVect2UI
     getMinSize() const
     {
-        FGASSERT(m_minSize.volume() > 0);   // This shouldn't be called before it's been assigned.
+        FGASSERT(m_minSize.cmpntsProduct() > 0);   // This shouldn't be called before it's been assigned.
         return m_minSize;
     }
 
