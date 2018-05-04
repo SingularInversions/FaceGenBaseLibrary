@@ -27,12 +27,13 @@ footer {
 <h2>Requirements</h2>
     <p>{ Windows, Ubuntu, MacOS }</p>
 <h2>Compile</h2>
+    <p>The library directory is referred to as ~ below:</p>
 <h3>Windows</h3>
     <p>Visual Studio {2013,2015,2017}:</p>
     <p><code>
-    ~sdk/source/VisualStudio2013.sln<br/>
-    ~sdk/source/VisualStudio2015.sln<br/>
-    ~sdk/source/VisualStudio2017.sln
+    ~/source/VisualStudio2013.sln<br/>
+    ~/source/VisualStudio2015.sln<br/>
+    ~/source/VisualStudio2017.sln
     </code></p>
 <h3>MacOS</h3>
     <p>Xcode 8</p>
@@ -43,27 +44,27 @@ footer {
       </li>
     </ul>
     <p><code>
-    ~sdk/source/Makefile.osx.clang.64.debug<br/>
-    ~sdk/source/Makefile.osx.clang.64.release<br/>
+    ~/source/Makefile.osx.clang.64.debug<br/>
+    ~/source/Makefile.osx.clang.64.release<br/>
     </code>
 <h3>Ubuntu</h3>
     <code>
       $ sudo apt install make build-essential clang llvm <br/>
     </code>
     <p><code>
-    ~sdk/source/Makefile.ubuntu.clang.64.debug<br/>
-    ~sdk/source/Makefile.ubuntu.clang.64.release<br/>
-    ~sdk/source/Makefile.ubuntu.gcc.64.debug<br/>
-    ~sdk/source/Makefile.ubuntu.gcc.64.release<br/>
-    ~sdk/source/Makefile.ubuntu.icpc.64.debug<br/>
-    ~sdk/source/Makefile.ubuntu.icpc.64.release<br/>
+    ~/source/Makefile.ubuntu.clang.64.debug<br/>
+    ~/source/Makefile.ubuntu.clang.64.release<br/>
+    ~/source/Makefile.ubuntu.gcc.64.debug<br/>
+    ~/source/Makefile.ubuntu.gcc.64.release<br/>
+    ~/source/Makefile.ubuntu.icpc.64.debug<br/>
+    ~/source/Makefile.ubuntu.icpc.64.release<br/>
     </code>
 <h2>Use</h2>
     <p>Set up the path ('>' windows. '$' osx,ubuntu) for 64bit release version (VS2012 for Windows):</p>
     <p><code>
-    > PATH=%PATH%;~fgbl\bin\win\vs12\64\release <br/>
-    $ PATH=$PATH:~fgbl/bin/osx/gcc/64/release <br/>
-    $ PATH=$PATH:~fgbl/bin/ubuntu/gcc/64/release <br/>
+    > PATH=%PATH%;~\bin\win\vs12\64\release <br/>
+    $ PATH=$PATH:~/bin/osx/gcc/64/release <br/>
+    $ PATH=$PATH:~/bin/ubuntu/gcc/64/release <br/>
     </code></p>
     <p>View all available commands:</p>
     <p><code>$> fgbl</code></p>
@@ -72,21 +73,21 @@ footer {
     <p>View all manual (interactive) test categories (GUI currently only supported on Windows):</p>
     <p><code>$> fgbl testm</code></p>
     <p>Rebuild makefiles, solution files and project files by scanning existing source code files:</p>
-    <p><code>~fgbl$> fgbl cons</code></p>
+    <p><code>~$> fgbl cons</code></p>
 <h2>Third Party Open Source</h2>
     <h3>BOOST</h3>
     <p>Some of BOOST is included. License:</p>
-    <p><code>~fgbl/source/LibTpBoost/boost_1_66_0/LICENSE_1_0.txt</code></p>
+    <p><code>~/source/LibTpBoost/boost_1_66_0/LICENSE_1_0.txt</code></p>
     <h3>ImageMagick</h3>
     <p>Some of version 6.6.2 of ImageMagick is included. License:</p>
     <p><a href="http://www.imagemagick.org/script/license.php">http://www.imagemagick.org/script/license.php</a></p>
     <p>This library is used only for reading and writing images to various file formats.</p>
     <h3>Independent JPEG Group (IJG)</h3>
     <p>Release 6b of the Independent JPEG Group JPEG software. License:</p>
-    <p><code>~fgbl/source/LibJpegIjg6b/README</code></p>
+    <p><code>~/source/LibJpegIjg6b/README</code></p>
     <h3>UTF-8</h3>
     <p>UTF-8 library release 2.1 from Nemanja Trifunovic. License in source code:</p>
-    <code>~Sdk/source/LibUTF-8/*.h</code>
+    <code>~/source/LibUTF-8/*.h</code>
     <h3>US NIST (TNT)</h3>
     <p>US NIST Template Numerical Toolkit (TNT) v.1.2.6 and Java Matrix (JAMA) for C++ v.1.2.5. Pursuant to title 17 Section 105 of the United States Code this software is not subject to copyright protection and is in the public domain.</p>
 
