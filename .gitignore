@@ -1,4 +1,5 @@
 # git ignore is case INsensitive on windows
+# Shell glob rules with no partial matches, leading slash matches repo root
 build/
 /_log/
 /bin/
@@ -20,6 +21,6 @@ build/
 /android/*/.idea/workspace.xml
 /android/*/captures
 .externalNativeBuild
-/android/*/gradlew
+/android/*/gradlew*
 /android/*/gradle/wrapper/
 /android/*/app/src/main/assets/
