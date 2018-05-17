@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4CE43A23-E6A2-1634-4F26-830C57F801AA}</ProjectGuid>
+    <ProjectGuid>{07679436-31CD-43B1-F153-28E7617853C4}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -76,7 +76,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_66_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -97,7 +97,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_66_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -116,7 +116,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_66_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -139,7 +139,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\..\LibTpBoost\boost_1_66_0\;..\..\LibJpegIjg6b\;..\..\LibImageMagickCore\ImageMagick-6.6.2\;..\..\LibUTF-8\;..\..\LibTntJama\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;BOOST_ALL_NO_LIB;BOOST_THREAD_USE_LIB=1;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>

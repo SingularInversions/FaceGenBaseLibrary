@@ -94,7 +94,31 @@ fgCmdRender(const FgArgs & args)
         "    Saves render arguments to <name>.xml and rendered image to <name>.png\n"
         "    <ext1>     - " + fgImgCommonFormatsDescription() + "\n"
         "render <name>\n"
-        "    Render using the arguments in <name>.xml (including the output image file name and type)");
+        "    Render using the arguments in <name>.xml (including the output image file name and type)\n"
+        "<name>.xml :\n"
+        "    <models> - The list of mesh filenames to be rendered.\n"
+        "    <pose>\n"
+        "        <rotateToHcs> - Quaternion specifying rotation from mesh original coordinates to\n"
+        "            head coordinate system (HCS) with head facing in Z direction, X to face's left.\n"
+        "        <rollRadians>,<tiltRadians>,<panRadians> - Euler angles applied from HCS\n"
+        "        <relTrans> - Translation in HCS relative with unit scale equal to half max bound.\n"
+        "        <relScale> - Scale from original mesh scale.\n"
+        "        <fovMaxDeg> - Maximum field of view angle of camera in degrees (applied to larger image dimension).\n"
+        "    <imagePixelSize>\n"
+        "    <options>\n"
+        "        <lighting> - All color component values below are in the range [0,1]:\n"
+        "            <ambient> - Light coming from all directions.\n"
+        "            <lights>\n"
+        "                <colour> - In order of Red, Greeen, Blue.\n"
+        "                <direction> - In order of X,Y,Z in OpenGL Eye Coordinates.\n"
+        "        <backgroundColor> - In order of R,G,B,A where all values in range [0,1].\n"
+        "        <antiAliasBitDepth> - Defaults to 3, use 4 or 5 for higher quality (slower).\n"
+        "        <renderSurfPoints> - 0 means don't, 1 means when visible and 2 means always.\n"
+        "            They are rendered as single-pixel green dots over the image.\n"
+        "    <saveSurfPointFile> - 0 means don't, 1 means save <name>.csv with a list of surface points\n"
+        "        written as <label>,<position>,<visible>, where <position> is in image unit coordinates; [0,1]\n"
+        "    <outputFile> - Name of image output file."
+    );
 
     string          renderName = syntax.next();
     Options         opts;
@@ -113,7 +137,7 @@ fgCmdRender(const FgArgs & args)
     else {
         // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
         // is appended rather than overwritten, so we must clear first:
-        opts.rend.options.lighting.m_lights.clear();
+        opts.rend.options.lighting.lights.clear();
         fgLoadXml(renderName+".xml",opts);
         if (!opts.rend.pose.rotateToHcs.normalize())
             fgThrow("rotateToHcs: quaternion cannot be zero magnitude");

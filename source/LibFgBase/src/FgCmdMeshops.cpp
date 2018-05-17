@@ -25,54 +25,12 @@ using namespace std;
 
 static
 void
-uvclamp(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<in>.<ext0> [<out>.<ext1>]\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString()
-        );
-    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
-    FgMat22F        cb(0,1,0,1);
-    for (size_t ii=0; ii<in.uvs.size(); ++ii)
-        in.uvs[ii] = fgClipToBounds(in.uvs[ii],cb);
-    if (syntax.more())
-        fgSaveMeshAnyFormat(in,syntax.next());
-    else
-        fgSaveMeshAnyFormat(in,syntax.curr());
-    return;
-}
-
-static
-void
-uvunwrap(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<in>.<ext0> [<out>.<ext1>]\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString()
-        );
-    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
-    for (size_t ii=0; ii<in.uvs.size(); ++ii) {
-        FgVect2F    uv = in.uvs[ii];
-        in.uvs[ii][0] = fgMod(uv[0],1.0f);
-        in.uvs[ii][1] = fgMod(uv[1],1.0f);
-    }
-    if (syntax.more())
-        fgSaveMeshAnyFormat(in,syntax.next());
-    else
-        fgSaveMeshAnyFormat(in,syntax.curr());
-    return;
-}
-
-static
-void
 combinesurfs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription() + "\n"
         "    All input meshes must have identical vertex lists.\n"
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
@@ -89,12 +47,25 @@ combinesurfs(const FgArgs & args)
 
 static
 void
+convert(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn> <out>.<extOut>\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
+        );
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
+    fgSaveMeshAnyFormat(mesh,syntax.next());
+}
+
+static
+void
 copyUvList(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString()
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     Fg3dMesh        out = fgLoadMeshAnyFormat(syntax.next());
@@ -111,8 +82,8 @@ copyUvs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<from>.<ext0> <to>.<ext1>\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString()
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
     Fg3dMesh        out = fgLoadMeshAnyFormat(syntax.next());
@@ -138,8 +109,8 @@ copyverts(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString() + "\n"
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription() + "\n"
         "    <out> is modified to have the vertex list from <in>"
         );
     Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
@@ -151,16 +122,17 @@ copyverts(const FgArgs & args)
     return;
 }
 
+static
 void
-fgCmdEmboss(const FgArgs & args)
+emboss(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<uvImage>.<img> <meshin>.<ext0> <val> <out>.<ext1>\n"
         "    <uvImage> = a UV-layout image whose grescale values will be used to emboss (0 - none, 255 - full)\n"
         "    <img>     = " + fgImgCommonFormatsDescription() + "\n"
-        "    <ext0>    = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext0>    = " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <val>     = Embossing factor as ratio of the max bounding box dimension.\n"
-        "    <ext1>    = " + fgMeshSaveFormatsString()
+        "    <ext1>    = " + fgSaveMeshFormatsCLDescription()
         );
     FgImgUC         img;
     fgLoadImgAnyFormat(syntax.next(),img);      // Treat as greyscale
@@ -182,8 +154,8 @@ invWind(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription() + "\n"
         "    Inverts the winding of all facets in <in> and saves to <out>"
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
@@ -201,13 +173,38 @@ invWind(const FgArgs & args)
     fgSaveMeshAnyFormat(mesh,syntax.next());
 }
 
+//static
+//void
+//makePrintable(const FgArgs & args)
+//{
+//    FgSyntax    syn(args,"<in>.<meshIn> <out>.<meshOut>\n"
+//        "    <meshIn> -  " + fgLoadMeshFormatsCLDescription() + "\n"
+//        "    <meshOut> - " + fgSaveMeshFormatsCLDescription() + "\n"
+//        "NOTES:\n"
+//        "    Fills in small holes and get rid of duplicate tris. Does not do anything complex.\n"
+//        "    Result will always be triangles-only mesh with unified surfaces."
+//    );
+//    Fg3dMesh            mesh = fgLoadMeshAnyFormat(syn.next());
+//    mesh.mergeAllSurfaces();
+//    mesh.convertToTris();
+//    Fg3dTopology        topo(mesh.verts,mesh.surfaces[0].tris.vertInds);
+//    vector<set<uint> >  seams = topo.seams();
+//    for (const set<uint> & seam : seams) {
+//        for (uint vIdx : seam) {
+//
+//        }
+//    }
+//
+//
+//}
+
 static
 void
 markVerts(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.tri <verts>.<ext> <out>.tri\n"
-        "    <ext> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext> = " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <out>.tri will be saved after marking a vertex in <in>.tri that is closest to each vertex in <verts>.<ext>."
         );
     Fg3dMesh    mesh = fgLoadTri(syntax.next());
@@ -243,168 +240,12 @@ markVerts(const FgArgs & args)
 
 static
 void
-xformApply(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgMeshSaveFormatsString()
-        );
-    FgSimilarity    xform;
-    fgLoadXml(syntax.next(),xform);
-    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
-    Fg3dMesh        out(in);
-    out.transform(FgAffine3F(xform.asAffine()));
-    fgSaveMeshAnyFormat(out,syntax.next());
-    return;
-}
-
-static
-void
-xformCreateMeshes(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
-        "    <ex> = " + fgLoadMeshFormatsDescription()
-        );
-    string      simFname = syntax.next();
-    Fg3dMesh    base = fgLoadMeshAnyFormat(syntax.next());
-    Fg3dMesh    targ = fgLoadMeshAnyFormat(syntax.next());
-    if (base.verts.size() != targ.verts.size())
-        fgThrow("Base and target mesh vertex counts are different");
-    vector<FgVect3D>    bv = fgToDouble(base.verts),
-                        tv = fgToDouble(targ.verts);
-    FgSimilarity        sim = fgSimilarityApprox(bv,tv);
-    double              ssd = fgSsd(fgTransform(bv,sim.asAffine()),tv),
-                        sz = fgMaxElem(fgDims(tv));
-    fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
-    fgSaveXml(simFname,sim);
-}
-
-static
-void
-xformCreateIdentity(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml\n"
-        "    Edit the values in this file or apply subsequent transforms with other commands"
-        );
-    string      simFname = syntax.next();
-    fgSaveXml(simFname,FgSimilarity());
-}
-
-static
-void
-xformCreateTrans(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml <X> <Y> <Z>"
-        );
-    string          simFname = syntax.next();
-    FgSimilarity    sim;
-    if (fgExists(simFname))
-        fgLoadXml(simFname,sim);
-    FgVect3D    trans;
-    trans[0] = fgFromString<double>(syntax.next());
-    trans[1] = fgFromString<double>(syntax.next());
-    trans[2] = fgFromString<double>(syntax.next());
-    fgSaveXml(simFname,FgSimilarity(trans)*sim);
-}
-
-static
-void
-xformCreateRotate(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml <axis> <degrees>\n"
-        "    <axis> = (x | y | z)   - Right-hand-rule axis of rotation"
-        );
-    string          simFname = syntax.next();
-    FgSimilarity    sim;
-    if (fgExists(simFname))
-        fgLoadXml(simFname,sim);
-    string          axisStr = syntax.next();
-    if (axisStr.empty())
-        syntax.error("<axis> cannot be the empty string");
-    char            axisName = std::tolower(axisStr[0]);
-    double          degs = fgFromString<double>(syntax.next()),
-                    rads = fgDegToRad(degs);
-    int             axisNum = int(axisName) - int('x');
-    if ((axisNum < 0) || (axisNum > 2))
-        syntax.error("Invalid value for <axis>",axisStr);
-    FgQuaternionD   rot(rads,uint(axisNum));
-    fgSaveXml(simFname,FgSimilarity(rot)*sim);
-}
-
-static
-void
-xformCreateScale(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<similarity>.xml <scale>"
-        );
-    string          simFname = syntax.next();
-    FgSimilarity    sim;
-    if (fgExists(simFname))
-        fgLoadXml(simFname,sim);
-    double          scale = fgFromString<double>(syntax.next());
-    fgSaveXml(simFname,FgSimilarity(scale)*sim);
-}
-
-static
-void
-xformCreate(const FgArgs & args)
-{
-    fgMenu(args,
-        fgSvec(
-            FgCmd(xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"),
-            FgCmd(xformCreateIdentity,"identity","Create the identity similarity transform"),
-            FgCmd(xformCreateTrans,"translate","Apply a translation to a similarity transform"),
-            FgCmd(xformCreateRotate,"rotate","Apply a rotation to a similarity transform"),
-            FgCmd(xformCreateScale,"scale","Apply a scaling to a similarity transform")
-            ));
-}
-
-static
-void
-xform(const FgArgs & args)
-{
-    fgMenu(args,
-        fgSvec(
-            FgCmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"),
-            FgCmd(xformCreate,"create","Create a similarity transform (to .XML file)")));
-}
-
-static
-void
-uvmask(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
-        "    <ext0> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <ext1> = " + fgImgCommonFormatsDescription() + "\n"
-        "    <ext2> = " + fgMeshSaveFormatsString()
-        );
-    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
-    FgImgRgbaUb     img;
-    fgLoadImgAnyFormat(syntax.next(),img);
-    FgImage<FgBool> mask = FgImage<FgBool>(img.dims());
-    for (FgIter2UI it(img.dims()); it.valid(); it.next()) {
-        FgVect4UC   px = img[it()].m_c;
-        mask[it()] = (px[0] > 0) || (px[1] > 0) || (px[2] > 0); }
-    mask = fgAnd(mask,fgFlipHoriz(mask));
-    mesh = fg3dMaskFromUvs(mesh,mask);
-    fgSaveMeshAnyFormat(mesh,syntax.next());
-}
-
-static
-void
 mmerge(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     while (syntax.more()) {
@@ -422,8 +263,8 @@ mergesurfs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     if (mesh.surfaces.size() == 1)
@@ -456,8 +297,8 @@ ruv(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgRemoveUnusedVerts(mesh);
@@ -470,8 +311,8 @@ mergenamedsurfs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgMergeSameNameSurfaces(mesh);
@@ -500,8 +341,8 @@ splitsurfsbyuvs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgSplitSurfsByUvs(mesh);
@@ -514,7 +355,7 @@ splitsurface(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
         "COMMENTS:\n"
         "    * Splits surfaces by connected vertex indices.\n"
         "    * Stores results to separate meshes with suffix '_<num>.tri'"
@@ -534,24 +375,11 @@ splitsurface(const FgArgs & args)
 
 static
 void
-convert(const FgArgs & args)
-{
-    FgSyntax    syntax(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
-        );
-    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
-    fgSaveMeshAnyFormat(mesh,syntax.next());
-}
-
-static
-void
 surfAdd(const FgArgs & args)
 {
     FgSyntax    syn(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
-        "    <ext>  - " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext>  - " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <name> - Surface name"
         );
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
@@ -567,7 +395,7 @@ surfCopy(const FgArgs & args)
 {
     FgSyntax    syn(args,
         "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
-        "    <ext>  - " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext>  - " + fgLoadMeshFormatsCLDescription() + "\n"
         " * tris only, uvs not preserved."
         );
     Fg3dMesh        from = fgLoadFgmesh(syn.next()),
@@ -581,7 +409,7 @@ surfDel(const FgArgs & args)
 {
     FgSyntax        syn(args,
         "<in>.<ext> <idx> <out>.<ext>\n"
-        "    <ext> - " + fgLoadMeshFormatsDescription() + "\n"
+        "    <ext> - " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <idx> - Which surface index to delete"
         );
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
@@ -598,7 +426,7 @@ surfList(const FgArgs & args)
 {
     FgSyntax    syn(args,
         "<in>.<ext>\n"
-        "    <ext> - " + fgLoadMeshFormatsDescription()
+        "    <ext> - " + fgLoadMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syn.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
@@ -735,8 +563,8 @@ toTris(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh.convertToTris();
@@ -749,8 +577,8 @@ unifyuvs(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgUnifyIdenticalUvs(mesh);
@@ -763,8 +591,8 @@ unifyverts(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString()
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription()
         );
     Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     mesh = fgUnifyIdenticalVerts(mesh);
@@ -773,11 +601,31 @@ unifyverts(const FgArgs & args)
 
 static
 void
+uvclamp(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<ext0> [<out>.<ext1>]\n"
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription()
+        );
+    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
+    FgMat22F        cb(0,1,0,1);
+    for (size_t ii=0; ii<in.uvs.size(); ++ii)
+        in.uvs[ii] = fgClipToBounds(in.uvs[ii],cb);
+    if (syntax.more())
+        fgSaveMeshAnyFormat(in,syntax.next());
+    else
+        fgSaveMeshAnyFormat(in,syntax.curr());
+    return;
+}
+
+static
+void
 uvimg(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<mesh>.<extIm> <img>.<extImg>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <extImg> = " + fgImgCommonFormatsDescription()
         );
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
@@ -785,6 +633,184 @@ uvimg(const FgArgs & args)
     if (fgExists(syntax.peekNext()))
         fgLoadImgAnyFormat(syntax.peekNext(),img);
     fgSaveImgAnyFormat(syntax.next(),fgUvImage(mesh,img));
+}
+
+static
+void
+uvmask(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgImgCommonFormatsDescription() + "\n"
+        "    <ext2> = " + fgSaveMeshFormatsCLDescription()
+        );
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
+    FgImgRgbaUb     img;
+    fgLoadImgAnyFormat(syntax.next(),img);
+    FgImage<FgBool> mask = FgImage<FgBool>(img.dims());
+    for (FgIter2UI it(img.dims()); it.valid(); it.next()) {
+        FgVect4UC   px = img[it()].m_c;
+        mask[it()] = (px[0] > 0) || (px[1] > 0) || (px[2] > 0); }
+    mask = fgAnd(mask,fgFlipHoriz(mask));
+    mesh = fg3dMaskFromUvs(mesh,mask);
+    fgSaveMeshAnyFormat(mesh,syntax.next());
+}
+
+static
+void
+uvunwrap(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<ext0> [<out>.<ext1>]\n"
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription()
+        );
+    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
+    for (size_t ii=0; ii<in.uvs.size(); ++ii) {
+        FgVect2F    uv = in.uvs[ii];
+        in.uvs[ii][0] = fgMod(uv[0],1.0f);
+        in.uvs[ii][1] = fgMod(uv[1],1.0f);
+    }
+    if (syntax.more())
+        fgSaveMeshAnyFormat(in,syntax.next());
+    else
+        fgSaveMeshAnyFormat(in,syntax.curr());
+    return;
+}
+
+static
+void
+xformApply(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
+        "    <ext0> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext1> = " + fgSaveMeshFormatsCLDescription()
+        );
+    FgSimilarity    xform;
+    fgLoadXml(syntax.next(),xform);
+    Fg3dMesh        in = fgLoadMeshAnyFormat(syntax.next());
+    Fg3dMesh        out(in);
+    out.transform(FgAffine3F(xform.asAffine()));
+    fgSaveMeshAnyFormat(out,syntax.next());
+    return;
+}
+
+static
+void
+xformCreateMeshes(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
+        "    <ex> = " + fgLoadMeshFormatsCLDescription()
+        );
+    string      simFname = syntax.next();
+    Fg3dMesh    base = fgLoadMeshAnyFormat(syntax.next());
+    Fg3dMesh    targ = fgLoadMeshAnyFormat(syntax.next());
+    if (base.verts.size() != targ.verts.size())
+        fgThrow("Base and target mesh vertex counts are different");
+    vector<FgVect3D>    bv = fgToDouble(base.verts),
+                        tv = fgToDouble(targ.verts);
+    FgSimilarity        sim = fgSimilarityApprox(bv,tv);
+    double              ssd = fgSsd(fgTransform(bv,sim.asAffine()),tv),
+                        sz = fgMaxElem(fgDims(tv));
+    fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
+    fgSaveXml(simFname,sim);
+}
+
+static
+void
+xformCreateIdentity(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml\n"
+        "    Edit the values in this file or apply subsequent transforms with other commands"
+        );
+    string      simFname = syntax.next();
+    fgSaveXml(simFname,FgSimilarity());
+}
+
+static
+void
+xformCreateTrans(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml <X> <Y> <Z>"
+        );
+    string          simFname = syntax.next();
+    FgSimilarity    sim;
+    if (fgExists(simFname))
+        fgLoadXml(simFname,sim);
+    FgVect3D    trans;
+    trans[0] = fgFromString<double>(syntax.next());
+    trans[1] = fgFromString<double>(syntax.next());
+    trans[2] = fgFromString<double>(syntax.next());
+    fgSaveXml(simFname,FgSimilarity(trans)*sim);
+}
+
+static
+void
+xformCreateRotate(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml <axis> <degrees>\n"
+        "    <axis> = (x | y | z)   - Right-hand-rule axis of rotation"
+        );
+    string          simFname = syntax.next();
+    FgSimilarity    sim;
+    if (fgExists(simFname))
+        fgLoadXml(simFname,sim);
+    string          axisStr = syntax.next();
+    if (axisStr.empty())
+        syntax.error("<axis> cannot be the empty string");
+    char            axisName = std::tolower(axisStr[0]);
+    double          degs = fgFromString<double>(syntax.next()),
+                    rads = fgDegToRad(degs);
+    int             axisNum = int(axisName) - int('x');
+    if ((axisNum < 0) || (axisNum > 2))
+        syntax.error("Invalid value for <axis>",axisStr);
+    FgQuaternionD   rot(rads,uint(axisNum));
+    fgSaveXml(simFname,FgSimilarity(rot)*sim);
+}
+
+static
+void
+xformCreateScale(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<similarity>.xml <scale>"
+        );
+    string          simFname = syntax.next();
+    FgSimilarity    sim;
+    if (fgExists(simFname))
+        fgLoadXml(simFname,sim);
+    double          scale = fgFromString<double>(syntax.next());
+    fgSaveXml(simFname,FgSimilarity(scale)*sim);
+}
+
+static
+void
+xformCreate(const FgArgs & args)
+{
+    fgMenu(args,
+        fgSvec(
+            FgCmd(xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"),
+            FgCmd(xformCreateIdentity,"identity","Create the identity similarity transform"),
+            FgCmd(xformCreateTrans,"translate","Apply a translation to a similarity transform"),
+            FgCmd(xformCreateRotate,"rotate","Apply a rotation to a similarity transform"),
+            FgCmd(xformCreateScale,"scale","Apply a scaling to a similarity transform")
+            ));
+}
+
+static
+void
+xform(const FgArgs & args)
+{
+    fgMenu(args,
+        fgSvec(
+            FgCmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"),
+            FgCmd(xformCreate,"create","Create a similarity transform (to .XML file)")));
 }
 
 static
@@ -797,7 +823,7 @@ meshops(const FgArgs & args)
     ops.push_back(FgCmd(copyUvList,"copyUvList","Copy UV list from one mesh to another with same UV count"));
     ops.push_back(FgCmd(copyUvs,"copyUvs","Copy UVs from one mesh to another with identical facet structure"));
     ops.push_back(FgCmd(copyverts,"copyverts","Copy verts from one mesh to another with same vertex count"));
-    ops.push_back(FgCmd(fgCmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"));
+    ops.push_back(FgCmd(emboss,"emboss","Emboss a mesh based on greyscale values of a UV image"));
     ops.push_back(FgCmd(invWind,"invWind","Invert facet winding of a mesh"));
     ops.push_back(FgCmd(markVerts,"markVerts","Mark vertices in a .TRI file from a given list"));
     ops.push_back(FgCmd(mmerge,"merge","Merge multiple meshes into one. No optimization is done"));

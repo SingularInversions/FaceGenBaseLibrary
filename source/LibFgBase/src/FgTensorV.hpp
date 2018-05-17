@@ -75,7 +75,7 @@ struct  FgTitr
     FgSizes             bounds;
     FgSizes             coord;
     bool                valid = true;           // Not redundant due to wraparound
-    const bool          minorToMajor = true;    // 'bounds' and 'coord' are minor to major. Vice versa if false.
+    bool                minorToMajor = true;    // 'bounds' and 'coord' are minor to major. Vice versa if false.
 
     explicit FgTitr(const FgSizes & b) : bounds(b), coord(b.size(),0) {FGASSERT(fgProduct(b) > 0); }
     FgTitr(const FgSizes & b,bool mtm) : bounds(b), coord(b.size(),0), minorToMajor(mtm) {FGASSERT(fgProduct(b) > 0); }

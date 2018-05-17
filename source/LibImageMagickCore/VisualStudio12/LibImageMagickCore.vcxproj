@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{1F292497-4C6D-C5FD-EE72-7F7FB19369ED}</ProjectGuid>
+    <ProjectGuid>{668A2EA1-03E9-E325-500C-34456FB322CF}</ProjectGuid>
     <RootNamespace>LibImageMagickCore</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -76,7 +76,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\ImageMagick-6.6.2\;..\ImageMagick-6.6.2\bzlib\;..\ImageMagick-6.6.2\jp2\src\libjasper\include\;..\ImageMagick-6.6.2\png\;..\ImageMagick-6.6.2\tiff\libtiff\;..\ImageMagick-6.6.2\zlib\;..\..\LibJpegIjg6b\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -98,7 +98,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\ImageMagick-6.6.2\;..\ImageMagick-6.6.2\bzlib\;..\ImageMagick-6.6.2\jp2\src\libjasper\include\;..\ImageMagick-6.6.2\png\;..\ImageMagick-6.6.2\tiff\libtiff\;..\ImageMagick-6.6.2\zlib\;..\..\LibJpegIjg6b\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>
@@ -118,7 +118,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\ImageMagick-6.6.2\;..\ImageMagick-6.6.2\bzlib\;..\ImageMagick-6.6.2\jp2\src\libjasper\include\;..\ImageMagick-6.6.2\png\;..\ImageMagick-6.6.2\tiff\libtiff\;..\ImageMagick-6.6.2\zlib\;..\..\LibJpegIjg6b\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -142,7 +142,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>..\ImageMagick-6.6.2\;..\ImageMagick-6.6.2\bzlib\;..\ImageMagick-6.6.2\jp2\src\libjasper\include\;..\ImageMagick-6.6.2\png\;..\ImageMagick-6.6.2\tiff\libtiff\;..\ImageMagick-6.6.2\zlib\;..\..\LibJpegIjg6b\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE=1;_SCL_SECURE_NO_DEPRECATE=1;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MAGICKLIB;TIFF_PLATFORM_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>

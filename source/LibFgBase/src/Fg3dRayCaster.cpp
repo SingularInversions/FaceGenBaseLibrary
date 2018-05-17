@@ -13,14 +13,14 @@
 using namespace std;
 
 Fg3dRayCastMesh::Fg3dRayCastMesh(
-        const Fg3dMesh &        mesh,
-        const FgVerts &         verts_,
-        const Fg3dNormals &     norms_,
-        FgAffineCw2F            itcsToIucs)
+    const Fg3dMesh &        mesh,
+    const FgVerts &         verts,
+    const Fg3dNormals &     norms,
+    FgAffineCw2F            itcsToIucs)
     :
-    verts(verts_),
-    norms(norms_),
-    uvs(mesh.uvs),
+    vertsPtr(&verts),
+    normsPtr(&norms),
+    uvsPtr(&mesh.uvs),
     material(mesh.surfaces[0].material)
 {
     for (const Fg3dSurface & s : mesh.surfaces) {
@@ -63,10 +63,11 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
 {
     FgVect3UI           tri = intersect.pointInds;
     FgVect3F            bCoord = intersect.baryCoord;
-    FgVect3F            norm = bCoord[0] * norms.vert[tri[0]] +
-                            bCoord[1] * norms.vert[tri[1]] +
-                            bCoord[2] * norms.vert[tri[2]];
+    FgVect3F            norm = bCoord[0] * normsPtr->vert[tri[0]] +
+                            bCoord[1] * normsPtr->vert[tri[1]] +
+                            bCoord[2] * normsPtr->vert[tri[2]];
     norm /= norm.length();
+    const FgVect2Fs &       uvs = *uvsPtr;
     FgVect2F                uv;
     if (!uvs.empty()) {
         FgVect3UI           uvInds = surfs[0].tris.uvInds[intersect.triInd];
@@ -82,13 +83,13 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
         FgRgbaF(230.0f,230.0f,230.0f,255.0f);
 	float	        aw = texSample.alpha() / 255.0f;
     FgVect3F        surfColour = texSample.m_c.subMatrix<3,1>(0,0) * aw;
-    for (size_t ll=0; ll<lighting.m_lights.size(); ++ll) {
-        FgLight     lgt = lighting.m_lights[ll];
-        float       fac = fgDot(norm,lgt.m_direction);
+    for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
+        FgLight     lgt = lighting.lights[ll];
+        float       fac = fgDot(norm,lgt.direction);
         if (fac > 0.0f) {
-            acc += fgMapMul(surfColour,lgt.m_colour) * fac;
+            acc += fgMapMul(surfColour,lgt.colour) * fac;
             if (material.shiny) {
-                FgVect3F    reflectDir = norm * fac * 2.0f - lgt.m_direction;
+                FgVect3F    reflectDir = norm * fac * 2.0f - lgt.direction;
                 if (reflectDir[2] > 0.0f) {
                     float   deltaSqr = fgSqr(reflectDir[0]) + fgSqr(reflectDir[1]),
                             val = exp(-deltaSqr * 32.0f);
@@ -97,7 +98,7 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
             }
         }
     }
-    acc += fgMapMul(surfColour,lighting.m_ambient);
+    acc += fgMapMul(surfColour,lighting.ambient);
     return FgRgbaF(acc[0],acc[1],acc[2],texSample.alpha());
 }
 
@@ -105,11 +106,11 @@ Fg3dRayCaster::Fg3dRayCaster(
     const Fg3dMeshes &          meshes,
     const FgVertss &            vertss,
     const Fg3dNormalss &        normss,
-    const FgLighting &          lighting_,
+    const FgLighting &          lighting,
     FgAffineCw2F                itcsToIucs,
     FgRgbaF                     background)
     :
-    lighting(lighting_),
+    lightingPtr(&lighting),
     m_background(background)
 {
     FGASSERT(meshes.size() == vertss.size());
@@ -132,7 +133,7 @@ Fg3dRayCaster::cast(FgVect2F posIucs) const
     }
     FgRgbaF     acc = m_background;
     for (uint ii=bestAll.size(); ii>0; --ii)    // Render back to front
-        acc = fgCompositeFragment(rayMesh[bestAll[ii-1].second.surfIdx].shade(bestAll[ii-1].second.intersect,lighting),acc);
+        acc = fgCompositeFragment(rayMesh[bestAll[ii-1].second.surfIdx].shade(bestAll[ii-1].second.intersect,*lightingPtr),acc);
     return acc;
 }
 

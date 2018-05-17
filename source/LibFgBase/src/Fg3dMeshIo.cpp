@@ -61,7 +61,7 @@ fgLoadMeshFormats()
 {return fgSvec<string>("fgmesh","obj","wobj","tri"); }
 
 string
-fgLoadMeshFormatsDescription()
+fgLoadMeshFormatsCLDescription()
 {return string("(fgmesh | [w]obj | tri)"); }
 
 void
@@ -113,7 +113,7 @@ fgMeshExportFormatsDescriptions()
 }
 
 std::string
-fgMeshSaveFormatsString()
+fgSaveMeshFormatsCLDescription()
 {return string("(tri | [w]obj | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
 const vector<string> &
@@ -133,7 +133,7 @@ triexport(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"
-        "    <meshExt>      - " + fgMeshSaveFormatsString() + "\n"
+        "    <meshExt>      - " + fgSaveMeshFormatsCLDescription() + "\n"
         "    <imgExt>       - " + fgImgCommonFormatsDescription()
         );
     string              outFile(syntax.next());

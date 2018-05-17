@@ -6,7 +6,7 @@ CONFIG = clang/64/release/
 BIN = ../bin/osx/$(CONFIG)
 $(shell mkdir -p $(BIN))
 all: $(BIN)fgbl 
-CFLAGSLibTpBoost = $(CFLAGS) -w -DBOOST_THREAD_BUILD_LIB=1 -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_66_0/
+CFLAGSLibTpBoost = $(CFLAGS) -w -DBOOST_THREAD_POSIX -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -DBOOST_THREAD_BUILD_LIB=1 -isystemLibTpBoost/boost_1_66_0/
 SDIRLibTpBoost = LibTpBoost/boost_1_66_0/libs/
 ODIRLibTpBoost = LibTpBoost/$(CONFIG)
 $(shell mkdir -p $(ODIRLibTpBoost))
@@ -118,7 +118,7 @@ $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o: $(SDIRLibTpBoost)thread/src/p
 	$(CPPC) -o $(ODIRLibTpBoost)thread_src_pthread_once_atomic.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/once_atomic.cpp
 $(ODIRLibTpBoost)thread_src_pthread_thread.o: $(SDIRLibTpBoost)thread/src/pthread/thread.cpp $(INCSLibTpBoost)
 	$(CPPC) -o $(ODIRLibTpBoost)thread_src_pthread_thread.o -c $(CFLAGSLibTpBoost) $(SDIRLibTpBoost)thread/src/pthread/thread.cpp
-CFLAGSLibJpegIjg6b = $(CFLAGS) -w -DBOOST_THREAD_POSIX
+CFLAGSLibJpegIjg6b = $(CFLAGS) -w
 SDIRLibJpegIjg6b = LibJpegIjg6b/
 ODIRLibJpegIjg6b = LibJpegIjg6b/$(CONFIG)
 $(shell mkdir -p $(ODIRLibJpegIjg6b))
@@ -244,7 +244,7 @@ $(ODIRLibJpegIjg6b)wrrle.o: $(SDIRLibJpegIjg6b)wrrle.c $(INCSLibJpegIjg6b)
 	$(CC) -o $(ODIRLibJpegIjg6b)wrrle.o -c $(CFLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrrle.c
 $(ODIRLibJpegIjg6b)wrtarga.o: $(SDIRLibJpegIjg6b)wrtarga.c $(INCSLibJpegIjg6b)
 	$(CC) -o $(ODIRLibJpegIjg6b)wrtarga.o -c $(CFLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrtarga.c
-CFLAGSLibImageMagickCore = $(CFLAGS) -w -D_MAGICKLIB -DTIFF_PLATFORM_CONSOLE -DBOOST_THREAD_POSIX -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibImageMagickCore/ImageMagick-6.6.2/bzlib/ -ILibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/include/ -ILibImageMagickCore/ImageMagick-6.6.2/png/ -ILibImageMagickCore/ImageMagick-6.6.2/tiff/libtiff/ -ILibImageMagickCore/ImageMagick-6.6.2/zlib/ -ILibJpegIjg6b/
+CFLAGSLibImageMagickCore = $(CFLAGS) -w -D_MAGICKLIB -DTIFF_PLATFORM_CONSOLE -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibImageMagickCore/ImageMagick-6.6.2/bzlib/ -ILibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/include/ -ILibImageMagickCore/ImageMagick-6.6.2/png/ -ILibImageMagickCore/ImageMagick-6.6.2/tiff/libtiff/ -ILibImageMagickCore/ImageMagick-6.6.2/zlib/ -ILibJpegIjg6b/
 SDIRLibImageMagickCore = LibImageMagickCore/ImageMagick-6.6.2/
 ODIRLibImageMagickCore = LibImageMagickCore/$(CONFIG)
 $(shell mkdir -p $(ODIRLibImageMagickCore))
@@ -906,7 +906,7 @@ $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o: $(SDIRLibImageMagickCore)tiff
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_write.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_write.c
 $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o: $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c $(INCSLibImageMagickCore)
 	$(CC) -o $(ODIRLibImageMagickCore)tiff_libtiff_tif_zip.o -c $(CFLAGSLibImageMagickCore) $(SDIRLibImageMagickCore)tiff/libtiff/tif_zip.c
-CFLAGSLibFgBase = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
+CFLAGSLibFgBase = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_THREAD_POSIX -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/
 SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = LibFgBase/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgBase))
@@ -1138,7 +1138,7 @@ $(ODIRLibFgBase)portable_binary_oarchive.o: $(SDIRLibFgBase)portable_binary_oarc
 	$(CPPC) -o $(ODIRLibFgBase)portable_binary_oarchive.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)portable_binary_oarchive.cpp
 $(ODIRLibFgBase)stdafx.o: $(SDIRLibFgBase)stdafx.cpp $(INCSLibFgBase)
 	$(CPPC) -o $(ODIRLibFgBase)stdafx.o -c $(CFLAGSLibFgBase) $(SDIRLibFgBase)stdafx.cpp
-CFLAGSLibFgNix = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSLibFgNix = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_THREAD_POSIX -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRLibFgNix = LibFgNix/
 ODIRLibFgNix = LibFgNix/$(CONFIG)
 $(shell mkdir -p $(ODIRLibFgNix))
@@ -1172,7 +1172,7 @@ $(ODIRLibFgNix)FgWinSpecificNix.o: $(SDIRLibFgNix)FgWinSpecificNix.cpp $(INCSLib
 	$(CPPC) -o $(ODIRLibFgNix)FgWinSpecificNix.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)FgWinSpecificNix.cpp
 $(ODIRLibFgNix)stdafx.o: $(SDIRLibFgNix)stdafx.cpp $(INCSLibFgNix)
 	$(CPPC) -o $(ODIRLibFgNix)stdafx.o -c $(CFLAGSLibFgNix) $(SDIRLibFgNix)stdafx.cpp
-CFLAGSfgbl = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_THREAD_POSIX -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
+CFLAGSfgbl = $(CFLAGS) -Wextra -Wno-unused-local-typedef -DBOOST_THREAD_POSIX -DBOOST_ALL_NO_LIB -DBOOST_THREAD_USE_LIB=1 -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -isystemLibTpBoost/boost_1_66_0/ -ILibJpegIjg6b/ -ILibImageMagickCore/ImageMagick-6.6.2/ -ILibUTF-8/ -ILibTntJama/ -ILibFgBase/src/
 SDIRfgbl = fgbl/
 ODIRfgbl = fgbl/$(CONFIG)
 $(shell mkdir -p $(ODIRfgbl))

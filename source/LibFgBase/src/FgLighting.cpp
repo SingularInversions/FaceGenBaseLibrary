@@ -18,7 +18,7 @@ using namespace std;
 FgImgRgbaUb
 FgLighting::createSpecularMap() const
 {
-    FGASSERT(m_lights.size() > 0);
+    FGASSERT(lights.size() > 0);
 
     float   fresnelLow = 1.5f,      // 90 degree angle brightness
             fresnelHigh = 1.5f,     // 0 degree angle brightness
@@ -39,13 +39,13 @@ FgLighting::createSpecularMap() const
                         fresnel = (1.0f - sr) * fresnelLow + sr * fresnelHigh;
                 FgVect3F        r(aa*xx,aa*yy,1.0f-2.0f*sq);
                 FgRgbaF         pix(0,0,0,255);
-                for (uint ll=0; ll<m_lights.size(); ll++)
+                for (uint ll=0; ll<lights.size(); ll++)
                 {
-                    float       diffSqr = (r - m_lights[ll].m_direction).mag(),
+                    float       diffSqr = (r - lights[ll].direction).mag(),
                                 bright = exp(-diffSqr * invVar) * fresnel * 255.0f;
-                    pix.red() += m_lights[ll].m_colour[0] * bright;
-                    pix.green() += m_lights[ll].m_colour[1] * bright;
-                    pix.blue() += m_lights[ll].m_colour[2] * bright;
+                    pix.red() += lights[ll].colour[0] * bright;
+                    pix.green() += lights[ll].colour[1] * bright;
+                    pix.blue() += lights[ll].colour[2] * bright;
                 }
                 if (pix.red() > 255.0f) pix.red() = 255.0f;
                 if (pix.green() > 255.0f) pix.green() = 255.0f;

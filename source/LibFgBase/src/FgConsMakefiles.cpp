@@ -18,12 +18,12 @@
 
 using namespace std;
 
-const char  lf = 0x0A;
+static const char lf = 0x0A;
 
 static
 void
 targets(
-    ofstream &              ofs,
+    ostream &              ofs,
     const string &          prjName,
     const FgConsSrcGroup &  grp)
 {
@@ -43,7 +43,7 @@ targets(
 static
 void
 group(
-    ofstream &              ofs,
+    ostream &              ofs,
     const string &          prjName,
     const FgConsSrcGroup &  grp)
 {
@@ -93,7 +93,7 @@ targetPath(const FgConsProj & prj,const string & os)
 static
 void
 linkLibs(
-    ofstream &              ofs,
+    ostream &              ofs,
     const FgConsProj &      prj,
     const FgConsSolution &  sln,
     const string &          os)
@@ -124,7 +124,7 @@ collapse(
 static
 void
 proj(
-    ofstream &          ofs,
+    ostream &          ofs,
     const FgConsProj &  prj,
     const FgConsSolution & sln,
     const string &      os,
@@ -145,7 +145,6 @@ proj(
     }
     for (size_t ii=0; ii<prj.defs.size(); ++ii)
         ofs << " -D" << prj.defs[ii];
-    ofs << " -DBOOST_THREAD_POSIX";
     for (size_t ii=0; ii<prj.incDirs.size(); ++ii) {
         string      libName = collapse(prj.name,prj.incDirs[ii]);
         if (fgStartsWith(libName,"LibTpBoost"))
@@ -221,7 +220,7 @@ proj(
 }
 
 static
-void
+bool
 consMakefile(
     const FgConsSolution &  sln,
     const string &          os,
@@ -229,10 +228,10 @@ consMakefile(
     bool                    x64,        // 32 bit if false
     bool                    debug)      // release if false
 {
-    string      bits = x64 ? "64" : "32",
-                config = debug ? "debug" : "release",
-                makefile = fgCat(fgSvec<string>("Makefile",os,compiler,bits,config),".");
-    ofstream    ofs(makefile.c_str(),ios::binary);    // ios::binary keeps newline = LF for *nix
+    string          bits = x64 ? "64" : "32",
+                    config = debug ? "debug" : "release",
+                    makefile = fgCat(fgSvec<string>("Makefile",os,compiler,bits,config),".");
+    ostringstream   ofs(ios::binary);    // ios::binary keeps newline = LF for *nix
     if (compiler == "clang") {
         // Will be changing to 'clang++ -Wno-c++11-extensions' if I can get ImageMagick to compile
         // without errors (or get rid of it). As of Yosemite (10.10) g++ is just clang++ and 
@@ -314,19 +313,28 @@ consMakefile(
         ofs << "\trm -r " << sln.projects[ii].name << "/" << compiler << lf;
     ofs << "cleanTargs:" << lf
         << "\trm -r $(BIN)" << lf;
+    string      body = ofs.str();
+    if (fgExists(makefile) && (body == fgSlurp(makefile)))
+        return false;
+    fgDump(body,makefile);
+    return true;
 }
 
-void
+bool
 fgConsMakefiles(FgConsSolution sln)
 {
-    consMakefile(sln,"ubuntu","clang",true,true);
-    consMakefile(sln,"ubuntu","clang",true,false);
-    consMakefile(sln,"ubuntu","gcc",true,true);
-    consMakefile(sln,"ubuntu","gcc",true,false);
-    consMakefile(sln,"ubuntu","icpc",true,true);
-    consMakefile(sln,"ubuntu","icpc",true,false);
-    consMakefile(sln,"osx","clang",true,true);
-    consMakefile(sln,"osx","clang",true,false);
+    bool        anyChanged = false,
+                change;
+    // Control flow to ensure 'consMakefile' is always run regardless of previous changes is a little awkward:
+    change = consMakefile(sln,"ubuntu","clang",true,true); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"ubuntu","clang",true,false); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"ubuntu","gcc",true,true); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"ubuntu","gcc",true,false); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"ubuntu","icpc",true,true); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"ubuntu","icpc",true,false); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"osx","clang",true,true); anyChanged = anyChanged || change;
+    change = consMakefile(sln,"osx","clang",true,false); anyChanged = anyChanged || change;
+    return anyChanged;
 }
 
 // */

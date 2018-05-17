@@ -134,12 +134,6 @@ fgConsBase(bool win,bool nix)
     sln.win = win;
     FGASSERT(win || nix);
     vector<string>  & defs = ret.defs;
-    defs = fgSvec<string>(
-        // This stops boost from automatically flagging the compiler to link to
-        // it's default library names. Without this you'll see link errors looking
-        // for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
-        "BOOST_ALL_NO_LIB",
-        "BOOST_THREAD_USE_LIB=1");
     vector<string>  srcDirs =
         fgSvec<string>(
             "filesystem/src/",
@@ -148,15 +142,21 @@ fgConsBase(bool win,bool nix)
             "thread/src/");
     if (nix) srcDirs.push_back("thread/src/pthread/");
     if (win) srcDirs.push_back("thread/src/win32/");
-    sln.addLib(
-        "LibTpBoost",
-        "boost_1_66_0/libs/",
-        srcDirs,
-        fgSvec<string>("boost_1_66_0/"),
-        fgCat(
-            fgSvec<string>("BOOST_THREAD_BUILD_LIB=1"),
-            defs),
-        2);
+    if (nix)
+        defs.push_back("BOOST_THREAD_POSIX");
+    // This stops boost from automatically flagging the compiler to link to it's default library names.
+    // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
+    defs.push_back("BOOST_ALL_NO_LIB");
+    defs.push_back("BOOST_THREAD_USE_LIB=1");
+    // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
+    defs.push_back("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE");
+    FgStrs          boostDefs = defs;
+    boostDefs.push_back("BOOST_THREAD_BUILD_LIB=1");
+    if (win) {
+        boostDefs.push_back("_CRT_SECURE_NO_DEPRECATE=1");
+        boostDefs.push_back("_SCL_SECURE_NO_DEPRECATE=1");
+    }
+    sln.addLib("LibTpBoost","boost_1_66_0/libs/",srcDirs,fgSvec<string>("boost_1_66_0/"),boostDefs,2);
     vector<string> & incMain = ret.incs,
                    & lnkMain = ret.lnks;
     incMain.push_back("../LibTpBoost/boost_1_66_0/");

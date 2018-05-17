@@ -112,13 +112,13 @@ FgRayCaster::cast(FgVect2F posIucs) const
         FgVect3F            acc(0.0f);
 	    float	            aw = albedo.alpha() / 255.0f;
         FgVect3F            surfColour = albedo.m_c.subMatrix<3,1>(0,0) * aw;
-        for (size_t ll=0; ll<lighting.m_lights.size(); ++ll) {
-            FgLight         lgt = lighting.m_lights[ll];
-            float           fac = fgDot(norm,lgt.m_direction);
+        for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
+            FgLight         lgt = lighting.lights[ll];
+            float           fac = fgDot(norm,lgt.direction);
             if (fac > 0.0f) {
-                acc += fgMapMul(surfColour,lgt.m_colour) * fac;
+                acc += fgMapMul(surfColour,lgt.colour) * fac;
                 if (material.shiny) {
-                    FgVect3F        reflectDir = norm * fac * 2.0f - lgt.m_direction;
+                    FgVect3F        reflectDir = norm * fac * 2.0f - lgt.direction;
                     if (reflectDir[2] > 0.0f) {
                         float       deltaSqr = fgSqr(reflectDir[0]) + fgSqr(reflectDir[1]),
                                     val = exp(-deltaSqr * 32.0f);
@@ -127,7 +127,7 @@ FgRayCaster::cast(FgVect2F posIucs) const
                 }
             }
         }
-        acc += fgMapMul(surfColour,lighting.m_ambient);
+        acc += fgMapMul(surfColour,lighting.ambient);
         FgRgbaF    isctColor = FgRgbaF(acc[0],acc[1],acc[2],albedo.alpha());
         color = fgCompositeFragment(isctColor,color);
      }

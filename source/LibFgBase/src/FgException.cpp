@@ -12,9 +12,9 @@
 #include "FgException.hpp"
 #include "FgStdString.hpp"
 
-const char * newline = "\n";
-
 using namespace std;
+
+static const char * newline = "\n";
 
 FgString
 FgException::Context::trans() const

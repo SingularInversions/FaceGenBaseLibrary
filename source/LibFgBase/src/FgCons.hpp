@@ -118,8 +118,9 @@ fgConsBase(
     bool    win,    // Include projects needed for Windows
     bool    nix);   // Include projects needed for *nix
 
-// Create makefiles for given solution in current directory:
-void
+// Create makefiles for given solution in current directory
+// Returns true if different from existing (useful for source control & CI):
+bool
 fgConsMakefiles(FgConsSolution sln);
 
 // Create Visual Studio 201x solution & project files for given solution in current directory tree:

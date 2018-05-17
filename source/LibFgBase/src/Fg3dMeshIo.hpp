@@ -28,7 +28,7 @@ vector<string>
 fgLoadMeshFormats();
 
 string
-fgLoadMeshFormatsDescription();
+fgLoadMeshFormatsCLDescription();
 
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
@@ -53,7 +53,7 @@ fgMeshExportFormatsWithMorphs();
 
 // Includes 'tri':
 std::string
-fgMeshSaveFormatsString();
+fgSaveMeshFormatsCLDescription();
 
 // FaceGen mesh format load / save:
 

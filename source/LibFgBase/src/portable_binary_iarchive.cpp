@@ -21,7 +21,7 @@
 
 void 
 portable_binary_iarchive::load_impl(boost::intmax_t & l, char maxsize){
-    char size;
+    signed char size;
     l = 0;
     this->primitive_base_t::load(size);
 

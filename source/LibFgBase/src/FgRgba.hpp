@@ -122,7 +122,7 @@ struct      FgRgba
 
     T       
     rec709() const                      // Use rec.709 RGB -> CIE L
-    {return static_cast<T>(0.213 * red() + 0.715 * green() + 0.072 * blue()); };
+    {return static_cast<T>(0.213 * red() + 0.715 * green() + 0.072 * blue()); }
 
     static
     FgRgba<T>

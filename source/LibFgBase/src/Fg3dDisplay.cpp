@@ -34,15 +34,15 @@ FGLINK(linkLighting)
     FGASSERT(d1.size() == 3);
     FGASSERT(d2.size() == 3);
     FgLighting &            lighting = outputs[0]->valueRef();
-    lighting.m_ambient = FgVect3F(amb[0],amb[1],amb[2]);
-    lighting.m_lights.resize(2);    // Must always assign both lights since OGL will keep settings for both
+    lighting.ambient = FgVect3F(amb[0],amb[1],amb[2]);
+    lighting.lights.resize(2);    // Must always assign both lights since OGL will keep settings for both
     for (uint ll=0; ll<2; ++ll) {
         const vector<double> &  ls = (ll == 0) ? l1 : l2;
         const vector<double> &  ds = (ll == 0) ? d1 : d2;
         FgLight                 light;
-        light.m_colour = FgVect3F(ls[0],ls[1],ls[2]);
-        light.m_direction = fgNormalize(FgVect3F(ds[0],ds[1],ds[2]));
-        lighting.m_lights[ll] = light;
+        light.colour = FgVect3F(ls[0],ls[1],ls[2]);
+        light.direction = fgNormalize(FgVect3F(ds[0],ds[1],ds[2]));
+        lighting.lights[ll] = light;
     }
 }
 

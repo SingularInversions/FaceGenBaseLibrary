@@ -492,14 +492,14 @@ fgOglSetLighting(const FgLighting & lt)
     glEnable(GL_LIGHTING);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();               // Lights are transformed by the current MVM
-    FgVect4F    amb = fgConcatVert(lt.m_ambient,1.0f);
+    FgVect4F    amb = fgConcatVert(lt.ambient,1.0f);
     glLightfv(glLight[0],GL_AMBIENT,amb.dataPtr());
-    for (uint ll=0; (ll<lt.m_lights.size()) && (ll < 4); ll++) {
-        const FgLight & lgt = lt.m_lights[ll];
+    for (uint ll=0; (ll<lt.lights.size()) && (ll < 4); ll++) {
+        const FgLight & lgt = lt.lights[ll];
         glEnable(glLight[ll]);
-        FgVect4F        pos = fgConcatVert(lgt.m_direction,0.0f);
+        FgVect4F        pos = fgConcatVert(lgt.direction,0.0f);
         glLightfv(glLight[ll],GL_POSITION,pos.dataPtr());
-        FgVect4F        clr = fgConcatVert(lgt.m_colour,1.0f);
+        FgVect4F        clr = fgConcatVert(lgt.colour,1.0f);
         glLightfv(glLight[ll],GL_DIFFUSE,clr.dataPtr());
     }
     CHECKOGLERROR;

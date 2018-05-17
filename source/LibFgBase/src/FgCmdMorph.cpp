@@ -27,7 +27,7 @@ apply(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
-        "    <ext>      - " + fgMeshSaveFormatsString() + "\n"
+        "    <ext>      - " + fgSaveMeshFormatsCLDescription() + "\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)\n"
@@ -148,8 +148,8 @@ create(const FgArgs & args)
 {
     FgSyntax    syntax(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
-        "    <extIn> = " + fgLoadMeshFormatsDescription() + "\n"
-        "    <extOut> = " + fgMeshSaveFormatsString() + "\n"
+        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut> = " + fgSaveMeshFormatsCLDescription() + "\n"
         "    -i         - Ignore very small morphs (ie. do not create)\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -197,7 +197,7 @@ void
 extract(const FgArgs & args)
 {
     FgSyntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
-        "    <ext> - Output format " + fgMeshSaveFormatsString() + "\n"
+        "    <ext> - Output format " + fgSaveMeshFormatsCLDescription() + "\n"
         "OUTPUTS:\n"
         "    <mesh>_<name>.<ext> for each morph target, or\n"
         "    <base>_<name>.<ext> if <base> is specified.\n"

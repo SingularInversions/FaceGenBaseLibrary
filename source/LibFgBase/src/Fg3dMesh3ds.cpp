@@ -343,9 +343,9 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
         id = COLOUR_RGB_BYTE;
         if (!fffWriteChunkHeader_local(fptr,id,colourChunkSize))
             return false;
-        red=(char)255;
-        green=(char)255;
-        blue=(char)255;
+        red= '\xFF';
+        green='\xFF';
+        blue='\xFF';
         if (fwrite(&red,1,1,fptr) != 1)
             return false;
         if (fwrite(&green,1,1,fptr) != 1)

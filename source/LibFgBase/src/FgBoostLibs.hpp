@@ -16,25 +16,12 @@
 #define FGBOOSTLIBS_HPP
 
 #ifdef _MSC_VER
-
-#ifndef _WIN64
-// Make boost::bind also work with win32 __stdcall (__cdecl is default).
-// win64 uses a single calling convention so use of below would result in ambiguity.
-#define BOOST_MEM_FN_ENABLE_STDCALL
-#endif
-// qualifier applied to function type has no meaning in path.hpp:
-#pragma warning(disable:4180)
-// boost function: nonstandard extension used : formal parameter 'function_ptr'
-// was previously defined as a type:
-#pragma warning(disable:4224)
-// Don't want warnings every time a '0' or '1' is used as a float:
-#pragma warning(disable:4244)
-// boost/archive/basic_binary_oprimitive.hpp: warning C4310: cast truncates constant value
-// (occurs only with vs2010 debug 32):
-#pragma warning(disable:4310)
-// Assignment operator could not be generated:
-#pragma warning(disable:4512)
-
+    #ifndef _WIN64
+        // Make boost::bind also work with win32 __stdcall (__cdecl is default).
+        // win64 uses a single calling convention so use of below would result in ambiguity.
+        #define BOOST_MEM_FN_ENABLE_STDCALL
+    #endif
+    #pragma warning(push,0)
 #endif
 
 #include <boost/any.hpp>
@@ -72,5 +59,11 @@
 #include <boost/thread/once.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/variant.hpp>
+
+#ifdef _MSC_VER
+    #pragma warning(pop)
+    // Currently gets triggered by boost portable binary archive on VS2015 so hard to remove for now:
+    #pragma warning(disable:4800)
+#endif
 
 #endif  // FGBOOSTLIBS_HPP

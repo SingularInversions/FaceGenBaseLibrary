@@ -52,6 +52,9 @@
 #include <string>
 #include <thread>
 
+// Don't want warnings every time a '0' or '1' is used as a float:
+#pragma warning(disable:4244)
+
 #endif
 
 // */

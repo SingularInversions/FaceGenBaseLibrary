@@ -40,10 +40,7 @@ fgConsVsPreprocessorDefs(
         else
             ret += ";_LIB";
     }
-    ret +=
-        ";_CRT_SECURE_NO_DEPRECATE=1"
-        ";_SCL_SECURE_NO_DEPRECATE=1"
-        ";_CRT_SECURE_NO_WARNINGS";
+    ret += ";_CRT_SECURE_NO_WARNINGS";
     for (size_t ii=0; ii<proj.defs.size(); ++ii)
         ret += ";" + proj.defs[ii];
     return ret;

@@ -11,17 +11,17 @@
 #include "FgTime.hpp"
 
 #include <sys/types.h>
-#include <sys/timeb.h>
-#include <unistd.h>
+#include <time.h>           // timespec, clock_getttime
+#include <unistd.h>         // sleep
 
 using namespace std;
 
 uint64
 fgTimeMs()
 {
-    struct  timeb   timeptr;
-    ftime(&timeptr);
-    return uint64(timeptr.time) * 1000ULL + uint64(timeptr.millitm);
+    timespec        spec;
+    clock_gettime(CLOCK_REALTIME,&spec);
+    return uint64(spec.tv_sec)*1000ULL + uint64(spec.tv_nsec/1000);
 }
 
 void
@@ -29,4 +29,3 @@ fgSleep(uint seconds)
 {
     sleep(seconds);
 }
-

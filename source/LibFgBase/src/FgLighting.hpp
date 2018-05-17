@@ -16,27 +16,27 @@
 
 struct  FgLight
 {
-    FgVect3F       m_colour;        // RGB range [0,1]
-    FgVect3F       m_direction;     // Unit direction vector to light in OECS (all lights at infinity)
+    FgVect3F       colour;          // RGB range [0,1]
+    FgVect3F       direction;       // Unit direction vector to light in OECS (all lights at infinity)
 
-    FG_SERIALIZE2(m_colour,m_direction);
+    FG_SERIALIZE2(colour,direction);
 
     FgLight() :
-        m_colour(0.6f,0.6f,0.6f),
-        m_direction(0.0f,0.0f,1.0f)     // At infinity behind camera (OECS)
+        colour(0.6f,0.6f,0.6f),
+        direction(0.0f,0.0f,1.0f)   // At infinity behind camera (OECS)
     {}
 };
 
 struct  FgLighting
 {
-    FgVect3F            m_ambient;      // RGB range [0,1]
-    vector<FgLight>     m_lights;
+    FgVect3F            ambient;    // RGB range [0,1]
+    vector<FgLight>     lights;
 
-    FG_SERIALIZE2(m_ambient,m_lights);
+    FG_SERIALIZE2(ambient,lights);
 
     FgLighting() :
-    m_ambient(0.4f,0.4f,0.4f)
-    {m_lights.resize(1); }
+    ambient(0.4f,0.4f,0.4f)
+    {lights.resize(1); }
 
     FgImgRgbaUb
     createSpecularMap() const;

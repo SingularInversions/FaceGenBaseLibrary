@@ -9,6 +9,8 @@
 // Keeps a separate grid index for each surface, despite the additional overhead:
 // * Naturally avoids indexing areas of the image with no objects maximizing cache efficiency
 // * No additional information about which surface needs to be stored with each triangle record
+// * Keeps pointers into client constructor objects so never keep beyond scope lifetime.
+//   We prefer pointers to references here since they need to be stored in std::vector.
 
 #ifndef FG3DRAYCASTER_HPP
 #define FG3DRAYCASTER_HPP
@@ -23,9 +25,9 @@ typedef boost::function<FgRgbaF(FgVect3F,FgVect2F,FgMaterial,const FgImgRgbaUb *
 
 struct  Fg3dRayCastMesh
 {
-    const FgVerts &             verts;      // OECS
-    const Fg3dNormals &         norms;      // OECS
-    const FgVect2Fs &           uvs;
+    const FgVerts *             vertsPtr;   // OECS
+    const Fg3dNormals *         normsPtr;   // OECS
+    const FgVect2Fs *           uvsPtr;
     Fg3dSurfaces                surfs;      // Converted to tris
     FgMaterial                  material;
     FgGridTriangles             grid;       // IUCS
@@ -47,7 +49,7 @@ struct  Fg3dRayCastMesh
 
 struct  Fg3dRayCaster
 {
-    const FgLighting &          lighting;
+    const FgLighting *          lightingPtr;
     FgRgbaF                     m_background;
     vector<Fg3dRayCastMesh>     rayMesh;
 

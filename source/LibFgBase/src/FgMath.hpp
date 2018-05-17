@@ -100,10 +100,10 @@ inline double   fgLn_pi()      {return 1.144729885849400173825117; }
 inline double   fgLn_2()       {return 0.693147180559945309417232; }
 inline double   fgLn_2pi()     {return 1.837877066409345483560659; }
 inline double   fgSqrt_2pi()   {return 2.506628274631000502415765; }
-inline double   fgRadToDeg(double radians) {return radians * 180.0 / fgPi(); };
-inline double   fgDegToRad(double degrees) {return degrees * fgPi() / 180.0; };
-inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; };
-inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; };
+inline double   fgRadToDeg(double radians) {return radians * 180.0 / fgPi(); }
+inline double   fgDegToRad(double degrees) {return degrees * fgPi() / 180.0; }
+inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; }
+inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
 namespace fgMath
 {

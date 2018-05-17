@@ -45,12 +45,7 @@ public:
     virtual const char *what( ) const throw( )
     {
         const char *msg = "programmer error";
-        switch(code){
-        case invalid_flags:
-            msg = "cannot be both big and little endian";
-        default:
-            boost::archive::archive_exception::what();
-        }
+        boost::archive::archive_exception::what();
         return msg;
     }
 };

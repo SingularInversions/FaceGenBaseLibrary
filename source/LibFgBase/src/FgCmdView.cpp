@@ -30,7 +30,7 @@ viewMesh(const FgArgs & args)
         "[-c] [-r] (<mesh>.<ext> [<texImage> [<transparencyImage>]])+\n"
         "    -c    - Compare meshes rather than view all at once\n"
         "    -r    - Remove unused vertices for viewing\n"
-        "    <ext> - " + fgLoadMeshFormatsDescription());
+        "    <ext> - " + fgLoadMeshFormatsCLDescription());
     bool                compare = false,
                         ru = false;
     while (syntax.peekNext()[0] == '-') {
@@ -115,7 +115,7 @@ fgCmdViewUvs(const FgArgs & args)
 {
     FgSyntax            syntax(args,
         "(<mesh>.<ext>)+ [<texImage>]\n"
-        "     <ext> = " + fgLoadMeshFormatsDescription());
+        "     <ext> = " + fgLoadMeshFormatsCLDescription());
     Fg3dMesh            mesh;
     FgImgRgbaUb         img;
     while (syntax.more()) {

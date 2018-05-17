@@ -61,11 +61,6 @@ fgCmdBaseTests()
 
 static
 void
-test(const FgArgs & args)
-{fgMenu(args,fgCmdBaseTests(),true); }
-
-static
-void
 testmGui(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
@@ -120,7 +115,7 @@ fgCmdFgbl(const FgArgs & args)
     cmds.push_back(fgCmdRenderInfo());
     cmds.push_back(fgCmdTriexportInfo());
     cmds.push_back(FgCmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
-    cmds.push_back(FgCmd(test,"test","Automated tests"));
+    cmds.push_back(FgCmd(fgCmdBaseTest,"test","Automated tests"));
     cmds.push_back(FgCmd(testm,"testm","Manual tests"));
     cmds.push_back(FgCmd(view,"view","Interactively view various file types"));
     fgMenu(args,cmds);

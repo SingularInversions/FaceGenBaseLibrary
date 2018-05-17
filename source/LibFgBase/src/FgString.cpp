@@ -28,7 +28,8 @@
 using namespace std;
 
 // Assume this means UTF-16/UCS-2
-#if WCHAR_MAX == 65535
+// Check for signed and unsigned cases (latter used by VS):
+#if ((WCHAR_MAX == 32767) || (WCHAR_MAX == 65535))
 
 static
 std::string
@@ -51,7 +52,8 @@ convert(std::string const & s)
 }
 
 // Assume this means UTF-32/UCS-4
-#elif WCHAR_MAX == 2147483647
+// We have to check signed max and unsigned max (eg. Ubuntu uses signed 32bit, Android unsigned 32bit):
+#elif ((WCHAR_MAX == 2147483647) || (WCHAR_MAX == 4294967295U))
 
 static
 std::string
@@ -74,7 +76,10 @@ convert(std::string const & s)
 }
 
 #else
-# error Unknown value for WCHAR_MAX
+    #define XSTR(x) STR(x)
+    #define STR(x) #x
+    #pragma message XSTR(WCHAR_MAX)
+    # error Unknown value for WCHAR_MAX
 #endif
 
 FgString::FgString(const wchar_t * s)

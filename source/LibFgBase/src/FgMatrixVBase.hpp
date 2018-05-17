@@ -83,7 +83,7 @@ struct  FgMatrixV
     FgVect2UI       dims() const {return FgVect2UI(ncols,nrows); }  // NB Order
     uint            numRows() const { return nrows; }
     uint            numCols() const { return ncols; }
-    uint            numElems() const {return (nrows*ncols); };
+    uint            numElems() const {return (nrows*ncols); }
     bool            empty() const {return (numElems() == 0); }
 
     // Element access by (row,column):

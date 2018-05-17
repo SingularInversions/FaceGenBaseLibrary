@@ -1001,7 +1001,13 @@ fgMaxIdx(const vector<T> & v,const std::function<bool(const T & lhs,const T & rh
     return ret;    
 }
 
-// Functional version of std::sort
+// Common case where we want to sort the whole vector:
+template<class T>
+void
+fgSort_(vector<T> & v)
+{std::sort(v.begin(),v.end()); }
+
+// Functional version of sorting whole vector:
 template<class T>
 vector<T>
 fgSort(const vector<T> & v)
@@ -1364,6 +1370,27 @@ fgSetwiseSubtract(const vector<T> & lhs,const vector<T> & rhs)
     vector<T>       ret;
     for (const T & l : lhs) {
         if (!fgContains(rhs,l))
+            ret.push_back(l);
+    }
+    return ret;
+}
+
+// Multiset subtraction on vector containers (lhs retains ordering):
+template<class T>
+vector<T>
+fgMultisetWiseSubtract(const vector<T> & lhs,vector<T> rhs)
+{
+    vector<T>       ret;
+    for (const T & l : lhs) {
+        bool        found = false;
+        for (auto it=rhs.begin(); it!=rhs.end(); ++it) {
+            if (l == *it) {
+                rhs.erase(it);
+                found = true;
+                break;
+            }
+        }
+        if (!found)
             ret.push_back(l);
     }
     return ret;

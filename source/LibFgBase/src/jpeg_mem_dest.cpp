@@ -23,7 +23,7 @@ struct my_destination_manager
 
 typedef my_destination_manager * my_dest_ptr_t;
 
-const size_t OUTPUT_BUF_SIZE=4096;
+static const size_t OUTPUT_BUF_SIZE=4096;
 
 METHODDEF(void)
 init_destination(j_compress_ptr cinfo)
