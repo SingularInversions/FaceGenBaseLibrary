@@ -12,13 +12,13 @@ build/
 /source/*/VisualStudio*/x64
 # Android Studio:
 *.iml
-/android/.gradle
-/android/local.properties
-/android/.idea/caches
-/android/.idea/libraries
-/android/.idea/modules.xml
-/android/.idea/workspace.xml
-/android/captures
+/android/*/.gradle
+/android/*/local.properties
+/android/*/.idea/caches
+/android/*/.idea/libraries
+/android/*/.idea/modules.xml
+/android/*/.idea/workspace.xml
+/android/*/captures
 .externalNativeBuild
 /android/*/gradlew
 /android/*/gradle/wrapper/
