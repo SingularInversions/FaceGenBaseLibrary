@@ -12,7 +12,6 @@ build/
 /source/*/VisualStudio*/Win32
 /source/*/VisualStudio*/x64
 # Android Studio:
-*.iml
 /android/*/.gradle
 /android/*/local.properties
 /android/*/.idea/caches
