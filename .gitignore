@@ -1,11 +1,25 @@
 # git ignore is case INsensitive on windows
-_log/
-bin/
-source/ipch
-source/.vs
-source/VisualStudio*.db
-source/VisualStudio*.opendb
-source/VisualStudio*.suo
-source/PredictedInputCache*
-source/*/VisualStudio*/Win32
-source/*/VisualStudio*/x64
+build/
+/_log/
+/bin/
+/source/ipch
+/source/.vs
+/source/VisualStudio*.db
+/source/VisualStudio*.opendb
+/source/VisualStudio*.suo
+/source/PredictedInputCache*
+/source/*/VisualStudio*/Win32
+/source/*/VisualStudio*/x64
+# Android Studio:
+*.iml
+/android/.gradle
+/android/local.properties
+/android/.idea/caches
+/android/.idea/libraries
+/android/.idea/modules.xml
+/android/.idea/workspace.xml
+/android/captures
+.externalNativeBuild
+/android/*/gradlew
+/android/*/gradle/wrapper/
+/android/*/app/src/main/assets/
