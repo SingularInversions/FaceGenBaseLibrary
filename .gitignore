@@ -1,5 +1,6 @@
 # git ignore is case INsensitive on windows
 # Shell glob rules with no partial matches, leading slash matches repo root
+# Note that /*/ only matches a single directory but you can use subdir .gitignore files
 build/
 /_log/
 /bin/
@@ -12,7 +13,7 @@ build/
 /source/*/VisualStudio*/Win32
 /source/*/VisualStudio*/x64
 # Android Studio:
-/android/*.iml
+*.iml
 /android/*/.gradle
 /android/*/local.properties
 /android/*/.idea/caches
