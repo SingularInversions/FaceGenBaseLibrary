@@ -8,7 +8,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibJpegIjg6b ${CMAK
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibTpBoost ${CMAKE_CURRENT_BINARY_DIR}/LibTpBoost)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibImageMagickCore ${CMAKE_CURRENT_BINARY_DIR}/LibImageMagickCore)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibFgBase ${CMAKE_CURRENT_BINARY_DIR}/LibFgBase)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibFgNix ${CMAKE_CURRENT_BINARY_DIR}/LibFgNix)
 
 # Android also supports STATIC libs as well:
 add_library(native-lib SHARED src/main/cpp/native-lib.cpp )
@@ -19,4 +18,4 @@ add_library(native-lib SHARED src/main/cpp/native-lib.cpp )
 # CMake verifies that the library exists before completing its build:
 find_library(log-lib log )
 
-target_link_libraries(native-lib LibFgBase LibFgNix ${log-lib} )
+target_link_libraries(native-lib LibFgBase ${log-lib} )
