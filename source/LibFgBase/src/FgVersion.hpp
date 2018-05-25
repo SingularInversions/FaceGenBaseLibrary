@@ -17,7 +17,7 @@ inline
 std::string
 fgVersion(const std::string & sep)
 {
-    return "3" + sep + "M" + sep + "1";
+    return "3" + sep + "N" + sep + "0";
 }
 
 #endif
