@@ -423,7 +423,7 @@ fgConsVs201x(FgConsSolution sln)
         writeVcxproj(sln.projects[ii],guidMap,15);
         writeVcxproj(sln.projects[ii],guidMap,17);
     }
-    writeSln(sln,12);
+    // This codebase uses C++11 which is only supported by the following:
     writeSln(sln,13);
     writeSln(sln,15);
     writeSln(sln,17);

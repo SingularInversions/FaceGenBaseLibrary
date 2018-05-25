@@ -11,7 +11,6 @@
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshOps.hpp"
-#include "FgTokenizer.hpp"
 #include "FgParse.hpp"
 #include "Fg3dNormals.hpp"
 

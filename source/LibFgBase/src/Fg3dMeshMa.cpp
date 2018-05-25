@@ -21,19 +21,16 @@
 using namespace std;
 
 template <class T>
-struct FR2Vect2LessThanByAxisT
+struct FgVect2LessThanByAxisT
 {
     bool operator()(const FgMatrixC<T,2,1> &x, const FgMatrixC<T,2,1> &y) const
             { return ((x[1] < y[1]) ||
                       (x[1] == y[1] && x[0] < y[0])); }
 };
 
-typedef FR2Vect2LessThanByAxisT<short>  FutVect2LessSC;
-typedef FR2Vect2LessThanByAxisT<uint>   FutVect2LessIC;
-typedef FR2Vect2LessThanByAxisT<float>  FutVect2LessFC;
-typedef FR2Vect2LessThanByAxisT<double> FutVect2LessDC;
+typedef FgVect2LessThanByAxisT<uint>   FgVect2ILess;
 
-typedef map<FgVect2UI,unsigned long,FutVect2LessIC> EdgeMapT;
+typedef map<FgVect2UI,unsigned long,FgVect2ILess> EdgeMapT;
 typedef EdgeMapT::iterator EdgeMapItr;
 typedef EdgeMapT::const_iterator EdgeMapCItr;
 

@@ -156,10 +156,10 @@ fgConsBase(bool win,bool nix)
         boostDefs.push_back("_CRT_SECURE_NO_DEPRECATE=1");
         boostDefs.push_back("_SCL_SECURE_NO_DEPRECATE=1");
     }
-    sln.addLib("LibTpBoost","boost_1_66_0/libs/",srcDirs,fgSvec<string>("boost_1_66_0/"),boostDefs,2);
+    sln.addLib("LibTpBoost","boost_1_67_0/libs/",srcDirs,fgSvec<string>("boost_1_67_0/"),boostDefs,2);
     vector<string> & incMain = ret.incs,
                    & lnkMain = ret.lnks;
-    incMain.push_back("../LibTpBoost/boost_1_66_0/");
+    incMain.push_back("../LibTpBoost/boost_1_67_0/");
     lnkMain.push_back("LibTpBoost");
     // This library is set up such that you run a config script to adapt the source code to
     // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
@@ -259,16 +259,19 @@ fgConsBase(bool win,bool nix)
     lnkMain.push_back("LibImageMagickCore");
     incMain.push_back("../LibUTF-8/");
     incMain.push_back("../LibTntJama/");
-    sln.addLib(
-        "LibFgBase",
-        "src/",
-        fgSvec<string>(""),
-        incMain,defs);
-    incMain.push_back("../LibFgBase/src/");
+    FgConsProj      libBase;
+    libBase.name = "LibFgBase";
+    libBase.srcBaseDir = "src/";
+    libBase.incDirs = incMain;
+    libBase.defs = defs;
+    libBase.warn = 4;
+    libBase.srcGroups.push_back(FgConsSrcGroup("LibFgBase/src/",""));
     if (nix) {
-        sln.addLib("LibFgNix",incMain,defs);
-        lnkMain.push_back("LibFgNix");
+        libBase.srcGroups.push_back(FgConsSrcGroup("LibFgBase/src/","nix/"));
+        libBase.incDirs.push_back("../LibFgBase/src/");
     }
+    sln.projects.push_back(libBase);
+    incMain.push_back("../LibFgBase/src/");
     if (win) {
         sln.addLib("LibFgWin",incMain,defs);
         lnkMain.push_back("LibFgWin");

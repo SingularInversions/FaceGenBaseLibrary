@@ -50,13 +50,12 @@ set(TIFF_SOURCES
     ${TIFF_ROOT}tif_write.c
     ${TIFF_ROOT}tif_zip.c
 )
-if(UNIX)
+if(WIN32)
+    set(TIFF_SOURCES ${TIFF_SOURCES} ${TIFF_ROOT}tif_win32.c)
+else()
     set(TIFF_SOURCES ${TIFF_SOURCES} ${TIFF_ROOT}tif_unix.c)
-    # get xlib sources
     file(GLOB XLIB_SOURCES "${PROJECT_ROOT}/xlib/*.c")
     set(MAGICK_SOURCES ${MAGICK_SOURCES} ${XLIB_SOURCES})
-elseif(WIN32)
-    set(TIFF_SOURCES ${TIFF_SOURCES} ${TIFF_ROOT}tif_win32.c)
 endif()
 
 add_library(LibImageMagickCore STATIC
@@ -81,7 +80,8 @@ target_include_directories(LibImageMagickCore
     PRIVATE ${PROJECT_ROOT}/png/
     PRIVATE ${PROJECT_ROOT}/xlib/
     PRIVATE ${PROJECT_ROOT}/jbig/libjbig/
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../LibJpegIjg6b/
     PRIVATE ${PROJECT_ROOT}/jp2/src/libjasper/include/
     PRIVATE ${PROJECT_ROOT}/jp2/src/libjasper/include/jasper/
 )
+
+target_link_libraries(LibImageMagickCore PRIVATE LibJpegIjg6b)

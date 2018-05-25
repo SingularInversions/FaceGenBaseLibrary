@@ -136,42 +136,42 @@ fgClusterTest(const FgArgs &)
 void
 fgClusterTestm(const FgArgs & args)
 {
-    FgSyntax            syn(args,"w | (c <ip>+)\n"
+    FgSyntax            syntax(args,"w | (c <ip>+)\n"
         "    w - start worker machine. Make sure you do this first on all computers to be referenced by <ip>+\n"
         "    c - coordinator. Makes use of the workers at <ip>+"
     );
-    if (syn.next() == "w")
+    if (syntax.next() == "w")
         return fgClustWorker(testWorkerFunc,fgClusterPortDefault());
-    if (syn.curr() == "c") {
+    if (syntax.curr() == "c") {
         FgStrs      ips;
         do
-            ips.push_back(syn.next());
-        while (syn.more());
+            ips.push_back(syntax.next());
+        while (syntax.more());
         shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(ips,fgClusterPortDefault());
         return testCoordinator(dispatcher.get());
     }
-    syn.error("Unknown command",syn.curr());
+    syntax.error("Unknown command",syntax.curr());
 }
 
 void
 fgClusterDeployTestm(const FgArgs & args)
 {
-    FgSyntax        syn(args,"<crdntorIP> <workerIP>+\n"
+    FgSyntax        syntax(args,"<crdntorIP> <workerIP>+\n"
         "    <IP> - If no periods are entered then '192.168.0' is automatically prepended.\n"
         "NOTES\n"
         "    * All <IP> machines must be running fgNcServer under Ubuntu"
     );
-    string      crdntorIP = syn.next();
+    string      crdntorIP = syntax.next();
     if (!fgContains(crdntorIP,'.'))
         crdntorIP = "192.168.0." + crdntorIP;
     FgStrs      workerIPs;
     do {
-        string  wip = syn.next();
+        string  wip = syntax.next();
         if (!fgContains(wip,'.'))
             wip = "192.168.0." + wip;
         workerIPs.push_back(wip);
     }
-    while (syn.more());
+    while (syntax.more());
     fgClusterDeploy("test0",testCoordinator,testWorkerFunc,crdntorIP,workerIPs,FgStrings());
 }
 

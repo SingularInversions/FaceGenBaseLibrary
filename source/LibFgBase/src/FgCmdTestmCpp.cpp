@@ -152,6 +152,23 @@ fgexp(const FgArgs &)
     fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
 }
 
+static
+void
+any(const FgArgs &)
+{
+    boost::any      v0 = 42,
+                    v1 = v0;
+    int *           v0Ptr = boost::any_cast<int>(&v0);
+    *v0Ptr = 7;
+    fgout << fgnl << "Original small value: " << *v0Ptr << " but copy remains at " << boost::any_cast<int>(v1);
+    // Now try with a heavy object that is not subject to small value optimization (16 bytes) onto the stack:
+    v0 = FgMat44D(42);
+    v1 = v0;
+    FgMat44D *      v0_ptr = boost::any_cast<FgMat44D>(&v0);
+    (*v0_ptr)[0] = 7;
+    fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<FgMat44D>(v1)[0];
+}
+
 void
 fgCmdTestmCpp(const FgArgs & args)
 {
@@ -159,6 +176,7 @@ fgCmdTestmCpp(const FgArgs & args)
     cmds.push_back(FgCmd(rvo,"rvo","Return value optimization / copy elision"));
     cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of library exp(double)"));
     cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
+    cmds.push_back(FgCmd(any,"any","Test boost any copy semantics"));
     fgMenu(args,cmds);
 }
 

@@ -47,7 +47,7 @@ apply(const FgArgs & args)
     while (syntax.more()) {
         FgString    arg = syntax.nextLower();
         uint        idx = syntax.nextAs<uint>();
-        float       val = fgFromString<float>(syntax.next());
+        float       val = syntax.nextAs<float>();
 
         //! Apply the morph:
         if (arg == "d") {
@@ -123,7 +123,7 @@ copymorphs(const FgArgs & args)
             delta = false;
         else if (syntax.curr() != "d")
             syntax.error("Invalid morph type flag",syntax.curr());
-        size_t      idx = fgFromString<size_t>(syntax.next());
+        size_t      idx = syntax.nextAs<size_t>();
         if (delta) {
             if (idx >= meshIn.deltaMorphs.size())
                 syntax.error("Invalid delta morph index",fgToString(idx));

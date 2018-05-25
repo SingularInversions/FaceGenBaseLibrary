@@ -21,6 +21,7 @@ struct  FgAffineCwC
 {
     FgMatrixC<T,dim,1>      m_scales;       // Applied first
     FgMatrixC<T,dim,1>      m_trans;
+    FG_SERIALIZE2(m_scales,m_trans);
 
     FgAffineCwC() : m_scales(T(1)), m_trans(0) {}
 

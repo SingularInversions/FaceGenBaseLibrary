@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(LibTpBoost)
 
-set(LIBS_ROOT "boost_1_66_0/libs")
+set(LIBS_ROOT "boost_1_67_0/libs")
 
 file(GLOB_RECURSE SOURCES
     "${LIBS_ROOT}/date_time/src/*.cpp"
@@ -14,11 +14,10 @@ set(THREAD_ROOT ${LIBS_ROOT}/thread)
 if(WIN32)
     file(GLOB WIN_THREADS ${THREAD_ROOT}/src/win32/*.cpp)
     set(THREAD_SOURCES ${THREAD_SOURCES} ${WIN_THREADS})
-endif(WIN32)
-if(UNIX)
+else()
     file(GLOB PTHREADS ${THREAD_ROOT}/src/pthread/*.cpp)
     set(THREAD_SOURCES ${THREAD_SOURCES} ${PTHREADS})
-endif(UNIX)
+endif()
 set(SOURCES ${SOURCES} ${THREAD_SOURCES})
 
 add_library(LibTpBoost STATIC ${SOURCES})
@@ -38,4 +37,4 @@ else()
 endif()
 target_compile_options(LibTpBoost PRIVATE -DBOOST_THREAD_BUILD_LIB=1)
 
-target_include_directories(LibTpBoost PUBLIC boost_1_66_0/)
+target_include_directories(LibTpBoost PUBLIC boost_1_67_0/)

@@ -35,12 +35,12 @@ struct  FgSyntax
     }
 
     template<typename T>
-    uint
+    T
     nextAs()
     {
-        FgOpt<T>    ret = fgFromStr<T>(next());     // 'FgOpt<T> fgFromStr<T>(const string &)' must be defined.
+        FgOpt<T>    ret = fgFromStr<T>(next());
         if (!ret.valid())
-            error(string("Invalid ")+string(typeid(T).name()),curr());
+            error("Unable to covnert string to "+string(typeid(T).name()),curr());
         return ret.val();
     }
 
@@ -88,6 +88,12 @@ struct  FgSyntax
     // Throws appropriate syntax error if different:
     void
     numArgsMustBe(uint numArgsNotIncludingCommand);
+
+    // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
+    // referencing 'argDescription':
+    uint
+    nextSelectionIndex(const FgStrs & validValues,const string & argDescription);
+
 
 private:
     string                 m_syntax;

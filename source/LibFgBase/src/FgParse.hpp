@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     April 21, 2005
 //
-// Simple, slow, correct string parsing (multi-pass approach).
+// Simple, slow, correct string tokenizing / parsing (functional multi-pass approach).
 //
 
 #ifndef FGPARSE_HPP
@@ -15,6 +15,45 @@
 #include "FgStdVector.hpp"
 #include "FgStdString.hpp"
 #include "FgString.hpp"
+
+inline bool
+fgIsDigit(char c)
+{return ((c >= '0') && (c <= '9')); }
+
+inline bool
+fgIsDigitOrMinus(char cc)
+{return ((fgIsDigit(cc)) || (cc == '-')); }
+
+inline bool
+fgIsWhitespaceOrInvalid(char c)
+{return ((c < 0x21) || (c > 0x7E)); }
+
+inline bool
+fgIsLetter(char c)
+{return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'))); }
+
+inline bool
+fgIsDigitOrLetter(char c)
+{return fgIsDigit(c) || fgIsLetter(c); }
+
+inline bool
+fgIsDigitLetterDashUnderscore(char c)
+{return fgIsDigit(c) || fgIsLetter(c) || (c == '-') || (c == '_'); }
+
+inline
+uint
+fgAsciiToDigit(char cc)
+{
+    uint    ret = uint(cc) - uint('0');
+    FGASSERT(ret < 10);
+    return ret;
+}
+
+// Returns a vector of tokens, treating all control codes and extended codes (high bit set) as whitespace,
+// grouping all connected digit-letter-dash-underscore characters and considering any others as single-character
+// tokens:
+FgStrs
+fgTokenize(const string &);
 
 // Split a string into non-empty lines at CR/LF and remove all CR/LF characters.
 // Use this instead of useless std::getline which leaves in CR characters on Windows.

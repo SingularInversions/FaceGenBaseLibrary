@@ -6,10 +6,6 @@
 // Authors: Andrew Beatty
 // Created: July 15, 2015
 //
-/**
-   \defgroup Base_Commands
-   Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
- */
 
 #include "stdafx.h"
 
@@ -32,7 +28,6 @@ fgCmdBaseTests()
     //FGADDCMD1(fgApproxFuncTest,"approxFunc");
     FGADDCMD1(fg3dTest,"3d");
     FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
-    FGADDCMD1(fgClusterTest,"cluster");
     FGADDCMD1(fgDepGraphTest,"depGraph");
     FGADDCMD1(fgExceptionTest,"exception");
     FGADDCMD1(fgFileSystemTest,"filesystem");
@@ -78,7 +73,8 @@ fgCmdBaseTestms()
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testmGui,"gui"));
     FGADDCMD1(fg3dTestMan,"3d");
-    FGADDCMD1(fgClusterTestm,"cluster");
+    FGADDCMD1(fgClusterTest,"cluster");
+    FGADDCMD1(fgClusterTestm,"clusterm");
     FGADDCMD1(fgClusterDeployTestm,"clusterDeploy");
     FGADDCMD(fgCmdTestmCpp,"cpp","C++ behaviour tests");
     FGADDCMD1(fg3dReadWobjTest,"readWobj");
@@ -103,6 +99,10 @@ void
 view(const FgArgs & args)
 {fgMenu(args,fgCmdViewInfos()); }
 
+/**
+   \defgroup Base_Commands Base Library Command Line
+   Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
+ */
 void
 fgCmdFgbl(const FgArgs & args)
 {

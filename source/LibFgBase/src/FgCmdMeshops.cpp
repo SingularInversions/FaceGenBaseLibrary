@@ -141,7 +141,7 @@ emboss(const FgArgs & args)
         fgThrow("Mesh has no UVs",syntax.curr());
     if (mesh.surfaces.size() != 1)
         fgThrow("Only 1 surface currently supported",syntax.curr());
-    float           val = fgFromString<float>(syntax.next());
+    float           val = syntax.nextAs<float>();
     if (!(val > 0.0f))
         fgThrow("Emboss value must be > 0",fgToString(val));
     mesh.verts = fgEmboss(mesh,img,val);
@@ -177,14 +177,14 @@ invWind(const FgArgs & args)
 //void
 //makePrintable(const FgArgs & args)
 //{
-//    FgSyntax    syn(args,"<in>.<meshIn> <out>.<meshOut>\n"
+//    FgSyntax    syntax(args,"<in>.<meshIn> <out>.<meshOut>\n"
 //        "    <meshIn> -  " + fgLoadMeshFormatsCLDescription() + "\n"
 //        "    <meshOut> - " + fgSaveMeshFormatsCLDescription() + "\n"
 //        "NOTES:\n"
 //        "    Fills in small holes and get rid of duplicate tris. Does not do anything complex.\n"
 //        "    Result will always be triangles-only mesh with unified surfaces."
 //    );
-//    Fg3dMesh            mesh = fgLoadMeshAnyFormat(syn.next());
+//    Fg3dMesh            mesh = fgLoadMeshAnyFormat(syntax.next());
 //    mesh.mergeAllSurfaces();
 //    mesh.convertToTris();
 //    Fg3dTopology        topo(mesh.verts,mesh.surfaces[0].tris.vertInds);
@@ -377,58 +377,58 @@ static
 void
 surfAdd(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
         "    <ext>  - " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <name> - Surface name"
         );
-    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
     Fg3dSurface     surf;
-    surf.name = syn.next();
+    surf.name = syntax.next();
     mesh.surfaces.push_back(surf);
-    fgSaveFgmesh(syn.next(),mesh);
+    fgSaveFgmesh(syntax.next(),mesh);
 }
 
 static
 void
 surfCopy(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
         "    <ext>  - " + fgLoadMeshFormatsCLDescription() + "\n"
         " * tris only, uvs not preserved."
         );
-    Fg3dMesh        from = fgLoadFgmesh(syn.next()),
-                    to = fgLoadMeshAnyFormat(syn.next());
-    fgSaveFgmesh(syn.next(),fgCopySurfaceStructure(from,to));
+    Fg3dMesh        from = fgLoadFgmesh(syntax.next()),
+                    to = fgLoadMeshAnyFormat(syntax.next());
+    fgSaveFgmesh(syntax.next(),fgCopySurfaceStructure(from,to));
 }
 
 static
 void
 surfDel(const FgArgs & args)
 {
-    FgSyntax        syn(args,
+    FgSyntax        syntax(args,
         "<in>.<ext> <idx> <out>.<ext>\n"
         "    <ext> - " + fgLoadMeshFormatsCLDescription() + "\n"
         "    <idx> - Which surface index to delete"
         );
-    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
-    size_t          idx = syn.nextAs<uint>();
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
+    size_t          idx = syntax.nextAs<uint>();
     if (idx >= mesh.surfaces.size())
-        syn.error("Selected surface index out of range",fgToString(idx));
+        syntax.error("Selected surface index out of range",fgToString(idx));
     mesh.surfaces.erase(mesh.surfaces.begin()+idx);
-    fgSaveMeshAnyFormat(mesh,syn.next());
+    fgSaveMeshAnyFormat(mesh,syntax.next());
 }
 
 static
 void
 surfList(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<in>.<ext>\n"
         "    <ext> - " + fgLoadMeshFormatsCLDescription()
         );
-    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syn.next());
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface & surf = mesh.surfaces[ss];
         fgout << fgnl << ss << ": " << surf.name;
@@ -439,17 +439,17 @@ static
 void
 surfRen(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<in>.fgmesh <idx> <name>\n"
         "   <idx>  - Which surface\n"
         "   <name> - Surface name"
         );
-    FgString        meshFname = syn.next();
+    FgString        meshFname = syntax.next();
     Fg3dMesh        mesh = fgLoadFgmesh(meshFname);
-    size_t          idx = fgFromString<size_t>(syn.next());
+    size_t          idx = syntax.nextAs<size_t>();
     if (idx >= mesh.surfaces.size())
         fgThrow("Index value larger than available surfaces");
-    mesh.surfaces[idx].name = syn.next();
+    mesh.surfaces[idx].name = syntax.next();
     fgSaveFgmesh(meshFname,mesh);
 }
 
@@ -457,27 +457,27 @@ static
 void
 spCopy(const FgArgs & args)
 {
-    FgSyntax    syn(args,"<from>.fgmesh <to>.fgmesh <out>.fgmesh");
-    Fg3dMesh    from = fgLoadFgmesh(syn.next()),
-                to = fgLoadFgmesh(syn.next());
+    FgSyntax    syntax(args,"<from>.fgmesh <to>.fgmesh <out>.fgmesh");
+    Fg3dMesh    from = fgLoadFgmesh(syntax.next()),
+                to = fgLoadFgmesh(syntax.next());
     if (from.surfaces.size() != to.surfaces.size())
         fgThrow("'from' and 'to' meshes have different surface counts");
     for (size_t ss=0; ss<to.surfaces.size(); ++ss)
         fgCat_(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
-    fgSaveFgmesh(syn.next(),to);
+    fgSaveFgmesh(syntax.next(),to);
 }
 
 static
 void
 spDel(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<in>.tri <ptIdx>\n"
         "   <spIdx>   - Which point on that surface to delete"
         );
-    FgString        meshFname = syn.next();
+    FgString        meshFname = syntax.next();
     Fg3dMesh        mesh = fgLoadTri(meshFname);
-    size_t          ii = fgFromString<size_t>(syn.next());
+    size_t          ii = syntax.nextAs<size_t>();
     Fg3dSurface &   surf = mesh.surfaces[0];
     if (ii >= surf.surfPoints.size())
         fgThrow("Point index value larger than availables points");
@@ -489,8 +489,8 @@ static
 void
 spList(const FgArgs & args)
 {
-    FgSyntax    syn(args,"<in>.fgmesh");
-    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syn.next());
+    FgSyntax    syntax(args,"<in>.fgmesh");
+    Fg3dMesh    mesh = fgLoadMeshAnyFormat(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Fg3dSurface & surf = mesh.surfaces[ss];
         fgout << fgnl << "Surface " << ss << ": " << surf.name << fgpush;
@@ -504,22 +504,22 @@ static
 void
 spRen(const FgArgs & args)
 {
-    FgSyntax    syn(args,
+    FgSyntax    syntax(args,
         "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
         "   <surfIdx> - Which surface\n"
         "   <spIdx>   - Which point on that surface\n"
         "   <name>    - Name"
         );
-    FgString        meshFname = syn.next();
+    FgString        meshFname = syntax.next();
     Fg3dMesh        mesh = fgLoadFgmesh(meshFname);
-    size_t          ss = fgFromString<size_t>(syn.next()),
-                    ii = fgFromString<size_t>(syn.next());
+    size_t          ss = syntax.nextAs<size_t>(),
+                    ii = syntax.nextAs<size_t>();
     if (ss >= mesh.surfaces.size())
         fgThrow("Surface index value larger than available surfaces");
     Fg3dSurface &   surf = mesh.surfaces[ss];
     if (ii >= surf.surfPoints.size())
         fgThrow("Point index value larger than availables points");
-    surf.surfPoints[ii].label = syn.next();
+    surf.surfPoints[ii].label = syntax.next();
     fgSaveFgmesh(meshFname,mesh);
 }
 
@@ -743,9 +743,9 @@ xformCreateTrans(const FgArgs & args)
     if (fgExists(simFname))
         fgLoadXml(simFname,sim);
     FgVect3D    trans;
-    trans[0] = fgFromString<double>(syntax.next());
-    trans[1] = fgFromString<double>(syntax.next());
-    trans[2] = fgFromString<double>(syntax.next());
+    trans[0] = syntax.nextAs<double>();
+    trans[1] = syntax.nextAs<double>();
+    trans[2] = syntax.nextAs<double>();
     fgSaveXml(simFname,FgSimilarity(trans)*sim);
 }
 
@@ -765,7 +765,7 @@ xformCreateRotate(const FgArgs & args)
     if (axisStr.empty())
         syntax.error("<axis> cannot be the empty string");
     char            axisName = std::tolower(axisStr[0]);
-    double          degs = fgFromString<double>(syntax.next()),
+    double          degs = syntax.nextAs<double>(),
                     rads = fgDegToRad(degs);
     int             axisNum = int(axisName) - int('x');
     if ((axisNum < 0) || (axisNum > 2))
@@ -785,7 +785,7 @@ xformCreateScale(const FgArgs & args)
     FgSimilarity    sim;
     if (fgExists(simFname))
         fgLoadXml(simFname,sim);
-    double          scale = fgFromString<double>(syntax.next());
+    double          scale = syntax.nextAs<double>();
     fgSaveXml(simFname,FgSimilarity(scale)*sim);
 }
 

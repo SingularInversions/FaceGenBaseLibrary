@@ -497,6 +497,7 @@ typedef FgMatrixC<double,1,2>       FgVectD2;
 typedef FgMatrixC<double,1,3>       FgVectD3;
 typedef FgMatrixC<uint,1,2>         FgVectU2;
 
+typedef vector<FgVect2I>            FgVect2Is;
 typedef vector<FgVect2F>            FgVect2Fs;
 typedef vector<FgVect2Fs>           FgVect2Fss;
 typedef vector<FgVect2D>            FgVect2Ds;

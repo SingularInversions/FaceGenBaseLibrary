@@ -33,15 +33,33 @@ fgToString(const T &val)
     return msg.str();
 }
 
-// Doesn't tell you when the input is invalid, so use 'fgFromStr' functions below for that:
+// Default uses standard stream input "lexical conversions".
+// Only valid strings for the given type are accepted, extra characters including whitespace are errors
+// Define fully specialized versions where this behaviour is not desired:
+template<class T>
+FgOpt<T>
+fgFromStr(const string & str)
+{
+    T                   val;
+    std::istringstream  iss(str);
+    iss >> val;
+    if (iss.fail() || (!iss.eof()))
+        return FgOpt<T>();
+    return FgOpt<T>(val);
+}
+// Only valid integer representations within the range of int32 will return a valid value, whitespace invalid:
+template<> FgOpt<int> fgFromStr<int>(const string &);
+template<> FgOpt<uint> fgFromStr<uint>(const string &);
+
+// Throws if the string is not formatted correctly:
 template<class T>
 T
 fgFromString(const string & str)
 {
-    std::istringstream  iss(str);
-    T   ret;
-    iss >> ret;
-    return ret;
+    FgOpt<T>    oval = fgFromStr<T>(str);
+    if (!oval.valid())
+        fgThrow("Unable to convert string to " + string(typeid(T).name()),str);
+    return oval.val();
 }
 
 // Ensures a minimum number of digits are printed:
@@ -128,14 +146,6 @@ fgCat(const string & s0,const string & s1,const string & s2)
     ret.append(s2);
     return ret;
 }
-
-// Only define fully specialized versions.
-// std::strtol uses 0 as an error code (WTF). std::stol uses strtol (and throws exceptions).
-// ints: Only valid integer representations within the range of int32 will return a valid value.
-// ints: Whitespace is not considered valid:
-template<class T>
-FgOpt<T>
-fgFromStr(const string &);
 
 // C++98 doesn't support .back() for strings:
 inline

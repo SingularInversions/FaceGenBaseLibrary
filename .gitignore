@@ -6,12 +6,9 @@ build/
 /bin/
 /source/ipch
 /source/.vs
-/source/VisualStudio*.db
-/source/VisualStudio*.opendb
-/source/VisualStudio*.suo
+/source/VisualStudio*
 /source/PredictedInputCache*
-/source/*/VisualStudio*/Win32
-/source/*/VisualStudio*/x64
+/source/*/VisualStudio*
 # Android Studio:
 *.iml
 /android/*/.gradle

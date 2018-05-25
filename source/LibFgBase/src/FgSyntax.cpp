@@ -38,8 +38,8 @@ FgSyntax::~FgSyntax()
 void
 FgSyntax::error(const string & errMsg)
 {
-    fgout.setCout(true);
-    fgout << endl << errMsg;
+    fgout.setCout(true);    // Don't write directly to cout to ensure proper logging:
+    fgout << endl << "ERROR: " << errMsg << endl;
     throwSyntax();
 }
 
@@ -47,7 +47,7 @@ void
 FgSyntax::error(const string & errMsg,const FgString & data)
 {
     fgout.setCout(true);
-    fgout << endl << errMsg << ": " << data;
+    fgout << endl << "ERROR: " << errMsg << ": " << data << endl;
     throwSyntax();
 }
 
@@ -106,4 +106,13 @@ FgSyntax::numArgsMustBe(uint num)
 {
     if (num+1 != m_args.size())
         incorrectNumArgs();
+}
+
+uint
+FgSyntax::nextSelectionIndex(const FgStrs & validValues,const string & argDescription)
+{
+    size_t      idx = fgFindFirstIdx(validValues,next());
+    if (idx == validValues.size())
+        error("Invalid value for",argDescription);
+    return uint(idx);
 }

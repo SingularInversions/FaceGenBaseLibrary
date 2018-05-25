@@ -17,6 +17,37 @@
 
 using namespace std;
 
+FgStrs
+fgTokenize(const string & str)
+{
+    FgStrs      ret;
+    string      acc;
+    for (char c : str) {
+        if (fgIsWhitespaceOrInvalid(c)) {
+            if (!acc.empty()) {
+                ret.push_back(acc);
+                acc.clear();
+            }
+        }
+        else if (fgIsDigitLetterDashUnderscore(c)) {
+            if (acc.empty())
+                acc.push_back(c);
+            else {
+                if (fgIsDigitLetterDashUnderscore(acc.back()))
+                    acc.push_back(c);
+                else {
+                    ret.push_back(acc);
+                    acc.clear();
+                    acc.push_back(c);
+                }
+            }
+        }
+    }
+    if (!acc.empty())
+        ret.push_back(acc);
+    return ret;
+}
+
 static
 bool
 isCrOrLf(char c)
@@ -276,8 +307,8 @@ fgWhiteBreak(const string & str)
 void
 fgTestmLoadCsv(const FgArgs & args)
 {
-    FgSyntax        syn(args,"<file>.csv");
-    FgStrss         data = fgLoadCsv(syn.next());
+    FgSyntax        syntax(args,"<file>.csv");
+    FgStrss         data = fgLoadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
         const FgStrs &  fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
