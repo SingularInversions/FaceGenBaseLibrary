@@ -10,7 +10,6 @@ build/
 /source/PredictedInputCache*
 /source/*/VisualStudio*
 # Android Studio:
-*.iml
 /android/*/.gradle
 /android/*/local.properties
 /android/*/.idea/caches
