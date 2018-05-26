@@ -9,7 +9,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibTpBoost ${CMAKE_
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibImageMagickCore ${CMAKE_CURRENT_BINARY_DIR}/LibImageMagickCore)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../../source/LibFgBase ${CMAKE_CURRENT_BINARY_DIR}/LibFgBase)
 
-# Android also supports STATIC libs as well:
+# Android supports STATIC libs as well:
 add_library(native-lib SHARED src/main/cpp/native-lib.cpp )
 
 # Searches for prebuilt library 'log' and stores the path in variable 'log-lib'.

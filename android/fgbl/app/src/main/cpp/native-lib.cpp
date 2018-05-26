@@ -1,13 +1,12 @@
 #include <jni.h>
 #include <string>
 
-using namespace std;
-
 extern "C" JNIEXPORT jstring
 
 JNICALL
-Java_com_facegen_empty_MainActivity_stringFromJNI(JNIEnv *env,jobject /* this */)
-{
-    string          hello = "fgbl - Hello World";
+Java_com_facegen_fgbl_MainActivity_stringFromJNI(
+        JNIEnv *env,
+        jobject /* this */) {
+    std::string hello = "Fgbl in C++";
     return env->NewStringUTF(hello.c_str());
 }

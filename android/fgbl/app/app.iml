@@ -124,116 +124,18 @@
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/jni" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/rs" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/src/androidTest/shaders" isTestSource="true" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/assets" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/blame" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/build-info" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/check-manifest" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/classes" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/cmake" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental-classes" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental-runtime-classes" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/incremental-verifier" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/instant-run-apk" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/instant-run-resources" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/javaPrecompile" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/jniLibs" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/manifest-checker" />
+      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/lint" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/manifests" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/prebuild" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/reload-dex" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/res" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/resources" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/rs" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/shaders" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/split-apk" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/splits-support" />
       <excludeFolder url="file://$MODULE_DIR$/build/intermediates/symbols" />
-      <excludeFolder url="file://$MODULE_DIR$/build/intermediates/transforms" />
-      <excludeFolder url="file://$MODULE_DIR$/build/kotlin" />
       <excludeFolder url="file://$MODULE_DIR$/build/outputs" />
-      <excludeFolder url="file://$MODULE_DIR$/build/tmp" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibFgBase/src">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibFgBase/src" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibFgBase/src/nix">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibFgBase/src/nix" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/bzlib">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/bzlib" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/coders">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/coders" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jbig/libjbig">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jbig/libjbig" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/base">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/base" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/bmp">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/bmp" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jp2">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jp2" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jpc">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jpc" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jpg">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/jpg" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/mif">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/mif" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/pgx">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/pgx" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/pnm">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/pnm" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/ras">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/jp2/src/libjasper/ras" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/magick">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/magick" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/png">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/png" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/tiff/libtiff">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/tiff/libtiff" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/xlib">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/xlib" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/zlib">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibImageMagickCore/ImageMagick-6.6.2/zlib" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibJpegIjg6b">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibJpegIjg6b" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/date_time/src/gregorian">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/date_time/src/gregorian" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/date_time/src/posix_time">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/date_time/src/posix_time" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/filesystem/src">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/filesystem/src" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/serialization/src">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/serialization/src" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/system/src">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/system/src" isTestSource="false" />
-    </content>
-    <content url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/thread/src/pthread">
-      <sourceFolder url="file://$MODULE_DIR$/../../../source/LibTpBoost/boost_1_67_0/libs/thread/src/pthread" isTestSource="false" />
     </content>
     <orderEntry type="jdk" jdkName="Android API 27 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
