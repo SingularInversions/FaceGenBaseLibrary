@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 
+#include "FgStdStream.hpp"
 #include "FgTypes.hpp"
 #include "FgException.hpp"
 #include "FgParse.hpp"

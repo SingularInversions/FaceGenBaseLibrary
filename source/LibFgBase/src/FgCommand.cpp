@@ -65,7 +65,7 @@ fgMenu(
     while (syntax.peekNext()[0] == '-') {
         string  opt = syntax.next();
         if ((opt == "-s") && optionQuiet)
-            fgout.setCout(false);
+            fgout.setDefOut(false);
         else if ((opt.substr(0,2) == "-k") && optionKeep) {
             s_keepTempFiles = true;
             if (opt.length() > 2)

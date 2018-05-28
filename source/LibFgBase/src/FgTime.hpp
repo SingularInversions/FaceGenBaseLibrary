@@ -11,6 +11,7 @@
 #define FGTIME_HPP
 
 #include "FgStdLibs.hpp"
+#include "FgStdString.hpp"
 #include "FgTypes.hpp"
 #include "FgOut.hpp"
 

@@ -13,6 +13,7 @@
 #ifndef FGITER_HPP
 #define FGITER_HPP
 
+#include "FgStdStream.hpp"
 #include "FgBounds.hpp"
 #include "FgDefaultVal.hpp"
 

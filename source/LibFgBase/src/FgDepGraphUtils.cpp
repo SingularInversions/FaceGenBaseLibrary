@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 
+#include "FgStdStream.hpp"
 #include "FgDepGraph.hpp"
 
 using namespace std;

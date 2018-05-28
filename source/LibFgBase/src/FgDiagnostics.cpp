@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 #include "FgDiagnostics.hpp"
+#include "FgOut.hpp"
 
 using namespace std;
 
@@ -39,5 +40,5 @@ fgAssert(const char * fname,int line,const string &  msg)
 void
 fgWarn(const char * fname,int line,const string & msg)
 {
-    cout << endl << "WARNING at : " <<  fgDiagString(fname,line,msg);
+    fgout << endl << "WARNING at : " <<  fgDiagString(fname,line,msg);
 }

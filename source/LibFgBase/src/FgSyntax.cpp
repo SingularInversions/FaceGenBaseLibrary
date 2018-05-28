@@ -38,7 +38,7 @@ FgSyntax::~FgSyntax()
 void
 FgSyntax::error(const string & errMsg)
 {
-    fgout.setCout(true);    // Don't write directly to cout to ensure proper logging:
+    fgout.setDefOut(true);    // Don't write directly to cout to ensure proper logging:
     fgout << endl << "ERROR: " << errMsg << endl;
     throwSyntax();
 }
@@ -46,7 +46,7 @@ FgSyntax::error(const string & errMsg)
 void
 FgSyntax::error(const string & errMsg,const FgString & data)
 {
-    fgout.setCout(true);
+    fgout.setDefOut(true);
     fgout << endl << "ERROR: " << errMsg << ": " << data << endl;
     throwSyntax();
 }

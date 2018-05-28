@@ -156,10 +156,10 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
                 }
                 perVertexTexture = identical;
                 if (!identical)
-                    cout << "Skipping per-facet texture data\n" << flush;
+                    fgout << "Skipping per-facet texture data\n" << flush;
             }
             else if (model.numTxtCoord(objId) != 0)
-                cout << "Skipping per-facet texture data\n" << flush;
+                fgout << "Skipping per-facet texture data\n" << flush;
         }
     }
     if (perVertexTexture && model.numTxtCoord(objId) != 0) {

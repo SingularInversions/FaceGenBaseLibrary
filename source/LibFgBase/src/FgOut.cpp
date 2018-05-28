@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "FgOut.hpp"
+#include "FgStdStream.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgException.hpp"
 #include "FgTime.hpp"
@@ -19,7 +20,10 @@ using namespace std;
 // Only this single global instance should ever be instantiated.
 // Note that 'fgout' can't be used in global variable constructors since it's
 // not guaranteed to be constructed yet itself:
-FgOut      fgout;
+FgOut               fgout;
+
+// Keep this here to avoid excess header dependencies:
+static FgOfstream   s_ofs;
 
 ostream &
 fgnl(ostream & ss)
@@ -52,42 +56,57 @@ fgreset(ostream & ss)
     return ss << endl;
 }
 
-bool
-FgOut::setCout(bool b)
+FgOut::FgOut()
 {
-    m_mutex.lock();
-    bool    ret = (m_stream != 0);
-    if (b) {
-        m_stream = &std::cout;
-        std::cout.precision(9); }
-    else
-        m_stream = 0;
-    m_mutex.unlock();
-    return ret;
+    m_streams.push_back(defOut());
+    m_streams.back()->precision(9);
+}
+
+bool
+FgOut::setDefOut(bool b)
+{
+    auto        it = find(m_streams.begin(),m_streams.end(),defOut());
+    if (it == m_streams.end()) {
+        if (b)
+            m_streams.push_back(defOut());
+        return false;
+    }
+    else {
+        if (!b)
+            m_streams.erase(it);
+        return true;
+    }
+}
+
+bool
+FgOut::defOutEnabled()
+{
+    auto        it = find(m_streams.begin(),m_streams.end(),defOut());
+    return (it != m_streams.end());
 }
 
 void
 FgOut::logFile(const FgString & fname,bool append,bool prependDate)
 {
-    m_mutex.lock();
-    if (m_ofstream.is_open())
-        m_ofstream.close();
-    m_ofstream.open(fname,append,true);
-    m_ofstream.precision(9);
+    if (s_ofs.is_open())
+        s_ofs.close();
+    s_ofs.open(fname,append,true);
+    s_ofs.precision(9);
     if (prependDate)
-        m_ofstream << '\n' << fgDateTimeString() << endl;
-    m_mutex.unlock();
+        s_ofs << '\n' << fgDateTimeString() << endl;
+    auto    it = find(m_streams.begin(),m_streams.end(),&s_ofs);
+    if (it == m_streams.end())
+        m_streams.push_back(&s_ofs);
 }
 
 void
-FgOut::flush() 
-{ 
-    m_mutex.lock();
-    if (m_ofstream)
-        m_ofstream.flush();
-    if (m_stream && *m_stream)
-        m_stream->flush();
-    m_mutex.unlock();
+FgOut::logFileClose()
+{
+    if (s_ofs.is_open())
+        s_ofs.close();
+    auto    it = find(m_streams.begin(),m_streams.end(),&s_ofs);
+    if (it != m_streams.end())
+        m_streams.erase(it);
 }
 
 void
@@ -96,6 +115,15 @@ FgOut::setIndentLevel(uint l)
     m_mutex.lock();
     m_indent = l;
     m_mutex.unlock();
+}
+
+FgOut &
+FgOut::flush()
+{
+    if (!m_mute)
+        for (auto s : m_streams)
+            (*s) << std::flush;
+    return *this;
 }
 
 FgOut &
@@ -116,21 +144,27 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
                 m_indent--;
             m_mutex.unlock(); }
         else if (manip == fgnl) {
-            if (m_stream)
-                *m_stream << endl;
-            if (m_ofstream.is_open())
-                m_ofstream << endl;
-            for (uint ii=0; ii<indentLevel(); ii++) {
-                if (m_stream)
-                    *m_stream << "|   ";
-                if (m_ofstream.is_open())
-                    m_ofstream << "|   "; }
+            for (auto s : m_streams) {
+                (*s) << endl;
+                for (uint ii=0; ii<indentLevel(); ii++)
+                    (*s) << "|   ";
+            }
         }
         else {
-            if (m_stream)
-                *m_stream << manip;
-            if (m_ofstream.is_open())
-                m_ofstream << manip; }
+            for (auto s : m_streams)
+                (*s) << manip;
+        }
     }
     return *this;
+}
+
+std::ostream *
+FgOut::defOut()
+{
+#ifdef __ANDROID__
+    // std::cout not supported by Android (supposed to pipe to /dev/null but in fact crashes with invalid pointer)
+    return &m_stringStream;
+#else
+    return &std::cout;
+#endif
 }

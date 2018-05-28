@@ -62,7 +62,7 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
     catch(FgExceptionCommandSyntax const &)
     {
         // Don't use std::cout directly since errors need to be logged if logging is on:
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << "RETURNS:"
              << endl << "     0 -- Successful completion"
              << endl << "    -1 -- FaceGen exception"
@@ -74,14 +74,14 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
     }
     catch(FgException const & e)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (FG exception): " << e.no_tr_message();
         FLUSH;
         return -1;
     }
     catch(std::bad_alloc const &)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << fgnl << "ERROR (std::bad_alloc): OUT OF MEMORY";
 #ifndef FG_64
         fgout << fgnl << "Try running a 64-bit binary instead of this 32-bit binary";
@@ -91,14 +91,14 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
     }
     catch(std::exception const & e)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (std::exception): " << e.what();
         FLUSH;
         return -2;
     }
     catch(...)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (unknown type):";
         FLUSH;
         return -3;
@@ -118,7 +118,7 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
     catch(FgExceptionCommandSyntax const &)
     {
         // Don't use std::cout directly since errors need to be logged if logging is on:
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << "RETURNS:"
              << endl << "     0 -- Successful completion"
              << endl << "    -1 -- FaceGen exception"
@@ -130,14 +130,14 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
     }
     catch(FgException const & e)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (FG exception): " << e.no_tr_message();
         FLUSH;
         return -1;
     }
     catch(std::bad_alloc const &)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << fgnl << "ERROR (std::bad_alloc): OUT OF MEMORY";
 #ifndef FG_64
         fgout << fgnl << "Try running a 64-bit binary instead of this 32-bit binary";
@@ -147,14 +147,14 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
     }
     catch(std::exception const & e)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (std::exception): " << e.what();
         FLUSH;
         return -2;
     }
     catch(...)
     {
-        fgout.setCout(true);
+        fgout.setDefOut(true);
         fgout << endl << "ERROR (unknown type):";
         FLUSH;
         return -3;

@@ -117,7 +117,7 @@ fgCmdNcServer(const FgArgs & args)
 {
     if (args.size() > 1)
         fgThrow(args[0]+" takes no arguments");
-    fgout.setCout(true);
+    fgout.setDefOut(true);
     fgout.logFile("fgNcServerLog.txt");
     // Despite this running in a new process each time, TCP errors can render
     // the port unusable on Windows until an OS reboot.

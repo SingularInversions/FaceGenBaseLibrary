@@ -35,6 +35,7 @@
 #include "FgStdLibs.hpp"
 #include "FgTypes.hpp"
 #include "FgStdVector.hpp"
+#include "FgStdStream.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgSerialize.hpp"
 #include "FgOut.hpp"

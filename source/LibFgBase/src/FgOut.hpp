@@ -7,6 +7,8 @@
 // Created:     Oct 2, 2005
 //
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
+// Output (not ordering) is threadsafe but modification of output selections is not.
+// Default output is 'cout' for systems supporting CLI, 'stringstream' otherwise (Android).
 //
 // USE:
 //
@@ -20,9 +22,7 @@
 #define FGOUT_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgTypes.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgStdStream.hpp"
+#include "FgString.hpp"
 
 std::ostream &
 fgnl(std::ostream& ss);
@@ -43,49 +43,28 @@ operator<<(std::ostream & ss,const std::vector<T> & vv);
 
 struct  FgOut
 {
-    boost::mutex        m_mutex;        // Guard m_indent
-    uint                m_indent;
-    FgOfstream          m_ofstream;     // Stream to file ?
-    std::ostream *      m_stream;       // Arbitrary stream - Null if no stream
-    bool                m_mute;         // Mute all output
+    bool                m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
 
-    FgOut()
-    :   m_indent(0),
-        m_stream(&std::cout),
-        m_mute(false)
-    {std::cout.precision(9); }
+    FgOut();
 
-    explicit
-    FgOut(std::ostream & os)
-    :   m_indent(0),
-        m_stream(&os),
-        m_mute(false)
-    {}
+    // This is a unique global object:
+    FgOut(const FgOut &) = delete;
+    FgOut & operator=(const FgOut &) = delete;
 
-    bool
-    setCout(bool b);
+    bool    setDefOut(bool b);          // Returns true if default output was initially enabled
 
-    bool
-    coutEnabled()
-    {return ((!m_mute) && (m_stream == &std::cout)); }
+    bool    defOutEnabled();            // As above. Non-const only for technical reasons.
 
     void
     logFile(const FgString & fname,bool append=true,bool prependDate=true);
 
-    void
-    logFileClose()
-    {
-        m_mutex.lock();
-        if (m_ofstream.is_open())
-            m_ofstream.close();
-        m_mutex.unlock();
-    }
+    void logFileClose();
 
     void
     push()
     {
         m_mutex.lock();
-        m_indent++;
+        ++m_indent;
         m_mutex.unlock();
     }
 
@@ -113,46 +92,37 @@ struct  FgOut
         m_mutex.unlock();
     }
 
-    void
-    flush();
+    FgOut & flush();
 
     template<typename T>
     FgOut &
     operator<<(const T & arg)
     {
         if (notMute())
-        {
-            if (m_stream)
-                (*m_stream) << arg;
-            if (m_ofstream.is_open())
-                m_ofstream << arg;
-        }
-        return *this;
-    }
-
-    FgOut &
-    operator<<(const char * str)
-    {
-        if (notMute())
-        {
-            if (m_stream)
-                (*m_stream) << str;
-            if (m_ofstream.is_open())
-                m_ofstream << str;
-        }
+            for (auto s : m_streams)
+                (*s) << arg;
         return *this;
     }
 
     FgOut &
     operator<<(std::ostream& (*manip)(std::ostream&));
 
+    std::string
+    getStringStream() const
+    {return m_stringStream.str() + "\n"; }
+
 private:
+    std::vector<std::ostream *> m_streams;  // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
+    std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
+    boost::mutex        m_mutex;            // Guard m_indent to keep it thread-safe:
+    uint                m_indent = 0;
+
     bool
     notMute()
-    {return ((!m_mute) && (m_stream || m_ofstream.is_open())); }
+    {return (!m_mute && !m_streams.empty()); }
 
-    FgOut(const FgOut&);              // ofstream objects cannot be copy constructed or operator=
-    FgOut& operator=(const FgOut&);   // so we must prevent both for this class as well.
+    std::ostream *
+    defOut();
 };
 
 extern FgOut      fgout;

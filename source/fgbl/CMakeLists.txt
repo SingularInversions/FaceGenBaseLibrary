@@ -8,8 +8,8 @@ add_executable(fgbl ${SOURCES})
 
 if(WIN32)
     target_compile_options(fgbl PRIVATE /D_CONSOLE)
-    target_link_libraries(fgbl PRIVATE LibFgWin)
+    target_link_libraries(fgbl LibFgWin)
 else()
     # In this case, nix files are included in base library, as they must be under a single-pass linker model:
-    target_link_libraries(fgbl PRIVATE LibFgBase)
+    target_link_libraries(fgbl LibFgBase)
 endif()

@@ -33,14 +33,14 @@ handler(
 void
 fgTcpServerTest(const FgArgs &)
 {
-    fgout.setCout(true);
+    fgout.setDefOut(true);
     fgTcpServer(fgNcServerPort(),true,handler,1024);
 }
 
 void
 fgTcpClientTest(const FgArgs &)
 {
-    fgout.setCout(true);
+    fgout.setDefOut(true);
     string          message = "Please respond",
                     response;
     fgTcpClient("peano",fgNcServerPort(),message,response);
