@@ -21,4 +21,3 @@ build/
 .externalNativeBuild
 /android/*/gradlew*
 /android/*/gradle/wrapper/
-/android/*/app/src/main/assets/
