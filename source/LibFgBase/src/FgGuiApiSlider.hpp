@@ -42,8 +42,8 @@ struct FgGuiApiSlider : FgGuiApi<FgGuiApiSlider>
     // getInput is required 1. to allow for restoring from serialization and 2. to allow
     // for dependent sliders (eg. FaceGen linear controls). It is also then used for the
     // initialization value:
-    boost::function<double(void)>   getInput;
-    boost::function<void(double)>   setOutput;
+    std::function<double(void)>   getInput;
+    std::function<void(double)>   setOutput;
     FgString                label;          // Can be empty
     FgVectD2                range;
     double                  tickSpacing;

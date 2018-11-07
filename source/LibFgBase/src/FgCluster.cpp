@@ -128,7 +128,7 @@ testCoordinator(const FgClustDispatcher * dispatcher)
 void
 fgClusterTest(const FgArgs &)
 {
-    boost::thread       worker(fgClustWorker,testWorkerFunc,fgClusterPortDefault());
+    std::thread       worker(fgClustWorker,testWorkerFunc,fgClusterPortDefault());
     shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(fgSvec<string>("127.0.0.1"),fgClusterPortDefault());
     testCoordinator(dispatcher.get());      // Local host loop-back IP for testing
 }

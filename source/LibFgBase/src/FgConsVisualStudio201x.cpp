@@ -52,7 +52,7 @@ void
 writeVcxproj(
     const FgConsProj &          proj,
     const map<string,string> &  guidMap,
-    uint                        vsver)      // 10 - VS2010, 12 - VS2012, 13 - VS2013, 15 = VS2015
+    uint                        vsver)      //13 - VS2013, 15 = VS2015, 17 = VS2017
 {
     if (proj.srcGroups.empty())
         fgThrow("Project has no source files",proj.name);
@@ -107,9 +107,7 @@ writeVcxproj(
             // PlatformToolset:
             // v100: use VS2010 (VC++10) compiler & libs (from VS2012+ IDE)
             // v110: use VS2012 (VC++11) compiler & libs, etc.
-            if (vsver == 12)
-                ofs << "    <PlatformToolset>v110</PlatformToolset>\n";
-            else if (vsver == 13)
+            if (vsver == 13)
                 ofs << "    <PlatformToolset>v120</PlatformToolset>\n";
             else if (vsver == 15)
                 ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
@@ -203,12 +201,14 @@ writeVcxproj(
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
             // Tried "EnableAllWarnings" but got tons of warning from boost include files:
-            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToString(proj.warn);
+            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToStr(proj.warn);
             ofs <<
                 "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
                 "      <WarningLevel>" << warnStr << "</WarningLevel>\n"
                 "      <DebugInformationFormat>" << ((cc == 0) ? "ProgramDatabase" : "\n      ") << "</DebugInformationFormat>\n"
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
+                // Note that MSVC fast floating point model is an extension to the standard and thus cannot
+                // be used in combination with disabling MSVC language extensions:
                 "      <FloatingPointModel>Fast</FloatingPointModel>\n"
                 "    </ClCompile>\n";
             if (proj.app || proj.dll) {
@@ -295,7 +295,7 @@ writeVcxproj(
     }
     ofs <<
         "  </ItemGroup>\n";
-    if ((vsver >= 12) && fgExists(proj.name+"/icon.ico")) {
+    if (fgExists(proj.name+"/icon.ico")) {
         fgCopyFile(proj.name+"/icon.ico",projDir+"icon1.ico",true);
         ofs <<
             "  <ItemGroup>\n"
@@ -358,7 +358,7 @@ static
 void
 writeSln(
     const FgConsSolution &  sln,
-    uint                    vsver)  // 10, 12, 13, 15, 17
+    uint                    vsver)
 {
     // Create solution file:
     string          rootName("VisualStudio"),
@@ -367,8 +367,8 @@ writeSln(
     ofs <<
         "\n"
         "Microsoft Visual Studio Solution File, Format Version "
-            << ((vsver == 10) ? "11" : "12") << ".00\n"
-        "# Visual Studio 20" << verStr << endl;
+            << "12.00\n"
+        "# Visual Studio 20" << verStr << "\n";
     for (size_t ii=0; ii<sln.projects.size(); ++ii) {
         const FgConsProj & proj = sln.projects[ii];
         ofs <<
@@ -419,7 +419,6 @@ fgConsVs201x(FgConsSolution sln)
         guidMap.insert(make_pair(proj.name,proj.guid));
     }
     for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        writeVcxproj(sln.projects[ii],guidMap,12);
         writeVcxproj(sln.projects[ii],guidMap,13);
         writeVcxproj(sln.projects[ii],guidMap,15);
         writeVcxproj(sln.projects[ii],guidMap,17);

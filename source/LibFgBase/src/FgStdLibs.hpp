@@ -51,6 +51,8 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 
 // Don't want warnings every time a '0' or '1' is used as a float:
 #pragma warning(disable:4244)

@@ -359,18 +359,26 @@ fgMapDiv(
     return ret;
 }
 
-template<uint nrows,uint ncols>
-FgMatrixC<double,nrows,ncols> 
-fgMatRandNormal()
+template<typename T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols> 
+fgMatRandNrm(T scale=1)
 {
-    FgMatrixC<double,nrows,ncols>   vec;
+    FgMatrixC<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
-        vec[ii] = fgRandNormal();
-    return vec;
+        ret[ii] = static_cast<T>(fgRandNormal())*scale;
+    return ret;
 }
 
-FgVerts
-fgVertsRandNormal(size_t num,float scale = 1.0f);
+// Handy shortcut for type double vectors:
+template<uint dim>
+FgMatrixC<double,dim,1> 
+fgVecRandNrm(double scale=1)
+{
+    FgMatrixC<double,dim,1>      vec;
+    for (uint ii=0; ii<dim; ++ii)
+        vec[ii] = fgRandNormal()*scale;
+    return vec;
+}
 
 template<uint nrows,uint ncols>
 FgMatrixC<double,nrows,ncols> 
@@ -399,7 +407,7 @@ fgMatRandOrtho()
 {
     FgMatrixC<double,dim,dim>       ret;
     for (uint row=0; row<dim; ++row) {
-        FgMatrixC<double,dim,1>     vec = fgMatRandNormal<double,dim,1>();
+        FgMatrixC<double,dim,1>     vec = fgMatRandNrm<double,dim,1>();
         for (uint rr=0; rr<row; ++rr) {
             FgMatrixC<double,dim,1> axis = ret.rowVec(rr);
             vec -=  axis * fgDot(vec,axis);

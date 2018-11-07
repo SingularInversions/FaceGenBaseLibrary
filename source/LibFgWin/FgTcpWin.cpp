@@ -30,7 +30,7 @@ struct  FgWinsockDll
         // Initialize Winsock DLL version 2.2:
         int         itmp = WSAStartup(MAKEWORD(2,2),&wsaData);
         if(itmp != 0)
-            FGASSERT_FALSE1(fgToString(itmp));
+            FGASSERT_FALSE1(fgToStr(itmp));
     }
 
     ~FgWinsockDll() {
@@ -69,7 +69,7 @@ fgTcpClient(
     // Resolve the server address and port.
     itmp = getaddrinfo(
         hostname.c_str(),           // Hostname or IP #
-        fgToString(port).c_str(),   // Service name or port #
+        fgToStr(port).c_str(),   // Service name or port #
         &hints,
         &addressInfo);              // RETURNED
     if (itmp != 0)
@@ -88,7 +88,7 @@ fgTcpClient(
         if (socketHandle == INVALID_SOCKET) {
             // Couldn't use scope guard for freeaddrinfo due to compile issues:
             freeaddrinfo(addressInfo);
-            FGASSERT_FALSE1(fgToString(WSAGetLastError()));
+            FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
         }
         // Set the timeout so the user isn't waiting for ages if the connection fails:
         DWORD           timeout = 5000;     // 5 seconds
@@ -108,11 +108,11 @@ fgTcpClient(
     // 'send' will block for buffering since we've created a blocking socket, so the
     // value returned is always either the data size or an error:
     itmp = send(socketHandle,data.data(),int(data.size()),0);
-    FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
+    FGASSERT1(itmp != SOCKET_ERROR,fgToStr(WSAGetLastError()));
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
     itmp = shutdown(socketHandle,SD_SEND);
-    FGASSERT1(itmp != SOCKET_ERROR,fgToString(WSAGetLastError()));
+    FGASSERT1(itmp != SOCKET_ERROR,fgToStr(WSAGetLastError()));
     if (getResponse) {
         response.clear();
         do {
@@ -124,7 +124,7 @@ fgTcpClient(
             itmp = recv(socketHandle,buff,sizeof(buff),0);
             // This can happen for many reasons (eg. connection interrupted) so don't throw:
             if (itmp == SOCKET_ERROR) {
-                //fgToString(WSAGetLastError()));
+                //fgToStr(WSAGetLastError()));
                 closesocket(socketHandle);
                 return false;
             }
@@ -157,24 +157,24 @@ fgTcpServer(
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
     struct addrinfo     *addrInfoPtr = NULL;
-    int itmp = getaddrinfo(NULL,fgToString(port).c_str(),&hints,&addrInfoPtr);
-    FGASSERT1(itmp == 0,fgToString(itmp));
+    int itmp = getaddrinfo(NULL,fgToStr(port).c_str(),&hints,&addrInfoPtr);
+    FGASSERT1(itmp == 0,fgToStr(itmp));
     sockListen = socket(addrInfoPtr->ai_family,addrInfoPtr->ai_socktype,addrInfoPtr->ai_protocol);
     if (sockListen == INVALID_SOCKET) {
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToString(WSAGetLastError()));
+        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
     }
     itmp = bind(sockListen,addrInfoPtr->ai_addr,(int)addrInfoPtr->ai_addrlen);
     if (itmp == SOCKET_ERROR) {
         closesocket(sockListen);
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToString(WSAGetLastError()));
+        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
     }
     itmp = listen(sockListen, SOMAXCONN);
     if (itmp == SOCKET_ERROR) {
         closesocket(sockListen);
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToString(WSAGetLastError()));
+        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
     }
     freeaddrinfo(addrInfoPtr);
 
@@ -189,7 +189,7 @@ fgTcpServer(
         sockClient = accept(sockListen,(sockaddr*)(&sa),&sz);
         if (sockClient == INVALID_SOCKET) {
             closesocket(sockListen);
-            FGASSERT_FALSE1(fgToString(WSAGetLastError()));
+            FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
         }
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:

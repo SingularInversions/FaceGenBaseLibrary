@@ -133,7 +133,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                 // is called from the client level.
                 m_panes[ii]->create(hwnd,
                     int(ii+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
-                    m_store+"_"+fgToString(ii),
+                    m_store+"_"+fgToStr(ii),
                     NULL,
                     ii==m_currPane);
             }

@@ -22,7 +22,7 @@
 using namespace std;
 
 static uint             m_count(0);
-static boost::mutex     m_mutex;
+static std::mutex     m_mutex;
 
 static
 FGLINK(calcAddInts)
@@ -238,9 +238,8 @@ testDepGraphMulti()
 {
     testDepGraphMulti(1);
     testDepGraphMulti(2);
-    uint    hthreads = boost::thread::hardware_concurrency(),
-            hcores = boost::thread::physical_concurrency();
-    fgout << fgnl << "Hardware threads: " << hthreads << " cores: " << hcores;
+    uint    hthreads = std::thread::hardware_concurrency();
+    fgout << fgnl << "Hardware threads: " << hthreads;
     if(hthreads > 2)
         testDepGraphMulti(hthreads);
 }
@@ -282,7 +281,26 @@ testDepGraphCopyable()
     FgDepGraph dg3(dg1);
 }
 
-static boost::barrier   m_barrier(2);
+class FgBarrier     // Copied from SO
+{
+private:
+    std::mutex _mutex;
+    std::condition_variable _cv;
+    std::size_t _count;
+public:
+    explicit FgBarrier(std::size_t count) : _count(count) { }
+    void wait()
+    {
+        std::unique_lock<std::mutex> lock(_mutex);
+        if (--_count == 0) {
+            _cv.notify_all();
+        } else {
+            _cv.wait(lock, [this] { return _count == 0; });
+        }
+    }
+};
+
+static FgBarrier    m_barrier(2);
 
 static void
 doit(const std::vector<const FgVariant*> & /*sources*/,

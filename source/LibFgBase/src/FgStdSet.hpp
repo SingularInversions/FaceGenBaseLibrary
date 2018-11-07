@@ -127,6 +127,17 @@ operator+=(std::set<T> & l,const std::set<T> & r)
 {l.insert(r.begin(),r.end()); }
 
 template<class T>
+void
+operator-=(std::set<T> & lhs,const std::set<T> & rhs)
+{
+    for (const T & r : rhs) {
+        auto it = lhs.find(r);
+        if (it != lhs.end())
+            lhs.erase(it);
+    }
+}
+
+template<class T>
 std::set<T>
 fgInsert(const std::set<T> & s,const T & v)
 {

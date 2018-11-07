@@ -69,9 +69,9 @@ bool
 fgGuiDialogProgress(const FgString &,uint,FgFnCallback2Void)
 {fgThrowNotImplemented(); return false; }
 
-boost::function<void(void)>
+std::function<void(void)>
 fgGuiDialogSplashScreen()
-{return boost::function<void(void)>(); }
+{return std::function<void(void)>(); }
 
 void
 FgGuiGraph::quit() {}

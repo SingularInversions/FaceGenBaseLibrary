@@ -20,14 +20,14 @@
 // Visualize function over 2 dimensions as a color-coded (auto-scaled) image:
 void
 fgVizFuncAsImage(
-    boost::function<double(FgVect2D)>   func,
+    std::function<double(FgVect2D)>   func,
     FgMat22D                         domainBounds,
     uint                                imgSize);
 
 // Function over 2 dimensions as surface:
 Fg3dMesh
 fgFuncToMesh(
-    boost::function<double(FgVect2D)>   func,
+    std::function<double(FgVect2D)>   func,
     FgMat22D                         domainBounds,
     uint                                sz);
 

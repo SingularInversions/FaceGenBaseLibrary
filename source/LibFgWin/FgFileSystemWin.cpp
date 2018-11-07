@@ -274,6 +274,8 @@ fgMakeWritableByAll(const FgString & name)
 {
     HANDLE          hFile =
         CreateFile(name.ns().c_str(),READ_CONTROL|WRITE_DAC,0,NULL,OPEN_EXISTING,NULL,NULL);
-    if (hFile != INVALID_HANDLE_VALUE)
+    if (hFile != INVALID_HANDLE_VALUE) {
         SetSecurityInfo(hFile,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,NULL,NULL);
+        CloseHandle(hFile);
+    }
 }

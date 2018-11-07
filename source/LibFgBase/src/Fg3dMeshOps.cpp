@@ -10,7 +10,7 @@
 #include "stdafx.h"
 
 #include "Fg3dMeshOps.hpp"
-#include "Fg3dTopology.hpp"
+#include "Fg3dNormals.hpp"
 #include "FgMath.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgAffine1.hpp"
@@ -258,7 +258,7 @@ fgPyramid(bool open)
 }
 
 Fg3dMesh
-fgCube(bool open)
+fg3dCube(bool open)
 {
     FgVerts             verts;
     for (uint vv=0; vv<8; ++vv)
@@ -452,7 +452,7 @@ fgUnifyIdenticalUvs(const Fg3dMesh & in)
             }
         }
     }
-    fgout << fgnl << cnt0 << " UVs merged " << cnt1 << " UV indices redirected" << endl;
+    fgout << fgnl << cnt0 << " UVs merged " << cnt1 << " UV indices redirected";
     return ret;
 }
 
@@ -508,7 +508,7 @@ fgSplitSurfsByUvs(const Fg3dMesh & in)
     ret.uvs = mesh.uvs;
     for (size_t ii=0; ii<numColours; ++ii)
         ret.surfaces.push_back(Fg3dSurface(newVertInds[ii],newUvInds[ii]));
-    fgout << fgnl << numColours << " separate UV-contiguous surfaces created" << endl;
+    fgout << fgnl << numColours << " separate UV-contiguous surfaces created";
     return ret;
 }
 

@@ -169,6 +169,98 @@ any(const FgArgs &)
     fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<FgMat44D>(v1)[0];
 }
 
+static
+void
+parr(const FgArgs &)
+{
+    // Generate data and put in both parallel and packed arrays:
+    size_t          N = 100000,
+                    A = 8;
+    FgDblss         pins(A),
+                    pouts(A);
+    for (FgDbls & pin : pins)
+        pin = fgGenerate<double>(fgRandNormal,N);
+    for (FgDbls & pout : pouts)
+        pout.resize(N,0);
+    FgDbls          sins,
+                    souts(N*A,0.0);
+    for (size_t ii=0; ii<N; ++ii)
+        for (size_t jj=0; jj<A; ++jj)
+            sins.push_back(pins[jj][ii]);
+
+    // Parallel -> Parallel
+    FgTimer         tm;
+    for (size_t rr=0; rr<100; ++rr) {
+        for (size_t ii=0; ii<N; ++ii) {
+            pouts[0][ii] += pins[0][ii]*pins[1][ii] + pins[2][ii]*pins[3][ii];
+            pouts[1][ii] += pins[1][ii]*pins[2][ii] + pins[3][ii]*pins[4][ii];
+            pouts[2][ii] += pins[2][ii]*pins[3][ii] + pins[4][ii]*pins[5][ii];
+            pouts[3][ii] += pins[3][ii]*pins[4][ii] + pins[5][ii]*pins[6][ii];
+            pouts[4][ii] += pins[4][ii]*pins[5][ii] + pins[6][ii]*pins[7][ii];
+            pouts[5][ii] += pins[5][ii]*pins[6][ii] + pins[7][ii]*pins[0][ii];
+            pouts[6][ii] += pins[6][ii]*pins[7][ii] + pins[0][ii]*pins[1][ii];
+            pouts[7][ii] += pins[7][ii]*pins[0][ii] + pins[1][ii]*pins[2][ii];
+        }
+    }
+    size_t          time = tm.readMs();
+    double          val = 0;
+    for (const FgDbls & outs : pouts)
+        val += fgSum(outs);
+    fgout << fgnl << "Paral arrays in, paral arrays out: " << time << "ms. (" << val << ")";
+
+    // Packed -> Packed
+    tm.start();
+    for (size_t rr=0; rr<100; ++rr) {
+        for (size_t ii=0; ii<N; ++ii) {
+            // Inlining this value in every use made no speed difference; the compiler
+            // takes care of this automatically. We only leave it for clarity:
+            size_t          idx = ii*8;
+            souts[idx+0] += sins[idx+0]*sins[idx+1] + sins[idx+2]*sins[idx+3];
+            souts[idx+1] += sins[idx+1]*sins[idx+2] + sins[idx+3]*sins[idx+4];
+            souts[idx+2] += sins[idx+2]*sins[idx+3] + sins[idx+4]*sins[idx+5];
+            souts[idx+3] += sins[idx+3]*sins[idx+4] + sins[idx+5]*sins[idx+6];
+            souts[idx+4] += sins[idx+4]*sins[idx+5] + sins[idx+6]*sins[idx+7];
+            souts[idx+5] += sins[idx+5]*sins[idx+6] + sins[idx+7]*sins[idx+0];
+            souts[idx+6] += sins[idx+6]*sins[idx+7] + sins[idx+0]*sins[idx+1];
+            souts[idx+7] += sins[idx+7]*sins[idx+0] + sins[idx+1]*sins[idx+2];
+        }
+    }
+    time = tm.readMs();
+    val = fgSum(souts);
+    fgout << fgnl << "Packed array in, packed array out: " << time << "ms. (" << val << ")";
+
+    // Packed -> Parallel
+    // I have no idea why this is faster than packed->packed. I looked at the MSVC17 x64 O2
+    // disassembler (on Goldbolt using just 4 vals and a single mult) and the multiply, add, store
+    // operands were identical ...
+    for (FgDbls & pout : pouts)
+        fgFill(pout,0.0);
+    tm.start();
+    for (size_t rr=0; rr<100; ++rr) {
+        for (size_t ii=0; ii<N; ++ii) {
+            // Inlining this value in every use made no speed difference; the compiler
+            // takes care of this automatically. We only leave it for clarity:
+            size_t          idx = ii*8;
+            pouts[0][ii] += sins[idx+0]*sins[idx+1] + sins[idx+2]*sins[idx+3];
+            pouts[1][ii] += sins[idx+1]*sins[idx+2] + sins[idx+3]*sins[idx+4];
+            pouts[2][ii] += sins[idx+2]*sins[idx+3] + sins[idx+4]*sins[idx+5];
+            pouts[3][ii] += sins[idx+3]*sins[idx+4] + sins[idx+5]*sins[idx+6];
+            pouts[4][ii] += sins[idx+4]*sins[idx+5] + sins[idx+6]*sins[idx+7];
+            pouts[5][ii] += sins[idx+5]*sins[idx+6] + sins[idx+7]*sins[idx+0];
+            pouts[6][ii] += sins[idx+6]*sins[idx+7] + sins[idx+0]*sins[idx+1];
+            pouts[7][ii] += sins[idx+7]*sins[idx+0] + sins[idx+1]*sins[idx+2];
+        }
+    }
+    time = tm.readMs();
+    val = 0;
+    for (const FgDbls & outs : pouts)
+        val += fgSum(outs);
+    fgout << fgnl << "Packed array in, paral arrays out: " << time << "ms. (" << val << ")";
+
+
+
+}
+
 void
 fgCmdTestmCpp(const FgArgs & args)
 {
@@ -177,6 +269,7 @@ fgCmdTestmCpp(const FgArgs & args)
     cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of library exp(double)"));
     cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
     cmds.push_back(FgCmd(any,"any","Test boost any copy semantics"));
+    cmds.push_back(FgCmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
     fgMenu(args,cmds);
 }
 

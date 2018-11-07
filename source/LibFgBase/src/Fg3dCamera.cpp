@@ -18,7 +18,6 @@
 #include "FgCoordSystem.hpp"
 
 using namespace std;
-using namespace fgMath;
 
 FgMat44F
 Fg3dCamera::projectIpcs(FgVect2UI dims) const

@@ -53,8 +53,8 @@ fgGuiTestmText(const FgArgs &)
 void
 fgGuiTestmDialogSplashScreen(const FgArgs &)
 {
-    boost::function<void(void)>     f = fgGuiDialogSplashScreen();
-    fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... " << endl;
+    std::function<void(void)>     f = fgGuiDialogSplashScreen();
+    fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
     fgSleep(3);
     f();
 }

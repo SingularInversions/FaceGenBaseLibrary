@@ -22,7 +22,7 @@ struct  FgGuiDiagHandler
     FgString                        appNameVer;     // Full name of application plus version
     // Client-defined error reporting. Can be null.
     // Accepts error message, returns true if reported, false otherwise (so default dialog can be shown):
-    boost::function<bool(FgString)> reportError;
+    std::function<bool(FgString)> reportError;
     FgString                        reportSuccMsg;  // Displayed if 'reportError' returns true.
     // Prepended to error message and displayed if 'reportError' == NULL or 'reportError' returns false:
     FgString                        reportFailMsg;
@@ -69,7 +69,7 @@ struct  FgGuiGraph
     struct  Input
     {
         uint                        nodeIdx;
-        boost::function<void()>     save;
+        std::function<void()>     save;
         FgVariant                   defaultVal;
     };
 
@@ -98,7 +98,7 @@ struct  FgGuiGraph
         readNode(node,guid,binary);
         Input       inp;
         inp.nodeIdx = node.idx();
-        inp.save = boost::bind(&FgGuiGraph::writeNode<T>,this,node,guid,binary);
+        inp.save = std::bind(&FgGuiGraph::writeNode<T>,this,node,guid,binary);
         inp.defaultVal = FgVariant(defaultVal);
         m_inputSaves.push_back(inp);
         return node;

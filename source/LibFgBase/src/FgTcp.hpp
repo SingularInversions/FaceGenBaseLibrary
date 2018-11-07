@@ -36,7 +36,7 @@ bool
 fgTcpClient(const string & hostname,uint16 port,const string & data,string & response)
 {return fgTcpClient(hostname,port,data,true,response); }
 
-typedef boost::function<bool        // Return false to terminate server
+typedef std::function<bool        // Return false to terminate server
     (const string &,                // IP Address of the client
      const string &,                // Data from the client
      string &)>                     // Data to be returned to client (ignored if server not supposed to respond)

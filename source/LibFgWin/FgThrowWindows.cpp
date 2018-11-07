@@ -5,11 +5,6 @@
 //
 // Authors:     Andrew Beatty
 // Created:     Nov 1, 2011
-//
-//
-// Authors:     Andrew Beatty
-// Created:     2007
-//
 
 #include "stdafx.h"
 
@@ -39,7 +34,7 @@ fgThrowWindows(const string & msg,const FgString & data)
         LocalFree(lpMsgBuf);
         FgException     exc("Windows has reported an error",winData);
         exc.pushMsg(msg,data);
-        fgThrow(exc);
+        throw exc;
     }
     else
         fgThrow(msg,data);

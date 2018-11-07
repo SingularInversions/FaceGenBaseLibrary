@@ -138,11 +138,8 @@ typedef FgQuaternion<double>   FgQuaternionD;
 
 inline
 FgQuaternionD
-fgQuaternionRand()
-{
-    // Use normal distros to ensure isotropy:
-    return FgQuaternionD(fgMatRandNormal<4,1>());
-}
+fgQuaternionRand()      // Samples evenly from SO(3)
+{return FgQuaternionD(fgVecRandNrm<4>()); }     // Use normal distros to ensure isotropy
 
 inline
 FgQuaternionD

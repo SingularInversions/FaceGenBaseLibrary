@@ -17,24 +17,35 @@
 using namespace std;
 
 void
-fgSymmEigs_(const FgMatrixD & rsm,FgDbls & vals,FgMatrixD & vecs)
+fgSymmEigs_(const FgMatrixD & mat,FgDbls & vals,FgMatrixD & vecs)
 {
-    // JAMA enters an infinite loop with NaNs:
-    for (size_t ii=0; ii<rsm.m_data.size(); ++ii)
-        FGASSERT(boost::math::isfinite(rsm.m_data[ii]));
-    uint                    dim = rsm.numRows();
-    FGASSERT(rsm.numCols() == dim);
-        // We use a const cast since we know 'solver' will not modify the elements, even though
-        // the Array2D object holds a non-const pointer to our data.
-    JAMA::Eigenvalue<double>
-        solver(TNT::Array2D<double>(rsm.numRows(),rsm.numCols(),const_cast<double*>(rsm.dataPtr())));
+    uint                    dim = mat.numRows();
+    FGASSERT(mat.numCols() == dim);
+    // First ensure exact symmetry by averaging with tranpose, as bad results can result from
+    // even tiny asymmetries:
+    FgMatrixD               symm(dim,dim);
+    for (uint rr=0; rr<dim; ++rr) {
+        double              diag = mat.rc(rr,rr);
+        FGASSERT(boost::math::isfinite(diag));    // JAMA enters an infinite loop with NaNs
+        symm.rc(rr,rr) = diag;
+        for (uint cc=rr+1; cc<dim; ++cc) {
+            double          v = mat.rc(rr,cc),
+                            vt = mat.rc(cc,rr);
+            FGASSERT(boost::math::isfinite(v));
+            FGASSERT(boost::math::isfinite(vt));
+            double          s = (v + vt) * 0.5;
+            symm.rc(rr,cc) = s;
+            symm.rc(cc,rr) = s;
+        }
+    }
+    int                         dimi = static_cast<int>(dim);
+    JAMA::Eigenvalue<double>    solver(TNT::Array2D<double>(dimi,dimi,&symm.m_data[0]));
     vals.resize(dim);
     vecs.resize(dim,dim);
-    int                     idim = static_cast<int>(dim);
-    for (int row=0; row<idim; row++) {
-        vals[row] = solver.m_d[row];
-        for (uint col=0; col<dim; col++)
-            vecs.rc(row,col) = solver.V[row][col];
+    for (int rr=0; rr<dimi; rr++) {
+        vals[rr] = solver.m_d[rr];
+        for (uint cc=0; cc<dim; cc++)
+            vecs.rc(rr,cc) = solver.V[rr][cc];
     }
 }
 

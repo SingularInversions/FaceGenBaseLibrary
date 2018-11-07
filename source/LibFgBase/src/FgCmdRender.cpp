@@ -89,12 +89,16 @@ void
 fgCmdRender(const FgArgs & args)
 {
     FgSyntax    syntax(args,
-        "<name> (<mesh>.tri [<image>.<ext1>])+\n"
-        "    Render specified meshes [with texture images] using default render arguments.\n"
-        "    Saves render arguments to <name>.xml and rendered image to <name>.png\n"
-        "    <ext1>     - " + fgImgCommonFormatsDescription() + "\n"
-        "render <name>\n"
-        "    Render using the arguments in <name>.xml (including the output image file name and type)\n"
+        "<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext1>])*\n"
+        "    - Render specified meshes [with texture images] using default render arguments.\n"
+        "    - Saves render arguments to <name>.xml and rendered image to <name>.png\n"
+        "    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml\n"
+        "    -l     - Load the object pose and camera intrinsics from the above files, "
+                     "do not calculate from <name>.xml\n"
+        "    <ext1> - " + fgImgCommonFormatsDescription() + "\n"
+        "NOTES:\n"
+        "    - If no mesh arguments are given, <name>.xml will be used for the arguments.\n"
+        "ARGUMENTS XML:\n"
         "<name>.xml :\n"
         "    <models> - The list of mesh filenames to be rendered.\n"
         "    <pose>\n"
@@ -119,15 +123,25 @@ fgCmdRender(const FgArgs & args)
         "        written as <label>,<position>,<visible>, where <position> is in image unit coordinates; [0,1]\n"
         "    <outputFile> - Name of image output file."
     );
-
     string          renderName = syntax.next();
     Options         opts;
+    string          viewSave,    // If empty, option not selected
+                    viewLoad;    // "
+    while (syntax.more() && (syntax.peekNext()[0] == '-')) {
+        string      arg = syntax.next();
+        if (arg == "-s")
+            viewSave = syntax.next();
+        else if (arg == "-l")
+            viewLoad = syntax.next();
+        else
+            syntax.error("Unrecognized option",arg);
+    }
     if (syntax.more()) {
         while (syntax.more()) {
             //! Set up the default render options from the arguments:
             ModelFiles  mf;
             mf.triFilename = syntax.next();
-            if (syntax.more())
+            if (syntax.more() && fgIsImgFilename(syntax.peekNext()))
                 mf.imgFilename = syntax.next();
             opts.rend.models.push_back(mf);
         }
@@ -166,8 +180,20 @@ fgCmdRender(const FgArgs & args)
     cps.relTrans = opts.rend.pose.relTrans;
     cps.logRelScale = std::log(opts.rend.pose.relScale);
     cps.fovMaxDeg = opts.rend.pose.fovMaxDeg;
-    Fg3dCamera          cam = cps.camera(opts.rend.imagePixelSize);
-    FgAffine3F          mvm(cam.modelview);
+    Fg3dCamera          cam;
+    FgAffine3F          mvm;
+    if (!viewLoad.empty()) {
+        fgLoadXml(viewLoad+"_cam.xml",cam);
+        fgLoadXml(viewLoad+"_pose.xml",mvm);
+    }
+    else {
+        cam = cps.camera(opts.rend.imagePixelSize);
+        mvm = FgAffine3F(cam.modelview);
+    }
+    if (!viewSave.empty()) {
+        fgSaveXml(viewSave+"_cam.xml",cam);
+        fgSaveXml(viewSave+"_pose.xml",mvm);
+    }
 
     //! Render:
     opts.rend.options.projSurfPoints = std::make_shared<FgProjSurfPoints>();    // Receive surf point projection data
@@ -180,7 +206,7 @@ fgCmdRender(const FgArgs & args)
     if (opts.saveSurfPointFile) {
         FgOfstream      ofs(renderName+".csv");
         for (const FgProjSurfPoint & psp : *opts.rend.options.projSurfPoints)
-            ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << endl;
+            ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
     }
 }
 

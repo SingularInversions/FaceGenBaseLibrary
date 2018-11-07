@@ -12,6 +12,7 @@
 #include "FgGuiApiText.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 FgGuiPtr
 fgGuiText(FgDgn<FgString> node,uint minWidth,bool rich)
@@ -64,8 +65,8 @@ fgGuiTextEdit(FgDgn<FgString> node,bool wantStretch)
 {
     FgGuiApiTextEdit    gtr;
     gtr.updateFlagIdx = g_gg.addUpdateFlag(node);
-    gtr.getInput = boost::bind(getText,node);
-    gtr.setOutput = boost::bind(setText,node,_1);
+    gtr.getInput = std::bind(getText,node);
+    gtr.setOutput = std::bind(setText,node,_1);
     gtr.minWidth = 100;
     gtr.wantStretch = wantStretch;
     return fgsp(gtr);
@@ -99,8 +100,8 @@ fgGuiTextEditFixed(FgDgn<double> valN,FgVectD2 bounds,uint numFraction)
     te.updateFlagIdx = g_gg.addUpdateFlag(valN);
     te.minWidth = 50;
     te.wantStretch = false;
-    te.getInput = boost::bind(valToTextFixed,valN,numFraction);
-    te.setOutput = boost::bind(textToVal,valN,bounds,FgFuncD2D(),_1);
+    te.getInput = std::bind(valToTextFixed,valN,numFraction);
+    te.setOutput = std::bind(textToVal,valN,bounds,FgFuncD2D(),_1);
     return fgGuiPtr(te);
 }
 
@@ -119,8 +120,8 @@ fgGuiTextEditFloat(FgDgn<double> valN,FgVectD2 bounds,uint numDigits,FgFuncD2D v
 {
     FgGuiApiTextEdit    te;
     te.updateFlagIdx = g_gg.addUpdateFlag(valN);
-    te.getInput = boost::bind(valToTextFloat,valN,numDigits,v2t);
-    te.setOutput = boost::bind(textToVal,valN,bounds,t2v,_1);
+    te.getInput = std::bind(valToTextFloat,valN,numDigits,v2t);
+    te.setOutput = std::bind(textToVal,valN,bounds,t2v,_1);
     te.minWidth = 80;
     te.wantStretch = false;
     return fgsp(te);

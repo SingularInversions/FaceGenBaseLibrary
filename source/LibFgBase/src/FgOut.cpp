@@ -28,7 +28,7 @@ static FgOfstream   s_ofs;
 ostream &
 fgnl(ostream & ss)
 {
-    ss << endl;                         // includes a flush
+    ss << '\n';
     uint    il = fgout.indentLevel();
     for (uint ii=0; ii<il; ii++)
         ss << "|   ";
@@ -53,7 +53,7 @@ ostream &
 fgreset(ostream & ss)
 {
     fgout.reset();
-    return ss << endl;
+    return ss << '\n';
 }
 
 FgOut::FgOut()
@@ -93,7 +93,7 @@ FgOut::logFile(const FgString & fname,bool append,bool prependDate)
     s_ofs.open(fname,append,true);
     s_ofs.precision(9);
     if (prependDate)
-        s_ofs << '\n' << fgDateTimeString() << endl;
+        s_ofs << '\n' << fgDateTimeString() << '\n';
     auto    it = find(m_streams.begin(),m_streams.end(),&s_ofs);
     if (it == m_streams.end())
         m_streams.push_back(&s_ofs);
@@ -145,7 +145,7 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
             m_mutex.unlock(); }
         else if (manip == fgnl) {
             for (auto s : m_streams) {
-                (*s) << endl;
+                (*s) << '\n';
                 for (uint ii=0; ii<indentLevel(); ii++)
                     (*s) << "|   ";
             }

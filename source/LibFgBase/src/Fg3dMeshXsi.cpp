@@ -130,7 +130,7 @@ static bool saveXsiFile(
     //
     // Write (version 3.0) file header
     //
-    ofs << "xsi 0300txt 0032\n\n" << flush;
+    ofs << "xsi 0300txt 0032\n\n";
 
     //
     // Output some standard info
@@ -187,12 +187,12 @@ static bool saveXsiFile(
                 // Far plane units
     ofs << "   " << floatToString(camFarPlane) << ";\n";
     ofs << "}\n";
-    ofs << "\n" << flush;
+    ofs << "\n";
     ofs << "SI_Ambience\n";
     ofs << "{\n";
     ofs << "   0.2; 0.2; 0.2;;\n";
     ofs << "}\n";
-    ofs << "\n" << flush;
+    ofs << "\n";
     ofs << "SI_Light light1\n";
     ofs << "{\n";
                 // Type
@@ -204,7 +204,7 @@ static bool saveXsiFile(
                  << floatToString(hiBound[1]) << "; "
                  << floatToString(camPos[2]) << ";;\n";
     ofs << "}\n";
-    ofs << "\n" << flush;
+    ofs << "\n";
 
 
     //
@@ -246,36 +246,36 @@ static bool saveXsiFile(
         {
             string objTexName = objName + string(".Material.") 
                               + objName + string(".texture.map");
-            ofs << "      SI_Texture2D " << objTexName << "\n";
-            ofs << "      {\n";
-            ofs << "         \"" << txtFname << "\";\n";
-            ofs << "         3;\n";             // UV map (unwrapped)
-            ofs << "         " << imgWd << ";" << imgHgt << ";\n";
-            ofs << "         0;" << imgWd-1 << ";0;" << imgHgt-1 << ";\n";
-            ofs << "         0;\n";             // No UV swap
-            ofs << "         1;1;\n";
-            ofs << "         0;0;\n";
-            ofs << "         1.0;1.0;\n";       // UV scale
-            ofs << "         0.0;0.0;\n";       // UV offset
-            ofs << "         1.0,0.0,0.0,0.0,\n";   // Project matrix
-            ofs << "         0.0,1.0,0.0,0.0,\n";
-            ofs << "         0.0,0.0,1.0,0.0,\n";
-            ofs << "         0.0,0.0,0.0,1.0;;\n";
-            ofs << "         3;\n";             // No mask blending
-            ofs << "         1.0;\n";           // Blending value
-            ofs << "         0.0;\n";           // Texture ambient
-            ofs << "         0.0;\n";           // Texture diffuse
-            ofs << "         0.0;\n";           // Texture specular
-            ofs << "         0.0;\n";           // Texture transparency
-            ofs << "         0.0;\n";           // Texture reflectivity
-            ofs << "         0.0;\n";           // Texture roughness
-            ofs << "      }\n";
+            ofs << "      SI_Texture2D " << objTexName << "\n"
+                "      {\n"
+                "         \"" << txtFname << "\";\n"
+                "         3;\n"              // UV map (unwrapped)
+                "         " << imgWd << ";" << imgHgt << ";\n"
+                "         0;" << imgWd-1 << ";0;" << imgHgt-1 << ";\n"
+                "         0;\n"              // No UV swap
+                "         1;1;\n"
+                "         0;0;\n"
+                "         1.0;1.0;\n"        // UV scale
+                "         0.0;0.0;\n"        // UV offset
+                "         1.0,0.0,0.0,0.0,\n"    // Project matrix
+                "         0.0,1.0,0.0,0.0,\n"
+                "         0.0,0.0,1.0,0.0,\n"
+                "         0.0,0.0,0.0,1.0;;\n"
+                "         3;\n"              // No mask blending
+                "         1.0;\n"            // Blending value
+                "         0.0;\n"            // Texture ambient
+                "         0.0;\n"            // Texture diffuse
+                "         0.0;\n"            // Texture specular
+                "         0.0;\n"            // Texture transparency
+                "         0.0;\n"            // Texture reflectivity
+                "         0.0;\n"            // Texture roughness
+                "      }\n";
         }
 
-        ofs << "   }\n" << flush;
+        ofs << "   }\n";
     }
     ofs << "}\n";
-    ofs << "\n" << flush;
+    ofs << "\n";
 
     //
     // Now we output the models
@@ -307,40 +307,40 @@ static bool saveXsiFile(
         normList.resize(vtxList.size());
 
         // Output the current model
-        ofs << "SI_Model MDL-" << objName << endl;
-        ofs << "{\n";
-        ofs << "   SI_Transform SRT-" << objName << endl;
-        ofs << "   {\n";
-        ofs << "      1.0, 1.0, 1.0, \n";
-        ofs << "      0.0, 0.0, 0.0, \n";
-        ofs << "      0.0, 0.0, 0.0, \n";
-        ofs << "   }\n";
-        ofs << "\n";
-        ofs << "   SI_GlobalMaterial\n";
-        ofs << "   {\n";
-        ofs << "      \"" << objName << "\",\n";
-        ofs << "      \"BRANCH\",\n";
-        ofs << "   }\n";
-        ofs << "\n";
-        ofs << "   SI_Visibility\n";
-        ofs << "   {\n";
-        ofs << "      1, \n";
-        ofs << "   }\n";
-        ofs << "\n";
-        ofs << "   SI_Mesh MSH-" << objName << endl;
-        ofs << "   {\n";
+        ofs << "SI_Model MDL-" << objName << "\n"
+            "{\n"
+            "   SI_Transform SRT-" << objName << "\n"
+            "   {\n"
+            "      1.0, 1.0, 1.0, \n"
+            "      0.0, 0.0, 0.0, \n"
+            "      0.0, 0.0, 0.0, \n"
+            "   }\n"
+            "\n"
+            "   SI_GlobalMaterial\n"
+            "   {\n"
+            "      \"" << objName << "\",\n"
+            "      \"BRANCH\",\n"
+            "   }\n"
+            "\n"
+            "   SI_Visibility\n"
+            "   {\n"
+            "      1, \n"
+            "   }\n"
+            "\n"
+            "   SI_Mesh MSH-" << objName << "\n"
+            "   {\n";
 
             // Coordinates (position, normal, and UV)
-        ofs << "      SI_Shape SHP-" << objName << "-ORG\n";
-        ofs << "      {\n";
+        ofs << "      SI_Shape SHP-" << objName << "-ORG\n"
+            "      {\n";
         if (perVertex || perFacet)
             ofs << "         3,\n";
         else
             ofs << "         2,\n";
-        ofs << "         \"ORDERED\",\n";
-        ofs << "\n";
-        ofs << "         " << vtxList.size() << ",\n";
-        ofs << "         \"POSITION\",\n";
+        ofs << "         \"ORDERED\",\n"
+            "\n"
+            "         " << vtxList.size() << ",\n"
+            "         \"POSITION\",\n";
         unsigned long pt;
         for (pt=0; pt<vtxList.size(); ++pt)
         {
@@ -382,9 +382,9 @@ static bool saveXsiFile(
         }
         if (perVertex || perFacet)
         {
-            ofs << "\n";
-            ofs << "         " << txtList.size() << ",\n";
-            ofs << "         \"TEX_COORD_UV\",\n";
+            ofs << "\n"
+                "         " << txtList.size() << ",\n"
+                "         \"TEX_COORD_UV\",\n";
             for (pt=0; pt<txtList.size(); ++pt)
             {
                 ofs << "         "
@@ -392,7 +392,7 @@ static bool saveXsiFile(
                     << floatToString(txtList[pt][1]) << ", \n";
             }
         }
-        ofs << "      }\n" << flush;
+        ofs << "      }\n";
 
             //
             // Facets
@@ -453,7 +453,7 @@ static bool saveXsiFile(
                         << txtTriList[tri][2] << ", \n";
                 }
             }
-            ofs << "      }\n" << flush;
+            ofs << "      }\n";
         }
 
         if (quadList.size())
@@ -521,7 +521,7 @@ static bool saveXsiFile(
                         << txtQuadList[qu][3] << ", \n";
                 }
             }
-            ofs << "      }\n" << flush;
+            ofs << "      }\n";
         }
 
         // Output morph targets as animations
@@ -531,7 +531,7 @@ static bool saveXsiFile(
             if (numMorphs)
             {
                 ofs << "\n";
-                ofs << "      SI_ShapeAnimation SHPANIM-" << objName << endl;
+                ofs << "      SI_ShapeAnimation SHPANIM-" << objName << "\n";
                 ofs << "      {\n";
                 ofs << "         \"LINEAR\",\n";
                 ofs << "         " << numMorphs+1 << ",\n";
@@ -613,23 +613,23 @@ static bool saveXsiFile(
                         }
                     }
 
-                    ofs << "         }\n" << flush;
+                    ofs << "         }\n";
                 }
-                ofs << "\n";
-                ofs << "         SI_FCurve " << objName << "-SHPANIM-1\n";
-                ofs << "         {\n";
-                ofs << "            \"" << objName << "\",\n";
-                ofs << "            \"SHPANIM-1\",\n";
-                ofs << "            \"LINEAR\",\n";
-                ofs << "            1,1,\n";
-                ofs << "            " << numMorphs+1 << ",\n";
+                ofs << "\n"
+                    "         SI_FCurve " << objName << "-SHPANIM-1\n"
+                    "         {\n"
+                    "            \"" << objName << "\",\n"
+                    "            \"SHPANIM-1\",\n"
+                    "            \"LINEAR\",\n"
+                    "            1,1,\n"
+                    "            " << numMorphs+1 << ",\n";
                 size_t      mm;
                 for (mm=0; mm<numMorphs+1; ++mm)
                 {
                     ofs << "            " << mm+1 << ", " << mm << ".0,\n";
                 }
                 ofs << "         }\n";
-                ofs << "      }\n" << flush;
+                ofs << "      }\n";
             }
         }
 
@@ -640,7 +640,7 @@ static bool saveXsiFile(
         ofs << "}\n";
 
         // End of current model
-        ofs << "\n" << flush;
+        ofs << "\n";
     }
 
     //
@@ -771,11 +771,14 @@ fgSaveXsiTest(const FgArgs & args)
     FGTESTDIR
     FgString    dd = fgDataDir();
     string      rd = "base/";
-    Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    fgSaveXsi("meshExportXsi",fgSvec(mesh));
+    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSaveXsi("meshExportXsi",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportXsi.xsi","base/test/");
     fgRegressFileRel("meshExportXsi0.png","base/test/");
+    fgRegressFileRel("meshExportXsi1.png","base/test/");
 }
 
 // */

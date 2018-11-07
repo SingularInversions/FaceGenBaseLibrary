@@ -77,6 +77,7 @@ fgCmdBaseTestms()
     FGADDCMD1(fgClusterTestm,"clusterm");
     FGADDCMD1(fgClusterDeployTestm,"clusterDeploy");
     FGADDCMD(fgCmdTestmCpp,"cpp","C++ behaviour tests");
+    FGADDCMD(fgGaTestm,"ga","GUI API");
     FGADDCMD1(fg3dReadWobjTest,"readWobj");
     FGADDCMD1(fgRandomTest,"random");
     FGADDCMD1(fgGeometryManTest,"geometry");

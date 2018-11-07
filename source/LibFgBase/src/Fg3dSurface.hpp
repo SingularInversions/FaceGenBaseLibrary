@@ -158,7 +158,7 @@ fgQuadsToTris(const vector<FgVect4UI> & quads);
 struct  FgMaterial
 {
     bool                shiny = false;
-    boost::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be the empty image.
+    std::shared_ptr<FgImgRgbaUb> albedoMap;   // Can be Null but should not be the empty image.
 };
 typedef vector<FgMaterial>  FgMaterials;
 typedef vector<FgMaterials> FgMaterialss;
@@ -275,13 +275,13 @@ struct  Fg3dSurface
 
     void
     setAlbedoMap(const FgImgRgbaUb & img)
-    {material.albedoMap = boost::make_shared<FgImgRgbaUb>(img); }
+    {material.albedoMap = std::make_shared<FgImgRgbaUb>(img); }
 
     FgImgRgbaUb &
     albedoMapRef()
     {
         if (!material.albedoMap)
-            material.albedoMap = boost::make_shared<FgImgRgbaUb>();
+            material.albedoMap = std::make_shared<FgImgRgbaUb>();
         return *material.albedoMap;
     }
 

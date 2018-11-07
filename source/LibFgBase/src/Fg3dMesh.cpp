@@ -186,6 +186,16 @@ Fg3dMesh::surfPointPositions(const FgStrs & labels) const
     return ret;
 }
 
+FgVect3Fs
+Fg3dMesh::markedVertPositions() const
+{
+    FgVerts     ret;
+    ret.reserve(markedVerts.size());
+    for (const FgMarkedVert & m : markedVerts)
+        ret.push_back(verts[m.idx]);
+    return ret;
+}
+
 FgTriSurf
 Fg3dMesh::asTriSurf() const
 {
@@ -704,7 +714,7 @@ fgSubdivide(const Fg3dMesh & in,bool loop)
             if (topo.vertOnBoundary(ii)) {
                 vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
                 if (vertInds.size() != 2)
-                    fgThrow("Cannot subdivide non-manifold mesh at vert index",fgToString(ii));
+                    fgThrow("Cannot subdivide non-manifold mesh at vert index",fgToStr(ii));
                 ret.verts[ii] = (in.verts[ii] * 6.0 + in.verts[vertInds[0]] + in.verts[vertInds[1]]) * 0.125f;
             }
             else {

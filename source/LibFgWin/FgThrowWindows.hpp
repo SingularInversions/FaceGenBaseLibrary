@@ -15,14 +15,20 @@
 
 // Appends the information from Windows' "GetLastError" into the exception message:
 void
-fgThrowWindows(
-    const std::string & msg,
-    const FgString &    data=FgString());
+fgThrowWindows(const std::string & msg,const FgString & data=FgString());
+
+inline
+void
+fgThrowWindows(const std::string & msg,const std::string & data)
+{fgThrowWindows(msg,FgString(data)); }
+
+template<class T>
+void
+fgThrowWindows(const std::string & msg,const T & data)
+{return fgThrowWindows(msg,FgString(fgToStr(data))); }
 
 void
-fgAssertWin(
-    const char *    fname,
-    int             line);
+fgAssertWin(const char * fname,int line);
 
 #define FGASSERTWIN(X)                                                  \
     if(X) (void) 0;                                                     \

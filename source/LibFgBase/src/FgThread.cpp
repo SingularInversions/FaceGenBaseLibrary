@@ -17,7 +17,7 @@ bool    fg_debug_thread = false;
 // debug output is needed:
 /*
 #define LOG_DEBUG_THREAD(x)                                 \
-    cout << endl << "Thread id: "                           \
+    cout << "\nThread id: "                           \
     << boost::this_thread::get_id() << " " << x;
 */
 #define LOG_DEBUG_THREAD(x)

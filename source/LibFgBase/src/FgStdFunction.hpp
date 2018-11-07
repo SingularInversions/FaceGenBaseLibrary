@@ -6,7 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     June 7, 2017
 //
-// Currently boost::function but will migrate:
+// Currently std::function but will migrate:
 
 #ifndef FGSTDFUNCTION_HPP
 #define FGSTDFUNCTION_HPP
@@ -14,7 +14,7 @@
 #include "FgStdLibs.hpp"
 #include "FgBoostLibs.hpp"
 
-typedef boost::function<void()>                                 FgFunc;
-typedef boost::function<std::string(const std::string &)>       FgFuncStr2Str;
+typedef std::function<void()>                                 FgFunc;
+typedef std::function<std::string(const std::string &)>       FgFuncStr2Str;
 
 #endif

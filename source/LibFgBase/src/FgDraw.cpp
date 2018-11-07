@@ -110,7 +110,7 @@ fgDrawBarGraph(
 void
 fgDrawFunction(
     FgImgRgbaUb &       img,            // OUTPUT
-    boost::function<double(double)> func,
+    std::function<double(double)> func,
     FgVectD2            bounds,         // abscissa value at image x bounds
     double              vscale,         // y pixels per unit
     FgRgbaUB            colour)
@@ -130,8 +130,6 @@ fgDrawFunction(
         lastPoint = point;
     }
 }
-
-using namespace fgMath;
 
 void
 fgDrawFunctions(

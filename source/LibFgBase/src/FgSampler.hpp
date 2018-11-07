@@ -14,7 +14,7 @@
 #include "FgImage.hpp"
 
 // Accepts a sample coordinate in IUCS and computes the image color at that point:
-typedef boost::function<FgRgbaF(FgVect2F)>  FgFuncSample;
+typedef std::function<FgRgbaF(FgVect2F)>  FgFuncSample;
 
 FgImgRgbaF
 fgSamplerF(

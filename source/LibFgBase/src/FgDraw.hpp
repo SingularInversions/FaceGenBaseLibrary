@@ -58,7 +58,7 @@ fgGraph(const std::vector<T> & data)
 void
 fgDrawFunction(
     FgImgRgbaUb &       img,            // OUTPUT
-    boost::function<double(double)> func,
+    std::function<double(double)> func,
     FgVectD2            bounds,         // abscissa value at image x bounds
     double              vscale,         // y pixels per unit
     FgRgbaUB            colour);

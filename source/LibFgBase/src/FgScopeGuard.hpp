@@ -15,15 +15,25 @@
 
 struct FgScopeGuard : FgNonCopyable
 {
-    FgScopeGuard(boost::function<void()> const & fn):
-        m_fn(fn)
-    {}
+    FgScopeGuard(std::function<void()> const & fn) : m_fn(fn) {}
 
-    ~FgScopeGuard()
-    { m_fn(); }
+    ~FgScopeGuard() {m_fn(); }
 
 private:
-    boost::function<void()> m_fn;
+    std::function<void()> m_fn;
+};
+
+// A version that allows you to ignore the return type of the end-of-scope function.
+// This is required for VS2013 and for strict C++11 compliance:
+template<typename T>
+struct FgScopeGuardT : FgNonCopyable
+{
+    FgScopeGuardT(std::function<T()> const & fn) : m_fn(fn) {}
+
+    ~FgScopeGuardT() {m_fn(); }
+
+private:
+    std::function<T()> m_fn;
 };
 
 #endif // FGSCOPEGUARD_HPP

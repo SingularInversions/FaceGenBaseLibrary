@@ -51,7 +51,7 @@ static
 void
 sfs(const FgArgs &)
 {
-    FgImg4UC            orig = fgLoadImg4UC(fgDataDir()+"base/lenna512.png");
+    FgImg4UC            orig = fgLoadImg4UC(fgDataDir()+"base/Mandrill512.png");
     FgImage<FgVect3F>   img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii] = FgVect3F(orig[ii].subMatrix<3,1>(0,0));

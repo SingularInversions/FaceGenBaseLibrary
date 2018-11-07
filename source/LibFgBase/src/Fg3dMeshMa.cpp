@@ -228,19 +228,18 @@ static bool saveMayaAsciiFile(
     //
     // Write header
     //
-    ofs << "//Maya ASCII 4.0 scene\n";
-    ofs << "//Name: " << path.base << endl;
+    ofs << "//Maya ASCII 4.0 scene\n"
+        "//Name: " << path.base << "\n";
     if (cmts)
     {
         ofs << "//\n";
         for (unsigned long cc=0; cc<cmts->size(); ++cc)
         {
-            ofs << "//" << (*cmts)[cc] << endl;
+            ofs << "//" << (*cmts)[cc] << "\n";
         }
         ofs << "//\n";
     }
     ofs << "requires maya \"4.0\";\n";
-    ofs << flush;
 
     //
     // Now write out the shape information for each object and target.
@@ -251,12 +250,12 @@ static bool saveMayaAsciiFile(
     //
     // Create the rendering / lighting nodes
     //
-    ofs << "createNode lightLinker -n \"lightLinker1\";\n";
-    ofs << "createNode displayLayerManager -n \"layerManager\";\n";
-    ofs << "createNode displayLayer -n \"defaultLayer\";\n";
-    ofs << "createNode renderLayerManager -n \"renderLayerManager\";\n";
-    ofs << "createNode renderLayer -n \"defaultRenderLayer\";\n";
-    ofs << "createNode renderLayer -s -n \"globalRender\";\n";
+    ofs << "createNode lightLinker -n \"lightLinker1\";\n"
+        "createNode displayLayerManager -n \"layerManager\";\n"
+        "createNode displayLayer -n \"defaultLayer\";\n"
+        "createNode renderLayerManager -n \"renderLayerManager\";\n"
+        "createNode renderLayer -n \"defaultRenderLayer\";\n"
+        "createNode renderLayer -s -n \"globalRender\";\n";
 
     //
     // Create Texture related nodes
@@ -295,15 +294,15 @@ static bool saveMayaAsciiFile(
         numSgGn += numMorphs;
     }
 
-    ofs << "select -ne :time1;\n";
-    ofs << "\tsetAttr \".o\" 1;\n";
-    ofs << "select -ne :renderPartition;\n";
-    ofs << "\tsetAttr -size " << numRenders << " \".st\";\n";
-    ofs << "select -ne :renderGlobalsList1;\n";
-    ofs << "select -ne :defaultShaderList1;\n";
-    ofs << "\tsetAttr -s " << numRenders << " \".s\";\n";
-    ofs << "select -ne :postProcessList1;\n";
-    ofs << "\tsetAttr -s " << "2 \".p\";\n";
+    ofs << "select -ne :time1;\n"
+        "\tsetAttr \".o\" 1;\n"
+        "select -ne :renderPartition;\n"
+        "\tsetAttr -size " << numRenders << " \".st\";\n"
+        "select -ne :renderGlobalsList1;\n"
+        "select -ne :defaultShaderList1;\n"
+        "\tsetAttr -s " << numRenders << " \".s\";\n"
+        "select -ne :postProcessList1;\n"
+        "\tsetAttr -s " << "2 \".p\";\n";
     if (numObjsWithTexture)
     {
         ofs << "select -ne :defaultRenderUtilityList1;\n";
@@ -333,7 +332,7 @@ static bool saveMayaAsciiFile(
     //
     connectAttributes(ofs,model,morphNames);
 
-    ofs << "// End of " << path.base << endl << flush;
+    ofs << "// End of " << path.base << "\n";
 
     //
     // Done.
@@ -1999,7 +1998,7 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
                     if (maxLen > 0)
                         if (baseName.length() > maxLen)
                             baseName.resize(maxLen);
-                    texBase = baseName + fgToString(imgIdx++) + "." + imgFormat;
+                    texBase = baseName + fgToStr(imgIdx++) + "." + imgFormat;
                     fgSaveImgAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
                 }
                 od.triList = surf.tris.vertInds;
@@ -2048,11 +2047,14 @@ fgSaveMaTest(const FgArgs & args)
     FGTESTDIR
     FgString    dd = fgDataDir();
     string      rd = "base/";
-    Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    fgSaveMa("meshExportMa",fgSvec(mesh));
+    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSaveMa("meshExportMa",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportMa.ma","base/test/");
     fgRegressFileRel("meshExportMa0.png","base/test/");
+    fgRegressFileRel("meshExportMa1.png","base/test/");
 }
 
 // */

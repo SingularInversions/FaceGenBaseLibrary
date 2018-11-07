@@ -23,7 +23,7 @@ struct FgCmd
     std::string     name;
     std::string     description;
 
-    FgCmd() : func(0) {}
+    FgCmd() {}
 
     FgCmd(FgCmdFunc func_,const char * name_)
         : func(func_), name(name_) {}

@@ -22,6 +22,8 @@ struct  FgSyntax
 {
     FgSyntax(
         const FgArgs &  args,   // Accepts UTF-8 here
+        // Wraparound for console width is aplied to this text. Any occurence of " - "
+        // sets the indent level for wraparound:
         const string &  syntax);
 
     ~FgSyntax();
@@ -40,7 +42,7 @@ struct  FgSyntax
     {
         FgOpt<T>    ret = fgFromStr<T>(next());
         if (!ret.valid())
-            error("Unable to covnert string to "+string(typeid(T).name()),curr());
+            error("Unable to convert string to "+string(typeid(T).name()),curr());
         return ret.val();
     }
 

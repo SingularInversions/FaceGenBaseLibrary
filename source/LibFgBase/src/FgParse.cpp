@@ -109,10 +109,6 @@ fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
     return ret;
 }
 
-bool
-isCrLf(uint ch)
-{return ((ch == '\r') || (ch == '\n')); }
-
 static
 void
 consumeCrLf(const FgUints & in,size_t & idx)    // Current idx must point to CR or LF
@@ -121,7 +117,7 @@ consumeCrLf(const FgUints & in,size_t & idx)    // Current idx must point to CR 
     if (idx == in.size())
         return;
     uint        ch1 = in[idx];
-    if (isCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
+    if (fgIsCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
         ++idx;
     return;
 }
@@ -154,7 +150,7 @@ csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to v
             if (idx == in.size())
                 return ret;
             uint    ch = in[idx];
-            if ((ch == ',') || (isCrLf(ch)))
+            if ((ch == ',') || (fgIsCrLf(ch)))
                 return ret;
             ret += fgUtf32ToUtf8(fgSvec(ch));
             ++idx;
@@ -169,7 +165,7 @@ csvGetLine(
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     FgStrs      ret;
-    if (isCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
+    if (fgIsCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
         consumeCrLf(in,idx);
         return ret;
     }
@@ -177,7 +173,7 @@ csvGetLine(
         ret.push_back(csvGetField(in,idx));
         if (idx == in.size())
             return ret;
-        if (isCrLf(in[idx])) {
+        if (fgIsCrLf(in[idx])) {
             consumeCrLf(in,idx);
             return ret;
         }
@@ -231,7 +227,7 @@ fgSaveCsv(const FgString & fname,const FgStrss & csvLines)
             for (size_t ii=1; ii<line.size(); ++ii) {
                 ofs << "," << csvField(line[ii]);
             }
-            ofs << endl;
+            ofs << '\n';
         }
     }
 }

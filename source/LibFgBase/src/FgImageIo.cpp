@@ -11,7 +11,6 @@
 #include "FgThread.hpp"
 #include "FgFileSystem.hpp"
 #include "FgScopeGuard.hpp"
-#include "FgSmartPtr.hpp"
 #include "FgCommand.hpp"
 
 // Don't let ImageMagick redeclare malloc:
@@ -37,6 +36,48 @@ fgEnsureMagick()
     fgRunOnce(fg_magick_init,Helper::init);
 }
 
+// Handy for pointers which need to be de-allocated when going out of scope
+// and also checked for validity when assigned:
+template<typename T>
+struct  FgScopePtr
+{
+    T *                         ptr;
+    std::function<T*(T*)>       dealloc;
+
+    FgScopePtr() : ptr(nullptr) {}
+
+    FgScopePtr(T*p,std::function<T*(T*)> d)
+        : ptr(p), dealloc(d)
+    {FGASSERT(p != nullptr); }
+
+    T *
+    get() const
+    {return ptr; }
+
+    T *
+    operator->()
+    {return ptr; }
+
+    ~FgScopePtr()
+    {
+        if (ptr != nullptr)
+            dealloc(ptr);
+    }
+};
+
+struct FgImgIoScopeGuard : FgNonCopyable
+{
+    FgImgIoScopeGuard(std::function<Image*()> const & fn):
+        m_fn(fn)
+    {}
+
+    ~FgImgIoScopeGuard()
+    { m_fn(); }
+
+private:
+    std::function<Image*()> m_fn;
+};
+
 void
 fgLoadImgAnyFormat(
     const FgString &    fname,
@@ -45,6 +86,8 @@ fgLoadImgAnyFormat(
     if (!fgFileReadable(fname))
         fgThrow("Unable to read file",fname);
     fgEnsureMagick();
+    // Need to wrap these in a lambda as they FgScopePtr takes a function that returns void. Some compilers
+    // (VS2013) will not accept this and it is not well-defined behaviour in C++11:
     FgScopePtr<ExceptionInfo>   exception(AcquireExceptionInfo(),DestroyExceptionInfo);
     FgScopePtr<ImageInfo>       image_info(CloneImageInfo(0),DestroyImageInfo);
     (void) strcpy(image_info->filename,fname.as_utf8_string().c_str());
@@ -53,7 +96,7 @@ fgLoadImgAnyFormat(
     if (imgPtr == 0)
         // exception.description is NULL. exception->reason includes the filename:
         fgThrow("Unable to read image file",exception->reason);
-    FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
+    FgImgIoScopeGuard           sg0(std::bind(DestroyImage,imgPtr));
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
     img.resize(uint(imgPtr->columns),uint(imgPtr->rows));
     for(uint row = 0; row < imgPtr->rows; ++row) {
@@ -92,7 +135,7 @@ fgLoadImg4UC(const FgString & fname)
     if (imgPtr == 0)
         // exception.description is NULL. exception->reason includes the filename:
         fgThrow("Unable to read image file",exception->reason);
-    FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
+    FgImgIoScopeGuard           sg0(std::bind(DestroyImage,imgPtr));
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
     ret.resize(uint(imgPtr->columns),uint(imgPtr->rows));
     for(uint row= 0; row < imgPtr->rows; ++row) {
@@ -125,7 +168,7 @@ fgLoadImgAnyFormat(
     if (imgPtr == 0)
         // exception.description is NULL. exception->reason includes the filename:
         fgThrow("Unable to read image file",exception->reason);
-    FgScopeGuard                sg0(boost::bind(DestroyImage,imgPtr));
+    FgImgIoScopeGuard           sg0(std::bind(DestroyImage,imgPtr));
     FgScopePtr<CacheView>       view(AcquireCacheView(imgPtr),DestroyCacheView);
     img.resize(uint(imgPtr->columns),uint(imgPtr->rows));
     for(uint row = 0; row < imgPtr->rows; ++row) {
@@ -172,10 +215,11 @@ fgImgSupportedFormats()
     fgEnsureMagick();
     FgScopePtr<ExceptionInfo>   exception(AcquireExceptionInfo(),DestroyExceptionInfo);
     size_t                      number_formats = 0;
-    FgScopePtr<char*>           formats(GetMagickList("*",&number_formats,exception.get()),RelinquishMagickMemory);
+    char **                     formats = GetMagickList("*",&number_formats,exception.get());
     for(size_t ii=0; ii<number_formats; ++ii)
-        ret.push_back(string(*(formats.get()+ii)));
+        ret.push_back(string(*(formats+ii)));
     ret.push_back("TIF");       // TIFF is supported but this abbreviation is not in the list
+    RelinquishMagickMemory(formats);
     return ret;
 }
 

@@ -22,6 +22,8 @@ struct  Fg3dCamera
     FgVect6D        frustum;        // Defines camera projection for OpenGL
     FgAffineCw2D    itcsToIucs;     // Defines projection for raycasting
 
+    FG_SERIALIZE3(modelview,frustum,itcsToIucs);
+
     // Projection from world to IPCS (and depth to inverse depth) for this camera (homogenous representation):
     FgMat44F
     projectIpcs(FgVect2UI dims) const;

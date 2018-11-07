@@ -23,7 +23,7 @@ FgDepGraph::FgDepGraph(uint num_threads)
     if (num_threads > 0)
         m_numThreads = num_threads;
     else
-        m_numThreads = uint(boost::thread::hardware_concurrency());
+        m_numThreads = uint(std::thread::hardware_concurrency());
 }
 
 void
@@ -117,21 +117,26 @@ FgDepGraph::updateNode(uint nodeIdx) const
     if (update.queue.empty())
         return;
     update.lastLink = m_linkGraph.incomingLink(nodeIdx);
-    vector<FgSinglePtr<boost::thread> > threads(numThreads());
-    for (size_t tt=0; tt<threads.size(); ++tt)
-        threads[tt] = new boost::thread(
-            &FgDepGraph::executeLinkTask,this,&linksSync,&update,(tt == 0));
+    vector<std::thread>     threads;
+    size_t                  nt = numThreads();
+    threads.reserve(nt);
+    for (size_t tt=0; tt<nt; ++tt)
+        threads.push_back(std::thread(&FgDepGraph::executeLinkTask,
+            this,
+            &linksSync,
+            &update,
+            (tt == 0)));
     do {
-        boost::thread::yield();
+        std::this_thread::yield();
     }
     while (!update.done);
-    for (size_t tt=0; tt<threads.size(); ++tt)
-        threads[tt]->join();
+    for (size_t tt=0; tt<nt; ++tt)
+        threads[tt].join();
     if (update.flag) {
         if (update.userCancelled)
             throw FgExceptionUserCancel();
         else
-            fgThrow(update.exception);
+            throw update.exception;
     }
 }
 
@@ -170,7 +175,7 @@ FgDepGraph::leafLinks(
     else {
         // Set up scheduling for this link:
         sync.incomingRemaining = incomingRemaining;
-        sync.mtxPtr = new boost::mutex;
+        sync.mtxPtr.reset(new std::mutex);
     }
     // Continue the traverse (even for leaf nodes since we need to mark sources clean):
     for (size_t ii=0; ii<srcNodes.size(); ++ii)
@@ -205,7 +210,7 @@ FgDepGraph::executeLinkTask(
             }
             updPtr->guardQueue->unlock();
             if (empty) {
-                boost::thread::yield();
+                std::this_thread::yield();
                 continue;
             }
             bool    followNext = false;
@@ -285,7 +290,7 @@ FgDepGraph::Update::set(
         exception = e;
         exception.pushMsg(
             "A computation within an FgDepGraph has generated an exception on link",
-            fgToString(linkIdx));
+            fgToStr(linkIdx));
     }
 }
 

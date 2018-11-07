@@ -175,11 +175,11 @@ fgExecutablePath()
 {
     CFURLRef bundleUrlRef(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
     FGASSERT(bundleUrlRef);
-    boost::shared_ptr<const void> bundleUrl(bundleUrlRef,CFRelease);
+    std::shared_ptr<const void> bundleUrl(bundleUrlRef,CFRelease);
 
     CFStringRef pathRef(CFURLCopyFileSystemPath(bundleUrlRef,kCFURLPOSIXPathStyle));
     FGASSERT(pathRef);
-    boost::shared_ptr<const void> path(pathRef,CFRelease);
+    std::shared_ptr<const void> path(pathRef,CFRelease);
 
     size_t size = 2*(CFStringGetLength(pathRef)+1); // worst case for UTF8
     boost::scoped_array<char> buffer(new char[size]);

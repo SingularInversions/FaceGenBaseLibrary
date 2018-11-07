@@ -18,6 +18,7 @@
 #include "FgCommand.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 static
 FGLINK(linkLighting)
@@ -118,7 +119,7 @@ fgGuiLighting()
         fgGuiText("\nInteractively adjust light direction:\n"
             "Light 1: hold down left and right mouse buttons while dragging\n"
             "Light 2: As above but also hold down shift key"),
-        fgGuiButton("Reset Lighting",boost::bind(resetLighting,ret.outN.idx()))
+        fgGuiButton("Reset Lighting",std::bind(resetLighting,ret.outN.idx()))
     ));
     return ret;
 }
@@ -218,8 +219,8 @@ fgBgImageCtrls()
     g_gg.addLink(lnkSetAlpha,fgUints(bgImgPreAlphaN,bgAlphaN),ret.api.imgN);
     FgGuiPtr            bgImageSlider = fgGuiSlider(bgAlphaN,"Foreground transparency",FgVectD2(0,1),0.1),
                         bgImageButtons = fgGuiSplit(true,
-                            fgGuiButton("Load Image",boost::bind(bgImageLoad,bgImgPreAlphaN,ret.api)),
-                            fgGuiButton("Clear Image",boost::bind(bgImageClear,bgImgPreAlphaN))),
+                            fgGuiButton("Load Image",std::bind(bgImageLoad,bgImgPreAlphaN,ret.api)),
+                            fgGuiButton("Clear Image",std::bind(bgImageClear,bgImgPreAlphaN))),
                         text = fgGuiText(
                             "Move: Ctrl-Shift-Left-Drag\n"
                             "Scale: Ctrl-Shift-Right-Drag");
@@ -500,17 +501,17 @@ getPanes(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN,bool textEditBoxes)
             output[ii] = poses[ii].neutral;
     }
     FgGuiPtrs       buttons;
-    buttons.push_back(fgGuiButton("Set All Zero",boost::bind(setAllZero,valsN)));
-    buttons.push_back(fgGuiButton("Load File",boost::bind(expr_load,posesN,valsN)));
-    buttons.push_back(fgGuiButton("Save File",boost::bind(expr_save,posesN,valsN)));
+    buttons.push_back(fgGuiButton("Set All Zero",std::bind(setAllZero,valsN)));
+    buttons.push_back(fgGuiButton("Load File",std::bind(expr_load,posesN,valsN)));
+    buttons.push_back(fgGuiButton("Save File",std::bind(expr_save,posesN,valsN)));
     FgGuiPtrs       sliders;
     sliders.push_back(fgGuiSplit(true,buttons));
     sliders.push_back(fgGuiSpacer(0,7));
     for (size_t ii=0; ii<poses.size(); ++ii) {
         FgGuiApiSlider      slider;
         slider.updateFlagIdx = g_gg.addUpdateFlag(valsN);     // Node leak but what can you do.
-        slider.getInput = boost::bind(getInput,valsN,ii);
-        slider.setOutput = boost::bind(setOutput,valsN,ii,_1);
+        slider.getInput = std::bind(getInput,valsN,ii);
+        slider.setOutput = std::bind(setOutput,valsN,ii,_1);
         slider.label = poses[ii].name;
         slider.range[0] = poses[ii].bounds[0];
         slider.range[1] = poses[ii].bounds[1];
@@ -520,8 +521,8 @@ getPanes(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN,bool textEditBoxes)
             te.updateFlagIdx = g_gg.addUpdateFlag(valsN);
             te.minWidth = 50;
             te.wantStretch = false;
-            te.getInput = boost::bind(morphGetTxt,valsN,ii);
-            te.setOutput = boost::bind(morphSetTxt,valsN,ii,_1);
+            te.getInput = std::bind(morphGetTxt,valsN,ii);
+            te.setOutput = std::bind(morphSetTxt,valsN,ii,_1);
             sliders.push_back(fgGuiSplit(true,fgGuiPtr(slider),fgGuiPtr(te)));
         }
         else
@@ -674,20 +675,20 @@ fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDg
             fgGuiSplit(true,
                 fgGuiText("Name:"),
                 fgGuiTextEdit(api.pointLabel)),
-            fgGuiButtonTr("Clear all surface points",boost::bind(clearAllSurfPts,meshesN))
+            fgGuiButtonTr("Clear all surface points",std::bind(clearAllSurfPts,meshesN))
         ));
     FgGuiPtr            verts =
         fgGuiSplit(false,fgSvec(
             fgGuiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
             fgGuiGroupbox("Vertex Selection Mode",vertSelModeRadio.win),
-            fgGuiButtonTr("Mark all seam vertices",boost::bind(markAllSeams,meshesN)),
-            fgGuiButtonTr("Clear all marked vertices",boost::bind(clearAllMarkedVerts,meshesN))
+            fgGuiButtonTr("Mark all seam vertices",std::bind(markAllSeams,meshesN)),
+            fgGuiButtonTr("Clear all marked vertices",std::bind(clearAllMarkedVerts,meshesN))
         ));
     Fg3dSurfaces &      surfs = g_gg.getRef(meshesN)[0].surfaces;
     FgStrings    surfNames;
     for (size_t ss=0; ss<surfs.size(); ++ss) {
         if (surfs[ss].name.empty())             // Generally not the case since default surf names assigned on load
-            surfs[ss].name = fgToString(ss);
+            surfs[ss].name = fgToStr(ss);
         surfNames.push_back(surfs[ss].name);
     }
     FgGuiPtr            facets;
@@ -695,8 +696,8 @@ fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDg
         facets = fgGuiText("There are no surfaces to edit");
     else {
         FgGuiRadio          surfChoice = fgGuiRadio(surfNames);
-        api.shiftRightDragAction = boost::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
-        api.ctrlShiftMiddleClickAction = boost::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
+        api.shiftRightDragAction = std::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
+        api.ctrlShiftMiddleClickAction = std::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
         facets = fgGuiSplit(false,
             fgGuiText("Assign tri to surface selection: shift-right-drag\n"
                 "Assign connected tris (not quads) to surface: shift-middle-click"),
@@ -707,8 +708,8 @@ fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDg
     tabs.push_back(FgGuiTab("Verts",true,verts));
     tabs.push_back(FgGuiTab("Facets",true,facets));
     FgGuiPtr            saveButtons = fgGuiSplit(true,
-        fgGuiButtonTr("TRI",boost::bind(saveMesh,string("tri"),meshesN,allVertssN)),
-        fgGuiButtonTr("FGMESH",boost::bind(saveMesh,string("fgmesh"),meshesN,allVertssN)));
+        fgGuiButtonTr("TRI",std::bind(saveMesh,string("tri"),meshesN,allVertssN)),
+        fgGuiButtonTr("FGMESH",std::bind(saveMesh,string("fgmesh"),meshesN,allVertssN)));
     return fgGuiSplit(false,fgGuiText("Save pre-morphed to file:"),saveButtons,fgGuiTabs(tabs));
 }
 
@@ -720,7 +721,7 @@ fgGui3dCtls(
     FgDgn<FgMat32D>             viewBoundsN,
     FgRenderCtrls               renderCtrls,
     FgDgn<FgLighting>           lightingN,
-    boost::function<void(bool,FgVect2I)>    bothButtonsDrag,
+    std::function<void(bool,FgVect2I)>    bothButtonsDrag,
     uint                        simple,
     bool                        textEditBoxes)
 {
@@ -731,7 +732,7 @@ fgGui3dCtls(
     ret.morphedVertssN = g_gg.addNode(FgVertss(),"morphedVertss");
     g_gg.addLink(lnkPoseShape,fgUints(meshesN,allVertssN,posesN,morphValsN),ret.morphedVertssN);
     ret.morphCtls = fgGuiSplitScroll(g_gg.addUpdateFlag(posesN),
-        boost::bind(getPanes,posesN,morphValsN,textEditBoxes),3);
+        std::bind(getPanes,posesN,morphValsN,textEditBoxes),3);
     vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
     string                      uid = "3d";
     FgStrings            panTiltOptions = fgSvec<FgString>("Pan / Tilt","Unconstrained");
@@ -802,9 +803,9 @@ fgGui3dCtls(
             )
         );
     // Required to disambiguate float / double overloads:
-    FgFuncD2D       dexp = static_cast<double(*)(double)>(std::exp),
-                    dlog = static_cast<double(*)(double)>(std::log);
-    FgGuiPtr        viewCtlScaleTe = fgGuiTextEditFloat(api.logRelSize,logScaleRange,6,dexp,dlog);
+    double (*pexpd)(double) = &std::exp;
+    double (*plogd)(double) = &std::log;
+    FgGuiPtr        viewCtlScaleTe = fgGuiTextEditFloat(api.logRelSize,logScaleRange,6,pexpd,plogd);
     FgGuiPtr        viewCtlScale =
                 fgGuiSlider(
                     api.logRelSize,
@@ -821,7 +822,7 @@ fgGui3dCtls(
     if (textEditBoxes)
         viewCtlScale = fgGuiSplit(true,viewCtlScale,viewCtlScaleTe);
     viewCtlScale = fgGuiGroupboxTr("Object relative scale",viewCtlScale);
-    FgGuiPtr        viewCtlReset = fgGuiButtonTr("Reset Camera",boost::bind(
+    FgGuiPtr        viewCtlReset = fgGuiButtonTr("Reset Camera",std::bind(
         resetView,lensFovDeg,api.panDegrees,api.tiltDegrees,api.pose,api.trans,api.logRelSize));
     if (simple == 2)
         ret.cameraGui = fgGuiSplit(false,viewCtlText,viewCtlScale,viewCtlReset);
@@ -897,12 +898,12 @@ FgViewMeshes(
             FgString        meshName = meshes[ii].name;
             // Names must be unique for radio selection buttons to work:
             if (meshName.empty())
-                meshName = "Mesh " + fgToString(ii);
+                meshName = "Mesh " + fgToStr(ii);
             if (fgContains(meshNames,meshName)) {
                 size_t      idx = 1;
-                while (fgContains(meshNames,meshName+"_"+fgToString(idx)))
+                while (fgContains(meshNames,meshName+"_"+fgToStr(idx)))
                     ++idx;
-                meshName += "_"+fgToString(idx);
+                meshName += "_"+fgToStr(idx);
             }
             meshNames.push_back(meshName);
         }
@@ -921,7 +922,7 @@ FgViewMeshes(
     g_gg.addLink(linkMeshStats2,meshesN,meshStatsN);
     FgRenderCtrls           renderOpts = fgRenderCtrls(0);
     FgGuiLighting           lighting = fgGuiLighting();
-    FgGui3dCtls             ga3 = fgGui3dCtls(meshesN,allVertsN,texssN,viewBoundsN,renderOpts,lighting.outN,NULL,0,true);
+    FgGui3dCtls             ga3 = fgGui3dCtls(meshesN,allVertsN,texssN,viewBoundsN,renderOpts,lighting.outN,nullptr,0,true);
     vector<FgGuiTab>        viewTabs = fgSvec(
         fgGuiTab("Camera",true,ga3.cameraGui),
         fgGuiTab("Render",true,renderOpts.win),
@@ -935,7 +936,7 @@ FgViewMeshes(
         mainTabs.push_back(fgGuiTab("Edit",true,ga3.editCtls));
     else
         mainTabs.push_back(meshSelect);
-    mainTabs.push_back(fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(fgToString(meshes))))));
+    mainTabs.push_back(fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(fgToStr(meshes))))));
     fgGuiImplStart(
         FgString("FaceGen SDK FgViewMeshes"),
         //fgGuiSplitAdj(true,ga3.viewport,ga3.morphCtls),

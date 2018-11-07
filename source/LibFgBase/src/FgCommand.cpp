@@ -17,12 +17,26 @@
 #include "FgBuild.hpp"
 #include "FgTestUtils.hpp"
 #include "FgParse.hpp"
+#include "FgConio.hpp"
 
 using namespace std;
 
 static string       s_breadcrumb;
 static string       s_annotateTestDir;
 static bool         s_keepTempFiles = false;
+
+static
+string
+cmdStr(const FgCmd & cmd)
+{
+    string          si = "\n        " + cmd.name;
+    if (!cmd.description.empty()) {
+        for (size_t jj=si.length(); jj<24; ++jj)
+            si += " ";
+        si += "- " + cmd.description + "\n";
+    }
+    return si;
+}
 
 void
 fgMenu(
@@ -51,16 +65,8 @@ fgMenu(
     desc += "    <command>:";
     vector<FgCmd>       cmds = cmdsUnsorted;
     std::sort(cmds.begin(),cmds.end());
-    for (size_t ii=0; ii<cmds.size(); ++ii) {
-        string  si = "\n        " + cmds[ii].name;
-        if (!cmds[ii].description.empty()) {
-            for (size_t jj=si.length(); jj<28; ++jj)
-                si += " ";
-            si += "- ";
-            si += cmds[ii].description;
-        }
-        desc += si;
-    }
+    for (size_t ii=0; ii<cmds.size(); ++ii)
+        desc += cmdStr(cmds[ii]);
     FgSyntax    syntax(args,cl+desc);
     while (syntax.peekNext()[0] == '-') {
         string  opt = syntax.next();

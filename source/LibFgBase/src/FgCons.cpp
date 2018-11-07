@@ -138,20 +138,13 @@ fgConsBase(bool win,bool nix)
         fgSvec<string>(
             "filesystem/src/",
             "serialization/src/",
-            "system/src/",
-            "thread/src/");
-    if (nix) srcDirs.push_back("thread/src/pthread/");
-    if (win) srcDirs.push_back("thread/src/win32/");
-    if (nix)
-        defs.push_back("BOOST_THREAD_POSIX");
+            "system/src/");
     // This stops boost from automatically flagging the compiler to link to it's default library names.
     // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
     defs.push_back("BOOST_ALL_NO_LIB");
-    defs.push_back("BOOST_THREAD_USE_LIB=1");
     // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
     defs.push_back("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE");
     FgStrs          boostDefs = defs;
-    boostDefs.push_back("BOOST_THREAD_BUILD_LIB=1");
     if (win) {
         boostDefs.push_back("_CRT_SECURE_NO_DEPRECATE=1");
         boostDefs.push_back("_SCL_SECURE_NO_DEPRECATE=1");

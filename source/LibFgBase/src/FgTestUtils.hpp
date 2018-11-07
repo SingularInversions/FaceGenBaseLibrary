@@ -84,10 +84,10 @@ fgRegressionBaseline(
 }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef boost::function<bool(const FgString &,const FgString &)> FgFnRegressFiles;
+typedef std::function<bool(const FgString &,const FgString &)> FgFnRegressFiles;
 
 // Calls the given regression check and deletes the query file if successful. If unsuccessful then:
-// 'overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
+// '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
 // leave the query file in place.
 void
 fgRegressFile(
@@ -139,16 +139,22 @@ template<>
 void
 fgRegressSave(const FgString &,const FgImgRgbaUb &);
 
+// Developers with source control create this (empty) flag file locally:
+inline
+bool
+fgOverwriteBaselines()
+{return fgExists(fgDataDir()+"_overwrite_baselines.flag"); }
+
 template<class T>
 void
 fgRegress(
     const T &           query,
     const FgString &    baselinePath,
-    const boost::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
+    const std::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
 {
     // This flag should be set on a developer's machine (and ignored by source control) for
     // easy updates & change visualation. It should NOT be set of automated build machines:
-    bool                regressOverwrite = fgExists(fgDataDir()+"overwrite_baselines.flag");
+    bool                regressOverwrite = fgOverwriteBaselines();
     if (!fgExists(baselinePath)) {
         if (regressOverwrite) {
             fgRegressSave(baselinePath,query);
@@ -175,5 +181,10 @@ fgRegress(
         fgThrow("Regression failure: ",baselinePath);
     }
 }
+
+// Regress a string against a data file. Throws if file is different.
+// For dev instances (_overwrite_baselines.flag), also overwrites file if different.
+void
+fgRegressString(const string & data,const FgString & relPath);
 
 #endif

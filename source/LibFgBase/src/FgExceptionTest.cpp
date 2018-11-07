@@ -50,51 +50,6 @@ struct FgMyException : public FgException
     FgMyException(std::string const & s, FgString const & m):FgException(s,m){}
 };
 
-static void testException2()
-{
-    try
-    {
-        fgThrow<FgMyException>("abcd");
-    }
-    catch(FgMyException& e)
-    {
-        FGASSERT(e.tr_message() == "abcd");
-        FGASSERT(e.no_tr_message() == "abcd");
-    }
-    catch(...)
-    {
-        FGASSERT_FALSE;
-    }
-
-    try
-    {
-        fgThrow<FgMyException>("abcd","efg");
-    }
-    catch(FgMyException& e)
-    {
-        FGASSERT(e.tr_message() == "abcd : efg");
-        FGASSERT(e.no_tr_message() == "abcd : efg");
-    }
-    catch(...)
-    {
-        FGASSERT_FALSE;
-    }
-
-    try
-    {
-        fgThrow<FgMyException>("abcd",FgString("efg"));
-    }
-    catch(FgMyException& e)
-    {
-        FGASSERT(e.tr_message() == "abcd : efg");
-        FGASSERT(e.no_tr_message() == "abcd : efg");
-    }
-    catch(...)
-    {
-        FGASSERT_FALSE;
-    }
-}
-
 void
 fgExceptionTest(const FgArgs &)
 {
@@ -107,5 +62,4 @@ fgExceptionTest(const FgArgs &)
         FGASSERT(e.tr_message() == tr_correct);
         FGASSERT(e.no_tr_message() == no_tr_correct);
     }
-    testException2();
 }

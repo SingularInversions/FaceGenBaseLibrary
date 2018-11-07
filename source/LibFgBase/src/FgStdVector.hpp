@@ -176,6 +176,18 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
     return vec;
 }
 
+// Generate elements using a function that takes no args (typically a random generator):
+template<class T>
+vector<T>
+fgGenerate(std::function<T()> generator,size_t num)
+{
+    vector<T>       ret;
+    ret.reserve(num);
+    for (size_t ii=0; ii<num; ++ii)
+        ret.push_back(generator());
+    return ret;
+}
+
 template<class T>
 vector<T>
 operator-(
@@ -766,6 +778,34 @@ fgTransform_(
 }
 
 template<class T>
+vector<T>
+fgAbs(const vector<T> & vec)
+{
+    vector<T>   ret;
+    ret.reserve(vec.size());
+    for (const T & v : vec)
+        ret.push_back(std::abs(v));
+    return ret;
+}
+
+inline void fgSum_(const vector<double> & in,double & out)
+{
+    double      acc = out;
+    for (double i : in)
+        acc += i;
+    out = acc;
+}
+
+// Sum into an existing accumulator:
+template<class T>
+void
+fgSum_(const vector<T> & in,T & out)
+{
+    for (const T & i : in)
+        out += i;
+}
+
+template<class T>
 T
 fgSum(const vector<T> & v)
 {
@@ -1031,7 +1071,7 @@ fgSortInds(const vector<T> & v)
     for (size_t ii=0; ii<inds.size(); ++ii)
         inds[ii] = ii;
     if (!inds.empty())
-        std::sort(inds.begin(),inds.end(),boost::bind(fgSortIndsLt<T>,&v[0],_1,_2));
+        std::sort(inds.begin(),inds.end(),std::bind(fgSortIndsLt<T>,&v[0],std::placeholders::_1,std::placeholders::_2));
     return inds;
 }
 
@@ -1051,7 +1091,7 @@ fgSortIndsRev(const vector<T> & v)
     for (size_t ii=0; ii<inds.size(); ++ii)
         inds[ii] = ii;
     if (!inds.empty())
-        std::sort(inds.begin(),inds.end(),boost::bind(fgSortIndsGt<T>,&v[0],_1,_2));
+        std::sort(inds.begin(),inds.end(),std::bind(fgSortIndsGt<T>,&v[0],std::placeholders::_1,std::placeholders::_2));
     return inds;
 }
 
@@ -1067,22 +1107,14 @@ fgReorder(const vector<T> & v,const vector<size_t> & inds)
     return ret;
 }
 
-// Sort key / data in separate std::vectors:
-template<class Key,class Data>
-void
-fgSortKey(vector<Key> & k,vector<Data> & d)
+template<class T>
+bool
+fgContainsDuplicates(const vector<T> & mustBeSorted)
 {
-    vector<size_t>  order = fgSortInds(k);
-    k = fgReorder(k,order);
-    d = fgReorder(d,order);
-}
-template<class Key,class Data>
-void
-fgSortKeyRev(vector<Key> & k,vector<Data> & d)
-{
-    vector<size_t>  order = fgSortIndsRev(k);
-    k = fgReorder(k,order);
-    d = fgReorder(d,order);
+    for (size_t ii=1; ii<mustBeSorted.size(); ++ii)
+        if (mustBeSorted[ii] == mustBeSorted[ii-1])
+            return true;
+    return false;
 }
 
 // Removes duplicates from a sorted vector (I don't get std::unique):
@@ -1094,7 +1126,7 @@ fgUnique(const vector<T> & v)
     if (!v.empty()) {
         ret.push_back(v[0]);
         for (size_t ii=1; ii<v.size(); ++ii)
-            if (v[ii] != ret.back())
+            if (!(v[ii] == ret.back()))     // In case type only defines operator==
                 ret.push_back(v[ii]);
     }
     return ret;
@@ -1191,6 +1223,7 @@ operator<<(std::ostream & ss,const vector<T> & vv)
 	return ss;
 }
 
+// For this to work with lambdas the template type must be explicitly given with the function call:
 template<class T>
 vector<T>
 fgFilter(const vector<T> & vals,const std::function<bool(const T & val)> & fnSelect)

@@ -21,8 +21,12 @@ static
 FgArgs
 fgArgs(int argc,const char * argv[])
 {
-    FgArgs  args;
-    for (int ii=0; ii<argc; ++ii)
+    FgArgs      args;
+    if (argc > 0) {     // The first arg is the command path but we only want the command name:
+        FgPath      path(argv[0]);
+        args.push_back(path.baseExt().m_str);
+    }
+    for (int ii=1; ii<argc; ++ii)
         args.push_back(string(argv[ii]));
     return args;
 }
@@ -31,8 +35,14 @@ static
 FgArgs
 fgArgs(int argc,const wchar_t * argv[])
 {
-    FgArgs      args;
-    for (int ii=0; ii<argc; ++ii) {
+    FgArgs          args;
+    if (argc > 0) {     // The first arg is the command path but we only want the command name:
+        FgString        tmp(argv[0]);
+        FgPath          path(tmp);
+        FgString        cmdName = path.baseExt();
+        args.push_back(cmdName.m_str);
+    }
+    for (int ii=1; ii<argc; ++ii) {
         FgString        tmp(argv[ii]);
         args.push_back(tmp.m_str);
     }
@@ -42,9 +52,9 @@ fgArgs(int argc,const wchar_t * argv[])
 // Final EOL required to due fgout idiom of fgnl at beginning of line:
 #ifdef _WIN32
 // Windows cmd.exe automatically adds an EOL so we only need one more:
-#define FLUSH fgout << endl
+#define NEWLINE fgout << "\n"
 #else
-#define FLUSH fgout << endl << endl
+#define NEWLINE fgout << "\n\n"
 #endif
 
 static FgArgs s_mainArgs;
@@ -56,7 +66,7 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
     {
         s_mainArgs = fgArgs(argc,argv);
         func(s_mainArgs);
-        FLUSH;
+        NEWLINE;
         return 0;
     }
     catch(FgExceptionCommandSyntax const &)
@@ -64,19 +74,19 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
         // Don't use std::cout directly since errors need to be logged if logging is on:
         fgout.setDefOut(true);
         fgout << "RETURNS:"
-             << endl << "     0 -- Successful completion"
-             << endl << "    -1 -- FaceGen exception"
-             << endl << "    -2 -- Standard library exception"
-             << endl << "    -3 -- Unknown exception"
-             << endl << "    -4 -- This message";
-        FLUSH;
+             << "\n     0 -- Successful completion"
+             << "\n    -1 -- FaceGen exception"
+             << "\n    -2 -- Standard library exception"
+             << "\n    -3 -- Unknown exception"
+             << "\n    -4 -- This message";
+        NEWLINE;
         return -4;
     }
     catch(FgException const & e)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (FG exception): " << e.no_tr_message();
-        FLUSH;
+        fgout << "\nERROR (FG exception): " << e.no_tr_message();
+        NEWLINE;
         return -1;
     }
     catch(std::bad_alloc const &)
@@ -86,21 +96,21 @@ fgMainConsole(FgCmdFunc func,int argc,const char * argv[])
 #ifndef FG_64
         fgout << fgnl << "Try running a 64-bit binary instead of this 32-bit binary";
 #endif
-        FLUSH;
+        NEWLINE;
         return -2;
     }
     catch(std::exception const & e)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (std::exception): " << e.what();
-        FLUSH;
+        fgout << "\nERROR (std::exception): " << e.what();
+        NEWLINE;
         return -2;
     }
     catch(...)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (unknown type):";
-        FLUSH;
+        fgout << "\nERROR (unknown type):";
+        NEWLINE;
         return -3;
     }
 }
@@ -112,7 +122,7 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
     {
         s_mainArgs = fgArgs(argc,argv);
         func(s_mainArgs);
-        FLUSH;
+        NEWLINE;
         return 0;
     }
     catch(FgExceptionCommandSyntax const &)
@@ -120,19 +130,19 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
         // Don't use std::cout directly since errors need to be logged if logging is on:
         fgout.setDefOut(true);
         fgout << "RETURNS:"
-             << endl << "     0 -- Successful completion"
-             << endl << "    -1 -- FaceGen exception"
-             << endl << "    -2 -- Standard library exception"
-             << endl << "    -3 -- Unknown exception"
-             << endl << "    -4 -- This message";
-        FLUSH;
+             << "\n     0 -- Successful completion"
+             << "\n    -1 -- FaceGen exception"
+             << "\n    -2 -- Standard library exception"
+             << "\n    -3 -- Unknown exception"
+             << "\n    -4 -- This message";
+        NEWLINE;
         return -4;
     }
     catch(FgException const & e)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (FG exception): " << e.no_tr_message();
-        FLUSH;
+        fgout << "\nERROR (FG exception): " << e.no_tr_message();
+        NEWLINE;
         return -1;
     }
     catch(std::bad_alloc const &)
@@ -142,21 +152,21 @@ fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[])
 #ifndef FG_64
         fgout << fgnl << "Try running a 64-bit binary instead of this 32-bit binary";
 #endif
-        FLUSH;
+        NEWLINE;
         return -2;
     }
     catch(std::exception const & e)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (std::exception): " << e.what();
-        FLUSH;
+        fgout << "\nERROR (std::exception): " << e.what();
+        NEWLINE;
         return -2;
     }
     catch(...)
     {
         fgout.setDefOut(true);
-        fgout << endl << "ERROR (unknown type):";
-        FLUSH;
+        fgout << "\nERROR (unknown type):";
+        NEWLINE;
         return -3;
     }
 }

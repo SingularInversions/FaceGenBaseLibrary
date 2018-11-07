@@ -136,6 +136,9 @@ struct  Fg3dMesh
     markedVertPos(const string & name_) const
     {return verts[fgFindFirst(markedVerts,name_).idx]; }
 
+    FgVect3Fs
+    markedVertPositions() const;        // Return positions of all marked verts
+
     void
     addMarkedVert(FgVect3F pos,const string & label)
     {
@@ -143,10 +146,10 @@ struct  Fg3dMesh
         verts.push_back(pos);
     }
 
-    vector<boost::shared_ptr<FgImgRgbaUb> >
+    vector<std::shared_ptr<FgImgRgbaUb> >
     albedoMaps() const
     {
-        vector<boost::shared_ptr<FgImgRgbaUb> > ret;
+        vector<std::shared_ptr<FgImgRgbaUb> > ret;
         ret.reserve(surfaces.size());
         for (size_t ss=0; ss<surfaces.size(); ++ss)
             ret.push_back(surfaces[ss].material.albedoMap);
@@ -198,6 +201,7 @@ struct  Fg3dMesh
     FgValid<size_t>
     findTargMorph(const FgString & name) const;
 
+    // Return the combined morph index:
     FgValid<size_t>
     findMorph(const FgString & name) const;
 
@@ -212,7 +216,7 @@ struct  Fg3dMesh
     void
     morph(
         const FgVerts &     allVerts,       // Must have same number of verts as base plus targets
-        const FgFlts &      coord,
+        const FgFlts &      coord,          // Combined morph coordinate over delta then targer morphs
         FgVerts &           outVerts)       // RETURNED. Same size as base verts
         const;
 

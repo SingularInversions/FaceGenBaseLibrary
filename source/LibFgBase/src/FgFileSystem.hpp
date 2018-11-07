@@ -61,8 +61,8 @@ FgString
 fgPublicDocumentsDirectory();
 
 // Find data directory from path of current executable (always given as absolute).
-// If 'throwIfFail' is false, then you must check the return value for the empty string (failure):
-const FgString & fgDataDir(bool throwIfFail=true);
+// If 'throwIfNotFound' is false, then you must check the return value for the empty string (failure):
+const FgString & fgDataDir(bool throwIfNotFound=true);
 
 // Force above to use current directory rather than executable location; useful for debugging:
 void fgDataDirFromCurrent();
@@ -165,10 +165,11 @@ fgFileReadable(const FgString & filename);
 std::string
 fgSlurp(FgString const & filename);
 
+// Setting 'onlyIfChanged' to false will result in the file being written regardless which may
+// be useful for very large files you don't want to read in and compare.
+// Leaving 'true' is useful to avoid triggering unwanted change detections:
 void
-fgDump(
-    const std::string & data,
-    const FgString &    filename);
+fgDump(const std::string & data,const FgString & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool

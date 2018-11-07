@@ -66,7 +66,7 @@ struct  FgGuiApiSplitScroll : FgGuiApi<FgGuiApiSplitScroll>
     uint                        updateFlagIdx;  // Has the panes info been updated ?
     // This function must not depend on the same guigraph node depended on by its children or
     // the windows will be destroyed and recreated with each child update and thus not work:
-    boost::function<FgGuiPtrs(void)> getPanes;
+    std::function<FgGuiPtrs(void)> getPanes;
     FgVect2UI                   minSize;        // Of client area (not including scroll bar)
     uint                        spacing;        // Insert this spacing above each sub-win
 
@@ -79,12 +79,12 @@ FgGuiPtr
 fgGuiSplitScroll(const FgGuiPtrs & panes,uint spacing=0);
 
 FgGuiPtr
-fgGuiSplitScroll(boost::function<FgGuiPtrs(void)> getPanes);
+fgGuiSplitScroll(std::function<FgGuiPtrs(void)> getPanes);
 
 FgGuiPtr
 fgGuiSplitScroll(
     uint                                updateNodeIdx,  // Must be unique to this object
-    boost::function<FgGuiPtrs(void)>    getPanes,
+    std::function<FgGuiPtrs(void)>    getPanes,
     uint                                spacing=0);
 
 #endif

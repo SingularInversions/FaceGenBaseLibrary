@@ -6,6 +6,8 @@
 // Authors:     Andrew Beatty
 // Created:     Nov 16, 2005
 //
+// Deprecated - use FgAny instead.
+//
 // Dynamic type for C++.
 //
 // Uses the shared_ptr idiom for heap object ownership. Use 'clone()' to explicitly copy.

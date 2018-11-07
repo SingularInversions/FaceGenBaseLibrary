@@ -19,7 +19,7 @@ using namespace std;
 
 void
 fgVizFuncAsImage(
-    boost::function<double(FgVect2D)>   func,
+    std::function<double(FgVect2D)>   func,
     FgMat22D                         domainBounds,
     uint                                sz)
 {
@@ -32,7 +32,7 @@ fgVizFuncAsImage(
 
 Fg3dMesh
 fgFuncToMesh(
-    boost::function<double(FgVect2D)>   func,
+    std::function<double(FgVect2D)>   func,
     FgMat22D                         domainBounds,
     uint                                sz)
 {

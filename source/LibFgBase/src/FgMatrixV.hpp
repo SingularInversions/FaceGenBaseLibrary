@@ -62,6 +62,12 @@ T
 fgDot(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
 {return fgDot(lhs.m_data,rhs.m_data); }
 
+// Map 'abs':
+template<class T>
+FgMatrixV<T>
+fgAbs(const FgMatrixV<T> & mat)
+{return FgMatrixV<T>(mat.nrows,mat.ncols,fgAbs(mat.m_data)); }
+
 template <class T>
 FgMatrixV<T>
 fgConcatHoriz(const std::vector<FgMatrixV<T> > & ms)
@@ -319,7 +325,7 @@ fgDiagonal(const FgMatrixV<T> & vec)
 
 template<class T>
 FgMatrixV<T>
-fgMatRandNormal(size_t nrows,size_t ncols)
+fgMatRandNrm(size_t nrows,size_t ncols)
 {
     FgMatrixV<T>    ret(nrows,ncols);
     for (size_t ii=0; ii<ret.numElems(); ++ii)
@@ -339,7 +345,7 @@ fgMatRandOrtho(size_t dim)
     FGASSERT(dim > 1);
     FgMatrixV<T>    ret(dim,dim);
     for (uint row=0; row<dim; ++row) {
-        FgMatrixV<T>    vec = fgMatRandNormal<T>(1,dim);
+        FgMatrixV<T>    vec = fgMatRandNrm<T>(1,dim);
         for (uint rr=0; rr<row; ++rr) {
             FgMatrixV<T>    axis = ret.rowVec(rr);
             vec -=  axis * fgDot(vec,axis);

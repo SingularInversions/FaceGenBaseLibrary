@@ -44,8 +44,8 @@ fgGuiText(FgString text,uint minWidth=0);
 struct  FgGuiApiTextEdit : FgGuiApi<FgGuiApiTextEdit>
 {
     uint                            updateFlagIdx;
-    boost::function<FgString(void)> getInput;
-    boost::function<void(FgString)> setOutput;
+    std::function<FgString(void)> getInput;
+    std::function<void(FgString)> setOutput;
     uint                            minWidth;
     bool                            wantStretch;    // Width only.
 };
@@ -58,7 +58,7 @@ fgGuiTextEdit(FgDgn<FgString> t,bool wantStretch=true);
 FgGuiPtr
 fgGuiTextEditFixed(FgDgn<double> valN,FgVectD2 bounds,uint numFraction=2);
 
-typedef boost::function<double(double)>     FgFuncD2D;
+typedef std::function<double(double)>     FgFuncD2D;
 
 // Floating-point numerical text edit box clips output values to bounds:
 FgGuiPtr

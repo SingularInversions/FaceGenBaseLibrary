@@ -17,6 +17,10 @@
 #include "FgString.hpp"
 
 inline bool
+fgIsCrLf(uint ch)
+{return ((ch == '\r') || (ch == '\n')); }
+
+inline bool
 fgIsDigit(char c)
 {return ((c >= '0') && (c <= '9')); }
 

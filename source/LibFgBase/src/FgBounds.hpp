@@ -149,17 +149,6 @@ fgMinElem(const FgMatrixC<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
-fgMinIdx(const FgMatrixC<T,nrows,ncols> & mat)
-{
-    uint        idx(0);
-    for (uint ii=1; ii<mat.numElems(); ++ii)
-        if (mat[ii] < mat[idx])
-            idx = ii;
-    return idx;
-}
-
-template<typename T,uint nrows,uint ncols>
-uint
 fgMaxIdx(const FgMatrixC<T,nrows,ncols> & mat)
 {
     uint        idx(0);
@@ -167,6 +156,40 @@ fgMaxIdx(const FgMatrixC<T,nrows,ncols> & mat)
         if (mat[ii] > mat[idx])
             idx = ii;
     return idx;
+}
+
+template<typename T,uint nrows,uint ncols>
+FgVect2UI
+fgMaxCrd(const FgMatrixC<T,nrows,ncols> & mat)
+{
+    FgVect2UI       crd;
+    T               max = std::numeric_limits<T>::min();
+    for (uint rr=0; rr<nrows; ++rr) {
+        for (uint cc=0; cc<ncols; ++cc) {
+            if (mat.rc(rr,cc) > max) {
+                max = mat.rc(rr,cc);
+                crd = FgVect2UI(rr,cc);
+            }
+        }
+    }
+    return crd;
+}
+
+template<typename T>
+FgVect2UI
+fgMaxCrd(const FgMatrixV<T> & mat)
+{
+    FgVect2UI       crd;
+    T               max = std::numeric_limits<T>::min();
+    for (uint rr=0; rr<mat.nrows; ++rr) {
+        for (uint cc=0; cc<mat.ncols; ++cc) {
+            if (mat.rc(rr,cc) > max) {
+                max = mat.rc(rr,cc);
+                crd = FgVect2UI(rr,cc);
+            }
+        }
+    }
+    return crd;
 }
 
 // Element-wise max:

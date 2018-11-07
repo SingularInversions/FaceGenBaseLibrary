@@ -10,33 +10,35 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
+#include "Fg3dMeshIo.hpp"
 #include "Fg3dMeshOps.hpp"
 #include "FgParse.hpp"
 #include "Fg3dNormals.hpp"
+#include "FgTestUtils.hpp"
 
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
 
-void
-fgObjTest()
-{
-    ofstream    ofs("square.obj");
-    ofs << 
-        "v 0.0 0.0 0.0\n"
-        "v 0.0 1.0 0.0\n"
-        "v 1.0 1.0 0.0\n"
-        "v 1.0 0.0 0.0\n"
-        "vt 0.0 0.0\n"
-        "vt 0.0 1.0\n"
-        "vt 1.0 1.0\n"
-        "vt 1.0 0.0\n"
-        "g plane\n"
-        "usemtl plane\n"
-        "f 1/1 2/2 3/3 4/4\n"
-        ;
-    ofs.close();
-}
+//void
+//fgObjTest()
+//{
+//    ofstream    ofs("square.obj");
+//    ofs << 
+//        "v 0.0 0.0 0.0\n"
+//        "v 0.0 1.0 0.0\n"
+//        "v 1.0 1.0 0.0\n"
+//        "v 1.0 0.0 0.0\n"
+//        "vt 0.0 0.0\n"
+//        "vt 0.0 1.0\n"
+//        "vt 1.0 1.0\n"
+//        "vt 1.0 0.0\n"
+//        "g plane\n"
+//        "usemtl plane\n"
+//        "f 1/1 2/2 3/3 4/4\n"
+//        ;
+//    ofs.close();
+//}
 
 static
 float
@@ -266,7 +268,7 @@ writeFacets(
                 uint        vi = vert[kk]+offsets.vert;
                 ofs << vi << "//" << vi << " ";
             }
-            ofs << endl;
+            ofs << "\n";
         }
     }
     else {
@@ -279,7 +281,7 @@ writeFacets(
                 uint        vi = vert[kk]+offsets.vert;
                 ofs << vi << "/" << uv[kk]+offsets.uv << "/" << vi << " ";
             }
-            ofs << endl;
+            ofs << "\n";
         }
     }
 }
@@ -289,11 +291,11 @@ writeMtlBase(
     FgOfstream &    ofs,
     uint            idx)
 {
-    ofs << "newmtl " << "Texture" << fgToString(idx) << endl
-        << "    illum 0\n"
-        << "    Kd 0.7 0.7 0.7\n"
-        << "    Ks 0 0 0\n"
-        << "    Ka 0 0 0\n";
+    ofs << "newmtl " << "Texture" << fgToStr(idx) << "\n"
+        "    illum 0\n"
+        "    Kd 0.7 0.7 0.7\n"
+        "    Ks 0 0 0\n"
+        "    Ka 0 0 0\n";
 }
 
 static
@@ -308,39 +310,39 @@ writeMesh(
     bool                mtlFile)        // Is there an associated MTL file
 {
     if (!mesh.deltaMorphs.empty())
-        fgout << endl << "WARNING: OBJ format does not support morphs";
+        fgout << "\n" << "WARNING: OBJ format does not support morphs";
 
     for (uint ii=0; ii<mesh.verts.size(); ++ii) {
         FgVect3F    vert = mesh.verts[ii];
-        ofs << "v " << vert[0] << " " << vert[1] << " " << vert[2] << endl;
+        ofs << "v " << vert[0] << " " << vert[1] << " " << vert[2] << "\n";
     }
     for (size_t ii=0; ii<mesh.uvs.size(); ++ii) {
         FgVect2F    uv = mesh.uvs[ii];
-        ofs << "vt " << uv[0] << " " << uv[1] << endl;
+        ofs << "vt " << uv[0] << " " << uv[1] << "\n";
     }
     Fg3dNormals         norms = fgNormals(mesh.surfaces,mesh.verts);
     for (size_t ii=0; ii<norms.vert.size(); ++ii) {
         FgVect3F    n = norms.vert[ii];
-        ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << endl;
+        ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << "\n";
     }
     for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
         if (mesh.surfaces[tt].material.albedoMap) {
-            string  idxString = fgToString(offsets.mat+tt);
+            string  idxString = fgToStr(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
             FgString        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
             fgSaveImgAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
             if (ofsMtl) {
                 writeMtlBase(ofsMtl,offsets.mat+tt);
-                ofsMtl << "    map_Kd " << imgName << endl;
+                ofsMtl << "    map_Kd " << imgName << "\n";
             }
         }
     }
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         const Fg3dSurface & surf = mesh.surfaces[ii];
-        FgString    name = (surf.name.empty() ? FgString("Surf")+fgToString(ii) : surf.name);
-        ofs << "g " << name << endl;
+        FgString    name = (surf.name.empty() ? FgString("Surf")+fgToStr(ii) : surf.name);
+        ofs << "g " << name << "\n";
         if (mtlFile)    // Meshlab can't handle 'usemtl' if there is no MTL file:
-            ofs << "usemtl Texture" << fgToString(offsets.mat+ii) << endl;
+            ofs << "usemtl Texture" << fgToStr(offsets.mat+ii) << "\n";
         writeFacets(ofs,surf.tris.vertInds,surf.tris.uvInds,offsets);
         writeFacets(ofs,surf.quads.vertInds,surf.quads.uvInds,offsets);
     }
@@ -370,7 +372,7 @@ fgSaveObj(
     // Some OBJ parsers (MeshLab) can't handle spaces in filenames:
     if (texImage) {
         FgString    mtlBaseExt = fpath.base.replace(' ','_') + ".mtl";
-        ofs << "mtllib " << mtlBaseExt << endl;
+        ofs << "mtllib " << mtlBaseExt << "\n";
         ofsMtl.open(fpath.dir() + mtlBaseExt);
         writeMtlBase(ofsMtl,0);
     }
@@ -380,10 +382,29 @@ fgSaveObj(
         FgString            name = (mesh.name.empty() ? fpath.base : mesh.name);
         // Replace spaces with underscores in case some OBJ parsers can't handle that:
         name = name.replace(' ','_');
-        ofs << "o " << name << endl
-            << "s 1" << endl;    // Enable smooth shading
+        ofs << "o " << name << "\n"
+            << "s 1" << "\n";    // Enable smooth shading
         offsets = writeMesh(ofs,ofsMtl,meshes[ii],fpath,offsets,imgFormat,texImage);
     }
+}
+
+void
+fgSaveObjTest(const FgArgs & args)
+{
+    FGTESTDIR
+    FgString        dd = fgDataDir();
+    string          rd = "base/";
+    Fg3dMesh        mouth = fgLoadTri(dd+rd+"Mouth.tri");
+    mouth.deltaMorphs.clear();       // Remove morphs to avoid warning
+    mouth.targetMorphs.clear();
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh        glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSaveObj("meshExportObj",fgSvec(mouth,glasses));
+    fgRegressFileRel("meshExportObj.obj","base/test/");
+    fgRegressFileRel("meshExportObj.mtl","base/test/");
+    fgRegressFileRel("meshExportObj1.png","base/test/");
+    fgRegressFileRel("meshExportObj2.png","base/test/");
 }
 
 // */

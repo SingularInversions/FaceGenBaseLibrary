@@ -19,7 +19,6 @@
 #include "FgImage.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgMath.hpp"
-#include "FgNormal.hpp"
 #include "FgAffine1.hpp"
 #include "FgMain.hpp"
 

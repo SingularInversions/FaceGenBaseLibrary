@@ -37,7 +37,7 @@ struct  FgGuiApiImage : public FgGuiApi<FgGuiApiImage>
     // User-selected points in IUCS. NB These are NOT corrected for non-power-of-2 pixel truncation:
     FgDgn<vector<FgVect2F> > pointsN;           
     FgDgn<FgImgRgbaUb>      dispN;              // Final display image including marked points
-    boost::function<void()> onClick;            // if non-NULL, call this after user-selected point click
+    std::function<void()> onClick;            // if non-NULL, call this after user-selected point click
 
     FgGuiImageDisp
     disp(FgVect2UI winSize);
@@ -71,6 +71,6 @@ FgGuiPtr
 fgGuiImage(
     FgDgn<FgImgRgbaUb>          imgN,           // input
     FgDgn<vector<FgVect2F> >    ptsIucsN,       // output: user-selected points
-    boost::function<void()>     onClick=NULL);
+    std::function<void()>       onClick=nullptr);
 
 #endif

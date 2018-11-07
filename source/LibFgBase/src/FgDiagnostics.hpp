@@ -70,23 +70,23 @@ fgAssert(const char * fname,int line,const std::string & msg = "");
 // Convenient for debugging:
 
 #define FG_HI_                                                      \
-std::cout << std::endl << "HI ! (" << __FILE__ << ": " << __LINE__       \
+std::cout << "\nHI ! (" << __FILE__ << ": " << __LINE__       \
         << ")" << std::flush
 
 #define FG_HI_1(X)                                                  \
-    std::cout << std::endl << #X ": " << (X) << std::flush
+    std::cout << "\n" << #X ": " << (X) << std::flush
 
 #define FG_HI_2(X,Y)                                                \
-	std::cout << std::endl << #X ": " << (X) << " "                 \
+	std::cout << "\n" << #X ": " << (X) << " "                 \
         << #Y ": " << (Y) << std::flush
 
 #define FG_HI_3(X,Y,Z)                                              \
-    std::cout << std::endl << #X ": " << (X) << " "                 \
+    std::cout << "\n" << #X ": " << (X) << " "                 \
          << #Y ": " << (Y) << " "                                   \
          << #Z ": " << (Z) << std::flush
 
 #define FG_HI_4(X,Y,Z,A)                                            \
-    std::cout << std::endl << #X ": " << (X) << " "                 \
+    std::cout << "\n" << #X ": " << (X) << " "                 \
          << #Y ": " << (Y) << " "                                   \
          << #Z ": " << (Z) << " "                                   \
          << #A ": " << (A) << std::flush
@@ -98,8 +98,10 @@ std::cout << std::endl << "HI ! (" << __FILE__ << ": " << __LINE__       \
 #define FG_DBG_STR(str) ""
 #endif
 
-// Crude warning system outputs to cout. Use when we don't want to throw in release distros:
+// Crude warning system outputs to cout. Use when we don't want to throw in release distros.
+// Currently just outputs to fgout but could add telemetry, special dev behaviour:
 void fgWarn(const char * fname,int line,const std::string & msg="");
+void fgWarn(const std::string & msg);
 
 #define FGWARN fgWarn(__FILE__,__LINE__)
 #define FGWARN1(X) fgWarn(__FILE__,__LINE__,X)

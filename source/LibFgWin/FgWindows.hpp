@@ -15,18 +15,11 @@
 // and later OSes (eg. InetNtop requires Vista and gestures require 7):
 #define WINVER 0x0601
 
-// The rest of the code needs to live with NOMINMAX defined, but
-// GDIplus needs these macros
-#if !defined(max)
-#  define min(x,y) ((x) < (y) ? (x) : (y))
-#  define max(x,y) ((x) < (y) ? (y) : (x))
-#endif
-
 // Include new winsock headers before windows.h since they supersede previous ones
 // referenced in windows.h:
 #include <winsock2.h>
-#include <ws2tcpip.h>
 #include <windows.h>
+#include <ws2tcpip.h>
 #include <windowsx.h>
 //#include <direct.h>                 // Needed for _getdcwd()
 //#include <tchar.h>

@@ -143,7 +143,7 @@ emboss(const FgArgs & args)
         fgThrow("Only 1 surface currently supported",syntax.curr());
     float           val = syntax.nextAs<float>();
     if (!(val > 0.0f))
-        fgThrow("Emboss value must be > 0",fgToString(val));
+        fgThrow("Emboss value must be > 0",fgToStr(val));
     mesh.verts = fgEmboss(mesh,img,val);
     fgSaveMeshAnyFormat(mesh,syntax.next());
 }
@@ -293,6 +293,51 @@ rdf(const FgArgs & args)
 
 static
 void
+rt(const FgArgs & args)
+{
+    FgSyntax    syntax(args,
+        "<in>.<extIn> <out>.<extOut> (<surfIndex> <triEquivIndex>)+\n"
+        "    <extIn>    - " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <extOut>   - " + fgSaveMeshFormatsCLDescription() + "\n"
+        "    <triEquivIndex> - Tri-equivalent index of triangle or half-quad to remove."
+        );
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
+    FgString        outName = syntax.next();
+    while (syntax.more()) {
+        size_t          si = syntax.nextAs<size_t>(),
+                        ti = syntax.nextAs<size_t>();
+        if (si >= mesh.surfaces.size())
+            fgThrow("Surface index out of bounds",fgToStr(si),fgToStr(mesh.surfaces.size()));
+        Fg3dSurface &   surf = mesh.surfaces[si];
+        if (ti >= surf.numTriEquivs())
+            fgThrow("Tri equiv index out of bounds",fgToStr(ti),fgToStr(surf.numTriEquivs()));
+        if (ti < surf.tris.size())
+            surf.removeTri(ti);
+        else {
+            ti -= surf.tris.size();
+            FgVect4UI       qvs = surf.quads.vertInds[ti/2];
+            FgVect4UI       uvs(0);
+            if (!surf.quads.uvInds.empty())
+                uvs = surf.quads.uvInds[ti/2];
+            surf.removeQuad(ti/2);
+            // The other tri making up the quad needs to be appended to tris:
+            if (ti & 0x1)
+                surf.tris.vertInds.push_back(FgVect3UI(qvs[0],qvs[1],qvs[2]));
+            else
+                surf.tris.vertInds.push_back(FgVect3UI(qvs[2],qvs[3],qvs[0]));
+            if (!surf.tris.uvInds.empty()) {
+                if (ti & 0x1)
+                    surf.tris.uvInds.push_back(FgVect3UI(uvs[0],uvs[1],uvs[2]));
+                else
+                    surf.tris.uvInds.push_back(FgVect3UI(uvs[2],uvs[3],uvs[0]));
+            }
+        }
+    }
+    fgSaveMeshAnyFormat(mesh,outName);
+}
+
+static
+void
 ruv(const FgArgs & args)
 {
     FgSyntax    syntax(args,
@@ -368,7 +413,7 @@ splitsurface(const FgArgs & args)
         vector<Fg3dSurface>     surfs = fgSplitSurface(mesh.surfaces[ss]);
         for (size_t ii=0; ii<surfs.size(); ++ii) {
             out.surfaces = fgSvec(surfs[ii]);
-            fgSaveTri(base+"_"+fgToString(idx++)+".tri",out);
+            fgSaveTri(base+"_"+fgToStr(idx++)+".tri",out);
         }
     }
 }
@@ -415,7 +460,7 @@ surfDel(const FgArgs & args)
     Fg3dMesh        mesh = fgLoadMeshAnyFormat(syntax.next());
     size_t          idx = syntax.nextAs<uint>();
     if (idx >= mesh.surfaces.size())
-        syntax.error("Selected surface index out of range",fgToString(idx));
+        syntax.error("Selected surface index out of range",fgToStr(idx));
     mesh.surfaces.erase(mesh.surfaces.begin()+idx);
     fgSaveMeshAnyFormat(mesh,syntax.next());
 }
@@ -805,12 +850,41 @@ xformCreate(const FgArgs & args)
 
 static
 void
+xformMirror(const FgArgs & args)
+{
+    FgSyntax        syn(args,
+        "<axis> <meshIn>.<ext1> [<meshOut>.<ext2>]\n"
+        "    <axis>     - (x | y | z)\n"
+        "    <ext1>     - " + fgLoadMeshFormatsCLDescription() + "\n"
+        "    <ext2>     - " + fgSaveMeshFormatsCLDescription()
+    );
+    uint            axis = 0;
+    string          axisStr = syn.nextLower().as_ascii();
+    if (axisStr == "x")
+        axis = 0;
+    else if (axisStr == "y")
+        axis = 1;
+    else if (axisStr == "z")
+        axis = 3;
+    else
+        syn.error("Invalid value of <axis>",axisStr);
+    Fg3dMesh        mesh = fgLoadMeshAnyFormat(syn.next());
+    FgMat33F        xf = FgMat33F::identity();
+    xf.rc(axis,axis) = -1.0f;
+    mesh.transform(xf);
+    FgString        fname = (syn.more() ? syn.next() : syn.curr());
+    fgSaveMeshAnyFormat(mesh,fname);
+}
+
+static
+void
 xform(const FgArgs & args)
 {
-    fgMenu(args,
-        fgSvec(
-            FgCmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"),
-            FgCmd(xformCreate,"create","Create a similarity transform (to .XML file)")));
+    FgCmds      cmds;
+    cmds.push_back(FgCmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"));
+    cmds.push_back(FgCmd(xformCreate,"create","Create a similarity transform (to .XML file)"));
+    cmds.push_back(FgCmd(xformMirror,"mirror","Mirror a mesh"));
+    fgMenu(args,cmds);
 }
 
 static
@@ -828,6 +902,7 @@ meshops(const FgArgs & args)
     ops.push_back(FgCmd(markVerts,"markVerts","Mark vertices in a .TRI file from a given list"));
     ops.push_back(FgCmd(mmerge,"merge","Merge multiple meshes into one. No optimization is done"));
     ops.push_back(FgCmd(rdf,"rdf","Remove Duplicate Facets within each surface"));
+    ops.push_back(FgCmd(rt,"rt","Remove specific tris from a mesh"));
     ops.push_back(FgCmd(ruv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"));
     ops.push_back(FgCmd(splitObjByMtl,"splitObjByMtl","Split up an OBJ mesh by 'usemtl' name"));
     ops.push_back(FgCmd(splitsurface,"splitSurface","Split up surface by connected vertex indices"));

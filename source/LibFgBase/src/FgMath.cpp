@@ -65,7 +65,7 @@ fgLog2Ceil(uint32 xx)
 // The cubic term co-efficient is assumed to be 1.0.
 // From Spiegel '99, Mathematical Handbook of Formulas and Tables.
 vector<double>
-fgMath::solveCubicReal(
+fgSolveCubicReal(
     double      c0,         // constant term
     double      c1,         // first order coefficient
     double      c2)         // second order coefficient
@@ -78,13 +78,13 @@ fgMath::solveCubicReal(
 
     if (dd > 0.0) {                     // Only one real root
         double          sqdd = sqrt(dd),
-                        ss = fgCbrt(rr + sqdd),
-                        tt = fgCbrt(rr - sqdd);
+                        ss = cbrt(rr + sqdd),
+                        tt = cbrt(rr - sqdd);
         retval.push_back(ss+tt-(c2/3.0));
         return retval;
     }
     else if (dd == 0.0) {               // All real roots, at least 2 equal
-        double          ss = fgCbrt(rr);
+        double          ss = cbrt(rr);
         retval.push_back(2.0 * ss - c2 / 3.0);
         retval.push_back(-2.0 * ss - c2 / 3.0);
         retval.push_back(-2.0 * ss - c2 / 3.0);
@@ -99,41 +99,6 @@ fgMath::solveCubicReal(
     }
 
     return retval;
-}
-
-double
-fgMath::normal(double val,double mean,double stdev)
-{
-    FGASSERT(stdev > 0.0);
-    return (fgExp(-0.5*fgSqr(val-mean)/fgSqr(stdev))/(stdev*fgSqrt_2pi()));
-}
-
-double
-fgMath::lnNormal(double val,double mean,double stdev)
-{
-    FGASSERT(stdev > 0.0);
-    return (-0.5 * fgLn_2pi() - std::log(stdev) - 0.5 * fgSqr(val-mean) / fgSqr(stdev));
-}
-
-double
-fgMath::lnNormalIid(
-    double  dimension,
-    double  ssd,
-    double  stdev)
-{
-    FGASSERT((dimension > 0.0) && (ssd >= 0.0) && (stdev > 0.0));
-    return (-0.5 * dimension * fgLn_2pi() 
-            - dimension * log(stdev)
-            - 0.5 * ssd / fgSqr(stdev));
-}
-
-double
-fgMath::lnNormalIidIgMapConstDim(
-    double  dimension,      // Number of IID measures
-    double  ssd)            // Sum of square differences between measures and means
-{
-    FGASSERT((dimension > 0.0) && (ssd >= 0.0));
-    return (-0.5 * dimension * log(ssd));
 }
 
 // Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).

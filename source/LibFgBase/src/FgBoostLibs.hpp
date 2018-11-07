@@ -37,10 +37,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/array.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/bind.hpp>
 #include <boost/config.hpp>
 #include <boost/detail/endian.hpp>
-#include <boost/function.hpp>
 #include <boost/functional.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -53,11 +51,6 @@
 #include <boost/serialization/throw_exception.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/static_assert.hpp>
-// Only include the necessary parts of boost/thread.hpp to avoid warning C4913 (VS2010):
-#include <boost/thread/barrier.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/once.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/variant.hpp>
 
 #ifdef _MSC_VER

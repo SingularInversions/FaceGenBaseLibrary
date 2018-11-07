@@ -12,6 +12,7 @@
 #include "FgGuiApiRadio.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 FgGuiPtr
 fgGuiRadio(FgDgn<FgString> selN,const FgStrings & vals,const FgStrings & labels)
@@ -60,7 +61,7 @@ fgGuiRadio(const FgStrings & vals,const FgStrings & labels,FgString store,FgStri
     else
         ret.strN = g_gg.addInput(defVal,store);
     ret.idxN = g_gg.addNode(size_t(0));
-    g_gg.addLink(boost::bind(valToIdx,vals,_1,_2),ret.strN,ret.idxN);
+    g_gg.addLink(std::bind(valToIdx,vals,_1,_2),ret.strN,ret.idxN);
     ret.win = fgGuiRadio(ret.strN,vals,labels);
     return ret;
 }

@@ -21,7 +21,7 @@
 #include "FgBestN.hpp"
 #include "FgAffineCwC.hpp"
 
-typedef boost::function<FgRgbaF(FgVect3F,FgVect2F,FgMaterial,const FgImgRgbaUb *)>   FgFuncShader;
+typedef std::function<FgRgbaF(FgVect3F,FgVect2F,FgMaterial,const FgImgRgbaUb *)>   FgFuncShader;
 
 struct  Fg3dRayCastMesh
 {

@@ -15,6 +15,7 @@
 #include "FgSystemInfo.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 void
 fgGuiDialogMessage(
@@ -47,7 +48,7 @@ fgGuiDialogFileLoad(
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
     FGASSERTWIN(SUCCEEDED(hr));
-    FgScopeGuard            sg(boost::bind(pfdRelease,pfd));
+    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -106,7 +107,7 @@ fgGuiDialogFileSave(
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
     FGASSERTWIN(SUCCEEDED(hr));
-    FgScopeGuard            sg(boost::bind(pfdRelease,pfd));
+    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -162,7 +163,7 @@ fgGuiDialogDirSelect()
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
     FGASSERTWIN(SUCCEEDED(hr));
-    FgScopeGuard            sg(boost::bind(pfdRelease,pfd));
+    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
@@ -260,7 +261,7 @@ static
 void
 threadWorker(const FgFnCallback2Void & fnWorker,HWND hwndMain,HWND hwndProgBar)
 {
-    FgFnBool2Bool           fnUpdateDialog = boost::bind(updateDialog,hwndMain,hwndProgBar,_1);
+    FgFnBool2Bool           fnUpdateDialog = std::bind(updateDialog,hwndMain,hwndProgBar,_1);
     try {
         fnWorker(fnUpdateDialog);
     }
@@ -302,7 +303,7 @@ fgGuiDialogProgress(const FgString & title,uint progressSteps,FgFnCallback2Void 
     UpdateWindow(hwndMain);
     s_cancel = false;
     s_error = FgString();
-    boost::thread               compute(threadWorker,boost::cref(fnWorker),hwndMain,progBar.hwndProgBar);
+    std::thread               compute(threadWorker,std::cref(fnWorker),hwndMain,progBar.hwndProgBar);
     MSG                         msg;
     while (GetMessage(&msg,NULL,0,0)) {
         TranslateMessage(&msg);
@@ -409,7 +410,7 @@ fgGuiWinDialogSplashClose()
         EndDialog(s_fgGuiWinDialogSplashScreen.hwndThis,0);
 }
 
-boost::function<void(void)>
+std::function<void(void)>
 fgGuiDialogSplashScreen()
 {
     // Need 4 bytes of zero after the DLGTEMPLATE structure for 'CreateDialog...' to work:

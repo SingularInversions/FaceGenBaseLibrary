@@ -43,6 +43,7 @@ operator<<(std::ostream & ss,const std::vector<T> & vv);
 
 struct  FgOut
 {
+    // TODO: Use std::atomic instead of mutexes around this:
     bool                m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
 
     FgOut();
@@ -114,7 +115,7 @@ struct  FgOut
 private:
     std::vector<std::ostream *> m_streams;  // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
     std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
-    boost::mutex        m_mutex;            // Guard m_indent to keep it thread-safe:
+    std::mutex        m_mutex;            // Guard m_indent to keep it thread-safe:
     uint                m_indent = 0;
 
     bool

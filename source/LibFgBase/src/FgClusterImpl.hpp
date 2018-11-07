@@ -131,30 +131,31 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
         // Start the receive threads before sending in case of long send and short return times.
         // Since workers will finish in different times, we cannot receive sequentially (not just due to
         // inefficiencies but also because input buffers could overflow) so each send is a thread:
-        vector<std::unique_ptr<boost::thread> >     recvThreads;
+        vector<std::thread>     recvThreads;
         recvThreads.reserve(msgsSend.size());
         for (size_t mm=0; mm<msgsSend.size(); ++mm)
-            recvThreads.emplace_back(std::unique_ptr<boost::thread>(new boost::thread(
-                recvFrameThread,boost::ref(*sockPtrs[mm]),boost::ref(msgsRecv[mm]))));
+            recvThreads.push_back(std::thread(recvFrameThread,
+                std::ref(*sockPtrs[mm]),
+                std::ref(msgsRecv[mm])));
         // Since there's only one physical ethernet cable and recipients are close by we just send each
         // message sequentially. A possible future optimization would be to make this asynchronous with some
         // number of threads (via asio):
         for (size_t mm=0; mm<msgsSend.size(); ++mm)
             sendFrame(*sockPtrs[mm],msgsSend[mm]);
         for (size_t mm=0; mm<recvThreads.size(); ++mm)
-            recvThreads[mm]->join();
+            recvThreads[mm].join();
         // Check for errors within the receive threads;
         static string       hdrSer = "\26\0\\0\0\0\0\0\0serialization::archive";    // Character literals in octal
         for (size_t mm=0; mm<msgsRecv.size(); ++mm)
             if (!fgStartsWith(msgsRecv[mm],hdrSer))
-                fgThrow("Cluster worker "+fgToString(mm),msgsRecv[mm]);
+                fgThrow("Cluster worker "+fgToStr(mm),msgsRecv[mm]);
     }
 };
 
 std::shared_ptr<FgClustDispatcher>
 fgClustDispatcher(const FgStrs & hostnames,uint16 port)
 {
-    return std::make_shared<FgClustDispatcherImpl>(hostnames,fgToString(port));
+    return std::make_shared<FgClustDispatcherImpl>(hostnames,fgToStr(port));
 }
 
 // */

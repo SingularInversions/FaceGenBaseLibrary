@@ -14,12 +14,60 @@
 #include "FgSyntax.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgTestUtils.hpp"
+#include "FgKdTree.hpp"
 
 using namespace std;
 
 /**
    \ingroup Base_Commands
-   Command to apply animation morphs to a mesh.
+   Apply morphs by name to meshes.
+ */
+static
+void
+anim(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<fileSuffix> (<mesh>.tri)+ (<morphName> <morphValue>)+\n"
+        "    <fileSuffix> - Will be added to the mesh name for the respective output file.\n"
+        "    <morphName>  - Exact name of morph to be applied. Need not exist on all meshes.\n"
+        "    <morphValue> - Any floating point number (0 no application, 1 full application).\n"
+        "COMMENTS:\n"
+        "    - The output mesh will have no morphs defined as application of the morphs\n"
+        "      to the vertex list necessarily invalidates the morph data."
+        );
+    string                          suffix = syn.next();
+    vector<pair<string,Fg3dMesh> >  meshes;
+    while (fgEndsWith(syn.peekNext(),".tri")) {
+        string                      name = syn.next();
+        meshes.push_back(make_pair(name,fgLoadTri(name)));
+    }
+    vector<pair<string,float> >     morphs;
+    while (syn.more()) {
+        string                      name = syn.next();
+        morphs.push_back(make_pair(name,syn.nextAs<float>()));
+    }
+    for (auto & mp : meshes) {
+        FgFlts              coord(mp.second.numMorphs(),0);
+        for (const auto & rp : morphs) {
+            FgValid<size_t>     idx = mp.second.findMorph(rp.first);
+            if (idx.valid())
+                coord[idx.val()] = rp.second;
+        }
+        FgVerts         out;
+        mp.second.morph(coord,out);
+        mp.second.verts = out;
+        // The morphs are invalidated once the base verts are changed:
+        mp.second.deltaMorphs.clear();
+        mp.second.targetMorphs.clear();
+        FgPath          path(mp.first);
+        path.base += suffix;
+        fgSaveTri(path.str(),mp.second);
+    }
+}
+
+/**
+   \ingroup Base_Commands
+   Apply morphs by index number to a mesh.
  */
 static
 void
@@ -33,10 +81,10 @@ apply(const FgArgs & args)
         "    <index>    - Morph index number (see 'morph list' command)\n"
         "    <value>    - Any floating point number (0: no application, 1: full application)\n"
         "COMMENTS:\n"
-        "    The output mesh will have no morphs defined as application of the morphs\n"
-        "    to the vertex list necessarily invalidates the morph data"
+        "    - The output mesh will have no morphs defined as application of the morphs\n"
+        "      to the vertex list necessarily invalidates the morph data.\n"
+        "    - Note that the index number of the same morph will be different for different meshes."
         );
-
     string      inFile = syntax.next(),
                 outFile = syntax.next();
     if (!fgCheckExt(inFile,"tri"))
@@ -52,12 +100,12 @@ apply(const FgArgs & args)
         //! Apply the morph:
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",fgToString(idx));
+                fgThrow("Delta morph index out of bounds",fgToStr(idx));
             deltas[idx] = val;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",fgToString(idx));
+                fgThrow("Target morph index out of bounds",fgToStr(idx));
             targets[idx] = val;
         }
         else
@@ -72,7 +120,46 @@ apply(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to remove all animation morphs in a mesh
+   Clamp delta morph vertex deltas to zero for seam vertices
+ */
+static
+void
+clamp(const FgArgs & args)
+{
+    FgSyntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
+        "    v - All vertices in <seam>.tri will be used to define the seam.\n"
+        "    m - Only marked vertices in <seam>.tri will defin the seam.\n"
+        "NOTES:\n"
+        "    * Only delta morphs are affected.\n"
+        "    * Vertex matching tolerance is 1/10,000 of the mesh max dimension."
+    );
+    Fg3dMesh        mesh = fgLoadTri(syn.next());
+    string          vm = syn.next();
+    FgVerts         seam;
+    if (vm == "v")
+        seam = fgLoadTri(syn.next()).verts;
+    else if (vm == "m")
+        seam = fgLoadTri(syn.next()).markedVertPositions();
+    else
+        syn.error("Not a valid option",vm);
+    if (seam.size() < 3)
+        syn.error("Too few vertices to be a seam",fgToStr(seam.size()));
+    FgKdTree        kd(seam);
+    float           scale = fgMaxElem(fgDims(mesh.verts)),
+                    closeSqr = fgSqr(scale / 10000.0f);
+    set<uint>       clampVertInds;
+    for (size_t ii=0; ii<mesh.verts.size(); ++ii)
+        if (kd.closest(mesh.verts[ii]).mag < closeSqr)
+            clampVertInds.insert(uint(ii));
+    for (FgMorph & morph : mesh.deltaMorphs)
+        for (uint ii : clampVertInds)
+            morph.verts[ii] = FgVect3F(0);
+    fgSaveTri(syn.next(),mesh);
+}
+
+/**
+   \ingroup Base_Commands
+   Remove all animation morphs in a mesh
  */
 static
 void
@@ -88,7 +175,7 @@ clear(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to copy animation morphs between meshes with corresponding vertex lists
+   Copy animation morphs between meshes with corresponding vertex lists
  */
 static
 void
@@ -126,12 +213,12 @@ copymorphs(const FgArgs & args)
         size_t      idx = syntax.nextAs<size_t>();
         if (delta) {
             if (idx >= meshIn.deltaMorphs.size())
-                syntax.error("Invalid delta morph index",fgToString(idx));
+                syntax.error("Invalid delta morph index",fgToStr(idx));
             meshOut.addDeltaMorph(meshIn.deltaMorphs[idx]);
         }
         else {
             if (idx >= meshIn.targetMorphs.size())
-                syntax.error("Invalid target morph index",fgToString(idx));
+                syntax.error("Invalid target morph index",fgToStr(idx));
             meshOut.addTargMorph(meshIn.targetMorphs[idx]);
         }
     }
@@ -140,7 +227,7 @@ copymorphs(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to create animation morphs for a mesh.
+   Create animation morphs for a mesh.
  */
 static
 void
@@ -190,7 +277,7 @@ create(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to extract all morphs to named OBJ files
+   Extract all morphs to named OBJ files
  */
 static
 void
@@ -222,7 +309,7 @@ extract(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to list animation morphs in a mesh.
+   List animation morphs in a mesh.
  */
 static
 void
@@ -250,7 +337,7 @@ morphList(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to remove animation morphs from a mesh.
+   Remove brackets from animation morph names (some mesh formats do not support them).
  */
 static
 void
@@ -271,7 +358,7 @@ removebrackets(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to remove animation morphs from a mesh.
+   Remove animation morphs from a mesh.
  */
 static
 void
@@ -298,12 +385,12 @@ removemorphs(const FgArgs & args)
         uint        idx = syntax.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",fgToString(idx));
+                fgThrow("Delta morph index out of bounds",fgToStr(idx));
             deltas[idx] = false;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",fgToString(idx));
+                fgThrow("Target morph index out of bounds",fgToStr(idx));
             targets[idx] = false;
         }
         else
@@ -323,7 +410,7 @@ removemorphs(const FgArgs & args)
 
 /**
    \ingroup Base_Commands
-   Command to rename an animation morph in a mesh.
+   Rename an animation morph in a mesh.
  */
 static
 void
@@ -343,12 +430,12 @@ renameMorph(const FgArgs & args)
     uint        idx = syntax.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
-            fgThrow("Delta morph index out of bounds",fgToString(idx));
+            fgThrow("Delta morph index out of bounds",fgToStr(idx));
         mesh.deltaMorphs[idx].name = syntax.next();
     }
     else if (arg == "t") {
         if (idx >= mesh.targetMorphs.size())
-            fgThrow("Target morph index out of bounds",fgToString(idx));
+            fgThrow("Target morph index out of bounds",fgToStr(idx));
         mesh.targetMorphs[idx].name = syntax.next();
     }
     else
@@ -361,7 +448,9 @@ void
 morph(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(apply,"apply","Apply morphs in a mesh with morphs"));
+    cmds.push_back(FgCmd(anim,"anim","Apply morphs by name to multiple meshes"));
+    cmds.push_back(FgCmd(apply,"apply","Apply morphs by index number in a single mesh"));
+    cmds.push_back(FgCmd(clamp,"clamp","Clamp delta morphs to zero on seam vertices"));
     cmds.push_back(FgCmd(clear,"clear","Clear all morphs from a mesh"));
     cmds.push_back(FgCmd(copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"));
     cmds.push_back(FgCmd(create,"create","Create morphs for a mesh"));

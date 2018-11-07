@@ -91,7 +91,7 @@ fgSaveVrml(
         const Fg3dMesh &    mesh = meshes[ii];
         FgString            nameUtf;
         if (mesh.name.empty())
-            nameUtf = fpath.base + fgToString(ii);
+            nameUtf = fpath.base + fgToStr(ii);
         else
             nameUtf = mesh.name;
         // Some VRML parsers (Meshlab) require DEF variable names to be strictly alphanumeric starting
@@ -112,7 +112,7 @@ fgSaveVrml(
             if (mesh.numValidAlbedoMaps() > 1)
                 fgThrow("VRML export with multiple texture images not yet implemented");
             // Some software (Meshlab:) can't deal with spaces in the image filename:
-            FgString    imgFile = fpath.base.replace(' ','_') + fgToString(ii);
+            FgString    imgFile = fpath.base.replace(' ','_') + fgToStr(ii);
             imgFile += "." + imgFormat;
             fgSaveImgAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
             ofs <<

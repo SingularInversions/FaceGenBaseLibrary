@@ -14,7 +14,6 @@
 #include "FgStdStream.hpp"
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
-#include "Fg3dTopology.hpp"
 #include "FgStdSet.hpp"
 
 using namespace std;

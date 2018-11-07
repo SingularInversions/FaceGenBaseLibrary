@@ -44,7 +44,7 @@ Fg3dMesh
 fgRemoveUnusedVerts(const Fg3dMesh &);
 
 Fg3dMesh
-fgCube(bool open=false);
+fg3dCube(bool open=false);
 
 Fg3dMesh
 fgPyramid(bool open=false);

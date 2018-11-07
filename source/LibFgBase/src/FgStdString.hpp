@@ -23,15 +23,25 @@ typedef std::vector<std::string>    FgStrs;
 typedef std::vector<FgStrs>         FgStrss;
 
 // More general than std::to_string since it uses operator<< which can be defined for
-// user-defined types as well. Also, to_string can cause ambiguous call errors:
+// user-defined types as well. Also, to_string can cause ambiguous call errors.
+// Defined here since this 'FgStdString' has more derived include dependencies and 
+// we need to include specializations for 'string' as well as 'FgString':
 template<class T>
-string
-fgToString(const T &val)
+std::string
+fgToStr(const T & val)
 {
     std::ostringstream   msg;
     msg << val;
     return msg.str();
 }
+template<>
+inline std::string
+fgToStr(const std::string & str)
+{return str; }
+template<>
+inline std::string
+fgToStr(const FgString & str)
+{return str.m_str; }
 
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors

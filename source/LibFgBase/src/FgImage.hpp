@@ -707,7 +707,7 @@ fgRotate90(
                     ys = (clockwise ? 1 : -1);
     for (uint yy=0; yy<dims[1]; ++yy)
         for (uint xx=0; xx<dims[0]; ++xx)
-            out.xy(xx,yy) = in.xy(size_t(yh+ys*yy),size_t(xh+xs*xx));
+            out.xy(xx,yy) = in.xy(yh+ys*yy,xh+xs*xx);
 }
 
 // Alpha-weight the pixels (assuming they are initially NOT):

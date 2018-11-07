@@ -156,10 +156,10 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
                 }
                 perVertexTexture = identical;
                 if (!identical)
-                    fgout << "Skipping per-facet texture data\n" << flush;
+                    fgout << "Skipping per-facet texture data\n";
             }
             else if (model.numTxtCoord(objId) != 0)
-                fgout << "Skipping per-facet texture data\n" << flush;
+                fgout << "Skipping per-facet texture data\n";
         }
     }
     if (perVertexTexture && model.numTxtCoord(objId) != 0) {
@@ -503,11 +503,14 @@ fgSave3dsTest(const FgArgs & args)
     FGTESTDIR
     FgString    dd = fgDataDir();
     string      rd = "base/";
-    Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    fgSave3ds("mshX3ds",fgSvec(mesh),"jpg");
+    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth"+".tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSave3ds("mshX3ds",fgSvec(mouth,glasses));
     fgRegressFileRel("mshX3ds.3ds","base/test/");
-    fgRegressFileRel("mshX3ds0.jpg","base/test/");
+    fgRegressFileRel("mshX3ds0.png","base/test/");
+    fgRegressFileRel("mshX3ds1.png","base/test/");
 }
 
 // */

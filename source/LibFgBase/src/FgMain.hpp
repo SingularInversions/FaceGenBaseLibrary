@@ -17,7 +17,7 @@
 // Can contain UTF-8 strings (due to legacy):
 typedef vector<string> FgArgs;
 
-typedef boost::function<void(const FgArgs &)> FgCmdFunc;
+typedef std::function<void(const FgArgs &)> FgCmdFunc;
 
 // Catches exceptions, outputs error details, returns appropriate value:
 int

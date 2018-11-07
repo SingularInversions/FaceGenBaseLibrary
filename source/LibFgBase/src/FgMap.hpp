@@ -8,6 +8,7 @@
 //
 // An associative container for small collections based on std::vector and without the implicit insertion
 // semantics of std::map. The collections are assumed small enough that no sorting is done and lookup is O(n).
+// Key type must support operator==
 //
 // * Looked at loki::AssocVector but didn't like the implicit insertion and OOPy, template-complex design.
 //
@@ -31,6 +32,7 @@ struct  FgMap
             if (p.first == k)
                 return p.second;
         FGASSERT_FALSE;
+        return map[0].second;       // Avoid warning
     }
 
     FgOpt<V>
@@ -46,9 +48,19 @@ struct  FgMap
     insert(const K & k,const V & v)     // Throws if key already in use
     {
         for (const std::pair<K,V> & p : map)
-            FGASSERT(k != p.first);
+            FGASSERT(!(k == p.first));
         map.push_back(std::make_pair(k,v));
     }
 };
+
+template<typename K,typename V>
+bool
+fgContains(const FgMap<K,V> & map,const K & key)
+{
+    for (const std::pair<K,V> & p : map.map)
+        if (p.first == key)
+            return true;
+    return false;
+}
 
 #endif

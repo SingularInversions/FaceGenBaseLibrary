@@ -37,7 +37,7 @@ FgStrs
 fgBuildCompilers(const string & os)
 {
     if (os == "win")
-        return fgSvec<string>("vs15","vs13","vs17");    // First is default for releases
+        return fgSvec<string>("vs17","vs15","vs13");    // First is default for releases
     else if (os == "ubuntu")
         return fgSvec<string>("clang","gcc","icpc");    // clang is faster than gcc and can run using the same shared libs
     else if (os == "osx")

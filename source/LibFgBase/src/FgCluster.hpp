@@ -48,7 +48,7 @@ fgClustDispatcher(
     const FgStrs &      hostnames,      // DNS or IP
     uint16              port=fgClusterPortDefault());
 
-typedef boost::function<void(const FgClustDispatcher *)>    FgFuncCrdntor;
+typedef std::function<void(const FgClustDispatcher *)>    FgFuncCrdntor;
 
 // Deploys Ubuntu version to LAN:
 void

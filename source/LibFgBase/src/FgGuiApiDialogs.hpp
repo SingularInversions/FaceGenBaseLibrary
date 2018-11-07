@@ -49,9 +49,9 @@ fgGuiDialogDirSelect();
 
 // Arguments: true - advance progress bar, false - do not
 // Return: true - user cancel, false - continue
-typedef boost::function<bool(bool)>             FgFnBool2Bool;
+typedef std::function<bool(bool)>             FgFnBool2Bool;
 
-typedef boost::function<void(FgFnBool2Bool)>    FgFnCallback2Void;
+typedef std::function<void(FgFnBool2Bool)>    FgFnCallback2Void;
 
 // Returns false if the computation was cancelled by the user, true otherwise:
 bool
@@ -62,7 +62,7 @@ fgGuiDialogProgress(
 
 // Uses the embedded icon for the splash screen.
 // Call the returned function to terminate the splash screen:
-boost::function<void(void)>
+std::function<void(void)>
 fgGuiDialogSplashScreen();
 
 #endif

@@ -5,6 +5,8 @@
 //
 // Authors: Sohail Somani, Andrew Beatty
 //
+// Deprecated.
+//
 // Reference-counted pointer similar to shared_ptr. Not multithread safe.
 
 #ifndef FGSHAREDPTR_HPP

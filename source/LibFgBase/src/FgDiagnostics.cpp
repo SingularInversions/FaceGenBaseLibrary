@@ -38,7 +38,13 @@ fgAssert(const char * fname,int line,const string &  msg)
 }
 
 void
+fgWarn(const std::string & msg)
+{
+    fgout << "\nWARNING: " << msg;
+}
+
+void
 fgWarn(const char * fname,int line,const string & msg)
 {
-    fgout << endl << "WARNING at : " <<  fgDiagString(fname,line,msg);
+    fgout << "\nWARNING at : " <<  fgDiagString(fname,line,msg);
 }

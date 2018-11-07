@@ -32,13 +32,13 @@ fgGuiSplitScroll(const FgGuiPtrs & panes,uint spacing)
 {
     FgGuiApiSplitScroll     ret;
     ret.updateFlagIdx = g_gg.addNode(0);      // dummy node ensures initial one-time setup
-    ret.getPanes = boost::bind(getPanes,panes);
+    ret.getPanes = std::bind(getPanes,panes);
     ret.spacing = spacing;
     return fgsp(ret);
 }
 
 FgGuiPtr
-fgGuiSplitScroll(boost::function<FgGuiPtrs(void)> getPanes)
+fgGuiSplitScroll(std::function<FgGuiPtrs(void)> getPanes)
 {
     FgGuiApiSplitScroll     ret;
     ret.updateFlagIdx = g_gg.addNode(0);      // dummy node ensures initial one-time setup
@@ -49,7 +49,7 @@ fgGuiSplitScroll(boost::function<FgGuiPtrs(void)> getPanes)
 FgGuiPtr
 fgGuiSplitScroll(
     uint                                updateNodeIdx,
-    boost::function<FgGuiPtrs(void)>    getPanes,
+    std::function<FgGuiPtrs(void)>    getPanes,
     uint                                spacing)
 {
     FgGuiApiSplitScroll     ret;

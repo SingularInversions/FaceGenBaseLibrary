@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 
+#include "FgAlgs.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgFileSystem.hpp"
 #include "FgStdStream.hpp"
@@ -123,10 +124,13 @@ fgSlurp(const FgString & filename)
 }
 
 void
-fgDump(
-    const string &      data,
-    const FgString &    filename)
+fgDump(const string & data,const FgString & filename,bool onlyIfChanged)
 {
+    if (onlyIfChanged && fgExists(filename)) {
+        string      fileData = fgSlurp(filename);
+        if (data == fileData)
+            return;
+    }
     FgOfstream  ofs(filename);
     ofs << data;
 }
@@ -144,7 +148,7 @@ fgBinaryFileCompare(
 static bool s_dataDirFromPath = false;
 
 const FgString &
-fgDataDir(bool throwIfFail)
+fgDataDir(bool throwIfNotFound)
 {
     // First find the data directory relative to current binary. It can be in one of:
     //  ./data                  (applications & remote execution)
@@ -159,17 +163,26 @@ fgDataDir(bool throwIfFail)
         path = fgGetCurrentDir();
     else
         path = fgExecutableDirectory();
-    string      data("data"+ fgDirSep());
-    for (size_t ii=0; ii<6; ++ii) {
+    string      data("data/"),
+                dataFlag(data+"_facegen_data_dir.flag");
+    size_t      depth = fgMin(path.dirs.size()+1,6ULL);
+    for (size_t ii=0; ii<depth; ++ii) {
         FgString    dd = path.str()+data;
         if (fgIsDirectory(dd)) {
-            ret = dd;
-            return ret;
+            if (fgExists(path.str()+dataFlag)) {
+                ret = dd;
+                return ret;
+            }
         }
-        path.dirs.pop_back();
+        if (!path.dirs.empty())     // Except on last iteration:
+            path.dirs.pop_back();
     }
-    if (throwIfFail)
-        fgThrow("Unable to find FaceGen data directory from executable location",fgExecutableDirectory());
+    if (throwIfNotFound) {
+        if (s_dataDirFromPath)
+            fgThrow("Unable to find FaceGen data directory from current path",fgGetCurrentDir());
+        else
+            fgThrow("Unable to find FaceGen data directory from executable path",fgExecutableDirectory());
+    }
     return ret;
 }
 
@@ -228,7 +241,7 @@ fgGlobHasExtension(FgPath path)
 FgStrings
 fgGlobFiles(const FgPath & path)
 {
-    FgStrings        ret;
+    FgStrings               ret;
     FgDirectoryContents     dc = fgDirectoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         FgPath              fn = dc.filenames[ii];

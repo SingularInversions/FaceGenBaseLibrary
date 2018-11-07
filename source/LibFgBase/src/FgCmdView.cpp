@@ -70,7 +70,7 @@ viewMesh(const FgArgs & args)
                 texture = fgResizePow2Ceil(texture);
             }
             // Apply to all surfaces:
-            boost::shared_ptr<FgImgRgbaUb>  map = boost::make_shared<FgImgRgbaUb>(texture);
+            std::shared_ptr<FgImgRgbaUb>  map = std::make_shared<FgImgRgbaUb>(texture);
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss)
                 mesh.surfaces[ss].material.albedoMap = map;
         }

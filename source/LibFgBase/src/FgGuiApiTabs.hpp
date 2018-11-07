@@ -22,21 +22,20 @@ struct  FgGuiTab
     uint            padRight;
     uint            padTop;
     uint            padBottom;
-    boost::function<void()>     onSelect;   // If non-null, called when this tab is selected
+    std::function<void()>     onSelect;   // If non-null, called when this tab is selected
 
     FgGuiTab()
-        : padLeft(1), padRight(1), padTop(1), padBottom(1), onSelect(NULL)
+    : padLeft(1), padRight(1), padTop(1), padBottom(1)
     {}
 
     FgGuiTab(const FgString & l,FgGuiPtr w)
-    : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1), onSelect(NULL)
+    : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1)
     {}
 
     FgGuiTab(const FgString & l,bool spacer,FgGuiPtr w)
     :   label(l), win(w),
         padLeft(spacer ? 5 : 1), padRight(spacer ? 5 : 1),
-        padTop(spacer ? 10 : 1), padBottom(1),
-        onSelect(NULL)
+        padTop(spacer ? 10 : 1), padBottom(1)
     {}
 };
 typedef std::vector<FgGuiTab>   FgGuiTabs;

@@ -18,6 +18,8 @@
 #include "FgNc.hpp"
 #include "FgParse.hpp"
 
+using namespace std::placeholders;
+
 #if defined(_MSC_VER) && defined(_DEBUG)
 
 #include <crtdbg.h>
@@ -75,7 +77,7 @@ fgRegressFile(const FgString & baselineRelPath,const FgString & queryPath,const 
 {
     if (!fgExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
-    bool                    regressOverwrite = fgExists(fgDataDir()+"overwrite_baselines.flag");
+    bool                    regressOverwrite = fgOverwriteBaselines();
     FgString                baselinePath = fgDataDir() + baselineRelPath;
     if (!fgExists(baselinePath)) {
         if (regressOverwrite) {
@@ -116,7 +118,7 @@ fgRegressImage(
     const string &      refPath,
     uint                maxDelta)
 {
-    FgFnRegressFiles       rt = boost::bind(compareImages,_1,_2,maxDelta);
+    FgFnRegressFiles       rt = std::bind(compareImages,_1,_2,maxDelta);
     fgRegressFileRel(testFile,refPath,rt);
 }
 
@@ -129,3 +131,13 @@ template<>
 void
 fgRegressSave(const FgString & path,const FgImgRgbaUb & img)
 {fgSaveImgAnyFormat(path,img); }
+
+void
+fgRegressString(const string & data,const FgString & relPath)
+{
+    FgString        dd = fgDataDir();
+    if (data == fgSlurp(dd+relPath))
+        return;
+    if (fgExists(dd+"_overwrite_baselines.flag"))
+        fgDump(data,dd+relPath);
+}

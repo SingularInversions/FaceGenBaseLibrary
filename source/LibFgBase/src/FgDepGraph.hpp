@@ -36,9 +36,8 @@
 #include "FgLinkGraph.hpp"
 #include "FgVariant.hpp"
 #include "FgOpt.hpp"
-#include "FgSmartPtr.hpp"
 
-typedef boost::function<void(const vector<const FgVariant *> &,const vector<FgVariant*> &)> FgLink;
+typedef std::function<void(const vector<const FgVariant *> &,const vector<FgVariant*> &)> FgLink;
 
 template<class T>
 struct  FgDgn
@@ -74,7 +73,7 @@ struct  FgDgn
 
 template<class In,class Out>
 void fgLink11(
-    boost::function<void(const In &,Out &)> func,
+    std::function<void(const In &,Out &)> func,
     const vector<const FgVariant*> &    inputs,
     const vector<FgVariant*> &          outputs)
 {
@@ -86,7 +85,7 @@ void fgLink11(
 
 template<class In0,class In1,class Out>
 void fgLink21(
-    boost::function<void(const In0 &,const In1 &,Out &)> func,
+    std::function<void(const In0 &,const In1 &,Out &)> func,
     const vector<const FgVariant*> &    inputs,
     const vector<FgVariant*> &          outputs)
 {
@@ -117,16 +116,16 @@ struct  FgDepNode
     name(uint idx) const
     {
         if (label.empty())
-            return fgToString(idx);
+            return fgToStr(idx);
         else
-            return fgToString(idx)+": "+label;
+            return fgToStr(idx)+": "+label;
     }
 };
 
 class   FgDepGraph
 {
     FgLinkGraph<FgDepNode,FgLink>   m_linkGraph;
-    boost::function<int()>          m_cancelCheck;  // If valid and returns non-zero, cancel calculations
+    std::function<int()>          m_cancelCheck;  // If valid and returns non-zero, cancel calculations
     uint                            m_numThreads;   // Defaults to number of hardware supported threads
 
 public:
@@ -164,7 +163,7 @@ public:
 
     // Set to null function to disable:
     void
-    setUserCancelCallback(const boost::function<int()> & cancelCheck)
+    setUserCancelCallback(const std::function<int()> & cancelCheck)
     {m_cancelCheck = cancelCheck; }
 
     uint
@@ -300,24 +299,24 @@ private:
     {
         Sync() : traversed(false) {}
         bool        traversed;              // Initial scheduling traverse flag
-        FgSinglePtr<boost::mutex> mtxPtr;   // Guard following member:
+        std::unique_ptr<std::mutex> mtxPtr; // Guard following member:
         int         incomingRemaining;      // How many input nodes need to be updated before this link runs ?
     };
     struct  Update
     {
         Update() :
-            guardException(new boost::mutex),
+            guardException(new std::mutex),
             flag(false),
             exception(""),
-            guardQueue(new boost::mutex),
+            guardQueue(new std::mutex),
             done(false),
             userCancelled(false)
             {}
-        std::unique_ptr<boost::mutex> guardException; // Guard 2 members below:
+        std::unique_ptr<std::mutex> guardException; // Guard 2 members below:
         bool                        flag;           // Error or cancellation exception has occurred
         FgException                 exception;
-        std::unique_ptr<boost::mutex> guardQueue;
-        char                        cachePad0[64-sizeof(std::unique_ptr<boost::mutex>)];
+        std::unique_ptr<std::mutex> guardQueue;
+        char                        cachePad0[64-sizeof(std::unique_ptr<std::mutex>)];
         vector<uint>                queue;
         char                        cachePad1[64-sizeof(size_t)];
         uint                        lastLink;

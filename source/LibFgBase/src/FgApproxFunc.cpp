@@ -15,7 +15,6 @@
 #include "FgMain.hpp"
 
 using namespace std;
-using namespace fgMath;
 
 struct  Sine
 {

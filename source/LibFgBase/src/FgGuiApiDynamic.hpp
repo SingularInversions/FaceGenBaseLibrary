@@ -19,7 +19,7 @@
 // Shim to use a dynmically updated window instead of a static one:
 struct  FgGuiApiDynamic : FgGuiApi<FgGuiApiDynamic>
 {
-    boost::function<FgGuiPtr(void)> getWin;
+    std::function<FgGuiPtr(void)> getWin;
     // Dynamic windows must have static size/stretch values since:
     // 1. The parent of a dynamic shim doesn't know to resize.
     // 2. Resizing dynamically can propogate arbitrarily up.
@@ -30,7 +30,7 @@ struct  FgGuiApiDynamic : FgGuiApi<FgGuiApiDynamic>
 
 inline
 FgGuiPtr
-fgGuiDynamic(boost::function<FgGuiPtr(void)> getWin,FgVect2UI minSize,FgVect2B wantStretch,uint updateIdx)
+fgGuiDynamic(std::function<FgGuiPtr(void)> getWin,FgVect2UI minSize,FgVect2B wantStretch,uint updateIdx)
 {
     FgGuiApiDynamic     d;
     d.getWin = getWin;

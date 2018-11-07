@@ -199,7 +199,7 @@ fgGuiImage(FgDgn<FgImgRgbaUb> imgN)
 }
 
 FgGuiPtr
-fgGuiImage(FgDgn<FgImgRgbaUb> imgN,FgDgn<vector<FgVect2F> > ptsIucsN,boost::function<void()> onClick)
+fgGuiImage(FgDgn<FgImgRgbaUb> imgN,FgDgn<vector<FgVect2F> > ptsIucsN,std::function<void()> onClick)
 {
     FgGuiApiImage       gai;
     gai.imgN = imgN;

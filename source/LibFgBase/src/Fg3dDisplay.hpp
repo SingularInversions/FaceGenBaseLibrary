@@ -79,7 +79,7 @@ fgGui3dCtls(
     FgDgn<FgMat32D>             viewBoundsN,        // Input
     FgRenderCtrls               renderCtrls,        // Inputs
     FgDgn<FgLighting>           lightingN,          // Input
-    boost::function<void(bool,FgVect2I)>    bothButtonsDrag,
+    std::function<void(bool,FgVect2I)>    bothButtonsDrag,
     // 0 - all render ctls, default marked points viewable, default unconstrained rotation
     // 1 - only color/shiny/flat/wireframe,
     // 2 - only color/shiny, and limit pan/tilt,

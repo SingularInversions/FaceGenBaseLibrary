@@ -37,7 +37,7 @@ fgSystemInfo()
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     GetVersionEx(LPOSVERSIONINFOW(&osvi));
     FgString            verStr,
-                        unknown = fgToString(osvi.dwMajorVersion) + "." + fgToString(osvi.dwMinorVersion);
+                        unknown = fgToStr(osvi.dwMajorVersion) + "." + fgToStr(osvi.dwMinorVersion);
     if (osvi.wProductType != VER_NT_WORKSTATION)
         unknown += " (server)";
     if (osvi.dwMajorVersion == 6) {

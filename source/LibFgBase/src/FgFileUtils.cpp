@@ -17,7 +17,7 @@ bool
 fgUpdateFiles(uint num,const FgStrings & ins,const FgStrings & outs,FgUpdateFilesFunc func)
 {
     if (fgNewer(ins,outs)) {
-        fgout.logFile(fgToString(num)+"_log.txt",false,false);
+        fgout.logFile(fgToStr(num)+"_log.txt",false,false);
         fgout << fgnl << "(" << fgCat(ins,",") << ") -> (" << fgCat(outs,",") << ")" << fgpush;
         FgTimer     time;
         func(ins,outs);

@@ -191,12 +191,12 @@ struct  FgGuiWinMain
         // R. Chen: WM_WINDOWPOSCHANGED catches all possible size/move changes (added later).
         // Sent for each move and also for maximize/minimize/restore:
         //else if (msg == WM_MOVE)
-        //    fgout << "WM_MOVE" << endl;
+        //    fgout << "WM_MOVE";
         // Only sent after initial showwindow call:
         //else if (msg == WM_SHOWWINDOW)
-        //    fgout << "WM_SHOWWINDOW" << endl;
+        //    fgout << "WM_SHOWWINDOW";
         //else if (msg == WM_QUERYOPEN)     // Queries window state before restore
-        //    fgout << "WM_QUERYOPEN" << endl;
+        //    fgout << "WM_QUERYOPEN";
         else if (msg == WM_CHAR) {
             wchar_t     wkey = wchar_t(wParam);
             for (size_t ii=0; ii<keyHandlers.size(); ++ii) {
@@ -300,7 +300,7 @@ fgNcSize(HWND hwnd)
 }
 
 LRESULT
-fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className)
+fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
 {
     FgString    msg;
     try

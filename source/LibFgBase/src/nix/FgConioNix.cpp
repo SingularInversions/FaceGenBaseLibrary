@@ -13,6 +13,9 @@
 #include "FgConio.hpp"
 #include "FgDiagnostics.hpp"
 
+#include <sys/ioctl.h>
+#include <unistd.h>
+
 bool
 fgKbhit()
 {
@@ -23,4 +26,15 @@ char
 fgGetch()
 {
     return 0;
+}
+
+unsigned int
+fgConsoleWidth()
+{
+    struct winsize      w;
+    int                 rc = ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    if (rc == 0)
+        return static_cast<unsigned int>(w.ws_col);
+    else
+        return 80U;
 }

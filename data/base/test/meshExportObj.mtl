@@ -1,0 +1,17 @@
+newmtl Texture0
+    illum 0
+    Kd 0.7 0.7 0.7
+    Ks 0 0 0
+    Ka 0 0 0
+newmtl Texture1
+    illum 0
+    Kd 0.7 0.7 0.7
+    Ks 0 0 0
+    Ka 0 0 0
+    map_Kd meshExportObj1.png
+newmtl Texture2
+    illum 0
+    Kd 0.7 0.7 0.7
+    Ks 0 0 0
+    Ka 0 0 0
+    map_Kd meshExportObj2.png

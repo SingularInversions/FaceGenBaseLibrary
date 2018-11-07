@@ -14,6 +14,7 @@
 #include "FgGuiApiText.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 FgGuiApiTickLabels
 fgGuiApiTickLabels(
@@ -27,7 +28,7 @@ fgGuiApiTickLabels(
     do {
         FgGuiApiTickLabel   t;
         t.pos = pos;
-        t.label = fgToString(pos);
+        t.label = fgToStr(pos);
         ret.push_back(t);
         pos += spacing;
     }
@@ -58,8 +59,8 @@ fgGuiSlider(
 {
     FgGuiApiSlider sldr;
     sldr.updateFlagIdx = g_gg.addUpdateFlag(valN);
-    sldr.getInput = boost::bind(getInput,valN);
-    sldr.setOutput = boost::bind(setOutput,valN,_1);
+    sldr.getInput = std::bind(getInput,valN);
+    sldr.setOutput = std::bind(setOutput,valN,_1);
     sldr.label = label;
     sldr.range = range;
     sldr.tickSpacing = tickSpacing;

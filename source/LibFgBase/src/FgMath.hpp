@@ -58,11 +58,7 @@ inline T
 fgCube(T a)
 {return (a*a*a); }
 
-template <typename T>
-inline T
-fgCbrt(T a)
-{return T(std::pow(double(a),1.0/3.0)); }    // TODO: faster version if required (eg. C++11 cbrt)
-
+// Safe version of 'exp' that throws when values fall outside type bounds:
 template<typename T>
 T
 fgExp(T val,bool clamp=false)
@@ -78,7 +74,7 @@ fgExp(T val,bool clamp=false)
 
 // Fast exp with no check for NaNs, overflow or underflow.
 // This was necessary as GNU's libm 'exp' (used by gcc and clang) is very slow.
-// (Microsoft's is actually a bit faster than this one).
+// (Microsoft's is actually a bit faster than this one):
 double fgExpFast(double x);
 
 template<typename T>
@@ -104,81 +100,6 @@ inline double   fgRadToDeg(double radians) {return radians * 180.0 / fgPi(); }
 inline double   fgDegToRad(double degrees) {return degrees * fgPi() / 180.0; }
 inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; }
 inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
-
-namespace fgMath
-{
-
-// Functions:
-
-std::vector<double>
-solveCubicReal(double c0,double c1,double c2);
-
-// Distributions:
-
-double
-normal(double val,double mean,double stdev);
-
-double
-lnNormal(double val,double mean,double stdev);
-
-double
-lnNormalIid(
-    double  dimension,      // Usually an integer corresponding to number of IID measures
-    double  ssd,            // Sum of square differences between measures and means
-    double  stdev);         // IID standard deviation
-
-double
-lnNormalIidIgMapConstDim(   // Use ignorance MAP value for variance and ignore dimension-const terms
-    double  dimension,      // Number of IID measures
-    double  ssd);           // Sum of square differences between measures and means
-
-template<uint dim>
-double
-normalCholesky(
-    const FgMatrixC<double,dim,1> &     pos,
-    const FgMatrixC<double,dim,1> &     mean,
-    const FgMatrixC<double,dim,dim> &   chol)   // Right-hand cholesky term of concentration
-{
-    double  det = 1.0;
-    for (uint ii=0; ii<dim; ii++)
-        det *= chol.rc(ii,ii);                // Cholesky is upper or lower triangular.
-    FgMatrixC<double,dim,1> mhlbs = chol * (pos-mean);
-    return (
-        std::pow(2.0 * fgPi(),double(dim) * -0.5) *
-        std::sqrt(det) *
-        fgExp(-0.5 * mhlbs.mag()));
-}
-
-template<uint dim>
-double
-lnNormalCholesky(
-    const FgMatrixC<double,dim,1> &     pos,
-    const FgMatrixC<double,dim,1> &     mean,
-    const FgMatrixC<double,dim,dim> &   chol)
-{
-    double  det = 1.0;
-    for (uint ii=0; ii<dim; ii++)
-        det *= chol.rc(dim,dim);
-    FgMatrixC<double,dim,1> mhlbs = chol * (pos-mean);
-    return (0.5 * std::log(det) -               // Cholesky has all diagonals > 0
-            0.5 * double(dim) * fgLn_2pi() -
-            0.5 * mhlbs.mag());
-}
-
-template<typename T,uint dim>
-T
-lnNormalIsotropic(
-    FgMatrixC<T,dim,1>  val,
-    FgMatrixC<T,dim,1>  mean,
-    T                   stdev)
-{
-    FGASSERT_FAST(stdev > T(0));
-    return (-0.5 * fgLn_2pi() * dim
-            - std::log(stdev) * dim
-            - 0.5 * (val-mean).mag() / fgSqr(stdev));
-}
-
-}   // namespace
 
 struct   FgModulo
 {
@@ -232,5 +153,8 @@ fgSubsets(const vector<T> & v,size_t min,size_t max)
     }
     return ret;
 }
+
+std::vector<double>
+fgSolveCubicReal(double c0,double c1,double c2);
 
 #endif

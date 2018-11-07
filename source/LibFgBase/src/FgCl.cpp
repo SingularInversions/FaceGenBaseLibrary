@@ -24,7 +24,7 @@ bool preview = false;
 bool
 run(const string & cmd,bool throwIfError,int rvalMask)
 {
-    fgout << fgnl << cmd << endl;   // DOS output lines will always start in zero'th column anyway
+    fgout << fgnl << cmd << "\n";   // DOS output lines will always start in zero'th column anyway
     int     retval = 0;
     if (!preview)
         retval = system(cmd.c_str());
@@ -32,7 +32,7 @@ run(const string & cmd,bool throwIfError,int rvalMask)
     if ((retval & rvalMask) != 0)
     {
         if (throwIfError)
-            fgThrow("Error exit code from command",fgToString(retval));
+            fgThrow("Error exit code from command",fgToStr(retval));
         else
             fgout << fgnl << "Error exit code from command: " << retval;
         return false;

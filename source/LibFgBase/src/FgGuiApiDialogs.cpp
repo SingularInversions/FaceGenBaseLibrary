@@ -32,7 +32,7 @@ fgGuiFileLoadButton(
 {
     FgGuiApiButton          ret;
     ret.label = buttonText;
-    ret.action = boost::bind(fileLoad,fileTypesDescription,extensions,storeID,output);
+    ret.action = std::bind(fileLoad,fileTypesDescription,extensions,storeID,output);
     return fgsp(ret);
 }
 

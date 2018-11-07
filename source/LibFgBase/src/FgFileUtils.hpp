@@ -14,7 +14,7 @@
 #include "FgTime.hpp"
 
 // First argument is a list of input files, second argument is a list of output files:
-typedef boost::function<void(const FgStrings &,const FgStrings &)>  FgUpdateFilesFunc;
+typedef std::function<void(const FgStrings &,const FgStrings &)>  FgUpdateFilesFunc;
 
 // Handle workflow dependencies between files:
 // Avoid double-typing inline values of 'ins' and 'outs'.

@@ -36,28 +36,28 @@ fgSavePly(
     size_t      imgCnt = 0;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         if (mesh.surfaces[ii].material.albedoMap) {
-            FgString    texFile = path.base + fgToString(ii) + "." + imgFormat;
+            FgString    texFile = path.base + fgToStr(ii) + "." + imgFormat;
             fgSaveImgAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
-            ofs << "comment TextureFile " << texFile << endl;
+            ofs << "comment TextureFile " << texFile << "\n";
         }
     }
-    ofs << "element vertex " << mesh.verts.size() << endl
-        << "property float x" << endl
-        << "property float y" << endl
-        << "property float z" << endl
-        << "property float nx" << endl
-        << "property float ny" << endl
-        << "property float nz" << endl
-        << "element face " << mesh.numTriEquivs() << endl
-        << "property list uchar int vertex_indices" << endl
-        << "property list uchar float texcoord" << endl
-        << "property int texnumber" << endl
-        << "end_header" << endl;
+    ofs << "element vertex " << mesh.verts.size() << "\n"
+        "property float x\n"
+        "property float y\n"
+        "property float z\n"
+        "property float nx\n"
+        "property float ny\n"
+        "property float nz\n"
+        "element face " << mesh.numTriEquivs() << "\n"
+        "property list uchar int vertex_indices\n"
+        "property list uchar float texcoord\n"
+        "property int texnumber\n"
+        "end_header\n";
     Fg3dNormals         norms = fgNormals(mesh);
     for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
         FgVect3F    pos = mesh.verts[vv],
                     nrm = norms.vert[vv];
-        ofs << pos[0] << " " << pos[1] << " " << pos[2] << " " << nrm[0] << " " << nrm[1] << " " << nrm[2] << endl;
+        ofs << pos[0] << " " << pos[1] << " " << pos[2] << " " << nrm[0] << " " << nrm[1] << " " << nrm[2] << "\n";
     }
     imgCnt = 0;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
@@ -75,7 +75,7 @@ fgSavePly(
                     ofs << uv[0] << " " << uv[1] << " ";
                 }
             }
-            ofs << imgCnt << endl;
+            ofs << imgCnt << "\n";
         }
         if (mesh.surfaces[ss].material.albedoMap)
             ++imgCnt;
@@ -88,12 +88,11 @@ fgSavePlyTest(const FgArgs & args)
     FGTESTDIR
     FgString            dd = fgDataDir();
     string              rd = "base/";
-    vector<Fg3dMesh>    meshes;
-    meshes.push_back(fgLoadTri(dd+rd+"Mouth.tri"));
-    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    meshes.push_back(fgLoadTri(dd+rd+"Glasses.tri"));
-    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    fgSavePly("meshExportPly",meshes);
+    Fg3dMesh            mouth = fgLoadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh            glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSavePly("meshExportPly",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportPly.ply","base/test/");
     fgRegressFileRel("meshExportPly0.png","base/test/");
     fgRegressFileRel("meshExportPly1.png","base/test/");

@@ -22,7 +22,7 @@ fgVertsRandNormal(size_t num,float scale)
     FgVerts         ret;
     ret.reserve(num);
     for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(FgVect3F(fgMatRandNormal<3,1>()*scale));
+        ret.push_back(fgMatRandNrm<float,3,1>()*scale);
     return ret;
 }
 
@@ -94,7 +94,7 @@ testInverse()
 {
     FgMatrixC<double,size,size> a,b;
     do
-        a = fgMatRandNormal<size,size>();
+        a = fgMatRandNrm<double,size,size>();
     while
         (fgDeterminant(a) < 0.01);
     b = fgMatInverse(a);
@@ -110,7 +110,7 @@ static void     testFgMatRotateAxis()
     for (uint ii=0; ii<100; ii++)
     {
         double          angle = fgRandUniform(-fgPi(),fgPi());
-        FgVect3D        axis = fgMatRandNormal<3,1>();
+        FgVect3D        axis = fgVecRandNrm<3>();
         axis /= axis.length();
         FgMat33D     mat = fgMatRotateAxis(angle,axis);
         double          err = (mat * mat.transpose() - FgMat33D::identity()).length(),

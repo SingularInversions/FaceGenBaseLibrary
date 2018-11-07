@@ -103,7 +103,7 @@ struct  FgGuiWinStatics
 extern FgGuiWinStatics s_fgGuiWin;
 
 LRESULT
-fgWinCallCatch(boost::function<LRESULT(void)> func,const string & className);
+fgWinCallCatch(std::function<LRESULT(void)> func,const string & className);
 
 template<class WinImpl>
 LRESULT CALLBACK
@@ -120,7 +120,7 @@ fgStatWndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
     if (wnd == 0)   // For before WM_NCCREATE
         return DefWindowProc(hwnd,message,wParam,lParam);
     else
-        return fgWinCallCatch(boost::bind(&WinImpl::wndProc,wnd,hwnd,message,wParam,lParam),className);
+        return fgWinCallCatch(std::bind(&WinImpl::wndProc,wnd,hwnd,message,wParam,lParam),className);
 }
 
 struct  FgCreateChild
@@ -155,8 +155,8 @@ fgCreateChild(
 {
     std::string     classNameA = typeid(ChildImpl).name();
     // Different class options mean different classes:
-    classNameA +=   fgToString(size_t(opt.cursor)) + "_" +
-                    fgToString(size_t(opt.useFillBrush));
+    classNameA +=   fgToStr(size_t(opt.cursor)) + "_" +
+                    fgToStr(size_t(opt.useFillBrush));
     std::wstring    className = FgString(classNameA).as_wstring();
     FGASSERT(className.length() < 256);     // Windows limit
     WNDCLASSEX  wcl;

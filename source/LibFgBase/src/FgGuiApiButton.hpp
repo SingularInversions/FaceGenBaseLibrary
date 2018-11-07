@@ -13,7 +13,7 @@
 #include "FgGuiApiBase.hpp"
 #include "FgDepGraph.hpp"
 
-typedef boost::function<void(void)>     FgFnVoid2Void;
+typedef std::function<void(void)>     FgFnVoid2Void;
 
 struct FgGuiApiButton : FgGuiApi<FgGuiApiButton>
 {

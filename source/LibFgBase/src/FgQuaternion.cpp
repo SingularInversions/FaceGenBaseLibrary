@@ -34,7 +34,7 @@ fgQuaternionTest(const FgArgs &)
     FGASSERT((m4-m1).length() < 0.0001);
 
     // test inverse
-    FgQuaternionD   inv1(fgMatRandNormal<4,1>()),
+    FgQuaternionD   inv1(fgVecRandNrm<4>()),
                     inv2 = inv1.inverse(),
                     inv3 = inv1 * inv2;
     FGASSERT(fgApproxEqual(inv3.m_real,1.0,10));

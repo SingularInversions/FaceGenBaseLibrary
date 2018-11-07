@@ -18,6 +18,7 @@
 #include "FgCommand.hpp"
 #include "Fg3dTopology.hpp"
 #include "FgAffine1.hpp"
+#include "FgBuild.hpp"
 
 using namespace std;
 
@@ -110,8 +111,8 @@ fgSubdivisionTest(const FgArgs &)
     addSubdivisions(meshes,fgTetrahedron(true));
     addSubdivisions(meshes,fgPyramid());
     addSubdivisions(meshes,fgPyramid(true));
-    addSubdivisions(meshes,fgCube());
-    addSubdivisions(meshes,fgCube(true));
+    addSubdivisions(meshes,fg3dCube());
+    addSubdivisions(meshes,fg3dCube(true));
     addSubdivisions(meshes,fgOctahedron());
     addSubdivisions(meshes,fgNTent(5));
     addSubdivisions(meshes,fgNTent(6));
@@ -160,6 +161,14 @@ fg3dTest(const FgArgs & args)
     FGADDCMD(fgSave3dsTest,"3ds",".3DS file format export");
     FGADDCMD(fgSaveLwoTest,"lwo","Lightwve object file format export");
     FGADDCMD(fgSaveMaTest,"ma","Maya ASCII file format export");
+#if (_MSC_VER >= 1900)      // Precision differences with nix & vs2013
+    FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
+#endif
+#if defined _WIN32          // Precision differences with gcc & clang
+    FGADDCMD(fgSaveObjTest,"obj","Wavefront OBJ ASCII file format export");
+    FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");
+    FGADDCMD(fgSaveXsiTest,"xsi",".XSI file format export");
+#endif
     fgMenu(args,cmds,true,false,true);
 }
 
@@ -168,11 +177,8 @@ fg3dTestMan(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(edgeDist,"edgeDist"));
+    FGADDCMD(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export");  // Uses GUI
     cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
-    FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
-    FGADDCMD(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export");
-    FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");    // Precision differences with gcc & clang
-    FGADDCMD(fgSaveXsiTest,"xsi",".XSI file format export");
     fgMenu(args,cmds,true,false,true);
 }
 

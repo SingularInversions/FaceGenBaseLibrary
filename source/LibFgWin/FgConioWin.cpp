@@ -23,3 +23,14 @@ fgGetch()
 {
     return char(_getch());
 }
+
+unsigned int
+fgConsoleWidth()
+{
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    BOOL        rc = GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    if (rc)
+        return static_cast<unsigned int>(1 + csbi.srWindow.Right - csbi.srWindow.Left);
+    else
+        return 80U;
+}

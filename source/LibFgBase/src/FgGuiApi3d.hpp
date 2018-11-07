@@ -70,17 +70,17 @@ struct  FgGuiApi3d : public FgGuiApi<FgGuiApi3d>
     // WARNING: drag actions are subject to click actions before the drag since click actions
     // currently take effect on button down, not up:
     // bool: is shift key down as well ?
-    boost::function<void(bool,VertIdx,FgVect3F)>    ctlDragAction;          // Can be empty
+    std::function<void(bool,VertIdx,FgVect3F)>    ctlDragAction;          // Can be empty
     // bool: is shift key down as well ? FgVect2I: drag delta in pixels
-    boost::function<void(bool,FgVect2I)>            bothButtonsDragAction;  // "
+    std::function<void(bool,FgVect2I)>            bothButtonsDragAction;  // "
     // FgVect2UI: viewport size
     // FgVect2I: final position
     // FgMat44F: transform verts to OICS
-    boost::function<void(FgVect2UI,FgVect2I,FgMat44F)>  shiftRightDragAction;
+    std::function<void(FgVect2UI,FgVect2I,FgMat44F)>  shiftRightDragAction;
     // FgVect2UI: viewport size
     // FgVect2I: click position
     // FgMat44F: transform verts to OICS
-    boost::function<void(FgVect2UI,FgVect2I,FgMat44F)>  ctrlShiftMiddleClickAction;
+    std::function<void(FgVect2UI,FgVect2I,FgMat44F)>  ctrlShiftMiddleClickAction;
 
     FgGuiApi3d() : panTiltLimits(false) {}
 

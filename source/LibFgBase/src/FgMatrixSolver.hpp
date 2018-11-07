@@ -20,7 +20,7 @@
 // but yields larger residual errors (10 x dim^2 x epsilon() for 1000x1000 versus 5x for NRC).
 void
 fgSymmEigs_(
-    const FgMatrixD &   rsm,
+    const FgMatrixD &   rsm,    // Symmetric matrix
     FgDbls &            vals,   // RETURNED: Eigenvalues, smallest to largest
     FgMatrixD &         vecs);  // RETURNED: Col vectors are respective eigenvectors
 

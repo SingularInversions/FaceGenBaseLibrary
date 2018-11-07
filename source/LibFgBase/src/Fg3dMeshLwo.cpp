@@ -2282,71 +2282,71 @@ static bool writeLwsFile(
     }
 
     // Start the file write
-    file << "LWSC\n";
-    file << "3\n";
-    file << "\n";
-    file << "FirstFrame 1\n";
-    file << "LastFrame 60\n";
-    file << "FrameStep 1\n";
-    file << "PreviewFirstFrame 0\n";
-    file << "PreviewLastFrame 60\n";
-    file << "PreviewFrameStep 1\n";
-    file << "CurrentFrame 0\n";
-    file << "FramesPerSecond 30\n";
-    file << "\n";
+    file << "LWSC\n"
+        "3\n"
+        "\n"
+        "FirstFrame 1\n"
+        "LastFrame 60\n"
+        "FrameStep 1\n"
+        "PreviewFirstFrame 0\n"
+        "PreviewLastFrame 60\n"
+        "PreviewFrameStep 1\n"
+        "CurrentFrame 0\n"
+        "FramesPerSecond 30\n"
+        "\n";
 
     for (unsigned long layer=0; layer<numLayers; ++layer)
     {
-        file << "LoadObjectLayer " << layer+1 << " " << lwoName.as_ascii() << "\n";
-        file << "ShowObject 6 3\n";
-        file << "ObjectMotion\n";
-        file << "NumChannels 9\n";
+        file << "LoadObjectLayer " << layer+1 << " " << lwoName.as_ascii() << "\n"
+            "ShowObject 6 3\n"
+            "ObjectMotion\n"
+            "NumChannels 9\n";
         unsigned long ii;
         for (ii=0; ii<=5; ++ii)
         {
-            file << "Channel " << ii << "\n";
-            file << "{ Envelope\n";
-            file << "  1\n";
-            file << "  Key 0 0 0 0 0 0 0 0 0\n";
-            file << "  Behaviors 1 1\n";
-            file << "}\n";
+            file << "Channel " << ii << "\n"
+                "{ Envelope\n"
+                "  1\n"
+                "  Key 0 0 0 0 0 0 0 0 0\n"
+                "  Behaviors 1 1\n"
+                "}\n";
         }
         for (ii=6; ii<=8; ++ii)
         {
-            file << "Channel " << ii << "\n";
-            file << "{ Envelope\n";
-            file << "  1\n";
-            file << "  Key 1 0 0 0 0 0 0 0 0\n";
-            file << "  Behaviors 1 1\n";
-            file << "}\n";
+            file << "Channel " << ii << "\n"
+                "{ Envelope\n"
+                "  1\n"
+                "  Key 1 0 0 0 0 0 0 0 0\n"
+                "  Behaviors 1 1\n"
+                "}\n";
         }
         file << "\n";
 
         if (numMorphs && morphNames)
         {
-            file << "Plugin DisplacementHandler 1 LW_MorphMixer\n";
-            file << numMorphs << "\n";
-            file << "1\n";
-            file << "{ Group\n";
-            file << "  " << numMorphs << "\n";
-            file << "  \"Miscellaneous\"\n";
-            file << "}\n";
+            file << "Plugin DisplacementHandler 1 LW_MorphMixer\n"
+                << numMorphs << "\n"
+                "1\n"
+                "{ Group\n"
+                "  " << numMorphs << "\n"
+                "  \"Miscellaneous\"\n"
+                "}\n";
             for (unsigned long mm=0; mm<numMorphs; ++mm)
             {
-                file << "{ MorfForm\n";
-                file << "  \"" << (*morphNames)[mm] << "\"\n";
-                file << "  0\n";
-                file << "  { Envelope\n";
-                file << "    1\n";
-                file << "    Key 0 0 0 0 0 0 0 0 0\n";
-                file << "    Behaviors 1 1\n";
-                file << "  }\n";
-                file << "}\n";
+                file << "{ MorfForm\n"
+                    "  \"" << (*morphNames)[mm] << "\"\n"
+                    "  0\n"
+                    "  { Envelope\n"
+                    "    1\n"
+                    "    Key 0 0 0 0 0 0 0 0 0\n"
+                    "    Behaviors 1 1\n"
+                    "  }\n"
+                    "}\n";
             }
             file << "EndPlugin\n";
         }
-        file << "ShadowOptions 7\n";
-        file << "\n" << flush;
+        file << "ShadowOptions 7\n"
+            "\n";
     }
 
     // Estimate a proper grid size
@@ -2364,7 +2364,7 @@ static bool writeLwsFile(
     else if (gridSize >= 2) gridSize = 2 * power10;
     else                    gridSize = power10;
 
-    file << "GridSize " << gridSize << endl << flush;
+    file << "GridSize " << gridSize << "\n";
 
     return (!file.fail());
 }
@@ -2389,12 +2389,15 @@ fgSaveLwoTest(const FgArgs & args)
     FGTESTDIR
     FgString    dd = fgDataDir();
     string      rd = "base/";
-    Fg3dMesh    mesh = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mesh.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    fgSaveLwo("meshExportLwo",fgSvec(mesh));
+    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth"+".tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSaveLwo("meshExportLwo",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportLwo.lwo","base/test/");
     fgRegressFileRel("meshExportLwo.lws","base/test/");
     fgRegressFileRel("meshExportLwo0.png","base/test/");
+    fgRegressFileRel("meshExportLwo1.png","base/test/");
 }
 
 // */

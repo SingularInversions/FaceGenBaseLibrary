@@ -124,47 +124,22 @@ struct FgExceptionNotImplemented : public FgException
         FgException("Functionality not implemented on this platform") {}
 };
 
-inline 
-void 
-fgThrow(const std::string & msg)
+inline void fgThrowNotImplemented()
+{throw FgExceptionNotImplemented(); }
+
+inline void fgThrow(const std::string & msg)
 { 
     throw FgException(msg);
 }
 
-inline
-void
-fgThrow(FgException const & e)
-{
-    throw e;
-}
+// DO NOT use templated types for the data args below since clang requires they be resolved
+// in PRIOR declarations which is not possible since this must be one of the first include
+// files:
 
-template<typename FgExType>
-inline void fgThrow(const std::string & msg)
-{
-    throw FgExType(msg);
-}
+inline void fgThrow(const std::string & msg,const FgString & data) 
+{throw FgException(msg,data);  }
 
-inline void fgThrow(const std::string & msg,const FgString & str) 
-{
-    throw FgException(msg,str); 
-}
-
-inline void fgThrow(const std::string & msg,const FgString & str0,const FgString & str1) 
-{
-    throw FgException(msg,str0+","+str1); 
-}
-
-template<typename FgExType>
-inline void fgThrow(const std::string & msg,const FgString & str)
-{
-    throw FgExType(msg,str);
-}
-
-inline
-void
-fgThrowNotImplemented()
-{
-    throw FgExceptionNotImplemented();
-}
+inline void fgThrow(const std::string & msg,const FgString  data0,const FgString & data1) 
+{throw FgException(msg,data0+","+data1); }
 
 #endif      // #ifndef FGEXCEPTION_HPP

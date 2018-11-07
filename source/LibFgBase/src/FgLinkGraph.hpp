@@ -138,7 +138,7 @@ FgLinkGraph<NodeData,LinkData>::addLink(
         FGASSERT(!fgContains(sources,sinks[ii]));       // Causes nasty bugs later
         Node &  node = m_nodes[sinks[ii]];
         if (node.incomingLink.valid())
-            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",fgToString(ii));
+            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",fgToStr(ii));
         node.incomingLink = linkIdx;
     }
     for (size_t ii=0; ii<sources.size(); ii++) {

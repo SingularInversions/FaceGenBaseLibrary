@@ -105,7 +105,7 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToStr(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
             resize();   // New windows must be sent a size
@@ -151,7 +151,7 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToString(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToStr(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
             g_gg.dg.update(m_api.updateFlagIdx);

@@ -10,7 +10,6 @@
 #include "stdafx.h"
 
 #include "Fg3dSurface.hpp"
-#include "Fg3dTopology.hpp"
 #include "FgBounds.hpp"
 #include "FgOpt.hpp"
 #include "FgStdString.hpp"
@@ -464,7 +463,7 @@ fgEnsureNamed(const vector<Fg3dSurface> & surfs,const FgString & baseName)
         size_t                  cnt = 0;
         for (size_t ss=0; ss<ret.size(); ++ss)
             if (ret[ss].name.empty())
-                ret[ss].name = baseName + fgToString(cnt++);
+                ret[ss].name = baseName + fgToStr(cnt++);
     }
     return ret;
 }

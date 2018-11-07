@@ -41,7 +41,7 @@ struct  FgGuiWinSelect : public FgGuiOsBase
     {
         m_store = store;
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+fgToString(ii),extStyle,false);
+            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+fgToStr(ii),extStyle,false);
         m_currPane = g_gg.getVal(m_api.selection);
         if (visible)
             m_panes[m_currPane]->showWindow(true);

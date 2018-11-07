@@ -57,7 +57,7 @@ checkOglError(const char * fname,int line)
 {
     GLenum  err = glGetError();
     if (err != 0) {
-        FgString        msg = string(fname) + " line " + fgToString(line) + "\n" + oglErrString(err);
+        FgString        msg = string(fname) + " line " + fgToStr(line) + "\n" + oglErrString(err);
         fgThrow("OpenGL Error",msg);
     }
 }
@@ -565,7 +565,7 @@ showAxes()
     FgMat44F            xform = fgOglTransform();
     // Projection matrix has negative determinant:
     float               scale = std::abs(fgDeterminant(xform.subMatrix<3,3>(0,0)/xform.rc(3,3)));
-    scale = 0.3f / fgCbrt(scale);
+    scale = 0.3f / std::cbrt(scale);
     FgVect3F            origin(0),x(scale,0,0),y(0,scale,0),z(0,0,scale);
     glPolygonOffset(0.0,0.0);
     glDisable(GL_TEXTURE_2D);
@@ -663,7 +663,6 @@ fgOglTransform()
     glGetFloatv(GL_PROJECTION_MATRIX,&prj[0]);
     glGetFloatv(GL_MODELVIEW_MATRIX,&mvm[0]);
     return prj.transpose() * mvm.transpose();
-    CHECKOGLERROR;
 }
 
 FgImgRgbaUb

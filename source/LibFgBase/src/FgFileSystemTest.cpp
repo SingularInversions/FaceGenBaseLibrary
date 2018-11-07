@@ -72,22 +72,10 @@ testReadableFile(const FgArgs & args)
     FgTempFile tempfile("testReadableFile.txt");
     std::ofstream ofs(tempfile.filename().c_str());
     FGASSERT(ofs);
-    ofs << "Hi" << std::endl;
+    ofs << "Hi";
     ofs.close();
     FGASSERT( fgFileReadable(tempfile.filename()) );
     FGASSERT( !fgFileReadable("This file does not exist nor should it ever 1234") );    
-}
-
-static
-void
-testIsDirectory(const FgArgs & args)
-{
-    FGTESTDIR
-    FgString realdir("this_is_a_real_directory");
-    fgCreateDirectory(realdir);
-    FgScopeGuard guard(boost::bind(fgRemoveDirectory,realdir,false));
-    FGASSERT(fgIsDirectory(realdir));
-    FGASSERT(!fgIsDirectory(FgString("lalaIdontexist")));
 }
 
 static
@@ -138,7 +126,6 @@ fgFileSystemTest(const FgArgs & args)
     cmds.push_back(FgCmd(testCurrentDirectory,"curDir"));
     cmds.push_back(FgCmd(testOfstreamUnicode,"ofsUni"));
     cmds.push_back(FgCmd(testReadableFile,"readable"));
-    cmds.push_back(FgCmd(testIsDirectory,"isDir"));
     cmds.push_back(FgCmd(testDeleteDirectory,"delDir"));
     cmds.push_back(FgCmd(testRecursiveCopy,"recurseCopy"));
     cmds.push_back(FgCmd(testExists,"exists"));

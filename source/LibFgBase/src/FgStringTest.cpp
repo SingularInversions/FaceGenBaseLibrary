@@ -101,7 +101,8 @@ static void Encoding()
         FgTempFile tf("testString_utf8.txt");
         {   std::ofstream ofs(tf.filename().c_str());        
             FGASSERT(ofs);
-            ofs << source << std::endl; }
+            ofs << source << '\n';
+        }
         {   std::ifstream ifs(tf.filename().c_str());
             FGASSERT(ifs);
             FgString target;

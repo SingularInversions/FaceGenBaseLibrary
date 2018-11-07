@@ -6,9 +6,7 @@
 // Authors:     Andrew Beatty
 // Created:     July 12, 2010
 //
-// Provide platform-independent access to direct command-line keyboard input (not available through C standard).
-// Currently only defined in LibFgWin.
-//
+// Provide platform-independent access to console functionality not available through C/C++ standards.
 
 #ifndef FGCONIO_HPP
 #define FGCONIO_HPP
@@ -20,5 +18,10 @@ fgKbhit();
 // Get keystroke:
 char
 fgGetch();
+
+// Get console character visible display width (windows also has a buffer width).
+// Returns 80 if not available.
+unsigned int
+fgConsoleWidth();
 
 #endif

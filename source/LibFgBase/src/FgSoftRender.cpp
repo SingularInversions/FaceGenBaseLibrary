@@ -25,6 +25,7 @@
 #include "FgImgDisplay.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 FgImgRgbaUb
 fgRenderSoft(
@@ -38,8 +39,8 @@ fgRenderSoft(
     FgVectF2                colorBounds = fgBounds(options.backgroundColor.m_c);
     FGASSERT((colorBounds[0] >= 0.0f) && (colorBounds[1] <= 255.0f));
     FgRayCaster             rc(meshes,modelview,itcsToIucs,options.lighting,options.backgroundColor);
-    // The 'boost::cref' for the 'rc' arg is critical; otherwise 'rc' gets copied on every call:
-    img = fgSampler(pxSz,boost::bind(&FgRayCaster::cast,boost::cref(rc),_1),options.antiAliasBitDepth);
+    // The 'std::cref' for the 'rc' arg is critical; otherwise 'rc' gets copied on every call:
+    img = fgSampler(pxSz,std::bind(&FgRayCaster::cast,std::cref(rc),_1),options.antiAliasBitDepth);
 
     // Calculate where the surface points land:
     FgProjSurfPoints          spps;
@@ -117,17 +118,17 @@ fgSoftRenderTest(const FgArgs &)
     // Test that the point is visible in the current configuration:
     ro.renderSurfPoints = FgRenderSurfPoints::whenVisible;
     FgImgRgbaUb     img = fgRenderSoft(FgVect2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<FgImgRgbaUb>(img,"t0.png",boost::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<FgImgRgbaUb>(img,"t0.png",std::bind(fgImgApproxEqual,_1,_2,2U));
     // Flip the winding to test the surface point is not visible from behind:
     surf.tris.vertInds.back() = {1,0,2};
     img = fgRenderSoft(FgVect2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<FgImgRgbaUb>(img,"t4.png",boost::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<FgImgRgbaUb>(img,"t4.png",std::bind(fgImgApproxEqual,_1,_2,2U));
     surf.tris.vertInds.back() = {0,1,2};    // Restore
     // Place a triangle just in front to test occlusion of the surface point:
     mesh.verts.push_back( {2,0,-3.9} );
     surf.tris.vertInds.push_back( {0,1,3} );
     img = fgRenderSoft(FgVect2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<FgImgRgbaUb>(img,"t3.png",boost::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<FgImgRgbaUb>(img,"t3.png",std::bind(fgImgApproxEqual,_1,_2,2U));
 
 
     // Model 2 right angle triangles making a sqaure with a checkerboard color map (preserving aspect ratio):
@@ -140,14 +141,14 @@ fgSoftRenderTest(const FgArgs &)
         bool        alternate = (it()[0] & 16) != (it()[1] & 16);
         map[it()] = alternate ? FgRgbaUB(0,0,0,255) : FgRgbaUB(255,255,255,255);
     }
-    surf.material.albedoMap = boost::make_shared<FgImgRgbaUb>(map);
+    surf.material.albedoMap = std::make_shared<FgImgRgbaUb>(map);
     // View undistorted checkerboard flat on:
     img = fgRenderSoft(FgVect2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<FgImgRgbaUb>(img,"t1.png",boost::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<FgImgRgbaUb>(img,"t1.png",std::bind(fgImgApproxEqual,_1,_2,2U));
     // View at an angle to see perspective distortion:
     modelview = FgAffine3D(FgVect3D(0,0,-4)) * FgAffine3D(fgMatRotateY(1.0)) * FgAffine3D(FgVect3D(0,0,4));
     img = fgRenderSoft(FgVect2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<FgImgRgbaUb>(img,"t2.png",boost::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<FgImgRgbaUb>(img,"t2.png",std::bind(fgImgApproxEqual,_1,_2,2U));
 }
 
 FgCmd

@@ -63,7 +63,7 @@ idVideo(size_t mm,size_t tt)
 static
 string
 nmVideo(size_t mm,size_t tt)
-{return "\"Video::Video"+fgToString(mm)+"_"+fgToString(tt)+"\""; }
+{return "\"Video::Video"+fgToStr(mm)+"_"+fgToStr(tt)+"\""; }
 
 void
 fgSaveFbx(
@@ -121,7 +121,7 @@ fgSaveFbx(
                 ofs << ",";
             ofs << v[0] << "," << v[1] << "," << v[2];
         }
-        ofs << endl <<
+        ofs << "\n"
             "        }\n"
             "        PolygonVertexIndex: *" << mesh.numTris()*3+mesh.numQuads()*4 << " {\n"
             "            a: ";
@@ -145,7 +145,7 @@ fgSaveFbx(
                 ofs << i[0] << "," << i[1] << "," << i[2] << "," << int(~i[3]);
             }
         }
-        ofs << endl <<
+        ofs << "\n"
             "        }\n"
             "        GeometryVersion: 124\n"
             "        LayerElementNormal: 0 {\n"
@@ -162,7 +162,7 @@ fgSaveFbx(
                 ofs << ",";
             ofs << n[0] << "," << n[1] << "," << n[2];
         }
-        ofs << endl <<
+        ofs << "\n"
             "            }\n"
             "        }\n"
             "        LayerElementUV: 0 {\n"
@@ -178,7 +178,7 @@ fgSaveFbx(
                 ofs << ",";
             ofs << uv[0] << "," << uv[1];
         }
-        ofs << endl <<
+        ofs << "\n"
             "            }\n"
             "            UVIndex: *" << mesh.numTris()*3+mesh.numQuads()*4 << " {\n"
             "                a: ";
@@ -202,7 +202,7 @@ fgSaveFbx(
                 ofs << i[0] << "," << i[1] << "," << i[2] << "," << i[3];
             }
         }
-        ofs << endl <<
+        ofs << "\n"
             "            }\n"
             "        }\n";
         ofs <<
@@ -225,7 +225,7 @@ fgSaveFbx(
                 ofs << ss;
             }
         }
-        ofs << endl <<
+        ofs << "\n"
             "            }\n"
             "        }\n"
             "        Layer: 0 {\n"
@@ -257,7 +257,7 @@ fgSaveFbx(
                     ofs << ",";
                 ofs << morph.baseInds[ii];
             }
-            ofs << endl <<
+            ofs << "\n"
                 "        }\n"
                 "        Vertices: *" << morph.baseInds.size()*3 << " {\n"
                 "            a: ";
@@ -267,7 +267,7 @@ fgSaveFbx(
                 FgVect3F    v = morph.verts[ii];
                 ofs << v[0] << "," << v[1] << "," << v[2];
             }
-            ofs << endl <<
+            ofs << "\n"
                 "        }\n"
                 "    }\n"
                 "    Deformer: " << idDeformer(mm,ee) << ", \"Deformer::" << morph.name << "\", \"BlendShape\" {\n"
@@ -299,7 +299,7 @@ fgSaveFbx(
                 "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
                 "        }\n"
                 "    }\n";
-            FgString    texBaseExt = path.base + fgToString(mm) + "_" + fgToString(tt) + "." + imgFormat;
+            FgString    texBaseExt = path.base + fgToStr(mm) + "_" + fgToStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
                 fgSaveImgAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
@@ -367,16 +367,14 @@ fgSaveFbxTest(const FgArgs & args)
     FGTESTDIR
     FgString            dd = fgDataDir();
     string              rd = "base/";
-    vector<Fg3dMesh>    meshes;
-    meshes.push_back(fgLoadTri(dd+rd+"Mouth.tri"));
-    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Mouth.tga"));
-    meshes.push_back(fgLoadTri(dd+rd+"Glasses.tri"));
-    meshes.back().surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    meshes = fgSvec(fgMergeMeshes(meshes));
-    fgSaveFbx("meshExportFbx",meshes);
+    Fg3dMesh            mouth = fgLoadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
+    Fg3dMesh            glasses = fgLoadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
+    fgSaveFbx("meshExportFbx",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportFbx.fbx","base/test/");
     fgRegressFileRel("meshExportFbx0_0.png","base/test/");
-    fgRegressFileRel("meshExportFbx0_1.png","base/test/");
+    fgRegressFileRel("meshExportFbx1_0.png","base/test/");
 }
 
 // */
