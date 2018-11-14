@@ -36,6 +36,7 @@
 
 #include <vector>
 #include <algorithm>
+#include <complex>
 #include <exception>
 #include <fstream>
 #include <functional>

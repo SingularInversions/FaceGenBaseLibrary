@@ -159,6 +159,17 @@ fgMaxIdx(const FgMatrixC<T,nrows,ncols> & mat)
 }
 
 template<typename T,uint nrows,uint ncols>
+uint
+fgMinIdx(const FgMatrixC<T,nrows,ncols> & mat)
+{
+    uint        idx(0);
+    for (uint ii=1; ii<mat.numElems(); ++ii)
+        if (mat[ii] < mat[idx])
+            idx = ii;
+    return idx;
+}
+
+template<typename T,uint nrows,uint ncols>
 FgVect2UI
 fgMaxCrd(const FgMatrixC<T,nrows,ncols> & mat)
 {

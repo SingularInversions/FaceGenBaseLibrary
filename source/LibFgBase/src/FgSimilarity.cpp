@@ -101,11 +101,11 @@ fgSimilarityApprox(
     N.cr(1,1) = Sxx-Syy-Szz;
     N.cr(2,2) = Syy-Sxx-Szz;
     N.cr(3,3) = Szz-Sxx-Syy;
-    // Calculate rotation from N per [Jain '95] fgEigs() Leaves largest eigVal in last index:
-    FgQuaternionD   pose(fgEigs(N).vecs.colVec(3));
+    // Calculate rotation from N per [Jain '95]. 'fgEigsRsm' Leaves largest eigVal in last index:
+    FgQuaternionD       pose(fgEigsRsm(N).vecs.colVec(3));
     // Calculate the 'trans' term: The transform is given by:
     // X = SR(d-dm)+rm = SR(d)-SR(dm)+rm
-    FgVect3D        trans = -scale * (pose.asMatrix() * domMean) + ranMean;
+    FgVect3D            trans = -scale * (pose.asMatrix() * domMean) + ranMean;
     ret = FgSimilarity(scale,pose,trans);
     // Measure residual:
     double  resid = fgRms(rangePts-fgTransform(domainPts,ret.asAffine())) / fgMaxElem(fgDims(rangePts));
@@ -119,7 +119,7 @@ fgSimilarityTest(const FgArgs &)
     FgSimilarity    sim(fgExp(fgRandNormal()),FgQuaternionD(fgVecRandNrm<4>()),fgVecRandNrm<3>());
     FgSimilarity    id = sim * sim.inverse();
     FgMat33D        diff = id.xformCoord(FgMat33D::identity()) - FgMat33D::identity();
-    FGASSERT(fgApproxEqual(1.0+diff.length(),1.0,10));
+    FGASSERT(fgApproxEqual(1.0+diff.length(),1.0,100));
 }
 
 void

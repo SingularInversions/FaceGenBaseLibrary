@@ -324,12 +324,12 @@ struct  FgMatrixC
                 rc(rr+row,cc+col) = sub.rc(rr,cc);
     }
 
-    T
+    double
     mag() const         // Squared magnitude
     {
-        T   ret = m[0]*m[0];
-        for (uint ii=1; ii<nrows*ncols; ++ii)
-            ret += m[ii]*m[ii];
+        double      ret = 0.0;
+        for (uint ii=0; ii<nrows*ncols; ++ii)
+            ret += fgMag(m[ii]);    // T can be non-scalar (eg. complex)
         return ret;
     }
 

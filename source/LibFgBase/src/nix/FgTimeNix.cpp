@@ -21,7 +21,7 @@ fgTimeMs()
 {
     timespec        spec;
     clock_gettime(CLOCK_REALTIME,&spec);
-    return uint64(spec.tv_sec)*1000ULL + uint64(spec.tv_nsec/1000);
+    return uint64(spec.tv_sec)*1000ULL + uint64(spec.tv_nsec/1000000);
 }
 
 void

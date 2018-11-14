@@ -251,7 +251,6 @@ fgConsBase(bool win,bool nix)
     incMain.push_back("../LibImageMagickCore/ImageMagick-6.6.2/");
     lnkMain.push_back("LibImageMagickCore");
     incMain.push_back("../LibUTF-8/");
-    incMain.push_back("../LibTntJama/");
     FgConsProj      libBase;
     libBase.name = "LibFgBase";
     libBase.srcBaseDir = "src/";

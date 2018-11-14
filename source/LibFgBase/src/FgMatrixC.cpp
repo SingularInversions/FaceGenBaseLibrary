@@ -9,10 +9,13 @@
 
 #include "stdafx.h"
 
-#include "jama_lu.h"
 #include "FgMatrixC.hpp"
 #include "FgSyntax.hpp"
 #include "FgMath.hpp"
+
+#define EIGEN_MPL2_ONLY     // Only use permissive licensed source files from Eigen
+#include "../../LibTpEigen/Eigen/Dense"
+#include "../../LibTpEigen/Eigen/Core"
 
 using namespace std;
 
@@ -55,37 +58,41 @@ fgSolve(FgMat22F A,FgVect2F b)
 FgOpt<FgVect3D>
 fgSolve(FgMat33D A,FgVect3D b)
 {
-    TNT::Array2D<double>    a(3,3,A.m);
-    JAMA::LU<double>        lu(a);
-    if (lu.isNonsingular()) {
-        TNT::Array1D<double>    x = lu.solve(TNT::Array1D<double>(3,b.m));
-        return FgOpt<FgVect3D>(FgVect3D(x[0],x[1],x[2]));
+    Eigen::Matrix3d         mat;
+    Eigen::Vector3d         vec;
+    for (uint rr=0; rr<3; ++rr)
+        for (uint cc=0; cc<3; ++cc)
+            mat(rr,cc) = A.rc(rr,cc);
+    for (uint rr=0; rr<3; ++rr)
+        vec(rr) = b[rr];
+    FgOpt<FgVect3D>         ret;
+    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
+    auto                    qr = mat.colPivHouseholderQr();
+    if (qr.isInvertible()) {
+        Eigen::Vector3d     sol = qr.solve(vec);
+        ret = FgVect3D(sol(0),sol(1),sol(2));
     }
-    return FgOpt<FgVect3D>();
-}
-
-FgOpt<FgVect3F>
-fgSolve(FgMat33F A,FgVect3F b)
-{
-    return fgSolve(FgMat33D(A),FgVect3D(b)).cast<FgVect3F>();
+    return ret;
 }
 
 FgOpt<FgVect4D>
 fgSolve(FgMat44D A,FgVect4D b)
 {
-    TNT::Array2D<double>    a(4,4,A.m);
-    JAMA::LU<double>        lu(a);
-    if (lu.isNonsingular()) {
-        TNT::Array1D<double>    x = lu.solve(TNT::Array1D<double>(4,b.m));
-        return FgOpt<FgVect4D>(FgVect4D(x[0],x[1],x[2],x[3]));
+    Eigen::Matrix4d         mat;
+    Eigen::Vector4d         vec;
+    for (uint rr=0; rr<4; ++rr)
+        for (uint cc=0; cc<4; ++cc)
+            mat(rr,cc) = A.rc(rr,cc);
+    for (uint rr=0; rr<4; ++rr)
+        vec(rr) = b[rr];
+    FgOpt<FgVect4D>         ret;
+    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
+    auto                    qr = mat.colPivHouseholderQr();
+    if (qr.isInvertible()) {
+        Eigen::Vector4d     sol = qr.solve(vec);
+        ret = FgVect4D(sol(0),sol(1),sol(2),sol(3));
     }
-    return FgOpt<FgVect4D>();
-}
-
-FgOpt<FgVect4F>
-fgSolve(FgMat44F A,FgVect4F b)
-{
-    return fgSolve(FgMat44D(A),FgVect4D(b)).cast<FgVect4F>();
+    return ret;
 }
 
 template<uint size>

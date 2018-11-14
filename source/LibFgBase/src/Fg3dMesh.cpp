@@ -382,7 +382,7 @@ Fg3dMesh::addTargMorph(const FgString & name_,const FgVerts & targetShape)
     FgIndexedMorph       tm;
     tm.name = name_;
     FgVerts             deltas = targetShape - verts;
-    float               maxMag = 0.0f;
+    double              maxMag = 0.0;
     for (size_t ii=0; ii<deltas.size(); ++ii)
         fgSetIfGreater(maxMag,deltas[ii].mag());
     if (maxMag == 0.0f)

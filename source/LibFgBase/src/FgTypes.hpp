@@ -140,6 +140,7 @@ template<> struct FgTraits<double>
 // Template stubs:
 
 inline double fgMag(double v) {return v*v; }
+inline double fgMag(std::complex<double> v) {return std::norm(v); }
 inline double fgDot(double a,double b) {return a*b; }
 
 inline void fgCast_(float  i,uchar &  o) {o = static_cast<uchar>(i); }

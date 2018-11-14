@@ -690,7 +690,7 @@ template<class T,uint sz>
 FgMatrixC<T,sz,sz>
 fgDiagonal(FgMatrixC<T,sz,1> vec)
 {
-    FgMatrixC<T,sz,sz>      ret(0);
+    FgMatrixC<T,sz,sz>      ret(static_cast<T>(0));
     for (uint ii=0; ii<sz; ++ii)
         ret.rc(ii,ii) = vec[ii];
     return ret;
@@ -700,7 +700,7 @@ template<class T>
 FgMatrixC<T,2,2>
 fgDiagonal(T v0,T v1)
 {
-    FgMatrixC<T,2,2>    ret(0);
+    FgMatrixC<T,2,2>    ret(static_cast<T>(0));
     ret[0] = v0;
     ret[3] = v1;
     return ret;
@@ -710,7 +710,7 @@ template<class T>
 FgMatrixC<T,3,3>
 fgDiagonal(T v0,T v1,T v2)
 {
-    FgMatrixC<T,3,3>    ret(0);
+    FgMatrixC<T,3,3>    ret(static_cast<T>(0));
     ret[0] = v0;
     ret[4] = v1;
     ret[8] = v2;
@@ -756,14 +756,13 @@ fgFindFirstIdx(FgMatrixC<T,nrows,1> m,T v)
 }
 
 // Solve matrix equation of the form Ax = b. Returns x if solvable, invalid if degenerate:
-FgOpt<FgVect2F>
-fgSolve(FgMat22F A,FgVect2F b);
-FgOpt<FgVect3F>
-fgSolve(FgMat33F A,FgVect3F b);
-FgOpt<FgVect4D>
-fgSolve(FgMat44D A,FgVect4D b);
-FgOpt<FgVect4F>
-fgSolve(FgMat44F A,FgVect4F b);
+FgOpt<FgVect2F> fgSolve(FgMat22F A,FgVect2F b);
+FgOpt<FgVect3D> fgSolve(FgMat33D A,FgVect3D b);
+inline
+FgOpt<FgVect3F> fgSolve(FgMat33F A,FgVect3F b) {return fgSolve(FgMat33D(A),FgVect3D(b)).cast<FgVect3F>(); }
+FgOpt<FgVect4D> fgSolve(FgMat44D A,FgVect4D b);
+inline
+FgOpt<FgVect4F> fgSolve(FgMat44F A,FgVect4F b) {return fgSolve(FgMat44D(A),FgVect4D(b)).cast<FgVect4F>(); }
 
 // Elements must all be non-zero:
 template<uint nrows,uint ncols>
@@ -845,6 +844,31 @@ double
 fgMag(FgMatrixC<T,nrows,ncols> m)
 {return m.mag(); }
 
+template<class T,uint nrows,uint ncols>
+double
+fgRms(FgMatrixC<T,nrows,ncols> m)
+{return std::sqrt(m.mag()/static_cast<double>(nrows*ncols)); }
+
+template<uint nrows,uint ncols>
+FgMatrixC<double,nrows,ncols>
+fgReal(const FgMatrixC<std::complex<double>,nrows,ncols> & m)   // Return real compoments
+{
+    FgMatrixC<double,nrows,ncols>   ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = m[ii].real();
+    return ret;
+}
+
+template<uint nrows,uint ncols>
+FgMatrixC<double,nrows,ncols>
+fgImag(const FgMatrixC<std::complex<double>,nrows,ncols> & m)   // Return imaginary compoments
+{
+    FgMatrixC<double,nrows,ncols>   ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = m[ii].imag();
+    return ret;
+}
+
 // Give a tangent coordinate system for a point on a sphere centred at origin:
 FgMat32D
 fgTanSphere(FgVect3D p);
@@ -894,6 +918,17 @@ fgPermute(const FgMatrixC<T,dim,1> & v,FgMatrixC<uint,dim,1> perm)  // Assumes a
     FgMatrixC<T,dim,1>      ret;
     for (uint dd=0; dd<dim; ++dd)
         ret[dd] = v[perm[dd]];
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+FgMatrixC<T,ncols,nrows>
+fgHermitian(const FgMatrixC<T,nrows,ncols> & mat)
+{
+    FgMatrixC<T,ncols,nrows>        ret;
+    for (uint rr=0; rr<nrows; ++rr)
+        for (uint cc=0; cc<ncols; ++cc)
+            ret.rc(cc,rr) = std::conj(mat.rc(rr,cc));
     return ret;
 }
 

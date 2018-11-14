@@ -164,10 +164,12 @@ fg3dTest(const FgArgs & args)
 #if (_MSC_VER >= 1900)      // Precision differences with nix & vs2013
     FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
 #endif
-#if defined _WIN32          // Precision differences with gcc & clang
+#ifdef _WIN32               // Precision differences with gcc & clang
     FGADDCMD(fgSaveObjTest,"obj","Wavefront OBJ ASCII file format export");
     FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");
+#ifndef _DEBUG              // Precision diffs from release
     FGADDCMD(fgSaveXsiTest,"xsi",".XSI file format export");
+#endif
 #endif
     fgMenu(args,cmds,true,false,true);
 }
