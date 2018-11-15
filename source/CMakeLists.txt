@@ -3,11 +3,11 @@ cmake_minimum_required(VERSION 3.5)     # Use guidelines from 'Modern Cmake' tal
 project(cmake CXX)
 
 # Global compile options:
-set(CMAKE_CXX_STANDARD 11)		                    # C++11 is required for this package
+set(CMAKE_CXX_STANDARD 11)                          # C++11 is required for this package
 # Using 'add_compile_options' adds to both CPP and C flags (as appropriate) but requires using annoying 'generators':
 add_compile_options($<$<CONFIG:Debug>:-D_DEBUG>)    # add_definitions does not accept generators
 if (MSVC)
-	add_definitions(
+    add_definitions(
         -DWIN32
         -D_UNICODE
         -D_CRT_SECURE_NO_WARNINGS)
@@ -51,7 +51,6 @@ add_subdirectory(LibTpBoost)
 add_subdirectory(LibJpegIjg6b)
 add_subdirectory(LibImageMagickCore)
 add_subdirectory(LibUTF-8)
-add_subdirectory(LibTntJama)
 add_subdirectory(LibFgBase)
 if(WIN32)
     add_subdirectory(LibFgWin)
