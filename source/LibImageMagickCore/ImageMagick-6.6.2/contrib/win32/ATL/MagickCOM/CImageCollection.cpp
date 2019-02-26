@@ -1,2 +1,0 @@
-// CImageCollection
-#include "CImageCollection.h"

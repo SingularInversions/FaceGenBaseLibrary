@@ -1,7 +1,0 @@
-LIBRARY	     isapimagick
-
-DESCRIPTION  'ImageMagick Extension DLL'
-
-EXPORTS
-    GetExtensionVersion
-    HttpExtensionProc
