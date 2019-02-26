@@ -10,7 +10,8 @@
 #ifndef FGHISTOGRAM_HPP
 #define FGHISTOGRAM_HPP
 
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 
 struct  FgHistogram
 {

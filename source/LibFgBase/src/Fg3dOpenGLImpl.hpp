@@ -248,13 +248,6 @@ drawSurfaces(
     mvm = mvm.transpose();
     prj = prj.transpose() * mvm;
     FgAffine3F      trans(mvm.subMatrix<3,3>(0,0));
-    //FgVectF2        bnds(numeric_limits<float>::max(),numeric_limits<float>::min());
-    //for (size_t ii=0; ii<verts.size(); ++ii) {
-    //    FgVect4F    v = prj * fgAsHomogVec(verts[ii]);
-    //    float   d = v[2] / v[3];
-    //    fgSetIfLess(bnds[0],d);
-    //    fgSetIfGreater(bnds[1],d); }
-    //FG_HI_1(bnds);
     FgAffine3F      oicsToOxcs(FgVect3F(1.0f));
     oicsToOxcs.postScale(0.5f);
     trans = oicsToOxcs * trans;
@@ -492,14 +485,14 @@ fgOglSetLighting(const FgLighting & lt)
     glEnable(GL_LIGHTING);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();               // Lights are transformed by the current MVM
-    FgVect4F    amb = fgConcatVert(lt.ambient,1.0f);
+    FgVect4F    amb = fgJoinVert(lt.ambient,1.0f);
     glLightfv(glLight[0],GL_AMBIENT,amb.dataPtr());
     for (uint ll=0; (ll<lt.lights.size()) && (ll < 4); ll++) {
         const FgLight & lgt = lt.lights[ll];
         glEnable(glLight[ll]);
-        FgVect4F        pos = fgConcatVert(lgt.direction,0.0f);
+        FgVect4F        pos = fgJoinVert(lgt.direction,0.0f);
         glLightfv(glLight[ll],GL_POSITION,pos.dataPtr());
-        FgVect4F        clr = fgConcatVert(lgt.colour,1.0f);
+        FgVect4F        clr = fgJoinVert(lgt.colour,1.0f);
         glLightfv(glLight[ll],GL_DIFFUSE,clr.dataPtr());
     }
     CHECKOGLERROR;

@@ -13,9 +13,17 @@
 #include "FgSyntax.hpp"
 #include "FgMath.hpp"
 
-#define EIGEN_MPL2_ONLY     // Only use permissive licensed source files from Eigen
-#include "../../LibTpEigen/Eigen/Dense"
-#include "../../LibTpEigen/Eigen/Core"
+#ifdef _MSC_VER
+    #pragma warning(push,0)     // Eigen triggers lots of warnings
+#endif
+
+#define EIGEN_MPL2_ONLY         // Only use permissive licensed source files from Eigen
+#include "Eigen/Dense"
+#include "Eigen/Core"
+
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
 
 using namespace std;
 
@@ -25,7 +33,7 @@ fgVertsRandNormal(size_t num,float scale)
     FgVerts         ret;
     ret.reserve(num);
     for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(fgMatRandNrm<float,3,1>()*scale);
+        ret.push_back(FgVect3F::randNormal(scale));
     return ret;
 }
 
@@ -101,7 +109,7 @@ testInverse()
 {
     FgMatrixC<double,size,size> a,b;
     do
-        a = fgMatRandNrm<double,size,size>();
+        a = FgMatrixC<double,size,size>::randNormal();
     while
         (fgDeterminant(a) < 0.01);
     b = fgMatInverse(a);
@@ -117,7 +125,7 @@ static void     testFgMatRotateAxis()
     for (uint ii=0; ii<100; ii++)
     {
         double          angle = fgRandUniform(-fgPi(),fgPi());
-        FgVect3D        axis = fgVecRandNrm<3>();
+        FgVect3D        axis = FgVect3D::randNormal();
         axis /= axis.length();
         FgMat33D     mat = fgMatRotateAxis(angle,axis);
         double          err = (mat * mat.transpose() - FgMat33D::identity()).length(),
@@ -160,5 +168,5 @@ fgTanSphere(FgVect3D v)
     r0 -= vn * fgDot(vn,r0);
     r0 /= r0.length();
     FgVect3D        r1 = fgCrossProduct(vn,r0);
-    return fgConcatHoriz(r0,r1);
+    return fgJoinHoriz(r0,r1);
 }

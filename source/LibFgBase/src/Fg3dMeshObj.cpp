@@ -176,7 +176,7 @@ fgLoadWobj(
                         ++numNgons;
                 }
             }
-            if (!surfSeparator.empty() && fgStartsWith(line,surfSeparator)) {
+            if (!surfSeparator.empty() && fgBeginsWith(line,surfSeparator)) {
                 vector<string>  words = fgSplitAtSeparators(line,' ');
                 if (words.size() != 2) {
                     fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii << " of " << fname;

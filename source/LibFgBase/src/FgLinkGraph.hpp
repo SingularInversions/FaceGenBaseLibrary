@@ -24,6 +24,7 @@
 
 #include "FgOpt.hpp"
 #include "FgStdString.hpp"
+#include "FgString.hpp"
 
 template<class NodeData,class LinkData>
 struct  FgLinkGraph

@@ -12,9 +12,12 @@
 #include "FgCl.hpp"
 #include "FgStdString.hpp"
 #include "FgException.hpp"
+#include "FgString.hpp"
 #include "FgOut.hpp"
 
 using namespace std;
+
+#ifndef FG_SANDBOX
 
 namespace fgCl
 {
@@ -41,3 +44,5 @@ run(const string & cmd,bool throwIfError,int rvalMask)
 }
 
 }   // namespace
+
+#endif

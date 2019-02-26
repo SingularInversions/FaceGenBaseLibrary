@@ -71,13 +71,19 @@ operator<<(std::ostream &,const FgTimer &);
 
 struct FgTimeScope
 {
-    FgTimer     timer;
+    uint64          startTime;
 
     FgTimeScope(const std::string & msg)
-    {fgout << fgnl << "Beginning " << msg << ":" << fgpush; }
+    {
+        fgout << fgnl << "Beginning " << msg << ":" << fgpush;
+        startTime = fgTimeMs();
+    }
 
     ~FgTimeScope()
-    {fgout << fgpop << fgnl << timer; }
+    {
+        uint64      t = fgTimeMs() - startTime;
+        fgout << fgpop << fgnl << "Done. " << t << " ms ";
+    }
 };
 
 // Returns true at most once per second:

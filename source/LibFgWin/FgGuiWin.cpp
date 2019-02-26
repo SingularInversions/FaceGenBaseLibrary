@@ -333,7 +333,7 @@ fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
     try
     {
         sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
-            + fgSystemInfo() + "\n" + className + "\n";
+            + fgOsName() + "\n" + className + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             fgGuiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else

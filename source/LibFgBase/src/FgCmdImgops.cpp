@@ -12,11 +12,12 @@
 #include "FgCommand.hpp"
 #include "FgSyntax.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgImage.hpp"
+#include "FgImageIo.hpp"
 
 using namespace std;
 
-static
+namespace {
+
 void
 addalpha(const FgArgs & args)
 {
@@ -36,7 +37,21 @@ addalpha(const FgArgs & args)
     fgSaveImgAnyFormat(syntax.next(),rgb);
 }
 
-static
+void
+composite(const FgArgs & args)
+{
+    FgSyntax    syn(args,
+        "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
+        "    Composite images of equal pixel dimensions.\n"
+        "    <overlay>.<imgExt> must have an alpha channel\n"
+        "    <imgExt> = " + fgImgCommonFormatsDescription());
+    FgImgRgbaUb     base = fgLoadImgAnyFormat(syn.next()),
+                    overlay = fgLoadImgAnyFormat(syn.next());
+    if (base.dims() != overlay.dims())
+        syn.error("The images must have identical pixel dimensions");
+    fgSaveImgAnyFormat(syn.next(),fgComposite(overlay,base));
+}
+
 void
 convert(const FgArgs & args)
 {
@@ -49,7 +64,6 @@ convert(const FgArgs & args)
     fgSaveImgAnyFormat(syntax.next(),img);
 }
 
-static
 void
 shrink2(const FgArgs & args)
 {
@@ -63,11 +77,10 @@ shrink2(const FgArgs & args)
     fgSaveImgAnyFormat(syntax.next(),img);
 }
 
-static
 void
 formats(const FgArgs &)
 {
-    FgStrs      fs = fgImgSupportedFormats();
+    FgStrs      fs = fgImgCommonFormats();
     fgout << fgnl << fs.size() << " formats supported:" << fgpush;
     char        previous = 'Z';
     for (const string & f : fs) {
@@ -80,12 +93,15 @@ formats(const FgArgs &)
     fgout << fgpop;
 }
 
+}
+
 static
 void
 imgops(const FgArgs & args)
 {
     vector<FgCmd>   ops;
     ops.push_back(FgCmd(addalpha,"addalpha","Add/replace an alpha channel from an another image"));
+    ops.push_back(FgCmd(composite,"composite","Composite an image with transparency over another"));
     ops.push_back(FgCmd(convert,"convert","Convert images between different formats"));
     ops.push_back(FgCmd(formats,"formats","List all supported formats by file extension"));
     ops.push_back(FgCmd(shrink2,"shrink2","Shrink images by a factor of 2"));
@@ -94,6 +110,6 @@ imgops(const FgArgs & args)
 
 FgCmd
 fgCmdImgopsInfo()
-{return FgCmd(imgops,"imgops","Operations on images"); }
+{return FgCmd(imgops,"image","Image operations"); }
 
 // */

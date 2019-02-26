@@ -9,29 +9,36 @@
 #ifndef FGMAIN_HPP
 #define FGMAIN_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgBoostLibs.hpp"
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
+// Use minimal includes for compile speed since this file is included in executable projects:
+#include <string>
+#include <vector>
+#include <functional>
 
 // Can contain UTF-8 strings (due to legacy):
-typedef vector<string> FgArgs;
+typedef std::vector<std::string>    FgArgs;
 
 typedef std::function<void(const FgArgs &)> FgCmdFunc;
 
-// Catches exceptions, outputs error details, returns appropriate value:
-int
-fgMainConsole(FgCmdFunc func,int argc,const char * argv[]);
+#ifdef _WIN32
+typedef wchar_t FgUtfChar;
+#else
+typedef char FgUtfChar;
+#endif
 
-// UTF-16 version for Windows:
 int
-fgMainConsole(FgCmdFunc func,int argc,const wchar_t * argv[]);
+fgMainConsole(FgCmdFunc func,int argc,const FgUtfChar * argv[]);
 
 // Return the original command line. Useful for spawning current function on other computers.
 // NB. Since main() only receives the command line as parsed by the shell, double quotes are added
 // around any arguments containing spaces, and double quotes are escaped. This may not work properly
 // on *nix:
-string
+std::string
 fgMainArgs();
+
+#ifdef _WIN32
+#define FGMAIN(F) int wmain(int argc,const wchar_t *argv[]) {return fgMainConsole(F,argc,argv); }
+#else
+#define FGMAIN(F) int main(int argc,const char *argv[]) {return fgMainConsole(F,argc,argv); }
+#endif
 
 #endif

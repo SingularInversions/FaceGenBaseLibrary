@@ -159,4 +159,11 @@ fgSavePly(
     const vector<Fg3dMesh> & meshes,
     string                  imgFormat = "png");
 
+// Collada. Does not yet support morphs.
+void
+fgSaveDae(
+    const FgString &        fname,
+    const vector<Fg3dMesh> & meshes,
+    string                  imgFormat = "png");
+
 #endif

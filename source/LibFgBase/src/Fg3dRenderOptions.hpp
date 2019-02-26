@@ -12,7 +12,8 @@
 
 #include "FgStdLibs.hpp"
 
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "Fg3dMesh.hpp"
 #include "FgDepGraph.hpp"
 

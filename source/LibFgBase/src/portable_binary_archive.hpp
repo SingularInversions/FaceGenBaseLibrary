@@ -13,7 +13,6 @@
 
 #include <boost/config.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/static_assert.hpp>
 
 #include <climits>
 #if CHAR_BIT != 8

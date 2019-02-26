@@ -47,7 +47,7 @@ fgGuiDialogFileLoad(
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
@@ -59,14 +59,14 @@ fgGuiDialogFileLoad(
     for (uint ii=0; ii<8; ++ii)
     guid.Data4[0] = 0;                  // Ensure consistent
     hr = pfd->SetClientGuid(guid);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Only want filesystem items; don't support other shell items:
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
                             exts = L"*." + FgString(extensions[0]).as_wstring();
     for (size_t ii=1; ii<extensions.size(); ++ii)
@@ -75,18 +75,18 @@ fgGuiDialogFileLoad(
     fs.pszName = desc.data();
     fs.pszSpec = exts.data();
     hr = pfd->SetFileTypes(1,&fs);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Set the selected file type index (starts at 1):
     hr = pfd->SetFileTypeIndex(1);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
-    if (SUCCEEDED(hr)) {                    // A filename was selected
+    if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
-        if (SUCCEEDED(hr)) {
+        if (hr == S_OK) {
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
-            if (SUCCEEDED(hr) && (pszFilePath != NULL)) {
+            if ((hr == S_OK) && (pszFilePath != NULL)) {
                 ret = FgString(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
@@ -106,7 +106,7 @@ fgGuiDialogFileSave(
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
@@ -118,34 +118,34 @@ fgGuiDialogFileSave(
     for (uint ii=0; ii<8; ++ii)
     guid.Data4[0] = 0;                  // Ensure consistent
     hr = pfd->SetClientGuid(guid);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Only want filesystem items; don't support other shell items:
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
                             exts = L"*." + FgString(extension).as_wstring();
     COMDLG_FILTERSPEC       fs;
     fs.pszName = desc.data();
     fs.pszSpec = exts.data();
     hr = pfd->SetFileTypes(1,&fs);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Set the selected file type index (starts at 1):
     hr = pfd->SetFileTypeIndex(1);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     wstring                 ext = FgString(extension).as_wstring();
     hr = pfd->SetDefaultExtension(ext.c_str());
     hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
-    if (SUCCEEDED(hr)) {                    // A filename was selected
+    if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
-        if (SUCCEEDED(hr)) {
+        if (hr == S_OK) {
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
-            if (SUCCEEDED(hr)) {
+            if (hr == S_OK) {
                 ret = FgString(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
@@ -162,23 +162,23 @@ fgGuiDialogDirSelect()
     HRESULT                 hr;
     IFileDialog *           pfd = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     FgScopeGuard            sg(std::bind(pfdRelease,pfd));
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     // Only want filesystem items; don't support other shell items:
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_PICKFOLDERS);
-    FGASSERTWIN(SUCCEEDED(hr));
+    FGASSERTWINOK(hr);
     hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
-    if (SUCCEEDED(hr)) {                    // A filename was selected
+    if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
-        if (SUCCEEDED(hr)) {
+        if (hr == S_OK) {
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
-            if (SUCCEEDED(hr)) {
+            if (hr == S_OK) {
                 FgString    str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
                 return fgAsDirectory(str);

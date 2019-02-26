@@ -17,13 +17,13 @@
 
 using namespace std;
 
+// Keep this here to avoid excess header dependencies:
+static FgOfstream   s_ofs;
+
 // Only this single global instance should ever be instantiated.
 // Note that 'fgout' can't be used in global variable constructors since it's
 // not guaranteed to be constructed yet itself:
 FgOut               fgout;
-
-// Keep this here to avoid excess header dependencies:
-static FgOfstream   s_ofs;
 
 ostream &
 fgnl(ostream & ss)
@@ -86,11 +86,11 @@ FgOut::defOutEnabled()
 }
 
 void
-FgOut::logFile(const FgString & fname,bool append,bool prependDate)
+FgOut::logFile(const std::string & fnameUtf8,bool append,bool prependDate)
 {
     if (s_ofs.is_open())
         s_ofs.close();
-    s_ofs.open(fname,append,true);
+    s_ofs.open(fnameUtf8,append,true);
     s_ofs.precision(9);
     if (prependDate)
         s_ofs << '\n' << fgDateTimeString() << '\n';

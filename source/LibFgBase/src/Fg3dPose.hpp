@@ -14,7 +14,8 @@
 
 #include "FgStdVector.hpp"
 #include "FgStdString.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "Fg3dSurface.hpp"
 #include "FgImage.hpp"
 #include "FgStdStream.hpp"

@@ -573,7 +573,7 @@ fgImgSsd(
 
 template<class T>
 FgImage<T>
-fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & r)
+fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & r)
 {
     FgImage<T>      ret;
     if (l.empty())
@@ -595,15 +595,15 @@ fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & r)
 
 template<class T>
 FgImage<T>
-fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
+fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
 {
     FgImage<T>      ret;
     if (l.empty())
-        ret = fgConcatHoriz(c,r);
+        ret = fgJoinHoriz(c,r);
     else if (c.empty())
-        ret = fgConcatHoriz(l,r);
+        ret = fgJoinHoriz(l,r);
     else if (r.empty())
-        ret = fgConcatHoriz(l,c);
+        ret = fgJoinHoriz(l,c);
     else {
         FGASSERT((l.height() == c.height()) && (c.height() == r.height()));
         ret.resize(l.width()+c.width()+r.width(),l.height());
@@ -622,7 +622,7 @@ fgConcatHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
 
 template<class T>
 FgImage<T>
-fgConcatVert(const FgImage<T> & t,const FgImage<T> & b)
+fgJoinVert(const FgImage<T> & t,const FgImage<T> & b)
 {
     FgImage<T>      ret;
     if (t.empty())
@@ -644,11 +644,11 @@ fgConcatVert(const FgImage<T> & t,const FgImage<T> & b)
 
 template<class T>
 FgImage<T>
-fgConcatVert(const std::vector<FgImage<T> > & v)
+fgJoinVert(const std::vector<FgImage<T> > & v)
 {
     FgImage<T>  ret;
     for (size_t ii=0; ii<v.size(); ++ii)
-        ret = fgConcatVert(ret,v[ii]);
+        ret = fgJoinVert(ret,v[ii]);
     return ret;
 }
 
@@ -664,7 +664,7 @@ fgCropPad(
     if (!src.empty()) {
         FgMat22I        srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
                         dstBnds = FgMat22I(fgRangeToBounds(dims)),
-                        range = fgBoundsIntersection(srcBnds-fgConcatHoriz(offset,offset),dstBnds);
+                        range = fgBoundsIntersection(srcBnds-fgJoinHoriz(offset,offset),dstBnds);
         for (FgIter2I it(fgInclToExcl(range)); it.valid(); it.next())
             ret[FgVect2UI(it())] = src[FgVect2UI(it()+offset)];
     }

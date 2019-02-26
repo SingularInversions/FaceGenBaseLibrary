@@ -10,6 +10,7 @@
 #include "stdafx.h"
 
 #include "FgLazy.hpp"
+#include "FgString.hpp"
 #include "FgDiagnostics.hpp"
 
 using namespace std;
@@ -108,9 +109,8 @@ objectRef(FgAny & node)
         dirty(inp.sinks);
         return inp.object;
     }
-    else
-        fgThrow("FgLeg::set on non-Input node",node.typeName());
-    return node;    // Avoid warning
+    fgThrow("FgLeg::set on non-Input node",node.typeName());
+    FG_UNREACHABLE_RETURN(node)
 }
 
 void
@@ -191,9 +191,8 @@ getImpl(FgAny & node)
     }
     else if (node.is<Sentinel>())
         return getImpl(node.ref<Sentinel>().source);
-    else
-        fgThrow("FgLeg::getImpl unhandled type",node.typeName());
-    return node;    // Avoid warning
+    fgThrow("FgLeg::getImpl unhandled type",node.typeName());
+    FG_UNREACHABLE_RETURN(node)
 }
 
 }

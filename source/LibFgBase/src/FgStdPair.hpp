@@ -12,11 +12,14 @@
 
 #include "FgStdLibs.hpp"
 
+namespace std {
+
 template<class T,class U>
-std::ostream& operator<<(std::ostream& ss,const std::pair<T,U> &pp)
+ostream & operator<<(ostream & ss,const pair<T,U> & pp)
 {
-    ss << "(" << pp.first << "," << pp.second << ")";
-    return ss;
+    return ss << "(" << pp.first << "," << pp.second << ")";
+}
+
 }
 
 #endif

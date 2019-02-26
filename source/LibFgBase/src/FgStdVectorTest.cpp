@@ -13,6 +13,15 @@
 #include "FgTestUtils.hpp"
 #include "FgMain.hpp"
 
+bool
+fgReduceOr(const vector<bool> & v)
+{
+    for (bool b : v)
+        if (b)
+            return true;
+    return false;
+}
+
 void
 fgStdVectorTest(const FgArgs &)
 {

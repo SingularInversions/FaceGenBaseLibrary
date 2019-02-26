@@ -12,7 +12,8 @@
 
 #include "FgTypes.hpp"
 #include "FgMath.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 
 template<typename T>
 bool

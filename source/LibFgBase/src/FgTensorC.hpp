@@ -16,7 +16,8 @@
 #include "FgStdVector.hpp"
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgIter.hpp"
 
 template <class T,uint rank>
@@ -34,14 +35,14 @@ struct  FgTensorC
     FgTensorC(size_t dim0,size_t dim1,size_t dim2,const vector<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2)), m_data(data)
     {
-        FG_STATIC_ASSERT(rank == 3);
+        static_assert(rank == 3,"Number of arguments does not dimensions");
         FGASSERT(dim0*dim1*dim2 == m_data.size());
     }
 
     FgTensorC(size_t dim0,size_t dim1,size_t dim2,size_t dim3,const vector<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2),uint(dim3)), m_data(data)
     {
-        FG_STATIC_ASSERT(rank == 4);
+        static_assert(rank == 4,"Number of arguments does not match elements");
         FGASSERT(dim0*dim1*dim2*dim3 == m_data.size());
     }
 

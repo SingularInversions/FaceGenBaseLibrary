@@ -10,6 +10,7 @@
 #include "stdafx.h"
 #include "FgDiagnostics.hpp"
 #include "FgOut.hpp"
+#include "FgString.hpp"
 
 using namespace std;
 

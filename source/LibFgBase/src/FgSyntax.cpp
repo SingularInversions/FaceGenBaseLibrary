@@ -28,6 +28,13 @@ FgSyntax::FgSyntax(
     m_syntax = args[0] + " " + syntax;
     if (args.size() == 1)
         throwSyntax();
+    else {
+        if ((args[1] == "/?") ||
+            (args[1] == "help") ||
+            (args[1] == "-help") ||
+            (args[1] == "--help"))
+            throwSyntax();
+    }
 }
 
 FgSyntax::~FgSyntax()

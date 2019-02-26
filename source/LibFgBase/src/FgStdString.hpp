@@ -21,6 +21,7 @@ using std::string;
 
 typedef std::vector<std::string>    FgStrs;
 typedef std::vector<FgStrs>         FgStrss;
+typedef std::vector<std::u32string> FgStr32s;
 
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors.
@@ -38,10 +39,6 @@ template<>
 inline std::string
 fgToStr(const std::string & str)
 {return str; }
-template<>
-inline std::string
-fgToStr(const FgString & str)
-{return str.m_str; }
 
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors
@@ -68,7 +65,7 @@ fgFromString(const string & str)
 {
     FgOpt<T>    oval = fgFromStr<T>(str);
     if (!oval.valid())
-        fgThrow("Unable to convert string to " + string(typeid(T).name()),str);
+        throw FgException("Unable to convert string to type",string(typeid(T).name())+":"+str);
     return oval.val();
 }
 
@@ -110,25 +107,10 @@ fgToUpper(const string & s);
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
 std::vector<string>
-fgSplitAtSeparators(
-    const string & str,
-    char                sep);
-
-bool
-fgStartsWith(
-    const string & str,
-    const string & pattern);
-
-bool
-fgEndsWith(
-    const string & str,
-    const string & pattern);
+fgSplitAtSeparators(const string & str,char sep);
 
 string
-fgReplace(
-    const string & str,
-    char                orig,
-    char                repl);
+fgReplace(const string & str,char orig,char repl);
 
 // Pad a string to desired len (does not truncate of longer):
 string
@@ -173,12 +155,107 @@ fgBack(string & s)
     return *(--s.end());
 }
 
+template<typename T>
 bool
-fgContains(const std::string & str,char c);
+fgContains(const std::basic_string<T> & str,T ch)
+{return (str.find(ch) != std::basic_string<T>::npos); }
 
-inline
+template<typename T>
 bool
-fgContains(const std::string & str,const std::string & pattern)
-{return (str.find(pattern) != string::npos); }
+fgContains(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
+{return (str.find(pattern) != std::basic_string<T>::npos); }
+
+template<typename T>
+bool
+fgContains(const std::basic_string<T> & str,const T * pattern_c_str)
+{return fgContains(str,std::basic_string<T>(pattern_c_str)); }
+
+template<typename T>
+std::basic_string<T>
+fgHead(const std::basic_string<T> & str,size_t size)
+{
+    FGASSERT(size <= str.size());
+    return std::basic_string<T>(str.begin(),str.begin()+size);
+}
+
+template<class T>
+std::basic_string<T>
+fgRest(const std::basic_string<T> & str,size_t start=1)
+{
+    FGASSERT(start <= str.size());      // Can be size zero
+    return std::basic_string<T>(str.begin()+start,str.end());
+}
+
+template<class T>
+std::basic_string<T>
+fgSubstr(const std::basic_string<T> & str,size_t start,size_t size)
+{
+    FGASSERT(start+size <= str.size());
+    return  std::basic_string<T>(str.begin()+start,str.begin()+start+size);
+}
+
+// Returns at least size 1, with 1 additional for each split element:
+template<class T>
+std::vector<std::basic_string<T> >
+fgSplit(const std::basic_string<T> & str,T ch)
+{
+    std::vector<std::basic_string<T> >  ret;
+    std::basic_string<T>                ss;
+    for(T c : str) {
+        if (c == ch) {
+            ret.push_back(ss);
+            ss.clear();
+        }
+        else
+            ss.push_back(c);
+    }
+    ret.push_back(ss);
+    return ret;
+}
+
+template<class T>
+size_t
+fgFindLastIdx(const std::basic_string<T> & str,T val)
+{
+    for (size_t ii=str.size(); ii!=0; --ii)
+        if (str[ii-1] == val)
+            return ii-1;
+    return str.size();
+}
+
+template<class T>
+bool
+fgBeginsWith(const std::basic_string<T> & base,const std::basic_string<T> & pattern)
+{
+    if (pattern.size() > base.size())
+        return false;
+    for (size_t ii=0; ii<pattern.size(); ++ii)
+        if (pattern[ii] != base[ii])
+            return false;
+    return true;
+}
+
+template<class T>
+bool
+fgBeginsWith(const std::basic_string<T> & base,const T * pattern_c_str)
+{return fgBeginsWith(base,std::basic_string<T>(pattern_c_str)); }
+
+template<class T>
+bool
+fgEndsWith(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
+{
+    if (pattern.size() > str.size())
+        return false;
+    size_t      offset = str.size() - pattern.size();
+    for (size_t ii=0; ii<pattern.size(); ++ii)
+        if (pattern[ii] != str[ii+offset])
+            return false;
+    return true;
+}
+
+template<class T>
+bool
+fgEndsWith(const std::basic_string<T> & str,const T * pattern_c_str)
+{return fgEndsWith(str,std::basic_string<T>(pattern_c_str)); }
 
 #endif

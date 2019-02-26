@@ -32,8 +32,8 @@ fgThrowWindows(const string & msg,const FgString & data)
             0, NULL );
         FgString        winData(wstring(static_cast<wchar_t*>(lpMsgBuf)));
         LocalFree(lpMsgBuf);
-        FgException     exc("Windows has reported an error",winData);
-        exc.pushMsg(msg,data);
+        FgException     exc("Windows has reported an error",winData.m_str);
+        exc.pushMsg(msg,data.m_str);
         throw exc;
     }
     else
@@ -46,6 +46,12 @@ fgAssertWin(
     int             line)
 {
     fgThrowWindows("Internal program error",fgDiagString(fname,line));
+}
+
+void
+fgAssertWinReturnZero(const char * fname,int line,long rval)
+{
+    fgThrowWindows("Internal program error",fgDiagString(fname,line)+" rval: "+fgToStr(rval));
 }
 
 // */

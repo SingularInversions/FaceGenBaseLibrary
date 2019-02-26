@@ -23,7 +23,8 @@
 #define FGAFFINEC_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 
 template <class T,uint dim>
 struct  FgAffineC

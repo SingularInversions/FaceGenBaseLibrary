@@ -8,10 +8,6 @@
 //
 // Global functions providing additional operations related to vector.
 //
-// Good article on possible optimizations:
-//
-// https://github.com/facebook/folly/blob/master/folly/docs/FBVector.md
-//
 
 #ifndef FGSTDVECTOR_HPP
 #define FGSTDVECTOR_HPP
@@ -21,6 +17,31 @@
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgOut.hpp"
+
+// std overloads must be defined in this namespace or confusion and errors will result:
+namespace std {
+
+    template<class T>
+    ostream &
+    operator<<(ostream & ss,const vector<T> & vv)
+    {
+        ios::fmtflags       oldFlag = ss.setf(
+            ios::fixed |
+            ios::showpos |
+            ios::right);
+        streamsize          oldPrec = ss.precision(6);
+        ss << "[" << fgpush;
+        if (vv.size() > 0)
+            ss << vv[0];
+	    for (size_t ii=1; ii<vv.size(); ii++)
+		    ss << "," << vv[ii];
+        ss << fgpop << "]";
+        ss.flags(oldFlag);
+        ss.precision(oldPrec);
+	    return ss;
+    }
+
+}
 
 using std::vector;
 
@@ -805,49 +826,19 @@ fgSum_(const vector<T> & in,T & out)
         out += i;
 }
 
+// NOTE: The value is accumulated in the templated type. Make a special purpose function
+// if the accumulator type must be larger than the templated type:
 template<class T>
 T
 fgSum(const vector<T> & v)
 {
-    typedef typename FgTraits<T>::Accumulator Acc;
-    Acc         acc(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        acc += Acc(v[ii]);
-    return T(acc);
-}
-
-// Partial sum:
-template<class T>
-T
-fgSum(const vector<T> & v,size_t num)
-{
-    FGASSERT(num <= v.size());
-    typedef typename FgTraits<T>::Accumulator Acc;
-    Acc         acc(0);
-    for (size_t ii=0; ii<num; ++ii)
-        acc += Acc(v[ii]);
-    return T(acc);
-}
-
-// Easier to do this as special case than to have global templated traits for casting
-// vector to accumulator type and back. Plus we want things to work a little differently
-// in this case:
-template<class T>
-vector<T>
-fgSum(const vector<vector<T> > & v)
-{
-    vector<T>       ret;
+    // We don't use std::accumulate since we want to properly handle the case where T itself
+    // is a container type that supports operator+=()
+    T           ret(0);
     if (!v.empty()) {
-        typedef typename FgTraits<T>::Accumulator   Acc;
-        vector<Acc>     acc(v[0].size(),Acc(0));
-        for (size_t ii=0; ii<v.size(); ++ii) {
-            FGASSERT(v[ii].size() == acc.size());
-            for (size_t jj=0; jj<acc.size(); ++jj)
-                acc[jj] += Acc(v[ii][jj]);
-        }
-        ret.reserve(acc.size());
-        for (size_t ii=0; ii<acc.size(); ++ii)
-            ret.push_back(T(acc[ii]));
+        ret = v[0];
+        for (size_t ii=1; ii<v.size(); ++ii)
+            ret += v[ii];
     }
     return ret;
 }
@@ -863,12 +854,15 @@ fgProduct(const vector<T> & v)
     return T(acc);
 }
 
+// The value is accumulated in the templated type. Make a special purpose function
+// if the accumulator type must be larger than the templated type:
 template<class T>
 T
 fgMean(const vector<T> & v)
 {
-    typedef typename FgTraits<T>::Scalar      Scal;
-    return (fgSum(v) / Scal(v.size()));
+    typedef typename FgTraits<T>::Scalar    S;
+    static_assert(std::is_floating_point<S>::value,"Multiplication by a reciprocal");
+    return fgSum(v) * (S(1) / S(v.size()));
 }
 
 template<class T>
@@ -886,20 +880,39 @@ fgSubtract(
 
 template<class T>
 void
-fgMapAddConst_(vector<T> & v,const T & val)
+fgMapAddConst_(vector<T> & vec,const T & val)
 {
-    for (size_t ii=0; ii<v.size(); ++ii)
-        v[ii] += val;
+    for (T & e : vec)
+        e += val;
+}
+
+template<class T>
+void
+fgMapSubConst_(vector<T> & vec,const T & val)
+{
+    for (T & e : vec)
+        e -= val;
 }
 
 template<class T>
 vector<T>
-fgMapAddConst(const vector<T> & in,const T & val)
+fgMapAddConst(const vector<T> & vec,const T & val)
 {
     vector<T>       ret;
-    ret.reserve(in.size());
-    for (typename vector<T>::const_iterator it=in.begin(); it != in.end(); ++it)
-        ret.push_back(*it + val);
+    ret.reserve(vec.size());
+    for (const T & v : vec)
+        ret.push_back(v + val);
+    return ret;
+}
+
+template<class T>
+vector<T>
+fgMapSubConst(const vector<T> & vec,const T & val)
+{
+    vector<T>       ret;
+    ret.reserve(vec.size());
+    for (const T & v : vec)
+        ret.push_back(v - val);
     return ret;
 }
 
@@ -1080,21 +1093,6 @@ bool
 fgSortIndsGt(const T * v,size_t l,size_t r)
 {return (v[l] > v[r]); }
 
-// Reverse sort.
-// Define as separate function to avoid forcing T to require definitions for both LT and GT:
-// Note that !(a < b) is not the same as (a > b) and (a == b) may not be defined either:
-template<class T>
-vector<size_t>
-fgSortIndsRev(const vector<T> & v)
-{
-    vector<size_t>  inds(v.size());
-    for (size_t ii=0; ii<inds.size(); ++ii)
-        inds[ii] = ii;
-    if (!inds.empty())
-        std::sort(inds.begin(),inds.end(),std::bind(fgSortIndsGt<T>,&v[0],std::placeholders::_1,std::placeholders::_2));
-    return inds;
-}
-
 // Make use of a permuted indices list to re-order a list (or subset thereof):
 template<class T>
 vector<T>
@@ -1200,27 +1198,6 @@ fgZip(const vector<vector<T> > & v)
         }
     }
     return ret;
-}
-
-template<class T>
-std::ostream &
-operator<<(std::ostream & ss,const vector<T> & vv)
-{
-    std::ios::fmtflags
-        oldFlag = ss.setf(
-            std::ios::fixed |
-            std::ios::showpos |
-            std::ios::right);
-    std::streamsize oldPrec = ss.precision(6);
-    ss << "[" << fgpush;
-    if (vv.size() > 0)
-        ss << vv[0];
-	for (uint ii=1; ii<vv.size(); ii++)
-		ss << "," << vv[ii];
-    ss << fgpop << "]";
-    ss.flags(oldFlag);
-    ss.precision(oldPrec);
-	return ss;
 }
 
 // For this to work with lambdas the template type must be explicitly given with the function call:
@@ -1384,15 +1361,23 @@ fgIntersection(const vector<vector<T> > & vs)
     return ret;
 }
 
+// Set union on vector containers, retaining lhs order then rhs order:
+template<class T>
+void
+fgSetwiseAdd_(vector<T> & lhs,const vector<T> & rhs)
+{
+    for (const T & r : rhs)
+        if (!fgContains(lhs,r))
+            lhs.push_back(r);
+}
+
+// Set union on vector containers, retaining lhs order then rhs order:
 template<class T>
 vector<T>
-fgRemoveAll(const vector<T> & vec,const T & val)
+fgSetwiseAdd(vector<T> lhs,const vector<T> & rhs)
 {
-    vector<T>       ret;
-    for (const T & v : vec)
-        if (!(v == val))
-            ret.push_back(v);
-    return ret;
+    fgSetwiseAdd_(lhs,rhs);
+    return lhs;
 }
 
 // Set subtraction on vector containers (lhs retains ordering):
@@ -1427,6 +1412,17 @@ fgMultisetWiseSubtract(const vector<T> & lhs,vector<T> rhs)
             ret.push_back(l);
     }
     return ret;
+}
+
+bool
+fgReduceOr(const vector<bool> & v);
+
+template<class T>
+vector<T>
+fgReverse(vector<T> v)
+{
+    std::reverse(v.begin(),v.end());
+    return v;
 }
 
 #endif

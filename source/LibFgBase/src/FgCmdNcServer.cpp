@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 
+#include "FgPlatform.hpp"
 #include "FgCommand.hpp"
 #include "FgSyntax.hpp"
 #include "FgFileSystem.hpp"
@@ -19,6 +20,8 @@
 #include "FgTime.hpp"
 #include "FgNc.hpp"
 #include "FgImageIo.hpp"
+
+#ifndef FG_SANDBOX
 
 using namespace std;
 
@@ -50,7 +53,7 @@ runScript(const string & logFile,const vector<string> & cmds)
                     pop = "fgPop";
     FgPushDir       dirStack;
     for (const string & cmd : cmds) {
-        if (fgStartsWith(cmd,push)) {
+        if (fgBeginsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
             FgOfstream  ofs(logFile,true);
             ofs << "<h3> pushd " << dir << "</h3>\n";
@@ -63,7 +66,7 @@ runScript(const string & logFile,const vector<string> & cmds)
                 return false;
             }
         }
-        else if (fgStartsWith(cmd,pop)) {
+        else if (fgBeginsWith(cmd,pop)) {
             FgOfstream  ofs(logFile,true);
             ofs << "<h3> popd </h3>\n";
             dirStack.pop();
@@ -123,5 +126,7 @@ fgCmdNcServer(const FgArgs & args)
     // the port unusable on Windows until an OS reboot.
     fgTcpServer(fgNcServerPort(),false,handler,0x10000);
 }
+
+#endif
 
 // */

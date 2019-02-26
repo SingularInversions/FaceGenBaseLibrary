@@ -15,17 +15,18 @@
 using namespace std;
 
 string
-fgNcShare(const string & os)
+fgNcShare(FgBuildOS os)
 {
     string      ret;
-    if (os == "win")
+    if (os == FgBuildOS::win)
         ret = "Z:\\";
-    else if (os == "osx")
+    // Both are compiled on MacOS:
+    else if ((os == FgBuildOS::macos) || (os == FgBuildOS::ios))
         ret =  "/Volumes/Zeus_share/";
-    else if (os == "ubuntu")
+    else if (os == FgBuildOS::linux)
         ret = "/mnt/share/";
     else
-        FGASSERT_FALSE1(os);
+        fgThrow("fgNcShare unhandled OS",int(os));
     return ret;
 }
 

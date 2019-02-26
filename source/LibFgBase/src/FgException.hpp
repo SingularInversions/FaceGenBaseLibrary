@@ -34,7 +34,6 @@
 #define FGEXCEPTION_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgString.hpp"
 
 //! The FaceGen API exception type.
 //! All exceptions raised by FG code are of this type, inherit from this type,
@@ -43,17 +42,15 @@ struct  FgException
 {
     struct  Context
     {
-        std::string     msg;        // In english
-        FgString        data;       // Non-translatable
+        std::string     msg;            // In english
+        std::string     dataUtf8;       // Non-translatable UTF-8
 
-        Context(const std::string & m,const FgString & d)
-            : msg(m), data(d)
-        {}
+        Context(const std::string & m,const std::string & d) : msg(m), dataUtf8(d) {}
 
-        FgString
+        std::string                 // UTF-8
         trans() const;
 
-        FgString
+        std::string                 // UTF-8
         noTrans() const;
     };
     std::vector<Context>    m_ct;
@@ -62,6 +59,7 @@ struct  FgException
     ~FgException()
     {}
 
+    FgException() {}
         /**
            Construct an exception with a message and append a second
            string to a translation of the message. For example:
@@ -77,10 +75,8 @@ struct  FgException
 
            Where the first part of the phrase is appropriately translated.
         */
-    FgException(
-        const std::string & msg,
-        const FgString &    data=FgString())
-        : m_ct(1,Context(msg,data))
+    FgException(const std::string & msg,const std::string & dataUtf8)
+        : m_ct(1,Context(msg,dataUtf8))
     {}
 
         /**
@@ -90,15 +86,15 @@ struct  FgException
     void
     pushMsg(
         const std::string & msg,
-        const FgString &    data=FgString())
+        const std::string & dataUtf8 = std::string())
     {
-        m_ct.push_back(Context(msg,data));
+        m_ct.push_back(Context(msg,dataUtf8));
     }
 
-    FgString
+    std::string
     tr_message() const;
 
-    FgString
+    std::string
     no_tr_message() const;
 };
 
@@ -107,39 +103,36 @@ struct  FgException
 struct  FgExceptionUserError : public FgException
 {
     explicit
-    FgExceptionUserError(const std::string & msg,const FgString & data) : FgException(msg,data)
+    FgExceptionUserError(const std::string & msg,const std::string & dataUtf8) : FgException(msg,dataUtf8)
     {}
 };
 
 struct  FgExceptionUserCancel : public FgException
 {
     FgExceptionUserCancel()
-    : FgException("User cancellation")
+    : FgException("User cancellation",std::string())
     {}
 };
 
 struct FgExceptionNotImplemented : public FgException
 {
-    FgExceptionNotImplemented() :
-        FgException("Functionality not implemented on this platform") {}
+    FgExceptionNotImplemented()
+        : FgException("Functionality not implemented on this platform",std::string()) {}
+
+    explicit
+    FgExceptionNotImplemented(const std::string & data)
+        : FgException("Functionality not implemented on this platform",data) {}
 };
 
-inline void fgThrowNotImplemented()
-{throw FgExceptionNotImplemented(); }
-
 inline void fgThrow(const std::string & msg)
-{ 
-    throw FgException(msg);
-}
+{throw FgException(msg,std::string()); }
 
-// DO NOT use templated types for the data args below since clang requires they be resolved
-// in PRIOR declarations which is not possible since this must be one of the first include
-// files:
-
-inline void fgThrow(const std::string & msg,const FgString & data) 
-{throw FgException(msg,data);  }
-
-inline void fgThrow(const std::string & msg,const FgString  data0,const FgString & data1) 
-{throw FgException(msg,data0+","+data1); }
+// Only way to avoid VS warnings since some configs warn for unreachable code (returns),
+// others for not returning a value ...
+#if defined(__GNUC__) || (defined(_MSC_VER) && defined(_DEBUG))
+#define FG_UNREACHABLE_RETURN(T) return T;
+#else
+#define FG_UNREACHABLE_RETURN(T)
+#endif
 
 #endif      // #ifndef FGEXCEPTION_HPP

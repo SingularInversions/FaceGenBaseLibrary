@@ -8,13 +8,13 @@
 //
 // Avoid the abomination that is std::algorithm on std::set
 //
-// WARNING (VS15): std::set::operator<(...) uses T::operator<(...) NOT std::less<T>() so if you have custom
-// ordering and you want to compare sets, make sure you also define T::operator<(...) appropriately.
 
 #ifndef FGSTDSET_HPP
 #define FGSTDSET_HPP
 
 #include "FgStdLibs.hpp"
+
+using std::set;
 
 template<class T>
 std::ostream &
@@ -27,10 +27,10 @@ operator<<(std::ostream & os,const std::set<T> & v)
 }
 
 // Useful in functional contexts where 's' is already an expression:
-template<class T>
+template<class T,class U>
 inline
 std::vector<T>
-fgSetToVec(const std::set<T> & s)
+fgSetToVec(const std::set<T,U> & s)
 {return std::vector<T>(s.begin(),s.end()); }
 
 template<class T>
@@ -120,11 +120,22 @@ operator-(const std::set<T> & lhs,const std::set<T> & rhs)
     return ret;
 }
 
-// plus is a nice short-hand for union:
+// Arithmetic notation is a nice short-hand for union:
 template<class T>
 void
 operator+=(std::set<T> & l,const std::set<T> & r)
 {l.insert(r.begin(),r.end()); }
+
+template<class T>
+void
+operator+=(std::set<T> & l,const std::vector<T> & r)
+{l.insert(r.begin(),r.end()); }
+
+// In case you prefer arithmetic notation for all:
+template<class T>
+void
+operator+=(std::set<T> & l,const T & r)
+{l.insert(r); }
 
 template<class T>
 void
@@ -135,6 +146,15 @@ operator-=(std::set<T> & lhs,const std::set<T> & rhs)
         if (it != lhs.end())
             lhs.erase(it);
     }
+}
+
+template<class T>
+void
+operator-=(std::set<T> & lhs,const T & rhs)
+{
+    auto it = lhs.find(rhs);
+    if (it != lhs.end())
+        lhs.erase(it);
 }
 
 template<class T>

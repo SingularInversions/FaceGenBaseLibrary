@@ -921,6 +921,6 @@ meshops(const FgArgs & args)
 
 FgCmd
 fgCmdMeshopsInfo()
-{return FgCmd(meshops,"meshops","Operations on 3D meshes"); }
+{return FgCmd(meshops,"mesh","3D Mesh tools"); }
 
 // */

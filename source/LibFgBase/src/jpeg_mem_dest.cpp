@@ -8,9 +8,11 @@
 
 #include "stdafx.h"
 
+extern "C" {
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jerror.h"
+}
 
 #include "FgStdLibs.hpp"
 

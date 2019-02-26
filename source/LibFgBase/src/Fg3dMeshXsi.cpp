@@ -736,20 +736,9 @@ static FgVect3F calQuadNormals(
 //
 static string floatToString(float val)
 {
-    char str[48];
-
-    sprintf(str,"%#f",val);
-    size_t len=strlen(str);
-    if (len)
-    {
-        if (str[len-1] == '.')
-        {
-            str[len] = '0';
-            str[len+1] = 0;
-        }
-    }
-
-    return string(str);
+    std::ostringstream   oss;
+    oss << std::fixed << std::setw(4) << std::setfill('0') << val;
+    return oss.str();
 }
 
 void

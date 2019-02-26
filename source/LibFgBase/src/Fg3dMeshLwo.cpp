@@ -492,8 +492,6 @@ static int  writeVx(FILE *fptr, unsigned long idx)
         else
             return 4;
     }
-
-    return 0;
 }
 
 

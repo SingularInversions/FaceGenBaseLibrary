@@ -22,7 +22,7 @@
 #define FGOUT_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgString.hpp"
+#include "FgTypes.hpp"
 
 std::ostream &
 fgnl(std::ostream& ss);
@@ -35,11 +35,6 @@ fgpop(std::ostream& ss);
 
 std::ostream &
 fgreset(std::ostream& ss);  // Reset indent to zero (useful for exception handling)
-
-// clang doesn't like vector's use of FgOut without forward declaration:
-template<class T>
-std::ostream &
-operator<<(std::ostream & ss,const std::vector<T> & vv);
 
 struct  FgOut
 {
@@ -57,7 +52,7 @@ struct  FgOut
     bool    defOutEnabled();            // As above. Non-const only for technical reasons.
 
     void
-    logFile(const FgString & fname,bool append=true,bool prependDate=true);
+    logFile(const std::string & fnameUtf8,bool append=true,bool prependDate=true);
 
     void logFileClose();
 
@@ -156,17 +151,15 @@ struct  FgOutPush
     {fgout << fgpop; }
 };
 
-#define FG_HI fgout << fgnl << "HI ! (" << __FILE__ << ": " << __LINE__ << ")" << std::flush
+#define FGOUT1(X) fgout << fgnl << #X ": " << (X)
 
-#define FG_HI1(X) fgout << fgnl << #X ": " << (X) << std::flush
+#define FGOUT2(X,Y) fgout << fgnl << #X ": " << (X) << "  " << #Y ": " << (Y)
 
-#define FG_HI2(X,Y) fgout << fgnl << #X ": " << (X) << " " << #Y ": " << (Y) << std::flush
+#define FGOUT3(X,Y,Z) fgout << fgnl                                 \
+        << #X ": " << (X) << "  " << #Y ": " << (Y) << " " << #Z ": " << (Z)
 
-#define FG_HI3(X,Y,Z) fgout << fgnl << #X ": " << (X) << " " << #Y ": " << (Y) << " " << #Z ": " << (Z) << std::flush
-
-#define FG_HI4(X,Y,Z,A) fgout << fgnl << #X ": " << (X) << " "     \
-         << #Y ": " << (Y) << " "                                   \
-         << #Z ": " << (Z) << " "                                   \
-         << #A ": " << (A) << std::flush
+#define FGOUT4(X,Y,Z,A) fgout << fgnl                               \
+        << #X ": " << (X) << "  " << #Y ": " << (Y) << "  "         \
+        << #Z ": " << (Z) << "  " << #A ": " << (A)
 
 #endif

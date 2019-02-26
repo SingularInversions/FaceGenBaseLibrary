@@ -18,9 +18,9 @@
 #include "FgFileSystem.hpp"
 #include "FgSerialSimple.hpp"
 
-// Location of network computing share root location as specified on given operating system:
+// Location of network computing share root location as specified on given *native* build OS:
 string
-fgNcShare(const string & os);
+fgNcShare(FgBuildOS nativeBuildOS);
 
 // As above for current host OS:
 string
@@ -52,7 +52,7 @@ fgCiShareBoot()
 
 inline
 string
-fgCiShareBoot(const string & os)
+fgCiShareBoot(FgBuildOS os)
 {return fgNcShare(os) + fgNsOs("ci/boot/",os); }
 
 inline
@@ -62,7 +62,7 @@ fgCiShareRepo()
 
 inline
 string
-fgCiShareRepo(const string & os)
+fgCiShareRepo(FgBuildOS os)
 {return fgNcShare(os) + fgNsOs("ci/root/",os); }
 
 #endif

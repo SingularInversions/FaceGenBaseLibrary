@@ -18,8 +18,10 @@ static void Construct()
         FGASSERT(s.length() == 0); }
     {   FgString s("12345");
         FGASSERT(s.length() == 5);}
+#ifdef _WIN32
     {   FgString s(L"12345");
         FGASSERT(s.length() == 5); }
+#endif
     {   FgString s1("12345");
         FgString s2(s1);
         FGASSERT(s1.length() == s2.length() && s1.length() == 5); }
@@ -42,6 +44,7 @@ static void Assign()
     {   FgString s;
         s = "12345";
         FGASSERT(s.length() == 5); }
+#ifdef _WIN32
     {   FgString s;
         s = L"12345";
         FGASSERT(s.length() == 5); }
@@ -50,6 +53,7 @@ static void Assign()
         FgString s1;
         s1 = s;
         FGASSERT(s1.length() == 5); }
+#endif
 }
 
 static void Append()
@@ -57,9 +61,11 @@ static void Append()
     {   FgString s("12345");
         s += "12345";
         FGASSERT(s.length() == 10); }
+#ifdef _WIN32
     {   FgString s("12345");
         s += L"12345";
         FGASSERT(s.length() == 10); }
+#endif
     {   FgString s("12345");
         s += s;
         FGASSERT(s.length() == 10); }
@@ -72,6 +78,7 @@ static void Append()
 
 static void Comparisons()
 {
+#ifdef _WIN32
     {   FgString s("12345");
         FGASSERT(s == "12345");
         FGASSERT(s == L"12345");
@@ -82,6 +89,7 @@ static void Comparisons()
         FGASSERT(s != L"Hi");
         FGASSERT(s != FgString("Bye"));
         FGASSERT(s == "12345"); }
+#endif
     {   FgString s("abcdefg");
         FGASSERT(s == "abcdefg");
         FGASSERT(s != "abc"); }
@@ -97,13 +105,15 @@ static void Encoding()
         FGASSERT(character == fg_character[0]);
     }
     {
-        FgString source("UTF-8:\xC5\xA1\xC4\x8E");
-        FgTempFile tf("testString_utf8.txt");
-        {   std::ofstream ofs(tf.filename().c_str());        
+        FgTestDir   td("string_encoding");
+        FgString    source("UTF-8:\xC5\xA1\xC4\x8E");
+        {
+            std::ofstream ofs("testString_utf8.txt");
             FGASSERT(ofs);
             ofs << source << '\n';
         }
-        {   std::ifstream ifs(tf.filename().c_str());
+        {
+            std::ifstream ifs("testString_utf8.txt");
             FGASSERT(ifs);
             FgString target;
             ifs >> target;
@@ -163,6 +173,17 @@ static void StartsWith()
     }
 }
 
+static void Convert()
+{
+    string      utf8 = fgSlurp(fgDataDir()+"base/test/utf8_language_samples.txt"),
+                reg32 = fgToUtf8(fgToUtf32(utf8));
+    FGASSERT(utf8 == reg32);
+#ifdef _WIN32
+    string     reg16 = fgToUtf8(fgToUtf16(utf8));
+    FGASSERT(utf8 == reg16);
+#endif
+}
+
 void
 fgStringTest(const FgArgs &)
 {
@@ -176,4 +197,5 @@ fgStringTest(const FgArgs &)
     Compare();
     Split();
     StartsWith();
+    Convert();
 }

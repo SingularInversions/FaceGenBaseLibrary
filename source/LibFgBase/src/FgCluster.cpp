@@ -48,13 +48,13 @@ fgClusterDeploy(
         return;
     // Use coordinator machine to copy executable to file server via CIFS, preserving executable bit permission:
     string          filesDirLocal = fgNcShare() + "cc/" + name + '/',
-                    filesDirUbu = fgNcShare("ubuntu") + "cc/" + name + '/';
+                    filesDirUbu = fgNcShare(FgBuildOS::linux) + "cc/" + name + '/';
     fgCreatePath(filesDirLocal+"data/");
     FgNcScript      scriptCrdntor;
     scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
     FgString        binBase = FgPath(fgExecutablePath()).base;
-    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot("ubuntu") + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
+    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot(FgBuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
     if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):

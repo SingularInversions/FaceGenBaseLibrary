@@ -10,10 +10,6 @@
 #ifndef FGSTDLIBS_HPP
 #define FGSTDLIBS_HPP
 
-// In case client includes Microsoft libraries before this:
-#undef max
-#undef min
-
 // C standard libraries. We use the 'c' prefixed versions which put the original
 // versions into the 'std::' namespace. Note that they also define 'using' for each
 // name so we don't have to use the namespace prefix (or 'using namespace std') -
@@ -29,14 +25,10 @@
 
 // C++ standard libraries:
 
-#ifdef _MSC_VER
-// Some MSVC standard libraries trigger this warning after release optimizations:
-#pragma warning (disable: 4702)
-#endif
-
-#include <vector>
 #include <algorithm>
+#include <codecvt>
 #include <complex>
+#include <condition_variable>
 #include <exception>
 #include <fstream>
 #include <functional>
@@ -44,19 +36,19 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <locale>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <numeric>
 #include <set>
 #include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
-
-// Don't want warnings every time a '0' or '1' is used as a float:
-#pragma warning(disable:4244)
+#include <type_traits>
+#include <vector>
 
 #endif
 

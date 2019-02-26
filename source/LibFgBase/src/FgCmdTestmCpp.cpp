@@ -11,6 +11,8 @@
 
 #include "stdafx.h"
 
+#include <boost/any.hpp>
+
 #include "FgCmd.hpp"
 #include "FgSyntax.hpp"
 #include "FgMetaFormat.hpp"
@@ -171,6 +173,25 @@ any(const FgArgs &)
 
 static
 void
+thash(const FgArgs &)
+{
+    for (uint ii=0; ii<3; ++ii) {
+        string              str = "Does this string give a consistent hash on subsequent runs ?";
+        std::hash<string>   hfn;        // Returns size_t
+#ifdef FG_64                            // size_t is 64 bits:
+        fgout << fgnl << "64 bit hash: " << hfn(str);
+#else                                   // size_t is 32 bits:
+        size_t              hval32 = hfn(str);
+        uint64              lo = hval32,
+                            hi = hfn(str+fgToStr(lo)),
+                            hval64 = lo | (hi << 32);
+        fgout << fgnl << "32 bit hash: " << hval32 << " and 64 composite: " << hval64;
+#endif
+    }
+}
+
+static
+void
 parr(const FgArgs &)
 {
     // Generate data and put in both parallel and packed arrays:
@@ -265,11 +286,12 @@ void
 fgCmdTestmCpp(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
+    cmds.push_back(FgCmd(any,"any","Test boost any copy semantics"));
+    cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
+    cmds.push_back(FgCmd(thash,"hash","Test std::hash behaviour"));
+    cmds.push_back(FgCmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
     cmds.push_back(FgCmd(rvo,"rvo","Return value optimization / copy elision"));
     cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of library exp(double)"));
-    cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
-    cmds.push_back(FgCmd(any,"any","Test boost any copy semantics"));
-    cmds.push_back(FgCmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
     fgMenu(args,cmds);
 }
 

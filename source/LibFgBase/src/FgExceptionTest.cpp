@@ -12,6 +12,7 @@
 #include "FgException.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgMain.hpp"
+#include "FgString.hpp"
 
 using namespace std;
 
@@ -45,9 +46,8 @@ static void func1()
 
 struct FgMyException : public FgException
 {
-    FgMyException(std::string const & s):FgException(s){}
-    FgMyException(std::string const & s, std::string const & m):FgException(s,m){}
-    FgMyException(std::string const & s, FgString const & m):FgException(s,m){}
+    FgMyException(std::string const & s) : FgException(s,string()) {}
+    FgMyException(std::string const & s, std::string const & m) : FgException(s,m) {}
 };
 
 void

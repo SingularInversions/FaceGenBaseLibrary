@@ -77,10 +77,13 @@ fgExp(T val,bool clamp=false)
 // (Microsoft's is actually a bit faster than this one):
 double fgExpFast(double x);
 
+// Returns one of {-1,0,1}. Branchless.
+// Not compatible with FP positive/negative for 0/Inf/Nan.
+// Use the slower std::sgnbit and std::copysign for that.
 template<typename T>
-T
+int
 fgSign(T val)
-{return (val < T(0)) ? T(-1) : T(1); }
+{return (T(0) < val) - (val < T(0)); }
 
 // std::fmod gives a remainder not a modulus (ie it can be negative):
 template<typename T>

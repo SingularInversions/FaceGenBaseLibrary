@@ -13,7 +13,7 @@
 #include "FgDiagnostics.hpp"
 #include "FgStdVector.hpp"
 #include "FgMain.hpp"
-#include "FgString.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 
@@ -33,12 +33,12 @@ FgPath::FgPath(const FgString & path)
 {
     if (path.empty())
         return;
-    vector<uint>    p = path.as_utf32();
-    p = fgReplace(p,uint('\\'),uint('/'));
+    u32string       p = path.as_utf32();
+    p = fgReplace(p,char32_t('\\'),char32_t('/'));  // VS2013 doesn't support char32_t literal U
     if (p.size() > 1) {
         if ((p[0] == '/') && (p[1] == '/')) {
             root = true;
-            vector<uint>::const_iterator    it = find(p.begin()+2,p.end(),uint('/'));
+            auto        it = find(p.begin()+2,p.end(),uint('/'));
             if (it == p.end()) {
                 drive = FgString(p);
                 return;
@@ -61,8 +61,8 @@ FgPath::FgPath(const FgString & path)
     }
     if (p.empty())
         return;
-    if (fgContains(p,uint('/'))) {
-        vector<vector<uint> >   s = fgSplit(p,uint('/'));
+    if (fgContains(p,char32_t('/'))) {
+        FgStr32s        s = fgSplit(p,char32_t('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
             FgString    str(s[ii]);
             if ((str == "..") && (!dirs.empty())) {
@@ -81,8 +81,8 @@ FgPath::FgPath(const FgString & path)
     }
     if (p.empty())
         return;
-    if (fgContains(p,uint('.'))) {
-        size_t  idx = fgFindLastIdx(p,uint('.'));
+    if (fgContains(p,char32_t('.'))) {
+        size_t      idx = fgFindLastIdx(p,char32_t('.'));
         base = FgString(fgHead(p,idx));
         ext = FgString(fgRest(p,idx+1));    // Don't include the dot
     }
@@ -185,12 +185,12 @@ fgAsDirectory(const FgString & path)
     FgString        ret = path;
     if (path.empty())
         return ret;
-    vector<uint>    str = path.as_utf32();
-    if (str.back() == uint('/'))
+    u32string       str = path.as_utf32();
+    if (str.back() == '/')
         return ret;
-    if (str.back() == uint('\\'))
+    if (str.back() == '\\')
         return ret;
-    if (str.back() == uint(':'))
+    if (str.back() == ':')
         return  ret;
     ret.m_str += '/';
     return ret;

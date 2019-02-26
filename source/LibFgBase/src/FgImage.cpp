@@ -20,7 +20,7 @@ operator<<(std::ostream & os,const FgImgRgbaUb & img)
     if (img.empty())
         return os << "Empty image";
     FgMatrixC<uchar,4,1>    init = img[0].m_c;
-    FgMatrixC<uchar,4,2>    bounds = fgConcatHoriz(init,init);
+    FgMatrixC<uchar,4,2>    bounds = fgJoinHoriz(init,init);
     for (FgIter2UI it(img.dims()); it.next(); it.valid()) {
         FgRgbaUB    pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {

@@ -8,11 +8,10 @@
 //
 // Optional-value type extender.
 //
-// * Simpler than std::optional - carries around a default constructed value when not valid.
-//
+// * std::optional not available until C++17.
+// * Simpler than boost::optional - carries around a default constructed value when not valid.
 // * To avoid additional memory use for numerical types, use 'FgValid' but note that
 //   numeric_limits<T>::max() is the special 'invalid' value.
-//
 //  * Otherwise, use 'FgOpt' which adds a bool to keep track.
 //
 
@@ -27,13 +26,9 @@ template<typename T>
 class   FgOpt
 {
 public:
-    FgOpt()
-    : m_valid(false)
-    {}
+    FgOpt() : m_valid(false) {}
 
-    FgOpt(const T & v)
-    : m_valid(true), m_val(v)
-    {}
+    FgOpt(const T & v) : m_valid(true), m_val(v) {}
 
     FgOpt &
     operator=(const T & v)

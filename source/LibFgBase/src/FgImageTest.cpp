@@ -16,26 +16,27 @@
 #include "FgTestUtils.hpp"
 #include "FgApproxEqual.hpp"
 #include "FgCommand.hpp"
+#include "FgSyntax.hpp"
 
 using namespace std;
 
+namespace {
+
 // MANUAL:
 
-static
 void
 display(const FgArgs &)
 {
     FgString    dd = fgDataDir();
     string      testorig_jpg("base/test/testorig.jpg");
     FgImgRgbaUb img;
-    fgImgLoadJfif(dd+testorig_jpg,img);
+    fgLoadImgAnyFormat(dd+testorig_jpg,img);
     fgImgDisplay(img);
     string      testorig_bmp("base/test/testorig.bmp");
     fgLoadImgAnyFormat(dd+testorig_bmp,img);
     fgImgDisplay(img);
 }
 
-static
 void
 resize(const FgArgs &)
 {
@@ -47,14 +48,13 @@ resize(const FgArgs &)
     fgImgDisplay(out);
 }
 
-static
 void
 sfs(const FgArgs &)
 {
-    FgImg4UC            orig = fgLoadImg4UC(fgDataDir()+"base/Mandrill512.png");
+    FgImgRgbaUb         orig = fgLoadImgAnyFormat(fgDataDir()+"base/Mandrill512.png");
     FgImage<FgVect3F>   img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
-        img[ii] = FgVect3F(orig[ii].subMatrix<3,1>(0,0));
+        img[ii] = FgVect3F(orig[ii].m_c.subMatrix<3,1>(0,0));
     FgTimer             time;
     for (uint ii=0; ii<100; ++ii)
         fgSmoothFloat(img,img,1);
@@ -63,19 +63,17 @@ sfs(const FgArgs &)
     fgImgDisplay(img);
 }
 
-void
-fgImageTestm(const FgArgs & args)
-{
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(resize,"resize"));
-    cmds.push_back(FgCmd(display,"display"));
-    cmds.push_back(FgCmd(sfs,"sfs","smoothFloat speed"));
-    fgMenu(args,cmds);
-}
-
 // AUTOMATIC:
 
-static
+void
+composite(const FgArgs &)
+{
+    FgString            dd = fgDataDir();
+    FgImgRgbaUb         overlay = fgLoadImgAnyFormat(dd+"base/Teeth512.png"),
+                        base = fgLoadImgAnyFormat(dd+"base/Mandrill512.png");
+    fgRegress(fgComposite(overlay,base),dd+"base/test/imgops/composite.png");
+}
+
 void
 testConvolve(const FgArgs &)
 {
@@ -90,12 +88,25 @@ testConvolve(const FgArgs &)
     FGASSERT(fgApproxEqual(i0.m_data,i1.m_data));
 }
 
+}
+
+void
+fgImageTestm(const FgArgs & args)
+{
+    vector<FgCmd>   cmds;
+    cmds.push_back(FgCmd(resize,"resize"));
+    cmds.push_back(FgCmd(display,"display"));
+    cmds.push_back(FgCmd(sfs,"sfs","smoothFloat speed"));
+    fgMenu(args,cmds);
+}
+
 void    fgImgTestWrite(const FgArgs &);
 
 void
 fgImageTest(const FgArgs & args)
 {
     vector<FgCmd>       cmds;
+    cmds.push_back(FgCmd(composite,"composite"));
     cmds.push_back(FgCmd(testConvolve,"conv"));
     cmds.push_back(FgCmd(fgImgTestWrite,"write"));
     fgMenu(args,cmds,true,false,true);

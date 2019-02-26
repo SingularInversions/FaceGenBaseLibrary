@@ -20,49 +20,13 @@ namespace fgCl
 void
 unzip(const string &)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
 }
 
 void
 zip(const string & ,const string & )
 {
-    fgThrowNotImplemented();
-}
-
-void
-ren(const string & ,const string & )
-{
-    fgThrowNotImplemented();
-}
-
-void
-copy(const string & ,const string & )
-{
-    fgThrowNotImplemented();
-}
-
-void
-copyDeep(const string & ,const string & )
-{
-    fgThrowNotImplemented();
-}
-
-void
-del(const string & )
-{
-    fgThrowNotImplemented();
-}
-
-void
-md(const string & )
-{
-    fgThrowNotImplemented();
-}
-
-void
-move(const string & ,const string & )
-{
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
 }
 
 }   // namespace

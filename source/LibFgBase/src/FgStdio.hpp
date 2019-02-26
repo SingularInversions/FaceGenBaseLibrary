@@ -6,7 +6,8 @@
 // Authors:     Andrew Beatty
 // Created:     Feb 25, 2011
 //
-// stdio related functionality - defined in platform specific libraries
+// C-style FILE* is needed for use of C libraries and older code.
+// This provides safe unicode cross-platform 'fopen'
 //
 
 #ifndef FGSTDIO_HPP
@@ -15,11 +16,11 @@
 #include "FgStdLibs.hpp"
 #include "FgString.hpp"
 
+// Always opens in 'binary' mode. Throws a descriptive error if the file cannot be opened.
 FILE *
 fgOpen(
     const FgString &    filename,
-    bool                write,      // false = read
-    bool                binary);    // false = text
+    bool                write);         // false = read
 
 #endif
 

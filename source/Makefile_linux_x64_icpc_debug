@@ -1,0 +1,13 @@
+CC = icc
+CXX = icpc
+LINK = icpc
+CFLAGS = -m64 -g -O1 -D_DEBUG -diag-disable=11074,11076 -xavx -fPIC
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++11
+LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
+DLLEXT = .so
+DLLARG = -shared -Wl,-soname,
+BINDIR = ../bin/ubuntu/x64/icpc/debug/
+BBINDIR = ../bin/ubuntu/x64/
+BUILDIR = ../build_ubuntu/x64/icpc/debug/
+include make_all.mk

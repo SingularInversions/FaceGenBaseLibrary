@@ -76,14 +76,6 @@ fgCreateDirectory(const FgString & dir)
 }
 
 void
-fgRemoveFile(const FgString & fname)
-{
-    string      utf8 = fname.as_utf8_string();
-    if (remove(utf8.c_str()) != 0)
-        fgThrow("Unable to remove file",fname);
-}
-
-void
 fgDeleteFile(const FgString & fname)
 {fgRemoveFile(fname); }
 
@@ -104,42 +96,42 @@ fgRemoveDirectory(
 FgString
 fgDirSystemAppDataRoot()
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
 FgString
 fgDirSystemAppData(FgString const &,FgString const &)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
 FgString
 fgDirUserAppDataLocalRoot()
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
 FgString
 fgDirUserAppDataRoamingRoot()
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
 FgString
 fgUserDocumentsDirectory(bool)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
 FgString
 fgPublicDocumentsDirectory()
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgString();
 }
 
@@ -157,13 +149,13 @@ struct  Dir
 bool
 fgCreationTime(const FgString &,uint64 &)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return false;
 }
 
 void
 fgMakeWritableByAll(const FgString &)
-{fgThrowNotImplemented(); }
+{throw FgExceptionNotImplemented(); }
 
 #if defined(__APPLE__)
 

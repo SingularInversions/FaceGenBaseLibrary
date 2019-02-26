@@ -243,7 +243,7 @@ fgCmdRenderTest(const FgArgs & args)
     fgCmdRender(fgSplitChar("render render_test"));
     fgRegressFileRel("render_test.png","base/test/",imgApproxEqual);
     // TODO: make a struct and serialize to XML so an approx comparison can be done (debug has precision diffs):
-    if ((fgCurrentCompiler() == "vs15") && (fgCurrentBuildConfig() == "release")) {
+    if ((fgCurrentCompiler() == FgCompiler::vs15) && (fgCurrentBuildConfig() == "release")) {
         fgRegressFileRel("render_test.csv","base/test/");
     }
 }

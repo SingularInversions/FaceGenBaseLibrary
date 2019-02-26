@@ -29,14 +29,14 @@ fg64bitOS()
 // Don't warn about deprecation ('GetVersionEx'). TODO: Make os version detection actually work.
 #  pragma warning(disable:4996)
 
-FgString
-fgSystemInfo()
+string
+fgOsName()
 {
     OSVERSIONINFOEX     osvi;
     ZeroMemory(&osvi,sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     GetVersionEx(LPOSVERSIONINFOW(&osvi));
-    FgString            verStr,
+    string              verStr,
                         unknown = fgToStr(osvi.dwMajorVersion) + "." + fgToStr(osvi.dwMinorVersion);
     if (osvi.wProductType != VER_NT_WORKSTATION)
         unknown += " (server)";
@@ -87,7 +87,7 @@ fgSystemInfo()
         verStr += " 64bit ";
     else
         verStr += " 32bit ";
-    return "Windows " + verStr + FgString(wstring(osvi.szCSDVersion));
+    return "Windows " + verStr + FgString(wstring(osvi.szCSDVersion)).m_str;
 }
 
 FgString

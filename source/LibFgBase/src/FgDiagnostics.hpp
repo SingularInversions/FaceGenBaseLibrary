@@ -16,7 +16,6 @@
 #define FGDIAGNOSTICS_HPP
 
 #include "FgException.hpp"
-#include "FgBoostLibs.hpp"
 
 std::string
 fgDiagString(const char *fname,int line);
@@ -65,30 +64,21 @@ fgAssert(const char * fname,int line,const std::string & msg = "");
 #define FGASSERT_FALSE1(msg)                                         \
     fgAssert(__FILE__,__LINE__,msg)
 
-#define FG_STATIC_ASSERT(X) BOOST_STATIC_ASSERT(X)
+// printf-style debugging:
 
-// Convenient for debugging:
+#define FG_HI std::cout << "\nHI! (" << __FILE__ << ": " << __LINE__ << ")" << std::flush
 
-#define FG_HI_                                                      \
-std::cout << "\nHI ! (" << __FILE__ << ": " << __LINE__       \
-        << ")" << std::flush
+#define FG_HI1(X) std::cout << "\nHI! " << #X ": " << (X) << std::flush
 
-#define FG_HI_1(X)                                                  \
-    std::cout << "\n" << #X ": " << (X) << std::flush
+#define FG_HI2(X,Y) std::cout << "\nHI! " << #X ": " << (X) << " " << #Y ": " << (Y) << std::flush
 
-#define FG_HI_2(X,Y)                                                \
-	std::cout << "\n" << #X ": " << (X) << " "                 \
-        << #Y ": " << (Y) << std::flush
-
-#define FG_HI_3(X,Y,Z)                                              \
-    std::cout << "\n" << #X ": " << (X) << " "                 \
-         << #Y ": " << (Y) << " "                                   \
+#define FG_HI3(X,Y,Z) std::cout << "\nHI! " << #X ": " << (X) << " "       \
+         << #Y ": " << (Y) << " "                                           \
          << #Z ": " << (Z) << std::flush
 
-#define FG_HI_4(X,Y,Z,A)                                            \
-    std::cout << "\n" << #X ": " << (X) << " "                 \
-         << #Y ": " << (Y) << " "                                   \
-         << #Z ": " << (Z) << " "                                   \
+#define FG_HI4(X,Y,Z,A) std::cout << "\nHI! " << #X ": " << (X) << " "     \
+         << #Y ": " << (Y) << " "                                           \
+         << #Z ": " << (Z) << " "                                           \
          << #A ": " << (A) << std::flush
 
 // Use string for debug build, empty string otherwise:

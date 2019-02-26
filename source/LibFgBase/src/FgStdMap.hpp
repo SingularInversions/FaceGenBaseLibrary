@@ -11,6 +11,18 @@
 #define FGSTDMAP_HPP
 
 #include "FgStdLibs.hpp"
+#include "FgException.hpp"
+
+// Use this when you know the Key must be present:
+template<class Key,class Val>
+Val
+fgLookup(const std::map<Key,Val> & map,const Key & key)
+{
+    auto        it = map.find(key);
+    if (it == map.end())
+        fgThrow("fgLookup key not found");
+    return it->second;
+}
 
 template<class Key,class Val>
 bool
@@ -26,50 +38,26 @@ fgMerge(const std::map<Key,Val> & l,const std::map<Key,Val> & r)
     return ret;
 }
 
-// A frequency map counts the number of additions of each object.
-// The value for any object not added is automatically zero.
-template<class T>
-struct FgFreqMap
+// Accumulate weights of type W for different values of type T in map<T,W>.
+// Useful for frequency maps or weight maps:
+template<class T,class W>
+void
+fgMapAccWeight_(std::map<T,W> & map,const T & val,W weight=W(1))
 {
-    std::map<T,size_t>      map;
+    auto    it = map.find(val);
+    if (it == map.end())
+        map[val] = weight;
+    else
+        it->second += weight;
+}
 
-    void add(const T & v)
-    {
-        auto    it = map.find(v);
-        if (it == map.end())
-            map[v] = 1;
-        else
-            ++(it->second);
-    }
-
-    void addMany(const T & v,size_t num)
-    {
-        auto    it = map.find(v);
-        if (it == map.end())
-            map[v] = num;
-        else
-            it->second += num;
-    }
-
-    size_t count(const T & v) const
-    {
-        auto    it = map.find(v);
-        if (it == map.end())
-            return 0;
-        else
-            return it->second;
-    }
-
-    std::pair<T,size_t>
-    max() const
-    {
-        std::pair<T,size_t>     ret;
-        ret.second = 0;
-        for (auto it=map.begin(); it!=map.end(); ++it)
-            if (it->second > ret.second)
-                ret = *it;
-        return ret;
-    }
-};
+// As above but accumulate all weights in 'rhs' to 'lhs':
+template<class T,class W>
+void
+fgMapAccWeight_(std::map<T,W> & lhs,const std::map<T,W> & rhs)
+{
+    for (const auto & it : rhs)
+        fgMapAccWeight_(lhs,it.first,it.second);
+}
 
 #endif

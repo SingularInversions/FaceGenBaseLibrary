@@ -13,61 +13,67 @@
 #include "FgStdLibs.hpp"
 #include "FgStdString.hpp"
 
-// Supported build OSes:
-std::vector<std::string>
-fgBuildOSes();
+// Build OS families are identical with respect to build files:
+enum struct FgBuildOS { win, linux, macos, ios, android };
+typedef std::vector<FgBuildOS>      FgBuildOSs;
+std::ostream & operator<<(std::ostream &,FgBuildOS);
+FgBuildOS fgStrToBuildOS(const string &);
 
-// Returns "win", "osx" or "ubuntu":
-std::string
-fgCurrentOS();
+// Supported native-build OS families (ie. not cross-compiled):
+inline FgBuildOSs
+fgBuildNativeOSs()
+{return fgSvec(FgBuildOS::win,FgBuildOS::linux,FgBuildOS::macos); }
+
+// Supported cross-compile-build OS families:
+inline FgBuildOSs
+fgBuildCrossCompileOSs()
+{return fgSvec(FgBuildOS::ios,FgBuildOS::android); }
+
+FgBuildOS
+fgCurrentBuildOS();
+
+// Instruction set architectures:
+enum struct FgArch { x86, x64, armv7, arm64, arm64e, armv7_a, arm64_v8a };
+typedef std::vector<FgArch>     FgArchs;
+std::ostream & operator<<(std::ostream &,FgArch);
+FgArch fgStrToArch(const string &);
+
+FgArchs
+fgBuildArchitectures(FgBuildOS os);
+
+// Supported compilers (based on platform):
+enum struct FgCompiler { vs13, vs15, vs17, gcc, clang, icpc };
+typedef std::vector<FgCompiler>     FgCompilers;
+std::ostream & operator<<(std::ostream &,FgCompiler);
+FgCompiler fgStrToCompiler(const string &);
 
 // Supported build compilers for given OS.
 // The first listed compiler is the default for binary distribution:
-std::vector<std::string>
-fgBuildCompilers(const std::string & os);
+FgCompilers
+fgBuildCompilers(FgBuildOS os);
 
-// Supported build compilers for current OS:
-inline
-std::vector<std::string>
-fgCompilers()
-{return fgBuildCompilers(fgCurrentOS()); }
-
-std::string
+FgCompiler
 fgCurrentCompiler();
 
-// Supported build bit sizes for given compiler:
-std::vector<std::string>
-fgBuildBits(const std::string & compiler);
-
-std::string
-fgCurrentBuildBits();
-
-// Supported build configurations ("debug" and "release"):
-std::vector<std::string>
-fgBuildConfigs();
-
-std::string
+string
 fgCurrentBuildConfig();
 
-std::string
+string
 fgCurrentBuildDescription();
 
 inline
-char
-fgDs(const std::string os)
-{return ((os == "win") ? '\\' : '/'); }
+string
+fgNsOs(const string & path,FgBuildOS os)
+{return (os == FgBuildOS::win) ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
 
-inline
-std::string
-fgNsOs(
-    const std::string & path,
-    const std::string & os)
-{return (os == "win") ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
+// Return bin directory for given configuration relative to the repo root:
+string
+fgRelBin(FgBuildOS,FgArch,FgCompiler,bool release,bool backslash=false);
 
 // Fast insecure hash for generating UUIDs from unique strings of at least length 8 based on std::hash.
-// Deterministic for same compiler / bit depth only for purposes of avoiding random seed issues,
+// Deterministic for same compiler / bit depth for regression testing.
 // 64 and 32 bit versions will NOT generate the same value, nor will different compilers (per std::hash).
-// In future may upgrade to use MD5 to ensure fully deterministic mapping:
+// In future may upgrade to MurmurHash3 to ensure fully deterministic mapping:
 uint64
 fgUuidHash64(const string & uniqueString);
 
@@ -80,7 +86,8 @@ struct  FgUint128
 FgUint128
 fgUuidHash128(const string & uniqueString);
 
-// Uses fgUuidHash128 above, filling UUID 'time' fields with random bits rather than actual time:
+// See comments on fgUuidHash64. Fills UUID 'time' fields with random bits for deterministic
+// regression testing; all randomness generated from 'name' argument:
 string
 fgCreateMicrosoftGuid(
     const string &  name,   // Must be at least 16 bytes long.

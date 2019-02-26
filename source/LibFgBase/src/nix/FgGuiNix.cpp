@@ -42,32 +42,32 @@ STUB(FgGuiApiTextEdit)
 
 void
 fgGuiDialogMessage(const FgString &,const FgString &)
-{fgThrowNotImplemented(); }
+{throw FgExceptionNotImplemented(); }
 
 FgOpt<FgString>
 fgGuiDialogFileLoad(const FgString &,const vector<std::string> &,const string &)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgOpt<FgString>();
 }
 
 FgOpt<FgString>
 fgGuiDialogFileSave(const FgString &,const std::string &)
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgOpt<FgString>();
 }
 
 FgOpt<FgString>
 fgGuiDialogDirSelect()
 {
-    fgThrowNotImplemented();
+    throw FgExceptionNotImplemented();
     return FgOpt<FgString>();
 }
 
 bool
 fgGuiDialogProgress(const FgString &,uint,FgFnCallback2Void)
-{fgThrowNotImplemented(); return false; }
+{throw FgExceptionNotImplemented(); return false; }
 
 std::function<void(void)>
 fgGuiDialogSplashScreen()

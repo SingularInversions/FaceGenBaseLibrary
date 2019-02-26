@@ -11,7 +11,8 @@
 #define FGMATRIXSOLVER_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 
 // Eigenvalues of a square real symmetric matrix.
 // Runs in O(dim^3) time, with residual error O(dim^2.?).
@@ -67,7 +68,7 @@ operator<<(std::ostream & os,const FgEigsC<dim> & e)
         << fgnl << "Eigenvectors as columns: " << e.vecs;
 }
 
-// Eigenspectrum of arbitrary matrix, returned in arbitrary order since eigenvalues
+// Eigensolver for arbitrary matrix, returned in arbitrary order since eigenvalues
 // can be complex. The eigenvectors can always be made real when the associated eigevalue
 // is real but do not default to a real representation:
 FgEigsC<3>      fgEigs(const FgMat33D & mat);

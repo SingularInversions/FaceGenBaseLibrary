@@ -11,7 +11,8 @@
 #define FG3DMESHLEGACY_HPP
 
 #include "FgDiagnostics.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "Fg3dMesh.hpp"
 
 struct  FffMultiObjectC

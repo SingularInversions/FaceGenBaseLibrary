@@ -17,81 +17,190 @@
 
 using namespace std;
 
-FgStrs
-fgBuildOSes()
-{return fgSvec<string>("win","osx","ubuntu"); }
-
-string
-fgCurrentOS()
+const vector<pair<FgBuildOS,string> > &
+fgBuildOSStrs()
 {
-#if defined _WIN32
-    return "win";
+    static vector<pair<FgBuildOS,string> >  ret =
+    {
+        {FgBuildOS::win,"win"},
+        {FgBuildOS::linux,"ubuntu"},
+        {FgBuildOS::macos,"macos"},
+        {FgBuildOS::ios,"ios"},
+        {FgBuildOS::android,"android"}
+    };
+    return ret;
+}
+
+std::ostream &
+operator<<(std::ostream & os ,FgBuildOS bos)
+{
+    const vector<pair<FgBuildOS,string> > & lst = fgBuildOSStrs();
+    for (const pair<FgBuildOS,string> & l : lst)
+        if (l.first == bos)
+            return os << l.second;
+    fgThrow("ostream unhandled FgBuildOS",int(bos));
+    FG_UNREACHABLE_RETURN(os);
+}
+
+FgBuildOS
+fgStrToBuildOS(const string & str)
+{
+    const vector<pair<FgBuildOS,string> > & lst = fgBuildOSStrs();
+    for (const pair<FgBuildOS,string> & l : lst)
+        if (l.second == str)
+            return l.first;
+    fgThrow("fgStrToBuildOS unhandled string",str);
+    FG_UNREACHABLE_RETURN(FgBuildOS::win);
+}
+
+FgBuildOS
+fgCurrentBuildOS()
+{
+#ifdef _WIN32
+    return FgBuildOS::win;
 #elif defined __APPLE__
-    return "osx";
+    #ifdef FG_SANDBOX
+        return FgBuildOS::ios;
+    #else
+        return FgBuildOS::macos;
+    #endif
 #else
-    return "ubuntu";
+    return FgBuildOS::linux;
 #endif
 }
 
-FgStrs
-fgBuildCompilers(const string & os)
+const vector<pair<FgArch,string> > &
+fgArchStrs()
 {
-    if (os == "win")
-        return fgSvec<string>("vs17","vs15","vs13");    // First is default for releases
-    else if (os == "ubuntu")
-        return fgSvec<string>("clang","gcc","icpc");    // clang is faster than gcc and can run using the same shared libs
-    else if (os == "osx")
-        return fgSvec<string>("clang");
-    FGASSERT_FALSE;
-    return FgStrs();
+    static vector<pair<FgArch,string> >  ret =
+    {
+        {FgArch::x86,"x86"},
+        {FgArch::x64,"x64"},
+        {FgArch::armv7,"armv7"},
+        {FgArch::arm64,"arm64"},
+        {FgArch::arm64e,"arm64e"},
+        {FgArch::armv7_a,"armv7-a"},
+        {FgArch::arm64_v8a,"arm64-v8a"}
+    };
+    return ret;
 }
 
-string
+std::ostream &
+operator<<(std::ostream & os,FgArch arch)
+{
+    const vector<pair<FgArch,string> > &    lst = fgArchStrs();
+    for (const pair<FgArch,string> & l : lst)
+        if (l.first == arch)
+            return os << l.second;
+    fgThrow("ostream unhandled FgArch",int(arch));
+    FG_UNREACHABLE_RETURN(os);
+}
+
+FgArch
+fgStrToArch(const string & str)
+{
+    const vector<pair<FgArch,string> > &    lst = fgArchStrs();
+    for (const pair<FgArch,string> & l : lst)
+        if (l.second == str)
+            return l.first;
+    fgThrow("fgStrToArch unhandled string",str);
+    FG_UNREACHABLE_RETURN(FgArch::x86);
+}
+
+FgArchs
+fgBuildArchitectures(FgBuildOS os)
+{
+    if ((os == FgBuildOS::win) || (os == FgBuildOS::linux))
+        return fgSvec(FgArch::x86,FgArch::x64);
+    else if (os == FgBuildOS::macos)
+        return fgSvec(FgArch::x64);
+    else if (os == FgBuildOS::ios)
+        // These are the iOS standard architectures (plus simulator) as of 2019.
+        // They support iPhone 5s (not 5,5c) and later.
+        return fgSvec(FgArch::armv7,FgArch::arm64,FgArch::arm64e,FgArch::x64);
+    else if (os == FgBuildOS::android)
+        return fgSvec(FgArch::armv7_a,FgArch::arm64_v8a,FgArch::x86);
+    else
+        fgThrow("fgBuildArchitecture unhandled OS",int(os));
+    FG_UNREACHABLE_RETURN(FgArchs());
+}
+
+const vector<pair<FgCompiler,string> > &
+fgCompilerStrs()
+{
+    static vector<pair<FgCompiler,string> >  ret =
+    {
+        {FgCompiler::vs13,"vs13"},
+        {FgCompiler::vs15,"vs15"},
+        {FgCompiler::vs17,"vs17"},
+        {FgCompiler::gcc,"gcc"},
+        {FgCompiler::clang,"clang"},
+        {FgCompiler::icpc,"icpc"}
+    };
+    return ret;
+}
+
+std::ostream &
+operator<<(std::ostream & os,FgCompiler comp)
+{
+    const vector<pair<FgCompiler,string> > &    lst = fgCompilerStrs();
+    for (const pair<FgCompiler,string> & l : lst)
+        if (l.first == comp)
+            return os << l.second;
+    fgThrow("ostream unhandled FgCompiler",int(comp));
+    FG_UNREACHABLE_RETURN(os);
+}
+
+FgCompiler fgStrToCompiler(const string & str)
+{
+    const vector<pair<FgCompiler,string> > &    lst = fgCompilerStrs();
+    for (const pair<FgCompiler,string> & l : lst)
+        if (l.second == str)
+            return l.first;
+    fgThrow("fgStrToCompiler unhandled string",str);
+    FG_UNREACHABLE_RETURN(FgCompiler::vs13);
+}
+
+FgCompilers
+fgBuildCompilers(FgBuildOS os)
+{
+    if (os == FgBuildOS::win)
+        return fgSvec(FgCompiler::vs17,FgCompiler::vs15,FgCompiler::vs13);
+    else if (os == FgBuildOS::linux)
+        return fgSvec(FgCompiler::clang,FgCompiler::gcc,FgCompiler::icpc);
+    else if (os == FgBuildOS::macos)
+        return fgSvec(FgCompiler::clang);
+    else if (os == FgBuildOS::ios)
+        return fgSvec(FgCompiler::clang);
+    else if (os == FgBuildOS::android)
+        return fgSvec(FgCompiler::clang);
+    fgThrow("fgBuildCompilers unhandled OS",int(os));
+    FG_UNREACHABLE_RETURN(FgCompilers());
+}
+
+FgCompiler
 fgCurrentCompiler()
 {
 #if defined _MSC_VER
-    #if (_MSC_VER == 1600)
-        return "vs10";
-    #elif (_MSC_VER == 1700)
-        return "vs12";
-	#elif (_MSC_VER == 1800)
-		return "vs13";
+    #if (_MSC_VER == 1800)
+		return FgCompiler::vs13;
     #elif(_MSC_VER == 1900)
-        return "vs15";
+        return FgCompiler::vs15;
     #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
-        return "vs17";
-    #endif                  // If you get an error, define the new Visual Studio version here
-#elif defined _INTEL_COMPILER
-    return "icpc";
+        return FgCompiler::vs17;
+    #else
+        define_new_visual_studio_version_here
+    #endif
+#elif defined __INTEL_COMPILER
+    return FgCompiler::icpc;
 #elif defined __clang__
-    return "clang";
+    return FgCompiler::clang;
 #elif defined __GNUC__      // Must be second as it's also defined by CLANG
-    return "gcc";
-#endif                      // If you get an error, define your compiler here
-}
-
-FgStrs
-fgBuildBits(const string & compiler)
-{
-    if (fgStartsWith(compiler,"vs"))
-        return fgSvec<string>("32","64");
-    else
-        return fgSvec<string>("64");
-}
-
-string
-fgCurrentBuildBits()
-{
-#ifdef FG_64
-    return "64";
+    return FgCompiler::gcc;
 #else
-    return "32";
+    define_new_compiler_here
 #endif
 }
-
-FgStrs
-fgBuildConfigs()
-{return fgSvec<string>("debug","release"); }
 
 string
 fgCurrentBuildConfig()
@@ -107,8 +216,17 @@ string
 fgCurrentBuildDescription()
 {
     return 
-        fgCurrentOS() + " " + fgCurrentCompiler() + " " +
-        fgCurrentBuildBits() + " " + fgCurrentBuildConfig();
+        fgToStr(fgCurrentBuildOS()) + " " +
+        fgToStr(fgCurrentCompiler()) + " " +
+        fgBitsString() + " " + fgCurrentBuildConfig();
+}
+
+string
+fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
+{
+    string          ds = backslash ? "\\" : "/",
+                    debrel = release ? "release" : "debug";
+    return "bin" + ds + fgToStr(os) + ds + fgToStr(arch) + ds + fgToStr(comp) + ds + debrel + ds;
 }
 
 uint64
@@ -119,9 +237,8 @@ fgUuidHash64(const string & str)
 #ifdef FG_64    // size_t is 64 bits:
     return hf(str);
 #else           // size_t is 32 bits:
-    size_t      split = str.size() / 2;
-    uint64      lo = hf(str.substr(0,split)),
-                hi = hf(str.substr(split));
+    uint64      lo = hf(str),
+                hi = hf(str+fgToStr(lo));
     return (lo | (hi << 32));
 #endif
 }
@@ -133,14 +250,14 @@ fgUuidHash128(const string & str)
     FGASSERT(str.size() >= 16);
     uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
                     *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
-    size_t          split = str.length() / 2;
-    *pLo = fgUuidHash64(str.substr(0,split));
-    *pHi = fgUuidHash64(str.substr(split));
+    *pLo = fgUuidHash64(str);
+    *pHi = fgUuidHash64(str+fgToStr(*pLo));
     return ret;
 }
 
 // A UUID is composed of 32 hex digits (ie 16 bytes / 128 bits) in a specific hyphonated pattern,
-// in which some of the first bits represent time values, which we ignore and replace with has bits:
+// the first bits representing time values, although we just use all hash bits for repeatability
+// (we don't want to force rebuilds every time we generate new solution/project files):
 string
 fgCreateMicrosoftGuid(const string & name,bool wsb)
 {
@@ -161,5 +278,5 @@ fgCreateMicrosoftGuid(const string & name,bool wsb)
 void
 fgTestmCreateMicrosoftGuid(const FgArgs &)
 {
-    fgout << fgCreateMicrosoftGuid("FaceGen library test");
+    fgout << fgnl << fgCreateMicrosoftGuid("This string should hash to a consistent value");
 }

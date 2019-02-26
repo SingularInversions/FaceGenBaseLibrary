@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.6)
 
 project(LibFgBase)
 
 file(GLOB SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c
     ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
 if(UNIX)
     file(GLOB UNIXSOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/nix/*.cpp)
@@ -16,14 +15,18 @@ add_library(LibFgBase STATIC ${SOURCES} ${UNIXSOURCES})
 target_link_libraries(LibFgBase
 	PUBLIC LibTpBoost
 	PUBLIC LibJpegIjg6b
-	PUBLIC LibTntJama
-	PRIVATE LibImageMagickCore
-	PRIVATE LibUTF-8)
+	PRIVATE LibTpStb
+	PRIVATE LibTpEigen)
 
 target_include_directories(LibFgBase PUBLIC src)    # Required for dependents to know where to look for include files.
 
-if(UNIX AND NOT ANDROID)                            # gradle takes care of appropriate Bionic libc linkage in this case
+# gradle takes care of appropriate Bionic libc linkage for Android.
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries(LibFgBase
-        PRIVATE pthread
-        PRIVATE rt)
+        PUBLIC pthread)
+elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")       # MacOS
+    find_library(CARBON_LIBRARY Carbon)
+    target_link_libraries(LibFgBase
+        PUBLIC ${CARBON_LIBRARY})
 endif()

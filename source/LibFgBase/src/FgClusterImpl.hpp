@@ -84,7 +84,7 @@ recvFrameThread(ip::tcp::socket & sock,string & msg)
         connectionOpen = recvFrame(sock,msg);
     }
     catch(FgException const & e) {
-        msg = e.tr_message().m_str;
+        msg = e.tr_message();
     }
     catch(std::exception const & e) {
         msg = string("Standard library exception\n")+e.what();
@@ -147,7 +147,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
         // Check for errors within the receive threads;
         static string       hdrSer = "\26\0\\0\0\0\0\0\0serialization::archive";    // Character literals in octal
         for (size_t mm=0; mm<msgsRecv.size(); ++mm)
-            if (!fgStartsWith(msgsRecv[mm],hdrSer))
+            if (!fgBeginsWith(msgsRecv[mm],hdrSer))
                 fgThrow("Cluster worker "+fgToStr(mm),msgsRecv[mm]);
     }
 };

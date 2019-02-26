@@ -25,7 +25,7 @@ fgQuaternionTest(const FgArgs &)
         q2 = q2 * q1;
     for (uint ii=0; ii<1000; ii++)
         q3 = q3 * q1;
-    FgMat33D            m1,
+    FgMat33D                m1,
                             m2 = q2.asMatrix(),
                             m3 = q3.asMatrix(),
                             m4 = m2 * m2.transpose();
@@ -34,7 +34,7 @@ fgQuaternionTest(const FgArgs &)
     FGASSERT((m4-m1).length() < 0.0001);
 
     // test inverse
-    FgQuaternionD   inv1(fgVecRandNrm<4>()),
+    FgQuaternionD   inv1(FgVect4D::randNormal()),
                     inv2 = inv1.inverse(),
                     inv3 = inv1 * inv2;
     FGASSERT(fgApproxEqual(inv3.m_real,1.0,10));

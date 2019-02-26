@@ -108,9 +108,9 @@ testBarycentricCoords()
 {
     // Test points inside triangle:
     for (uint ii=0; ii<100; ++ii) {
-        FgVect2D    v0 = fgVecRandNrm<2>(),
-                    v1 = fgVecRandNrm<2>(),
-                    v2 = fgVecRandNrm<2>(),
+        FgVect2D    v0 = FgVect2D::randNormal(),
+                    v1 = FgVect2D::randNormal(),
+                    v2 = FgVect2D::randNormal(),
                     del1 = v1-v0,
                     del2 = v2-v0;
         if ((del1[0]*del2[1]-del1[1]*del2[0]) > 0.001) {
@@ -127,9 +127,9 @@ testBarycentricCoords()
     }
     // Test points outside triangle:
     for (uint ii=0; ii<100; ++ii) {
-        FgVect2D    v0 = fgVecRandNrm<2>(),
-                    v1 = fgVecRandNrm<2>(),
-                    v2 = fgVecRandNrm<2>(),
+        FgVect2D    v0 = FgVect2D::randNormal(),
+                    v1 = FgVect2D::randNormal(),
+                    v2 = FgVect2D::randNormal(),
                     del1 = v1-v0,
                     del2 = v2-v0;
         if ((del1[0]*del2[1]-del1[1]*del2[0]) > 0.001) {
@@ -154,10 +154,10 @@ testBarycentricCoords3D()
 {
     fgout << fgnl << "Barycentric 3d: " << fgpush;
     for (uint ii=0; ii<50; ++ii) {
-        FgVect3D    v0 = fgVecRandNrm<3>(),
-                    v1 = fgVecRandNrm<3>(),
-                    v2 = fgVecRandNrm<3>(),
-                    bc = fgVecRandNrm<3>();
+        FgVect3D    v0 = FgVect3D::randNormal(),
+                    v1 = FgVect3D::randNormal(),
+                    v2 = FgVect3D::randNormal(),
+                    bc = FgVect3D::randNormal();
         bc /= bc[0] + bc[1] + bc[2];
         FgVect3D    pt = bc[0]*v0 + bc[1]*v1 + bc[2]*v2;
         FgOpt<FgVect3D>    ret = fgBarycentricCoords(pt,v0,v1,v2);
@@ -206,11 +206,11 @@ testRayPlaneIntersect()
         FgVect2D        r0 = rot * v0,
                         r1 = rot * v1,
                         r2 = rot * v2;
-        FgMat33D     rot3 = fgMatRotateAxis((fgRand()*0.5-0.25)*fgPi(),fgVecRandNrm<3>());
+        FgMat33D     rot3 = fgMatRotateAxis((fgRand()*0.5-0.25)*fgPi(),FgVect3D::randNormal());
         FgVect3D        p0 = rot3 * fgAsHomogVec(r0),
                         p1 = rot3 * fgAsHomogVec(r1),
                         p2 = rot3 * fgAsHomogVec(r2),
-                        pt = rot3 * fgAsHomogVec(zero + fgMatRandUniform<2,1>(-0.1,0.1));
+                        pt = rot3 * fgAsHomogVec(zero + FgVect2D::randUniform(-0.1,0.1));
         FgVect4D        pln = fgPlaneH(p0,p1,p2);
         FgVect4D        is = fgLinePlaneIntersect(pt*exp(fgRandNormal()),pln);
         FGASSERT(fgApproxEqual(pt,fgFromHomogVec(is)));
@@ -222,7 +222,7 @@ void
 pit0(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2,int res)
 {
     FGASSERT(fgPointInTriangle(pt,v0,v1,v2) == res);
-    FGASSERT(fgPointInTriangle(pt,v0,v2,v1) == res*-1);
+    FGASSERT(fgPointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
 }
 
 static

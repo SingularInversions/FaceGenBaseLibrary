@@ -361,59 +361,21 @@ fgMapDiv(
 
 template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,ncols> 
-fgMatRandNrm(T scale=1)
+FgMatrixC<T,nrows,ncols>::randNormal(T stdev)
+{
+    FgMatrixC<T,nrows,ncols>        ret;
+    for (size_t ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = static_cast<T>(fgRandNormal())*stdev;
+    return ret;
+}
+
+template<typename T,uint nrows,uint ncols>
+FgMatrixC<T,nrows,ncols>
+FgMatrixC<T,nrows,ncols>::randUniform(T lo,T hi)
 {
     FgMatrixC<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = static_cast<T>(fgRandNormal())*scale;
-    return ret;
-}
-
-// Handy shortcut for type double vectors:
-template<uint dim>
-FgMatrixC<double,dim,1> 
-fgVecRandNrm(double scale=1)
-{
-    FgMatrixC<double,dim,1>      vec;
-    for (uint ii=0; ii<dim; ++ii)
-        vec[ii] = fgRandNormal()*scale;
-    return vec;
-}
-
-template<uint nrows,uint ncols>
-FgMatrixC<double,nrows,ncols> 
-fgMatRandUniform(double lo,double hi)
-{
-    FgMatrixC<double,nrows,ncols>   vec;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        vec[ii] = fgRandUniform(lo,hi);
-    return vec;
-}
-
-// Exponentiated normal distributed elements:
-template<uint nrows,uint ncols>
-FgMatrixC<double,nrows,ncols>
-fgMatRandExp(double mean,double stdev)
-{
-    FgMatrixC<double,nrows,ncols>   ret;
-    for (uint ii=0; ii<ret.numElems(); ++ii)
-        ret[ii] = std::exp(fgRandNormal()*stdev+mean);
-    return ret;
-}
-
-template<uint dim>
-FgMatrixC<double,dim,dim>
-fgMatRandOrtho()
-{
-    FgMatrixC<double,dim,dim>       ret;
-    for (uint row=0; row<dim; ++row) {
-        FgMatrixC<double,dim,1>     vec = fgMatRandNrm<double,dim,1>();
-        for (uint rr=0; rr<row; ++rr) {
-            FgMatrixC<double,dim,1> axis = ret.rowVec(rr);
-            vec -=  axis * fgDot(vec,axis);
-        }
-        ret.setSubMat(row,0,fgNormalize(vec));
-    }
+    for (size_t ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = static_cast<T>(fgRandUniform(double(lo),double(hi)));
     return ret;
 }
 
@@ -480,7 +442,7 @@ fgRoundU(FgMatrixC<float,nrows,ncols> m)
 // Create a wider matrix by concatenating rows from 2 matrices:
 template<class T,uint nrows,uint ncols1,uint ncols2>
 FgMatrixC<T,nrows,ncols1+ncols2>
-fgConcatHoriz(
+fgJoinHoriz(
     const FgMatrixC<T,nrows,ncols1> & lhs,
     const FgMatrixC<T,nrows,ncols2> & rhs)
 {
@@ -499,7 +461,7 @@ fgConcatHoriz(
 // Create a wider matrix by concatenating rows from 3 matrices:
 template<class T,uint nrows,uint ncols1,uint ncols2,uint ncols3>
 FgMatrixC<T,nrows,ncols1+ncols2+ncols3>
-fgConcatHoriz(
+fgJoinHoriz(
     const FgMatrixC<T,nrows,ncols1> & m1,
     const FgMatrixC<T,nrows,ncols2> & m2,
     const FgMatrixC<T,nrows,ncols3> & m3)
@@ -521,7 +483,7 @@ fgConcatHoriz(
 // Create a taller matrix by concatenating cols from 2 matrices:
 template<class T,uint nrows1,uint nrows2,uint ncols>
 FgMatrixC<T,nrows1+nrows2,ncols>
-fgConcatVert(
+fgJoinVert(
     const FgMatrixC<T,nrows1,ncols> & upper,
     const FgMatrixC<T,nrows2,ncols> & lower)
 {
@@ -538,7 +500,7 @@ fgConcatVert(
 // Create a taller matrix by concatenating a given value to all columns:
 template<class T,uint nrows,uint ncols>
 FgMatrixC<T,nrows+1,ncols>
-fgConcatVert(const FgMatrixC<T,nrows,ncols> & mat,T val)
+fgJoinVert(const FgMatrixC<T,nrows,ncols> & mat,T val)
 {
     FgMatrixC<T,nrows+1,ncols>  ret;
     uint    ii=0;
@@ -658,7 +620,7 @@ fgUninterpolate(
 {
     FgMatrixC<Flt,dim,1>    coordL = fgFloor(coord),
                             coordH = coordL + FgMatrixC<Flt,dim,1>(1);
-    weights = fgConcatHoriz(coordH-coord,coord-coordL);
+    weights = fgJoinHoriz(coordH-coord,coord-coordL);
     coordLo = FgMatrixC<Int,dim,1>(coordL);
 }
 
@@ -849,6 +811,11 @@ double
 fgRms(FgMatrixC<T,nrows,ncols> m)
 {return std::sqrt(m.mag()/static_cast<double>(nrows*ncols)); }
 
+template<typename T,uint nrows,uint ncols>
+inline T
+fgLength(const std::vector<FgMatrixC<T,nrows,ncols> > & v)
+{return std::sqrt(fgMag(v)); }
+
 template<uint nrows,uint ncols>
 FgMatrixC<double,nrows,ncols>
 fgReal(const FgMatrixC<std::complex<double>,nrows,ncols> & m)   // Return real compoments
@@ -929,6 +896,17 @@ fgHermitian(const FgMatrixC<T,nrows,ncols> & mat)
     for (uint rr=0; rr<nrows; ++rr)
         for (uint cc=0; cc<ncols; ++cc)
             ret.rc(cc,rr) = std::conj(mat.rc(rr,cc));
+    return ret;
+}
+
+template<class Xform,class T,uint nrows,uint ncols>
+std::vector<FgMatrixC<T,nrows,ncols> >
+operator*(
+    const Xform &                                   xform,
+    const std::vector<FgMatrixC<T,nrows,ncols> > &  rhs)
+{
+    std::vector<FgMatrixC<T,nrows,ncols> >  ret(rhs.size());
+    fgTransform_(rhs,ret,xform);
     return ret;
 }
 

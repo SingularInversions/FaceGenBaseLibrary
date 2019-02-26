@@ -9,6 +9,7 @@
 
 #include "stdafx.h"
 
+#include "FgPlatform.hpp"
 #include "FgStdStream.hpp"
 #include "FgDepGraph.hpp"
 
@@ -57,7 +58,10 @@ fgDotToPdf(
 {
     // Uses 'dot.exe' from Graphviz (2.38 as of last test use):
     string      cmd = "dot -Tpdf -o" + pdfFile + " " + dotFile;
-    system(cmd.c_str());
+#ifndef FG_SANDBOX
+    if (system(cmd.c_str()) != 0)
+        fgout << fgnl << "Command failed.";
+#endif
 }
 
 void

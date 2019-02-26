@@ -21,6 +21,7 @@ struct  FgGuiWinText : public FgGuiOsBase
     FgGuiApiText        m_api;
     HWND                hwndText;
     HWND                hwndThis;
+    // Text in UTF-16 for Windows (UCS2 was only used prior to Windows2000):
     wstring             m_content;  // Assigned in constructor and in updateIfChanged()
     // Assigned in WM_CREATE and updated in updateIfChanged(). The min height is calculated using
     // m_maxMinWid below, regardless of actual width, to avoid the complexity of adjusting

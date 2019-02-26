@@ -33,18 +33,11 @@ fgLoadImgAnyFormat(const FgString & fname)
     return ret;
 }
 
-FgImg4UC
-fgLoadImg4UC(const FgString & fname);
-
 void
 fgSaveImgAnyFormat(const FgString & fname,const FgImgRgbaUb & img);
 
 void
 fgSaveImgAnyFormat(const FgString & fname,const FgImgUC & img);
-
-// List of all supported image file format extensions in UPPER CASE:
-std::vector<std::string>
-fgImgSupportedFormats();
 
 // List of file extensions of the 6 most commonly used formats in LOWER CASE:
 std::vector<std::string>
@@ -66,26 +59,15 @@ fgFindImgFiles(const FgString & baseName);
 bool
 fgImgFindLoadAnyFormat(const FgString & baseName,FgImgRgbaUb & img);
 
-void
-fgImgSaveJfif(
-    const FgImgRgbaUb &     img,
-    const FgString &        fname,
-    int                     quality=100);
+// data must be 4 channel RGBA of size wid*hgt*4:
+std::vector<uchar>
+fgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality);
 
-void
-fgImgSaveJfif(
-    const FgImgRgbaUb &     img,
-    std::vector<uchar> &    buffer,
-    int                     quality=100);
+// JFIF format (can be dumped to .jpg file):
+std::vector<uchar>
+fgEncodeJpeg(const FgImgRgbaUb & img,int quality=100);
 
-void
-fgImgLoadJfif(
-    const FgString &        fname,
-    FgImgRgbaUb &           img);
-
-void
-fgImgLoadJfif(
-    const std::vector<uchar> &  fileContents,
-    FgImgRgbaUb &           img);
+FgImgRgbaUb
+fgDecodeJpeg(const std::vector<uchar> &  fileContents);
 
 #endif

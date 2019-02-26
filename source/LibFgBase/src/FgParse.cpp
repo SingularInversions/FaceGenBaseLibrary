@@ -83,26 +83,26 @@ fgSplitLines(const string & src,bool backslashContinuation)
     return ret;
 }
 
-vector<vector<uint32> >
-fgSplitLines(const vector<uint32> & src,bool incEmpty)
+FgStr32s
+fgSplitLines(const u32string & src,bool incEmpty)
 {
-    vector<vector<uint32> > ret;
-    size_t          base = 0;
+    FgStr32s            ret;
+    size_t              base = 0;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
             if ((ii > base) || incEmpty)
-                ret.push_back(vector<uint32>(src.begin()+base,src.begin()+ii));
+                ret.push_back(u32string(src.begin()+base,src.begin()+ii));
             base = ii+1; } }
     if (base < src.size())
-        ret.push_back(vector<uint32>(src.begin()+base,src.end()));
+        ret.push_back(u32string(src.begin()+base,src.end()));
     return ret;
 }
 
 FgStrings
 fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
 {
-    FgStrings            ret;
-    vector<vector<uint32> >     res = fgSplitLines(FgString(utf8).as_utf32(),includeEmptyLines);
+    FgStrings               ret;
+    FgStr32s       res = fgSplitLines(FgString(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
         ret[ii] = FgString(res[ii]);
@@ -111,12 +111,12 @@ fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
 
 static
 void
-consumeCrLf(const FgUints & in,size_t & idx)    // Current idx must point to CR or LF
+consumeCrLf(const u32string & in,size_t & idx)    // Current idx must point to CR or LF
 {
-    uint        ch0 = in[idx++];
+    char32_t        ch0 = in[idx++];
     if (idx == in.size())
         return;
-    uint        ch1 = in[idx];
+    char32_t        ch1 = in[idx];
     if (fgIsCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
         ++idx;
     return;
@@ -124,7 +124,7 @@ consumeCrLf(const FgUints & in,size_t & idx)    // Current idx must point to CR 
 
 static
 string
-csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
+csvGetField(const u32string & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
 {
     string      ret;
     if (in[idx] == '"') {               // Quoted field
@@ -132,7 +132,7 @@ csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to v
         for (;;) {
             if (idx == in.size())
                 return ret;
-            uint    ch = in[idx++];
+            char32_t    ch = in[idx++];
             if (ch == '"') {
                 if ((idx < in.size()) && (in[idx] == '"')) {    // Double quote inside quoted field
                     ret.push_back('"');
@@ -142,17 +142,17 @@ csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to v
                     return ret;         // End of quoted field
             }
             else
-                ret += fgUtf32ToUtf8(fgSvec(ch));
+                ret += fgToUtf8(ch);
         }
     }
     else {                             // Unquoted field
         for (;;) {
             if (idx == in.size())
                 return ret;
-            uint    ch = in[idx];
+            char32_t    ch = in[idx];
             if ((ch == ',') || (fgIsCrLf(ch)))
                 return ret;
-            ret += fgUtf32ToUtf8(fgSvec(ch));
+            ret += fgToUtf8(ch);
             ++idx;
         }
     }
@@ -161,7 +161,7 @@ csvGetField(const FgUints & in,size_t & idx)    // idx must initially point to v
 static
 FgStrs
 csvGetLine(
-    const FgUints & in,
+    const u32string & in,
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     FgStrs      ret;
@@ -184,19 +184,42 @@ csvGetLine(
             return ret;
         }
     }
-    return ret;
 }
 
 FgStrss
-fgLoadCsv(const FgString & fname)
+fgLoadCsv(const FgString & fname,size_t fieldsPerLine)
 {
-    FgStrss     ret;
-    FgUints     data = fgUtf8ToUtf32(fgSlurp(fname));
-    size_t      idx = 0;
+    FgStrss         ret;
+    u32string       data = fgToUtf32(fgSlurp(fname));
+    size_t          idx = 0;
     while (idx < data.size()) {
-        FgStrs  line = csvGetLine(data,idx);
-        if (!line.empty())                      // Ignore empty lines
+        FgStrs      line = csvGetLine(data,idx);
+        if (!line.empty()) {                    // Ignore empty lines
+            if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
+                fgThrow("CSV file contains a line with incorrect field width",fname);
             ret.push_back(line);
+        }
+    }
+    return ret;
+}
+
+map<string,FgStrs>
+fgLoadCsvToMap(const FgString & fname,size_t keyIdx,size_t fieldsPerLine)
+{
+    FGASSERT(keyIdx < fieldsPerLine);
+    map<string,FgStrs>  ret;
+    u32string           data = fgToUtf32(fgSlurp(fname));
+    size_t              idx = 0;
+    while (idx < data.size()) {
+        FgStrs          line = csvGetLine(data,idx);
+        if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
+            fgThrow("CSV file contains a line with incorrect field width",fname);
+        const string &  key = line[keyIdx];
+        auto            it = ret.find(key);
+        if (it == ret.end())
+            ret[key] = line;
+        else
+            fgThrow("CSV file key is not unique",fname,key);
     }
     return ret;
 }
@@ -205,13 +228,13 @@ static
 string
 csvField(const string & data)
 {
-    string      ret = "\"";
-    FgUints     utf32 = fgUtf8ToUtf32(data);
-    for (uint ch32 : utf32) {
-        if (ch32 == uint('"'))
+    string          ret = "\"";
+    u32string       utf32 = fgToUtf32(data);
+    for (char32_t ch32 : utf32) {
+        if (ch32 == char32_t('"'))      // VS2013 doesn't support char32_t literal U
             ret += "\"\"";
         else
-            ret += fgUtf32ToUtf8(fgSvec(ch32));
+            ret += fgToUtf8(ch32);
     }
     ret += "\"";
     return ret;
@@ -319,7 +342,7 @@ string
 fgAsciify(const string & in)
 {
     string          ret;
-    map<uint,char>  hg;     // homoglyph map
+    map<char32_t,char>  hg;     // homoglyph map
     hg[166] = ':';
     hg[167] = 'S';
     hg[168] = '"';
@@ -362,9 +385,9 @@ fgAsciify(const string & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    FgUints     utf32 = fgUtf8ToUtf32(in);
-    for (uint ch32 : utf32) {
-        string  utf8 = fgUtf32ToUtf8(fgSvec(ch32));
+    u32string       utf32 = fgToUtf32(in);
+    for (char32_t ch32 : utf32) {
+        string  utf8 = fgToUtf8(ch32);
         if (utf8.size() == 1)
             ret.push_back(utf8[0]);
         else {
@@ -375,5 +398,18 @@ fgAsciify(const string & in)
                 ret.push_back(it->second);
         }
     }
+    return ret;
+}
+
+u32string
+fgReplace(const u32string & str,char32_t a,char32_t b)
+{
+    u32string       ret;
+    ret.reserve(str.size());
+    for (const char32_t & c : str)
+        if (c == a)
+            ret.push_back(b);
+        else
+            ret.push_back(c);
     return ret;
 }

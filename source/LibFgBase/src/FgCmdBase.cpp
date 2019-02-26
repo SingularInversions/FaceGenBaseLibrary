@@ -16,6 +16,7 @@
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"
 #include "FgVersion.hpp"
+#include "FgSystemInfo.hpp"
 
 using namespace std;
 
@@ -31,12 +32,14 @@ fgCmdBaseTests()
     FGADDCMD1(fgDepGraphTest,"depGraph");
     FGADDCMD1(fgExceptionTest,"exception");
     FGADDCMD1(fgFileSystemTest,"filesystem");
+    FGADDCMD1(fgOpenTest,"open");
     FGADDCMD1(fgGeometryTest,"geometry");
     FGADDCMD1(fgGridTrianglesTest,"gridTriangles");
     FGADDCMD1(fgImageTest,"image");
     FGADDCMD1(fgMatrixSolverTest,"matrixSolver");
     FGADDCMD1(fgMathTest,"math");
     FGADDCMD1(fgMatrixCTest,"matrixC");
+    FGADDCMD1(fgMatrixVTest,"matrixV");
     FGADDCMD1(fgMetaFormatTest,"metaFormat");
     FGADDCMD1(fgMorphTest,"morph");
     FGADDCMD1(fgPathTest,"path");
@@ -65,6 +68,24 @@ testmGui(const FgArgs & args)
     FGADDCMD1(fgGuiTestmScroll,"scroll");
     FGADDCMD1(fgGuiTestmDialogSplashScreen,"splash");
     fgMenu(args,cmds);
+}
+
+static
+void
+sysinfo(const FgArgs &)
+{
+    fgout
+        << fgnl << "Computer name: " << fgComputerName()
+        << fgnl << "OS: " << fgOsName() << (fg64bitOS() ? " (64 bit)" : " (32 bit)")
+        << fgnl << "CPU hardware threads: " << std::thread::hardware_concurrency()
+        << fgnl << "Executable:" << fgpush
+#ifdef __APPLE__
+        << fgnl << "__APPLE__: " << __APPLE__
+#endif
+#ifdef _MSC_VER
+        << fgnl << "_MSC_VER: " << _MSC_VER
+#endif
+        << fgpop;
 }
 
 vector<FgCmd>
@@ -116,6 +137,7 @@ fgCmdFgbl(const FgArgs & args)
     cmds.push_back(fgCmdRenderInfo());
     cmds.push_back(fgCmdTriexportInfo());
     cmds.push_back(FgCmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
+    cmds.push_back(FgCmd(sysinfo,"sys","Show system info"));
     cmds.push_back(FgCmd(fgCmdBaseTest,"test","Automated tests"));
     cmds.push_back(FgCmd(testm,"testm","Manual tests"));
     cmds.push_back(FgCmd(view,"view","Interactively view various file types"));

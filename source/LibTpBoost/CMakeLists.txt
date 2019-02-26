@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.6)
 
 project(LibTpBoost)
 
@@ -27,9 +27,7 @@ target_compile_options(LibTpBoost PUBLIC -DBOOST_THREAD_USE_LIB=1)
 target_compile_options(LibTpBoost PUBLIC -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 if (MSVC)
     target_compile_options(LibTpBoost
-        PRIVATE /W0
-        PRIVATE -D_SCL_SECURE_NO_DEPRECATE=1    # not turned off by /W0
-	    PRIVATE -D_CRT_SECURE_NO_DEPRECATE=1)
+        PRIVATE /W2)
 else()
     target_compile_options(LibTpBoost
         PUBLIC -DBOOST_THREAD_POSIX

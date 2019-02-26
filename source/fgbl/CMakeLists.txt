@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.6)
 
 project(fgbl)
 
@@ -10,6 +10,6 @@ if(WIN32)
     target_compile_options(fgbl PRIVATE /D_CONSOLE)
     target_link_libraries(fgbl LibFgWin)
 else()
-    # In this case, nix files are included in base library, as they must be under a single-pass linker model:
+    # Nix files must be included in base library, due to single-pass linker:
     target_link_libraries(fgbl LibFgBase)
 endif()

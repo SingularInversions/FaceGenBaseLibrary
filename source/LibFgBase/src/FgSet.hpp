@@ -6,8 +6,11 @@
 // Authors:     Andrew Beatty
 // Created:     18.04.14
 //
-// A set for small collections based on std::vector with O(n) operations
+// An order-preserving set for small collections based on std::vector. For:
+// 1. Small sets where we don't want the overhead of std::set
+// 2. Sets which need to preserve ordering
 //
+// The element type must have operator==() defined
 
 #ifndef FGSET_HPP
 #define FGSET_HPP

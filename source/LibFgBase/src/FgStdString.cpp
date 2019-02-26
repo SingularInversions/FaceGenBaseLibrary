@@ -74,37 +74,6 @@ fgSplitAtSeparators(
     return ret;
 }
 
-bool
-fgStartsWith(
-    const std::string & str,
-    const std::string & pattern)
-{
-    if(pattern.length() > str.length())
-        return false;
-    string::const_iterator  sit = str.begin(),
-                            pit = pattern.begin();
-    while (pit != pattern.end())
-        if (*sit++ != *pit++)
-            return false;
-    return true;
-}
-
-bool
-fgEndsWith(
-    const std::string & str,
-    const std::string & pattern)
-{
-    if (pattern.length() > str.length())
-        return false;
-    string::const_iterator  sit = str.end(),
-                            pit = pattern.end();
-    // C++ standard allows decrementing end() to give valid element for vector:
-    while (pit != pattern.begin())
-        if (*(--sit) != *(--pit))
-            return false;
-    return true;
-}
-
 std::string
 fgReplace(
     const std::string & str,
@@ -189,15 +158,6 @@ fgFromStr<uint>(const string & str)
     }
     ret = uint(acc);
     return ret;
-}
-
-bool
-fgContains(const std::string & str,char c)
-{
-    for (size_t ii=0; ii<str.size(); ++ii)
-        if (str[ii] == c)
-            return true;
-    return false;
 }
 
 // */

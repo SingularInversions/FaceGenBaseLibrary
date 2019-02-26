@@ -24,7 +24,8 @@
 
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgOut.hpp"
 
 template<typename T>

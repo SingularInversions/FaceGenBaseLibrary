@@ -159,9 +159,6 @@ inline void fgRound_(float in,uchar & out) {out = static_cast<uchar>(in + 0.5f);
 inline int fgRound(double v) {return static_cast<int>(std::floor(v+0.5)); }
 inline uint fgRoundU(double v) {return static_cast<uint>(v+0.5); }
 
-// Add default ordering to types:
-
-
 #endif
 
 // */

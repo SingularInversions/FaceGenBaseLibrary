@@ -6,15 +6,22 @@
 // Authors:     Andrew Beatty
 // Created:     Nov 30, 2011
 //
+// Generate Visual Studio SLN and XPROJ files.
+//
+// NOTES:
+// * Use of the exact number of tab characters is required for correct VS parsing behaviour.
 
 #include "stdafx.h"
 
 #include "FgStdStream.hpp"
+#include "FgStdMap.hpp"
 #include "FgCons.hpp"
 #include "FgOut.hpp"
 #include "FgException.hpp"
 #include "FgFileSystem.hpp"
 #include "FgBuild.hpp"
+#include "FgString.hpp"
+#include "FgTestUtils.hpp"
 
 using namespace std;
 
@@ -22,54 +29,56 @@ static
 string
 fgConsVsPreprocessorDefs(
     bool                release,
-    const FgConsProj &  proj)
+    const FgConsProj &  proj,
+    const FgStrs &      defs)
 {
     string  ret = "WIN32";
     if (release)
         ret += ";NDEBUG";
     else
         ret += ";_DEBUG";
-    if (proj.app) {
-        if (proj.pureGui)
-            ret += ";_WINDOWS";
-        else
-            ret += ";_CONSOLE";
-    }
-    else {
-        if (proj.dll)
-            ret += ";_WINDOWS;_USRDLL;TESTDLL_EXPORTS";
-        else
-            ret += ";_LIB";
-    }
-    ret += ";_CRT_SECURE_NO_WARNINGS";
-    for (size_t ii=0; ii<proj.defs.size(); ++ii)
-        ret += ";" + proj.defs[ii];
+    if (proj.isGuiExecutable())
+        ret += ";_WINDOWS";
+    else if (proj.isClExecutable())
+        ret += ";_CONSOLE";
+    else if (proj.isDynamicLib())
+        ret += ";_WINDOWS;_USRDLL;TESTDLL_EXPORTS";
+    else if (proj.isStaticLib())
+        ret += ";_LIB";
+    else
+        fgThrow("fgConsVsPreprocessorDefs unhandled type",proj.type);
+    for (const string & def : defs)
+        ret += ";" + def;
     return ret;
 }
 
 static
-void
+bool
 writeVcxproj(
+    const FgConsSolution &      sln,            // Transitive lookups
     const FgConsProj &          proj,
-    const map<string,string> &  guidMap,
-    uint                        vsver)      //13 - VS2013, 15 = VS2015, 17 = VS2017
+    const map<string,string> &  nameToGuid,     // Must contain all project names
+    uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017
 {
-    if (proj.srcGroups.empty())
-        fgThrow("Project has no source files",proj.name);
-    string      verStr = fgToStringDigits(vsver,2),
-                projDir = proj.name + "/VisualStudio" + verStr + "/";
+    FgStrs          includes = sln.getIncludes(proj.name,false),
+                    defines = sln.getDefs(proj.name),
+                    lnkDeps = sln.getLnkDeps(proj.name);
+    string          verStr = fgToStringDigits(vsver,2),
+                    projDir = proj.name + "/VisualStudio" + verStr + "/";
     fgCreateDirectory(projDir);
-    string      projFile = projDir + proj.name + ".vcxproj";
-    ofstream    ofs(projFile.c_str());      // Text mode so newline = CR LF
-    string      config[] = {"Debug","Release"};
-    string      bits[] = {"Win32","x64"};
-    string      toolsVersion = "4";
+    string          projFile = projDir + proj.name + ".vcxproj";
+    ostringstream   ofs;
+    string          config[] = {"Debug","Release"};
+    string          bits[] = {"Win32","x64"};
+    string          toolsVersion = "4";
 	if (vsver == 13)
 		toolsVersion = "12";
 	else if (vsver == 15)
 		toolsVersion = "14";
 	else if (vsver == 17)
 		toolsVersion = "15";
+    else
+        fgThrow("writeVcxproj unhandled vsver",vsver);
     ofs << 
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
         "<Project DefaultTargets=\"Build\" ToolsVersion=\""+toolsVersion+".0\" xmlns=\""
@@ -85,7 +94,7 @@ writeVcxproj(
     ofs <<
         "  </ItemGroup>\n"
         "  <PropertyGroup Label=\"Globals\">\n"
-        "    <ProjectGuid>" << proj.guid << "</ProjectGuid>\n"
+        "    <ProjectGuid>" << fgLookup(nameToGuid,proj.name) << "</ProjectGuid>\n"
         "    <RootNamespace>" << proj.name << "</RootNamespace>\n"
         "    <Keyword>Win32Proj</Keyword>\n"
         "  </PropertyGroup>\n"
@@ -96,26 +105,25 @@ writeVcxproj(
                 "  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
                     << "|" << bits[bb] << "'\" Label=\"Configuration\">\n"
                 "    <ConfigurationType>";
-            if (proj.app)
+            if (proj.isExecutable())
                 ofs << "Application";
-            else if (proj.dll)
+            else if (proj.isDynamicLib())
                 ofs << "DynamicLibrary";
             else
                 ofs << "StaticLibrary";
             ofs <<
                 "</ConfigurationType>\n";
             // PlatformToolset:
-            // v100: use VS2010 (VC++10) compiler & libs (from VS2012+ IDE)
-            // v110: use VS2012 (VC++11) compiler & libs, etc.
             if (vsver == 13)
                 ofs << "    <PlatformToolset>v120</PlatformToolset>\n";
             else if (vsver == 15)
                 ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
 			else if (vsver == 17)
 				ofs << "    <PlatformToolset>v141</PlatformToolset>\n";
+            else
+                fgThrow("writeVcxproj unhandled vsver",vsver);
             ofs <<
-                "    <CharacterSet>" << (proj.unicode ? "Unicode" : "MultiByte") << "</CharacterSet>\n";
-            ofs <<
+                "    <CharacterSet>Unicode</CharacterSet>\n"
                 "  </PropertyGroup>\n";
         }
     }
@@ -138,22 +146,22 @@ writeVcxproj(
         "    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>\n";
 
     string      sourceToBinPath("..\\bin\\win\\");
-    sourceToBinPath += "vs"+verStr+"\\";
     for (uint cc=0; cc<2; ++cc) {
         for (uint bb=0; bb<2; ++bb) {
             ofs <<
                 "    <OutDir Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
                     << "|" << bits[bb] << "'\">";
-            if (proj.app || proj.dll)
+            if (proj.isLinked())
                 ofs << "..\\..\\" << sourceToBinPath
-                    << ((bb == 0) ? "32\\" : "64\\")
+                    << ((bb == 0) ? "x86\\" : "x64\\")
+                    << "vs" << verStr << "\\"
                     << ((cc == 0) ? "debug\\" : "release\\");
             else
                 ofs << "$(Platform)\\$(Configuration)\\";
             ofs << "</OutDir>\n"
                 "    <IntDir Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
                     << "|" << bits[bb] << "'\">$(Platform)\\$(Configuration)\\</IntDir>\n";
-            if (proj.app || proj.dll)
+            if (proj.isLinked())
                 ofs <<
                     "    <LinkIncremental Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
                     << "|" << bits[bb] << "'\">" << ((cc == 0) ? "true" : "false") << "</LinkIncremental>\n";
@@ -162,7 +170,8 @@ writeVcxproj(
     ofs <<
         "  </PropertyGroup>\n";
     bool        pch = false;
-    if (fgFileReadable(proj.name+"/"+proj.srcBaseDir+proj.srcGroups[0].dir+"stdafx.cpp"))
+    if (!proj.srcGroups.empty() &&
+        fgFileReadable(proj.name+"/"+proj.baseDir+proj.srcGroups[0].dir+"stdafx.cpp"))
         pch = true;
     for (uint cc=0; cc<2; ++cc) {
         for (uint bb=0; bb<2; ++bb) {
@@ -183,14 +192,13 @@ writeVcxproj(
                     "      <IntrinsicFunctions>true</IntrinsicFunctions>\n";
             ofs <<
                 "      <AdditionalIncludeDirectories>";
-            for (size_t ii=0; ii<proj.incDirs.size(); ++ii)
-            {
-                string  dir = fgReplace(proj.incDirs[ii],'/','\\');
+            for (const string & relPath : includes) {
+                string          dir = fgReplace(relPath,'/','\\');
                 ofs << "..\\" << dir << ";";    // .vcxproj file is in a subdir of project dir
             }
             ofs <<
                 "%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>\n"
-                "      <PreprocessorDefinitions>" << fgConsVsPreprocessorDefs((cc == 1),proj)
+                "      <PreprocessorDefinitions>" << fgConsVsPreprocessorDefs((cc == 1),proj,defines)
                     << ";%(PreprocessorDefinitions)</PreprocessorDefinitions>\n";
             if (cc == 0)
                 ofs <<
@@ -211,33 +219,30 @@ writeVcxproj(
                 // be used in combination with disabling MSVC language extensions:
                 "      <FloatingPointModel>Fast</FloatingPointModel>\n"
                 "    </ClCompile>\n";
-            if (proj.app || proj.dll) {
+            if (proj.isLinked()) {
                 ofs <<
                     "    <Link>\n"
                     "      <GenerateDebugInformation>" << ((cc == 0) ? "true" : "false")
                         << "</GenerateDebugInformation>\n"
-                    "      <SubSystem>" << (proj.pureGui ? "Windows" : "Console") << "</SubSystem>\n"
+                    "      <SubSystem>" << (proj.isGuiExecutable() ? "Windows" : "Console") << "</SubSystem>\n"
                     "      <TargetMachine>MachineX" << ((bb == 0) ? "86" : "64") << "</TargetMachine>\n"
                     "      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;"
                         "opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;";
-                for (size_t ii=0; ii<proj.dllDeps.size(); ++ii)
-                    ofs << proj.dllDeps[ii] << ".lib;";
-                ofs <<
-                    "%(AdditionalDependencies)</AdditionalDependencies>\n";
-                if (!proj.dllDeps.empty())
-                    // The SDK builder copies the preferred binaries into all fully
-                    // differentiated bins:
-                    ofs <<
-                        "      <AdditionalLibraryDirectories>$(SolutionDir)\\"
-                        << sourceToBinPath
-                        << ((bb == 0) ? "32\\" : "64\\")
+                for (const string & dll : lnkDeps)
+                    if (!sln.contains(dll))         // Binary-only DLL
+                        ofs << dll << ".lib;";
+                ofs
+                    << "%(AdditionalDependencies)</AdditionalDependencies>\n"
+                    // The SDK builder copies the preferred binaries into repo/bin/os/arch/ dirs:
+                       "      <AdditionalLibraryDirectories>$(SolutionDir)\\"
+                    << sourceToBinPath
+                    << ((bb == 0) ? "x86\\" : "x64\\")
+                    << "</AdditionalLibraryDirectories>\n"
+                       "      <OutputFile>$(SolutionDir)\\" << sourceToBinPath
+                        << ((bb == 0) ? "x86\\" : "x64\\")
+                        << "vs" << verStr << "\\"
                         << ((cc == 0) ? "debug\\" : "release\\")
-                        << "</AdditionalLibraryDirectories>\n";
-                ofs <<
-                    "      <OutputFile>$(SolutionDir)\\" << sourceToBinPath
-                        << ((bb == 0) ? "32\\" : "64\\")
-                        << ((cc == 0) ? "debug\\" : "release\\")
-                        << "$(ProjectName)." << (proj.app ? "exe" : "dll") << "</OutputFile>\n"
+                        << "$(ProjectName)." << (proj.isExecutable() ? "exe" : "dll") << "</OutputFile>\n"
                     "    </Link>\n";
             }
             else    // static lib
@@ -249,36 +254,33 @@ writeVcxproj(
                 "  </ItemDefinitionGroup>\n";
         }
     }
-    if (proj.app || proj.dll) {
+    if (proj.isLinked()) {
         ofs << "  <ItemGroup>\n";
-        for (size_t ll=0; ll<proj.lnkDeps.size(); ++ll) {
-            const string &  name = proj.lnkDeps[ll];
-            map<string,string>::const_iterator  it = guidMap.find(name);
-            if (it == guidMap.end())
-                fgThrow("Link dependency to unknown library",name);
-            const string &  guid = it->second;
-            ofs <<
-                "    <ProjectReference Include=\"..\\..\\" << name << "\\VisualStudio"
-                    << verStr << "\\" << name << ".vcxproj\">\n"
-                "      <Project>" << guid << "</Project>\n"
-                "      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>\n"
-                "      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>\n"
-                "    </ProjectReference>\n";
+        for (const string & name : lnkDeps) {
+            if (sln.contains(name))     // Only projects with source are referenced:
+                ofs <<
+                    "    <ProjectReference Include=\"..\\..\\" << name << "\\VisualStudio"
+                        << verStr << "\\" << name << ".vcxproj\">\n"
+                    "      <Project>" << fgLookup(nameToGuid,name) << "</Project>\n"
+                    "      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>\n"
+                    "      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>\n"
+                    "    </ProjectReference>\n";
         }
         ofs << "  </ItemGroup>\n";
     }
     ofs << "  <ItemGroup>\n";
-    for (size_t gg=0; gg<proj.srcGroups.size(); ++gg) {
-        const FgConsSrcGroup &  grp = proj.srcGroups[gg];
+    for (const FgConsSrcDir & grp : proj.srcGroups) {
         for (size_t ff=0; ff<grp.files.size(); ++ff) {
-            string path = fgReplace(proj.srcBaseDir+grp.dir+grp.files[ff],'/','\\');
+            string path = fgReplace(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
             if (fgEndsWith(grp.files[ff],".cpp") || fgEndsWith(grp.files[ff],".c"))
                 ofs << "    <ClCompile Include=\"..\\" << path << "\"";
             else if (fgEndsWith(grp.files[ff],".hpp") || fgEndsWith(grp.files[ff],".h"))
                 ofs << "    <ClInclude Include=\"..\\" << path << "\"";
             else
                 fgThrow("Unrecognized source file type",grp.files[ff]);
-            if ((grp.files[ff] == "stdafx.cpp") || (fgEndsWith(grp.files[ff],".c"))) {
+            // WARNING: MSVC cannot mix pure C files with pre-comiled headers unless you also individually
+            // mark them for pre-compilation which we do NOT do here:
+            if (grp.files[ff] == "stdafx.cpp") {
                 ofs << ">\n";
                 for (uint cc=0; cc<2; ++cc)
                     for (uint bb=0; bb<2; ++bb)
@@ -352,30 +354,87 @@ writeVcxproj(
         "  <ImportGroup Label=\"ExtensionTargets\">\n"
         "  </ImportGroup>\n"
         "</Project>\n";
+    return fgDump(ofs.str(),projFile.c_str());
 }
 
 static
-void
+bool
 writeSln(
-    const FgConsSolution &  sln,
-    uint                    vsver)
+    const FgConsSolution &      sln,
+    const string &              merkle,         // Concatenation of project GUIDs
+    const map<string,string> &  nameToGuid,     // Must contain all project names
+    uint                        vsver)
 {
     // Create solution file:
     string          rootName("VisualStudio"),
-                    verStr = fgToStringDigits(vsver,2);
-    FgOfstream      ofs(rootName+verStr+".sln");
+                    verStr = fgToStringDigits(vsver,2),
+    // Visual studio completely changes the SLN UUID if any project is added or removed.
+    // It does not change either UUID if project properties are modified:
+                    slnGuid = fgCreateMicrosoftGuid(merkle+verStr);
+    ostringstream   ofs;
     ofs <<
         "\n"
         "Microsoft Visual Studio Solution File, Format Version "
             << "12.00\n"
-        "# Visual Studio 20" << verStr << "\n";
-    for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        const FgConsProj & proj = sln.projects[ii];
-        ofs <<
-            "Project(\"{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}\") = \""
-            << proj.name << "\", \"" << proj.name << "\\VisualStudio" << verStr << "\\"
-            << proj.name << ".vcxproj\", \"" << proj.guid << "\"\n"
-            "EndProject\n";
+        "# Visual Studio ";
+    if (vsver == 17)
+        ofs << "15\n"       // VS17 writes version number instead of year
+            "VisualStudioVersion = 15.0.27703.2000\n"
+            "MinimumVisualStudioVersion = 10.0.40219.1\n";
+    else
+        ofs << "20" << verStr << "\n";
+    for (const FgConsProj & proj : sln.projects) {
+        if (!proj.srcGroups.empty()) {
+            ofs <<
+                "Project(\"" + slnGuid + "\") = \""
+                << proj.name << "\", \"" << proj.name << "\\VisualStudio" << verStr << "\\"
+                << proj.name << ".vcxproj\", \"" << fgLookup(nameToGuid,proj.name) << "\"\n"
+                "EndProject\n";
+        }
+    }
+    string      globalEndSections;
+    // Add CMake and Unix folders if this is a VS17 dev instance:
+    if ((vsver >= 17) && fgExists("../data/_overwrite_baselines.flag")) {
+        // This GUID is pre-defined to mean a solution folder:
+        string                  uuidFolder = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
+        if (fgExists("CMakeLists.txt")) {   // Add CMake files for easy viewing / searching
+            string                  uuidCmakeFolder = "{06685DCC-912A-409E-BAF1-580272DB71CD}";
+            FgDirectoryContents     dc = fgDirectoryContents("");
+            ofs <<
+                "Project(\"" + uuidFolder + "\") = \"cmake\", \"cmake\", \"" + uuidCmakeFolder + "\"\n"
+                "	ProjectSection(SolutionItems) = preProject\n"
+                "		CMakeLists.txt = CMakeLists.txt\n";
+            ofs <<
+                "	EndProjectSection\n"
+                "EndProject\n";
+            for (const FgString & dir : dc.dirnames) {
+                FgString            cmf = dir + "\\CMakeLists.txt";
+                if (fgExists(cmf)) {
+                    string          uuid = fgCreateMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
+                    ofs <<
+                        "Project(\"" + uuidFolder + "\") = \"" + dir + "\", \"" + dir + "\", \"" + uuid + "\"\n"
+                        "	ProjectSection(SolutionItems) = preProject\n"
+                        "		" + cmf + " = " + cmf + "\n"
+                        "	EndProjectSection\n"
+                        "EndProject\n";
+                    globalEndSections += "		" + uuid + " = " + uuidCmakeFolder + "\n";
+                }
+            }
+        }
+        if (fgExists("LibFgBase/src/nix")) {    // Add unix files for easy viewing / searching
+            string                  nixPath = "LibFgBase\\src\\nix\\";
+            string                  uuidNixFolder = "{AE0BD3A3-EF58-4762-9266-81AF0C5A05A8}";
+            FgDirectoryContents     dc = fgDirectoryContents(nixPath);
+            ofs <<
+                // These GUIDs are specific to generic folders with text files in them:
+                "Project(\"" + uuidFolder + "\") = \"unix\", \"unix\", \"" + uuidNixFolder + "\"\n"
+                "	ProjectSection(SolutionItems) = preProject\n";
+            for (const FgString & fname : dc.filenames)
+                ofs << "		" + nixPath+fname + " = " + nixPath+fname + "\n";
+            ofs <<
+                "	EndProjectSection\n"
+                "EndProject\n";
+        }
     }
     ofs <<
         "Global\n"
@@ -386,47 +445,65 @@ writeSln(
         "		Release|x64 = Release|x64\n"
         "	EndGlobalSection\n"
         "	GlobalSection(ProjectConfigurationPlatforms) = postSolution\n";
-    for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        const string & guid = sln.projects[ii].guid;
-        ofs <<
-            "		" << guid << ".Debug|Win32.ActiveCfg = Debug|Win32\n"
-            "		" << guid << ".Debug|Win32.Build.0 = Debug|Win32\n"
-            "		" << guid << ".Debug|x64.ActiveCfg = Debug|x64\n"
-            "		" << guid << ".Debug|x64.Build.0 = Debug|x64\n"
-            "		" << guid << ".Release|Win32.ActiveCfg = Release|Win32\n"
-            "		" << guid << ".Release|Win32.Build.0 = Release|Win32\n"
-            "		" << guid << ".Release|x64.ActiveCfg = Release|x64\n"
-            "		" << guid << ".Release|x64.Build.0 = Release|x64\n";
+    for (const FgConsProj & proj : sln.projects) {
+        if (!proj.srcGroups.empty()) {
+            string          guid = fgLookup(nameToGuid,proj.name);
+            ofs <<
+                "		" << guid << ".Debug|Win32.ActiveCfg = Debug|Win32\n"
+                "		" << guid << ".Debug|Win32.Build.0 = Debug|Win32\n"
+                "		" << guid << ".Debug|x64.ActiveCfg = Debug|x64\n"
+                "		" << guid << ".Debug|x64.Build.0 = Debug|x64\n"
+                "		" << guid << ".Release|Win32.ActiveCfg = Release|Win32\n"
+                "		" << guid << ".Release|Win32.Build.0 = Release|Win32\n"
+                "		" << guid << ".Release|x64.ActiveCfg = Release|x64\n"
+                "		" << guid << ".Release|x64.Build.0 = Release|x64\n";
+        }
     }
     ofs <<
         "	EndGlobalSection\n"
         "	GlobalSection(SolutionProperties) = preSolution\n"
         "		HideSolutionNode = FALSE\n"
         "	EndGlobalSection\n"
+        "	GlobalSection(NestedProjects) = preSolution\n"
+        << globalEndSections <<
+        "	EndGlobalSection\n"
+        "	GlobalSection(ExtensibilityGlobals) = postSolution\n"
+        "		SolutionGuid = {39B2BC3E-9FF2-4906-92AE-80DBB3FF9746}\n"
+        "	EndGlobalSection\n"
         "EndGlobal\n";
+    return fgDump(ofs.str(),rootName+verStr+".sln");
 }
 
-void
-fgConsVs201x(FgConsSolution sln)
+bool
+fgConsVs201x(const FgConsSolution & sln)
 {
-    // Create project files:
-    map<string,string>  guidMap;
-    string              hashPrepend = "FaceGenConsVS20";
-    for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        FgConsProj &    proj = sln.projects[ii];
-        // Prepend proj name to ensure at least 16 characters for GUID creation:
-        proj.guid = fgCreateMicrosoftGuid(hashPrepend+proj.name);
-        guidMap.insert(make_pair(proj.name,proj.guid));
+    FGASSERT(sln.type == FgConsType::win);
+    map<string,string>  nameToGuid;
+    string              hashPrepend = "FaceGenVisualStudio:",    // Ensure descriptor string >= 16 chars
+                        merkle;
+    for (const FgConsProj & proj : sln.projects) {
+        if (!proj.srcGroups.empty()) {
+            string          projGuid = fgCreateMicrosoftGuid(hashPrepend+proj.descriptor());
+            auto            it = nameToGuid.find(proj.name);
+            if (it != nameToGuid.end())
+                fgThrow("fgConsVs201x duplicate project name",proj.name);
+            nameToGuid[proj.name] = projGuid;
+            merkle += projGuid;
+        }
     }
-    for (size_t ii=0; ii<sln.projects.size(); ++ii) {
-        writeVcxproj(sln.projects[ii],guidMap,13);
-        writeVcxproj(sln.projects[ii],guidMap,15);
-        writeVcxproj(sln.projects[ii],guidMap,17);
+    bool                changed = false;
+    for (const FgConsProj & proj : sln.projects) {
+        if (!proj.srcGroups.empty()) {
+            changed = writeVcxproj(sln,proj,nameToGuid,13) || changed;
+            changed = writeVcxproj(sln,proj,nameToGuid,15) || changed;
+            changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
+        }
     }
-    // This codebase uses C++11 which is only supported by the following:
-    writeSln(sln,13);
-    writeSln(sln,15);
-    writeSln(sln,17);
+    // This codebase uses C++11 which is only supported by VS 2013 and later:
+    changed = writeSln(sln,merkle,nameToGuid,13) || changed;
+    changed = writeSln(sln,merkle,nameToGuid,15) || changed;
+    changed = writeSln(sln,merkle,nameToGuid,17) || changed;
+    return changed;
 }
 
 // */

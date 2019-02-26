@@ -1,0 +1,13 @@
+CC = clang
+CXX = clang++
+LINK = clang++
+CFLAGS = -m64 -g -O1 -D_DEBUG -fno-common
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+LFLAGS = -framework Carbon
+DLLEXT = .dylib
+DLLARG = -dynamiclib -Wl,-install_name,@executable_path/
+BINDIR = ../bin/macos/x64/clang/debug/
+BBINDIR = ../bin/macos/x64/
+BUILDIR = ../build_macos/x64/clang/debug/
+include make_all.mk

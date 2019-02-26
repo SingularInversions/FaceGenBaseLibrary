@@ -9,7 +9,8 @@
 
 #include "stdafx.h"
 
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "Fg3dMesh.hpp"
 #include "FgException.hpp"
 #include "FgStdStream.hpp"
@@ -385,8 +386,10 @@ Fg3dMesh::addTargMorph(const FgString & name_,const FgVerts & targetShape)
     double              maxMag = 0.0;
     for (size_t ii=0; ii<deltas.size(); ++ii)
         fgSetIfGreater(maxMag,deltas[ii].mag());
-    if (maxMag == 0.0f)
-        fgThrow("Attempt to create empty target morph");
+    if (maxMag == 0.0f) {
+        fgout << fgnl << "WARNING: skipping empty morph " << name_;
+        return;
+    }
     maxMag *= fgSqr(0.001f);
     for (size_t ii=0; ii<deltas.size(); ++ii) {
         if (deltas[ii].mag() > maxMag) {

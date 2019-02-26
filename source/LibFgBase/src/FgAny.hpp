@@ -20,8 +20,8 @@
 #define FGANY_HPP
 
 #include "FgStdLibs.hpp"
-
 #include "FgException.hpp"
+#include "FgString.hpp"
 
 struct FgAnyPolyBase
 {
@@ -73,7 +73,7 @@ public:
     is() const
     {
         const FgAnyPoly<T> * ptr = dynamic_cast<FgAnyPoly<T>*>(asShared().get());
-        return (ptr != NULL);
+        return (ptr != nullptr);
     }
 
     template<class T>
@@ -81,7 +81,7 @@ public:
     as() const
     {
         const FgAnyPoly<T> * ptr = dynamic_cast<FgAnyPoly<T>*>(asShared().get());
-        if (ptr == NULL)
+        if (ptr == nullptr)
             fgThrow("FgAnyWeak.as incompatible type dereference",asShared()->typeName()+"->"+typeid(T).name());
         return ptr->object;
     }
@@ -92,7 +92,7 @@ public:
     ref()
     {
         FgAnyPoly<T> *      ptr = dynamic_cast<FgAnyPoly<T>*>(asShared().get());
-        if (ptr == NULL)
+        if (ptr == nullptr)
             fgThrow("FgAnyWeak.ref incompatible type dereference",asShared()->typeName()+"->"+typeid(T).name());
         return ptr->object;
     }
@@ -140,7 +140,7 @@ public:
         if (!objPtr)
             fgThrow("FgAny.is null dereference",typeid(T).name());
         const FgAnyPoly<T> * ptr = dynamic_cast<FgAnyPoly<T>*>(objPtr.get());
-        return (ptr != NULL);
+        return (ptr != nullptr);
     }
 
     template<class T>
@@ -150,9 +150,22 @@ public:
         if (!objPtr)
             fgThrow("FgAny.as null dereference",typeid(T).name());
         const FgAnyPoly<T> * ptr = dynamic_cast<FgAnyPoly<T>*>(objPtr.get());
-        if (ptr == NULL)
+        if (ptr == nullptr)
             fgThrow("FgAny.as incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;
+    }
+
+    // Follows the idiom of returning a null pointer if the type differs:
+    template<class T>
+    const T *
+    asp() const
+    {
+        if (!objPtr)
+            return nullptr;
+        const FgAnyPoly<T> * ptr = dynamic_cast<FgAnyPoly<T>*>(objPtr.get());
+        if (ptr == nullptr)
+            return nullptr;
+        return &ptr->object;
     }
 
     // Use at your own risk as this violates copy semantics:
@@ -163,7 +176,7 @@ public:
         if (!objPtr)
             fgThrow("FgAny.ref null dereference",typeid(T).name());
         FgAnyPoly<T> *      ptr = dynamic_cast<FgAnyPoly<T>*>(objPtr.get());
-        if (ptr == NULL)
+        if (ptr == nullptr)
             fgThrow("FgAny.ref incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;
     }

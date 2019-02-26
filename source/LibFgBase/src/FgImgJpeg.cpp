@@ -3,8 +3,10 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// Authors: Sohail Somani, Andrew Beatty
 
 #include "stdafx.h"
+
 #include <csetjmp>
 #include "FgStdLibs.hpp"
 #include "FgStdStream.hpp"
@@ -21,14 +23,13 @@
 
 extern "C" {
 #include "jpeglib.h"
-    // defined in jpeg_mem_src.c
-    void jpeg_mem_src(j_decompress_ptr cinfo,
-                      const JOCTET * buffer, size_t size);
 }
 
+// defined in jpeg_mem_src.cpp
+void jpeg_mem_src(j_decompress_ptr cinfo,const JOCTET * buffer, size_t size);
+
 // Defined in jpeg_mem_dest.cpp
-void jpeg_mem_dest(j_compress_ptr cinfo,
-                   std::vector<JOCTET> & target);
+void jpeg_mem_dest(j_compress_ptr cinfo,std::vector<JOCTET> & target);
 
 struct IJGErrorManager
 {
@@ -152,7 +153,9 @@ cleanup:
 static
 bool
 saveJpeg(
-    const FgImgRgbaUb &     img,
+    uint                    wid,
+    uint                    hgt,
+    const uchar *           srcImg,     // Must be RGBA of size wid*hgt*4
     vector<unsigned char> & jpgBuffer,
     int                     quality)
 {
@@ -169,7 +172,7 @@ saveJpeg(
 
     bool succeeded = false;
 
-    vector<uchar> img_buffer(img.height() * img.width() * 3);
+    vector<uchar> img_buffer(wid*hgt*3);
 
     switch(setjmp(jerr.setjmp_buffer))
     {
@@ -180,8 +183,8 @@ saveJpeg(
             jpeg_create_compress(&cinfo);
             jpeg_mem_dest(&cinfo, jpgBuffer);
 
-            cinfo.image_width = img.width();
-            cinfo.image_height = img.height();
+            cinfo.image_width = wid;
+            cinfo.image_height = hgt;
             cinfo.input_components = 3;
             cinfo.in_color_space = JCS_RGB;
 
@@ -192,18 +195,17 @@ saveJpeg(
 
             jpeg_start_compress(&cinfo, TRUE);
 
-            uchar * imgPtr = &img_buffer[0];
-            for(uint yy = 0; yy < img.height(); yy++)
-            {
-                for(uint xx=0; xx<img.width(); xx++)
-                {
-                    *imgPtr++ = img.xy(xx,yy).red();
-                    *imgPtr++ = img.xy(xx,yy).green();
-                    *imgPtr++ = img.xy(xx,yy).blue();
+            for(uint yy=0; yy<hgt; yy++) {
+                const uchar *   srcPtr = srcImg + yy*wid*4;
+                size_t          dstOff = yy*wid*3;
+                for(uint xx=0; xx<wid; xx++) {
+                    img_buffer[dstOff+xx*3] = srcPtr[xx*4];
+                    img_buffer[dstOff+xx*3+1] = srcPtr[xx*4+1];
+                    img_buffer[dstOff+xx*3+2] = srcPtr[xx*4+2];
                 }
             }
 
-            uint row_stride = img.width() * 3;
+            uint row_stride = wid * 3;
             while(cinfo.next_scanline < cinfo.image_height)
             {
                 row_pointer[0] = &img_buffer[cinfo.next_scanline * row_stride];
@@ -231,56 +233,29 @@ cleanup:
     return succeeded;
 }
 
-void
-fgImgSaveJfif(
-    const FgImgRgbaUb & img,
-    const FgString &    fname,
-    int                 quality)
+std::vector<uchar>
+fgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 {
-    vector<uchar>       target;
-    if(!saveJpeg(img,target,quality)) 
-        fgThrow("Could not encode as JFIF",fname);
-    FgOfstream  ofs(fname);
-    ofs.setf(std::ios::skipws);
-    std::ostream_iterator<unsigned char> output_file(ofs);
-    std::copy(target.begin(),target.end(),
-              output_file);
+    vector<uchar>       ret;
+    if(!saveJpeg(wid,hgt,data,ret,quality)) 
+        fgThrow("Could not encode as JPEG/JFIF");
+    return ret;
 }
 
-void
-fgImgSaveJfif(
-    const FgImgRgbaUb &     img,
-    std::vector<uchar> &    buffer,
-    int                     quality)
+vector<uchar>
+fgEncodeJpeg(const FgImgRgbaUb & img,int quality)
 {
-    if(!saveJpeg(img,buffer,quality)) 
-        fgThrow("Could not encode as JFIF");
+    vector<uchar>       ret;
+    if(!saveJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],ret,quality)) 
+        fgThrow("Could not encode as JPEG/JFIF");
+    return ret;
 }
 
-void
-fgImgLoadJfif(
-    const FgString &    fname,
-    FgImgRgbaUb &       img)
+FgImgRgbaUb
+fgDecodeJpeg(const vector<uchar> & data)
 {
-    FgIfstream  ifs(fname);
-
-    ifs.seekg(0,std::ios::end);
-    std::streamsize size = ifs.tellg();
-    ifs.seekg(0,std::ios::beg);
-    
-    vector<uchar>       source;
-    source.resize(static_cast<std::size_t>(size));
-    ifs.read(reinterpret_cast<char*>(&source[0]),size);
-    
-    if(!loadJpeg(source,img))
-        fgThrow("Error processing JFIF data",fname);
-}
-
-void 
-fgImgLoadJfif(
-    const vector<uchar> &   data,
-    FgImgRgbaUb &           img)
-{
-    if(!loadJpeg(data,img))
-        fgThrow("Error processing JFIF data");
+    FgImgRgbaUb         ret;
+    if(!loadJpeg(data,ret))
+        fgThrow("Could not decode as JPEG/JFIF");
+    return ret;
 }

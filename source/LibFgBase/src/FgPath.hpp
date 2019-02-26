@@ -102,8 +102,13 @@ struct  FgPath
     FgPath
     operator+(const FgPath &  rhs) const;
 
+    // Move up 'num' directories. Throws an error if not possible:
     void
-    popDirs(uint);
+    popDirs(uint num);
+
+    bool
+    isDirectory() const
+    {return (base.empty() && ext.empty()); }
 };
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:

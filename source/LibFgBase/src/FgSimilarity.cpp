@@ -57,7 +57,7 @@ fgSimilarityRand()
         FgSimilarity(
             std::exp(fgRandNormal()),
             fgQuaternionRand(),
-            fgVecRandNrm<3>());
+            FgVect3D::randNormal());
 }
 
 // Uses approach originally from [Horn '87 "Closed-Form Solution of Absolute Orientation..."
@@ -116,7 +116,7 @@ fgSimilarityApprox(
 void
 fgSimilarityTest(const FgArgs &)
 {
-    FgSimilarity    sim(fgExp(fgRandNormal()),FgQuaternionD(fgVecRandNrm<4>()),fgVecRandNrm<3>());
+    FgSimilarity    sim(fgExp(fgRandNormal()),FgQuaternionD(FgVect4D::randNormal()),FgVect3D::randNormal());
     FgSimilarity    id = sim * sim.inverse();
     FgMat33D        diff = id.xformCoord(FgMat33D::identity()) - FgMat33D::identity();
     FGASSERT(fgApproxEqual(1.0+diff.length(),1.0,100));
@@ -131,9 +131,9 @@ fgSimilarityApproxTest(const FgArgs &)
         vector<FgVect3D>    domain(numPts),
                             range(numPts);
         for (uint ii=0; ii<numPts; ii++)
-            domain[ii] = fgVecRandNrm<3>();
+            domain[ii] = FgVect3D::randNormal();
         for (uint mm=0; mm<10; mm++) {
-            FgSimilarity    simRef(fgExp(3.0 * fgRandNormal()),fgQuaternionRand(),fgVecRandNrm<3>());
+            FgSimilarity    simRef(fgExp(3.0 * fgRandNormal()),fgQuaternionRand(),FgVect3D::randNormal());
             fgTransform_(domain,range,simRef.asAffine());
             FgSimilarity    sim = fgSimilarityApprox(domain,range);
             fgTransform_(domain,sim.asAffine());

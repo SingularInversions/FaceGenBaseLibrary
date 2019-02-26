@@ -11,55 +11,44 @@
 
 #include "FgException.hpp"
 #include "FgStdString.hpp"
+#include "FgString.hpp"
 
 using namespace std;
 
-static const char * newline = "\n";
-
-FgString
+string
 FgException::Context::trans() const
 {
-    if (data.empty())
-        return fgTr(msg);
+    if (dataUtf8.empty())
+        return fgTr(msg).m_str;
     else
-        return fgTr(msg)+" : "+data;
+        return (fgTr(msg) + " : " + dataUtf8).m_str;
 }
 
-FgString
+string
 FgException::Context::noTrans() const
 {
-    if (data.empty())
-        return FgString(msg);
+    if (dataUtf8.empty())
+        return msg;
     else
-        return FgString(msg)+" : "+data;
+        return msg + " : " + dataUtf8;
 }
 
-FgString
+string
 FgException::tr_message() const
 {
-    if (m_ct.empty())
-        return FgString();
-    size_t      last = m_ct.size()-1;
-    FgString    ret = m_ct[last].trans();
-    for (size_t ii=1; ii<m_ct.size(); ++ii)
-    {
-        ret += newline;
-        ret += m_ct[last-ii].trans();
-    }
-    return ret;
+    FgStrs          strs;
+    // Translate and reverse order so most proximal message comes first:
+    for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
+        strs.push_back(it->trans());
+    return fgCat(strs,"\n");
 }
 
-FgString
+string
 FgException::no_tr_message() const
 {
-    if (m_ct.empty())
-        return FgString();
-    size_t      last = m_ct.size()-1;
-    FgString    ret = m_ct[last].noTrans();
-    for (size_t ii=1; ii<m_ct.size(); ++ii)
-    {
-        ret += newline;
-        ret += m_ct[last-ii].noTrans();
-    }
-    return ret;
+    FgStrs          strs;
+    // Translate and reverse order so most proximal message comes first:
+    for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
+        strs.push_back(it->noTrans());
+    return fgCat(strs,"\n");
 }

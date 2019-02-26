@@ -64,8 +64,8 @@ fgTokenize(const string &);
 FgStrs
 fgSplitLines(const string & src,bool backslashContinuation=true);
 
-FgUintss
-fgSplitLines(const FgUints & src,bool includeEmptyLines=false);
+FgStr32s
+fgSplitLines(const std::u32string & src,bool includeEmptyLines=false);
 
 FgStrings
 fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines=false);
@@ -75,7 +75,17 @@ fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines=false);
 // * When a quote directly follows a comma, in which case everthing, including commas and newlines,
 //   up until the next single-quote is taken as the value, and double-quotes are taken as single-quotes.
 FgStrss
-fgLoadCsv(const FgString & fname);
+fgLoadCsv(
+    const FgString &    fname,
+    size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
+
+// Each non-empty line in the CSV must have at least keyIdx+1 fields or an error will occur.
+// The map value will contain all fields in original order (including key):
+std::map<std::string,FgStrs>
+fgLoadCsvToMap(
+    const FgString &    fname,
+    size_t              keyIdx,
+    size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
 
 // Quotes all fields and uses double-quotes to escape quote literals.
 void
@@ -96,5 +106,8 @@ fgWhiteBreak(const string &);
 // and all others to '?':
 string
 fgAsciify(const string &);
+
+std::u32string
+fgReplace(const std::u32string & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
 
 #endif

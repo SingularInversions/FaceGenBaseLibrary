@@ -7,11 +7,30 @@
 #include "stdafx.h"
 
 #include "FgSystemInfo.hpp"
+#include "FgPlatform.hpp"
 
-FgString
-fgSystemInfo()
-{return FgString(); }
+using namespace std;
+
+bool
+fg64bitOS()     // Nix is simple, OS bits = build bits:
+{return fgIs64bit(); }
+
+string
+fgOsName()
+{
+    string      ret;
+#ifdef __APPLE__
+    ret = "MacOS";
+#elif __linux__
+    ret = "Linux";
+#elif __FreeBSD__
+    ret = "FreeBSD";
+#else
+    ret = "Unknown";
+#endif
+    return ret;
+}
 
 FgString
 fgComputerName()
-{return FgString(); }
+{return FgString("Unknown"); }

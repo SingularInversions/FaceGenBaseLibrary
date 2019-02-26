@@ -13,9 +13,7 @@
 #include "FgTime.hpp"
 #include "FgThread.hpp"
 #include "FgTestUtils.hpp"
-#include "FgTempFile.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgTempFile.hpp"
 #include "FgStdVector.hpp"
 #include "FgCommand.hpp"
 

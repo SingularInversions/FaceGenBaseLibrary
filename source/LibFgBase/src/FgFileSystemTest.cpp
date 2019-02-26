@@ -28,8 +28,8 @@ testCurrentDirectory(const FgArgs & args)
     FGTESTDIR
     try
     {
-        wstring         chin = L"\u4EE5";
-        FgString        chinese(chin);
+        char32_t        ch = 0x00004EE5;            // A Chinese character
+        FgString        chinese(ch);
         FgString        oldDir = fgGetCurrentDir();
         FgString        dirName = chinese + fgDirSep();
         fgCreateDirectory(dirName);
@@ -56,8 +56,8 @@ void
 testOfstreamUnicode(const FgArgs & args)
 {
     FGTESTDIR
-    char            centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
-    FgString        test = FgString(centInUtf8);
+    char32_t        cent = 0x000000A2;              // The cent sign
+    FgString        test = FgString(cent);
     FgOfstream      ofs(test);
     FGASSERT(ofs);
     ofs.close();
@@ -69,13 +69,12 @@ void
 testReadableFile(const FgArgs & args)
 {
     FGTESTDIR
-    FgTempFile tempfile("testReadableFile.txt");
-    std::ofstream ofs(tempfile.filename().c_str());
+    std::ofstream ofs("testReadableFile.txt");
     FGASSERT(ofs);
     ofs << "Hi";
     ofs.close();
-    FGASSERT( fgFileReadable(tempfile.filename()) );
-    FGASSERT( !fgFileReadable("This file does not exist nor should it ever 1234") );    
+    FGASSERT(fgFileReadable("testReadableFile.txt"));
+    FGASSERT(!fgFileReadable("This file does not exist"));
 }
 
 static
@@ -83,15 +82,15 @@ void
 testDeleteDirectory(const FgArgs & args)
 {
     FGTESTDIR
-    char        centInUtf8[] = {'\302', '\242', '\000'};    // The cent symbol
-    FgString    cent = FgString(centInUtf8)+"/";
-    FgString    name = "testDeleteDirectory/";
+    char32_t        ch = 0x000000A2;              // The cent sign
+    FgString        cent = FgString(ch)+"/";
+    FgString        name = "testDeleteDirectory/";
     fgCreateDirectory(name);
     FGASSERT(fgExists(name));
     fgCreateDirectory(name+cent);
     fgSaveXml(name+cent+"a",42);
     fgSaveXml(name+"b",21);
-    fgRemoveAll(name);
+    fgRemoveDirectoryRecursive(name);
     FGASSERT(!fgExists(name));
 }
 

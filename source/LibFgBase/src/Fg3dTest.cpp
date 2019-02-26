@@ -165,6 +165,7 @@ fg3dTest(const FgArgs & args)
     FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
 #endif
 #ifdef _WIN32               // Precision differences with gcc & clang
+    FGADDCMD(fgSaveDaeTest,"dae","Collada DAE format export");
     FGADDCMD(fgSaveObjTest,"obj","Wavefront OBJ ASCII file format export");
     FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");
 #ifndef _DEBUG              // Precision diffs from release

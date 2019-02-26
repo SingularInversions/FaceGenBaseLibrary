@@ -11,7 +11,8 @@
 #define FGLIGHT_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgImage.hpp"
 
 struct  FgLight

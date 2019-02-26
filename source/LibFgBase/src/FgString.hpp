@@ -11,8 +11,31 @@
 #define INCLUDED_FGSTRING_HPP
 
 #include "FgStdLibs.hpp"
+#include "FgException.hpp"
+#include "FgStdString.hpp"
 #include "FgTypes.hpp"
 #include "FgSerialize.hpp"
+
+std::u32string
+fgToUtf32(const std::string & utf8);
+
+std::string
+fgToUtf8(const char32_t & utf32_char);
+
+std::string
+fgToUtf8(const std::u32string & utf32);
+
+// The following 2 functions are only needed by Windows and don't work on *nix due to
+// different sizeof(wchar_t):
+#ifdef _WIN32
+
+std::wstring
+fgToUtf16(const std::string & utf8);
+
+std::string
+fgToUtf8(const std::wstring & utf16);
+
+#endif
 
 struct  FgString
 {
@@ -20,19 +43,14 @@ struct  FgString
 
     FgString() {};
 
-    FgString(const char * utf8_c_string)
-        : m_str(utf8_c_string) {};
+    FgString(const char * utf8_c_string) : m_str(utf8_c_string) {};
 
-    FgString(const std::string & utf8_string)
-        : m_str(utf8_string) {};
+    FgString(const std::string & utf8_string) : m_str(utf8_string) {};
 
-    // Construct from a wstring. Since sizeof(wchar_t) is compiler/platform dependent,
-    // encoding is utf16 for Windows, utf32 for gcc & XCode:
-    FgString(const wchar_t *);
-    FgString(const std::wstring &);
+    explicit FgString(char32_t utf32_char) : m_str(fgToUtf8(utf32_char)) {}
 
     explicit
-    FgString(const std::vector<uint32> & utf32_string);
+    FgString(const std::u32string & utf32) : m_str(fgToUtf8(utf32)) {}
 
     FgString &
     operator+=(const FgString&);
@@ -43,6 +61,7 @@ struct  FgString
     FgString
     operator+(char c) const;
 
+    // Use sparingly as this function is very inefficient in UTF-8 encoding:
     uint32
     operator[](size_t) const;
 
@@ -78,19 +97,25 @@ struct  FgString
     friend
     std::istream& operator>>(std::istream&, FgString &);
 
-    // Encoded as UTF16 if wstring is 16-bit chars, UTF32 if wstring is 32-bit chars:
-    std::wstring
-    as_wstring() const;
-
     std::string const &
     as_utf8_string() const
     {return m_str; }
 
-    std::vector<uint32>
-    as_utf32() const;
+    std::u32string
+    as_utf32() const
+    {return fgToUtf32(m_str); }
 
     // Return native unicode string (UTF-16 for Win, UTF-8 for Nix):
-#ifdef _MSC_VER
+#ifdef _WIN32
+    // Construct from a wstring. Since sizeof(wchar_t) is compiler/platform dependent,
+    // encoding is utf16 for Windows, utf32 for gcc & XCode:
+    FgString(const wchar_t *);
+    FgString(const std::wstring &);
+
+    // Encoded as UTF16 if wchar_t is 16-bit, UTF32 if wchar_t is 32-bit:
+    std::wstring
+    as_wstring() const;
+
     std::wstring
     ns() const
     {return as_wstring(); }
@@ -122,9 +147,6 @@ struct  FgString
     std::vector<FgString>
     split(char ch) const;
 
-    uint
-    count(char ch) const;
-
     bool
     beginsWith(const FgString & s) const;
 
@@ -142,11 +164,18 @@ struct  FgString
 
 typedef std::vector<FgString>   FgStrings;
 
-std::vector<uint>
-fgUtf8ToUtf32(const std::string &);
+template<>
+inline std::string
+fgToStr(const FgString & str)
+{return str.m_str; }
 
-std::string
-fgUtf32ToUtf8(const std::vector<uint> &);
+template<class T>
+void fgThrow(const std::string & msg,const T & data) 
+{throw FgException(msg,fgToStr(data));  }
+
+template<class T,class U>
+void fgThrow(const std::string & msg,const T data0,const U & data1) 
+{throw FgException(msg,fgToStr(data0)+","+fgToStr(data1)); }
 
 inline
 FgString

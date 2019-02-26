@@ -117,7 +117,7 @@ struct  FgIter
 
     FgMatrixC<T,dim,2>
     inclusiveRange() const
-    {return fgConcatHoriz(m_bndsLoIncl,m_bndsHiExcl - FgMatrixC<T,dim,1>(1)); }
+    {return fgJoinHoriz(m_bndsLoIncl,m_bndsHiExcl - FgMatrixC<T,dim,1>(1)); }
 
     FgMatrixC<T,dim,1>
     dims() const

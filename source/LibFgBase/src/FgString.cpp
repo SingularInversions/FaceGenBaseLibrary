@@ -9,90 +9,80 @@
 #include "stdafx.h"
 
 #include "FgString.hpp"
+#include "FgStdString.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgStdVector.hpp"
 
-/// difference_type -> int warning. Not a problem unless we have to
-/// handle UTF-8 strings with 2 billion characters.
-#if defined(_MSC_VER)
-#  pragma warning(push)
-#  pragma warning(disable:4244)
-#endif
-
-#include "utf8.h"
-
-#if defined(_MSC_VER)
-#  pragma warning(pop)
-#endif
-
 using namespace std;
 
-// Assume this means UTF-16/UCS-2
-// Check for signed and unsigned cases (latter used by VS):
-#if ((WCHAR_MAX == 32767) || (WCHAR_MAX == 65535))
-
-static
-std::string
-convert(std::wstring const & w)
+u32string
+fgToUtf32(const string & str)
 {
-    std::string s;
-    utf8::utf16to8(w.begin(),w.end(),
-                   std::back_inserter(s));
-    return s;
-}
-
-static
-std::wstring
-convert(std::string const & s)
-{
-    std::wstring w;
-    utf8::utf8to16(s.begin(),s.end(),
-                   std::back_inserter(w));
-    return w;
-}
-
-// Assume this means UTF-32/UCS-4
-// We have to check signed max and unsigned max (eg. Ubuntu uses signed 32bit, Android unsigned 32bit):
-#elif ((WCHAR_MAX == 2147483647) || (WCHAR_MAX == 4294967295U))
-
-static
-std::string
-convert(std::wstring const & w)
-{
-    std::string s;
-    utf8::utf32to8(w.begin(),w.end(),
-                   std::back_inserter(s));
-    return s;
-}
-
-static
-std::wstring
-convert(std::string const & s)
-{
-    std::wstring w;
-    utf8::utf8to32(s.begin(),s.end(),
-                   std::back_inserter(w));
-    return w;
-}
-
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (str.empty())
+        return u32string();
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
+    auto            asInt = convert.from_bytes(str);
+    return u32string(reinterpret_cast<char32_t const *>(asInt.data()),asInt.length());
 #else
-    #define XSTR(x) STR(x)
-    #define STR(x) #x
-    #pragma message XSTR(WCHAR_MAX)
-    # error Unknown value for WCHAR_MAX
+    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
+    return convert.from_bytes(str);
 #endif
+}
 
-FgString::FgString(const wchar_t * s)
-    : m_str(convert(std::wstring(s)))
+string
+fgToUtf8(const u32string & in)
+{
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (in.empty())
+        return string();
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>    convert;
+    auto            ptr = reinterpret_cast<const int32_t *>(in.data());
+    return convert.to_bytes(ptr,ptr+in.size());
+#else
+    wstring_convert<codecvt_utf8<char32_t>,char32_t>    convert;
+    return convert.to_bytes(in);
+#endif
+}
+
+string
+fgToUtf8(const char32_t & utf32_char)
+{return fgToUtf8(u32string(1,utf32_char)); }
+
+// Following 2 functions are only needed by Windows and don't work on *nix due to
+// different sizeof(wchar_t):
+#ifdef _WIN32
+
+std::wstring
+fgToUtf16(const std::string & utf8)
+{
+    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
+    return converter.from_bytes(utf8);
+}
+
+std::string
+fgToUtf8(const std::wstring & utf16)
+{
+    // codecvt_utf8_utf16 inherits from codecvt
+    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
+    return converter.to_bytes(utf16);
+}
+
+FgString::FgString(const wchar_t * s) : m_str(fgToUtf8(wstring(s)))
 {}
 
-FgString::FgString(const std::wstring & s)
-    : m_str(convert(s))
+FgString::FgString(const wstring & s) : m_str(fgToUtf8(s))
 {}
 
-FgString::FgString(const vector<uint32> & utf32_string)
-: m_str(fgUtf32ToUtf8(utf32_string))
-{}
+wstring
+FgString::as_wstring() const
+{
+    return fgToUtf16(m_str);
+}
+
+#endif
 
 FgString&
 FgString::operator+=(const FgString & s)
@@ -119,30 +109,13 @@ FgString::operator+(char c) const
 uint32
 FgString::operator[](size_t idx) const
 {
-    utf8::iterator<std::string::const_iterator> it(m_str.begin(),
-                                                   m_str.begin(),m_str.end());
-    std::advance(it,idx);
-    return *it;
+    return uint32(fgToUtf32(m_str).at(idx));
 }
 
 size_t
 FgString::length() const
 {
-    return utf8::distance(m_str.begin(),m_str.end());
-}
-
-std::wstring
-FgString::as_wstring() const
-{
-    return convert(m_str);
-}
-
-std::vector<uint32>
-FgString::as_utf32() const
-{
-    vector<uint32>  ret;
-    utf8::utf8to32(m_str.begin(),m_str.end(),std::back_inserter(ret));
-    return ret;
+    return fgToUtf32(m_str).size();
 }
 
 bool
@@ -154,7 +127,7 @@ FgString::is_ascii() const
     return true;
 }
 
-const std::string &
+const string &
 FgString::ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
@@ -163,10 +136,10 @@ FgString::ascii() const
     return m_str;
 }
 
-std::string
+string
 FgString::as_ascii() const
 {
-    vector<uint32>  str(as_utf32());
+    u32string       str(as_utf32());
     string          ret;
     for (size_t ii=0; ii<str.size(); ++ii)
         ret += char(str[ii] & 0x7F);
@@ -177,50 +150,23 @@ FgString
 FgString::replace(char a, char b) const
 {
     FGASSERT((uchar(a) < 128) && (uchar(b) < 128));
-    FgString                ret(m_str);
-    string::const_iterator  src = m_str.begin();
-    string::iterator        dst = ret.m_str.begin();
-    while (src != m_str.end())
-    {
-        if (*src == a)
-            *dst = b;
-        utf8::next(src,m_str.end());
-        utf8::next(dst,ret.m_str.end());
-    }
-    return ret;
+    u32string           str = fgToUtf32(m_str);
+    char32_t            a32 = a,
+                        b32 = b;
+    for (char32_t & c : str)
+        if (c == a32)
+            c = b32;
+    return FgString(str);
 }
 
 FgStrings
 FgString::split(char ch) const
 {
+    FgStr32s            strs = fgSplit(fgToUtf32(m_str),char32_t(ch));
     FgStrings           ret;
-    vector<uint32>      str = as_utf32();
-    vector<uint32>      ss;
-    for (size_t ii=0; ii<str.size(); ++ii) {
-        if (str[ii] == uint32(ch)) {
-            ret.push_back(FgString(ss));
-            ss.clear();
-        }
-        else
-            ss.push_back(str[ii]);
-    }
-    ret.push_back(FgString(ss));
-    return ret;
-}
-
-uint
-FgString::count(char ch) const
-{
-    uint    ret = 0;
-    utf8::iterator<std::string::const_iterator>
-        it(m_str.begin(),m_str.begin(),m_str.end()),
-        end(m_str.end(),m_str.begin(),m_str.end());
-    while (it != end)
-    {
-        if (*it == uint32(ch))
-            ++ret;
-        it++;
-    }
+    ret.reserve(strs.size());
+    for (const u32string & str : strs)
+        ret.push_back(FgString(str));
     return ret;
 }
 
@@ -237,28 +183,12 @@ bool
 FgString::endsWith(const FgString & str) const
 {return fgEndsWith(as_utf32(),str.as_utf32()); }
 
-FgUints
-fgUtf8ToUtf32(const string & in)
-{
-    FgUints         ret;
-    utf8::utf8to32(in.begin(),in.end(),std::back_inserter(ret));
-    return ret;
-}
-
-string
-fgUtf32ToUtf8(const FgUints & in)
-{
-    string          ret;
-    utf8::utf32to8(in.begin(),in.end(),std::back_inserter(ret));
-    return ret;
-}
-
 FgString
 FgString::toLower() const
 {
-    vector<uint32>  tmp = as_utf32();
+    u32string       tmp = as_utf32();
     for (size_t ii=0; ii<tmp.size(); ++ii) {
-        uint32      ch = tmp[ii];
+        char32_t    ch = tmp[ii];
         if ((ch > 64) && (ch < 91))
             tmp[ii] = ch + 32;
     }
@@ -278,7 +208,7 @@ operator>>(std::istream & is, FgString & s)
 }
 
 FgString
-fgTr(const std::string & msg)
+fgTr(const string & msg)
 {
     // Just a stub for now:
     return msg;
@@ -288,7 +218,7 @@ FgString
 fgRemoveChars(const FgString & str,uchar chr)
 {
     FGASSERT(chr < 128);
-    vector<uint32>  s32 = str.as_utf32(),
+    u32string       s32 = str.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (s32[ii] != chr)
@@ -299,7 +229,7 @@ fgRemoveChars(const FgString & str,uchar chr)
 FgString
 fgRemoveChars(const FgString & str,FgString chrs)
 {
-    vector<uint32>  s32 = str.as_utf32(),
+    u32string       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
@@ -315,7 +245,7 @@ fgGlobMatch(const FgString & globStr,const FgString & str)
         return str.empty();
     if (globStr == "*")
         return true;
-    vector<uint>        gs = globStr.as_utf32(),
+    u32string           gs = globStr.as_utf32(),
                         ts = str.as_utf32();
     if (gs[0] == '*')
         return fgEndsWith(ts,fgRest(gs,1));
@@ -328,8 +258,8 @@ FgString
 fgSubstring(const FgString & str,size_t start,size_t size)
 {
     FgString        ret;
-    vector<uint>    s = str.as_utf32();
-    s = fgSubvec(s,start,size);
+    u32string       s = str.as_utf32();
+    s = fgSubstr(s,start,size);
     ret = FgString(s);
     return ret;
 }
@@ -350,7 +280,7 @@ string
 fgToVariableName(const FgString & str)
 {
     string          ret;
-    vector<uint>    str32 = str.as_utf32();
+    u32string    str32 = str.as_utf32();
     // First character must be alphabetical or underscore:
     if (isalpha(char(str32[0])))
         ret += char(str32[0]);

@@ -13,7 +13,6 @@
 #include "FgStdLibs.hpp"
 #include "FgBoostLibs.hpp"
 #include "FgDiagnostics.hpp"
-#include "FgTempFile.hpp"
 #include "FgOut.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImageBase.hpp"
@@ -43,7 +42,7 @@ private:
         {                                                               \
             fgout << fgnl << e.no_tr_message();                         \
             fgout << fgnl << e1;                                        \
-            FGASSERT(e.no_tr_message().beginsWith(FgString(e1)));       \
+            FGASSERT(fgBeginsWith(e.no_tr_message(),e1));               \
             fg_test_check_threw = true;                                 \
         }                                                               \
         catch(...){fg_test_check_threw = true;}                         \

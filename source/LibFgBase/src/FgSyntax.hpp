@@ -14,6 +14,7 @@
 #include "FgStdLibs.hpp"
 #include "FgStdString.hpp"
 #include "FgMain.hpp"
+#include "FgString.hpp"
 
 struct  FgExceptionCommandSyntax
 {};

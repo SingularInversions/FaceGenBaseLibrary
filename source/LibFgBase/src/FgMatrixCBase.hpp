@@ -70,23 +70,23 @@ struct  FgMatrixC
 
     // Value-set constructors; # args must agree with # elements:
     FgMatrixC(T x,T y) {
-        FG_STATIC_ASSERT(nrows*ncols == 2);
-        m[0] = x; m[1] = y; }
+        static_assert(nrows*ncols == 2,"Number of arguments does not match elements");
+        m[0] = x; m[1] = y; }                               //-V557 (for PVS-Studio)
     FgMatrixC(T x,T y,T z) {
-        FG_STATIC_ASSERT(nrows*ncols == 3);
-        m[0] = x; m[1] = y; m[2] = z; }
+        static_assert(nrows*ncols == 3,"Number of arguments does not match elements");
+        m[0] = x; m[1] = y; m[2] = z; }                     //-V557 (for PVS-Studio)
     FgMatrixC(T a,T b,T c,T d) {
-        FG_STATIC_ASSERT(nrows*ncols == 4);
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; }
+        static_assert(nrows*ncols == 4,"Number of arguments does not match elements");
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; }                   //-V557 (for PVS-Studio)
     FgMatrixC(T a,T b,T c,T d,T e) {
-        FG_STATIC_ASSERT(nrows*ncols == 5);
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }
+        static_assert(nrows*ncols == 5,"Number of arguments does not match elements");
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }           //-V557 (for PVS-Studio)
     FgMatrixC(T a,T b,T c,T d,T e,T f) {
-        FG_STATIC_ASSERT(nrows*ncols == 6);
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }
+        static_assert(nrows*ncols == 6,"Number of arguments does not match elements");
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }   //-V557 (for PVS-Studio)
     FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
-        FG_STATIC_ASSERT(nrows*ncols == 9);
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; }
+        static_assert(nrows*ncols == 9,"Number of arguments does not match elements");
+        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; } //-V557 (for PVS-Studio)
 
     // Don't make explicit since initializer_list makes it clear we're constructing:
     FgMatrixC(std::initializer_list<T> l)   // initializer_list is just a couple of pointers so pass-by-value is faster:
@@ -98,11 +98,8 @@ struct  FgMatrixC
             *ptr++ = *it;
     }
 
-    // CC requires explicit definition due to type conversion constructor below:
-    FgMatrixC(const FgMatrixC & mat) {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
-            m[ii] = mat.m[ii];
-    }
+    // CC explicit definition required to differentiate from conversion constructors below:
+    FgMatrixC(const FgMatrixC & mat) = default;
 
     // Type conversion constructor. Use 'fgRound' if float->fixed rounding desired:
     template<class U>
@@ -137,26 +134,26 @@ struct  FgMatrixC
 
     // Element access by (row,column):
     T &
-    rc(uint row,uint col)
+    rc(size_t row,size_t col)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
     const T &
-    rc(uint row,uint col) const
+    rc(size_t row,size_t col) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
     // Element access by (column,row):
     T &
-    cr(uint col,uint row)
+    cr(size_t col,size_t row)
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
     const T &
-    cr(uint col,uint row) const
+    cr(size_t col,size_t row) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
@@ -371,7 +368,7 @@ struct  FgMatrixC
     FgMatrixC
     identity()
     {
-        FG_STATIC_ASSERT(nrows == ncols);
+        static_assert(nrows == ncols,"Identity matrix must be square");
         FgMatrixC               ret(T(0));
         for (uint ii=0; ii<nrows; ++ii)
             ret.rc(ii,ii) = T(1);
@@ -428,6 +425,11 @@ struct  FgMatrixC
         }
         return false;
     }
+
+    // Static creation functions:
+
+    static FgMatrixC randUniform(T lo,T hi);
+    static FgMatrixC randNormal(T stdev=T(1));
 };
 
 template<class T,uint nrows,uint ncols>
@@ -515,6 +517,40 @@ typedef vector<FgVect2Ds>           FgVect2Dss;
 typedef vector<FgVect2Dss>          FgVect2Dsss;
 typedef vector<FgVect3Ds>           FgVect3Dss;
 typedef vector<FgVect3Dss>          FgVect3Dsss;
+
+template <class T,uint nrows,uint ncols>
+std::ostream& operator<<(std::ostream& ss,const FgMatrixC<T,nrows,ncols> & mm)
+{
+    FGASSERT(mm.numRows()*mm.numCols()>0);
+    bool        vector((mm.numRows() == 1) || mm.numCols() == 1);
+    std::ios::fmtflags
+        oldFlag = ss.setf(
+            std::ios::fixed |
+            std::ios::showpos |
+            std::ios::right);
+    std::streamsize oldPrec = ss.precision(6);
+    if (vector) {
+        ss << "[" << mm[0];
+        for (uint ii=1; ii<mm.numElems(); ii++)
+            ss << "," << mm[ii];
+        ss << "]";
+        if (mm.numRows() > 1) ss << "^T";       // Indicate transpose of column vector
+    }
+    else {
+        ss << fgpush;
+        for (uint row=0; row<mm.numRows(); row++) {
+            ss << fgnl;
+            ss << "[ ";
+            for (uint col=0; col<mm.numCols(); col++)
+                ss << mm.rc(row,col) << "  ";
+            ss << "]";
+        }
+        ss << fgpop;
+    }
+    ss.flags(oldFlag);
+    ss.precision(oldPrec);
+    return ss;
+}
 
 template<class T,uint nrows,uint ncols>
 void

@@ -14,6 +14,7 @@
 #include "FgStdVector.hpp"
 #include "FgStdString.hpp"
 #include "FgStdFunction.hpp"
+#include "FgString.hpp"
 
 // Only one fgClusterPortDefault is needed because we can have simultaneous TCP connections with all workers since:
 // 1. Set keepalive option (defaults to 2 hour interval) and works on non-proxy connection

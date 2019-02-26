@@ -17,7 +17,8 @@
 #define FGBOUNDS_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 
 template<typename T>
 inline void
@@ -117,7 +118,6 @@ template<typename T,uint nrows,uint ncols>
 FgMatrixC<T,nrows,1>
 fgMaxColwise(const FgMatrixC<T,nrows,ncols> & mat)
 {
-    FG_STATIC_ASSERT(ncols > 1);
     FgMatrixC<T,nrows,1>    ret(mat.colVec(0));
     for (uint row=0; row<nrows; ++row)
         for (uint col=1; col<ncols; ++col)
@@ -311,7 +311,7 @@ FgMatrixC<uint,dim,2>
 fgRangeToBounds(FgMatrixC<uint,dim,1> range)
 {
     FGASSERT(fgMinElem(range) > 0);
-    return fgConcatHoriz(FgMatrixC<uint,dim,1>(0),range-FgMatrixC<uint,dim,1>(1));
+    return fgJoinHoriz(FgMatrixC<uint,dim,1>(0),range-FgMatrixC<uint,dim,1>(1));
 }
 
 template<typename T,uint dim>
@@ -357,7 +357,7 @@ fgCubeBounds(const vector<FgMatrixC<T,dim,1> > & verts,T padRatio=1)
                         hi = bounds.colVec(1),
                         centre = (lo + hi) * T(0.5);
     T                   hsize = fgMaxElem(hi - lo) * 0.5f * padRatio;
-    ret = fgConcatHoriz(centre-FgMatrixC<T,dim,1>(hsize),centre+FgMatrixC<T,dim,1>(hsize));
+    ret = fgJoinHoriz(centre-FgMatrixC<T,dim,1>(hsize),centre+FgMatrixC<T,dim,1>(hsize));
     return ret;
 }
 

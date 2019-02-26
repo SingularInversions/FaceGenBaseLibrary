@@ -108,7 +108,7 @@ fgGridTriangles(const FgVect2Fs & verts,const FgVect3UIs & tris,float binsPerTri
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
-    ret.clientToGridIpcs = FgAffineCw2F(fgConcatHoriz(domainLo,domainHi),range);
+    ret.clientToGridIpcs = FgAffineCw2F(fgJoinHoriz(domainLo,domainHi),range);
     ret.grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
         FgVect3UI       tri = tris[ii];

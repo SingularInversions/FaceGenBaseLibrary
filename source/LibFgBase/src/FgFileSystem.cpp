@@ -15,6 +15,7 @@
 #include "FgStdStream.hpp"
 #include "FgStdString.hpp"
 #include "FgStdVector.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -73,6 +74,27 @@ fgSetCurrentDirUp()
 }
 
 void
+fgRemoveDirectoryRecursive(const FgString & dirname)
+{
+#ifdef _WIN32
+    // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
+    FgDirectoryContents     dc = fgDirectoryContents(dirname);
+    for (size_t ii=0; ii<dc.dirnames.size(); ii++)
+        fgRemoveDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
+    for (size_t ii=0; ii<dc.filenames.size(); ii++)
+        fgDeleteFile(dirname+"/"+dc.filenames[ii]);
+    // Get around windows filesystem recursive folder delete bug by trying a second time
+    // after a pause for the filesystem to catch up:
+    if (fgRemoveDirectory(dirname))
+        return;
+    fgSleep(1);
+    fgRemoveDirectory(dirname,true);
+#else
+    boost::filesystem::remove_all(dirname.m_str);
+#endif
+}
+
+void
 fgCreatePath(const FgString & path)
 {
     FgPath          p(fgAsDirectory(path));
@@ -123,16 +145,17 @@ fgSlurp(const FgString & filename)
     return ss.str();
 }
 
-void
+bool
 fgDump(const string & data,const FgString & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && fgExists(filename)) {
         string      fileData = fgSlurp(filename);
         if (data == fileData)
-            return;
+            return false;
     }
     FgOfstream  ofs(filename);
     ofs << data;
+    return true;
 }
 
 bool
@@ -145,50 +168,47 @@ fgBinaryFileCompare(
     return contents1 == contents2;
 }
 
-static bool s_dataDirFromPath = false;
+static FgString s_fgDataDir;
 
 const FgString &
 fgDataDir(bool throwIfNotFound)
 {
-    // First find the data directory relative to current binary. It can be in one of:
+    // Typical locations relative to executable:
     //  ./data                  (applications & remote execution)
     //  ../../data              (pre-built sdk binaries in bin/os/)
-    // ...
     //  ../../../../../data     (dev & sdk binaries)
-    static FgString     ret;
-    if (!ret.empty())
-        return ret;
-    FgPath      path;
-    if (s_dataDirFromPath)
-        path = fgGetCurrentDir();
-    else
-        path = fgExecutableDirectory();
-    string      data("data/"),
-                dataFlag(data+"_facegen_data_dir.flag");
-    size_t      depth = fgMin(path.dirs.size()+1,6ULL);
-    for (size_t ii=0; ii<depth; ++ii) {
-        FgString    dd = path.str()+data;
+    if (!s_fgDataDir.empty())
+        return s_fgDataDir;
+    FgString        pathStr = fgExecutableDirectory();
+    FgPath          path(pathStr);
+    string          data("data/"),
+                    flag("_facegen_data_dir.flag");
+    bool            keepSearching = true;
+    while (keepSearching) {
+        FgString        dd = path.str()+data;
         if (fgIsDirectory(dd)) {
-            if (fgExists(path.str()+dataFlag)) {
-                ret = dd;
-                return ret;
+            if (fgExists(dd+flag)) {
+                s_fgDataDir = dd;
+                return s_fgDataDir;
             }
         }
-        if (!path.dirs.empty())     // Except on last iteration:
+        if (path.dirs.empty())
+            keepSearching = false;
+        else
             path.dirs.pop_back();
     }
-    if (throwIfNotFound) {
-        if (s_dataDirFromPath)
-            fgThrow("Unable to find FaceGen data directory from current path",fgGetCurrentDir());
-        else
-            fgThrow("Unable to find FaceGen data directory from executable path",fgExecutableDirectory());
-    }
-    return ret;
+    if (throwIfNotFound)
+        fgThrow("fgDataDir unable to find FaceGen data directory",pathStr);
+    return s_fgDataDir;
 }
 
 void
-fgDataDirFromCurrent()
-{s_dataDirFromPath = true; }
+fgSetDataDir(const FgString & dir)
+{
+    if (!fgExists(dir+"_facegen_data_dir.flag"))
+        fgThrow("fgSetDataDir FaceGen data flag not found",dir);
+    s_fgDataDir = dir;
+}
 
 bool
 fgNewer(const FgStrings & sources,const FgStrings & sinks)
@@ -248,6 +268,15 @@ fgGlobFiles(const FgPath & path)
         if (fgGlobMatch(path.base,fn.base) && (fgGlobMatch(path.ext,fn.ext)))
             ret.push_back(dc.filenames[ii]);
     }
+    return ret;
+}
+
+FgStrings
+fgGlobFiles(const FgString & basePath,const FgString & relPath,const FgString & filePattern)
+{
+    FgStrings       ret = fgGlobFiles(basePath+relPath+filePattern);
+    for (FgString & r : ret)
+        r = relPath + r;
     return ret;
 }
 

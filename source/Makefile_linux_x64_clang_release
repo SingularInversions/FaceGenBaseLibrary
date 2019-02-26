@@ -1,0 +1,13 @@
+CC = clang
+CXX = clang++
+LINK = clang++
+CFLAGS = -m64 -DNDEBUG -fno-common -Ofast -fPIC
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
+DLLEXT = .so
+DLLARG = -shared -Wl,-soname,
+BINDIR = ../bin/ubuntu/x64/clang/release/
+BBINDIR = ../bin/ubuntu/x64/
+BUILDIR = ../build_ubuntu/x64/clang/release/
+include make_all.mk

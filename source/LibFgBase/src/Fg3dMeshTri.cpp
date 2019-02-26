@@ -177,7 +177,7 @@ fgLoadTri(const FgString & fname)
         ret = fgLoadTri(ff);
     }
     catch (FgException & e) {
-        e.m_ct.back().data = fname;
+        e.m_ct.back().dataUtf8 = fname.m_str;
         throw;
     }
     ret.name = fgPathToBase(fname);

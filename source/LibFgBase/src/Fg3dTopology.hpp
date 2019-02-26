@@ -15,7 +15,8 @@
 #include "FgStdLibs.hpp"
 
 #include "FgTypes.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgOpt.hpp"
 #include "Fg3dNormals.hpp"
 

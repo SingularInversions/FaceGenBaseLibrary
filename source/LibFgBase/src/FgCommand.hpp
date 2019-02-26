@@ -46,6 +46,8 @@ fgMenu(
     bool                optionQuiet=false,  // Give option to silence console output
     bool                optionKeep=false);  // Give option to keep test files
 
+// Creates a temporary directory with a name giving the CL args and date/time on construction,
+// and removes the directory on destruction (unless the 'keep temp files' option has been selected):
 struct FgTestDir
 {
     FgPushDir       pd;
@@ -61,6 +63,10 @@ struct FgTestDir
 // Creates a test directory with a name formed from the breadcrumb of commands, changes the
 // current directory to that, then reverts to the initial directory when it goes out of scope:
 #define FGTESTDIR FGASSERT(!args.empty()); FgTestDir fgTestDir(fgToLower(args[0]));
+
+// Set the root test directory. Useful for sandboxed platforms:
+void
+fgSetRootTestDir(const FgString & dir);
 
 // Make a copy of a data file in current directory:
 void

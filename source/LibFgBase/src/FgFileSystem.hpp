@@ -51,21 +51,24 @@ FgString
 fgDirUserAppDataLocalFaceGen(const string & subd0,const string & subd1)
 {return fgDirUserAppDataLocal(fgSvec<string>("FaceGen",subd0,subd1)); }
 
-// Can and does sometimes fail, possibly when using Windows roaming identities.
+// Can and does sometimes fail on Windows, possibly when using roaming identities.
 // If it fails but 'throwOnFail' is false, it returns the empty string:
 FgString
 fgUserDocumentsDirectory(bool throwOnFail=true);
 
-// This has not been known to fail:
+// This has not been known to fail on Windows:
 FgString
 fgPublicDocumentsDirectory();
 
-// Find data directory from path of current executable (always given as absolute).
-// If 'throwIfNotFound' is false, then you must check the return value for the empty string (failure):
+// Find FaceGen data directory from path of current executable, searching up one directory
+// at a time for a directory named 'data' containing the file '_facegen_data_dir.flag'.
+// If 'throwIfNotFound' is false, check the return value for the empty string (failure):
 const FgString & fgDataDir(bool throwIfNotFound=true);
 
-// Force above to use current directory rather than executable location; useful for debugging:
-void fgDataDirFromCurrent();
+// Manually set data directory. Useful for sandboxed platforms and debugging apps on native
+// platforms:
+void
+fgSetDataDir(const FgString & dirEndingWithSlash);
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
@@ -73,11 +76,11 @@ void fgDataDirFromCurrent();
 
 // Both 'src' and 'dst' must be file paths; 'dst' should not be a directory:
 void
-fgCopyFile(const FgString & src,const FgString & dst,bool overwrite = false);
+fgCopyFile(const FgString & srcFilePath,const FgString & dstFilePath,bool overwrite = false);
 
 // Copy then delete original (safer than rename which doesn't work across volumes):
 void
-fgMoveFile(const FgString & src,const FgString & dst,bool overwrite = false);
+fgMoveFile(const FgString & srcFilePath,const FgString & dstFilePath,bool overwrite = false);
 
 // Will not throw, returns false for any kind of failure on 'fname':
 bool
@@ -86,11 +89,6 @@ fgExists(const FgString & fname);
 inline bool
 fgRemove(const FgString & fname)
 {return boost::filesystem::remove(fname.ns()); }
-
-// Recursive descent remove:
-inline size_t
-fgRemoveAll(const FgString & fname)
-{return size_t(boost::filesystem::remove_all(fname.ns())); }
 
 inline void
 fgRename(const FgString & from,const FgString & to)
@@ -126,10 +124,11 @@ bool                                // true if successful
 fgSetCurrentDirUp();
 
 // Doesn't remove read-only files:
-void
-fgRemoveFile(const FgString &);
+inline void
+fgRemoveFile(const FgString & fname)
+{boost::filesystem::remove(fname.ns()); }
 
-// Ignores read-only or hidden attribs (Windows only):
+// Ignores read-only or hidden attribs on Windows (identical to fgRemoveFile on nix):
 void
 fgDeleteFile(const FgString &);
 
@@ -139,8 +138,9 @@ fgRemoveDirectory(
     const FgString &    dirName,
     bool                throwOnFail=false);
 
+// Throws on failure:
 void
-fgDeleteDirectory(const FgString &);      // Full recursive delete
+fgRemoveDirectoryRecursive(const FgString &);      // Full recursive delete
 
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
@@ -165,10 +165,10 @@ fgFileReadable(const FgString & filename);
 std::string
 fgSlurp(FgString const & filename);
 
-// Setting 'onlyIfChanged' to false will result in the file being written regardless which may
-// be useful for very large files you don't want to read in and compare.
-// Leaving 'true' is useful to avoid triggering unwanted change detections:
-void
+// Setting 'onlyIfChanged' to false will result in the file always being written,
+// regardless of whether the new data may be identical.
+// Leaving 'true' is useful to avoid triggering unwanted change detections.
+bool    // Returns true if the file was written
 fgDump(const std::string & data,const FgString & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
@@ -254,6 +254,10 @@ fgGlobHasExtension(FgPath path);
 // RETURNS: Matching filenames without directory:
 FgStrings
 fgGlobFiles(const FgPath & path);
+
+// As above but the full path is given by 'basePath + keepPath' and the return paths include 'keepPath':
+FgStrings
+fgGlobFiles(const FgString & basePath,const FgString & relPath,const FgString & filePattern);
 
 // 'toDir' must exist.
 // Returns true if there were any files in 'toDir' with the same name as a 'fromDir' file:

@@ -1,0 +1,8 @@
+CC = clang
+CXX = clang++
+LINK = clang++
+CFLAGS = -arch x86 -DNDEBUG -fno-common -Ofast -DANDROID -fPIE
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+BUILDIR = ../build_android/x86/clang/release/
+include make_libs.mk

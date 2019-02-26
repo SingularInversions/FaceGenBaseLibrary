@@ -27,6 +27,7 @@
 #include "FgOut.hpp"
 #include "FgStdPair.hpp"
 #include "FgSharedPtr.hpp"
+#include "FgString.hpp"
 
 class FgVariant
 {

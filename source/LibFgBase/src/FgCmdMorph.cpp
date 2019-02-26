@@ -464,7 +464,7 @@ morph(const FgArgs & args)
 
 FgCmd
 fgCmdMorphInfo()
-{return FgCmd(morph,"morph","List, apply or create morphs for 3D meshes"); }
+{return FgCmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void
 fgMorphTest(const FgArgs & args)

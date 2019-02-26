@@ -14,6 +14,7 @@
 #include "FgDiagnostics.hpp"
 #include "FgStdString.hpp"
 #include "FgThrowWindows.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 
@@ -77,14 +78,6 @@ fgSetCurrentDir(
     return ret;
 }
 
-void
-fgRemoveFile(const FgString & fname)
-{
-    wstring wfname = fname.as_wstring();
-    if (DeleteFile(wfname.c_str()) == 0)
-        fgThrowWindows("Unable to delete file",fname);
-}
-
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
 void
 fgDeleteFile(const FgString & fname)
@@ -111,19 +104,6 @@ fgRemoveDirectory(
     if (throwOnFail)
         fgThrowWindows("Unable to remove directory",dirname);
     return false;
-}
-
-// Does a recursive deletion of a directory tree. We do not change the current directory as we
-// recurse because this would not be thread safe.
-void
-fgDeleteDirectory(const FgString & dirname)
-{
-    FgDirectoryContents     dc = fgDirectoryContents(dirname);
-    for (size_t ii=0; ii<dc.dirnames.size(); ii++)
-        fgDeleteDirectory(dirname+"/"+dc.dirnames[ii]);
-    for (size_t ii=0; ii<dc.filenames.size(); ii++)
-        fgDeleteFile(dirname+"/"+dc.filenames[ii]);
-    fgRemoveDirectory(dirname,true);
 }
 
 bool

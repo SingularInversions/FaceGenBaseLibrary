@@ -17,7 +17,8 @@
 #include <directxcolors.h>
 
 #include "FgGaBase.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgFileSystem.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMetaFormat.hpp"
@@ -512,7 +513,7 @@ struct  FgGuiWinMain
 void
 startMain(
     WinPtr                  win,
-    const FgString &        appNameVer)
+    const FgString &        /*appNameVer*/)
 {
     //FgString                title = "FgGaTest";
     //g_hInst = GetModuleHandle(NULL);
@@ -585,7 +586,7 @@ fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
     try
     {
         sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
-            + fgSystemInfo() + "\n" + className + "\n";
+            + fgOsName() + "\n" + className + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             fgGuiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else

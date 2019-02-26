@@ -9,12 +9,14 @@
 
 #include "stdafx.h"
 #include "FgStdVector.hpp"
+#include "FgStdSet.hpp"
 #include "FgOut.hpp"
 #include "FgException.hpp"
 #include "FgFileSystem.hpp"
 #include "FgCommand.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgCons.hpp"
+#include "FgSyntax.hpp"
 
 using namespace std;
 
@@ -36,254 +38,327 @@ glob(const string & dir)
     return ret;
 }
 
-FgConsSrcGroup::FgConsSrcGroup(const string & baseDir,const string & relDir)
+FgConsSrcDir::FgConsSrcDir(const string & baseDir,const string & relDir)
     : dir(relDir), files(glob(baseDir+relDir))
     {}
 
-FgConsProj::FgConsProj(
-    const string &          name_,
-    const string &          srcBaseDir_,
-    const vector<string> &  incDirs_,
-    const vector<string> &  defs_,
-    const vector<string> &  lnkDeps_,
-    uint                    warn_)
-    :
-    name(name_),
-    srcBaseDir(srcBaseDir_),
-    srcGroups(fgSvec(FgConsSrcGroup(name_+'/'+srcBaseDir_,""))),
-    incDirs(incDirs_),
-    defs(defs_),
-    lnkDeps(lnkDeps_),
-    warn(warn_)
-{}
-
-void
-FgConsSolution::addDll(
-    const string &          name,
-    const vector<string> &  incDirs,
-    const vector<string> &  lnkDeps,
-    const vector<string> &  defs)
+string
+FgConsProj::descriptor() const
 {
-    if (!fgExists(name))
-        fgThrow("Unable to find directory",name);
-    FgConsProj  proj(name,"",incDirs,defs,lnkDeps);
-    proj.dll = true;
-    projects.push_back(proj);
-}
-
-void
-FgConsSolution::addLib(
-    const string &          name,
-    const vector<string> &  incDirs,
-    const vector<string> &  defs)
-{
-    if (!fgExists(name))
-        fgThrow("Unable to find directory",name);
-    FgConsSrcGroup           srcs;
-    srcs.files = glob(name+'/');
-    FgConsProj         proj(name,"",incDirs,defs,vector<string>());
-    proj.srcGroups = fgSvec(srcs);
-    projects.push_back(proj);
-}
-
-void
-FgConsSolution::addLib(
-    const string &          name,
-    const string &          srcBaseDir,
-    const vector<string> &  srcDirs,    // Leave empty for default
-    const vector<string> &  incDirs,
-    const vector<string> &  defs,
-    uint                    warn)
-{
-    if (!fgExists(name))
-        fgThrow("Unable to find directory",name);
-    FgConsProj         proj;
-    proj.name = name;
-    proj.srcBaseDir = srcBaseDir;
-    proj.incDirs = incDirs;
-    proj.defs = defs;
-    proj.warn = warn;
-    if (srcDirs.size() == 0)
-        proj.srcGroups.push_back(FgConsSrcGroup(name+'/'+srcBaseDir,""));
-    else
-        for (size_t ii=0; ii<srcDirs.size(); ++ii)
-            proj.srcGroups.push_back(FgConsSrcGroup(name+'/'+srcBaseDir,srcDirs[ii]));
-    projects.push_back(proj);
-}
-
-void
-FgConsSolution::addApp(
-    const string &          name,
-    const vector<string> &  incDirs,
-    const vector<string> &  lnkDeps,
-    const vector<string> &  defs)
-{
-    if (!fgExists(name))
-        fgThrow("Unable to find directory",name);
-    FgConsProj  proj(name,string(),incDirs,defs,lnkDeps);
-    proj.app = true;
-    projects.push_back(proj);
-}
-
-FgConsBase
-fgConsBase(bool win,bool nix)
-{
-    FgConsBase      ret;
-    // Build platform solutions in current directory:
-    FgConsSolution  & sln = ret.sln;
-    sln.win = win;
-    FGASSERT(win || nix);
-    vector<string>  & defs = ret.defs;
-    vector<string>  srcDirs =
-        fgSvec<string>(
-            "filesystem/src/",
-            "serialization/src/",
-            "system/src/");
-    // This stops boost from automatically flagging the compiler to link to it's default library names.
-    // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
-    defs.push_back("BOOST_ALL_NO_LIB");
-    // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
-    defs.push_back("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE");
-    FgStrs          boostDefs = defs;
-    if (win) {
-        boostDefs.push_back("_CRT_SECURE_NO_DEPRECATE=1");
-        boostDefs.push_back("_SCL_SECURE_NO_DEPRECATE=1");
-    }
-    sln.addLib("LibTpBoost","boost_1_67_0/libs/",srcDirs,fgSvec<string>("boost_1_67_0/"),boostDefs,2);
-    vector<string> & incMain = ret.incs,
-                   & lnkMain = ret.lnks;
-    incMain.push_back("../LibTpBoost/boost_1_67_0/");
-    lnkMain.push_back("LibTpBoost");
-    // This library is set up such that you run a config script to adapt the source code to
-    // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
-    // is required to make it properly source-compatible cross-platform:
-    sln.addLib(
-        "LibJpegIjg6b","",
-        fgSvec<string>(""),
-        vector<string>(),
-        vector<string>(),
-        2);
-    incMain.push_back("../LibJpegIjg6b/");
-    lnkMain.push_back("LibJpegIjg6b");
-    //sln.addLib(
-    //    "LibTpTiff",
-    //    "tiff-4.0.3/libtiff/",
-    //    fgSvec<string>(""),
-    //    vector<string>(),
-    //    vector<string>(),2);
-    //incMain.push_back("../LibTpTiff/tiff-4.0.3/libtiff/");
-    //lnkMain.push_back("LibTpTiff");
-    // ImageMagick is a PITA.
-    // to read floating point TIFF (but breaks gcc bmp read) add the following to 'magic-config.h':
-    // #define MAGICKCORE_HDRI_SUPPORT
-    FgConsProj     imgk(
-        "LibImageMagickCore",
-        "ImageMagick-6.6.2/",
-        fgSvec(
-            string("ImageMagick-6.6.2/"),
-            string("ImageMagick-6.6.2/bzlib/"),
-            string("ImageMagick-6.6.2/jp2/src/libjasper/include/"),
-            string("ImageMagick-6.6.2/png/"),
-            string("ImageMagick-6.6.2/tiff/libtiff/"),
-            string("ImageMagick-6.6.2/zlib/"),
-            string("../LibJpegIjg6b/")),
-        fgSvec<string>(
-            "_MAGICKLIB",
-            "TIFF_PLATFORM_CONSOLE"),
-        vector<string>(),
-        0);
-    imgk.addSrcGroup("bzlib/");
-    imgk.addSrcGroup("coders/");
-    imgk.addSrcGroup("jp2/src/libjasper/base/");
-    imgk.addSrcGroup("jp2/src/libjasper/bmp/");
-    imgk.addSrcGroup("jp2/src/libjasper/jp2/");
-    imgk.addSrcGroup("jp2/src/libjasper/jpc/");
-    imgk.addSrcGroup("jp2/src/libjasper/jpg/");
-    imgk.addSrcGroup("jp2/src/libjasper/mif/");
-    imgk.addSrcGroup("jp2/src/libjasper/pgx/");
-    imgk.addSrcGroup("jp2/src/libjasper/pnm/");
-    imgk.addSrcGroup("jp2/src/libjasper/ras/");
-    imgk.addSrcGroup("magick/");
-    imgk.addSrcGroup("png/");
-    imgk.addSrcGroup("zlib/");
-    vector<string>  imtf;
-    imtf.push_back("tif_aux.c");
-    imtf.push_back("tif_close.c");
-    imtf.push_back("tif_codec.c");
-    imtf.push_back("tif_color.c");
-    imtf.push_back("tif_compress.c");
-    imtf.push_back("tif_dir.c");
-    imtf.push_back("tif_dirinfo.c");
-    imtf.push_back("tif_dirread.c");
-    imtf.push_back("tif_dirwrite.c");
-    imtf.push_back("tif_dumpmode.c");
-    imtf.push_back("tif_error.c");
-    imtf.push_back("tif_extension.c");
-    imtf.push_back("tif_fax3.c");
-    imtf.push_back("tif_fax3sm.c");
-    imtf.push_back("tif_flush.c");
-    imtf.push_back("tif_getimage.c");
-    imtf.push_back("tif_jpeg.c");
-    imtf.push_back("tif_luv.c");
-    imtf.push_back("tif_lzw.c");
-    imtf.push_back("tif_next.c");
-    imtf.push_back("tif_ojpeg.c");
-    imtf.push_back("tif_open.c");
-    imtf.push_back("tif_packbits.c");
-    imtf.push_back("tif_pixarlog.c");
-    imtf.push_back("tif_predict.c");
-    imtf.push_back("tif_print.c");
-    imtf.push_back("tif_read.c");
-    imtf.push_back("tif_strip.c");
-    imtf.push_back("tif_swab.c");
-    imtf.push_back("tif_thunder.c");
-    imtf.push_back("tif_tile.c");
-    imtf.push_back("tif_version.c");
-    imtf.push_back("tif_warning.c");
-    if (nix)
-        imtf.push_back("tif_unix.c");
-    if (win)
-        imtf.push_back("tif_win32.c");
-    imtf.push_back("tif_write.c");
-    imtf.push_back("tif_zip.c");
-    imgk.srcGroups.push_back(FgConsSrcGroup("tiff/libtiff/",imtf));
-    sln.projects.push_back(imgk);
-    incMain.push_back("../LibImageMagickCore/ImageMagick-6.6.2/");
-    lnkMain.push_back("LibImageMagickCore");
-    incMain.push_back("../LibUTF-8/");
-    FgConsProj      libBase;
-    libBase.name = "LibFgBase";
-    libBase.srcBaseDir = "src/";
-    libBase.incDirs = incMain;
-    libBase.defs = defs;
-    libBase.warn = 4;
-    libBase.srcGroups.push_back(FgConsSrcGroup("LibFgBase/src/",""));
-    if (nix) {
-        libBase.srcGroups.push_back(FgConsSrcGroup("LibFgBase/src/","nix/"));
-        libBase.incDirs.push_back("../LibFgBase/src/");
-    }
-    sln.projects.push_back(libBase);
-    incMain.push_back("../LibFgBase/src/");
-    if (win) {
-        sln.addLib("LibFgWin",incMain,defs);
-        lnkMain.push_back("LibFgWin");
-    }
-    // This is down here because libraries must be linked in the right order for gcc:
-    lnkMain.push_back("LibFgBase");
-    if (fgExists("fgbl"))
-        sln.addApp("fgbl",incMain,lnkMain,defs);
+    string          ret = name + ":" + baseDir + ":";
+    for (const FgConsSrcDir & csg : srcGroups)
+        ret += csg.dir + ";";
     return ret;
 }
 
-void
-fgCmdCons(const FgArgs &)
+FgConsProj
+FgConsSolution::addApp(const string & name,const string & lnkDep)
 {
-    // Allow this func to be called from repo or repo/source:
+    if (!fgExists(name))
+        fgThrow("Unable to find directory",name);
+    const FgConsProj &  dp = at(lnkDep);
+    if (!dp.isStaticLib())
+        fgThrow("App must depend on static lib",name,lnkDep);
+    FgConsProj          proj(name,"");
+    proj.addSrcDir("");
+    proj.addDep(lnkDep,false);
+    return proj;
+}
+
+void
+FgConsSolution::addAppClp(const string & name,const string & lnkDep)
+{
+    FgConsProj          proj = addApp(name,lnkDep);
+    proj.type = FgConsProj::Type::clp;
+    projects.push_back(proj);
+}
+
+void
+FgConsSolution::addAppGui(const string & name,const string & lnkDep)
+{
+    FgConsProj          proj = addApp(name,lnkDep);
+    proj.type = FgConsProj::Type::gui;
+    projects.push_back(proj);
+}
+
+bool
+FgConsSolution::contains(const string & projName) const
+{
+    for (const FgConsProj & p : projects)
+        if (p.name == projName)
+            return true;
+    return false;
+}
+
+const FgConsProj &
+FgConsSolution::at(const string & projName) const
+{
+    for (const FgConsProj & p : projects)
+        if (p.name == projName)
+            return p;
+    fgThrow("at() project not found",projName);
+    FG_UNREACHABLE_RETURN(projects[0]);
+}
+
+// Topological sort of transitive includes:
+FgStrs
+FgConsSolution::getTransitiveIncludes(const string & projName,bool fileDir,set<string> & done) const
+{
+    const FgConsProj &  p = at(projName);
+    FgStrs              ret;
+    // DLLs are not transitive - related include file must be a separate explicit lnkDep:
+    if (p.isDynamicLib())
+        return ret;
+    for (const FgProjDep & pd : p.projDeps) {
+        if (!fgContains(done,pd.name) && pd.transitive) {
+            fgCat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+            done.insert(pd.name);
+        }
+    }
+    for (const FgIncDir & id : p.incDirs) {
+        if (id.transitive) {
+            if (fileDir)
+                ret.push_back("../"+p.name+"/"+p.baseDir+id.relPath+id.relFiles);
+            else
+                ret.push_back("../"+p.name+"/"+p.baseDir+id.relPath);
+        }
+    }
+    return ret;
+}
+
+FgStrs
+FgConsSolution::getIncludes(const string & projName,bool fileDir) const
+{
+    const FgConsProj &  p = at(projName);
+    FgStrs              ret;
+    set<string>         done;
+    for (const FgProjDep & pd : p.projDeps)
+        fgCat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+    for (const FgIncDir & id : p.incDirs) {
+        if (fileDir)
+            ret.push_back(p.baseDir+id.relPath+id.relFiles);
+        else
+            ret.push_back(p.baseDir+id.relPath);
+    }
+    return fgReverse(ret);      // Includes need to be search from most proximal to least
+}
+
+// Topological sort of transitive defines:
+FgStrs
+FgConsSolution::getTransitiveDefs(const string & projName,set<string> & done) const
+{
+    const FgConsProj &  p = at(projName);
+    FgStrs              ret;
+    // DLLs are not transitive - related include file must be a separate explicit lnkDep:
+    if (p.isDynamicLib())
+        return ret;
+    for (const FgProjDep & pd : p.projDeps) {
+        if (!fgContains(done,pd.name) && pd.transitive) {
+            fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+            done.insert(pd.name);
+        }
+    }
+    for (const FgConsDef & d : p.defs)
+        if (d.transitive)
+            ret.push_back(d.name);
+    return ret;
+}
+
+FgStrs
+FgConsSolution::getDefs(const string & projName) const
+{
+    const FgConsProj &  p = at(projName);
+    FgStrs              ret;
+    set<string>         done;
+    for (const FgProjDep & pd : p.projDeps)
+        fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+    for (const FgConsDef & d : p.defs)
+        ret.push_back(d.name);
+    return ret;
+}
+
+FgStrs
+FgConsSolution::getTransitiveLnkDeps(const string & projName,set<string> & done) const
+{
+    FgStrs              ret;
+    if (fgContains(done,projName))
+        return ret;
+    const FgConsProj &  p = at(projName);
+    if (p.isStaticLib())                // Only static libs link transitively, not DLLs:
+        for (const FgProjDep & pd : p.projDeps)
+            fgCat_(ret,getTransitiveLnkDeps(pd.name,done));
+    fgCat_(ret,p.binDllDeps);           // Assume binary link deps are most derived (hack)
+    if (!p.srcGroups.empty())           // Header-only libs don't link:
+        ret.push_back(projName);
+    done.insert(projName);
+    return ret;
+}
+
+FgStrs
+FgConsSolution::getLnkDeps(const string & projName) const
+{
+    const FgConsProj &  p = at(projName);
+    FgStrs              ret;
+    set<string>         done;
+    for (const FgProjDep & pd : p.projDeps)
+        fgCat_(ret,getTransitiveLnkDeps(pd.name,done));
+    return fgReverse(ret);
+}
+
+FgStrs
+FgConsSolution::getAllDeps(const string & projName,set<string> & done,bool dllSource) const
+{
+    FgStrs      ret;
+    if (fgContains(done,projName))
+        return ret;
+    const FgConsProj &  p = at(projName);
+    if (!dllSource && p.isDynamicLib())
+        return ret;
+    for (const FgProjDep & pd : p.projDeps)
+        fgCat_(ret,getAllDeps(pd.name,done,dllSource));
+    ret.push_back(projName);
+    done.insert(projName);
+    return ret;
+}
+
+FgStrs
+FgConsSolution::getAllDeps(const string & projName,bool dllSource) const
+{
+    set<string>     done;
+    return getAllDeps(projName,done,dllSource);
+}
+
+FgStrs
+FgConsSolution::getAllDeps(const FgStrs & projNames,bool dllSource) const
+{
+    set<string>     done;
+    FgStrs          ret;
+    for (const string & projName : projNames)
+        fgCat_(ret,getAllDeps(projName,done,dllSource));
+    return ret;
+}
+
+FgConsSolution
+fgGetConsData(FgConsType type)
+{
+    FgConsSolution  ret(type);
+
+    FgConsProj      boost("LibTpBoost","boost_1_67_0/");
+    boost.addSrcDir("libs/filesystem/src/");
+    boost.addSrcDir("libs/serialization/src/");
+    boost.addSrcDir("libs/system/src/");
+    boost.addIncDir("","boost/",true);
+    // This stops boost from automatically flagging the compiler to link to it's default library names.
+    // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
+    boost.defs.push_back(FgConsDef("BOOST_ALL_NO_LIB",true));
+    // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
+    boost.defs.push_back(FgConsDef("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE",true));
+    boost.warn = 2;
+    ret.projects.push_back(boost);
+
+    // This library is set up such that you run a config script to adapt the source code to
+    // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
+    // is required to make it properly source-compatible cross-platform:
+    FgConsProj      jpeg("LibJpegIjg6b","");
+    jpeg.addSrcDir("");
+    jpeg.addIncDir("",true);
+    jpeg.warn = 2;
+    ret.projects.push_back(jpeg);
+
+    FgConsProj      eigen("LibTpEigen","");
+    eigen.addIncDir("","Eigen/",true);
+    ret.projects.push_back(eigen);
+
+    FgConsProj      stb("LibTpStb","stb/");
+    stb.addIncDir("",true);
+    ret.projects.push_back(stb);
+
+    FgConsProj      base("LibFgBase","src/");
+    base.addSrcDir("");
+    base.addIncDir("",true);
+    if (type != FgConsType::win)
+        base.addSrcDir("nix/");
+    base.addDep(boost.name,true);
+    base.addDep(stb.name,false);
+    base.addDep(jpeg.name,false);
+    base.addDep(eigen.name,false);
+    ret.projects.push_back(base);
+
+    string          depName = base.name;
+
+    if (type == FgConsType::win) {
+        FgConsProj      basewin("LibFgWin","");
+        basewin.addSrcDir("");
+        basewin.addIncDir("",true);
+        basewin.addDep(base.name,true);
+        ret.projects.push_back(basewin);
+        depName = basewin.name;
+    }
+
+    if (fgExists("fgbl"))
+        ret.addAppClp("fgbl",depName);
+
+    return ret;
+}
+
+// Create Visual Studio 201x solution & project files for given solution in current directory tree:
+bool
+fgConsVs201x(const FgConsSolution & sln);
+
+// Create native-build OS makefiles for given solution in current directory
+// Returns true if different from existing (useful for source control & CI):
+bool
+fgConsNativeMakefiles(const FgConsSolution & sln);
+
+// Create cross-compile-build OS makefiles for given solution in current directory
+// Returns true if different from existing (useful for source control & CI):
+bool
+fgConsCrossMakefiles(const FgConsSolution & sln);
+
+bool
+fgConsBuildFiles(const FgConsSolution & sln)
+{
     FgPushDir       pd;
     if (fgExists("source"))
         pd.push("source");
-    FgConsSolution  sln = fgConsBase(true,false).sln;
-    fgConsVs201x(sln);
-    sln = fgConsBase(false,true).sln;
-    fgConsMakefiles(sln);
+    bool        changed = false;
+    if (sln.type == FgConsType::win)
+        changed = fgConsVs201x(sln);
+    else if (sln.type == FgConsType::nix)
+        changed = fgConsNativeMakefiles(sln);
+    else if (sln.type == FgConsType::cross)
+        changed = fgConsCrossMakefiles(sln);
+    else
+        fgThrow("fgConsBuildFiles unhandled OS build family",sln.type);
+    return changed;
+}
+
+void
+fgConsBuildAllFiles()
+{
+    fgConsBuildFiles(fgGetConsData(FgConsType::win));
+    fgConsBuildFiles(fgGetConsData(FgConsType::nix));
+    fgConsBuildFiles(fgGetConsData(FgConsType::cross));
+}
+
+void
+fgCmdCons(const FgArgs & args)
+{
+    FgSyntax        syntax(args,
+        "(sln | make) <option>*\n"
+        "    sln  - Visual Studio SLN and VCXPROJ files.\n"
+        "    make - Makefiles (all non-windows platforms).\n"
+    );
+    string          type = syntax.next();
+    set<string>     options;
+    while (syntax.more())
+        options.insert(syntax.next());
+    if (type == "sln")
+        fgConsBuildFiles(fgGetConsData(FgConsType::win));
+    else if (type == "make") {
+        fgConsBuildFiles(fgGetConsData(FgConsType::nix));
+        fgConsBuildFiles(fgGetConsData(FgConsType::cross));
+    }
+    else
+        syntax.error("Invalid option",type);
 }

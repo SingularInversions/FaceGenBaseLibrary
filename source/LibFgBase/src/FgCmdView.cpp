@@ -100,7 +100,7 @@ fgViewImagef(const FgArgs & args)
     if (fgToLower(fgPathToExt(syntax.next())) == "fgpbn")
         fgLoadPBin(syntax.curr(),img);
     else {
-        if (fgCurrentOS() != "win")
+        if (fgCurrentBuildOS() != FgBuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
         fgLoadImgAnyFormat(syntax.curr(),img);
     }

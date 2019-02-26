@@ -6,57 +6,56 @@
 // Authors:     Andrew Beatty
 // Created:     Jan 19, 2005
 //
-// Platform and compiler specific definitions.
+// Compile target platform and compiler specific definitions.
 //
-// Relevent ANSI defines:
+// ANSI defines:
 // _DATE_
 // _FILE_
 // _LINE_
 // _TIMESTAMP_
-// _DEBUG           Not ANSI but universal
+// NDEBUG               Controls expression of ANSI 'assert'.
+//
+// MSVC defines:
+// _WIN32               Compiling for windows (32 or 64 bit)
+// _WIN64               Targeting 64-bit ISA
+// _DEBUG               Defined automatically by MSVC (/MTd or /MDd). We define for gcc/clang.
+// _MSC_VER :
+//      1800 : VS2013 12.0
+//      1900 : VS2015 14.0
+//      1910-1916 : VS2017 14.1
+// _M_AMD64             Targeting Intel/AMD 64-bit ISA
+
+// gcc,clang,icpc defines:
+// __GNUC__             Compiler is gcc, clang or icpc
+// __clang__            clang compiler
+// __INTEL_COMPILER     Intel's icc and icpc compilers
+// _LP64                LP64 paradigm
+// __x86_64__           Intel/AMD 64 bit ISA
+// __ppc64__            PowerPC 64 bit ISA
+// __APPLE__            Defined on all apple platform compilers (along with __MACH__)
+// __ANDROID__
+//
 
 #ifndef FGPLATFORM_HPP
 #define FGPLATFORM_HPP
 
-// Visual Studio name - _MSC_VER - vc++ version
-// VS2013 - 1800 - 12.0
-// VS2015 - 1900 - 14.0
-// VS2017 - 1910 - 14.1
-// VS2017 - 1911 - 14.1
-// VS2017 - 1912 - 14.1
-#ifdef _MSC_VER
+// FaceGen defines:
 
-    // Useful defines:
-    // _WIN32       We are compiling for windows (32 or 64 bit)
-    // _WIN64       We are compiling for 64 bit windows
-    // _M_AMD64     Defined if targetting 64-bit
-
-    #define FG_RESTRICT __restrict
-
-    #ifdef _WIN64
+// FG_64            Targeting 64-bit ISA (there is no cross-compiler standard for this)
+#ifdef _WIN64
     #define FG_64
-    #endif
- 
-#elif defined(__GNUC__)     // gcc, clang or icpc
-
-    // Useful defines:
-    // _LP64        LP64 paradigm
-    // __x86_64__   64-bit instruction set
-    // __ppc64__    ppc 64 bit instruction set
-
-    #define FG_RESTRICT __restrict__
-
-    #ifdef _LP64
+#elif __x86_64__
     #define FG_64
-    #endif
+#endif
 
-// If we need compiler-specific behaviour, check for
-// __clang__            clang compiler
-// __INTEL_COMPILER     Intel's icc and icpc compilers
-#else
-
-    compiler_definitions_here;          // Put your compiler's equivalents here (in an #elif).
-
+// FG_SANDBOX       Targeting a sandboxed platform (eg. Android, iOS, WebAssembly). No system() calls etc.
+#ifdef __ANDROID__
+    #define FG_SANDBOX
+#endif
+#if defined(__APPLE__) && defined(ENABLE_BITCODE)
+    // Including "TargetConditionals.h" and testing TARGET_OS_IPHONE does not work because this file
+    // is in sysroot/usr/include/ which doesn't compile with C++ (C only):
+    #define FG_SANDBOX
 #endif
 
 int
@@ -70,7 +69,7 @@ fgIs64bit();
 bool
 fgIsDebug();
 
-// Returns "32" if the current EXE is 32-bit, "64" if 64-bit.
+// Returns "32 if the current executable is 32-bit, "64" if 64-bit.
 std::string
 fgBitsString();
 

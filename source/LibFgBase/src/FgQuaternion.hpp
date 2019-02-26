@@ -17,7 +17,8 @@
 #include "FgStdLibs.hpp"
 
 #include "FgMath.hpp"
-#include "FgMatrix.hpp"
+#include "FgMatrixC.hpp"
+#include "FgMatrixV.hpp"
 #include "FgRandom.hpp"
 
 template<typename T>
@@ -73,13 +74,13 @@ struct  FgQuaternion
     asMatrix() const
     {
         FgMatrixC<T,3,3>    ret;
-        T                   sq = fgSqr(m_real),
-                            lq = fgSqr(m_comp[0]), 
-                            mq = fgSqr(m_comp[1]),
-                            nq = fgSqr(m_comp[2]);
-        ret[0] = sq + lq - mq - nq;
-        ret[4] = sq - lq + mq - nq;
-        ret[8] = sq - lq - mq + nq;
+        T                   rm = fgSqr(m_real),
+                            im = fgSqr(m_comp[0]), 
+                            jm = fgSqr(m_comp[1]),
+                            km = fgSqr(m_comp[2]);
+        ret[0] = rm + im - jm - km;
+        ret[4] = rm - im + jm - km;
+        ret[8] = rm - im - jm + km;
         ret[1] = T(2) * (m_comp[0]*m_comp[1] - m_real*m_comp[2]);
         ret[2] = T(2) * (m_comp[0]*m_comp[2] + m_real*m_comp[1]);
         ret[3] = T(2) * (m_comp[0]*m_comp[1] + m_real*m_comp[2]);
@@ -139,7 +140,7 @@ typedef FgQuaternion<double>   FgQuaternionD;
 inline
 FgQuaternionD
 fgQuaternionRand()      // Samples evenly from SO(3)
-{return FgQuaternionD(fgVecRandNrm<4>()); }     // Use normal distros to ensure isotropy
+{return FgQuaternionD(FgVect4D::randNormal()); }     // Use normal distros to ensure isotropy
 
 inline
 FgQuaternionD

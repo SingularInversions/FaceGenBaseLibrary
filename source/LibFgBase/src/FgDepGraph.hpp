@@ -307,7 +307,7 @@ private:
         Update() :
             guardException(new std::mutex),
             flag(false),
-            exception(""),
+            exception(),
             guardQueue(new std::mutex),
             done(false),
             userCancelled(false)

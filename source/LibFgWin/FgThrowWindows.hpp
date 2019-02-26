@@ -34,6 +34,13 @@ fgAssertWin(const char * fname,int line);
     if(X) (void) 0;                                                     \
     else fgAssertWin(__FILE__,__LINE__)
 
+void
+fgAssertWinReturnZero(const char * fname,int line,long rval);
+
+// It's important to record the return value on failure since 'getLastError' sometimes
+// returns SUCCESS after a failure - eg. CoCreateInstance with CLSID_FileOpenDialog:
+#define FGASSERTWINOK(X) if(X==0) (void)0; else fgAssertWinReturnZero(__FILE__,__LINE__,X)
+
 #endif
 
 // */

@@ -88,7 +88,8 @@ fgMenu(
             for (size_t ii=0; ii<cmds.size(); ++ii) {
                 fgout << fgnl << cmds[ii].name << ": " << fgpush;
                 cmds[ii].func(fgSvec(cmds[ii].name,cmdl));      // Pass on the 'all'
-                fgout << fgpop; }
+                fgout << fgpop;
+            }
             fgout << fgpop << fgnl << "All Passed.";
             return;
         }
@@ -106,11 +107,17 @@ fgMenu(
     syntax.error("Invalid command",cmd);
 }
 
+static FgString s_rootTestDir;
+
 FgTestDir::FgTestDir(const string & name)
 {
     FGASSERT(!name.empty());
-    path = FgPath(fgDataDir());
-    path.dirs.back() = "_log";      // replace 'data' with 'log'
+    if (s_rootTestDir.empty()) {
+        path = FgPath(fgDataDir());
+        path.dirs.back() = "_log";      // replace 'data' with 'log'
+    }
+    else
+        path = s_rootTestDir;
     path.dirs.push_back(s_breadcrumb+name);
     string          dt = fgDateTimePath();
     if (s_annotateTestDir.length() > 0)
@@ -128,13 +135,17 @@ FgTestDir::~FgTestDir()
         pd.pop();
         if (!s_keepTempFiles) {
             // Recursively delete the directory for this test:
-            fgRemoveAll(path.str());
+            fgRemoveDirectoryRecursive(path.str());
             // Remove the test name directory if empty:
             path.dirs.resize(path.dirs.size()-1);
             fgRemoveDirectory(path.str());
         }
     }
 }
+
+void
+fgSetRootTestDir(const FgString & dir)
+{ s_rootTestDir = dir; }
 
 void
 fgTestCopy(const string & relPath)

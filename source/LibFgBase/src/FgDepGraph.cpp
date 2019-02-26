@@ -241,7 +241,7 @@ FgDepGraph::executeLinkTask(
                     }
                 }
                 if (!todo.empty()) {
-                    if (updPtr->done)
+                    if (updPtr->done)       //-V547 (PVS Studio)
                         return;
                     if (doCancelCheck) {
                         if (m_cancelCheck) {
@@ -272,7 +272,7 @@ FgDepGraph::executeLinkTask(
         updPtr->set(FgException("Standard library exception",e.what()),linkInd);
     }
     catch(...) {
-        updPtr->set(FgException("Unknown exception type"),linkInd);
+        updPtr->set(FgException("Unknown exception type",string()),linkInd);
     }
 }
 
