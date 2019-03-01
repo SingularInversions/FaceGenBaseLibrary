@@ -1,0 +1,14 @@
+ifndef NDK_ROOT
+$(error NDK_ROOT is not set)
+endif
+ANDROID_API_VERSION ?= 23
+CC = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi${ANDROID_API_VERSION}-clang
+CXX = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi${ANDROID_API_VERSION}-clang++
+LINK = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi${ANDROID_API_VERSION}-clang++
+AR = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-ar
+RANLIB = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/arm-linux-androideabi-ranlib
+CFLAGS = -DNDEBUG -fno-common -Ofast -fPIC --sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/windows-x86_64/sysroot -I${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/c++/v1 -I${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/include/c++/4.9.x -I${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include -I${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/arm-linux-androideabi
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+BUILDIR = ../build_android/armeabi-v7a/clang/release/
+include make_libs.mk

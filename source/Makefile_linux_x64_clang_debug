@@ -1,6 +1,8 @@
 CC = clang
 CXX = clang++
 LINK = clang++
+AR = ar
+RANLIB = ranlib
 CFLAGS = -m64 -g -O1 -D_DEBUG -fno-common -fsanitize=address -fPIC
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
