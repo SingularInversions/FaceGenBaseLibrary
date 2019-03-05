@@ -88,6 +88,9 @@ h2 ~ *:not(h2) {
         fgSetDataDir(dataDir); <br>
     </code></p>
 <h2>Android</h2>
+	<h3>Build notes</h3>
+		<p>To build the libraries you need to setup the HOST variable on the Makefile_android* files, matching your host architecture ( where you build the code, linux-x86_64 by default ) and add NDK ( pointing your ndk root derectory ) to your enviroment variables ( or you can set the variable when fire the make command ) <code>make -f myfile NDK=path/to/ndk</code></p>
+		<p></p>
 	<h3>Setting up Ubuntu</h3>
 		<p>Taking a clean, but updated, Ubuntu install. Download the AndroidStudio binary from the official website <a href="https://developer.android.com/studio">Android Studio website</a></p>
 		<p>Extract the "android-studio" folder in some directory ( Desktop on the example )</p>

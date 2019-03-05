@@ -1,5 +1,5 @@
-ifndef NDK_ROOT
-$(error NDK_ROOT is not set)
+ifndef NDK
+$(error NDK is not set)
 endif
 # SETUP MAKE VARIABLES
 HOST = linux-x86_64 
