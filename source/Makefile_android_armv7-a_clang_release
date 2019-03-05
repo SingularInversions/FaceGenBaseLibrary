@@ -7,9 +7,10 @@ TARGET = arm-linux-androideabi
 LLVM_TOOLCHAIN = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/bin
 LLVM_SYSROOT = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/sysroot
 # SETUP COMPILER FLAGS
-CFLAGS = -arch armv7-a -DNDEBUG -fno-common -Ofast -DANDROID -fPIE
+CFLAGS = -fPIE -fPIC -fno-common -Ofast -DNDEBUG -DANDROID --sysroot=$(LLVM_SYSROOT) -stdlib=libc++ --target=$(TARGET) -march=armv7-a -Wl,--fix-cortex-a8 -mfloat-abi=soft
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+LDFLAGS = -pie
 # SETUP COMPILER TOOLS
 CC = $(LLVM_TOOLCHAIN)/clang
 CXX = $(LLVM_TOOLCHAIN)/clang++
