@@ -1,15 +1,17 @@
 OUTDIR = ../build_android/
 .PHONY: all FORCE clean
 all: $(OUTDIR)LibTpBoost.a $(OUTDIR)LibJpegIjg6b.a $(OUTDIR)LibFgBase.a 
-$(OUTDIR)LibTpBoost.a: $(OUTDIR)armeabi-v7a/clang/release/LibTpBoost.a $(OUTDIR)arm64-v8a/clang/release/LibTpBoost.a $(OUTDIR)x86/clang/release/LibTpBoost.a
-$(OUTDIR)LibJpegIjg6b.a: $(OUTDIR)armeabi-v7a/clang/release/LibJpegIjg6b.a $(OUTDIR)arm64-v8a/clang/release/LibJpegIjg6b.a $(OUTDIR)x86/clang/release/LibJpegIjg6b.a
-$(OUTDIR)LibFgBase.a: $(OUTDIR)armeabi-v7a/clang/release/LibFgBase.a $(OUTDIR)arm64-v8a/clang/release/LibFgBase.a $(OUTDIR)x86/clang/release/LibFgBase.a
+$(OUTDIR)LibTpBoost.a: $(OUTDIR)armeabi-v7a/clang/release/LibTpBoost.a $(OUTDIR)arm64-v8a/clang/release/LibTpBoost.a $(OUTDIR)x86/clang/release/LibTpBoost.a $(OUTDIR)x86_64/clang/release/LibTpBoost.a
+$(OUTDIR)LibJpegIjg6b.a: $(OUTDIR)armeabi-v7a/clang/release/LibJpegIjg6b.a $(OUTDIR)arm64-v8a/clang/release/LibJpegIjg6b.a $(OUTDIR)x86/clang/release/LibJpegIjg6b.a $(OUTDIR)x86_64/clang/release/LibJpegIjg6b.a
+$(OUTDIR)LibFgBase.a: $(OUTDIR)armeabi-v7a/clang/release/LibFgBase.a $(OUTDIR)arm64-v8a/clang/release/LibFgBase.a $(OUTDIR)x86/clang/release/LibFgBase.a $(OUTDIR)x86_64/clang/release/LibFgBase.a
 $(OUTDIR)armeabi-v7a/clang/release/%.a: FORCE
 	$(MAKE) -j4 -f Makefile_android_armeabi-v7a_clang_release
 $(OUTDIR)arm64-v8a/clang/release/%.a: FORCE
 	$(MAKE) -j4 -f Makefile_android_arm64-v8a_clang_release
 $(OUTDIR)x86/clang/release/%.a: FORCE
 	$(MAKE) -j4 -f Makefile_android_x86_clang_release
+$(OUTDIR)x86_64/clang/release/%.a: FORCE
+	$(MAKE) -j4 -f Makefile_android_x86_64_clang_release
 FORCE:
 clean:
 	rm -r $(OUTDIR)
