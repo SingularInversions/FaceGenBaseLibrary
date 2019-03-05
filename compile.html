@@ -99,28 +99,38 @@ h2 ~ *:not(h2) {
         Set Minimum API level API 23: Android 6.0 (Marshmallow) -> Next<br/>
         Finish<br/>
         <br/>
-        Modify app/src/main/cpp/CMakeLists.txt with the following changes:<br/>
-        <ul><li> Add these lines and replace FaceGenBaseLibrary_PATH_HERE with a proper value<br/>
+        Link to FaceGenBaseLibrary in app/src/main/cpp/CMakeLists.txt<br/>
+        An example of how app/src/main/cpp/CMakeLists.txt will look like (Replace FaceGenBaseLibrary_PATH_HERE with a proper value)<br/>
         <br/>
-        <code># configure import FaceGenBaseLibrary<br/>
+        <code>cmake_minimum_required(VERSION 3.4.1)<br/>
+        <br/>
+        # configure import FaceGenBaseLibrary<br/>
         set(FaceGenBaseLibrary_DIR FaceGenBaseLibrary_PATH_HERE)<br/>
         <br/>
         add_library(FgBase STATIC IMPORTED)<br/>
         set_target_properties(FgBase PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibFgBase.a<br/>
-        &emsp;INTERFACE_INCLUDE_DIRECTORIES ${FaceGenBaseLibrary_DIR}/source/LibFgBase/src)<br/>
+        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibFgBase.a)<br/>
         <br/>
         add_library(TpBoost STATIC IMPORTED)<br/>
         set_target_properties(TpBoost PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibTpBoost.a<br/>
-        &emsp;INTERFACE_INCLUDE_DIRECTORIES ${FaceGenBaseLibrary_DIR}/source/LibTpBoost/boost_1_67_0)<br/>
+        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibTpBoost.a)<br/>
         <br/>
         add_library(JpegIjg6b STATIC IMPORTED)<br/>
         set_target_properties(JpegIjg6b PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibJpegIjg6b.a<br/>
-        &emsp;INTERFACE_INCLUDE_DIRECTORIES ${FaceGenBaseLibrary_DIR}/source/LibJpegIjg6b)<br/></code>
+        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibJpegIjg6b.a)<br/>
         <br/>
-        <li> Add <code>FgBase TpBoost JpegIjg6b</code> to <code>target_link_libraries</code><br/></ul>
+        add_library(native-lib SHARED native-lib.cpp)<br/>
+        <br/>
+        target_include_directories(native-lib PRIVATE<br/>
+        &emsp;${FaceGenBaseLibrary_DIR}/source/LibFgBase/src<br/>
+        &emsp;${FaceGenBaseLibrary_DIR}/source/LibTpBoost/boost_1_67_0<br/>
+        &emsp;${FaceGenBaseLibrary_DIR}/source/LibJpegIjg6b)<br/>
+        <br/>
+        target_link_libraries(native-lib<br/>
+        &emsp;FgBase<br/>
+        &emsp;TpBoost<br/>
+        &emsp;JpegIjg6b)<br/></code>
+    </p>
 
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
