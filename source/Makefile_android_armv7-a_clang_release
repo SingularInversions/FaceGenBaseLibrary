@@ -1,8 +1,19 @@
-CC = clang
-CXX = clang++
-LINK = clang++
+ifndef NDK_ROOT
+$(error NDK_ROOT is not set)
+endif
+# SETUP MAKE VARIABLES
+HOST = linux-x86_64 
+TARGET = arm-linux-androideabi
+LLVM_TOOLCHAIN = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/bin
+LLVM_SYSROOT = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/sysroot
+# SETUP COMPILER FLAGS
 CFLAGS = -arch armv7-a -DNDEBUG -fno-common -Ofast -DANDROID -fPIE
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+# SETUP COMPILER TOOLS
+CC = clang
+CXX = clang++
+LINK = clang++
+# SETUP OUTPUT DIRECTORY AND BUILD
 BUILDIR = ../build_android/armv7-a/clang/release/
 include make_libs.mk
