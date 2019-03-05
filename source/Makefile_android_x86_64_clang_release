@@ -5,8 +5,8 @@ ANDROID_API_VERSION ?= 23
 CC = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
 CXX = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++
 LINK = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++
-AR = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android-ar
-RANLIB = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android-ranlib
+AR = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android-ar
+RANLIB = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android-ranlib
 CFLAGS = -DNDEBUG -fno-common -Ofast -fPIC --target=x86_64-linux-android${ANDROID_API_VERSION} -fno-addrsig --sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024 -stdlib=libc++
