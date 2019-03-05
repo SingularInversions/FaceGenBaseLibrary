@@ -11,9 +11,12 @@ CFLAGS = -arch armv7-a -DNDEBUG -fno-common -Ofast -DANDROID -fPIE
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
 # SETUP COMPILER TOOLS
-CC = clang
-CXX = clang++
-LINK = clang++
+CC = $(LLVM_TOOLCHAIN)/clang
+CXX = $(LLVM_TOOLCHAIN)/clang++
+AS = $(LLVM_TOOLCHAIN)/clang
+AR = $(LLVM_TOOLCHAIN)/$(TARGET)-ar
+LD = $(LLVM_TOOLCHAIN)/$(TARGET)-ld
+STRIP = $(LLVM_TOOLCHAIN)/$(TARGET)-strip
 # SETUP OUTPUT DIRECTORY AND BUILD
 BUILDIR = ../build_android/armv7-a/clang/release/
 include make_libs.mk
