@@ -87,7 +87,40 @@ h2 ~ *:not(h2) {
         std::string dataDir = std::string([dd UTF8String]) + "/data/"; <br>
         fgSetDataDir(dataDir); <br>
     </code></p>
-
+<h2>Android</h2>
+	<h3>Setting up Ubuntu</h3>
+		<p>Taking a clean, but updated, Ubuntu install. Download the AndroidStudio binary from the official website <a href="https://developer.android.com/studio">Android Studio website</a></p>
+		<p>Extract the "android-studio" folder in some directory ( Desktop on the example )</p>
+		<p>If you are using a 64bits Ubuntu you need to install additional dependences : <code>sudo apt-get install lib32z1 lib32ncurses5 lib32bz2-1.0 lib32stdc++6</code></p>
+		<p>Open a terminal and go to "android-studio" directory : <code>cd &#126;/Desktop/android-studio</code></p>
+		<p>Then run it : <code>./bin/studio.sh</code></p>
+		<p>The first time you run AndroidStudio it will ask you for setup, just select "Standar". This will install the latest Android SDK with all basic build tools</p>
+		<p>( This step needs to be done once you are in some AndroidStudio project, to avoid configuring enviroment variables for command line tools )
+		Now you need to add LLDB, Cmake and NDK to your AndroidStudio installation to build C applications, you can do it from SDK Manager, just tick the options (LLBD, Cmake and NDK) and click Apply.
+		You can open SDK Manager using the "cube with downside arrow" icon, on the right top of you AndroidStudio interface, or accessing via menus File -> Settings ( Appearance & Behavoir -> System settings -> Android SDK ).
+		Then on the SDK Tools tab, there are the mentioned options.</p>
+	<h3>Using the library on you Android app</h3>
+		<p>
+			<ol>
+				<li>Start a new project on AndroidStudio</li>
+				<li>Select Native c++ app ( on Phone and Tablets tab )</li>
+				<li>Set your Name, Package and Location. Use Java as language and 23 for Minimum SDK version</li>
+				<li>Select C++11 Toolchain</li>
+				<li>Once the project is created, open the CMakeLists.txt on <code>src/main/cpp/</code></li>
+				<li>To add a library to the project
+					<ol>
+						<li>Create the reference adding <code>add_library(LIB_ALIAS STATIC IMPORTED)</code>, use the desired LIB_ALIAS</li>
+						<li>Provide the sources for your generated target adding 
+						<p><code>set_target_properties(FgBase PROPERTIES</br>
+						IMPORTED_LOCATION "PATH/TO/LIB/${ANDROID_ABI}/MyLib.a"</br>
+						INTERFACE_INCLUDE_DIRECTORIES "PATH/TO/LIB/HEADERS")</code></p>
+						</li>
+						<li>Link your library to the target where you want to use it. Creating a new link <code>target_link_libraries(EXECUTABLE_TARGET LIB_ALIAS)</code> or adding it to a existing one <code>target_link_libraries(EXECUTABLE_TARGET EXISTING_LIB LIB_ALIAS)</code></li>
+					</ol>
+				</li>
+				<li>Now once you added the libraries and headers, you can use it from you linked targets including the desired header <code>#include <MyLib.hpp></code></li>
+			</ol>
+		</p>
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
 <div style="height:1px"></div>
