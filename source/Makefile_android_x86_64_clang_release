@@ -19,5 +19,5 @@ AR = $(LLVM_TOOLCHAIN)/$(TARGET)-ar
 LD = $(LLVM_TOOLCHAIN)/$(TARGET)-ld
 STRIP = $(LLVM_TOOLCHAIN)/$(TARGET)-strip
 # SETUP OUTPUT DIRECTORY AND BUILD
-BUILDIR = ../build_android/x86/clang/release/
+BUILDIR = ../build_android/x86_64/clang/release/
 include make_libs.mk
