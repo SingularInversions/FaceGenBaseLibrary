@@ -2,7 +2,7 @@ ifndef NDK
 $(error NDK is not set)
 endif
 # SETUP MAKE VARIABLES
-HOST = linux-x86_64 
+HOST = linux-x86_64
 TARGET = i686-linux-android
 LLVM_TOOLCHAIN = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/bin
 LLVM_SYSROOT = $(NDK)/toolchains/llvm/prebuilt/$(HOST)/sysroot
