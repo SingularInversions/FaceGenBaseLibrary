@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 3.4.1)
+
+# configure import FaceGenBaseLibrary
+set(FGBL_DIR FaceGenBaseLibrary_PATH_HERE)
+
+add_library(FgBase STATIC IMPORTED)
+set_target_properties(FgBase PROPERTIES
+        IMPORTED_LOCATION ${FGBL_DIR}/build_android/${ANDROID_ABI}/clang/release/LibFgBase.a)
+
+add_library(TpBoost STATIC IMPORTED)
+set_target_properties(TpBoost PROPERTIES
+        IMPORTED_LOCATION ${FGBL_DIR}/build_android/${ANDROID_ABI}/clang/release/LibTpBoost.a)
+
+add_library(JpegIjg6b STATIC IMPORTED)
+set_target_properties(JpegIjg6b PROPERTIES
+        IMPORTED_LOCATION ${FGBL_DIR}/build_android/${ANDROID_ABI}/clang/release/LibJpegIjg6b.a)
+
+add_library(native-lib SHARED native-lib.cpp)
+
+target_include_directories(native-lib PRIVATE
+        ${FGBL_DIR}/source/LibFgBase/src
+        ${FGBL_DIR}/source/LibTpBoost/boost_1_67_0
+        ${FGBL_DIR}/source/LibJpegIjg6b)
+
+find_library(log-lib log)
+
+target_link_libraries(native-lib
+                      ${log-lib}
+                      FgBase
+                      TpBoost
+                      JpegIjg6b)

@@ -92,44 +92,14 @@ h2 ~ *:not(h2) {
     <br/>
     Download and unzip <a href="http://developer.android.com/ndk/downloads">Android NDK</a><br/>
     <code> make -f Makefile_android NDK_ROOT=[NDKROOT] ANDROID_API_VERSION=23 </code></p>
-    <p>Download <a href="http://developer.android.com/sdk/index.html">Android Studio</a><br/>
-        Launch Android Studio.<br/>
+    <p>Download and launch <a href="http://developer.android.com/sdk/index.html">Android Studio</a><br/>
         Start a new Android Studio project<br/>
         Choose Native C++ -> Next<br/>
         Set Minimum API level API 23: Android 6.0 (Marshmallow) -> Next<br/>
         Finish<br/>
         <br/>
         Link to FaceGenBaseLibrary in app/src/main/cpp/CMakeLists.txt<br/>
-        An example of how app/src/main/cpp/CMakeLists.txt will look like (Replace FaceGenBaseLibrary_PATH_HERE with a proper value)<br/>
-        <br/>
-        <code>cmake_minimum_required(VERSION 3.4.1)<br/>
-        <br/>
-        # configure import FaceGenBaseLibrary<br/>
-        set(FaceGenBaseLibrary_DIR FaceGenBaseLibrary_PATH_HERE)<br/>
-        <br/>
-        add_library(FgBase STATIC IMPORTED)<br/>
-        set_target_properties(FgBase PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibFgBase.a)<br/>
-        <br/>
-        add_library(TpBoost STATIC IMPORTED)<br/>
-        set_target_properties(TpBoost PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibTpBoost.a)<br/>
-        <br/>
-        add_library(JpegIjg6b STATIC IMPORTED)<br/>
-        set_target_properties(JpegIjg6b PROPERTIES<br/>
-        &emsp;IMPORTED_LOCATION ${FaceGenBaseLibrary_DIR}/build_android/${ANDROID_ABI}/clang/release/LibJpegIjg6b.a)<br/>
-        <br/>
-        add_library(native-lib SHARED native-lib.cpp)<br/>
-        <br/>
-        target_include_directories(native-lib PRIVATE<br/>
-        &emsp;${FaceGenBaseLibrary_DIR}/source/LibFgBase/src<br/>
-        &emsp;${FaceGenBaseLibrary_DIR}/source/LibTpBoost/boost_1_67_0<br/>
-        &emsp;${FaceGenBaseLibrary_DIR}/source/LibJpegIjg6b)<br/>
-        <br/>
-        target_link_libraries(native-lib<br/>
-        &emsp;FgBase<br/>
-        &emsp;TpBoost<br/>
-        &emsp;JpegIjg6b)<br/></code>
+        An example of implement linking <a href="android_cmake_example.txt">Android CMake</a> (Replace FaceGenBaseLibrary_PATH_HERE with a proper value)<br/>
     </p>
 
 </section>
