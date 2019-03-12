@@ -181,7 +181,7 @@ struct Assignment<DstXprType, Solve<CwiseUnaryOp<internal::scalar_conjugate_op<t
   }
 };
 
-} // end namespace internal
+} // end namepsace internal
 
 } // end namespace Eigen
 

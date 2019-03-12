@@ -83,8 +83,8 @@ fgMenu(
     string      cmd = syntax.next(),
                 cmdl = fgToLower(cmd);
     if (optionAll) {
-        fgout << fgnl << "Testing: " << fgpush;
         if (cmdl == "all") {
+            fgout << fgnl << "Testing: " << fgpush;
             for (size_t ii=0; ii<cmds.size(); ++ii) {
                 fgout << fgnl << cmds[ii].name << ": " << fgpush;
                 cmds[ii].func(fgSvec(cmds[ii].name,cmdl));      // Pass on the 'all'
@@ -97,12 +97,12 @@ fgMenu(
     for (size_t ii=0; ii<cmds.size(); ++ii) {
         if (cmdl == fgToLower(cmds[ii].name)) {
             cmds[ii].func(syntax.rest());
-            if (optionAll)
+            if (optionAll && (cmdl == "all"))
                 fgout << fgpop << fgnl << "Passed.";
             return;
         }
     }
-    if (optionAll)
+    if (optionAll && (cmdl == "all"))
         fgout << fgpop;
     syntax.error("Invalid command",cmd);
 }
@@ -168,3 +168,10 @@ fgRunCmd(const FgCmdFunc & func,const string & argStr)
 bool
 fgKeepTempFiles()
 {return s_keepTempFiles; }
+
+bool
+fgAutomatedTest(const FgArgs & args)
+{
+    return ((args.size() == 2) && (args[1] == "all"));
+}
+

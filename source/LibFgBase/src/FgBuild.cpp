@@ -78,9 +78,7 @@ fgArchStrs()
         {FgArch::x64,"x64"},
         {FgArch::armv7,"armv7"},
         {FgArch::arm64,"arm64"},
-        {FgArch::arm64e,"arm64e"},
-        {FgArch::armv7_a,"armv7-a"},
-        {FgArch::arm64_v8a,"arm64-v8a"}
+        {FgArch::arm64e,"arm64e"}
     };
     return ret;
 }
@@ -117,9 +115,9 @@ fgBuildArchitectures(FgBuildOS os)
     else if (os == FgBuildOS::ios)
         // These are the iOS standard architectures (plus simulator) as of 2019.
         // They support iPhone 5s (not 5,5c) and later.
-        return fgSvec(FgArch::armv7,FgArch::arm64,FgArch::arm64e,FgArch::x64);
+        return fgSvec(FgArch::x64,FgArch::armv7,FgArch::arm64,FgArch::arm64e);
     else if (os == FgBuildOS::android)
-        return fgSvec(FgArch::armv7_a,FgArch::arm64_v8a,FgArch::x86);
+        return fgSvec(FgArch::x86,FgArch::x64,FgArch::armv7,FgArch::arm64);
     else
         fgThrow("fgBuildArchitecture unhandled OS",int(os));
     FG_UNREACHABLE_RETURN(FgArchs());

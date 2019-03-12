@@ -85,6 +85,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -107,6 +109,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -128,6 +132,8 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -152,85 +158,87 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\cderror.h"  />
-    <ClInclude Include="..\cdjpeg.h"  />
-    <ClCompile Include="..\jcapimin.c"  />
-    <ClCompile Include="..\jcapistd.c"  />
-    <ClCompile Include="..\jccoefct.c"  />
-    <ClCompile Include="..\jccolor.c"  />
-    <ClCompile Include="..\jcdctmgr.c"  />
-    <ClCompile Include="..\jchuff.c"  />
-    <ClInclude Include="..\jchuff.h"  />
-    <ClCompile Include="..\jcinit.c"  />
-    <ClCompile Include="..\jcmainct.c"  />
-    <ClCompile Include="..\jcmarker.c"  />
-    <ClCompile Include="..\jcmaster.c"  />
-    <ClCompile Include="..\jcomapi.c"  />
-    <ClInclude Include="..\jconfig.h"  />
-    <ClCompile Include="..\jcparam.c"  />
-    <ClCompile Include="..\jcphuff.c"  />
-    <ClCompile Include="..\jcprepct.c"  />
-    <ClCompile Include="..\jcsample.c"  />
-    <ClCompile Include="..\jctrans.c"  />
-    <ClCompile Include="..\jdapimin.c"  />
-    <ClCompile Include="..\jdapistd.c"  />
-    <ClCompile Include="..\jdatadst.c"  />
-    <ClCompile Include="..\jdatasrc.c"  />
-    <ClCompile Include="..\jdcoefct.c"  />
-    <ClCompile Include="..\jdcolor.c"  />
-    <ClInclude Include="..\jdct.h"  />
-    <ClCompile Include="..\jddctmgr.c"  />
-    <ClCompile Include="..\jdhuff.c"  />
-    <ClInclude Include="..\jdhuff.h"  />
-    <ClCompile Include="..\jdinput.c"  />
-    <ClCompile Include="..\jdmainct.c"  />
-    <ClCompile Include="..\jdmarker.c"  />
-    <ClCompile Include="..\jdmaster.c"  />
-    <ClCompile Include="..\jdmerge.c"  />
-    <ClCompile Include="..\jdphuff.c"  />
-    <ClCompile Include="..\jdpostct.c"  />
-    <ClCompile Include="..\jdsample.c"  />
-    <ClCompile Include="..\jdtrans.c"  />
-    <ClCompile Include="..\jerror.c"  />
-    <ClInclude Include="..\jerror.h"  />
-    <ClCompile Include="..\jfdctflt.c"  />
-    <ClCompile Include="..\jfdctfst.c"  />
-    <ClCompile Include="..\jfdctint.c"  />
-    <ClCompile Include="..\jidctflt.c"  />
-    <ClCompile Include="..\jidctfst.c"  />
-    <ClCompile Include="..\jidctint.c"  />
-    <ClCompile Include="..\jidctred.c"  />
-    <ClInclude Include="..\jinclude.h"  />
-    <ClCompile Include="..\jmemmgr.c"  />
-    <ClCompile Include="..\jmemnobs.c"  />
-    <ClInclude Include="..\jmemsys.h"  />
-    <ClInclude Include="..\jmorecfg.h"  />
-    <ClInclude Include="..\jpegint.h"  />
-    <ClInclude Include="..\jpeglib.h"  />
-    <ClCompile Include="..\jquant1.c"  />
-    <ClCompile Include="..\jquant2.c"  />
-    <ClCompile Include="..\jutils.c"  />
-    <ClInclude Include="..\jversion.h"  />
-    <ClCompile Include="..\rdbmp.c"  />
-    <ClCompile Include="..\rdcolmap.c"  />
-    <ClCompile Include="..\rdgif.c"  />
-    <ClCompile Include="..\rdppm.c"  />
-    <ClCompile Include="..\rdrle.c"  />
-    <ClCompile Include="..\rdswitch.c"  />
-    <ClCompile Include="..\rdtarga.c"  />
-    <ClCompile Include="..\transupp.c"  />
-    <ClInclude Include="..\transupp.h"  />
-    <ClCompile Include="..\wrbmp.c"  />
-    <ClCompile Include="..\wrgif.c"  />
-    <ClCompile Include="..\wrppm.c"  />
-    <ClCompile Include="..\wrrle.c"  />
-    <ClCompile Include="..\wrtarga.c"  />
+    <ClInclude Include="..\cderror.h" />
+    <ClInclude Include="..\cdjpeg.h" />
+    <ClCompile Include="..\jcapimin.c" />
+    <ClCompile Include="..\jcapistd.c" />
+    <ClCompile Include="..\jccoefct.c" />
+    <ClCompile Include="..\jccolor.c" />
+    <ClCompile Include="..\jcdctmgr.c" />
+    <ClCompile Include="..\jchuff.c" />
+    <ClInclude Include="..\jchuff.h" />
+    <ClCompile Include="..\jcinit.c" />
+    <ClCompile Include="..\jcmainct.c" />
+    <ClCompile Include="..\jcmarker.c" />
+    <ClCompile Include="..\jcmaster.c" />
+    <ClCompile Include="..\jcomapi.c" />
+    <ClInclude Include="..\jconfig.h" />
+    <ClCompile Include="..\jcparam.c" />
+    <ClCompile Include="..\jcphuff.c" />
+    <ClCompile Include="..\jcprepct.c" />
+    <ClCompile Include="..\jcsample.c" />
+    <ClCompile Include="..\jctrans.c" />
+    <ClCompile Include="..\jdapimin.c" />
+    <ClCompile Include="..\jdapistd.c" />
+    <ClCompile Include="..\jdatadst.c" />
+    <ClCompile Include="..\jdatasrc.c" />
+    <ClCompile Include="..\jdcoefct.c" />
+    <ClCompile Include="..\jdcolor.c" />
+    <ClInclude Include="..\jdct.h" />
+    <ClCompile Include="..\jddctmgr.c" />
+    <ClCompile Include="..\jdhuff.c" />
+    <ClInclude Include="..\jdhuff.h" />
+    <ClCompile Include="..\jdinput.c" />
+    <ClCompile Include="..\jdmainct.c" />
+    <ClCompile Include="..\jdmarker.c" />
+    <ClCompile Include="..\jdmaster.c" />
+    <ClCompile Include="..\jdmerge.c" />
+    <ClCompile Include="..\jdphuff.c" />
+    <ClCompile Include="..\jdpostct.c" />
+    <ClCompile Include="..\jdsample.c" />
+    <ClCompile Include="..\jdtrans.c" />
+    <ClCompile Include="..\jerror.c" />
+    <ClInclude Include="..\jerror.h" />
+    <ClCompile Include="..\jfdctflt.c" />
+    <ClCompile Include="..\jfdctfst.c" />
+    <ClCompile Include="..\jfdctint.c" />
+    <ClCompile Include="..\jidctflt.c" />
+    <ClCompile Include="..\jidctfst.c" />
+    <ClCompile Include="..\jidctint.c" />
+    <ClCompile Include="..\jidctred.c" />
+    <ClInclude Include="..\jinclude.h" />
+    <ClCompile Include="..\jmemmgr.c" />
+    <ClCompile Include="..\jmemnobs.c" />
+    <ClInclude Include="..\jmemsys.h" />
+    <ClInclude Include="..\jmorecfg.h" />
+    <ClInclude Include="..\jpegint.h" />
+    <ClInclude Include="..\jpeglib.h" />
+    <ClCompile Include="..\jquant1.c" />
+    <ClCompile Include="..\jquant2.c" />
+    <ClCompile Include="..\jutils.c" />
+    <ClInclude Include="..\jversion.h" />
+    <ClCompile Include="..\rdbmp.c" />
+    <ClCompile Include="..\rdcolmap.c" />
+    <ClCompile Include="..\rdgif.c" />
+    <ClCompile Include="..\rdppm.c" />
+    <ClCompile Include="..\rdrle.c" />
+    <ClCompile Include="..\rdswitch.c" />
+    <ClCompile Include="..\rdtarga.c" />
+    <ClCompile Include="..\transupp.c" />
+    <ClInclude Include="..\transupp.h" />
+    <ClCompile Include="..\wrbmp.c" />
+    <ClCompile Include="..\wrgif.c" />
+    <ClCompile Include="..\wrppm.c" />
+    <ClCompile Include="..\wrrle.c" />
+    <ClCompile Include="..\wrtarga.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -16,6 +16,7 @@
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
 #include "FgApproxEqual.hpp"
+#include "FgSyntax.hpp"
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings
@@ -38,7 +39,7 @@ fgEigsRsm_(const FgMatrixD & rsm,FgDbls & vals,FgMatrixD & vecs)
 {
     size_t              dim = rsm.ncols;
     FGASSERT(rsm.nrows == dim);
-    // Ensure exact symmetry and valid value and copy into Eigen format:
+    // Ensure exact symmetry (results will be wrong otherwise) and valid values and copy into Eigen format:
     MatrixXd            mat(dim,dim);
     for (size_t rr=0; rr<dim; ++rr) {
         for (size_t cc=rr; cc<dim; ++cc) {
@@ -74,7 +75,7 @@ fgEigsRsm(const FgMatrixC<double,3,3> & rsm)
             mat(cc,rr) = v;
         }
     }
-    // Eigen 3.3.5 supposedly has 3x3 specialization of this in closed-form:
+    // Eigen supposedly has 3x3 specialization of this in closed-form:
     SelfAdjointEigenSolver<Matrix3d>    es(mat);
     const Matrix3d &    eigVecs = es.eigenvectors();
     const Vector3d &    eigVals = es.eigenvalues();
@@ -146,21 +147,3 @@ fgEigs(const FgMat33D & mat)
 FgEigsC<4>
 fgEigs(const FgMat44D & mat)
 {return fgEigsT<4>(mat); }
-
-void
-fgMatrixEigenTest(const FgArgs &)
-{
-    const size_t        dim = 2000;
-    MatrixXd            l(dim,dim),
-                        r(dim,dim);
-    for (size_t rr=0; rr<dim; ++rr) {
-        for (size_t cc=0; cc<dim; ++cc) {
-            l(rr,cc) = fgRand();
-            r(rr,cc) = fgRand();
-        }
-    }
-    {
-        FgTimeScope     ts("Eigen mat mul " + fgToStr(dim));
-        MatrixXd        m = l * r;
-    }
-}

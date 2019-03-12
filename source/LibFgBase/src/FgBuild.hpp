@@ -33,7 +33,7 @@ FgBuildOS
 fgCurrentBuildOS();
 
 // Instruction set architectures:
-enum struct FgArch { x86, x64, armv7, arm64, arm64e, armv7_a, arm64_v8a };
+enum struct FgArch { x86, x64, armv7, arm64, arm64e };
 typedef std::vector<FgArch>     FgArchs;
 std::ostream & operator<<(std::ostream &,FgArch);
 FgArch fgStrToArch(const string &);

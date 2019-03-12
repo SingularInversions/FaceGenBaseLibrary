@@ -81,46 +81,39 @@ class PartialReduxExpr : public internal::dense_xpr_base< PartialReduxExpr<Matri
     const MemberOp m_functor;
 };
 
-template<typename A,typename B> struct partial_redux_dummy_func;
-
-#define EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(MEMBER,COST,VECTORIZABLE,BINARYOP)                \
-  template <typename ResultType,typename Scalar>                                                            \
-  struct member_##MEMBER {                                                                  \
-    EIGEN_EMPTY_STRUCT_CTOR(member_##MEMBER)                                                \
-    typedef ResultType result_type;                                                         \
-    typedef BINARYOP<Scalar,Scalar> BinaryOp;   \
-    template<int Size> struct Cost { enum { value = COST }; };             \
-    enum { Vectorizable = VECTORIZABLE };                                                   \
-    template<typename XprType>                                                              \
-    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE                                                   \
-    ResultType operator()(const XprType& mat) const                                         \
-    { return mat.MEMBER(); }                                                                \
-    BinaryOp binaryFunc() const { return BinaryOp(); }                                      \
+#define EIGEN_MEMBER_FUNCTOR(MEMBER,COST)                               \
+  template <typename ResultType>                                        \
+  struct member_##MEMBER {                                              \
+    EIGEN_EMPTY_STRUCT_CTOR(member_##MEMBER)                            \
+    typedef ResultType result_type;                                     \
+    template<typename Scalar, int Size> struct Cost                     \
+    { enum { value = COST }; };                                         \
+    template<typename XprType>                                          \
+    EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE                               \
+    ResultType operator()(const XprType& mat) const                     \
+    { return mat.MEMBER(); } \
   }
-
-#define EIGEN_MEMBER_FUNCTOR(MEMBER,COST) \
-  EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(MEMBER,COST,0,partial_redux_dummy_func)
 
 namespace internal {
 
+EIGEN_MEMBER_FUNCTOR(squaredNorm, Size * NumTraits<Scalar>::MulCost + (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(norm, (Size+5) * NumTraits<Scalar>::MulCost + (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(stableNorm, (Size+5) * NumTraits<Scalar>::MulCost + (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(blueNorm, (Size+5) * NumTraits<Scalar>::MulCost + (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(hypotNorm, (Size-1) * functor_traits<scalar_hypot_op<Scalar> >::Cost );
+EIGEN_MEMBER_FUNCTOR(sum, (Size-1)*NumTraits<Scalar>::AddCost);
+EIGEN_MEMBER_FUNCTOR(mean, (Size-1)*NumTraits<Scalar>::AddCost + NumTraits<Scalar>::MulCost);
+EIGEN_MEMBER_FUNCTOR(minCoeff, (Size-1)*NumTraits<Scalar>::AddCost);
+EIGEN_MEMBER_FUNCTOR(maxCoeff, (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(all, (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(any, (Size-1)*NumTraits<Scalar>::AddCost);
 EIGEN_MEMBER_FUNCTOR(count, (Size-1)*NumTraits<Scalar>::AddCost);
+EIGEN_MEMBER_FUNCTOR(prod, (Size-1)*NumTraits<Scalar>::MulCost);
 
-EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(sum, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_sum_op);
-EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(minCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_min_op);
-EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(maxCoeff, (Size-1)*NumTraits<Scalar>::AddCost, 1, internal::scalar_max_op);
-EIGEN_MAKE_PARTIAL_REDUX_FUNCTOR(prod, (Size-1)*NumTraits<Scalar>::MulCost, 1, internal::scalar_product_op);
-
-template <int p, typename ResultType,typename Scalar>
+template <int p, typename ResultType>
 struct member_lpnorm {
   typedef ResultType result_type;
-  enum { Vectorizable = 0 };
-  template<int Size> struct Cost
+  template<typename Scalar, int Size> struct Cost
   { enum { value = (Size+5) * NumTraits<Scalar>::MulCost + (Size-1)*NumTraits<Scalar>::AddCost }; };
   EIGEN_DEVICE_FUNC member_lpnorm() {}
   template<typename XprType>
@@ -128,20 +121,17 @@ struct member_lpnorm {
   { return mat.template lpNorm<p>(); }
 };
 
-template <typename BinaryOpT, typename Scalar>
+template <typename BinaryOp, typename Scalar>
 struct member_redux {
-  typedef BinaryOpT BinaryOp;
   typedef typename result_of<
                      BinaryOp(const Scalar&,const Scalar&)
                    >::type  result_type;
-  
-  enum { Vectorizable = functor_traits<BinaryOp>::PacketAccess };
-  template<int Size> struct Cost { enum { value = (Size-1) * functor_traits<BinaryOp>::Cost }; };
+  template<typename _Scalar, int Size> struct Cost
+  { enum { value = (Size-1) * functor_traits<BinaryOp>::Cost }; };
   EIGEN_DEVICE_FUNC explicit member_redux(const BinaryOp func) : m_functor(func) {}
   template<typename Derived>
   EIGEN_DEVICE_FUNC inline result_type operator()(const DenseBase<Derived>& mat) const
   { return mat.redux(m_functor); }
-  const BinaryOp& binaryFunc() const { return m_functor; }
   const BinaryOp m_functor;
 };
 }
@@ -149,30 +139,18 @@ struct member_redux {
 /** \class VectorwiseOp
   * \ingroup Core_Module
   *
-  * \brief Pseudo expression providing broadcasting and partial reduction operations
+  * \brief Pseudo expression providing partial reduction operations
   *
   * \tparam ExpressionType the type of the object on which to do partial reductions
-  * \tparam Direction indicates whether to operate on columns (#Vertical) or rows (#Horizontal)
+  * \tparam Direction indicates the direction of the redux (#Vertical or #Horizontal)
   *
-  * This class represents a pseudo expression with broadcasting and partial reduction features.
+  * This class represents a pseudo expression with partial reduction features.
   * It is the return type of DenseBase::colwise() and DenseBase::rowwise()
-  * and most of the time this is the only way it is explicitly used.
+  * and most of the time this is the only way it is used.
   *
-  * To understand the logic of rowwise/colwise expression, let's consider a generic case `A.colwise().foo()`
-  * where `foo` is any method of `VectorwiseOp`. This expression is equivalent to applying `foo()` to each
-  * column of `A` and then re-assemble the outputs in a matrix expression:
-  * \code [A.col(0).foo(), A.col(1).foo(), ..., A.col(A.cols()-1).foo()] \endcode
-  * 
   * Example: \include MatrixBase_colwise.cpp
   * Output: \verbinclude MatrixBase_colwise.out
   *
-  * The begin() and end() methods are obviously exceptions to the previous rule as they
-  * return STL-compatible begin/end iterators to the rows or columns of the nested expression.
-  * Typical use cases include for-range-loop and calls to STL algorithms:
-  * 
-  * Example: \include MatrixBase_colwise_iterator_cxx11.cpp
-  * Output: \verbinclude MatrixBase_colwise_iterator_cxx11.out
-  * 
   * \sa DenseBase::colwise(), DenseBase::rowwise(), class PartialReduxExpr
   */
 template<typename ExpressionType, int Direction> class VectorwiseOp
@@ -185,11 +163,11 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     typedef typename internal::ref_selector<ExpressionType>::non_const_type ExpressionTypeNested;
     typedef typename internal::remove_all<ExpressionTypeNested>::type ExpressionTypeNestedCleaned;
 
-    template<template<typename OutScalar,typename InputScalar> class Functor,
-                      typename ReturnScalar=Scalar> struct ReturnType
+    template<template<typename _Scalar> class Functor,
+                      typename Scalar_=Scalar> struct ReturnType
     {
       typedef PartialReduxExpr<ExpressionType,
-                               Functor<ReturnScalar,Scalar>,
+                               Functor<Scalar_>,
                                Direction
                               > Type;
     };
@@ -208,7 +186,24 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     };
 
   protected:
-  
+
+    typedef typename internal::conditional<isVertical,
+                               typename ExpressionType::ColXpr,
+                               typename ExpressionType::RowXpr>::type SubVector;
+    /** \internal
+      * \returns the i-th subvector according to the \c Direction */
+    EIGEN_DEVICE_FUNC
+    SubVector subVector(Index i)
+    {
+      return SubVector(m_matrix.derived(),i);
+    }
+
+    /** \internal
+      * \returns the number of subvectors in the direction \c Direction */
+    EIGEN_DEVICE_FUNC
+    Index subVectors() const
+    { return isVertical?m_matrix.cols():m_matrix.rows(); }
+
     template<typename OtherDerived> struct ExtendedType {
       typedef Replicate<OtherDerived,
                         isVertical   ? 1 : ExpressionType::RowsAtCompileTime,
@@ -263,32 +258,6 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     EIGEN_DEVICE_FUNC
     inline const ExpressionType& _expression() const { return m_matrix; }
 
-    #ifdef EIGEN_PARSED_BY_DOXYGEN
-    /** STL-like <a href="https://en.cppreference.com/w/cpp/named_req/RandomAccessIterator">RandomAccessIterator</a>
-      * iterator type over the columns or rows as returned by the begin() and end() methods.
-      */
-    random_access_iterator_type iterator;
-    /** This is the const version of iterator (aka read-only) */
-    random_access_iterator_type const_iterator;
-    #else
-    typedef internal::subvector_stl_iterator<ExpressionType,       DirectionType(Direction)> iterator;
-    typedef internal::subvector_stl_iterator<const ExpressionType, DirectionType(Direction)> const_iterator;
-    #endif
-
-    /** returns an iterator to the first row (rowwise) or column (colwise) of the nested expression.
-      * \sa end(), cbegin()
-      */
-    iterator        begin() const { return iterator      (m_matrix, 0); }
-    /** const version of begin() */
-    const_iterator cbegin() const { return const_iterator(m_matrix, 0); }
-
-    /** returns an iterator to the row (resp. column) following the last row (resp. column) of the nested expression
-      * \sa begin(), cend()
-      */
-    iterator        end()   const { return iterator      (m_matrix, m_matrix.template subVectors<DirectionType(Direction)>()); }
-    /** const version of end() */
-    const_iterator cend()   const { return const_iterator(m_matrix, m_matrix.template subVectors<DirectionType(Direction)>()); }
-
     /** \returns a row or column vector expression of \c *this reduxed by \a func
       *
       * The template parameter \a BinaryOp is the type of the functor
@@ -304,22 +273,22 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
 
     typedef typename ReturnType<internal::member_minCoeff>::Type MinCoeffReturnType;
     typedef typename ReturnType<internal::member_maxCoeff>::Type MaxCoeffReturnType;
-    typedef PartialReduxExpr<const CwiseUnaryOp<internal::scalar_abs2_op<Scalar>, const ExpressionTypeNestedCleaned>,internal::member_sum<RealScalar,RealScalar>,Direction> SquaredNormReturnType;
-    typedef CwiseUnaryOp<internal::scalar_sqrt_op<RealScalar>, const SquaredNormReturnType> NormReturnType;
+    typedef typename ReturnType<internal::member_squaredNorm,RealScalar>::Type SquaredNormReturnType;
+    typedef typename ReturnType<internal::member_norm,RealScalar>::Type NormReturnType;
     typedef typename ReturnType<internal::member_blueNorm,RealScalar>::Type BlueNormReturnType;
     typedef typename ReturnType<internal::member_stableNorm,RealScalar>::Type StableNormReturnType;
     typedef typename ReturnType<internal::member_hypotNorm,RealScalar>::Type HypotNormReturnType;
     typedef typename ReturnType<internal::member_sum>::Type SumReturnType;
-    typedef EIGEN_EXPR_BINARYOP_SCALAR_RETURN_TYPE(SumReturnType,Scalar,quotient) MeanReturnType;
+    typedef typename ReturnType<internal::member_mean>::Type MeanReturnType;
     typedef typename ReturnType<internal::member_all>::Type AllReturnType;
     typedef typename ReturnType<internal::member_any>::Type AnyReturnType;
-    typedef PartialReduxExpr<ExpressionType, internal::member_count<Index,Scalar>, Direction> CountReturnType;
+    typedef PartialReduxExpr<ExpressionType, internal::member_count<Index>, Direction> CountReturnType;
     typedef typename ReturnType<internal::member_prod>::Type ProdReturnType;
     typedef Reverse<const ExpressionType, Direction> ConstReverseReturnType;
     typedef Reverse<ExpressionType, Direction> ReverseReturnType;
 
     template<int p> struct LpNormReturnType {
-      typedef PartialReduxExpr<ExpressionType, internal::member_lpnorm<p,RealScalar,Scalar>,Direction> Type;
+      typedef PartialReduxExpr<ExpressionType, internal::member_lpnorm<p,RealScalar>,Direction> Type;
     };
 
     /** \returns a row (or column) vector expression of the smallest coefficient
@@ -358,7 +327,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
       * \sa DenseBase::squaredNorm() */
     EIGEN_DEVICE_FUNC
     const SquaredNormReturnType squaredNorm() const
-    { return SquaredNormReturnType(m_matrix.cwiseAbs2()); }
+    { return SquaredNormReturnType(_expression()); }
 
     /** \returns a row (or column) vector expression of the norm
       * of each column (or row) of the referenced expression.
@@ -370,7 +339,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
       * \sa DenseBase::norm() */
     EIGEN_DEVICE_FUNC
     const NormReturnType norm() const
-    { return NormReturnType(squaredNorm()); }
+    { return NormReturnType(_expression()); }
 
     /** \returns a row (or column) vector expression of the norm
       * of each column (or row) of the referenced expression.
@@ -435,7 +404,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     * \sa DenseBase::mean() */
     EIGEN_DEVICE_FUNC
     const MeanReturnType mean() const
-    { return sum() / Scalar(Direction==Vertical?m_matrix.rows():m_matrix.cols()); }
+    { return MeanReturnType(_expression()); }
 
     /** \returns a row (or column) vector expression representing
       * whether \b all coefficients of each respective column (or row) are \c true.
@@ -640,7 +609,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     EIGEN_DEVICE_FUNC
     CwiseBinaryOp<internal::scalar_quotient_op<Scalar>,
                   const ExpressionTypeNestedCleaned,
-                  const typename OppositeExtendedType<NormReturnType>::Type>
+                  const typename OppositeExtendedType<typename ReturnType<internal::member_norm,RealScalar>::Type>::Type>
     normalized() const { return m_matrix.cwiseQuotient(extendedToOpposite(this->norm())); }
 
 
@@ -701,7 +670,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
   * \sa rowwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
-EIGEN_DEVICE_FUNC inline typename DenseBase<Derived>::ColwiseReturnType
+inline typename DenseBase<Derived>::ColwiseReturnType
 DenseBase<Derived>::colwise()
 {
   return ColwiseReturnType(derived());
@@ -715,7 +684,7 @@ DenseBase<Derived>::colwise()
   * \sa colwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
-EIGEN_DEVICE_FUNC inline typename DenseBase<Derived>::RowwiseReturnType
+inline typename DenseBase<Derived>::RowwiseReturnType
 DenseBase<Derived>::rowwise()
 {
   return RowwiseReturnType(derived());

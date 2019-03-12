@@ -1,6 +1,8 @@
 CC = gcc
 CXX = gcc
 LINK = g++
+AR = ar
+RANLIB = ranlib
 CFLAGS = -m64 -g -O1 -D_DEBUG -fPIC
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11

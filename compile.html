@@ -71,10 +71,10 @@ h2 ~ *:not(h2) {
             Select all libraries: <code>~sdk/build_ios/*.a</code>
         <li><code> 'Build Settings' -> 'Search Paths' -> 'Header Search Paths' </code> Within the
             <code>~sdk/source/</code> directory, add each of the following (expand glob):
-            <code> LibFg*/src/ LibTpBoost/boost_1_67_0/ </code>
+            <code> LibFg* LibFgBase/src LibTpBoost/boost_1_67_0 </code>
     </ul>
-    <p>Make a copy of the directory <code>~sdk/data/</code> containing only the data you need in your 
-        application (see <a href="deploy.html">Deployment</a>), and add that data into your app bundle
+    <p>Make a copy of the directory <code>~sdk/data/</code> containing only the data you need  
+        (see <a href="deploy.html">Deployment</a>), and add that data into your app bundle
         preserving the directory structure (one way to do this is to right-click on your application directory
         in Xcode, select 'Add Files', select 'Create folder references', ensure 'Copy items if needed' is
         de-selected, than select your copy of the <code>~sdk/data/</code> directory). </li> 
@@ -87,6 +87,55 @@ h2 ~ *:not(h2) {
         std::string dataDir = std::string([dd UTF8String]) + "/data/"; <br>
         fgSetDataDir(dataDir); <br>
     </code></p>
+<h2>Android</h2>
+    <p>Cross-compiled from Linux.</p>
+    <p>Download and install Android Studio and Android NDK
+      (<a href="https://developer.android.com/ndk/downloads">
+        <code>https://developer.android.com/ndk/downloads</code></a>.)
+    <p>Make the FaceGen static libraries for Android:</p>
+    <p><code>$ cd ~sdk/source</br>
+      $ make -f Makefile_android -NDK_ROOT=&ltndkPath&gt [-API_VERSION=&ltver&gt] </code>
+    <p> Where <code>&ltndkPath&gt</code> is typically <code>/home/user/Android/Sdk/ndk-bundle</code>
+        and <code>&ltver&gt</code> defaults to 23.</p>
+    <p> To make an app that links to these libraries:
+      <code> Start a new Android Studio Project -> Native C++ </code>.
+       Select the same API level you compiled the library with. Select the C++11 toolchain.
+       Modify <code> ~app/app/src/main/cpp/CMakeLists.txt </code> to add the FaceGen static library
+       projects and include directories:</p>
+    <p><ul>
+      <li> <code> set(FG_DIR /path/to/FaceGenSdk) </code> </li>
+      <li> For each of the library files <code> ~sdk/build_android/x86/clang/release/*.a </code>
+          Define the static library: <br> <br>
+          <samp>
+          add_library(&ltname&gt STATIC IMPORTED) <br>
+          set_target_properties(&ltname&gt PROPERTIES <br>
+          &nbsp &nbsp &nbsp &nbsp IMPORTED_LOCATION ${FG_DIR}/build_android/${ANDROID_ABI}/clang/release/&ltname&gt.a)
+          </samp> <br> <br>
+      <li> Add the respective include directories to you app's native lib : <br>
+          <samp> <br>
+          target_include_directories(native-lib PRIVATE <br>
+          &nbsp &nbsp &nbsp &nbsp ... <br>
+          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/&ltname&gt <br>
+          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/LibFgBase/src <br>
+          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/LibTpBoost/boost_1_67_0 ) <br>
+          </samp> <br>
+      <li> Link your native lib to the respective libraries: <br> <br>
+          <samp>
+          target_link_libraries(native-lib <br>
+          &nbsp &nbsp &nbsp &nbsp ... <br>
+          &nbsp &nbsp &nbsp &nbsp &ltname&gt <br>
+          &nbsp &nbsp &nbsp &nbsp LibFgBase <br>
+          &nbsp &nbsp &nbsp &nbsp LibJpegIjg6b <br>
+          &nbsp &nbsp &nbsp &nbsp LibTpBoost ) <br>
+          </samp> <br>
+      <li> Create an assets folder for FaceGen data: <code> File -> New -> Folder -> Assets Folder </code>
+          and copy in the data you need (see <a href="deploy.html">Deployment</a>) preserving the directory
+          structure.
+    </ul>
+    <p> Android is poorly designed as asset files cannot be accessed via standard filesystem
+        calls. The simplest approach is to make a local filesystem copy of all bundled data you need with
+        FaceGen when your app first runs. You can then pass this location to <code> fgSetDataDir() </code>.
+          
 
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">

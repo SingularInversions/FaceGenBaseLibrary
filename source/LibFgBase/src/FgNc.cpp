@@ -23,7 +23,7 @@ fgNcShare(FgBuildOS os)
     // Both are compiled on MacOS:
     else if ((os == FgBuildOS::macos) || (os == FgBuildOS::ios))
         ret =  "/Volumes/Zeus_share/";
-    else if (os == FgBuildOS::linux)
+    else if ((os == FgBuildOS::linux) || (os == FgBuildOS::android))
         ret = "/mnt/share/";
     else
         fgThrow("fgNcShare unhandled OS",int(os));

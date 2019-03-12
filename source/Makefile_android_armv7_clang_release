@@ -6,10 +6,10 @@ NDK_BIN = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin
 CC = ${NDK_BIN}/clang
 CXX = ${NDK_BIN}/clang++
 LINK = ${NDK_BIN}/clang++
-AR = ${NDK_BIN}/i686-linux-android-ar
-RANLIB = ${NDK_BIN}/i686-linux-android-ranlib
-CFLAGS = -DNDEBUG -Ofast -mstackrealign -fno-addrsig -fPIC --target=i686-linux-android${API_VERSION} --sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+AR = ${NDK_BIN}/arm-linux-androideabi-ar
+RANLIB = ${NDK_BIN}/arm-linux-androideabi-ranlib
+CFLAGS = -DNDEBUG -Ofast -fno-addrsig -fPIC --target=armv7a-linux-androideabi${API_VERSION} --sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024 -stdlib=libc++
-BUILDIR = ../build_android/x86/clang/release/
+BUILDIR = ../build_android/armeabi-v7a/clang/release/
 include make_libs.mk

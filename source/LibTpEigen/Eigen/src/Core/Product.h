@@ -116,7 +116,7 @@ class dense_product_base
  : public internal::dense_xpr_base<Product<Lhs,Rhs,Option> >::type
 {};
 
-/** Conversion to scalar for inner-products */
+/** Convertion to scalar for inner-products */
 template<typename Lhs, typename Rhs, int Option>
 class dense_product_base<Lhs, Rhs, Option, InnerProduct>
  : public internal::dense_xpr_base<Product<Lhs,Rhs,Option> >::type
@@ -127,7 +127,7 @@ public:
   using Base::derived;
   typedef typename Base::Scalar Scalar;
   
-  EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE operator const Scalar() const
+  EIGEN_STRONG_INLINE operator const Scalar() const
   {
     return internal::evaluator<ProductXpr>(derived()).coeff(0,0);
   }

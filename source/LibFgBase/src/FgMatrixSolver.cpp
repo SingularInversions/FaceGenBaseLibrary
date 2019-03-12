@@ -16,6 +16,7 @@
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
 #include "FgApproxEqual.hpp"
+#include "FgSyntax.hpp"
 
 using namespace std;
 
@@ -29,7 +30,8 @@ FgEigsRsm::matrix() const
     return vecs * rhs;
 }
 
-static
+namespace {
+
 FgMatrixD
 randSymmMatrix(uint dim)
 {
@@ -45,7 +47,6 @@ randSymmMatrix(uint dim)
 
 typedef function<void(const FgMatrixD &,FgDbls &,FgMatrixD &)>  FnSolve;
 
-static
 void
 testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 {
@@ -92,7 +93,6 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
     FGASSERT(residual < tol);
 }
 
-static
 void
 testAsymEigs(const FgArgs &)
 {
@@ -107,9 +107,8 @@ testAsymEigs(const FgArgs &)
         << fgnl << "Residual: " << residual;
 }
 
-static
 void
-testSymmEigen(const FgArgs &)
+testSymmEigenAuto(const FgArgs &)
 {
     fgRandSeedRepeatable();
     testSymmEigenProblem(10,fgEigsRsm_,true);
@@ -117,9 +116,52 @@ testSymmEigen(const FgArgs &)
 #ifndef _DEBUG
     testSymmEigenProblem(100,fgEigsRsm_,false);
     testSymmEigenProblem(300,fgEigsRsm_,false);
-    //testSymmEigenProblem(1000,fgEigsRsm_,false);
-    //testSymmEigenProblem(3000,fgEigsRsm_,false);
 #endif
+}
+
+void
+testSymmEigenTime(const FgArgs & args)
+{
+    if (fgAutomatedTest(args))
+        return;
+    FgSyntax            syn(args,"<size>");
+    // Random symmetric matrix, uniform distribution:
+    size_t              dim = syn.nextAs<size_t>();
+    fgRandSeedRepeatable();
+    FgMatrixD           mat = randSymmMatrix(uint(dim));
+    FgDbls              eigVals;
+    FgMatrixD           eigVecs;
+    FgTimer             timer;
+    fgEigsRsm_(mat,eigVals,eigVecs);
+    size_t              time = timer.readMs();
+    FgMatrixD           eigValMat(dim,dim);
+    eigValMat.setZero();
+    for (uint ii=0; ii<dim; ii++)
+        eigValMat.rc(ii,ii) = eigVals[ii];
+    FgMatrixD       recon = eigVecs * eigValMat * eigVecs.transpose();
+    double          residual = 0.0;
+    for (uint ii=0; ii<dim; ii++)
+        for (uint jj=ii; jj<dim; jj++)
+            residual += fgSqr(recon.rc(ii,jj) - mat.rc(ii,jj));
+    residual = sqrt(residual/double(dim*dim));      // root of mean value
+    // RMS residual appears to go with the square root of the matrix dimension:
+    double          tol = numeric_limits<double>::epsilon() * sqrt(dim) * 2.0;
+    fgout << fgnl << "Dim: " << dim << fgpush
+        << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol
+        << fgnl << "Time: " << time;
+    fgout << fgpop;
+    FGASSERT(residual < tol);
+}
+
+void
+testSymmEigen(const FgArgs & args)
+{
+    FgCmds      cmds;
+    cmds.push_back(FgCmd(testSymmEigenAuto,"auto","Automated tests"));
+    cmds.push_back(FgCmd(testSymmEigenTime,"time","Timing test"));
+    fgMenu(args,cmds,true);
+}
+
 }
 
 void

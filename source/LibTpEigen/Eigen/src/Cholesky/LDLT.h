@@ -247,7 +247,7 @@ template<typename _MatrixType, int _UpLo> class LDLT
 
     /** \brief Reports whether previous computation was successful.
       *
-      * \returns \c Success if computation was successful,
+      * \returns \c Success if computation was succesful,
       *          \c NumericalIssue if the factorization failed because of a zero pivot.
       */
     ComputationInfo info() const
@@ -258,6 +258,7 @@ template<typename _MatrixType, int _UpLo> class LDLT
 
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     template<typename RhsType, typename DstType>
+    EIGEN_DEVICE_FUNC
     void _solve_impl(const RhsType &rhs, DstType &dst) const;
     #endif
 
@@ -304,7 +305,8 @@ template<> struct ldlt_inplace<Lower>
     if (size <= 1)
     {
       transpositions.setIdentity();
-      if (numext::real(mat.coeff(0,0)) > static_cast<RealScalar>(0) ) sign = PositiveSemiDef;
+      if(size==0) sign = ZeroSign;
+      else if (numext::real(mat.coeff(0,0)) > static_cast<RealScalar>(0) ) sign = PositiveSemiDef;
       else if (numext::real(mat.coeff(0,0)) < static_cast<RealScalar>(0)) sign = NegativeSemiDef;
       else sign = ZeroSign;
       return true;

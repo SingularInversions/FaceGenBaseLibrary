@@ -83,4 +83,8 @@ fgRunCmd(const FgCmdFunc & func,const string & argStr);
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();
 
+// Returns true if the user is doing a 'test all', so we can choose to skip non-automatable tests:
+bool
+fgAutomatedTest(const FgArgs &);
+
 #endif

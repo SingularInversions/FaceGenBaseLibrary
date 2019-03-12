@@ -180,8 +180,10 @@ public:
   RealScalar threshold() const
   {
     eigen_assert(m_isInitialized || m_usePrescribedThreshold);
+    // this temporary is needed to workaround a MSVC issue
+    Index diagSize = (std::max<Index>)(1,m_diagSize);
     return m_usePrescribedThreshold ? m_prescribedThreshold
-                                    : (std::max<Index>)(1,m_diagSize)*NumTraits<Scalar>::epsilon();
+                                    : diagSize*NumTraits<Scalar>::epsilon();
   }
 
   /** \returns true if \a U (full or thin) is asked for in this SVD decomposition */
@@ -212,6 +214,7 @@ public:
   
   #ifndef EIGEN_PARSED_BY_DOXYGEN
   template<typename RhsType, typename DstType>
+  EIGEN_DEVICE_FUNC
   void _solve_impl(const RhsType &rhs, DstType &dst) const;
   #endif
 

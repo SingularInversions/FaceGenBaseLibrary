@@ -81,7 +81,7 @@ linkLibs(
     const FgConsSolution &  sln,
     bool                    binaryOnly)     // Include binary-only deps
 {
-    // Unix link is single-pass; order of linkage is important:
+    // gcc link is single-pass; order of linkage is important:
     FgStrs      libDeps = sln.getLnkDeps(prj.name);
     for (const string & name : libDeps) {
         if (sln.contains(name)) {
@@ -156,10 +156,10 @@ consProj(
         // We put libraries in the 'bin' path rather than the 'build' path as that simplifies
         // the issue 
         // ar options: r - replace .o files in archive, c - create if doesn't exist
-        ofs << "\tar rc " << targetPath(prj) << " ";
+        ofs << "\t$(AR) rc " << targetPath(prj) << " ";
         for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
             targets(ofs,prj.name,prj.srcGroups[ii]);
-        ofs << lf << "\tranlib " << targetPath(prj);
+        ofs << lf << "\t$(RANLIB) " << targetPath(prj);
     }
     ofs << lf;
     for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
@@ -217,7 +217,7 @@ constIncludeFileBox(const FgConsSolution & sln,const string & fname)
 }
 
 bool
-consMakefile(
+consMakefileOsArch(
     FgBuildOS               os,
     FgCompiler              compiler,
     FgArch                  arch,
@@ -248,18 +248,6 @@ consMakefile(
         else
             fgThrow("architecture not supported on iOS",arch);
     }
-    else if (os == FgBuildOS::android) {
-        if (arch == FgArch::x86)
-            cflags.push_back("-arch x86");
-        else if (arch == FgArch::x64)
-            cflags.push_back("-arch x86_64");
-        else if (arch == FgArch::armv7_a)
-            cflags.push_back("-arch armv7-a");
-        else if (arch == FgArch::arm64_v8a)
-            cflags.push_back("-arch arm64-v8a");
-        else
-            fgThrow("architecture not supported on Android",arch);
-    }
     else {
         if (arch == FgArch::x86)
             cflags.push_back("-m32");
@@ -288,7 +276,7 @@ consMakefile(
         // Ensures no common symbols across all libraries, required for all files which
         // are part of a DLL so we just always use it:
         cflags.push_back("-fno-common");
-        // clang defaults to 256 which can cause problems with boost::serialization exceeding
+        // clang defaults to 256 which can cause errors with boost::iarchive exceeding
         // template depth limit, so set to same limit used by gcc and vs:
         cxxflags.push_back("-ftemplate-depth=1024");
         if (!debug)
@@ -352,10 +340,6 @@ consMakefile(
         cflags.push_back("-fPIC");
         cflags.push_back("-fno-strict-aliasing");
     }
-    else if (os == FgBuildOS::android) {
-        cflags.push_back("-DANDROID");
-        cflags.push_back("-fPIE");
-    }
     else {      // Linux
         // -fPIC: (position indepdent code) is required for all object files which are 
         // part of a shared library, so we just always use it (except MacOS where it's the default)
@@ -376,6 +360,8 @@ consMakefile(
     ofs << "CC = " << cc << lf
         << "CXX = " << cxx << lf
         << "LINK = " << link << lf
+        << "AR = ar" << lf
+        << "RANLIB = ranlib" << lf
         << "CFLAGS = " << fgCat(cflags," ") << lf
         << "CCFLAGS = $(CFLAGS)" << lf
         << "CXXFLAGS = $(CFLAGS) " << fgCat(cxxflags," ") << lf;
@@ -393,13 +379,109 @@ consMakefile(
 }
 
 bool
-consMakefileCross(const FgConsSolution & sln,FgBuildOS os)
+consMakefileAndroidArch(
+    FgBuildOS               host,       // Host OS for cross-compilation
+    FgArch                  arch,
+    bool                    debug=false)
 {
-    FgCompiler          compiler = fgBuildCompilers(os)[0];
-    FgArchs             archs = fgBuildArchitectures(os);
+    // https://developer.android.com/ndk/guides/other_build_systems
+    string          hostStr;
+    if (host == FgBuildOS::win)
+        hostStr = "windows";
+    else if (host == FgBuildOS::linux)
+        hostStr = "linux";
+    else
+        fgThrow("consMakefileAndroidArch unhandled host OS",host);
+    string          archCMakeStr;
+    if (arch == FgArch::x86)
+        archCMakeStr = "x86";
+    else if (arch == FgArch::x64)
+        archCMakeStr = "x86_64";
+    else if (arch == FgArch::armv7)
+        archCMakeStr = "armeabi-v7a";
+    else if (arch == FgArch::arm64)
+        archCMakeStr = "arm64-v8a";
+    else
+        fgThrow("consMakefileAndroidArch unhandled arch",arch);
+    string          debrel = debug ? "debug" : "release",
+                    ar,ranlib;
+    if (arch == FgArch::x86) {
+        string      base = "${NDK_BIN}/i686-" + hostStr + "-android-";
+        ar = base + "ar";
+        ranlib = base + "ranlib";
+    }
+    else if (arch == FgArch::x64) {
+        string      base = "${NDK_BIN}/x86_64-" + hostStr + "-android-";
+        ar = base + "ar";
+        ranlib = base + "ranlib";
+    }
+    else if (arch == FgArch::armv7) {
+        string      base = "${NDK_BIN}/arm-" + hostStr + "-androideabi-";
+        ar = base + "ar";
+        ranlib = base + "ranlib";
+    }
+    else if (arch == FgArch::arm64) {
+        string      base = "${NDK_BIN}/aarch64-" + hostStr + "-android-";
+        ar = base + "ar";
+        ranlib = base + "ranlib";
+    }
+    else
+        fgThrow("consMakefileAndroidArch unhandled arch for ar/ranlib",arch);
+    FgStrs          cflags,
+                    cxxflags;               // cpp flags in *addition* to 'cflags'
+    if (debug) {
+        cflags.push_back("-g");             // generate debug info
+        cflags.push_back("-O1");            // minimal optimization
+        cflags.push_back("-D_DEBUG");
+    }
+    else {
+        cflags.push_back("-DNDEBUG");
+        cflags.push_back("-Ofast");         // O3 plus fast floating point opts.
+    }
+    if (arch == FgArch::x86)
+        cflags.push_back("-mstackrealign");     // From android toolchain
+    cflags.push_back("-fno-addrsig");           // From android toolchain
+    cflags.push_back("-fPIC");                  // In case used with shared libs
+    string          targetStr;                  // The so-called 'target triple':
+    if (arch == FgArch::x86)
+        targetStr = "i686-" + hostStr + "-android";
+    else if (arch == FgArch::x64)
+        targetStr = "x86_64-" + hostStr + "-android";
+    else if (arch == FgArch::armv7)
+        targetStr = "armv7a-" + hostStr + "-androideabi";
+    else if (arch == FgArch::arm64)
+        targetStr = "aarch64-" + hostStr + "-android";
+    cflags.push_back("--target="+targetStr+"${API_VERSION}");
+    cflags.push_back("--sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/"+hostStr+"-x86_64/sysroot");
+    cxxflags.push_back("-std=c++11");
+    cxxflags.push_back("-ftemplate-depth=1024");    // boost annoyance
+    cxxflags.push_back("-stdlib=libc++");           // From android toolchain
+    ostringstream   ofs;
+    ofs << "ifndef NDK_ROOT" << lf
+        << "$(error NDK_ROOT is not set)" << lf
+        << "endif" << lf
+        << "API_VERSION ?= 23" << lf
+        << "NDK_BIN = ${NDK_ROOT}/toolchains/llvm/prebuilt/" + hostStr + "-x86_64/bin" << lf
+        << "CC = ${NDK_BIN}/clang" << lf
+        << "CXX = ${NDK_BIN}/clang++" << lf
+        << "LINK = ${NDK_BIN}/clang++" << lf
+        << "AR = " << ar << lf
+        << "RANLIB = " << ranlib << lf
+        << "CFLAGS = " << fgCat(cflags," ") << lf
+        << "CCFLAGS = $(CFLAGS)" << lf
+        << "CXXFLAGS = $(CFLAGS) " << fgCat(cxxflags," ") << lf
+        << "BUILDIR = ../build_android/" << archCMakeStr << "/clang/" << debrel << "/" << lf
+        << "include make_libs.mk" << lf;
+    return fgDump(ofs.str(),"Makefile_android_" + fgToStr(arch) + "_clang_" + debrel);
+}
+
+bool
+consMakefileIos(const FgConsSolution & sln)
+{
+    FgArchs             archs = fgBuildArchitectures(FgBuildOS::ios);
     ostringstream       oss;
-    oss << "OUTDIR = ../build_" << os << "/" << lf
-        << ".PHONY: all FORCE clean" << lf
+    oss << "OUTDIR = ../build_ios/" << lf;
+        oss << ".PHONY: all FORCE clean" << lf
         // Rely on 'make' following order given for targets to ensure recurse make calls.
         // Could perhaps have thin libs depend on phony architecture targets ("%.a : arch")
         // to trigger recursive makes:
@@ -410,38 +492,40 @@ consMakefileCross(const FgConsSolution & sln,FgBuildOS os)
     oss << lf;
     for (const FgConsProj & p : sln.projects) {
         if (!p.srcGroups.empty()) {
-            if (os == FgBuildOS::ios) {
-                string          fatLib = "$(OUTDIR)"+p.name+".a";
-                string          srcLibs;
-                for (FgArch arch : archs)
-                    srcLibs += " $(OUTDIR)" + fgToStr(arch) + "/" + fgToStr(compiler) + "/release/" + p.name + ".a";
-                oss << fatLib << ":" << srcLibs << lf;
-                // Using 'xcrun' here avoid problems according to some sources.
-                oss << "\txcrun -sdk iphoneos lipo -create -output " << fatLib << srcLibs << lf;
-            }
-            else if (os == FgBuildOS::android) {
-                string          fatLib = "$(OUTDIR)"+p.name+".aar";
-                string          srcLibs;
-                for (FgArch arch : archs)
-                    srcLibs += " $(OUTDIR)" + fgToStr(arch) + "/" + fgToStr(compiler) + "/release/" + p.name + ".aar";
-                oss << fatLib << ":" << srcLibs << lf;
-                // TODO: build android AAR from .o files here:
-                oss << "\techo This Makefile is not yet working" << lf;
-            }
-            else
-                fgThrow("consMakefileCross unexpected OS",fgToStr(os));
+            string          fatLib = "$(OUTDIR)"+p.name+".a";
+            string          srcLibs;
+            for (FgArch arch : archs)
+                srcLibs += " $(OUTDIR)" + fgToStr(arch) + "/clang/release/" + p.name + ".a";
+            oss << fatLib << ":" << srcLibs << lf;
+            // Using 'xcrun' here avoid problems according to some sources.
+            oss << "\txcrun -sdk iphoneos lipo -create -output " << fatLib << srcLibs << lf;
         }
     }
     for (FgArch arch : archs) {
         // The % character is a glob which indicates that all such files depend on the same command:
-        oss << "$(OUTDIR)" << arch << "/" << compiler << "/release/%.a: FORCE" << lf
+        oss << "$(OUTDIR)" << arch << "/clang/release/%.a: FORCE" << lf
             // The recursive make command is smart enough to handle parent CL options such as -n
-            << "\t$(MAKE) -j4 -f Makefile_" << os << "_" << arch << "_" << compiler << "_release" << lf;
+            << "\t$(MAKE) -j4 -f Makefile_ios_" << arch << "_clang_release" << lf;
     }
     oss << "FORCE:" << lf
         << "clean:" << lf
         << "\trm -r $(OUTDIR)" << lf;
-    return fgDump(oss.str(),"Makefile_"+fgToStr(os));
+    return fgDump(oss.str(),"Makefile_ios");
+}
+
+bool
+consMakefileAndroid(const FgConsSolution &)
+{
+    FgArchs             archs = fgBuildArchitectures(FgBuildOS::android);
+    ostringstream       oss;
+    oss << "OUTDIR = ../build_android/" << lf
+        << ".PHONY: all clean" << lf
+        << "all:" << lf;
+    for (FgArch arch : archs)
+        oss << "\t$(MAKE) -j4 -f Makefile_android_" << arch << "_clang_release" << lf;
+    oss << "clean:" << lf
+        << "\trm -r $(OUTDIR)" << lf;
+    return fgDump(oss.str(),"Makefile_android");
 }
 
 }
@@ -453,14 +537,14 @@ fgConsNativeMakefiles(const FgConsSolution & sln)
     bool            changed = false;
     string          fnameAll = "make_all.mk";
     changed = constIncludeFileNative(sln,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::clang,FgArch::x64,true,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::clang,FgArch::x64,false,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::gcc,FgArch::x64,true,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::gcc,FgArch::x64,false,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::icpc,FgArch::x64,true,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::linux,FgCompiler::icpc,FgArch::x64,false,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::macos,FgCompiler::clang,FgArch::x64,true,fnameAll) || changed;
-    changed = consMakefile(FgBuildOS::macos,FgCompiler::clang,FgArch::x64,false,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::clang,FgArch::x64,true,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::clang,FgArch::x64,false,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::gcc,FgArch::x64,true,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::gcc,FgArch::x64,false,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::icpc,FgArch::x64,true,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::linux,FgCompiler::icpc,FgArch::x64,false,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::macos,FgCompiler::clang,FgArch::x64,true,fnameAll) || changed;
+    changed = consMakefileOsArch(FgBuildOS::macos,FgCompiler::clang,FgArch::x64,false,fnameAll) || changed;
     return changed;
 }
 
@@ -479,11 +563,17 @@ fgConsCrossMakefiles(const FgConsSolution & sln)
     bool            changed = false;
     string          fnameLibs = "make_libs.mk";
     changed = constIncludeFileBox(slnXC,fnameLibs) || changed;
-    for (FgBuildOS bs : fgBuildCrossCompileOSs()) {
-        for (FgArch arch : fgBuildArchitectures(bs))
-            changed = consMakefile(bs,fgBuildCompilers(bs)[0],arch,false,fnameLibs) || changed;
-        changed = consMakefileCross(slnXC,bs) || changed;
-    }
+
+    // IOS on MacOS:
+    for (FgArch arch : fgBuildArchitectures(FgBuildOS::ios))
+        changed = consMakefileOsArch(FgBuildOS::ios,fgBuildCompilers(FgBuildOS::ios)[0],arch,false,fnameLibs) || changed;
+    changed = consMakefileIos(slnXC) || changed;
+
+    // Android on Linux:
+    for (FgArch arch : fgBuildArchitectures(FgBuildOS::android))
+        changed = consMakefileAndroidArch(FgBuildOS::linux,arch) || changed;
+    changed = consMakefileAndroid(slnXC) || changed;
+
     return changed;
 }
 

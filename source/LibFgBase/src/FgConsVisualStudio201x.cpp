@@ -218,6 +218,12 @@ writeVcxproj(
                 // Note that MSVC fast floating point model is an extension to the standard and thus cannot
                 // be used in combination with disabling MSVC language extensions:
                 "      <FloatingPointModel>Fast</FloatingPointModel>\n"
+                // No downside to supporting OpenMP in Visual Studio:
+                "      <OpenMPSupport>true</OpenMPSupport>\n";
+            if (vsver >= 17)    // Improved error position indicator:
+                ofs <<
+                "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n";
+            ofs <<
                 "    </ClCompile>\n";
             if (proj.isLinked()) {
                 ofs <<
@@ -292,7 +298,7 @@ writeVcxproj(
                 ofs << "    </ClCompile>\n";
             }
             else
-                ofs << "  />\n";
+                ofs << " />\n";
         }
     }
     ofs <<

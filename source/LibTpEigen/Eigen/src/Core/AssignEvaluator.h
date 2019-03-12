@@ -97,7 +97,7 @@ private:
 
 public:
   enum {
-    Traversal = (int(MayLinearVectorize) && (LinearPacketSize>InnerPacketSize)) ? int(LinearVectorizedTraversal)
+    Traversal = int(MayLinearVectorize) && (LinearPacketSize>InnerPacketSize) ? int(LinearVectorizedTraversal)
               : int(MayInnerVectorize)   ? int(InnerVectorizedTraversal)
               : int(MayLinearVectorize)  ? int(LinearVectorizedTraversal)
               : int(MaySliceVectorize)   ? int(SliceVectorizedTraversal)
@@ -172,8 +172,6 @@ public:
     EIGEN_DEBUG_VAR(MaySliceVectorize)
     std::cerr << "Traversal" << " = " << Traversal << " (" << demangle_traversal(Traversal) << ")" << std::endl;
     EIGEN_DEBUG_VAR(SrcEvaluator::CoeffReadCost)
-    EIGEN_DEBUG_VAR(DstEvaluator::CoeffReadCost)
-    EIGEN_DEBUG_VAR(Dst::SizeAtCompileTime)
     EIGEN_DEBUG_VAR(UnrollingLimit)
     EIGEN_DEBUG_VAR(MayUnrollCompletely)
     EIGEN_DEBUG_VAR(MayUnrollInner)
@@ -699,26 +697,6 @@ protected:
   DstXprType& m_dstExpr;
 };
 
-// Special kernel used when computing small products whose operands have dynamic dimensions.  It ensures that the
-// PacketSize used is no larger than 4, thereby increasing the chance that vectorized instructions will be used
-// when computing the product.
-
-template<typename DstEvaluatorTypeT, typename SrcEvaluatorTypeT, typename Functor>
-class restricted_packet_dense_assignment_kernel : public generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, Functor, BuiltIn>
-{
-protected:
-  typedef generic_dense_assignment_kernel<DstEvaluatorTypeT, SrcEvaluatorTypeT, Functor, BuiltIn> Base;
- public:
-    typedef typename Base::Scalar Scalar;
-    typedef typename Base::DstXprType DstXprType;
-    typedef typename find_best_packet<Scalar, 4>::type PacketType;
-    
-    EIGEN_DEVICE_FUNC restricted_packet_dense_assignment_kernel(DstEvaluatorTypeT &dst, const SrcEvaluatorTypeT &src, const Functor &func, DstXprType& dstExpr)
-    : Base(dst, src, func, dstExpr)
-  {
-  }
- };
- 
 /***************************************************************************
 * Part 5 : Entry point for dense rectangular assignment
 ***************************************************************************/
@@ -778,7 +756,7 @@ EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE void call_dense_assignment_loop(DstXprType
 // AssignmentKind must define a Kind typedef.
 template<typename DstShape, typename SrcShape> struct AssignmentKind;
 
-// Assignment kind defined in this file:
+// Assignement kind defined in this file:
 struct Dense2Dense {};
 struct EigenBase2EigenBase {};
 
@@ -857,27 +835,6 @@ void call_assignment_no_alias(Dst& dst, const Src& src, const Func& func)
   
   Assignment<ActualDstTypeCleaned,Src,Func>::run(actualDst, src, func);
 }
-
-template<typename Dst, typename Src, typename Func>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
-void call_restricted_packet_assignment_no_alias(Dst& dst, const Src& src, const Func& func)
-{
-    typedef evaluator<Dst> DstEvaluatorType;
-    typedef evaluator<Src> SrcEvaluatorType;
-    typedef restricted_packet_dense_assignment_kernel<DstEvaluatorType,SrcEvaluatorType,Func> Kernel;
-
-    EIGEN_STATIC_ASSERT_LVALUE(Dst)
-    EIGEN_CHECK_BINARY_COMPATIBILIY(Func,typename Dst::Scalar,typename Src::Scalar);
-
-    SrcEvaluatorType srcEvaluator(src);
-    resize_if_allowed(dst, src, func);
-    
-    DstEvaluatorType dstEvaluator(dst);
-    Kernel kernel(dstEvaluator, srcEvaluator, func, dst.const_cast_derived());
-
-    dense_assignment_loop<Kernel>::run(kernel);
-}
-
 template<typename Dst, typename Src>
 EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
 void call_assignment_no_alias(Dst& dst, const Src& src)
@@ -942,7 +899,7 @@ struct Assignment<DstXprType, SrcXprType, Functor, EigenBase2EigenBase, Weak>
     src.evalTo(dst);
   }
 
-  // NOTE The following two functions are templated to avoid their instantiation if not needed
+  // NOTE The following two functions are templated to avoid their instanciation if not needed
   //      This is needed because some expressions supports evalTo only and/or have 'void' as scalar type.
   template<typename SrcScalarType>
   EIGEN_DEVICE_FUNC

@@ -112,7 +112,7 @@ template<> struct packet_traits<float>  : default_packet_traits
     // FIXME check the Has*
     HasSin  = 0,
     HasCos  = 0,
-    HasLog  = 1,
+    HasLog  = 0,
     HasExp  = 1,
     HasSqrt = 0
   };

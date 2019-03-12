@@ -18,7 +18,67 @@
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
 
+#ifdef _MSC_VER
+    #pragma warning(push,0)     // Eigen triggers lots of warnings
+#endif
+
+#define EIGEN_MPL2_ONLY     // Only use permissive licensed source files from Eigen
+#include "Eigen/Dense"
+#include "Eigen/Core"
+
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
+
 using namespace std;
+
+using namespace Eigen;
+
+template<>
+FgMatrixF
+operator*(const FgMatrixF & lhs,const FgMatrixF & rhs)
+{
+    if (lhs.ncols < 100)
+        return fgMatMul(lhs,rhs);
+    FGASSERT(lhs.ncols == rhs.nrows);
+    MatrixXf            l(lhs.nrows,lhs.ncols),
+                        r(rhs.nrows,rhs.ncols);
+    for (size_t rr=0; rr<lhs.nrows; ++rr)
+        for (size_t cc=0; cc<lhs.ncols; ++cc)
+            l(rr,cc) = lhs.rc(rr,cc);
+    for (size_t rr=0; rr<rhs.nrows; ++rr)
+        for (size_t cc=0; cc<rhs.ncols; ++cc)
+            r(rr,cc) = rhs.rc(rr,cc);
+    MatrixXf            m = l * r;
+    FgMatrixF           ret(lhs.nrows,rhs.ncols);
+    for (size_t rr=0; rr<ret.nrows; ++rr)
+        for (size_t cc=0; cc<ret.ncols; ++cc)
+            ret.rc(rr,cc) = m(rr,cc);
+    return ret;
+}
+
+template<>
+FgMatrixD
+operator*(const FgMatrixD & lhs,const FgMatrixD & rhs)
+{
+    if (lhs.ncols < 100)
+        return fgMatMul(lhs,rhs);
+    FGASSERT(lhs.ncols == rhs.nrows);
+    MatrixXd            l(lhs.nrows,lhs.ncols),
+                        r(rhs.nrows,rhs.ncols);
+    for (size_t rr=0; rr<lhs.nrows; ++rr)
+        for (size_t cc=0; cc<lhs.ncols; ++cc)
+            l(rr,cc) = lhs.rc(rr,cc);
+    for (size_t rr=0; rr<rhs.nrows; ++rr)
+        for (size_t cc=0; cc<rhs.ncols; ++cc)
+            r(rr,cc) = rhs.rc(rr,cc);
+    MatrixXd            m = l * r;
+    FgMatrixD           ret(lhs.nrows,rhs.ncols);
+    for (size_t rr=0; rr<ret.nrows; ++rr)
+        for (size_t cc=0; cc<ret.ncols; ++cc)
+            ret.rc(rr,cc) = m(rr,cc);
+    return ret;
+}
 
 double
 fgMatSumElems(const FgMatrixD & mat)
@@ -59,7 +119,8 @@ fgPartition(const FgMatrixD & m,size_t loSize)
     return ret;
 }
 
-static
+namespace {
+
 void
 testCorrect(const FgArgs &)
 {
@@ -69,7 +130,6 @@ testCorrect(const FgArgs &)
     FGASSERT(N == R);
 }
 
-static
 FgMatrixD
 tt0(const FgMatrixD & lhs,const FgMatrixD & rhs)
 {
@@ -88,7 +148,6 @@ tt0(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-static
 FgMatrixD
 tt1(const FgMatrixD & lhs,const FgMatrixD & rhs)
 {
@@ -111,7 +170,6 @@ tt1(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-static
 FgMatrixD
 tt2(const FgMatrixD & lhs,const FgMatrixD & rhs)
 {
@@ -142,7 +200,6 @@ tt2(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-static
 FgMatrixD
 tt3(const FgMatrixD & lhs,const FgMatrixD & rhs)
 {
@@ -186,9 +243,8 @@ tt3(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-static
 void
-testMul(function<FgMatrixD(const FgMatrixD &,const FgMatrixD &)> fn,const FgMatrixD & l,const FgMatrixD & r,const string & desc)
+showMul(function<FgMatrixD(const FgMatrixD &,const FgMatrixD &)> fn,const FgMatrixD & l,const FgMatrixD & r,const string & desc)
 {
     fgout << fgnl << desc << " : ";
     FgTimer         timer;
@@ -197,17 +253,56 @@ testMul(function<FgMatrixD(const FgMatrixD &,const FgMatrixD &)> fn,const FgMatr
     fgout << elapsed << " ms";
 }
 
-static
 void
-testTime(const FgArgs &)
+testMul(const FgArgs & args)
 {
-    uint            dim = 128;  // Must divide 8 for non-generalized tests
+    if (fgAutomatedTest(args))
+        return;
+    FgSyntax        syn(args,"<size>");
+    size_t          sz = fgFromStr<size_t>(syn.next()).val();
+    FgMatrixD       m0 = FgMatrixD::randNormal(sz,sz),
+                    m1 = FgMatrixD::randNormal(sz,sz);
+    FgTimer         timer;
+    FgMatrixD       m2 = m0 * m1;
+    size_t          time = timer.readMs();
+    fgout << sz << ": " << time << "ms";
+}
+
+void
+loopStructTime(const FgArgs & args)
+{
+    if (fgAutomatedTest(args))
+        return;
+    uint            dim = 1024;     // Must divide 8 for non-generalized tests
     FgMatrixD       m1 = FgMatrixD::randNormal(dim,dim),
                     m2 = FgMatrixD::randNormal(dim,dim);
-    testMul(tt0,m1,m2,"1 sub-loop");
-    testMul(tt1,m1,m2,"3 sub-loops");
-    testMul(tt2,m1,m2,"1 sub-loop generalized");
-    testMul(tt3,m1,m2,"3 sub-loops generalized");
+    showMul(tt0,m1,m2,"1 sub-loop");
+    showMul(tt1,m1,m2,"3 sub-loops");
+    showMul(tt2,m1,m2,"1 sub-loop generalized");
+    showMul(tt3,m1,m2,"3 sub-loops generalized");
+}
+
+void
+eigenTest(const FgArgs & args)
+{
+    if (fgAutomatedTest(args))
+        return;
+    FgSyntax            syn(args,"<size>");
+    size_t              sz = fgFromStr<size_t>(syn.next()).val();
+    MatrixXd            l(sz,sz),
+                        r(sz,sz);
+    for (size_t rr=0; rr<sz; ++rr) {
+        for (size_t cc=0; cc<sz; ++cc) {
+            l(rr,cc) = fgRand();
+            r(rr,cc) = fgRand();
+        }
+    }
+    {
+        FgTimeScope     ts("Eigen mat mul " + fgToStr(sz));
+        MatrixXd        m = l * r;
+    }
+}
+
 }
 
 void
@@ -215,9 +310,8 @@ fgMatrixVTest(const FgArgs & args)
 {
     vector<FgCmd>   cmds;
     cmds.push_back(FgCmd(testCorrect,"correct"));
-#ifndef _DEBUG          // Too slow for debug
-    FGADDCMD1(fgMatrixEigenTest,"eigen");
-#endif
-    cmds.push_back(FgCmd(testTime,"time"));
+    cmds.push_back(FgCmd(eigenTest,"tem","Time eigen mat mul"));
+    cmds.push_back(FgCmd(testMul,"tlm","Time loop mat mul"));
+    cmds.push_back(FgCmd(loopStructTime,"lst","Loop structure timing experiment"));
     fgMenu(args,cmds,true);
 }

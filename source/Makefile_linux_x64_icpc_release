@@ -1,6 +1,8 @@
 CC = icc
 CXX = icpc
 LINK = icpc
+AR = ar
+RANLIB = ranlib
 CFLAGS = -m64 -DNDEBUG -diag-disable=11074,11076 -Ofast -xavx -fPIC
 CCFLAGS = $(CFLAGS)
 CXXFLAGS = $(CFLAGS) -std=c++11

@@ -36,10 +36,10 @@ fgCmdBaseTests()
     FGADDCMD1(fgGeometryTest,"geometry");
     FGADDCMD1(fgGridTrianglesTest,"gridTriangles");
     FGADDCMD1(fgImageTest,"image");
-    FGADDCMD1(fgMatrixSolverTest,"matrixSolver");
+    FGADDCMD(fgMatrixSolverTest,"matSol","Matrix Solver");
     FGADDCMD1(fgMathTest,"math");
-    FGADDCMD1(fgMatrixCTest,"matrixC");
-    FGADDCMD1(fgMatrixVTest,"matrixV");
+    FGADDCMD(fgMatrixCTest,"matC","MatrixC");
+    FGADDCMD(fgMatrixVTest,"matV","MatrixV");
     FGADDCMD1(fgMetaFormatTest,"metaFormat");
     FGADDCMD1(fgMorphTest,"morph");
     FGADDCMD1(fgPathTest,"path");

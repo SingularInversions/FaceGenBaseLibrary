@@ -29,7 +29,12 @@ T generic_fast_tanh_float(const T& a_x)
   // this range is +/-1.0f in single-precision.
   const T plus_9 = pset1<T>(9.f);
   const T minus_9 = pset1<T>(-9.f);
-  const T x = pmax(pmin(a_x, plus_9), minus_9);
+  // NOTE GCC prior to 6.3 might improperly optimize this max/min
+  //      step such that if a_x is nan, x will be either 9 or -9,
+  //      and tanh will return 1 or -1 instead of nan.
+  //      This is supposed to be fixed in gcc6.3,
+  //      see: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=72867
+  const T x = pmax(minus_9,pmin(plus_9,a_x));
   // The monomial coefficients of the numerator polynomial (odd).
   const T alpha_1 = pset1<T>(4.89352455891786e-03f);
   const T alpha_3 = pset1<T>(6.37261928875436e-04f);
@@ -67,7 +72,7 @@ T generic_fast_tanh_float(const T& a_x)
 }
 
 template<typename RealScalar>
-EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+EIGEN_STRONG_INLINE
 RealScalar positive_real_hypot(const RealScalar& x, const RealScalar& y)
 {
   EIGEN_USING_STD_MATH(sqrt);
@@ -82,8 +87,7 @@ template<typename Scalar>
 struct hypot_impl
 {
   typedef typename NumTraits<Scalar>::Real RealScalar;
-  static EIGEN_DEVICE_FUNC
-  inline RealScalar run(const Scalar& x, const Scalar& y)
+  static inline RealScalar run(const Scalar& x, const Scalar& y)
   {
     EIGEN_USING_STD_MATH(abs);
     return positive_real_hypot<RealScalar>(abs(x), abs(y));

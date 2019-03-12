@@ -414,7 +414,7 @@ std::ostream& operator<<(std::ostream& ss,const FgMatrixV<T> & mm)
 
 template<class T>
 FgMatrixV<T>
-operator*(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
+fgMatMul(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
 {
     // Block sub-loop cache optimization - no multithreading or explicit SIMD.
     // Use eigen instead if speed is important:
@@ -457,6 +457,21 @@ operator*(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
     }
     return mat;
 }
+
+template<class T>
+inline FgMatrixV<T>
+operator*(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
+{return fgMatMul(lhs,rhs); }
+
+// Specializations for float and double use Eigen library when matrix is large enough to be worth
+// copying over:
+template<>
+FgMatrixF
+operator*(const FgMatrixF & lhs,const FgMatrixF & rhs);
+
+template<>
+FgMatrixD
+operator*(const FgMatrixD & lhs,const FgMatrixD & rhs);
 
 template<class T>
 FgMatrixV<T>
@@ -800,6 +815,27 @@ fgMatrixToVecVec(const FgMatrixV<T> & v)
     for (size_t rr=0; rr<ret.size(); ++rr)
         ret[rr] = v.rowData(uint(rr));
     return ret;
+}
+
+template<class T>
+T
+fgMag(const FgMatrixV<T> & mat)
+{return mat.mag(); }
+
+template<class T>
+T
+fgOffDiagonalRelMag(const FgMatrixV<T> & mat)
+{
+    FGASSERT(mat.ncols == mat.nrows);
+    T       sz = T(mat.ncols),
+            diag = T(0),
+            offd = T(0);
+    for (size_t rr=0; rr<sz; ++rr) {
+        diag += fgMag(mat.rc(rr,rr));
+        for (size_t cc=rr+1; cc<sz; ++cc)
+            offd += fgMag(mat.rc(rr,cc)) + fgMag(mat.rc(cc,rr));
+    }
+    return offd * sz / (diag * sz * (sz-1));
 }
 
 #endif

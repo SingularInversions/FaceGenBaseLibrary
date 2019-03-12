@@ -85,6 +85,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -107,6 +108,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -128,6 +130,7 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -152,60 +155,61 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\codecvt_error_category.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\operations.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\path.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\path_traits.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\portability.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\unique_path.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\utf8_codecvt_facet.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\windows_file_codecvt.cpp"  />
-    <ClInclude Include="..\boost_1_67_0\libs\filesystem\src\windows_file_codecvt.hpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\archive_exception.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_archive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_iarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_iserializer.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_oarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_oserializer.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_pointer_iserializer.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_pointer_oserializer.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_serializer_map.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_iprimitive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_oprimitive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_wiprimitive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_woprimitive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_xml_archive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_iarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_oarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_wiarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_woarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\codecvt_null.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info_no_rtti.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info_typeid.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\polymorphic_iarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\polymorphic_oarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\stl_port.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_iarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_oarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_wiarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_woarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\utf8_codecvt_facet2.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\void_cast.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_archive_exception.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_grammar.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_iarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_oarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_wgrammar.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_wiarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_woarchive.cpp"  />
-    <ClCompile Include="..\boost_1_67_0\libs\system\src\error_code.cpp"  />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\codecvt_error_category.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\operations.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\path.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\path_traits.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\portability.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\unique_path.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\utf8_codecvt_facet.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\filesystem\src\windows_file_codecvt.cpp" />
+    <ClInclude Include="..\boost_1_67_0\libs\filesystem\src\windows_file_codecvt.hpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\archive_exception.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_archive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_iserializer.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_oserializer.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_pointer_iserializer.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_pointer_oserializer.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_serializer_map.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_iprimitive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_oprimitive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_wiprimitive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_text_woprimitive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\basic_xml_archive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\binary_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\codecvt_null.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info_no_rtti.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\extended_type_info_typeid.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\polymorphic_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\polymorphic_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\stl_port.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\text_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\utf8_codecvt_facet2.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\void_cast.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_archive_exception.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_grammar.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_wgrammar.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\serialization\src\xml_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_67_0\libs\system\src\error_code.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
