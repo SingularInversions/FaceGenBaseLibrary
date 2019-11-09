@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{E9E1D804-F35C-138E-F54C-F085C7DDE6AF}</ProjectGuid>
+    <ProjectGuid>{6904AE47-51E0-BEED-2B13-288A79237C3D}</ProjectGuid>
     <RootNamespace>LibFgWin</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

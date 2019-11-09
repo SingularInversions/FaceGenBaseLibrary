@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{2F64C553-6CBC-1D2C-DE00-73BCA29D1223}</ProjectGuid>
+    <ProjectGuid>{0F8FAE76-1CBC-C2CA-86E2-9D1CACEB2F97}</ProjectGuid>
     <RootNamespace>LibTpBoost</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

@@ -507,14 +507,12 @@ fgConsVs201x(const FgConsSolution & sln)
     bool                changed = false;
     for (const FgConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
-            changed = writeVcxproj(sln,proj,nameToGuid,13) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,15) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,19) || changed;
         }
     }
     // This codebase uses C++11 which is only supported by VS 2013 and later:
-    changed = writeSln(sln,merkle,nameToGuid,13) || changed;
     changed = writeSln(sln,merkle,nameToGuid,15) || changed;
     changed = writeSln(sln,merkle,nameToGuid,17) || changed;
     changed = writeSln(sln,merkle,nameToGuid,19) || changed;

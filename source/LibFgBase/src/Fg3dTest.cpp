@@ -171,14 +171,15 @@ fg3dTest(const CLArgs & args)
     cmds.push_back(Cmd(fgSave3dsTest,"3ds",".3DS file format export"));
     cmds.push_back(Cmd(fgSaveLwoTest,"lwo","Lightwve object file format export"));
     cmds.push_back(Cmd(fgSaveMaTest,"ma","Maya ASCII file format export"));
-    // Precision differences in float->string with other compilers cause differences:
-#if (_MSC_VER >= 1920)
-    cmds.push_back(Cmd(fgSaveDaeTest, "dae", "Collada DAE format export"));
-    cmds.push_back(Cmd(fgSaveFbxTest,"fbx",".FBX file format export"));
-    cmds.push_back(Cmd(fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"));
-    cmds.push_back(Cmd(fgSavePlyTest, "ply", ".PLY file format export"));
-    cmds.push_back(Cmd(fgSaveXsiTest, "xsi", ".XSI file format export"));
-#endif
+    // Precision differences in float->string causes endless problems not just in different compilers
+    // and configs, but even base lib vs main lib with same WTF:
+    if (fgOverwriteBaselines()) {
+        cmds.push_back(Cmd(fgSaveDaeTest, "dae", "Collada DAE format export"));
+        cmds.push_back(Cmd(fgSaveFbxTest, "fbx", ".FBX file format export"));
+        cmds.push_back(Cmd(fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"));
+        cmds.push_back(Cmd(fgSavePlyTest, "ply", ".PLY file format export"));
+        cmds.push_back(Cmd(fgSaveXsiTest, "xsi", ".XSI file format export"));
+    }
     fgMenu(args,cmds,true,false,true);
 }
 

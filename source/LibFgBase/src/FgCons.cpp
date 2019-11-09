@@ -302,7 +302,7 @@ fgGetConsData(FgConsType type)
     return ret;
 }
 
-// Create Visual Studio 201x solution & project files for given solution in current directory tree:
+// Create Visual Studio 2015/17/19 solution & project files for given solution in current directory tree:
 bool
 fgConsVs201x(const FgConsSolution & sln);
 

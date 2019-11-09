@@ -164,8 +164,8 @@ FgCompiler fgStrToCompiler(const string & str)
 FgCompilers
 fgBuildCompilers(FgBuildOS os)
 {
-    if (os == FgBuildOS::win)
-        return fgSvec(FgCompiler::vs19,FgCompiler::vs17,FgCompiler::vs15,FgCompiler::vs13);
+    if (os == FgBuildOS::win)   // No longer support vs13:
+        return fgSvec(FgCompiler::vs19,FgCompiler::vs17,FgCompiler::vs15);
     else if (os == FgBuildOS::linux)
         return fgSvec(FgCompiler::clang,FgCompiler::gcc,FgCompiler::icpc);
     else if (os == FgBuildOS::macos)

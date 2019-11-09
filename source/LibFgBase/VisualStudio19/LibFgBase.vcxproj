@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{5B961373-F4B8-DA15-075F-4A80089B758B}</ProjectGuid>
+    <ProjectGuid>{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
