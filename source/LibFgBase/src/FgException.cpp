@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Jan 27, 2007
+
 //
 
 #include "stdafx.h"
@@ -14,6 +13,8 @@
 #include "FgString.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 string
 FgException::Context::trans() const
@@ -36,19 +37,21 @@ FgException::Context::noTrans() const
 string
 FgException::tr_message() const
 {
-    FgStrs          strs;
+    Strings          strs;
     // Translate and reverse order so most proximal message comes first:
     for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
         strs.push_back(it->trans());
-    return fgCat(strs,"\n");
+    return cat(strs,"\n");
 }
 
 string
 FgException::no_tr_message() const
 {
-    FgStrs          strs;
+    Strings          strs;
     // Translate and reverse order so most proximal message comes first:
     for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
         strs.push_back(it->noTrans());
-    return fgCat(strs,"\n");
+    return cat(strs,"\n");
+}
+
 }

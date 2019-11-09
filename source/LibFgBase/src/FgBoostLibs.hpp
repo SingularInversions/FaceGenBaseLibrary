@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani, Andrew Beatty
-//
+
 // Only the 'libs' and 'boost' subdirectories actually used are included from boost
 // (which still adds up to quite a few due to dependencies).
 //
@@ -34,6 +33,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/item_version_type.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/array.hpp> 
 #include <boost/serialization/map.hpp> 
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/throw_exception.hpp>

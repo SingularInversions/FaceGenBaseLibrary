@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani
-//
+
 
 #include "stdafx.h"
 #include "FgImageIo.hpp"
@@ -14,43 +13,45 @@
 
 using namespace std;
 
+namespace Fg {
+
 void
-fgLoadImgAnyFormat(const FgString & fname,FgImgUC & ret)
+imgLoadAnyFormat(const Ustring & fname,ImgUC & ret)
 {
-    FgImgRgbaUb     img = fgLoadImgAnyFormat(fname);
+    ImgC4UC     img = imgLoadAnyFormat(fname);
     ret.resize(img.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
         ret[ii] = img[ii].rec709();
 }
 
 void
-fgLoadImgAnyFormat(const FgString & fname,FgImgF & img)
+imgLoadAnyFormat(const Ustring & fname,ImgF & img)
 {
-    FgImgRgbaUb     tmp;
-    fgLoadImgAnyFormat(fname,tmp);
+    ImgC4UC     tmp;
+    imgLoadAnyFormat(fname,tmp);
     img.resize(tmp.dims());
     for (size_t ii=0; ii<tmp.numPixels(); ++ii)
         img.m_data[ii] = tmp.m_data[ii].rec709();
 }
 
 void
-fgSaveImgAnyFormat(const FgString & fname,const FgImgUC & img)
+imgSaveAnyFormat(const Ustring & fname,const ImgUC & img)
 {
-    FgImgRgbaUb         tmp;
-    fgImgConvert(img,tmp);
-    fgSaveImgAnyFormat(fname,tmp);
+    ImgC4UC         tmp;
+    imgConvert_(img,tmp);
+    imgSaveAnyFormat(fname,tmp);
 }
 
 vector<string>
-fgImgCommonFormats()
+imgFileExtensions()
 {
     return fgSvec<string>("png","jpg","jpeg","bmp","tga");
 }
 
 string
-fgImgCommonFormatsDescription()
+imgFileExtensionsDescription()
 {
-    vector<string>  cf = fgImgCommonFormats();
+    vector<string>  cf = imgFileExtensions();
     string  retval("(");
     retval += cf[0];
     for (size_t ii=1; ii<cf.size(); ++ii)
@@ -59,43 +60,45 @@ fgImgCommonFormatsDescription()
 }
 
 bool
-fgIsImgFilename(const FgString & fname)
+hasImgExtension(const Ustring & fname)
 {
     string          ext = fgToLower(fgPathToExt(fname).m_str);
-    return fgContains(fgImgCommonFormats(),ext);
+    return fgContains(imgFileExtensions(),ext);
 }
 
 std::vector<std::string>
-fgFindImgFiles(const FgString & baseName)
+imgFindFiles(const Ustring & baseName)
 {
     vector<string>      ret,
-                        cifs = fgImgCommonFormats();
+                        cifs = imgFileExtensions();
     for (size_t ii=0; ii<cifs.size(); ++ii)
-        if (fgFileReadable(baseName+"."+cifs[ii]))
+        if (fileReadable(baseName+"."+cifs[ii]))
             ret.push_back(cifs[ii]);
     return ret;
 }
 
 bool
-fgImgFindLoadAnyFormat(const FgString & baseName,FgImgRgbaUb & img)
+imgFindLoadAnyFormat(const Ustring & baseName,ImgC4UC & img)
 {
-    vector<string>  exts = fgFindImgFiles(baseName);
+    vector<string>  exts = imgFindFiles(baseName);
     if (exts.empty())
         return false;
-    FgString        fname = baseName + "." + exts[0];
+    Ustring        fname = baseName + "." + exts[0];
     if (exts.size() > 1)
         fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
-    fgLoadImgAnyFormat(fname,img);
+    imgLoadAnyFormat(fname,img);
     return true;
 }
 
 void
-fgImgTestWrite(const FgArgs & args)
+fgImgTestWrite(const CLArgs & args)
 {
     FGTESTDIR
     char32_t        ch = 0x00004EE5;            // A Chinese character
-    FgString        chinese(ch);
-    FgImgRgbaUb     redImg(16,16,FgRgbaUB(255,0,0,255));
-    fgSaveImgAnyFormat(chinese+"0.jpg",redImg);
-    fgSaveImgAnyFormat(chinese+"0.png",redImg);
+    Ustring        chinese(ch);
+    ImgC4UC     redImg(16,16,RgbaUC(255,0,0,255));
+    imgSaveAnyFormat(chinese+"0.jpg",redImg);
+    imgSaveAnyFormat(chinese+"0.png",redImg);
+}
+
 }

@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     10.09.27
+
 //
 // Command to software-render meshes to image files.
 //
@@ -27,6 +26,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 namespace FgCmdRender {     // Avoid global namespace visibility of local types below
 
 struct  ModelFiles
@@ -40,13 +41,13 @@ struct  ModelFiles
 
 struct  Pose
 {
-    FgQuaternionD       rotateToHcs;
+    QuaternionD       rotateToHcs;
     // Euler angles applied in HCS in following order after 'rotateToHcs':
     double              rollRadians = 0.0;
     double              tiltRadians = 0.0;
     double              panRadians = 0.0;
     // Model translation parallel to image plane, relative to half max model bound:
-    FgVect2D            relTrans;
+    Vec2D            relTrans;
     // Scale relative to automatically determined size of object in image:
     double              relScale = 0.9;
     // Field of view of larger image dimension (degrees). Must be > 0 but can set as low as 0.0001
@@ -60,7 +61,7 @@ struct  RenderArgs
 {
     vector<ModelFiles>      models;
     Pose                    pose;
-    FgVect2UI               imagePixelSize = FgVect2UI(512,512);
+    Vec2UI               imagePixelSize = Vec2UI(512,512);
     FgRenderOptions         options;
 
     FG_SERIALIZE4(models,pose,imagePixelSize,options);
@@ -86,16 +87,16 @@ using namespace FgCmdRender;
    Command to render a mesh and colour map to an image.
  */
 void
-fgCmdRender(const FgArgs & args)
+fgCmdRender(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext1>])*\n"
         "    - Render specified meshes [with texture images] using default render arguments.\n"
         "    - Saves render arguments to <name>.xml and rendered image to <name>.png\n"
         "    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml\n"
         "    -l     - Load the object pose and camera intrinsics from the above files, "
                      "do not calculate from <name>.xml\n"
-        "    <ext1> - " + fgImgCommonFormatsDescription() + "\n"
+        "    <ext1> - " + imgFileExtensionsDescription() + "\n"
         "NOTES:\n"
         "    - If no mesh arguments are given, <name>.xml will be used for the arguments.\n"
         "ARGUMENTS XML:\n"
@@ -141,7 +142,7 @@ fgCmdRender(const FgArgs & args)
             //! Set up the default render options from the arguments:
             ModelFiles  mf;
             mf.triFilename = syntax.next();
-            if (syntax.more() && fgIsImgFilename(syntax.peekNext()))
+            if (syntax.more() && hasImgExtension(syntax.peekNext()))
                 mf.imgFilename = syntax.next();
             opts.rend.models.push_back(mf);
         }
@@ -158,21 +159,21 @@ fgCmdRender(const FgArgs & args)
     }
 
     //! Load data from files:
-    vector<Fg3dMesh>    meshes(opts.rend.models.size());
-    FgMat33F            rotMatrix = FgMat33F(opts.rend.pose.rotateToHcs.asMatrix());
+    vector<Mesh>    meshes(opts.rend.models.size());
+    Mat33F            rotMatrix = Mat33F(opts.rend.pose.rotateToHcs.asMatrix());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = opts.rend.models[ii];
-        Fg3dMesh &          mesh = meshes[ii];
-        mesh = fgLoadTri(mf.triFilename);
+        Mesh &          mesh = meshes[ii];
+        mesh = loadTri(mf.triFilename);
         if (!mf.imgFilename.empty())
-            fgLoadImgAnyFormat(FgString(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
+            imgLoadAnyFormat(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
         mesh.transform(rotMatrix);
         mesh.surfaces[0].material.shiny = mf.shiny;
     }
 
     //! Calculate view transforms:
-    FgMat32F            bounds = fgBounds(meshes);
-    Fg3dCameraParams    cps(fgF2D(bounds));
+    Mat32F            bounds = getBounds(meshes);
+    CameraParams    cps(fgF2D(bounds));
     cps.pose =
         fgRotateY(opts.rend.pose.panRadians) *
         fgRotateX(opts.rend.pose.tiltRadians) *
@@ -180,15 +181,15 @@ fgCmdRender(const FgArgs & args)
     cps.relTrans = opts.rend.pose.relTrans;
     cps.logRelScale = std::log(opts.rend.pose.relScale);
     cps.fovMaxDeg = opts.rend.pose.fovMaxDeg;
-    Fg3dCamera          cam;
-    FgAffine3F          mvm;
+    Camera          cam;
+    Affine3F        mvm;
     if (!viewLoad.empty()) {
         fgLoadXml(viewLoad+"_cam.xml",cam);
         fgLoadXml(viewLoad+"_pose.xml",mvm);
     }
     else {
         cam = cps.camera(opts.rend.imagePixelSize);
-        mvm = FgAffine3F(cam.modelview);
+        mvm = Affine3F(cam.modelview);
     }
     if (!viewSave.empty()) {
         fgSaveXml(viewSave+"_cam.xml",cam);
@@ -197,40 +198,40 @@ fgCmdRender(const FgArgs & args)
 
     //! Render:
     opts.rend.options.projSurfPoints = std::make_shared<FgProjSurfPoints>();    // Receive surf point projection data
-    FgTimer             timer;
-    FgImgRgbaUb         image = fgRenderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
+    FgTimer         timer;
+    ImgC4UC          image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
     fgout << fgnl << "Render time: " << timer.read() << "s ";
 
     //! Save results:
-    fgSaveImgAnyFormat(FgString(opts.outputFile),image);
+    imgSaveAnyFormat(Ustring(opts.outputFile),image);
     if (opts.saveSurfPointFile) {
-        FgOfstream      ofs(renderName+".csv");
+        Ofstream      ofs(renderName+".csv");
         for (const FgProjSurfPoint & psp : *opts.rend.options.projSurfPoints)
             ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
     }
 }
 
-FgCmd
+Cmd
 fgCmdRenderInfo()
-{return FgCmd(fgCmdRender,"render","Render TRI files with optional texture images to an image file"); }
+{return Cmd(fgCmdRender,"render","Render TRI files with optional texture images to an image file"); }
 
 static
 bool
-imgApproxEqual(const FgString & file0,const FgString & file1)
+imgApproxEqual(const Ustring & file0,const Ustring & file1)
 {
-    FgImgRgbaUb     img0 = fgLoadImgAnyFormat(file0),
-                    img1 = fgLoadImgAnyFormat(file1);
+    ImgC4UC     img0 = imgLoadAnyFormat(file0),
+                    img1 = imgLoadAnyFormat(file1);
     return fgImgApproxEqual(img0,img1,2);
 }
 
 void
-fgCmdRenderTest(const FgArgs & args)
+fgCmdRenderTest(const CLArgs & args)
 {
     FGTESTDIR
     fgTestCopy("base/Jane.tri");
     fgTestCopy("base/Jane.jpg");
     Options             opts;
-    opts.rend.imagePixelSize = FgVect2UI(120,160);
+    opts.rend.imagePixelSize = Vec2UI(120,160);
     opts.rend.pose.panRadians = fgDegToRad(55.0f);
     opts.outputFile = "render_test.png";
     opts.rend.options.renderSurfPoints = FgRenderSurfPoints::whenVisible;
@@ -240,10 +241,12 @@ fgCmdRenderTest(const FgArgs & args)
     mf.imgFilename = "Jane.jpg";
     opts.rend.models.push_back(mf);
     fgSaveXml("render_test.xml",opts);
-    fgCmdRender(fgSplitChar("render render_test"));
+    fgCmdRender(splitChar("render render_test"));
     fgRegressFileRel("render_test.png","base/test/",imgApproxEqual);
     // TODO: make a struct and serialize to XML so an approx comparison can be done (debug has precision diffs):
     if ((fgCurrentCompiler() == FgCompiler::vs15) && (fgCurrentBuildConfig() == "release")) {
         fgRegressFileRel("render_test.csv","base/test/");
     }
+}
+
 }

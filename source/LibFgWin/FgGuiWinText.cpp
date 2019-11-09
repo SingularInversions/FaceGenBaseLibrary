@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,40 +16,43 @@
 
 using namespace std;
 
-struct  FgGuiWinText : public FgGuiOsBase
+namespace Fg {
+
+struct  GuiTextWin : public GuiBaseImpl
 {
-    FgGuiApiText        m_api;
+    GuiText             m_api;
     HWND                hwndText;
     HWND                hwndThis;
-    // Text in UTF-16 for Windows (UCS2 was only used prior to Windows2000):
-    wstring             m_content;  // Assigned in constructor and in updateIfChanged()
+    // Cache text in UTF-16 format for Windows (UCS2 was only used prior to Windows2000):
+    wstring             m_content;
+    DfgFPtr             m_updateFlag;   // Track changes in above
     // Assigned in WM_CREATE and updated in updateIfChanged(). The min height is calculated using
     // m_maxMinWid below, regardless of actual width, to avoid the complexity of adjusting
     // Y-min dynamically with window width:
-    FgVect2UI           m_minSize;
+    Vec2UI              m_minSize;
     // Long text will have a minimum width of at least the following:
-    static const uint   m_maxMinWid = 300;
+    static const uint   m_maxMinWid = 350;
     static const uint   m_minHgt = 16;
 
-    FgGuiWinText(const FgGuiApiText & api) :
+    GuiTextWin(const GuiText & api) :
         m_api(api),
         // Default to something before we've had a chance to work out real vals:
         m_minSize(m_maxMinWid,m_minHgt)
     {
         static HMODULE hmRichEdit = LoadLibrary(L"RichEd20.dll");
-        const FgString &        text = g_gg.getVal(m_api.content);
-        g_gg.dg.update(m_api.updateFlagIdx);    // No need for redundant update
+        const Ustring &        text = m_api.content.cref();
         m_content = text.as_wstring();
+        m_updateFlag = makeUpdateFlag(m_api.content);
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
-//fgout << fgnl << "FgGuiWinText::create" << fgpush;
-        FgCreateChild   cc;
+//fgout << fgnl << "GuiTextWin::create" << fgpush;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -60,18 +63,18 @@ struct  FgGuiWinText : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
         FGASSERT(m_minSize.cmpntsProduct() > 0);   // This shouldn't be called before it's been assigned.
         return m_minSize;
     }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {
         bool        horiz = (m_api.wantStretch[0] || (m_minSize[0] > m_maxMinWid));
-        return FgVect2B(horiz,m_api.wantStretch[1]);
+        return Vec2B(horiz,m_api.wantStretch[1]);
     }
     
     void
@@ -79,7 +82,7 @@ struct  FgGuiWinText : public FgGuiOsBase
     {
         SetWindowTextW(hwndText,m_content.c_str());     // Update text in window
         if (m_content.empty())      // Reserve a min lines of max min width:
-            m_minSize = FgVect2UI(m_maxMinWid,m_minHgt*m_api.minHeight);
+            m_minSize = Vec2UI(m_maxMinWid,m_minHgt*m_api.minHeight);
         else {                      // Calculate updated text dimensions:
             // Get single line height (16 on my PC):
             RECT        rs = {0,0,0,0};
@@ -113,8 +116,8 @@ struct  FgGuiWinText : public FgGuiOsBase
     virtual void
     updateIfChanged()
     {
-        if (g_gg.dg.update(m_api.updateFlagIdx)) {
-            const FgString &        text = g_gg.getVal(m_api.content);
+        if (m_updateFlag->checkUpdate()) {
+            const Ustring &        text = m_api.content.cref();
             m_content = text.as_wstring(); 
             updateText();
             // TODO: if updateText() changes m_minSize we need to return a value (recursively)
@@ -124,7 +127,7 @@ struct  FgGuiWinText : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE); }
 
     virtual void
@@ -138,7 +141,7 @@ struct  FgGuiWinText : public FgGuiOsBase
         {
             case WM_CREATE:
             {
-//fgout << fgnl << "FgGuiWinText::WM_CREATE";
+//fgout << fgnl << "GuiTextWin::WM_CREATE";
                 hwndThis = hwnd;
                 wstring         winClass;
                 if (m_api.rich)
@@ -153,7 +156,7 @@ struct  FgGuiWinText : public FgGuiOsBase
                         0,0,0,0,
                         hwnd,
                         HMENU(1),           // Assign identifier 1 to this child window
-                        s_fgGuiWin.hinst,
+                        s_guiWin.hinst,
                         NULL);              // No WM_CREATE parameter
                 FGASSERTWIN(hwndText != 0);
                 SendMessage(hwndText,EM_SETBKGNDCOLOR,0,GetSysColor(COLOR_3DFACE));
@@ -198,6 +201,8 @@ struct  FgGuiWinText : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiText & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinText(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiText & def)
+{return GuiImplPtr(new GuiTextWin(def)); }
+
+}

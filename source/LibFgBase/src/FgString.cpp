@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani
-//
+
 
 #include "stdafx.h"
 
@@ -15,6 +14,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 u32string
 fgToUtf32(const string & str)
 {
@@ -24,7 +25,7 @@ fgToUtf32(const string & str)
         return u32string();
     wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
     auto            asInt = convert.from_bytes(str);
-    return u32string(reinterpret_cast<char32_t const *>(asInt.data()),asInt.length());
+    return u32string(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
 #else
     wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
     return convert.from_bytes(str);
@@ -70,35 +71,35 @@ fgToUtf8(const std::wstring & utf16)
     return converter.to_bytes(utf16);
 }
 
-FgString::FgString(const wchar_t * s) : m_str(fgToUtf8(wstring(s)))
+Ustring::Ustring(const wchar_t * s) : m_str(fgToUtf8(wstring(s)))
 {}
 
-FgString::FgString(const wstring & s) : m_str(fgToUtf8(s))
+Ustring::Ustring(const wstring & s) : m_str(fgToUtf8(s))
 {}
 
 wstring
-FgString::as_wstring() const
+Ustring::as_wstring() const
 {
     return fgToUtf16(m_str);
 }
 
 #endif
 
-FgString&
-FgString::operator+=(const FgString & s)
+Ustring&
+Ustring::operator+=(const Ustring & s)
 {
     m_str += s.m_str;
     return *this;
 }
 
-FgString
-FgString::operator+(const FgString& s) const
+Ustring
+Ustring::operator+(const Ustring& s) const
 {
-    return FgString(m_str+s.m_str);
+    return Ustring(m_str+s.m_str);
 }
 
-FgString
-FgString::operator+(char c) const
+Ustring
+Ustring::operator+(char c) const
 {
     string      ret = m_str;
     FGASSERT(uchar(c) < 128);
@@ -107,19 +108,19 @@ FgString::operator+(char c) const
 }
 
 uint32
-FgString::operator[](size_t idx) const
+Ustring::operator[](size_t idx) const
 {
     return uint32(fgToUtf32(m_str).at(idx));
 }
 
 size_t
-FgString::length() const
+Ustring::size() const
 {
     return fgToUtf32(m_str).size();
 }
 
 bool
-FgString::is_ascii() const
+Ustring::is_ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
@@ -128,7 +129,7 @@ FgString::is_ascii() const
 }
 
 const string &
-FgString::ascii() const
+Ustring::ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
@@ -137,7 +138,7 @@ FgString::ascii() const
 }
 
 string
-FgString::as_ascii() const
+Ustring::as_ascii() const
 {
     u32string       str(as_utf32());
     string          ret;
@@ -146,8 +147,8 @@ FgString::as_ascii() const
     return ret;
 }
 
-FgString
-FgString::replace(char a, char b) const
+Ustring
+Ustring::replace(char a, char b) const
 {
     FGASSERT((uchar(a) < 128) && (uchar(b) < 128));
     u32string           str = fgToUtf32(m_str);
@@ -156,22 +157,22 @@ FgString::replace(char a, char b) const
     for (char32_t & c : str)
         if (c == a32)
             c = b32;
-    return FgString(str);
+    return Ustring(str);
 }
 
-FgStrings
-FgString::split(char ch) const
+Ustrings
+Ustring::split(char ch) const
 {
     FgStr32s            strs = fgSplit(fgToUtf32(m_str),char32_t(ch));
-    FgStrings           ret;
+    Ustrings           ret;
     ret.reserve(strs.size());
     for (const u32string & str : strs)
-        ret.push_back(FgString(str));
+        ret.push_back(Ustring(str));
     return ret;
 }
 
 bool
-FgString::beginsWith(const FgString & s) const
+Ustring::beginsWith(const Ustring & s) const
 {
     if(s.m_str.size() > m_str.size())
         return false;
@@ -180,11 +181,11 @@ FgString::beginsWith(const FgString & s) const
 
 // Can't put this inline without include file recursive dependency:
 bool
-FgString::endsWith(const FgString & str) const
+Ustring::endsWith(const Ustring & str) const
 {return fgEndsWith(as_utf32(),str.as_utf32()); }
 
-FgString
-FgString::toLower() const
+Ustring
+Ustring::toLower() const
 {
     u32string       tmp = as_utf32();
     for (size_t ii=0; ii<tmp.size(); ++ii) {
@@ -192,30 +193,30 @@ FgString::toLower() const
         if ((ch > 64) && (ch < 91))
             tmp[ii] = ch + 32;
     }
-    return FgString(tmp);
+    return Ustring(tmp);
 }
 
 std::ostream& 
-operator<<(std::ostream & os, const FgString & s)
+operator<<(std::ostream & os, const Ustring & s)
 {
     return os << s.m_str;
 }
 
 std::istream&
-operator>>(std::istream & is, FgString & s)
+operator>>(std::istream & is, Ustring & s)
 {
     return is >> s.m_str;
 }
 
-FgString
+Ustring
 fgTr(const string & msg)
 {
     // Just a stub for now:
     return msg;
 }
 
-FgString
-fgRemoveChars(const FgString & str,uchar chr)
+Ustring
+fgRemoveChars(const Ustring & str,uchar chr)
 {
     FGASSERT(chr < 128);
     u32string       s32 = str.as_utf32(),
@@ -223,11 +224,11 @@ fgRemoveChars(const FgString & str,uchar chr)
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (s32[ii] != chr)
             r32.push_back(s32[ii]);
-    return FgString(r32);
+    return Ustring(r32);
 }
 
-FgString
-fgRemoveChars(const FgString & str,FgString chrs)
+Ustring
+fgRemoveChars(const Ustring & str,Ustring chrs)
 {
     u32string       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
@@ -235,11 +236,11 @@ fgRemoveChars(const FgString & str,FgString chrs)
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (!fgContains(c32,s32[ii]))
             r32.push_back(s32[ii]);
-    return FgString(r32);
+    return Ustring(r32);
 }
 
 bool
-fgGlobMatch(const FgString & globStr,const FgString & str)
+fgGlobMatch(const Ustring & globStr,const Ustring & str)
 {
     if (globStr.empty())
         return str.empty();
@@ -254,20 +255,30 @@ fgGlobMatch(const FgString & globStr,const FgString & str)
     return (str == globStr);
 }
 
-FgString
-fgSubstring(const FgString & str,size_t start,size_t size)
+Ustring
+fgSubstring(const Ustring & str,size_t start,size_t size)
 {
-    FgString        ret;
+    Ustring        ret;
     u32string       s = str.as_utf32();
     s = fgSubstr(s,start,size);
-    ret = FgString(s);
+    ret = Ustring(s);
     return ret;
 }
 
-FgString
-fgCat(const FgStrings & strings,const FgString & separator)
+Ustring
+fgRest(Ustring const & str,size_t start)
 {
-    FgString        ret;
+    Ustring        ret;
+    u32string       s = str.as_utf32();
+    s = fgRest(s,start);
+    ret = Ustring(s);
+    return ret;
+}
+
+Ustring
+cat(const Ustrings & strings,const Ustring & separator)
+{
+    Ustring        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
         ret += strings[ii];
         if (ii < strings.size()-1)
@@ -277,7 +288,7 @@ fgCat(const FgStrings & strings,const FgString & separator)
 }
 
 string
-fgToVariableName(const FgString & str)
+fgToVariableName(const Ustring & str)
 {
     string          ret;
     u32string    str32 = str.as_utf32();
@@ -293,4 +304,21 @@ fgToVariableName(const FgString & str)
             ret += '_';
     }
     return ret;
+}
+
+Ustring
+replaceCharWithString(Ustring const & in,char32_t from,Ustring const to)
+{
+    u32string       in32 = in.as_utf32(),
+                    to32 = to.as_utf32(),
+                    out;
+    for (char32_t ch : in32) {
+        if (ch == from)
+            out += to32;
+        else
+            out += ch;
+    }
+    return Ustring(out);
+}
+
 }

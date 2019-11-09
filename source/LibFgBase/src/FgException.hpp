@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 14, 2005
+
 //
 //      USE:
 //
@@ -34,6 +33,8 @@
 #define FGEXCEPTION_HPP
 
 #include "FgStdLibs.hpp"
+
+namespace Fg {
 
 //! The FaceGen API exception type.
 //! All exceptions raised by FG code are of this type, inherit from this type,
@@ -134,5 +135,7 @@ inline void fgThrow(const std::string & msg)
 #else
 #define FG_UNREACHABLE_RETURN(T)
 #endif
+
+}
 
 #endif      // #ifndef FGEXCEPTION_HPP

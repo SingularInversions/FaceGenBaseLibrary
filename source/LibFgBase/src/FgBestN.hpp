@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 9, 2010
+
 //
 // Keep up to N best key/val pairs in sorted order from largest to smallest.
 
@@ -13,6 +12,8 @@
 
 #include "FgStdLibs.hpp"
 #include "FgOpt.hpp"
+
+namespace Fg {
 
 template<class Key,class Val,uint MaxNum>
 struct      FgBestN
@@ -54,10 +55,10 @@ struct      FgBestN
     operator[](uint idx) const
     {return m_best[idx]; }
 
-    vector<Val>
+    Svec<Val>
     vals() const
     {
-        vector<Val>     ret(m_num);
+        Svec<Val>     ret(m_num);
         for (uint ii=0; ii<m_num; ++ii)
             ret[ii] = m_best[ii].second;
         return ret;
@@ -69,15 +70,10 @@ struct      FgBestN
 template<class Key,class Val>
 class   FgMin
 {
-    Key     m_key;
-    Val     m_val;
+    Key     m_key = std::numeric_limits<Key>::max();
+    Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
 
 public:
-    FgMin() :
-        m_key(std::numeric_limits<Key>::max()), 
-        m_val(fgDefaultVal<Val>())          // Avoid use before set warnings
-    {} 
-
     void
     update(Key key,const Val & val)
     {
@@ -102,15 +98,10 @@ public:
 template<class Key,class Val>
 class   FgMax
 {
-    Key     m_key;
-    Val     m_val;
+    Key     m_key = std::numeric_limits<Key>::lowest();
+    Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
 
 public:
-    FgMax() :
-        m_key(std::numeric_limits<Key>::min()),
-        m_val(fgDefaultVal<Val>())          // Avoid use before set warnings
-    {}
-
     void
     update(Key key,const Val & val)
     {
@@ -122,7 +113,7 @@ public:
 
     bool
     valid() const
-    {return (m_key != std::numeric_limits<Key>::min()); }
+    {return (m_key != std::numeric_limits<Key>::lowest()); }
 
     const Val &
     val()
@@ -131,5 +122,7 @@ public:
         return m_val;
     }
 };
+
+}
 
 #endif

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 21, 2005
+
 //
 
 #include "stdafx.h"
@@ -18,10 +17,12 @@
 
 using namespace std;
 
-FgStrs
+namespace Fg {
+
+Strings
 fgTokenize(const string & str)
 {
-    FgStrs      ret;
+    Strings      ret;
     string      acc;
     for (char c : str) {
         if (fgIsWhitespaceOrInvalid(c)) {
@@ -56,19 +57,12 @@ isCrOrLf(char c)
     return ((c == 0x0A) || (c == 0x0D));    // LF or CR resp.
 }
 
-FgStrs
-fgSplitLines(const string & src,bool backslashContinuation)
+Strings
+splitLines(string const & src)
 {
-    FgStrs          ret;
+    Strings         ret;
     string          acc;
     for (size_t ii=0; ii<src.size(); ++ii) {
-        if (backslashContinuation && (src[ii] == '\\')) {
-            if ((ii+1 < src.size()) && (isCrOrLf(src[ii+1]))) {
-                ++ii;
-                while ((ii+1 < src.size()) && (isCrOrLf(src[ii])))
-                    ++ii;
-            }
-        }
         if (isCrOrLf(src[ii])) {
             if (!acc.empty()) {
                 ret.push_back(acc);
@@ -84,7 +78,7 @@ fgSplitLines(const string & src,bool backslashContinuation)
 }
 
 FgStr32s
-fgSplitLines(const u32string & src,bool incEmpty)
+splitLines(const u32string & src,bool incEmpty)
 {
     FgStr32s            ret;
     size_t              base = 0;
@@ -98,14 +92,14 @@ fgSplitLines(const u32string & src,bool incEmpty)
     return ret;
 }
 
-FgStrings
+Ustrings
 fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
 {
-    FgStrings               ret;
-    FgStr32s       res = fgSplitLines(FgString(utf8).as_utf32(),includeEmptyLines);
+    Ustrings               ret;
+    FgStr32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
-        ret[ii] = FgString(res[ii]);
+        ret[ii] = Ustring(res[ii]);
     return ret;
 }
 
@@ -159,12 +153,12 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
 }
 
 static
-FgStrs
+Strings
 csvGetLine(
     const u32string & in,
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
-    FgStrs      ret;
+    Strings      ret;
     if (fgIsCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
         consumeCrLf(in,idx);
         return ret;
@@ -186,14 +180,14 @@ csvGetLine(
     }
 }
 
-FgStrss
-fgLoadCsv(const FgString & fname,size_t fieldsPerLine)
+Stringss
+fgLoadCsv(const Ustring & fname,size_t fieldsPerLine)
 {
-    FgStrss         ret;
+    Stringss         ret;
     u32string       data = fgToUtf32(fgSlurp(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
-        FgStrs      line = csvGetLine(data,idx);
+        Strings      line = csvGetLine(data,idx);
         if (!line.empty()) {                    // Ignore empty lines
             if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
                 fgThrow("CSV file contains a line with incorrect field width",fname);
@@ -203,15 +197,15 @@ fgLoadCsv(const FgString & fname,size_t fieldsPerLine)
     return ret;
 }
 
-map<string,FgStrs>
-fgLoadCsvToMap(const FgString & fname,size_t keyIdx,size_t fieldsPerLine)
+map<string,Strings>
+fgLoadCsvToMap(const Ustring & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
-    map<string,FgStrs>  ret;
+    map<string,Strings>  ret;
     u32string           data = fgToUtf32(fgSlurp(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
-        FgStrs          line = csvGetLine(data,idx);
+        Strings          line = csvGetLine(data,idx);
         if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
             fgThrow("CSV file contains a line with incorrect field width",fname);
         const string &  key = line[keyIdx];
@@ -241,10 +235,10 @@ csvField(const string & data)
 }
 
 void
-fgSaveCsv(const FgString & fname,const FgStrss & csvLines)
+fgSaveCsv(const Ustring & fname,const Stringss & csvLines)
 {
-    FgOfstream      ofs(fname);
-    for (FgStrs line : csvLines) {
+    Ofstream      ofs(fname);
+    for (Strings line : csvLines) {
         if (!line.empty()) {
             ofs << csvField(line[0]);
             for (size_t ii=1; ii<line.size(); ++ii) {
@@ -255,10 +249,10 @@ fgSaveCsv(const FgString & fname,const FgStrss & csvLines)
     }
 }
 
-FgStrs
-fgSplitChar(const string & str,char ch,bool ie)
+Strings
+splitChar(const string & str,char ch,bool ie)
 {
-    FgStrs  ret;
+    Strings         ret;
     string          curr;
     for (size_t ii=0; ii<str.size(); ++ii) {
         if (str[ii] == ch) {
@@ -275,10 +269,10 @@ fgSplitChar(const string & str,char ch,bool ie)
     return ret;
 }
 
-FgStrs
+Strings
 fgWhiteBreak(const string & str)
 {
-    FgStrs  retval;
+    Strings  retval;
     bool            symbolFlag = false,
                     quoteFlag = false;
     string          currSymbol;
@@ -325,12 +319,12 @@ fgWhiteBreak(const string & str)
 }
 
 void
-fgTestmLoadCsv(const FgArgs & args)
+fgTestmLoadCsv(const CLArgs & args)
 {
-    FgSyntax        syntax(args,"<file>.csv");
-    FgStrss         data = fgLoadCsv(syntax.next());
+    Syntax        syntax(args,"<file>.csv");
+    Stringss         data = fgLoadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
-        const FgStrs &  fields = data[rr];
+        const Strings &  fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
         for (size_t ff=0; ff<fields.size(); ++ff)
             fgout << fgnl << "Field " << ff << ": " << fields[ff];
@@ -412,4 +406,6 @@ fgReplace(const u32string & str,char32_t a,char32_t b)
         else
             ret.push_back(c);
     return ret;
+}
+
 }

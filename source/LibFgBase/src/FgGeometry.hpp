@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Sept 20, 2005
+
 //
 
 #ifndef FGGEOMETRY_HPP
@@ -13,9 +12,11 @@
 #include "FgStdLibs.hpp"
 #include "FgQuaternion.hpp"
 
+namespace Fg {
+
 struct  FgVecMag
 {
-    FgVect3D    vec;
+    Vec3D    vec;
     double      mag;    // Squared magnitude of vec. Initialized to invalid.
 
     FgVecMag() : mag(std::numeric_limits<double>::max()) {}
@@ -26,68 +27,64 @@ struct  FgVecMag
 
 // Returns closest point in given line segment from origin:
 FgVecMag
-fgClosestPointInSegment(FgVect3D p0,FgVect3D p1);
+fgClosestPointInSegment(Vec3D p0,Vec3D p1);
 
 // Returns delta from point to tri:
 FgVecMag
-fgClosestPointInTri(FgVect3D point,FgVect3D vert0,FgVect3D vert1,FgVect3D vert2);
+fgClosestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
 
 // Returns the barycentric coord of point relative to triangle.
 // If no valid value, triangle is degenerate.
 // Point is in triangle if all coordinates are positive:
-FgOpt<FgVect3D>
-fgBarycentricCoords(FgVect2D point,FgVect2D v0,FgVect2D v1,FgVect2D v2);
+Opt<Vec3D>
+fgBarycentricCoords(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2);
 
 // Returns the barycentric coord of a point relative to a triangle in 3D.
 // Only works for planar points.
 // Returns invalid if triangle degenerate.
-FgOpt<FgVect3D>
-fgBarycentricCoords(FgVect3D point,FgVect3D vert0,FgVect3D vert1,FgVect3D vert2);
+Opt<Vec3D>
+fgBarycentricCoords(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
 
 inline
-FgOpt<FgVect3D>
-fgBarycentricCoords(FgVect2F point,FgVect2F v0,FgVect2F v1,FgVect2F v2)
-{return fgBarycentricCoords(FgVect2D(point),FgVect2D(v0),FgVect2D(v1),FgVect2D(v2)); }
-
-// Return the position of the barycentric coordinate given the triangle indices and vertex list:
-inline
-FgVect3F
-fgBarycentricToPos(const FgVect3Fs & verts,FgVect3UI vertInds,FgVect3F baryCoord)
-{return (baryCoord[0]*verts[vertInds[0]] + baryCoord[1]*verts[vertInds[1]] + baryCoord[2]*verts[vertInds[2]]); }
+Opt<Vec3D>
+fgBarycentricCoords(Vec2F point,Vec2F v0,Vec2F v1,Vec2F v2)
+{return fgBarycentricCoords(Vec2D(point),Vec2D(v0),Vec2D(v1),Vec2D(v2)); }
 
 // Homogenous plane representation from 3 points on plane:
-FgVect4D
-fgPlaneH(FgVect3D p0,FgVect3D p1,FgVect3D p2);
+Vec4D
+fgPlaneH(Vec3D p0,Vec3D p1,Vec3D p2);
 
 // Returns the homogeneous coordinate of the intersection of a line through the origin with a plane.
 // The homogeneous component will be zero if there is no intersection. Otherwise, the dot product
 // of the intersection and the ray will determine the direction (along ray) to intersection.
-FgVect4D
+Vec4D
 fgLinePlaneIntersect(
-    FgVect3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
-    FgVect4D        plane);     // Homogenous representation
+    Vec3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
+    Vec4D        plane);     // Homogenous representation
 
 // Returns: 0: point not in triangle or degenerate triangle.
 //          1: point in triangle, CC winding
 //          -1: point in triangle, CW winding
 int
-fgPointInTriangle(FgVect2D pt,FgVect2D v0,FgVect2D v1,FgVect2D v2);
+fgPointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2);
 
 // Returns the intersection point of a line and a triangle, if it exists, in either direction:
-FgOpt<FgVect3D>
+Opt<Vec3D>
 fgLineTriIntersect(
-    FgVect3D        point,      // Point on line
-    FgVect3D        ray,        // Direction of ray emanating from point. Does not need to be normalized
-    FgVect3D        v0,         // Vertices of triangle
-    FgVect3D        v1,         // "
-    FgVect3D        v2);        // "
+    Vec3D        point,      // Point on line
+    Vec3D        ray,        // Direction of ray emanating from point. Does not need to be normalized
+    Vec3D        v0,         // Vertices of triangle
+    Vec3D        v1,         // "
+    Vec3D        v2);        // "
 
 inline
 double
-pointToPlaneDistSqr(FgVect3D pnt,FgVect4D planeH)
+pointToPlaneDistSqr(Vec3D pnt,Vec4D planeH)
 {
-    FgVect3D    planeN(planeH[0],planeH[1],planeH[2]);
-    return (fgSqr(fgDot(pnt,planeN) + planeH[3]) / planeN.mag());
+    Vec3D    planeN(planeH[0],planeH[1],planeH[2]);
+    return (sqr(dotProd(pnt,planeN) + planeH[3]) / planeN.mag());
+}
+
 }
 
 #endif

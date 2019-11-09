@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 31, 2017
+
 //
 // Implementation file to be included in OS-specific libraries
 
@@ -15,13 +14,15 @@
 
 using namespace boost::asio;
 
+namespace Fg {
+
 // TCP provides a full duplex stream but no mechanism for discrete messages (although each direction of
 // the stream can be closed separately) so we do our own 'framing' of messsages using a size-block format
 // in the functions below:
 
 static
 void
-sendFrame(ip::tcp::socket & sock,const string & msg)
+sendFrame(ip::tcp::socket & sock,const String & msg)
 {
     boost::system::error_code err;
     size_t              msgSz = msg.size();
@@ -34,7 +35,7 @@ sendFrame(ip::tcp::socket & sock,const string & msg)
 // Returns 'false' if connection closed by sender
 static
 bool
-recvFrame(ip::tcp::socket & sock,string & msg)
+recvFrame(ip::tcp::socket & sock,String & msg)
 {
     boost::system::error_code err;
     size_t              msgSz,
@@ -58,7 +59,7 @@ recvFrame(ip::tcp::socket & sock,string & msg)
 // The worker can receive and send messages in the same thread as the dispatcher won't send
 // another message until it receives its response:
 void
-fgClustWorker(FgFuncStr2Str handler,uint16 port)
+fgClustWorker(FgFnStr2Str handler,uint16 port)
 {
     io_service              ios;                    // Initialize networking functionality
     ip::tcp::endpoint       ep(ip::tcp::v4(),port);
@@ -67,17 +68,17 @@ fgClustWorker(FgFuncStr2Str handler,uint16 port)
     acc.accept(sock);
     boost::system::error_code err;
     for (;;) {
-        string              msg;
+        String              msg;
         if (!recvFrame(sock,msg))                   // Can block for a long time
             return;                                 // Connection closed, terminate
-        string              resp = handler(msg);    // Can take a long time before returning
+        String              resp = handler(msg);    // Can take a long time before returning
         sendFrame(sock,resp);
     }
 }
 
 // If an exception is thrown, store it's details in the message:
 void
-recvFrameThread(ip::tcp::socket & sock,string & msg)
+recvFrameThread(ip::tcp::socket & sock,String & msg)
 {
     bool    connectionOpen = true;
     try {
@@ -87,7 +88,7 @@ recvFrameThread(ip::tcp::socket & sock,string & msg)
         msg = e.tr_message();
     }
     catch(std::exception const & e) {
-        msg = string("Standard library exception\n")+e.what();
+        msg = String("Standard library exception\n")+e.what();
     }
     catch(...) {
         msg = "Unknown exception type";
@@ -101,9 +102,9 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
     typedef std::unique_ptr<ip::tcp::socket>    SockPtr;
 
     io_service              ios;
-    vector<SockPtr>         sockPtrs;
+    Svec<SockPtr>         sockPtrs;
 
-    FgClustDispatcherImpl(const FgStrs & hosts,const string & port)
+    FgClustDispatcherImpl(const Strings & hosts,const String & port)
     {
         sockPtrs.reserve(hosts.size());
         for (size_t hh=0; hh<hosts.size(); ++hh) {
@@ -124,14 +125,14 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
 
     virtual
     void
-    batchProcess(const FgStrs & msgsSend,FgStrs & msgsRecv) const
+    batchProcess(const Strings & msgsSend,Strings & msgsRecv) const
     {
         FGASSERT(msgsSend.size() == sockPtrs.size());
         msgsRecv.resize(msgsSend.size());
         // Start the receive threads before sending in case of long send and short return times.
         // Since workers will finish in different times, we cannot receive sequentially (not just due to
         // inefficiencies but also because input buffers could overflow) so each send is a thread:
-        vector<std::thread>     recvThreads;
+        Svec<std::thread>     recvThreads;
         recvThreads.reserve(msgsSend.size());
         for (size_t mm=0; mm<msgsSend.size(); ++mm)
             recvThreads.push_back(std::thread(recvFrameThread,
@@ -145,17 +146,19 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
         for (size_t mm=0; mm<recvThreads.size(); ++mm)
             recvThreads[mm].join();
         // Check for errors within the receive threads;
-        static string       hdrSer = "\26\0\\0\0\0\0\0\0serialization::archive";    // Character literals in octal
+        static String       hdrSer = "\26\0\\0\0\0\0\0\0serialization::archive";    // Character literals in octal
         for (size_t mm=0; mm<msgsRecv.size(); ++mm)
             if (!fgBeginsWith(msgsRecv[mm],hdrSer))
-                fgThrow("Cluster worker "+fgToStr(mm),msgsRecv[mm]);
+                fgThrow("Cluster worker "+toString(mm),msgsRecv[mm]);
     }
 };
 
 std::shared_ptr<FgClustDispatcher>
-fgClustDispatcher(const FgStrs & hostnames,uint16 port)
+fgClustDispatcher(const Strings & hostnames,uint16 port)
 {
-    return std::make_shared<FgClustDispatcherImpl>(hostnames,fgToStr(port));
+    return std::make_shared<FgClustDispatcherImpl>(hostnames,toString(port));
+}
+
 }
 
 // */

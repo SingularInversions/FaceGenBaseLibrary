@@ -1,15 +1,13 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 5, 2005
+
 //
 
 #include "stdafx.h"
 
-#include "FgAlgs.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgFileSystem.hpp"
 #include "FgStdStream.hpp"
@@ -20,10 +18,12 @@
 using namespace std;
 using namespace boost::filesystem;
 
+namespace Fg {
+
 void
-fgCopyFile(const FgString & src,const FgString & dst,bool overwrite)
+fileCopy(const Ustring & src,const Ustring & dst,bool overwrite)
 {
-    if (fgExists(dst)) {
+    if (pathExists(dst)) {
         if (overwrite) {
             // 'copy_option::overwrite_if_exists' leaves file of size max(size(src),size(dst)) but
             // explicit removal is not always reflected quickly in filesystem leading to an error if we
@@ -40,16 +40,16 @@ fgCopyFile(const FgString & src,const FgString & dst,bool overwrite)
 }
 
 void
-fgMoveFile(const FgString & src,const FgString & dst,bool overwrite)
+fileMove(const Ustring & src,const Ustring & dst,bool overwrite)
 {
     // We use copy and delete since boost::filesystem::rename will fail if the target
     // is on a different volume:
-    fgCopyFile(src,dst,overwrite);
+    fileCopy(src,dst,overwrite);
     fgDeleteFile(src);
 }
 
 bool
-fgExists(const FgString & fname)
+pathExists(const Ustring & fname)
 {
     // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
     // We don't want that - consider it just not there:
@@ -63,10 +63,19 @@ fgExists(const FgString & fname)
     return ret;
 }
 
+// TODO: re-write more efficient OS-specific code (utime on Linus, god knows what on Win):
+void
+fileTouch(Ustring const & fname)
+{
+    // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
+    String      tmp = fgSlurp(fname);
+    fgDump(tmp,fname,false);
+}
+
 bool
 fgSetCurrentDirUp()
 {
-    FgPath      cd = fgAsDirectory(fgGetCurrentDir());
+    Path      cd = fgAsDirectory(fgGetCurrentDir());
     if (cd.dirs.empty())
         return false;
     fgSetCurrentDir(cd.dir(cd.dirs.size()-1));
@@ -74,11 +83,11 @@ fgSetCurrentDirUp()
 }
 
 void
-fgRemoveDirectoryRecursive(const FgString & dirname)
+fgRemoveDirectoryRecursive(const Ustring & dirname)
 {
 #ifdef _WIN32
     // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
-    FgDirectoryContents     dc = fgDirectoryContents(dirname);
+    DirectoryContents     dc = directoryContents(dirname);
     for (size_t ii=0; ii<dc.dirnames.size(); ii++)
         fgRemoveDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
@@ -95,13 +104,13 @@ fgRemoveDirectoryRecursive(const FgString & dirname)
 }
 
 void
-fgCreatePath(const FgString & path)
+fgCreatePath(const Ustring & path)
 {
-    FgPath          p(fgAsDirectory(path));
+    Path          p(fgAsDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
-        FgString    dir = p.dir(ii+1);
-        if (fgExists(dir)) {
-            if (!fgIsDirectory(dir))
+        Ustring    dir = p.dir(ii+1);
+        if (pathExists(dir)) {
+            if (!isDirectory(dir))
                 fgThrow("Not a directory (unable to create)",dir);
         }
         else
@@ -109,26 +118,26 @@ fgCreatePath(const FgString & path)
     }
 }
 
-FgString
+Ustring
 fgExecutableDirectory()
 {
     //return fgGetCurrentDir();         // For debugging installed versions
-    FgPath      p(fgExecutablePath());
+    Path      p(fgExecutablePath());
     return p.dir();
 }
 
 bool
-fgFileReadable(const FgString & filename)
+fileReadable(const Ustring & filename)
 {
-    FgIfstream ifs(filename,false);
+    Ifstream ifs(filename,false);
     if (!ifs.is_open()) return false;
     return true;
 }
 
-FgString
+Ustring
 fgDirUserAppDataLocal(const vector<string> & subPath)
 {
-    FgString    ret = fgDirUserAppDataLocalRoot();
+    Ustring    ret = fgDirUserAppDataLocalRoot();
     for (size_t ii=0; ii<subPath.size(); ++ii) {
         ret += subPath[ii] + fgDirSep();
         fgCreateDirectory(ret);
@@ -137,41 +146,41 @@ fgDirUserAppDataLocal(const vector<string> & subPath)
 }
 
 string
-fgSlurp(const FgString & filename)
+fgSlurp(const Ustring & filename)
 {
-    FgIfstream          ifs(filename);
+    Ifstream          ifs(filename);
     ostringstream       ss;
     ss << ifs.rdbuf();
     return ss.str();
 }
 
 bool
-fgDump(const string & data,const FgString & filename,bool onlyIfChanged)
+fgDump(const string & data,const Ustring & filename,bool onlyIfChanged)
 {
-    if (onlyIfChanged && fgExists(filename)) {
+    if (onlyIfChanged && pathExists(filename)) {
         string      fileData = fgSlurp(filename);
         if (data == fileData)
             return false;
     }
-    FgOfstream  ofs(filename);
+    Ofstream  ofs(filename);
     ofs << data;
     return true;
 }
 
 bool
 fgBinaryFileCompare(
-    const FgString & file1,
-    const FgString & file2)
+    const Ustring & file1,
+    const Ustring & file2)
 {
     string contents1(fgSlurp(file1));
     string contents2(fgSlurp(file2));
     return contents1 == contents2;
 }
 
-static FgString s_fgDataDir;
+static Ustring s_fgDataDir;
 
-const FgString &
-fgDataDir(bool throwIfNotFound)
+const Ustring &
+dataDir(bool throwIfNotFound)
 {
     // Typical locations relative to executable:
     //  ./data                  (applications & remote execution)
@@ -179,15 +188,15 @@ fgDataDir(bool throwIfNotFound)
     //  ../../../../../data     (dev & sdk binaries)
     if (!s_fgDataDir.empty())
         return s_fgDataDir;
-    FgString        pathStr = fgExecutableDirectory();
-    FgPath          path(pathStr);
+    Ustring        pathStr = fgExecutableDirectory();
+    Path          path(pathStr);
     string          data("data/"),
                     flag("_facegen_data_dir.flag");
     bool            keepSearching = true;
     while (keepSearching) {
-        FgString        dd = path.str()+data;
-        if (fgIsDirectory(dd)) {
-            if (fgExists(dd+flag)) {
+        Ustring        dd = path.str()+data;
+        if (isDirectory(dd)) {
+            if (pathExists(dd+flag)) {
                 s_fgDataDir = dd;
                 return s_fgDataDir;
             }
@@ -198,43 +207,43 @@ fgDataDir(bool throwIfNotFound)
             path.dirs.pop_back();
     }
     if (throwIfNotFound)
-        fgThrow("fgDataDir unable to find FaceGen data directory",pathStr);
+        fgThrow("dataDir unable to find FaceGen data directory",pathStr);
     return s_fgDataDir;
 }
 
 void
-fgSetDataDir(const FgString & dir)
+fgSetDataDir(const Ustring & dir)
 {
-    if (!fgExists(dir+"_facegen_data_dir.flag"))
+    if (!pathExists(dir+"_facegen_data_dir.flag"))
         fgThrow("fgSetDataDir FaceGen data flag not found",dir);
     s_fgDataDir = dir;
 }
 
 bool
-fgNewer(const FgStrings & sources,const FgStrings & sinks)
+fileNewer(const Ustrings & sources,const Ustrings & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
-    time_t      srcTime = fgLastWriteTime(sources[0]);
+    time_t      srcTime = getLastWriteTime(sources[0]);
     for (size_t ii=1; ii<sources.size(); ++ii) {
-        time_t  st = fgLastWriteTime(sources[ii]);
+        time_t  st = getLastWriteTime(sources[ii]);
         if (st > srcTime)
             srcTime = st;
     }
     for (size_t ii=0; ii<sinks.size(); ++ii) {
-        if (!fgExists(sinks[ii]))
+        if (!pathExists(sinks[ii]))
             return true;
-        time_t  st = fgLastWriteTime(sinks[ii]);
+        time_t  st = getLastWriteTime(sinks[ii]);
         if (st < srcTime)
             return true;
     }
     return false;
 }
 
-FgDirectoryContents
-fgGlobStartsWith(const FgPath & path)
+DirectoryContents
+globDirStartsWith(const Path & path)
 {
-    FgDirectoryContents ret;
-    FgDirectoryContents dc = fgDirectoryContents(path.dir());
+    DirectoryContents ret;
+    DirectoryContents dc = directoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii)
         if (dc.filenames[ii].beginsWith(path.base))
             ret.filenames.push_back(dc.filenames[ii]);
@@ -244,104 +253,92 @@ fgGlobStartsWith(const FgPath & path)
     return ret;
 }
 
-FgDirectoryContents
-fgGlobHasExtension(FgPath path)
+Ustrings
+globFiles(const Path & path)
 {
-    FgDirectoryContents ret;
-    FgDirectoryContents dc = fgDirectoryContents(path.dir());
-    for (size_t ii=0; ii<dc.filenames.size(); ++ii)
-        if (FgPath(dc.filenames[ii]).ext == path.ext)
-            ret.filenames.push_back(dc.filenames[ii]);
-    for (size_t ii=0; ii<dc.dirnames.size(); ++ii)
-        if (FgPath(dc.dirnames[ii]).ext == path.ext)
-            ret.dirnames.push_back(dc.dirnames[ii]);
-    return ret;
-}
-
-FgStrings
-fgGlobFiles(const FgPath & path)
-{
-    FgStrings               ret;
-    FgDirectoryContents     dc = fgDirectoryContents(path.dir());
+    Ustrings               ret;
+    DirectoryContents     dc = directoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        FgPath              fn = dc.filenames[ii];
+        Path              fn = dc.filenames[ii];
         if (fgGlobMatch(path.base,fn.base) && (fgGlobMatch(path.ext,fn.ext)))
             ret.push_back(dc.filenames[ii]);
     }
     return ret;
 }
 
-FgStrings
-fgGlobFiles(const FgString & basePath,const FgString & relPath,const FgString & filePattern)
+Ustrings
+globFiles(const Ustring & basePath,const Ustring & relPath,const Ustring & filePattern)
 {
-    FgStrings       ret = fgGlobFiles(basePath+relPath+filePattern);
-    for (FgString & r : ret)
+    Ustrings       ret = globFiles(basePath+relPath+filePattern);
+    for (Ustring & r : ret)
         r = relPath + r;
     return ret;
 }
 
 bool
-fgCopyAllFiles(const FgString & fromDir_,const FgString & toDir_,bool overwrite)
+fgCopyAllFiles(const Ustring & fromDir_,const Ustring & toDir_,bool overwrite)
 {
     bool                    ret = false;
-    FgString                fromDir = fgAsDirectory(fromDir_),  // Ensure ends with delim
+    Ustring                fromDir = fgAsDirectory(fromDir_),  // Ensure ends with delim
                             toDir = fgAsDirectory(toDir_);
-    FgDirectoryContents     dc = fgDirectoryContents(fromDir);
+    DirectoryContents     dc = directoryContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        FgString            fn = dc.filenames[ii];
-        if (fgExists(toDir+fn)) {
+        Ustring            fn = dc.filenames[ii];
+        if (pathExists(toDir+fn)) {
             ret = true;
             if (!overwrite)
                 continue;
         }
-        fgCopyFile(fromDir+fn,toDir+fn,overwrite);
+        fileCopy(fromDir+fn,toDir+fn,overwrite);
     }
     return ret;
 }
 
 void
-fgCopyToCurrentDir(const FgPath & file)
+fgCopyToCurrentDir(const Path & file)
 {
-    if (fgExists(file.baseExt()))
+    if (pathExists(file.baseExt()))
         fgThrow("Attempt to copy to current directory which already contains",file.baseExt());
-    fgCopyFile(file.str(),file.baseExt());
+    fileCopy(file.str(),file.baseExt());
 }
 
 void
-fgCopyRecursive(const FgString & fromDir,const FgString & toDir)
+fgCopyRecursive(const Ustring & fromDir,const Ustring & toDir)
 {
-    if (!fgIsDirectory(fromDir))
+    if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
     fgCreateDirectory(toDir);
-    FgPath                  fromP(fgAsDirectory(fromDir)),
+    Path                  fromP(fgAsDirectory(fromDir)),
                             toP(fgAsDirectory(toDir));
-    FgString                from = fromP.str(),     // Ensures delimiter at end when appropriate
+    Ustring                from = fromP.str(),     // Ensures delimiter at end when appropriate
                             to = toP.str();
-    FgDirectoryContents     dc = fgDirectoryContents(fromDir);
+    DirectoryContents     dc = directoryContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        FgString &          fn = dc.filenames[ii];
-        fgCopyFile(from+fn,to+fn);
+        Ustring &          fn = dc.filenames[ii];
+        fileCopy(from+fn,to+fn);
     }
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
-        const FgString &    dn = dc.dirnames[ii];
+        const Ustring &    dn = dc.dirnames[ii];
         fgCopyRecursive(from+dn,to+dn);
     }
 }
 
 void
-fgMirrorFile(const FgPath & src,const FgPath & dst)
+fgMirrorFile(const Path & src,const Path & dst)
 {
     FGASSERT(!src.base.empty());
     FGASSERT(!dst.base.empty());
     for (size_t ii=0; ii<dst.dirs.size(); ++ii) {
-        FgString    dir = dst.dir(ii+1);
-        if (fgExists(dir)) {
-            if (!fgIsDirectory(dir))
+        Ustring    dir = dst.dir(ii+1);
+        if (pathExists(dir)) {
+            if (!isDirectory(dir))
                 fgThrow("Not a directory (unable to mirror)",dir);
         }
         else
             fgCreateDirectory(dir);
     }
-    if (fgNewer(src.str(),dst.str()))
-        fgCopyFile(src.str(),dst.str(),true);
+    if (fileNewer(src.str(),dst.str()))
+        fileCopy(src.str(),dst.str(),true);
+}
+
 }

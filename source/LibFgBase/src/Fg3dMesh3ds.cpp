@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: John Leung
-// Created: Feb 5, 2002
+
 //
 
 #include "stdafx.h"
@@ -45,10 +44,12 @@ using namespace std;
 #define     TRI_SMOOTH      0x4150
 #define     TRI_TRANS       0x4160
 
+namespace Fg {
+
 static string fffMdlNameTo3dsName(const string & mdlName,vector<string> & nameList)
 {
     string name = mdlName;
-    if (name.length() > 10) {
+    if (name.size() > 10) {
         name = mdlName.substr(0,10);
         int doAgainCount=0;
         do {
@@ -97,8 +98,8 @@ static bool fffWriteChunkHeader_local(FILE *fptr,unsigned short id,int ln)
 
 static bool fffWrite3dsString_local(FILE *fptr, const string &str)
 {
-    if (fwrite(str.c_str(),sizeof(char),str.length()+1,fptr) !=
-            str.length()+1)
+    if (fwrite(str.c_str(),sizeof(char),str.size()+1,fptr) !=
+            str.size()+1)
         return false;
     else
         return true;
@@ -119,7 +120,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<FgVect3F> &ptList = model.getPtList(objId);
+        const vector<Vec3F> &ptList = model.getPtList(objId);
         for (unsigned short ii=0; ii<numVtx; ++ii) {
             if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
                 return false;
@@ -140,16 +141,16 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             if (model.numPoints(objId) == model.numTxtCoord(objId)) {
                 bool identical = true;
                 // Check if the facet lists are identical
-                const vector<FgVect3UI> &triList = 
+                const vector<Vec3UI> &triList = 
                         model.getTriList(objId);
-                const vector<FgVect3UI> &txtTriList = 
+                const vector<Vec3UI> &txtTriList = 
                         model.getTexTriList(objId);
                 for (unsigned int tri=0; identical && tri<model.numTxtTris(objId); ++tri) {
                     if (triList[tri] != txtTriList[tri])
                         identical = false;
                 }
-                const vector<FgVect4UI> &quadList =  model.getQuadList(objId);
-                const vector<FgVect4UI> &txtQuadList = model.getTexQuadList(objId);
+                const vector<Vec4UI> &quadList =  model.getQuadList(objId);
+                const vector<Vec4UI> &txtQuadList = model.getTexQuadList(objId);
                 for (unsigned int quad=0; identical && quad<model.numTxtQuads(objId); ++quad) {
                     if (quadList[quad] != txtQuadList[quad])
                         identical = false;
@@ -169,7 +170,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<FgVect2F> &ptList = model.getTextCoord(objId);
+        const vector<Vec2F> &ptList = model.getTextCoord(objId);
         for (unsigned short ii=0; ii<numVtx; ++ii) {
             if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
                 return false;
@@ -195,7 +196,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<FgVect3UI> &triList = model.getTriList(objId);
+        const vector<Vec3UI> &triList = model.getTriList(objId);
         for (unsigned short ii=0; ii<numTris; ++ii) {
             unsigned short idx1 = (unsigned short) triList[ii][0];
             unsigned short idx2 = (unsigned short) triList[ii][1];
@@ -209,7 +210,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
                 return false;
         }
-        const vector<FgVect4UI> &quadList = model.getQuadList(objId);
+        const vector<Vec4UI> &quadList = model.getQuadList(objId);
         ushort ii;
         for (ii=0; ii<numQuads; ++ii) {
             for (int xx=0; xx<2; ++xx) {
@@ -241,7 +242,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             textureInfo.find(textureFile);
         if (mapItr != textureInfo.end()) {
             id = TRI_MAT_GROUP;
-            int triMatChunkSize = 6 + int(mapItr->second.length()) + 1
+            int triMatChunkSize = 6 + int(mapItr->second.size()) + 1
                                  + sizeof(unsigned short)*(totalTris+1);
             if (!fffWriteChunkHeader_local(fptr,id,triMatChunkSize))
                 return false;
@@ -283,9 +284,9 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
         string textureFile = model.getTextureFilename(objId);
         if (textureFile != "") {
             // Make the filename in DOS 8.3 format
-            FgPath  upath(textureFile);
+            Path  upath(textureFile);
             string path=upath.dir().m_str, root=upath.base.m_str, suff=upath.ext.m_str;
-            if (root.length() > 8) {
+            if (root.size() > 8) {
                 textureFile = path + root.substr(0,8) + "." + suff;
             }
             if (textureInfoMap.find(textureFile) == textureInfoMap.end()) {
@@ -307,7 +308,7 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
 
         id = MAT_NAME;
 
-        int mapNameChunkSize = 6 + int(itr->second.length()) + 1;
+        int mapNameChunkSize = 6 + int(itr->second.size()) + 1;
         if (!fffWriteChunkHeader_local(fptr,id,mapNameChunkSize))
             return false;
         if (!fffWrite3dsString_local(fptr,itr->second))
@@ -375,7 +376,7 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
         matEntryChunkSize += mapSpecularColourChunkSize;
 
         id = MAT_TEXMAP;
-        int mapFilenameChunkSize = 6 + int(itr->first.length()) + 1;
+        int mapFilenameChunkSize = 6 + int(itr->first.size()) + 1;
         int textMapChunkSize = 6 + mapFilenameChunkSize;
         if (!fffWriteChunkHeader_local(fptr,id,textMapChunkSize))
             return false;
@@ -408,7 +409,7 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
                                              objNameList);
         if (!fffWrite3dsString_local(fptr,objName))
             return false;
-        objChunkSize += int(objName.length())+1;
+        objChunkSize += int(objName.size())+1;
 
         int triObjChunkSize;
         if (!fffWriteTriObjectChunk_local(fptr,triObjChunkSize,
@@ -430,11 +431,11 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
 
 static
 bool
-fffSave3dsFile(const FgString &name, const FffMultiObjectC &model)
+fffSave3dsFile(const Ustring &name, const FffMultiObjectC &model)
 {
-    FgPath      path(name);
+    Path      path(name);
     path.ext = "3ds";
-    FgString    fname = path.str();
+    Ustring    fname = path.str();
 #ifdef _WIN32
     FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
@@ -482,9 +483,9 @@ fffSave3dsFile(const FgString &name, const FffMultiObjectC &model)
 }
 
 void
-fgSave3ds(
-    const FgString &        fname,
-    vector<Fg3dMesh>        meshes,
+save3ds(
+    const Ustring &        fname,
+    vector<Mesh>        meshes,
     string                  imgFormat)
 {
     for (size_t ii=0; ii<meshes.size(); ++ii) {
@@ -498,19 +499,21 @@ fgSave3ds(
 }
 
 void
-fgSave3dsTest(const FgArgs & args)
+fgSave3dsTest(const CLArgs & args)
 {
     FGTESTDIR
-    FgString    dd = fgDataDir();
+    Ustring    dd = dataDir();
     string      rd = "base/";
-    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
-    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    fgSave3ds("mshX3ds",fgSvec(mouth,glasses));
+    Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
+    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
+    save3ds("mshX3ds",fgSvec(mouth,glasses));
     fgRegressFileRel("mshX3ds.3ds","base/test/");
     fgRegressFileRel("mshX3ds0.png","base/test/");
     fgRegressFileRel("mshX3ds1.png","base/test/");
+}
+
 }
 
 // */

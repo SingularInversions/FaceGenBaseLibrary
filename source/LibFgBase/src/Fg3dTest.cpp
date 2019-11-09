@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     December 11, 2009
+
 //
 
 #include "stdafx.h"
@@ -22,11 +21,13 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 void
 addSubdivisions(
-    vector<Fg3dMesh> &  meshes,
-    const Fg3dMesh &    mesh)
+    vector<Mesh> &  meshes,
+    const Mesh &    mesh)
 {
     meshes.push_back(mesh);
     for (uint ii=0; ii<5; ++ii)
@@ -35,18 +36,18 @@ addSubdivisions(
 
 static
 void
-test3dMeshSubdivision(const FgArgs &)
+test3dMeshSubdivision(const CLArgs &)
 {
-    Fg3dMesh        meanMesh = fgLoadTri(fgDataDir()+"base/Jane.tri");
+    Mesh        meanMesh = loadTri(dataDir()+"base/Jane.tri");
     meanMesh.surfaces[0] = meanMesh.surfaces[0].convertToTris();
     fgout << meanMesh;
     // Test subdivision of surface points:
     size_t              numPts = meanMesh.surfPointNum();
-    vector<FgVect3F>    surfPoints0(numPts);
+    vector<Vec3F>    surfPoints0(numPts);
     for (uint ii=0; ii<numPts; ++ii)
         surfPoints0[ii] = meanMesh.surfPointPos(ii);
     meanMesh = fgSubdivide(meanMesh,false);
-    vector<FgVect3F>    surfPoints1(numPts);
+    vector<Vec3F>    surfPoints1(numPts);
     for (size_t ii=0; ii<numPts; ++ii) {
         surfPoints1[ii] = meanMesh.surfPointPos(ii);
         FGASSERT(
@@ -57,7 +58,7 @@ test3dMeshSubdivision(const FgArgs &)
 }
 
 void
-fg3dReadWobjTest(const FgArgs &)
+fg3dReadWobjTest(const CLArgs &)
 {
     FgTestDir   tmp("readObj");
     ofstream    ofs("square.obj");
@@ -75,12 +76,12 @@ fg3dReadWobjTest(const FgArgs &)
         "f 1/1 2/2 3/3 4/4\n"
         ;
     ofs.close();
-    Fg3dMesh    mesh = fgLoadWobj("square.obj");
-    fgViewMesh(mesh);
+    Mesh    mesh = loadWobj("square.obj");
+    meshView(mesh);
 }
 
 void
-fgTextureImageMappingRenderTest(const FgArgs &)
+fgTextureImageMappingRenderTest(const CLArgs &)
 {
     ofstream    ofs("square.obj");
     ofs << 
@@ -97,16 +98,16 @@ fgTextureImageMappingRenderTest(const FgArgs &)
         "f 1/1 2/2 3/3 4/4\n"
         ;
     ofs.close();
-    Fg3dMesh    mesh = fgLoadWobj("square.obj");
+    Mesh    mesh = loadWobj("square.obj");
     string      textureFile("base/test/TextureMapOrdering.jpg");
-    fgLoadImgAnyFormat(fgDataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
-    fgViewMesh(mesh);
+    imgLoadAnyFormat(dataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
+    meshView(mesh);
 }
 
 void
-fgSubdivisionTest(const FgArgs &)
+fgSubdivisionTest(const CLArgs &)
 {
-    vector<Fg3dMesh>    meshes;
+    vector<Mesh>    meshes;
     addSubdivisions(meshes,fgTetrahedron());
     addSubdivisions(meshes,fgTetrahedron(true));
     addSubdivisions(meshes,fgPyramid());
@@ -118,71 +119,81 @@ fgSubdivisionTest(const FgArgs &)
     addSubdivisions(meshes,fgNTent(6));
     addSubdivisions(meshes,fgNTent(7));
     addSubdivisions(meshes,fgNTent(8));
-    FgViewMeshes(meshes,true);
+    meshView(meshes,true);
 }
 
 static
 void
-edgeDist(const FgArgs &)
+edgeDist(const CLArgs &)
 {
-    Fg3dMesh        mesh = fgLoadTri(fgDataDir()+"base/Jane.tri");
-    Fg3dSurface     surf = fgMergeSurfaces(mesh.surfaces).convertToTris();
+    Mesh        mesh = loadTri(dataDir()+"base/Jane.tri");
+    Surf     surf = mergeSurfaces(mesh.surfaces).convertToTris();
     Fg3dTopology    topo(mesh.verts,surf.tris.vertInds);
     size_t          vertIdx = 0;    // Randomly choose the first
     vector<float>   edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
     float           distMax = 0;
     for (size_t ii=0; ii<edgeDists.size(); ++ii)
         if (edgeDists[ii] < numeric_limits<float>::max())
-            fgSetIfGreater(distMax,edgeDists[ii]);
+            setIfGreater(distMax,edgeDists[ii]);
     float           distToCol = 255.99f / distMax;
     vector<uchar>   colVal(edgeDists.size(),255);
     for (size_t ii=0; ii<colVal.size(); ++ii)
         if (edgeDists[ii] < numeric_limits<float>::max())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
-    mesh.surfaces[0].setAlbedoMap(FgImgRgbaUb(128,128,FgRgbaUB(255)));
-    FgAffineCw2F    otcsToIpcs = fgOtcsToIpcs(FgVect2UI(128));
+    mesh.surfaces[0].setAlbedoMap(ImgC4UC(128,128,RgbaUC(255)));
+    AffineEw2F    otcsToIpcs = fgOtcsToIpcs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-        FgVect3UI   vertInds = surf.tris.vertInds[tt];
-        FgVect3UI   uvInds = surf.tris.uvInds[tt];
+        Vec3UI   vertInds = surf.tris.vertInds[tt];
+        Vec3UI   uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {
-            FgRgbaUB    col(255);
+            RgbaUC    col(255);
             col.red() = colVal[vertInds[ii]];
             col.green() = 255 - col.red();
-            mesh.surfaces[0].material.albedoMap->paint(FgVect2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+            mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
     }
-    fgViewMesh(mesh);
+    meshView(mesh);
 }
 
+void fgSave3dsTest(CLArgs const &);
+void fgSaveLwoTest(CLArgs const &);
+void fgSaveMaTest(CLArgs const &);
+void fgSaveFbxTest(CLArgs const &);
+void fgSaveDaeTest(CLArgs const &);
+void fgSaveObjTest(CLArgs const &);
+void fgSavePlyTest(CLArgs const &);
+void fgSaveXsiTest(CLArgs const &);
+
 void
-fg3dTest(const FgArgs & args)
+fg3dTest(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    FGADDCMD(fgSave3dsTest,"3ds",".3DS file format export");
-    FGADDCMD(fgSaveLwoTest,"lwo","Lightwve object file format export");
-    FGADDCMD(fgSaveMaTest,"ma","Maya ASCII file format export");
-#if (_MSC_VER >= 1900)      // Precision differences with nix & vs2013
-    FGADDCMD(fgSaveFbxTest,"fbx",".FBX file format export");
-#endif
-#ifdef _WIN32               // Precision differences with gcc & clang
-    FGADDCMD(fgSaveDaeTest,"dae","Collada DAE format export");
-    FGADDCMD(fgSaveObjTest,"obj","Wavefront OBJ ASCII file format export");
-    FGADDCMD(fgSavePlyTest,"ply",".PLY file format export");
-#ifndef _DEBUG              // Precision diffs from release
-    FGADDCMD(fgSaveXsiTest,"xsi",".XSI file format export");
-#endif
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(fgSave3dsTest,"3ds",".3DS file format export"));
+    cmds.push_back(Cmd(fgSaveLwoTest,"lwo","Lightwve object file format export"));
+    cmds.push_back(Cmd(fgSaveMaTest,"ma","Maya ASCII file format export"));
+    // Precision differences in float->string with other compilers cause differences:
+#if (_MSC_VER >= 1920)
+    cmds.push_back(Cmd(fgSaveDaeTest, "dae", "Collada DAE format export"));
+    cmds.push_back(Cmd(fgSaveFbxTest,"fbx",".FBX file format export"));
+    cmds.push_back(Cmd(fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"));
+    cmds.push_back(Cmd(fgSavePlyTest, "ply", ".PLY file format export"));
+    cmds.push_back(Cmd(fgSaveXsiTest, "xsi", ".XSI file format export"));
 #endif
     fgMenu(args,cmds,true,false,true);
 }
 
+void fgSaveFgmeshTest(CLArgs const &);
+
 void
-fg3dTestMan(const FgArgs & args)
+fg3dTestMan(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(edgeDist,"edgeDist"));
-    FGADDCMD(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export");  // Uses GUI
-    cmds.push_back(FgCmd(test3dMeshSubdivision,"subdivision"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(edgeDist,"edgeDist"));
+    cmds.push_back(Cmd(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export"));  // Uses GUI
+    cmds.push_back(Cmd(test3dMeshSubdivision,"subdivision"));
     fgMenu(args,cmds,true,false,true);
+}
+
 }
 
 // */

@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4AF91011-C9A9-6CA0-290D-FAB7104EDF4E}</ProjectGuid>
+    <ProjectGuid>{AADC400F-E99E-0287-5F62-41D5AE0BE375}</ProjectGuid>
     <RootNamespace>LibJpegIjg6b</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>

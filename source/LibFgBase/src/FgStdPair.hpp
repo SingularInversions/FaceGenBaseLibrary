@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Jan 19, 2005
+
 //
 
 #ifndef FGSTDPAIR_HPP
@@ -12,10 +11,11 @@
 
 #include "FgStdLibs.hpp"
 
-namespace std {
+namespace Fg {
 
 template<class T,class U>
-ostream & operator<<(ostream & ss,const pair<T,U> & pp)
+std::ostream &
+operator<<(std::ostream & ss,std::pair<T,U> const & pp)
 {
     return ss << "(" << pp.first << "," << pp.second << ")";
 }

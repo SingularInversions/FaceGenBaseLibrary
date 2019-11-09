@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,33 +13,45 @@
 #include "FgStdLibs.hpp"
 #include "FgString.hpp"
 
+namespace Fg {
+
 // Appends the information from Windows' "GetLastError" into the exception message:
 void
-fgThrowWindows(const std::string & msg,const FgString & data=FgString());
+throwWindows(const std::string & msg,const Ustring & data=Ustring());
 
 inline
 void
-fgThrowWindows(const std::string & msg,const std::string & data)
-{fgThrowWindows(msg,FgString(data)); }
+throwWindows(const std::string & msg,const std::string & data)
+{throwWindows(msg,Ustring(data)); }
 
 template<class T>
 void
-fgThrowWindows(const std::string & msg,const T & data)
-{return fgThrowWindows(msg,FgString(fgToStr(data))); }
+throwWindows(const std::string & msg,const T & data)
+{return throwWindows(msg,Ustring(toString(data))); }
 
 void
-fgAssertWin(const char * fname,int line);
+assertWindows(const char * fname,int line);
+
+void
+assertWinReturnZero(const char * fname,int line,long rval);
+
+// Templated custom destructor superior to function object since it's compatible with containers:
+template<class T>
+struct      Release
+{
+    // unique_ptr only calls this if ptr != nullptr:
+    void operator()(T* ptr) const {ptr->Release(); }
+};
+
+}
 
 #define FGASSERTWIN(X)                                                  \
     if(X) (void) 0;                                                     \
-    else fgAssertWin(__FILE__,__LINE__)
-
-void
-fgAssertWinReturnZero(const char * fname,int line,long rval);
+    else Fg::assertWindows(__FILE__,__LINE__)
 
 // It's important to record the return value on failure since 'getLastError' sometimes
 // returns SUCCESS after a failure - eg. CoCreateInstance with CLSID_FileOpenDialog:
-#define FGASSERTWINOK(X) if(X==0) (void)0; else fgAssertWinReturnZero(__FILE__,__LINE__,X)
+#define FGASSERTWINOK(X) if(X>=0) (void)0; else Fg::assertWinReturnZero(__FILE__,__LINE__,X)
 
 #endif
 

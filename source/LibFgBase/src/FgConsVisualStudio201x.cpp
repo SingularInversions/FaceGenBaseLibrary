@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Nov 30, 2011
+
 //
 // Generate Visual Studio SLN and XPROJ files.
 //
@@ -25,12 +24,14 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 string
 fgConsVsPreprocessorDefs(
     bool                release,
     const FgConsProj &  proj,
-    const FgStrs &      defs)
+    const Strings &      defs)
 {
     string  ret = "WIN32";
     if (release)
@@ -58,9 +59,9 @@ writeVcxproj(
     const FgConsSolution &      sln,            // Transitive lookups
     const FgConsProj &          proj,
     const map<string,string> &  nameToGuid,     // Must contain all project names
-    uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017
+    uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017, 19 = VS2019
 {
-    FgStrs          includes = sln.getIncludes(proj.name,false),
+    Strings          includes = sln.getIncludes(proj.name,false),
                     defines = sln.getDefs(proj.name),
                     lnkDeps = sln.getLnkDeps(proj.name);
     string          verStr = fgToStringDigits(vsver,2),
@@ -75,7 +76,7 @@ writeVcxproj(
 		toolsVersion = "12";
 	else if (vsver == 15)
 		toolsVersion = "14";
-	else if (vsver == 17)
+	else if ((vsver == 17) || (vsver == 19))
 		toolsVersion = "15";
     else
         fgThrow("writeVcxproj unhandled vsver",vsver);
@@ -96,7 +97,11 @@ writeVcxproj(
         "  <PropertyGroup Label=\"Globals\">\n"
         "    <ProjectGuid>" << fgLookup(nameToGuid,proj.name) << "</ProjectGuid>\n"
         "    <RootNamespace>" << proj.name << "</RootNamespace>\n"
-        "    <Keyword>Win32Proj</Keyword>\n"
+        "    <Keyword>Win32Proj</Keyword>\n";
+    if (vsver == 19)
+        ofs << 
+            "    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>\n";
+    ofs <<
         "  </PropertyGroup>\n"
         "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\n";
     for (uint bb=0; bb<2; ++bb) {
@@ -120,6 +125,8 @@ writeVcxproj(
                 ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
 			else if (vsver == 17)
 				ofs << "    <PlatformToolset>v141</PlatformToolset>\n";
+            else if (vsver == 19)
+                ofs << "    <PlatformToolset>v142</PlatformToolset>\n";
             else
                 fgThrow("writeVcxproj unhandled vsver",vsver);
             ofs <<
@@ -171,7 +178,7 @@ writeVcxproj(
         "  </PropertyGroup>\n";
     bool        pch = false;
     if (!proj.srcGroups.empty() &&
-        fgFileReadable(proj.name+"/"+proj.baseDir+proj.srcGroups[0].dir+"stdafx.cpp"))
+        fileReadable(proj.name+"/"+proj.baseDir+proj.srcGroups[0].dir+"stdafx.cpp"))
         pch = true;
     for (uint cc=0; cc<2; ++cc) {
         for (uint bb=0; bb<2; ++bb) {
@@ -209,7 +216,7 @@ writeVcxproj(
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
             // Tried "EnableAllWarnings" but got tons of warning from boost include files:
-            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + fgToStr(proj.warn);
+            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + toString(proj.warn);
             ofs <<
                 "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
                 "      <WarningLevel>" << warnStr << "</WarningLevel>\n"
@@ -303,8 +310,8 @@ writeVcxproj(
     }
     ofs <<
         "  </ItemGroup>\n";
-    if (fgExists(proj.name+"/icon.ico")) {
-        fgCopyFile(proj.name+"/icon.ico",projDir+"icon1.ico",true);
+    if (pathExists(proj.name+"/icon.ico")) {
+        fileCopy(proj.name+"/icon.ico",projDir+"icon1.ico",true);
         ofs <<
             "  <ItemGroup>\n"
             "    <ClInclude Include=\"resource.h\" />\n"
@@ -315,7 +322,7 @@ writeVcxproj(
             "  <ItemGroup>\n"
             "    <Image Include=\"icon1.ico\" />\n"
             "  </ItemGroup>\n";
-        FgOfstream  res(projDir+"resource.h");
+        Ofstream  res(projDir+"resource.h");
         res <<
             "#define IDI_ICON1                       101\n"
             "#ifdef APSTUDIO_INVOKED\n"
@@ -326,7 +333,7 @@ writeVcxproj(
             "#define _APS_NEXT_SYMED_VALUE           101\n"
             "#endif\n"
             "#endif\n";
-        FgOfstream rd(projDir+proj.name+".rc");
+        Ofstream rd(projDir+proj.name+".rc");
         rd <<
             "#include \"resource.h\"\n"
             "#define APSTUDIO_READONLY_SYMBOLS\n"
@@ -383,7 +390,7 @@ writeSln(
         "Microsoft Visual Studio Solution File, Format Version "
             << "12.00\n"
         "# Visual Studio ";
-    if (vsver == 17)
+    if (vsver >= 17)
         ofs << "15\n"       // VS17 writes version number instead of year
             "VisualStudioVersion = 15.0.27703.2000\n"
             "MinimumVisualStudioVersion = 10.0.40219.1\n";
@@ -400,12 +407,12 @@ writeSln(
     }
     string      globalEndSections;
     // Add CMake and Unix folders if this is a VS17 dev instance:
-    if ((vsver >= 17) && fgExists("../data/_overwrite_baselines.flag")) {
+    if ((vsver >= 17) && pathExists("../data/_overwrite_baselines.flag")) {
         // This GUID is pre-defined to mean a solution folder:
         string                  uuidFolder = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
-        if (fgExists("CMakeLists.txt")) {   // Add CMake files for easy viewing / searching
+        if (pathExists("CMakeLists.txt")) {   // Add CMake files for easy viewing / searching
             string                  uuidCmakeFolder = "{06685DCC-912A-409E-BAF1-580272DB71CD}";
-            FgDirectoryContents     dc = fgDirectoryContents("");
+            DirectoryContents     dc = directoryContents("");
             ofs <<
                 "Project(\"" + uuidFolder + "\") = \"cmake\", \"cmake\", \"" + uuidCmakeFolder + "\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n"
@@ -413,9 +420,9 @@ writeSln(
             ofs <<
                 "	EndProjectSection\n"
                 "EndProject\n";
-            for (const FgString & dir : dc.dirnames) {
-                FgString            cmf = dir + "\\CMakeLists.txt";
-                if (fgExists(cmf)) {
+            for (const Ustring & dir : dc.dirnames) {
+                Ustring            cmf = dir + "\\CMakeLists.txt";
+                if (pathExists(cmf)) {
                     string          uuid = fgCreateMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
                     ofs <<
                         "Project(\"" + uuidFolder + "\") = \"" + dir + "\", \"" + dir + "\", \"" + uuid + "\"\n"
@@ -427,15 +434,15 @@ writeSln(
                 }
             }
         }
-        if (fgExists("LibFgBase/src/nix")) {    // Add unix files for easy viewing / searching
+        if (pathExists("LibFgBase/src/nix")) {    // Add unix files for easy viewing / searching
             string                  nixPath = "LibFgBase\\src\\nix\\";
             string                  uuidNixFolder = "{AE0BD3A3-EF58-4762-9266-81AF0C5A05A8}";
-            FgDirectoryContents     dc = fgDirectoryContents(nixPath);
+            DirectoryContents     dc = directoryContents(nixPath);
             ofs <<
                 // These GUIDs are specific to generic folders with text files in them:
                 "Project(\"" + uuidFolder + "\") = \"unix\", \"unix\", \"" + uuidNixFolder + "\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n";
-            for (const FgString & fname : dc.filenames)
+            for (const Ustring & fname : dc.filenames)
                 ofs << "		" + nixPath+fname + " = " + nixPath+fname + "\n";
             ofs <<
                 "	EndProjectSection\n"
@@ -503,13 +510,17 @@ fgConsVs201x(const FgConsSolution & sln)
             changed = writeVcxproj(sln,proj,nameToGuid,13) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,15) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
+            changed = writeVcxproj(sln,proj,nameToGuid,19) || changed;
         }
     }
     // This codebase uses C++11 which is only supported by VS 2013 and later:
     changed = writeSln(sln,merkle,nameToGuid,13) || changed;
     changed = writeSln(sln,merkle,nameToGuid,15) || changed;
     changed = writeSln(sln,merkle,nameToGuid,17) || changed;
+    changed = writeSln(sln,merkle,nameToGuid,19) || changed;
     return changed;
+}
+
 }
 
 // */

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: August 29, 2014
+
 //
 
 #include "stdafx.h"
@@ -14,117 +13,98 @@
 using namespace std;
 using namespace std::placeholders;
 
-FgGuiPtr
-fgGuiText(FgDgn<FgString> node,uint minWidth,bool rich)
+namespace Fg {
+
+GuiPtr
+guiText(NPT<Ustring> node,uint minWidth,bool rich)
 {
-    FgGuiApiText    gt;
+    GuiText    gt;
     gt.content = node;
-    gt.updateFlagIdx = g_gg.addUpdateFlag(node);
     gt.wantStretch[0] = true;
     gt.minWidth = minWidth;
     gt.rich = rich;
-    return fgsp(gt);
+    return std::make_shared<GuiText>(gt);
 }
 
-FgGuiPtr
-fgGuiTextLines(FgDgn<FgString> node,uint minHeight,bool wantStretchVert)
+GuiPtr
+guiTextLines(NPT<Ustring> node,uint minHeight,bool wantStretchVert)
 {
-    FgGuiApiText    gt;
+    GuiText    gt;
     gt.content = node;
-    gt.updateFlagIdx = g_gg.addUpdateFlag(node);
     gt.wantStretch[0] = true;
     gt.wantStretch[1] = wantStretchVert;
     gt.minHeight = minHeight;
-    return fgsp(gt);
+    return std::make_shared<GuiText>(gt);
 }
 
-FgGuiPtr
-fgGuiText(FgString txt,uint minWidth)
+GuiPtr
+guiText(Ustring txt,uint minWidth)
 {
-    FgGuiApiText    gt;
-    gt.content = g_gg.addNode(txt);
-    gt.updateFlagIdx = g_gg.addUpdateFlag(gt.content);
+    GuiText    gt;
+    gt.content = makeIPT(txt);
     gt.minWidth = minWidth;
-    return fgsp(gt);
+    return std::make_shared<GuiText>(gt);
 }
 
-static
-FgString
-getText(FgDgn<FgString> n)
-{return g_gg.getVal(n); }
-
-static
-void
-setText(FgDgn<FgString> n,FgString v)
+GuiPtr
+guiTextEdit(IPT<Ustring> node,bool wantStretch)
 {
-    g_gg.setVal(n,v);
-}
-
-FgGuiPtr
-fgGuiTextEdit(FgDgn<FgString> node,bool wantStretch)
-{
-    FgGuiApiTextEdit    gtr;
-    gtr.updateFlagIdx = g_gg.addUpdateFlag(node);
-    gtr.getInput = std::bind(getText,node);
-    gtr.setOutput = std::bind(setText,node,_1);
+    GuiTextEdit    gtr;
+    gtr.updateFlag = makeUpdateFlag(node);
+    gtr.getInput = [node](){return node.val(); };
+    gtr.setOutput = [node](Ustring s){node.set(s); };
     gtr.minWidth = 100;
     gtr.wantStretch = wantStretch;
-    return fgsp(gtr);
-}
-
-static
-FgString
-valToTextFixed(FgDgn<double> valN,uint numFraction)
-{
-    double          val = g_gg.getVal(valN);
-    return fgToFixed(val,numFraction);
+    return std::make_shared<GuiTextEdit>(gtr);
 }
 
 static
 void
-textToVal(FgDgn<double> valN,FgVectD2 clip,FgFuncD2D t2v,const FgString & str)
+textToVal2(IPT<double> valN,VecD2 clip,FgFuncD2D t2v,const Ustring & str)
 {
-    // Behaviour for non-numerical strings varies even between debug and release, the
-    // latter returning very small values for null string:
-    double          val = fgFromString<double>(str.as_ascii());
+    double          val = 0.0;
+    try {val = fgFromString<double>(str.as_ascii()); }
+    catch (...) {}
     if (t2v)
         val = t2v(val);
-    val = fgClip(val,clip[0],clip[1]);
-    g_gg.setVal(valN,val);
+    val = clampBounds(val,clip[0],clip[1]);
+    valN.set(val);
 }
 
-FgGuiPtr
-fgGuiTextEditFixed(FgDgn<double> valN,FgVectD2 bounds,uint numFraction)
+GuiPtr
+guiTextEditFixed(IPT<double> valN,VecD2 bounds,uint numFraction)
 {
-    FgGuiApiTextEdit    te;
-    te.updateFlagIdx = g_gg.addUpdateFlag(valN);
+    GuiTextEdit    te;
+    te.updateFlag = makeUpdateFlag(valN);
     te.minWidth = 50;
     te.wantStretch = false;
-    te.getInput = std::bind(valToTextFixed,valN,numFraction);
-    te.setOutput = std::bind(textToVal,valN,bounds,FgFuncD2D(),_1);
-    return fgGuiPtr(te);
+    te.getInput = [valN,numFraction](){return fgToFixed(valN.val(),numFraction); };
+    te.setOutput = std::bind(textToVal2,valN,bounds,FgFuncD2D(),_1);
+    return guiMakePtr(te);
 }
 
 static
-FgString
-valToTextFloat(FgDgn<double> valN,uint numDigits,FgFuncD2D v2t)
+Ustring
+valToTextFloat2(IPT<double> valN,uint numDigits,FgFuncD2D v2t)
 {
-    double te = g_gg.getVal(valN);
+    double      te = valN.val();
     if (v2t)
         te = v2t(te);
-    return FgString(fgToStringPrecision(te,numDigits));
+    return Ustring(fgToStringPrecision(te,numDigits));
 }
 
-FgGuiPtr
-fgGuiTextEditFloat(FgDgn<double> valN,FgVectD2 bounds,uint numDigits,FgFuncD2D v2t,FgFuncD2D t2v)
+GuiPtr
+guiTextEditFloat(IPT<double> valN,VecD2 bounds,uint numDigits,FgFuncD2D v2t,FgFuncD2D t2v)
 {
-    FgGuiApiTextEdit    te;
-    te.updateFlagIdx = g_gg.addUpdateFlag(valN);
-    te.getInput = std::bind(valToTextFloat,valN,numDigits,v2t);
-    te.setOutput = std::bind(textToVal,valN,bounds,t2v,_1);
+    GuiTextEdit      te;
+    te.updateFlag = makeUpdateFlag(valN);
+    te.getInput = std::bind(valToTextFloat2,valN,numDigits,v2t);
+    te.setOutput = std::bind(textToVal2,valN,bounds,t2v,_1);
     te.minWidth = 80;
     te.wantStretch = false;
-    return fgsp(te);
+    return std::make_shared<GuiTextEdit>(te);
+}
+
 }
 
 // */

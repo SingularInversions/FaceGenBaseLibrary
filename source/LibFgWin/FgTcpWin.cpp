@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,6 +22,8 @@
 // Don't warn about deprecation ('inet_ntoa'). TODO: Upgrade TCP stuff for IPV6
 #  pragma warning(disable:4996)
 
+namespace Fg {
+
 struct  FgWinsockDll
 {
     WSADATA     wsaData;
@@ -30,7 +32,7 @@ struct  FgWinsockDll
         // Initialize Winsock DLL version 2.2:
         int         itmp = WSAStartup(MAKEWORD(2,2),&wsaData);
         if(itmp != 0)
-            FGASSERT_FALSE1(fgToStr(itmp));
+            FGASSERT_FALSE1(toString(itmp));
     }
 
     ~FgWinsockDll() {
@@ -49,11 +51,11 @@ initWinsock()
 
 bool
 fgTcpClient(
-    const string &      hostname,
+    const String &      hostname,
     uint16              port,
-    const string &      data,
+    const String &      data,
     bool                getResponse,
-    string &            response)
+    String &            response)
 {
     initWinsock();
     SOCKET              socketHandle;
@@ -69,7 +71,7 @@ fgTcpClient(
     // Resolve the server address and port.
     itmp = getaddrinfo(
         hostname.c_str(),           // Hostname or IP #
-        fgToStr(port).c_str(),   // Service name or port #
+        toString(port).c_str(),   // Service name or port #
         &hints,
         &addressInfo);              // RETURNED
     if (itmp != 0)
@@ -88,7 +90,7 @@ fgTcpClient(
         if (socketHandle == INVALID_SOCKET) {
             // Couldn't use scope guard for freeaddrinfo due to compile issues:
             freeaddrinfo(addressInfo);
-            FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
+            FGASSERT_FALSE1(toString(WSAGetLastError()));
         }
         // Set the timeout so the user isn't waiting for ages if the connection fails:
         DWORD           timeout = 5000;     // 5 seconds
@@ -108,11 +110,11 @@ fgTcpClient(
     // 'send' will block for buffering since we've created a blocking socket, so the
     // value returned is always either the data size or an error:
     itmp = send(socketHandle,data.data(),int(data.size()),0);
-    FGASSERT1(itmp != SOCKET_ERROR,fgToStr(WSAGetLastError()));
+    FGASSERT1(itmp != SOCKET_ERROR,toString(WSAGetLastError()));
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
     itmp = shutdown(socketHandle,SD_SEND);
-    FGASSERT1(itmp != SOCKET_ERROR,fgToStr(WSAGetLastError()));
+    FGASSERT1(itmp != SOCKET_ERROR,toString(WSAGetLastError()));
     if (getResponse) {
         response.clear();
         do {
@@ -124,12 +126,12 @@ fgTcpClient(
             itmp = recv(socketHandle,buff,sizeof(buff),0);
             // This can happen for many reasons (eg. connection interrupted) so don't throw:
             if (itmp == SOCKET_ERROR) {
-                //fgToStr(WSAGetLastError()));
+                //toString(WSAGetLastError()));
                 closesocket(socketHandle);
                 return false;
             }
             if (itmp > 0)
-                response += string(buff,itmp);
+                response += String(buff,itmp);
         }
         while (itmp > 0);
         FGASSERT(itmp == 0);
@@ -157,24 +159,24 @@ fgTcpServer(
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
     struct addrinfo     *addrInfoPtr = NULL;
-    int itmp = getaddrinfo(NULL,fgToStr(port).c_str(),&hints,&addrInfoPtr);
-    FGASSERT1(itmp == 0,fgToStr(itmp));
+    int itmp = getaddrinfo(NULL,toString(port).c_str(),&hints,&addrInfoPtr);
+    FGASSERT1(itmp == 0,toString(itmp));
     sockListen = socket(addrInfoPtr->ai_family,addrInfoPtr->ai_socktype,addrInfoPtr->ai_protocol);
     if (sockListen == INVALID_SOCKET) {
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
+        FGASSERT_FALSE1(toString(WSAGetLastError()));
     }
     itmp = bind(sockListen,addrInfoPtr->ai_addr,(int)addrInfoPtr->ai_addrlen);
     if (itmp == SOCKET_ERROR) {
         closesocket(sockListen);
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
+        FGASSERT_FALSE1(toString(WSAGetLastError()));
     }
     itmp = listen(sockListen, SOMAXCONN);
     if (itmp == SOCKET_ERROR) {
         closesocket(sockListen);
         freeaddrinfo(addrInfoPtr);
-        FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
+        FGASSERT_FALSE1(toString(WSAGetLastError()));
     }
     freeaddrinfo(addrInfoPtr);
 
@@ -189,7 +191,7 @@ fgTcpServer(
         sockClient = accept(sockListen,(sockaddr*)(&sa),&sz);
         if (sockClient == INVALID_SOCKET) {
             closesocket(sockListen);
-            FGASSERT_FALSE1(fgToStr(WSAGetLastError()));
+            FGASSERT_FALSE1(toString(WSAGetLastError()));
         }
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
@@ -197,9 +199,9 @@ fgTcpServer(
         setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
 		char * clientStringPtr = inet_ntoa(sa.sin_addr);
             FGASSERT(clientStringPtr != NULL);
-        string     ipAddr = string(clientStringPtr);
+        String     ipAddr = String(clientStringPtr);
         //fgout << "receiving from " << ipAddr << " ... " << std::flush;
-        string     dataBuff;
+        String     dataBuff;
         int retVal = 0;
         do {
             char    recvbuf[1024];
@@ -209,7 +211,7 @@ fgTcpServer(
             retVal = recv(sockClient,recvbuf,sizeof(recvbuf),0);
             fgout << "." << std::flush;
             if (retVal > 0)
-                dataBuff += string(recvbuf,retVal);
+                dataBuff += String(recvbuf,retVal);
         }
         while ((retVal > 0) && (dataBuff.size() <= maxRecvBytes));
         if (retVal != 0) {
@@ -224,7 +226,7 @@ fgTcpServer(
         fgout << ": " << std::flush;
         if (!respond)   // Avoid timeout errors on the data socket for long handlers that don't respond:
             closesocket(sockClient);
-        string     response;
+        String     response;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
@@ -249,6 +251,8 @@ fgTcpServer(
         fgout << std::flush;
     } while (handlerRetval == true);
     closesocket(sockListen);
+}
+
 }
 
 // */

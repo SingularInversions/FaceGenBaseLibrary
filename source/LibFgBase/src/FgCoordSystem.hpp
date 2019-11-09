@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 9, 2012
+
 //
 // Coordinate system definitions that don't have a natural place elsewhere
 
@@ -61,38 +60,44 @@
 //    Y - viewer’s up 
 //
 
+namespace Fg {
+
 template<typename T>
-FgMatrixC<T,3,3>
+Mat<T,3,3>
 fgHcsToCcs()
 {
-    return {
+    return Mat<T,3,3> {
         1, 0, 0,
         0,-1, 0,
-        0, 0,-1 };
+        0, 0,-1
+    };
 }
 
 template<typename T>
-FgMatrixC<T,4,4>
+Mat<T,4,4>
 fgHcsToCcsH()
 {
-    return {
+    return Mat<T,4,4> {{{
         1, 0, 0, 0,
         0,-1, 0, 0,
         0, 0,-1, 0,
-        0, 0, 0, 1 };
+        0, 0, 0, 1
+    }}};
 }
 
 template<typename T>
-FgMatrixC<T,4,4>
+Mat<T,4,4>
 fgProjectOecsToItcs()
 {
-    return {
+    return Mat<T,4,4> {{{
         1, 0, 0, 0,
         0,-1, 0, 0,
         0, 0, 0, 1,
-        0, 0,-1, 0 };
+        0, 0,-1, 0
+    }}};
 }
 
+}
 
 // */
 

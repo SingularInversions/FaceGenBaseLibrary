@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: March 24, 2015
+
 //
 // Stack-based variable-size array with fixed max size.
 // Less verbose than boost::static_vector.
@@ -15,13 +14,13 @@
 #include "FgStdLibs.hpp"
 #include "FgDiagnostics.hpp"
 
+namespace Fg {
+
 template<class T,uint maxSize>
-struct FgArray
+struct VArray
 {
     T       m[maxSize];
-    uint    sz;
-
-    FgArray() : sz(0) {}
+    uint    sz = 0;
 
     uint
     size() const
@@ -56,5 +55,7 @@ struct FgArray
     empty() const
     {return (sz == 0); }
 };
+
+}
 
 #endif

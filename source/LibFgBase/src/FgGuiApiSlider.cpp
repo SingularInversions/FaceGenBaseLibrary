@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: April 7, 2011
+
 //
 
 #include "stdafx.h"
@@ -16,19 +15,22 @@
 using namespace std;
 using namespace std::placeholders;
 
-FgGuiApiTickLabels
-fgGuiApiTickLabels(
-    FgVectD2        range,
+
+namespace Fg {
+
+GuiTickLabels
+guiTickLabels(
+    VecD2        range,
     double          spacing,
     double          basePos)
 {
     FGASSERT((basePos >= range[0]) && (basePos <= range[1]));
     double              pos = basePos - std::floor((basePos - range[0])/spacing) * spacing;
-    FgGuiApiTickLabels  ret;
+    GuiTickLabels  ret;
     do {
-        FgGuiApiTickLabel   t;
+        GuiTickLabel   t;
         t.pos = pos;
-        t.label = fgToStr(pos);
+        t.label = toString(pos);
         ret.push_back(t);
         pos += spacing;
     }
@@ -36,71 +38,10 @@ fgGuiApiTickLabels(
     return ret;
 }
 
-static
-double
-getInput(FgDgn<double> n)
-{return g_gg.getVal(n); }
-
-static
-void
-setOutput(FgDgn<double> n,double v)
-{g_gg.setVal(n,v); }
-
-FgGuiPtr
-fgGuiSlider(
-    FgDgn<double>   valN,
-    FgString        label,
-    FgVectD2        range,
-    double          tickSpacing,
-    const FgGuiApiTickLabels & tl,
-    const FgGuiApiTickLabels & ul,
-    uint            edgePadding,
-    bool            editBox)
+Ustrings
+numberedLabels(const Ustring & baseLabel,size_t num)
 {
-    FgGuiApiSlider sldr;
-    sldr.updateFlagIdx = g_gg.addUpdateFlag(valN);
-    sldr.getInput = std::bind(getInput,valN);
-    sldr.setOutput = std::bind(setOutput,valN,_1);
-    sldr.label = label;
-    sldr.range = range;
-    sldr.tickSpacing = tickSpacing;
-    sldr.tickLabels = tl;
-    sldr.tockLabels = ul;
-    sldr.edgePadding = edgePadding;
-    FgGuiPtr        ret = fgGuiPtr(sldr);
-    if (editBox)
-        ret = fgGuiSplit(true,ret,fgGuiTextEditFixed(valN,range));
-    return ret;
-}
-
-FgGuiSliders
-fgGuiSliders(
-    const FgStrings &       labels,
-    FgVectD2                range,
-    double                  initVal,
-    double                  tickSpacing,
-    const FgString &        relStore)
-{
-    FgGuiSliders            ret;
-    vector<FgDgn<double> >  slidersN;
-    for (size_t ii=0; ii<labels.size(); ++ii) {
-        FgDgn<double>       val;
-        if (relStore.empty())
-            val = g_gg.addNode(initVal);
-        else
-            val = g_gg.addInput(initVal,relStore+labels[ii]);
-        ret.inputInds.push_back(val);
-        ret.sliders.push_back(fgGuiSlider(val,labels[ii],range,tickSpacing));
-        slidersN.push_back(val);
-    }
-    ret.outputIdx = g_gg.collate(slidersN);
-    return ret;
-}
-
-FgStrings
-fgNumberedLabels(const FgString & baseLabel,size_t num)
-{
-    FgStrings       ret;
+    Ustrings       ret;
     ret.reserve(num);
     uint            numDigits = 1;
     size_t          tmp = num;
@@ -109,6 +50,80 @@ fgNumberedLabels(const FgString & baseLabel,size_t num)
     for (size_t ii=0; ii<num; ++ii)
         ret.push_back(baseLabel+fgToStringDigits(ii,numDigits));
     return ret;
+}
+
+GuiPtr
+guiSlider(
+    IPT<double>     valN,
+    Ustring        label,
+    VecD2        range,
+    double          tickSpacing,
+    const GuiTickLabels & tl,
+    const GuiTickLabels & ul,
+    uint            edgePadding,
+    bool            editBox)
+{
+    GuiSlider sldr;
+    sldr.updateFlag = makeUpdateFlag(valN);
+    sldr.getInput = [valN](){return valN.val(); };
+    sldr.setOutput = [valN](double v){valN.set(v); };
+    sldr.label = label;
+    sldr.range = range;
+    sldr.tickSpacing = tickSpacing;
+    sldr.tickLabels = tl;
+    sldr.tockLabels = ul;
+    sldr.edgePadding = edgePadding;
+    GuiPtr        ret = guiMakePtr(sldr);
+    if (editBox)
+        ret = guiSplit(true,ret,guiTextEditFixed(valN,range));
+    return ret;
+}
+
+Arr<GuiPtr,3>
+guiSliders(
+    IPT<Vec3F>    valN,
+    const array<Ustring,3> & labels,
+    VecD2                range,
+    double                  tickSpacing)
+{
+    Arr<GuiPtr,3>  ret;
+    for (size_t ss=0; ss<3; ++ss) {
+        GuiSlider        s;
+        s.updateFlag = makeUpdateFlag(valN);
+        s.getInput = [valN,ss](){return valN.cref()[ss]; };
+        s.setOutput = [valN,ss](double v){valN.ref()[ss] = v; };
+        s.label = labels[ss];
+        s.range = range;
+        s.tickSpacing = tickSpacing;
+        ret[ss] = guiMakePtr(s);
+    }
+    return ret;
+}
+
+GuiSliders
+guiSliders(
+    const Ustrings &       labels,
+    VecD2                range,
+    double                  initVal,
+    double                  tickSpacing,
+    const Ustring &        relStore)
+{
+    GuiSliders           ret;
+    vector<IPT<double> >    slidersN;
+    for (size_t ii=0; ii<labels.size(); ++ii) {
+        IPT<double>       val;
+        if (relStore.empty())
+            val = makeIPT(initVal);
+        else
+            val = makeSavedIPT(initVal,relStore+labels[ii]);
+        ret.valNs.push_back(val);
+        ret.sliders.push_back(guiSlider(val,labels[ii],range,tickSpacing));
+        slidersN.push_back(val);
+    }
+    ret.valsN = linkCollate(slidersN);
+    return ret;
+}
+
 }
 
 // */

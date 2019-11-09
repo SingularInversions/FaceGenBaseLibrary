@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-//
+
 
 #include "stdafx.h"
 #include "FgMain.hpp"
@@ -17,21 +16,23 @@
 
 using namespace std;
 
+namespace Fg {
+
 #ifdef _WIN32
 
 static
-FgArgs
+CLArgs
 fgArgs(int argc,const wchar_t * argv[])
 {
-    FgArgs          args;
+    CLArgs          args;
     if (argc > 0) {     // The first arg is the command path but we only want the command name:
-        FgString        tmp(argv[0]);
-        FgPath          path(tmp);
-        FgString        cmdName = path.baseExt();
+        Ustring        tmp(argv[0]);
+        Path          path(tmp);
+        Ustring        cmdName = path.baseExt();
         args.push_back(cmdName.m_str);
     }
     for (int ii=1; ii<argc; ++ii) {
-        FgString        tmp(argv[ii]);
+        Ustring        tmp(argv[ii]);
         args.push_back(tmp.m_str);
     }
     return args;
@@ -42,12 +43,12 @@ fgArgs(int argc,const wchar_t * argv[])
 #else
 
 static
-FgArgs
+CLArgs
 fgArgs(int argc,const char * argv[])
 {
-    FgArgs      args;
+    CLArgs      args;
     if (argc > 0) {     // The first arg is the command path but we only want the command name:
-        FgPath      path(argv[0]);
+        Path      path(argv[0]);
         args.push_back(path.baseExt().m_str);
     }
     for (int ii=1; ii<argc; ++ii)
@@ -59,10 +60,10 @@ fgArgs(int argc,const char * argv[])
 
 #endif
 
-static FgArgs s_mainArgs;
+static CLArgs s_mainArgs;
 
 int
-fgMainConsole(FgCmdFunc func,int argc,const FgUtfChar * argv[])
+fgMainConsole(CmdFunc func,int argc,const NativeUtfChar * argv[])
 {
     try
     {
@@ -137,4 +138,6 @@ fgMainArgs()
             ret += arg + " ";
     }
     return ret;
+}
+
 }

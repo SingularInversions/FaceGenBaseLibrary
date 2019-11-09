@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,6 +15,8 @@
 
 #include <sys/ioctl.h>
 #include <unistd.h>
+
+namespace Fg {
 
 bool
 fgKbhit()
@@ -37,4 +39,6 @@ fgConsoleWidth()
         return static_cast<unsigned int>(w.ws_col);
     else
         return 80U;
+}
+
 }

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Date: Nov 27, 2010
+
 //
 
 #include "stdafx.h"
@@ -18,8 +17,10 @@
 
 using namespace std;
 
-FgSyntax::FgSyntax(
-    const FgArgs &      args,
+namespace Fg {
+
+Syntax::Syntax(
+    const CLArgs &      args,
     const string & syntax)
     :
     m_args(args), m_idx(0)
@@ -37,16 +38,16 @@ FgSyntax::FgSyntax(
     }
 }
 
-FgSyntax::~FgSyntax()
+Syntax::~Syntax()
 {
     size_t      unused = m_args.size() - m_idx - 1;
     if ((unused > 0) && (!std::uncaught_exception()))
         fgout << fgnl << "WARNING: last " << unused
-            << " argument(s) not used : " << fgCat(fgTail(m_args,unused)," ");
+            << " argument(s) not used : " << cat(fgTail(m_args,unused)," ");
 }
 
 void
-FgSyntax::error(const string & errMsg)
+Syntax::error(const string & errMsg)
 {
     fgout.setDefOut(true);    // Don't write directly to cout to ensure proper logging:
     fgout << "\nERROR: " << errMsg << '\n';
@@ -54,7 +55,7 @@ FgSyntax::error(const string & errMsg)
 }
 
 void
-FgSyntax::error(const string & errMsg,const FgString & data)
+Syntax::error(const string & errMsg,const Ustring & data)
 {
     fgout.setDefOut(true);
     fgout << "\nERROR: " << errMsg << ": " << data << '\n';
@@ -62,20 +63,20 @@ FgSyntax::error(const string & errMsg,const FgString & data)
 }
 
 void
-FgSyntax::incorrectNumArgs()
+Syntax::incorrectNumArgs()
 {
     error("Incorrect number of arguments");
 }
 
 void
-FgSyntax::checkExtension(const FgString & fname,const string & ext)
+Syntax::checkExtension(const Ustring & fname,const string & ext)
 {
     if (!fgCheckExt(fname,ext))
         error("File must have extension "+ext,fname);
 }
 
 void
-FgSyntax::checkExtension(
+Syntax::checkExtension(
     const string &                 fname,
     const std::vector<string> &    exts)
 {
@@ -83,21 +84,21 @@ FgSyntax::checkExtension(
     for (size_t ii=0; ii<exts.size(); ++ii)
         if (fext == fgToLower(exts[ii]))
             return;
-    error("Filename did not have on of the required extensions",fname + " : " + fgToStr(exts));
+    error("Filename did not have on of the required extensions",fname + " : " + toString(exts));
 }
 
 const string &
-FgSyntax::peekNext()
+Syntax::peekNext()
 {
     if (m_idx+1 == m_args.size())
         error("Expected another argument after",m_args[m_idx]);
     return m_args[m_idx+1];
 }
 
-FgArgs
-FgSyntax::rest()
+CLArgs
+Syntax::rest()
 {
-    FgArgs  ret(m_args.begin()+m_idx,m_args.end());
+    CLArgs  ret(m_args.begin()+m_idx,m_args.end());
     m_idx = m_args.size()-1;
     return ret;
 }
@@ -160,7 +161,7 @@ string
 formatLines(const string & desc)
 {
     // Convert from old-style manual formatting to long lines:
-    FgStrs      ins = fgSplitLines(desc,true),
+    Strings     ins = splitLines(desc),
                 outs;
     size_t      indent = 0;
     for (const string & line : ins) {
@@ -197,7 +198,7 @@ formatLines(const string & desc)
 }
 
 void
-FgSyntax::throwSyntax()
+Syntax::throwSyntax()
 {
     m_idx = m_args.size()-1;    // Don't print warning for unused args in this case
     std::cout << "\n" << formatLines(m_syntax);
@@ -205,17 +206,19 @@ FgSyntax::throwSyntax()
 }
 
 void
-FgSyntax::numArgsMustBe(uint num)
+Syntax::numArgsMustBe(uint num)
 {
     if (num+1 != m_args.size())
         incorrectNumArgs();
 }
 
 uint
-FgSyntax::nextSelectionIndex(const FgStrs & validValues,const string & argDescription)
+Syntax::nextSelectionIndex(const Strings & validValues,const string & argDescription)
 {
     size_t      idx = fgFindFirstIdx(validValues,next());
     if (idx == validValues.size())
         error("Invalid value for",argDescription);
     return uint(idx);
+}
+
 }

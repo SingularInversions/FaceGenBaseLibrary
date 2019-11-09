@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,9 +14,7 @@
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgDefaultVal.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgAlgs.hpp"
 
 using namespace std;
 
@@ -31,18 +29,20 @@ operator<<(ostream & os,const SCROLLINFO & si)
         << " trackPos " << si.nTrackPos;
 }
 
-struct  FgGuiWinSplitScroll : public FgGuiOsBase
+namespace Fg {
+
+struct  GuiSplitScrollWin : public GuiBaseImpl
 {
-    FgGuiApiSplitScroll         m_api;
+    GuiSplitScroll              m_api;
     HWND                        hwndThis;
-    FgGuiOsPtrs                 m_panes;
+    GuiImplPtrs                 m_panes;
     // Cache current visibility of panes to avoid excessive update calls:
     vector<FgBool>              m_panesVisible;
-    FgVect2I                    m_client;   // doesn't include slider
-    FgString                    m_store;
+    Vec2I                    m_client;   // doesn't include slider
+    Ustring                    m_store;
     SCROLLINFO                  m_si;
 
-    FgGuiWinSplitScroll(const FgGuiApiSplitScroll & api) :
+    GuiSplitScrollWin(const GuiSplitScroll & api) :
         m_api(api), hwndThis(0)
     {
         m_si.cbSize = sizeof(m_si);     // Never changes
@@ -52,15 +52,15 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitScroll::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         m_store = store;
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.style = WS_VSCROLL;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -71,41 +71,41 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
         // Set the minimum scrollable size as the smaller of the maximum element
         // and a fixed maximum min:
-        FgVect2UI   ret = m_api.minSize;
+        Vec2UI   ret = m_api.minSize;
         // Add scroll bar width:
         ret[0] += GetSystemMetrics(SM_CXVSCROLL);
         return ret;
     }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             if (m_panes[ii]->wantStretch()[0])
-                return FgVect2B(true,true);
-        return FgVect2B(false,true);
+                return Vec2B(true,true);
+        return Vec2B(false,true);
     }
 
     virtual void
     updateIfChanged()
     {
 //fgout << fgnl << "SplitScroll::updateIfChanged";
-        if (g_gg.dg.update(m_api.updateFlagIdx)) {
+        if (m_api.updateFlag->checkUpdate()) {
 //fgout << " ... updating" << fgpush;
             // call DestroyWindow in all created sub-windows:
             for (size_t ii=0; ii<m_panes.size(); ++ii)
                 m_panes[ii]->destroy();
-            FgGuiPtrs            panes = m_api.getPanes();
+            GuiPtrs            panes = m_api.getPanes();
             m_panes.resize(panes.size());
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToStr(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toString(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
             resize();   // New windows must be sent a size
@@ -117,7 +117,7 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "SplitScroll::moveWindow: " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
@@ -146,19 +146,19 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
 //fgout << fgnl << "SplitScroll::WM_CREATE" << fgpush;
             hwndThis = hwnd;
             FGASSERT(m_panes.empty());
-            FgGuiPtrs   panes = m_api.getPanes();
+            GuiPtrs   panes = m_api.getPanes();
             m_panes.resize(panes.size());
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+fgToStr(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toString(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
-            g_gg.dg.update(m_api.updateFlagIdx);
+            m_api.updateFlag->checkUpdate();
 //fgout << fgpop;
         }
         else if (msg == WM_SIZE) {
-            m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
+            m_client = Vec2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] > 0) {
 //fgout << fgnl << "SplitScroll::WM_SIZE: " << m_client << fgpush;
                 resize();
@@ -215,7 +215,7 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     {
         // No point in doing this before we have the client size (ie at first construction):
         if (m_client[1] > 0) {
-            FgVect2I    pos(0),
+            Vec2I    pos(0),
                         sz = m_client;
             sz[0] -= 5;     // Leave space between content and slider
             pos[1] = int(m_api.spacing) - m_si.nPos;
@@ -252,6 +252,8 @@ struct  FgGuiWinSplitScroll : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiSplitScroll & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinSplitScroll(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiSplitScroll & def)
+{return GuiImplPtr(new GuiSplitScrollWin(def)); }
+
+}

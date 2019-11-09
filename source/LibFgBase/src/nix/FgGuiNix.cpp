@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,69 +14,73 @@
 
 using namespace std;
 
+namespace Fg {
+
 void
-fgGuiImplStart(const FgString &,FgGuiPtr,const FgString &,const FgGuiOptions &)
+guiStartImpl(const Ustring &,GuiPtr,const Ustring &,const GuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \
-FgPtr<FgGuiOsBase>                                    \
-fgGuiGetOsInstance(const X &)                               \
-{return FgPtr<FgGuiOsBase>(); }
+GuiImplPtr                                    \
+guiGetOsImpl(const X &)                               \
+{return GuiImplPtr(); }
 
-STUB(FgGuiApi3d)
-STUB(FgGuiApiButton)
-STUB(FgGuiApiCheckbox)
-STUB(FgGuiApiDynamic)
-STUB(FgGuiApiGroupbox)
-STUB(FgGuiApiImage)
-STUB(FgGuiApiRadio)
-STUB(FgGuiApiSelect)
-STUB(FgGuiApiSlider)
-STUB(FgGuiApiSpacer)
-STUB(FgGuiApiSplit)
-STUB(FgGuiApiSplitAdj)
-STUB(FgGuiApiSplitScroll)
-STUB(FgGuiApiTabs)
-STUB(FgGuiApiText)
-STUB(FgGuiApiTextEdit)
+STUB(Gui3d)
+STUB(GuiButton)
+STUB(GuiCheckbox)
+STUB(GuiDynamic)
+STUB(GuiGroupbox)
+STUB(GuiImage)
+STUB(GuiRadio)
+STUB(GuiSelect)
+STUB(GuiSlider)
+STUB(GuiSpacer)
+STUB(GuiSplit)
+STUB(GuiSplitAdj)
+STUB(GuiSplitScroll)
+STUB(GuiTabs)
+STUB(GuiText)
+STUB(GuiTextEdit)
 
 void
-fgGuiDialogMessage(const FgString &,const FgString &)
+guiDialogMessage(const Ustring &,const Ustring &)
 {throw FgExceptionNotImplemented(); }
 
-FgOpt<FgString>
-fgGuiDialogFileLoad(const FgString &,const vector<std::string> &,const string &)
+Opt<Ustring>
+guiDialogFileLoad(const Ustring &,const vector<std::string> &,const string &)
 {
     throw FgExceptionNotImplemented();
-    return FgOpt<FgString>();
+    return Opt<Ustring>();
 }
 
-FgOpt<FgString>
-fgGuiDialogFileSave(const FgString &,const std::string &)
+Opt<Ustring>
+guiDialogFileSave(const Ustring &,const std::string &)
 {
     throw FgExceptionNotImplemented();
-    return FgOpt<FgString>();
+    return Opt<Ustring>();
 }
 
-FgOpt<FgString>
-fgGuiDialogDirSelect()
+Opt<Ustring>
+guiDialogDirSelect()
 {
     throw FgExceptionNotImplemented();
-    return FgOpt<FgString>();
+    return Opt<Ustring>();
 }
 
 bool
-fgGuiDialogProgress(const FgString &,uint,FgFnCallback2Void)
+guiDialogProgress(const Ustring &,uint,WorkerFunc)
 {throw FgExceptionNotImplemented(); return false; }
 
 std::function<void(void)>
-fgGuiDialogSplashScreen()
+guiDialogSplashScreen()
 {return std::function<void(void)>(); }
 
 void
-FgGuiGraph::quit() {}
+guiQuit() {}
 
 void
-FgGuiGraph::updateScreenImpl() {}
+winUpdateScreen() {}
+
+}
 
 // */

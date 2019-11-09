@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Sept. 20, 2011
+
 //
 
 #ifndef FGGUIAPIDIALOGS_HPP
@@ -13,56 +12,62 @@
 #include "FgGuiApiBase.hpp"
 #include "FgGuiApiButton.hpp"
 
+namespace Fg {
+
 void
-fgGuiDialogMessage(
-    const FgString & caption,
-    const FgString & message);
+guiDialogMessage(
+    Ustring const & caption,
+    Ustring const & message);
 
 // NB Windows:
 // * Will sometimes return UNC path (eg. Windows Server) for network drive, rather than LFS drive letter.
 // * Although only extension-matching files are shown, users can (and will) type in filenames with non-matching
 //   which dialog will then accept.
-FgOpt<FgString>
-fgGuiDialogFileLoad(
-    const FgString &            description,
-    const FgStrs &              extensions,
-    const string &              storeID=string());  // Remember different directories for same 'description'
+Opt<Ustring>
+guiDialogFileLoad(
+    Ustring const &             description,
+    Strings const &             extensions,
+    String const &              storeID=String());  // Remember different directories for same 'description'
 
-FgGuiPtr
-fgGuiFileLoadButton(
-    const FgString &            buttonText,
-    const FgString &            fileTypesDescription,
-    const FgStrs &              extensions,
-    const string &              storeID,
-    FgDgn<FgString>             output);
+GuiPtr
+guiLoadButton(
+    Ustring const &             buttonText,
+    Ustring const &             fileTypesDescription,
+    Strings const &             extensions,
+    String const &              storeID,
+    IPT<Ustring> const &        selection);    // User load selection path placed here
 
 // The extension should be chosen in the GUI before calling this function.
 // Windows will allow the user to enter a different extension of 3 characters, but extensions of different
 // character length (or no extension) will have the given extension appended:
-FgOpt<FgString>
-fgGuiDialogFileSave(
-    const FgString &        description,
-    const std::string &     extension);
+Opt<Ustring>
+guiDialogFileSave(
+    Ustring const &             description,
+    String const &              extension);
 
-FgOpt<FgString>
-fgGuiDialogDirSelect();
+Opt<Ustring>
+guiDialogDirSelect();
 
 // Arguments: true - advance progress bar, false - do not
-// Return: true - user cancel, false - continue
-typedef std::function<bool(bool)>             FgFnBool2Bool;
+// Return: true - user cancel, false - continue work
+typedef Sfun<bool(bool)>            WorkerCallback;
 
-typedef std::function<void(FgFnBool2Bool)>    FgFnCallback2Void;
+// The worker function must accept the callback function for it to invoke at regular intervals
+// to communicate progress and check for user cancel (see signature above):
+typedef Sfun<void(WorkerCallback)>  WorkerFunc;
 
 // Returns false if the computation was cancelled by the user, true otherwise:
 bool
-fgGuiDialogProgress(
-    const FgString &        title,
-    uint                    progressSteps,
-    FgFnCallback2Void       actionProgress);
+guiDialogProgress(
+    Ustring const &         dialogTitle,
+    uint                    progressSteps,  // Number of progress steps exprected from worker callback
+    WorkerFunc              actionProgress);
 
 // Uses the embedded icon for the splash screen.
 // Call the returned function to terminate the splash screen:
-std::function<void(void)>
-fgGuiDialogSplashScreen();
+Sfun<void(void)>
+guiDialogSplashScreen();
+
+}
 
 #endif

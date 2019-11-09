@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: 19.01.09
+
 //
 
 #include "stdafx.h"
@@ -20,15 +19,17 @@
 
 using namespace std;
 
+namespace Fg {
+
 void
-fgSaveDae(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
+saveDae(
+    const Ustring &            filename,
+    const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
-    FgPath          fpath(filename);
-    FgString        dirBase = fpath.dirBase();
-    FgOfstream      ofs(dirBase+".dae");
+    Path          fpath(filename);
+    Ustring        dirBase = fpath.dirBase();
+    Ofstream      ofs(dirBase+".dae");
     ofs.precision(7);
     ofs <<
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -42,19 +43,19 @@ fgSaveDae(
     ostringstream       lib_img,
                         lib_shd,
                         lib_mat;
-    map<FgImgRgbaUb*,FgString>  imagesSaved;
+    map<ImgC4UC*,Ustring>  imagesSaved;
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &        mesh = meshes[mm];
+        const Mesh &        mesh = meshes[mm];
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface &     surf = mesh.surfaces[ss];
+            const Surf &     surf = mesh.surfaces[ss];
             if (surf.hasUvIndices() && surf.material.albedoMap) {
-                string              id = fgToStr(mm) + "_" + fgToStr(ss);
-                FgString            imgFile = fpath.base + id + "." + imgFormat;
-                FgImgRgbaUb         *imgPtr = surf.material.albedoMap.get();
+                string              id = toString(mm) + "_" + toString(ss);
+                Ustring            imgFile = fpath.base + id + "." + imgFormat;
+                ImgC4UC         *imgPtr = surf.material.albedoMap.get();
                 if (fgContains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
                 else {
-                    fgSaveImgAnyFormat(fpath.dir()+imgFile,*surf.material.albedoMap);
+                    imgSaveAnyFormat(fpath.dir()+imgFile,*surf.material.albedoMap);
                     imagesSaved[imgPtr] = imgFile;
                 }
                 lib_img <<
@@ -100,16 +101,16 @@ fgSaveDae(
     ofs <<
         "  <library_geometries>\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &    mesh = meshes[mm];
-        Fg3dNormals         norms = fgNormals(mesh);
-        string              id = "mesh" + fgToStr(mm);
-        FgString            name = mesh.name.empty() ? id : mesh.name;
+        const Mesh &    mesh = meshes[mm];
+        Normals         norms = calcNormals(mesh);
+        string              id = "mesh" + toString(mm);
+        Ustring            name = mesh.name.empty() ? id : mesh.name;
         ofs <<
             "    <geometry id=\"" << id << "\" name=\"" << name << "\">\n"
             "      <mesh>\n"
             "        <source id=\"" << id << "-positions\" name=\"positions\">\n"
             "          <float_array id=\"" << id << "-positions-array\" count=\"" << mesh.verts.size()*3 << "\">";
-        for (const FgVect3F & v : mesh.verts)
+        for (const Vec3F & v : mesh.verts)
             ofs << " " << v[0] << " " << v[1] << " " << v[2];
         ofs << " </float_array>\n"
             "          <technique_common>\n"
@@ -122,7 +123,7 @@ fgSaveDae(
             "        </source>\n"
             "        <source id=\"" << id << "-normals\" name=\"normals\">\n"
             "          <float_array id=\"" << id << "-normals-array\" count=\"" << norms.vert.size()*3 << "\">";
-        for (const FgVect3F & v : norms.vert)
+        for (const Vec3F & v : norms.vert)
             ofs << " " << v[0] << " " << v[1] << " " << v[2];
         ofs << " </float_array>\n"
             "          <technique_common>\n"
@@ -137,7 +138,7 @@ fgSaveDae(
             ofs <<
                 "        <source id=\"" << id << "-uvs\" name=\"uvs\">\n"
                 "          <float_array id=\"" << id << "-uvs-array\" count=\"" << mesh.uvs.size()*2 << "\">";
-            for (const FgVect2F & v : mesh.uvs)
+            for (const Vec2F & v : mesh.uvs)
                 ofs << " " << v[0] << " " << v[1];
         ofs << " </float_array>\n"
                 "          <technique_common>\n"
@@ -153,7 +154,7 @@ fgSaveDae(
             "          <input semantic=\"POSITION\" source=\"#" << id << "-positions\" />\n"
             "        </vertices>\n";
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface &     surf = mesh.surfaces[ss];
+            const Surf &     surf = mesh.surfaces[ss];
             bool        hasUVs = (surf.tris.hasUvs() && surf.quads.hasUvs());
             ofs <<
                 "        <polylist count=\"" << surf.tris.size() + surf.quads.size() << "\" material=\"materialRef" << mm << "_" << ss << "\">\n"
@@ -171,7 +172,7 @@ fgSaveDae(
             ofs << " </vcount>\n"
                 "          <p>";
             for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
-                FgVect3UI       tri = surf.tris.vertInds[ii];
+                Vec3UI       tri = surf.tris.vertInds[ii];
                 for (size_t jj=0; jj<3; ++jj) {
                     ofs << " " << tri[jj];
                     if (hasUVs)
@@ -179,7 +180,7 @@ fgSaveDae(
                 }
             }
             for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
-                FgVect4UI       quad = surf.quads.vertInds[ii];
+                Vec4UI       quad = surf.quads.vertInds[ii];
                 for (size_t jj=0; jj<4; ++jj) {
                     ofs << " " << quad[jj];
                     if (hasUVs)
@@ -225,18 +226,20 @@ fgSaveDae(
 }
 
 void
-fgSaveDaeTest(const FgArgs & args)
+fgSaveDaeTest(const CLArgs & args)
 {
     FGTESTDIR
-    FgString        dd = fgDataDir() + "base/test/";
-    Fg3dMesh        teethU = fgLoadTri(dd+"teethUpper.tri"),
-                    teethL = fgLoadTri(dd+"teethLower.tri");
-    auto            teethImg = make_shared<FgImgRgbaUb>(fgLoadImgAnyFormat(dd+"teeth.png"));
+    Ustring        dd = dataDir() + "base/test/";
+    Mesh        teethU = loadTri(dd+"teethUpper.tri"),
+                    teethL = loadTri(dd+"teethLower.tri");
+    auto            teethImg = make_shared<ImgC4UC>(imgLoadAnyFormat(dd+"teeth.png"));
     teethU.surfaces[0].material.albedoMap = teethImg;
     teethL.surfaces[0].material.albedoMap = teethImg;
-    fgSaveDae("teethExportDae",fgSvec(teethU,teethL));
+    saveDae("teethExportDae",fgSvec(teethU,teethL));
     fgRegressFileRel("teethExportDae.dae","base/test/");
     fgRegressFileRel("teethExportDae0_0.png","base/test/");
+}
+
 }
 
 // */

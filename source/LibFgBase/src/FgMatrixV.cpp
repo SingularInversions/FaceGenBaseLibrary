@@ -1,17 +1,15 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 24, 2009
+
 //
 
 #include "stdafx.h"
 
 #include "FgMatrixV.hpp"
 #include "FgMath.hpp"
-#include "FgAlgs.hpp"
 #include "FgOut.hpp"
 #include "FgApproxEqual.hpp"
 #include "FgSyntax.hpp"
@@ -34,12 +32,14 @@ using namespace std;
 
 using namespace Eigen;
 
+namespace Fg {
+
 template<>
-FgMatrixF
-operator*(const FgMatrixF & lhs,const FgMatrixF & rhs)
+MatF
+operator*(const MatF & lhs,const MatF & rhs)
 {
     if (lhs.ncols < 100)
-        return fgMatMul(lhs,rhs);
+        return matMul(lhs,rhs);
     FGASSERT(lhs.ncols == rhs.nrows);
     MatrixXf            l(lhs.nrows,lhs.ncols),
                         r(rhs.nrows,rhs.ncols);
@@ -50,7 +50,7 @@ operator*(const FgMatrixF & lhs,const FgMatrixF & rhs)
         for (size_t cc=0; cc<rhs.ncols; ++cc)
             r(rr,cc) = rhs.rc(rr,cc);
     MatrixXf            m = l * r;
-    FgMatrixF           ret(lhs.nrows,rhs.ncols);
+    MatF           ret(lhs.nrows,rhs.ncols);
     for (size_t rr=0; rr<ret.nrows; ++rr)
         for (size_t cc=0; cc<ret.ncols; ++cc)
             ret.rc(rr,cc) = m(rr,cc);
@@ -58,11 +58,11 @@ operator*(const FgMatrixF & lhs,const FgMatrixF & rhs)
 }
 
 template<>
-FgMatrixD
-operator*(const FgMatrixD & lhs,const FgMatrixD & rhs)
+MatD
+operator*(const MatD & lhs,const MatD & rhs)
 {
     if (lhs.ncols < 100)
-        return fgMatMul(lhs,rhs);
+        return matMul(lhs,rhs);
     FGASSERT(lhs.ncols == rhs.nrows);
     MatrixXd            l(lhs.nrows,lhs.ncols),
                         r(rhs.nrows,rhs.ncols);
@@ -73,7 +73,7 @@ operator*(const FgMatrixD & lhs,const FgMatrixD & rhs)
         for (size_t cc=0; cc<rhs.ncols; ++cc)
             r(rr,cc) = rhs.rc(rr,cc);
     MatrixXd            m = l * r;
-    FgMatrixD           ret(lhs.nrows,rhs.ncols);
+    MatD           ret(lhs.nrows,rhs.ncols);
     for (size_t rr=0; rr<ret.nrows; ++rr)
         for (size_t cc=0; cc<ret.ncols; ++cc)
             ret.rc(rr,cc) = m(rr,cc);
@@ -81,7 +81,7 @@ operator*(const FgMatrixD & lhs,const FgMatrixD & rhs)
 }
 
 double
-fgMatSumElems(const FgMatrixD & mat)
+fgMatSumElems(const MatD & mat)
 {
     double      acc = 0.0;
     for (uint ii=0; ii<mat.numElems(); ii++)
@@ -96,20 +96,20 @@ struct    StackElem
     bool        overflow;
 };
 
-FgMatrixD
-fgRelDiff(const FgMatrixD & a,const FgMatrixD & b,double minAbs)
+MatD
+fgRelDiff(const MatD & a,const MatD & b,double minAbs)
 {
-    FgMatrixD   ret;
+    MatD   ret;
     FGASSERT(a.dims() == b.dims());
     ret.resize(a.dims());
     ret.m_data = fgRelDiff(a.m_data,b.m_data,minAbs);
     return ret;
 }
 
-FgMatrixC<FgMatrixD,2,2>
-fgPartition(const FgMatrixD & m,size_t loSize)
+Mat<MatD,2,2>
+fgPartition(const MatD & m,size_t loSize)
 {
-    FgMatrixC<FgMatrixD,2,2>    ret;
+    Mat<MatD,2,2>    ret;
     FGASSERT(m.nrows == m.ncols);
     size_t                      hiSize = m.ncols - loSize;
     ret.rc(0,0) = m.subMatrix(0,0,loSize,loSize);
@@ -122,18 +122,18 @@ fgPartition(const FgMatrixD & m,size_t loSize)
 namespace {
 
 void
-testCorrect(const FgArgs &)
+testCorrect(const CLArgs &)
 {
-    FgMatrixD       M = {2,2,{1,2,3,5}},
+    MatD       M = {2,2,{1,2,3,5}},
                     N = M * M,
                     R = {2,2,{7,12,18,31}};
     FGASSERT(N == R);
 }
 
-FgMatrixD
-tt0(const FgMatrixD & lhs,const FgMatrixD & rhs)
+MatD
+tt0(const MatD & lhs,const MatD & rhs)
 {
-    FgMatrixD           mat(lhs.nrows,rhs.ncols,0.0);
+    MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     const size_t          CN = 8;
     for (size_t rr=0; rr<mat.nrows; rr++) {
@@ -148,10 +148,10 @@ tt0(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-FgMatrixD
-tt1(const FgMatrixD & lhs,const FgMatrixD & rhs)
+MatD
+tt1(const MatD & lhs,const MatD & rhs)
 {
-    FgMatrixD           mat(lhs.nrows,rhs.ncols,0.0);
+    MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     const size_t          CN = 8;
     for (size_t rr=0; rr<mat.nrows; rr+=CN) {
@@ -170,11 +170,11 @@ tt1(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-FgMatrixD
-tt2(const FgMatrixD & lhs,const FgMatrixD & rhs)
+MatD
+tt2(const MatD & lhs,const MatD & rhs)
 {
     const size_t        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
-    FgMatrixD           mat(lhs.nrows,rhs.ncols,0.0);
+    MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     for (size_t rr=0; rr<mat.nrows; rr++) {
         size_t            mIdx = mat.ncols * rr;
@@ -200,19 +200,19 @@ tt2(const FgMatrixD & lhs,const FgMatrixD & rhs)
     return mat;
 }
 
-FgMatrixD
-tt3(const FgMatrixD & lhs,const FgMatrixD & rhs)
+MatD
+tt3(const MatD & lhs,const MatD & rhs)
 {
     const size_t        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
-    FgMatrixD           mat(lhs.nrows,rhs.ncols,0.0);
+    MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     for (size_t rr=0; rr<mat.nrows; rr+=CN) {
-        size_t          R2 = fgMin(CN,mat.nrows-rr);
+        size_t          R2 = minEl(CN,mat.nrows-rr);
         for (size_t cc=0; cc<mat.ncols; cc+=CN) {
-            size_t          C2 = fgMin(CN,mat.ncols-cc);
+            size_t          C2 = minEl(CN,mat.ncols-cc);
             if (C2 < CN) {                          // Keep paths separate so inner loop can be unrolled below
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = fgMin(CN,lhs.ncols-kk);
+                    size_t          K2 = minEl(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t          mIdx = (rr+rr2)*mat.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
@@ -226,7 +226,7 @@ tt3(const FgMatrixD & lhs,const FgMatrixD & rhs)
             }
             else {
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = fgMin(CN,lhs.ncols-kk);
+                    size_t          K2 = minEl(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t          mIdx = (rr+rr2)*mat.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
@@ -244,38 +244,38 @@ tt3(const FgMatrixD & lhs,const FgMatrixD & rhs)
 }
 
 void
-showMul(function<FgMatrixD(const FgMatrixD &,const FgMatrixD &)> fn,const FgMatrixD & l,const FgMatrixD & r,const string & desc)
+showMul(function<MatD(const MatD &,const MatD &)> fn,const MatD & l,const MatD & r,const string & desc)
 {
     fgout << fgnl << desc << " : ";
     FgTimer         timer;
-    FgMatrixD       m3 = fn(l,r);
+    MatD       m3 = fn(l,r);
     size_t          elapsed = timer.readMs();
     fgout << elapsed << " ms";
 }
 
 void
-testMul(const FgArgs & args)
+testMul(const CLArgs & args)
 {
     if (fgAutomatedTest(args))
         return;
-    FgSyntax        syn(args,"<size>");
+    Syntax        syn(args,"<size>");
     size_t          sz = fgFromStr<size_t>(syn.next()).val();
-    FgMatrixD       m0 = FgMatrixD::randNormal(sz,sz),
-                    m1 = FgMatrixD::randNormal(sz,sz);
+    MatD       m0 = MatD::randNormal(sz,sz),
+                    m1 = MatD::randNormal(sz,sz);
     FgTimer         timer;
-    FgMatrixD       m2 = m0 * m1;
+    MatD       m2 = m0 * m1;
     size_t          time = timer.readMs();
     fgout << sz << ": " << time << "ms";
 }
 
 void
-loopStructTime(const FgArgs & args)
+loopStructTime(const CLArgs & args)
 {
     if (fgAutomatedTest(args))
         return;
     uint            dim = 1024;     // Must divide 8 for non-generalized tests
-    FgMatrixD       m1 = FgMatrixD::randNormal(dim,dim),
-                    m2 = FgMatrixD::randNormal(dim,dim);
+    MatD       m1 = MatD::randNormal(dim,dim),
+                    m2 = MatD::randNormal(dim,dim);
     showMul(tt0,m1,m2,"1 sub-loop");
     showMul(tt1,m1,m2,"3 sub-loops");
     showMul(tt2,m1,m2,"1 sub-loop generalized");
@@ -283,22 +283,22 @@ loopStructTime(const FgArgs & args)
 }
 
 void
-eigenTest(const FgArgs & args)
+eigenTest(const CLArgs & args)
 {
     if (fgAutomatedTest(args))
         return;
-    FgSyntax            syn(args,"<size>");
+    Syntax            syn(args,"<size>");
     size_t              sz = fgFromStr<size_t>(syn.next()).val();
     MatrixXd            l(sz,sz),
                         r(sz,sz);
     for (size_t rr=0; rr<sz; ++rr) {
         for (size_t cc=0; cc<sz; ++cc) {
-            l(rr,cc) = fgRand();
-            r(rr,cc) = fgRand();
+            l(rr,cc) = randUniform();
+            r(rr,cc) = randUniform();
         }
     }
     {
-        FgTimeScope     ts("Eigen mat mul " + fgToStr(sz));
+        FgTimeScope     ts("Eigen mat mul " + toString(sz));
         MatrixXd        m = l * r;
     }
 }
@@ -306,12 +306,14 @@ eigenTest(const FgArgs & args)
 }
 
 void
-fgMatrixVTest(const FgArgs & args)
+fgMatrixVTest(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(testCorrect,"correct"));
-    cmds.push_back(FgCmd(eigenTest,"tem","Time eigen mat mul"));
-    cmds.push_back(FgCmd(testMul,"tlm","Time loop mat mul"));
-    cmds.push_back(FgCmd(loopStructTime,"lst","Loop structure timing experiment"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(testCorrect,"correct"));
+    cmds.push_back(Cmd(eigenTest,"tem","Time eigen mat mul"));
+    cmds.push_back(Cmd(testMul,"tlm","Time loop mat mul"));
+    cmds.push_back(Cmd(loopStructTime,"lst","Loop structure timing experiment"));
     fgMenu(args,cmds,true);
+}
+
 }

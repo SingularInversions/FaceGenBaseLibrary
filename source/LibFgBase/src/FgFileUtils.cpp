@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 8, 2016
+
 //
 
 #include "stdafx.h"
@@ -13,12 +12,14 @@
 
 using namespace std;
 
+namespace Fg {
+
 bool
-fgUpdateFiles(uint num,const FgStrings & ins,const FgStrings & outs,FgUpdateFilesFunc func)
+fgUpdateFiles(uint num,const Ustrings & ins,const Ustrings & outs,FgUpdateFilesFunc func)
 {
-    if (fgNewer(ins,outs)) {
-        fgout.logFile(fgToStr(num)+"_log.txt",false,false);
-        fgout << fgnl << "(" << fgCat(ins,",") << ") -> (" << fgCat(outs,",") << ")" << fgpush;
+    if (fileNewer(ins,outs)) {
+        fgout.logFile(toString(num)+"_log.txt",false,false);
+        fgout << fgnl << "(" << cat(ins,",") << ") -> (" << cat(outs,",") << ")" << fgpush;
         FgTimer     time;
         func(ins,outs);
         double      elapsed = time.read();
@@ -30,6 +31,8 @@ fgUpdateFiles(uint num,const FgStrings & ins,const FgStrings & outs,FgUpdateFile
         return true;
     }
     return false;
+}
+
 }
 
 // */

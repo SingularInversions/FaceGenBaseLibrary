@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C0396080-BA25-1481-65B9-66191E5914D1}</ProjectGuid>
+    <ProjectGuid>{40E2243A-0403-EF7C-9B55-CF0D89D5F799}</ProjectGuid>
     <RootNamespace>fgbl</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -187,22 +187,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\LibFgWin\VisualStudio15\LibFgWin.vcxproj">
-      <Project>{6904AE47-51E0-BEED-2B13-288A79237C3D}</Project>
+      <Project>{E9E1D804-F35C-138E-F54C-F085C7DDE6AF}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibFgBase\VisualStudio15\LibFgBase.vcxproj">
-      <Project>{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}</Project>
+      <Project>{5B961373-F4B8-DA15-075F-4A80089B758B}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibJpegIjg6b\VisualStudio15\LibJpegIjg6b.vcxproj">
-      <Project>{4AF91011-C9A9-6CA0-290D-FAB7104EDF4E}</Project>
+      <Project>{AADC400F-E99E-0287-5F62-41D5AE0BE375}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\..\LibTpBoost\VisualStudio15\LibTpBoost.vcxproj">
-      <Project>{0F8FAE76-1CBC-C2CA-86E2-9D1CACEB2F97}</Project>
+      <Project>{2F64C553-6CBC-1D2C-DE00-73BCA29D1223}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>

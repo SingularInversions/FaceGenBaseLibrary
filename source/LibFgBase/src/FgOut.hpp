@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 2, 2005
+
 //
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
 // Output (not ordering) is threadsafe but modification of output selections is not.
@@ -24,6 +23,8 @@
 #include "FgStdLibs.hpp"
 #include "FgTypes.hpp"
 
+namespace Fg {
+
 std::ostream &
 fgnl(std::ostream& ss);
 
@@ -35,6 +36,11 @@ fgpop(std::ostream& ss);
 
 std::ostream &
 fgreset(std::ostream& ss);  // Reset indent to zero (useful for exception handling)
+
+// ADL won't find this for FgOut::operator<< below so it must be visible up front for clang:
+template<class T>
+std::ostream &
+operator<<(std::ostream &,std::vector<T> const &);
 
 struct  FgOut
 {
@@ -95,13 +101,13 @@ struct  FgOut
     operator<<(const T & arg)
     {
         if (notMute())
-            for (auto s : m_streams)
-                (*s) << arg;
+            for (std::ostream * os : m_streams)
+                (*os) << arg;
         return *this;
     }
 
     FgOut &
-    operator<<(std::ostream& (*manip)(std::ostream&));
+    operator<<(std::ostream & (*manip)(std::ostream&));
 
     std::string
     getStringStream() const
@@ -110,7 +116,7 @@ struct  FgOut
 private:
     std::vector<std::ostream *> m_streams;  // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
     std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
-    std::mutex        m_mutex;            // Guard m_indent to keep it thread-safe:
+    std::mutex          m_mutex;            // Guard m_indent to keep it thread-safe:
     uint                m_indent = 0;
 
     bool
@@ -141,13 +147,13 @@ struct  FgOutMute
     {release(); }
 };
 
-struct  FgOutPush
+struct  OutPush
 {
     explicit
-    FgOutPush(const std::string & label)
+    OutPush(const std::string & label)
     {fgout << fgnl << label << fgpush; }
 
-    ~FgOutPush()
+    ~OutPush()
     {fgout << fgpop; }
 };
 
@@ -161,5 +167,7 @@ struct  FgOutPush
 #define FGOUT4(X,Y,Z,A) fgout << fgnl                               \
         << #X ": " << (X) << "  " << #Y ": " << (Y) << "  "         \
         << #Z ": " << (Z) << "  " << #A ": " << (A)
+
+}
 
 #endif

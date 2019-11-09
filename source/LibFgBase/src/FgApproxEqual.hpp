@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Nov 16, 2010
+
 //
 
 #ifndef FGAPPROXEQUAL_HPP
@@ -14,6 +13,8 @@
 #include "FgMath.hpp"
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
+
+namespace Fg {
 
 template<typename T>
 bool
@@ -55,67 +56,51 @@ fgApproxEqualRel(double v0,double v1,double relDiff)
 inline
 bool
 fgApproxEqual(
-    const vector<float> &   lhs,
-    const vector<float> &   rhs,
+    const Svec<float> &   lhs,
+    const Svec<float> &   rhs,
     float       relAccuracy = 0.000001)
 {
     FGASSERT(lhs.size() == rhs.size());
     FGASSERT(relAccuracy > std::numeric_limits<float>::epsilon());
-    float   mag1 = fgMag(lhs),
-        mag2 = fgMag(rhs),
+    float   mag1 = cMag(lhs),
+        mag2 = cMag(rhs),
         mag = sqrt((mag1 + mag2) * float(0.5));
     if (mag == float(0))
         return true;
-    float   rdelta = fgLength(lhs-rhs) / mag,
+    float   rdelta = cLen(lhs-rhs) / mag,
         eps =  relAccuracy * float(lhs.size());
     return (rdelta <= eps);
 }
 
-template<typename T>
+template<typename T,uint nrows,uint ncols>
 bool
-fgApproxEqualMatrix(
-    const T &   m0,
-    const T &   m1,
-    double      relTolerance)
+fgApproxEqual(
+    const Mat<T,nrows,ncols> &    m0,
+    const Mat<T,nrows,ncols> &    m1,
+    uint    relTolEpsilons=4)
 {
-    typedef typename T::ValType Scalar;
-    Scalar  delSqr = (m1-m0).mag();
+    T           delSqr = (m1-m0).mag();
     if (delSqr == 0)
         return true;
-    Scalar  relDiff = Scalar(4) * delSqr / (m0+m1).mag();
-    return (fgSqr(relTolerance) >= relDiff);
+    double      relTolerance = relTolEpsilons*std::numeric_limits<T>::epsilon();
+    T           relDiff = T(4) * delSqr / (m0+m1).mag();
+    return (sqr(relTolerance) >= relDiff);
 }
 
 template<typename T,uint nrows,uint ncols>
 bool
 fgApproxEqual(
-    const FgMatrixC<T,nrows,ncols> &    m0,
-    const FgMatrixC<T,nrows,ncols> &    m1,
-    uint    relTolEpsilons=4)
-{return fgApproxEqualMatrix(m0,m1,T(relTolEpsilons)*std::numeric_limits<T>::epsilon()); }
-
-template<typename T>
-bool
-fgApproxEqual(
-    const FgMatrixV<T> &    m0,
-    const FgMatrixV<T> &    m1,
-    T                       relTolerance)
-{return fgApproxEqualMatrix(m0,m1,relTolerance); }
-
-template<typename T,uint nrows,uint ncols>
-bool
-fgApproxEqual(
-    const std::vector<FgMatrixC<T,nrows,ncols> > &  lhs,
-    const std::vector<FgMatrixC<T,nrows,ncols> > &  rhs,
+    const Svec<Mat<T,nrows,ncols> > &  lhs,
+    const Svec<Mat<T,nrows,ncols> > &  rhs,
     T       relAccuracy = 0.000001)
 {
     FGASSERT(lhs.size() == rhs.size());
     FGASSERT(relAccuracy > std::numeric_limits<T>::epsilon());
-    T   mag1 = fgMag(lhs),
-        mag2 = fgMag(rhs),
+    T   mag1 = cMag(lhs),
+        mag2 = cMag(rhs),
         mag = sqrt((mag1 + mag2) * T(0.5));
     if (mag == T(0)) return true;
-    T   rdelta = fgLength(lhs-rhs) / mag,
+    T   rdelta = cLen(lhs-rhs) / mag,
         eps =  relAccuracy * T(nrows*ncols*lhs.size());
     return (rdelta <= eps);
 }
@@ -123,8 +108,8 @@ fgApproxEqual(
 template<typename T,uint nrows,uint ncols>
 bool
 fgApproxEqualComponents(
-    const FgMatrixC<T,nrows,ncols> &    m0,
-    const FgMatrixC<T,nrows,ncols> &    m1,
+    const Mat<T,nrows,ncols> &    m0,
+    const Mat<T,nrows,ncols> &    m1,
     uint                                relEpsilons=2)
 {
     FGASSERT(m0.numElems() == m1.numElems());
@@ -137,8 +122,8 @@ fgApproxEqualComponents(
 template<typename T,uint nrows,uint ncols>
 bool
 fgApproxEqualComponentsAbs(
-    const FgMatrixC<T,nrows,ncols> &    m0,
-    const FgMatrixC<T,nrows,ncols> &    m1,
+    const Mat<T,nrows,ncols> &    m0,
+    const Mat<T,nrows,ncols> &    m1,
     T                                   absDelta)
 {
     FGASSERT(m0.numElems() == m1.numElems());
@@ -151,8 +136,8 @@ fgApproxEqualComponentsAbs(
 template<typename T,uint nrows,uint ncols>
 bool
 fgApproxEqualComponents(
-    const std::vector<FgMatrixC<T,nrows,ncols> > &  lhs,
-    const std::vector<FgMatrixC<T,nrows,ncols> > &  rhs,
+    const Svec<Mat<T,nrows,ncols> > &  lhs,
+    const Svec<Mat<T,nrows,ncols> > &  rhs,
     T                                               relTol)
 {
     FGASSERT(lhs.size() == rhs.size());
@@ -177,6 +162,7 @@ inline
 bool
 fgApproxEqualMag(T v0,T v1,T mag)
 {return (std::abs(v0-v1) < mag * std::numeric_limits<T>::epsilon() * 10); }
-    
+
+}
 
 #endif

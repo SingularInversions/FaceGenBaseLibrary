@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 7, 2004
+
 //
 
 #include "stdafx.h"
@@ -13,6 +12,8 @@
 #include "FgString.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 string
 fgDiagString(const char * fname,int line)
@@ -39,13 +40,15 @@ fgAssert(const char * fname,int line,const string &  msg)
 }
 
 void
-fgWarn(const std::string & msg)
+fgWarn(const std::string & msg,const std::string & dataUtf8)
 {
-    fgout << "\nWARNING: " << msg;
+    fgout << "\nWARNING: " << msg << ": " << dataUtf8;
 }
 
 void
 fgWarn(const char * fname,int line,const string & msg)
 {
     fgout << "\nWARNING at : " <<  fgDiagString(fname,line,msg);
+}
+
 }

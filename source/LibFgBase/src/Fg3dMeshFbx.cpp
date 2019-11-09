@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Jan 17, 2014
+
 //
 // Basic FBX export
 
@@ -19,6 +18,8 @@
 #include "FgTestUtils.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 static
 size_t
@@ -63,18 +64,18 @@ idVideo(size_t mm,size_t tt)
 static
 string
 nmVideo(size_t mm,size_t tt)
-{return "\"Video::Video"+fgToStr(mm)+"_"+fgToStr(tt)+"\""; }
+{return "\"Video::Video"+toString(mm)+"_"+toString(tt)+"\""; }
 
 void
-fgSaveFbx(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
+saveFbx(
+    const Ustring &            filename,
+    const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
     FGASSERT(!meshes.empty());
-    FgPath      path(filename);
+    Path      path(filename);
     path.ext = "fbx";
-    FgOfstream  ofs(path.str());
+    Ofstream  ofs(path.str());
     ofs.precision(7);
     ofs <<
         "; FBX 7.4.0 project file\n"
@@ -100,7 +101,7 @@ fgSaveFbx(
         "}\n"
         "Objects:  {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &    mesh = meshes[mm];
+        const Mesh &    mesh = meshes[mm];
         ofs <<
             "    Model: " << idModel(mm) << ", \"Model::" << mesh.name << "\", \"Mesh\" {\n"
             "        Version: 232\n"
@@ -116,7 +117,7 @@ fgSaveFbx(
             "        Vertices: *" << mesh.verts.size()*3 << " {\n"
             "            a: ";
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
-            FgVect3F    v = mesh.verts[vv];
+            Vec3F    v = mesh.verts[vv];
             if (vv > 0)
                 ofs << ",";
             ofs << v[0] << "," << v[1] << "," << v[2];
@@ -127,9 +128,9 @@ fgSaveFbx(
             "            a: ";
         bool        start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface & surf = mesh.surfaces[ss];
+            const Surf & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-                FgVect3UI   i = surf.tris.vertInds[tt];
+                Vec3UI   i = surf.tris.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -137,7 +138,7 @@ fgSaveFbx(
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
             for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-                FgVect4UI   i = surf.quads.vertInds[tt];
+                Vec4UI   i = surf.quads.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -155,9 +156,9 @@ fgSaveFbx(
             "            ReferenceInformationType: \"Direct\"\n"
             "            Normals: *" << mesh.verts.size()*3 << " {\n"
             "                a: ";
-        Fg3dNormals     norms = fgNormals(mesh);
+        Normals     norms = calcNormals(mesh);
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
-            FgVect3F    n = norms.vert[vv];
+            Vec3F    n = norms.vert[vv];
             if (vv > 0)
                 ofs << ",";
             ofs << n[0] << "," << n[1] << "," << n[2];
@@ -173,7 +174,7 @@ fgSaveFbx(
             "            UV: *" << mesh.uvs.size()*2 << " {\n"
             "                a: ";
         for (size_t uu=0; uu<mesh.uvs.size(); ++uu) {
-            FgVect2F    uv = mesh.uvs[uu];
+            Vec2F    uv = mesh.uvs[uu];
             if (uu > 0)
                 ofs << ",";
             ofs << uv[0] << "," << uv[1];
@@ -184,9 +185,9 @@ fgSaveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface & surf = mesh.surfaces[ss];
+            const Surf & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
-                FgVect3UI   i = surf.tris.uvInds[tt];
+                Vec3UI   i = surf.tris.uvInds[tt];
                 if (start)
                     start = false;
                 else
@@ -194,7 +195,7 @@ fgSaveFbx(
                 ofs << i[0] << "," << i[1] << "," << i[2];
             }
             for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
-                FgVect4UI   i = surf.quads.uvInds[tt];
+                Vec4UI   i = surf.quads.uvInds[tt];
                 if (start)
                     start = false;
                 else
@@ -215,7 +216,7 @@ fgSaveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface & surf = mesh.surfaces[ss];
+            const Surf & surf = mesh.surfaces[ss];
             size_t              num = surf.tris.uvInds.size() + surf.quads.uvInds.size();
             for (size_t ii=0; ii<num; ++ii) {
                 if (start)
@@ -246,7 +247,7 @@ fgSaveFbx(
         ofs <<
             "    }\n";
         for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
-            FgIndexedMorph  morph = mesh.getMorphAsIndexedDelta(ee);
+            IndexedMorph  morph = mesh.getMorphAsIndexedDelta(ee);
             ofs << 
                 "    Geometry: " << idGeoExp(mm,ee) << ", \"Geometry::" << morph.name << "\", \"Shape\" {\n"
                 "        Version: 100\n"
@@ -264,7 +265,7 @@ fgSaveFbx(
             for (size_t ii=0; ii<morph.baseInds.size(); ++ii) {
                 if (ii > 0)
                     ofs << ",";
-                FgVect3F    v = morph.verts[ii];
+                Vec3F    v = morph.verts[ii];
                 ofs << v[0] << "," << v[1] << "," << v[2];
             }
             ofs << "\n"
@@ -283,7 +284,7 @@ fgSaveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &    mesh = meshes[mm];
+        const Mesh &    mesh = meshes[mm];
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<
                 "    Material: " << idMaterial(mm,tt) << ", \"Material::Material" << mm << "_" << tt << "\", \"\" {\n"
@@ -299,9 +300,9 @@ fgSaveFbx(
                 "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
                 "        }\n"
                 "    }\n";
-            FgString    texBaseExt = path.base + fgToStr(mm) + "_" + fgToStr(tt) + "." + imgFormat;
+            Ustring    texBaseExt = path.base + toString(mm) + "_" + toString(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
-                fgSaveImgAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
+                imgSaveAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
                 "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
                 "        Type: \"TextureVideoClip\"\n"
@@ -336,7 +337,7 @@ fgSaveFbx(
         "}\n"
         "Connections: {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &    mesh = meshes[mm];
+        const Mesh &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idModel(mm) << ",0\n";
         for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
             ofs << "    C: \"OO\", " << idGeoExp(mm,ee) << "," << idSubdeformer(mm,ee) << "\n";
@@ -346,7 +347,7 @@ fgSaveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Fg3dMesh &    mesh = meshes[mm];
+        const Mesh &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idGeometry(mm) << "," << idModel(mm) << "\n";
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<
@@ -362,19 +363,21 @@ fgSaveFbx(
 }
 
 void
-fgSaveFbxTest(const FgArgs & args)
+fgSaveFbxTest(const CLArgs & args)
 {
     FGTESTDIR
-    FgString            dd = fgDataDir();
+    Ustring            dd = dataDir();
     string              rd = "base/";
-    Fg3dMesh            mouth = fgLoadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
-    Fg3dMesh            glasses = fgLoadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    fgSaveFbx("meshExportFbx",fgSvec(mouth,glasses));
+    Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
+    saveFbx("meshExportFbx",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportFbx.fbx","base/test/");
     fgRegressFileRel("meshExportFbx0_0.png","base/test/");
     fgRegressFileRel("meshExportFbx1_0.png","base/test/");
+}
+
 }
 
 // */

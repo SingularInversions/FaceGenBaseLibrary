@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Dec 2, 2011
+
 //
 
 #include "stdafx.h"
@@ -16,6 +15,8 @@
 #include "FgSyntax.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 const vector<pair<FgBuildOS,string> > &
 fgBuildOSStrs()
@@ -131,6 +132,7 @@ fgCompilerStrs()
         {FgCompiler::vs13,"vs13"},
         {FgCompiler::vs15,"vs15"},
         {FgCompiler::vs17,"vs17"},
+        {FgCompiler::vs19,"vs19"},
         {FgCompiler::gcc,"gcc"},
         {FgCompiler::clang,"clang"},
         {FgCompiler::icpc,"icpc"}
@@ -163,7 +165,7 @@ FgCompilers
 fgBuildCompilers(FgBuildOS os)
 {
     if (os == FgBuildOS::win)
-        return fgSvec(FgCompiler::vs17,FgCompiler::vs15,FgCompiler::vs13);
+        return fgSvec(FgCompiler::vs19,FgCompiler::vs17,FgCompiler::vs15,FgCompiler::vs13);
     else if (os == FgBuildOS::linux)
         return fgSvec(FgCompiler::clang,FgCompiler::gcc,FgCompiler::icpc);
     else if (os == FgBuildOS::macos)
@@ -186,6 +188,8 @@ fgCurrentCompiler()
         return FgCompiler::vs15;
     #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
         return FgCompiler::vs17;
+    #elif((_MSC_VER >= 1920) && (_MSC_VER < 1930))
+        return FgCompiler::vs19;
     #else
         define_new_visual_studio_version_here
     #endif
@@ -214,8 +218,8 @@ string
 fgCurrentBuildDescription()
 {
     return 
-        fgToStr(fgCurrentBuildOS()) + " " +
-        fgToStr(fgCurrentCompiler()) + " " +
+        toString(fgCurrentBuildOS()) + " " +
+        toString(fgCurrentCompiler()) + " " +
         fgBitsString() + " " + fgCurrentBuildConfig();
 }
 
@@ -224,7 +228,7 @@ fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
 {
     string          ds = backslash ? "\\" : "/",
                     debrel = release ? "release" : "debug";
-    return "bin" + ds + fgToStr(os) + ds + fgToStr(arch) + ds + fgToStr(comp) + ds + debrel + ds;
+    return "bin" + ds + toString(os) + ds + toString(arch) + ds + toString(comp) + ds + debrel + ds;
 }
 
 uint64
@@ -236,7 +240,7 @@ fgUuidHash64(const string & str)
     return hf(str);
 #else           // size_t is 32 bits:
     uint64      lo = hf(str),
-                hi = hf(str+fgToStr(lo));
+                hi = hf(str+toString(lo));
     return (lo | (hi << 32));
 #endif
 }
@@ -249,7 +253,7 @@ fgUuidHash128(const string & str)
     uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
                     *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
     *pLo = fgUuidHash64(str);
-    *pHi = fgUuidHash64(str+fgToStr(*pLo));
+    *pHi = fgUuidHash64(str+toString(*pLo));
     return ret;
 }
 
@@ -274,7 +278,9 @@ fgCreateMicrosoftGuid(const string & name,bool wsb)
 }
 
 void
-fgTestmCreateMicrosoftGuid(const FgArgs &)
+fgTestmCreateMicrosoftGuid(const CLArgs &)
 {
     fgout << fgnl << fgCreateMicrosoftGuid("This string should hash to a consistent value");
+}
+
 }

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 29, 2004
+
 //
 // std::string related functions
 //
@@ -17,61 +16,60 @@
 #include "FgStdVector.hpp"
 #include "FgOpt.hpp"
 
-using std::string;
+namespace Fg {
 
-typedef std::vector<std::string>    FgStrs;
-typedef std::vector<FgStrs>         FgStrss;
-typedef std::vector<std::u32string> FgStr32s;
+typedef std::string             String;
+typedef Svec<String>            Strings;
+typedef Svec<Strings>           Stringss;
+typedef Svec<std::u32string>    FgStr32s;
 
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors.
-// Defined here since this 'FgStdString' has more derived include dependencies and 
-// we need to include specializations for 'string' as well as 'FgString':
 template<class T>
-std::string
-fgToStr(const T & val)
+String
+toString(const T & val)
 {
     std::ostringstream   msg;
     msg << val;
     return msg.str();
 }
 template<>
-inline std::string
-fgToStr(const std::string & str)
+inline String
+toString(const String & str)
 {return str; }
 
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors
 // Define fully specialized versions where this behaviour is not desired:
 template<class T>
-FgOpt<T>
-fgFromStr(const string & str)
+Opt<T>
+fgFromStr(const String & str)
 {
     T                   val;
     std::istringstream  iss(str);
     iss >> val;
     if (iss.fail() || (!iss.eof()))
-        return FgOpt<T>();
-    return FgOpt<T>(val);
+        return Opt<T>();
+    return Opt<T>(val);
 }
 // Only valid integer representations within the range of int32 will return a valid value, whitespace invalid:
-template<> FgOpt<int> fgFromStr<int>(const string &);
-template<> FgOpt<uint> fgFromStr<uint>(const string &);
+template<> Opt<int> fgFromStr<int>(const String &);
+template<> Opt<uint> fgFromStr<uint>(const String &);
 
-// Throws if the string is not formatted correctly:
+// Throws if the String is not formatted correctly:
 template<class T>
 T
-fgFromString(const string & str)
+fgFromString(const String & str)
 {
-    FgOpt<T>    oval = fgFromStr<T>(str);
+    Opt<T>    oval = fgFromStr<T>(str);
     if (!oval.valid())
-        throw FgException("Unable to convert string to type",string(typeid(T).name())+":"+str);
+        throw FgException("Unable to convert String to type",String(typeid(T).name())+":"+str);
     return oval.val();
 }
 
 // Ensures a minimum number of digits are printed:
 template<class T>
-string
+String
 fgToStringDigits(T val,uint numDigits)
 {
     std::ostringstream   oss;
@@ -81,7 +79,7 @@ fgToStringDigits(T val,uint numDigits)
 
 // Sets the desired total number of digits (precision):
 template<class T>
-string
+String
 fgToStringPrecision(T val,uint precision)
 {
     std::ostringstream   oss;
@@ -91,49 +89,49 @@ fgToStringPrecision(T val,uint precision)
 }
 
 // Set the number of digits beyond fixed point:
-string
+String
 fgToFixed(double val,uint fractionalDigits=0);
 
 // Multiply by 100 and put a percent sign after:
-string
+String
 fgToPercent(double val,uint fractionalDigits=0);
 
-string
-fgToLower(const string & s);
+String
+fgToLower(const String & s);
 
-string
-fgToUpper(const string & s);
+String
+fgToUpper(const String & s);
 
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
-std::vector<string>
-fgSplitAtSeparators(const string & str,char sep);
+Svec<String>
+fgSplitAtSeparators(const String & str,char sep);
 
-string
-fgReplace(const string & str,char orig,char repl);
+String
+fgReplace(const String & str,char orig,char repl);
 
-// Pad a string to desired len (does not truncate of longer):
-string
-fgPad(const string & str,size_t len,char ch=' ');
+// Pad a String to desired len (does not truncate of longer):
+String
+fgPad(const String & str,size_t len,char ch=' ');
 
 // Inspired by Python join():
-string
-fgCat(const vector<string> & strings,const string & separator);
+String
+cat(const Svec<String> & strings,const String & separator);
 
 inline
-string
-fgCat(const string & s0,const string & s1)
+String
+cat(const String & s0,const String & s1)
 {
-    string      ret(s0);
+    String      ret(s0);
     ret.append(s1);
     return ret;
 }
 
 inline
-string
-fgCat(const string & s0,const string & s1,const string & s2)
+String
+cat(const String & s0,const String & s1,const String & s2)
 {
-    string      ret(s0);
+    String      ret(s0);
     ret.append(s1);
     ret.append(s2);
     return ret;
@@ -142,14 +140,14 @@ fgCat(const string & s0,const string & s1,const string & s2)
 // C++98 doesn't support .back() for strings:
 inline
 char
-fgBack(const string & s)
+fgBack(const String & s)
 {
     FGASSERT(!s.empty());
     return *(--s.end());
 }
 inline
 char &
-fgBack(string & s)
+fgBack(String & s)
 {
     FGASSERT(!s.empty());
     return *(--s.end());
@@ -196,10 +194,10 @@ fgSubstr(const std::basic_string<T> & str,size_t start,size_t size)
 
 // Returns at least size 1, with 1 additional for each split element:
 template<class T>
-std::vector<std::basic_string<T> >
+Svec<std::basic_string<T> >
 fgSplit(const std::basic_string<T> & str,T ch)
 {
-    std::vector<std::basic_string<T> >  ret;
+    Svec<std::basic_string<T> >  ret;
     std::basic_string<T>                ss;
     for(T c : str) {
         if (c == ch) {
@@ -257,5 +255,7 @@ template<class T>
 bool
 fgEndsWith(const std::basic_string<T> & str,const T * pattern_c_str)
 {return fgEndsWith(str,std::basic_string<T>(pattern_c_str)); }
+
+}
 
 #endif

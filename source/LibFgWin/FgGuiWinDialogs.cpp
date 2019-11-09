@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,47 +17,47 @@
 using namespace std;
 using namespace std::placeholders;
 
+namespace Fg {
+
+template<class T>
+using Unique = std::unique_ptr<T,Fg::Release<T> >;
+
 void
-fgGuiDialogMessage(
-    const FgString & cap,
-    const FgString & msg)
+guiDialogMessage(
+    const Ustring & cap,
+    const Ustring & msg)
 {
     MessageBox(
         // Sending the main window handle makes it the OWNER of this window (not parent since
         // this is not a child window but an actual window), which makes this a modal dialog:
-        s_fgGuiWin.hwndMain,
+        s_guiWin.hwndMain,
         msg.as_wstring().c_str(),
         cap.as_wstring().c_str(),
         MB_OK);
 }
 
-static
-void
-pfdRelease(IFileDialog * pfd)
-{pfd->Release(); }
-
-FgOpt<FgString>
-fgGuiDialogFileLoad(
-    const FgString &        description,
-    const vector<string> &  extensions,
+Opt<Ustring>
+guiDialogFileLoad(
+    const Ustring &         description,
+    const Strings &         extensions,
     const string &          storeID)
 {
     FGASSERT(!extensions.empty());
-    FgOpt<FgString>    ret;
+    Opt<Ustring>          ret;
     HRESULT                 hr;
-    IFileDialog *           pfd = NULL;
-    hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
+    IFileDialog *           pfdPtr = NULL;
+    hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
+    Unique<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
-    std::hash<string>       hash;       // VS12 doesn't like this inlined
-    guid.Data1 = ulong(hash(description.m_str+storeID));
-    guid.Data2 = ushort(0x7708U);       // Randomly chosen
+    size_t                  hashVal = hash<string>{}(description.m_str+storeID);
+    guid.Data1 = ulong(hashVal);
+    guid.Data2 = ushort(0x7708U);       // Randomly chosen for this function
     guid.Data3 = ushort(0x20DAU);       // "
     for (uint ii=0; ii<8; ++ii)
-    guid.Data4[0] = 0;                  // Ensure consistent
+        guid.Data4[ii] = 0;             // Ensure consistent
     hr = pfd->SetClientGuid(guid);
     FGASSERTWINOK(hr);
     // Get existing (default) options to avoid overwrite:
@@ -68,55 +68,55 @@ fgGuiDialogFileLoad(
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
     FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
-                            exts = L"*." + FgString(extensions[0]).as_wstring();
+                            exts = L"*." + Ustring(extensions[0]).as_wstring();
     for (size_t ii=1; ii<extensions.size(); ++ii)
-        exts += L";*." + FgString(extensions[ii]).as_wstring();
+        exts += L";*." + Ustring(extensions[ii]).as_wstring();
     COMDLG_FILTERSPEC       fs;
-    fs.pszName = desc.data();
-    fs.pszSpec = exts.data();
+    fs.pszName = desc.c_str();
+    fs.pszSpec = exts.c_str();
     hr = pfd->SetFileTypes(1,&fs);
     FGASSERTWINOK(hr);
     // Set the selected file type index (starts at 1):
     hr = pfd->SetFileTypeIndex(1);
     FGASSERTWINOK(hr);
-    hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
+    hr = pfd->Show(s_guiWin.hwndMain);    // Blocking call to display dialog
     if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            PWSTR           pszFilePath = NULL;
+            Unique<IShellItem>  psiResultRaii(psiResult);
+            PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if ((hr == S_OK) && (pszFilePath != NULL)) {
-                ret = FgString(pszFilePath);
+                ret = Ustring(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
-            psiResult->Release();
         }
     }
     return ret;
 }
 
-FgOpt<FgString>
-fgGuiDialogFileSave(
-    const FgString &    description,
+Opt<Ustring>
+guiDialogFileSave(
+    const Ustring &    description,
     const string &      extension)
 {
     FGASSERT(!extension.empty());
-    FgOpt<FgString>    ret;
+    Opt<Ustring>          ret;
     HRESULT                 hr;
-    IFileDialog *           pfd = NULL;
-    hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
+    IFileDialog *           pfdPtr = NULL;
+    hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
+    Unique<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
-    std::hash<string>       hash;       // VS12 doesn't like this inlined
-    guid.Data1 = ulong(hash(description.m_str));
+    size_t                  hashVal = hash<string>{}(description.m_str);
+    guid.Data1 = ulong(hashVal);
     guid.Data2 = ushort(0x0F3FU);       // Randomly chosen
     guid.Data3 = ushort(0x574CU);       // "
     for (uint ii=0; ii<8; ++ii)
-    guid.Data4[0] = 0;                  // Ensure consistent
+        guid.Data4[ii] = 0;             // Ensure consistent
     hr = pfd->SetClientGuid(guid);
     FGASSERTWINOK(hr);
     // Get existing (default) options to avoid overwrite:
@@ -127,7 +127,7 @@ fgGuiDialogFileSave(
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
     FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
-                            exts = L"*." + FgString(extension).as_wstring();
+                            exts = L"*." + Ustring(extension).as_wstring();
     COMDLG_FILTERSPEC       fs;
     fs.pszName = desc.data();
     fs.pszSpec = exts.data();
@@ -136,34 +136,34 @@ fgGuiDialogFileSave(
     // Set the selected file type index (starts at 1):
     hr = pfd->SetFileTypeIndex(1);
     FGASSERTWINOK(hr);
-    wstring                 ext = FgString(extension).as_wstring();
+    wstring                 ext = Ustring(extension).as_wstring();
     hr = pfd->SetDefaultExtension(ext.c_str());
-    hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
+    hr = pfd->Show(s_guiWin.hwndMain);    // Blocking call to display dialog
     if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
+            Unique<IShellItem>  psiResultRaii(psiResult);
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
-                ret = FgString(pszFilePath);
+                ret = Ustring(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
-            psiResult->Release();
         }
     }
     return ret;
 }
 
-FgOpt<FgString>
-fgGuiDialogDirSelect()
+Opt<Ustring>
+guiDialogDirSelect()
 {
-    FgOpt<FgString>    ret;
+    Opt<Ustring>            ret;
     HRESULT                 hr;
-    IFileDialog *           pfd = NULL;
-    hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfd));
+    IFileDialog *           pfdPtr = NULL;
+    hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    FgScopeGuard            sg(std::bind(pfdRelease,pfd));
+    Unique<IFileDialog>     pfd(pfdPtr);
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
@@ -171,32 +171,32 @@ fgGuiDialogDirSelect()
     // Only want filesystem items; don't support other shell items:
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_PICKFOLDERS);
     FGASSERTWINOK(hr);
-    hr = pfd->Show(s_fgGuiWin.hwndMain);    // Blocking call to display dialog
+    hr = pfd->Show(s_guiWin.hwndMain);    // Blocking call to display dialog
     if (hr == S_OK) {                       // A filename was selected
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            PWSTR           pszFilePath = NULL;
+            Unique<IShellItem>  psiResultRaii(psiResult);
+            PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
-                FgString    str(pszFilePath);
+                Ustring         str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
                 return fgAsDirectory(str);
             }
-            psiResult->Release();
         }
     }
     return ret;
 }
 
-static bool s_cancel;
-
-struct  FgGuiWinDialogProgress
+struct  GuiDialogProgressWin
 {
     uint        progressSteps;
     HWND        hwndThis;
     HWND        hwndProgBar;
     HWND        hwndButton;
+    // Doesn't need to be atomic since it's only written by one thread and any state change is valid:
+    bool        cancelFlag = false;
 
     LRESULT
     wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
@@ -208,7 +208,7 @@ struct  FgGuiWinDialogProgress
                     0,PROGRESS_CLASS,(LPTSTR)NULL,
                     WS_CHILD | WS_BORDER | WS_VISIBLE,
                     100,20,300,50,
-                    hwndThis,(HMENU)1,s_fgGuiWin.hinst,NULL);
+                    hwndThis,(HMENU)1,s_guiWin.hinst,NULL);
             FGASSERTWIN(hwndProgBar != 0);
             SendMessage(hwndProgBar,PBM_SETRANGE,0,MAKELPARAM(0,progressSteps));
             SendMessage(hwndProgBar,PBM_SETSTEP,(WPARAM)1,0);
@@ -221,7 +221,7 @@ struct  FgGuiWinDialogProgress
                     100,120,300,20,     // Will be sent MOVEWINDOW messages.
                     hwnd,
                     HMENU(0),
-                    s_fgGuiWin.hinst,
+                    s_guiWin.hinst,
                     NULL);              // No WM_CREATE parameter
             FGASSERTWIN(hwndButton != 0);
             return 0;
@@ -231,7 +231,7 @@ struct  FgGuiWinDialogProgress
             WORD    code = HIWORD(wParam);
             if (code == 0) {
                 FGASSERT(ident == 0);
-                s_cancel = true;
+                cancelFlag = true;
             }
             return 0;
         }
@@ -240,50 +240,46 @@ struct  FgGuiWinDialogProgress
 };
 
 static
-bool
-updateDialog(HWND hwndMain,HWND hwndProgBar,bool milestone)
-{
-    if (s_cancel) {
-        // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
-        // the message queue so the modal message loop below would have no way of knowing when it's
-        // being closed:
-        PostMessage(hwndMain,WM_CLOSE,0,0);
-        return true;
-    }
-    if (milestone)
-        SendMessage(hwndProgBar,PBM_STEPIT,0,0);
-    return false;
-}
-
-static FgString         s_error;
-
-static
 void
-threadWorker(const FgFnCallback2Void & fnWorker,HWND hwndMain,HWND hwndProgBar)
+threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & cancelFlag,Ustring & errMsg)
 {
-    FgFnBool2Bool           fnUpdateDialog = std::bind(updateDialog,hwndMain,hwndProgBar,_1);
+    WorkerCallback          callback = [=](bool isMilestone)
+        {
+            if (cancelFlag) {
+                // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
+                // the message queue so the modal message loop below would have no way of knowing when it's
+                // being closed:
+                PostMessage(hwndMain,WM_CLOSE,0,0);
+                return true;
+            }
+            if (isMilestone)
+                SendMessage(hwndProgBar,PBM_STEPIT,0,0);
+            return false;
+        };
+
+        //fnUpdateDialog = bind(updateDialog,hwndMain,hwndProgBar,_1);
     try {
-        fnWorker(fnUpdateDialog);
+        worker(callback);
     }
     catch(FgException const & e)
     {
-        s_error = "FG Exception: " + e.no_tr_message();
+        errMsg = "FG Exception: " + e.no_tr_message();
     }
     catch(std::bad_alloc const &)
     {
-        s_error = "OUT OF MEMORY ";
+        errMsg = "OUT OF MEMORY ";
 #ifndef FG_64
         if (fg64bitOS())
-            s_error += "(install 64-bit version if possible) ";
+            errMsg += "(install 64-bit version if possible) ";
 #endif
     }
     catch(std::exception const & e)
     {
-        s_error = "std::exception: " + FgString(e.what());
+        errMsg = "std::exception: " + Ustring(e.what());
     }
     catch(...)
     {
-        s_error = "Unknown type: ";
+        errMsg = "Unknown type: ";
     }
     // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
     // the message queue so the modal message loop below would have no way of knowing when it's
@@ -292,19 +288,19 @@ threadWorker(const FgFnCallback2Void & fnWorker,HWND hwndMain,HWND hwndProgBar)
 }
 
 bool
-fgGuiDialogProgress(const FgString & title,uint progressSteps,FgFnCallback2Void fnWorker)
+guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
 {
-    FgGuiWinDialogProgress      progBar;
+    GuiDialogProgressWin    progBar;
     progBar.progressSteps = progressSteps;
     // Create the dialog window with the main window as its parent window:
-    HWND                        hwndMain = fgCreateDialog(title,s_fgGuiWin.hwndMain,&progBar);
-    EnableWindow(s_fgGuiWin.hwndMain,FALSE);    // Disable main window for model dialog
+    HWND                    hwndMain = winCreateDialog(title,s_guiWin.hwndMain,&progBar);
+    EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     ShowWindow(hwndMain,SW_SHOWNORMAL);
     UpdateWindow(hwndMain);
-    s_cancel = false;
-    s_error = FgString();
-    std::thread               compute(threadWorker,std::cref(fnWorker),hwndMain,progBar.hwndProgBar);
-    MSG                         msg;
+    Ustring                 errMsg;
+    thread                  compute(threadWorker,
+        cref(worker),hwndMain,progBar.hwndProgBar,ref(progBar.cancelFlag),ref(errMsg));
+    MSG                     msg;
     while (GetMessage(&msg,NULL,0,0)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -315,10 +311,10 @@ fgGuiDialogProgress(const FgString & title,uint progressSteps,FgFnCallback2Void 
     }
     compute.join();
     DestroyWindow(hwndMain);
-    EnableWindow(s_fgGuiWin.hwndMain,TRUE);    // Re-enable main window
-    if (!s_error.empty())
-        fgThrow("ERROR @ fgGuiDialogProgress",s_error);
-    return !s_cancel;
+    EnableWindow(s_guiWin.hwndMain,TRUE);    // Re-enable main window
+    if (!errMsg.empty())
+        fgThrow("Exception in guiDialogProgress",errMsg);
+    return !progBar.cancelFlag;
 }
 
 // **************************************** Splash Screen *****************************************
@@ -326,12 +322,12 @@ fgGuiDialogProgress(const FgString & title,uint progressSteps,FgFnCallback2Void 
 static
 const int s_splashSize = 256;
 
-struct  FgGuiWinDialogSplashScreen
+struct  GuiDialogSplashScreenWin
 {
     HWND            hwndThis;
-    FgImgRgbaUb     img;
+    ImgC4UC     img;
 
-    FgGuiWinDialogSplashScreen() : hwndThis(0), img(s_splashSize,s_splashSize,FgRgbaUB(0,255,0,255)) {}
+    GuiDialogSplashScreenWin() : hwndThis(0), img(s_splashSize,s_splashSize,RgbaUC(0,255,0,255)) {}
 
     LRESULT
     wndProc(HWND hwnd,UINT msg,WPARAM,LPARAM)
@@ -379,7 +375,7 @@ struct  FgGuiWinDialogSplashScreen
                     img.width(),img.height(),
                     0,0,
                     0,img.height(),
-                    img.dataPtr(),      // This pointer is kept after function return
+                    img.data(),      // This pointer is kept after function return
                     (BITMAPINFO*)&bmi,
                     DIB_RGB_COLORS);
             }
@@ -395,7 +391,7 @@ struct  FgGuiWinDialogSplashScreen
 };
 
 static
-FgGuiWinDialogSplashScreen  s_fgGuiWinDialogSplashScreen;
+GuiDialogSplashScreenWin  s_fgGuiWinDialogSplashScreen;
 
 static
 INT_PTR CALLBACK
@@ -411,7 +407,7 @@ fgGuiWinDialogSplashClose()
 }
 
 std::function<void(void)>
-fgGuiDialogSplashScreen()
+guiDialogSplashScreen()
 {
     // Need 4 bytes of zero after the DLGTEMPLATE structure for 'CreateDialog...' to work:
     void *          mem = malloc(sizeof(DLGTEMPLATE)+4);
@@ -422,6 +418,8 @@ fgGuiDialogSplashScreen()
     free(mem);
     FGASSERTWIN(res != NULL);
     return &fgGuiWinDialogSplashClose;
+}
+
 }
 
 // */

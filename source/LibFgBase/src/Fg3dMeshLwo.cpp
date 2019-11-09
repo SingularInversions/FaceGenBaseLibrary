@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: John Leung
-// Created: Jan 7, 2002
+
 //
 // Very basic LWO export
 
@@ -79,32 +78,34 @@ using namespace std;
 #define ID_AAST  LWID('A','A','S','T')
 #define ID_PIXB  LWID('P','I','X','B')
 
+namespace Fg {
+
 struct LwoTextureInfoS
 {
     string                  uvTexName;
     vector<unsigned long>   texVtxList;
-    vector<FgVect2F>      texTxtCoord;
+    vector<Vec2F>      texTxtCoord;
 };
 
 
 //****************************************************************************
 // Local functions
 //****************************************************************************
-static bool saveLwoLwsFile(const FgString &fname,
+static bool saveLwoLwsFile(const Ustring &fname,
                 const FffMultiObjectC &model,
                 const vector<FffMultiObjectC> *targets,
                 const vector<string>          *names);
 
-static bool searchVtxTexMap(unsigned long vtxId, FgVect2F tex,
+static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
-                const vector<FgVect2F> &texCoord);
-static bool errorFcloseExit(FILE *fptr, const FgString &fname);
-static FgVect3F toLwoCoord(FgVect3F vec) { vec[2]=-vec[2]; return vec; }
+                const vector<Vec2F> &texCoord);
+static bool errorFcloseExit(FILE *fptr, const Ustring &fname);
+static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
 static bool swap2BytesWrite(FILE *fptr, const void *ptr);
 static int  writeVx(FILE *fptr, unsigned long idx);
-static bool writeVec12(FILE *fptr, const FgVect3F &vect);
-static bool writeVec8(FILE *fptr, const FgVect2F &vect);
+static bool writeVec12(FILE *fptr, const Vec3F &vect);
+static bool writeVec8(FILE *fptr, const Vec2F &vect);
 static bool padByte(FILE *fptr)
             { char byte=0; return (fwrite(&byte,1,1,fptr) == 1); }
 static bool writeId(FILE *fptr, unsigned long id)
@@ -119,15 +120,15 @@ static bool writeTagsChunk(FILE *fptr, unsigned long &chunkSize,
                 vector<string> &tagNameList);
 static bool writeLayrChunk(FILE *fptr, unsigned long &chunkSize,
                 unsigned short num, string name,
-                FgVect3F pivot);
+                Vec3F pivot);
 static bool writePntsChunks(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model, int objIdx);
 static bool writeBboxChunks(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model, 
-                FgVect3F &minVec, FgVect3F &maxVec, int objIdx);
+                Vec3F &minVec, Vec3F &maxVec, int objIdx);
 static bool writeVmapTxuvChunks(FILE *fptr, unsigned long &chunkSize,
                 vector<unsigned long> &tmpVtxList,
-                vector<FgVect2F> &tmpTexCoord,
+                vector<Vec2F> &tmpTexCoord,
                 const string &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeVmapMorfChunks(FILE *fptr, unsigned long &chunkSize,
@@ -139,7 +140,7 @@ static bool writePtagChunks(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model, int objIndex);
 static bool writeVmadChunks(FILE *fptr, unsigned long &chunkSize,
                 const vector<unsigned long> &tmpVtxList,
-                const vector<FgVect2F> &tmpTexCoord,
+                const vector<Vec2F> &tmpTexCoord,
                 const string &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeClipChunks(FILE *fptr, unsigned long &chunkSize,
@@ -171,8 +172,8 @@ static bool writeSurfBlokVmapSubChunk(FILE *fptr, unsigned short &chunkSize,
 static bool writeSurfBlokAastSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize);
 
-static bool writeLwsFile(const FgString &lwsName, const FgString &lwoName,
-                FgVect3F minVect, FgVect3F maxVect,
+static bool writeLwsFile(const Ustring &lwsName, const Ustring &lwoName,
+                Vec3F minVect, Vec3F maxVect,
                 unsigned long numLayers, unsigned long numMorphs, 
                 const vector<string> *morphNames);
 
@@ -181,7 +182,7 @@ static bool writeLwsFile(const FgString &lwsName, const FgString &lwoName,
 //                              fffSaveLwoLwsFile
 //****************************************************************************
 static bool    fffSaveLwoLwsFile(
-    const FgString            &fname,
+    const Ustring            &fname,
     const FffMultiObjectC   &model)
 {
     return saveLwoLwsFile(fname,model,0,0);
@@ -199,7 +200,7 @@ static string translateName(string input)
 
 static bool    fffSaveLwoLwsFile(
 
-    const FgString                    &fname,
+    const Ustring                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,  // Only use the vertices.
     const vector<string>            &morphNames)
@@ -217,15 +218,15 @@ static bool    fffSaveLwoLwsFile(
 //                              saveLwoLwsFile
 //****************************************************************************
 static bool saveLwoLwsFile(
-    const FgString                  &fname,
+    const Ustring                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *targets,       // Only use the vertices.
     const vector<string>            *names)
 {
-    FgPath          path(fname);
-    FgString        lwsName = path.dirBase() + ".lws";
-    FgString        lwoName = path.base + ".lwo";
-    FgString        fullLwoName = path.dirBase() + ".lwo";
+    Path          path(fname);
+    Ustring        lwsName = path.dirBase() + ".lws";
+    Ustring        lwoName = path.base + ".lwo";
+    Ustring        fullLwoName = path.dirBase() + ".lwo";
 #ifdef _WIN32
     FILE *fptr = _wfopen(fullLwoName.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
@@ -260,7 +261,7 @@ static bool saveLwoLwsFile(
 
     // LAYR chunk
     string layerName = string("Layer");
-    FgVect3F pivot(0.0f,0.0f,0.0f);
+    Vec3F pivot(0.0f,0.0f,0.0f);
     unsigned long layrChunkSize = 0;
     if (!writeLayrChunk(fptr,layrChunkSize,0,layerName,pivot))
         return errorFcloseExit(fptr,fname);
@@ -273,8 +274,8 @@ static bool saveLwoLwsFile(
     fileChunkSize += pntsChunkSize;
 
     // BBOX chunk
-    FgVect3F minVect(0.0f,0.0f,0.0f);
-    FgVect3F maxVect(0.0f,0.0f,0.0f);
+    Vec3F minVect(0.0f,0.0f,0.0f);
+    Vec3F maxVect(0.0f,0.0f,0.0f);
     unsigned long bboxChunkSize = 0;
     if (!writeBboxChunks(fptr,bboxChunkSize,model,minVect,maxVect,-1))
         return errorFcloseExit(fptr,fname);
@@ -402,9 +403,9 @@ static bool saveLwoLwsFile(
 static bool searchVtxTexMap(
 
     unsigned long               vtxId,
-    FgVect2F                  tex,
+    Vec2F                  tex,
     const vector<unsigned long> &vtxList,
-    const vector<FgVect2F>    &texCoord)
+    const vector<Vec2F>    &texCoord)
 {
     bool found = false;
 
@@ -428,7 +429,7 @@ static bool searchVtxTexMap(
 //****************************************************************************
 //                              errorFcloseExit
 //****************************************************************************
-static bool errorFcloseExit(FILE *fptr, const FgString &)
+static bool errorFcloseExit(FILE *fptr, const Ustring &)
 {
     fclose(fptr);
     return false;
@@ -498,7 +499,7 @@ static int  writeVx(FILE *fptr, unsigned long idx)
 //****************************************************************************
 //                              writeVec12
 //****************************************************************************
-static bool writeVec12(FILE *fptr, const FgVect3F &vect)
+static bool writeVec12(FILE *fptr, const Vec3F &vect)
 {
     if (!swap4BytesWrite(fptr,&vect[0]))
         return false;
@@ -511,7 +512,7 @@ static bool writeVec12(FILE *fptr, const FgVect3F &vect)
 //****************************************************************************
 //                              writeVec8
 //****************************************************************************
-static bool writeVec8(FILE *fptr, const FgVect2F &vect)
+static bool writeVec8(FILE *fptr, const Vec2F &vect)
 {
     if (!swap4BytesWrite(fptr,&vect[0]))
         return false;
@@ -635,7 +636,7 @@ static bool writeLayrChunk(
     unsigned long   &chunkSize,
     unsigned short  num,
     string          name,
-    FgVect3F      pivot)
+    Vec3F      pivot)
 {
     chunkSize = 0;
 
@@ -713,11 +714,11 @@ static bool writePntsChunks(
     // Now write the points
     for (obj=startObj; obj<endObj; ++obj)
     {
-        const vector<FgVect3F> &pts = model.getPtList(obj);
+        const vector<Vec3F> &pts = model.getPtList(obj);
         for (unsigned long ii=0; ii<pts.size(); ++ii)
         {
             // Lightwave uses left-handed coordinate system!
-            FgVect3F pt = toLwoCoord(pts[ii]);
+            Vec3F pt = toLwoCoord(pts[ii]);
             if (!writeVec12(fptr,pt))
                 return false;
             chunkSize += 12;
@@ -736,8 +737,8 @@ static bool writeBboxChunks(
     FILE                    *fptr, 
     unsigned long           &chunkSize,
     const FffMultiObjectC   &model, 
-    FgVect3F              &minPnt,
-    FgVect3F              &maxPnt,
+    Vec3F              &minPnt,
+    Vec3F              &maxPnt,
     int                     objIdx)
 {
     chunkSize = 0;
@@ -753,7 +754,7 @@ static bool writeBboxChunks(
     bool maxMinInitialized = false;
     for (unsigned long obj=startObj; obj<endObj; ++obj)
     {
-        const vector<FgVect3F> &pts = model.getPtList(obj);
+        const vector<Vec3F> &pts = model.getPtList(obj);
         if (!maxMinInitialized && pts.size() > 0)
         {
             minPnt = maxPnt = pts[0];
@@ -779,8 +780,8 @@ static bool writeBboxChunks(
     chunkSize += 8;
 
     // Write out the bounding box values
-    FgVect3F minVal = toLwoCoord(minPnt);
-    FgVect3F maxVal = toLwoCoord(maxPnt);
+    Vec3F minVal = toLwoCoord(minPnt);
+    Vec3F maxVal = toLwoCoord(maxPnt);
     if (!writeVec12(fptr,minVal))
         return false;
     chunkSize += 12;
@@ -800,7 +801,7 @@ static bool writeVmapTxuvChunks(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     vector<unsigned long>   &tmpVtxList,
-    vector<FgVect2F>      &tmpTxtCoord,
+    vector<Vec2F>      &tmpTxtCoord,
     const string            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
@@ -822,9 +823,9 @@ static bool writeVmapTxuvChunks(
     tmpTxtCoord.clear();
     unsigned long obj = objIdx;
 
-    vector<FgVect2F> txtCoord;
+    vector<Vec2F> txtCoord;
     vector<bool>       touched;
-    txtCoord.resize(model.numPoints(obj),FgVect2F(0.0f,0.0f));
+    txtCoord.resize(model.numPoints(obj),Vec2F(0.0f,0.0f));
     touched.resize(model.numPoints(obj),false);
 
     if (model.numTxtCoord(obj) != 0)
@@ -834,7 +835,7 @@ static bool writeVmapTxuvChunks(
             model.numTxtQuads(obj) == 0)
         {
             // Per-vertex texture
-            const vector<FgVect2F> &txt = model.getTextCoord(obj);
+            const vector<Vec2F> &txt = model.getTextCoord(obj);
             txtCoord = txt;
             touched.clear();
             touched.resize(txt.size(),true);
@@ -846,11 +847,11 @@ static bool writeVmapTxuvChunks(
 
             // Build a temporary per-vertex mapping.  Incorrect ones
             // will be remapped by the VMAD chunk.
-            const vector<FgVect2F> &txt = model.getTextCoord(obj);
-            const vector<FgVect3UI> &tris = model.getTriList(obj);
-            const vector<FgVect4UI> &quads = model.getQuadList(obj);
-            const vector<FgVect3UI> &txtTris = model.getTexTriList(obj);
-            const vector<FgVect4UI> &txtQuads = model.getTexQuadList(obj);
+            const vector<Vec2F> &txt = model.getTextCoord(obj);
+            const vector<Vec3UI> &tris = model.getTriList(obj);
+            const vector<Vec4UI> &quads = model.getQuadList(obj);
+            const vector<Vec3UI> &txtTris = model.getTexTriList(obj);
+            const vector<Vec4UI> &txtQuads = model.getTexQuadList(obj);
             for (unsigned long tt=0; tt<tris.size(); ++tt)
             {
                 txtCoord[ tris[ tt ][0] ] = txt[ txtTris[ tt ][0] ];
@@ -971,7 +972,7 @@ static bool writeVmapMorfChunks(
     }
 
     vector<unsigned long> tmpVtxList;
-    vector<FgVect3F> tmpMorfDelta;
+    vector<Vec3F> tmpMorfDelta;
     tmpVtxList.clear();
     tmpMorfDelta.clear();
 
@@ -980,8 +981,8 @@ static bool writeVmapMorfChunks(
     {
         if (model.numPoints(obj) == target.numPoints(obj))
         {
-            const vector<FgVect3F> &vtxList = model.getPtList(obj);
-            const vector<FgVect3F> &tvtxList = target.getPtList(obj);
+            const vector<Vec3F> &vtxList = model.getPtList(obj);
+            const vector<Vec3F> &tvtxList = target.getPtList(obj);
             for (unsigned long vtx=0; vtx<vtxList.size(); ++vtx)
             {
                 tmpVtxList.push_back(vtx+vtxOffset);
@@ -1100,7 +1101,7 @@ static bool writePolsChunks(
         // Note: Lightwave requires the poly to be posed clockwise.
 
         unsigned short polySize = 3;
-        const vector<FgVect3UI> &triList = model.getTriList(obj);
+        const vector<Vec3UI> &triList = model.getTriList(obj);
         for (unsigned long tri=0; tri<triList.size(); ++tri)
         {
             if (!swap2BytesWrite(fptr,&polySize))
@@ -1128,7 +1129,7 @@ static bool writePolsChunks(
         }
 
         polySize = 4;
-        const vector<FgVect4UI> &quadList = model.getQuadList(obj);
+        const vector<Vec4UI> &quadList = model.getQuadList(obj);
         for (unsigned long quad=0; quad<quadList.size(); ++quad)
         {
             if (!swap2BytesWrite(fptr,&polySize))
@@ -1263,7 +1264,7 @@ static bool writeVmadChunks(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     const vector<unsigned long> &tmpVtxList,
-    const vector<FgVect2F> &tmpTexCoord,
+    const vector<Vec2F> &tmpTexCoord,
     const string            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
@@ -1288,14 +1289,14 @@ static bool writeVmadChunks(
     // Build the per-facet info
     vector<unsigned long>   vtxList;
     vector<unsigned long>   polyList;
-    vector<FgVect2F>      texList;
+    vector<Vec2F>      texList;
     unsigned long obj = objIdx;
 
-    const vector<FgVect3UI> &triList = model.getTriList(obj);
-    const vector<FgVect3UI> &texTriList = model.getTexTriList(obj);
-    const vector<FgVect4UI> &quadList = model.getQuadList(obj);
-    const vector<FgVect4UI> &texQuadList = model.getTexQuadList(obj);
-    const vector<FgVect2F> &txList = model.getTextCoord(obj);
+    const vector<Vec3UI> &triList = model.getTriList(obj);
+    const vector<Vec3UI> &texTriList = model.getTexTriList(obj);
+    const vector<Vec4UI> &quadList = model.getQuadList(obj);
+    const vector<Vec4UI> &texQuadList = model.getTexQuadList(obj);
+    const vector<Vec2F> &txList = model.getTextCoord(obj);
 
     // Only needs to do this for per-facet texture data.
     if (txList.size() != 0 &&
@@ -1304,7 +1305,7 @@ static bool writeVmadChunks(
     {
         unsigned long vtx;
         unsigned long poly;
-        FgVect2F tex;
+        Vec2F tex;
         for (unsigned long tri=0; tri<triList.size(); ++tri)
         {
             poly = tri + polyOffset;
@@ -1932,7 +1933,7 @@ static bool writeSurfBlokTmapSubChunk(FILE *fptr, unsigned short &chunkSize)
     tmapSubChunkSize += 6;
 
     // TMAP's CNTR sub-chunk's data
-    FgVect3F cntr(0.0f,0.0f,0.0f);
+    Vec3F cntr(0.0f,0.0f,0.0f);
     if (!writeVec12(fptr,cntr))
         return false;
     if (!swap2BytesWrite(fptr,&envelope))
@@ -1948,7 +1949,7 @@ static bool writeSurfBlokTmapSubChunk(FILE *fptr, unsigned short &chunkSize)
     tmapSubChunkSize += 6;
 
     // TMAP's SIZE sub-chunk's data
-    FgVect3F size(1.0f,1.0f,1.0f);
+    Vec3F size(1.0f,1.0f,1.0f);
     if (!writeVec12(fptr,size))
         return false;
     if (!swap2BytesWrite(fptr,&envelope))
@@ -1964,7 +1965,7 @@ static bool writeSurfBlokTmapSubChunk(FILE *fptr, unsigned short &chunkSize)
     tmapSubChunkSize += 6;
 
     // TMAP's ROTA sub-chunk's data
-    FgVect3F rota(0.0f,0.0f,0.0f);
+    Vec3F rota(0.0f,0.0f,0.0f);
     if (!writeVec12(fptr,rota))
         return false;
     if (!swap2BytesWrite(fptr,&envelope))
@@ -1981,7 +1982,7 @@ static bool writeSurfBlokTmapSubChunk(FILE *fptr, unsigned short &chunkSize)
 
     // TMAP's FALL sub-chunk's data
     unsigned short type = 0;
-    FgVect3F fall(0.0f,0.0f,0.0f);
+    Vec3F fall(0.0f,0.0f,0.0f);
     if (!swap2BytesWrite(fptr,&type))
         return false;
     if (!writeVec12(fptr,fall))
@@ -2265,15 +2266,15 @@ static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize)
 // programs using LWO2 format (ie replacing the ": " with ".").
 //
 static bool writeLwsFile(
-    const FgString            &lwsName, 
-    const FgString            &lwoName,
-    FgVect3F              minVect,
-    FgVect3F              maxVect,
+    const Ustring            &lwsName, 
+    const Ustring            &lwoName,
+    Vec3F              minVect,
+    Vec3F              maxVect,
     unsigned long           numLayers,
     unsigned long           numMorphs, 
     const vector<string>    *morphNames)
 {
-    FgOfstream file(lwsName);
+    Ofstream file(lwsName);
     if (!file)
     {
         return false;
@@ -2368,9 +2369,9 @@ static bool writeLwsFile(
 }
 
 void
-fgSaveLwo(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
+saveLwo(
+    const Ustring &        fname,
+    const vector<Mesh> & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
@@ -2382,20 +2383,22 @@ fgSaveLwo(
 }
 
 void
-fgSaveLwoTest(const FgArgs & args)
+fgSaveLwoTest(const CLArgs & args)
 {
     FGTESTDIR
-    FgString    dd = fgDataDir();
+    Ustring    dd = dataDir();
     string      rd = "base/";
-    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth"+".tri");
-    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
-    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    fgSaveLwo("meshExportLwo",fgSvec(mouth,glasses));
+    Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
+    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
+    saveLwo("meshExportLwo",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportLwo.lwo","base/test/");
     fgRegressFileRel("meshExportLwo.lws","base/test/");
     fgRegressFileRel("meshExportLwo0.png","base/test/");
     fgRegressFileRel("meshExportLwo1.png","base/test/");
+}
+
 }
 
 // */

@@ -1,18 +1,15 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
-//
-// Authors:     Andrew Beatty
-// Created:     May 21, 2009
 //
 // Optional-value type extender.
 //
 // * std::optional not available until C++17.
 // * Simpler than boost::optional - carries around a default constructed value when not valid.
-// * To avoid additional memory use for numerical types, use 'FgValid' but note that
+// * To avoid additional memory use for numerical types, use 'Valid' but note that
 //   numeric_limits<T>::max() is the special 'invalid' value.
-//  * Otherwise, use 'FgOpt' which adds a bool to keep track.
+//  * Otherwise, use 'Opt' which adds a bool to keep track.
 //
 
 #ifndef FGOPT_HPP
@@ -22,15 +19,20 @@
 #include "FgSerialize.hpp"
 #include "FgDiagnostics.hpp"
 
+namespace Fg {
+
 template<typename T>
-class   FgOpt
+class   Opt
 {
+    bool        m_valid;
+    T           m_val;
+
 public:
-    FgOpt() : m_valid(false) {}
+    Opt() : m_valid(false) {}
 
-    FgOpt(const T & v) : m_valid(true), m_val(v) {}
+    Opt(const T & v) : m_valid(true), m_val(v) {}
 
-    FgOpt &
+    Opt &
     operator=(const T & v)
     {m_val=v; m_valid=true; return *this; }
 
@@ -51,16 +53,16 @@ public:
     {FGASSERT(m_valid); return m_val; }
 
     template<typename U>
-    FgOpt<U>
+    Opt<U>
     cast()
     {
         if (m_valid)
-            return FgOpt<U>(U(m_val));
-        return FgOpt<U>();
+            return Opt<U>(U(m_val));
+        return Opt<U>();
     }
 
     bool
-    operator==(const FgOpt<T> & rhs) const
+    operator==(const Opt<T> & rhs) const
     {
         if (m_valid && rhs.m_valid)
             return (m_val == rhs.m_val);
@@ -68,21 +70,17 @@ public:
     }
 
     bool
-    operator!=(const FgOpt<T> & rhs) const
+    operator!=(const Opt<T> & rhs) const
     {
         if (m_valid && rhs.m_valid)
             return (m_val != rhs.m_val);
         return (m_valid || rhs.m_valid);
     }
-
-private:
-    bool        m_valid;
-    T           m_val;
 };
 
 template<typename T>
 std::ostream &
-operator<<(std::ostream & os,const FgOpt<T> & v)
+operator<<(std::ostream & os,const Opt<T> & v)
 {
     if (v.valid())
         os << v.val();
@@ -92,20 +90,20 @@ operator<<(std::ostream & os,const FgOpt<T> & v)
 }
 
 template<typename T>
-struct FgValid
+struct Valid
 {
     T       m_val;      // = numeric_limits<T>::max() if not valid
 
-    FgValid()
+    Valid()
     : m_val(std::numeric_limits<T>::max())
     {}
 
     explicit
-    FgValid(const T & v)
+    Valid(const T & v)
     : m_val(v)
     {}
 
-    FgValid &
+    Valid &
     operator=(const T & v)
     {m_val = v; return *this; }
 
@@ -140,12 +138,14 @@ struct FgValid
 
 template<typename T>
 std::ostream &
-operator<<(std::ostream & os,const FgValid<T> & v)
+operator<<(std::ostream & os,const Valid<T> & v)
 {
     if (v.valid())
         return (os << v.val());
     else
         return (os << "<invalid>");
+}
+
 }
 
 #endif

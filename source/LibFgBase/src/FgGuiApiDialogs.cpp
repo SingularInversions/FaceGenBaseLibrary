@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Feb 16, 2018
+
 //
 
 #include "stdafx.h"
@@ -13,27 +12,35 @@
 
 using namespace std;
 
-static
+
+namespace Fg {
+
+namespace {
+
 void
-fileLoad(FgString fileTypesDescription,FgStrs extensions,string storeID,FgDgn<FgString> output)
+fileLoad2(Ustring fileTypesDescription,Strings extensions,string storeID,IPT<Ustring> output)
 {
-    FgOpt<FgString>     fname = fgGuiDialogFileLoad(fileTypesDescription,extensions,storeID);
+    Opt<Ustring>     fname = guiDialogFileLoad(fileTypesDescription,extensions,storeID);
     if (fname.valid())
-        g_gg.setVal(output,fname.val());
+        output.set(fname.val());
 }
 
-FgGuiPtr
-fgGuiFileLoadButton(
-    const FgString &            buttonText,
-    const FgString &            fileTypesDescription,
-    const FgStrs &              extensions,
+}
+
+GuiPtr
+guiLoadButton(
+    const Ustring &            buttonText,
+    const Ustring &            fileTypesDescription,
+    const Strings &              extensions,
     const string &              storeID,
-    FgDgn<FgString>             output)
+    const IPT<Ustring> &       selection)
 {
-    FgGuiApiButton          ret;
-    ret.label = buttonText;
-    ret.action = std::bind(fileLoad,fileTypesDescription,extensions,storeID,output);
-    return fgsp(ret);
+    GuiButton          b;
+    b.label = buttonText;
+    b.action = bind(fileLoad2,fileTypesDescription,extensions,storeID,selection);
+    return make_shared<GuiButton>(b);
+}
+
 }
 
 // */

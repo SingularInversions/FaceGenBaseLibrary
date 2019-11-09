@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,27 +15,30 @@
 
 using namespace std;
 
-static FgVect2UI    s_pad(40,12);
+namespace Fg {
 
-struct  FgGuiWinRadio : public FgGuiOsBase
+static Vec2UI    s_pad(40,12);
+
+struct  GuiRadioWin : public GuiBaseImpl
 {
-    FgGuiApiRadio       m_api;
+    GuiRadio            m_api;
+    DfgFPtr             updateFlag;
     HWND                hwndThis;
     vector<HWND>        m_hwnds;
-    vector<FgVect2UI>   m_sizes;
+    vector<Vec2UI>   m_sizes;
 
-    FgGuiWinRadio(const FgGuiApiRadio & api)
-    : m_api(api)
+    GuiRadioWin(const GuiRadio & api)
+    : m_api(api), updateFlag(makeUpdateFlag(m_api.selection))
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
-//fgout << fgnl << "FgGuiWinRadio::create " << m_api.labels[0];
-        FgCreateChild   cc;
+//fgout << fgnl << "GuiRadioWin::create " << m_api.labels[0];
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
     }
 
     virtual void
@@ -45,35 +48,35 @@ struct  FgGuiWinRadio : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
-        FgVect2UI   sz;
+        Vec2UI   sz;
         uint        dimAcc = (m_api.horiz ? 0 : 1),
                     dimMax = 1 - dimAcc;
         for (size_t ii=0; ii<m_sizes.size(); ++ii) {
-            fgSetIfGreater(sz[dimMax],m_sizes[ii][dimMax]);
+            setIfGreater(sz[dimMax],m_sizes[ii][dimMax]);
             sz[dimAcc] += m_sizes[ii][dimAcc] + s_pad[dimAcc];
         }
         sz[dimMax] += s_pad[dimMax];
         return sz;
     }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
-    {return FgVect2B(false,false); }
+    {return Vec2B(false,false); }
 
     virtual void
     updateIfChanged()
     {
-        if (g_gg.dg.update(m_api.updateIdx))
+        if (updateFlag->checkUpdate())
             updateRadio();
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
-//fgout << fgnl << "FgGuiWinRadio::moveWindow " << lo << " , " << sz;
+//fgout << fgnl << "GuiRadioWin::moveWindow " << lo << " , " << sz;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
     }
 
@@ -88,7 +91,7 @@ struct  FgGuiWinRadio : public FgGuiOsBase
         {
             case WM_CREATE:
                 {
-//fgout << fgnl << "FgGuiWinRadio::WM_CREATE " << m_api.labels[0];
+//fgout << fgnl << "GuiRadioWin::WM_CREATE " << m_api.labels[0];
                     hwndThis = hwnd;
                     m_sizes.resize(m_api.labels.size());
                     m_hwnds.resize(m_api.labels.size());
@@ -102,28 +105,28 @@ struct  FgGuiWinRadio : public FgGuiOsBase
                                 0,0,0,0,            // Generates WM_SIZE 0 message
                                 hwnd,
                                 HMENU(ii),
-                                s_fgGuiWin.hinst,
+                                s_guiWin.hinst,
                                 NULL);              // No WM_CREATE parameter
                         FGASSERTWIN(m_hwnds[ii] != 0);
                         // I couldn't get the 'Button_GetIdealSize' macro to work; here, in WM_SIZE,
-                        // with FgGuiWinButton, with starting size arguments, whatever. This approach
+                        // with GuiButtonWin, with starting size arguments, whatever. This approach
                         // is more universal than just buttons anyway.
                         // Still only an approximate I think ... docs are complex:
                         SIZE        sz;
-                        GetTextExtentPoint32(GetDC(hwndThis),wstr.c_str(),int(wstr.length()),&sz);
-                        m_sizes[ii] = FgVect2UI(sz.cx,sz.cy);
+                        GetTextExtentPoint32(GetDC(hwndThis),wstr.c_str(),int(wstr.size()),&sz);
+                        m_sizes[ii] = Vec2UI(sz.cx,sz.cy);
                     }
                     updateRadio();
                     return 0;
                 }
             case WM_SIZE:
                 {
-//fgout << fgnl << "FgGuiWinRadio::WM_SIZE " << m_api.labels[0];
+//fgout << fgnl << "GuiRadioWin::WM_SIZE " << m_api.labels[0];
                     // Don't care what size params are since these controls stick to min size,
                     // but we still need to ignore Windows' initial zero-size message:
                     if (LOWORD(lParam) * HIWORD(lParam) == 0)
                         return 0;
-                    FgVect2UI       szTot = getMinSize(),
+                    Vec2UI       szTot = getMinSize(),
                                     pos,sz;
                     uint            dimAcc = (m_api.horiz ? 0 : 1),
                                     dimMax = 1 - dimAcc;
@@ -140,14 +143,14 @@ struct  FgGuiWinRadio : public FgGuiOsBase
                     WORD    ident = LOWORD(wParam);
                     WORD    code = HIWORD(wParam);
                     if (code == 0) {    // radio box clicked
-//fgout << fgnl << "FgGuiWinRadio::WM_COMMAND clicked " << m_api.labels[0];
+//fgout << fgnl << "GuiRadioWin::WM_COMMAND clicked " << m_api.labels[0];
                         size_t      sel = ident;
-                        if (sel >= m_api.vals.size())
+                        if (sel >= m_api.labels.size())
                             sel = 0;
 //fgout << " val: " << sel << " m_api.selection " << m_api.selection;
-                        g_gg.setVal(m_api.selection,m_api.vals[sel]);
+                        m_api.selection.set(sel);
 //fgout << fgnl << "Update screen: " << flush << fgpush;
-                        g_gg.updateScreen();
+                        winUpdateScreen();
 //fgout << fgpop << fgnl << "Updated " << flush;
                     }
                     return 0;
@@ -159,9 +162,8 @@ struct  FgGuiWinRadio : public FgGuiOsBase
     void
     updateRadio()
     {
-        const FgString &    sel = g_gg.getVal(m_api.selection);
-        size_t              val = fgFindFirstIdx(m_api.vals,sel);
-        if (val >= m_api.vals.size())
+        size_t              val = m_api.selection.val();
+        if (val >= m_api.labels.size())
             val = 0;
         for (size_t ii=0; ii<m_hwnds.size(); ++ii) {
             if (ii == val)
@@ -172,6 +174,8 @@ struct  FgGuiWinRadio : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiRadio & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinRadio(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiRadio & def)
+{return GuiImplPtr(new GuiRadioWin(def)); }
+
+}

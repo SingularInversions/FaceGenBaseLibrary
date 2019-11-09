@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 4, 2008
+
 //
 
 #include "stdafx.h"
@@ -16,8 +15,10 @@
 
 using namespace std;
 
+namespace Fg {
+
 static const string   state1 = "State1";
-static const FgString state2("State2");
+static const Ustring state2("State2");
 // TODO: Check for a specific language translation here once implemented:
 static const string   tr_correct = 
     "While executing func1 with state : State1\n"
@@ -51,7 +52,7 @@ struct FgMyException : public FgException
 };
 
 void
-fgExceptionTest(const FgArgs &)
+fgExceptionTest(const CLArgs &)
 {
     try
     {
@@ -62,4 +63,6 @@ fgExceptionTest(const FgArgs &)
         FGASSERT(e.tr_message() == tr_correct);
         FGASSERT(e.no_tr_message() == no_tr_correct);
     }
+}
+
 }

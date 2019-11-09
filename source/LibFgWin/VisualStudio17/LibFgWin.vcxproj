@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6904AE47-51E0-BEED-2B13-288A79237C3D}</ProjectGuid>
+    <ProjectGuid>{E9E1D804-F35C-138E-F54C-F085C7DDE6AF}</ProjectGuid>
     <RootNamespace>LibFgWin</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -162,15 +162,13 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\Fg3dOpenGLImpWin.cpp" />
     <ClCompile Include="..\FgClusterWin.cpp" />
     <ClCompile Include="..\FgClWin.cpp" />
     <ClCompile Include="..\FgConioWin.cpp" />
     <ClCompile Include="..\FgFileSystemWin.cpp" />
-    <ClCompile Include="..\FgGaWin.cpp" />
+    <ClCompile Include="..\FgGui3dWin.cpp" />
     <ClCompile Include="..\FgGuiWin.cpp" />
     <ClInclude Include="..\FgGuiWin.hpp" />
-    <ClCompile Include="..\FgGuiWin3dOgl.cpp" />
     <ClCompile Include="..\FgGuiWinButton.cpp" />
     <ClCompile Include="..\FgGuiWinCheckbox.cpp" />
     <ClCompile Include="..\FgGuiWinDialogs.cpp" />
@@ -189,7 +187,6 @@
     <ClCompile Include="..\FgGuiWinTextEdit.cpp" />
     <ClCompile Include="..\FgSystemInfoWin.cpp" />
     <ClCompile Include="..\FgTcpWin.cpp" />
-    <ClCompile Include="..\FgThread.cpp" />
     <ClCompile Include="..\FgThrowWindows.cpp" />
     <ClInclude Include="..\FgThrowWindows.hpp" />
     <ClCompile Include="..\FgTimeWin.cpp" />
@@ -202,6 +199,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClInclude Include="..\stdafx.h" />
+    <ClInclude Include="..\wglext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

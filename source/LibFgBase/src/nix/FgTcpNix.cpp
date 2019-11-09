@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,6 +33,8 @@
 
 // Do NOT use std namespace to avoid collision with posix 'bind'
 
+namespace Fg {
+
 bool
 fgTcpClient(
     const std::string & hostname,
@@ -46,7 +48,7 @@ fgTcpClient(
                 SOCK_STREAM,        // "stream socket"
                 IPPROTO_TCP);       // TCP transport protocol
     FGASSERT(clientSock >= 0);
-    FgScopeGuard        closeSocket(std::bind(close,clientSock));
+    ScopeGuard        closeSocket(std::bind(close,clientSock));
     // Set the timeout so the user doesn't have to wait forever if the connection fails:
     timeval         timeout;
     timeout.tv_sec = 5;
@@ -72,7 +74,7 @@ fgTcpClient(
     // write() is same as send() with flag=0:
     int nBytes = write(clientSock,data.data(),int(data.size()));
     if (nBytes < int(data.size()))
-        FGASSERT_FALSE1(fgToStr(nBytes));
+        FGASSERT_FALSE1(toString(nBytes));
     //fgout << "done" << std::flush;
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
@@ -131,7 +133,7 @@ fgTcpServer(
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-    int rv = getaddrinfo(NULL,fgToStr(port).c_str(),&hints,&servinfo);
+    int rv = getaddrinfo(NULL,toString(port).c_str(),&hints,&servinfo);
     FGASSERT1(rv == 0,std::string(gai_strerror(rv)));
 
     // loop through all the results and bind to the first we can
@@ -240,6 +242,8 @@ fgTcpServer(
     } while (handlerRetval == true);
     if (listenSockFd >= 0)
         close(listenSockFd);
+}
+
 }
 
 // */

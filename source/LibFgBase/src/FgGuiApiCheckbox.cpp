@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: June 28, 2014
+
 //
 
 #include "stdafx.h"
@@ -13,30 +12,45 @@
 
 using namespace std;
 
-FgGuiPtr
-fgGuiCheckbox(const FgString & label,FgDgn<bool> node)
+
+namespace Fg {
+
+GuiPtr
+guiCheckbox(const Ustring & label,const IPT<bool> & node)
 {
-    FgGuiApiCheckbox    cb;
+    GuiCheckbox      cb;
     cb.label = label;
     cb.val = node;
-    cb.updateFlagIdx = g_gg.addUpdateFlag(node);
-    return fgsp(cb);
+    cb.updateFlag = makeUpdateFlag(node);
+    return make_shared<GuiCheckbox>(cb);
 }
 
-FgGuiPtr
-fgGuiCheckboxes(const FgStrings & labels,const vector<bool> & defaults,FgDgn<vector<bool> > output)
+GuiPtr
+guiCheckboxes(Ustrings const & labels,vector<IPT<bool> > const & selNs)
 {
     FGASSERT(!labels.empty());
+    FGASSERT(selNs.size() == labels.size());
+    GuiPtrs                   wins;
+    for (size_t ii=0; ii<labels.size(); ++ii)
+        wins.push_back(guiCheckbox(labels[ii],selNs[ii]));
+    return guiSplit(false,wins);
+}
+
+GuiVal<Bools>
+guiCheckboxes(Ustrings const & labels,const Bools & defaults)
+{
     FGASSERT(labels.size() == defaults.size());
-    vector<FgGuiPtr>        wins;
-    vector<FgDgn<bool> >    selNs;
+    vector<IPT<bool> >          selNs;
     for (size_t ii=0; ii<labels.size(); ++ii) {
-        bool                sel = defaults[ii];     // need an actual bool for by reference arg below
-        selNs.push_back(g_gg.addNode(sel));
-        wins.push_back(fgGuiCheckbox(labels[ii],selNs.back()));
+        IPT<bool>               selN = makeIPT<bool>(defaults[ii]);
+        selNs.push_back(selN);
     }
-    g_gg.addLink(fgLinkCollate<bool>,fgUints(selNs),fgUints(output));
-    return fgGuiSplit(false,wins);
+    GuiVal<Bools>      ret;
+    ret.valN = linkCollate(selNs);
+    ret.win = guiCheckboxes(labels,selNs);
+    return ret;
+}
+
 }
 
 // */

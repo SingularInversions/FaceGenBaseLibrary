@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Jan 27, 2012
+
 //
 
 #include "stdafx.h"
@@ -17,6 +16,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 string
 fgDirSep()
 {
@@ -28,7 +29,7 @@ fgDirSep()
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
-FgPath::FgPath(const FgString & path)
+Path::Path(const Ustring & path)
 : root(false)
 {
     if (path.empty())
@@ -40,16 +41,16 @@ FgPath::FgPath(const FgString & path)
             root = true;
             auto        it = find(p.begin()+2,p.end(),uint('/'));
             if (it == p.end()) {
-                drive = FgString(p);
+                drive = Ustring(p);
                 return;
             }
             size_t      slashPos = it-p.begin();
-            drive = FgString(fgHead(p,slashPos));
+            drive = Ustring(fgHead(p,slashPos));
             p = fgRest(p,slashPos);
         }
         // Strictly else since we don't combine UNC and LFS:
         else if (p[1] == ':') {
-            drive = FgString(fgHead(p,2));
+            drive = Ustring(fgHead(p,2));
             p = fgRest(p,2);
         }
     }
@@ -64,15 +65,15 @@ FgPath::FgPath(const FgString & path)
     if (fgContains(p,char32_t('/'))) {
         FgStr32s        s = fgSplit(p,char32_t('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
-            FgString    str(s[ii]);
+            Ustring    str(s[ii]);
             if ((str == "..") && (!dirs.empty())) {
-                if (FgString(dirs.back()) == str)
+                if (Ustring(dirs.back()) == str)
                     dirs.push_back(str);            // '..' does not back up over '..' !
                 else
                     dirs = fgHead(dirs,dirs.size()-1);
             }
             else if (str != ".")
-                dirs.push_back(FgString(s[ii]));
+                dirs.push_back(Ustring(s[ii]));
         }
         if (!s.back().empty())
             p = s.back();
@@ -83,28 +84,28 @@ FgPath::FgPath(const FgString & path)
         return;
     if (fgContains(p,char32_t('.'))) {
         size_t      idx = fgFindLastIdx(p,char32_t('.'));
-        base = FgString(fgHead(p,idx));
-        ext = FgString(fgRest(p,idx+1));    // Don't include the dot
+        base = Ustring(fgHead(p,idx));
+        ext = Ustring(fgRest(p,idx+1));    // Don't include the dot
     }
     else
-        base = FgString(p);
+        base = Ustring(p);
 }
 
-FgString
-FgPath::str() const
+Ustring
+Path::str() const
 {
-    FgString    ret = dir();
+    Ustring    ret = dir();
     ret += base;
     if (!ext.empty())
-        ret += FgString(".") + ext;
+        ret += Ustring(".") + ext;
     return ret;
 }
 
-FgString
-FgPath::dir(size_t n) const
+Ustring
+Path::dir(size_t n) const
 {
     FGASSERT(n <= dirs.size());
-    FgString    ret(drive);
+    Ustring    ret(drive);
     if (root)
         ret += fgDirSep();
     for (size_t ii=0; ii<n; ++ii)
@@ -112,38 +113,38 @@ FgPath::dir(size_t n) const
     return ret;
 }
 
-FgString
-FgPath::baseExt() const
+Ustring
+Path::baseExt() const
 {
-    FgString        ret(base);
+    Ustring        ret(base);
     if (!ext.empty())
-        ret += FgString(".") + ext;
+        ret += Ustring(".") + ext;
     return ret;
 }
 
-FgPath
-FgPath::operator+(const FgPath &  rhs) const
+Path
+Path::operator+(const Path &  rhs) const
 {
     FGASSERT((base.empty()) && (ext.empty()));      // lhs is directory only
     FGASSERT((rhs.drive.empty()) && (!rhs.root));   // rhs is relative path
     return
-        FgPath(
+        Path(
             drive,root,
-            fgCat(dirs,rhs.dirs),
+            cat(dirs,rhs.dirs),
             rhs.base,rhs.ext);
 }
 
 void
-FgPath::popDirs(uint n)
+Path::popDirs(uint n)
 {
     FGASSERT(n <= dirs.size());
     dirs.resize(dirs.size()-n);
 }
 
-FgPath
-fgPathFromDir(const FgString & directory)
+Path
+fgPathFromDir(const Ustring & directory)
 {
-    FgPath      ret(directory);
+    Path      ret(directory);
     if (!ret.base.empty()) {
         ret.dirs.push_back(ret.baseExt());
         ret.base.clear();
@@ -152,37 +153,37 @@ fgPathFromDir(const FgString & directory)
     return ret;
 }
 
-FgString
-fgPathToBase(const FgString & f)
-{return FgPath(f).base; }
+Ustring
+fgPathToBase(const Ustring & f)
+{return Path(f).base; }
 
-FgString
-fgPathToDirBase(const FgString & p)
-{return FgPath(p).dirBase(); }
+Ustring
+fgPathToDirBase(const Ustring & p)
+{return Path(p).dirBase(); }
 
-FgString
-fgPathToExt(const FgString & p)
-{return FgPath(p).ext; }
+Ustring
+fgPathToExt(const Ustring & p)
+{return Path(p).ext; }
 
 std::string
 fgPathToExt(const std::string & p)
-{return fgPathToExt(FgString(p)).m_str; }
+{return fgPathToExt(Ustring(p)).m_str; }
 
 bool
-fgCheckExt(const FgString & path,const string & ext)
+fgCheckExt(const Ustring & path,const string & ext)
 {
-    FgPath      p(path);
+    Path      p(path);
     return (p.ext.toLower() == fgToLower(ext));
 }
 
-FgString
-fgPathToName(const FgString & f)
-{return FgPath(f).baseExt(); }
+Ustring
+fgPathToName(const Ustring & f)
+{return Path(f).baseExt(); }
 
-FgString
-fgAsDirectory(const FgString & path)
+Ustring
+fgAsDirectory(const Ustring & path)
 {
-    FgString        ret = path;
+    Ustring        ret = path;
     if (path.empty())
         return ret;
     u32string       str = path.as_utf32();
@@ -198,28 +199,28 @@ fgAsDirectory(const FgString & path)
 
 string
 fgAsDirectory(const string & path)
-{return fgAsDirectory(FgString(path)).m_str; }
+{return fgAsDirectory(Ustring(path)).m_str; }
 
 void
-fgPathTest(const FgArgs &)
+fgPathTest(const CLArgs &)
 {
-    FgPath  p;
+    Path  p;
 
-    p = FgPath("file");
+    p = Path("file");
     FGASSERT(p.drive.empty());
     FGASSERT(!p.root);
     FGASSERT(p.dirs.empty());
     FGASSERT(p.base == "file");
     FGASSERT(p.ext.empty());
 
-    p = FgPath("file.ext");
+    p = Path("file.ext");
     FGASSERT(p.drive.empty());
     FGASSERT(!p.root);
     FGASSERT(p.dirs.empty());
     FGASSERT(p.base == "file");
     FGASSERT(p.ext == "ext");
 
-    p = FgPath("reldir/");
+    p = Path("reldir/");
     FGASSERT(p.drive.empty());
     FGASSERT(!p.root);
     FGASSERT(p.dirs.size() == 1);
@@ -227,7 +228,7 @@ fgPathTest(const FgArgs &)
     FGASSERT(p.base.empty());
     FGASSERT(p.ext.empty());
 
-    p = FgPath("/absdir/");
+    p = Path("/absdir/");
     FGASSERT(p.drive.empty());
     FGASSERT(p.root);
     FGASSERT(p.dirs.size() == 1);
@@ -235,14 +236,14 @@ fgPathTest(const FgArgs &)
     FGASSERT(p.base.empty());
     FGASSERT(p.ext.empty());
 
-    p = FgPath("C:file");
+    p = Path("C:file");
     FGASSERT(p.drive == "C:");
     FGASSERT(!p.root);
     FGASSERT(p.dirs.empty());
     FGASSERT(p.base == "file");
     FGASSERT(p.ext.empty());
 
-    p = FgPath("/d.0/d.1/d.2/file");
+    p = Path("/d.0/d.1/d.2/file");
     FGASSERT(p.drive.empty());
     FGASSERT(p.root);
     FGASSERT(p.dirs.size() == 3);
@@ -250,14 +251,14 @@ fgPathTest(const FgArgs &)
     FGASSERT(p.base == "file");
     FGASSERT(p.ext.empty());
 
-    p = FgPath("dir/../");
+    p = Path("dir/../");
     FGASSERT(p.drive.empty());
     FGASSERT(!p.root);
     FGASSERT(p.dirs.empty());
     FGASSERT(p.base.empty());
     FGASSERT(p.ext.empty());
 
-    p = FgPath("C:../");
+    p = Path("C:../");
     FGASSERT(p.drive == "C:");
     FGASSERT(!p.root);
     FGASSERT(p.dirs.size() == 1);
@@ -265,10 +266,12 @@ fgPathTest(const FgArgs &)
     FGASSERT(p.base.empty());
     FGASSERT(p.ext.empty());
 
-    p = FgPath("//computer");
+    p = Path("//computer");
     FGASSERT(p.drive == "//computer");
 
-    p = FgPath("//computer/some/path/");
+    p = Path("//computer/some/path/");
     FGASSERT(p.drive == "//computer");
     FGASSERT(p.dirs.size() == 2);
+}
+
 }

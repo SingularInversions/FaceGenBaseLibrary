@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 26, 2011
+
 //
 
 #ifndef FGGUIAPIGROUPBOX_HPP
@@ -12,25 +11,36 @@
 
 #include "FgGuiApiBase.hpp"
 
+namespace Fg {
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiGroupbox;
+GuiImplPtr guiGetOsImpl(GuiGroupbox const & guiApi);
+
 struct
-FgGuiApiGroupbox : FgGuiApi<FgGuiApiGroupbox>
+GuiGroupbox : GuiBase
 {
-    FgGuiApiGroupbox(const FgString & l,FgGuiPtr c)
+    GuiGroupbox(const Ustring & l,GuiPtr c)
     : label(l), contents(c)
     {}
 
-    FgString        label;
-    FgGuiPtr     contents;
+    Ustring        label;
+    GuiPtr     contents;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 inline
-FgGuiPtr
-fgGuiGroupboxTr(const std::string & label,FgGuiPtr p)
-{return fgnew<FgGuiApiGroupbox>(fgTr(label),p); }
+GuiPtr
+guiGroupboxTr(const std::string & label,GuiPtr p)
+{return std::make_shared<GuiGroupbox>(fgTr(label),p); }
 
 inline
-FgGuiPtr
-fgGuiGroupbox(const FgString & label,FgGuiPtr p)
-{return fgnew<FgGuiApiGroupbox>(label,p); }
+GuiPtr
+guiGroupbox(const Ustring & label,GuiPtr p)
+{return std::make_shared<GuiGroupbox>(label,p); }
+
+}
 
 #endif

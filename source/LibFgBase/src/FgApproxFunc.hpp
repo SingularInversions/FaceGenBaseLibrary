@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     June 19, 2010
+
 //
 // Simple function approximation using interpolated LUT.
 // Possible future optimization: Use Chebyshev approximation.
@@ -14,13 +13,16 @@
 #define FGAPPROXFUNC_HPP
 
 #include "FgStdLibs.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
+
+namespace Fg {
 
 template<class Float>   // 'float' or 'double'
 struct  FgApproxFunc
 {
-    std::vector<Float>  m_lut;
+    Svec<Float>  m_lut;
     Float               m_lutBase;
     Float               m_lutScale;
 
@@ -60,5 +62,7 @@ struct  FgApproxFunc
         return (wgtLo * m_lut[idxLo] + wgtHi * m_lut[idxHi]);
     }
 };
+
+}
 
 #endif

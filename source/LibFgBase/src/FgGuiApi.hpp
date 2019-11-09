@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 2, 2014
+
 //
 // Declarative GUI API
 // Currently only implemented on Windows
@@ -26,5 +25,13 @@
 #include "FgGuiApiSplit.hpp"
 #include "FgGuiApiTabs.hpp"
 #include "FgGuiApiText.hpp"
+
+namespace Fg {
+
+// Gives choice of supported image load/save formats:
+GuiVal<String>
+guiImageFormat(const String & label,bool warnTransparency);
+
+}
 
 #endif

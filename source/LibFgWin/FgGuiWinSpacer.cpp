@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,41 +14,42 @@
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgDefaultVal.hpp"
 #include "FgMetaFormat.hpp"
 
 using namespace std;
 
-struct  FgGuiWinSpacer : public FgGuiOsBase
-{
-    FgGuiApiSpacer              m_api;
+namespace Fg {
 
-    FgGuiWinSpacer(const FgGuiApiSpacer & api) :
+struct  GuiSpacerWin : public GuiBaseImpl
+{
+    GuiSpacer              m_api;
+
+    GuiSpacerWin(const GuiSpacer & api) :
         m_api(api)
     {}
 
     virtual void
-    create(HWND,int,const FgString &,DWORD,bool)
+    create(HWND,int,const Ustring &,DWORD,bool)
     {}
 
     virtual void
     destroy()
     {}
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {return m_api.size; }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
-    {return FgVect2B(false,false); }
+    {return Vec2B(false,false); }
 
     virtual void
     updateIfChanged()
     {}
 
     virtual void
-    moveWindow(FgVect2I,FgVect2I)
+    moveWindow(Vec2I,Vec2I)
     {}
 
     virtual void
@@ -60,6 +61,8 @@ struct  FgGuiWinSpacer : public FgGuiOsBase
     {}
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiSpacer & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinSpacer(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiSpacer & def)
+{return GuiImplPtr(new GuiSpacerWin(def)); }
+
+}

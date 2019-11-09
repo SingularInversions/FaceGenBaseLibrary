@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 22, 2005
+
 //
 // Constant size (stack based) matrix / vector
 //
@@ -32,85 +31,77 @@
 #ifndef FGMATRIXCBASE_HPP
 #define FGMATRIXCBASE_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgTypes.hpp"
-#include "FgStdVector.hpp"
-#include "FgStdStream.hpp"
+#include "FgMath.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgSerialize.hpp"
 #include "FgOut.hpp"
 
-// Declare only due to mutual dependence; FgMatrixC and FgMatrixV can be constructed
+namespace Fg {
+
+// Declare only due to mutual dependence; Mat and MatV can be constructed
 // from each other:
 template<class T>
-struct  FgMatrixV;
+struct  MatV;
 
 template <typename T,uint nrows,uint ncols>
-struct  FgMatrixC
+struct  Mat
 {
-    T   m[nrows*ncols];     // Leave as C array since boost::serialize doesn't like std::array
+    Arr<T,nrows*ncols>    m;
     FG_SERIALIZE1(m)
-
-    typedef T ValType;
 
     // Auto-initialization of builtins to zero is deprecated, avoid depending on it by using
     // constant-value initialization constructor below:
-    FgMatrixC()
+    Mat()
     {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             fgInitializeBuiltinsToZero(m[ii]);
     }
 
+    explicit
+    Mat(Arr<T,nrows*ncols> const & data) : m(data) {}
+
     // Constant-value initialization constructor:
     // (unfortunately a pointer-based constructor cannot be added without being ambiguous
-    // to the below which is widely used. Use 'fgMatrixC' below instead)
+    // to the below which is widely used. Use 'cMat' below instead)
     explicit
-    FgMatrixC(T x)
+    Mat(T x)
     {setConstant(x); }
 
     // Value-set constructors; # args must agree with # elements:
-    FgMatrixC(T x,T y) {
+    Mat(T x,T y) {
         static_assert(nrows*ncols == 2,"Number of arguments does not match elements");
         m[0] = x; m[1] = y; }                               //-V557 (for PVS-Studio)
-    FgMatrixC(T x,T y,T z) {
+    Mat(T x,T y,T z) {
         static_assert(nrows*ncols == 3,"Number of arguments does not match elements");
         m[0] = x; m[1] = y; m[2] = z; }                     //-V557 (for PVS-Studio)
-    FgMatrixC(T a,T b,T c,T d) {
+    Mat(T a,T b,T c,T d) {
         static_assert(nrows*ncols == 4,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; }                   //-V557 (for PVS-Studio)
-    FgMatrixC(T a,T b,T c,T d,T e) {
+    Mat(T a,T b,T c,T d,T e) {
         static_assert(nrows*ncols == 5,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }           //-V557 (for PVS-Studio)
-    FgMatrixC(T a,T b,T c,T d,T e,T f) {
+    Mat(T a,T b,T c,T d,T e,T f) {
         static_assert(nrows*ncols == 6,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }   //-V557 (for PVS-Studio)
-    FgMatrixC(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
+    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
         static_assert(nrows*ncols == 9,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; } //-V557 (for PVS-Studio)
 
-    // Don't make explicit since initializer_list makes it clear we're constructing:
-    FgMatrixC(std::initializer_list<T> l)   // initializer_list is just a couple of pointers so pass-by-value is faster:
-    {
-        FGASSERT(nrows*ncols == l.size());
-        // initializer list construction of 'm' (: m {l} ) didn't work, not sure why.
-        T * ptr = &m[0];
-        for (auto it=l.begin(); it!=l.end(); ++it)
-            *ptr++ = *it;
-    }
-
     // CC explicit definition required to differentiate from conversion constructors below:
-    FgMatrixC(const FgMatrixC & mat) = default;
+    Mat(const Mat & mat) = default;
 
-    // Type conversion constructor. Use 'fgRound' if float->fixed rounding desired:
+    // Type conversion constructor. Use 'round<int>' if float->fixed rounding desired:
     template<class U>
     explicit
-    FgMatrixC(const FgMatrixC<U,nrows,ncols> & mat) {
+    Mat(const Mat<U,nrows,ncols> & mat) {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             m[ii] = static_cast<T>(mat[ii]);
     }
 
     explicit
-    FgMatrixC(const FgMatrixV<T>& mm) {
+    Mat(const MatV<T>& mm) {
         FGASSERT((nrows == mm.numRows()) && (ncols == mm.numCols()));
         for (uint ii=0; ii<nrows*ncols; ++ii)
             m[ii] = mm[ii];
@@ -171,61 +162,61 @@ struct  FgMatrixC
         return m[xx];
     }
     T &
-    operator[](FgMatrixC<uint,2,1> crd)
+    operator[](Mat<uint,2,1> crd)
     {
         FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
         return m[crd.m[1]*ncols+crd.m[0]];
     }
     const T &
-    operator[](FgMatrixC<uint,2,1> crd) const
+    operator[](Mat<uint,2,1> crd) const
     {
         FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
         return m[crd.m[1]*ncols+crd.m[0]];
     }
     const T *
-    dataPtr() const
-    {return m; }
+    data() const
+    {return m.data(); }
 
-    FgMatrixC
-    operator+(const FgMatrixC & rhs) const
+    Mat
+    operator+(const Mat & rhs) const
     {
-        FgMatrixC           ret;
+        Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
             ret.m[ii] = m[ii] + rhs.m[ii];
         return ret;
     }
 
-    FgMatrixC
-    operator-(const FgMatrixC & rhs) const
+    Mat
+    operator-(const Mat & rhs) const
     {
-        FgMatrixC           ret;
+        Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
             ret.m[ii] = m[ii] - rhs.m[ii];
         return ret;
     }
 
-    FgMatrixC
+    Mat
     operator-() const
     {
-        FgMatrixC           ret;
+        Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
             ret.m[ii] = -m[ii];
         return ret;
     }
 
-    FgMatrixC
+    Mat
     operator*(T val) const
     {
-        FgMatrixC           ret;
+        Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
             ret.m[ii] = m[ii] * val;
         return ret;
     }
 
-    FgMatrixC
+    Mat
     operator/(T val) const
     {
-        FgMatrixC           ret;
+        Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
             ret.m[ii] = m[ii] / val;
         return ret;
@@ -240,15 +231,15 @@ struct  FgMatrixC
     {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] /= val; }
 
     void
-    operator+=(const FgMatrixC & rhs)
+    operator+=(const Mat & rhs)
     {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] += rhs.m[ii]; }
 
     void
-    operator-=(const FgMatrixC & rhs)
+    operator-=(const Mat & rhs)
     {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] -= rhs.m[ii]; }
 
     bool
-    operator==(const FgMatrixC & rhs) const
+    operator==(const Mat & rhs) const
     {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             if (!(m[ii] == rhs.m[ii]))
@@ -257,7 +248,7 @@ struct  FgMatrixC
     }
 
     bool
-    operator!=(const FgMatrixC & rhs) const
+    operator!=(const Mat & rhs) const
     {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             if (m[ii] != rhs.m[ii])
@@ -267,7 +258,7 @@ struct  FgMatrixC
 
     // Ternary compare to match STL containers. Ordering by axis:
     int
-    compare(const FgMatrixC & rhs) const
+    compare(const Mat & rhs) const
     {
         for (uint ii=0; ii<nrows*ncols; ++ii) {
             if (m[ii] < rhs.m[ii])
@@ -299,11 +290,11 @@ struct  FgMatrixC
     }
 
     template<uint srows,uint scols>
-    FgMatrixC<T,srows,scols>
+    Mat<T,srows,scols>
     subMatrix(uint firstRow,uint firstCol) const
     {
         FGASSERT_FAST((firstRow+srows <= nrows) && (firstCol+scols <= ncols));
-        FgMatrixC<T,srows,scols>    ret;
+        Mat<T,srows,scols>    ret;
         uint                        cnt = 0;
         for (uint rr=firstRow; rr<firstRow+srows; ++rr)
             for (uint cc=firstCol; cc<firstCol+scols; ++cc)
@@ -313,7 +304,7 @@ struct  FgMatrixC
 
     template <uint srows,uint scols>
     void
-    setSubMat(const FgMatrixC<T,srows,scols> & sub,uint row,uint col)
+    setSubMat(const Mat<T,srows,scols> & sub,uint row,uint col)
     {
         FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
         for (uint rr=0; rr<srows; rr++)
@@ -326,38 +317,38 @@ struct  FgMatrixC
     {
         double      ret = 0.0;
         for (uint ii=0; ii<nrows*ncols; ++ii)
-            ret += fgMag(m[ii]);    // T can be non-scalar (eg. complex)
+            ret += cMag(m[ii]);    // T can be non-scalar (eg. complex)
         return ret;
     }
 
     T
-    length() const
+    len() const
     {return sqrt(mag()); }
 
-    FgMatrixC<T,ncols,nrows>
+    Mat<T,ncols,nrows>
     transpose() const
     {
-        FgMatrixC<T,ncols,nrows> tMat;
+        Mat<T,ncols,nrows> tMat;
         for (uint ii=0; ii<nrows; ii++)
             for (uint jj=0; jj<ncols; jj++)
                 tMat.rc(jj,ii) = rc(ii,jj);
         return tMat;
     }
 
-    FgMatrixC<T,nrows,1>
+    Mat<T,nrows,1>
     colVec(uint col) const
     {
-        FgMatrixC<T,nrows,1>    ret;
+        Mat<T,nrows,1>    ret;
         FGASSERT_FAST(col < nrows);
         for (uint rr=0; rr<nrows; rr++)
             ret[rr] = rc(rr,col);
         return ret;
     }
 
-    FgMatrixC<T,1,ncols>
+    Mat<T,1,ncols>
     rowVec(uint row) const
     {
-        FgMatrixC<T,1,ncols>    ret;
+        Mat<T,1,ncols>    ret;
         FGASSERT_FAST(row < nrows);
         for (uint cc=0; cc<ncols; ++cc)
             ret[cc] = rc(row,cc);
@@ -365,11 +356,11 @@ struct  FgMatrixC
     }
 
     static
-    FgMatrixC
+    Mat
     identity()
     {
         static_assert(nrows == ncols,"Identity matrix must be square");
-        FgMatrixC               ret(T(0));
+        Mat               ret(T(0));
         for (uint ii=0; ii<nrows; ++ii)
             ret.rc(ii,ii) = T(1);
         return ret;
@@ -386,15 +377,15 @@ struct  FgMatrixC
         const T * _p;
     };
     explicit
-    FgMatrixC(FromPtr p)
+    Mat(FromPtr p)
     {
         for (uint ii=0; ii<nrows*ncols; ++ii)
             m[ii] = *(p._p++);
     }
     static
-    FgMatrixC
+    Mat
     fromPtr(const T * p)
-    {return FgMatrixC(FromPtr(p)); }
+    {return Mat(FromPtr(p)); }
 
     T
     cmpntsSum() const
@@ -415,7 +406,7 @@ struct  FgMatrixC
     }
 
     bool
-    operator<(const FgMatrixC & rhs) const      // Useful for putting in a std::map
+    operator<(const Mat & rhs) const      // Useful for putting in a std::map
     {
         for (uint ii=0; ii<nrows*ncols; ++ii) {
             if (m[ii] < rhs[ii])
@@ -426,110 +417,117 @@ struct  FgMatrixC
         return false;
     }
 
+    // Preserves row major ordering:
+    Svec<T>
+    asStdVector() const
+    {
+        Svec<T>   ret;
+        ret.reserve(size());
+        for (size_t ii=0; ii<nrows*ncols; ++ii)
+            ret.push_back(m[ii]);
+        return ret;
+    }
+
     // Static creation functions:
 
-    static FgMatrixC randUniform(T lo,T hi);
-    static FgMatrixC randNormal(T stdev=T(1));
+    static Mat randUniform(T lo,T hi);
+    static Mat randNormal(T stdev=T(1));
 };
 
 template<class T,uint nrows,uint ncols>
-struct  FgTraits<FgMatrixC<T,nrows,ncols> >
+struct  Traits<Mat<T,nrows,ncols> >
 {
-    typedef typename FgTraits<T>::Scalar                                Scalar;
-    typedef FgMatrixC<typename FgTraits<T>::Accumulator,nrows,ncols>    Accumulator;
-    typedef FgMatrixC<typename FgTraits<T>::Floating,nrows,ncols>       Floating;
+    typedef typename Traits<T>::Scalar                                Scalar;
+    typedef Mat<typename Traits<T>::Accumulator,nrows,ncols>    Accumulator;
+    typedef Mat<typename Traits<T>::Floating,nrows,ncols>       Floating;
 };
 
-typedef FgMatrixC<float,2,2>        FgMat22F;
-typedef FgMatrixC<double,2,2>       FgMat22D;
-typedef FgMatrixC<int,2,2>          FgMat22I;
-typedef FgMatrixC<uint,2,2>         FgMat22UI;
-typedef FgMatrixC<float,3,3>        FgMat33F;
-typedef FgMatrixC<double,3,3>       FgMat33D;
-typedef FgMatrixC<float,4,4>        FgMat44F;
-typedef FgMatrixC<double,4,4>       FgMat44D;
+typedef Mat<float,2,2>          Mat22F;
+typedef Mat<double,2,2>         Mat22D;
+typedef Mat<int,2,2>            Mat22I;
+typedef Mat<uint,2,2>           Mat22UI;
+typedef Mat<float,3,3>          Mat33F;
+typedef Mat<double,3,3>         Mat33D;
+typedef Mat<float,4,4>          Mat44F;
+typedef Mat<double,4,4>         Mat44D;
 
-typedef FgMatrixC<float,2,3>        FgMat23F;
-typedef FgMatrixC<double,2,3>       FgMat23D;
-typedef FgMatrixC<float,3,2>        FgMat32F;
-typedef FgMatrixC<double,3,2>       FgMat32D;
-typedef FgMatrixC<int,3,2>          FgMat32I;
-typedef FgMatrixC<uint,3,2>         FgMat32UI;
-typedef FgMatrixC<double,3,4>       FgMat34D;
-typedef FgMatrixC<float,4,3>        FgMat43F;
+typedef Mat<float,2,3>          Mat23F;
+typedef Mat<double,2,3>         Mat23D;
+typedef Mat<float,3,2>          Mat32F;
+typedef Mat<double,3,2>         Mat32D;
+typedef Mat<int,3,2>            Mat32I;
+typedef Mat<uint,3,2>           Mat32UI;
+typedef Mat<double,3,4>         Mat34D;
 
-typedef FgMatrixC<float,2,1>        FgVect2F;
-typedef FgMatrixC<double,2,1>       FgVect2D;
-typedef FgMatrixC<short,2,1>        FgVect2S;
-typedef FgMatrixC<ushort,2,1>       FgVect2US;
-typedef FgMatrixC<int,2,1>          FgVect2I;
-typedef FgMatrixC<uint,2,1>         FgVect2UI;
-typedef FgMatrixC<uchar,2,1>        FgVect2UC;
-typedef FgMatrixC<bool,2,1>         FgVect2B;
-typedef FgMatrixC<float,3,1>        FgVect3F;
-typedef FgMatrixC<double,3,1>       FgVect3D;
-typedef FgMatrixC<short,3,1>        FgVect3S;
-typedef FgMatrixC<int,3,1>          FgVect3I;
-typedef FgMatrixC<uint,3,1>         FgVect3UI;
-typedef FgMatrixC<int16,3,1>        FgVect3I16;
-typedef FgMatrixC<schar,3,1>        FgVect3SC;
-typedef FgMatrixC<uchar,3,1>        FgVect3UC;
-typedef FgMatrixC<float,4,1>        FgVect4F;
-typedef FgMatrixC<double,4,1>       FgVect4D;
-typedef FgMatrixC<short,4,1>        FgVect4S;
-typedef FgMatrixC<int,4,1>          FgVect4I;
-typedef FgMatrixC<uint,4,1>         FgVect4UI;
-typedef FgMatrixC<schar,4,1>        FgVect4SC;
-typedef FgMatrixC<uchar,4,1>        FgVect4UC;
-typedef FgMatrixC<float,5,1>        FgVect5F;
-typedef FgMatrixC<double,5,1>       FgVect5D;
-typedef FgMatrixC<short,5,1>        FgVect5S;
-typedef FgMatrixC<int,5,1>          FgVect5I;
-typedef FgMatrixC<uint,5,1>         FgVect5UI;
-typedef FgMatrixC<float,6,1>        FgVect6F;
-typedef FgMatrixC<double,6,1>       FgVect6D;
-typedef FgMatrixC<short,6,1>        FgVect6S;
-typedef FgMatrixC<int,6,1>          FgVect6I;
-typedef FgMatrixC<uint,6,1>         FgVect6UI;
-typedef FgMatrixC<double,9,1>       FgVect9D;
+typedef Mat<float,2,1>          Vec2F;
+typedef Mat<double,2,1>         Vec2D;
+typedef Mat<short,2,1>          Vec2S;
+typedef Mat<int,2,1>            Vec2I;
+typedef Mat<uint,2,1>           Vec2UI;
+typedef Mat<bool,2,1>           Vec2B;
+typedef Mat<float,3,1>          Vec3F;
+typedef Mat<double,3,1>         Vec3D;
+typedef Mat<short,3,1>          Vec3S;
+typedef Mat<int,3,1>            Vec3I;
+typedef Mat<uint,3,1>           Vec3UI;
+typedef Mat<int16,3,1>          Vec3I16;
+typedef Mat<schar,3,1>          Vec3SC;
+typedef Mat<uchar,3,1>          Vec3UC;
+typedef Mat<float,4,1>          Vec4F;
+typedef Mat<double,4,1>         Vec4D;
+typedef Mat<int,4,1>            Vec4I;
+typedef Mat<uint,4,1>           Vec4UI;
+typedef Mat<uchar,4,1>          Vec4UC;
+typedef Mat<double,5,1>         Vec5D;
 
-typedef FgMatrixC<float,1,2>        FgVectF2;
-typedef FgMatrixC<float,1,3>        FgVectF3;
-typedef FgMatrixC<float,1,4>        FgVectF4;
-typedef FgMatrixC<double,1,2>       FgVectD2;
-typedef FgMatrixC<double,1,3>       FgVectD3;
-typedef FgMatrixC<uint,1,2>         FgVectU2;
+typedef Mat<float,1,2>          VecF2;
+typedef Mat<float,1,3>          VecF3;
+typedef Mat<double,1,2>         VecD2;
 
-typedef vector<FgVect2I>            FgVect2Is;
-typedef vector<FgVect2F>            FgVect2Fs;
-typedef vector<FgVect2Fs>           FgVect2Fss;
-typedef vector<FgVect2D>            FgVect2Ds;
-typedef vector<FgVect3F>            FgVerts;
-typedef vector<FgVect3F>            FgVect3Fs;
-typedef vector<FgVect3UI>           FgVect3UIs;
-typedef vector<FgVect3D>            FgVect3Ds;
-typedef vector<FgVect4F>            FgVect4Fs;
-typedef vector<FgVect4UI>           FgVect4UIs;
-typedef vector<FgVect4D>            FgVect4Ds;
+typedef Svec<Vec2UI>            Vec2UIs;
+typedef Svec<Vec2F>             Vec2Fs;
+typedef Svec<Vec2D>             Vec2Ds;
+typedef Svec<VecD2>             VecD2s;
+typedef Svec<Vec3F>             Vec3Fs;
+typedef Svec<Vec3UI>            Vec3UIs;
+typedef Svec<Vec3D>             Vec3Ds;
+typedef Svec<Vec4UI>            Vec4UIs;
 
-typedef vector<FgVerts>             FgVertss;
-typedef vector<FgVect2Ds>           FgVect2Dss;
-typedef vector<FgVect2Dss>          FgVect2Dsss;
-typedef vector<FgVect3Ds>           FgVect3Dss;
-typedef vector<FgVect3Dss>          FgVect3Dsss;
+typedef Svec<Vec3Fs>            Vec3Fss;
+typedef Svec<Vec3Ds>            Vec3Dss;
+typedef Svec<Vec4UIs>           Vec4UIss;
+
+template<typename To,typename From,uint nrows,uint ncols>
+inline
+Mat<To,nrows,ncols>
+scast(Mat<From,nrows,ncols> const & mat)
+{return Mat<To,nrows,ncols>(scast<To,From,nrows*ncols>(mat.m)); }
+
+template<typename To,typename From,uint nrows,uint ncols>
+inline
+Svec<Mat<To,nrows,ncols> >
+scast(Svec<Mat<From,nrows,ncols> > const & vm)
+{
+    Svec<Mat<To,nrows,ncols> >      ret;
+    ret.reserve(vm.size());
+    for (auto it=vm.cbegin(); it!=vm.cend(); ++it)
+        ret.push_back(scast<To>(*it));
+    return ret;
+}
 
 template <class T,uint nrows,uint ncols>
-std::ostream& operator<<(std::ostream& ss,const FgMatrixC<T,nrows,ncols> & mm)
+std::ostream &
+operator<<(std::ostream& ss,const Mat<T,nrows,ncols> & mm)
 {
     FGASSERT(mm.numRows()*mm.numCols()>0);
-    bool        vector((mm.numRows() == 1) || mm.numCols() == 1);
+    bool        isVec((mm.numRows() == 1) || mm.numCols() == 1);
     std::ios::fmtflags
         oldFlag = ss.setf(
             std::ios::fixed |
             std::ios::showpos |
             std::ios::right);
     std::streamsize oldPrec = ss.precision(6);
-    if (vector) {
+    if (isVec) {
         ss << "[" << mm[0];
         for (uint ii=1; ii<mm.numElems(); ii++)
             ss << "," << mm[ii];
@@ -554,7 +552,7 @@ std::ostream& operator<<(std::ostream& ss,const FgMatrixC<T,nrows,ncols> & mm)
 
 template<class T,uint nrows,uint ncols>
 void
-fgReadp(std::istream & is,FgMatrixC<T,nrows,ncols> & m)
+fgReadp(std::istream & is,Mat<T,nrows,ncols> & m)
 {
     for (uint ii=0; ii<nrows*ncols; ++ii)
         fgReadp(is,m[ii]);
@@ -562,7 +560,7 @@ fgReadp(std::istream & is,FgMatrixC<T,nrows,ncols> & m)
 
 template<class T,uint nrows,uint ncols>
 void
-fgWritep(std::ostream & os,const FgMatrixC<T,nrows,ncols> & m)
+fgWritep(std::ostream & os,const Mat<T,nrows,ncols> & m)
 {
     for (uint ii=0; ii<nrows*ncols; ++ii)
         fgWritep(os,m[ii]);
@@ -571,65 +569,31 @@ fgWritep(std::ostream & os,const FgMatrixC<T,nrows,ncols> & m)
 // function 'constructors':
 
 template<typename T,uint nrows,uint ncols>
-FgMatrixC<T,nrows,ncols>
-fgMatrixC(T * const ptr)
+Mat<T,nrows,ncols>
+cMat(T * const ptr)
 {
-    FgMatrixC<T,nrows,ncols>    ret;
+    Mat<T,nrows,ncols>    ret;
     for (size_t ii=0; ii<nrows*ncols; ++ii)
         ret.m[ii] = *ptr++;
     return ret;
 }
 
 template<typename T,uint nrows,uint ncols>
-FgMatrixC<T,nrows,ncols>
-fgMatrixC(const vector<T> & v)
+Mat<T,nrows,ncols>
+cMat(const Svec<T> & v)
 {
-    FgMatrixC<T,nrows,ncols>    ret;
+    Mat<T,nrows,ncols>    ret;
     FGASSERT(v.size() == nrows*ncols);
     for (size_t ii=0; ii<v.size(); ++ii)
         ret.m[ii] = v[ii];
     return ret;
 }
 
-// Number type conversions are easier with a function for 2 reasons:
-// 1. No repetition of nrows and ncols vals in templates.
-// 2. Can be used in certain instances where constructor conversions would be interpreted as
-//    function delarations.
 template<class T,uint nrows,uint ncols>
-FgMatrixC<double,nrows,ncols>
-fgToDouble(const FgMatrixC<T,nrows,ncols> & m)
-{return FgMatrixC<double,nrows,ncols>(m); }
+Mat<int,nrows,ncols>
+fgToInt(const Mat<T,nrows,ncols> & m)
+{return Mat<int,nrows,ncols>(m); }
 
-template<class T,uint nrows,uint ncols>
-FgMatrixC<float,nrows,ncols>
-fgToFloat(const FgMatrixC<T,nrows,ncols> & m)
-{return FgMatrixC<float,nrows,ncols>(m); }
-
-template<class T,uint nrows,uint ncols>
-FgMatrixC<int,nrows,ncols>
-fgToInt(const FgMatrixC<T,nrows,ncols> & m)
-{return FgMatrixC<int,nrows,ncols>(m); }
-
-template<class T,uint nrows,uint ncols>
-vector<FgMatrixC<double,nrows,ncols> >
-fgToDouble(const vector<FgMatrixC<T,nrows,ncols> > & v)
-{
-    vector<FgMatrixC<double,nrows,ncols> >  ret;
-    ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.push_back(FgMatrixC<double,nrows,ncols>(v[ii]));
-    return ret;
-}
-
-template<class T,uint nrows,uint ncols>
-vector<FgMatrixC<float,nrows,ncols> >
-fgToFloat(const vector<FgMatrixC<T,nrows,ncols> > & v)
-{
-    vector<FgMatrixC<float,nrows,ncols> >  ret;
-    ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.push_back(FgMatrixC<float,nrows,ncols>(v[ii]));
-    return ret;
 }
 
 #endif

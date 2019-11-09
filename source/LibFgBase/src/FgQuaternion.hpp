@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 6, 2005
+
 //
 // Keeps a normalized quaternion.
 //
@@ -21,140 +20,135 @@
 #include "FgMatrixV.hpp"
 #include "FgRandom.hpp"
 
+namespace Fg {
+
 template<typename T>
-struct  FgQuaternion
+struct  Quaternion
 {
     // Real component, identity when 1 (with quaternion normalized):
-    T                   m_real;
-    // Complex components. Direction is rotation axis (RHR) and length (when quaternion is normalized)
+    T               real;
+    // Imaginary components. Direction is rotation axis (RHR) and length (when quaternion is normalized)
     // is twice the rotation in radians for small values (tangent rotations):
-    FgMatrixC<T,3,1>    m_comp;
-    FG_SERIALIZE2(m_real,m_comp);
+    Mat<T,3,1>      imag;
+    FG_SERIALIZE2(real,imag);
 
     // Default constructor is identity:
-    FgQuaternion() : m_real(1), m_comp(FgMatrixC<T,3,1>(0)) {}
+    Quaternion() : real(1), imag(Mat<T,3,1>(0)) {}
 
-    FgQuaternion(T real,FgMatrixC<T,3,1> complex) : m_real(real), m_comp(complex) 
+    Quaternion(T r,Mat<T,3,1> i) : real(r), imag(i) 
     {normalizeP(); }
 
-    FgQuaternion(T real,T rotAxisX,T rotAxisY,T rotAxisZ) : m_real(real), m_comp(rotAxisX,rotAxisY,rotAxisZ)
+    Quaternion(T r,T rotAxisX,T rotAxisY,T rotAxisZ) : real(r), imag(rotAxisX,rotAxisY,rotAxisZ)
     {normalizeP(); }
 
     // Create a rotation around a coordinate axis (0 - X, 1 - Y, 2 - Z):
-    FgQuaternion(T radians,uint axis) :
-        m_real(std::cos(radians/2))
+    Quaternion(T radians,uint axis) :
+        real(std::cos(radians/2))
     {
         FGASSERT(axis < 3);
-        m_comp[axis] = std::sin(radians/2);
+        imag[axis] = std::sin(radians/2);
     }
 
     explicit 
-    FgQuaternion(const FgMatrixC<T,4,1> & v) : m_real(v[0]), m_comp(v[1],v[2],v[3])
+    Quaternion(const Mat<T,4,1> & v) : real(v[0]), imag(v[1],v[2],v[3])
     {normalizeP(); }
 
     bool
-    operator==(const FgQuaternion & rhs) const
-    {return ((m_real == rhs.m_real) && (m_comp == rhs.m_comp)); }
+    operator==(const Quaternion & rhs) const
+    {return ((real == rhs.real) && (imag == rhs.imag)); }
 
     // Composition operator:
-    FgQuaternion
-    operator*(const FgQuaternion & rhs) const
+    Quaternion
+    operator*(const Quaternion & rhs) const
     {
-        FgQuaternion    ret;
-        ret.m_real = m_real*(rhs.m_real) - fgDot(m_comp,rhs.m_comp);
-        ret.m_comp = m_real*(rhs.m_comp) + (rhs.m_real)*m_comp + fgCrossProduct(m_comp,rhs.m_comp);
+        Quaternion    ret;
+        ret.real = real*(rhs.real) - dotProd(imag,rhs.imag);
+        ret.imag = real*(rhs.imag) + (rhs.real)*imag + crossProduct(imag,rhs.imag);
         return ret;
     }
 
-    FgQuaternion
+    Quaternion
     inverse() const
-    {return FgQuaternion(m_real,-m_comp); }
+    {return Quaternion(real,-imag); }
 
-    FgMatrixC<T,3,3>
+    Mat<T,3,3>
     asMatrix() const
     {
-        FgMatrixC<T,3,3>    ret;
-        T                   rm = fgSqr(m_real),
-                            im = fgSqr(m_comp[0]), 
-                            jm = fgSqr(m_comp[1]),
-                            km = fgSqr(m_comp[2]);
+        Mat<T,3,3>    ret;
+        T                   rm = sqr(real),
+                            im = sqr(imag[0]), 
+                            jm = sqr(imag[1]),
+                            km = sqr(imag[2]);
         ret[0] = rm + im - jm - km;
         ret[4] = rm - im + jm - km;
         ret[8] = rm - im - jm + km;
-        ret[1] = T(2) * (m_comp[0]*m_comp[1] - m_real*m_comp[2]);
-        ret[2] = T(2) * (m_comp[0]*m_comp[2] + m_real*m_comp[1]);
-        ret[3] = T(2) * (m_comp[0]*m_comp[1] + m_real*m_comp[2]);
-        ret[5] = T(2) * (m_comp[1]*m_comp[2] - m_real*m_comp[0]);
-        ret[6] = T(2) * (m_comp[0]*m_comp[2] - m_real*m_comp[1]);
-        ret[7] = T(2) * (m_comp[1]*m_comp[2] + m_real*m_comp[0]);
+        ret[1] = T(2) * (imag[0]*imag[1] - real*imag[2]);
+        ret[2] = T(2) * (imag[0]*imag[2] + real*imag[1]);
+        ret[3] = T(2) * (imag[0]*imag[1] + real*imag[2]);
+        ret[5] = T(2) * (imag[1]*imag[2] - real*imag[0]);
+        ret[6] = T(2) * (imag[0]*imag[2] - real*imag[1]);
+        ret[7] = T(2) * (imag[1]*imag[2] + real*imag[0]);
         return ret;
     }
 
-    FgMatrixC<T,4,1>
-    asVector() const
-    {return FgMatrixC<T,4,1>(m_real,m_comp[0],m_comp[1],m_comp[2]); }
+    Mat<T,4,1>
+    asVect4() const
+    {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
 
     bool            // false if zero magnitude
     normalize()     // Useful for deserialization of user data
     {
-        T   mag = m_real*m_real + m_comp.mag();
+        T   mag = real*real + imag.mag();
         if (mag == T(0))
             return false;
         T   fac = T(1) / sqrt(mag);
-        m_real *= fac;
-        m_comp *= fac;
+        real *= fac;
+        imag *= fac;
         return true;
-    }
-
-    // Returns tangent distance magnitude between rotations in radians squared
-    // (only accurate for small diffs):
-    double
-    deltaRadiansMag(const FgQuaternion & rhs) const
-    {
-        FgMatrixC<T,4,1>    lv = asVector(),
-                            rv = rhs.asVector();
-        // Account for projective identity:
-        if (fgDot(lv,rv) < 0)
-            rv *= -1;
-        // Small differences correspond to twice the difference in radians thus 4 times the magnitude:
-        return (lv-rv).mag()*4;
     }
 
     void
     normalizeP()
     {FGASSERT(normalize()); }
+
+    static
+    Quaternion
+    rand()      // Samples evenly from SO(3)
+    {return Quaternion(Mat<T,4,1>::randNormal()); } // Use normal distros to ensure isotropy
 };
 
 template<class T,uint ncols>
-FgMatrixC<T,3,ncols>
-operator*(const FgQuaternion<T> & lhs,const FgMatrixC<T,3,ncols> & rhs)
+Mat<T,3,ncols>
+operator*(const Quaternion<T> & lhs,const Mat<T,3,ncols> & rhs)
 { return (lhs.asMatrix() * rhs); }
 
 template <class T>
-std::ostream& operator<<(std::ostream& s,const FgQuaternion<T> & q)
-{return (s << q.asVector()); }
+std::ostream& operator<<(std::ostream& s,const Quaternion<T> & q)
+{return (s << q.asVect4()); }
 
-typedef FgQuaternion<float>    FgQuaternionF;
-typedef FgQuaternion<double>   FgQuaternionD;
-
-inline
-FgQuaternionD
-fgQuaternionRand()      // Samples evenly from SO(3)
-{return FgQuaternionD(FgVect4D::randNormal()); }     // Use normal distros to ensure isotropy
+typedef Quaternion<float>    QuaternionF;
+typedef Quaternion<double>   QuaternionD;
 
 inline
-FgQuaternionD
+QuaternionD
 fgRotateX(double radians)
-{return FgQuaternionD(radians,0); }
+{return QuaternionD(radians,0); }
 
 inline
-FgQuaternionD
+QuaternionD
 fgRotateY(double radians)
-{return FgQuaternionD(radians,1); }
+{return QuaternionD(radians,1); }
 
 inline
-FgQuaternionD
+QuaternionD
 fgRotateZ(double radians)
-{return FgQuaternionD(radians,2); }
+{return QuaternionD(radians,2); }
+
+// Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
+// Useful for rotation prior.
+double
+fgTanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
+
+}
 
 #endif

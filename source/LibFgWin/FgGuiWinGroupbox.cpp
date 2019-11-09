@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,25 +16,27 @@
 
 using namespace std;
 
+namespace Fg {
+
 const uint padHorz = 8;
 const uint padTop = 20;
 const uint padBot = 5;
 
-struct  FgGuiWinGroupbox : public FgGuiOsBase
+struct  GuiGroupboxWin : public GuiBaseImpl
 {
-    FgGuiApiGroupbox            m_api;
-    FgPtr<FgGuiOsBase>    m_contents;
-    HWND                        m_hwndGb;
-    FgString                    m_store;
+    GuiGroupbox             m_api;
+    GuiImplPtr              m_contents;
+    HWND                    m_hwndGb;
+    Ustring                m_store;
 
-    FgGuiWinGroupbox(const FgGuiApiGroupbox & api)
+    GuiGroupboxWin(const GuiGroupbox & api)
     : m_api(api)
     {m_contents = m_api.contents->getInstance(); }
 
     virtual void
-    create(HWND parentHwnd,int,const FgString & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int,const Ustring & store,DWORD extStyle,bool visible)
     {
-//fgout << fgnl << "FgGuiWinGroupbox::create " << m_api.label << fgpush;
+//fgout << fgnl << "GuiGroupboxWin::create " << m_api.label << fgpush;
         m_store = store;
         int     flags = WS_CHILD;
         if (visible)
@@ -47,7 +49,7 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
                 0,0,0,0,                // Will be sent MOVEWINDOW messages.
                 parentHwnd,
                 HMENU(0),
-                s_fgGuiWin.hinst,
+                s_guiWin.hinst,
                 NULL);                  // No WM_CREATE parameter
         FGASSERTWIN(m_hwndGb != 0);
         m_contents->create(parentHwnd,1,m_store,extStyle,visible);
@@ -61,11 +63,11 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
         m_contents->destroy();
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
-    {return (m_contents->getMinSize() + FgVect2UI(2*padHorz,padTop+padBot)); }
+    {return (m_contents->getMinSize() + Vec2UI(2*padHorz,padTop+padBot)); }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {return m_contents->wantStretch(); }
 
@@ -74,12 +76,12 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
     {m_contents->updateIfChanged(); }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
-//fgout << fgnl << "FgGuiWinGroupbox::moveWindow " << lo << " , " << sz;
+//fgout << fgnl << "GuiGroupboxWin::moveWindow " << lo << " , " << sz;
         if (sz[0]*sz[1] > 0) {
             MoveWindow(m_hwndGb,lo[0],lo[1],sz[0],sz[1],TRUE);
-            FgVect2I    clo(padHorz,padTop),
+            Vec2I    clo(padHorz,padTop),
                         csz(sz[0]-2*padHorz,sz[1]-padTop-padBot);
             m_contents->moveWindow(lo+clo,csz);
         }
@@ -93,6 +95,8 @@ struct  FgGuiWinGroupbox : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiGroupbox & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinGroupbox(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiGroupbox & def)
+{return GuiImplPtr(new GuiGroupboxWin(def)); }
+
+}

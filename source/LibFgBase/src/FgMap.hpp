@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     18.04.14
+
 //
 // An associative container for small collections based on std::vector and without the implicit insertion
 // semantics of std::map. The collections are assumed small enough that no sorting is done and lookup is O(n).
@@ -20,10 +19,12 @@
 #include "FgDiagnostics.hpp"
 #include "FgOpt.hpp"
 
+namespace Fg {
+
 template<typename K,typename V>
 struct  FgMap
 {
-    std::vector<std::pair<K,V> >    map;
+    Svec<std::pair<K,V> >    map;
 
     const V &
     operator[](const K & k) const       // No implicit insertion - throws if key not found
@@ -35,13 +36,13 @@ struct  FgMap
         return map[0].second;       // Avoid warning
     }
 
-    FgOpt<V>
+    Opt<V>
     find(const K & k) const
     {
         for (size_t ii=0; ii<map.size(); ++ii)
             if (map[ii].first == k)
-                return FgOpt<V>(map[ii].second);
-        return FgOpt<V>();
+                return Opt<V>(map[ii].second);
+        return Opt<V>();
     }
 
     void
@@ -61,6 +62,8 @@ fgContains(const FgMap<K,V> & map,const K & key)
         if (p.first == key)
             return true;
     return false;
+}
+
 }
 
 #endif

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 21, 2005
+
 //
 // Variable-size (heap based) matrix / vector
 
@@ -16,54 +15,48 @@
 #include "FgTypes.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgMatrixCBase.hpp"    // Used to represent dimensions 
-#include "FgAlgs.hpp"
 #include "FgRandom.hpp"
 
+namespace Fg {
+
 template <class T>
-struct  FgMatrixV
+struct  MatV
 {
     uint            nrows;
     uint            ncols;
-    vector<T>       m_data;
+    Svec<T>         m_data;
 
     FG_SERIALIZE3(nrows,ncols,m_data)
 
-    FgMatrixV() : nrows(0),ncols(0) {}
+    MatV() : nrows(0),ncols(0) {}
 
-    FgMatrixV(size_t numRows,size_t numCols)
+    MatV(size_t numRows,size_t numCols)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(numRows*numCols)
     {}
 
-    FgMatrixV(size_t numRows,size_t numCols,T val)
+    MatV(size_t numRows,size_t numCols,T val)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(numRows*numCols,val)
     {}
 
-    FgMatrixV(size_t numRows,size_t numCols,const T *ptr)
+    MatV(size_t numRows,size_t numCols,const T *ptr)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(ptr,ptr+numRows*numCols)
     {}
 
-    FgMatrixV(size_t nr,size_t nc,const vector<T> & v) : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
+    MatV(size_t nr,size_t nc,const Svec<T> & v) : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
     {FGASSERT(nr*nc == v.size()); }
 
     explicit
-    FgMatrixV(FgVect2UI cols_rows) : nrows(cols_rows[1]), ncols(cols_rows[0])
+    MatV(Vec2UI cols_rows) : nrows(cols_rows[1]), ncols(cols_rows[0])
     {m_data.resize(ncols*nrows); }
 
     template<uint nr,uint nc>
     explicit
-    FgMatrixV(const FgMatrixC<T,nr,nc>& mm)
+    MatV(const Mat<T,nr,nc>& mm)
     {
         resize(nr,nc);
         for (uint ii=0; ii<nr*nc; ii++)
             (*this)[ii] = mm[ii];
     }
-
-    // initializer_list is just a couple of pointers so pass-by-value is faster:
-    FgMatrixV(uint rows,uint cols,std::initializer_list<T> l) : nrows(rows), ncols(cols), m_data(l)
-    {FGASSERT(nrows*ncols == l.size()); }
-
-    FgMatrixV(FgVect2UI dims,std::initializer_list<T> l) : nrows(dims[1]), ncols(dims[0]), m_data(l)
-    {FGASSERT(nrows*ncols == l.size()); }
 
     void
     clear()
@@ -78,10 +71,10 @@ struct  FgMatrixV
     {nrows = uint(nr);ncols = uint(nc); m_data.resize(nr*nc,v); }
 
     void
-    resize(FgVect2UI cols_rows)
+    resize(Vec2UI cols_rows)
     {resize(cols_rows[1],cols_rows[0]); }
 
-    FgVect2UI       dims() const {return FgVect2UI(ncols,nrows); }  // NB Order
+    Vec2UI       dims() const {return Vec2UI(ncols,nrows); }  // NB Order
     uint            numRows() const { return nrows; }
     uint            numCols() const { return ncols; }
     uint            numElems() const {return (nrows*ncols); }
@@ -123,15 +116,15 @@ struct  FgMatrixV
     {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
 
     T &
-    operator[](FgVect2UI coord)
+    operator[](Vec2UI coord)
     {return cr(coord[0],coord[1]); }
 
     const T &
-    operator[](FgVect2UI coord) const
+    operator[](Vec2UI coord) const
     {return cr(coord[0],coord[1]); }
 
     const T *
-    dataPtr() const
+    data() const
     {FGASSERT(!m_data.empty()); return &m_data[0]; }
 
     const T *
@@ -142,22 +135,22 @@ struct  FgMatrixV
         return &m_data[row*ncols];
     }
 
-    const vector<T> &
+    const Svec<T> &
     dataVec() const
     {return m_data; }
 
-    vector<T>
+    Svec<T>
     rowData(uint row) const
     {
         const T *       rPtr = rowPtr(row);
-        return vector<T>(rPtr,rPtr+ncols);
+        return Svec<T>(rPtr,rPtr+ncols);
     }
 
-    vector<T>
+    Svec<T>
     colData(uint row) const
     {
         FGASSERT(row < nrows);
-        vector<T>       ret;
+        Svec<T>       ret;
         ret.reserve(nrows);
         for (uint cc=0; cc<ncols; ++cc)
             ret.push_back(rc(row,cc));
@@ -165,53 +158,53 @@ struct  FgMatrixV
     }
 
     void
-    addRow(const vector<T> & data)
+    addRow(const Svec<T> & data)
     {
         FGASSERT(data.size() == ncols);
-        fgCat_(m_data,data);
+        cat_(m_data,data);
         ++nrows;
     }
 
     // Operators
 
     bool
-    operator==(const FgMatrixV & rhs) const
+    operator==(const MatV & rhs) const
     {return ((nrows==rhs.nrows) && (ncols==rhs.ncols) && (m_data==rhs.m_data)); }
 
     bool
-    operator!=(const FgMatrixV & rhs) const
+    operator!=(const MatV & rhs) const
     {return !(operator==(rhs)); }
 
-    FgMatrixV
+    MatV
     operator*(T v) const
     {
-        FgMatrixV<T> newMat(nrows,ncols);
+        MatV<T> newMat(nrows,ncols);
         for (uint ii=0; ii<m_data.size(); ii++)
             newMat.m_data[ii] = m_data[ii] * v;
         return newMat;
     }
 
-    FgMatrixV
-    operator+(const FgMatrixV & rhs) const
+    MatV
+    operator+(const MatV & rhs) const
     {
-        FgMatrixV<T>    ret(nrows,ncols);
+        MatV<T>    ret(nrows,ncols);
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         for (uint ii=0; ii<m_data.size(); ii++)
             ret.m_data[ii] = m_data[ii] + rhs.m_data[ii];
         return ret;
     }
 
-    FgMatrixV
-    operator-(const FgMatrixV & rhs) const
+    MatV
+    operator-(const MatV & rhs) const
     {
-        FgMatrixV<T>    ret(nrows,ncols);
+        MatV<T>    ret(nrows,ncols);
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         for (uint ii=0; ii<m_data.size(); ii++)
             ret.m_data[ii] = m_data[ii] - rhs.m_data[ii];
         return ret;
     }
 
-    const FgMatrixV &
+    const MatV &
     operator*=(T v)
     {
         for (uint ii=0; ii<m_data.size(); ii++)
@@ -219,8 +212,8 @@ struct  FgMatrixV
         return *this;
     }
 
-    const FgMatrixV &
-    operator+=(const FgMatrixV & rhs)
+    const MatV &
+    operator+=(const MatV & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         for (uint ii=0; ii<m_data.size(); ii++)
@@ -228,8 +221,8 @@ struct  FgMatrixV
         return *this;
     }
 
-    const FgMatrixV &
-    operator-=(const FgMatrixV & rhs)
+    const MatV &
+    operator-=(const MatV & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         for (uint ii=0; ii<m_data.size(); ii++)
@@ -238,7 +231,7 @@ struct  FgMatrixV
     }
 
     void
-    setSubMat(size_t row,size_t col,const FgMatrixV & m)
+    setSubMat(size_t row,size_t col,const MatV & m)
     {
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
@@ -248,7 +241,7 @@ struct  FgMatrixV
 
     // Set submatrix from the transpose of the given matrix (saves an allocation and a copy):
     void
-    setSubMatTr(size_t row,size_t col,const FgMatrixV & m)
+    setSubMatTr(size_t row,size_t col,const MatV & m)
     {
         FGASSERT((m.ncols+row <= nrows) && (m.nrows+col <= ncols));
         for (uint rr=0; rr<m.ncols; ++rr)
@@ -258,7 +251,7 @@ struct  FgMatrixV
 
     // Accumulate in sub-matrix:
     void
-    accSubMat(size_t row,size_t col,const FgMatrixV & m)
+    accSubMat(size_t row,size_t col,const MatV & m)
     {
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
@@ -267,7 +260,7 @@ struct  FgMatrixV
     }
     template<uint mrows,uint mcols>
     void
-    accSubMat(size_t row,size_t col,FgMatrixC<T,mrows,mcols> m)
+    accSubMat(size_t row,size_t col,Mat<T,mrows,mcols> m)
     {
         FGASSERT((mrows+row <= nrows) && (mcols+col <= ncols));
         for (uint rr=0; rr<mrows; ++rr)
@@ -294,10 +287,10 @@ struct  FgMatrixV
             this->rc(ii,ii) = T(1);
     }
 
-    FgMatrixV
+    MatV
     transpose() const
     {
-        FgMatrixV<T> tMat(ncols,nrows);
+        MatV<T> tMat(ncols,nrows);
         for (uint ii=0; ii<nrows; ii++)
             for (uint jj=0; jj<ncols; jj++)
                 tMat.rc(jj,ii) = rc(ii,jj);
@@ -306,64 +299,62 @@ struct  FgMatrixV
 
     double
     mag() const                     // Squared magnitude
-    {return fgMag(m_data); }
+    {return cMag(m_data); }
 
     double
-    length() const                  // Euclidean length
-    {return fgLength(m_data); }
+    len() const                  // Euclidean length
+    {return cLen(m_data); }
 
     T
     mean() const
-    {return fgMean(m_data); }
+    {return cMean(m_data); }
 
     bool
     isVector() const
     {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
 
-    FgMatrixV
+    MatV
     subMatrix(size_t firstRow,size_t firstCol,size_t numRows_,size_t numCols_) const
     {
         FGASSERT(((firstCol + numCols_) <= ncols) && 
                  ((firstRow + numRows_) <= nrows));
-        FgMatrixV<T> retval(numRows_,numCols_);
+        MatV<T> retval(numRows_,numCols_);
         for (size_t ii=0; ii<numRows_; ii++)
             for (size_t jj=0; jj<numCols_; jj++)
                 retval.rc(ii,jj) = this->rc(ii+firstRow,jj+firstCol);
         return retval;
     }
 
-    FgMatrixV
+    MatV
     colVec(uint n) const
     {return subMatrix(0,n,nrows,1); }
 
-    FgMatrixV
+    MatV
     rowVec(uint n) const
     {return subMatrix(n,0,1,ncols); }
 
-    typedef T ValType;
-
     // Static creation functions:
 
-    static FgMatrixV identity(size_t dim)
+    static MatV identity(size_t dim)
     {
-        FgMatrixV       ret(dim,dim,T(0));
+        MatV       ret(dim,dim,T(0));
         for (size_t ii=0; ii<dim; ++ii)
             ret.rc(ii,ii) = T(1);
         return ret;
     }
 
-    static FgMatrixV randNormal(size_t nrows,size_t ncols,T mean=T(0),T stdev=T(1))
-    {return FgMatrixV<T>(nrows,ncols,fgRandNormals(nrows*ncols,mean,stdev)); }
+    static MatV randNormal(size_t nrows,size_t ncols,T mean=T(0),T stdev=T(1))
+    {return MatV<T>(nrows,ncols,randNormals(nrows*ncols,mean,stdev)); }
 
-    static FgMatrixV randOrthogonal(size_t dim)
+    static MatV randOrthogonal(size_t dim)
     {
         FGASSERT(dim > 1);
-        FgMatrixV        ret(dim,dim);
+        MatV        ret(dim,dim);
         for (uint row=0; row<dim; ++row) {
-            FgMatrixV    vec = FgMatrixV::randNormal(1,dim);
+            MatV    vec = MatV::randNormal(1,dim);
             for (uint rr=0; rr<row; ++rr) {
-                FgMatrixV    axis = ret.rowVec(rr);
-                vec -=  axis * fgDot(vec,axis);
+                MatV    axis = ret.rowVec(rr);
+                vec -=  axis * dotProd(vec,axis);
             }
             ret.setSubMat(row,0,fgNormalize(vec));
         }
@@ -371,25 +362,23 @@ struct  FgMatrixV
     }
 };
 
-typedef FgMatrixV<short>        FgMatrixS;
-typedef FgMatrixV<int>          FgMatrixI;
-typedef FgMatrixV<uint>         FgMatrixUI;
-typedef FgMatrixV<float>        FgMatrixF;
-typedef FgMatrixV<double>       FgMatrixD;
-typedef vector<FgMatrixD>       FgMatrixDs;
+typedef MatV<float>         MatF;
+typedef MatV<double>        MatD;
+typedef Svec<MatD>          MatDs;
 
 template <class T>
-std::ostream& operator<<(std::ostream& ss,const FgMatrixV<T> & mm)
+std::ostream &
+operator<<(std::ostream & ss,const MatV<T> & mm)
 {
     FGASSERT(mm.numRows()*mm.numCols()>0);
-    bool        vector((mm.numRows() == 1) || mm.numCols() == 1);
+    bool        isVec((mm.numRows() == 1) || mm.numCols() == 1);
     std::ios::fmtflags
         oldFlag = ss.setf(
             std::ios::fixed |
             std::ios::showpos |
             std::ios::right);
     std::streamsize oldPrec = ss.precision(6);
-    if (vector) {
+    if (isVec) {
         ss << "[" << mm[0];
         for (uint ii=1; ii<mm.numElems(); ii++)
             ss << "," << mm[ii];
@@ -412,94 +401,95 @@ std::ostream& operator<<(std::ostream& ss,const FgMatrixV<T> & mm)
     return ss;
 }
 
+// The element type must be static_cast-able from from 0:
 template<class T>
-FgMatrixV<T>
-fgMatMul(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
+MatV<T>
+matMul(const MatV<T> & lhs,const MatV<T> & rhs)
 {
+    FGASSERT(lhs.ncols == rhs.nrows);
     // Block sub-loop cache optimization - no multithreading or explicit SIMD.
     // Use eigen instead if speed is important:
-    const size_t        CN = 64 / sizeof(T);    // Number of elements that fit in L1 Cache (est)
-    FgMatrixV<T>        mat(lhs.nrows,rhs.ncols,T(0));
-    FGASSERT(lhs.ncols == rhs.nrows);
-    for (size_t rr=0; rr<mat.nrows; rr+=CN) {
-        size_t          R2 = fgMin(CN,mat.nrows-rr);
-        for (size_t cc=0; cc<mat.ncols; cc+=CN) {
-            size_t          C2 = fgMin(CN,mat.ncols-cc);
+    size_t constexpr    CN = 64 / sizeof(T);    // Number of elements that fit in L1 Cache (est)
+    MatV<T>             ret(lhs.nrows,rhs.ncols,static_cast<T>(0));
+    for (size_t rr=0; rr<ret.nrows; rr+=CN) {
+        size_t const        R2 = minEl(CN,ret.nrows-rr);
+        for (size_t cc=0; cc<ret.ncols; cc+=CN) {
+            size_t const        C2 = minEl(CN,ret.ncols-cc);
             if (C2 < CN) {                          // Keep paths separate so inner loop can be unrolled below
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = fgMin(CN,lhs.ncols-kk);
+                    size_t const    K2 = minEl(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
-                        size_t          mIdx = (rr+rr2)*mat.ncols + cc;
+                        size_t const    mIdx = (rr+rr2)*ret.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
-                            T               lv = lhs.rc(rr+rr2,kk+kk2);
-                            size_t          rIdx = (kk+kk2)*rhs.ncols + cc;
+                            T const         lv = lhs.rc(rr+rr2,kk+kk2);
+                            size_t const    rIdx = (kk+kk2)*rhs.ncols + cc;
                             for (size_t cc2=0; cc2<C2; ++cc2)
-                                mat.m_data[mIdx+cc2] += lv * rhs.m_data[rIdx+cc2];
+                                ret.m_data[mIdx+cc2] += lv * rhs.m_data[rIdx+cc2];
                         }
                     }
                 }
             }
             else {
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = fgMin(CN,lhs.ncols-kk);
+                    size_t const    K2 = minEl(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
-                        size_t          mIdx = (rr+rr2)*mat.ncols + cc;
+                        size_t const    mIdx = (rr+rr2)*ret.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
-                            T               lv = lhs.rc(rr+rr2,kk+kk2);
-                            size_t          rIdx = (kk+kk2)*rhs.ncols + cc;
+                            T const         lv = lhs.rc(rr+rr2,kk+kk2);
+                            size_t const    rIdx = (kk+kk2)*rhs.ncols + cc;
                             for (size_t cc2=0; cc2<CN; ++cc2)   // CN is compile-time const so this loop is unrolled
-                                mat.m_data[mIdx+cc2] += lv * rhs.m_data[rIdx+cc2];
+                                ret.m_data[mIdx+cc2] += lv * rhs.m_data[rIdx+cc2];
                         }
                     }
                 }
             }
         }
     }
-    return mat;
+    return ret;
 }
 
 template<class T>
-inline FgMatrixV<T>
-operator*(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
-{return fgMatMul(lhs,rhs); }
+inline MatV<T>
+operator*(const MatV<T> & lhs,const MatV<T> & rhs)
+{return matMul(lhs,rhs); }
 
 // Specializations for float and double use Eigen library when matrix is large enough to be worth
 // copying over:
 template<>
-FgMatrixF
-operator*(const FgMatrixF & lhs,const FgMatrixF & rhs);
+MatF
+operator*(const MatF & lhs,const MatF & rhs);
 
 template<>
-FgMatrixD
-operator*(const FgMatrixD & lhs,const FgMatrixD & rhs);
+MatD
+operator*(const MatD & lhs,const MatD & rhs);
 
 template<class T>
-FgMatrixV<T>
-operator*(const T & lhs,const FgMatrixV<T> & rhs)
+MatV<T>
+operator*(const T & lhs,const MatV<T> & rhs)
 {return (rhs*lhs); }
 
 template<typename T>
-FgMatrixV<T>
-fgColVec(const vector<T> & v)
-{return FgMatrixV<T>(uint(v.size()),1,v.data()); }
+MatV<T>
+fgColVec(const Svec<T> & v)
+{return MatV<T>(uint(v.size()),1,v.data()); }
 
 template<typename T>
-FgMatrixV<T>
-fgRowVec(const vector<T> & v)
+MatV<T>
+fgRowVec(const Svec<T> & v)
 {
     FGASSERT(!v.empty());
-    return FgMatrixV<T>(1,uint(v.size()),&v[0]);
+    return MatV<T>(1,uint(v.size()),&v[0]);
 }
 
-FgMatrixD &
-operator/=(FgMatrixD & mat,double div);
+MatD &
+operator/=(MatD & mat,double div);
 
-// FgMatrixV<> * vector<> treats rhs side as a column vector and returns same:
+// MatV<> * Svec<> treats rhs side as a column vector and returns same:
 template<class T>
-vector<T>
-operator*(const FgMatrixV<T> & lhs,const vector<T> & rhs)
+Svec<T>
+operator*(const MatV<T> & lhs,const Svec<T> & rhs)
 {
-    vector<T>       ret(lhs.nrows,T(0));
+    Svec<T>       ret(lhs.nrows,T(0));
     FGASSERT(lhs.ncols == rhs.size());
     for (uint rr=0; rr<lhs.nrows; ++rr)
         for (uint cc=0; cc<lhs.ncols; ++cc)
@@ -507,12 +497,12 @@ operator*(const FgMatrixV<T> & lhs,const vector<T> & rhs)
     return ret;
 }
 
-// vector<> * FgMatrixV<> treats lhs side as a row vector and returns same:
+// Svec<> * MatV<> treats lhs side as a row vector and returns same:
 template<class T>
-vector<T>
-operator*(const vector<T> & lhs,const FgMatrixV<T> & rhs)
+Svec<T>
+operator*(const Svec<T> & lhs,const MatV<T> & rhs)
 {
-    vector<T>       ret(rhs.ncols,T(0));
+    Svec<T>       ret(rhs.ncols,T(0));
     FGASSERT(lhs.size() == rhs.nrows);
     for (uint rr=0; rr<rhs.nrows; ++rr)
         for (uint cc=0; cc<rhs.ncols; ++cc)
@@ -521,26 +511,26 @@ operator*(const vector<T> & lhs,const FgMatrixV<T> & rhs)
 }
 
 double
-fgMatSumElems(const FgMatrixD & mat);
+fgMatSumElems(const MatD & mat);
 
 template<class T>
 T
-fgDot(const FgMatrixV<T> & lhs,const FgMatrixV<T> & rhs)
-{return fgDot(lhs.m_data,rhs.m_data); }
+dotProd(const MatV<T> & lhs,const MatV<T> & rhs)
+{return dotProd(lhs.m_data,rhs.m_data); }
 
 // Map 'abs':
 template<class T>
-FgMatrixV<T>
-fgAbs(const FgMatrixV<T> & mat)
-{return FgMatrixV<T>(mat.nrows,mat.ncols,fgAbs(mat.m_data)); }
+MatV<T>
+mapAbs(const MatV<T> & mat)
+{return MatV<T>(mat.nrows,mat.ncols,mapAbs(mat.m_data)); }
 
 // Matrix join is the inverse of partition:
 // 2x2 block matrix join:
 template<class T>
-FgMatrixV<T>
-fgJoin(const FgMatrixV<T> & ul,const FgMatrixV<T> & ur,const FgMatrixV<T> & ll,const FgMatrixV<T> & lr)
+MatV<T>
+fgJoin(const MatV<T> & ul,const MatV<T> & ur,const MatV<T> & ll,const MatV<T> & lr)
 {
-    FgMatrixV<T>        ret(ul.nrows+ll.nrows,ul.ncols+ur.ncols);
+    MatV<T>        ret(ul.nrows+ll.nrows,ul.ncols+ur.ncols);
     FGASSERT((ul.ncols == ll.ncols) && (ur.ncols == lr.ncols));
     FGASSERT((ul.nrows == ur.nrows) && (ll.nrows == lr.nrows));
     ret.setSubMat(0,0,ul);
@@ -550,10 +540,10 @@ fgJoin(const FgMatrixV<T> & ul,const FgMatrixV<T> & ur,const FgMatrixV<T> & ll,c
     return ret;
 }
 template <class T>
-FgMatrixV<T>
-fgJoinHoriz(const std::vector<FgMatrixV<T> > & ms)
+MatV<T>
+fgJoinHoriz(const Svec<MatV<T> > & ms)
 {
-    FgMatrixV<T>    ret;
+    MatV<T>    ret;
     FGASSERT(!ms.empty());
     uint            rows = ms[0].numRows(),
                     cols = 0;
@@ -570,10 +560,10 @@ fgJoinHoriz(const std::vector<FgMatrixV<T> > & ms)
     return ret;
 }
 template <class T>
-FgMatrixV<T>
-fgJoinHoriz(const FgMatrixV<T> & left,const FgMatrixV<T> & right)
+MatV<T>
+fgJoinHoriz(const MatV<T> & left,const MatV<T> & right)
 {
-    FgMatrixV<T>        retval;
+    MatV<T>        retval;
     if (left.empty())
         retval = right;
     else if (right.empty())
@@ -594,10 +584,10 @@ fgJoinHoriz(const FgMatrixV<T> & left,const FgMatrixV<T> & right)
     return retval;
 }
 template <class T>
-FgMatrixV<T>
-fgJoinVert(const std::vector<FgMatrixV<T> > & ms)
+MatV<T>
+fgJoinVert(const Svec<MatV<T> > & ms)
 {
-    FgMatrixV<T>    ret;
+    MatV<T>    ret;
     FGASSERT(!ms.empty());
     uint            rows = 0,
                     cols = ms[0].ncols;
@@ -614,10 +604,10 @@ fgJoinVert(const std::vector<FgMatrixV<T> > & ms)
     return ret;
 }
 template <class T>
-FgMatrixV<T>
-fgJoinVert(const FgMatrixV<T> & upper,const FgMatrixV<T> & lower)
+MatV<T>
+fgJoinVert(const MatV<T> & upper,const MatV<T> & lower)
 {
-    FgMatrixV<T>      ret;
+    MatV<T>      ret;
     if (upper.empty())
         ret = lower;
     else if (lower.empty())
@@ -634,12 +624,12 @@ fgJoinVert(const FgMatrixV<T> & upper,const FgMatrixV<T> & lower)
     return ret;
 }
 template <class T>
-FgMatrixV<T>
-fgJoinVert(const FgMatrixV<T> & upper,const FgMatrixV<T> & middle,const FgMatrixV<T> & lower)
+MatV<T>
+fgJoinVert(const MatV<T> & upper,const MatV<T> & middle,const MatV<T> & lower)
 {
     FGASSERT(upper.numCols() == middle.numCols());
     FGASSERT(middle.numCols() == lower.numCols());
-    FgMatrixV<T>      retval(upper.numRows()+middle.numRows()+lower.numRows(),upper.numCols());
+    MatV<T>      retval(upper.numRows()+middle.numRows()+lower.numRows(),upper.numCols());
     uint    row=0;
     for (uint rr=0; rr<upper.numRows(); rr++)
         for (uint col=0; col<upper.numCols(); col++)
@@ -655,18 +645,18 @@ fgJoinVert(const FgMatrixV<T> & upper,const FgMatrixV<T> & middle,const FgMatrix
 // Diagonal block matrix join. Off-diagonal blocks are all set to zero.
 // Blocks are not required to be square.
 template<class T>
-FgMatrixV<T>
-fgJoinDiagonal(const std::vector<FgMatrixV<T> > & blocks)
+MatV<T>
+fgJoinDiagonal(const Svec<MatV<T> > & blocks)
 {
-    FgMatrixV<T>        ret;
-    FgSizes             rows(blocks.size(),0),
+    MatV<T>        ret;
+    Sizes             rows(blocks.size(),0),
                         cols(blocks.size(),0);
     for (size_t ii=0; ii<blocks.size(); ++ii) {
         rows[ii] = blocks[ii].numRows();
         cols[ii] = blocks[ii].numCols();
     }
-    size_t              nrows = fgSum(rows),
-                        ncols = fgSum(cols),
+    size_t              nrows = cSum(rows),
+                        ncols = cSum(cols),
                         rr = 0,
                         cc = 0;
     ret.resize(nrows,ncols,T(0));
@@ -678,10 +668,10 @@ fgJoinDiagonal(const std::vector<FgMatrixV<T> > & blocks)
     return ret;
 }
 template<class T>
-FgMatrixV<T>
-fgJoinDiagonal(const FgMatrixV<T> & b0,const FgMatrixV<T> & b1)
+MatV<T>
+fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1)
 {
-    FgMatrixV<T>        ret;
+    MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows,
                         ncols = b0.ncols + b1.ncols;
     ret.resize(nrows,ncols,T(0));
@@ -690,10 +680,10 @@ fgJoinDiagonal(const FgMatrixV<T> & b0,const FgMatrixV<T> & b1)
     return ret;
 }
 template<class T>
-FgMatrixV<T>
-fgJoinDiagonal(const FgMatrixV<T> & b0,const FgMatrixV<T> & b1,const FgMatrixV<T> & b2)
+MatV<T>
+fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
 {
-    FgMatrixV<T>        ret;
+    MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows + b2.nrows,
                         ncols = b0.ncols + b1.ncols + b2.ncols;
     ret.resize(nrows,ncols,T(0));
@@ -704,17 +694,17 @@ fgJoinDiagonal(const FgMatrixV<T> & b0,const FgMatrixV<T> & b1,const FgMatrixV<T
 }
 
 // Partition a square matrix into 4 matrices symmetrically:
-FgMatrixC<FgMatrixD,2,2>
-fgPartition(const FgMatrixD & m,size_t loSize);
+Mat<MatD,2,2>
+fgPartition(const MatD & m,size_t loSize);
 
 template<class T>
-FgMatrixV<T>
+MatV<T>
 fgModulateCols(
-    const FgMatrixV<T> &    matrix,
-    const FgMatrixV<T> &    modVector)
+    const MatV<T> &    matrix,
+    const MatV<T> &    modVector)
 {
     FGASSERT(matrix.numCols() == modVector.numElems());
-    FgMatrixD       ret = matrix;
+    MatD       ret = matrix;
     for (uint rr=0; rr<matrix.numRows(); ++rr)
         for (uint cc=0; cc<matrix.numCols(); ++cc)
             ret.rc(rr,cc) *= modVector[cc];
@@ -722,48 +712,48 @@ fgModulateCols(
 }
 
 template<class T>
-FgMatrixV<T>
+MatV<T>
 fgDiagonal(size_t dim,const T & val)
 {
-    FgMatrixV<T>    ret(dim,dim,T(0));
+    MatV<T>    ret(dim,dim,T(0));
     for (uint ii=0; ii<dim; ++ii)
         ret.rc(ii,ii) = val;
     return ret;
 }
 
 template<class T>
-FgMatrixV<T>
-fgDiagonal(const vector<T> & vec)
+MatV<T>
+fgDiagonal(const Svec<T> & vec)
 {
     uint            dim = uint(vec.size());
-    FgMatrixV<T>    ret(dim,dim,T(0));
+    MatV<T>    ret(dim,dim,T(0));
     for (uint ii=0; ii<dim; ++ii)
         ret.rc(ii,ii) = vec[ii];
     return ret;
 }
 
 template<class T>
-FgMatrixV<T>
-fgDiagonal(const FgMatrixV<T> & vec)
+MatV<T>
+fgDiagonal(const MatV<T> & vec)
 {
     FGASSERT((vec.numRows() == 1) || (vec.numCols() == 1));
     uint            dim = vec.numRows() * vec.numCols();
-    FgMatrixV<T>    ret(dim,dim,T(0));
+    MatV<T>    ret(dim,dim,T(0));
     for (uint ii=0; ii<dim; ++ii)
         ret.rc(ii,ii) = vec[ii];
     return ret;
 }
 
 template<class T>
-FgMatrixV<T>
-fgNormalize(const FgMatrixV<T> & m)
+MatV<T>
+fgNormalize(const MatV<T> & m)
 {return m * (1/std::sqrt(m.mag())); }
 
 template<class T>
-FgMatrixV<T>
-fgOuterProduct(const vector<T> & rowFacs,const vector<T> & colFacs)
+MatV<T>
+fgOuterProduct(const Svec<T> & rowFacs,const Svec<T> & colFacs)
 {
-    FgMatrixV<T>        ret(rowFacs.size(),colFacs.size());
+    MatV<T>        ret(rowFacs.size(),colFacs.size());
     size_t              cnt = 0;
     for (size_t rr=0; rr<rowFacs.size(); ++rr)
         for (size_t cc=0; cc<colFacs.size(); ++cc)
@@ -771,47 +761,28 @@ fgOuterProduct(const vector<T> & rowFacs,const vector<T> & colFacs)
     return ret;
 }
 
-FgMatrixD
-fgRelDiff(const FgMatrixD & a,const FgMatrixD & b,double minAbs=0.0);
-
-// Dimensional extrapolation of 'fgJaggedVec', returns a square matrix of 
-// matrices of outer product dimensions:
-template<class T>
-FgMatrixV<FgMatrixV<T> >
-fgJaggedMat(const FgSizes & dims,const T & initVal)
-{
-    FgMatrixV<FgMatrixV<T> >    ret(dims.size(),dims.size());
-    for (size_t rr=0; rr<ret.nrows; ++rr)
-        for (size_t cc=0; cc<ret.ncols; ++cc)
-            ret.rc(rr,cc).resize(dims[rr],dims[cc],initVal);
-    return ret;
-}
-
-// For use with above:
-typedef FgMatrixV<FgVect3D>     FgVect3Dz;
-typedef FgMatrixV<FgVect3Dz>    FgVect3Dzz;
-typedef FgMatrixV<FgMat33D>     FgMat33Dz;
-typedef FgMatrixV<FgMat33Dz>    FgMat33Dzz;
+MatD
+fgRelDiff(const MatD & a,const MatD & b,double minAbs=0.0);
 
 // Form a matrix from a vector of vectors representing each row:
 template<class T>
-FgMatrixV<T>
-fgVecVecToMatrix(const vector<vector<T> > & vss)    // vss must be non-empty with all sub-vects of same size
+MatV<T>
+fgVecVecToMatrix(const Svec<Svec<T> > & vss)    // vss must be non-empty with all sub-vects of same size
 {
     FGASSERT(!vss.empty());
     size_t          numRows = vss.size(),
                     numCols = vss[0].size();
-    vector<T>       data = fgFlat(vss);
+    Svec<T>       data = fgFlat(vss);
     FGASSERT(data.size() == numRows*numCols);
-    return FgMatrixV<T>(numRows,numCols,data);
+    return MatV<T>(numRows,numCols,data);
 }
 
 // Return a vector of vectors for each row in a matrix:
 template<class T>
-vector<vector<T> >
-fgMatrixToVecVec(const FgMatrixV<T> & v)
+Svec<Svec<T> >
+fgMatrixToVecVec(const MatV<T> & v)
 {
-    vector<vector<T> >      ret(v.numRows());
+    Svec<Svec<T> >      ret(v.numRows());
     for (size_t rr=0; rr<ret.size(); ++rr)
         ret[rr] = v.rowData(uint(rr));
     return ret;
@@ -819,23 +790,25 @@ fgMatrixToVecVec(const FgMatrixV<T> & v)
 
 template<class T>
 T
-fgMag(const FgMatrixV<T> & mat)
+cMag(const MatV<T> & mat)
 {return mat.mag(); }
 
 template<class T>
 T
-fgOffDiagonalRelMag(const FgMatrixV<T> & mat)
+fgOffDiagonalRelMag(const MatV<T> & mat)
 {
     FGASSERT(mat.ncols == mat.nrows);
     T       sz = T(mat.ncols),
             diag = T(0),
             offd = T(0);
     for (size_t rr=0; rr<sz; ++rr) {
-        diag += fgMag(mat.rc(rr,rr));
+        diag += cMag(mat.rc(rr,rr));
         for (size_t cc=rr+1; cc<sz; ++cc)
-            offd += fgMag(mat.rc(rr,cc)) + fgMag(mat.rc(cc,rr));
+            offd += cMag(mat.rc(rr,cc)) + cMag(mat.rc(cc,rr));
     }
     return offd * sz / (diag * sz * (sz-1));
+}
+
 }
 
 #endif

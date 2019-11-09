@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: June 23, 2009
+
 //
 
 #include "stdafx.h"
@@ -22,134 +21,152 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 void
-viewMesh(const FgArgs & args)
+viewMesh(const CLArgs & args)
 {
-    FgSyntax            syntax(args,
-        "[-c] [-r] (<mesh>.<ext> [<texImage> [<transparencyImage>]])+\n"
-        "    -c    - Compare meshes rather than view all at once\n"
-        "    -r    - Remove unused vertices for viewing\n"
-        "    <ext> - " + fgLoadMeshFormatsCLDescription());
-    bool                compare = false,
-                        ru = false;
-    while (syntax.peekNext()[0] == '-') {
-        if (syntax.next() == "-c")
+    Syntax            syn(args,
+        "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]])+\n"
+        "    -c         - Compare meshes rather than view all at once\n"
+        "    -r         - Remove unused vertices for viewing\n"
+        "    <mesh>     - Mesh to view\n"
+        "    <ext>      - " + meshLoadFormatsCLDescription() +
+        "    <color>    - Color / albedo map (can contain transparency in alpha channel)\n"
+        "    <transparency> - Transparency map\n"
+        "    <specular> - Specularity map\n"
+        "    <img>      - " + imgFileExtensionsDescription()
+    );
+    bool            compare = false,
+                    removeUnused = false;
+    while (syn.peekNext()[0] == '-') {
+        if (syn.next() == "-c")
             compare = true;
-        else if (syntax.curr() == "-r")
-            ru = true;
+        else if (syn.curr() == "-r")
+            removeUnused = true;
         else
-            syntax.error("Unrecognized option: ",syntax.curr());
+            syn.error("Unrecognized option: ",syn.curr());
     }
-    vector<Fg3dMesh>    meshes;
-    while (syntax.more()) {
-        FgString        fname = syntax.next(),
-                        ext = fgToLower(fgPathToExt(fname));
-        Fg3dMesh        mesh = fgLoadMeshAnyFormat(fname);
-        fgout << fgnl << "Mesh " << meshes.size() << ": " << fgpush << mesh;
-        size_t          origVerts = mesh.verts.size();
-        if (ru) {
-            mesh = fgRemoveUnusedVerts(mesh);
+    Meshs           meshes;
+    while (syn.more()) {
+        Path            path(syn.next());
+        Mesh            mesh = meshLoadAnyFormat(path.str());
+        mesh.name = path.base;
+        if (removeUnused) {
+            size_t          origVerts = mesh.verts.size();
+            mesh = meshRemoveUnusedVerts(mesh);
             if (mesh.verts.size() < origVerts)
                 fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
         }
-        if(syntax.more() && fgIsImgFilename(syntax.peekNext())) {
+        fgout << fgnl << mesh;
+        if (syn.more() && hasImgExtension(syn.peekNext())) {
             if (mesh.uvs.empty())
-                fgout << fgnl << "WARNING: " << syntax.curr() << " has no UVs, texture image "
-                    << syntax.peekNext() << " will not be seen.";
-            FgImgRgbaUb         texture;
-            fgLoadImgAnyFormat(syntax.next(),texture);
-            fgout << fgnl << "Texture image: " << texture;
-            if(syntax.more() && fgIsImgFilename(syntax.peekNext())) {
-                FgImgRgbaUb     trans;
-                fgout << fgnl << "Transparency image:" << trans;
-                fgLoadImgAnyFormat(syntax.next(),trans);
-                texture = fgImgApplyTransparencyPow2(texture,trans);
+                fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, texture image "
+                    << syn.peekNext() << " will not be seen.";
+            ImgC4UC         albedo = imgLoadAnyFormat(syn.next());
+            fgout << fgnl << "Albedo map: " << albedo;
+            albedo = fgResizePow2Ceil(albedo);
+            if (syn.more() && (syn.peekNext()[0] == '-')) {
+                if(syn.next() == "-t") {
+                    ImgC4UC         trans = imgLoadAnyFormat(syn.next());
+                    fgout << fgnl << "Transparency map: " << trans;
+                    albedo = fgImgApplyTransparencyPow2(albedo,trans);
+                }
+                else if (syn.curr() == "-s") {
+                    ImgC4UC         spec;
+                    imgLoadAnyFormat(syn.next(),spec);
+                    fgout << fgnl << "Specularity map: " << spec;
+                    auto                specPtr = make_shared<ImgC4UC>(spec);
+                    for (Surf & surf : mesh.surfaces)
+                        surf.material.specularMap = specPtr;
+                }
+                else
+                    syn.error("Unrecognized image map option",syn.curr());
             }
-            else {
-                texture = fgResizePow2Ceil(texture);
-            }
-            // Apply to all surfaces:
-            std::shared_ptr<FgImgRgbaUb>  map = std::make_shared<FgImgRgbaUb>(texture);
-            for (size_t ss=0; ss<mesh.surfaces.size(); ++ss)
-                mesh.surfaces[ss].material.albedoMap = map;
+            auto        albPtr = make_shared<ImgC4UC>(albedo);
+            for (Surf & surf : mesh.surfaces)
+                surf.material.albedoMap = albPtr;
         }
         meshes.push_back(mesh);
-        fgout << fgpop;
     }
-    FgViewMeshes(meshes,compare);
+    if (meshes.empty())
+        syn.error("No meshes specified");
+    Mesh        ignoreModified = meshView(meshes,compare);
 }
 
 void
-fgViewImage(const FgArgs & args)
+fgViewImage(const CLArgs & args)
 {
-    FgSyntax    syntax(args,"<imageFileName>");
+    Syntax    syntax(args,"<imageFileName>");
     if (args.size() > 2)
         syntax.incorrectNumArgs();
-    FgImgRgbaUb     img;
-    fgLoadImgAnyFormat(syntax.next(),img);
+    ImgC4UC     img;
+    imgLoadAnyFormat(syntax.next(),img);
     fgout << fgnl << img;
-    fgImgDisplay(img);
+    imgDisplay(img);
 }
 
 void
-fgViewImagef(const FgArgs & args)
+fgViewImagef(const CLArgs & args)
 {
-    FgSyntax    syntax(args,"<imageFileName> [<saveName>]");
-    FgImgF      img;
+    Syntax    syntax(args,"<imageFileName> [<saveName>]");
+    ImgF      img;
     if (fgToLower(fgPathToExt(syntax.next())) == "fgpbn")
         fgLoadPBin(syntax.curr(),img);
     else {
         if (fgCurrentBuildOS() != FgBuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
-        fgLoadImgAnyFormat(syntax.curr(),img);
+        imgLoadAnyFormat(syntax.curr(),img);
     }
     if (syntax.more())
         fgSavePBin(syntax.next(),img);
     fgout << fgnl << img;
-    fgImgDisplay(img);
+    imgDisplay(img);
 }
 
 void
-fgCmdViewUvs(const FgArgs & args)
+fgCmdViewUvs(const CLArgs & args)
 {
-    FgSyntax            syntax(args,
+    Syntax            syntax(args,
         "(<mesh>.<ext>)+ [<texImage>]\n"
-        "     <ext> = " + fgLoadMeshFormatsCLDescription());
-    Fg3dMesh            mesh;
-    FgImgRgbaUb         img;
+        "     <ext> = " + meshLoadFormatsCLDescription());
+    Mesh            mesh;
+    ImgC4UC         img;
     while (syntax.more()) {
         string          fname = syntax.next(),
                         ext = fgToLower(fgPathToExt(fname));
-        if (fgContains(fgLoadMeshFormats(),ext)) {
-            Fg3dMesh    tmp = fgLoadMeshAnyFormat(fname);
+        if (fgContains(meshLoadFormats(),ext)) {
+            Mesh    tmp = meshLoadAnyFormat(fname);
             if (tmp.uvs.empty())
                 syntax.error("Mesh has no UVs",fname);
             mesh = fgMergeMeshes(mesh,tmp);
         }
-        else if (fgIsImgFilename(fname)) {
+        else if (hasImgExtension(fname)) {
             if (!img.empty())
                 syntax.error("Only one image allowed");
-            img = fgLoadImgAnyFormat(fname);
+            img = imgLoadAnyFormat(fname);
         }
         else
             syntax.error("Unknown file type",fname);
     }
-    FgMat22F            uvb = fgBounds(mesh.uvs);
+    Mat22F            uvb = getBounds(mesh.uvs);
     fgout << fgnl << "UV Bounds: " << uvb;
-    FgVectF2            uvbb = fgBounds(uvb);
+    VecF2            uvbb = getBounds(uvb.m);
     if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
         fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
-    fgImgDisplay(fgUvImage(mesh,img));
+    imgDisplay(fgUvWireframeImage(mesh,img));
 }
 
-vector<FgCmd>
+vector<Cmd>
 fgCmdViewInfos()
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(viewMesh,"mesh","Interactively view 3D meshes"));
-    cmds.push_back(FgCmd(fgViewImage,"image","Basic image viewer"));
-    cmds.push_back(FgCmd(fgViewImagef,"imagef","Floating point image viewer"));
-    cmds.push_back(FgCmd(fgCmdViewUvs,"uvs","View the UV layout of a 3D mesh"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(viewMesh,"mesh","Interactively view 3D meshes"));
+    cmds.push_back(Cmd(fgViewImage,"image","Basic image viewer"));
+    cmds.push_back(Cmd(fgViewImagef,"imagef","Floating point image viewer"));
+    cmds.push_back(Cmd(fgCmdViewUvs,"uvs","View the UV layout of a 3D mesh"));
     return cmds;
+}
+
 }

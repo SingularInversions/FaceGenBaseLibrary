@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 14, 2011
+
 //
 // Select between multiple windows for current display:
 
@@ -13,22 +12,33 @@
 
 #include "FgGuiApiBase.hpp"
 
-struct  FgGuiApiSelect : FgGuiApi<FgGuiApiSelect>
+namespace Fg {
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiSelect;
+GuiImplPtr guiGetOsImpl(GuiSelect const & guiApi);
+
+struct  GuiSelect : GuiBase
 {
-    vector<FgGuiPtr>        wins;
-    FgDgn<size_t>           selection;
-    uint                    updateNodeIdx;
+    Svec<GuiPtr>        wins;
+    IPT<size_t>      selection;
+    DfgFPtr             updateFlag;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 inline
-FgGuiPtr
-fgGuiSelect(FgDgn<size_t> select,const vector<FgGuiPtr> & wins)
+GuiPtr
+guiSelect(IPT<size_t> select,const Svec<GuiPtr> & wins)
 {
-    FgGuiApiSelect  ret;
+    GuiSelect    ret;
     ret.wins = wins;
     ret.selection = select;
-    ret.updateNodeIdx = g_gg.addUpdateFlag(ret.selection);
-    return fgsp(ret);
+    ret.updateFlag = makeUpdateFlag(ret.selection);
+    return std::make_shared<GuiSelect>(ret);
+}
+
 }
 
 #endif

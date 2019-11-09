@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 2, 2005
+
 //
 
 #include "stdafx.h"
@@ -17,8 +16,10 @@
 
 using namespace std;
 
+namespace Fg {
+
 // Keep this here to avoid excess header dependencies:
-static FgOfstream   s_ofs;
+static Ofstream   s_ofs;
 
 // Only this single global instance should ever be instantiated.
 // Note that 'fgout' can't be used in global variable constructors since it's
@@ -167,4 +168,6 @@ FgOut::defOut()
 #else
     return &std::cout;
 #endif
+}
+
 }

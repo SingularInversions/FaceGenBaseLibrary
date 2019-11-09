@@ -1,8 +1,7 @@
 //
 // Copyright (C) Singular Inversions Inc. 2018
 //
-// Authors:     Andrew Beatty
-// Created:     18.01.30
+
 //
 // Windows-specific functionality
 //
@@ -14,12 +13,16 @@
 #include "FgString.hpp"
 #include "FgOpt.hpp"
 
-// Returns no value if given dir/name not found:
-FgOpt<ulong>
-fgWinRegistryLookupUlong(const FgString & dir,const FgString & name);
+namespace Fg {
 
 // Returns no value if given dir/name not found:
-FgOpt<FgString>
-fgWinRegistryLookupString(const FgString & dir,const FgString & name);
+Opt<ulong>
+winRegistryLookupUlong(const Ustring & dir,const Ustring & name);
+
+// Returns no value if given dir/name not found:
+Opt<Ustring>
+fgWinRegistryLookupString(const Ustring & dir,const Ustring & name);
+
+}
 
 #endif

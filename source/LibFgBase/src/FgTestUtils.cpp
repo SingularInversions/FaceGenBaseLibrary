@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani
-// Created: 2008
+
 //
 
 #include "stdafx.h"
@@ -19,6 +18,8 @@
 #include "FgParse.hpp"
 
 using namespace std::placeholders;
+
+namespace Fg {
 
 #if defined(_MSC_VER) && defined(_DEBUG)
 
@@ -66,22 +67,22 @@ using namespace std;
 
 void
 fgRegressFail(
-    const FgString & testName,
-    const FgString & refName)
+    const Ustring & testName,
+    const Ustring & refName)
 {
     fgThrow("Regression failure",testName + " != " + refName);
 }
 
 void
-fgRegressFile(const FgString & baselineRelPath,const FgString & queryPath,const FgFnRegressFiles & fnEqual)
+fgRegressFile(const Ustring & baselineRelPath,const Ustring & queryPath,const FgFnRegressFiles & fnEqual)
 {
-    if (!fgExists(queryPath))
+    if (!pathExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
     bool                    regressOverwrite = fgOverwriteBaselines();
-    FgString                baselinePath = fgDataDir() + baselineRelPath;
-    if (!fgExists(baselinePath)) {
+    Ustring                baselinePath = dataDir() + baselineRelPath;
+    if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
-            fgCopyFile(queryPath,baselinePath);
+            fileCopy(queryPath,baselinePath);
             fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works.
         }
@@ -92,7 +93,7 @@ fgRegressFile(const FgString & baselineRelPath,const FgString & queryPath,const 
         fgDeleteFile(queryPath);        // Passed test
     else {                              // Failed test
         if (regressOverwrite) {
-            fgCopyFile(queryPath,baselinePath,true);
+            fileCopy(queryPath,baselinePath,true);
             fgDeleteFile(queryPath);
         }
         fgThrow("Regression failure",queryPath+" != "+baselineRelPath);
@@ -102,13 +103,13 @@ fgRegressFile(const FgString & baselineRelPath,const FgString & queryPath,const 
 static
 bool
 compareImages(
-    const FgString &    f1,
-    const FgString &    f2,
+    const Ustring &    f1,
+    const Ustring &    f2,
     uint                maxDelta)
 {
-    FgImgRgbaUb         i1,i2;
-    fgLoadImgAnyFormat(f1,i1);
-    fgLoadImgAnyFormat(f2,i2);
+    ImgC4UC         i1,i2;
+    imgLoadAnyFormat(f1,i1);
+    imgLoadAnyFormat(f2,i2);
     return fgImgApproxEqual(i1,i2,maxDelta);
 }
 
@@ -123,21 +124,23 @@ fgRegressImage(
 }
 
 template<>
-FgImgRgbaUb
-fgRegressLoad(const FgString & path)
-{return fgLoadImgAnyFormat(path); }
+ImgC4UC
+fgRegressLoad(const Ustring & path)
+{return imgLoadAnyFormat(path); }
 
 template<>
 void
-fgRegressSave(const FgString & path,const FgImgRgbaUb & img)
-{fgSaveImgAnyFormat(path,img); }
+fgRegressSave(const Ustring & path,const ImgC4UC & img)
+{imgSaveAnyFormat(path,img); }
 
 void
-fgRegressString(const string & data,const FgString & relPath)
+fgRegressString(const string & data,const Ustring & relPath)
 {
-    FgString        dd = fgDataDir();
+    Ustring        dd = dataDir();
     if (data == fgSlurp(dd+relPath))
         return;
-    if (fgExists(dd+"_overwrite_baselines.flag"))
+    if (pathExists(dd+"_overwrite_baselines.flag"))
         fgDump(data,dd+relPath);
+}
+
 }

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Mar 2, 2013
+
 //
 // Avoid the abomination that is std::algorithm on std::set
 //
@@ -14,7 +13,7 @@
 
 #include "FgStdLibs.hpp"
 
-using std::set;
+namespace Fg {
 
 template<class T>
 std::ostream &
@@ -39,16 +38,16 @@ std::set<T>
 fgVecToSet(const std::vector<T> & v)
 {return std::set<T>(v.begin(),v.end()); }
 
-template<class T>
+template<class T,class Lt>
 inline
 bool
-fgContains(const std::set<T> & s,const T & v)
+fgContains(const std::set<T,Lt> & s,const T & v)
 {return (s.find(v) != s.end()); }
 
 // Returns true if the intersect of s0 and s1 is non-empty. Loop is through s1 so prefer s0 for the larger set.
 template<class T>
 bool
-fgContainsAny(const std::set<T> & s0,const std::set<T> & s1)
+containsAny(const std::set<T> & s0,const std::set<T> & s1)
 {
     for (auto it=s1.begin(); it != s1.end(); ++it)
         if (fgContains(s0,*it))
@@ -59,7 +58,7 @@ fgContainsAny(const std::set<T> & s0,const std::set<T> & s1)
 // Returns true if s0 contains all elements of s1. Loop is through s1 so prefer s0 for the larger set.
 template<class T>
 bool
-fgContainsAll(const std::set<T> & s0,const std::set<T> & s1)
+containsAll(const std::set<T> & s0,const std::set<T> & s1)
 {
     for (auto it=s1.begin(); it != s1.end(); ++it)
         if (!fgContains(s0,*it))
@@ -158,12 +157,32 @@ operator-=(std::set<T> & lhs,const T & rhs)
 }
 
 template<class T>
+void
+operator-=(std::set<T> & lhs,const std::vector<T> & rhs)
+{
+    for (const T & r : rhs) {
+        auto it = lhs.find(r);
+        if (it != lhs.end())
+            lhs.erase(it);
+    }
+}
+
+template<class T>
 std::set<T>
 fgInsert(const std::set<T> & s,const T & v)
 {
     std::set<T>         ret = s;
     ret.insert(v);
     return ret;
+}
+
+template<class T>
+bool
+fgContains(const std::unordered_set<T> & s,const T & v)
+{
+    return (s.find(v) != s.end());
+}
+
 }
 
 #endif

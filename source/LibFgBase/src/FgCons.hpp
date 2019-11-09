@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Nov 29, 2011
+
 //
 // Construct build files (makefiles, VS sln/vcxproj), aka build file generator.
 //
@@ -14,83 +13,84 @@
 
 #include "FgStdLibs.hpp"
 #include "FgTypes.hpp"
-#include "FgDefaultVal.hpp"
 #include "FgStdString.hpp"
 #include "FgStdVector.hpp"
 #include "FgStdSet.hpp"
 
+namespace Fg {
+
 struct  FgConsSrcDir
 {
-    string          dir;        // Relative to 'name/baseDir/' below. Can be empty.
+    String          dir;        // Relative to 'name/baseDir/' below. Can be empty.
     // Both compile targets and include files are listed below but the latter are only used
     // for display in IDEs:
-    FgStrs          files;      // Bare filename relative to dir above.
+    Strings          files;      // Bare filename relative to dir above.
 
     FgConsSrcDir() {}
 
-    FgConsSrcDir(const string & d,const FgStrs & f)
+    FgConsSrcDir(const String & d,const Strings & f)
     : dir(d), files(f)
     {}
 
-    FgConsSrcDir(const string & baseDir,const string & relDir);
+    FgConsSrcDir(const String & baseDir,const String & relDir);
 };
-typedef vector<FgConsSrcDir>    FgConsSrcDirs;
+typedef Svec<FgConsSrcDir>    FgConsSrcDirs;
 
 struct  FgIncDir
 {
-    string      relPath;        // Relative to 'name/baseDir/' below. Can be empty.
+    String      relPath;        // Relative to 'name/baseDir/' below. Can be empty.
     // The path of the actual include files relative to the above. This is NOT used as an
     // include path, but to locate the header files for build dependencies. Can be empty:
-    string      relFiles;
+    String      relFiles;
     bool        transitive;     // True if the include path is public, false if private
     FgIncDir() {}
-    FgIncDir(const string & r,bool t) : relPath(r), transitive(t) {}
-    FgIncDir(const string & r,const string & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
+    FgIncDir(const String & r,bool t) : relPath(r), transitive(t) {}
+    FgIncDir(const String & r,const String & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
 };
-typedef vector<FgIncDir>        FgIncDirs;
+typedef Svec<FgIncDir>        FgIncDirs;
 
-inline FgIncDirs fgIncDirs(const FgStrs & dirs)
+inline FgIncDirs fgIncDirs(const Strings & dirs)
 {
     FgIncDirs   ret;
-    for (const string & d : dirs)
+    for (const String & d : dirs)
         ret.push_back(FgIncDir(d,true));
     return ret;
 }
 
 struct  FgConsDef
 {
-    string      name;
+    String      name;
     bool        transitive;
 
     FgConsDef() {}
-    FgConsDef(const string & n,bool t) : name(n), transitive(t) {}
+    FgConsDef(const String & n,bool t) : name(n), transitive(t) {}
 };
-typedef vector<FgConsDef>   FgConsDefs;
+typedef Svec<FgConsDef>   FgConsDefs;
 
-inline FgConsDefs fgConsDefs(const FgStrs & defs)
+inline FgConsDefs fgConsDefs(const Strings & defs)
 {
     FgConsDefs  ret;
-    for (const string & d : defs)
+    for (const String & d : defs)
         ret.push_back(FgConsDef(d,true));
     return ret;
 }
 
 struct  FgProjDep
 {
-    string          name;
+    String          name;
     // Are include directories and macro defs from this project and those it depends on passed on
     // to dependents ? (ie. are they used by this project's hpp files rather than just cpp files ?):
     bool            transitive;
 
     FgProjDep() {}
-    FgProjDep(const string & n,bool t) : name(n), transitive(t) {}
+    FgProjDep(const String & n,bool t) : name(n), transitive(t) {}
 };
-typedef vector<FgProjDep>   FgProjDeps;
+typedef Svec<FgProjDep>   FgProjDeps;
 
 struct  FgConsProj
 {
-    string              name;
-    string              baseDir;        // Relative to 'name' dir. Can be empty. Otherwise includes trailing '/'
+    String              name;
+    String              baseDir;        // Relative to 'name' dir. Can be empty. Otherwise includes trailing '/'
     FgConsSrcDirs       srcGroups;      // Can be empty for header-only libs (no library will be created)
     FgIncDirs           incDirs;        // Relative to 'name/baseDir/'
     FgConsDefs          defs;
@@ -99,7 +99,7 @@ struct  FgConsProj
     // via link-from-link or include-from-include) should not be put here as they are
     // automatically transitively determined:
     FgProjDeps          projDeps;
-    FgStrs              binDllDeps;     // Binary-only DLL dependencies (ie not in 'projDeps' above).
+    Strings              binDllDeps;     // Binary-only DLL dependencies (ie not in 'projDeps' above).
     uint                warn = 4;       // Warning level [0 - 4] (if project has compile targets)
     // 'lib' - static library
     // 'dll' - dynamic library
@@ -110,7 +110,7 @@ struct  FgConsProj
 
     FgConsProj() {}
 
-    FgConsProj(const string & n,const string & sbd) : name(n), baseDir(sbd) {}
+    FgConsProj(const String & n,const String & sbd) : name(n), baseDir(sbd) {}
 
     bool isStaticLib() const {return (type==Type::lib); }
     bool isClExecutable() const {return (type==Type::clp); }
@@ -120,28 +120,28 @@ struct  FgConsProj
     bool isLinked() const {return (isExecutable() || isDynamicLib()); }
 
     void
-    addSrcDir(const string & relDir)
+    addSrcDir(const String & relDir)
     {srcGroups.push_back(FgConsSrcDir(name+'/'+baseDir,relDir)); }
 
     void
-    addIncDir(const string & relDir,bool transitive)
+    addIncDir(const String & relDir,bool transitive)
     {incDirs.push_back(FgIncDir(relDir,transitive)); }
 
     void
-    addIncDir(const string & relDir,const string & relFiles,bool transitive)
+    addIncDir(const String & relDir,const String & relFiles,bool transitive)
     {incDirs.push_back(FgIncDir(relDir,relFiles,transitive)); }
 
     void
-    addDep(const string & depName,bool transitiveIncludesAndDefs)
+    addDep(const String & depName,bool transitiveIncludesAndDefs)
     {projDeps.push_back(FgProjDep(depName,transitiveIncludesAndDefs)); }
 
-    string
+    String
     descriptor() const;             // Used to generate repeatable GUID
 };
 
 inline std::ostream & operator<<(std::ostream & os,FgConsProj::Type t) {return os << int(t); }
 
-typedef vector<FgConsProj>  FgConsProjs;
+typedef Svec<FgConsProj>  FgConsProjs;
 
 // The build construction data is diferent for the three cases of:
 // win: Windows - extra Win-specific libraries
@@ -160,54 +160,54 @@ struct  FgConsSolution
     explicit FgConsSolution(FgConsType t) : type(t) {}
 
     void
-    addAppClp(const string &  name,const string & lnkDep);
+    addAppClp(const String &  name,const String & lnkDep);
 
     void
-    addAppGui(const string &  name,const string & lnkDep);
+    addAppGui(const String &  name,const String & lnkDep);
 
     bool
-    contains(const string & projName) const;
+    contains(const String & projName) const;
 
     const FgConsProj &
-    at(const string & projName) const;
+    at(const String & projName) const;
 
     // Return transitive include directories, reverse topologically sorted. The 'fileDir'
     // option returns the directly directly containing the headers, rather than the expected
     // include directiry, if different:
-    FgStrs
-    getIncludes(const string & projName,bool fileDir) const;
+    Strings
+    getIncludes(const String & projName,bool fileDir) const;
 
-    FgStrs
-    getDefs(const string & projName) const;
+    Strings
+    getDefs(const String & projName) const;
 
     // Returns transitive required libraries (static and dynamic) for linking, reverse topologically sorted.
     // Library names not contained in 'projects' are binary-only DLLs.
-    FgStrs
-    getLnkDeps(const string & projName) const;
+    Strings
+    getLnkDeps(const String & projName) const;
 
     // Returns a list of all prerequisite projects including the given one, topologically sorted
-    FgStrs
-    getAllDeps(const string & projName,bool dllSource=true) const;
+    Strings
+    getAllDeps(const String & projName,bool dllSource=true) const;
 
     // Returns a list of all prerequisite projects including the given one, topologically sorted
-    FgStrs
-    getAllDeps(const FgStrs & projNames,bool dllSource=true) const;
+    Strings
+    getAllDeps(const Strings & projNames,bool dllSource=true) const;
 
 private:
     FgConsProj
-    addApp(const string & name,const string & lnkDep);
+    addApp(const String & name,const String & lnkDep);
 
-    FgStrs
-    getTransitiveDefs(const string & projName,set<string> & done) const;
+    Strings
+    getTransitiveDefs(const String & projName,std::set<String> & done) const;
 
-    FgStrs
-    getTransitiveIncludes(const string & projName,bool fileDir,set<string> & done) const;
+    Strings
+    getTransitiveIncludes(const String & projName,bool fileDir,std::set<String> & done) const;
 
-    FgStrs
-    getTransitiveLnkDeps(const string & projName,set<string> & done) const;
+    Strings
+    getTransitiveLnkDeps(const String & projName,std::set<String> & done) const;
 
-    FgStrs
-    getAllDeps(const string & projName,set<string> & done,bool dllSource) const;
+    Strings
+    getAllDeps(const String & projName,std::set<String> & done,bool dllSource) const;
 };
 
 // Current dir must be ~repo/source/
@@ -223,5 +223,7 @@ fgConsBuildFiles(const FgConsSolution & sln);
 // Construct build files for all platforms:
 void
 fgConsBuildAllFiles();
+
+}
 
 #endif

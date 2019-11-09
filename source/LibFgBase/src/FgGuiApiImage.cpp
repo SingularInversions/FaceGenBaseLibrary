@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Dec 2, 2013
+
 //
 
 #include "stdafx.h"
@@ -14,29 +13,32 @@
 
 using namespace std;
 
-FgGuiImageDisp
-FgGuiApiImage::disp(FgVect2UI winSize)
+
+namespace Fg {
+
+GuiImageDisp
+GuiImage::disp(Vec2UI winSize)
 {
     FGASSERT(winSize[0]*winSize[1] > 0);
-    FgGuiImageDisp  ret;
+    GuiImageDisp  ret;
     if (allowMouseCtls) {
         // Ensure level has been initialized using window size so dispN will be correctly calculated:
-        uint                        level = g_gg.getVal(currLevelN);
+        uint                    level = currLevelN.val();
         if (level == 0) {    // not yet initialized:
-            const vector<FgImgRgbaUb> & pyr = g_gg.getVal(pyramidN);
+            const vector<ImgC4UC> & pyr = pyramidN.cref();
             while (
                 (level+1 < pyr.size()) &&
                 (pyr[level].width() < winSize[0]) &&
                 (pyr[level].height() < winSize[1]))
                     ++level;
-            g_gg.setVal(currLevelN,level);
+            currLevelN.set(level);
         }
         // Adjust offset here to be able to respond properly to window resize.
         // Image can only be moved if it's larger than display window, and movement is clamped
         // to keep image boundaries at or outside window boundaries.
-        const FgImgRgbaUb & img = g_gg.getVal(dispN);
-        FgVect2I            offset = g_gg.getVal(offsetN);
-        FgVect2I            delsz = FgVect2I(winSize) - FgVect2I(img.dims());
+        const ImgC4UC & img = dispN.cref();
+        Vec2I            offset = offsetN.val();
+        Vec2I            delsz = Vec2I(winSize) - Vec2I(img.dims());
         if (delsz[0] < 0) {
             if (offset[0] < delsz[0]) offset[0] = delsz[0];
             if (offset[0] > 0) offset[0] = 0;
@@ -49,21 +51,21 @@ FgGuiApiImage::disp(FgVect2UI winSize)
         }
         else
             offset[1] = delsz[1] / 2;
-        g_gg.setVal(offsetN,offset);
-        g_gg.getVal(offsetN);           // Clean node; don't trigger future repaints
+        offsetN.set(offset);
+        offsetN.val();                  // Clean node; don't trigger future repaints
 
         ret.width = img.width();
         ret.height = img.height();
-        ret.dataPtr = img.dataPtr();
+        ret.dataPtr = img.data();
         ret.offsetx = offset[0];
         ret.offsety = offset[1];
     }
     else {
-        const FgImgRgbaUb & img = g_gg.getVal(imgN);
-        FgVect2I    pad = FgVect2I(winSize) - FgVect2I(img.dims());
+        const ImgC4UC & img = imgN.cref();
+        Vec2I    pad = Vec2I(winSize) - Vec2I(img.dims());
         ret.width = img.width();
         ret.height = img.height();
-        ret.dataPtr = img.dataPtr();
+        ret.dataPtr = img.data();
         ret.offsetx = (pad[0] > 0 ? pad[0]/2 : 0);
         ret.offsety = (pad[1] > 0 ? pad[1]/2 : 0);
     }
@@ -71,65 +73,65 @@ FgGuiApiImage::disp(FgVect2UI winSize)
 }
 
 void
-FgGuiApiImage::move(FgVect2I delta)
+GuiImage::move(Vec2I delta)
 {
     if (allowMouseCtls) {
-        FgVect2I    offset = g_gg.getVal(offsetN) + delta;
-        g_gg.setVal(offsetN,offset);
+        Vec2I    offset = offsetN.val() + delta;
+        offsetN.set(offset);
     }
 }
 
 void
-FgGuiApiImage::zoom(int delta)
+GuiImage::zoom(int delta)
 {
     if (!allowMouseCtls)
         return;
-    int     zoom = g_gg.getVal(zoomN);
+    int     zoom = zoomN.val();
     zoom += delta;
     if (zoom > 30) {
         zoom = 0;
-        const vector<FgImgRgbaUb> &     pyr = g_gg.getVal(pyramidN);
-        uint    level = g_gg.getVal(currLevelN);
+        const vector<ImgC4UC> &     pyr = pyramidN.cref();
+        uint    level = currLevelN.val();
         if (level < pyr.size()-1)
-            g_gg.setVal(currLevelN,level+1);
+            currLevelN.set(level+1);
     }
     if (zoom < -30) {
         zoom = 0;
-        uint    level = g_gg.getVal(currLevelN);
+        uint    level = currLevelN.val();
         if (level > 7)
-            g_gg.setVal(currLevelN,level-1);
+            currLevelN.set(level-1);
     }
-    g_gg.setVal(zoomN,zoom);
+    zoomN.set(zoom);
 }
 
 void
-FgGuiApiImage::click(FgVect2I pos)
+GuiImage::click(Vec2I pos)
 {
-    if (!allowMouseCtls)
-        return;
-    uint                lev = g_gg.getVal(currLevelN);
-    const FgImgRgbaUb & img = g_gg.getVal(pyramidN)[lev];
-    FgVect2I            imgPos = pos - g_gg.getVal(offsetN);
-    if ((imgPos[0] >= 0) && (imgPos[0] < int(img.width())) &&
-        (imgPos[1] >= 0) && (imgPos[1] < int(img.height()))) {
-        FgVect2F    posr = FgVect2F(imgPos) + FgVect2F(0.5f),
-                    posIucs(posr[0]/float(img.width()),posr[1]/float(img.height()));
-        vector<FgVect2F> &  points = g_gg.getRef(pointsN);
-        points.push_back(posIucs);
-        if (onClick != NULL)
-            onClick();
+    if (allowMouseCtls) {
+        uint                lev = currLevelN.val();
+        const ImgC4UC & img = pyramidN.cref()[lev];
+        Vec2I            imgPos = pos - offsetN.val();
+        if ((imgPos[0] >= 0) && (imgPos[0] < int(img.width())) &&
+            (imgPos[1] >= 0) && (imgPos[1] < int(img.height()))) {
+            Vec2F    posr = Vec2F(imgPos) + Vec2F(0.5f),
+                        posIucs(posr[0]/float(img.width()),posr[1]/float(img.height()));
+            vector<Vec2F> &  points = pointsN.ref();
+            points.push_back(posIucs);
+        }
     }
+    if (onClick != NULL)
+        onClick();
 }
 
 uint
-FgGuiApiImage::update()
+GuiImage::update()
 {
-    if (g_gg.dg.update(updateNodeIdxFill)) {
+    if (updateFill->checkUpdate()) {
         if (allowMouseCtls)
-            g_gg.dg.update(updateNodeIdxNofill);
+            updateNofill->checkUpdate();
         return 2;
     }
-    if (allowMouseCtls && g_gg.dg.update(updateNodeIdxNofill)) {
+    if (allowMouseCtls && updateNofill->checkUpdate()) {
         // Avoid flickering due to background repaint if image size hasn't changed:
         return 1;
     }
@@ -137,20 +139,19 @@ FgGuiApiImage::update()
 }
 
 static
-FGLINK(linkPyramid)
+void
+linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
 {
-    FGLINKARGS(1,1);
-    FgImgRgbaUb             img = inputs[0]->valueRef();
-    vector<FgImgRgbaUb> &   pyr = outputs[0]->valueRef();
     if (img.empty()) {
         pyr.clear();
         return;
     }
     const uint              maxDim = 2048;
+    ImgC4UC             tmp = img;
     while (fgMaxElem(img.dims()) > maxDim)
-        img = fgImgShrink2(img);
-    pyr.resize(fgLog2Floor(fgMinElem(img.dims()))+1);
-    pyr.back() = img;
+        tmp = fgImgShrink2(tmp);
+    pyr.resize(log2Floor(fgMinElem(tmp.dims()))+1);
+    pyr.back() = tmp;
     for (uint ii=0; ii<pyr.size()-1; ++ii)
         fgImgShrink2(pyr[pyr.size()-1-ii],pyr[pyr.size()-2-ii]);
     // Add up to 4x expansion for small images:
@@ -160,25 +161,22 @@ FGLINK(linkPyramid)
 }
 
 static
-FGLINK(linkDisp)
+void
+linkDisp2(const ImgC4UCs & pyr,const uint & levIn,const Vec2Fs & pts,ImgC4UC & img)
 {
-    FGLINKARGS(3,1);
-    const vector<FgImgRgbaUb> & pyr = inputs[0]->valueRef();
-    uint                        lev = inputs[1]->valueRef();
-    const vector<FgVect2F> &    pts = inputs[2]->valueRef();
-    FgImgRgbaUb &               img = outputs[0]->valueRef();
     if (pyr.empty()) {
-        img = FgImgRgbaUb();
+        img = ImgC4UC();
         return;
     }
-    uint                        maxLev = uint(pyr.size())-1;
+    uint                        maxLev = uint(pyr.size())-1,
+                                lev = levIn;
     if (lev > maxLev)
         lev = maxLev;
     img = pyr[lev];
     for (size_t ii=0; ii<pts.size(); ++ii){
         int     xx = int(pts[ii][0] * img.width()),
                 yy = int(pts[ii][1] * img.height());
-        FgRgbaUB    green(0,255,0,255);
+        RgbaUC    green(0,255,0,255);
         for (int jj=-4; jj<5; ++jj) {
             for (int kk=-1; kk<2; ++kk) {
                 img.paint(xx+jj,yy+kk,green);
@@ -188,34 +186,43 @@ FGLINK(linkDisp)
     }
 }
 
-FgGuiPtr
-fgGuiImage(FgDgn<FgImgRgbaUb> imgN)
+GuiPtr
+guiImage(NPT<ImgC4UC> imgN)
 {
-    FgGuiApiImage       gai;
+    GuiImage       gai;
     gai.imgN = imgN;
-    gai.updateNodeIdxFill = g_gg.addUpdateFlag(imgN);
-    gai.allowMouseCtls = false;
-    return fgGuiPtr(gai);
+    gai.updateFill = makeUpdateFlag(imgN);
+    return guiMakePtr(gai);
 }
 
-FgGuiPtr
-fgGuiImage(FgDgn<FgImgRgbaUb> imgN,FgDgn<vector<FgVect2F> > ptsIucsN,std::function<void()> onClick)
+GuiPtr
+guiImage(NPT<ImgC4UC> imgN,Sfun<void()> const & onClick)
 {
-    FgGuiApiImage       gai;
+    GuiImage       gai;
+    gai.imgN = imgN;
+    gai.updateFill = makeUpdateFlag(imgN);
+    gai.onClick = onClick;
+    return guiMakePtr(gai);
+}
+
+GuiPtr
+guiImage(NPT<ImgC4UC> imgN,IPT<Vec2Fs> ptsIucsN,std::function<void()> onClick)
+{
+    GuiImage       gai;
     gai.imgN = imgN;
     gai.allowMouseCtls = true;
-    gai.offsetN = g_gg.addNode(FgVect2I());
-    gai.zoomN = g_gg.addNode(0);
-    gai.currLevelN = g_gg.addNode(uint(0),"imgCurrLevel");
-    gai.pyramidN = g_gg.addNode(vector<FgImgRgbaUb>(),"imgPyramid");
+    gai.offsetN = makeIPT(Vec2I());
+    gai.zoomN = makeIPT(0);
+    gai.currLevelN = makeIPT(uint(0));
+    gai.pyramidN = link1_<ImgC4UC,ImgC4UCs>(gai.imgN,linkPyramid2);
     gai.pointsN = ptsIucsN;
-    gai.dispN = g_gg.addNode(FgImgRgbaUb(),"imgDisp");
+    gai.dispN = link3_<ImgC4UC,ImgC4UCs,uint,Vec2Fs>(gai.pyramidN,gai.currLevelN,gai.pointsN,linkDisp2);
     gai.onClick = onClick;
-    g_gg.addLink(linkPyramid,gai.imgN,gai.pyramidN);
-    g_gg.addLink(linkDisp,fgUints(gai.pyramidN,gai.currLevelN,gai.pointsN),gai.dispN);
-    gai.updateNodeIdxFill = g_gg.addUpdateFlag(fgUints(gai.imgN,gai.currLevelN));
-    gai.updateNodeIdxNofill = g_gg.addUpdateFlag(fgUints(gai.offsetN,gai.pointsN));
-    return fgGuiPtr(gai);
+    gai.updateFill = makeUpdateFlag(gai.imgN,gai.currLevelN);
+    gai.updateNofill = makeUpdateFlag(gai.offsetN,gai.pointsN);
+    return guiMakePtr(gai);
+}
+
 }
 
 // */

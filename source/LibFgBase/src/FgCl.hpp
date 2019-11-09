@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 21, 2011
+
 //
 // Command-line invocations (currently only defined in LibFgWin)
 
@@ -16,8 +15,9 @@
 
 #ifndef FG_SANDBOX
 
-namespace fgCl
-{
+namespace Fg {
+
+namespace fgCl {
 
 extern bool preview;
 
@@ -32,6 +32,8 @@ void
 zip(const std::string & dir,bool oldFormat=false);
 
 }   // namespace
+
+}
 
 #endif
 

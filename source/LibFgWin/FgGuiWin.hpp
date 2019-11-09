@@ -1,14 +1,14 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Authors:     Andrew Beatty
 // Created:     March 18, 2011
 //
-// FgGuiWin objects may or may not be win32 windows. This is important for avoiding
+// GuiBaseImpl child objects may or may not be win32 windows. This is important for avoiding
 // excessive depth in the tree as win64 can choke on as little as 7 levels. Due to this,
-// FgGuiWin objects call a virtual function to create, move or hide/show children, which
+// GuiBaseImpl child objects call a virtual function to create, move or hide/show children, which
 // keep track of their own win32 handles.
 //
 // To avoid duplication, all windows sizing is done through 'moveWindow' which means that
@@ -28,11 +28,13 @@
 #include "FgMatrixC.hpp"
 #include "FgOpt.hpp"
 
+namespace Fg {
+
 // Declared in LibFgBase but defined differently in each OS-specific library:
-struct  FgGuiOsBase
+struct  GuiBaseImpl
 {
     virtual
-    ~FgGuiOsBase()
+    ~GuiBaseImpl()
     {};
 
     // Recursively create the win32 window objects using the idiomatic approach of
@@ -42,7 +44,7 @@ struct  FgGuiOsBase
     create(
         HWND            hwndParent,
         int             ident,          // WinImpl window index
-        const FgString & store,         // Root filename for storing state.
+        const Ustring & store,         // Root filename for storing state.
         DWORD           extStyle=NULL,
         bool            visible=true)   // Visible on creation ?
         = 0;
@@ -56,21 +58,21 @@ struct  FgGuiOsBase
     // So for windows that contain dynamic sub-windows, we have a problem ...
     // Minimum sizes do not include any padding. It is the responsibility of the
     // parent container window to provide padding between elements:
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const = 0;
 
     // Do the window contents BENEFIT from stretching in the given dimensions ?
     // Any window size can always be expanded but the contents do not necessarily expand
     // to fill, or even if they do it may not improve anything (eg. a button) so this
     // propertly allows space to be allocated somewhere more beneficial (if possible):
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const = 0;
 
     virtual void
     updateIfChanged() = 0;
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz) = 0;
+    moveWindow(Vec2I lo,Vec2I sz) = 0;
 
     // Since Windows automatically makes all sub-windows of a hidden window hidden, we keep
     // sub-windows in a visible or hidden state as if the parent window was visible, to
@@ -83,33 +85,33 @@ struct  FgGuiOsBase
     // down the relative position of the cursor so that split windows know which handle to
     // return !
     virtual
-    FgOpt<HWND>
+    Opt<HWND>
     getHwnd()
-    {return FgOpt<HWND>(); }
+    {return Opt<HWND>(); }
 
     virtual void
     saveState()
     {}
 };
 
-struct  FgGuiWinStatics
+struct  GuiWinStatics
 {
     HINSTANCE       hinst;
     HWND            hwndMain;
 
-    FgGuiWinStatics() : hinst(0), hwndMain(0) {}
+    GuiWinStatics() : hinst(0), hwndMain(0) {}
 };
 
-extern FgGuiWinStatics s_fgGuiWin;
+extern GuiWinStatics s_guiWin;
 
 LRESULT
-fgWinCallCatch(std::function<LRESULT(void)> func,const string & className);
+winCallCatch(std::function<LRESULT(void)> func,const String & className);
 
 template<class WinImpl>
 LRESULT CALLBACK
-fgStatWndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+statWndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
 {
-    static string   className = typeid(WinImpl).name();
+    static String   className = typeid(WinImpl).name();
     if (message == WM_NCCREATE) {
         // The "this" pointer passed to CreateWindowEx is returned here in 'lParam'.
         // Save to the Windows instance user data for retrieval in later calls:
@@ -120,10 +122,10 @@ fgStatWndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
     if (wnd == 0)   // For before WM_NCCREATE
         return DefWindowProc(hwnd,message,wParam,lParam);
     else
-        return fgWinCallCatch(std::bind(&WinImpl::wndProc,wnd,hwnd,message,wParam,lParam),className);
+        return winCallCatch(std::bind(&WinImpl::wndProc,wnd,hwnd,message,wParam,lParam),className);
 }
 
-struct  FgCreateChild
+struct  WinCreateChild
 {
     DWORD       style;
     DWORD       extStyle;
@@ -133,7 +135,7 @@ struct  FgCreateChild
     // if a parent window is not visible, it's children are not visible:
     bool        visible;
 
-    FgCreateChild() :
+    WinCreateChild() :
         style(NULL),
         extStyle(NULL),
         useFillBrush(true),
@@ -144,30 +146,30 @@ struct  FgCreateChild
 
 template<class ChildImpl>
 HWND
-fgCreateChild(
+winCreateChild(
     HWND            parentHwnd,
     // WinImpl window identifier. Must be unique per instantiation for given parent if messages from
     // child to parent need to be processed:
     size_t          ident,
     // Passed back in windows callback function and used to map to object's wndProc:
     ChildImpl *     thisPtr,
-    FgCreateChild   opt)
+    WinCreateChild   opt)
 {
     std::string     classNameA = typeid(ChildImpl).name();
     // Different class options mean different classes:
-    classNameA +=   fgToStr(size_t(opt.cursor)) + "_" +
-                    fgToStr(size_t(opt.useFillBrush));
-    std::wstring    className = FgString(classNameA).as_wstring();
-    FGASSERT(className.length() < 256);     // Windows limit
+    classNameA +=   toString(size_t(opt.cursor)) + "_" +
+                    toString(size_t(opt.useFillBrush));
+    std::wstring    className = Ustring(classNameA).as_wstring();
+    FGASSERT(className.size() < 256);     // Windows limit
     WNDCLASSEX  wcl;
     wcl.cbSize = sizeof(wcl);
-    if (GetClassInfoEx(s_fgGuiWin.hinst,className.c_str(),&wcl) == 0)
+    if (GetClassInfoEx(s_guiWin.hinst,className.c_str(),&wcl) == 0)
     {
         wcl.style = CS_HREDRAW | CS_VREDRAW;
-        wcl.lpfnWndProc = &fgStatWndProc<ChildImpl>;
+        wcl.lpfnWndProc = &statWndProc<ChildImpl>;
         wcl.cbClsExtra = 0;
         wcl.cbWndExtra = sizeof(void *);
-        wcl.hInstance = s_fgGuiWin.hinst;
+        wcl.hInstance = s_guiWin.hinst;
         wcl.hIcon = NULL;
         wcl.hCursor = opt.cursor;
         // COLOR_BTNFACE matches background color used by windows for buttons & controls [Petzold 374].
@@ -197,7 +199,7 @@ fgCreateChild(
             0,0,0,0,
             parentHwnd,
             (HMENU)ident,
-            s_fgGuiWin.hinst,   // Contrary to MSDN docs, this is used on all WinOSes to
+            s_guiWin.hinst,   // Contrary to MSDN docs, this is used on all WinOSes to
                                 // disambiguate the class name over different modules [Raymond Chen]
             thisPtr);           // Value to be sent as argument with WM_NCCREATE message
     FGASSERTWIN(hwnd != 0);
@@ -206,20 +208,20 @@ fgCreateChild(
 
 template<class WinImpl>
 HWND
-fgCreateDialog(
-    const FgString &    title,
+winCreateDialog(
+    const Ustring &    title,
     HWND                ownerHwnd,
     WinImpl *           thisPtr)
 {
-    std::wstring    className = FgString("FgDialogClass").as_wstring();
+    std::wstring    className = Ustring("FgDialogClass").as_wstring();
     WNDCLASSEX      wcl;
     wcl.cbSize = sizeof(wcl);
-    if (GetClassInfoEx(s_fgGuiWin.hinst,className.c_str(),&wcl) == 0) {
+    if (GetClassInfoEx(s_guiWin.hinst,className.c_str(),&wcl) == 0) {
         wcl.style = NULL;
-        wcl.lpfnWndProc = &fgStatWndProc<WinImpl>;
+        wcl.lpfnWndProc = &statWndProc<WinImpl>;
         wcl.cbClsExtra = 0;
         wcl.cbWndExtra = sizeof(void *);
-        wcl.hInstance = s_fgGuiWin.hinst;
+        wcl.hInstance = s_guiWin.hinst;
         wcl.hIcon = NULL;
         wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
         wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE),
@@ -249,18 +251,23 @@ fgCreateDialog(
             widDlg,hgtDlg,
             ownerHwnd,
             NULL,               // Use class menu definition (ie none)
-            s_fgGuiWin.hinst,   // Contrary to MSDN docs, this is used on all WinOSes to
+            s_guiWin.hinst,   // Contrary to MSDN docs, this is used on all WinOSes to
                                 // disambiguate the class name over different modules [Raymond Chen]
             thisPtr);           // Value to be sent as argument with WM_NCCREATE message
     FGASSERTWIN(hwnd != 0);
     return hwnd;
 }
 
-FgVect2I
-fgScreenPos(HWND hwnd,LPARAM lParam);
+Vec2I
+winScreenPos(HWND hwnd,LPARAM lParam);
 
-FgVect2UI
-fgNcSize(HWND hwnd);
+Vec2UI
+winNcSize(HWND hwnd);
+
+// Send WM_USER to main hwnd. TODO: make this NOT rely on a global !
+void winUpdateScreen();
+
+}
 
 #endif
 

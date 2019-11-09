@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: 2018.01.10
+
 //
 
 #include "stdafx.h"
@@ -13,24 +12,19 @@
 #include "FgTestUtils.hpp"
 #include "FgMain.hpp"
 
-bool
-fgReduceOr(const vector<bool> & v)
-{
-    for (bool b : v)
-        if (b)
-            return true;
-    return false;
-}
+namespace Fg {
 
 void
-fgStdVectorTest(const FgArgs &)
+fgStdVectorTest(const CLArgs &)
 {
-    FgInts          v = { 1, 2, 3 };
-    FgIntss         subs = fgSubsets(v,0,4);
+    Ints          v = { 1, 2, 3 };
+    Intss         subs = fgSubsets(v,0,4);
     fgout << fgnl << "Subsets of 1..3 : " << subs;
     FGASSERT(subs.size() == 8);
     subs = fgSubsets(v,2,2);
     fgout << fgnl << "Of which size 2 : " << subs;
-    FgIntss         chk = {{1,2},{1,3},{2,3}};
+    Intss         chk = {{1,2},{1,3},{2,3}};
     FGASSERT(subs == chk);
+}
+
 }

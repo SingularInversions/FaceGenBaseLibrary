@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 6, 2011
+
 //
 
 #include "stdafx.h"
@@ -19,80 +18,80 @@
 
 using namespace std;
 
+namespace Fg {
+
 void
-fgImgDisplay(const FgImgRgbaUb & img,vector<FgVect2F> pts)
+imgDisplay(const ImgC4UC & img,vector<Vec2F> pts)
 {
-    FgString            store = fgDirUserAppDataLocalFaceGen("SDK","DisplayImage");
-    g_gg = FgGuiGraph(store);
-    fgGuiImplStart(
-        FgString("FaceGen SDK DisplayImage"),
-        fgGuiImage(g_gg.addNode(img),g_gg.addNode(pts)),
+    Ustring            store = fgDirUserAppDataLocalFaceGen("SDK","DisplayImage");
+    guiStartImpl(
+        Ustring("FaceGen SDK DisplayImage"),
+        guiImage(makeIPT(img),makeIPT(pts)),
         store);
 }
 
 void
-fgImgDisplay(const FgImgUC &img)
+imgDisplay(const ImgUC &img)
 {
-    FgImgRgbaUb        dispImg;
-    fgImgConvert(img,dispImg);
-    fgImgDisplay(dispImg);
+    ImgC4UC        dispImg;
+    imgConvert_(img,dispImg);
+    imgDisplay(dispImg);
 }
 
 void
-fgImgDisplay(const FgImage<ushort> & img)
+imgDisplay(const Img<ushort> & img)
 {
-    FgAffine1F      aff(FgVectF2(fgBounds(img.dataVec())),FgVectF2(0,255));
-    FgImgRgbaUb     di(img.dims());
+    Affine1F      aff(VecF2(getBounds(img.dataVec())),VecF2(0,255));
+    ImgC4UC     di(img.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
-        di[ii] = FgRgbaUB(aff * img[ii]);
-    fgImgDisplay(di);
+        di[ii] = RgbaUC(aff * img[ii]);
+    imgDisplay(di);
 }
 
 void
-fgImgDisplay(const FgImgF & img)
+imgDisplay(const ImgF & img)
 {
-    FgAffine1F          aff(fgBounds(img.m_data),FgVectF2(0,255));
-    FgImgRgbaUb         dispImg(img.dims());
+    Affine1F          aff(getBounds(img.m_data),VecF2(0,255));
+    ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = FgRgbaUB(uchar(aff * img.m_data[ii]));
-    fgImgDisplay(dispImg);
+        dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
+    imgDisplay(dispImg);
 }
 
 void
-fgImgDisplay(const FgImgD & img)
+imgDisplay(const ImgD & img)
 {
-    FgAffine1D          aff(fgBounds(img.m_data),FgVectD2(0,255));
-    FgImgRgbaUb         dispImg(img.dims());
+    Affine1D          aff(getBounds(img.m_data),VecD2(0,255));
+    ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = FgRgbaUB(uchar(aff * img.m_data[ii]));
-    fgImgDisplay(dispImg);
+        dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
+    imgDisplay(dispImg);
 }
 
 void
-fgImgDisplay(const FgImg3F & img)
+imgDisplay(const Img3F & img)
 {
-    FgVectF2            bounds = fgBounds(fgBounds(img.dataVec()));
-    FgAffineCwPre3F     xform(FgVect3F(-bounds[0]),FgVect3F(255.0f/(bounds[1]-bounds[0])));
-    FgImg3F             tmp = FgImg3F(img.dims(),fgTransform(img.dataVec(),xform));
-    FgImgRgbaUb         disp(tmp.dims());
+    VecF2               bounds = getBounds(getBounds(img.dataVec()).m);
+    AffineEwPre3F       xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
+    Img3F               tmp = Img3F(img.dims(),mapXft(img.dataVec(),xform));
+    ImgC4UC             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
-        FgVect3UC       clr;       
-        fgRound_(tmp[ii],clr);
-        disp[ii] = FgRgbaUB(clr[0],clr[1],clr[2],uchar(255));
+        Vec3UC          clr = round<uchar>(tmp[ii]);
+        disp[ii] = RgbaUC(clr[0],clr[1],clr[2],uchar(255));
     }
     fgout << fgnl << disp;
-    fgImgDisplay(disp);
+    imgDisplay(disp);
 }
 
 void
-fgImgDisplayColorize(const FgImgD & img)
+fgImgDisplayColorize(const ImgD & img)
 {
-    FgVectD2        ib = fgBounds(img.dataVec());
-    FgAffine1D aff(ib,FgVectD2(0,4));
-    FgImgRgbaUb     di(img.dims());
-    for (FgIter2UI it(di.dims()); it.valid(); it.next()) {
+    VecD2        ib = getBounds(img.dataVec());
+    Affine1D aff(ib,VecD2(0,4));
+    ImgC4UC     di(img.dims());
+    for (Iter2UI it(di.dims()); it.valid(); it.next()) {
         double      sc = aff * img[it()];
-        FgRgbaUB    col(0,0,0,255);
+        RgbaUC    col(0,0,0,255);
         if(sc < 1.0) {
             col.blue() = uchar((1-sc) * 255);
             col.green() = uchar(sc * 255); }
@@ -114,20 +113,22 @@ fgImgDisplayColorize(const FgImgD & img)
     fgout << fgnl
         << "Colour scheme blue-green-red-purple-white over bounds: ["
         << ib[0] << "," << ib[1] << "]";
-    fgImgDisplay(di);
+    imgDisplay(di);
 }
 
 void
-fgImgDisplay(const FgImgRgbaF & img)
+imgDisplay(const ImgC4F & img)
 {
-    FgImgRgbaUb     di(img.dims());
+    ImgC4UC     di(img.dims());
     for (size_t ii=0; ii<di.numPixels(); ++ii)
-        di[ii] = FgRgbaUB(img[ii]*255.0f + FgRgbaF(0.5f));
-    fgImgDisplay(di);
+        di[ii] = RgbaUC(img[ii]*255.0f + RgbaF(0.5f));
+    imgDisplay(di);
 }
 
 void
-fgImgGuiTestm(const FgArgs &)
+fgImgGuiTestm(const CLArgs &)
 {
-    fgImgDisplay(fgLoadImgAnyFormat(fgDataDir()+"base/trees.jpg"));
+    imgDisplay(imgLoadAnyFormat(dataDir()+"base/trees.jpg"));
+}
+
 }

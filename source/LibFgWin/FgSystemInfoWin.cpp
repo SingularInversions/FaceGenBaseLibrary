@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,6 +13,8 @@
 #include "FgString.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 bool
 fg64bitOS()
@@ -37,7 +39,7 @@ fgOsName()
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     GetVersionEx(LPOSVERSIONINFOW(&osvi));
     string              verStr,
-                        unknown = fgToStr(osvi.dwMajorVersion) + "." + fgToStr(osvi.dwMinorVersion);
+                        unknown = toString(osvi.dwMajorVersion) + "." + toString(osvi.dwMinorVersion);
     if (osvi.wProductType != VER_NT_WORKSTATION)
         unknown += " (server)";
     if (osvi.dwMajorVersion == 6) {
@@ -87,10 +89,10 @@ fgOsName()
         verStr += " 64bit ";
     else
         verStr += " 32bit ";
-    return "Windows " + verStr + FgString(wstring(osvi.szCSDVersion)).m_str;
+    return "Windows " + verStr + Ustring(wstring(osvi.szCSDVersion)).m_str;
 }
 
-FgString
+Ustring
 fgComputerName()
 {
     TCHAR       buff[512];
@@ -101,6 +103,8 @@ fgComputerName()
         return wstring(buff,buff+len);
     else
         return wstring(L"Unknown");
+}
+
 }
 
 // */

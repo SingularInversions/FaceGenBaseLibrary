@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 28, 2005
+
 //
 
 #include "stdafx.h"
@@ -34,8 +33,10 @@ using namespace std;
 
 using namespace Eigen;
 
+namespace Fg {
+
 void
-fgEigsRsm_(const FgMatrixD & rsm,FgDbls & vals,FgMatrixD & vecs)
+fgEigsRsm_(const MatD & rsm,Doubles & vals,MatD & vecs)
 {
     size_t              dim = rsm.ncols;
     FGASSERT(rsm.nrows == dim);
@@ -64,7 +65,7 @@ fgEigsRsm_(const FgMatrixD & rsm,FgDbls & vals,FgMatrixD & vecs)
 }
 
 FgEigsRsmC<3>
-fgEigsRsm(const FgMatrixC<double,3,3> & rsm)
+fgEigsRsm(const Mat<double,3,3> & rsm)
 {
     Matrix3d            mat;
     for (size_t rr=0; rr<3; ++rr) {
@@ -89,7 +90,7 @@ fgEigsRsm(const FgMatrixC<double,3,3> & rsm)
 }
 
 FgEigsRsmC<4>
-fgEigsRsm(const FgMatrixC<double,4,4> & rsm)
+fgEigsRsm(const Mat<double,4,4> & rsm)
 {
     Matrix4d            mat;
     for (size_t rr=0; rr<4; ++rr) {
@@ -114,7 +115,7 @@ fgEigsRsm(const FgMatrixC<double,4,4> & rsm)
 
 template<size_t dim>
 FgEigsC<dim>
-fgEigsT(const FgMatrixC<double,dim,dim> & in)
+fgEigsT(const Mat<double,dim,dim> & in)
 {
     // Ensure valid value and copy into Eigen format:
     MatrixXd            mat(dim,dim);
@@ -141,9 +142,11 @@ fgEigsT(const FgMatrixC<double,dim,dim> & in)
 // Eigen does not have specialized solutions of 'EigenSolve' for small values
 // so we just insantiate generic version above:
 FgEigsC<3>
-fgEigs(const FgMat33D & mat)
+fgEigs(const Mat33D & mat)
 {return fgEigsT<3>(mat); }
 
 FgEigsC<4>
-fgEigs(const FgMat44D & mat)
+fgEigs(const Mat44D & mat)
 {return fgEigsT<4>(mat); }
+
+}

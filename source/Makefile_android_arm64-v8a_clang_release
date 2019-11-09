@@ -1,8 +1,0 @@
-CC = clang
-CXX = clang++
-LINK = clang++
-CFLAGS = -arch arm64-v8a -DNDEBUG -fno-common -Ofast -DANDROID -fPIE
-CCFLAGS = $(CFLAGS)
-CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
-BUILDIR = ../build_android/arm64-v8a/clang/release/
-include make_libs.mk

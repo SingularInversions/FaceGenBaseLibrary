@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 12, 2011
+
 //
 
 #ifndef FGGUIAPITABS_HPP
@@ -14,55 +13,66 @@
 #include "FgStdString.hpp"
 #include "FgStdVector.hpp"
 
-struct  FgGuiTab
+namespace Fg {
+
+struct  GuiTabDef
 {
-    FgString        label;
-    FgGuiPtr        win;
+    Ustring        label;
+    GuiPtr          win;
     uint            padLeft;        // pixels ...
     uint            padRight;
     uint            padTop;
     uint            padBottom;
     std::function<void()>     onSelect;   // If non-null, called when this tab is selected
 
-    FgGuiTab()
+    GuiTabDef()
     : padLeft(1), padRight(1), padTop(1), padBottom(1)
     {}
 
-    FgGuiTab(const FgString & l,FgGuiPtr w)
+    GuiTabDef(const Ustring & l,GuiPtr w)
     : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1)
     {}
 
-    FgGuiTab(const FgString & l,bool spacer,FgGuiPtr w)
+    GuiTabDef(const Ustring & l,bool spacer,GuiPtr w)
     :   label(l), win(w),
         padLeft(spacer ? 5 : 1), padRight(spacer ? 5 : 1),
         padTop(spacer ? 10 : 1), padBottom(1)
     {}
 };
-typedef std::vector<FgGuiTab>   FgGuiTabs;
+typedef Svec<GuiTabDef>  GuiTabDefs;
 
 inline
-FgGuiTab
-fgGuiTab(const string & l,FgGuiPtr w)
-{return FgGuiTab(fgTr(l),w); }
+GuiTabDef
+guiTab(const String & l,GuiPtr w)
+{return GuiTabDef(fgTr(l),w); }
 
 inline
-FgGuiTab
-fgGuiTab(const string & label,bool spacer,FgGuiPtr w)
-{return FgGuiTab(fgTr(label),spacer,w); }
+GuiTabDef
+guiTab(const String & label,bool spacer,GuiPtr w)
+{return GuiTabDef(fgTr(label),spacer,w); }
 
-struct  FgGuiApiTabs : FgGuiApi<FgGuiApiTabs>
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiTabs;
+GuiImplPtr guiGetOsImpl(GuiTabs const & guiApi);
+
+struct  GuiTabs : GuiBase
 {
-    vector<FgGuiTab>        tabs;
+    Svec<GuiTabDef>        tabs;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 inline
-FgGuiPtr
-fgGuiTabs(const vector<FgGuiTab> & tabs)
+GuiPtr
+guiTabs(const Svec<GuiTabDef> & tabs)
 {
     FGASSERT(!tabs.empty());
-    FgGuiApiTabs        gat;
+    GuiTabs        gat;
     gat.tabs = tabs;
-    return fgsp(gat);
+    return std::make_shared<GuiTabs>(gat);
+}
+
 }
 
 #endif

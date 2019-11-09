@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:		Andrew Beatty
-// Created:		April 6, 2010
+
 //
 
 #include "stdafx.h"
@@ -19,41 +18,43 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 inline bool
 valsDiffer(
-    const FgRgbaF &                 centre,
-    const FgMatrixC<FgRgbaF,2,2> &  corners,
+    const RgbaF &                 centre,
+    const Mat<RgbaF,2,2> &  corners,
     float                           maxDiff)
 {
     return (
-        (fgMaxElem(fgAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(fgAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(fgAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(fgAbs(corners[3].m_c - centre.m_c)) > maxDiff));
+        (fgMaxElem(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
+        (fgMaxElem(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
+        (fgMaxElem(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
+        (fgMaxElem(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
 }
 
 static uint64 rayCount;
 
 static
-FgRgbaF
+RgbaF
 sampleRecurse(
     FgFuncSample            sample,
-    FgMat22F                bounds,
-    FgMatrixC<FgRgbaF,2,2>  cornerVals,
+    Mat22F                bounds,
+    Mat<RgbaF,2,2>  cornerVals,
     float                   maxDiff)
 {
-    FgVect2F        lc = bounds.colVec(0),
+    Vec2F        lc = bounds.colVec(0),
                     uc = bounds.colVec(1),
                     del = (uc-lc)*0.5f,
                     delx,dely;
     delx[0] = del[0];
     dely[1] = del[1];
-    FgRgbaF         ret,
+    RgbaF         ret,
                     centre(sample(lc+delx+dely));
     if (valsDiffer(centre,cornerVals,maxDiff)) {
         rayCount+=4;
-        FgMatrixC<FgRgbaF,3,3>  vals(
+        Mat<RgbaF,3,3>  vals(
                 cornerVals[0],
                 sample(lc+delx),
                 cornerVals[1],
@@ -63,10 +64,10 @@ sampleRecurse(
                 cornerVals[2],
                 sample(uc-delx),
                 cornerVals[3]);
-        FgRgbaF     acc;
-        for (FgIter2UI it(2); it.valid(); it.next()) {
-            FgVect2UI   coord = it();
-            FgVect2F    lc2 = lc + FgVect2F(coord) * del[0];
+        RgbaF     acc;
+        for (Iter2UI it(2); it.valid(); it.next()) {
+            Vec2UI   coord = it();
+            Vec2F    lc2 = lc + Vec2F(coord) * del[0];
             acc += 
                 sampleRecurse(
                     sample,
@@ -81,38 +82,38 @@ sampleRecurse(
     return ret;
 }
 
-FgImgRgbaF
+ImgC4F
 fgSamplerF(
-    FgVect2UI           dims,
+    Vec2UI           dims,
     FgFuncSample        sample,
     uint                antiAliasBitDepth)
 {
-    FgImgRgbaF          img(dims);
+    ImgC4F          img(dims);
     FGASSERT(dims.cmpntsProduct() > 0);
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 16));
     rayCount = (img.width()+1) * (img.height()+1);
     float               widf = float(img.width()),
                         hgtf = float(img.height());
-    FgImgRgbaF          sampleLines(img.width()+1,2);
+    ImgC4F          sampleLines(img.width()+1,2);
     for (uint col=0; col<sampleLines.width(); ++col)
         sampleLines.xy(col,0) = 
-            sample(FgVect2F(float(col)/widf,0.0f));
+            sample(Vec2F(float(col)/widf,0.0f));
     for (uint row=0; row<img.height(); ++row) {
         uint            fbit = row%2,
                         sbit = 1-fbit;
         for (uint col=0; col<sampleLines.width(); ++col)
             sampleLines.xy(col,sbit) = 
-                sample(FgVect2F(float(col)/widf,float(row+1)/hgtf));
+                sample(Vec2F(float(col)/widf,float(row+1)/hgtf));
         for (uint col=0; col<img.width(); ++col) {
             img.xy(col,row) =
                 sampleRecurse(
                     sample,
-                    FgMat22F(
+                    Mat22F(
                         float(col)/widf,
                         float(col+1)/widf,
                         float(row)/hgtf,
                         float(row+1)/hgtf),
-                    FgMatrixC<FgRgbaF,2,2>(
+                    Mat<RgbaF,2,2>(
                         sampleLines.xy(col,fbit),
                         sampleLines.xy(col+1,fbit),
                         sampleLines.xy(col,sbit),
@@ -124,47 +125,47 @@ fgSamplerF(
     return img;
 }
 
-FgImgRgbaUb
+ImgC4UC
 fgSampler(
-    FgVect2UI           dims,
+    Vec2UI           dims,
     FgFuncSample        sample,
     uint                antiAliasBitDepth)
 {
-    FgImgRgbaUb         img(dims);
+    ImgC4UC         img(dims);
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 8));
-    FgImgRgbaF          fimg = fgSamplerF(img.dims(),sample,antiAliasBitDepth);
-    for (FgIter2UI it(img.dims()); it.valid(); it.next())
+    ImgC4F          fimg = fgSamplerF(img.dims(),sample,antiAliasBitDepth);
+    for (Iter2UI it(img.dims()); it.valid(); it.next())
     {
-        const FgRgbaF & fpix = fimg[it()];
+        const RgbaF & fpix = fimg[it()];
         img[it()] = 
-            FgRgbaUB(
-                uchar(fgClip(fpix.red(),0.0f,255.0f)),
-                uchar(fgClip(fpix.green(),0.0f,255.0f)),
-                uchar(fgClip(fpix.blue(),0.0f,255.0f)),
-                uchar(fgClip(fpix.alpha(),0.0f,255.0f)));
+            RgbaUC(
+                uchar(clampBounds(fpix.red(),0.0f,255.0f)),
+                uchar(clampBounds(fpix.green(),0.0f,255.0f)),
+                uchar(clampBounds(fpix.blue(),0.0f,255.0f)),
+                uchar(clampBounds(fpix.alpha(),0.0f,255.0f)));
     }
     return img;
 }
 
 static
-FgRgbaF
-halfMoon(FgVect2F ics)
+RgbaF
+halfMoon(Vec2F ics)
 {
-    if ((ics[1] > 0.5f) && ((ics-FgVect2F(0.5f,0.5f)).length() < 0.3f))
-        return FgRgbaF(255.0f,255.0f,255.0f,255.0f);
+    if ((ics[1] > 0.5f) && ((ics-Vec2F(0.5f,0.5f)).len() < 0.3f))
+        return RgbaF(255.0f,255.0f,255.0f,255.0f);
     else
-        return FgRgbaF(0.0f,0.0f,0.0f,255.0f);
+        return RgbaF(0.0f,0.0f,0.0f,255.0f);
 }
 
 void
-fgSamplerTest(const FgArgs &)
+fgSamplerTest(const CLArgs &)
 {
-    fgImgDisplay(fgSampler(FgVect2UI(128),halfMoon,4));
+    imgDisplay(fgSampler(Vec2UI(128),halfMoon,4));
 }
 
 static
-FgRgbaF
-mandelbrot(FgVect2F ics)
+RgbaF
+mandelbrot(Vec2F ics)
 {
     double      zr = 0.0,
                 zc = 0.0,
@@ -179,16 +180,18 @@ mandelbrot(FgVect2F ics)
         zc = 2.0*zr*zc + cc;
         zr = tmp2;
     }
-    return FgRgbaF(float(ii));
+    return RgbaF(float(ii));
 }
 
 void
-fgSamplerMLTest(const FgArgs &)
+fgSamplerMLTest(const CLArgs &)
 {
     FgTimer         time;
-    FgImgRgbaUb     img = fgSampler(FgVect2UI(1024),mandelbrot,3);
+    ImgC4UC     img = fgSampler(Vec2UI(1024),mandelbrot,3);
     fgout << "Time: " << time.read() << "s";
-    fgImgDisplay(img);
+    imgDisplay(img);
+}
+
 }
 
 // */

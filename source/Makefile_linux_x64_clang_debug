@@ -5,7 +5,7 @@ AR = ar
 RANLIB = ranlib
 CFLAGS = -m64 -g -O1 -D_DEBUG -fno-common -fsanitize=address -fPIC
 CCFLAGS = $(CFLAGS)
-CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=2048
 LFLAGS = -fsanitize=address -pthread -z origin -Wl,-rpath='$$ORIGIN'
 DLLEXT = .so
 DLLARG = -shared -Wl,-soname,

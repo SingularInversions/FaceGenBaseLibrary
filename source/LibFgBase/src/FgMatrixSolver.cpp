@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 28, 2005
+
 //
 
 #include "stdafx.h"
@@ -20,10 +19,12 @@
 
 using namespace std;
 
-FgMatrixD
+namespace Fg {
+
+MatD
 FgEigsRsm::matrix() const
 {
-    FgMatrixD       rhs = vecs.transpose();
+    MatD       rhs = vecs.transpose();
     for (size_t rr=0; rr<rhs.nrows; ++rr)
         for (size_t cc=0; cc<rhs.ncols; ++cc)
             rhs.rc(rr,cc) *= vals[cc];
@@ -32,47 +33,47 @@ FgEigsRsm::matrix() const
 
 namespace {
 
-FgMatrixD
+MatD
 randSymmMatrix(uint dim)
 {
-    FgMatrixD  mat(dim,dim);
+    MatD  mat(dim,dim);
     for (uint ii=0; ii<dim; ii++) {
         for (uint jj=ii; jj<dim; jj++) {
-            mat.rc(ii,jj) = fgRand();
+            mat.rc(ii,jj) = randUniform();
             mat.rc(jj,ii) = mat.rc(ii,jj);
         }
     }
     return mat;
 }
 
-typedef function<void(const FgMatrixD &,FgDbls &,FgMatrixD &)>  FnSolve;
+typedef function<void(const MatD &,Doubles &,MatD &)>  FnSolve;
 
 void
 testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 {
     // Random symmetric matrix, uniform distribution:
-    FgMatrixD           mat = randSymmMatrix(dim);
-    FgDbls              eigVals;
-    FgMatrixD           eigVecs;
+    MatD           mat = randSymmMatrix(dim);
+    Doubles              eigVals;
+    MatD           eigVecs;
     FgTimer             timer;
     solve(mat,eigVals,eigVecs);
     size_t              time = timer.readMs();
     // What is the pre-diagonalization speedup:
-    FgMatrixD           innerHess = eigVecs.transpose() * mat * eigVecs,
+    MatD           innerHess = eigVecs.transpose() * mat * eigVecs,
                         innerEigvecs;
-    FgDbls              innerEigVals;
+    Doubles              innerEigVals;
     timer.start();
     solve(innerHess,innerEigVals,innerEigvecs);
     size_t              timeInner = timer.readMs();
-    FgMatrixD           eigValMat(dim,dim);
+    MatD           eigValMat(dim,dim);
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
         eigValMat.rc(ii,ii) = eigVals[ii];
-    FgMatrixD       recon = eigVecs * eigValMat * eigVecs.transpose();
+    MatD       recon = eigVecs * eigValMat * eigVecs.transpose();
     double          residual = 0.0;
     for (uint ii=0; ii<dim; ii++)
         for (uint jj=ii; jj<dim; jj++)
-            residual += fgSqr(recon.rc(ii,jj) - mat.rc(ii,jj));
+            residual += sqr(recon.rc(ii,jj) - mat.rc(ii,jj));
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
     double          tol = numeric_limits<double>::epsilon() * sqrt(dim) * 2.0;
@@ -94,13 +95,13 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 }
 
 void
-testAsymEigs(const FgArgs &)
+testAsymEigs(const CLArgs &)
 {
-    FgMat33D        mat = fgMatRotateAxis(1.0,FgVect3D(1,1,1));
+    Mat33D        mat = matRotateAxis(1.0,Vec3D(1,1,1));
     FgEigsC<3>      eigs = fgEigs(mat);
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
-    FgMat33D        regress = fgReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
+    Mat33D        regress = fgReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
     double          residual = fgRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
@@ -108,9 +109,9 @@ testAsymEigs(const FgArgs &)
 }
 
 void
-testSymmEigenAuto(const FgArgs &)
+testSymmEigenAuto(const CLArgs &)
 {
-    fgRandSeedRepeatable();
+    randSeedRepeatable();
     testSymmEigenProblem(10,fgEigsRsm_,true);
     testSymmEigenProblem(30,fgEigsRsm_,false);
 #ifndef _DEBUG
@@ -120,29 +121,29 @@ testSymmEigenAuto(const FgArgs &)
 }
 
 void
-testSymmEigenTime(const FgArgs & args)
+testSymmEigenTime(const CLArgs & args)
 {
     if (fgAutomatedTest(args))
         return;
-    FgSyntax            syn(args,"<size>");
+    Syntax            syn(args,"<size>");
     // Random symmetric matrix, uniform distribution:
     size_t              dim = syn.nextAs<size_t>();
-    fgRandSeedRepeatable();
-    FgMatrixD           mat = randSymmMatrix(uint(dim));
-    FgDbls              eigVals;
-    FgMatrixD           eigVecs;
+    randSeedRepeatable();
+    MatD           mat = randSymmMatrix(uint(dim));
+    Doubles              eigVals;
+    MatD           eigVecs;
     FgTimer             timer;
     fgEigsRsm_(mat,eigVals,eigVecs);
     size_t              time = timer.readMs();
-    FgMatrixD           eigValMat(dim,dim);
+    MatD           eigValMat(dim,dim);
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
         eigValMat.rc(ii,ii) = eigVals[ii];
-    FgMatrixD       recon = eigVecs * eigValMat * eigVecs.transpose();
+    MatD       recon = eigVecs * eigValMat * eigVecs.transpose();
     double          residual = 0.0;
     for (uint ii=0; ii<dim; ii++)
         for (uint jj=ii; jj<dim; jj++)
-            residual += fgSqr(recon.rc(ii,jj) - mat.rc(ii,jj));
+            residual += sqr(recon.rc(ii,jj) - mat.rc(ii,jj));
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
     double          tol = numeric_limits<double>::epsilon() * sqrt(dim) * 2.0;
@@ -154,21 +155,23 @@ testSymmEigenTime(const FgArgs & args)
 }
 
 void
-testSymmEigen(const FgArgs & args)
+testSymmEigen(const CLArgs & args)
 {
-    FgCmds      cmds;
-    cmds.push_back(FgCmd(testSymmEigenAuto,"auto","Automated tests"));
-    cmds.push_back(FgCmd(testSymmEigenTime,"time","Timing test"));
+    Cmds      cmds;
+    cmds.push_back(Cmd(testSymmEigenAuto,"auto","Automated tests"));
+    cmds.push_back(Cmd(testSymmEigenTime,"time","Timing test"));
     fgMenu(args,cmds,true);
 }
 
 }
 
 void
-fgMatrixSolverTest(const FgArgs & args)
+fgMatrixSolverTest(const CLArgs & args)
 {
-    FgCmds      cmds;
-    cmds.push_back(FgCmd(testAsymEigs,"asym","Arbitrary real matrix eigensystem"));
-    cmds.push_back(FgCmd(testSymmEigen,"symm","Real symmetric matrix eigensystem"));
+    Cmds      cmds;
+    cmds.push_back(Cmd(testAsymEigs,"asym","Arbitrary real matrix eigensystem"));
+    cmds.push_back(Cmd(testSymmEigen,"symm","Real symmetric matrix eigensystem"));
     fgMenu(args,cmds,true);
+}
+
 }

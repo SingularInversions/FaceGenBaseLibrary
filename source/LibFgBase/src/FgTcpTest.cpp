@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Aug 29, 2012
+
 //
 
 #include "stdafx.h"
@@ -15,6 +14,8 @@
 #include "FgMain.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 static
 bool
@@ -31,14 +32,14 @@ handler(
 }
 
 void
-fgTcpServerTest(const FgArgs &)
+fgTcpServerTest(const CLArgs &)
 {
     fgout.setDefOut(true);
     fgTcpServer(fgNcServerPort(),true,handler,1024);
 }
 
 void
-fgTcpClientTest(const FgArgs &)
+fgTcpClientTest(const CLArgs &)
 {
     fgout.setDefOut(true);
     string          message = "Please respond",
@@ -47,4 +48,6 @@ fgTcpClientTest(const FgArgs &)
     fgout << fgnl << "Response received: " << response;
     message = "My god, it's full of stars";
     fgTcpClient("peano",fgNcServerPort(),message);
+}
+
 }

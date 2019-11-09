@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 23, 2011
+
 //
 // USE:
 //
@@ -22,45 +21,32 @@
 #define FGGUIAPIRADIO_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgDepGraph.hpp"
+#include "FgDataflow.hpp"
 
-struct FgGuiApiRadio : FgGuiApi<FgGuiApiRadio>
+namespace Fg {
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiRadio;
+GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
+
+struct GuiRadio : GuiBase
 {
     bool                horiz;
-    FgStrings           vals;       // The output values for each selection. Must be non-empty.
-    FgStrings           labels;     // Must be same size as 'val'. Each must be unique.
-    FgDgn<FgString>     selection;
-    // Node idx for updating can be different from selection (must be exclusive):
-    uint                updateIdx;
+    Ustrings           labels;
+    IPT<size_t>         selection;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-FgGuiPtr
-fgGuiRadio(FgDgn<FgString> selN,const FgStrings & vals,const FgStrings & labels);
+// If desired output is the index:
+GuiPtr
+guiRadio(Ustrings const & labels,IPT<size_t> idxN);
 
-// When 'vals' and 'labels' are the same:
-inline
-FgGuiPtr
-fgGuiRadio(FgDgn<FgString> selN,const FgStrings & vals)
-{return fgGuiRadio(selN,vals,vals); }
+// If desired output is the label:
+GuiVal<Ustring>
+guiRadioLabel(Ustrings const & labels,IPT<size_t> idxN);
 
-struct  FgGuiRadio
-{
-    FgDgn<FgString>     strN;       // Currently selected string. Input node.
-    FgDgn<size_t>       idxN;       // Currently selected index. Derived from above.
-    FgGuiPtr            win;
-};
-
-// When you just need indices into 'labels'.
-// 'labels' must be unique.
-// The selection will be a stored input if 'store' is non-empty.
-// If 'defVal' is empty, the first element in 'vals' will be the default.
-FgGuiRadio
-fgGuiRadio(const FgStrings & vals,const FgStrings & labels,FgString store="",FgString defVal="");
-
-// When 'vals' and 'labels' are the same:
-inline
-FgGuiRadio
-fgGuiRadio(const FgStrings & vals,const FgString & store="")
-{return fgGuiRadio(vals,vals,store); }
+}
 
 #endif

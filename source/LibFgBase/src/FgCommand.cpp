@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-//
+
 
 #include "stdafx.h"
 
@@ -21,17 +20,19 @@
 
 using namespace std;
 
+namespace Fg {
+
 static string       s_breadcrumb;
 static string       s_annotateTestDir;
 static bool         s_keepTempFiles = false;
 
 static
 string
-cmdStr(const FgCmd & cmd)
+cmdStr(const Cmd & cmd)
 {
     string          si = "\n        " + cmd.name;
     if (!cmd.description.empty()) {
-        for (size_t jj=si.length(); jj<24; ++jj)
+        for (size_t jj=si.size(); jj<24; ++jj)
             si += " ";
         si += "- " + cmd.description + "\n";
     }
@@ -41,7 +42,7 @@ cmdStr(const FgCmd & cmd)
 void
 fgMenu(
     vector<string>          args,
-    const vector<FgCmd> &   cmdsUnsorted,
+    const vector<Cmd> &   cmdsUnsorted,
     bool                    optionAll,
     bool                    optionQuiet,
     bool                    optionKeep)
@@ -63,18 +64,18 @@ fgMenu(
     else
         cl += "<command>\n";
     desc += "    <command>:";
-    vector<FgCmd>       cmds = cmdsUnsorted;
+    vector<Cmd>       cmds = cmdsUnsorted;
     std::sort(cmds.begin(),cmds.end());
     for (size_t ii=0; ii<cmds.size(); ++ii)
         desc += cmdStr(cmds[ii]);
-    FgSyntax    syntax(args,cl+desc);
+    Syntax    syntax(args,cl+desc);
     while (syntax.peekNext()[0] == '-') {
         string  opt = syntax.next();
         if ((opt == "-s") && optionQuiet)
             fgout.setDefOut(false);
         else if ((opt.substr(0,2) == "-k") && optionKeep) {
             s_keepTempFiles = true;
-            if (opt.length() > 2)
+            if (opt.size() > 2)
                 s_annotateTestDir = opt.substr(2);
         }
         else
@@ -107,20 +108,20 @@ fgMenu(
     syntax.error("Invalid command",cmd);
 }
 
-static FgString s_rootTestDir;
+static Ustring s_rootTestDir;
 
 FgTestDir::FgTestDir(const string & name)
 {
     FGASSERT(!name.empty());
     if (s_rootTestDir.empty()) {
-        path = FgPath(fgDataDir());
+        path = Path(dataDir());
         path.dirs.back() = "_log";      // replace 'data' with 'log'
     }
     else
         path = s_rootTestDir;
     path.dirs.push_back(s_breadcrumb+name);
     string          dt = fgDateTimePath();
-    if (s_annotateTestDir.length() > 0)
+    if (s_annotateTestDir.size() > 0)
         dt += " " + s_annotateTestDir;
     path.dirs.push_back(dt);
     fgCreatePath(path.dir());
@@ -144,24 +145,24 @@ FgTestDir::~FgTestDir()
 }
 
 void
-fgSetRootTestDir(const FgString & dir)
+fgSetRootTestDir(const Ustring & dir)
 { s_rootTestDir = dir; }
 
 void
 fgTestCopy(const string & relPath)
 {
-    FgString        name = fgPathToName(relPath);
-    if (fgExists(name))
+    Ustring        name = fgPathToName(relPath);
+    if (pathExists(name))
         fgThrow("Test copy filename collision",name);
-    FgString        source = fgDataDir() + relPath;
-    fgCopyFile(source,name);
+    Ustring        source = dataDir() + relPath;
+    fileCopy(source,name);
 }
 
 void
-fgRunCmd(const FgCmdFunc & func,const string & argStr)
+runCmd(const CmdFunc & func,const string & argStr)
 {
     fgout << fgnl << argStr << " " << fgpush;
-    func(fgSplitChar(argStr));
+    func(splitChar(argStr));
     fgout << fgpop;
 }
 
@@ -170,8 +171,9 @@ fgKeepTempFiles()
 {return s_keepTempFiles; }
 
 bool
-fgAutomatedTest(const FgArgs & args)
+fgAutomatedTest(const CLArgs & args)
 {
     return ((args.size() == 2) && (args[1] == "all"));
 }
 
+}

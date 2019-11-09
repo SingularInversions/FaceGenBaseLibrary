@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: July 15, 2015
+
 //
 
 #include "stdafx.h"
@@ -20,59 +19,89 @@
 
 using namespace std;
 
-FgCmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
+namespace Fg {
 
-vector<FgCmd>
+void fg3dTest(CLArgs const &);
+void fgBoostSerializationTest(CLArgs const &);
+void fgCmdTestDfg(CLArgs const &);
+void fgExceptionTest(CLArgs const &);
+void fgFileSystemTest(CLArgs const &);
+void fgOpenTest(CLArgs const &);
+void fgGeometryTest(CLArgs const &);
+void fgGridTrianglesTest(CLArgs const &);
+void fgImageTest(CLArgs const &);
+void fgMatrixSolverTest(CLArgs const &);
+void fgMathTest(CLArgs const &);
+void fgMatrixCTest(CLArgs const &);
+void fgMatrixVTest(CLArgs const &);
+void fgMetaFormatTest(CLArgs const &);
+void fgMorphTest(CLArgs const &);
+void fgPathTest(CLArgs const &);
+void fgQuaternionTest(CLArgs const &);
+void fgCmdRenderTest(CLArgs const &);
+void fgSerializeTest(CLArgs const &);
+void fgSimilarityTest(CLArgs const &);
+void fgSimilarityApproxTest(CLArgs const &);
+void fgStdVectorTest(CLArgs const &);
+void fgStringTest(CLArgs const &);
+void fgTensorTest(CLArgs const &);
+
+Cmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
+
+vector<Cmd>
 fgCmdBaseTests()
 {
-    vector<FgCmd>   cmds;
-    //FGADDCMD1(fgApproxFuncTest,"approxFunc");
-    FGADDCMD1(fg3dTest,"3d");
-    FGADDCMD1(fgBoostSerializationTest,"boostSerialization");
-    FGADDCMD1(fgDepGraphTest,"depGraph");
-    FGADDCMD1(fgExceptionTest,"exception");
-    FGADDCMD1(fgFileSystemTest,"filesystem");
-    FGADDCMD1(fgOpenTest,"open");
-    FGADDCMD1(fgGeometryTest,"geometry");
-    FGADDCMD1(fgGridTrianglesTest,"gridTriangles");
-    FGADDCMD1(fgImageTest,"image");
-    FGADDCMD(fgMatrixSolverTest,"matSol","Matrix Solver");
-    FGADDCMD1(fgMathTest,"math");
-    FGADDCMD(fgMatrixCTest,"matC","MatrixC");
-    FGADDCMD(fgMatrixVTest,"matV","MatrixV");
-    FGADDCMD1(fgMetaFormatTest,"metaFormat");
-    FGADDCMD1(fgMorphTest,"morph");
-    FGADDCMD1(fgPathTest,"path");
-    FGADDCMD1(fgQuaternionTest,"quaternion");
-    FGADDCMD(fgCmdRenderTest,"rendc","render command");
-    FGADDCMD1(fgSerializeTest,"serialize");
-    FGADDCMD1(fgSharedPtrTest,"sharedPtr");
-    FGADDCMD1(fgSimilarityTest,"similarity");
-    FGADDCMD1(fgSimilarityApproxTest,"similarityApprox");
-    FGADDCMD1(fgStdVectorTest,"vector");
-    FGADDCMD1(fgStringTest,"string");
-    FGADDCMD1(fgTensorTest,"tensor");
-    FGADDCMD1(fgVariantTest,"variant");
+    Cmds      cmds {
+        {fg3dTest,"3d"},
+        {fgBoostSerializationTest,"boostSerialization"},
+        {fgCmdTestDfg,"dataflow"},
+        {fgExceptionTest,"exception"},
+        {fgFileSystemTest,"filesystem"},
+        {fgOpenTest,"open"},
+        {fgGeometryTest,"geometry"},
+        {fgGridTrianglesTest,"gridTriangles"},
+        {fgImageTest,"image"},
+        {fgMatrixSolverTest,"matSol","Matrix Solver"},
+        {fgMathTest,"math"},
+        {fgMatrixCTest,"matC","MatrixC"},
+        {fgMatrixVTest,"matV","MatrixV"},
+        {fgMetaFormatTest,"metaFormat"},
+        {fgMorphTest,"morph"},
+        {fgPathTest,"path"},
+        {fgQuaternionTest,"quaternion"},
+        {fgCmdRenderTest,"rendc","render command"},
+        {fgSerializeTest,"serialize"},
+        {fgSimilarityTest,"similarity"},
+        {fgSimilarityApproxTest,"similarityApprox"},
+        {fgStdVectorTest,"vector"},
+        {fgStringTest,"string"},
+        {fgTensorTest,"tensor"}
+    };
     cmds.push_back(fgSoftRenderTestInfo());
     return cmds;
 }
 
+void fgImgGuiTestm(CLArgs const &);
+void fgTestmGuiMesh(CLArgs const &);
+void fgTestmGui2(CLArgs const &);
+void fgGuiTestmDialogSplashScreen(CLArgs const &);
+
 static
 void
-testmGui(const FgArgs & args)
+testmGui(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    FGADDCMD1(fgImgGuiTestm,"image");
-    FGADDCMD1(fgTestmGuiMesh,"mesh");
-    FGADDCMD1(fgGuiTestmText,"text");
-    FGADDCMD1(fgGuiTestmScroll,"scroll");
-    FGADDCMD1(fgGuiTestmDialogSplashScreen,"splash");
+    Cmds      cmds {
+        {fgImgGuiTestm,"image"},
+        {fgTestmGui2,"gui2"},
+        {fgTestmGuiMesh,"mesh"},
+        {fgGuiTestmDialogSplashScreen,"splash"}
+    };
     fgMenu(args,cmds);
 }
 
 static
 void
-sysinfo(const FgArgs &)
+sysinfo(const CLArgs &)
 {
     fgout
         << fgnl << "Computer name: " << fgComputerName()
@@ -88,37 +117,49 @@ sysinfo(const FgArgs &)
         << fgpop;
 }
 
-vector<FgCmd>
+void fg3dTestMan(CLArgs const &);
+void fgClusterTest(CLArgs const &);
+void fgClusterTestm(CLArgs const &);
+void fgClusterDeployTestm(CLArgs const &);
+void fgCmdTestmCpp(CLArgs const &);
+void fg3dReadWobjTest(CLArgs const &);
+void fgRandomTest(CLArgs const &);
+void fgGeometryManTest(CLArgs const &);
+void fgSubdivisionTest(CLArgs const &);
+void fgTextureImageMappingRenderTest(CLArgs const &);
+void fgImageTestm(CLArgs const &);
+
+Cmds
 fgCmdBaseTestms()
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(testmGui,"gui"));
-    FGADDCMD1(fg3dTestMan,"3d");
-    FGADDCMD1(fgClusterTest,"cluster");
-    FGADDCMD1(fgClusterTestm,"clusterm");
-    FGADDCMD1(fgClusterDeployTestm,"clusterDeploy");
-    FGADDCMD(fgCmdTestmCpp,"cpp","C++ behaviour tests");
-    FGADDCMD(fgGaTestm,"ga","GUI API");
-    FGADDCMD1(fg3dReadWobjTest,"readWobj");
-    FGADDCMD1(fgRandomTest,"random");
-    FGADDCMD1(fgGeometryManTest,"geometry");
-    FGADDCMD1(fgSubdivisionTest,"subdivision");
-    FGADDCMD1(fgTextureImageMappingRenderTest,"texturemap");
-    FGADDCMD1(fgImageTestm,"image");
+    Cmds      cmds {
+        {testmGui,"gui"},
+        {fg3dTestMan,"3d"},
+        {fgClusterTest,"cluster"},
+        {fgClusterTestm,"clusterm"},
+        {fgClusterDeployTestm,"clusterDeploy"},
+        {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
+        {fg3dReadWobjTest,"readWobj"},
+        {fgRandomTest,"random"},
+        {fgGeometryManTest,"geometry"},
+        {fgSubdivisionTest,"subdivision"},
+        {fgTextureImageMappingRenderTest,"texturemap"},
+        {fgImageTestm,"image"}
+    };
     return cmds;
 }
 
 static
 void
-testm(const FgArgs & args)
+testm(const CLArgs & args)
 {fgMenu(args,fgCmdBaseTestms()); }
 
 void
-fgCmdBaseTest(const FgArgs & args)
+fgCmdBaseTest(const CLArgs & args)
 {fgMenu(args,fgCmdBaseTests(),true); }
 
 void
-view(const FgArgs & args)
+view(const CLArgs & args)
 {fgMenu(args,fgCmdViewInfos()); }
 
 /**
@@ -126,22 +167,24 @@ view(const FgArgs & args)
    Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
  */
 void
-fgCmdFgbl(const FgArgs & args)
+fgCmdFgbl(const CLArgs & args)
 {
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 
-    vector<FgCmd>   cmds;
+    vector<Cmd>   cmds;
     cmds.push_back(fgCmdImgopsInfo());
     cmds.push_back(fgCmdMeshopsInfo());
     cmds.push_back(fgCmdMorphInfo());
     cmds.push_back(fgCmdRenderInfo());
     cmds.push_back(fgCmdTriexportInfo());
-    cmds.push_back(FgCmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
-    cmds.push_back(FgCmd(sysinfo,"sys","Show system info"));
-    cmds.push_back(FgCmd(fgCmdBaseTest,"test","Automated tests"));
-    cmds.push_back(FgCmd(testm,"testm","Manual tests"));
-    cmds.push_back(FgCmd(view,"view","Interactively view various file types"));
+    cmds.push_back(Cmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
+    cmds.push_back(Cmd(sysinfo,"sys","Show system info"));
+    cmds.push_back(Cmd(fgCmdBaseTest,"test","Automated tests"));
+    cmds.push_back(Cmd(testm,"testm","Manual tests"));
+    cmds.push_back(Cmd(view,"view","Interactively view various file types"));
     fgMenu(args,cmds);
+}
+
 }
 
 // */

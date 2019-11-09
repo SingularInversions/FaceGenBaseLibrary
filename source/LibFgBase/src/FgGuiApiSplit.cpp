@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: June 10, 2014
+
 //
 
 #include "stdafx.h"
@@ -13,50 +12,55 @@
 
 using namespace std;
 
+
+namespace Fg {
+
 static
-FgGuiPtrs
-getPanes(FgGuiPtrs ps)
+GuiPtrs
+getPanes(GuiPtrs ps)
 {return ps; }
 
-FgGuiPtr
-fgGuiSplit(bool horiz,const vector<FgGuiPtr> & panes)
+GuiPtr
+guiSplit(bool horiz,const GuiPtrs & panes)
 {
-    FgGuiApiSplit       ret;
+    GuiSplit       ret;
     ret.horiz = horiz;
     ret.panes = panes;
-    return fgsp(ret);
+    return make_shared<GuiSplit>(ret);
 }
 
-FgGuiPtr
-fgGuiSplitScroll(const FgGuiPtrs & panes,uint spacing)
+GuiPtr
+guiSplitScroll(const GuiPtrs & panes,uint spacing)
 {
-    FgGuiApiSplitScroll     ret;
-    ret.updateFlagIdx = g_gg.addNode(0);      // dummy node ensures initial one-time setup
+    GuiSplitScroll     ret;
+    ret.updateFlag = makeUpdateFlag(makeIPT(0));  // dummy node ensures initial one-time setup
     ret.getPanes = std::bind(getPanes,panes);
     ret.spacing = spacing;
-    return fgsp(ret);
+    return make_shared<GuiSplitScroll>(ret);
 }
 
-FgGuiPtr
-fgGuiSplitScroll(std::function<FgGuiPtrs(void)> getPanes)
+GuiPtr
+guiSplitScroll(std::function<GuiPtrs(void)> getPanes)
 {
-    FgGuiApiSplitScroll     ret;
-    ret.updateFlagIdx = g_gg.addNode(0);      // dummy node ensures initial one-time setup
+    GuiSplitScroll     ret;
+    ret.updateFlag = makeUpdateFlag(makeIPT(0));  // dummy node ensures initial one-time setup
     ret.getPanes = getPanes;
-    return fgsp(ret);
+    return make_shared<GuiSplitScroll>(ret);
 }
 
-FgGuiPtr
-fgGuiSplitScroll(
-    uint                                updateNodeIdx,
-    std::function<FgGuiPtrs(void)>    getPanes,
+GuiPtr
+guiSplitScroll(
+    const DfgFPtr &                        updateNodeIdx,  // Must be unique to this object
+    std::function<GuiPtrs(void)>      getPanes,       // Dynamic window recreation on updateFlag
     uint                                spacing)
 {
-    FgGuiApiSplitScroll     ret;
-    ret.updateFlagIdx = g_gg.addUpdateFlag(updateNodeIdx);
+    GuiSplitScroll     ret;
+    ret.updateFlag = updateNodeIdx;
     ret.getPanes = getPanes;
     ret.spacing = spacing;
-    return fgsp(ret);
+    return make_shared<GuiSplitScroll>(ret);
+}
+
 }
 
 // */

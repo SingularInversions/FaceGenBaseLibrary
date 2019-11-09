@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 6, 2011
+
 //
 // Parameterized 3D camera transforms
 //
@@ -16,26 +15,39 @@
 #include "FgAffineC.hpp"
 #include "FgAffineCwC.hpp"
 
-struct  Fg3dCamera
+namespace Fg {
+
+// Only represent frustums with principal point at centre and far plane at infinity:
+struct  Frustum
 {
-    FgAffine3D      modelview;      // Transform to OECS
-    FgVect6D        frustum;        // Defines camera projection for OpenGL
-    FgAffineCw2D    itcsToIucs;     // Defines projection for raycasting
+    double          nearHalfWidth;      // > 0
+    double          nearHalfHeight;     // > 0
+    double          nearDist;           // > 0
+    double          farDist;            // > nearDist
+
+    FG_SERIALIZE4(nearHalfWidth,nearHalfHeight,nearDist,farDist);
+};
+
+struct  Camera
+{
+    Affine3D        modelview;      // Transform world to OECS
+    Frustum         frustum;        // Defines camera projection
+    AffineEw2D      itcsToIucs;     // Defines projection for raycasting
 
     FG_SERIALIZE3(modelview,frustum,itcsToIucs);
 
     // Projection from world to IPCS (and depth to inverse depth) for this camera (homogenous representation):
-    FgMat44F
-    projectIpcs(FgVect2UI dims) const;
+    Mat44F
+    projectIpcs(Vec2UI dims) const;
 };
 
-struct  Fg3dCameraParams
+struct  CameraParams
 {
-    FgMat32D        modelBounds;
+    Mat32D          modelBounds;
     // Model rotation around centre of model bounds:
-    FgQuaternionD   pose;
+    QuaternionD   pose;
     // Model translation parallel to image plane, relative to half max model bound:
-    FgVect2D        relTrans;
+    Vec2D           relTrans;
     // Scale relative to automatically determined size of object in image:
     double          logRelScale;
     // Field of view of larger image dimension (degrees). Must be > 0 but can set as low as 0.0001
@@ -44,14 +56,16 @@ struct  Fg3dCameraParams
 
     // By default, scale the object a bit smaller than the image to leave some boundary and
     // some room for perspective enlargement of parts closer than the median plane:
-    Fg3dCameraParams() : logRelScale(-0.1), fovMaxDeg(17) {}
+    CameraParams() : logRelScale(-0.1), fovMaxDeg(17) {}
 
     explicit
-    Fg3dCameraParams(FgMat32D bounds)
+    CameraParams(Mat32D bounds)
     : modelBounds(bounds), logRelScale(-0.1), fovMaxDeg(17) {}
 
-    Fg3dCamera
-    camera(FgVect2UI viewport) const;
+    Camera
+    camera(Vec2UI viewport) const;
 };
+
+}
 
 #endif

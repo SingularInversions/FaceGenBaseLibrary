@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Aug 27, 2004
+
 //
 // Simple left-to-right, top-to-bottom (row major), tightly-packed, unaligned image templated by pixel type.
 // 
@@ -37,67 +36,68 @@
 #ifndef FGIMGBASE_HPP
 #define FGIMGBASE_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgRgba.hpp"
 #include "FgIter.hpp"
-#include "FgStdStream.hpp"
 #include "FgAffineCwC.hpp"
 
+namespace Fg {
+
 template<typename T>
-struct  FgImage
+struct  Img
 {
-    FgVect2UI       m_dims;         // [width,height]
-    vector<T>       m_data;         // Pixels stored left to right, top to bottom.
+    Vec2UI          m_dims;         // [width,height]
+    Svec<T>         m_data;         // Pixels stored left to right, top to bottom.
 
     FG_SERIALIZE2(m_dims,m_data);
 
     typedef T PixelType;
 
-    FgImage() : m_dims(0) {}
+    Img() : m_dims(0) {}
 
-    FgImage(size_t wid,size_t hgt)
+    Img(size_t wid,size_t hgt)
     : m_dims(uint(wid),uint(hgt)), m_data(wid*hgt)
     {}
 
-    FgImage(size_t wid,size_t hgt,T fill)
+    Img(size_t wid,size_t hgt,T fill)
     : m_dims(uint(wid),uint(hgt)), m_data(wid*hgt,fill)
     {}
 
     explicit
-    FgImage(FgVect2UI dims)
+    Img(Vec2UI dims)
     : m_dims(dims), m_data(dims[0]*dims[1])
     {}
 
-    FgImage(FgVect2UI dims,T fillVal)
+    Img(Vec2UI dims,T fillVal)
     : m_dims(dims), m_data(dims[0]*dims[1],fillVal)
     {}
 
-    FgImage(FgVect2UI dims,const vector<T> & imgData)
+    Img(Vec2UI dims,const Svec<T> & imgData)
     : m_dims(dims), m_data(imgData)
     {FGASSERT(m_data.size() == m_dims[0]*m_dims[1]); }
 
-    FgImage(FgVect2UI dims,const T * pixels)
+    Img(Vec2UI dims,const T * pixels)
     : m_dims(dims), m_data(pixels,pixels+dims[0]*dims[1])
     {}
 
     void
     clear()
-    {m_data.clear(); m_dims = FgVect2UI(0); }
+    {m_data.clear(); m_dims = Vec2UI(0); }
 
     // WARNING: This does not adjust any existing image data, just allocated dimensions and memory:
     void
     resize(uint wid,uint hgt)
     {
-        m_dims = FgVect2UI(wid,hgt);
+        m_dims = Vec2UI(wid,hgt);
         m_data.resize(wid*hgt);
     }
 
     void
-    resize(FgVect2UI dims)
+    resize(Vec2UI dims)
     {resize(dims[0],dims[1]); }
 
     void
-    resize(FgVect2UI dims,T fillVal)
+    resize(Vec2UI dims,T fillVal)
     {
         resize(dims);
         std::fill(m_data.begin(),m_data.end(),fillVal);
@@ -111,7 +111,7 @@ struct  FgImage
     height() const
     {return m_dims[1]; }
 
-    FgVect2UI           // (width,height)
+    Vec2UI           // (width,height)
     dims() const
     {return m_dims; }
 
@@ -147,21 +147,21 @@ struct  FgImage
     {return m_data[idx]; }
 
     T &
-    operator[](FgVect2UI ircsPos)
+    operator[](Vec2UI ircsPos)
     {return xy(ircsPos[0],ircsPos[1]); }
 
     const T &
-    operator[](FgVect2UI ircsPos) const
+    operator[](Vec2UI ircsPos) const
     {return xy(ircsPos[0],ircsPos[1]); }
 
     template<typename U>
     T &
-    operator[](const FgIter<U,2> & it)
+    operator[](const Iter<U,2> & it)
     {return xy(it()[0],it()[1]); }
 
     template<typename U>
     const T &
-    operator[](const FgIter<U,2> & it) const
+    operator[](const Iter<U,2> & it) const
     {return xy(it()[0],it()[1]); }
 
     T *
@@ -180,56 +180,72 @@ struct  FgImage
             xy(ircs_x,ircs_y) = val;
     }
     void
-    paint(FgVect2UI ircs,T val)
+    paint(Vec2UI ircs,T val)
     {
         paint(ircs[0],ircs[1],val);
     }
     void
-    paint(FgVect2I ircs,T val)
+    paint(Vec2I ircs,T val)
     {
         if ((ircs[0] >= 0) && (ircs[1] >= 0))
             paint(ircs[0],ircs[1],val);
     }
 
     const T *
-    dataPtr() const
+    data() const
     {return (!m_data.empty() ? &m_data[0] : NULL); }
 
     T *
-    dataPtr()
+    data()
     {return (!m_data.empty() ? &m_data[0] : NULL); }
 
-    const vector<T> &
+    const Svec<T> &
     dataVec() const
     {return m_data; }
 
     bool
-    operator==(const FgImage & rhs) const
+    operator==(const Img & rhs) const
     {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
 };
 
-typedef FgImage<uchar>      FgImgUC;
-typedef FgImage<float>      FgImgF;
-typedef FgImage<double>     FgImgD;
-typedef FgImage<FgRgbaUB>   FgImgRgbaUb;
-typedef FgImage<FgRgbaUS>   FgImgRgbaUs;
-typedef FgImage<FgRgbaF>    FgImgRgbaF;
-typedef FgImage<FgVect2F>   FgImg2F;
-typedef FgImage<FgVect3F>   FgImg3F;
-typedef FgImage<FgVect4F>   FgImg4F;
-typedef FgImage<FgVect4UC>  FgImg4UC;
+typedef Img<uchar>     ImgUC;
+typedef Img<float>     ImgF;
+typedef Img<double>    ImgD;
 
-typedef vector<FgImgRgbaUb> FgImgs;
-typedef vector<FgImgs>      FgImgss;
-typedef vector<FgImg3F>     FgImg3Fs;
+typedef Img<Vec2F>     Img2F;
+
+typedef Img<Arr3SC>    Img3SC;
+typedef Img<Arr3I>     Img3I;
+typedef Img<Vec3F>     Img3F;      // RGB [0,1] unless otherwise noted
+typedef Svec<Img3F>    Img3Fs;
+
+typedef Img<Arr4UC>    Img4UC;
+typedef Svec<Img4UC>   Img4UCs;
+typedef Img<Arr4F>     Img4F;
+
+// Deprecated:
+typedef Img<RgbaUC>    ImgC4UC;
+typedef Svec<ImgC4UC>  ImgC4UCs;
+typedef Img<RgbaF>     ImgC4F;
+
+template<typename T,typename U>
+void
+scast_(Img<T> const & from,Img<U> & to)
+{
+    to.resize(from.dims());
+    for (size_t ii=0; ii<to.numPixels(); ++ii)
+        scast_(from[ii],to[ii]);
+}
 
 template<class T>
 std::ostream &
-operator<<(std::ostream & os,const FgImage<T> & img)
+operator<<(std::ostream & os,const Img<T> & img)
 {
     return
         os << "dimensions: " << img.dims()
-            << " bounds: " << fgBounds(img.m_data);
+            << " bounds: " << getBounds(img.m_data);
+}
+
 }
 
 #endif

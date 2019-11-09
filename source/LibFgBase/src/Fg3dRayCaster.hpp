@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 29, 2010
+
 //
 // Keeps a separate grid index for each surface, despite the additional overhead:
 // * Naturally avoids indexing areas of the image with no objects maximizing cache efficiency
@@ -21,48 +20,50 @@
 #include "FgBestN.hpp"
 #include "FgAffineCwC.hpp"
 
-typedef std::function<FgRgbaF(FgVect3F,FgVect2F,FgMaterial,const FgImgRgbaUb *)>   FgFuncShader;
+namespace Fg {
+
+typedef std::function<RgbaF(Vec3F,Vec2F,Material,const ImgC4UC *)>   FgFuncShader;
 
 struct  Fg3dRayCastMesh
 {
-    const FgVerts *             vertsPtr;   // OECS
-    const Fg3dNormals *         normsPtr;   // OECS
-    const FgVect2Fs *           uvsPtr;
-    Fg3dSurfaces                surfs;      // Converted to tris
-    FgMaterial                  material;
+    const Vec3Fs *             vertsPtr;   // OECS
+    const Normals *         normsPtr;   // OECS
+    const Vec2Fs *           uvsPtr;
+    Surfs                surfs;      // Converted to tris
+    Material                  material;
     FgGridTriangles             grid;       // IUCS
-    FgFlts                      invDepths;  // Inverse depth values. 1-1 with 'verts'
-    FgVect2Fs                   vertsIucs;  // Vertex projections into image plane
+    Floats                      invDepths;  // Inverse depth values. 1-1 with 'verts'
+    Vec2Fs                   vertsIucs;  // Vertex projections into image plane
 
     Fg3dRayCastMesh(
-        const Fg3dMesh &        mesh,       // Ignore base vertex positions here
-        const FgVerts &         verts,      // Current OECS vertex positions.
-        const Fg3dNormals &     normss,     // Current OECS normals.
-        FgAffineCw2F            itcsToIucs);
+        const Mesh &        mesh,       // Ignore base vertex positions here
+        const Vec3Fs &         verts,      // Current OECS vertex positions.
+        const Normals &     normss,     // Current OECS normals.
+        AffineEw2F            itcsToIucs);
 
     FgBestN<float,FgTriPoint,8>
-    cast(FgVect2F posIucs) const;
+    cast(Vec2F posIucs) const;
 
-    FgRgbaF
+    RgbaF
     shade(const FgTriPoint & intersect,const FgLighting & lighting) const;
 };
 
 struct  Fg3dRayCaster
 {
     const FgLighting *          lightingPtr;
-    FgRgbaF                     m_background;
-    vector<Fg3dRayCastMesh>     rayMesh;
+    RgbaF                     m_background;
+    Svec<Fg3dRayCastMesh>     rayMesh;
 
     Fg3dRayCaster(
-        const Fg3dMeshes &      meshes,
-        const FgVertss &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
-        const Fg3dNormalss &    normss,         // Current OECS normals. Must be 1-1 with above.
+        const Meshs &      meshes,
+        const Vec3Fss &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
+        const Normalss &    normss,         // Current OECS normals. Must be 1-1 with above.
         const FgLighting &      lighting,
-        FgAffineCw2F            itcsToIucs,
-        FgRgbaF                 background);
+        AffineEw2F            itcsToIucs,
+        RgbaF                 background);
 
-    FgRgbaF
-    cast(FgVect2F posIucs) const;
+    RgbaF
+    cast(Vec2F posIucs) const;
 
     struct Best
     {
@@ -76,6 +77,8 @@ struct  Fg3dRayCaster
         {}
     };
 };
+
+}
 
 #endif
 

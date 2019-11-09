@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 14, 2017
+
 //
 // Stack-based templated-dimension array (aka templated-rank "tensor").
 //
@@ -20,26 +19,28 @@
 #include "FgMatrixV.hpp"
 #include "FgIter.hpp"
 
+namespace Fg {
+
 template <class T,uint rank>
 struct  FgTensorC
 {
-    FgMatrixC<uint,rank,1>  m_dims;     // From minor to major
-    vector<T>               m_data;     // Always of size fgProduct(m_dims)
+    Mat<uint,rank,1>  m_dims;     // From minor to major
+    Svec<T>               m_data;     // Always of size fgProduct(m_dims)
 
     FG_SERIALIZE2(m_dims,m_data);
 
-    typedef FgMatrixC<uint,rank,1>   Crd;
+    typedef Mat<uint,rank,1>   Crd;
 
     FgTensorC() {}
 
-    FgTensorC(size_t dim0,size_t dim1,size_t dim2,const vector<T> & data)
+    FgTensorC(size_t dim0,size_t dim1,size_t dim2,const Svec<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2)), m_data(data)
     {
         static_assert(rank == 3,"Number of arguments does not dimensions");
         FGASSERT(dim0*dim1*dim2 == m_data.size());
     }
 
-    FgTensorC(size_t dim0,size_t dim1,size_t dim2,size_t dim3,const vector<T> & data)
+    FgTensorC(size_t dim0,size_t dim1,size_t dim2,size_t dim3,const Svec<T> & data)
     : m_dims(uint(dim0),uint(dim1),uint(dim2),uint(dim3)), m_data(data)
     {
         static_assert(rank == 4,"Number of arguments does not match elements");
@@ -75,7 +76,7 @@ struct  FgTensorC
         ret.m_dims = fgPermute(m_dims,perm);
         ret.m_data.resize(m_data.size());
         // Loop in source tensor order so we can use permuation as forward transform:
-        for (FgIter<uint,rank> it(m_dims); it.valid(); it.next())
+        for (Iter<uint,rank> it(m_dims); it.valid(); it.next())
             ret[fgPermute(it(),perm)] = (*this)[it()];
         return ret;
     }
@@ -88,7 +89,7 @@ struct  FgTensorC
         ret.m_dims = m_dims;
         ret.m_data.resize(m_data.size());
         std::swap(ret.m_dims[d0],ret.m_dims[d1]);
-        for (FgIter<uint,rank> it(ret.m_dims); it.valid(); it.next()) {
+        for (Iter<uint,rank> it(ret.m_dims); it.valid(); it.next()) {
             Crd         itTr = it();
             std::swap(itTr[d0],itTr[d1]);
             ret[it()] = (*this)[itTr];
@@ -107,5 +108,7 @@ typedef FgTensorC<float,3>       FgTensor3F;
 typedef FgTensorC<float,4>       FgTensor4F;
 typedef FgTensorC<double,3>      FgTensor3D;
 typedef FgTensorC<double,4>      FgTensor4D;
+
+}
 
 #endif

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,24 +16,26 @@
 
 using namespace std;
 
-struct  FgGuiWinCheckbox : public FgGuiOsBase
+namespace Fg {
+
+struct  GuiCheckboxWin : public GuiBaseImpl
 {
-    FgGuiApiCheckbox    m_api;
+    GuiCheckbox      m_api;
     HWND                hwndCheckbox,
                         hwndThis;
 
-    FgGuiWinCheckbox(const FgGuiApiCheckbox & api)
+    GuiCheckboxWin(const GuiCheckbox & api)
     : m_api(api)
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
-//fgout << fgnl << "FgGuiWinCheckbox::create " << m_api.label << fgpush;
-        FgCreateChild   cc;
+//fgout << fgnl << "GuiCheckboxWin::create " << m_api.label << fgpush;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -44,25 +46,25 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
-    {return FgVect2UI(150,24); }
+    {return Vec2UI(150,24); }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
-    {return FgVect2B(false,false); }
+    {return Vec2B(false,false); }
 
     virtual void
     updateIfChanged()
     {
-        if (g_gg.dg.update(m_api.updateFlagIdx))
+        if (m_api.updateFlag->checkUpdate())
             updateCheckbox();
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
-//fgout << fgnl << "FgGuiWinCheckbox::moveWindow " << lo << " , " << sz;
+//fgout << fgnl << "GuiCheckboxWin::moveWindow " << lo << " , " << sz;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
     }
 
@@ -74,7 +76,7 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
     wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
-//fgout << fgnl << "FgGuiWinCheckbox::WM_CREATE " << m_api.label;
+//fgout << fgnl << "GuiCheckboxWin::WM_CREATE " << m_api.label;
             hwndThis = hwnd;
             hwndCheckbox =
                 CreateWindowEx(0,
@@ -85,7 +87,7 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
                     0,0,0,0,            // Will be sent MOVEWINDOW messages.
                     hwnd,
                     HMENU(0),
-                    s_fgGuiWin.hinst,
+                    s_guiWin.hinst,
                     NULL);              // No WM_CREATE parameter
             FGASSERTWIN(hwndCheckbox != 0);
             updateCheckbox();
@@ -93,7 +95,7 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
         else if (msg == WM_SIZE) {      // Sends new size of client area:
             int     wid = LOWORD(lParam);
             int     hgt = HIWORD(lParam);
-//fgout << fgnl << "FgGuiWinCheckbox::WM_SIZE " << m_api.label << " : " << wid << "," << hgt;
+//fgout << fgnl << "GuiCheckboxWin::WM_SIZE " << m_api.label << " : " << wid << "," << hgt;
             if (wid*hgt > 0)
                 MoveWindow(hwndCheckbox,0,0,wid,hgt,TRUE);
         }
@@ -102,9 +104,9 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
             WORD    code = HIWORD(wParam);
             if (code == 0) {            // checkbox clicked
                 FGASSERT(ident == 0);
-                bool val = !g_gg.getVal(m_api.val);
-                g_gg.setVal(m_api.val,val);
-                g_gg.updateScreen();
+                bool &      val = m_api.val.ref();
+                val = !val;
+                winUpdateScreen();
             }
         }
         else 
@@ -115,11 +117,13 @@ struct  FgGuiWinCheckbox : public FgGuiOsBase
     void
     updateCheckbox()
     {
-        bool    val = g_gg.getVal(m_api.val);
+        bool    val = m_api.val.val();
         SendMessage(hwndCheckbox,BM_SETCHECK,val ? 1 : 0,0);
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiCheckbox & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinCheckbox(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiCheckbox & def)
+{return GuiImplPtr(new GuiCheckboxWin(def)); }
+
+}

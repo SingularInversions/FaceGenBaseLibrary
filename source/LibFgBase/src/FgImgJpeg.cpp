@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -51,11 +51,13 @@ fgIJGErrorExit(j_common_ptr cinfo)
 
 using namespace std;
 
+namespace Fg {
+
 static
 bool
 loadJpeg(
     const vector<uchar> &   jpgBuffer,
-    FgImgRgbaUb &           img)
+    ImgC4UC &           img)
 {
     jpeg_decompress_struct cinfo;
     IJGErrorManager jerr;
@@ -65,7 +67,7 @@ loadJpeg(
 
     bool                succeeded = false;
     bool                allocError = false;
-    FgVect2UI           allocErrorSz;
+    Vec2UI           allocErrorSz;
 
     vector<uchar>       buff;
 
@@ -105,7 +107,7 @@ loadJpeg(
             {
                 succeeded = false;
                 allocError = true;
-                allocErrorSz = FgVect2UI(cinfo.output_width,cinfo.output_height);
+                allocErrorSz = Vec2UI(cinfo.output_width,cinfo.output_height);
                 goto cleanup;
             }
             uchar*              buffer = &buff[0];
@@ -146,7 +148,7 @@ ok:
 cleanup:
     jpeg_destroy_decompress(&cinfo);
     if (allocError)
-        fgThrow("Allocation error in loadJpeg for size: "+fgToStr(allocErrorSz));
+        fgThrow("Allocation error in loadJpeg for size: "+toString(allocErrorSz));
     return succeeded;
 }
 
@@ -234,7 +236,7 @@ cleanup:
 }
 
 std::vector<uchar>
-fgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
+imgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 {
     vector<uchar>       ret;
     if(!saveJpeg(wid,hgt,data,ret,quality)) 
@@ -243,7 +245,7 @@ fgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 }
 
 vector<uchar>
-fgEncodeJpeg(const FgImgRgbaUb & img,int quality)
+imgEncodeJpeg(const ImgC4UC & img,int quality)
 {
     vector<uchar>       ret;
     if(!saveJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],ret,quality)) 
@@ -251,11 +253,13 @@ fgEncodeJpeg(const FgImgRgbaUb & img,int quality)
     return ret;
 }
 
-FgImgRgbaUb
-fgDecodeJpeg(const vector<uchar> & data)
+ImgC4UC
+imgDecodeJpeg(Uchars const & data)
 {
-    FgImgRgbaUb         ret;
+    ImgC4UC         ret;
     if(!loadJpeg(data,ret))
         fgThrow("Could not decode as JPEG/JFIF");
     return ret;
+}
+
 }

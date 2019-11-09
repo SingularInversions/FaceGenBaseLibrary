@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,26 +15,28 @@
 
 using namespace std;
 
-struct  FgGuiWinImage : public FgGuiOsBase
-{
-    HWND            m_hwnd;
-    FgGuiApiImage   m_api;
-    FgVect2UI       m_size;
-    FgVect2I        m_posWhenLButtonClicked;
-    FgVect2I        m_lastPos;                  // Last mouse position in CC
-    bool            dragging;
+namespace Fg {
 
-    FgGuiWinImage(const FgGuiApiImage & api)
+struct  GuiImageWin : public GuiBaseImpl
+{
+    HWND                m_hwnd;
+    GuiImage            m_api;
+    Vec2UI           m_size;
+    Vec2I            m_posWhenLButtonClicked;
+    Vec2I            m_lastPos;                  // Last mouse position in CC
+    bool                dragging;
+
+    GuiImageWin(const GuiImage & api)
     : m_api(api), dragging(false)
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
     }
 
     virtual void
@@ -44,22 +46,21 @@ struct  FgGuiWinImage : public FgGuiOsBase
         DestroyWindow(m_hwnd);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
         if (m_api.allowMouseCtls)
-            return FgVect2UI(100,100);
-        const FgImgRgbaUb & img = g_gg.getVal(m_api.imgN);
+            return Vec2UI(100,100);
+        const ImgC4UC & img = m_api.imgN.cref();
         return img.dims();
     }
 
-    // This is a fixed window image display, not a stretchable one:
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {
         if (m_api.allowMouseCtls)
-            return FgVect2B(true,true);
-        return FgVect2B(false,false);
+            return Vec2B(true,true);
+        return Vec2B(false,false);
     }
 
     virtual void
@@ -74,7 +75,7 @@ struct  FgGuiWinImage : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
 
     virtual void
@@ -88,7 +89,7 @@ struct  FgGuiWinImage : public FgGuiOsBase
             m_hwnd = hwnd;
         }
         else if (msg == WM_SIZE) {
-            m_size = FgVect2UI(LOWORD(lParam),HIWORD(lParam));
+            m_size = Vec2UI(LOWORD(lParam),HIWORD(lParam));
         }
         else if (msg == WM_PAINT) {
             HDC         hdc;
@@ -103,7 +104,7 @@ struct  FgGuiWinImage : public FgGuiOsBase
                 DWORD               greenMask;
                 DWORD               blueMask;
             };
-            FgGuiImageDisp          imgd = m_api.disp(m_size);
+            GuiImageDisp            imgd = m_api.disp(m_size);
             FGBMI                   bmi;
             memset(&bmi,0,sizeof(bmi));
             BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
@@ -129,7 +130,7 @@ struct  FgGuiWinImage : public FgGuiOsBase
             EndPaint(hwnd,&ps);
         }
         else if (msg == WM_LBUTTONDOWN) {
-            m_posWhenLButtonClicked = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            m_posWhenLButtonClicked = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             m_lastPos = m_posWhenLButtonClicked;
             POINT   point;
             point.x = 0;
@@ -144,31 +145,31 @@ struct  FgGuiWinImage : public FgGuiOsBase
         }
         else if (msg == WM_LBUTTONUP) {
             ClipCursor(NULL);
-            FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             if (!dragging) {
                 m_api.click(pos);
-                g_gg.updateScreen();
+                winUpdateScreen();
             }
             dragging = false;
         }
         else if (msg == WM_MOUSEMOVE) {
-            FgVect2I    pos = FgVect2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            FgVect2I    delta = pos-m_lastPos;
+            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I    delta = pos-m_lastPos;
             m_lastPos = pos;
             if (wParam == MK_LBUTTON) {
                 if (dragging == false) {
                     // Add hysteresis to avoid annoying missed clicks due to very slight movement:
-                    if (fgMaxElem(fgAbs(pos-m_posWhenLButtonClicked)) > 1)
+                    if (fgMaxElem(mapAbs(pos-m_posWhenLButtonClicked)) > 1)
                         dragging = true;
                 }
                 if (dragging) {
                     m_api.move(delta);
-                    g_gg.updateScreen();
+                    winUpdateScreen();
                 }
             }
             else if (wParam == MK_RBUTTON) {
                 m_api.zoom(delta[1]);
-                g_gg.updateScreen();
+                winUpdateScreen();
             }
         }
         else
@@ -177,8 +178,10 @@ struct  FgGuiWinImage : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiImage & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinImage(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiImage & def)
+{return GuiImplPtr(new GuiImageWin(def)); }
+
+}
 
 // */

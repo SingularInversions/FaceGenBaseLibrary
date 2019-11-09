@@ -1,8 +1,7 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc.
+// Copyright (c) 2019 Singular Inversions Inc.
 //
-// Authors:     Andrew Beatty
-// Created:     May 23, 2011
+
 //
 
 #ifndef FGKDTREE_HPP
@@ -12,38 +11,42 @@
 #include "FgOpt.hpp"
 #include "FgMath.hpp"
 
+namespace Fg {
+
 struct  FgMagPnt
 {
     float       mag;        // Squared distance to closest point
-    FgVect3F    pnt;        // Closest point
+    Vec3F    pnt;        // Closest point
 };
 
 class   FgKdTree
 {
 public:
-    FgKdTree(const std::vector<FgVect3F> & pnts);   // Must be non-empty
+    FgKdTree(const Svec<Vec3F> & pnts);   // Must be non-empty
 
     FgMagPnt
-    closest(FgVect3F pos) const;
+    closest(Vec3F pos) const;
 
 private:
     struct  Node
     {
-        Node(FgVect3F v) : vert(v) {}
-        Node(FgVect3F v,uint l) : vert(v), idxLo(l) {}
-        Node(FgVect3F v,uint l,uint h) : vert(v), idxLo(l), idxHi(h) {}
+        Node(Vec3F v) : vert(v) {}
+        Node(Vec3F v,uint l) : vert(v), idxLo(l) {}
+        Node(Vec3F v,uint l,uint h) : vert(v), idxLo(l), idxHi(h) {}
 
-        FgVect3F        vert;
-        FgValid<uint>   idxLo;
-        FgValid<uint>   idxHi;
+        Vec3F        vert;
+        Valid<uint>   idxLo;
+        Valid<uint>   idxHi;
     };
-    std::vector<Node>   m_tree;
+    Svec<Node>   m_tree;
 
     uint
-    createNode(const std::vector<FgVect3F> & verts,uint dim);
+    createNode(const Svec<Vec3F> & verts,uint dim);
 
     FgMagPnt
-    findBest(const FgVect3F & pos,FgMagPnt currBest,uint rootIdx,uint dim) const;
+    findBest(const Vec3F & pos,FgMagPnt currBest,uint rootIdx,uint dim) const;
 };
+
+}
 
 #endif

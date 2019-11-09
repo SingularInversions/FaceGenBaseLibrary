@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,19 +21,21 @@ using namespace std;
 using boost::filesystem::is_directory;
 using boost::filesystem::directory_iterator;
 
+namespace Fg {
+
 bool
-fgIsDirectory(const FgString & name)
+isDirectory(const Ustring & name)
 {return is_directory(name.ns()); }
 
-FgDirectoryContents
-fgDirectoryContents(const FgString & dirName)
+DirectoryContents
+directoryContents(const Ustring & dirName)
 {
-    FgString        dn = dirName;
+    Ustring        dn = dirName;
     if (dn.empty())     // Interpret this as current directory, which boost filesystem does not
-        dn = FgString(".");
+        dn = Ustring(".");
     if (!is_directory(dn.ns()))
         fgThrow("Not a directory",dirName);
-    FgDirectoryContents     ret;
+    DirectoryContents     ret;
     directory_iterator      it_end;
     for (directory_iterator it(dn.ns()); it != it_end; ++it) {
         if (is_directory(it->status()))
@@ -44,13 +46,13 @@ fgDirectoryContents(const FgString & dirName)
     return ret;
 }
 
-FgString
+Ustring
 fgGetCurrentDir()
 {
     char    buff[512] = {0};
     if (!getcwd(buff,511))
         fgThrow("Unable to get current working directory");
-    FgString    ps(buff);
+    Ustring    ps(buff);
     if (!ps.empty() && !ps.endsWith("/"))
         ps += "/";
     return ps;
@@ -58,7 +60,7 @@ fgGetCurrentDir()
 
 bool
 fgSetCurrentDir(
-    const FgString &    dir,
+    const Ustring &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -69,19 +71,19 @@ fgSetCurrentDir(
 }
 
 bool
-fgCreateDirectory(const FgString & dir)
+fgCreateDirectory(const Ustring & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
 }
 
 void
-fgDeleteFile(const FgString & fname)
-{fgRemoveFile(fname); }
+fgDeleteFile(const Ustring & fname)
+{pathRemove(fname); }
 
 bool
 fgRemoveDirectory(
-    const FgString &    dir,
+    const Ustring &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -93,51 +95,51 @@ fgRemoveDirectory(
     return false;
 }
 
-FgString
+Ustring
 fgDirSystemAppDataRoot()
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
-FgString
-fgDirSystemAppData(FgString const &,FgString const &)
+Ustring
+fgDirSystemAppData(Ustring const &,Ustring const &)
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
-FgString
+Ustring
 fgDirUserAppDataLocalRoot()
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
-FgString
+Ustring
 fgDirUserAppDataRoamingRoot()
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
-FgString
+Ustring
 fgUserDocumentsDirectory(bool)
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
-FgString
+Ustring
 fgPublicDocumentsDirectory()
 {
     throw FgExceptionNotImplemented();
-    return FgString();
+    return Ustring();
 }
 
 struct  Dir
 {
-    Dir(const FgString & dirName)
+    Dir(const Ustring & dirName)
     {handle = opendir(dirName.as_utf8_string().c_str()); }
 
     ~Dir()
@@ -147,14 +149,18 @@ struct  Dir
 };
 
 bool
-fgCreationTime(const FgString &,uint64 &)
+getCreationTime(const Ustring &,uint64 &)
 {
     throw FgExceptionNotImplemented();
     return false;
 }
 
+std::time_t
+getLastWriteTime(const Ustring & path)
+{return boost::filesystem::last_write_time(path.ns()); }
+
 void
-fgMakeWritableByAll(const FgString &)
+fgMakeWritableByAll(const Ustring &)
 {throw FgExceptionNotImplemented(); }
 
 #if defined(__APPLE__)
@@ -162,7 +168,7 @@ fgMakeWritableByAll(const FgString &)
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
 
-FgString
+Ustring
 fgExecutablePath()
 {
     CFURLRef bundleUrlRef(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
@@ -178,12 +184,12 @@ fgExecutablePath()
 
     FGASSERT(CFStringGetCString(pathRef,buffer.get(),size,kCFStringEncodingUTF8));
 
-    return FgString(buffer.get()); // Conversion from utf8
+    return Ustring(buffer.get()); // Conversion from utf8
 }
 
 #else
 
-FgString
+Ustring
 fgExecutablePath()
 {
     std::ostringstream os;
@@ -191,12 +197,14 @@ fgExecutablePath()
     os << getpid();
 
     std::string proclink("/proc/" + os.str() + "/exe");
-    FGASSERT(fgFileReadable(FgString(proclink)));
+    FGASSERT(fileReadable(Ustring(proclink)));
     char resolved_name[PATH_MAX] = {0};
     FGASSERT(realpath(proclink.c_str(),resolved_name));
-    return FgString(resolved_name);
+    return Ustring(resolved_name);
 }
 
 #endif
+
+}
 
 // */

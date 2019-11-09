@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: John Leung
-// Created: Feb 5, 2002
+
 //
 
 #include "stdafx.h"
@@ -20,17 +19,19 @@
 
 using namespace std;
 
+namespace Fg {
+
 template <class T>
 struct FgVect2LessThanByAxisT
 {
-    bool operator()(const FgMatrixC<T,2,1> &x, const FgMatrixC<T,2,1> &y) const
+    bool operator()(const Mat<T,2,1> &x, const Mat<T,2,1> &y) const
             { return ((x[1] < y[1]) ||
                       (x[1] == y[1] && x[0] < y[0])); }
 };
 
 typedef FgVect2LessThanByAxisT<uint>   FgVect2ILess;
 
-typedef map<FgVect2UI,unsigned long,FgVect2ILess> EdgeMapT;
+typedef map<Vec2UI,unsigned long,FgVect2ILess> EdgeMapT;
 typedef EdgeMapT::iterator EdgeMapItr;
 typedef EdgeMapT::const_iterator EdgeMapCItr;
 
@@ -39,16 +40,16 @@ typedef EdgeMapT::const_iterator EdgeMapCItr;
 // Local function prototypes
 //****************************************************************************
 static bool saveMayaAsciiFile(
-        const FgString                    &fname,
+        const Ustring                    &fname,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
         const vector<string>            *morphNames,
         const vector<string>            *cmts);
 static void buildEdgeList(
-        const vector<FgVect3UI>    &triList,
-        const vector<FgVect4UI>    &quadList,
+        const vector<Vec3UI>    &triList,
+        const vector<Vec4UI>    &quadList,
         EdgeMapT                    &edgeMap,
-        vector<FgVect2UI>          &edgeList);
+        vector<Vec2UI>          &edgeList);
 static bool findEdgeId(
         unsigned long   vtx1,
         unsigned long   vtx2,
@@ -126,18 +127,18 @@ static string getObjectTexFileName(
 static string getObjectTexPlaceName(
         const FffMultiObjectC &model, unsigned long mm);
 
-static void writeTexCoord(ofstream &ofs, const vector<FgVect2F> &texCoord);
-static void writeVertices(ofstream &ofs, const vector<FgVect3F> &vtxList);
-static void writeEdges(ofstream &ofs, const vector<FgVect2UI> &edgeList);
+static void writeTexCoord(ofstream &ofs, const vector<Vec2F> &texCoord);
+static void writeVertices(ofstream &ofs, const vector<Vec3F> &vtxList);
+static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList);
 static void writeFacets(
         ofstream                    &ofs,
-        const vector<FgVect3F>    &vtxList,
-        const vector<FgVect3UI>    &triList,
-        const vector<FgVect4UI>    &quadList,
+        const vector<Vec3F>    &vtxList,
+        const vector<Vec3UI>    &triList,
+        const vector<Vec4UI>    &quadList,
         const EdgeMapT              &edgeMap,
-        const vector<FgVect2F>    &texCoord,
-        const vector<FgVect3UI>    &texTriList,
-        const vector<FgVect4UI>    &texQuadList);
+        const vector<Vec2F>    &texCoord,
+        const vector<Vec3UI>    &texTriList,
+        const vector<Vec4UI>    &texQuadList);
 static void writeObjects(
         ofstream                        &ofs,
         const FffMultiObjectC           &model,
@@ -168,7 +169,7 @@ static void connectAttributes(
 //****************************************************************************
 static bool    fffSaveMayaAsciiFile(
 
-    const FgString            &fname,
+    const Ustring            &fname,
     const FffMultiObjectC   &model,
     const vector<string>    *cmts)
 {
@@ -177,7 +178,7 @@ static bool    fffSaveMayaAsciiFile(
 
 static bool    fffSaveMayaAsciiFile(
 
-    const FgString                    &fname,
+    const Ustring                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,
     const vector<string>            &morphNames,
@@ -192,7 +193,7 @@ static bool    fffSaveMayaAsciiFile(
 //****************************************************************************
 static bool saveMayaAsciiFile(
 
-    const FgString                  &fname,
+    const Ustring                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
     const vector<string>            *morphNames,
@@ -217,9 +218,9 @@ static bool saveMayaAsciiFile(
         return false;
     }
 
-    FgPath      path(fname);
+    Path      path(fname);
     path.ext = "ma";
-    FgOfstream ofs(path.str());
+    Ofstream ofs(path.str());
     if (!ofs)
     {
         return false;
@@ -283,7 +284,7 @@ static bool saveMayaAsciiFile(
         int numMorphs = totalNumTargets;
 
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "")
+        if (texFname.size() == 0 || texFname == "")
         {
             numSgDsm += (1 + numMorphs);
             continue;
@@ -355,10 +356,10 @@ static bool saveMayaAsciiFile(
 //****************************************************************************
 static void buildEdgeList(
 
-    const vector<FgVect3UI>    &triList,
-    const vector<FgVect4UI>    &quadList,
+    const vector<Vec3UI>    &triList,
+    const vector<Vec4UI>    &quadList,
     EdgeMapT                    &edgeMap,
-    vector<FgVect2UI>          &edgeList)
+    vector<Vec2UI>          &edgeList)
 {
     unsigned long edgeId=0;
 
@@ -367,9 +368,9 @@ static void buildEdgeList(
         for (int ii=0; ii<3; ++ii)
         {
             int ii2 = (ii+1) % 3;
-            FgVect2UI edg1 = FgVect2UI(triList[tt][ii],
+            Vec2UI edg1 = Vec2UI(triList[tt][ii],
                                          triList[tt][ii2]);
-            FgVect2UI edg2 = FgVect2UI(edg1[1],edg1[0]);
+            Vec2UI edg2 = Vec2UI(edg1[1],edg1[0]);
             if (edgeMap.find(edg1) != edgeMap.end() ||
                 edgeMap.find(edg2) != edgeMap.end())
                 continue;
@@ -385,9 +386,9 @@ static void buildEdgeList(
         for (int ii=0; ii<4; ++ii)
         {
             int ii2 = (ii+1) % 4;
-            FgVect2UI edg1 = FgVect2UI(quadList[qq][ii],
+            Vec2UI edg1 = Vec2UI(quadList[qq][ii],
                                          quadList[qq][ii2]);
-            FgVect2UI edg2 = FgVect2UI(edg1[1],edg1[0]);
+            Vec2UI edg2 = Vec2UI(edg1[1],edg1[0]);
             if (edgeMap.find(edg1) != edgeMap.end() ||
                 edgeMap.find(edg2) != edgeMap.end())
                 continue;
@@ -416,8 +417,8 @@ static bool findEdgeId(
     const EdgeMapT  &edgeMap,
     long            &edgeId)
 {
-    FgVect2UI edge1 = FgVect2UI(vtx1,vtx2);
-    FgVect2UI edge2 = FgVect2UI(vtx2,vtx1);
+    Vec2UI edge1 = Vec2UI(vtx1,vtx2);
+    Vec2UI edge2 = Vec2UI(vtx2,vtx1);
 
     EdgeMapCItr itr;
 
@@ -838,7 +839,7 @@ static string getObjectTexPlaceName(
 //****************************************************************************
 //                              writeTexCoord
 //****************************************************************************
-static void writeTexCoord(ofstream &ofs, const vector<FgVect2F> &texCoord)
+static void writeTexCoord(ofstream &ofs, const vector<Vec2F> &texCoord)
 {
     if (texCoord.size())
     {
@@ -866,7 +867,7 @@ static void writeTexCoord(ofstream &ofs, const vector<FgVect2F> &texCoord)
 //****************************************************************************
 //                              writeVertices
 //****************************************************************************
-static void writeVertices(ofstream &ofs, const vector<FgVect3F> &vtxList)
+static void writeVertices(ofstream &ofs, const vector<Vec3F> &vtxList)
 {
     ofs << "\tsetAttr -s " << vtxList.size() 
                 << " \".vt[0:" << vtxList.size()-1 << "]\"\n";
@@ -891,7 +892,7 @@ static void writeVertices(ofstream &ofs, const vector<FgVect3F> &vtxList)
 //****************************************************************************
 //                              writeEdges
 //****************************************************************************
-static void writeEdges(ofstream &ofs, const vector<FgVect2UI> &edgeList)
+static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList)
 {
     ofs << "\tsetAttr -s " << edgeList.size() 
                 << " \".ed[0:" << edgeList.size()-1 << "]\"\n";
@@ -918,13 +919,13 @@ static void writeEdges(ofstream &ofs, const vector<FgVect2UI> &edgeList)
 static void writeFacets(
 
     ofstream                    &ofs,
-    const vector<FgVect3F>    &vtxList,
-    const vector<FgVect3UI>    &triList,
-    const vector<FgVect4UI>    &quadList,
+    const vector<Vec3F>    &vtxList,
+    const vector<Vec3UI>    &triList,
+    const vector<Vec4UI>    &quadList,
     const EdgeMapT              &edgeMap,
-    const vector<FgVect2F>    &texCoord,
-    const vector<FgVect3UI>    &texTriList,
-    const vector<FgVect4UI>    &texQuadList)
+    const vector<Vec2F>    &texCoord,
+    const vector<Vec3UI>    &texTriList,
+    const vector<Vec4UI>    &texQuadList)
 {
     // Per-facet or per-vertex texture
     bool perFacet = false;
@@ -1035,19 +1036,19 @@ static void writeObjects(
         ofs << "createNode transform -n \"" << neutralGrp << "\";\n";
 
     vector< EdgeMapT > edgeMap;
-    vector< vector<FgVect2UI> > edgeList;
+    vector< vector<Vec2UI> > edgeList;
     edgeMap.resize(model.numObjs());
     edgeList.resize(model.numObjs());
     edgeSizeList.clear();
     for (unsigned long objId=0; objId<model.numObjs(); ++objId)
     {
         // Get an alias to the list data
-        const vector<FgVect3F> &vtxList = model.getPtList(objId);
-        const vector<FgVect3UI> &triList = model.getTriList(objId);
-        const vector<FgVect4UI> &quadList = model.getQuadList(objId);
-        const vector<FgVect2F> &texCoord = model.getTextCoord(objId);
-        const vector<FgVect3UI> &texTriList = model.getTexTriList(objId);
-        const vector<FgVect4UI> &texQuadList = model.getTexQuadList(objId);
+        const vector<Vec3F> &vtxList = model.getPtList(objId);
+        const vector<Vec3UI> &triList = model.getTriList(objId);
+        const vector<Vec4UI> &quadList = model.getQuadList(objId);
+        const vector<Vec2F> &texCoord = model.getTextCoord(objId);
+        const vector<Vec3UI> &texTriList = model.getTexTriList(objId);
+        const vector<Vec4UI> &texQuadList = model.getTexQuadList(objId);
 
         // Build an edge list first
         buildEdgeList(triList,quadList,edgeMap[objId],edgeList[objId]);
@@ -1055,7 +1056,7 @@ static void writeObjects(
 
         // Check if this object has texture
         string texFname = model.getTextureFilename(objId);
-        if (texFname.length() == 0)
+        if (texFname.size() == 0)
             texFname = "";
 
         // Now write out the information to file
@@ -1137,17 +1138,17 @@ static void writeObjects(
         for (unsigned long objId=0; objId<model.numObjs(); ++objId)
         {
             string texFname = model.getTextureFilename(objId);
-            if (texFname.length() == 0)
+            if (texFname.size() == 0)
                 texFname = "";
 
-            const vector<FgVect3F> &mVtxList = 
+            const vector<Vec3F> &mVtxList = 
                 (*morphTargets)[mm].getPtList(objId);
-            const vector<FgVect3F> &vtxList = model.getPtList(objId);
-            const vector<FgVect3UI> &triList = model.getTriList(objId);
-            const vector<FgVect4UI> &quadList = model.getQuadList(objId);
-            const vector<FgVect2F> &texCoord = model.getTextCoord(objId);
-            const vector<FgVect3UI> &texTriList = model.getTexTriList(objId);
-            const vector<FgVect4UI> &texQuadList=model.getTexQuadList(objId);
+            const vector<Vec3F> &vtxList = model.getPtList(objId);
+            const vector<Vec3UI> &triList = model.getTriList(objId);
+            const vector<Vec4UI> &quadList = model.getQuadList(objId);
+            const vector<Vec2F> &texCoord = model.getTextCoord(objId);
+            const vector<Vec3UI> &texTriList = model.getTexTriList(objId);
+            const vector<Vec4UI> &texQuadList=model.getTexQuadList(objId);
 
             size_t  numFacets = triList.size() + quadList.size();
 
@@ -1207,7 +1208,7 @@ static int writeShadingMaterialPhong(
     for (unsigned long mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ++numObjWithTextureFile;
 
@@ -1306,7 +1307,7 @@ static void writeBlendShapes(
     {
         string texFname = model.getTextureFilename(mm);
 
-        if (texFname.length() > 0 && texFname != "")
+        if (texFname.size() > 0 && texFname != "")
         {
             string grpId = getObjBlendTexGrpIdName(model,mm);
             string grpParts = getObjBlendTexGrpPartsName(model,mm);
@@ -1388,7 +1389,7 @@ static void writePolySoftEdge(
                     "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;\n";
 
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() > 0 && texFname != "" && totalNumMorphs == 0)
+        if (texFname.size() > 0 && texFname != "" && totalNumMorphs == 0)
         {
             string grpIdName = getObjPolySoftEdgeGrpId(model,mm);
             string grpPartsName = getObjPolySoftEdgeGrpParts(model,mm);
@@ -1426,7 +1427,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        bool hasTexture = (texFname.length() > 0 && texFname != "");
+        bool hasTexture = (texFname.size() > 0 && texFname != "");
 
         if (totalNumTargets == 0)
         {
@@ -1492,7 +1493,7 @@ static void connectAttributes(
         for (unsigned long nn=0; nn<model.numObjs(); ++nn)
         {
             string texFname = model.getTextureFilename(nn);
-            if (texFname.length() == 0 || texFname == "")
+            if (texFname.size() == 0 || texFname == "")
                 continue;
 
             string mphShapeName = getObjMorphShapeName(model,nn,mphName);
@@ -1528,7 +1529,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ofs << "connectAttr \":defaultLightSet.msg\" "
                     << "\"lightLinker1.lnk[" << lnkIdx << "].llnk\";\n";
@@ -1562,7 +1563,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         string objPhong = getObjectPhongName(model,mm);
         string objShadingEng = getObjectShadingEngName(model,mm);
@@ -1681,7 +1682,7 @@ static void connectAttributes(
             continue;
 
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() > 0 && texFname != "")
+        if (texFname.size() > 0 && texFname != "")
         {
             ofs << "connectAttr \""
                     << getObjectShapeOrigName(model,mm) << ".w\" \""
@@ -1723,7 +1724,7 @@ static void connectAttributes(
         string texFname = model.getTextureFilename(mm);
 
         int bIdx = 0;
-        if (texFname.length() > 0 && texFname != "")
+        if (texFname.size() > 0 && texFname != "")
             bIdx = 3;
         ofs << "connectAttr \""
                     << getObjectShapeName(model,mm) << ".iog.og[" 
@@ -1763,7 +1764,7 @@ static void connectAttributes(
         string texFname = model.getTextureFilename(mm);
 
         int tIdx = 1;
-        if (texFname.length() > 0 && texFname != "")
+        if (texFname.size() > 0 && texFname != "")
             tIdx = 4;
 
         string tweakName = getObjTweakName(model,mm);
@@ -1782,7 +1783,7 @@ static void connectAttributes(
                     << tweakName << ".msg\" \""
                     << tweakSetName << ".ub[0]\";\n";
 
-        if (texFname.length() == 0 || texFname == "")
+        if (texFname.size() == 0 || texFname == "")
         {
             ofs << "connectAttr \""
                     << getObjectShapeOrigName(model,mm) << ".w\" \""
@@ -1805,7 +1806,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        bool hasTexture = (texFname.length() > 0 && texFname != "");
+        bool hasTexture = (texFname.size() > 0 && texFname != "");
 
         string polySoftEdgeName = getObjPolySoftEdgeName(model,mm);
 
@@ -1855,7 +1856,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ofs << "connectAttr \""
                 << getObjectShadingEngName(model,mm) << ".pa\" \""
@@ -1877,7 +1878,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ofs << "connectAttr \""
                 << getObjectPhongName(model,mm) << ".msg\" \""
@@ -1899,7 +1900,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ofs << "connectAttr \""
                 << getObjectTexPlaceName(model,mm) << ".msg\" \""
@@ -1914,7 +1915,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         ofs << "connectAttr \""
                 << getObjectTexFileName(model,mm) << ".msg\" \""
@@ -1927,7 +1928,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() > 0 && texFname != "")
+        if (texFname.size() > 0 && texFname != "")
         {
             for (unsigned long tt=0; tt<totalNumTargets; ++tt)
             {
@@ -1957,7 +1958,7 @@ static void connectAttributes(
     for (mm=0; mm<model.numObjs(); ++mm)
     {
         string texFname = model.getTextureFilename(mm);
-        if (texFname.length() == 0 || texFname == "") continue;
+        if (texFname.size() == 0 || texFname == "") continue;
 
         for (unsigned long tt=0; tt<totalNumTargets; ++tt)
         {
@@ -1972,15 +1973,15 @@ static void connectAttributes(
 }
 
 FgMeshLegacy
-fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string & imgFormat,uint maxLen)
+fgMeshLegacy(const vector<Mesh> & meshes,const Ustring & fname,const string & imgFormat,uint maxLen)
 {
     FgMeshLegacy                    ret;
-    FgPath                          path(fname);
+    Path                          path(fname);
     // Index from legacy mesh to 'meshes' since latter can have multiple tex images per mesh:
     vector<size_t>                  meshesInds;
     size_t                          imgIdx = 0;
     for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Fg3dMesh &            mesh = meshes[ii];
+        const Mesh &            mesh = meshes[ii];
         FffMultiObjectC::objData    od;
         od.ptList = mesh.verts;
         od.textCoord = mesh.uvs;
@@ -1991,15 +1992,15 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
         }
         else {
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-                const Fg3dSurface &         surf = mesh.surfaces[ss];
+                const Surf &         surf = mesh.surfaces[ss];
                 string                      texBase;
                 if (surf.material.albedoMap) {
                     string                  baseName = path.base.as_ascii();
                     if (maxLen > 0)
-                        if (baseName.length() > maxLen)
+                        if (baseName.size() > maxLen)
                             baseName.resize(maxLen);
-                    texBase = baseName + fgToStr(imgIdx++) + "." + imgFormat;
-                    fgSaveImgAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
+                    texBase = baseName + toString(imgIdx++) + "." + imgFormat;
+                    imgSaveAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
                 }
                 od.triList = surf.tris.vertInds;
                 od.quadList = surf.quads.vertInds;
@@ -2011,14 +2012,14 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
             }
         }
     }
-    set<FgString>           morphSet = fgMorphs(meshes);
-    FgStrings        morphs(morphSet.begin(),morphSet.end());
+    set<Ustring>           morphSet = fgMorphs(meshes);
+    Ustrings        morphs(morphSet.begin(),morphSet.end());
     ret.morphs.resize(morphs.size(),ret.base);
     for (size_t mm=0; mm<morphs.size(); ++mm) {
         vector<FffMultiObjectC::objData> &  ods = ret.morphs[mm].m_objs;
         for (size_t ii=0; ii<ods.size(); ++ii) {
-            const Fg3dMesh &    mesh = meshes[meshesInds[ii]];
-            FgValid<size_t>     morphIdx = mesh.findMorph(morphs[mm]);
+            const Mesh &    mesh = meshes[meshesInds[ii]];
+            Valid<size_t>     morphIdx = mesh.findMorph(morphs[mm]);
             if (morphIdx.valid())
                 ods[ii].ptList = mesh.morphSingle(mesh.findMorph(morphs[mm]).val());
         }
@@ -2028,9 +2029,9 @@ fgMeshLegacy(const vector<Fg3dMesh> & meshes,const FgString & fname,const string
 }
 
 void
-fgSaveMa(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
+saveMa(
+    const Ustring &        fname,
+    const vector<Mesh> & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
@@ -2042,19 +2043,21 @@ fgSaveMa(
 }
 
 void
-fgSaveMaTest(const FgArgs & args)
+fgSaveMaTest(const CLArgs & args)
 {
     FGTESTDIR
-    FgString    dd = fgDataDir();
+    Ustring    dd = dataDir();
     string      rd = "base/";
-    Fg3dMesh    mouth = fgLoadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"MouthSmall.png"));
-    Fg3dMesh    glasses = fgLoadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(fgLoadImgAnyFormat(dd+rd+"Glasses.tga"));
-    fgSaveMa("meshExportMa",fgSvec(mouth,glasses));
+    Mesh    mouth = loadTri(dd+rd+"Mouth.tri");
+    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
+    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
+    saveMa("meshExportMa",fgSvec(mouth,glasses));
     fgRegressFileRel("meshExportMa.ma","base/test/");
     fgRegressFileRel("meshExportMa0.png","base/test/");
     fgRegressFileRel("meshExportMa1.png","base/test/");
+}
+
 }
 
 // */

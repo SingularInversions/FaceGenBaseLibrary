@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct. 6, 2016
+
 //
 // Mesh format using little-endian int32, uint32, IEEE 754 single-precision and UTF-8 data
 //
@@ -21,11 +20,13 @@
 
 using namespace std;
 
-Fg3dMesh
-fgLoadFgmesh(const FgString & fname)
+namespace Fg {
+
+Mesh
+loadFgmesh(const Ustring & fname)
 {
-    Fg3dMesh        ret;
-    FgIfstream      ifs(fname);
+    Mesh        ret;
+    Ifstream      ifs(fname);
     if (fgReadpT<string>(ifs) != "FgMesh01")
         fgThrow("Not a valid FGMESH file",fname);
     fgReadp(ifs,ret);
@@ -33,21 +34,23 @@ fgLoadFgmesh(const FgString & fname)
 }
 
 void
-fgSaveFgmesh(const FgString & fname,const Fg3dMesh & mesh)
+saveFgmesh(const Ustring & fname,const Mesh & mesh)
 {
-    FgOfstream          ofs(fname);
+    Ofstream          ofs(fname);
     fgWritep(ofs,string("FgMesh01"));
     fgWritep(ofs,mesh);
 }
 
 void
-fgSaveFgmesh(const FgString & fname,const Fg3dMeshes & meshes)
-{fgSaveFgmesh(fname,fgMergeMeshes(meshes)); }
+saveFgmesh(const Ustring & fname,const Meshs & meshes)
+{saveFgmesh(fname,fgMergeMeshes(meshes)); }
 
 void
-fgSaveFgmeshTest(const FgArgs & args)
+fgSaveFgmeshTest(const CLArgs & args)
 {
     FGTESTDIR;
-    fgSaveFgmesh("Mouth.tri",fgLoadTri(fgDataDir()+"base/Mouth.tri"));
-    fgViewMesh(fgLoadFgmesh("Mouth.tri"));
+    saveFgmesh("Mouth.tri",loadTri(dataDir()+"base/Mouth.tri"));
+    meshView(loadFgmesh("Mouth.tri"));
+}
+
 }

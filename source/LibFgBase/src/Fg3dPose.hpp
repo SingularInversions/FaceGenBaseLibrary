@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 28, 2017
+
 //
 
 #ifndef FG3DPOSE_HPP
@@ -22,18 +21,20 @@
 #include "FgOpt.hpp"
 #include "FgQuaternion.hpp"
 
-// Per-vertex morph (aka blendshape) represented by deltas from base shape:
-struct  FgMorph
-{
-    FgString            name;
-    FgVerts             verts;      // 1-1 correspondence with base verts
+namespace Fg {
 
-    FgMorph() {}
-    FgMorph(const FgString & n,const FgVerts & v)
+// Per-vertex morph (aka blendshape) represented by deltas from base shape:
+struct  Morph
+{
+    Ustring             name;
+    Vec3Fs              verts;      // 1-1 correspondence with base verts
+
+    Morph() {}
+    Morph(const Ustring & n,const Vec3Fs & v)
         : name(n), verts(v) {}
 
     void
-    applyAsDelta(FgVerts & accVerts,float val) const
+    applyAsDelta(Vec3Fs & accVerts,float val) const
     {
         FGASSERT(verts.size() == accVerts.size());
         for (size_t ii=0; ii<verts.size(); ++ii)
@@ -41,33 +42,33 @@ struct  FgMorph
     }
 };
 
-void    fgReadp(std::istream &,FgMorph &);
-void    fgWritep(std::ostream &,const FgMorph &);
+typedef Svec<Morph>     Morphs;
 
-typedef     vector<FgMorph>     FgMorphs;
+void fgReadp(std::istream &,Morph &);
+void fgWritep(std::ostream &,const Morph &);
 
 // Indexed vertices morph (aka blendshape) represented by absolute position:
-struct  FgIndexedMorph
+struct  IndexedMorph
 {
-    FgString            name;
-    FgUints             baseInds;   // Indices of base vertices to be morphed.
+    Ustring            name;
+    Uints             baseInds;   // Indices of base vertices to be morphed.
     // Can represent target position or delta depending on type of morph.
     // Must be same size() as baseInds.:
-    FgVerts             verts;
+    Vec3Fs             verts;
 
     void
-    applyAsTarget_(const FgVerts & baseVerts,const FgVerts & targVerts,size_t & idxTarg,float val,FgVerts & accVerts) const
+    applyAsTarget_(const Vec3Fs & baseVerts,const Vec3Fs & targVerts,size_t & idxTarg,float val,Vec3Fs & accVerts) const
     {
         for (size_t ii=0; ii<baseInds.size(); ++ii) {
             uint        idx = baseInds[ii];
-            FgVect3F    del = targVerts[idxTarg+ii] - baseVerts[idx];
+            Vec3F    del = targVerts[idxTarg+ii] - baseVerts[idx];
             accVerts[idx] += del * val;
         }
         idxTarg += baseInds.size();
     }
 
     void
-    applyAsTarget_(const FgVerts & baseVerts,float val,FgVerts & accVerts) const
+    applyAsTarget_(const Vec3Fs & baseVerts,float val,Vec3Fs & accVerts) const
     {
         size_t      idx = 0;
         applyAsTarget_(baseVerts,verts,idx,val,accVerts);
@@ -75,18 +76,18 @@ struct  FgIndexedMorph
 
     // Name of morph does not affect equality:
     bool
-    operator==(const FgIndexedMorph & rhs) const
+    operator==(const IndexedMorph & rhs) const
     {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
 };
 
-void    fgReadp(std::istream &,FgIndexedMorph &);
-void    fgWritep(std::ostream &,const FgIndexedMorph &);
+void    fgReadp(std::istream &,IndexedMorph &);
+void    fgWritep(std::ostream &,const IndexedMorph &);
 
-typedef vector<FgIndexedMorph>  FgIndexedMorphs;
+typedef Svec<IndexedMorph>  IndexedMorphs;
 
 inline
 size_t
-fgSumVerts(const FgIndexedMorphs & ims)
+fgSumVerts(const IndexedMorphs & ims)
 {
     size_t      ret = 0;
     for (size_t ii=0; ii<ims.size(); ++ii)
@@ -96,78 +97,57 @@ fgSumVerts(const FgIndexedMorphs & ims)
 
 void
 fgAccDeltaMorphs(
-    const vector<FgMorph> &     deltaMorphs,
-    const FgFlts &              coord,
-    FgVerts &                   accVerts);  // MODIFIED: morphing delta accumualted here
+    const Svec<Morph> &     deltaMorphs,
+    const Floats &              coord,
+    Vec3Fs &                   accVerts);  // MODIFIED: morphing delta accumualted here
 
 // This version of target morph application is more suited to SSM dataflow, where the
 // target positions have been transformed as part of the 'allVerts' array:
 void
 fgAccTargetMorphs(
-    const FgVerts &             allVerts,   // Base verts plus all target morph verts
-    const vector<FgIndexedMorph> & targMorphs,  // Only 'baseInds' is used.
-    const FgFlts &              coord,      // morph coefficient for each target morph
-    FgVerts &                   accVerts);  // MODIFIED: target morphing delta accumulated here
+    const Vec3Fs &             allVerts,   // Base verts plus all target morph verts
+    const Svec<IndexedMorph> & targMorphs,  // Only 'baseInds' is used.
+    const Floats &              coord,      // morph coefficient for each target morph
+    Vec3Fs &                   accVerts);  // MODIFIED: target morphing delta accumulated here
 
-// Current implementation supports at most 3 skin weights per vertex.
-struct  FgSkinWgt
+struct  PoseVal
 {
-    FgVect3UI       skinInds;       // Corresponding to below
-    FgVect3F        skinWgts;       // Non-zero values should be at beginning
-};
-
-typedef vector<FgSkinWgt>       FgSkinWgts;
-
-// We use skin-based poses only for rotations, eg. eyes, eyelids, jaw, neck:
-struct  FgSkinRot
-{
-    FgString            name;
-    FgVect3F            axis;       // Normalized axis of rotation direction (RHR)
-    FgVect3F            bone;       // Any point on the axis of rotation
-    FgVect2F            bounds;     // Pose limit bounds (radians). Lower val non-zero for eg. eye movements.
-    float               neutral;    // Neutral pose value (radians). Zero for eyes but non-zero for eg. eyelids.
-};
-
-typedef vector<FgSkinRot>       FgSkinRots;
-
-struct  FgPose
-{
-    FgString            name;
-    FgVect2F            bounds;
+    Ustring             name;
+    Vec2F               bounds;
     float               neutral;
 
-    FgPose() : bounds(FgVect2F(0,1)), neutral(0) {}
+    PoseVal() : bounds(Vec2F(0,1)), neutral(0) {}
 
     // Provide an ordering so we can make a set. We do not differentiate based on bounds and neutral
     // value since this is too complicated in the rest of the code; client must beware not to
     // overload pose names:
     bool
-    operator<(const FgPose & rhs) const
+    operator<(const PoseVal & rhs) const
     {return (name < rhs.name); }
 
     // Allow for finding by name:
     bool
-    operator==(const FgString & rhsName) const
+    operator==(const Ustring & rhsName) const
     {return (name == rhsName); }
 };
 
-typedef vector<FgPose>          FgPoses;
+typedef Svec<PoseVal>          PoseVals;
 
 inline
-FgPoses
-fgPoses(const FgMorphs & morphs)
+PoseVals
+fgPoses(const Morphs & morphs)
 {
-    FgPoses         ret(morphs.size());
+    PoseVals         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].name = morphs[ii].name;
     return ret;
 }
 
 inline
-FgPoses
-fgPoses(const FgIndexedMorphs & morphs)
+PoseVals
+fgPoses(const IndexedMorphs & morphs)
 {
-    FgPoses         ret(morphs.size());
+    PoseVals         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].name = morphs[ii].name;
     return ret;
@@ -175,11 +155,13 @@ fgPoses(const FgIndexedMorphs & morphs)
 
 // Accumulate deltas for delta morphs stored as a vertex array:
 void
-fgPoseDeltas(const std::map<FgString,float> & poseVals,const FgMorphs & deltaMorphs,FgVerts & acc);
+fgPoseDeltas(const std::map<Ustring,float> & poseVals,const Morphs & deltaMorphs,Vec3Fs & acc);
 
 // Accumulate deltas for target morphs stored as indexed vertex array:
 void
-fgPoseDeltas(const std::map<FgString,float> & poseVals,const FgIndexedMorphs & targMorphs,const FgVerts & indivShape,
-    const FgVerts & targShape,FgVerts & acc);
+fgPoseDeltas(const std::map<Ustring,float> & poseVals,const IndexedMorphs & targMorphs,const Vec3Fs & indivShape,
+    const Vec3Fs & targShape,Vec3Fs & acc);
+
+}
 
 #endif

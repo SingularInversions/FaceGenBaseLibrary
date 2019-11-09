@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 29, 2012
+
 //
 // Multi-dimensional index iterator with offset and stride.
 //
@@ -15,41 +14,43 @@
 
 #include "FgStdStream.hpp"
 #include "FgBounds.hpp"
-#include "FgDefaultVal.hpp"
+
+namespace Fg {
 
 template<typename T,uint dim>
-struct  FgIter
+struct  Iter
 {
-    FgMatrixC<T,dim,1>  m_bndsLoIncl;   // Inclusive lower bounds
-    FgMatrixC<T,dim,1>  m_bndsHiExcl;   // Exclusive upper bounds
+    static_assert(std::is_integral<T>::value,"Iter only supports integral types");
+    Mat<T,dim,1>        m_bndsLoIncl;   // Inclusive lower bounds
+    Mat<T,dim,1>        m_bndsHiExcl;   // Exclusive upper bounds
     // Strides (Step sizes) for each dimension. MUST NOT be larger than difference between bounds:
-    FgMatrixC<T,dim,1>  m_strides;
-    FgMatrixC<T,dim,1>  m_idx;
-    FgBoolT             m_inBounds;     // Not redundant since m_idx wraps around.
+    Mat<T,dim,1>        m_strides;
+    Mat<T,dim,1>        m_idx;
+    bool                m_inBounds=true;    // Not redundant since m_idx wraps around.
 
     explicit
-    FgIter(FgMatrixC<T,dim,2> inclLowerExclUpperBounds)
+    Iter(Mat<T,dim,2> inclLowerExclUpperBounds)
     :   m_bndsLoIncl(inclLowerExclUpperBounds.colVec(0)),
         m_bndsHiExcl(inclLowerExclUpperBounds.colVec(1)),
-        m_strides(FgMatrixC<T,dim,1>(1)),
+        m_strides(Mat<T,dim,1>(1)),
         m_idx(inclLowerExclUpperBounds.colVec(0))
     {setValid(); }
 
-    FgIter(
-        FgMatrixC<T,dim,1>      lowerBounds,
-        FgMatrixC<T,dim,1>      exclusiveUpperBounds)
+    Iter(
+        Mat<T,dim,1>      lowerBounds,
+        Mat<T,dim,1>      exclusiveUpperBounds)
         :   m_bndsLoIncl(lowerBounds),
             m_bndsHiExcl(exclusiveUpperBounds),
-            m_strides(FgMatrixC<T,dim,1>(1)),
+            m_strides(Mat<T,dim,1>(1)),
             m_idx(lowerBounds)
     {setValid(); }
 
     // Can't have last argument as optional on above since old versions of gcc have a bug
     // with non-type template arguments in default arguments:
-    FgIter(
-        FgMatrixC<T,dim,1>      lowerBounds,
-        FgMatrixC<T,dim,1>      exclusiveUpperBounds,
-        FgMatrixC<T,dim,1>      strides)
+    Iter(
+        Mat<T,dim,1>      lowerBounds,
+        Mat<T,dim,1>      exclusiveUpperBounds,
+        Mat<T,dim,1>      strides)
         :   m_bndsLoIncl(lowerBounds),
             m_bndsHiExcl(exclusiveUpperBounds),
             m_strides(strides),
@@ -58,7 +59,7 @@ struct  FgIter
 
     // Lower bounds implicitly zero, strides implicitly 1:
     explicit
-    FgIter(FgMatrixC<T,dim,1> dims)
+    Iter(Mat<T,dim,1> dims)
     :   m_bndsLoIncl(0),
         m_bndsHiExcl(dims),
         m_strides(1),
@@ -67,7 +68,7 @@ struct  FgIter
 
     // Lower bounds implicitly zero, upper bounds all the same, strides 1:
     explicit
-    FgIter(T exclusiveUpperBound)
+    Iter(T exclusiveUpperBound)
     :   m_bndsLoIncl(0),
         m_bndsHiExcl(exclusiveUpperBound),
         m_strides(1),
@@ -93,48 +94,48 @@ struct  FgIter
     valid() const
     {return m_inBounds; }
 
-    const FgMatrixC<T,dim,1> &
+    const Mat<T,dim,1> &
     operator()() const
     {return m_idx; }
 
     // Mirror the point around the centre in all axes:
-    FgMatrixC<T,dim,1>
+    Mat<T,dim,1>
     mirror() const
-    {return (m_bndsHiExcl - m_idx - FgMatrixC<T,dim,1>(1)); }
+    {return (m_bndsHiExcl - m_idx - Mat<T,dim,1>(1)); }
 
     // Mirror the point around the centre in the given axis:
-    FgMatrixC<T,dim,1>
+    Mat<T,dim,1>
     mirror(uint axis) const
     {
-        FgMatrixC<T,dim,1>      ret = m_idx;
+        Mat<T,dim,1>      ret = m_idx;
         ret[axis] = m_bndsHiExcl[axis] - m_idx[axis] - 1;
         return ret;
     }
 
-    FgMatrixC<T,dim,1>
+    Mat<T,dim,1>
     delta() const
     {return m_idx - m_bndsLoIncl; }
 
-    FgMatrixC<T,dim,2>
+    Mat<T,dim,2>
     inclusiveRange() const
-    {return fgJoinHoriz(m_bndsLoIncl,m_bndsHiExcl - FgMatrixC<T,dim,1>(1)); }
+    {return fgJoinHoriz(m_bndsLoIncl,m_bndsHiExcl - Mat<T,dim,1>(1)); }
 
-    FgMatrixC<T,dim,1>
+    Mat<T,dim,1>
     dims() const
     {
         return (m_bndsHiExcl - m_bndsLoIncl);
     }
 
     // Return clipped bounds of all supremum norm (L_inf) distance = 1 neighbours:
-    FgMatrixC<T,dim,2>
+    Mat<T,dim,2>
     neighbourBounds() const
     {
         return 
-            FgMatrixC<T,dim,2>(
+            Mat<T,dim,2>(
                 fgBoundsIntersection(
-                    FgMatrixC<int,dim,1>(m_idx) * FgMatrixC<int,1,2>(1) +
-                        FgMatrixC<int,dim,2>(-1,1,-1,1,-1,1),
-                    FgMatrixC<int,dim,2>(inclusiveRange())));
+                    Mat<int,dim,1>(m_idx) * Mat<int,1,2>(1) +
+                        Mat<int,dim,2>(-1,1,-1,1,-1,1),
+                    Mat<int,dim,2>(inclusiveRange())));
     }
 
 private:
@@ -155,12 +156,11 @@ private:
         FGASSERT(m_strides.cmpntsProduct() > 0);
         m_inBounds = fgLt(m_idx,m_bndsHiExcl);
     }
-    FgTypeAttributeFixedS<T>    fixed_point_types_only; // Do not instantiate with floating
 };
 
 template<typename T,uint dim>
-ostream &
-operator<<(ostream & os,const FgIter<T,dim> & it)
+std::ostream &
+operator<<(std::ostream & os,const Iter<T,dim> & it)
 {
     return os
         << "lo: " << it.m_bndsLoIncl
@@ -170,9 +170,59 @@ operator<<(ostream & os,const FgIter<T,dim> & it)
         << " valid: " << it.m_inBounds;
 }
 
-typedef FgIter<int,2>   FgIter2I;
-typedef FgIter<int,3>   FgIter3I;
-typedef FgIter<uint,2>  FgIter2UI;
-typedef FgIter<uint,3>  FgIter3UI;
+typedef Iter<int,2>   Iter2I;
+typedef Iter<uint,2>  Iter2UI;
+typedef Iter<uint,3>  Iter3UI;
+
+// Inclusive bounds iterator:
+template<typename T,uint dim>
+struct  IterIub
+{
+    static_assert(std::is_integral<T>::value,"IterIub only supports integral types");
+    Mat<T,dim,1>  bndLo;          // Inclusive
+    Mat<T,dim,1>  bndHi;          // Inclusive
+    Mat<T,dim,1>  idx;            // Current index. Z out of bounds at end of iteration.
+
+    explicit
+    IterIub(Mat<T,dim,2> inclusiveBounds)
+    :   bndLo(inclusiveBounds.colVec(0)),
+        bndHi(inclusiveBounds.colVec(1)),
+        idx(inclusiveBounds.colVec(0))
+    {init(); }
+
+    bool
+    next()
+    {
+        uint        dd = 0;
+        for (; dd<dim-1; ++dd) {
+            if (++idx[dd] > bndHi[dd])      // Inclusive upper bound
+                idx[dd] = bndLo[dd];        // Wrap-around and loop to next dimension
+            else
+                return true;
+        }
+        return (++idx[dd] <= bndHi[dd]);    // Don't wrap-around the final dimension
+    }
+
+    bool
+    valid() const
+    {return (idx[dim-1] <= bndHi[dim-1]); }
+
+    const Mat<T,dim,1> &
+    operator()() const
+    {return idx; }
+
+    // Set iterator to invalid if the range is empty (or negative):
+    void
+    init()
+    {
+        for (uint dd=0; dd<dim; ++dd)
+            if (bndLo[dd] > bndHi[dd])
+                idx[dim-1] = bndHi[dim-1] + 1;
+    }
+};
+
+typedef IterIub<uint,3>   IterIub3UI;
+
+}
 
 #endif

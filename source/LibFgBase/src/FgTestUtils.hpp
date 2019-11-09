@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:Sohail Somani
-// Created: 2008
+
 //
 
 #ifndef INCLUDED_TEST_UTILS_HPP
@@ -17,6 +16,8 @@
 #include "FgMetaFormat.hpp"
 #include "FgImageBase.hpp"
 #include "FgCommand.hpp"
+
+namespace Fg {
 
 struct FgMemoryLeakDetector
 {
@@ -64,8 +65,8 @@ private:
 
 void
 fgRegressFail(
-    const FgString & testName,
-    const FgString & refName);
+    const Ustring & testName,
+    const Ustring & refName);
 
 // Returns corresponding regression baseline value:
 template<class T>
@@ -78,28 +79,28 @@ fgRegressionBaseline(
     if (fgKeepTempFiles())
         fgSaveXml(name+"_baseline.xml",val);
     T       base;
-    fgLoadXml(fgDataDir()+path+name+"_baseline.xml",base);
+    fgLoadXml(dataDir()+path+name+"_baseline.xml",base);
     return base;
 }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef std::function<bool(const FgString &,const FgString &)> FgFnRegressFiles;
+typedef std::function<bool(const Ustring &,const Ustring &)> FgFnRegressFiles;
 
 // Calls the given regression check and deletes the query file if successful. If unsuccessful then:
 // '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
 // leave the query file in place.
 void
 fgRegressFile(
-    const FgString &            baselineRelPath,    // Relative (to data dir) path to regression baseline file
-    const FgString &            queryPath,          // Path to query file to be tested
+    const Ustring &            baselineRelPath,    // Relative (to data dir) path to regression baseline file
+    const Ustring &            queryPath,          // Path to query file to be tested
     const FgFnRegressFiles &    fnEqual = fgBinaryFileCompare); // Defaults to binary equality test
 
 // As above when query and baseline have same name:
 inline
 void
 fgRegressFileRel(
-    const FgString &    name,       // file name to be regressed. Must exist in current directory and in 'relDir'.
-    const FgString &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    const Ustring &    name,       // file name to be regressed. Must exist in current directory and in 'relDir'.
+    const Ustring &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
     const FgFnRegressFiles & fnEqual = fgBinaryFileCompare)     // Defaults to binary equality test
 {fgRegressFile(relDir+name,name,fnEqual); }
 
@@ -119,7 +120,7 @@ fgRegressCompare(const T & lhs,const T & rhs)
 
 template<class T>
 T
-fgRegressLoad(const FgString & fname)
+fgRegressLoad(const Ustring & fname)
 {
     T       ret;
     fgLoadXml(fname,ret);
@@ -128,33 +129,33 @@ fgRegressLoad(const FgString & fname)
 
 template<class T>
 void
-fgRegressSave(const FgString & fname,const T & val)
+fgRegressSave(const Ustring & fname,const T & val)
 {fgSaveXml(fname,val); }
 
 template<>
-FgImgRgbaUb
-fgRegressLoad(const FgString &);
+ImgC4UC
+fgRegressLoad(const Ustring &);
 template<>
 void
-fgRegressSave(const FgString &,const FgImgRgbaUb &);
+fgRegressSave(const Ustring &,const ImgC4UC &);
 
 // Developers with source control create this (empty) flag file locally:
 inline
 bool
 fgOverwriteBaselines()
-{return fgExists(fgDataDir()+"_overwrite_baselines.flag"); }
+{return pathExists(dataDir()+"_overwrite_baselines.flag"); }
 
 template<class T>
 void
 fgRegress(
     const T &           query,
-    const FgString &    baselinePath,
+    const Ustring &    baselinePath,
     const std::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
 {
     // This flag should be set on a developer's machine (and ignored by source control) for
     // easy updates & change visualation. It should NOT be set of automated build machines:
     bool                regressOverwrite = fgOverwriteBaselines();
-    if (!fgExists(baselinePath)) {
+    if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
             fgRegressSave(baselinePath,query);
             fgout << fgnl << "New regression baseline saved: " << baselinePath;
@@ -184,6 +185,8 @@ fgRegress(
 // Regress a string against a data file. Throws if file is different.
 // For dev instances (_overwrite_baselines.flag), also overwrites file if different.
 void
-fgRegressString(const string & data,const FgString & relPath);
+fgRegressString(const String & data,const Ustring & relPath);
+
+}
 
 #endif

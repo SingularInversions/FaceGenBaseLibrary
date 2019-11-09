@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Jan 19, 2005
+
 //
 // Compile target platform and compiler specific definitions.
 //
@@ -23,6 +22,7 @@
 //      1800 : VS2013 12.0
 //      1900 : VS2015 14.0
 //      1910-1916 : VS2017 14.1
+//      1920-1923 : VS2019 16
 // _M_AMD64             Targeting Intel/AMD 64-bit ISA
 
 // gcc,clang,icpc defines:
@@ -38,6 +38,8 @@
 
 #ifndef FGPLATFORM_HPP
 #define FGPLATFORM_HPP
+
+#include "FgStdLibs.hpp"
 
 // FaceGen defines:
 
@@ -58,8 +60,7 @@
     #define FG_SANDBOX
 #endif
 
-int
-fgSizeofPtr();    // avoid 'conditional expression is constant' errors
+namespace Fg {
 
 // Is current binary 64 bit (avoid 'conditional expression is constant') ?
 bool
@@ -72,5 +73,7 @@ fgIsDebug();
 // Returns "32 if the current executable is 32-bit, "64" if 64-bit.
 std::string
 fgBitsString();
+
+}
 
 #endif

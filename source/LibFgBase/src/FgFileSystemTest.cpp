@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 11, 2009
+
 //
 
 #include "stdafx.h"
@@ -21,23 +20,25 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 void
-testCurrentDirectory(const FgArgs & args)
+testCurrentDirectory(const CLArgs & args)
 {
     FGTESTDIR
     try
     {
         char32_t        ch = 0x00004EE5;            // A Chinese character
-        FgString        chinese(ch);
-        FgString        oldDir = fgGetCurrentDir();
-        FgString        dirName = chinese + fgDirSep();
+        Ustring        chinese(ch);
+        Ustring        oldDir = fgGetCurrentDir();
+        Ustring        dirName = chinese + fgDirSep();
         fgCreateDirectory(dirName);
         fgSetCurrentDir(dirName);
-        FgString        newDir = fgGetCurrentDir();
-        FgString        expected = oldDir + dirName;
+        Ustring        newDir = fgGetCurrentDir();
+        Ustring        expected = oldDir + dirName;
         fgSetCurrentDir(oldDir);
-        FgString        restored = fgGetCurrentDir();
+        Ustring        restored = fgGetCurrentDir();
         FGASSERT(fgRemoveDirectory(dirName));
         fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
         fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
@@ -53,59 +54,59 @@ testCurrentDirectory(const FgArgs & args)
 
 static
 void
-testOfstreamUnicode(const FgArgs & args)
+testOfstreamUnicode(const CLArgs & args)
 {
     FGTESTDIR
     char32_t        cent = 0x000000A2;              // The cent sign
-    FgString        test = FgString(cent);
-    FgOfstream      ofs(test);
+    Ustring        test = Ustring(cent);
+    Ofstream      ofs(test);
     FGASSERT(ofs);
     ofs.close();
-    fgRemoveFile(test);
+    pathRemove(test);
 }
 
 static
 void
-testReadableFile(const FgArgs & args)
+testReadableFile(const CLArgs & args)
 {
     FGTESTDIR
     std::ofstream ofs("testReadableFile.txt");
     FGASSERT(ofs);
     ofs << "Hi";
     ofs.close();
-    FGASSERT(fgFileReadable("testReadableFile.txt"));
-    FGASSERT(!fgFileReadable("This file does not exist"));
+    FGASSERT(fileReadable("testReadableFile.txt"));
+    FGASSERT(!fileReadable("This file does not exist"));
 }
 
 static
 void
-testDeleteDirectory(const FgArgs & args)
+testDeleteDirectory(const CLArgs & args)
 {
     FGTESTDIR
     char32_t        ch = 0x000000A2;              // The cent sign
-    FgString        cent = FgString(ch)+"/";
-    FgString        name = "testDeleteDirectory/";
+    Ustring        cent = Ustring(ch)+"/";
+    Ustring        name = "testDeleteDirectory/";
     fgCreateDirectory(name);
-    FGASSERT(fgExists(name));
+    FGASSERT(pathExists(name));
     fgCreateDirectory(name+cent);
     fgSaveXml(name+cent+"a",42);
     fgSaveXml(name+"b",21);
     fgRemoveDirectoryRecursive(name);
-    FGASSERT(!fgExists(name));
+    FGASSERT(!pathExists(name));
 }
 
 static
 void
-testRecursiveCopy(const FgArgs & args)
+testRecursiveCopy(const CLArgs & args)
 {
     FGTESTDIR
     string          path = "silly-v3.4.7/subdir/";
     fgCreatePath("tst1/"+path);
-    FgOfstream      ofs("tst1/"+path+"file");
+    Ofstream      ofs("tst1/"+path+"file");
     ofs << "hello";
     ofs.close();
     fgCopyRecursive("tst1","tst2");
-    FgIfstream      ifs("tst2/"+path+"file");
+    Ifstream      ifs("tst2/"+path+"file");
     string          hello;
     ifs >> hello;
     FGASSERT(hello == "hello");
@@ -113,20 +114,22 @@ testRecursiveCopy(const FgArgs & args)
 
 static
 void
-testExists(const FgArgs &)
+testExists(const CLArgs &)
 {
-    FGASSERT(!fgExists("//doesNotExists"));
+    FGASSERT(!pathExists("//doesNotExists"));
 }
 
 void
-fgFileSystemTest(const FgArgs & args)
+fgFileSystemTest(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(testCurrentDirectory,"curDir"));
-    cmds.push_back(FgCmd(testOfstreamUnicode,"ofsUni"));
-    cmds.push_back(FgCmd(testReadableFile,"readable"));
-    cmds.push_back(FgCmd(testDeleteDirectory,"delDir"));
-    cmds.push_back(FgCmd(testRecursiveCopy,"recurseCopy"));
-    cmds.push_back(FgCmd(testExists,"exists"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(testCurrentDirectory,"curDir"));
+    cmds.push_back(Cmd(testOfstreamUnicode,"ofsUni"));
+    cmds.push_back(Cmd(testReadableFile,"readable"));
+    cmds.push_back(Cmd(testDeleteDirectory,"delDir"));
+    cmds.push_back(Cmd(testRecursiveCopy,"recurseCopy"));
+    cmds.push_back(Cmd(testExists,"exists"));
     fgMenu(args,cmds,true,true,true);
+}
+
 }

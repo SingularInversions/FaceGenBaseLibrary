@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:Andrew Beatty
-// Date: June 3, 2009
+
 //
 
 #ifndef FGSTATSNORMAL_HPP
@@ -14,17 +13,18 @@
 #include "FgMath.hpp"
 #include "FgRandom.hpp"
 
+namespace Fg {
+
 template<uint dim>
 struct   FgNormal
 {
-    typedef FgMatrixC<double,dim,1>     Vec;
-    typedef FgMatrixC<double,dim,dim>   Mat;
+    typedef Mat<double,dim,1>     Vec;
 
-    Vec         mean;
-    Mat         root;       // Square root of the concentration matrix
+    Vec                 mean;
+    Mat<double,dim,dim> root;       // Square root of the concentration matrix
 
     FgNormal() {root.setIdentity(); }
-    FgNormal(const Vec & m,const Mat & c) : mean(m), root(c) {}
+    FgNormal(const Vec & m,const Mat<double,dim,dim> & c) : mean(m), root(c) {}
 
     double
     operator() (const Vec & pos) const
@@ -32,8 +32,8 @@ struct   FgNormal
         Vec         mhlbs = root * (pos-mean);
         return (
             std::pow(2.0 * fgPi(),double(dim) * -0.5) *
-            fgDeterminant(root) *
-            fgExp(-0.5 * mhlbs.mag()));
+            determinant(root) *
+            expSafe(-0.5 * mhlbs.mag()));
     }
 
     Vec
@@ -43,7 +43,7 @@ struct   FgNormal
     lnLikelihood(const Vec & pos) const
     {
         Vec         mhlbs = root * (pos-mean);
-        return (std::log(fgDeterminant(root)) -
+        return (std::log(determinant(root)) -
                 0.5 * double(dim) * fgLn_2pi() -
                 0.5 * mhlbs.mag());
     }
@@ -59,6 +59,8 @@ operator<<(std::ostream & ss,const FgNormal<dim> &  norm)
         ss  << fgnl << "Norm" << dim
             << " Mean: " << norm.mean() 
             << fgnl << "Conc Root: " << norm.root;
+}
+
 }
 
 #endif

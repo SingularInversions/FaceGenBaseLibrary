@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 27, 2006
+
 //
 
 #ifndef FGTIME_HPP
@@ -15,6 +14,8 @@
 #include "FgTypes.hpp"
 #include "FgOut.hpp"
 
+namespace Fg {
+
 // Cross-platform version always has units of seconds:
 void
 fgSleep(uint seconds);
@@ -24,18 +25,18 @@ uint64
 fgTimeMs();
 
 // GMT date and time string in format: yyyy.mm.dd hh:mm:ss
-std::string
+String
 fgDateTimeString();
 
-std::string
+String
 fgDateTimeString(time_t rawTime);
 
 // GMT date string in format: yy.mm.dd
-std::string
+String
 fgDate(time_t rawTime);
 
 // Handy way of naming log files using current date and time (does not append a suffix):
-std::string
+String
 fgDateTimePath();
 
 struct  FgTimer
@@ -63,7 +64,7 @@ struct  FgTimer
 
     // Outputs 'label' to 'fgout' newline along with the time taken in 'ms', then resets the timer:
     void
-    report(const string & label);
+    report(const String & label);
 };
 
 std::ostream &
@@ -73,9 +74,9 @@ struct FgTimeScope
 {
     uint64          startTime;
 
-    FgTimeScope(const std::string & msg)
+    FgTimeScope(const String & msg)
     {
-        fgout << fgnl << "Beginning " << msg << ":" << fgpush;
+        fgout << fgnl << "Beginning " << msg << ":" << fgpush << fgnl;
         startTime = fgTimeMs();
     }
 
@@ -89,5 +90,7 @@ struct FgTimeScope
 // Returns true at most once per second:
 bool
 fgTick();
+
+}
 
 #endif

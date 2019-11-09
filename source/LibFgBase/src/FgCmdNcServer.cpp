@@ -1,8 +1,7 @@
 //
 // Copyright (C) Singular Inversions Inc. 2011
 //
-// Authors: Andrew Beatty
-// Created: Dec 7, 2011
+
 //
 // Network Computing server.
 // Simplest possible server for handling scripts remotely for CI and CC setup.
@@ -24,6 +23,8 @@
 #ifndef FG_SANDBOX
 
 using namespace std;
+
+namespace Fg {
 
 static
 bool
@@ -51,15 +52,15 @@ runScript(const string & logFile,const vector<string> & cmds)
 {
     const string    push = "fgPush ",
                     pop = "fgPop";
-    FgPushDir       dirStack;
+    PushDir       dirStack;
     for (const string & cmd : cmds) {
         if (fgBeginsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
-            FgOfstream  ofs(logFile,true);
+            Ofstream  ofs(logFile,true);
             ofs << "<h3> pushd " << dir << "</h3>\n";
-            if (!fgExists(dir))
+            if (!pathExists(dir))
                 fgCreateDirectory(dir);
-            if (fgIsDirectory(dir))
+            if (isDirectory(dir))
                 dirStack.push(dir);
             else {
                 ofs << "directory not found\n";
@@ -67,7 +68,7 @@ runScript(const string & logFile,const vector<string> & cmds)
             }
         }
         else if (fgBeginsWith(cmd,pop)) {
-            FgOfstream  ofs(logFile,true);
+            Ofstream  ofs(logFile,true);
             ofs << "<h3> popd </h3>\n";
             dirStack.pop();
         }
@@ -86,14 +87,14 @@ handler(
 {
     FgNcScript      script;
     script.dsrMsg(dataIn);
-    FgPath          logPath(script.logFile);
+    Path          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
-        logPath = FgPath(fgGetCurrentDir()+script.logFile);     // Make absolute
+        logPath = Path(fgGetCurrentDir()+script.logFile);     // Make absolute
     fgCreatePath(logPath.dir());                                // Create path if necessary
     script.logFile = logPath.str().m_str;
     string          dirBase = logPath.dirBase().m_str;
-    FgImgRgbaUb     img(32,32,FgRgbaUB(255,255,0,255));
-    fgSaveImgAnyFormat(dirBase+".jpg",img);
+    ImgC4UC     img(32,32,RgbaUC(255,255,0,255));
+    imgSaveAnyFormat(dirBase+".jpg",img);
     fgWriteFile(script.logFile,
             "<html>\n"
             "<head>\n"
@@ -104,19 +105,19 @@ handler(
             "<h3>" + fgDateTimeString() + " (client: " + addr + ")</h3>\n"
             "<font size=\"2\">\n",false);
     bool            res = runScript(script.logFile,script.cmds);
-    FgOfstream      ofs(script.logFile,true);
+    Ofstream      ofs(script.logFile,true);
     ofs << "\n<h2>DONE - " << (res ? "SUCCESS" : "FAILURE") << "</h2>\n"
         << "</body>\n</html>\n";
     if (res)
-        img = FgImgRgbaUb(32,32,FgRgbaUB(0,255,0,255));
+        img = ImgC4UC(32,32,RgbaUC(0,255,0,255));
     else
-        img = FgImgRgbaUb(32,32,FgRgbaUB(255,0,0,255));
-    fgSaveImgAnyFormat(dirBase+".jpg",img);
+        img = ImgC4UC(32,32,RgbaUC(255,0,0,255));
+    imgSaveAnyFormat(dirBase+".jpg",img);
     return true;
 }
 
 void
-fgCmdNcServer(const FgArgs & args)
+fgCmdNcServer(const CLArgs & args)
 {
     if (args.size() > 1)
         fgThrow(args[0]+" takes no arguments");
@@ -125,6 +126,8 @@ fgCmdNcServer(const FgArgs & args)
     // Despite this running in a new process each time, TCP errors can render
     // the port unusable on Windows until an OS reboot.
     fgTcpServer(fgNcServerPort(),false,handler,0x10000);
+}
+
 }
 
 #endif

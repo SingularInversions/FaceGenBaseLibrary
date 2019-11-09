@@ -1,52 +1,41 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 19, 2011
+
 //
 
 #ifndef FGGUIAPICHECKBOX_HPP
 #define FGGUIAPICHECKBOX_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgDepGraph.hpp"
 
-struct FgGuiApiCheckbox : FgGuiApi<FgGuiApiCheckbox>
+namespace Fg {
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiCheckbox;
+GuiImplPtr guiGetOsImpl(GuiCheckbox const & guiApi);
+
+struct GuiCheckbox : GuiBase
 {
-    FgString        label;
-    FgDgn<bool>     val;
-    uint            updateFlagIdx;
+    Ustring            label;
+    IPT<bool>    val;
+    DfgFPtr         updateFlag;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-FgGuiPtr
-fgGuiCheckbox(const FgString & label,FgDgn<bool> node);
+GuiPtr
+guiCheckbox(const Ustring & label,const IPT<bool> & valInp);
 
-template<class T>
-FGLINK(fgLinkCheckboxObject)
-{
-    FGLINKARGS(2,1);
-    bool                sel = inputs[0]->valueRef();
-    const T &           obj = inputs[1]->valueRef();
-    vector<T> &         out = outputs[0]->valueRef();
-    if (sel)
-        out = fgSvec(obj);
-    else
-        out.clear();
+GuiPtr
+guiCheckboxes(Ustrings const & labels,Svec<IPT<bool> > const & selNs);
+
+GuiVal<Svec<bool> >
+guiCheckboxes(const Ustrings & labels,const Svec<bool> & defaults);
+
 }
-
-// Have checkbox select a predefined object by outputting a vector that contains either 0 or 1 instances:
-template<class T>
-FgGuiPtr
-fgGuiCheckboxObject(const FgString & label,FgDgn<bool> input,const T & object,FgDgn<vector<T> > output)
-{
-    g_gg.addLink(fgLinkCheckboxObject<T>,fgUints(input,g_gg.addNode(object,string("checkbox_")+typeid(T).name())),output);
-    return fgGuiCheckbox(label,input);
-}
-
-// Currently no flag for serializing defaults:
-FgGuiPtr
-fgGuiCheckboxes(const FgStrings & labels,const vector<bool> & defaults,FgDgn<vector<bool> > output);
 
 #endif

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 18, 2009
+
 //
 
 #include "stdafx.h"
@@ -16,448 +15,261 @@
 #include "Fg3dMeshIo.hpp"
 #include "Fg3dTopology.hpp"
 #include "FgCommand.hpp"
+#include "FgStdSet.hpp"
 
 using namespace std;
 using namespace std::placeholders;
 
-static
-FGLINK(linkLighting)
+namespace Fg {
+
+namespace {
+
+GuiVal<Vec3F>
+makeColorSliders(const Ustring & store,double init,double tickSpacing)
 {
-    FGLINKARGS(5,1);
-    const vector<double> &  amb = inputs[0]->valueRef();
-    const vector<double> &  l1 = inputs[1]->valueRef();
-    const vector<double> &  l2 = inputs[2]->valueRef();
-    const vector<double> &  d1 = inputs[3]->valueRef();
-    const vector<double> &  d2 = inputs[4]->valueRef();
-    FGASSERT(amb.size() == 3);
-    FGASSERT(l1.size() == 3);
-    FGASSERT(l2.size() == 3);
-    FGASSERT(d1.size() == 3);
-    FGASSERT(d2.size() == 3);
-    FgLighting &            lighting = outputs[0]->valueRef();
-    lighting.ambient = FgVect3F(amb[0],amb[1],amb[2]);
-    lighting.lights.resize(2);    // Must always assign both lights since OGL will keep settings for both
-    for (uint ll=0; ll<2; ++ll) {
-        const vector<double> &  ls = (ll == 0) ? l1 : l2;
-        const vector<double> &  ds = (ll == 0) ? d1 : d2;
-        FgLight                 light;
-        light.colour = FgVect3F(ls[0],ls[1],ls[2]);
-        light.direction = fgNormalize(FgVect3F(ds[0],ds[1],ds[2]));
-        lighting.lights[ll] = light;
+    IPT<Vec3F>           valN = makeSavedIPT(Vec3F(init),store);
+    array<GuiPtr,3>       sliders = guiSliders(valN,array<Ustring,3>(),VecD2(0,1),tickSpacing);
+    array<Ustring,3>       labels {{"Red","Green","Blue"}};
+    GuiPtrs               wins;
+    for (uint ii=0; ii<3; ++ii) {
+        wins.push_back(guiSplit(true,
+            guiText(labels[ii],45),       // Fixed width larger than all colors to align sliders
+            sliders[ii]));
     }
+    return GuiVal<Vec3F>(valN,guiSplit(false,wins[0],wins[1],wins[2]));
 }
 
-static
-FgGuiWinVal<vector<double> >
-colorSliders(const string & relStore,double init,double tickSpacing)
+GuiVal<Vec3F>
+makeDirectionSliders(array<IPT<double>,3> inputNs,const Ustring & store)
 {
-    FgGuiWinVal<vector<double> >    ret;
-    vector<uint>                    valsN;
-    FgGuiPtrs                       sliders;
-    string                          colors[] = {"Red","Green","Blue"};
-    for (uint ii=0; ii<3; ++ii) {
-        FgDgn<double>   val = g_gg.addInput(init,relStore+colors[ii]);
-        valsN.push_back(val);
-        sliders.push_back(fgGuiSplit(true,
-            fgGuiText(colors[ii],45),       // Fixed width larger than all colors to align sliders
-            fgGuiSlider(val,"",FgVectD2(0,1),tickSpacing)));
+    Vec3D            defaultVal(0,0,1);
+    VecD2            bounds(-100000,100000);
+    array<string,3>     labels {{"Right:","Up:","Backward:"}};
+    GuiPtrs           ctls;
+    for (uint xx=0; xx<3; ++xx) {
+        inputNs[xx].initSaved(defaultVal[xx],store+toString(xx));
+        ctls.push_back(guiText(labels[xx]));
+        ctls.push_back(guiTextEditFloat(inputNs[xx],bounds));
     }
-    ret.valN = g_gg.addNode(vector<double>(),"RGB");
-    g_gg.addLink(fgLinkCollate<double>,valsN,ret.valN);
-    ret.win = fgGuiSplit(false,sliders);
+    GuiVal<Vec3F> ret;
+    ret.valN = link3<Vec3F,double,double,double>(inputNs[0],inputNs[1],inputNs[2],
+        [](double v0,double v1,double v2){return Vec3F(v0,v1,v2); });
+    ret.win = guiSplit(false,
+        guiText("Direction vector to light (from viewer's point of view):"),
+        guiSplit(true,ctls));
     return ret;
 }
 
-struct  FgLightDir
+struct  LightCtrls
 {
-    FgGuiPtr                        win;
-    FgDgn<vector<double> >          dirN;
-    FgMatrixC<FgDgn<double>,3,1>    dirAxisNs;
+    GuiPtr                clrSliders;
+    GuiPtr                dirSliders;
+    OPT<FgLight>            light;
 };
 
-static
-FgLightDir
-lightDir(const string & relLight)
+LightCtrls
+makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,const Ustring & store)
 {
-    FgLightDir      ret;
-    ret.dirAxisNs[0] = g_gg.addInput(0.0,"Light"+relLight+"X"),
-    ret.dirAxisNs[1] = g_gg.addInput(0.0,"Light"+relLight+"Y"),
-    ret.dirAxisNs[2] = g_gg.addInput(1.0,"Light"+relLight+"Z");
-    FgVectD2        bounds(-100000,100000);
-    FgGuiPtr        x = fgGuiTextEditFloat(ret.dirAxisNs[0],bounds),
-                    y = fgGuiTextEditFloat(ret.dirAxisNs[1],bounds),
-                    z = fgGuiTextEditFloat(ret.dirAxisNs[2],bounds);
-    ret.dirN = g_gg.addNode(vector<double>(),"Light"+relLight+"Dir");
-    g_gg.addLink(fgLinkCollate<double>,fgUints(ret.dirAxisNs[0],ret.dirAxisNs[1],ret.dirAxisNs[2]),ret.dirN);
-    ret.win = fgGuiSplit(false,
-        fgGuiText("Direction vector to light (from viewer's point of view):"),
-        fgGuiSplit(true,fgSvec<FgGuiPtr>(fgGuiText("Right:"),x,fgGuiText("Up:"),y,fgGuiText("Backward:"),z)));
+    LightCtrls              ret;
+    GuiVal<Vec3F>     color = makeColorSliders(store+"Color",defaultBrightness,0.1);
+    GuiVal<Vec3F>     dir = makeDirectionSliders(inputNs,store+"Direction");
+    ret.light = link2<FgLight,Vec3F,Vec3F>(color.valN,dir.valN,[](Vec3F c,Vec3F d){return FgLight(c,d); });
+    ret.clrSliders = color.win;
+    ret.dirSliders = dir.win;
     return ret;
 }
 
 void
-resetLighting(uint lightingIdx)
-{g_gg.setInputsToDefault(lightingIdx); }
-
-FgGuiLighting
-fgGuiLighting()
+lightDirectionDrag(
+    bool                        shiftKey,
+    Vec2I                    pixels,
+    array<IPT<double>,3>        light1,
+    array<IPT<double>,3>        light2)
 {
-    FgGuiLighting   ret;
-    ret.outN = g_gg.addNode(FgLighting(),"Lighting");
-    FgGuiWinVal<vector<double> >    ambient = colorSliders("Ambient",0.4,0.1);
-    FgGuiWinVal<vector<double> >    light1 = colorSliders("Light1",0.6,0.1);
-    FgGuiWinVal<vector<double> >    light2 = colorSliders("Light2",0.0,0.1);
-    FgLightDir                      ld1 = lightDir("1"),
-                                    ld2 = lightDir("2");
-    g_gg.addLink(linkLighting,fgUints(ambient.valN,light1.valN,light2.valN,ld1.dirN,ld2.dirN),ret.outN);
-    ret.dirAxisNs[0] = ld1.dirAxisNs;
-    ret.dirAxisNs[1] = ld2.dirAxisNs;
-    ret.win = fgGuiSplitScroll(fgSvec(
-        fgGuiGroupbox("Ambient",ambient.win),
-        fgGuiGroupbox("Light 1",fgGuiSplit(false,light1.win,ld1.win)),
-        fgGuiGroupbox("Light 2",fgGuiSplit(false,light2.win,ld2.win)),
-        fgGuiText("\nInteractively adjust light direction:\n"
+    const array<IPT<double>,3> &    lgt = shiftKey ? light2 : light1;
+    Vec3D                        dir;
+    for (uint ii=0; ii<3; ++ii)
+        dir[ii] = lgt[ii].val();
+    dir = fgNormalize(dir);
+    Vec3D                    axis(pixels[1],pixels[0],0);
+    double                      axisLen = axis.len();
+    if (axisLen > 0.0) {
+        Mat33D                rot = matRotateAxis(axisLen/500.0,axis/axisLen);
+        dir = rot * dir;
+        for (uint ii=0; ii<3; ++ii)
+            lgt[ii].set(dir[ii]);
+    }
+}
+
+}
+
+GuiPtr
+makeLightingCtrls(
+    RPT<FgLighting>         lightingR,
+    IPT<BothButtonsDragAction> bothButtonsDragActionI,
+    const Ustring &        store)
+{
+    GuiVal<Vec3F>     ambient = makeColorSliders(store+"Ambient",0.4,0.1);
+    Ustring                sp = store + "Diffuse";
+    array<IPT<double>,3>    dir1Ns,
+                            dir2Ns;
+    LightCtrls              light1 = makeLightCtrls(dir1Ns,0.6,sp+"1"),
+                            light2 = makeLightCtrls(dir2Ns,0.0,sp+"2");
+    NPT<FgLighting>         lightingN =
+        link3<FgLighting,Vec3F,FgLight,FgLight>(ambient.valN,light1.light,light2.light,
+            [](Vec3F a,FgLight l1,FgLight l2)
+            {return FgLighting(a,fgSvec(l1,l2)); }
+        );
+    connect(lightingR,lightingN);
+    bothButtonsDragActionI.init(std::bind(lightDirectionDrag,_1,_2,dir1Ns,dir2Ns));
+    auto                    resetLighting = [lightingN,dir1Ns,dir2Ns]()
+        {
+            DfgNPtrs       nodes;
+            nodes.push_back(lightingN.ptr);
+            for (const IPT<double> & i : dir1Ns)
+                nodes.push_back(i.ptr);
+            for (const IPT<double> & i : dir2Ns)
+                nodes.push_back(i.ptr);
+            setInputsToDefault(nodes);
+        };
+    return guiSplitScroll(fgSvec(
+        guiGroupbox("Ambient",ambient.win),
+        guiGroupbox("Light 1",guiSplit(false,light1.clrSliders,light1.dirSliders)),
+        guiGroupbox("Light 2",guiSplit(false,light2.clrSliders,light2.dirSliders)),
+        guiText("\nInteractively adjust light direction:\n"
             "Light 1: hold down left and right mouse buttons while dragging\n"
             "Light 2: As above but also hold down shift key"),
-        fgGuiButton("Reset Lighting",std::bind(resetLighting,ret.outN.idx()))
+        guiButton("Reset Lighting",resetLighting)
     ));
-    return ret;
 }
 
-static
-FGLINK(linkRenderOpts)
-{
-    FGLINKARGS(11,1);
-    bool                facets = inputs[0]->valueRef();
-    bool                useTexture = inputs[1]->valueRef();
-    bool                shiny = inputs[2]->valueRef();
-    bool                wireframe = inputs[3]->valueRef();
-    bool                flatShaded = inputs[4]->valueRef();
-    bool                surfPoints = inputs[5]->valueRef();
-    bool                markedVerts = inputs[6]->valueRef();
-    bool                allVerts = inputs[7]->valueRef();
-    bool                twoSided = inputs[8]->valueRef();
-    FgVect3F            bcolor = inputs[9]->valueRef();
-    bool                showAxes = inputs[10]->valueRef();
-    Fg3dRenderOptions & ro = outputs[0]->valueRef();
-    ro.facets = facets;
-    ro.useTexture = useTexture;
-    ro.shiny = shiny;
-    ro.wireframe = wireframe;
-    ro.flatShaded = flatShaded;
-    ro.surfPoints = surfPoints;
-    ro.markedVerts = markedVerts;
-    ro.allVerts = allVerts;
-    ro.twoSided = twoSided;
-    ro.backgroundColor = bcolor;
-    ro.showAxes = showAxes;
-}
+namespace {
 
-static
 void
-bgImageLoad(FgDgn<FgImgRgbaUb> imgN,FgGuiApiBgImage bgImg)
+bgImageLoad2(BackgroundImage bgi)
 {
-    FgOpt<FgString>     fname = fgGuiDialogFileLoad(fgImgCommonFormatsDescription(),fgImgCommonFormats());
+    Opt<Ustring>     fname = guiDialogFileLoad(imgFileExtensionsDescription(),imgFileExtensions());
     if (!fname.valid())
         return;
-    FgImgRgbaUb         orig;
+    if (fname.val().empty())
+        return;
+    ImgC4UC &       img = bgi.imgN.ref();
     try {
-        orig = fgLoadImgAnyFormat(fname.val());
+        imgLoadAnyFormat(fname.val(),img);
     }
     catch (const FgException & e) {
-        fgGuiDialogMessage("Unable to load image",e.no_tr_message());
+        guiDialogMessage("Unable to load background image",e.no_tr_message());
         return;
     }
-    g_gg.setVal(bgImg.origDimsN,orig.dims());
-    FgImgRgbaUb &       img = g_gg.getRef(imgN);
-    img.resize(FgVect2UI(1024));
-    fgImgResize(orig,img);
-    g_gg.setVal(bgImg.offset,FgVect2F(0));
-    g_gg.setVal(bgImg.lnScale,0.0);
+    bgi.origDimsN.set(img.dims());
+    bgi.offset.set(Vec2F(0.0));
+    bgi.lnScale.set(0.0);
 }
 
-static
-void
-bgImageClear(FgDgn<FgImgRgbaUb> imgN)
-{g_gg.setVal(imgN,FgImgRgbaUb()); }
-
-static
-FGLINK(linkColSel)
+GuiPtr
+backgroundCtrls(BackgroundImage bgImg,const Ustring & store)
 {
-    FGLINKARGS(1,1);
-    const vector<double> &  cv = inputs[0]->valueRef();
-    FgVect3F &              col = outputs[0]->valueRef();
-    col = FgVect3F(cv[0],cv[1],cv[2]);
+    bgImg.imgN.initSaved(ImgC4UC(),store+"Image",true);
+    bgImg.origDimsN.initSaved(Vec2UI(0),store+"OrigDims");
+    bgImg.offset.initSaved(Vec2F(0),store+"Offset");
+    bgImg.lnScale.initSaved(0.0,store+"LnScale");
+    bgImg.foregroundTransparency.initSaved(0.0,store+"ForegroundTransparency");
+    GuiPtr    bgImageSlider = guiSlider(bgImg.foregroundTransparency,"Foreground transparency",VecD2(0,1),0.0),
+                loadButton = guiButton("Load Image",bind(bgImageLoad2,bgImg)),
+                clearButton = guiButton("Clear Image",[bgImg](){bgImg.imgN.ref().clear();}),
+                bgImageButtons = guiSplit(true,loadButton,clearButton),
+                text = guiText("Move: Ctrl-Shift-Left-Drag\nScale: Ctrl-Shift-Right-Drag");
+    return guiGroupbox("Background Image",guiSplit(false,bgImageButtons,bgImageSlider,text));
 }
 
-static
-FGLINK(lnkSetAlpha)
+RendOptions
+linkRenderOpts2(const Bools & opts,const Vec3F & bgColor)
 {
-    FGLINKARGS(2,1);
-    const FgImgRgbaUb &     imgIn = inputs[0]->valueRef();
-    double                  alpha = inputs[1]->valueRef();
-    FgImgRgbaUb &           imgOut = outputs[0]->valueRef();
-    uchar                   a = uchar(alpha * 255.0 + 0.5);
-    imgOut.resize(imgIn.dims());
-    for (size_t ii=0; ii<imgOut.numPixels(); ++ii) {
-        FgRgbaUB    p = imgIn[ii];
-        p.alpha() = a;
-        imgOut[ii] = p;
+    RendOptions       r;
+    r.useTexture = opts[0];
+    r.shiny = opts[1];
+    r.wireframe = opts[2];
+    r.flatShaded = opts[3];
+    r.facets = opts[4];
+    r.surfPoints = opts[5];
+    r.markedVerts = opts[6];
+    r.allVerts = opts[7];
+    r.twoSided = opts[8];
+    r.showAxes = opts[9];
+    r.backgroundColor = bgColor;
+    return r;
+}
+
+struct OptInit
+{
+    bool        defVal;
+    string      store;
+    string      desc;
+};
+
+}
+
+GuiPtr
+makeRendCtrls(
+    RPT<RendOptions>    rendOptionsR,
+    BackgroundImage     bgImg,
+    uint                simple,
+    const Ustring &    store)
+{
+    vector<OptInit>         opts = {
+        {(simple != 3),"ColorMaps","Color Maps"},           // 0
+        {false,"Shiny","Shiny"},                            // 1
+        {false,"Wireframe","Wireframe"},                    // 2
+        {false,"FlatShaded","Flat Shaded"},                 // 3
+        {true,"Facets","Facets"},                           // 4
+        {(simple==0),"SurfacePoints","Surface Points"},     // 5
+        {(simple==0),"MarkedVerts","Marked Vertices"},      // 6
+        {false,"AllVertices","All Vertices"},               // 7
+        {true,"TwoSided","Two Sided"},                      // 8
+        {false,"ShowAxes","Show origin and axes (red:X green:Y blue:Z)"} // 9
+    };
+    vector<IPT<bool> >      optNs;
+    GuiPtrs               optWs;
+    for (const OptInit & opt : opts) {
+        optNs.push_back(makeSavedIPT(opt.defVal,store+opt.store));
+        optWs.push_back(guiCheckbox(opt.desc,optNs.back()));
     }
-}
-
-FgBgImageCtrls
-fgBgImageCtrls()
-{
-    FgBgImageCtrls      ret;
-    ret.api.imgN = g_gg.addNode(FgImgRgbaUb(),"bgImage");
-    ret.api.origDimsN = g_gg.addNode(FgVect2UI());
-    ret.api.lnScale = g_gg.addNode(0.0);
-    ret.api.offset = g_gg.addNode(FgVect2F(0));
-    FgDgn<FgImgRgbaUb>  bgImgPreAlphaN = g_gg.addNode(FgImgRgbaUb(),"bgImgPreAlpha");
-    FgDgn<double>       bgAlphaN = g_gg.addInput(0.0,"BgImageAlpha");
-    g_gg.addLink(lnkSetAlpha,fgUints(bgImgPreAlphaN,bgAlphaN),ret.api.imgN);
-    FgGuiPtr            bgImageSlider = fgGuiSlider(bgAlphaN,"Foreground transparency",FgVectD2(0,1),0.1),
-                        bgImageButtons = fgGuiSplit(true,
-                            fgGuiButton("Load Image",std::bind(bgImageLoad,bgImgPreAlphaN,ret.api)),
-                            fgGuiButton("Clear Image",std::bind(bgImageClear,bgImgPreAlphaN))),
-                        text = fgGuiText(
-                            "Move: Ctrl-Shift-Left-Drag\n"
-                            "Scale: Ctrl-Shift-Right-Drag");
-    ret.win = fgGuiGroupbox("Background Image",fgGuiSplit(false,bgImageButtons,bgImageSlider,text));
-    ret.changeFlag = g_gg.addUpdateFlag(fgUints(ret.api.imgN,ret.api.origDimsN,ret.api.lnScale,ret.api.offset));
-    return ret;
-}
-
-FgRenderCtrls
-fgRenderCtrls(uint simple)
-{
-    FgRenderCtrls       ret;
-    string              uid = "RenderCtrls";
-    FgDgn<bool>         useTexture = g_gg.addInput((simple != 3),uid+"UseTexture"),
-                        shiny = g_gg.addInput(false,uid+"Shiny"),
-                        wireframe = g_gg.addInput(false,uid+"Wireframe"),
-                        flatShaded = g_gg.addInput(false,uid+"FlatShaded"),
-                        facets = g_gg.addInput(true,uid+"Facets"),
-                        surfPoints = g_gg.addInput((simple == 0),uid+"SurfPoints"),
-                        markedVerts = g_gg.addInput((simple == 0),uid+"MarkedVerts"),
-                        allVerts = g_gg.addInput(false,uid+"AllVerts"),
-                        twoSidedN = g_gg.addInput(true,uid+"TwoSided"),
-                        showAxesN = g_gg.addInput(false,uid+"ShowAxes");
-    FgGuiWinVal<vector<double> >    bgColor = colorSliders(uid+"Background",0.0,0.1);
-    FgDgn<FgVect3F>     bgColorN = g_gg.addNode(FgVect3F(),"bgColor");
-    g_gg.addLink(linkColSel,bgColor.valN,bgColorN);
-    ret.optsN = g_gg.addNode(Fg3dRenderOptions(),"renderOptions");
-    g_gg.addLink(linkRenderOpts,
-        fgSvec<uint>(facets,useTexture,shiny,wireframe,flatShaded,surfPoints,markedVerts,allVerts,twoSidedN,bgColorN,showAxesN),
-        ret.optsN);
-    FgGuiPtr            rcColor = fgGuiCheckbox("Color maps",useTexture),
-                        rcShiny = fgGuiCheckbox("Shiny",shiny),
-                        rcWire = fgGuiCheckbox("Wireframe",wireframe),
-                        rcFlat = fgGuiCheckbox("Flat shaded",flatShaded),
-                        rcFacet = fgGuiCheckbox("Facets",facets),
-                        rcSurf = fgGuiCheckbox("Surface points",surfPoints),
-                        rcMark = fgGuiCheckbox("Marked vertices",markedVerts),
-                        rcAll = fgGuiCheckbox("All vertices",allVerts),
-                        rcTwoSided = fgGuiCheckbox("Two sided",twoSidedN),
-                        rcAxes = fgGuiCheckbox("Show origin and axes (red:X green:Y blue: Z)",showAxesN);
-    FgGuiPtr            renderCtls;
+    NPT<Bools>            optsN = linkCollate<bool>(optNs);
+    GuiVal<Vec3F>       bgColor = makeColorSliders(store+"BgColor",0.0,0.1);
+    NPT<RendOptions>        rendOptionsN = link2<RendOptions,Bools,Vec3F>(optsN,bgColor.valN,linkRenderOpts2);
+    connect(rendOptionsR,rendOptionsN);
+    GuiPtr                  renderCtls;
     if (simple == 1)
-        renderCtls = fgGuiSplit(true,
-            fgGuiSplit(false,rcColor,rcShiny,rcWire),
-            fgGuiSplit(false,rcFlat,rcFacet),
-            fgGuiSplit(false,rcAll,rcTwoSided));
+        renderCtls = guiSplit(true,
+            guiSplit(false,optWs[0],optWs[1],optWs[2]),
+            guiSplit(false,optWs[3],optWs[4]),
+            guiSplit(false,optWs[7],optWs[8]));
     else if (simple == 2)
-        renderCtls = fgGuiSplit(false,rcColor,rcShiny);
+        renderCtls = guiSplit(false,optWs[0],optWs[1]);
     else if (simple == 3)
-        renderCtls = fgGuiSplit(false,rcShiny,rcWire,rcFlat);
+        renderCtls = guiSplit(false,optWs[1],optWs[2],optWs[3]);
     else    // simple == 0 or default to all controls:
-        renderCtls = fgGuiSplit(false,fgGuiSplit(true,
-            fgGuiSplit(false,rcColor,rcShiny,rcWire),
-            fgGuiSplit(false,rcFlat,rcFacet,rcSurf),
-            fgGuiSplit(false,rcMark,rcAll,rcTwoSided)),rcAxes);
-    FgGuiPtr        viewCtlRender = fgGuiGroupboxTr("Render",renderCtls),
-                    viewCtlColor = fgGuiGroupboxTr("Background Color",bgColor.win);
-    FgBgImageCtrls  bgImageCtrls = fgBgImageCtrls();
-    ret.bgImgApi = bgImageCtrls.api;
-    ret.win = fgGuiSplit(false,viewCtlRender,viewCtlColor,bgImageCtrls.win);
-    return ret;
+        renderCtls = guiSplit(false,guiSplit(true,
+            guiSplit(false,optWs[0],optWs[1],optWs[2]),
+            guiSplit(false,optWs[3],optWs[4],optWs[5]),
+            guiSplit(false,optWs[6],optWs[7],optWs[8])),optWs[9]);
+    GuiPtr        viewCtlRender = guiGroupboxTr("Render",renderCtls),
+                    viewCtlColor = guiGroupboxTr("Background Color",bgColor.win),
+                    bgImageCtrls = backgroundCtrls(bgImg,store+"BgImage");
+    return guiSplit(false,viewCtlRender,viewCtlColor,bgImageCtrls);
 }
 
-static
-FGLINK(linkNorms)
-{
-    FGLINKARGS(2,1);
-    const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    const FgVertss &            vertss = inputs[1]->valueRef();
-    vector<Fg3dNormals> &       normss = outputs[0]->valueRef();
-    FGASSERT(meshes.size() == vertss.size());
-    normss.resize(meshes.size());
-    for (size_t ii=0; ii<normss.size(); ++ii)
-        fgNormals_(meshes[ii].surfaces,vertss[ii],normss[ii]);
-}
+namespace {
 
-static
-FGLINK(linkXform)
-{
-    FGLINKARGS(9,1);
-    Fg3dCameraParams    cps;
-    cps.modelBounds = inputs[0]->valueRef();
-    size_t              panTiltMode = inputs[1]->valueRef();
-    FgVect2D            panTilt;
-    panTilt[0] = inputs[2]->valueRef();
-    panTilt[1] = inputs[3]->valueRef();
-    cps.pose = inputs[4]->valueRef();
-    cps.relTrans = inputs[5]->valueRef();
-    cps.logRelScale = inputs[6]->valueRef();
-    cps.fovMaxDeg= inputs[7]->valueRef();
-    FgVect2UI           viewport = inputs[8]->valueRef();
-    if (panTiltMode == 0) {
-        FgQuaternionD   pan(fgDegToRad(panTilt[0]),1),
-                        tilt(fgDegToRad(panTilt[1]),0);
-        cps.pose = pan*tilt;
-    }
-    Fg3dCamera &        camera = outputs[0]->valueRef();
-    camera = cps.camera(viewport);
-}
-
-static
 void
-resetView(
-    FgDgn<double>           lensFovDeg,
-    FgDgn<double>           pan,
-    FgDgn<double>           tilt,
-    FgDgn<FgQuaternionD>    pose,
-    FgDgn<FgVect2D>         translate,
-    FgDgn<double>           logRelSize)
+expr_load2(NPT<PoseVals> posesN,IPT<Doubles> valsN)
 {
-    Fg3dCameraParams        defaultCps;
-    defaultCps.logRelScale = -0.3;
-    g_gg.setVal(lensFovDeg,defaultCps.fovMaxDeg);
-    g_gg.setVal(pan,0.0);
-    g_gg.setVal(tilt,0.0);
-    g_gg.setVal(pose,FgQuaternionD());
-    g_gg.setVal(translate,FgVect2D(0));
-    g_gg.setVal(logRelSize,defaultCps.logRelScale);
-}
-
-static
-FGLINK(lnkPoses)
-{
-    FGLINKARGS(1,1);
-    const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    FgPoses &                   poses = outputs[0]->valueRef();
-    poses = fgPoses(meshes);
-}
-
-static
-FGLINK(lnkPoseShape)
-{
-    FGLINKARGS(4,1);
-    const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    const FgVertss &            allVertss = inputs[1]->valueRef();
-    const FgPoses &             poses = inputs[2]->valueRef();
-    vector<double>              poseVals = inputs[3]->valueRef();
-    FgVertss &                  vertss = outputs[0]->valueRef();
-    FGASSERT(meshes.size() == allVertss.size());
-    // If pose list has changed but poseVals not yet updated (by GUI), assume all zero.
-    // TODO: Keep poses as a label:val dictionary.
-    if (poses.size() != poseVals.size()) {
-        poseVals.clear();
-        poseVals.resize(poses.size(),0.0);
-    }
-    map<FgString,float>     poseMap;
-    for (size_t ii=0; ii<poses.size(); ++ii)
-        poseMap[poses[ii].name] = poseVals[ii];
-    vertss.resize(meshes.size());
-    for (size_t ii=0; ii<meshes.size(); ++ii)
-        vertss[ii] = meshes[ii].poseShape(allVertss[ii],poseMap);
-}
-
-static
-FGLINK(linkMeshStats2)
-{
-    FGLINKARGS(1,1);
-    const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    FgString &                  text = outputs[0]->valueRef();
-    text.clear();
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        ostringstream   os;
-        const Fg3dMesh &    mesh = meshes[ii];
-        os  << "\nMesh " << ii << ":"
-            << fgpush << mesh << fgpop;
-        text += FgString(os.str());
-    }
-}
-
-static
-void
-saveMesh(string format,FgDgn<vector<Fg3dMesh> > meshesN,FgDgn<FgVertss > vertssN)
-{
-    const vector<Fg3dMesh> &    meshes = g_gg.getVal(meshesN);
-    const FgVertss &     vertss = g_gg.getVal(vertssN);
-    FGASSERT(!meshes.empty());
-    FGASSERT(meshes.size() == vertss.size());
-    FgOpt<FgString>        fname = fgGuiDialogFileSave("FaceGen",format);
+    Opt<Ustring> fname = guiDialogFileLoad("FaceGen XML expression file",fgSvec<string>("xml"));
     if (fname.valid()) {
-        Fg3dMesh                mesh = meshes[0];
-        mesh.updateAllVerts(vertss[0]);
-        fgSaveMeshAnyFormat(mesh,fname.val());
-    }
-}
-
-static
-double
-getInput(FgDgn<vector<double> > n,size_t idx)
-{
-    const vector<double> &  ls = g_gg.getVal(n);
-    return ls[idx];
-}
-
-static
-void
-setOutput(FgDgn<vector<double> > n,size_t idx,double val)
-{
-    vector<double> &        ls = g_gg.dg.nodeValRef(n);
-    ls[idx] = val;
-}
-
-static
-void
-setAllZero(FgDgn<vector<double> > n)
-{
-    vector<double> &        ls = g_gg.dg.nodeValRef(n);
-    for (size_t ii=0; ii<ls.size(); ++ii)
-        ls[ii] = 0.0;
-}
-
-static
-FgString
-morphGetTxt(FgDgn<vector<double> > valsN,size_t idx)
-{
-    const vector<double> &  vals = g_gg.getVal(valsN);
-    return fgToFixed(vals[idx],2);
-}
-
-static
-void
-morphSetTxt(FgDgn<vector<double> > valsN,size_t idx,const FgString & str)
-{
-    double              val = fgFromString<double>(str.as_ascii());
-    vector<double> &    vals = g_gg.getRef(valsN);
-    vals[idx] = fgClip(val,-1.0,2.0);
-}
-
-static
-void
-expr_load(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
-{
-    FgOpt<FgString> fname = fgGuiDialogFileLoad("FaceGen XML expression file",fgSvec<string>("xml"));
-    if (fname.valid()) {
-        const FgPoses &         poses = g_gg.getVal(posesN);
-        vector<double> &        vals = g_gg.getRef(valsN);
+        const PoseVals &         poses = posesN.cref();
+        Doubles &                vals = valsN.ref();
         FGASSERT(poses.size() == vals.size());
-        vector<pair<FgString,double> >  lvs;
+        vector<pair<Ustring,double> >  lvs;
         fgLoadXml(fname.val(),lvs);
         for (size_t ii=0; ii<lvs.size(); ++ii) {
             size_t      idx = fgFindFirstIdx(poses,lvs[ii].first);
@@ -467,16 +279,15 @@ expr_load(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
     }
 }
 
-static
 void
-expr_save(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
+expr_save2(NPT<PoseVals> posesN,NPT<Doubles > valsN)
 {
-    FgOpt<FgString> fname = fgGuiDialogFileSave("FaceGen XML expression file","xml");
+    Opt<Ustring> fname = guiDialogFileSave("FaceGen XML expression file","xml");
     if (fname.valid()) {
-        const FgPoses &             poses = g_gg.getVal(posesN);
-        const vector<double> &      vals = g_gg.getVal(valsN);
+        const PoseVals &             poses = posesN.cref();
+        const Doubles &              vals = valsN.cref();
         FGASSERT(poses.size() == vals.size());
-        vector<pair<FgString,double> >  lvs;
+        vector<pair<Ustring,double> >  lvs;
         lvs.reserve(poses.size());
         for (size_t ii=0; ii<poses.size(); ++ii)
             lvs.push_back(make_pair(poses[ii].name,vals[ii]));
@@ -484,320 +295,334 @@ expr_save(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN)
     }
 }
 
-// Called by FgGuiSplitScroll when 'labelsN' changes:
-static 
-FgGuiPtrs
-getPanes(FgDgn<FgPoses> posesN,FgDgn<vector<double> > valsN,bool textEditBoxes)
-{
-    // Since this window is dynamic, its values are stored as a vector in a single node, to
-    // avoid having to edit the depgraph with each update.
-    // Do not use const ref as DG may re-allocate:
-    const FgPoses &         poses = g_gg.getVal(posesN);
-    vector<double> &        output = g_gg.dg.nodeValRef(valsN);
-    if (output.size() != poses.size()) {   // past value is stale
-        output.clear();
-        output.resize(poses.size());
-        for (size_t ii=0; ii<output.size(); ++ii)
-            output[ii] = poses[ii].neutral;
-    }
-    FgGuiPtrs       buttons;
-    buttons.push_back(fgGuiButton("Set All Zero",std::bind(setAllZero,valsN)));
-    buttons.push_back(fgGuiButton("Load File",std::bind(expr_load,posesN,valsN)));
-    buttons.push_back(fgGuiButton("Save File",std::bind(expr_save,posesN,valsN)));
-    FgGuiPtrs       sliders;
-    sliders.push_back(fgGuiSplit(true,buttons));
-    sliders.push_back(fgGuiSpacer(0,7));
-    for (size_t ii=0; ii<poses.size(); ++ii) {
-        FgGuiApiSlider      slider;
-        slider.updateFlagIdx = g_gg.addUpdateFlag(valsN);     // Node leak but what can you do.
-        slider.getInput = std::bind(getInput,valsN,ii);
-        slider.setOutput = std::bind(setOutput,valsN,ii,_1);
-        slider.label = poses[ii].name;
-        slider.range[0] = poses[ii].bounds[0];
-        slider.range[1] = poses[ii].bounds[1];
-        slider.tickSpacing = 0.1;
-        if (textEditBoxes) {
-            FgGuiApiTextEdit    te;
-            te.updateFlagIdx = g_gg.addUpdateFlag(valsN);
-            te.minWidth = 50;
-            te.wantStretch = false;
-            te.getInput = std::bind(morphGetTxt,valsN,ii);
-            te.setOutput = std::bind(morphSetTxt,valsN,ii,_1);
-            sliders.push_back(fgGuiSplit(true,fgGuiPtr(slider),fgGuiPtr(te)));
-        }
-        else
-            sliders.push_back(fgGuiPtr(slider));
-    }
-    return sliders;
-}
-
-static
 void
-markAllSeams(FgDgn<vector<Fg3dMesh> > meshesN)
+assignTri2(      // Re-assign a tri (or quad) to a different surface if intersected
+    NPT<RendMeshes>         rendMeshesN,
+    NPT<size_t>             surfIdx,
+    Vec2UI               winSize,
+    Vec2I                pos,
+    Mat44F                toOics)
 {
-    vector<Fg3dMesh> &      meshes = g_gg.getRef(meshesN);
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        Fg3dMesh &          mesh = meshes[ii];
-        Fg3dTopology        topo(mesh.verts,mesh.getTriEquivs().vertInds);
-        vector<set<uint> >  seams = topo.seams();
-        for (size_t ss=0; ss<seams.size(); ++ss) {
-            const set<uint> &   seam = seams[ss];
-            for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
-                mesh.markedVerts.push_back(FgMarkedVert(*it));
-        }
-    }
-}
-
-static
-void
-clearAllSurfPts(FgDgn<vector<Fg3dMesh> > meshesN)
-{
-    vector<Fg3dMesh> &      meshes = g_gg.getRef(meshesN);
-    for (size_t ii=0; ii<meshes.size(); ++ii)
-        for (size_t ss=0; ss<meshes[ii].surfaces.size(); ++ss)
-            meshes[ii].surfaces[ss].surfPoints.clear();
-}
-
-static
-void
-clearAllMarkedVerts(FgDgn<vector<Fg3dMesh> > meshesN)
-{
-    vector<Fg3dMesh> &      meshes = g_gg.getRef(meshesN);
-    for (size_t ii=0; ii<meshes.size(); ++ii)
-        meshes[ii].markedVerts.clear();
-}
-
-static
-void
-assignTri(      // Re-assign a tri (or quad) to a different surface if intersected
-    FgDgn<Fg3dMeshes> meshesN,FgDgn<FgVertss> allVertssN,FgDgn<size_t> surfIdx,
-    FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
-{
-    if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
-        return;
-    vector<Fg3dMesh> &          meshes = g_gg.getRef(meshesN);
-    const FgVertss &            vertss = g_gg.getVal(allVertssN);
-    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
+    RendMeshes const &          rms = rendMeshesN.cref();
+    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
     if (vpt.valid()) {
-        FgMeshesIntersect       isct = vpt.val();
-        size_t                  dstSurfIdx = g_gg.getVal(surfIdx);
-        Fg3dMesh &              mesh = meshes[isct.meshIdx];
-        if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < mesh.surfaces.size())) {
-            Fg3dSurface &           srcSurf = mesh.surfaces[isct.surfIdx];
-            Fg3dSurface &           dstSurf = mesh.surfaces[dstSurfIdx];
-            if (srcSurf.isTri(isct.surfPnt.triEquivIdx)) {
-                // Copy surface points on selected tri to destination surface:
-                for (FgSurfPoint sp : srcSurf.surfPoints) {
-                    if (sp.triEquivIdx == isct.surfPnt.triEquivIdx) {
-                        sp.triEquivIdx = uint(dstSurf.tris.size());
-                        dstSurf.surfPoints.push_back(sp);
+        MeshesIntersect       isct = vpt.val();
+        size_t                  dstSurfIdx = surfIdx.val();
+        RendMesh const &       rm = rms[isct.meshIdx];
+        Mesh *              meshPtr = rm.origMeshN.valPtr();
+        if (meshPtr) {
+            if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
+                Surf &           srcSurf = meshPtr->surfaces[isct.surfIdx];
+                Surf &           dstSurf = meshPtr->surfaces[dstSurfIdx];
+                if (srcSurf.isTri(isct.surfPnt.triEquivIdx)) {
+                    // Copy surface points on selected tri to destination surface:
+                    for (SurfPoint sp : srcSurf.surfPoints) {
+                        if (sp.triEquivIdx == isct.surfPnt.triEquivIdx) {
+                            sp.triEquivIdx = uint(dstSurf.tris.size());
+                            dstSurf.surfPoints.push_back(sp);
+                        }
                     }
+                    // Move selected tri to destination surface:
+                    size_t          idx = isct.surfPnt.triEquivIdx;
+                    if (srcSurf.tris.hasUvs() && dstSurf.tris.hasUvs())
+                        dstSurf.tris.uvInds.push_back(srcSurf.tris.uvInds[idx]);
+                    dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[idx]);
+                    srcSurf.removeTri(isct.surfPnt.triEquivIdx);
                 }
-                // Move selected tri to destination surface:
-                size_t          idx = isct.surfPnt.triEquivIdx;
-                if (dstSurf.tris.hasUvs())
-                    dstSurf.tris.uvInds.push_back(srcSurf.tris.uvInds[idx]);
-                dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[idx]);
-                srcSurf.removeTri(isct.surfPnt.triEquivIdx);
-            }
-            else {                      // It's a quad
-                // Copy surface points on selected quad to destination surface:
-                size_t                  quadIdx = (isct.surfPnt.triEquivIdx - srcSurf.tris.size())/2;
-                for (FgSurfPoint sp : srcSurf.surfPoints) {
-                    size_t              spQuadIdx2 = sp.triEquivIdx - srcSurf.tris.size(),
-                                        spQuadIdx = spQuadIdx2 / 2,
-                                        spQuadMod = spQuadIdx2 % 2;
-                    if (spQuadIdx == quadIdx) {
-                        size_t          idx = dstSurf.tris.size() + 2*dstSurf.quads.size() + spQuadMod;
-                        sp.triEquivIdx = uint(idx);
-                        dstSurf.surfPoints.push_back(sp);
+                else {                      // It's a quad
+                    // Copy surface points on selected quad to destination surface:
+                    size_t                  quadIdx = (isct.surfPnt.triEquivIdx - srcSurf.tris.size())/2;
+                    for (SurfPoint sp : srcSurf.surfPoints) {
+                        size_t              spQuadIdx2 = sp.triEquivIdx - srcSurf.tris.size(),
+                                            spQuadIdx = spQuadIdx2 / 2,
+                                            spQuadMod = spQuadIdx2 % 2;
+                        if (spQuadIdx == quadIdx) {
+                            size_t          idx = dstSurf.tris.size() + 2*dstSurf.quads.size() + spQuadMod;
+                            sp.triEquivIdx = uint(idx);
+                            dstSurf.surfPoints.push_back(sp);
+                        }
                     }
+                    // Move selected quad to destination surface:
+                    if (srcSurf.quads.hasUvs() && dstSurf.quads.hasUvs())
+                        dstSurf.quads.uvInds.push_back(srcSurf.quads.uvInds[quadIdx]);
+                    dstSurf.quads.vertInds.push_back(srcSurf.quads.vertInds[quadIdx]);
+                    srcSurf.removeQuad(quadIdx);
                 }
-                // Move selected quad to destination surface:
-                if (dstSurf.quads.hasUvs())
-                    dstSurf.quads.uvInds.push_back(srcSurf.quads.uvInds[quadIdx]);
-                dstSurf.quads.vertInds.push_back(srcSurf.quads.vertInds[quadIdx]);
-                srcSurf.removeQuad(quadIdx);
             }
         }
     }
 }
 
 // Currently only works on tri facets:
-static
 void
-assignPaint(
-    FgDgn<Fg3dMeshes> meshesN,FgDgn<FgVertss> allVertssN,FgDgn<size_t> surfIdx,
-    FgVect2UI winSize,FgVect2I pos,FgMat44F toOics)
+assignPaint2(
+    NPT<RendMeshes>         rendMeshesN,
+    NPT<size_t>             surfIdx,
+    Vec2UI               winSize,
+    Vec2I                pos,
+    Mat44F                toOics)
 {
-    if (g_gg.dg.sinkNode(meshesN))      // feature disabled if node not modifiable
-        return;
-    vector<Fg3dMesh> &          meshes = g_gg.getRef(meshesN);
-    const FgVertss &            vertss = g_gg.getVal(allVertssN);
-    FgOpt<FgMeshesIntersect>    vpt = fgMeshesIntersect(winSize,pos,toOics,meshes,vertss);
+    RendMeshes const &          rms = rendMeshesN.cref();
+    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
     if (vpt.valid()) {
-        FgMeshesIntersect       isct = vpt.val();
-        size_t                  dstSurfIdx = g_gg.getVal(surfIdx);
-        Fg3dMesh &              mesh = meshes[isct.meshIdx];
-        if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < mesh.surfaces.size())) {
-            FgVect3UI           tri = mesh.surfaces[isct.surfIdx].getTriEquiv(isct.surfPnt.triEquivIdx);
-            Fg3dSurfaces        surfs = fgSplitSurface(mesh.surfaces[isct.surfIdx]);
-            for (size_t ss=0; ss<surfs.size(); ++ss) {
-                if (fgContains(surfs[ss].tris.vertInds,tri)) {
-                    mesh.surfaces[dstSurfIdx].merge(surfs[ss]);
-                    surfs.erase(surfs.begin()+ss);
-                    mesh.surfaces[isct.surfIdx] = fgMergeSurfaces(surfs);
-                    return;
+        MeshesIntersect       isct = vpt.val();
+        size_t                  dstSurfIdx = surfIdx.val();
+        RendMesh const &       rm = rms[isct.meshIdx];
+        Mesh *              meshPtr = rm.origMeshN.valPtr();
+        if (meshPtr) {
+            if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
+                Vec3UI           tri = meshPtr->surfaces[isct.surfIdx].getTriEquivPosInds(isct.surfPnt.triEquivIdx);
+                Surfs        surfs = fgSplitSurface(meshPtr->surfaces[isct.surfIdx]);
+                for (size_t ss=0; ss<surfs.size(); ++ss) {
+                    if (fgContains(surfs[ss].tris.vertInds,tri)) {
+                        meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
+                        surfs.erase(surfs.begin()+ss);
+                        meshPtr->surfaces[isct.surfIdx] = mergeSurfaces(surfs);
+                        return;
+                    }
                 }
             }
         }
     }
 }
 
-// Modifies 'api' to add it's hooks:
-static
-FgGuiPtr
-fg3dGuiEdit(FgGuiApi3d & api,const FgString & uid,FgDgn<Fg3dMeshes> meshesN,FgDgn<FgVertss> allVertssN)
+void
+saveMesh2(
+    string                  format,
+    NPT<RendMeshes>         rendMeshesN)
 {
-    if (g_gg.dg.sinkNode(meshesN) || g_gg.dg.sinkNode(allVertssN))
-        return fgGuiSpacer(0,0);
-    vector<FgGuiTab>    tabs;
-    FgGuiRadio          vertSelModeRadio = fgGuiRadio(fgSvec<FgString>("Single","Edge Seam","Fold Seam"),uid+"_vertMarkMode");
-    api.vertMarkModeN = vertSelModeRadio.idxN;
-    api.pointLabel = g_gg.addNode(FgString());
-    api.colorBySurface = g_gg.addInput(false,uid+"_facet_color");
-    FgGuiPtr            points = 
-        fgGuiSplit(false,fgSvec(
-            fgGuiText(
+    RendMeshes const &          rms = rendMeshesN.cref();
+    if (rms.empty())
+        return;
+    Opt<Ustring>             fname = guiDialogFileSave("FaceGen",format);
+    if (fname.valid()) {
+        Meshs              meshes;
+        for (RendMesh const & rm : rms)
+            meshes.push_back(rm.origMeshN.cref());
+        meshSaveAnyFormat(meshes,fname.val());
+    }
+}
+
+GuiPtr
+makeEditFacetsPane(NPT<RendMeshes> rendMeshesN,Gui3d & viewport)
+{
+    RendMeshes const &      rms = rendMeshesN.cref();
+    FGASSERT(!rms.empty());
+    RendMesh const &       rm = rms[0];
+    Mesh *              meshPtr = rm.origMeshN.valPtr();
+    FGASSERT(meshPtr);
+    Ustrings               surfNames;
+    for (size_t ss=0; ss<meshPtr->surfaces.size(); ++ss) {
+        Surf &       surf = meshPtr->surfaces[ss];
+        if (surf.name.empty())      // Generally not the case since default surf names assigned on load
+            surf.name = toString(ss);
+        surfNames.push_back(surf.name);
+    }
+    GuiPtr                facets;
+    if (surfNames.empty())
+        facets = guiText("There are no surfaces to edit");
+    else {
+        IPT<size_t>     surfChoiceN(0);
+        GuiPtr        surfChoiceW = guiRadio(surfNames,surfChoiceN);
+        viewport.shiftRightDragActionI.init(bind(assignTri2,rendMeshesN,surfChoiceN,_1,_2,_3));
+        viewport.ctrlShiftMiddleClickActionI.init(bind(assignPaint2,rendMeshesN,surfChoiceN,_1,_2,_3));
+        facets = guiSplit(false,
+            guiText("Assign tri to surface selection: shift-right-drag\n"
+                "Assign connected tris (not quads) to surface: shift-middle-click"),
+            guiGroupbox("Surface Selection",surfChoiceW),
+            guiCheckbox("Color by surface",viewport.colorBySurface));
+    }
+    return facets;
+}
+
+struct  MeshSurfsName
+{
+    Ustring        meshName;
+    Ustrings       surfNames;
+};
+typedef vector<MeshSurfsName>   MeshSurfsNames;
+
+// Modifies 'api' to add it's hooks:
+GuiPtr
+makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
+{
+    vector<GuiTabDef>    tabs;
+    Ustrings           vsmrLabels = {"Single","Edge Seam","Fold Seam"};
+    IPT<size_t>         vertSelModeN(0);
+    GuiPtr            vertSelModeW = guiRadio(vsmrLabels,vertSelModeN);
+    api.vertMarkModeN = vertSelModeN;
+    IPT<Ustring>       pointLabelN = makeIPT(Ustring());
+    api.pointLabel = pointLabelN;
+    NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
+    GuiPtr            points = 
+        guiSplit(false,fgSvec(
+            guiText(
                 "Mark Surface Point: ctrl-shift-left-click on surface.\n"
                 "A point with an identical non-null name will be overwritten"
             ),
-            fgGuiSplit(true,
-                fgGuiText("Name:"),
-                fgGuiTextEdit(api.pointLabel)),
-            fgGuiButtonTr("Clear all surface points",std::bind(clearAllSurfPts,meshesN))
+            guiSplit(true,
+                guiText("Name:"),
+                guiTextEdit(pointLabelN)),
+            guiButtonTr("Clear all surface points",
+                [rendMeshesN]()
+                {
+                    RendMeshes const &      rms = rendMeshesN.cref();
+                    for (RendMesh const & rm : rms) {
+                        Mesh *          meshPtr = rm.origMeshN.valPtr();
+                        if (meshPtr) {
+                            for (Surf & surf : meshPtr->surfaces)
+                                surf.surfPoints.clear();
+                        }
+                    }
+                })
         ));
-    FgGuiPtr            verts =
-        fgGuiSplit(false,fgSvec(
-            fgGuiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
-            fgGuiGroupbox("Vertex Selection Mode",vertSelModeRadio.win),
-            fgGuiButtonTr("Mark all seam vertices",std::bind(markAllSeams,meshesN)),
-            fgGuiButtonTr("Clear all marked vertices",std::bind(clearAllMarkedVerts,meshesN))
+    GuiPtr            verts =
+        guiSplit(false,fgSvec(
+            guiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
+            guiGroupbox("Vertex Selection Mode",vertSelModeW),
+            guiButtonTr("Mark all seam vertices",
+                [rendMeshesN]()
+                {
+                    RendMeshes const &      rms = rendMeshesN.cref();
+                    for (RendMesh const & rm : rms) {
+                        Mesh *          meshPtr = rm.origMeshN.valPtr();
+                        if (meshPtr) {
+                            Fg3dTopology        topo(meshPtr->verts,meshPtr->getTriEquivs().vertInds);
+                            vector<set<uint> >  seams = topo.seams();
+                            for (size_t ss=0; ss<seams.size(); ++ss) {
+                                const set<uint> &   seam = seams[ss];
+                                for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
+                                    meshPtr->markedVerts.push_back(MarkedVert(*it));
+                            }
+                        }
+                    }
+                }),
+            guiButtonTr("Clear all marked vertices",
+                [rendMeshesN]()
+                {
+                    RendMeshes const & rms = rendMeshesN.cref();
+                    for (RendMesh const & rm : rms) {
+                        Mesh *          meshPtr = rm.origMeshN.valPtr();
+                        if (meshPtr)
+                            meshPtr->markedVerts.clear();
+                    }
+                })
         ));
-    Fg3dSurfaces &      surfs = g_gg.getRef(meshesN)[0].surfaces;
-    FgStrings    surfNames;
-    for (size_t ss=0; ss<surfs.size(); ++ss) {
-        if (surfs[ss].name.empty())             // Generally not the case since default surf names assigned on load
-            surfs[ss].name = fgToStr(ss);
-        surfNames.push_back(surfs[ss].name);
-    }
-    FgGuiPtr            facets;
-    if (surfNames.empty())
-        facets = fgGuiText("There are no surfaces to edit");
-    else {
-        FgGuiRadio          surfChoice = fgGuiRadio(surfNames);
-        api.shiftRightDragAction = std::bind(assignTri,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
-        api.ctrlShiftMiddleClickAction = std::bind(assignPaint,meshesN,allVertssN,surfChoice.idxN,_1,_2,_3);
-        facets = fgGuiSplit(false,
-            fgGuiText("Assign tri to surface selection: shift-right-drag\n"
-                "Assign connected tris (not quads) to surface: shift-middle-click"),
-            fgGuiGroupbox("Surface Selection",surfChoice.win),
-            fgGuiCheckbox("Color by surface",api.colorBySurface));
-    }
-    tabs.push_back(FgGuiTab("Points",true,points));
-    tabs.push_back(FgGuiTab("Verts",true,verts));
-    tabs.push_back(FgGuiTab("Facets",true,facets));
-    FgGuiPtr            saveButtons = fgGuiSplit(true,
-        fgGuiButtonTr("TRI",std::bind(saveMesh,string("tri"),meshesN,allVertssN)),
-        fgGuiButtonTr("FGMESH",std::bind(saveMesh,string("fgmesh"),meshesN,allVertssN)));
-    return fgGuiSplit(false,fgGuiText("Save pre-morphed to file:"),saveButtons,fgGuiTabs(tabs));
+    GuiPtr    facets = guiDynamic(bind(makeEditFacetsPane,rendMeshesN,api),makeUpdateFlag(meshSurfsNamesN));
+    tabs.push_back(GuiTabDef("Points",true,points));
+    tabs.push_back(GuiTabDef("Verts",true,verts));
+    tabs.push_back(GuiTabDef("Facets",true,facets));
+    GuiPtr            saveButtons = guiSplit(true,
+        guiButtonTr("TRI",bind(saveMesh2,string("tri"),rendMeshesN)),
+        guiButtonTr("FGMESH",bind(saveMesh2,string("fgmesh"),rendMeshesN)));
+    return guiSplit(false,guiText("Save pre-morphed to file:"),saveButtons,guiTabs(tabs));
 }
 
-FgGui3dCtls
-fgGui3dCtls(
-    FgDgn<vector<Fg3dMesh> >    meshesN,
-    FgDgn<FgVertss >            allVertssN,
-    FgDgn<vector<FgImgs> >      texssN,
-    FgDgn<FgMat32D>             viewBoundsN,
-    FgRenderCtrls               renderCtrls,
-    FgDgn<FgLighting>           lightingN,
-    std::function<void(bool,FgVect2I)>    bothButtonsDrag,
-    uint                        simple,
-    bool                        textEditBoxes)
+// Unique names will be left unchanged.
+// Empty names will be assigned the baseName plus a number.
+// Non-unique names will have a number added.
+Ustrings
+makeUniqueNames(const Ustrings & names,const Ustring & baseName)
 {
-    FgGui3dCtls                 ret;
-    FgDgn<FgPoses>              posesN = g_gg.addNode(FgPoses(),"morphNames");
-    g_gg.addLink(lnkPoses,meshesN,posesN);
-    FgDgn<vector<double> >      morphValsN = g_gg.addInput(vector<double>(),"morphVals");
-    ret.morphedVertssN = g_gg.addNode(FgVertss(),"morphedVertss");
-    g_gg.addLink(lnkPoseShape,fgUints(meshesN,allVertssN,posesN,morphValsN),ret.morphedVertssN);
-    ret.morphCtls = fgGuiSplitScroll(g_gg.addUpdateFlag(posesN),
-        std::bind(getPanes,posesN,morphValsN,textEditBoxes),3);
-    vector<Fg3dMesh>            meshes = g_gg.getVal(meshesN);
-    string                      uid = "3d";
-    FgStrings            panTiltOptions = fgSvec<FgString>("Pan / Tilt","Unconstrained");
-    FgGuiRadio                  panTiltRadio;
-    if (simple == 0)
-        panTiltRadio = fgGuiRadio(panTiltOptions,panTiltOptions,uid+"_PanTiltMode",panTiltOptions[1]);
-    else
-        panTiltRadio = fgGuiRadio(panTiltOptions,uid+"_PanTiltMode");
-    FgGuiApi3d      api;
-    api.meshesN = meshesN;
-    api.vertssN = ret.morphedVertssN;
-    api.normssN = g_gg.addNode(vector<Fg3dNormals>(),"normss");
-    api.texssN = texssN;
-    api.viewBounds = viewBoundsN;
-    api.panTiltMode = panTiltRadio.idxN;
-    api.light = lightingN;
-    api.xform = g_gg.addNode(Fg3dCamera(),"xform");
-    api.renderOptions = renderCtrls.optsN;
+    Ustrings           ret;
+    ret.reserve(names.size());
+    for (size_t nn=0; nn<names.size(); ++nn) {
+        Ustring            name = names[nn];
+        if (name.empty())
+            name = baseName + "_" + toString(nn);
+        if (fgContains(ret,name)) {
+            size_t      idx = 1;
+            while (fgContains(ret,name+"_"+toString(idx)))
+                ++idx;
+            name += "_"+toString(idx);
+        }
+        ret.push_back(name);
+    }
+    return ret;
+}
+
+}
+
+GuiPtr
+makeCameraCtrls(
+    Gui3d &                 api,
+    NPT<Mat32D>           viewBoundsN,
+    const Ustring &        store,
+    uint                    simple,
+    bool                    textEditBoxes)
+{
+    Ustrings               panTiltOptions = {"Pan / Tilt","Unconstrained"};
+    size_t                  panTiltDefault = (simple == 0) ? 1 : 0;
+    IPT<size_t>             panTiltRadioN = makeSavedIPT<size_t>(panTiltDefault,store+"PanTiltMode");
+    GuiPtr                panTiltRadioW = guiRadio(panTiltOptions,panTiltRadioN);
+    api.panTiltMode = panTiltRadioN;
     if (simple == 2)
         api.panTiltLimits = true;
-    api.panDegrees = g_gg.addInput(0.0,uid+"camPan");
-    api.tiltDegrees = g_gg.addInput(0.0,uid+"camTilt");
-    api.pose = g_gg.addInput(FgQuaternionD(),uid+"Pose");
-    api.trans = g_gg.addInput(FgVect2D(0),uid+"Trans");
-    api.logRelSize = g_gg.addInput(-0.3,uid+"LogRelSize");
+    api.panDegrees.initSaved(0.0,store+"Pan");
+    api.tiltDegrees.initSaved(0.0,store+"Tilt");
+    api.pose.initSaved(QuaternionD(),store+"Pose");
+    api.trans.initSaved(Vec2D(0),store+"Trans");
+    api.logRelSize.initSaved(-0.3,store+"LogRelSize");
     // Give non-zero viewport initial val to avoid NaNs in initial dependency calc for rendering:
-    api.viewportDims = g_gg.addNode(FgVect2UI(1),"viewportDims");
-    api.bgImg = renderCtrls.bgImgApi;
-    api.bothButtonsDragAction = bothButtonsDrag;
-    g_gg.addLink(linkNorms,fgUints(meshesN,ret.morphedVertssN),api.normssN);
-    Fg3dCameraParams    defaultCps;     // Use default for lensFovDeg:
-    FgDgn<double>       lensFovDeg = g_gg.addInput(defaultCps.fovMaxDeg,uid+"LensFovDeg");
-    FgVectD2            logScaleRange(log(1.0/5.0),log(5.0));
-    g_gg.addLink(linkXform,
-        fgUints(viewBoundsN,api.panTiltMode,api.panDegrees,api.tiltDegrees,api.pose,api.trans,
-                api.logRelSize,lensFovDeg,api.viewportDims),
-        api.xform);
-    ret.editCtls = fg3dGuiEdit(api,uid+"_edit",meshesN,allVertssN);
-    ret.viewport = fgsp(api);
-    FgGuiPtr        viewCtlText =
-        fgGuiText(
+    api.viewportDims.init(Vec2UI(1));
+    CameraParams    defaultCps;     // Use default for lensFovDeg:
+    IPT<double>         lensFovDeg = makeSavedIPT(defaultCps.fovMaxDeg,store+"LensFovDeg");
+    VecD2            logScaleRange(log(1.0/5.0),log(5.0));
+    OPT<CameraParams>   camParamsN =
+        link5<CameraParams,Mat32D,QuaternionD,Vec2D,double,double>(
+            viewBoundsN,api.pose,api.trans,api.logRelSize,lensFovDeg,
+            [](const Mat32D & vb,const QuaternionD & p,const Vec2D & t,const double & lrs,const double & lfd)
+            {
+                CameraParams    r;
+                r.modelBounds = vb;
+                r.pose = p;
+                r.relTrans = t;
+                r.logRelScale = lrs;
+                r.fovMaxDeg = lfd;
+                return r;
+            });
+    OPT<Vec2D>   panTiltN = link2<Vec2D,double,double>(api.panDegrees,api.tiltDegrees,
+        [](const double & p,const double & t){return Vec2D(p,t); });
+    api.xform = link4<Camera,CameraParams,size_t,Vec2D,Vec2UI>(
+        camParamsN,api.panTiltMode,panTiltN,api.viewportDims,
+        [](const CameraParams & cp,const size_t & m,const Vec2D & pt,const Vec2UI & v)
+        {
+            CameraParams    cps = cp;
+            if (m == 0) {
+                QuaternionD   pan(fgDegToRad(pt[0]),1),
+                                tilt(fgDegToRad(pt[1]),0);
+                cps.pose = pan*tilt;
+            }
+            return cps.camera(v);
+        });
+    GuiPtr        viewCtlText =
+        guiText(
             "  Rotate: left-click-drag (or touch-drag)\n"
             "  Scale: right-click-drag up/down (or pinch-to-zoom)\n"
             "  Move: shift-left-click-drag (or middle-click-drag)");
-    FgVectD2        panTiltClip(-360.0,360.0);      // Values are wrapped by viewport impl
-    FgGuiPtr        viewCtlPanTiltText =
-        fgGuiSplit(false,
-            fgGuiSplit(true,fgGuiTextEditFixed(api.panDegrees,panTiltClip),fgGuiTextEditFixed(api.tiltDegrees,panTiltClip)),
-            fgGuiSpacer(0,30));
+    VecD2        panTiltClip(-360.0,360.0);      // Values are wrapped by viewport impl
+    GuiPtr        viewCtlPanTiltText =
+        guiSplit(false,
+            guiSplit(true,
+                guiTextEditFixed(api.panDegrees,panTiltClip),
+                guiTextEditFixed(api.tiltDegrees,panTiltClip)),
+            guiSpacer(0,30));
     if (textEditBoxes)
-        panTiltRadio.win = fgGuiSplit(true,panTiltRadio.win,viewCtlPanTiltText);
-    FgGuiPtr        viewCtlRotation = fgGuiGroupboxTr("Object rotation",panTiltRadio.win);
-    FgGuiPtr        viewCtlFov =
-        fgGuiGroupboxTr(
+        panTiltRadioW = guiSplit(true,panTiltRadioW,viewCtlPanTiltText);
+    GuiPtr        viewCtlRotation = guiGroupboxTr("Object rotation",panTiltRadioW);
+    GuiPtr        viewCtlFov =
+        guiGroupboxTr(
             "Lens field of view (degrees)",
-            fgGuiSlider(
+            guiSlider(
                 lensFovDeg,
-                FgString(),
-                FgVectD2(0.0,60.0),
+                Ustring(),
+                VecD2(0.0,60.0),
                 15.0,
-                fgGuiApiTickLabels(FgVectD2(0.0,60.0),15.0,0.0),
+                guiTickLabels(VecD2(0.0,60.0),15.0,0.0),
                 fgSvec(
-                    FgGuiApiTickLabel(0.0,fgTr("Orthographic")),
-                    FgGuiApiTickLabel(30.0,fgTr("Normal")),
-                    FgGuiApiTickLabel(60.0,fgTr("Wide"))),
+                    GuiTickLabel(0.0,fgTr("Orthographic")),
+                    GuiTickLabel(30.0,fgTr("Normal")),
+                    GuiTickLabel(60.0,fgTr("Wide"))),
                 30,     // Lots of room required for "Orthographic" at end of slider
                 textEditBoxes
             )
@@ -805,188 +630,400 @@ fgGui3dCtls(
     // Required to disambiguate float / double overloads:
     double (*pexpd)(double) = &std::exp;
     double (*plogd)(double) = &std::log;
-    FgGuiPtr        viewCtlScaleTe = fgGuiTextEditFloat(api.logRelSize,logScaleRange,6,pexpd,plogd);
-    FgGuiPtr        viewCtlScale =
-                fgGuiSlider(
+    GuiPtr        viewCtlScaleTe = guiTextEditFloat(api.logRelSize,logScaleRange,6,pexpd,plogd);
+    GuiPtr        viewCtlScale =
+                guiSlider(
                     api.logRelSize,
-                    FgString(),
+                    Ustring(),
                     logScaleRange,
                     (logScaleRange[1]-logScaleRange[0])/4.0,
                     fgSvec(
-                        FgGuiApiTickLabel(logScaleRange[0],"0.2"),
-                        FgGuiApiTickLabel(0.0,"1.0"),
-                        FgGuiApiTickLabel(logScaleRange[1],"5.0")),
-                    vector<FgGuiApiTickLabel>(),
+                        GuiTickLabel(logScaleRange[0],"0.2"),
+                        GuiTickLabel(0.0,"1.0"),
+                        GuiTickLabel(logScaleRange[1],"5.0")),
+                    vector<GuiTickLabel>(),
                     30      // Match width of slider above
                 );
     if (textEditBoxes)
-        viewCtlScale = fgGuiSplit(true,viewCtlScale,viewCtlScaleTe);
-    viewCtlScale = fgGuiGroupboxTr("Object relative scale",viewCtlScale);
-    FgGuiPtr        viewCtlReset = fgGuiButtonTr("Reset Camera",std::bind(
-        resetView,lensFovDeg,api.panDegrees,api.tiltDegrees,api.pose,api.trans,api.logRelSize));
+        viewCtlScale = guiSplit(true,viewCtlScale,viewCtlScaleTe);
+    viewCtlScale = guiGroupboxTr("Object relative scale",viewCtlScale);
+    DfgNPtrs           resetDeps;
+    resetDeps.push_back(api.panDegrees.ptr);
+    resetDeps.push_back(api.tiltDegrees.ptr);
+    resetDeps.push_back(api.pose.ptr);
+    resetDeps.push_back(api.trans.ptr);
+    resetDeps.push_back(api.logRelSize.ptr);
+    resetDeps.push_back(lensFovDeg.ptr);
+    GuiPtr        viewCtlReset = guiButtonTr("Reset Camera",[resetDeps](){setInputsToDefault(resetDeps);});
     if (simple == 2)
-        ret.cameraGui = fgGuiSplit(false,viewCtlText,viewCtlScale,viewCtlReset);
+        return guiSplit(false,viewCtlText,viewCtlScale,viewCtlReset);
     else
-        ret.cameraGui = fgGuiSplit(false,fgSvec(
+        return guiSplit(false,fgSvec(
             viewCtlText,viewCtlRotation,viewCtlFov,viewCtlScale,viewCtlReset));
-    return ret;
 }
 
-static
-FGLINK(linkSelect)
-{
-    FGLINKARGS(2,1);
-    const vector<Fg3dMesh> &    meshes = inputs[0]->valueRef();
-    size_t                      sel = inputs[1]->valueRef();
-    FGASSERT(sel < meshes.size());
-    vector<bool>                sels(meshes.size(),false);
-    sels[sel] = true;
-    outputs[0]->set(sels);
-}
+OPT<Vec3Fs>
+linkAllVerts(NPT<Mesh> meshN)
+{return link1<Mesh,Vec3Fs>(meshN,[](Mesh const & mesh){return mesh.allVerts();}); }
 
-static
-FGLINK(linkParts)
+OPT<Vec3Fs>
+linkPosedVerts(NPT<Mesh> meshN,NPT<Vec3Fs> allVertsN,OPT<PoseVals> posesN,NPT<Doubles> morphValsN)
 {
-    FGLINKARGS(2,3);
-    const vector<Fg3dMesh> &    meshesIn = inputs[0]->valueRef();
-    const vector<bool> &        selections = inputs[1]->valueRef();
-    FGASSERT(meshesIn.size() == selections.size());
-    vector<Fg3dMesh>            meshes;
-    FgVertss             vertss;
-    vector<FgImgs>              imgss;
-    for (size_t ii=0; ii<selections.size(); ++ii) {
-        if (selections[ii]) {
-            const Fg3dMesh &    mesh = meshesIn[ii];
-            meshes.push_back(mesh);
-            vertss.push_back(mesh.allVerts());
-            imgss.push_back(mesh.albedoMapsOld());
+    return link4_<Vec3Fs,Mesh,Vec3Fs,PoseVals,Doubles>(meshN,allVertsN,posesN,morphValsN,[=](
+            Mesh const &            mesh,
+            Vec3Fs const &             allVerts,
+            PoseVals const &             poses,
+            Doubles const &              poseVals,
+            Vec3Fs &                   verts)
+        {
+            // 'poseVals' may not be initialized yet since it's set by GUI so fake it until then:
+            Floats              vals = scast<float>(poseVals);
+            if (vals.size() != poses.size())
+                vals.resize(poses.size(),0);
+            map<Ustring,float>         poseMap;
+            for (size_t ii=0; ii<poses.size(); ++ii)
+                poseMap[poses[ii].name] = vals[ii];
+            verts = mesh.poseShape(allVerts,poseMap);
         }
-    }
-    outputs[0]->set(meshes);
-    outputs[1]->set(vertss);
-    outputs[2]->set(imgss);
+    );
 }
 
-Fg3dMesh
-FgViewMeshes(
-    const vector<Fg3dMesh> &    meshes,
-    bool                        compare)
+OPT<Normals>
+linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN)
+{
+    return link2_<Normals,Mesh,Vec3Fs>(meshN,posedVertsN,
+        [](const Mesh & mesh,const Vec3Fs & verts,Normals & norms)
+        {calcNormals_(mesh.surfaces,verts,norms); });
+}
+
+OPT<Mesh>
+linkLoadMesh(NPT<Ustring> pathBaseN)
+{
+    return link1_<Ustring,Mesh>(pathBaseN,
+        [](Ustring const & pathBase,Mesh & mesh)
+        {
+            if (pathBase.empty())
+                mesh = Mesh();                      // Deselected
+            else if (pathExists(pathBase+".tri"))
+                loadTri_(pathBase+".tri",mesh,false); // Ignore if can't load
+            //else if (pathExists(pathBase+".fgMesh"))
+            //    loadFgmesh(pathBase+".fgmesh",mesh);
+            else
+                fgWarn("linkLoadMesh mesh file not found",pathBase.m_str);
+        });
+}
+
+OPT<ImgC4UC>
+linkLoadImage(NPT<Ustring> filenameN)
+{
+    return link1_<Ustring,ImgC4UC>(filenameN,
+        [](Ustring const & fn,ImgC4UC & img)
+        {
+            img.clear();        // Ensure cleared in case load fails.
+            if (!fn.empty())
+                imgLoadAnyFormat(fn,img);
+        });
+}
+
+GuiPosedMeshes::GuiPosedMeshes() :
+    poseLabelsN(
+        linkN<Mesh,PoseVals>(vector<NPT<Mesh> >(),[](Meshs const & m){return fgPoses(m);})
+    ),
+    poseValsN(makeIPT(Doubles()))
+{}
+
+void
+GuiPosedMeshes::addMesh(
+        NPT<Mesh>           meshN,
+        NPT<Vec3Fs>            allVertsN,
+        ImgNs                   albedoNs,
+        ImgNs                   specularNs)
+{
+    // We can't check against mesh surfaces at this time since it may not be selected:
+    FGASSERT(albedoNs.size() == specularNs.size());
+    addLink(meshN.ptr,poseLabelsN.ptr);
+    RendMesh                   rm;
+    rm.origMeshN = meshN;
+    size_t                      S = albedoNs.size();
+    for (size_t ss=0; ss<S; ++ss) {
+        RendSurf               rs;
+        rs.albedoMap = albedoNs[ss];
+        rs.albedoMapFlag = makeUpdateFlag(albedoNs[ss]);
+        rs.albedoHasTransparencyN = link1<ImgC4UC,bool>(rs.albedoMap,
+            [](ImgC4UC const & img){return fgUsesAlpha(img);});     // Returns false if image empty
+        rs.specularMap = specularNs[ss];
+        rs.specularMapFlag = makeUpdateFlag(specularNs[ss]);
+        rm.rendSurfs.push_back(rs);
+    }
+    rm.posedVertsN = linkPosedVerts(meshN,allVertsN,poseLabelsN,poseValsN);
+    rm.normalsN = linkNormals(meshN,rm.posedVertsN);
+    rm.surfVertsFlag = makeUpdateFlag(rm.posedVertsN);
+    rm.allVertsFlag = makeUpdateFlag(rm.posedVertsN);
+    rendMeshes.push_back(rm);
+}
+
+void
+GuiPosedMeshes::addMesh(NPT<Mesh> meshN,NPT<Vec3Fs> vertsN)
+{
+    ImgNs       albedoNs;
+    albedoNs.push_back(makeIPT(ImgC4UC()));
+    ImgNs       specularNs;
+    specularNs.push_back(makeIPT(ImgC4UC()));
+    addMesh(meshN,vertsN,albedoNs,specularNs);
+}
+
+
+// Called by GuiSplitScroll when 'labelsN' changes:
+GuiPtrs
+makePoseCtrlSliders(NPT<PoseVals> posesN,IPT<Doubles> valsN,bool textEditBoxes)
+{
+    PoseVals const &         poses = posesN.cref();
+    Doubles &                output = valsN.ref();
+    if (output.size() != poses.size()) {   // past value is stale
+        output.clear();
+        output.resize(poses.size());
+        for (size_t ii=0; ii<output.size(); ++ii)
+            output[ii] = poses[ii].neutral;
+    }
+    GuiPtrs               buttons;
+    buttons.push_back(guiButton("Set All Zero",[valsN](){fgFill(valsN.ref(),0.0);}));
+    buttons.push_back(guiButton("Load File",bind(expr_load2,posesN,valsN)));
+    buttons.push_back(guiButton("Save File",bind(expr_save2,posesN,valsN)));
+    GuiPtrs               sliders;
+    sliders.push_back(guiSplit(true,buttons));
+    sliders.push_back(guiSpacer(0,7));
+    for (size_t ii=0; ii<poses.size(); ++ii) {
+        GuiSlider      slider;
+        slider.updateFlag = makeUpdateFlag(valsN);
+        slider.getInput = [valsN,ii](){return valsN.cref()[ii];};
+        slider.setOutput = [valsN,ii](double v){valsN.ref()[ii] = v;};
+        slider.label = poses[ii].name;
+        slider.range[0] = poses[ii].bounds[0];
+        slider.range[1] = poses[ii].bounds[1];
+        slider.tickSpacing = 0.1;
+        if (textEditBoxes) {
+            GuiTextEdit      te;
+            te.updateFlag = makeUpdateFlag(valsN);
+            te.minWidth = 50;
+            te.wantStretch = false;
+            te.getInput = [valsN,ii](){return fgToFixed(valsN.cref()[ii],2); };
+            te.setOutput = [valsN,ii](const Ustring & s)
+            {
+                valsN.ref()[ii] = clampBounds(fgFromString<double>(s.m_str),-1.0,2.0);
+            };
+            sliders.push_back(guiSplit(true,guiMakePtr(slider),guiMakePtr(te)));
+        }
+        else
+            sliders.push_back(guiMakePtr(slider));
+    }
+    if (poses.empty())
+        sliders.push_back(guiText("The currently selected models contain no expression morphs."));
+    return sliders;
+}
+
+GuiPtr
+GuiPosedMeshes::makePoseCtrls(bool editBoxes) const
+{
+    auto        makeSliders =  bind(makePoseCtrlSliders,poseLabelsN,poseValsN,editBoxes);
+    return guiSplitScroll(makeUpdateFlag(poseLabelsN),makeSliders,3);
+}
+
+OPT<Mat32D>
+linkBounds(RendMeshes const & rms)
+{
+    vector<NPT<Mat32F> >      boundsNs;
+    for (RendMesh const & rm : rms) {
+        boundsNs.push_back(link1<Mesh,Mat32F>(rm.origMeshN,
+            [](Mesh const & m){return getBounds(m.verts);}));
+    }
+    return linkN<Mat32F,Mat32D>(boundsNs,[](vector<Mat32F> const & bs)
+    {
+        Mat32F    bounds = boundsUnion(bs);
+        if (bounds[1] < bounds[0])      // No meshes selected
+            bounds = Mat32F(0,1,0,1,0,1);
+        return Mat32D(bounds);
+    });
+}
+
+OPT<Ustring>
+linkMeshStats(RendMeshes const & rms)
+{
+    Svec<NPT<Ustring> >    statsNs;
+    for (RendMesh const & rm : rms)
+        statsNs.push_back(link1<Mesh,Ustring>(rm.origMeshN,[](Mesh const & m)
+            {
+                if (m.verts.empty())
+                    return Ustring();
+                stringstream    ss;
+                ss << m;
+                return Ustring(ss.str());
+            }));
+    return linkN<Ustring,Ustring>(statsNs,[](Ustrings const & strs){return cat(strs,"");});
+}
+
+GuiPtr
+makeViewCtrls(
+    Gui3d &             gui3d,
+    NPT<Mat32D>       viewBoundsN,
+    Ustring const &    store,
+    uint                simple,
+    bool                textEditBoxes)
+{
+    GuiPtr          cameraW = makeCameraCtrls(gui3d,viewBoundsN,store+"Camera",simple,textEditBoxes),
+                    renderOptsW = makeRendCtrls(gui3d.renderOptions,gui3d.bgImg,simple,store+"RendOpts"),
+                    lightingW = makeLightingCtrls(gui3d.light,gui3d.bothButtonsDragActionI,store+"Light");
+    GuiTabDefs      viewTabs = {
+                        guiTab("Camera",true,cameraW),
+                        guiTab("Render",true,renderOptsW),
+                        guiTab("Lighting",true,lightingW)
+                    };
+    return guiTabs(viewTabs);
+}
+
+static
+void
+saveCapImage(NPT<string> const & formatN,Sptr<Gui3d::Capture> const & capture)
+{
+    Opt<Ustring>     fname = guiDialogFileSave("",formatN.cref());
+    if (fname.valid()) {
+        if (capture->getImg)
+            imgSaveAnyFormat(fname.val(),capture->getImg(capture->getDims()));
+    }
+}
+
+GuiPtr
+guiCaptureSaveImage(Sptr<Gui3d::Capture> const & capture)
+{
+    GuiVal<string>     capImgFormat = guiImageFormat("Image Format",false);
+    GuiPtr              saveImage = guiSplit(false,
+        guiText("Save the current render image to a file"),
+        capImgFormat.win,
+        guiButton("Save",bind(saveCapImage,capImgFormat.valN,capture)));
+    return saveImage;
+}
+
+Mesh
+meshView(const Meshs & meshes,bool compare)
 {
     FGASSERT(meshes.size() > 0);
-    FgString                    store = fgDirUserAppDataLocalFaceGen("SDK","FgViewMeshes");
-    g_gg = FgGuiGraph(store);
-    FgDgn<Fg3dMeshes>           meshesN = g_gg.addNode(Fg3dMeshes(),"meshes");
-    FgDgn<FgVertss>             allVertsN = g_gg.addNode(FgVertss(),"allVerts");
-    FgDgn<FgImgss>              texssN = g_gg.addNode(FgImgss(),"texss");
-    FgGuiTab                    meshSelect;
-    if (meshes.size() == 1) {   // No selection pane in this case so edit controls will work
-        g_gg.setVal(meshesN,meshes);
-        FgVertss                vertss;
-        vector<FgImgs>          texss;
-        vertss.push_back(meshes[0].allVerts());
-        texss.push_back(meshes[0].albedoMapsOld());
-        g_gg.setVal(allVertsN,vertss);
-        g_gg.setVal(texssN,texss);
+    Ustring                 store = fgDirUserAppDataLocalFaceGen("SDK","meshView");
+    IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(getBounds(meshes)));
+    GuiPosedMeshes          mrms;
+    vector<IPT<Mesh> >      meshNs;
+    vector<IPT<MeshSurfsName> >  meshSurfsNameNs;
+    // Ensure we have valid, unique names:
+    Ustrings                meshNames = makeUniqueNames(fgSliceMember(meshes,&Mesh::name),"Mesh");
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        const Mesh &        mesh = meshes[mm];
+        IPT<Mesh>           meshN = makeIPT(mesh);
+        IPT<Vec3Fs>         allVertsN = makeIPT(mesh.allVerts());
+        ImgNs               albedoNs,
+                            specularNs;
+        IPT<ImgC4UC>        emptyImageN = makeIPT(ImgC4UC());
+        for (const Surf & surf : mesh.surfaces) {
+            if (surf.material.albedoMap)
+                albedoNs.push_back(makeIPT(*surf.material.albedoMap));
+            else
+                albedoNs.push_back(emptyImageN);
+            if (surf.material.specularMap)
+                specularNs.push_back(makeIPT(*surf.material.specularMap));
+            else
+                specularNs.push_back(emptyImageN);
+        }
+        mrms.addMesh(meshN,allVertsN,albedoNs,specularNs);
+        meshNs.push_back(meshN);
+        {
+            MeshSurfsName       msn;
+            msn.meshName = meshNames[mm];
+            msn.surfNames = makeUniqueNames(fgSliceMember(mesh.surfaces,&Surf::name),"Surf");
+            meshSurfsNameNs.push_back(makeIPT(msn));
+        }
+    }
+    OPT<MeshSurfsNames>     meshSurfsNamesN = linkCollate<MeshSurfsName>(meshSurfsNameNs);
+    GuiPtr                  meshSelect;
+    NPT<Bools>              selsN;
+    if (compare) {
+        IPT<Ustrings>           meshNamesN = makeIPT(meshNames);
+        IPT<Ustring>            meshSelectN = makeIPT(meshNames[0]);
+        IPT<size_t>             selMeshN(0);
+        GuiPtr                  selMeshRadio = guiRadio(meshNames,selMeshN);
+        size_t                  sz = meshNames.size();
+        selsN = link1<size_t,Bools>(selMeshN,[sz](size_t const & idx)
+            {
+                Bools           ret(sz,false);
+                if (idx < sz)
+                    ret[idx] = true;
+                return ret;
+            });
+        meshSelect = selMeshRadio;
     }
     else {
-        FgDgn<vector<Fg3dMesh> >    meshesSrcN = g_gg.addNode(meshes,"meshesSrc");
-        vector<bool>                sels(meshes.size(),true);
-        FgDgn<vector<bool> >        selsN = g_gg.addNode(sels,"sels");
-        g_gg.addLink(linkParts,fgUints(meshesSrcN,selsN),fgUints(meshesN,allVertsN,texssN));
-        FgStrings            meshNames;
-        for (size_t ii=0; ii<meshes.size(); ++ii) {
-            FgString        meshName = meshes[ii].name;
-            // Names must be unique for radio selection buttons to work:
-            if (meshName.empty())
-                meshName = "Mesh " + fgToStr(ii);
-            if (fgContains(meshNames,meshName)) {
-                size_t      idx = 1;
-                while (fgContains(meshNames,meshName+"_"+fgToStr(idx)))
-                    ++idx;
-                meshName += "_"+fgToStr(idx);
-            }
-            meshNames.push_back(meshName);
-        }
-        if (compare) {
-            FgGuiRadio          selMeshRadio = fgGuiRadio(meshNames);
-            g_gg.addLink(linkSelect,fgUints(meshesSrcN,selMeshRadio.idxN),selsN);
-            meshSelect = fgGuiTab("Select",true,selMeshRadio.win);
-        }
-        else {
-            meshSelect = fgGuiTab("Select",true,fgGuiCheckboxes(meshNames,sels,selsN));
-        }
+        GuiVal<Bools>       cbs = guiCheckboxes(meshNames,Bools(meshes.size(),true));
+        selsN = cbs.valN;
+        meshSelect = cbs.win;
     }
-    FgMat32F                viewBounds = fgBounds(meshes);
-    FgDgn<FgMat32D>         viewBoundsN = g_gg.addNode(fgF2D(viewBounds),"viewBounds");
-    FgDgn<FgString>         meshStatsN = g_gg.addNode(FgString(),"meshStats");
-    g_gg.addLink(linkMeshStats2,meshesN,meshStatsN);
-    FgRenderCtrls           renderOpts = fgRenderCtrls(0);
-    FgGuiLighting           lighting = fgGuiLighting();
-    FgGui3dCtls             ga3 = fgGui3dCtls(meshesN,allVertsN,texssN,viewBoundsN,renderOpts,lighting.outN,nullptr,0,true);
-    vector<FgGuiTab>        viewTabs = fgSvec(
-        fgGuiTab("Camera",true,ga3.cameraGui),
-        fgGuiTab("Render",true,renderOpts.win),
-        fgGuiTab("Lighting",true,lighting.win));
-    vector<FgGuiTab>        mainTabs = fgSvec(
-        fgGuiTab("View",false,fgGuiTabs(viewTabs)),
-        fgGuiTab("Morphs",true,ga3.morphCtls)//,
-        //fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(meshStatsN))))
-    );
-    if (meshes.size() == 1)
-        mainTabs.push_back(fgGuiTab("Edit",true,ga3.editCtls));
-    else
-        mainTabs.push_back(meshSelect);
-    mainTabs.push_back(fgGuiTab("Info",true,fgGuiSplitScroll(fgSvec(fgGuiText(fgToStr(meshes))))));
-    fgGuiImplStart(
-        FgString("FaceGen SDK FgViewMeshes"),
-        //fgGuiSplitAdj(true,ga3.viewport,ga3.morphCtls),
-        fgGuiSplitAdj(true,ga3.viewport,fgGuiTabs(mainTabs)),
+    IPT<RendMeshes>     rmsN {mrms.rendMeshes};
+    Gui3d               gui3d;
+    gui3d.rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,
+        [](const RendMeshes & m,const Bools & s){return fgFilter(m,s); });
+    GuiTabDefs          mainTabs = {
+        guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View",0,true)),
+        guiTab("Morphs",true,mrms.makePoseCtrls(true)),
+        guiTab("Select",true,meshSelect),
+        guiTab("Edit",true,makeEditPane(meshSurfsNamesN,gui3d)),
+        guiTab("Info",true,guiSplitScroll(fgSvec(guiText(linkMeshStats(mrms.rendMeshes))))),
+        guiTab("System",true,guiTextLines(gui3d.systemInfo,16,true))
+    };
+    guiStartImpl(
+        Ustring("FaceGen SDK meshView"),
+        guiSplitAdj(true,std::make_shared<Gui3d>(gui3d),guiTabs(mainTabs)),
         store);
-    if (meshes.size() == 1)
-        return g_gg.getVal(meshesN)[0];
-    else
-        return Fg3dMesh();
+    return meshNs[0].cref();
 }
 
-static
+namespace {
+
 void
-simple(const FgArgs &)
+simple(const CLArgs &)
 {
-    FgString    dir = fgDataDir() + "base/";
-    Fg3dMesh    mesh = fgLoadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
-    fgViewMesh(mesh);
+    Ustring    dir = dataDir() + "base/";
+    Mesh    mesh = loadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
+    meshView(fgSvec(mesh),false);
 }
 
-static
 void
-surfs(const FgArgs &)
+surfs(const CLArgs &)
 {
-    Fg3dMesh        mesh;
-    mesh.verts.push_back(FgVect3F(0,0,0));
-    mesh.verts.push_back(FgVect3F(1,0,0));
-    mesh.verts.push_back(FgVect3F(1,1,0));
-    mesh.verts.push_back(FgVect3F(0,1,0));
-    mesh.verts.push_back(FgVect3F(0,0,-1));
-    mesh.verts.push_back(FgVect3F(0,1,-1));
-    Fg3dSurface     surf;
+    Mesh        mesh;
+    mesh.verts.push_back(Vec3F(0,0,0));
+    mesh.verts.push_back(Vec3F(1,0,0));
+    mesh.verts.push_back(Vec3F(1,1,0));
+    mesh.verts.push_back(Vec3F(0,1,0));
+    mesh.verts.push_back(Vec3F(0,0,-1));
+    mesh.verts.push_back(Vec3F(0,1,-1));
+    Surf     surf;
     surf.name = "1";
-    surf.tris.vertInds.push_back(FgVect3UI(0,1,2));
-    surf.tris.vertInds.push_back(FgVect3UI(0,5,4));
+    surf.tris.vertInds.push_back(Vec3UI(0,1,2));
+    surf.tris.vertInds.push_back(Vec3UI(2,3,0));
+    //mesh.surfaces.push_back(surf);
+    //surf.name = "2";
+    surf.tris.vertInds.push_back(Vec3UI(0,3,5));
+    surf.tris.vertInds.push_back(Vec3UI(5,4,0));
     mesh.surfaces.push_back(surf);
-    surf.name = "2";
-    surf.tris.vertInds[0] = FgVect3UI(0,2,3);
-    surf.tris.vertInds[1] = FgVect3UI(0,3,5);
-    mesh.surfaces.push_back(surf);
-    fgViewMesh(mesh);
+    meshView(fgSvec(mesh),false);
+}
+
 }
 
 void
-fgTestmGuiMesh(const FgArgs & args)
+fgTestmGuiMesh(const CLArgs & args)
 {
-    vector<FgCmd>       cmds;
-    cmds.push_back(FgCmd(simple,"simple","Jane face cutout"));
-    cmds.push_back(FgCmd(surfs,"surfs","Multiple surface mesh"));
+    vector<Cmd>       cmds;
+    cmds.push_back(Cmd(simple,"simple","Jane face cutout"));
+    cmds.push_back(Cmd(surfs,"surfs","Multiple surface mesh"));
     fgMenu(args,cmds);
+}
+
 }
 
 // */

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     John Leung
-// Created:     March 11, 2001
+
 //
 
 #ifndef FG3DMESHLEGACY_HPP
@@ -14,6 +13,8 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 #include "Fg3dMesh.hpp"
+
+namespace Fg {
 
 struct  FffMultiObjectC
 {
@@ -71,77 +72,77 @@ struct  FffMultiObjectC
                                 total += numQuads(ii);
                             return total;
                         }
-        const FgVect3F *ptArray(int objId) const
+        const Vec3F *ptArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].ptList[0]);
                         }
-        const FgVect3UI *triArray(int objId) const
+        const Vec3UI *triArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].triList[0]);
                         }
-        const FgVect4UI *quadArray(int objId) const
+        const Vec4UI *quadArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].quadList[0]);
                         }
-        const std::vector<FgVect3F> &getPtList(int objId) const
+        const Svec<Vec3F> &getPtList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].ptList;
                         }
-        std::vector<FgVect3F> &getPtList(int objId)
+        Svec<Vec3F> &getPtList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].ptList;
                         }
-        const std::vector<FgVect3UI> &getTriList(int objId) const
+        const Svec<Vec3UI> &getTriList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].triList;
                         }
-        std::vector<FgVect3UI> &getTriList(int objId)
+        Svec<Vec3UI> &getTriList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].triList;
                         }
-        const std::vector<FgVect4UI> &getQuadList(int objId) const
+        const Svec<Vec4UI> &getQuadList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].quadList;
                         }
-        std::vector<FgVect4UI> &getQuadList(int objId)
+        Svec<Vec4UI> &getQuadList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].quadList;
                         }
-        const std::vector<FgVect2F> &getTextCoord(int objId) const
+        const Svec<Vec2F> &getTextCoord(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].textCoord;
                         }
-        std::vector<FgVect2F> &getTextCoord(int objId)
+        Svec<Vec2F> &getTextCoord(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].textCoord;
                         }
-        const std::vector<FgVect3UI> &getTexTriList(int objId) const
+        const Svec<Vec3UI> &getTexTriList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texTriList;
                         }
-        std::vector<FgVect3UI> &getTexTriList(int objId)
+        Svec<Vec3UI> &getTexTriList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texTriList;
                         }
-        const std::vector<FgVect4UI> &getTexQuadList(int objId) const
+        const Svec<Vec4UI> &getTexQuadList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texQuadList;
                         }
-        std::vector<FgVect4UI> &getTexQuadList(int objId)
+        Svec<Vec4UI> &getTexQuadList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texQuadList;
@@ -190,24 +191,24 @@ struct  FffMultiObjectC
 
         struct objData
         {
-            std::vector<FgVect3F> ptList;
-            std::vector<FgVect3UI> triList;
-            std::vector<FgVect4UI> quadList;
-            std::vector<FgVect2F> textCoord;
-            std::vector<FgVect3UI> texTriList;
-            std::vector<FgVect4UI> texQuadList;
+            Svec<Vec3F> ptList;
+            Svec<Vec3UI> triList;
+            Svec<Vec4UI> quadList;
+            Svec<Vec2F> textCoord;
+            Svec<Vec3UI> texTriList;
+            Svec<Vec4UI> texQuadList;
             std::string             textureFile;
             std::string             modelName;
         };
 
-        std::vector<objData> m_objs;
+        Svec<objData> m_objs;
 };
 
 struct  FgMeshLegacy
 {
     FffMultiObjectC                 base;
-    std::vector<FffMultiObjectC>    morphs;
-    std::vector<std::string>        morphNames;
+    Svec<FffMultiObjectC>    morphs;
+    Svec<std::string>        morphNames;
 
     void
     forcePerVertexTextCoord()
@@ -221,9 +222,11 @@ struct  FgMeshLegacy
 // Also saves the texture images to appropriate filenames:
 FgMeshLegacy
 fgMeshLegacy(
-    const std::vector<Fg3dMesh> &   meshes,
-    const FgString &                fname,
+    const Svec<Mesh> &   meshes,
+    const Ustring &                fname,
     const std::string &             imgFormat,
     uint                            maxLen=0);      // If non-zero, maxmum base filename length allowed (eg. 3DS)
+
+}
 
 #endif

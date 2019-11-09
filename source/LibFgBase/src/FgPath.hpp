@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Jan 27, 2012
+
 //
 // Terminology:
 //
@@ -26,6 +25,8 @@
 #include "FgStdString.hpp"
 #include "FgString.hpp"
 
+namespace Fg {
+
 #ifdef _WIN32
     #define FG_FS_DIR_SEP "\\"
 #else
@@ -33,8 +34,8 @@
 #endif
 
 // Native directory separator converter:
-inline string
-fgNs(const string & path)
+inline String
+fgNs(const String & path)
 {
 #ifdef _WIN32
     return fgReplace(path,'/','\\');
@@ -43,8 +44,8 @@ fgNs(const string & path)
 #endif
 }
 
-inline FgString
-fgNfs(const FgString & path)
+inline Ustring
+fgNfs(const Ustring & path)
 {
 #ifdef _WIN32
     return path.replace('/','\\');
@@ -53,54 +54,54 @@ fgNfs(const FgString & path)
 #endif
 }
 
-string
+String
 fgDirSep();                         // Directory separator ('/' on Unix, '\' on Windows)
 
 // '.' and '..' are only handled relative to given path string, not 'current' path:
-struct  FgPath
+struct  Path
 {
     // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
     // OR drive letter on Windows (eg C:), in which case 'root' can be either.
-    FgString            drive;
+    Ustring            drive;
     bool                root;   // Path starts at root ? (otherwise relative)
-    FgStrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
-    FgString            base;   // Base filename
-    FgString            ext;    // Filename extension (no '.')
+    Ustrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
+    Ustring            base;   // Base filename
+    Ustring            ext;    // Filename extension (no '.')
 
-    FgPath() : root(false) {}
+    Path() : root(false) {}
 
-    // Leaving this implicit allows FgString to be used as an arg for functions taking FgPath.
+    // Leaving this implicit allows Ustring to be used as an arg for functions taking Path.
     // Anything in 'path' not suffixed by a directory delimiter is assumed to be a file.
-    FgPath(const FgString & path);
+    Path(const Ustring & path);
 
-    FgPath(
-        const FgString & d,bool r,const FgStrings & ds,
-        const FgString & b,const FgString & e)
+    Path(
+        const Ustring & d,bool r,const Ustrings & ds,
+        const Ustring & b,const Ustring & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}
 
     // All delimiters in native form. All directory names end with delimiter:
-    FgString
+    Ustring
     str() const;
 
     // Only the first N directories with no filename, terminated with a delimiter:
-    FgString
+    Ustring
     dir(size_t n) const;
 
     // Directory terminated with a delimiter:
-    FgString
+    Ustring
     dir() const
     {return dir(dirs.size()); }
 
-    FgString
+    Ustring
     baseExt() const;
 
-    FgString
+    Ustring
     dirBase() const
     {return dir() + base; }
 
-    FgPath
-    operator+(const FgPath &  rhs) const;
+    Path
+    operator+(const Path &  rhs) const;
 
     // Move up 'num' directories. Throws an error if not possible:
     void
@@ -112,33 +113,35 @@ struct  FgPath
 };
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
-FgPath
-fgPathFromDir(const FgString & directory);
+Path
+fgPathFromDir(const Ustring & directory);
 
-FgString
-fgPathToBase(const FgString & path);
+Ustring
+fgPathToBase(const Ustring & path);
 
-FgString
-fgPathToDirBase(const FgString & path);
+Ustring
+fgPathToDirBase(const Ustring & path);
 
-FgString
-fgPathToExt(const FgString & path);
+Ustring
+fgPathToExt(const Ustring & path);
 
-string
-fgPathToExt(const string & path);
+String
+fgPathToExt(const String & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-fgCheckExt(const FgString & path,const string & ext);
+fgCheckExt(const Ustring & path,const String & ext);
 
-FgString
-fgPathToName(const FgString & path);
+Ustring
+fgPathToName(const Ustring & path);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
-FgString
-fgAsDirectory(const FgString & path);
+Ustring
+fgAsDirectory(const Ustring & path);
 
-string
-fgAsDirectory(const string & path);
+String
+fgAsDirectory(const String & path);
+
+}
 
 #endif

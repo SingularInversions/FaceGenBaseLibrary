@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,25 +16,27 @@
 
 using namespace std;
 
-struct  FgGuiWinButton : public FgGuiOsBase
+namespace Fg {
+
+struct  GuiButtonWin : public GuiBaseImpl
 {
-    FgGuiApiButton      m_api;
+    GuiButton      m_api;
     HWND                hwndButton,
                         hwndThis;
 
-    FgGuiWinButton(const FgGuiApiButton & api)
+    GuiButtonWin(const GuiButton & api)
     : m_api(api)
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Button::create visible: " << visible << " extStyle: " << extStyle << fgpush;
         // We need a parent window in order to catch the button command messages:
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -45,13 +47,13 @@ struct  FgGuiWinButton : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
-    {return FgVect2UI(100,24); }
+    {return Vec2UI(100,24); }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
-    {return FgVect2B(false,false); }
+    {return Vec2B(false,false); }
 
     virtual void
     updateIfChanged()
@@ -60,7 +62,7 @@ struct  FgGuiWinButton : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "Button::moveWindow: " << lo << "," << sz;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
@@ -79,7 +81,7 @@ struct  FgGuiWinButton : public FgGuiOsBase
         if (msg == WM_CREATE) {
 //fgout << fgnl << "Button::WM_CREATE";
             // This is the first place we get the hwnd for this instance since this callback
-            // happens before 'fgCreateChild' above returns:
+            // happens before 'winCreateChild' above returns:
             hwndThis = hwnd;
             hwndButton =
                 CreateWindowEx(0,
@@ -89,7 +91,7 @@ struct  FgGuiWinButton : public FgGuiOsBase
                     0,0,0,0,            // Will be sent MOVEWINDOW messages.
                     hwnd,
                     HMENU(0),
-                    s_fgGuiWin.hinst,
+                    s_guiWin.hinst,
                     NULL);              // No WM_CREATE parameter
             FGASSERTWIN(hwndButton != 0);
         }
@@ -98,7 +100,7 @@ struct  FgGuiWinButton : public FgGuiOsBase
             int     hgt = HIWORD(lParam);
             if (wid*hgt > 0) {
 //fgout << fgnl << "Button::WM_SIZE: " << wid << "," << hgt;
-                int     buttonHgt = fgMin(int(getMinSize()[1]),hgt),
+                int     buttonHgt = minEl(int(getMinSize()[1]),hgt),
                         vspace = hgt - buttonHgt;
                 MoveWindow(hwndButton,0,vspace/2,wid,buttonHgt,TRUE);
             }
@@ -109,7 +111,7 @@ struct  FgGuiWinButton : public FgGuiOsBase
             if (code == 0) {
                 FGASSERT(ident == 0);
                 m_api.action();
-                g_gg.updateScreen();
+                winUpdateScreen();
             }
         }
 //case WM_PAINT:
@@ -120,6 +122,8 @@ struct  FgGuiWinButton : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiButton & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinButton(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiButton & def)
+{return GuiImplPtr(new GuiButtonWin(def)); }
+
+}

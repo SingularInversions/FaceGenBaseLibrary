@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 24, 2011
+
 //
 
 #include "stdafx.h"
@@ -13,9 +12,11 @@
 
 using namespace std;
 
+namespace Fg {
+
 bool
-FgOfstream::open(
-    const FgString &        fname,
+Ofstream::open(
+    const Ustring &        fname,
     bool                    append,
     bool                    throwOnFail)
 {
@@ -40,8 +41,8 @@ FgOfstream::open(
 }
 
 bool
-FgIfstream::open(
-    const FgString &        fname,
+Ifstream::open(
+    const Ustring &        fname,
     bool                    throwOnFail)
 {
     // Use try-catch in case client has enabled ios::exceptions (not enabled by default):
@@ -62,10 +63,12 @@ FgIfstream::open(
 }
 
 void
-fgWriteFile(const FgString & fname,const std::string & data,bool append)
+fgWriteFile(const Ustring & fname,const std::string & data,bool append)
 {
-    FgOfstream  ofs(fname,append);
+    Ofstream  ofs(fname,append);
     ofs << data;
+}
+
 }
 
 // */

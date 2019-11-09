@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-//
+
 // Structures for building nested commands within a single CLI executable
 
 #ifndef FG_COMMAND_HPP
@@ -17,31 +16,33 @@
 #include "FgMain.hpp"
 #include "FgFileSystem.hpp"
 
-struct FgCmd
+namespace Fg {
+
+struct Cmd
 {
-    FgCmdFunc       func;
-    std::string     name;
-    std::string     description;
+    CmdFunc         func;
+    String          name;
+    String          description;
 
-    FgCmd() {}
+    Cmd() {}
 
-    FgCmd(FgCmdFunc func_,const char * name_)
+    Cmd(CmdFunc func_,const char * name_)
         : func(func_), name(name_) {}
 
-    FgCmd(FgCmdFunc func_,const char * name_,const char * description_)
+    Cmd(CmdFunc func_,const char * name_,const char * description_)
         : func(func_), name(name_), description(description_) {}
 
     bool
-    operator<(const FgCmd & rhs) const
+    operator<(const Cmd & rhs) const
     {return (name < rhs.name); }
 };
 
-typedef std::vector<FgCmd> FgCmds;
+typedef Svec<Cmd> Cmds;
 
 void
 fgMenu(
-    FgArgs              args,
-    const FgCmds &      cmds,
+    CLArgs              args,
+    const Cmds &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
     bool                optionQuiet=false,  // Give option to silence console output
     bool                optionKeep=false);  // Give option to keep test files
@@ -50,12 +51,12 @@ fgMenu(
 // and removes the directory on destruction (unless the 'keep temp files' option has been selected):
 struct FgTestDir
 {
-    FgPushDir       pd;
-    FgPath          path;
+    PushDir         pd;
+    Path            path;
 
     FgTestDir() {}
 
-    FgTestDir(const std::string & name);
+    FgTestDir(const String & name);
 
     ~FgTestDir();
 };
@@ -66,25 +67,27 @@ struct FgTestDir
 
 // Set the root test directory. Useful for sandboxed platforms:
 void
-fgSetRootTestDir(const FgString & dir);
+fgSetRootTestDir(const Ustring & dir);
 
 // Make a copy of a data file in current directory:
 void
-fgTestCopy(const std::string & nameRelativeToDataDir);
+fgTestCopy(const String & nameRelativeToDataDir);
 
-// fgout the desired command, parse 'argStr' into an FgArgs, and run with indent:
+// fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
 void
-fgRunCmd(const FgCmdFunc & func,const string & argStr);
+runCmd(const CmdFunc & func,const String & argStr);
 
-// Useful for writing command dispatch commands - as long as vector<FgCmd> is named 'cmds':
-#define FGADDCMD1(fn,name) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,name))
-#define FGADDCMD(fn,name,desc) void fn(const FgArgs &); cmds.push_back(FgCmd(fn,name,desc))
+// Useful for writing command dispatch commands - as long as Svec<Cmd> is named 'cmds':
+#define FGADDCMD1(fn,name) void fn(const CLArgs &); cmds.push_back(Cmd(fn,name))
+#define FGADDCMD(fn,name,desc) void fn(const CLArgs &); cmds.push_back(Cmd(fn,name,desc))
 
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();
 
 // Returns true if the user is doing a 'test all', so we can choose to skip non-automatable tests:
 bool
-fgAutomatedTest(const FgArgs &);
+fgAutomatedTest(const CLArgs &);
+
+}
 
 #endif

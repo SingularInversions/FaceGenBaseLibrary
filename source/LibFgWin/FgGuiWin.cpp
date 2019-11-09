@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -37,19 +37,20 @@
 
 using namespace std;
 
-FgGuiWinStatics s_fgGuiWin;
+namespace Fg {
 
-static wchar_t fgGuiWinMain[] = L"FgGuiWinMain";
+GuiWinStatics s_guiWin;
 
-struct  FgGuiWinMain
+struct  GuiWinMain
 {
-    FgString                    m_title;
-    FgString                    m_store;        // Base filename for state storage
-    FgPtr<FgGuiOsBase>          m_win;
-    FgVect2UI                   m_size;         // Current size of client area
+    Ustring                     m_title;
+    Ustring                     m_store;        // Base filename for state storage
+    GuiImplPtr                  m_win;
+    Vec2UI                      m_size;         // Current size of client area
     vector<HANDLE>              eventHandles;   // Client event handles to trigger message loop
-    vector<FgFunc>              eventHandlers;  // Respective event handlers
-    vector<FgGuiKeyHandle>      keyHandlers;
+    vector<FgFnVoid2Void>       eventHandlers;  // Respective event handlers
+    vector<GuiKeyHandle>        keyHandlers;
+    function<void()>            onUpdate;       // Run on each screen update
 
     void
     start()
@@ -60,26 +61,27 @@ struct  FgGuiWinMain
         icc.dwICC = ICC_BAR_CLASSES;
         InitCommonControlsEx(&icc);
 
+        wchar_t constexpr   className[] = L"GuiWinMain";
         // The following will give us a handle to the current instance aka 'module',
         // which corresponds to the binary file in which this code is compiled
         // (ie. EXE or a DLL):
         WNDCLASSEX  wcl;
         wcl.cbSize = sizeof(wcl);
-        if (GetClassInfoEx(s_fgGuiWin.hinst,fgGuiWinMain,&wcl) == 0) {
+        if (GetClassInfoEx(s_guiWin.hinst,className,&wcl) == 0) {
             // 101 is the fgb-generated resource number of the icon images (if provided):
-            HICON   icon = LoadIcon(s_fgGuiWin.hinst,MAKEINTRESOURCE(101));
+            HICON   icon = LoadIcon(s_guiWin.hinst,MAKEINTRESOURCE(101));
             if (icon == NULL)
                 icon = LoadIcon(NULL,IDI_APPLICATION);
             wcl.style = CS_HREDRAW | CS_VREDRAW;
-            wcl.lpfnWndProc = &fgStatWndProc<FgGuiWinMain>;
+            wcl.lpfnWndProc = &statWndProc<GuiWinMain>;
             wcl.cbClsExtra = 0;
             wcl.cbWndExtra = sizeof(void *);
-            wcl.hInstance = s_fgGuiWin.hinst;
+            wcl.hInstance = s_guiWin.hinst;
             wcl.hIcon = icon;
             wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
             wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
             wcl.lpszMenuName = NULL;
-            wcl.lpszClassName = fgGuiWinMain;
+            wcl.lpszClassName = className;
             wcl.hIconSm = NULL;
             FGASSERTWIN(RegisterClassEx(&wcl));
         }
@@ -87,11 +89,11 @@ struct  FgGuiWinMain
         // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
         // col vec 1 is size. Windows screen coordinates:
         // x - right, y - down, origin - upper left corner of MAIN screen.
-        FgMat22I        posDims(CW_USEDEFAULT,1200,CW_USEDEFAULT,800),
+        Mat22I        posDims(CW_USEDEFAULT,1400,CW_USEDEFAULT,900),
                         pdTmp;
         if (fgLoadXml(m_store+".xml",pdTmp,false)) {
-            FgVect2I    pdAbs = fgAbs(pdTmp.subMatrix<2,1>(0,0));
-            FgVect2I    pdMin = FgVect2I(m_win->getMinSize());
+            Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
+            Vec2I    pdMin = Vec2I(m_win->getMinSize());
             if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
                 (pdAbs[1] < 32000) &&
                 (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
@@ -103,9 +105,9 @@ struct  FgGuiWinMain
         // This is done so that the caller can send messages to the child window immediately
         // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
         // after creation, so that dynamic windows can be created and setting can be udpated:
-        s_fgGuiWin.hwndMain =
+        s_guiWin.hwndMain =
             CreateWindowEx(0,
-                fgGuiWinMain,
+                className,
                 m_title.as_wstring().c_str(),
                 WS_OVERLAPPEDWINDOW,
                 posDims[0],posDims[2],
@@ -113,18 +115,18 @@ struct  FgGuiWinMain
                 NULL,NULL,
                 // Contrary to MSDN docs, this is used on all WinOSes to disambiguate
                 // the class name over different modules [Raymond Chen]:
-                s_fgGuiWin.hinst,
+                s_guiWin.hinst,
                 this);      // Value to be sent as argument with WM_NCCREATE message
-        FGASSERTWIN(s_fgGuiWin.hwndMain);
+        FGASSERTWIN(s_guiWin.hwndMain);
 //fgout << fgpop;
 
 //fgout << fgnl << "ShowWindow";
         // Set the currently selected windows to show, which also causes the WM_SIZE message
         // to be sent (and for the builtin controls, WM_PAINT):
-        ShowWindow(s_fgGuiWin.hwndMain,SW_SHOWNORMAL);
+        ShowWindow(s_guiWin.hwndMain,SW_SHOWNORMAL);
         // The first draw doesn't work properly without this; for some reason the initial
         // window isn't fully invalidated, especially within windows using win32 controls:
-        InvalidateRect(s_fgGuiWin.hwndMain,NULL,TRUE);
+        InvalidateRect(s_guiWin.hwndMain,NULL,TRUE);
         MSG         msg;
         HANDLE      dummyEvent = INVALID_HANDLE_VALUE;
         HANDLE      *eventsPtr = (eventHandles.empty() ? &dummyEvent : &eventHandles[0]);
@@ -139,7 +141,7 @@ struct  FgGuiWinMain
             if ((idx >= 0) && (idx < int(eventHandles.size()))) {
                 eventHandlers[idx]();
 //fgout << fgnl << "SendMessage WM_USER" << fgpush;
-                g_gg.updateScreen();
+                winUpdateScreen();
 //fgout << fgpop;
             }
             // Get all messages here since MsgWaitForMultipleObjects waits for NEW messages:
@@ -169,7 +171,7 @@ struct  FgGuiWinMain
         // Enforce minimum windows sizes. This only works on the main window so
         // we must calculate the minimum size from that of all sub-windows:
         else if (msg == WM_GETMINMAXINFO) {
-            FgVect2UI       min = m_win->getMinSize() + fgNcSize(hwnd);
+            Vec2UI       min = m_win->getMinSize() + winNcSize(hwnd);
             MINMAXINFO *    mmi = (MINMAXINFO*)lParam;
             POINT           pnt;
             pnt.x = min[0];
@@ -184,7 +186,7 @@ struct  FgGuiWinMain
             // on entire window. So we must avoid zero sizing:
             if (m_size[0]*m_size[1] > 0) {
 //fgout << fgnl <<  "Main::WM_SIZE: " << m_size << fgpush;
-                m_win->moveWindow(FgVect2I(0),FgVect2I(m_size));
+                m_win->moveWindow(Vec2I(0),Vec2I(m_size));
 //fgout << fgpop;
             }
         }
@@ -200,14 +202,15 @@ struct  FgGuiWinMain
         else if (msg == WM_CHAR) {
             wchar_t     wkey = wchar_t(wParam);
             for (size_t ii=0; ii<keyHandlers.size(); ++ii) {
-                FgGuiKeyHandle  kh = keyHandlers[ii];
+                GuiKeyHandle  kh = keyHandlers[ii];
                 if (wkey == wchar_t(kh.key))
                     kh.handler();
             }
         }
-        // This msg is sent by FgGuiGraph::updateScreen() which is called whenever an 
-        // input has been changed:
+        // This msg is sent by updateScreen():
         else if (msg == WM_USER) {
+            if (onUpdate)
+                onUpdate();
 //fgout << fgnl << "Main::WM_USER " << flush << fgpush;
             m_win->updateIfChanged();
 //fgout << fgnl << "updateIfChanged done " << flush << fgpop;
@@ -218,13 +221,13 @@ struct  FgGuiWinMain
             // Don't use GetWindowRect here as it's affected by minimization and maximization:
             FGASSERTWIN(GetWindowPlacement(hwnd,&wp));
             const RECT &        rect = wp.rcNormalPosition;
-            FgMat22I dims(rect.left,rect.right-rect.left,rect.top,rect.bottom-rect.top);
+            Mat22I dims(rect.left,rect.right-rect.left,rect.top,rect.bottom-rect.top);
             fgSaveXml(m_store+".xml",dims,false);
             m_win->saveState();
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
         }
         //else if (msg == WM_MOUSEWHEEL) {
-        //    FgOpt<HWND>     child = m_win->getHwnd();
+        //    Opt<HWND>     child = m_win->getHwnd();
         //    if (child.valid())
         //        SendMessage(child.val(),msg,wParam,lParam);
         //}
@@ -235,56 +238,39 @@ struct  FgGuiWinMain
 };
 
 void
-FgGuiGraph::updateScreenImpl()
+guiStartImpl(
+    Ustring const &                title,
+    GuiPtr                        gui,
+    Ustring const &                store,
+    GuiOptions const &            options)
 {
-//fgout << fgnl << "s_fgGuiWin.hwndMain: " << s_fgGuiWin.hwndMain << flush;
-    SendMessage(s_fgGuiWin.hwndMain,WM_USER,0,0);
-//    LRESULT     ret = SendMessage(s_fgGuiWin.hwndMain,WM_USER,0,0);
-//fgout << fgnl << "SendMessage returned: " << ret << flush;
-}
-
-void
-FgGuiGraph::quit()
-{
-    // When a WM_CLOSE message is generated by the user clicking the close 'X' button,
-    // the default (DefWindowProc) is to do this, which of course generates a WM_DESTROY:
-    DestroyWindow(s_fgGuiWin.hwndMain);
-}
-
-void
-fgGuiImplStart(
-    const FgString &            title,
-    FgPtr<FgGuiApiBase>   def,
-    const FgString &            storeDir,
-    const FgGuiOptions &        opts)
-{
-    s_fgGuiWin.hinst = GetModuleHandle(NULL);
-    FgGuiWinMain    gui;
-    gui.m_title = title;
-    gui.m_store = storeDir + "win_";
-    gui.m_win = def->getInstance();
-    for (size_t ii=0; ii<opts.events.size(); ++ii) {
-        gui.eventHandles.push_back(opts.events[ii].handle);
-        gui.eventHandlers.push_back(opts.events[ii].handler);
+    s_guiWin.hinst = GetModuleHandle(NULL);
+    GuiWinMain        win;
+    win.m_title = title;
+    win.m_store = store + "Win";
+    win.m_win = gui->getInstance();
+    for (GuiEvent const & event : options.events) {
+        win.eventHandles.push_back(event.handle);
+        win.eventHandlers.push_back(event.handler);
     }
-    gui.keyHandlers = opts.keyHandlers;
-    gui.start();
-    g_gg.saveInputs();
-    s_fgGuiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
+    win.keyHandlers = options.keyHandlers;
+    win.onUpdate = options.onUpdate;
+    win.start();
+    s_guiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
 }
 
-FgVect2I
-fgScreenPos(HWND hwnd,LPARAM lParam)
+Vec2I
+winScreenPos(HWND hwnd,LPARAM lParam)
 {
     POINT       coord;
     coord.x = GET_X_LPARAM(lParam);
     coord.y = GET_Y_LPARAM(lParam);
     FGASSERTWIN(ClientToScreen(hwnd,&coord));
-    return FgVect2I(coord.x,coord.y);
+    return Vec2I(coord.x,coord.y);
 }
 
-FgVect2UI
-fgNcSize(HWND hwnd)
+Vec2UI
+winNcSize(HWND hwnd)
 {
     // Calculate how much space Windows is taking for the NC area.
     // I was unable to get similar values using GetSystemMetrics (eg. for
@@ -294,15 +280,15 @@ fgNcSize(HWND hwnd)
     FGASSERTWIN(GetWindowRect(hwnd,&rectW));
     FGASSERTWIN(GetClientRect(hwnd,&rectC));
     return
-        FgVect2UI(
+        Vec2UI(
             (rectW.right-rectW.left)-(rectC.right-rectC.left),
             (rectW.bottom-rectW.top)-(rectC.bottom-rectC.top));
 }
 
 LRESULT
-fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
+winCallCatch(std::function<LRESULT(void)> func,const string & className)
 {
-    FgString    msg;
+    Ustring    msg;
     try
     {
         return func();
@@ -321,23 +307,23 @@ fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
     }
     catch(std::exception const & e)
     {
-        msg = "std::exception: " + FgString(e.what());
+        msg = "std::exception: " + Ustring(e.what());
     }
     catch(...)
     {
         msg = "Unknown type: ";
     }
-    msg = "ERROR @ fgWinCallCatch: " + msg;
-    FgString        caption = "ERROR",
+    msg = "ERROR @ winCallCatch: " + msg;
+    Ustring        caption = "ERROR",
                     sysInfo;
     try
     {
         sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
             + fgOsName() + "\n" + className + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
-            fgGuiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
+            guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else
-            fgGuiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
+            guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
         return LRESULT(0);
     }
     catch(FgException const & e)
@@ -346,12 +332,30 @@ fgWinCallCatch(std::function<LRESULT(void)> func,const string & className)
     }
     catch(std::exception const & e)
     {
-        msg += "std::exception: " + FgString(e.what());
+        msg += "std::exception: " + Ustring(e.what());
     }
     catch(...)
     {
         msg += "Unknown type: ";
     }
-    fgGuiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
+    guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
     return LRESULT(0);
+}
+
+void winUpdateScreen()
+{
+//fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
+    SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
+//    LRESULT     ret = SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
+//fgout << fgnl << "SendMessage returned: " << ret << flush;
+}
+
+void
+guiQuit()
+{
+    // When a WM_CLOSE message is generated by the user clicking the close 'X' button,
+    // the default (DefWindowProc) is to do this, which generates a WM_DESTROY:
+    DestroyWindow(s_guiWin.hwndMain);
+}
+
 }

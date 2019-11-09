@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 7, 2011
+
 //
 
 #ifndef FGBUILD_HPP
@@ -13,11 +12,13 @@
 #include "FgStdLibs.hpp"
 #include "FgStdString.hpp"
 
+namespace Fg {
+
 // Build OS families are identical with respect to build files:
 enum struct FgBuildOS { win, linux, macos, ios, android };
-typedef std::vector<FgBuildOS>      FgBuildOSs;
+typedef Svec<FgBuildOS>      FgBuildOSs;
 std::ostream & operator<<(std::ostream &,FgBuildOS);
-FgBuildOS fgStrToBuildOS(const string &);
+FgBuildOS fgStrToBuildOS(const String &);
 
 // Supported native-build OS families (ie. not cross-compiled):
 inline FgBuildOSs
@@ -34,18 +35,18 @@ fgCurrentBuildOS();
 
 // Instruction set architectures:
 enum struct FgArch { x86, x64, armv7, arm64, arm64e };
-typedef std::vector<FgArch>     FgArchs;
+typedef Svec<FgArch>     FgArchs;
 std::ostream & operator<<(std::ostream &,FgArch);
-FgArch fgStrToArch(const string &);
+FgArch fgStrToArch(const String &);
 
 FgArchs
 fgBuildArchitectures(FgBuildOS os);
 
 // Supported compilers (based on platform):
-enum struct FgCompiler { vs13, vs15, vs17, gcc, clang, icpc };
-typedef std::vector<FgCompiler>     FgCompilers;
+enum struct FgCompiler { vs13, vs15, vs17, vs19, gcc, clang, icpc };
+typedef Svec<FgCompiler>     FgCompilers;
 std::ostream & operator<<(std::ostream &,FgCompiler);
-FgCompiler fgStrToCompiler(const string &);
+FgCompiler fgStrToCompiler(const String &);
 
 // Supported build compilers for given OS.
 // The first listed compiler is the default for binary distribution:
@@ -55,19 +56,19 @@ fgBuildCompilers(FgBuildOS os);
 FgCompiler
 fgCurrentCompiler();
 
-string
+String
 fgCurrentBuildConfig();
 
-string
+String
 fgCurrentBuildDescription();
 
 inline
-string
-fgNsOs(const string & path,FgBuildOS os)
+String
+fgNsOs(const String & path,FgBuildOS os)
 {return (os == FgBuildOS::win) ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
 
 // Return bin directory for given configuration relative to the repo root:
-string
+String
 fgRelBin(FgBuildOS,FgArch,FgCompiler,bool release,bool backslash=false);
 
 // Fast insecure hash for generating UUIDs from unique strings of at least length 8 based on std::hash.
@@ -75,7 +76,7 @@ fgRelBin(FgBuildOS,FgArch,FgCompiler,bool release,bool backslash=false);
 // 64 and 32 bit versions will NOT generate the same value, nor will different compilers (per std::hash).
 // In future may upgrade to MurmurHash3 to ensure fully deterministic mapping:
 uint64
-fgUuidHash64(const string & uniqueString);
+fgUuidHash64(const String & uniqueString);
 
 struct  FgUint128
 {
@@ -84,14 +85,16 @@ struct  FgUint128
 
 // As above but requires unique string at least length 16:
 FgUint128
-fgUuidHash128(const string & uniqueString);
+fgUuidHash128(const String & uniqueString);
 
 // See comments on fgUuidHash64. Fills UUID 'time' fields with random bits for deterministic
 // regression testing; all randomness generated from 'name' argument:
-string
+String
 fgCreateMicrosoftGuid(
-    const string &  name,   // Must be at least 16 bytes long.
+    const String &  name,   // Must be at least 16 bytes long.
     bool            withSquiglyBrackets=true);
+
+}
 
 #endif
 

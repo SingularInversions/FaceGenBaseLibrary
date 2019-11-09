@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 25, 2011
+
 //
 
 #ifndef FGGUIAPIMAIN_HPP
@@ -18,6 +17,9 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#undef max
+#undef min
 
 // These CRT includes are absolutely required here to avoid link errors. No idea why but
 // has something to do with the fact that the actual entry point of the EXE is the CRT initialization

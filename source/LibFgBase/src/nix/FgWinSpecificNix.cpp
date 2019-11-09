@@ -12,10 +12,14 @@
 
 using namespace std;
 
-FgOpt<ulong>
-fgWinRegistryLookupUlong(const FgString &,const FgString &)
-{return FgOpt<ulong>(); }
+namespace Fg {
 
-FgOpt<FgString>
-fgWinRegistryLookupString(const FgString &,const FgString &)
-{return FgOpt<FgString>(); }
+Opt<ulong>
+winRegistryLookupUlong(const Ustring &,const Ustring &)
+{return Opt<ulong>(); }
+
+Opt<Ustring>
+fgWinRegistryLookupString(const Ustring &,const Ustring &)
+{return Opt<Ustring>(); }
+
+}

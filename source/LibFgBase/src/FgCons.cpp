@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Nov 29, 2011
+
 //
 
 #include "stdafx.h"
@@ -20,15 +19,17 @@
 
 using namespace std;
 
+namespace Fg {
+
 static
 vector<string>
 glob(const string & dir)
 {
     vector<string>      ret;
-    FgDirectoryContents dc = fgDirectoryContents(dir);
+    DirectoryContents dc = directoryContents(dir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         string      fn = dc.filenames[ii].as_utf8_string();
-        FgPath      p(fn);
+        Path      p(fn);
         string      ext = p.ext.ascii(),
                     base = p.base.ascii();
         if (((ext == "cpp") || (ext == "c") || (ext == "hpp") || (ext == "h")) &&
@@ -54,7 +55,7 @@ FgConsProj::descriptor() const
 FgConsProj
 FgConsSolution::addApp(const string & name,const string & lnkDep)
 {
-    if (!fgExists(name))
+    if (!pathExists(name))
         fgThrow("Unable to find directory",name);
     const FgConsProj &  dp = at(lnkDep);
     if (!dp.isStaticLib())
@@ -101,17 +102,17 @@ FgConsSolution::at(const string & projName) const
 }
 
 // Topological sort of transitive includes:
-FgStrs
+Strings
 FgConsSolution::getTransitiveIncludes(const string & projName,bool fileDir,set<string> & done) const
 {
     const FgConsProj &  p = at(projName);
-    FgStrs              ret;
+    Strings              ret;
     // DLLs are not transitive - related include file must be a separate explicit lnkDep:
     if (p.isDynamicLib())
         return ret;
     for (const FgProjDep & pd : p.projDeps) {
         if (!fgContains(done,pd.name) && pd.transitive) {
-            fgCat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+            cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
             done.insert(pd.name);
         }
     }
@@ -126,14 +127,14 @@ FgConsSolution::getTransitiveIncludes(const string & projName,bool fileDir,set<s
     return ret;
 }
 
-FgStrs
+Strings
 FgConsSolution::getIncludes(const string & projName,bool fileDir) const
 {
     const FgConsProj &  p = at(projName);
-    FgStrs              ret;
+    Strings              ret;
     set<string>         done;
     for (const FgProjDep & pd : p.projDeps)
-        fgCat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+        cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
     for (const FgIncDir & id : p.incDirs) {
         if (fileDir)
             ret.push_back(p.baseDir+id.relPath+id.relFiles);
@@ -144,11 +145,11 @@ FgConsSolution::getIncludes(const string & projName,bool fileDir) const
 }
 
 // Topological sort of transitive defines:
-FgStrs
+Strings
 FgConsSolution::getTransitiveDefs(const string & projName,set<string> & done) const
 {
     const FgConsProj &  p = at(projName);
-    FgStrs              ret;
+    Strings              ret;
     // DLLs are not transitive - related include file must be a separate explicit lnkDep:
     if (p.isDynamicLib())
         return ret;
@@ -164,11 +165,11 @@ FgConsSolution::getTransitiveDefs(const string & projName,set<string> & done) co
     return ret;
 }
 
-FgStrs
+Strings
 FgConsSolution::getDefs(const string & projName) const
 {
     const FgConsProj &  p = at(projName);
-    FgStrs              ret;
+    Strings              ret;
     set<string>         done;
     for (const FgProjDep & pd : p.projDeps)
         fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
@@ -177,64 +178,64 @@ FgConsSolution::getDefs(const string & projName) const
     return ret;
 }
 
-FgStrs
+Strings
 FgConsSolution::getTransitiveLnkDeps(const string & projName,set<string> & done) const
 {
-    FgStrs              ret;
+    Strings              ret;
     if (fgContains(done,projName))
         return ret;
     const FgConsProj &  p = at(projName);
     if (p.isStaticLib())                // Only static libs link transitively, not DLLs:
         for (const FgProjDep & pd : p.projDeps)
-            fgCat_(ret,getTransitiveLnkDeps(pd.name,done));
-    fgCat_(ret,p.binDllDeps);           // Assume binary link deps are most derived (hack)
+            cat_(ret,getTransitiveLnkDeps(pd.name,done));
+    cat_(ret,p.binDllDeps);           // Assume binary link deps are most derived (hack)
     if (!p.srcGroups.empty())           // Header-only libs don't link:
         ret.push_back(projName);
     done.insert(projName);
     return ret;
 }
 
-FgStrs
+Strings
 FgConsSolution::getLnkDeps(const string & projName) const
 {
     const FgConsProj &  p = at(projName);
-    FgStrs              ret;
+    Strings              ret;
     set<string>         done;
     for (const FgProjDep & pd : p.projDeps)
-        fgCat_(ret,getTransitiveLnkDeps(pd.name,done));
+        cat_(ret,getTransitiveLnkDeps(pd.name,done));
     return fgReverse(ret);
 }
 
-FgStrs
+Strings
 FgConsSolution::getAllDeps(const string & projName,set<string> & done,bool dllSource) const
 {
-    FgStrs      ret;
+    Strings      ret;
     if (fgContains(done,projName))
         return ret;
     const FgConsProj &  p = at(projName);
     if (!dllSource && p.isDynamicLib())
         return ret;
     for (const FgProjDep & pd : p.projDeps)
-        fgCat_(ret,getAllDeps(pd.name,done,dllSource));
+        cat_(ret,getAllDeps(pd.name,done,dllSource));
     ret.push_back(projName);
     done.insert(projName);
     return ret;
 }
 
-FgStrs
+Strings
 FgConsSolution::getAllDeps(const string & projName,bool dllSource) const
 {
     set<string>     done;
     return getAllDeps(projName,done,dllSource);
 }
 
-FgStrs
-FgConsSolution::getAllDeps(const FgStrs & projNames,bool dllSource) const
+Strings
+FgConsSolution::getAllDeps(const Strings & projNames,bool dllSource) const
 {
     set<string>     done;
-    FgStrs          ret;
+    Strings          ret;
     for (const string & projName : projNames)
-        fgCat_(ret,getAllDeps(projName,done,dllSource));
+        cat_(ret,getAllDeps(projName,done,dllSource));
     return ret;
 }
 
@@ -295,7 +296,7 @@ fgGetConsData(FgConsType type)
         depName = basewin.name;
     }
 
-    if (fgExists("fgbl"))
+    if (pathExists("fgbl"))
         ret.addAppClp("fgbl",depName);
 
     return ret;
@@ -318,8 +319,8 @@ fgConsCrossMakefiles(const FgConsSolution & sln);
 bool
 fgConsBuildFiles(const FgConsSolution & sln)
 {
-    FgPushDir       pd;
-    if (fgExists("source"))
+    PushDir       pd;
+    if (pathExists("source"))
         pd.push("source");
     bool        changed = false;
     if (sln.type == FgConsType::win)
@@ -336,15 +337,18 @@ fgConsBuildFiles(const FgConsSolution & sln)
 void
 fgConsBuildAllFiles()
 {
+    PushDir       pd;
+    if (pathExists("source"))
+        pd.push("source");
     fgConsBuildFiles(fgGetConsData(FgConsType::win));
     fgConsBuildFiles(fgGetConsData(FgConsType::nix));
     fgConsBuildFiles(fgGetConsData(FgConsType::cross));
 }
 
 void
-fgCmdCons(const FgArgs & args)
+fgCmdCons(const CLArgs & args)
 {
-    FgSyntax        syntax(args,
+    Syntax        syntax(args,
         "(sln | make) <option>*\n"
         "    sln  - Visual Studio SLN and VCXPROJ files.\n"
         "    make - Makefiles (all non-windows platforms).\n"
@@ -361,4 +365,6 @@ fgCmdCons(const FgArgs & args)
     }
     else
         syntax.error("Invalid option",type);
+}
+
 }

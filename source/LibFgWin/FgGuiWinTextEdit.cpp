@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,18 +15,20 @@
 
 using namespace std;
 
-struct  FgGuiWinTextEdit : public FgGuiOsBase
+namespace Fg {
+
+struct  GuiTextEditWin : public GuiBaseImpl
 {
     HWND                hwndText;
     HWND                hwndThis;
-    FgGuiApiTextEdit    m_api;
-    FgVect2UI           m_fontDims;
+    GuiTextEdit         m_api;
+    Vec2UI           m_fontDims;
     // Track when keyboard focus is on this edit box so we don't overwrite the user:
     bool                m_keyboardFocus;
     // We have to cache the current text contents to know when a user change has occurred:
-    FgString            m_currText;
+    Ustring            m_currText;
 
-    FgGuiWinTextEdit(const FgGuiApiTextEdit & api)
+    GuiTextEditWin(const GuiTextEdit & api)
         : m_api(api), m_fontDims(16,16), m_keyboardFocus(false)
     {}
 
@@ -34,14 +36,13 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
     totalHeight() const
     {return m_fontDims[1]+6; }
 
-
     virtual void
-    create(HWND parentHwnd,int ident,const FgString &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
     {
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
     }
 
     virtual void
@@ -51,27 +52,27 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
-    {return FgVect2UI(m_api.minWidth,totalHeight()); }
+    {return Vec2UI(m_api.minWidth,totalHeight()); }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
-    {return FgVect2B(m_api.wantStretch,false); }
+    {return Vec2B(m_api.wantStretch,false); }
 
     virtual void
     updateIfChanged()
     {
         if (!m_keyboardFocus) {
-            if (g_gg.dg.update(m_api.updateFlagIdx)) {
-                const FgString &    txt = m_api.getInput();
+            if (m_api.updateFlag->checkUpdate()) {
+                const Ustring &    txt = m_api.getInput();
                 SetWindowText(hwndText,txt.as_wstring().c_str());
             }
         }
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE); }
 
     virtual void
@@ -94,15 +95,15 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                         0,0,0,0,            // Will be sent MOVEWINDOW messages.
                         hwnd,
                         HMENU(1),           // Assign identifier 1 to this child window
-                        s_fgGuiWin.hinst,
+                        s_guiWin.hinst,
                         NULL);              // No WM_CREATE parameter
                 FGASSERTWIN(hwndText != 0);
                 TEXTMETRIC  tm;
                 GetTextMetrics(GetDC(hwndThis),&tm);
                 m_fontDims[0] = tm.tmAveCharWidth;
                 m_fontDims[1] = tm.tmHeight + tm.tmExternalLeading;
-                const FgString &    txt = m_api.getInput();
-                g_gg.dg.update(m_api.updateFlagIdx);
+                const Ustring &    txt = m_api.getInput();
+                m_api.updateFlag->checkUpdate();
                 SetWindowText(hwndText,txt.as_wstring().c_str());
                 m_currText = txt;
                 return 0;
@@ -135,12 +136,12 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                     // Windows only retrieves argLen-1 chars then sends a NULL:
                     GetWindowText(hwndText,&str[0],len+1);
                     // Use c string cons to avoid including NULL in string itself:
-                    FgString    txt(&str[0]);
+                    Ustring    txt(&str[0]);
                     if (txt != m_currText) {
                         m_currText = txt;
                         m_api.setOutput(txt);
                         if (m_keyboardFocus)        // In this case the change is due to user interaction
-                            g_gg.updateScreen();    // Won't affect this text edit box while focus is on
+                            winUpdateScreen();    // Won't affect this text edit box while focus is on
                     }
                 }
                 else if (nc == EN_SETFOCUS) {
@@ -148,7 +149,7 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
                 }
                 else if (nc == EN_KILLFOCUS) {
                     m_keyboardFocus = false;
-                    const FgString &    txt = m_api.getInput();
+                    const Ustring &    txt = m_api.getInput();
                     SetWindowText(hwndText,txt.as_wstring().c_str());
                 }
             }
@@ -157,6 +158,8 @@ struct  FgGuiWinTextEdit : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiTextEdit & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinTextEdit(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiTextEdit & def)
+{return GuiImplPtr(new GuiTextEditWin(def)); }
+
+}

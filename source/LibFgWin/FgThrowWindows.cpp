@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,10 +14,12 @@
 
 using namespace std;
 
+namespace Fg {
+
 // Get the Windows text description of the last error to create an FgException, then append the
 // client exception message.
 void
-fgThrowWindows(const string & msg,const FgString & data)
+throwWindows(const string & msg,const Ustring & data)
 {
     DWORD           errNum = GetLastError();
     if (errNum != ERROR_SUCCESS) {
@@ -30,7 +32,7 @@ fgThrowWindows(const string & msg,const FgString & data)
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
             (LPTSTR) &lpMsgBuf,
             0, NULL );
-        FgString        winData(wstring(static_cast<wchar_t*>(lpMsgBuf)));
+        Ustring        winData(wstring(static_cast<wchar_t*>(lpMsgBuf)));
         LocalFree(lpMsgBuf);
         FgException     exc("Windows has reported an error",winData.m_str);
         exc.pushMsg(msg,data.m_str);
@@ -41,17 +43,19 @@ fgThrowWindows(const string & msg,const FgString & data)
 }
 
 void
-fgAssertWin(
+assertWindows(
     const char *    fname,
     int             line)
 {
-    fgThrowWindows("Internal program error",fgDiagString(fname,line));
+    throwWindows("Internal program error",fgDiagString(fname,line));
 }
 
 void
-fgAssertWinReturnZero(const char * fname,int line,long rval)
+assertWinReturnZero(const char * fname,int line,long rval)
 {
-    fgThrowWindows("Internal program error",fgDiagString(fname,line)+" rval: "+fgToStr(rval));
+    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toString(rval));
+}
+
 }
 
 // */

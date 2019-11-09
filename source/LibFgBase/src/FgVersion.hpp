@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 26, 2012
+
 //
 // Codebase version; major / minor / patch
 
@@ -13,11 +12,15 @@
 
 #include "FgStdString.hpp"
 
+namespace Fg {
+
 inline
 std::string
 fgVersion(const std::string & sep)
 {
-    return "3" + sep + "P" + sep + "0";
+    return "3" + sep + "Q" + sep + "0";
+}
+
 }
 
 #endif

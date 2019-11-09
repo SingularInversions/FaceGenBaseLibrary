@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     June 27, 2014
+
 //
 
 #include "stdafx.h"
@@ -12,6 +11,7 @@
 #include "FgMatrixC.hpp"
 #include "FgSyntax.hpp"
 #include "FgMath.hpp"
+#include "FgRandom.hpp"
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings
@@ -27,21 +27,23 @@
 
 using namespace std;
 
-FgVerts
+namespace Fg {
+
+Vec3Fs
 fgVertsRandNormal(size_t num,float scale)
 {
-    FgVerts         ret;
+    Vec3Fs         ret;
     ret.reserve(num);
     for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(FgVect3F::randNormal(scale));
+        ret.push_back(Vec3F::randNormal(scale));
     return ret;
 }
 
 // Gaussian elimination can be very simply explicit in this case:
-FgOpt<FgVect2F>
-fgSolve(FgMat22F A,FgVect2F b)
+Opt<Vec2F>
+fgSolve(Mat22F A,Vec2F b)
 {
-    FgOpt<FgVect2F>    ret;
+    Opt<Vec2F>    ret;
     float                   a0 = A[0]*A[3],
                             a1 = A[1]*A[2],
                             a0s = a0*a0,
@@ -51,20 +53,20 @@ fgSolve(FgMat22F A,FgVect2F b)
                         a11 = A[0] - r1 * A[2],
                         x = (b[0] - r1 * b[1]) / a11,
                         y = (b[1] - A[2] * x) / A[3];
-        ret = FgVect2F(x,y);
+        ret = Vec2F(x,y);
     }
     else if (a0s < a1s) {
         float           r1 = A[0] / A[2],
                         a12 = A[1] - r1 * A[3],
                         y = (b[0] - r1 * b[1]) / a12,
                         x = (b[1] - A[3] * y) / A[2];
-        ret = FgVect2F(x,y);
+        ret = Vec2F(x,y);
     }
     return ret;
 }
 
-FgOpt<FgVect3D>
-fgSolve(FgMat33D A,FgVect3D b)
+Opt<Vec3D>
+fgSolve(Mat33D A,Vec3D b)
 {
     Eigen::Matrix3d         mat;
     Eigen::Vector3d         vec;
@@ -73,18 +75,18 @@ fgSolve(FgMat33D A,FgVect3D b)
             mat(rr,cc) = A.rc(rr,cc);
     for (uint rr=0; rr<3; ++rr)
         vec(rr) = b[rr];
-    FgOpt<FgVect3D>         ret;
+    Opt<Vec3D>         ret;
     // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
     auto                    qr = mat.colPivHouseholderQr();
     if (qr.isInvertible()) {
         Eigen::Vector3d     sol = qr.solve(vec);
-        ret = FgVect3D(sol(0),sol(1),sol(2));
+        ret = Vec3D(sol(0),sol(1),sol(2));
     }
     return ret;
 }
 
-FgOpt<FgVect4D>
-fgSolve(FgMat44D A,FgVect4D b)
+Opt<Vec4D>
+fgSolve(Mat44D A,Vec4D b)
 {
     Eigen::Matrix4d         mat;
     Eigen::Vector4d         vec;
@@ -93,12 +95,12 @@ fgSolve(FgMat44D A,FgVect4D b)
             mat(rr,cc) = A.rc(rr,cc);
     for (uint rr=0; rr<4; ++rr)
         vec(rr) = b[rr];
-    FgOpt<FgVect4D>         ret;
+    Opt<Vec4D>         ret;
     // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
     auto                    qr = mat.colPivHouseholderQr();
     if (qr.isInvertible()) {
         Eigen::Vector4d     sol = qr.solve(vec);
-        ret = FgVect4D(sol(0),sol(1),sol(2),sol(3));
+        ret = Vec4D(sol(0),sol(1),sol(2),sol(3));
     }
     return ret;
 }
@@ -107,40 +109,40 @@ template<uint size>
 static void
 testInverse()
 {
-    FgMatrixC<double,size,size> a,b;
+    Mat<double,size,size> a,b;
     do
-        a = FgMatrixC<double,size,size>::randNormal();
+        a = Mat<double,size,size>::randNormal();
     while
-        (fgDeterminant(a) < 0.01);
+        (determinant(a) < 0.01);
     b = fgMatInverse(a);
     a = (a * b + b * a) * 0.5;  // cancel errors from near-singularities in matrix
     b.setIdentity();
-    double          res = (a-b).length();
+    double          res = (a-b).len();
     FGASSERT(res < (10.0 * size * size * numeric_limits<double>::epsilon()));
 }
 
 static void     testFgMatRotateAxis()
 {
-    fgRandSeedRepeatable();
+    randSeedRepeatable();
     for (uint ii=0; ii<100; ii++)
     {
-        double          angle = fgRandUniform(-fgPi(),fgPi());
-        FgVect3D        axis = FgVect3D::randNormal();
-        axis /= axis.length();
-        FgMat33D     mat = fgMatRotateAxis(angle,axis);
-        double          err = (mat * mat.transpose() - FgMat33D::identity()).length(),
-                        err2 = (mat * axis - axis).length();
+        double          angle = randUniform(-fgPi(),fgPi());
+        Vec3D        axis = Vec3D::randNormal();
+        axis /= axis.len();
+        Mat33D     mat = matRotateAxis(angle,axis);
+        double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
+                        err2 = (mat * axis - axis).len();
 
         FGASSERT(err < (std::numeric_limits<double>::epsilon() * 10.0));
         FGASSERT(err2 < (std::numeric_limits<double>::epsilon() * 10.0));
-        FGASSERT(fgDeterminant(mat) > 0.0);      // Ensure SO(3) not just O(3)
+        FGASSERT(determinant(mat) > 0.0);      // Ensure SO(3) not just O(3)
     }
 }
 
 void
-fgMatrixCTest(const FgArgs &)
+fgMatrixCTest(const CLArgs &)
 {
-    fgRandSeedRepeatable();
+    randSeedRepeatable();
     for (size_t ii=0; ii<10; ++ii)
     {
         testInverse<2>();
@@ -149,12 +151,12 @@ fgMatrixCTest(const FgArgs &)
     testFgMatRotateAxis();
 }
 
-FgMat32D
-fgTanSphere(FgVect3D v)
+Mat32D
+fgTanSphere(Vec3D v)
 {
     // Find permutation that sorts 'v' smallest to largest:
-    FgVect3UI           p(0,1,2);
-    FgVect3D            m = fgMapSqr(v);
+    Vec3UI           p(0,1,2);
+    Vec3D            m = fgMapSqr(v);
     if (m[0] > m[1])
         std::swap(p[0],p[1]);
     if (m[p[1]] > m[p[2]])
@@ -162,11 +164,13 @@ fgTanSphere(FgVect3D v)
     if (m[p[0]] > m[p[1]])
         std::swap(p[0],p[1]);
     // Gram-Schmidt starting with least co-linear axes:
-    FgVect3D        r0(0),
+    Vec3D        r0(0),
                     vn = fgNormalize(v);
     r0[p[0]] = 1.0;
-    r0 -= vn * fgDot(vn,r0);
-    r0 /= r0.length();
-    FgVect3D        r1 = fgCrossProduct(vn,r0);
+    r0 -= vn * dotProd(vn,r0);
+    r0 /= r0.len();
+    Vec3D        r1 = crossProduct(vn,r0);
     return fgJoinHoriz(r0,r1);
+}
+
 }

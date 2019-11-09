@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Nov. 20, 2009
+
 //
 // A directed acyclic bipartite graph in which the bipartite vertex types are 'Node' and 'Link'.
 //
@@ -17,7 +16,7 @@
 //
 // The Nodes with outgoing edges to a Link are called its 'sources'.
 // The Nodes with incoming edges from a Link are called its 'sinks'.
-// Currently only used by FgDepGraph but templated to enforce abstraction of node data types.
+// Currently only used by FgDepGraphMt but templated to enforce abstraction of node data types.
 
 #ifndef FGLINKGRAPH_HPP
 #define FGLINKGRAPH_HPP
@@ -26,29 +25,31 @@
 #include "FgStdString.hpp"
 #include "FgString.hpp"
 
+namespace Fg {
+
 template<class NodeData,class LinkData>
 struct  FgLinkGraph
 {
     struct  Link
     {
-        vector<uint>        sources;    // Indices into m_nodes
-        vector<uint>        sinks;      // "
+        Svec<uint>        sources;    // Indices into m_nodes
+        Svec<uint>        sinks;      // "
         LinkData            data;
 
         Link() {};
-        Link(const vector<uint> &src,const vector<uint> &snk,LinkData d) : 
+        Link(const Svec<uint> &src,const Svec<uint> &snk,LinkData d) : 
             sources(src), sinks(snk), data(d) {}
     };
     struct  Node
     {
-        FgValid<uint>       incomingLink;
-        vector<uint>        outgoingLinks;
+        Valid<uint>       incomingLink;
+        Svec<uint>        outgoingLinks;
         NodeData            data;
 
         Node(const NodeData & d) : data(d) {}
     };
-    vector<Link>            m_links;
-    vector<Node>            m_nodes;
+    Svec<Link>            m_links;
+    Svec<Node>            m_nodes;
 
     uint
     addNode(const NodeData & data);
@@ -56,8 +57,8 @@ struct  FgLinkGraph
     uint
     addLink(
         const LinkData &        data,
-        const vector<uint> &    inputs,
-        const vector<uint> &    outputs);
+        const Svec<uint> &    inputs,
+        const Svec<uint> &    outputs);
 
     void
     appendSource(uint sourceIdx,uint linkIdx);
@@ -90,7 +91,7 @@ struct  FgLinkGraph
     linkData(uint linkIdx)
     {return m_links[linkIdx].data; }
 
-    const vector<uint> &
+    const Svec<uint> &
     outgoingLinks(uint nodeIdx) const
     {return m_nodes[nodeIdx].outgoingLinks; }
 
@@ -101,11 +102,11 @@ struct  FgLinkGraph
     uint
     incomingLink(uint sinkInd) const;
 
-    const vector<uint> &
+    const Svec<uint> &
     linkSources(uint linkIdx) const
     {return m_links[linkIdx].sources; }
 
-    const vector<uint> &
+    const Svec<uint> &
     linkSinks(uint linkIdx) const
     {return m_links[linkIdx].sinks; }
 
@@ -127,8 +128,8 @@ template<class NodeData,class LinkData>
 uint
 FgLinkGraph<NodeData,LinkData>::addLink(
     const LinkData &        data,
-    const vector<uint> &    sources,
-    const vector<uint> &    sinks)
+    const Svec<uint> &    sources,
+    const Svec<uint> &    sinks)
 {
     FGASSERT(sinks.size() > 0);           // A Link must have at least 1 sink
     uint        linkIdx = uint(m_links.size());
@@ -139,7 +140,7 @@ FgLinkGraph<NodeData,LinkData>::addLink(
         FGASSERT(!fgContains(sources,sinks[ii]));       // Causes nasty bugs later
         Node &  node = m_nodes[sinks[ii]];
         if (node.incomingLink.valid())
-            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",fgToStr(ii));
+            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",toString(ii));
         node.incomingLink = linkIdx;
     }
     for (size_t ii=0; ii<sources.size(); ii++) {
@@ -177,16 +178,16 @@ void
 fgTraverseDown(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    vector<bool> &      nodesTouched,       // MODIFIED
-    vector<bool> &      linksTouched)       // MODIFIED
+    Svec<bool> &      nodesTouched,       // MODIFIED
+    Svec<bool> &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
-    const vector<uint> &    outLinks = lg.outgoingLinks(nodeIdx);
+    const Svec<uint> &    outLinks = lg.outgoingLinks(nodeIdx);
     for (size_t ll=0; ll<outLinks.size(); ++ll) {
         uint    linkIdx = outLinks[ll];
         if (!linksTouched[linkIdx]) {
             linksTouched[linkIdx] = true;
-            const vector<uint> &    sinks = lg.linkSinks(linkIdx);
+            const Svec<uint> &    sinks = lg.linkSinks(linkIdx);
             for (size_t nn=0; nn<sinks.size(); ++nn)
                 if (!nodesTouched[sinks[nn]])
                     fgTraverseDown(lg,sinks[nn],nodesTouched,linksTouched);
@@ -199,8 +200,8 @@ void
 fgTraverseUp(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    vector<bool> &      nodesTouched,       // MODIFIED
-    vector<bool> &      linksTouched)       // MODIFIED
+    Svec<bool> &      nodesTouched,       // MODIFIED
+    Svec<bool> &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
     if (!lg.hasIncomingLink(nodeIdx))
@@ -210,19 +211,19 @@ fgTraverseUp(
         linksTouched[linkIdx] = true;
         // We include all sink nodes of a traversed link even if they're not part
         // of the traversal, since running the link will write to all sinks:
-        const vector<uint> &   sinks = lg.linkSinks(linkIdx);
+        const Svec<uint> &   sinks = lg.linkSinks(linkIdx);
         for (size_t nn=0; nn<sinks.size(); ++nn)
             nodesTouched[sinks[nn]] = true;
         // Continue traverse:
-        const vector<uint> &   sources = lg.linkSources(linkIdx);
+        const Svec<uint> &   sources = lg.linkSources(linkIdx);
         for (size_t nn=0; nn<sources.size(); ++nn)
             if (!nodesTouched[sources[nn]])
                 fgTraverseUp(lg,sources[nn],nodesTouched,linksTouched);
     }
 }
 
+}
 
 #endif
-
 
 // */

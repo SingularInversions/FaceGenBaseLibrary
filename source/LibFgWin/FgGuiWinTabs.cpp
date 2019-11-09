@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,24 +17,24 @@
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgDefaultVal.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgAlgs.hpp"
 
 using namespace std;
 
-struct  FgGuiWinTabs : public FgGuiOsBase
-{
-    FgGuiApiTabs                    m_api;
-    HWND                            m_tabHwnd;
-    HWND                            hwndThis;
-    FgGuiOsPtrs                     m_panes;
-    uint                            m_currPane;
-    FgVect2I                        m_client;
-    RECT                            m_dispArea;
-    FgString                        m_store;
+namespace Fg {
 
-    FgGuiWinTabs(const FgGuiApiTabs & api)
+struct  GuiTabsWin : public GuiBaseImpl
+{
+    GuiTabs                     m_api;
+    HWND                        m_tabHwnd;
+    HWND                        hwndThis;
+    GuiImplPtrs                 m_panes;
+    uint                        m_currPane;
+    Vec2I                    m_client;
+    RECT                        m_dispArea;
+    Ustring                    m_store;
+
+    GuiTabsWin(const GuiTabs & api)
         : m_api(api)
     {
         FGASSERT(m_api.tabs.size()>0);
@@ -44,7 +44,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
         m_store = store;
@@ -52,10 +52,10 @@ struct  FgGuiWinTabs : public FgGuiOsBase
         if (fgLoadXml(m_store+".xml",cp,false))
             if (cp < m_panes.size())
                 m_currPane = cp;
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -66,25 +66,25 @@ struct  FgGuiWinTabs : public FgGuiOsBase
         DestroyWindow(hwndThis);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
-        FgVect2UI   max(0);
+        Vec2UI   max(0);
         for (size_t ii=0; ii<m_panes.size(); ++ii) {
-            const FgGuiTab &    tab = m_api.tabs[ii];
-            FgVect2UI           pad(tab.padLeft+tab.padRight,tab.padTop+tab.padBottom);
-            max = fgMax(max,m_panes[ii]->getMinSize()+pad);
+            const GuiTabDef &    tab = m_api.tabs[ii];
+            Vec2UI           pad(tab.padLeft+tab.padRight,tab.padTop+tab.padBottom);
+            max = maxEl(max,m_panes[ii]->getMinSize()+pad);
         }
-        return max + FgVect2UI(0,37);
+        return max + Vec2UI(0,37);
     }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             if (m_panes[ii]->wantStretch()[0])
-                return FgVect2B(true,true);
-        return FgVect2B(false,true);
+                return Vec2B(true,true);
+        return Vec2B(false,true);
     }
 
     virtual void
@@ -96,7 +96,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "Tabs::moveWindow " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
@@ -133,7 +133,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                 // is called from the client level.
                 m_panes[ii]->create(hwnd,
                     int(ii+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
-                    m_store+"_"+fgToStr(ii),
+                    m_store+"_"+toString(ii),
                     NULL,
                     ii==m_currPane);
             }
@@ -145,7 +145,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
                     0,0,0,0,
                     hwnd,
                     0,      // Identifier 0
-                    s_fgGuiWin.hinst,
+                    s_guiWin.hinst,
                     NULL);
             TCITEM  tc = {0};
             tc.mask = TCIF_TEXT;
@@ -162,7 +162,7 @@ struct  FgGuiWinTabs : public FgGuiOsBase
             return 0;
         }
         else if (msg == WM_SIZE) {
-            m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
+            m_client = Vec2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] > 0) {
 //fgout << fgnl << "Tabs::WM_SIZE: " << m_api.tabs[0].label << " : " << m_client << fgpush;
                 resize(hwnd);
@@ -203,8 +203,8 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     void
     resizeCurrPane()
     {
-        const FgGuiTab &    tab = m_api.tabs[m_currPane];
-        FgVect2I    lo(m_dispArea.left + tab.padLeft, m_dispArea.top + tab.padTop),
+        const GuiTabDef &    tab = m_api.tabs[m_currPane];
+        Vec2I    lo(m_dispArea.left + tab.padLeft, m_dispArea.top + tab.padTop),
                     hi(m_dispArea.right - tab.padRight,m_dispArea.bottom - tab.padBottom),
                     sz = hi - lo;
         m_panes[m_currPane]->moveWindow(lo,sz);
@@ -226,6 +226,8 @@ struct  FgGuiWinTabs : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiTabs & api)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinTabs(api)); }
+GuiImplPtr
+guiGetOsImpl(const GuiTabs & api)
+{return GuiImplPtr(new GuiTabsWin(api)); }
+
+}

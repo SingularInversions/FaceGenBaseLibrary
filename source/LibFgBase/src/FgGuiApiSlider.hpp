@@ -1,90 +1,106 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 16, 2011
+
 //
 
 #ifndef FGGUIAPISLIDER_HPP
 #define FGGUIAPISLIDER_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgDepGraph.hpp"
 #include "FgMatrixC.hpp"
 
-struct  FgGuiApiTickLabel
+namespace Fg {
+
+struct  GuiTickLabel
 {
     double              pos;
-    FgString            label;
+    Ustring             label;
 
-    FgGuiApiTickLabel()
+    GuiTickLabel()
     {}
 
-    FgGuiApiTickLabel(double p,FgString l)
+    GuiTickLabel(double p,Ustring l)
     : pos(p), label(l)
     {}
 };
 
-typedef vector<FgGuiApiTickLabel> FgGuiApiTickLabels;
+typedef Svec<GuiTickLabel> GuiTickLabels;
 
-// Generate equispaced tick labels:
-FgGuiApiTickLabels
-fgGuiApiTickLabels(
-    FgVectD2        range,
-    double          spacing,
-    double          basePos);
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiSlider;
+GuiImplPtr guiGetOsImpl(GuiSlider const & guiApi);
 
-struct FgGuiApiSlider : FgGuiApi<FgGuiApiSlider>
+struct GuiSlider : GuiBase
 {
-    uint                    updateFlagIdx;
+    DfgFPtr             updateFlag;
     // getInput is required 1. to allow for restoring from serialization and 2. to allow
     // for dependent sliders (eg. FaceGen linear controls). It is also then used for the
     // initialization value:
-    std::function<double(void)>   getInput;
-    std::function<void(double)>   setOutput;
-    FgString                label;          // Can be empty
-    FgVectD2                range;
-    double                  tickSpacing;
-    FgGuiApiTickLabels      tickLabels;
-    FgGuiApiTickLabels      tockLabels;     // On other side from ticks
+    Sfun<double(void)>  getInput;
+    Sfun<void(double)>  setOutput;
+    Ustring             label;          // Can be empty
+    VecD2               range;
+    double              tickSpacing;
+    GuiTickLabels       tickLabels;     // Can be empty
+    GuiTickLabels       tockLabels;     // ". On other side from ticks
     // Set this to larger values if your tick / tock labels overflow the edges:
-    uint                    edgePadding;
+    uint                edgePadding = 5;
 
-    FgGuiApiSlider() : edgePadding(5) {}
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-FgGuiPtr
-fgGuiSlider(
-    FgDgn<double>   val,
-    FgString        label,               // Can be empty
-    FgVectD2        range,
-    double          tickSpacing,
-    const FgGuiApiTickLabels & tl = FgGuiApiTickLabels(),
-    const FgGuiApiTickLabels & ul = FgGuiApiTickLabels(),
-    uint            edgePadding=5,
-    bool            editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
+GuiPtr
+guiSlider(
+    IPT<double>         valN,
+    Ustring             label,               // Can be empty
+    VecD2               range,
+    double              tickSpacing,
+    const GuiTickLabels & tl = GuiTickLabels(),
+    const GuiTickLabels & ul = GuiTickLabels(),
+    uint                edgePadding=5,
+    bool                editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
 
 // Create a panel of similar sliders with numbered names:
 
-struct  FgGuiSliders
+// Keeping tuple of values as input instead of collating allows for simpler state checks
+// (eg. normalization) but then doesn't play well with edit boxes so not such a great idea:
+Arr<GuiPtr,3>
+guiSliders(
+    IPT<Vec3F>          valN,
+    const Arr<Ustring,3> & labels,
+    VecD2               range,
+    double              tickSpacing);
+
+struct  GuiSliders
 {
-    vector<FgGuiPtr>        sliders;
-    vector<FgDgn<double> >  inputInds;
-    FgDgn<vector<double> >  outputIdx;      // Collated output if you need it
+    GuiPtrs             sliders;
+    Svec<IPT<double> >  valNs;
+    NPT<Doubles>        valsN;          // Collated vals if needed
 };
 
-FgGuiSliders
-fgGuiSliders(
-    const FgStrings &       labels,
-    FgVectD2                range,
-    double                  initVal,
-    double                  tickSpacing,
-    const FgString &        relStore="");   // Relative store name for saving state (null if no save)
+GuiSliders
+guiSliders(
+    const Ustrings &    labels,
+    VecD2               range,
+    double              initVal,
+    double              tickSpacing,
+    const Ustring &     relStore="");   // Relative store name for saving state (null if no save)
 
 // Use to auto create labels for above. Labels will have numbers appended:
-FgStrings
-fgNumberedLabels(const FgString & baseLabel,size_t num);
+Ustrings
+numberedLabels(const Ustring & baseLabel,size_t num);
+
+// Generate equispaced tick labels:
+GuiTickLabels
+guiTickLabels(
+    VecD2           range,
+    double          spacing,
+    double          basePos);
+
+}
 
 #endif

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,8 +18,10 @@
 
 using namespace std;
 
+namespace Fg {
+
 bool
-fgIsDirectory(const FgString & name)
+isDirectory(const Ustring & name)
 {
     wstring         nameW = name.as_wstring();
     DWORD           attr = GetFileAttributesW(nameW.c_str());
@@ -29,13 +31,13 @@ fgIsDirectory(const FgString & name)
 }
 
 // Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
-FgDirectoryContents
-fgDirectoryContents(const FgString & dirName)
+DirectoryContents
+directoryContents(const Ustring & dirName)
 {
-    FgPath              dir(fgAsDirectory(dirName));
-    FgDirectoryContents ret;
+    Path              dir(fgAsDirectory(dirName));
+    DirectoryContents ret;
     WIN32_FIND_DATAW	finddata;
-    FgString            spec = dir.str() + "*";
+    Ustring            spec = dir.str() + "*";
     HANDLE hFind = FindFirstFileW(spec.as_wstring().c_str(),&finddata);
     if (hFind == INVALID_HANDLE_VALUE)
         return ret;
@@ -43,22 +45,22 @@ fgDirectoryContents(const FgString & dirName)
         if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             wstring     name(finddata.cFileName);
             if ((name != L".") && (name != L".."))
-                ret.dirnames.push_back(FgString(finddata.cFileName));
+                ret.dirnames.push_back(Ustring(finddata.cFileName));
         }
         else
-            ret.filenames.push_back(FgString(finddata.cFileName));
+            ret.filenames.push_back(Ustring(finddata.cFileName));
     } while	(FindNextFileW(hFind,&finddata) != 0);
     FindClose(hFind);
     return ret;
 }
 
-FgString
+Ustring
 fgGetCurrentDir()
 {
     wchar_t     buff[MAX_PATH]= {0};
     if (!GetCurrentDirectory(MAX_PATH,buff))
-        fgThrowWindows("Unable to get current directory");
-    FgString    ps(buff);
+        throwWindows("Unable to get current directory");
+    Ustring    ps(buff);
     if (!ps.empty() && !ps.endsWith("\\"))
         ps += "\\";
     return ps;
@@ -68,33 +70,33 @@ fgGetCurrentDir()
 // doesn't return a success flag:
 bool
 fgSetCurrentDir(
-    const FgString &    dir,
+    const Ustring &    dir,
     bool                throwOnFail)
 {
     wstring wdir = dir.as_wstring();
     bool ret = (SetCurrentDirectory(wdir.c_str()) != 0);
     if ((!ret) && throwOnFail)
-        fgThrowWindows("Unable to set current directory to",dir);
+        throwWindows("Unable to set current directory to",dir);
     return ret;
 }
 
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
 void
-fgDeleteFile(const FgString & fname)
+fgDeleteFile(const Ustring & fname)
 {
     wstring wfname = fname.as_wstring();
     DWORD   attributes = GetFileAttributes(wfname.c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES)
-        fgThrowWindows("Unable to read attributes of file",fname);
+        throwWindows("Unable to read attributes of file",fname);
     attributes = attributes & (!FILE_ATTRIBUTE_READONLY) & (!FILE_ATTRIBUTE_HIDDEN);
     if (SetFileAttributes(wfname.c_str(),attributes) == 0)
-        fgThrowWindows("Unable to modify attributes of file to allow delete",fname);
-    fgRemoveFile(fname);
+        throwWindows("Unable to modify attributes of file to allow delete",fname);
+    pathRemove(fname);
 }
 
 bool
 fgRemoveDirectory(
-    const FgString &    dirname,
+    const Ustring &    dirname,
     bool                throwOnFail)
 {
     wstring wdirname = dirname.as_wstring();
@@ -102,12 +104,12 @@ fgRemoveDirectory(
     if (ret != 0)
         return true;
     if (throwOnFail)
-        fgThrowWindows("Unable to remove directory",dirname);
+        throwWindows("Unable to remove directory",dirname);
     return false;
 }
 
 bool
-fgCreateDirectory(const FgString & dirname)
+fgCreateDirectory(const Ustring & dirname)
 {
     wstring     curr = fgGetCurrentDir().as_wstring(),
                 dirn = dirname.as_wstring();
@@ -115,20 +117,20 @@ fgCreateDirectory(const FgString & dirname)
         if (GetLastError() == ERROR_ALREADY_EXISTS)
             return false;
         else
-            fgThrowWindows("Unable to create directory",dirname);
+            throwWindows("Unable to create directory",dirname);
     }
     return true;
 }
 
-FgString
+Ustring
 fgExecutablePath()
 {
     wchar_t     module_name[MAX_PATH] = {0};
     GetModuleFileNameW(0,module_name,sizeof(module_name));
-    return FgString(module_name);
+    return Ustring(module_name);
 }
 
-FgString
+Ustring
 fgDirSystemAppDataRoot()
 {
     wchar_t     path[MAX_PATH];
@@ -140,23 +142,23 @@ fgDirSystemAppDataRoot()
             SHGFP_TYPE_CURRENT,
             path);
     if (retval != S_OK)
-        fgThrowWindows("Unable to retrieve an all-users application data directory");
-    return FgString(path) + "\\";
+        throwWindows("Unable to retrieve an all-users application data directory");
+    return Ustring(path) + "\\";
 }
 
-FgString
+Ustring
 fgDirSystemAppData(
-    FgString const & groupName,
-    FgString const & appName)
+    Ustring const & groupName,
+    Ustring const & appName)
 {
-    FgString    appDir = fgDirSystemAppDataRoot() + groupName;
+    Ustring    appDir = fgDirSystemAppDataRoot() + groupName;
     fgCreateDirectory(appDir);
     appDir = appDir + fgDirSep() + appName;
     fgCreateDirectory(appDir);
     return appDir + fgDirSep();
 }
 
-FgString
+Ustring
 fgDirUserAppDataRoamingRoot()
 {
     wchar_t     path[MAX_PATH];
@@ -168,11 +170,11 @@ fgDirUserAppDataRoamingRoot()
             SHGFP_TYPE_CURRENT,
             path);
     if (retval != S_OK)
-        fgThrowWindows("Unable to retrieve user's roaming application data directory");
-    return FgString(path) + "\\";
+        throwWindows("Unable to retrieve user's roaming application data directory");
+    return Ustring(path) + "\\";
 }
 
-FgString
+Ustring
 fgDirUserAppDataLocalRoot()
 {
     wchar_t     path[MAX_PATH];
@@ -184,11 +186,11 @@ fgDirUserAppDataLocalRoot()
             SHGFP_TYPE_CURRENT,
             path);
     if (retval != S_OK)
-        fgThrowWindows("Unable to retrieve user's local application data directory");
-    return FgString(path) + "\\";
+        throwWindows("Unable to retrieve user's local application data directory");
+    return Ustring(path) + "\\";
 }
 
-FgString
+Ustring
 fgUserDocumentsDirectory(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
@@ -201,14 +203,14 @@ fgUserDocumentsDirectory(bool throwOnFail)
             path);
     if (retval != S_OK) {
         if (throwOnFail)
-            fgThrowWindows("Unable to retrieve user documents directory");
+            throwWindows("Unable to retrieve user documents directory");
         else
-            return FgString();
+            return Ustring();
     }
-    return FgString(path) + "\\";
+    return Ustring(path) + "\\";
 }
 
-FgString
+Ustring
 fgPublicDocumentsDirectory()
 {
     wchar_t     path[MAX_PATH];
@@ -220,12 +222,12 @@ fgPublicDocumentsDirectory()
             SHGFP_TYPE_CURRENT,
             path);
     if (retval != S_OK)
-        fgThrowWindows("Unable to retrieve public documents directory");
-    return FgString(path) + "\\";
+        throwWindows("Unable to retrieve public documents directory");
+    return Ustring(path) + "\\";
 }
 
 bool
-fgCreationTime(const FgString & path,uint64 & time)
+getCreationTime(const Ustring & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -249,8 +251,32 @@ fgCreationTime(const FgString & path,uint64 & time)
     return true;
 }
 
+std::time_t
+getLastWriteTime(const Ustring & fname)
+{
+    // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
+    HANDLE hndl =
+        CreateFile(
+            fname.as_wstring().c_str(),
+            NULL,                           // Leaving zero means we're only getting meta-data about the file/dir
+            NULL,                           // no need to specify share mode for meta-data
+            NULL,                           // no security options
+            OPEN_EXISTING,                  // Do not create
+            FILE_FLAG_BACKUP_SEMANTICS,     // Must be so to work with directories
+            NULL);                          // don't get template info
+    if (hndl == INVALID_HANDLE_VALUE)
+        return false;
+    FILETIME    creation,
+                lastAccess,
+                lastWrite;
+    BOOL    ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
+    CloseHandle(hndl);
+    FGASSERTWIN(ret);
+    return uint64(lastWrite.dwLowDateTime) +(uint64(lastWrite.dwHighDateTime) << 32);
+}
+
 void
-fgMakeWritableByAll(const FgString & name)
+fgMakeWritableByAll(const Ustring & name)
 {
     HANDLE          hFile =
         CreateFile(name.ns().c_str(),READ_CONTROL|WRITE_DAC,0,NULL,OPEN_EXISTING,NULL,NULL);
@@ -258,4 +284,6 @@ fgMakeWritableByAll(const FgString & name)
         SetSecurityInfo(hFile,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,NULL,NULL);
         CloseHandle(hFile);
     }
+}
+
 }

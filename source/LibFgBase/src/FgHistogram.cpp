@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 22, 2009
+
 //
 
 #include "stdafx.h"
@@ -13,8 +12,10 @@
 
 using namespace std;
 
+namespace Fg {
+
 FgHistogram::FgHistogram(
-    FgVectD2    bounds_,
+    VecD2    bounds_,
     size_t      numBins)
     : bounds(bounds_)
 {
@@ -25,7 +26,7 @@ FgHistogram::FgHistogram(
 
 FgHistogram::FgHistogram(
     const vector<double> &  samples,
-    FgVectD2                bounds_,
+    VecD2                bounds_,
     size_t                  numBins)
     : bounds(bounds_)
 {
@@ -35,7 +36,7 @@ FgHistogram::FgHistogram(
     binCounts.resize(numBins,0);
     double      fac = double(numBins) / (bounds[1]-bounds[0]);
     for (uint ii=0; ii<samples.size(); ++ii) {
-        int     bin = fgRound((samples[ii]-bounds[0])*fac);
+        int     bin = round<int>((samples[ii]-bounds[0])*fac);
         if ((bin >= 0) && (bin < int(numBins)))
             ++(binCounts[bin]);
     }
@@ -45,7 +46,7 @@ bool
 FgHistogram::addSample(double val)
 {
     double      fac = double(binCounts.size()) / (bounds[1]-bounds[0]);
-    int         bin = fgRound((val-bounds[0]) * fac);
+    int         bin = round<int>((val-bounds[0]) * fac);
     if ((bin >= 0) && (bin < int(binCounts.size()))) {
         ++(binCounts[bin]);
         return true;
@@ -75,4 +76,6 @@ FgHistogram::asDensity() const
     for (size_t ii=0; ii<binCounts.size(); ++ii)
         ret[ii] = fac * binCounts[ii];
     return ret;
+}
+
 }

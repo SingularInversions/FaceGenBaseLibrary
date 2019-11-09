@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 10, 2011
+
 //
 
 #include "stdafx.h"
@@ -18,6 +17,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 namespace {
 
 const char lf = 0x0A;       // Unix line ending
@@ -30,7 +31,7 @@ targets(
 {
     vector<pair<string,string> >    srcNames;
     for (size_t ii=0; ii<grp.files.size(); ++ii) {
-        FgPath      p(grp.files[ii]);
+        Path      p(grp.files[ii]);
         string      ext = p.ext.ascii();
         if ((ext == "cpp") || (ext == "c"))
             srcNames.push_back(make_pair(p.base.ascii(),ext));
@@ -49,7 +50,7 @@ group(
     string  odir = "$(ODIR" + prjName + ")" + fgReplace(grp.dir,'/','_'),
             sdir = "$(SDIR" + prjName + ")" + grp.dir;
     for (size_t ii=0; ii<grp.files.size(); ++ii) {
-        FgPath      path(grp.files[ii]);
+        Path      path(grp.files[ii]);
         string      ext = path.ext.ascii();
         if ((ext == "cpp") || (ext == "c")) {
             string      srcName = grp.files[ii],
@@ -82,7 +83,7 @@ linkLibs(
     bool                    binaryOnly)     // Include binary-only deps
 {
     // gcc link is single-pass; order of linkage is important:
-    FgStrs      libDeps = sln.getLnkDeps(prj.name);
+    Strings      libDeps = sln.getLnkDeps(prj.name);
     for (const string & name : libDeps) {
         if (sln.contains(name)) {
             const FgConsProj &  p = sln.at(name);
@@ -114,7 +115,7 @@ consProj(
     const FgConsProj &  prj,
     const FgConsSolution & sln)
 {
-    FgStrs          incDirs = sln.getIncludes(prj.name,false),
+    Strings          incDirs = sln.getIncludes(prj.name,false),
                     headerDirs = sln.getIncludes(prj.name,true),
                     defs = sln.getDefs(prj.name);
     ofs << "FLAGS" << prj.name << " = ";
@@ -225,14 +226,14 @@ consMakefileOsArch(
     const string &          fnameBuild) // includes this makefile
 {
     string          debrel = debug ? "debug" : "release",
-                    osStr = (os == FgBuildOS::linux) ? "linux" : fgToStr(os),
-                    makefile = fgCat(fgSvec<string>("Makefile",osStr,fgToStr(arch),fgToStr(compiler),debrel),"_"),
+                    osStr = (os == FgBuildOS::linux) ? "linux" : toString(os),
+                    makefile = cat(fgSvec<string>("Makefile",osStr,toString(arch),toString(compiler),debrel),"_"),
                     cc,
                     cxx,
                     link,
                     dllext,             // DLL file extension (including dot)
                     dllarg;             // DLL link args up to and adjacent to target name
-    FgStrs          cflags,
+    Strings          cflags,
                     cxxflags,           // cpp flags in *addition* to 'cflags'
                     lflags;
     // NOTE that warning and include flags are added per-project, not here.
@@ -277,8 +278,8 @@ consMakefileOsArch(
         // are part of a DLL so we just always use it:
         cflags.push_back("-fno-common");
         // clang defaults to 256 which can cause errors with boost::iarchive exceeding
-        // template depth limit, so set to same limit used by gcc and vs:
-        cxxflags.push_back("-ftemplate-depth=1024");
+        // template depth limit. gcc limit of 1024 too small due to large ACS thread sigs:
+        cxxflags.push_back("-ftemplate-depth=2048");
         if (!debug)
             cflags.push_back("-Ofast");         // O3 plus fast floating point opts.
         if (debug && (os == FgBuildOS::linux)) {
@@ -293,6 +294,8 @@ consMakefileOsArch(
         // g++ calls ld but it adds arguments for the appropriate standard libraries so it's easier.
         // It uses shared libaries by default and static linking appears quite difficult to get right:
         link = "g++";
+        // gcc defaults to 1024. Too small due to large ACS thread sigs:
+        cxxflags.push_back("-ftemplate-depth=2048");
         if (!debug) {
             // -march=corei7 actually slowed down nrrjohnverts a smidgen.
             // -msse3 made no difference on some speed tests.
@@ -362,12 +365,12 @@ consMakefileOsArch(
         << "LINK = " << link << lf
         << "AR = ar" << lf
         << "RANLIB = ranlib" << lf
-        << "CFLAGS = " << fgCat(cflags," ") << lf
+        << "CFLAGS = " << cat(cflags," ") << lf
         << "CCFLAGS = $(CFLAGS)" << lf
-        << "CXXFLAGS = $(CFLAGS) " << fgCat(cxxflags," ") << lf;
+        << "CXXFLAGS = $(CFLAGS) " << cat(cxxflags," ") << lf;
     if (native)
         ofs
-            << "LFLAGS = " << fgCat(lflags," ") << lf
+            << "LFLAGS = " << cat(lflags," ") << lf
             << "DLLEXT = " << dllext << lf
             << "DLLARG = " << dllarg << lf
             << "BINDIR = ../" << fgRelBin(os,arch,compiler,!debug) << lf
@@ -427,7 +430,7 @@ consMakefileAndroidArch(
     }
     else
         fgThrow("consMakefileAndroidArch unhandled arch for ar/ranlib",arch);
-    FgStrs          cflags,
+    Strings          cflags,
                     cxxflags;               // cpp flags in *addition* to 'cflags'
     if (debug) {
         cflags.push_back("-g");             // generate debug info
@@ -467,12 +470,12 @@ consMakefileAndroidArch(
         << "LINK = ${NDK_BIN}/clang++" << lf
         << "AR = " << ar << lf
         << "RANLIB = " << ranlib << lf
-        << "CFLAGS = " << fgCat(cflags," ") << lf
+        << "CFLAGS = " << cat(cflags," ") << lf
         << "CCFLAGS = $(CFLAGS)" << lf
-        << "CXXFLAGS = $(CFLAGS) " << fgCat(cxxflags," ") << lf
+        << "CXXFLAGS = $(CFLAGS) " << cat(cxxflags," ") << lf
         << "BUILDIR = ../build_android/" << archCMakeStr << "/clang/" << debrel << "/" << lf
         << "include make_libs.mk" << lf;
-    return fgDump(ofs.str(),"Makefile_android_" + fgToStr(arch) + "_clang_" + debrel);
+    return fgDump(ofs.str(),"Makefile_android_" + toString(arch) + "_clang_" + debrel);
 }
 
 bool
@@ -495,7 +498,7 @@ consMakefileIos(const FgConsSolution & sln)
             string          fatLib = "$(OUTDIR)"+p.name+".a";
             string          srcLibs;
             for (FgArch arch : archs)
-                srcLibs += " $(OUTDIR)" + fgToStr(arch) + "/clang/release/" + p.name + ".a";
+                srcLibs += " $(OUTDIR)" + toString(arch) + "/clang/release/" + p.name + ".a";
             oss << fatLib << ":" << srcLibs << lf;
             // Using 'xcrun' here avoid problems according to some sources.
             oss << "\txcrun -sdk iphoneos lipo -create -output " << fatLib << srcLibs << lf;
@@ -575,6 +578,8 @@ fgConsCrossMakefiles(const FgConsSolution & sln)
     changed = consMakefileAndroid(slnXC) || changed;
 
     return changed;
+}
+
 }
 
 // */

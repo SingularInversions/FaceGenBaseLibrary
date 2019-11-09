@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     June 28, 2007
+
 //
 // Cross-platform unicode filename fstreams and other conveniences.
 //
@@ -13,9 +12,9 @@
 // * More convenient to select exception throwing on a per-call basis.
 // * Always use binary mode due to complexity of text mode some of which is:
 // * In C++ the '\n' character has value 0x0A (LF) on both windows and *nix.
-// * When using text mode ostream on Windows this is converted to the 2 byte code CR LF
+// * When using text mode std::ostream on Windows this is converted to the 2 byte code CR LF
 //   (0x0D 0x0A) or ('\r' '\n'). On *nix it is left unchanged.
-// * When using text mode istream on either platform, any of the various EOL formats are converted to '\n'.
+// * When using text mode std::istream on either platform, any of the various EOL formats are converted to '\n'.
 //
 
 #ifndef FGSTDSTREAM_HPP
@@ -24,26 +23,23 @@
 #include "FgStdLibs.hpp"
 #include "FgString.hpp"
 
-using   std::istream;
-using   std::ostream;
-using   std::string;
-using   std::vector;
+namespace Fg {
 
-struct  FgOfstream : public std::ofstream
+struct  Ofstream : public std::ofstream
 {
-    FgOfstream()
+    Ofstream()
     {}
 
     explicit
-    FgOfstream(
-        const FgString &        fname,
+    Ofstream(
+        const Ustring &        fname,
         bool                    append = false,
         bool                    throwOnFail = true)
     {open(fname,append,throwOnFail); }
 
     bool
     open(
-        const FgString &        fname,
+        const Ustring &        fname,
         bool                    append = false,
         bool                    throwOnFail = true);
 
@@ -58,20 +54,20 @@ struct  FgOfstream : public std::ofstream
 
 template<class T>
 void
-fgWriteb(ostream & os,const T & val)    // Only use for builtins !
+fgWriteb(std::ostream & os,const T & val)    // Only use for builtins !
 {os.write(reinterpret_cast<const char*>(&val),sizeof(val)); }
 
 // Handle builtins:
-inline void fgWritep(ostream & os,int32 val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,uint32 val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,int64 val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,uint64 val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,float val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,double val) {fgWriteb(os,val); }
-inline void fgWritep(ostream & os,bool val) {fgWriteb(os,uchar(val)); }
+inline void fgWritep(std::ostream & os,int32 val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,uint32 val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,int64 val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,uint64 val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,float val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,double val) {fgWriteb(os,val); }
+inline void fgWritep(std::ostream & os,bool val) {fgWriteb(os,uchar(val)); }
 
 inline void
-fgWritep(ostream & os,const string & str)
+fgWritep(std::ostream & os,const String & str)
 {
     fgWritep(os,uint32(str.size()));
     if (!str.empty())
@@ -80,12 +76,12 @@ fgWritep(ostream & os,const string & str)
 
 // Has to be here since FgStdStream.hpp depends on FgString.hpp
 inline void
-fgWritep(std::ostream & os,const FgString & s)
+fgWritep(std::ostream & os,const Ustring & s)
 {fgWritep(os,s.m_str); }
 
 template<class T>
 void
-fgWritep(ostream & os,const vector<T> & vec)
+fgWritep(std::ostream & os,const Svec<T> & vec)
 {
     fgWritep(os,uint32(vec.size()));        // Always store size_t as 32 bit for 32/64 portability
     if (!vec.empty())
@@ -95,20 +91,20 @@ fgWritep(ostream & os,const vector<T> & vec)
 
 // INPUT:
 
-struct  FgIfstream : public std::ifstream
+struct  Ifstream : public std::ifstream
 {
-    FgIfstream()
+    Ifstream()
     {}
 
     explicit
-    FgIfstream(
-        const FgString &        fname,
+    Ifstream(
+        const Ustring &        fname,
         bool                    throwOnFail=true)
     {open(fname,throwOnFail); }
 
     bool
     open(
-        const FgString &        fname,
+        const Ustring &        fname,
         bool                    throwOnFail=true);
 
     template<typename T>
@@ -128,12 +124,12 @@ struct  FgIfstream : public std::ifstream
 
 template<class T>
 void
-fgReadb(istream & is,T & val)
+readb(std::istream & is,T & val)
 {is.read(reinterpret_cast<char*>(&val),sizeof(T)); }
 
 template<class T>
 T
-fgReadt(istream & is)
+fgReadt(std::istream & is)
 {
     T       ret;
     is.read(reinterpret_cast<char*>(&ret),sizeof(ret));
@@ -141,16 +137,16 @@ fgReadt(istream & is)
 }
 
 // Handle builtins:
-inline void fgReadp(istream & is,int32 & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,uint32 & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,int64 & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,uint64 & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,float & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,double & val) {fgReadb(is,val); }
-inline void fgReadp(istream & is,bool & val) {val = bool(fgReadt<uchar>(is)); }
+inline void fgReadp(std::istream & is,int32 & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,uint32 & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,int64 & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,uint64 & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,float & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,double & val) {readb(is,val); }
+inline void fgReadp(std::istream & is,bool & val) {val = bool(fgReadt<uchar>(is)); }
 
 inline void
-fgReadp(istream & is,string & str)
+fgReadp(std::istream & is,String & str)
 {
     str.resize(fgReadt<uint32>(is));
     if (!str.empty())
@@ -158,12 +154,12 @@ fgReadp(istream & is,string & str)
 }
 
 inline void
-fgReadp(istream & is,FgString & str)
+fgReadp(std::istream & is,Ustring & str)
 {fgReadp(is,str.m_str); }
 
 template<class T>
 void
-fgReadp(istream & is,vector<T> & vec)
+fgReadp(std::istream & is,Svec<T> & vec)
 {
     vec.resize(fgReadt<uint32>(is));
     for (size_t ii=0; ii<vec.size(); ++ii)
@@ -172,7 +168,7 @@ fgReadp(istream & is,vector<T> & vec)
 
 template<class T>
 T
-fgReadpT(istream & is)
+fgReadpT(std::istream & is)
 {
     T       ret;
     fgReadp(is,ret);
@@ -181,7 +177,9 @@ fgReadpT(istream & is)
 
 // Handy for open-write-close:
 void
-fgWriteFile(const FgString & fname,const std::string & data,bool append=true);
+fgWriteFile(const Ustring & fname,const String & data,bool append=true);
+
+}
 
 #endif
 

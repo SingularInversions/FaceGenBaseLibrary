@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 14, 2005
+
 //
 
 #ifndef FGIMAGE_HPP
@@ -12,108 +11,84 @@
 
 #include "FgImageBase.hpp"
 #include "FgImageIo.hpp"
-#include "FgAlgs.hpp"
 #include "FgIter.hpp"
 #include "FgAffineC.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgArray.hpp"
 
+namespace Fg {
+
 std::ostream &
-operator<<(std::ostream &,const FgImgRgbaUb &);
+operator<<(std::ostream &,const ImgC4UC &);
 
 inline
-FgAffineCw2F
+AffineEw2F
 fgOicsToIucs()
-{return FgAffineCw2F(FgMat22F(-1,1,-1,1),FgMat22F(0,1,1,0)); }
+{return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
 
 inline
-FgAffineCw2F
-fgIucsToIpcs(FgVect2UI dims)
-{return FgAffineCw2F(FgMat22F(0,1,0,1),FgMat22F(0,dims[0],0,dims[1])); }
+AffineEw2F
+fgIucsToIpcs(Vec2UI dims)
+{return AffineEw2F(Mat22F(0,1,0,1),Mat22F(0,dims[0],0,dims[1])); }
 
 inline
-FgAffineCw2F
-fgIrcsToIucs(FgVect2UI imageDims)
-{return FgAffineCw2F(FgMat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),FgMat22F(0,1,0,1)); }
+AffineEw2F
+calcIrcsToIucs(Vec2UI imageDims)
+{return AffineEw2F(Mat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),Mat22F(0,1,0,1)); }
 
 inline
-FgVect2F
-fgIucsToIrcs(FgVect2UI ircsDims,FgVect2F iucsCoord)
-{return (fgMapMul(iucsCoord,FgVect2F(ircsDims)) - FgVect2F(0.5)); }
+Vec2F
+fgIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord)
+{return (fgMapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
 
 template<uint dim>
 inline
-FgAffineCwC<float,dim>
+AffineEw<float,dim>
 fgIrcsToIpcs()
-{return FgAffineCwC<float,dim>(FgMatrixC<float,dim,1>(1),FgMatrixC<float,dim,1>(0.5f)); }
+{return AffineEw<float,dim>(Mat<float,dim,1>(1),Mat<float,dim,1>(0.5f)); }
 
-struct  FgCoordWgt
+struct  CoordWgt
 {
-    FgVect2UI   coordIrcs;
-    double      wgt;
+    Vec2UI      coordIrcs;  // Image coordinate
+    float       wgt;        // Respective weight
 };
 
 // Bilinear interpolation co-efficients culling samples outside bounds.
 // Return value can contain between 0 and 4 samples depending on how many are culled:
-FgArray<FgCoordWgt,4>
-fgBlerpCoordsCull(FgVect2UI dims,FgVect2F coordIucs);
+VArray<CoordWgt,4>
+blerpCoordsCull(Vec2UI dims,Vec2F coordIucs);
 
-// Bilinear interpolation co-efficients with coordinate clipping.
-// Return value structure much easier to use than a terser bounds-based representation:
-FgMatrixC<FgCoordWgt,4,1>
-fgBlerpCoordsClip(FgVect2UI dims,FgVect2F coordIucs);
+// Bilinear interpolation coordinates and co-efficients with coordinates clamped to image.
+// Returned matrix weights sum to 1. Cols are X Lo,Hi and rows are Y Lo,Hi.
+Mat<CoordWgt,2,2>
+blerpCoordsClip(Vec2UI dims,Vec2F coordIucs);
 
 // Bilinear interpolation. Returns alpha-weighted linear-interpolated value.
 // Source points outside image considered to have alpha zero:
-FgRgbaF
-fgBlerpAlpha(const FgImgRgbaUb & img,FgVect2F coordIucs);
+RgbaF
+sampleAlpha(const ImgC4UC & img,Vec2F coordIucs);
 
-// Bilinear interpolation.
-// Clips sample point coordinates to image boundaries.
-template<class T>
-typename FgTraits<T>::Floating      // 'float' for scalars, 'float' components for vectors
-fgBlerpClipIpcs(
-    const FgImage<T> &  img,        // Must not be empty
-    FgVect2F            coordIpcs)
+// Sample an image with coordinates clipped to image boundaries:
+template<typename T>
+typename Traits<T>::Floating
+sampleClip(Img<T> const & img,Vec2F coordIucs)
 {
-    FGASSERT(!img.empty());         // Required for algorithm below
-    typedef typename FgTraits<T>::Floating    Acc;
-    Acc                 acc(0.0);
-    float               xf = coordIpcs[0] - 0.5f,     // to IRCS
-                        yf = coordIpcs[1] - 0.5f;
-    int                 xi = int(std::floor(xf)),
-                        yi = int(std::floor(yf));
-    float               wxh = xf - float(xi),
-                        wyh = yf - float(yi),
-                        wxl = 1.0f - wxh,
-                        wyl = 1.0f - wyh;
-    uint                xl = uint((xi < 0) ? 0 : xi),
-                        yl = uint((yi < 0) ? 0 : yi),
-                        xh = uint((xi+1 < 0) ? 0 : xi+1),
-                        yh = uint((yi+1 < 0) ? 0 : yi+1),
-                        xm = img.width()-1,
-                        ym = img.height()-1;
-    xl = (xl > xm) ? xm : xl;
-    yl = (yl > ym) ? ym : yl;
-    xh = (xh > xm) ? xm : xh;
-    yh = (yh > ym) ? ym : yh;
-    acc += Acc(img.xy(xl,yl)) * wxl * wyl;
-    acc += Acc(img.xy(xh,yl)) * wxh * wyl;
-    acc += Acc(img.xy(xl,yh)) * wxl * wyh;
-    acc += Acc(img.xy(xh,yh)) * wxh * wyh;
-    return acc;
+    typedef typename Traits<T>::Floating    Acc;
+    Acc                 ret(0);
+    Mat<CoordWgt,2,2>   bc = blerpCoordsClip(img.dims(),coordIucs);
+    for (uint ii=0; ii<4; ++ii) {
+        CoordWgt        cw = bc.m[ii];
+        ret += Acc(img[cw.coordIrcs]) * cw.wgt;
+    }
+    return ret;
 }
-template<class T>
-typename FgTraits<T>::Floating
-fgBlerpClipIucs(const FgImage<T> & img,FgVect2F coordIucs)
-{return fgBlerpClipIpcs(img,fgMapMul(coordIucs,FgVect2F(img.dims()))); }
 
 template<class T>
-FgMatrixC<T,2,2>
-fgSampleFdd1Clamp(const FgImage<T> & img,FgVect2UI coord)
+Mat<T,2,2>
+fgSampleFdd1Clamp(const Img<T> & img,Vec2UI coord)
 {
-    FgMatrixC<T,2,2>    ret;
-    FgVect2UI           dims = img.dims();
+    Mat<T,2,2>      ret;
+    Vec2UI          dims = img.dims();
     for (uint dim=0; dim<2; ++dim) {
         for (int xx=-1; xx<2; xx+=2) {
             int         pos = int(coord[dim]) + xx,
@@ -122,7 +97,7 @@ fgSampleFdd1Clamp(const FgImage<T> & img,FgVect2UI coord)
                 pos = 0;
             else if (pos > max)
                 pos = max;
-            FgVect2UI   crd = coord;
+            Vec2UI      crd = coord;
             crd[dim] = uint(pos);
             ret.cr((xx+1)/2,dim) = img[crd];
         }
@@ -131,10 +106,10 @@ fgSampleFdd1Clamp(const FgImage<T> & img,FgVect2UI coord)
 }
 
 template<class T>
-FgImage<T>
-fgThreshold(const FgImage<T> & img,T minRoundUp)
+Img<T>
+fgThreshold(const Img<T> & img,T minRoundUp)
 {
-    FgImage<T>      ret(img.dims());
+    Img<T>      ret(img.dims());
     for (size_t ii=0; ii<ret.m_data.size(); ++ii)
         ret.m_data[ii] = (img.m_data[ii] < minRoundUp) ? T(0) : std::numeric_limits<T>::max();
     return ret;
@@ -142,30 +117,30 @@ fgThreshold(const FgImage<T> & img,T minRoundUp)
 
 // Shrink an image by 2x2 averaging blocks, rounding down the image size if odd:
 void
-fgImgShrink2(const FgImgRgbaUb & src,FgImgRgbaUb & dst);
+fgImgShrink2(const ImgC4UC & src,ImgC4UC & dst);
 
 inline
-FgImgRgbaUb
-fgImgShrink2(const FgImgRgbaUb & src)
+ImgC4UC
+fgImgShrink2(const ImgC4UC & src)
 {
-    FgImgRgbaUb ret;
+    ImgC4UC ret;
     fgImgShrink2(src,ret);
     return ret;
 }
 
 // Resampled 2x expansion. See 'magnify' for a unresampled.
-FgImgRgbaUb
-fgExpand2(const FgImgRgbaUb & src);
+ImgC4UC
+fgExpand2(const ImgC4UC & src);
 
 // 2x image shrink using block average for types composed of floating point values.
 // Truncates last row/col if width/height not even.
 template<typename T>
 void
 fgShrink2Float(
-    const FgImage<T> &  src,
-    FgImage<T> &        dst)    // Must be a different instance
+    const Img<T> &  src,
+    Img<T> &        dst)    // Must be a different instance
 {
-    FGASSERT(src.dataPtr() != dst.dataPtr());
+    FGASSERT(src.data() != dst.data());
     dst.resize(src.dims()/2);
     for (uint yy=0; yy<dst.height(); ++yy)
         for (uint xx=0; xx<dst.width(); ++xx)
@@ -173,42 +148,55 @@ fgShrink2Float(
                 src.xy(2*xx,2*yy) +
                 src.xy(2*xx+1,2*yy) +
                 src.xy(2*xx+1,2*yy+1) +
-                src.xy(2*xx,2*yy+1)) / 4;
+                src.xy(2*xx,2*yy+1)) / typename Traits<T>::Scalar(4);
 }
 
 template<class T>
-FgImage<T>
-fgShrink2Float(const FgImage<T> & img)
+Img<T>
+fgShrink2Float(const Img<T> & img)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     fgShrink2Float(img,ret);
     return ret;
 }
 
+// A row/col of pixels will be truncated if the dimensions are not even.
+// Not yet optimized.
+ImgUC fgShrink2(const ImgUC & img);
+
 // Shrink an image by 1x2 averaging blocks, rounding down the image width if odd.
-FgImgRgbaUb
-fgImgShrinkWid2(const FgImgRgbaUb & src);
+ImgC4UC
+fgImgShrinkWid2(const ImgC4UC & src);
 
 // Shrink an image by 2x1 averaging blocks, rounding down the image height if odd.
-FgImgRgbaUb
-fgImgShrinkHgt2(const FgImgRgbaUb & src);
+ImgC4UC
+fgImgShrinkHgt2(const ImgC4UC & src);
 
 // Repeat each pixel value 'fac' times in both dimensions:
 template<class T>
-FgImage<T>
-fgImgMagnify(const FgImage<T> & img,size_t fac)
+Img<T>
+fgImgMagnify(const Img<T> & img,size_t fac)
 {
-    FgImage<T>      ret(img.dims()*uint(fac));
-    for (FgIter2UI  it(ret.dims()); it.next(); it.valid())
+    Img<T>      ret(img.dims()*uint(fac));
+    for (Iter2UI  it(ret.dims()); it.next(); it.valid())
         ret[it()] = img[it()/uint(fac)];
     return ret;
 }
 
 void
-fgImgConvert(const FgImgRgbaUb & src,FgImgUC & dst);
+imgConvert_(const ImgC4UC & src,ImgUC & dst);
 
 void
-fgImgConvert(const FgImgUC & src,FgImgRgbaUb & dst);
+imgConvert_(const ImgUC & src,ImgC4UC & dst);
+
+inline
+ImgC4UC
+imgUcTo4Uc(ImgUC const & img)
+{
+    ImgC4UC      ret;
+    imgConvert_(img,ret);
+    return ret;
+}
 
 // Resize to the destination image dimensions, by shrinking or expanding in each dimension.
 // Samples the exact proportional amount of the source image covered by the destination image
@@ -216,29 +204,29 @@ fgImgConvert(const FgImgUC & src,FgImgRgbaUb & dst);
 // dimensions:
 void
 fgImgResize(
-    const FgImgRgbaUb & src,
-    FgImgRgbaUb &       dst);   // MODIFIED
+    const ImgC4UC & src,
+    ImgC4UC &       dst);   // MODIFIED
 
 void
-fgImgPntRescaleConvert(const FgImgD & src,FgImgUC & dst);
+fgImgPntRescaleConvert(const ImgD & src,ImgUC & dst);
 
 void
-fgImgPntRescaleConvert(const FgImgD & src,FgImgRgbaUb & dst);
+fgImgPntRescaleConvert(const ImgD & src,ImgC4UC & dst);
 
-FgAffine2D
-fgImgGetIrcsToBounds(uint wid,uint hgt,const FgMat22D & bounds);
+Affine2D
+fgImgGetIrcsToBounds(uint wid,uint hgt,const Mat22D & bounds);
 
-FgImgRgbaUb
+ImgC4UC
 fgImgApplyTransparencyPow2(
-    const FgImgRgbaUb & colour,
-    const FgImgRgbaUb & transparency);
+    const ImgC4UC & colour,
+    const ImgC4UC & transparency);
 
-FgImage<FgBool>
-fgAnd(const FgImage<FgBool> &,const FgImage<FgBool> &);
+Img<FgBool>
+fgAnd(const Img<FgBool> &,const Img<FgBool> &);
 
 template<class T>
 void
-fgImgFlipVertical(FgImage<T> & img)
+fgImgFlipVertical(Img<T> & img)
 {
     uint    wid = img.width(),
             halfHgt = img.height()/2;
@@ -251,10 +239,10 @@ fgImgFlipVertical(FgImage<T> & img)
 }
 
 template<class T>
-FgImage<T>
-fgFlipHoriz(const FgImage<T> & img)
+Img<T>
+fgFlipHoriz(const Img<T> & img)
 {
-    FgImage<T>  ret(img.dims());
+    Img<T>  ret(img.dims());
     uint        xh = img.width()-1;
     for (uint yy=0; yy<img.height(); ++yy) {
         for (uint xx=0; xx<img.width(); ++xx)
@@ -265,7 +253,7 @@ fgFlipHoriz(const FgImage<T> & img)
 template<class T>
 inline void
 fgImgFill(
-    FgImage<T> &    img,
+    Img<T> &    img,
     T               val)
 {
     for (size_t ii=0; ii<img.numPixels(); ++ii)
@@ -276,26 +264,17 @@ fgImgFill(
 // usually more convenient & precise for what needs to be done.
 template<class T>
 void
-fgImgPntAffine(const FgImage<T>& in,FgImage<T>& out,T trans,T scale)
+fgImgPntAffine(const Img<T>& in,Img<T>& out,T trans,T scale)
 {
     out.resize(in.width(),in.height());
     for (size_t ii=0; ii<out.numPixels(); ++ii)
         out[ii] = (in[ii] + trans) * scale;
 }
 
-template<class T,class U>
-void
-fgCast_(const FgImage<T> & in,FgImage<U> & out)
-{
-    out.resize(in.dims());
-    for (size_t ii=0; ii<out.numPixels(); ++ii)
-        fgCast_(in[ii],out[ii]);
-}
-
 // Accumulators for convolution:
 template<class T> struct FgConvTraits;
 template<> struct FgConvTraits<uchar>       {typedef ushort     Acc; };
-template<> struct FgConvTraits<FgRgbaUB>    {typedef FgRgbaUS   Acc; };
+template<> struct FgConvTraits<RgbaUC>    {typedef RgbaUS   Acc; };
 template<class T>
 void
 fgSmoothUint1D(
@@ -316,15 +295,15 @@ fgSmoothUint1D(
 template<class T>
 void
 fgSmoothUint(
-    const FgImage<T> &  src,
-    FgImage<T> &        dst,
+    const Img<T> &  src,
+    Img<T> &        dst,
     uchar               borderPolicy=1)     // 0 - zero border policy, 1 - replication border policy
 {
     typedef typename FgConvTraits<T>::Acc     Acc;
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.width(),src.height());
-    FgImage<Acc> acc(src.width(),3);                  // Accumulator image
+    Img<Acc> acc(src.width(),3);                  // Accumulator image
     T           *dstPtr = dst.rowPtr(0);
     Acc         *accPtr0,
                 *accPtr1 = acc.rowPtr(0),
@@ -351,10 +330,10 @@ fgSmoothUint(
         dstPtr[xx] = T((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + Acc(7)) / 16);
 }
 template<class T>
-FgImage<T>
-fgSmoothUint(const FgImage<T> & src,uchar borderPolicy=1)
+Img<T>
+fgSmoothUint(const Img<T> & src,uchar borderPolicy=1)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     fgSmoothUint(src,ret,borderPolicy);
     return ret;
 }
@@ -385,7 +364,7 @@ fgSmoothFloat2D(
     float       fac=1.0f/4.0f)  // Per-axis kernel normalization factor
 {
     float       factor = fac*fac;
-    FgImage<T>  acc(wid,3);
+    Img<T>     acc(wid,3);
     T           *accPtr0,
                 *accPtr1 = acc.rowPtr(0),
                 *accPtr2 = acc.rowPtr(1);
@@ -414,22 +393,22 @@ fgSmoothFloat2D(
 template<class T>
 void
 fgSmoothFloat(
-    const FgImage<T> &  src,
-    FgImage<T> &        dst,                // Can be same as src
+    const Img<T> &  src,
+    Img<T> &        dst,                // Can be same as src
     uchar               borderPolicy)       // 0 - zero border policy, 1 - replication border policy
 {
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
-    fgSmoothFloat2D(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
+    fgSmoothFloat2D(src.data(),dst.data(),src.width(),src.height(),borderPolicy);
 }
 
 // Only defined for binarized images, output is binarized:
 template<class T>
-FgImage<T>
-fgDilate(const FgImage<T> & img)
+Img<T>
+fgDilate(const Img<T> & img)
 {
-    FgImage<T>      ret = fgSmoothUint(img);
+    Img<T>      ret = fgSmoothUint(img);
     for (T & p : ret.m_data)
         p = (p > 0) ? std::numeric_limits<T>::max() : 0;
     return ret;
@@ -442,7 +421,7 @@ template<class Pixel>
 void
 fgConvolveFloatHoriz(
     const Pixel *       srcPtrs[3],
-    const FgMat33F & krn,
+    const Mat33F & krn,
     Pixel *             dstPtr,
     uint                sz,
     uchar               borderPolicy)               // See below
@@ -466,17 +445,17 @@ fgConvolveFloatHoriz(
 template<class Pixel>
 void
 fgConvolveFloat(
-    const FgImage<Pixel> &  src,
-    const FgMat33F &     krn,                // The kernel to be correlated
-    FgImage<Pixel> &        dst,                // Must be different from src
+    const Img<Pixel> &  src,
+    const Mat33F &     krn,                // The kernel to be correlated
+    Img<Pixel> &        dst,                // Must be different from src
     uchar                   borderPolicy)       // 0 - zero border policy, 1 - replication border policy
 {
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
-    FGASSERT(src.dataPtr() != dst.dataPtr());
+    FGASSERT(src.data() != dst.data());
     uint                    wid = src.width();
-    vector<Pixel>           boundaryRow(wid,Pixel(0));
+    Svec<Pixel>           boundaryRow(wid,Pixel(0));
     const Pixel *           srcPtrs[3];
     if (borderPolicy == 0)
         srcPtrs[0] = &boundaryRow[0];
@@ -502,39 +481,39 @@ fgConvolveFloat(
 template<class T>
 void
 fgResampleSimple(
-    const FgImage<T> &  in,
-    FgImage<T> &        out)
+    const Img<T> &  in,
+    Img<T> &        out)
 {
     if (in.dims().cmpntsProduct() == 0)
         out.clear();
     else {
         FGASSERT(fgMinElem(out.dims()) > 0);
-        FgMat22F        inBoundsIucs( 0.0f,1.0f,    // fgBlerpClipIucs takes UICS
+        Mat22F        inBoundsIucs( 0.0f,1.0f,    // sampleClip takes UICS
                                       0.0f,1.0f),
                         outBoundsIrcs(-0.5f,float(out.width())-0.5f,
                                       -0.5f,float(out.height())-0.5f);
-        FgAffineCw2F    o2i(outBoundsIrcs,inBoundsIucs);
-        for (FgIter2UI it(out.dims()); it.valid(); it.next()) {
-            FgVect2F    pt = o2i * FgVect2F(it());
-            fgRound(fgBlerpClipIucs(in,pt),out[it]);
+        AffineEw2F    o2i(outBoundsIrcs,inBoundsIucs);
+        for (Iter2UI it(out.dims()); it.valid(); it.next()) {
+            Vec2F    pt = o2i * Vec2F(it());
+            round_(sampleClip(in,pt),out[it]);
         }
     }
 }
 template<class T>
-FgImage<T>
-fgResampleSimple(const FgImage<T> & in,FgVect2UI dims)
+Img<T>
+fgResampleSimple(const Img<T> & in,Vec2UI dims)
 {
-    FgImage<T>      ret(dims);
+    Img<T>      ret(dims);
     fgResampleSimple(in,ret);
     return ret;
 }
 
 template<class T>
 void
-fgResizePow2Ceil_(const FgImage<T> & in,FgImage<T> & out)
+fgResizePow2Ceil_(const Img<T> & in,Img<T> & out)
 {
-    if (!fgIsPow2(in.dims())) {
-        out.resize(fgPow2Ceil(in.dims()));
+    if (!isPow2(in.dims())) {
+        out.resize(pow2Ceil(in.dims()));
         fgResampleSimple(in,out);
     }
     else
@@ -542,40 +521,40 @@ fgResizePow2Ceil_(const FgImage<T> & in,FgImage<T> & out)
 }
 
 template<class T>
-FgImage<T>
-fgResizePow2Ceil(const FgImage<T> & img)
+Img<T>
+fgResizePow2Ceil(const Img<T> & img)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     fgResizePow2Ceil_(img,ret);
     return ret;
 }
 
 bool
-fgImgApproxEqual(const FgImgRgbaUb & img0,const FgImgRgbaUb & img1,uint maxDelta=0);
+fgImgApproxEqual(const ImgC4UC & img0,const ImgC4UC & img1,uint maxDelta=0);
 
 template<class T>
 double
 fgImgSsd(
-    const FgImage<FgRgba<T> > & im0,
-    const FgImage<FgRgba<T> > & im1)
+    const Img<Rgba<T> > & im0,
+    const Img<Rgba<T> > & im1)
 {
     FGASSERT(im0.dims() == im1.dims());
     double      acc = 0.0;
-    for (FgIter2UI it(im0.dims()); it.valid(); it.next())
+    for (Iter2UI it(im0.dims()); it.valid(); it.next())
     {
-        FgVect4D        p0,p1;
-        fgCast_(im0[it].m_c,p0);
-        fgCast_(im1[it].m_c,p1);
+        Vec4D        p0,p1;
+        scast_(im0[it].m_c,p0);
+        scast_(im1[it].m_c,p1);
         acc += (p0-p1).mag();
     }
     return acc;
 }
 
 template<class T>
-FgImage<T>
-fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & r)
+Img<T>
+fgJoinHoriz(const Img<T> & l,const Img<T> & r)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     if (l.empty())
         ret = r;
     else if (r.empty())
@@ -583,21 +562,21 @@ fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & r)
     else {
         FGASSERT(l.height() == r.height());
         ret.resize(l.width()+r.width(),l.height());
-        FgVect2UI       off;
-        for (FgIter2UI it(l.dims()); it.valid(); it.next())
+        Vec2UI       off;
+        for (Iter2UI it(l.dims()); it.valid(); it.next())
             ret[it()] = l[it()];
         off[0] += l.dims()[0];
-        for (FgIter2UI it(r.dims()); it.valid(); it.next())
+        for (Iter2UI it(r.dims()); it.valid(); it.next())
             ret[it()+off] = r[it()];
     }
     return ret;
 }
 
 template<class T>
-FgImage<T>
-fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
+Img<T>
+fgJoinHoriz(const Img<T> & l,const Img<T> & c,const Img<T> & r)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     if (l.empty())
         ret = fgJoinHoriz(c,r);
     else if (c.empty())
@@ -607,24 +586,24 @@ fgJoinHoriz(const FgImage<T> & l,const FgImage<T> & c,const FgImage<T> & r)
     else {
         FGASSERT((l.height() == c.height()) && (c.height() == r.height()));
         ret.resize(l.width()+c.width()+r.width(),l.height());
-        FgVect2UI   off;
-        for (FgIter2UI it(l.dims()); it.valid(); it.next())
+        Vec2UI   off;
+        for (Iter2UI it(l.dims()); it.valid(); it.next())
             ret[it()] = l[it()];
         off[0] += l.dims()[0];
-        for (FgIter2UI it(c.dims()); it.valid(); it.next())
+        for (Iter2UI it(c.dims()); it.valid(); it.next())
             ret[it()+off] = c[it()];
         off[0] += c.dims()[0];
-        for (FgIter2UI it(r.dims()); it.valid(); it.next())
+        for (Iter2UI it(r.dims()); it.valid(); it.next())
             ret[it()+off] = r[it()];
     }
     return ret;
 }
 
 template<class T>
-FgImage<T>
-fgJoinVert(const FgImage<T> & t,const FgImage<T> & b)
+Img<T>
+fgJoinVert(const Img<T> & t,const Img<T> & b)
 {
-    FgImage<T>      ret;
+    Img<T>      ret;
     if (t.empty())
         ret = b;
     else if (b.empty())
@@ -632,73 +611,73 @@ fgJoinVert(const FgImage<T> & t,const FgImage<T> & b)
     else {
         FGASSERT(t.width() == b.width());
         ret.resize(t.width(),t.height()+b.height());
-        FgVect2UI   off;
-        for (FgIter2UI it(t.dims()); it.valid(); it.next())
+        Vec2UI   off;
+        for (Iter2UI it(t.dims()); it.valid(); it.next())
             ret[it()] = t[it()];
         off[1] += t.dims()[1];
-        for (FgIter2UI it(b.dims()); it.valid(); it.next())
+        for (Iter2UI it(b.dims()); it.valid(); it.next())
             ret[it()+off] = b[it()];
     }
     return ret;
 }
 
 template<class T>
-FgImage<T>
-fgJoinVert(const std::vector<FgImage<T> > & v)
+Img<T>
+fgJoinVert(const Svec<Img<T> > & v)
 {
-    FgImage<T>  ret;
+    Img<T>  ret;
     for (size_t ii=0; ii<v.size(); ++ii)
         ret = fgJoinVert(ret,v[ii]);
     return ret;
 }
 
 template<class T>
-FgImage<T>
+Img<T>
 fgCropPad(
-    const FgImage<T> &  src,
-    FgVect2UI           dims,
-    FgVect2I            offset = FgVect2I(0),
+    const Img<T> &  src,
+    Vec2UI           dims,
+    Vec2I            offset = Vec2I(0),
     T                   fill = T())
 {
-    FgImage<T>      ret(dims,fill);
+    Img<T>      ret(dims,fill);
     if (!src.empty()) {
-        FgMat22I        srcBnds = FgMat22I(fgRangeToBounds(src.dims())),
-                        dstBnds = FgMat22I(fgRangeToBounds(dims)),
+        Mat22I        srcBnds = Mat22I(fgRangeToBounds(src.dims())),
+                        dstBnds = Mat22I(fgRangeToBounds(dims)),
                         range = fgBoundsIntersection(srcBnds-fgJoinHoriz(offset,offset),dstBnds);
-        for (FgIter2I it(fgInclToExcl(range)); it.valid(); it.next())
-            ret[FgVect2UI(it())] = src[FgVect2UI(it()+offset)];
+        for (Iter2I it(fgInclToExcl(range)); it.valid(); it.next())
+            ret[Vec2UI(it())] = src[Vec2UI(it()+offset)];
     }
     return ret;
 }
 
 // Requires alpha-weighted color values:
 template<class T>
-FgImage<T>
+Img<T>
 fgComposite(
-    const FgImage<T> &  foreground,
-    const FgImage<T> &  background)
+    const Img<T> &  foreground,
+    const Img<T> &  background)
 {
     FGASSERT(foreground.dims() == background.dims());
-    FgImage<T>      ret(foreground.dims());
+    Img<T>      ret(foreground.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
         ret[ii] = fgCompositeFragmentUnweighted(foreground[ii],background[ii]);
     return ret;
 }
 
 // Simple resampling (no filtering) based on a transform map:
-FgImgRgbaUb
+ImgC4UC
 fgResample(
-    const FgImage<FgVect2F> &   map,    // Resample coordinates in OTCS, with (-1,-1) as invalid
-    const FgImgRgbaUb &         src);
+    const Img2F &   map,    // Resample coordinates in OTCS, with (-1,-1) as invalid
+    const ImgC4UC &         src);
 
 template<class T>
 void
 fgRotate90(
     bool                clockwise,
-    const FgImage<T> &  in,
-    FgImage<T> &        out)
+    const Img<T> &  in,
+    Img<T> &        out)
 {
-    FgVect2UI       dims(in.dims());
+    Vec2UI       dims(in.dims());
     std::swap(dims[0],dims[1]);
     out.resize(dims);
     int             xh = (clockwise ? dims[0]-1 : 0),
@@ -713,50 +692,67 @@ fgRotate90(
 // Alpha-weight the pixels (assuming they are initially NOT):
 inline
 void
-fgAlphaWeight(FgImgRgbaUb & img)
+fgAlphaWeight(ImgC4UC & img)
 {
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii].alphaWeight();
 }
 
-// Does any pixel contain an alpha value less than 254 ?
+// Does any pixel contain an alpha value less than 254 ? (returns false if empty)
 bool
-fgUsesAlpha(const FgImgRgbaUb &,uchar minVal=254);
+fgUsesAlpha(const ImgC4UC &,uchar minVal=254);
 
-inline FgVect4UC fgRed() {return FgVect4UC(255,0,0,255); }
-inline FgVect4UC fgGreen() {return FgVect4UC(255,0,0,255); }
-inline FgVect4UC fgBlue() {return FgVect4UC(255,0,0,255); }
+inline Vec4UC fgRed() {return Vec4UC(255,0,0,255); }
+inline Vec4UC fgGreen() {return Vec4UC(255,0,0,255); }
+inline Vec4UC fgBlue() {return Vec4UC(255,0,0,255); }
 
 // Thickness must be and odd number:
 void
-fgPaintCrossHair(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC color=fgRed(),uint thickness=1);
+fgPaintCrossHair(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint thickness=1);
 
 void
-fgPaintDot(FgImgRgbaUb & img,FgVect2I ircs,FgVect4UC color=fgRed(),uint radius=3);
+fgPaintDot(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
 
 void
-fgPaintDot(FgImgRgbaUb & img,FgVect2F ipcs,FgVect4UC color=fgRed(),uint radius=3);
+fgPaintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
 
 // Returns only 2-block-filtered 2-subsampled images of the original.
 // Smallest is when the largest dimension is of size 1 (smallest dim clamped to size 1).
 // Non power-of-2 dimensions are truncated when subsampled.
-vector<FgImgRgbaUb>
-fgOglMipMap(const FgImgRgbaUb & img);
+Svec<ImgC4UC>
+fgMipMap(const ImgC4UC & img);
 
 // Convert, no scaling:
-FgImg3F
-fgImgToF3(const FgImgRgbaUb &);
+Img3F
+fgImgToF3(const ImgC4UC &);
 
 // Scale space image (3 channel float). Returns image pyramid from largest (same as source but smoothed)
 // to smallest dimension equal to 2. Non power of 2 dimensions are simply rounded down at each level:
-FgImg3Fs
+Img3Fs
 fgSsi(
-    const FgImg3F & img,                // Source image
+    const Img3F & img,                // Source image
     uchar           borderPolicy=0);    // 0: border is value 0, 1: border is mirrored
 
 // Returns the transforms from ITCS to IPCS for each corresponding SSI level given the original image dims,
 // principal point and FOV. Takes into account the dimension rounding for non power of 2 dimensions:
-FgAffineCw2Fs
-fgSsiItcsToIpcs(FgVect2UI dims,FgVect2F principalPointIpcs,FgVect2F fovItcs);
+AffineEw2Fs
+fgSsiItcsToIpcs(Vec2UI dims,Vec2F principalPointIpcs,Vec2F fovItcs);
+
+// Blend images given a greyscale transition map [0,255] : 0 -> 'img0', 255 -> 'img1'
+// The returned image is the size of 'img0' and 'img1' and 'transition' are bilinearly sampled.
+// Any of the images can be empty:
+ImgC4UC
+imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition);
+
+// Modulate the color channels of an image with a modulation map scaled such that identity (1.0) = 64.
+// Only the color channels of modulationMap are used. The input images may be different sizes but must
+// have identical aspect ratios. Either image may be empty.
+ImgC4UC
+imgModulate(
+    ImgC4UC const &     colorImage,             // Alpha left unchanged
+    ImgC4UC const &     modulationMap,          // RGB channels modulate respective channels in 'colorImage'. Alpha ignored.
+    float               modulationFactor=1.0f); // [0.5,1.5] modulate the modulation values.
+
+}
 
 #endif

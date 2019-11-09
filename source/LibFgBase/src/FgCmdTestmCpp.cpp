@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: June 16, 2017
+
 //
 // Test C++ behaviour
 //
@@ -24,11 +23,13 @@
 
 using namespace std;
 
+namespace Fg {
+
 static size_t rvoCount;
 
 struct  FgTestmRvo
 {
-    FgDbls      data;
+    Doubles      data;
     FgTestmRvo() {}
     FgTestmRvo(double v) : data(1,v) {}
     FgTestmRvo(const FgTestmRvo & rhs) : data(rhs.data) {++rvoCount; }
@@ -37,14 +38,14 @@ struct  FgTestmRvo
 FgTestmRvo
 fgTestmRvo()
 {
-    FgDbls      t0(1,3.14159);
+    Doubles      t0(1,3.14159);
     return FgTestmRvo(t0[0]);
 }
 
 FgTestmRvo
 fgTestmRvoMr(bool sel)
 {
-    FgDbls      t0(1,2.71828),
+    Doubles      t0(1,2.71828),
                 t1(1,3.14159);
     if (sel)
         return FgTestmRvo(t0[0]);
@@ -55,7 +56,7 @@ fgTestmRvoMr(bool sel)
 FgTestmRvo
 fgTestmNrvo(bool sel)
 {
-    FgDbls      t0(1,2.71828),
+    Doubles      t0(1,2.71828),
                 t1(1,3.14159);
     FgTestmRvo  ret;
     if (sel)
@@ -68,7 +69,7 @@ fgTestmNrvo(bool sel)
 FgTestmRvo
 fgTestmNrvoMr(bool sel)
 {
-    FgDbls      t0(1,2.71828),
+    Doubles      t0(1,2.71828),
                 t1(1,3.14159);
     FgTestmRvo  ret;
     if (sel) {
@@ -83,7 +84,7 @@ fgTestmNrvoMr(bool sel)
 
 static
 void
-rvo(const FgArgs &)
+rvo(const CLArgs &)
 {
     FgTestmRvo      t;
     rvoCount = 0;
@@ -105,7 +106,7 @@ rvo(const FgArgs &)
 
 static
 void
-speedExp(const FgArgs &)
+speedExp(const CLArgs &)
 {
     double      val = 0,
                 inc = 2.718281828,
@@ -124,17 +125,17 @@ speedExp(const FgArgs &)
 
 static
 void
-fgexp(const FgArgs &)
+fgexp(const CLArgs &)
 {
     double      maxRel = 0,
                 totRel = 0;
     size_t      cnt = 0;
     for (double dd=0; dd<5; dd+=0.001) {
         double  baseline = exp(-dd),
-                test = fgExpFast(-dd),
+                test = expFast(-dd),
                 meanVal = (test+baseline) * 0.5,
                 relDel = (test-baseline) / meanVal;
-        maxRel = fgMax(maxRel,relDel);
+        maxRel = maxEl(maxRel,relDel);
         totRel += relDel;
         ++cnt;
     }
@@ -146,7 +147,7 @@ fgexp(const FgArgs &)
     size_t      reps = 10000000;
     FgTimer     tm;
     for (size_t ii=0; ii<reps; ++ii) {
-        acc += fgExpFast(-val);
+        acc += expFast(-val);
         val += inc;
         if (val > mod)
             val -= mod;
@@ -156,7 +157,7 @@ fgexp(const FgArgs &)
 
 static
 void
-any(const FgArgs &)
+any(const CLArgs &)
 {
     boost::any      v0 = 42,
                     v1 = v0;
@@ -164,16 +165,16 @@ any(const FgArgs &)
     *v0Ptr = 7;
     fgout << fgnl << "Original small value: " << *v0Ptr << " but copy remains at " << boost::any_cast<int>(v1);
     // Now try with a heavy object that is not subject to small value optimization (16 bytes) onto the stack:
-    v0 = FgMat44D(42);
+    v0 = Mat44D(42);
     v1 = v0;
-    FgMat44D *      v0_ptr = boost::any_cast<FgMat44D>(&v0);
+    Mat44D *      v0_ptr = boost::any_cast<Mat44D>(&v0);
     (*v0_ptr)[0] = 7;
-    fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<FgMat44D>(v1)[0];
+    fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<Mat44D>(v1)[0];
 }
 
 static
 void
-thash(const FgArgs &)
+thash(const CLArgs &)
 {
     for (uint ii=0; ii<3; ++ii) {
         string              str = "Does this string give a consistent hash on subsequent runs ?";
@@ -183,7 +184,7 @@ thash(const FgArgs &)
 #else                                   // size_t is 32 bits:
         size_t              hval32 = hfn(str);
         uint64              lo = hval32,
-                            hi = hfn(str+fgToStr(lo)),
+                            hi = hfn(str+toString(lo)),
                             hval64 = lo | (hi << 32);
         fgout << fgnl << "32 bit hash: " << hval32 << " and 64 composite: " << hval64;
 #endif
@@ -192,18 +193,18 @@ thash(const FgArgs &)
 
 static
 void
-parr(const FgArgs &)
+parr(const CLArgs &)
 {
     // Generate data and put in both parallel and packed arrays:
     size_t          N = 100000,
                     A = 8;
-    FgDblss         pins(A),
+    Doubless         pins(A),
                     pouts(A);
-    for (FgDbls & pin : pins)
-        pin = fgGenerate<double>(fgRandNormal,N);
-    for (FgDbls & pout : pouts)
+    for (Doubles & pin : pins)
+        pin = fgGenerate<double>(randNormal,N);
+    for (Doubles & pout : pouts)
         pout.resize(N,0);
-    FgDbls          sins,
+    Doubles          sins,
                     souts(N*A,0.0);
     for (size_t ii=0; ii<N; ++ii)
         for (size_t jj=0; jj<A; ++jj)
@@ -225,8 +226,8 @@ parr(const FgArgs &)
     }
     size_t          time = tm.readMs();
     double          val = 0;
-    for (const FgDbls & outs : pouts)
-        val += fgSum(outs);
+    for (const Doubles & outs : pouts)
+        val += cSum(outs);
     fgout << fgnl << "Paral arrays in, paral arrays out: " << time << "ms. (" << val << ")";
 
     // Packed -> Packed
@@ -247,14 +248,14 @@ parr(const FgArgs &)
         }
     }
     time = tm.readMs();
-    val = fgSum(souts);
+    val = cSum(souts);
     fgout << fgnl << "Packed array in, packed array out: " << time << "ms. (" << val << ")";
 
     // Packed -> Parallel
     // I have no idea why this is faster than packed->packed. I looked at the MSVC17 x64 O2
     // disassembler (on Goldbolt using just 4 vals and a single mult) and the multiply, add, store
     // operands were identical ...
-    for (FgDbls & pout : pouts)
+    for (Doubles & pout : pouts)
         fgFill(pout,0.0);
     tm.start();
     for (size_t rr=0; rr<100; ++rr) {
@@ -274,8 +275,8 @@ parr(const FgArgs &)
     }
     time = tm.readMs();
     val = 0;
-    for (const FgDbls & outs : pouts)
-        val += fgSum(outs);
+    for (const Doubles & outs : pouts)
+        val += cSum(outs);
     fgout << fgnl << "Packed array in, paral arrays out: " << time << "ms. (" << val << ")";
 
 
@@ -283,16 +284,18 @@ parr(const FgArgs &)
 }
 
 void
-fgCmdTestmCpp(const FgArgs & args)
+fgCmdTestmCpp(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(any,"any","Test boost any copy semantics"));
-    cmds.push_back(FgCmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
-    cmds.push_back(FgCmd(thash,"hash","Test std::hash behaviour"));
-    cmds.push_back(FgCmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
-    cmds.push_back(FgCmd(rvo,"rvo","Return value optimization / copy elision"));
-    cmds.push_back(FgCmd(speedExp,"exp","Measure the speed of library exp(double)"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(any,"any","Test boost any copy semantics"));
+    cmds.push_back(Cmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
+    cmds.push_back(Cmd(thash,"hash","Test std::hash behaviour"));
+    cmds.push_back(Cmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
+    cmds.push_back(Cmd(rvo,"rvo","Return value optimization / copy elision"));
+    cmds.push_back(Cmd(speedExp,"exp","Measure the speed of library exp(double)"));
     fgMenu(args,cmds);
+}
+
 }
 
 // */

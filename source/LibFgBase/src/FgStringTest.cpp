@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani
-//
+
 
 #include "stdafx.h"
 
@@ -12,27 +11,31 @@
 #include "FgString.hpp"
 #include "FgMain.hpp"
 
+using namespace std;
+
+namespace Fg {
+
 static void Construct()
 {
-    {   FgString s;
-        FGASSERT(s.length() == 0); }
-    {   FgString s("12345");
-        FGASSERT(s.length() == 5);}
+    {   Ustring s;
+        FGASSERT(s.size() == 0); }
+    {   Ustring s("12345");
+        FGASSERT(s.size() == 5);}
 #ifdef _WIN32
-    {   FgString s(L"12345");
-        FGASSERT(s.length() == 5); }
+    {   Ustring s(L"12345");
+        FGASSERT(s.size() == 5); }
 #endif
-    {   FgString s1("12345");
-        FgString s2(s1);
-        FGASSERT(s1.length() == s2.length() && s1.length() == 5); }
+    {   Ustring s1("12345");
+        Ustring s2(s1);
+        FGASSERT(s1.size() == s2.size() && s1.size() == 5); }
 }
 
 static void Copy()
 {
     {
         // Ensure that we are copying on copy
-        FgString original("abcd");
-        FgString copy(original);
+        Ustring original("abcd");
+        Ustring copy(original);
         FGASSERT(copy == original);
         copy += "efghi";
         FGASSERT(copy != original);
@@ -41,35 +44,35 @@ static void Copy()
 
 static void Assign()
 {
-    {   FgString s;
+    {   Ustring s;
         s = "12345";
-        FGASSERT(s.length() == 5); }
+        FGASSERT(s.size() == 5); }
 #ifdef _WIN32
-    {   FgString s;
+    {   Ustring s;
         s = L"12345";
-        FGASSERT(s.length() == 5); }
-    {   FgString s;
+        FGASSERT(s.size() == 5); }
+    {   Ustring s;
         s = L"12345";
-        FgString s1;
+        Ustring s1;
         s1 = s;
-        FGASSERT(s1.length() == 5); }
+        FGASSERT(s1.size() == 5); }
 #endif
 }
 
 static void Append()
 {
-    {   FgString s("12345");
+    {   Ustring s("12345");
         s += "12345";
-        FGASSERT(s.length() == 10); }
+        FGASSERT(s.size() == 10); }
 #ifdef _WIN32
-    {   FgString s("12345");
+    {   Ustring s("12345");
         s += L"12345";
-        FGASSERT(s.length() == 10); }
+        FGASSERT(s.size() == 10); }
 #endif
-    {   FgString s("12345");
+    {   Ustring s("12345");
         s += s;
-        FGASSERT(s.length() == 10); }
-    {   FgString s("abcd");
+        FGASSERT(s.size() == 10); }
+    {   Ustring s("abcd");
         FGASSERT(s=="abcd");
         s+="efg";
         FGASSERT(s!="abcd");
@@ -79,18 +82,18 @@ static void Append()
 static void Comparisons()
 {
 #ifdef _WIN32
-    {   FgString s("12345");
+    {   Ustring s("12345");
         FGASSERT(s == "12345");
         FGASSERT(s == L"12345");
-        FGASSERT(s == FgString("12345"));
-        FGASSERT(FgString("12345") == s); }
-    {   FgString s("12345");
+        FGASSERT(s == Ustring("12345"));
+        FGASSERT(Ustring("12345") == s); }
+    {   Ustring s("12345");
         FGASSERT(s != "abcdefg");
         FGASSERT(s != L"Hi");
-        FGASSERT(s != FgString("Bye"));
+        FGASSERT(s != Ustring("Bye"));
         FGASSERT(s == "12345"); }
 #endif
-    {   FgString s("abcdefg");
+    {   Ustring s("abcdefg");
         FGASSERT(s == "abcdefg");
         FGASSERT(s != "abc"); }
 }
@@ -101,12 +104,12 @@ static void Encoding()
         // Character as Unicode code point
         uint32  character = 0x0161;
         // Same character as UTF-8 encoded string
-        FgString fg_character("\xC5\xA1");
+        Ustring fg_character("\xC5\xA1");
         FGASSERT(character == fg_character[0]);
     }
     {
         FgTestDir   td("string_encoding");
-        FgString    source("UTF-8:\xC5\xA1\xC4\x8E");
+        Ustring    source("UTF-8:\xC5\xA1\xC4\x8E");
         {
             std::ofstream ofs("testString_utf8.txt");
             FGASSERT(ofs);
@@ -115,7 +118,7 @@ static void Encoding()
         {
             std::ifstream ifs("testString_utf8.txt");
             FGASSERT(ifs);
-            FgString target;
+            Ustring target;
             ifs >> target;
             FGASSERT(source == target); }
     }
@@ -123,32 +126,32 @@ static void Encoding()
 
 static void Replace()
 {
-    {   FgString original("ab");
-        FGASSERT(FgString("aa") == original.replace('b','a'));
-        FGASSERT(FgString("bb") == original.replace('a','b')); }
-    {   FgString original("abcd");
-        FGASSERT(FgString("aacd") == original.replace('b','a'));
-        FGASSERT(FgString("abbd") == original.replace('c','b')); }
+    {   Ustring original("ab");
+        FGASSERT(Ustring("aa") == original.replace('b','a'));
+        FGASSERT(Ustring("bb") == original.replace('a','b')); }
+    {   Ustring original("abcd");
+        FGASSERT(Ustring("aacd") == original.replace('b','a'));
+        FGASSERT(Ustring("abbd") == original.replace('c','b')); }
 }
 
 static void Compare()
 {
-    FgString a("a");
-    FgString b("b");
+    Ustring a("a");
+    Ustring b("b");
     FGASSERT(a < b);
     FGASSERT(!(b < a));
 }
 
 static void Split()
 {
-    {   FgString a("a/b/c");
-        FgStrings comps = a.split('/');
+    {   Ustring a("a/b/c");
+        Ustrings comps = a.split('/');
         FGASSERT(comps.size() == 3);
-        FGASSERT(comps[0] == FgString("a"));
-        FGASSERT(comps[1] == FgString("b"));
-        FGASSERT(comps[2] == FgString("c")); }
-    {   FgString a("noseparator");
-        FgStrings comps = a.split(' ');
+        FGASSERT(comps[0] == Ustring("a"));
+        FGASSERT(comps[1] == Ustring("b"));
+        FGASSERT(comps[2] == Ustring("c")); }
+    {   Ustring a("noseparator");
+        Ustrings comps = a.split(' ');
         FGASSERT(comps.size() == 1);
         FGASSERT(comps[0] == a); }
 }
@@ -156,26 +159,26 @@ static void Split()
 static void StartsWith()
 {
     {
-        FgString a("abcd");
-        FGASSERT(a.beginsWith(FgString("a")));
-        FGASSERT(a.beginsWith(FgString("ab")));
-        FGASSERT(a.beginsWith(FgString("abc")));
-        FGASSERT(a.beginsWith(FgString("abcd")));
-        FGASSERT(!a.beginsWith(FgString("d")));
-        FGASSERT(!a.beginsWith(FgString("db")));
-        FGASSERT(!a.beginsWith(FgString("dbc")));
-        FGASSERT(!a.beginsWith(FgString("dbcd")));
-        FGASSERT(!a.beginsWith(FgString("abcde")));        
+        Ustring a("abcd");
+        FGASSERT(a.beginsWith(Ustring("a")));
+        FGASSERT(a.beginsWith(Ustring("ab")));
+        FGASSERT(a.beginsWith(Ustring("abc")));
+        FGASSERT(a.beginsWith(Ustring("abcd")));
+        FGASSERT(!a.beginsWith(Ustring("d")));
+        FGASSERT(!a.beginsWith(Ustring("db")));
+        FGASSERT(!a.beginsWith(Ustring("dbc")));
+        FGASSERT(!a.beginsWith(Ustring("dbcd")));
+        FGASSERT(!a.beginsWith(Ustring("abcde")));        
     }
     {
-        FgString a("a kind of longish string to test with since small strings may hide some bugs");
-        FGASSERT(a.beginsWith(FgString("a kind of longish string to test with")));
+        Ustring a("a kind of longish string to test with since small strings may hide some bugs");
+        FGASSERT(a.beginsWith(Ustring("a kind of longish string to test with")));
     }
 }
 
 static void Convert()
 {
-    string      utf8 = fgSlurp(fgDataDir()+"base/test/utf8_language_samples.txt"),
+    string      utf8 = fgSlurp(dataDir()+"base/test/utf8_language_samples.txt"),
                 reg32 = fgToUtf8(fgToUtf32(utf8));
     FGASSERT(utf8 == reg32);
 #ifdef _WIN32
@@ -185,7 +188,7 @@ static void Convert()
 }
 
 void
-fgStringTest(const FgArgs &)
+fgStringTest(const CLArgs &)
 {
     Construct();
     Copy();
@@ -198,4 +201,6 @@ fgStringTest(const FgArgs &)
     Split();
     StartsWith();
     Convert();
+}
+
 }

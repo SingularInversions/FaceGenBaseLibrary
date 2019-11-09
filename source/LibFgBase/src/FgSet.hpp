@@ -3,8 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     18.04.14
+
 //
 // An order-preserving set for small collections based on std::vector. For:
 // 1. Small sets where we don't want the overhead of std::set
@@ -18,10 +17,12 @@
 #include "FgStdLibs.hpp"
 #include "FgDiagnostics.hpp"
 
+namespace Fg {
+
 template<typename T>
 struct  FgSet
 {
-    std::vector<T>      set;
+    Svec<T>      set;
 
     size_t
     size() const
@@ -45,5 +46,7 @@ struct  FgSet
         set.push_back(val);
     }
 };
+
+}
 
 #endif

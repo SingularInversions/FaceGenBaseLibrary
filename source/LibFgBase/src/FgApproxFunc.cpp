@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     June 21, 2010
+
 //
 
 #include "stdafx.h"
@@ -16,6 +15,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 struct  Sine
 {
     double
@@ -24,20 +25,20 @@ struct  Sine
 };
 
 void
-fgApproxFuncTest(const FgArgs &)
+fgApproxFuncTest(const CLArgs &)
 {
     const double        accuracy = 0.0001;
     for (uint ii=0; ii<10; ++ii)
     {
-        double          base = fgRandUniform(-fgPi(),fgPi()),
-                        length = fgRandUniform(0.5,1.5) * fgPi();
+        double          base = randUniform(-fgPi(),fgPi()),
+                        len = randUniform(0.5,1.5) * fgPi();
         Sine            sine;
-        FgApproxFunc<double>    af(sine,base,base+length,256);
+        FgApproxFunc<double>    af(sine,base,base+len,256);
         double          xx,delta;
         for (uint jj=0; jj<1000; ++jj)
         {
             // Test interpolation:
-            xx = fgRandUniform(base,base+length);
+            xx = randUniform(base,base+len);
             delta = std::abs(sine(xx) - af(xx));
             FGASSERT(delta < accuracy);
         }
@@ -49,11 +50,13 @@ fgApproxFuncTest(const FgArgs &)
         xx = base - 1.001;
         delta = std::abs(sine(base) - af(xx));
         FGASSERT(delta < accuracy);
-        xx = base + length + 0.001;
-        delta = std::abs(sine(base+length) - af(xx));
+        xx = base + len + 0.001;
+        delta = std::abs(sine(base+len) - af(xx));
         FGASSERT(delta < accuracy);
-        xx = base + length + 1.001;
-        delta = std::abs(sine(base+length) - af(xx));
+        xx = base + len + 1.001;
+        delta = std::abs(sine(base+len) - af(xx));
         FGASSERT(delta < accuracy);
     }
+}
+
 }

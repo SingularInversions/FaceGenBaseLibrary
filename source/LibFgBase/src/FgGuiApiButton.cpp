@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: June 28, 2014
+
 //
 
 #include "stdafx.h"
@@ -13,22 +12,26 @@
 
 using namespace std;
 
-FgGuiPtr
-fgGuiButton(const FgString & label,FgFnVoid2Void action)
+namespace Fg {
+
+GuiPtr
+guiButton(const Ustring & label,FgFnVoid2Void action)
 {
-    FgGuiApiButton      b;
+    GuiButton      b;
     b.label = label;
     b.action = action;
-    return fgsp(b);
+    return std::make_shared<GuiButton>(b);
 }
 
-FgGuiPtr
-fgGuiButtonTr(const string & label,FgFnVoid2Void action)
+GuiPtr
+guiButtonTr(const string & label,FgFnVoid2Void action)
 {
-    FgGuiApiButton      b;
+    GuiButton      b;
     b.label = label;
     b.action = action;
-    return fgsp(b);
+    return std::make_shared<GuiButton>(b);
+}
+
 }
 
 // */

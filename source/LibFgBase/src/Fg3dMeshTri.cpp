@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct. 8, 2009
+
 //
 
 #include "stdafx.h"
@@ -17,6 +16,8 @@
 
 using namespace std;
 
+namespace Fg {
+
 static string triIdent = "FRTRI003";
 
 static
@@ -24,7 +25,7 @@ string
 readString(istream & istr,bool wchar)
 {
     uint        size;
-    fgReadb(istr,size);
+    readb(istr,size);
     string      str;
     if (size == 0)
         return str;
@@ -32,7 +33,7 @@ readString(istream & istr,bool wchar)
     for (uint ii=0; ii<size; ++ii) {
         if (wchar) {
             wchar_t     wch;
-            fgReadb(istr,wch);
+            readb(istr,wch);
             str[ii] = char(wch);
         }
         else
@@ -43,10 +44,9 @@ readString(istream & istr,bool wchar)
     return str;
 }
 
-Fg3dMesh
-fgLoadTri(istream & istr)
+void
+loadTri(istream & istr,Mesh & mesh)
 {
-    Fg3dMesh            mesh;
     // Check for file type identifier
     char                cdata[9];
     istr.read(cdata,8);
@@ -66,16 +66,16 @@ fgLoadTri(istream & istr)
                 numStatMorph,
                 numStatMorphVerts;
     char        buff[16];
-    fgReadb(istr,numVerts);
-    fgReadb(istr,numTris);
-    fgReadb(istr,numQuads);
-    fgReadb(istr,numLabVerts);
-    fgReadb(istr,numSurfPts);
-    fgReadb(istr,numUvs);
-    fgReadb(istr,texExt);
-    fgReadb(istr,numDiffMorph);
-    fgReadb(istr,numStatMorph);
-    fgReadb(istr,numStatMorphVerts);
+    readb(istr,numVerts);
+    readb(istr,numTris);
+    readb(istr,numQuads);
+    readb(istr,numLabVerts);
+    readb(istr,numSurfPts);
+    readb(istr,numUvs);
+    readb(istr,texExt);
+    readb(istr,numDiffMorph);
+    readb(istr,numStatMorph);
+    readb(istr,numStatMorphVerts);
     istr.read(buff,16);
     bool    texs = ((texExt & 0x01) != 0),
             wchar = ((texExt & 0x02) != 0);
@@ -83,16 +83,20 @@ fgLoadTri(istream & istr)
         fgout << fgnl << "WARNING: Unicode labels being converted to ASCII.";
 
     // Read in the verts:
-    FGASSERT(numVerts > 0);     // Valid TRI must have to have verts
+    if (numVerts==0)
+        fgThrow("TRI file has no vertices");
     mesh.verts.resize(numVerts);
-    vector<FgVect3F>    targVerts(numStatMorphVerts);
+    vector<Vec3F>    targVerts(numStatMorphVerts);
     istr.read(reinterpret_cast<char*>(&mesh.verts[0]),int(12*numVerts));
     if (numStatMorphVerts > 0)
         istr.read(reinterpret_cast<char*>(&targVerts[0]),int(12*numStatMorphVerts));
 
-    // Read in the surface (a TRI has only one):
-    mesh.surfaces.resize(1);
-    Fg3dSurface &           surf = mesh.surfaces[0];
+    // Read in the surface if there is any surface data (a TRI has only one):
+    bool            hasSurface =  ((numTris > 0) || (numQuads > 0));
+    if (hasSurface)
+        mesh.surfaces.resize(1);
+    Surf            dummy;
+    Surf &          surf = hasSurface ? mesh.surfaces[0] : dummy;
     surf.tris.vertInds.resize(numTris);
     if (numTris > 0)
         istr.read(reinterpret_cast<char*>(&surf.tris.vertInds[0]),int(12*numTris));
@@ -107,9 +111,9 @@ fgLoadTri(istream & istr)
     }
     // Surface points:
     for (uint ii=0; ii<numSurfPts; ii++) {
-        FgSurfPoint     sp;
-        fgReadb(istr,sp.triEquivIdx);
-        fgReadb(istr,sp.weights);
+        SurfPoint     sp;
+        readb(istr,sp.triEquivIdx);
+        readb(istr,sp.weights);
         sp.label = readString(istr,wchar);
         surf.surfPoints.push_back(sp);
     }
@@ -142,21 +146,21 @@ fgLoadTri(istream & istr)
         mesh.deltaMorphs[mm].name = readString(istr,wchar);
         mesh.deltaMorphs[mm].verts.resize(numVerts);
         float       scale;
-        fgReadb(istr,scale);
+        readb(istr,scale);
         for (uint vv=0; vv<numVerts; vv++) {
-            FgVect3S    sval;
-            fgReadb(istr,sval);
-            mesh.deltaMorphs[mm].verts[vv] = FgVect3F(sval) * scale;
+            Vec3S    sval;
+            readb(istr,sval);
+            mesh.deltaMorphs[mm].verts[vv] = Vec3F(sval) * scale;
         }
     }
     // Target morphs:
     size_t                      targVertsStart = 0;
     mesh.targetMorphs.reserve(numStatMorph);
     for (uint ii=0; ii<numStatMorph; ++ii) {
-        FgIndexedMorph       tm;
+        IndexedMorph       tm;
         tm.name = readString(istr,wchar);
         uint32                      numTargVerts;
-        fgReadb(istr,numTargVerts);
+        readb(istr,numTargVerts);
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
             tm.baseInds.resize(numTargVerts);
             istr.read((char*)&tm.baseInds[0],4*numTargVerts);
@@ -165,16 +169,37 @@ fgLoadTri(istream & istr)
             mesh.targetMorphs.push_back(tm);
         }
     }
-    return mesh;
 }
 
-Fg3dMesh
-fgLoadTri(const FgString & fname)
+Mesh
+loadTri(std::istream & is)
 {
-    Fg3dMesh        ret;
+    Mesh        ret;
+    loadTri(is,ret);
+    return ret;
+}
+
+void
+loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail)
+{
     try {
-        FgIfstream      ff(fname);
-        ret = fgLoadTri(ff);
+        Ifstream      ff(fname);
+        loadTri(ff,ret);
+    }
+    catch (...) {
+        if (throwOnFail)
+            throw;
+    }
+    ret.name = fgPathToBase(fname);
+}
+
+Mesh
+loadTri(const Ustring & fname)
+{
+    Mesh        ret;
+    try {
+        Ifstream      ff(fname);
+        ret = loadTri(ff);
     }
     catch (FgException & e) {
         e.m_ct.back().dataUtf8 = fname.m_str;
@@ -184,13 +209,13 @@ fgLoadTri(const FgString & fname)
     return ret;
 }
 
-Fg3dMesh
-fgLoadTri(
-    const FgString &    meshFile,
-    const FgString &    texImage)
+Mesh
+loadTri(
+    const Ustring &    meshFile,
+    const Ustring &    texImage)
 {
-    Fg3dMesh        mesh = fgLoadTri(meshFile);
-    fgLoadImgAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
+    Mesh        mesh = loadTri(meshFile);
+    imgLoadAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
     return mesh;
 }
 
@@ -199,32 +224,27 @@ void
 writeLabel(ostream & ostr,const string & str)
 {
     // The spec requires writing a null terminator after the string:
-    fgWriteb(ostr,uint32(str.length()+1));
-    ostr.write(str.c_str(),str.length()+1);
+    fgWriteb(ostr,uint32(str.size()+1));
+    ostr.write(str.c_str(),str.size()+1);
 }
 
 void
-fgSaveTri(
-    const FgString &    fname,
-    const Fg3dMesh &    inMesh)
+saveTri(
+    Ustring const &     fname,
+    Mesh const &        mesh)
 {
-    Fg3dMesh        mesh(inMesh);
-    if (mesh.surfaces.size() > 1)
-        mesh.mergeAllSurfaces();
-    const Fg3dSurface surf =
-        (mesh.surfaces.size() > 0) ? mesh.surfaces[0] : Fg3dSurface();
-    const vector<FgSurfPoint> & surfPoints = surf.surfPoints;
-
+    Surf const          surf = mergeSurfaces(mesh.surfaces);
+    SurfPoints const &  surfPoints = surf.surfPoints;
     size_t              numTargetMorphVerts = fgSumVerts(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
-    FgOfstream          ff(fname);
+    Ofstream            ff(fname);
     ff.write(triIdent.data(),8);
     fgWriteb(ff,int32(numBaseVerts));               // V
     fgWriteb(ff,int32(surf.numTris()));             // T
     fgWriteb(ff,int32(surf.numQuads()));            // Q
     fgWriteb(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
     fgWriteb(ff,int32(surfPoints.size()));          // numSurfPts (LS)
-    int32       numUvs = int32(mesh.uvs.size());
+    int32               numUvs = int32(mesh.uvs.size());
     fgWriteb(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
     if (surf.hasUvIndices())
         fgWriteb(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
@@ -242,16 +262,16 @@ fgSaveTri(
     for (uint ii=0; ii<mesh.verts.size(); ++ii)
         fgWriteb(ff,mesh.verts[ii]);
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
-        const FgIndexedMorph &   tm = mesh.targetMorphs[ii];
+        const IndexedMorph &   tm = mesh.targetMorphs[ii];
         for (size_t jj=0; jj<tm.verts.size(); ++jj)
             fgWriteb(ff,tm.verts[jj]);
     }
 
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
-        fgWriteb(ff,surf.getTri(ii));
+        fgWriteb(ff,surf.getTriPosInds(ii));
     for (uint ii=0; ii<surf.numQuads(); ++ii)
-        fgWriteb(ff,surf.getQuad(ii));
+        fgWriteb(ff,surf.getQuadPosInds(ii));
 
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
@@ -261,7 +281,7 @@ fgSaveTri(
 
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
-        const FgSurfPoint &     sp = surfPoints[ii];
+        const SurfPoint &   sp = surfPoints[ii];
         fgWriteb(ff,sp.triEquivIdx);
         fgWriteb(ff,sp.weights);
         writeLabel(ff,sp.label);
@@ -279,12 +299,10 @@ fgSaveTri(
 
     // Delta morphs:
     for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {   
-        const FgMorph &    morph = mesh.deltaMorphs[ii];
+        const Morph &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
-        float   scale =
-            float(numeric_limits<short>::max()-1) /
-            fgMaxElem(fgAbs(fgBounds(morph.verts)));
+        float           scale = float(numeric_limits<short>::max()-1) / fgMaxElem(mapAbs(getBounds(morph.verts)));
         fgWriteb(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)
@@ -293,10 +311,12 @@ fgSaveTri(
 
     // Target morphs:
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
-        const FgIndexedMorph &   morph = mesh.targetMorphs[ii];
+        const IndexedMorph &   morph = mesh.targetMorphs[ii];
         writeLabel(ff,morph.name.as_ascii());
         fgWriteb(ff,uint32(morph.baseInds.size()));
         for (size_t jj=0; jj<morph.baseInds.size(); ++jj)
             fgWriteb(ff,uint32(morph.baseInds[jj]));
     }
+}
+
 }

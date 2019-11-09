@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Aug 24, 2005
+
 //
 
 #include "stdafx.h"
@@ -15,10 +14,12 @@
 
 using namespace std;
 
+namespace Fg {
+
 // Without a hardware nlz (number of leading zeros) instruction, this function has
 // to be iterative (C / C++ doesn't have any keyword for this operator):
 uint
-fgNumLeadingZeros(uint32 x)
+numLeadingZeros(uint32 x)
 {
    uint     n = 0;
    if (x == 0) return(32);
@@ -32,33 +33,33 @@ fgNumLeadingZeros(uint32 x)
 
 
 uint8
-fgNumNonzeroBits8(uint8 xx)
+numNonzeroBits8(uint8 xx)
 {
     return
         (xx & 1U) + (xx & 2U)/2 + (xx & 4U)/4 + (xx & 8U)/8 +
         (xx & 16U)/16 + (xx & 32U)/32 + (xx & 64U)/64 + (xx & 128U)/128;
 }
 uint16
-fgNumNonzeroBits16(uint16 xx)
+numNonzeroBits16(uint16 xx)
 {
-    return fgNumNonzeroBits8(xx & 255) + fgNumNonzeroBits8(xx >> 8);
+    return numNonzeroBits8(xx & 255) + numNonzeroBits8(xx >> 8);
 }
 uint
-fgNumNonzeroBits32(uint32 xx)
+numNonzeroBits32(uint32 xx)
 {
     return
-        fgNumNonzeroBits8(xx & 255) + fgNumNonzeroBits8((xx >> 8) & 255) +
-        fgNumNonzeroBits8((xx >> 16) & 255) + fgNumNonzeroBits8((xx >> 24));
+        numNonzeroBits8(xx & 255) + numNonzeroBits8((xx >> 8) & 255) +
+        numNonzeroBits8((xx >> 16) & 255) + numNonzeroBits8((xx >> 24));
 }
 
 uint
-fgLog2Ceil(uint32 xx)
+log2Ceil(uint32 xx)
 {
-    uint    logFloor = fgLog2Floor(xx);
+    uint    logFloor = log2Floor(xx);
     if (xx == (1u << logFloor))
-        return (fgLog2Floor(xx));
+        return (log2Floor(xx));
     else
-        return (fgLog2Floor(xx) + 1u);
+        return (log2Floor(xx) + 1u);
 }
 
 // RETURNS: Between 1 and 3 real roots of the equation. Duplicate roots are returned in duplicate.
@@ -72,9 +73,9 @@ fgSolveCubicReal(
 {
     vector<double>  retval;
 
-    double      qq = (3.0 * c1 - fgSqr(c2)) / 9.0,
-                rr = (9.0 * c1 * c2 - 27.0 * c0 - 2.0 * fgCube(c2)) / 54.0,
-                dd = fgCube(qq) + fgSqr(rr);
+    double      qq = (3.0 * c1 - sqr(c2)) / 9.0,
+                rr = (9.0 * c1 * c2 - 27.0 * c0 - 2.0 * cube(c2)) / 54.0,
+                dd = cube(qq) + sqr(rr);
 
     if (dd > 0.0) {                     // Only one real root
         double          sqdd = sqrt(dd),
@@ -101,36 +102,88 @@ fgSolveCubicReal(
     return retval;
 }
 
+vector<double>
+fgConvolve(
+    const vector<double> &     data,
+    const vector<double> &     kernel)
+{
+    FGASSERT(data.size() * kernel.size() > 0);
+    FGASSERT((kernel.size() % 2) == 1);
+    size_t              kbase = kernel.size()/2;
+    vector<double>      ret(data.size(),0.0);
+    for (size_t ii=0; ii<ret.size(); ++ii) {
+        for (size_t jj=kernel.size()-1; jj<kernel.size(); --jj) {
+            size_t      idx = ii + kbase - jj;
+            if (idx < data.size())
+                ret[ii] += data[idx] * kernel[jj];
+        }
+    }
+    return ret;
+}
+
+vector<double>
+fgConvolveGauss(
+    const std::vector<double> &     in,
+    double                          stdev)
+{
+    FGASSERT(stdev > 0.0);
+    // Create kernel w/ 6 stdevs on each side for double since this is 2 parts in 1B:
+    size_t          ksize = round<uint>(stdev * 6);
+    if (ksize == 0)
+        return in;
+    vector<double>  kernel(ksize*2+1);
+    for (size_t ii=0; ii<ksize; ++ii) {
+        double      val = expSafe(-0.5*sqr(ii/stdev));
+        kernel[ksize+ii] = val;
+        kernel[ksize-ii] = val;
+    }
+    double fac = 1.0 / cSum(kernel);
+    for (size_t ii=0; ii<kernel.size(); ++ii)
+        kernel[ii] *= fac;
+    return fgConvolve(in,kernel);
+}
+
+vector<double>
+fgRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
+{
+    vector<double>      ret;
+    FGASSERT(a.size() == b.size());
+    ret.resize(a.size());
+    for (size_t ii=0; ii<a.size(); ++ii)
+        ret[ii] = fgRelDiff(a[ii],b[ii],minAbs);
+    return ret;
+}
+
 // Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).
 static
 void
 testFgRand()
 {
-    fgRandSeedRepeatable();
+    randSeedRepeatable();
     const uint      numSamples = 1000000;
     const double    num = double(numSamples);
     vector<double>  vals(numSamples);
     double          mean = 0.0;
     for (uint ii=0; ii<numSamples; ii++)
     {
-        vals[ii] = fgRand();
+        vals[ii] = randUniform();
         mean += vals[ii];
     }
     mean /= num;
     double          rms = 0.0;
     for (uint ii=0; ii<numSamples; ii++)
-        rms += fgSqr(vals[ii]);
+        rms += sqr(vals[ii]);
     rms = (rms / num);
 
     fgout << fgnl << "Mean: " << mean << fgnl << "RMS: " << rms;
-    FGASSERT(std::abs(mean * 2.0 - 1.0) < 0.001);    // Should be good to 1 in sqrt(1M)
-    FGASSERT(std::abs(rms * 3.0 - 1.0) < 0.001);
+    FGASSERT(std::abs(mean * 2.0 - 1.0) < 0.01);    // Should be good to 1 in sqrt(1M)
+    FGASSERT(std::abs(rms * 3.0 - 1.0) < 0.01);
 }
 
 void
-fgMathTest(const FgArgs &)
+fgMathTest(const CLArgs &)
 {
-    FgOutPush       op("Testing rand");
+    OutPush       op("Testing rand");
     testFgRand();
 }
 
@@ -166,7 +219,7 @@ typedef union
     struct {int32_t  lo,hi;} asInt;
 }  FgExpFast;
 
-double fgExpFast(double x)
+double expFast(double x)
 {
     x *=  1.4426950408889634074;        // Convert to base 2 exponent
     double      ipart = floor(x+0.5),
@@ -183,4 +236,6 @@ double fgExpFast(double x)
     px = px * fpart;
     y = 1.0 + 2.0*(px/(qx-px));
     return epart.dbl*y;
+}
+
 }

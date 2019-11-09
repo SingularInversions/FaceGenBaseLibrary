@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Nov 11, 2010
+
 //
 
 #include "stdafx.h"
@@ -16,11 +15,13 @@
 
 using namespace std;
 
+namespace Fg {
+
 template<uint dim>
 void
 writePoint(
-    FgOfstream &            ofs,
-    FgMatrixC<float,dim,1>  pnt)
+    Ofstream &            ofs,
+    Mat<float,dim,1>  pnt)
 {
     ofs << "               ";
     for (uint kk=0; kk<dim; ++kk)
@@ -30,8 +31,8 @@ writePoint(
 template<uint dim>
 void
 writePoints(
-    FgOfstream &                            ofs,
-    const vector<FgMatrixC<float,dim,1> > & pts)
+    Ofstream &                            ofs,
+    const vector<Mat<float,dim,1> > & pts)
 {
     ofs <<
         "            point\n"
@@ -49,8 +50,8 @@ writePoints(
 template<uint dim>
 void
 writeIdx(
-    FgOfstream &          ofs,
-    FgMatrixC<uint,dim,1> idx)
+    Ofstream &          ofs,
+    Mat<uint,dim,1> idx)
 {
     ofs << "            ";
     for (uint ii=0; ii<dim; ++ii)
@@ -61,8 +62,8 @@ writeIdx(
 template<uint dim>
 void
 writeIndices(
-    FgOfstream &                            ofs,
-    const vector<FgMatrixC<uint,dim,1> > &  inds)
+    Ofstream &                            ofs,
+    const vector<Mat<uint,dim,1> > &  inds)
 {
     if (inds.size() == 0) return;
     writeIdx(ofs,inds[0]);
@@ -74,24 +75,24 @@ writeIndices(
 }
 
 void
-fgSaveVrml(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
+saveVrml(
+    const Ustring &            filename,
+    const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
     FGASSERT(meshes.size() > 0);
-    FgOfstream  ofs(filename);
+    Ofstream  ofs(filename);
     ofs.precision(7);
     ofs <<
         "#VRML V2.0 utf8\n"
         "# Copyright 2015 Singular Inversions Inc. (facegen.com)\n"
         "# For more information, please visit https://facegen.com\n";
-    FgPath          fpath(filename);
+    Path          fpath(filename);
     for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Fg3dMesh &    mesh = meshes[ii];
-        FgString            nameUtf;
+        const Mesh &    mesh = meshes[ii];
+        Ustring            nameUtf;
         if (mesh.name.empty())
-            nameUtf = fpath.base + fgToStr(ii);
+            nameUtf = fpath.base + toString(ii);
         else
             nameUtf = mesh.name;
         // Some VRML parsers (Meshlab) require DEF variable names to be strictly alphanumeric starting
@@ -112,9 +113,9 @@ fgSaveVrml(
             if (mesh.numValidAlbedoMaps() > 1)
                 fgThrow("VRML export with multiple texture images not yet implemented");
             // Some software (Meshlab:) can't deal with spaces in the image filename:
-            FgString    imgFile = fpath.base.replace(' ','_') + fgToStr(ii);
+            Ustring    imgFile = fpath.base.replace(' ','_') + toString(ii);
             imgFile += "." + imgFormat;
-            fgSaveImgAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
+            imgSaveAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
             ofs <<
                 "        texture ImageTexture\n"
                 "        {\n"
@@ -135,7 +136,7 @@ fgSaveVrml(
             "        coordIndex\n"
             "        [\n";
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Fg3dSurface & surf = mesh.surfaces[ss];
+            const Surf & surf = mesh.surfaces[ss];
             if (surf.numTris() > 0) {
                 writeIndices(ofs,surf.tris.vertInds);
                 if (surf.numQuads() > 0)
@@ -160,7 +161,7 @@ fgSaveVrml(
                 "        texCoordIndex\n"
                 "        [\n";
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-                const Fg3dSurface & surf = mesh.surfaces[ss];
+                const Surf & surf = mesh.surfaces[ss];
                 if (surf.tris.uvInds.size() > 0) {
                     writeIndices(ofs,surf.tris.uvInds);
                     if (surf.quads.uvInds.size() > 0)
@@ -180,6 +181,8 @@ fgSaveVrml(
             "    }\n"
             "}\n";
     }
+}
+
 }
 
 // */

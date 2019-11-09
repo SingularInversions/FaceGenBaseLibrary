@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 20, 2009
+
 //
 
 #ifndef FGHISTOGRAM_HPP
@@ -13,18 +12,20 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 
+namespace Fg {
+
 struct  FgHistogram
 {
-    vector<size_t>          binCounts;
-    FgVectD2                bounds;         // outer bounds of bin range. bounds[1] > bounds[0].
+    Svec<size_t>          binCounts;
+    VecD2                bounds;         // outer bounds of bin range. bounds[1] > bounds[0].
 
     FgHistogram(
-        FgVectD2            bounds,
+        VecD2            bounds,
         size_t              numBins);
 
     FgHistogram(
-        const vector<double> & samples,
-        FgVectD2            bounds,
+        const Svec<double> & samples,
+        VecD2            bounds,
         size_t              numBins);
 
     bool                                    // Returns true if sample falls into bounds
@@ -38,8 +39,10 @@ struct  FgHistogram
     {return binCounts[ii]; }
 
     // Return an L1 normalized density of the samples over the range:
-    vector<double>
+    Svec<double>
     asDensity() const;
 };
+
+}
 
 #endif

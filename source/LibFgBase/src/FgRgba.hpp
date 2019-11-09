@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Aug 27, 2004
+
 //
 // Templated RGBA pixel type.
 //
@@ -28,40 +27,42 @@
 #include "FgMatrixV.hpp"
 #include "FgOut.hpp"
 
+namespace Fg {
+
 template<typename T>
-struct      FgRgba
+struct      Rgba
 {
-    FgMatrixC<T,4,1>        m_c;           // Keep as array so densely packed.
+    Mat<T,4,1>        m_c;           // Keep as array so densely packed.
     FG_SERIALIZE1(m_c)
 
     typedef T ValueType;
 
-    FgRgba()
+    Rgba()
     {};
 
     explicit
-    FgRgba(T val)
+    Rgba(T val)
     : m_c(val)
     {}
 
     explicit
-    FgRgba(const FgMatrixC<T,4,1> & mat)
+    Rgba(const Mat<T,4,1> & mat)
     : m_c(mat)
     {}
 
     // Conversion constructor
     template<class U>
     explicit
-    FgRgba(const FgRgba<U> & val)
-    : m_c(FgMatrixC<T,4,1>(val.m_c)) 
+    Rgba(const Rgba<U> & val)
+    : m_c(Mat<T,4,1>(val.m_c)) 
     {}
 
     // Provide explicit CC when using templated conversion constructor to avoid compiler issues.
-    FgRgba(const FgRgba & rhs)
+    Rgba(const Rgba & rhs)
     : m_c(rhs.m_c)
     {}
 
-    FgRgba(T r,T g,T b,T a)
+    Rgba(T r,T g,T b,T a)
     {red()=r; green()=g; blue()=b; alpha()=a; }
 
     T & red() {return m_c[0]; }
@@ -74,51 +75,51 @@ struct      FgRgba
     const T & blue() const {return m_c[2]; }
     const T & alpha() const {return m_c[3]; }
 
-    FgMatrixC<T,3,1>
+    Mat<T,3,1>
     rgb() const
-    {return FgMatrixC<T,3,1>(m_c[0],m_c[1],m_c[2]); }
+    {return Mat<T,3,1>(m_c[0],m_c[1],m_c[2]); }
 
-    FgRgba
-    operator+(const FgRgba & rhs) const
-    {return FgRgba(m_c+rhs.m_c); }
+    Rgba
+    operator+(const Rgba & rhs) const
+    {return Rgba(m_c+rhs.m_c); }
 
-    FgRgba
-    operator-(const FgRgba & rhs) const
-    {return FgRgba(m_c-rhs.m_c); }
+    Rgba
+    operator-(const Rgba & rhs) const
+    {return Rgba(m_c-rhs.m_c); }
 
-    FgRgba
-    operator*(const FgRgba &rhs) const
-    {return FgRgba(fgMapMul(m_c,rhs.m_c)); }
+    Rgba
+    operator*(const Rgba &rhs) const
+    {return Rgba(fgMapMul(m_c,rhs.m_c)); }
 
-    FgRgba
+    Rgba
     operator*(T val) const
-    {return FgRgba(m_c * val); }
+    {return Rgba(m_c * val); }
 
-    FgRgba
+    Rgba
     operator/(T val) const
-    {return FgRgba(m_c/val); }
+    {return Rgba(m_c/val); }
 
-    const FgRgba &
+    const Rgba &
     operator*=(T v)
     {m_c*=v; return *this; }
 
-    const FgRgba &
+    const Rgba &
     operator/=(T v)
     {m_c/=v; return *this; }
 
-    const FgRgba &
-    operator+=(FgRgba rhs)
+    const Rgba &
+    operator+=(Rgba rhs)
     {
         m_c += rhs.m_c;
         return *this;
     }
     
     bool
-    operator==(FgRgba const & rhs) const
+    operator==(Rgba const & rhs) const
     {return m_c == rhs.m_c; }
 
     bool
-    operator!=(FgRgba const & rhs) const
+    operator!=(Rgba const & rhs) const
     {return !(m_c == rhs.m_c); }
 
     T       
@@ -126,9 +127,9 @@ struct      FgRgba
     {return static_cast<T>(0.213 * red() + 0.715 * green() + 0.072 * blue()); }
 
     static
-    FgRgba<T>
+    Rgba<T>
     fromRgbaPtr(const T * v)
-    {return FgRgba<T>(v[0],v[1],v[2],v[3]); }
+    {return Rgba<T>(v[0],v[1],v[2],v[3]); }
 
     void
     alphaWeight()
@@ -140,24 +141,33 @@ struct      FgRgba
     }
 };
 
+typedef Rgba<uchar>           RgbaUC;
+typedef Rgba<ushort>          RgbaUS;
+typedef Rgba<float>           RgbaF;
+typedef Rgba<double>          RgbaD;
+
 template<typename T>
-FgRgba<T> operator*(FgRgba<T> lhs, T rhs)
+struct  Traits<Rgba<T> >
+{
+    typedef typename Traits<T>::Scalar             Scalar;
+    typedef Rgba<typename Traits<T>::Accumulator>  Accumulator;
+    typedef Rgba<typename Traits<T>::Floating>     Floating;
+};
+
+template<typename T>
+Rgba<T> operator*(Rgba<T> lhs, T rhs)
 {
     lhs *= rhs;
     return lhs;
 }
 
-template<typename T,typename U>
+template<typename To,typename From>
 void
-fgRound(
-    const FgRgba<T> &   in,
-    FgRgba<U> &         out)
-{
-    fgRound_(in.m_c,out.m_c);
-}
+round_(Rgba<From> const & in,Rgba<To> & out)
+{round_(in.m_c,out.m_c); }
 
 template<typename T>
-FgOut & operator<<(FgOut & out, const FgRgba<T> & pixel)
+FgOut & operator<<(FgOut & out, const Rgba<T> & pixel)
 {
     return out << "{" 
                << int(pixel.red())   << "," 
@@ -166,59 +176,49 @@ FgOut & operator<<(FgOut & out, const FgRgba<T> & pixel)
                << int(pixel.alpha()) << "}";
 }
 
-typedef FgRgba<uchar>           FgRgbaUB;
-typedef FgRgba<ushort>          FgRgbaUS;
-typedef FgRgba<float>           FgRgbaF;
-typedef FgRgba<double>          FgRgbaD;
-
-template<typename T>
-struct  FgTraits<FgRgba<T> >
-{
-    typedef FgRgba<typename FgTraits<T>::Accumulator>  Accumulator;
-    typedef FgRgba<typename FgTraits<T>::Floating>     Floating;
-};
-
 // NB: This function assumes pre-weighted colour values !!!
 inline
-FgRgbaUB
-fgCompositeFragmentUnweighted(FgRgbaUB foreground,FgRgbaUB background)
+RgbaUC
+fgCompositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
 {
 	uint		fga = foreground.alpha(),
 				bga = background.alpha(),
 				tra = 255 - fga,
 				aca = (tra * bga + 127) / 255;
-	FgVect3UI	fgc(foreground.m_c.subMatrix<3,1>(0,0)),
+	Vec3UI	fgc(foreground.m_c.subMatrix<3,1>(0,0)),
 				bgc(background.m_c.subMatrix<3,1>(0,0)),
-				acc = fgc + (bgc * aca + FgVect3UI(127)) / 255;
+				acc = fgc + (bgc * aca + Vec3UI(127)) / 255;
 	return
-		FgRgbaUB(acc[0],acc[1],acc[2],fga+aca);
+		RgbaUC(acc[0],acc[1],acc[2],fga+aca);
 }
 
 // NB: This function assumes pre-weighted colour values !!!
 inline
-FgRgbaUB
-fgCompositeFragment(FgRgbaUB foreground,FgRgbaUB background)
+RgbaUC
+fgCompositeFragment(RgbaUC foreground,RgbaUC background)
 {
     uint        fac = 255 - foreground.alpha();
-    FgVect4UI   acc = FgVect4UI(background.m_c) * fac + FgVect4UI(127);
-    return (foreground + FgRgbaUB(FgMatrixC<uchar,4,1>(acc/255)));
+    Vec4UI   acc = Vec4UI(background.m_c) * fac + Vec4UI(127);
+    return (foreground + RgbaUC(Mat<uchar,4,1>(acc/255)));
 }
 inline
-FgRgbaF
-fgCompositeFragment(FgRgbaF foreground,FgRgbaF background)
+RgbaF
+fgCompositeFragment(RgbaF foreground,RgbaF background)
 {
     float       fac = (255.0f - foreground.alpha()) / 255.0f;
     return (foreground + background * fac);
 }
 
-inline
-FgRgbaUB
-fgRoundU(FgRgbaF v)
-{return FgRgbaUB(FgVect4UC(fgRoundU(v.m_c))); }
+template<typename To,typename From>
+Rgba<To>
+round(Rgba<From> const & v)
+{return Rgba<To>(round<To>(v.m_c)); }
 
 template<class T,class U>
 void
-fgCast_(const FgRgba<T> & i,FgRgba<U> & o)
-{fgCast_(i.m_c,o.m_c); }
+scast_(const Rgba<T> & i,Rgba<U> & o)
+{scast_(i.m_c,o.m_c); }
+
+}
 
 #endif

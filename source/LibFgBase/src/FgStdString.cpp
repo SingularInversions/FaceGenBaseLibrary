@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Dec 29, 2004
+
 //
 
 #include "stdafx.h"
@@ -13,6 +12,8 @@
 #include "FgTypes.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 string
 fgToFixed(double val,uint fractionalDigits)
@@ -30,7 +31,7 @@ std::string
 fgToLower(const std::string & s)
 {
     string  retval;
-    retval.reserve(s.length());
+    retval.reserve(s.size());
 	// Can't use std::transform since 'tolower' causes warning by converting int->char
     // std::transform(s.begin(),s.end(),retval.begin(),::tolower);
 	for (char ch : s)
@@ -42,7 +43,7 @@ std::string
 fgToUpper(const std::string & s)
 {
     string  retval;
-    retval.reserve(s.length());
+    retval.reserve(s.size());
 	// Can't use std::transform since 'tolower' causes warning by converting int->char
 	// std::transform(s.begin(),s.end(),retval.begin(),::toupper);
 	for (char ch : s)
@@ -91,13 +92,13 @@ string
 fgPad(const string & str,size_t len,char ch)
 {
     string  ret = str;
-    if (len > str.length())
+    if (len > str.size())
         ret.resize(len,ch);
     return ret;
 }
 
 string
-fgCat(const vector<string> & strings,const string & separator)
+cat(const vector<string> & strings,const string & separator)
 {
     string      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -109,10 +110,10 @@ fgCat(const vector<string> & strings,const string & separator)
 }
 
 template<>
-FgOpt<int>
+Opt<int>
 fgFromStr(const string & str)
 {
-    FgOpt<int>              ret;
+    Opt<int>              ret;
     if (str.empty())
         return ret;
     bool                    neg = false;
@@ -138,10 +139,10 @@ fgFromStr(const string & str)
 }
 
 template<>
-FgOpt<uint>
+Opt<uint>
 fgFromStr<uint>(const string & str)
 {
-    FgOpt<uint>             ret;
+    Opt<uint>             ret;
     if (str.empty())
         return ret;
     string::const_iterator  it = str.begin();
@@ -158,6 +159,8 @@ fgFromStr<uint>(const string & str)
     }
     ret = uint(acc);
     return ret;
+}
+
 }
 
 // */

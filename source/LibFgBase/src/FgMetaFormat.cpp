@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Oct 14, 2010
+
 //
 
 #include "stdafx.h"
@@ -14,6 +13,8 @@
 #include "FgCommand.hpp"
 
 using namespace std;
+
+namespace Fg {
 
 struct AA
 {
@@ -47,7 +48,7 @@ fgTestArchive()
 }
 
 void
-fgBoostSerializationTest(const FgArgs &)
+fgBoostSerializationTest(const CLArgs &)
 {
     using namespace boost::archive;
 
@@ -57,7 +58,7 @@ fgBoostSerializationTest(const FgArgs &)
 }
 
 void
-fgMetaFormatTest(const FgArgs &)
+fgMetaFormatTest(const CLArgs &)
 {
     FgTestDir   td("MetaFormat");
     int     a = 42;
@@ -90,7 +91,7 @@ struct C
 };
 
 void
-fgSerializeTest(const FgArgs &)
+fgSerializeTest(const CLArgs &)
 {
     FgTestDir   td("Serialize");
     size_t                                  sz = 5;
@@ -105,6 +106,8 @@ fgSerializeTest(const FgArgs &)
     fgLoadText("t1",vc);
     for (size_t ii=0; ii<sz; ++ii)
         FGASSERT(va[ii].m0 == vc[ii].m0);
+}
+
 }
 
 // */

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: Sept 22, 2011
+
 //
 
 #ifndef FG3DMESHIO_HPP
@@ -13,131 +12,113 @@
 #include "FgString.hpp"
 #include "Fg3dMeshOps.hpp"
 
+namespace Fg {
+
 // Returns false if 'fname' has no extension and no mesh file was found with a valid extension.
 // Returns true otherwise. Throws an exception if the specified extension cannot be read as a mesh.
 bool
-fgLoadMeshAnyFormat(
-    const FgString &    fname,  // If no extension specified will search readable mesh types.
-    Fg3dMesh &          mesh);  // RETURNED
+meshLoadAnyFormat(
+    Ustring const &     fname,  // If no extension specified will search readable mesh types.
+    Mesh &              mesh);  // RETURNED
 
-Fg3dMesh
-fgLoadMeshAnyFormat(const FgString & fname);
+Mesh
+meshLoadAnyFormat(Ustring const & fname);
 
 // Returns lower case list of supported extensions:
-vector<string>
-fgLoadMeshFormats();
+Strings
+meshLoadFormats();
 
-string
-fgLoadMeshFormatsCLDescription();
+String
+meshLoadFormatsCLDescription();
 
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
 void
-fgSaveMeshesAnyFormat(const vector<Fg3dMesh> & meshes,const FgString & fname,const string & imgFormat="png");
+meshSaveAnyFormat(Meshs const & meshes,Ustring const & fname,const String & imgFormat="png");
 
 inline
 void
-fgSaveMeshAnyFormat(const Fg3dMesh & mesh,const FgString & fname)
-{fgSaveMeshesAnyFormat(fgSvec(mesh),fname); }
+meshSaveAnyFormat(const Mesh & mesh,Ustring const & fname)
+{meshSaveAnyFormat(fgSvec(mesh),fname); }
 
 // Does not include FaceGen formats:
-const vector<string> &
-fgMeshExportFormatsExts();
+const Strings &
+meshExportFormatExts();
 
 // 1-1 with above
-const vector<string> &
-fgMeshExportFormatsDescriptions();
+const Strings &
+meshExportFormatDescriptions();
 
-const vector<string> &
-fgMeshExportFormatsWithMorphs();
+const Strings &
+meshExportFormatsWithMorphs();
 
 // Includes 'tri':
 std::string
-fgSaveMeshFormatsCLDescription();
+meshSaveFormatsCLDescription();
 
 // FaceGen mesh format load / save:
 
-Fg3dMesh
-fgLoadFgmesh(const FgString & fname);
+Mesh
+loadFgmesh(Ustring const & fname);
 void
-fgSaveFgmesh(const FgString & fname,const Fg3dMesh & mesh);
+saveFgmesh(Ustring const & fname,const Mesh & mesh);
 void
-fgSaveFgmesh(const FgString & fname,const Fg3dMeshes & meshes);
+saveFgmesh(Ustring const & fname,Meshs const & meshes);
 
 // FaceGen legacy mesh format load / save:
 
-Fg3dMesh
-fgLoadTri(std::istream & is);
-Fg3dMesh
-fgLoadTri(const FgString & fname);
-Fg3dMesh
-fgLoadTri(const FgString & meshFile,const FgString & texFile);
+void        loadTri_(std::istream & is,Mesh & ret);
+Mesh        loadTri(std::istream & is);
+void        loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail=true);
+Mesh        loadTri(Ustring const & fname);
+Mesh        loadTri(Ustring const & meshFile,Ustring const & texFile);
+
 // Merges all surfaces:
 void
-fgSaveTri(const FgString & fname,const Fg3dMesh & mesh);
+saveTri(Ustring const & fname,const Mesh & mesh);
 // Merges all meshes and surfaces. Texture images not saved.
 inline
 void
-fgSaveTri(const FgString & fname,const vector<Fg3dMesh> & meshes)
-{return fgSaveTri(fname,fgMergeMeshes(meshes)); }
+saveTri(Ustring const & fname,Meshs const & meshes)
+{return saveTri(fname,fgMergeMeshes(meshes)); }
 
 // Third party mesh formats:
 
-Fg3dMesh
-fgLoadWobj(
-    const FgString &    filename,
+Mesh
+loadWobj(
+    Ustring const &     filename,
     // Break up the surfaces by the given WOBJ separator. Valid values are 'usemtl', 'o' and 'g':
-    string              surfSeparator=string());
+    String              surfSeparator=String());
 
 // Ignores morphs:
 void
-fgSaveObj(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
-    string                      imgFormat = "png");
+saveObj(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
 
 // Ignores morphs:
 void
-fgSaveVrml(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
-    string                      imgFormat = "png");
+saveVrml(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
 
-// Meshes with shared morphs must be merged as different surfaces into a single Fg3dMesh for the
+// Meshes with shared morphs must be merged as different surfaces into a single Mesh for the
 // morphs to be unified in FBX (as imported into Unity). Unity will ignore albedo map file 
 // references so they must be manually added:
 void
-fgSaveFbx(
-    const FgString &            filename,
-    const vector<Fg3dMesh> &    meshes,
-    string                      imgFormat = "png");
+saveFbx(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
 
 // All meshes merged, ignores UVs, textures, morphs, etc:
 void
-fgSaveStl(
-    const FgString &            fname,
-    const vector<Fg3dMesh> &    meshes);
+saveStl(Ustring const & fname,Meshs const & meshes);
 
 // Morph targets are also saved:
 void
-fgSaveLwo(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
-    string                  imgFormat = "png");
+saveLwo(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-fgSaveMa(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
-    string                  imgFormat = "png");
+saveMa(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-fgSaveXsi(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
-    string                  imgFormat = "png");
+saveXsi(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
 
 // 3DS:
 // * No morph targets
@@ -146,24 +127,17 @@ fgSaveXsi(
 // * 8.3 tex names only
 // * 2^16 max verts & tris
 void
-fgSave3ds(
-    const FgString &        fname,
-    vector<Fg3dMesh>        meshes,
-    string                  imgFormat = "png");
+save3ds(Ustring const & fname,Meshs meshes,String imgFormat = "png");
 
 // Vertices & surfaces must be merged to a single list but tex images are specified per facet.
 // Currently saves all facets as tris but can easily be changed to preverve quads:
 void
-fgSavePly(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
-    string                  imgFormat = "png");
+savePly(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
 
 // Collada. Does not yet support morphs.
 void
-fgSaveDae(
-    const FgString &        fname,
-    const vector<Fg3dMesh> & meshes,
-    string                  imgFormat = "png");
+saveDae(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+
+}
 
 #endif

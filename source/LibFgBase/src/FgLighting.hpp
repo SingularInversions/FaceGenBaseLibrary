@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     May 24, 2005
+
 //
 
 #ifndef FGLIGHT_HPP
@@ -15,32 +14,37 @@
 #include "FgMatrixV.hpp"
 #include "FgImage.hpp"
 
+namespace Fg {
+
 struct  FgLight
 {
-    FgVect3F       colour;          // RGB range [0,1]
-    FgVect3F       direction;       // Unit direction vector to light in OECS (all lights at infinity)
+    Vec3F       colour {0.6f,0.6f,0.6f}; // RGB range [0,1]
+    Vec3F       direction {0,0,1};       // Unit direction vector to light in OECS (all lights at infinity)
 
     FG_SERIALIZE2(colour,direction);
 
-    FgLight() :
-        colour(0.6f,0.6f,0.6f),
-        direction(0.0f,0.0f,1.0f)   // At infinity behind camera (OECS)
-    {}
+    FgLight() {}
+    FgLight(Vec3F c,Vec3F d) : colour(c), direction(d) {}
 };
+
+typedef Svec<FgLight>    FgLights;
 
 struct  FgLighting
 {
-    FgVect3F            ambient;    // RGB range [0,1]
-    vector<FgLight>     lights;
+    Vec3F            ambient;    // RGB range [0,1]
+    FgLights            lights;
 
     FG_SERIALIZE2(ambient,lights);
 
-    FgLighting() :
-    ambient(0.4f,0.4f,0.4f)
-    {lights.resize(1); }
+    FgLighting() : ambient(0.4f) {lights.resize(1); }
+    FgLighting(Vec3F a) : ambient(a) {}
+    FgLighting(Vec3F a,FgLight l) : ambient(a), lights(fgSvec(l)) {}
+    FgLighting(Vec3F a,FgLights const & l) : ambient(a), lights(l) {}
 
-    FgImgRgbaUb
+    ImgC4UC
     createSpecularMap() const;
 };
+
+}
 
 #endif

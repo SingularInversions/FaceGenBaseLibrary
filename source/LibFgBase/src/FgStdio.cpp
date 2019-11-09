@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Feb 25, 2011
+
 //
 
 #include "stdafx.h"
@@ -13,17 +12,19 @@
 
 using namespace std;
 
+namespace Fg {
+
 #ifdef _WIN32
 
 FILE *
-fgOpen(const FgString & fname,bool write)
+fgOpen(const Ustring & fname,bool write)
 {
     FILE *          fPtr;
     const wchar_t * mode = write ? L"wb" : L"rb";
     errno_t         err = _wfopen_s(&fPtr,fname.as_wstring().c_str(),mode);
     if (err != 0) {
         FgException     e;
-        e.pushMsg("_wfopen_s error code",fgToStr(err));
+        e.pushMsg("_wfopen_s error code",toString(err));
         string          msg = "Unable to open file for " + string(write ? "writing" : "reading");
         e.pushMsg(msg,fname.m_str);
         throw e;
@@ -35,7 +36,7 @@ fgOpen(const FgString & fname,bool write)
 #else
 
 FILE *
-fgOpen(const FgString & fname,bool write)
+fgOpen(const Ustring & fname,bool write)
 {
     FILE *          fPtr;
     const char *    mode = write ? "wb" : "rb";
@@ -50,11 +51,11 @@ fgOpen(const FgString & fname,bool write)
 #endif
 
 void
-fgOpenTest(const FgArgs & args)
+fgOpenTest(const CLArgs & args)
 {
     FGTESTDIR;
     char32_t        ch = 0x00004EE5;            // A Chinese character
-    FgString        chinese(ch);
+    Ustring        chinese(ch);
     string          data = "test data";
     FILE *          fPtr = fgOpen(chinese,true);
     fwrite(data.data(),1,data.size(),fPtr);
@@ -66,6 +67,8 @@ fgOpenTest(const FgArgs & args)
     fclose(fPtr);
     FGASSERT(sz == data.size());
     FGASSERT(test == data);
+}
+
 }
 
 // */

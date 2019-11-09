@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     August 22, 2005
+
 //
 // Compute normals for a mesh
 
@@ -17,12 +16,14 @@
 #include "FgMatrixV.hpp"
 #include "Fg3dMesh.hpp"
 
-struct  Fg3dFacetNormals
-{
-    FgVect3Fs               tri;        // Tri facet normals for a surface
-    FgVect3Fs               quad;       // Quad facet normals for a surface
+namespace Fg {
 
-    FgVect3F
+struct  FacetNormals
+{
+    Vec3Fs               tri;        // Tri facet normals for a surface
+    Vec3Fs               quad;       // Quad facet normals for a surface
+
+    Vec3F
     triEquiv(size_t idx) const
     {
         if (idx < tri.size())
@@ -31,33 +32,35 @@ struct  Fg3dFacetNormals
         return quad[idx/2];
     }
 };
-typedef vector<Fg3dFacetNormals>    Fg3dFacetNormalss;
+typedef Svec<FacetNormals>      FacetNormalss;
 
-struct  Fg3dNormals
+struct  Normals
 {
-    Fg3dFacetNormalss       facet;       // Facet normals for each surface
-    FgVect3Fs               vert;        // Vertex normals.
+    FacetNormalss       facet;       // Facet normals for each surface
+    Vec3Fs              vert;        // Vertex normals.
 };
-typedef vector<Fg3dNormals>         Fg3dNormalss;
+typedef Svec<Normals>           Normalss;
 
 void
-fgNormals_(
-    const Fg3dSurfaces &    surfs,
-    const FgVerts &         verts,
-    Fg3dNormals &           norms);     // RETURNED
+calcNormals_(
+    Surfs const &       surfs,
+    Vec3Fs const &      verts,
+    Normals &           norms);     // RETURNED
 
 inline
-Fg3dNormals
-fgNormals(const Fg3dSurfaces & surfs,const FgVerts & verts)
+Normals
+calcNormals(Surfs const & surfs,Vec3Fs const & verts)
 {
-    Fg3dNormals         norms;
-    fgNormals_(surfs,verts,norms);
+    Normals         norms;
+    calcNormals_(surfs,verts,norms);
     return norms;
 }
 
 inline
-Fg3dNormals
-fgNormals(const Fg3dMesh & mesh)
-{return fgNormals(mesh.surfaces,mesh.verts); }
+Normals
+calcNormals(Mesh const & mesh)
+{return calcNormals(mesh.surfaces,mesh.verts); }
+
+}
 
 #endif

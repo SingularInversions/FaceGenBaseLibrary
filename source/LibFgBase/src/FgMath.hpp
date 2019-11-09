@@ -1,67 +1,115 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     June 22, 2005
+
 //
 
 #ifndef FGMATH_HPP
 #define FGMATH_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgTypes.hpp"
-#include "FgMatrixCBase.hpp"
-#include "FgAlgs.hpp"
+#include "FgStdVector.hpp"
+#include "FgStdArray.hpp"
+
+namespace Fg {
 
 template <typename T>
 inline T
-fgSqr(T a)
+sqr(T a)
 {return (a*a); }
+
+// Squared magnitude function base cases:
+inline float cMag(float v) {return v*v; }
+inline double cMag(double v) {return v*v; }
+inline double cMag(std::complex<double> v) {return std::norm(v); }
+
+template<class T>
+double
+cMag(const Svec<T> & v)              // Sum of squared magnitude values:
+{
+    double      ret(0);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret += cMag(v[ii]);
+    return ret;
+}
+
+template<typename T,size_t S>
+T
+cMag(std::array<T,S> const a)
+{
+    T       acc(0);
+    for (T const & e : a)
+        acc += cMag(e);
+    return acc;
+}
+
+template<typename T,size_t S>
+T
+cLen(std::array<T,S> const a)
+{return std::sqrt(cMag(a)); }
+
+template<class T>
+double
+cLen(const Svec<T> & v)           // Euclidean length (L2 norm)
+{return std::sqrt(cMag(v)); }
+
+// Dot product function base case:
+inline double dotProd(double a,double b) {return a*b; }
+
+template<class T>
+double
+dotProd(const Svec<T> & v0,const Svec<T> & v1)
+{
+    double      acc(0);
+    FGASSERT(v0.size() == v1.size());
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += dotProd(v0[ii],v1[ii]);
+    return acc;
+}
 
 inline
 bool
-fgIsPow2(uint xx)
+isPow2(uint xx)
 {return ((xx != 0) && ((xx & (xx-1)) == 0)); }
 
 uint
-fgNumLeadingZeros(uint32 xx);                   // 0 returns 32.
+numLeadingZeros(uint32 xx);                   // 0 returns 32.
 
 uint8
-fgNumNonzeroBits8(uint8 xx);
+numNonzeroBits8(uint8 xx);
 uint16
-fgNumNonzeroBits16(uint16 xx);
+numNonzeroBits16(uint16 xx);
 uint
-fgNumNonzeroBits32(uint32 xx);
+numNonzeroBits32(uint32 xx);
 
 inline
 uint
-fgLog2Floor(uint32 xx)                          // Not valid for 0.
-{return (31-fgNumLeadingZeros(xx)); }
+log2Floor(uint32 xx)                          // Not valid for 0.
+{return (31-numLeadingZeros(xx)); }
 
 uint
-fgLog2Ceil(uint32 xx);                          // Not valid for 0.
-
-inline
-uint
-fgPow2Floor(uint32 xx)                        // Not valid for 0.
-{return (1 << fgLog2Floor(xx)); }
+log2Ceil(uint32 xx);                          // Not valid for 0.
 
 inline
 uint
-fgPow2Ceil(uint32 xx)
-{return (1 << fgLog2Ceil(xx)); }                // Not valid for 0.
+pos2Floor(uint32 xx)                        // Not valid for 0.
+{return (1 << log2Floor(xx)); }
+
+inline
+uint
+pow2Ceil(uint32 xx)
+{return (1 << log2Ceil(xx)); }                // Not valid for 0.
 
 template <typename T>
 inline T
-fgCube(T a)
+cube(T a)
 {return (a*a*a); }
 
 // Safe version of 'exp' that throws when values fall outside type bounds:
 template<typename T>
 T
-fgExp(T val,bool clamp=false)
+expSafe(T val,bool clamp=false)
 {
     static T    maxIn = std::log(std::numeric_limits<T>::max());
     if (std::abs(val) < maxIn)
@@ -75,14 +123,14 @@ fgExp(T val,bool clamp=false)
 // Fast exp with no check for NaNs, overflow or underflow.
 // This was necessary as GNU's libm 'exp' (used by gcc and clang) is very slow.
 // (Microsoft's is actually a bit faster than this one):
-double fgExpFast(double x);
+double          expFast(double x);
 
 // Returns one of {-1,0,1}. Branchless.
 // Not compatible with FP positive/negative for 0/Inf/Nan.
 // Use the slower std::sgnbit and std::copysign for that.
 template<typename T>
 int
-fgSign(T val)
+cmpTernary(T val)
 {return (T(0) < val) - (val < T(0)); }
 
 // std::fmod gives a remainder not a modulus (ie it can be negative):
@@ -104,14 +152,14 @@ inline double   fgDegToRad(double degrees) {return degrees * fgPi() / 180.0; }
 inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; }
 inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
-struct   FgModulo
+struct   Modulo
 {
     size_t      val;        // Invariant: [0,mod)
     size_t      mod;
 
-    FgModulo() {}
+    Modulo() {}
 
-    FgModulo(size_t v,size_t m) : val(v), mod(m)
+    Modulo(size_t v,size_t m) : val(v), mod(m)
     {FGASSERT(val < mod); }
 
     void
@@ -131,22 +179,113 @@ struct   FgModulo
     }
 };
 
-typedef std::vector<FgModulo> FgModulos;
+typedef Svec<Modulo> Modulos;
+
+template<class T>
+double
+fgSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
+{
+    FGASSERT(v0.size() == v1.size());
+    double      acc = 0;
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += cMag(v1[ii]-v0[ii]);
+    return acc;
+}
+
+template<class T>
+double
+fgSsd(const Svec<T> & vec,const T & val)          // Sum of square differences with a constant val
+{
+    double      acc = 0;
+    for (size_t ii=0; ii<vec.size(); ++ii)
+        acc += cMag(vec[ii]-val);
+    return acc;
+}
+
+template<class T>
+double
+fgRms(const Svec<T> & v)                          // Root mean squared
+{return std::sqrt(cMag(v) / v.size()); }
+
+// Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
+template<class T>
+inline T maxEl(T x1,T x2) {return std::max(x1,x2); }
+template<class T> 
+inline T maxEl(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
+template<class T> 
+inline T maxEl(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
+
+template<class T>
+inline T minEl(T x1,T x2) {return std::min(x1,x2); }
+template<class T>
+inline T minEl(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
+
+template<class T,size_t S>
+inline T maxEl(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
+template<class T,size_t S>
+inline T minEl(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
+
+template<class T,size_t S>
+Arr<T,S> mapAbs(const Arr<T,S> & a)
+{
+    Arr<T,S>     ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = std::abs(a[ii]);
+    return ret;
+}
+
+// Useful for min/max with different types:
+inline uint64 minEl(uint64 a,uint b) {return std::min(a,uint64(b)); }
+inline uint64 minEl(uint a,uint64 b) {return std::min(uint64(a),b); }
+
+// Avoid extra typing:
+inline double fgEpsilonD() {return std::numeric_limits<double>::epsilon(); }
+
+// 1D convolution with zero-value boundary handling (non-optimized):
+Svec<double>
+fgConvolve(
+    const Doubles &         data,
+    const Doubles &         kernel);    // Must be odd size with convolution centre in middle.
+
+// 1D Gaussian convolution for large kernels (direct sampled kernel)
+// with zero-value boundary handling:
+Svec<double>
+fgConvolveGauss(
+    const Doubles &         in,
+    double                  stdev); // Kernel stdev relative to sample spacing.
+
+// Gives relative difference of 'b' vs 'a'.
+// Exact in the limit of small differences above the minimum scale (see below).
+// Limit values of +/- 2 for very different values.
+// 'minAbs' is used as the minimum scale for determining relative difference
+// (important when one value may be very small or zero).
+inline
+double
+fgRelDiff(double a,double b,double minAbs=fgEpsilonD())
+{
+    double      del = b-a,
+                denom = std::abs(b)+std::abs(a);
+    denom = (denom < minAbs) ? minAbs : denom;
+    return del * 2.0 / denom;
+}
+
+Svec<double>
+fgRelDiff(const Svec<double> & a,const Svec<double> & b,double minAbs=fgEpsilonD());
 
 // Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
 template<class T>
-vector<vector<T> >
-fgSubsets(const vector<T> & v,size_t min,size_t max)
+Svec<Svec<T> >
+fgSubsets(const Svec<T> & v,size_t min,size_t max)
 {
-    vector<vector<T> >      ret;
+    Svec<Svec<T> >      ret;
     if (!v.empty() && (max>=min)) {
         FGASSERT(v.size() < 30);                            // Sanity check
         uint32              sv = uint32(v.size());
         uint32              sz = 1UL << sv;                 // EUB for bit field
         for (uint32 ii=0; ii<sz; ++ii) {
-            uint32          nzb = fgNumNonzeroBits32(ii);
+            uint32          nzb = numNonzeroBits32(ii);
             if ((nzb >= min) && (nzb <= max)) {
-                vector<T>       r;
+                Svec<T>       r;
                 for (uint32 jj=0; jj<sv; ++jj)
                     if (ii & (1 << jj))
                         r.push_back(v[jj]);
@@ -157,7 +296,9 @@ fgSubsets(const vector<T> & v,size_t min,size_t max)
     return ret;
 }
 
-std::vector<double>
+Svec<double>
 fgSolveCubicReal(double c0,double c1,double c2);
+
+}
 
 #endif

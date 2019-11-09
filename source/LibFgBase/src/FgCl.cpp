@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: April 21, 2011
+
 //
 
 #include "stdafx.h"
@@ -19,8 +18,9 @@ using namespace std;
 
 #ifndef FG_SANDBOX
 
-namespace fgCl
-{
+namespace Fg {
+
+namespace fgCl {
 
 bool preview = false;
 
@@ -35,7 +35,7 @@ run(const string & cmd,bool throwIfError,int rvalMask)
     if ((retval & rvalMask) != 0)
     {
         if (throwIfError)
-            fgThrow("Error exit code from command",fgToStr(retval));
+            fgThrow("Error exit code from command",toString(retval));
         else
             fgout << fgnl << "Error exit code from command: " << retval;
         return false;
@@ -44,5 +44,7 @@ run(const string & cmd,bool throwIfError,int rvalMask)
 }
 
 }   // namespace
+
+}
 
 #endif

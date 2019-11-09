@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 25, 2011
+
 //
 // Scale (can be negative) and translate transform: x' = sx + t
 
@@ -13,19 +12,21 @@
 
 #include "FgStdLibs.hpp"
 
+namespace Fg {
+
 template <class T>
-struct  FgAffine1
+struct  Affine1
 {
     T       m_scale;
     T       m_trans;
 
-    FgAffine1() : m_scale(T(1)), m_trans(T(0)) {}
-    FgAffine1(T scale,T trans) : m_scale(scale), m_trans(trans) {}
+    Affine1() : m_scale(T(1)), m_trans(T(0)) {}
+    Affine1(T scale,T trans) : m_scale(scale), m_trans(trans) {}
 
     // Construct from bounding box mapping:
-    FgAffine1(
-        FgMatrixC<T,1,2> domainBounds,
-        FgMatrixC<T,1,2> rangeBounds)
+    Affine1(
+        Mat<T,1,2> domainBounds,
+        Mat<T,1,2> rangeBounds)
     {
         T   domainDelta = domainBounds[1] - domainBounds[0],
             rangeDelta = rangeBounds[1] - rangeBounds[0];
@@ -39,25 +40,27 @@ struct  FgAffine1
     {return (m_scale * domainVal + m_trans); }
 
     // x = (x'-t)/s = (1/s)x' + (-t/s)
-    FgAffine1
+    Affine1
     inverse() const
-    {return FgAffine1(T(1)/m_scale,-m_trans/m_scale); }
+    {return Affine1(T(1)/m_scale,-m_trans/m_scale); }
 
     T
     invXform(T rangeVal) const
     {return ((rangeVal - m_trans) / m_scale); }
 };
 
-typedef FgAffine1<float>       FgAffine1F;
-typedef FgAffine1<double>      FgAffine1D;
+typedef Affine1<float>       Affine1F;
+typedef Affine1<double>      Affine1D;
 
 template<class T>
 std::ostream &
-operator<<(std::ostream & os,const FgAffine1<T> & v)
+operator<<(std::ostream & os,const Affine1<T> & v)
 {
     os  << fgnl << "Scale: " << v.m_scale
         << fgnl << " Translation: " << v.m_trans;
     return os;
+}
+
 }
 
 #endif

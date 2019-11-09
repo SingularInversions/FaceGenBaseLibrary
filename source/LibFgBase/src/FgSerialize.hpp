@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-//
+
 // Make working with boost::serialize easier.
 //
 // NOTES:
@@ -25,6 +24,8 @@
 #include "FgBoostLibs.hpp"
 #include "portable_binary_oarchive.hpp"
 #include "portable_binary_iarchive.hpp"
+
+namespace Fg {
 
 #define FG_SERIAL_HELPER1(v1)                                                   \
     template<class Archive>                                                     \
@@ -133,6 +134,8 @@ fgDeserializePort(const std::string & blob,T & val)
     std::istringstream          is(blob);
     portable_binary_iarchive    ia(is);
     ia >> BOOST_SERIALIZATION_NVP(val);
+}
+
 }
 
 #endif

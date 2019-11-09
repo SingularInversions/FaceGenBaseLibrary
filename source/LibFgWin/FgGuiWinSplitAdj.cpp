@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,22 +14,23 @@
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgDefaultVal.hpp"
 #include "FgMetaFormat.hpp"
 
 using namespace std;
 
+namespace Fg {
+
 static const int dividerThickness = 3;
 static const int borderThickness = 2;
 
-struct  FgGuiWinSplitDivider
+struct  GuiSplitWinDivider
 {
-    FgBoolF     drag;       // Is the user dragging this window ?
+    bool        drag=false;     // Is the user dragging this window ?
     // Last mouse pos in screen coords (since this window is moving !)
     // Only valid when drag == true:
-    FgVect2I    lastPos;
-    FgVect2UI   parentCursorLo;
-    FgVect2UI   parentCursorHi;
+    Vec2I    lastPos;
+    Vec2UI   parentCursorLo;
+    Vec2UI   parentCursorHi;
 
     LRESULT
     wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
@@ -40,7 +41,7 @@ struct  FgGuiWinSplitDivider
         if (msg == WM_LBUTTONDOWN) {
             if (wParam == MK_LBUTTON) {
                 SetCapture(hwnd);
-                lastPos = fgScreenPos(hwnd,lParam);
+                lastPos = winScreenPos(hwnd,lParam);
                 drag = true;
                 HWND    pHwnd = GetParent(hwnd);
                 POINT   point;
@@ -65,8 +66,8 @@ struct  FgGuiWinSplitDivider
         else if (msg == WM_MOUSEMOVE) {
             if (wParam == MK_LBUTTON) {
                 if (drag) {
-                    FgVect2I    pos = fgScreenPos(hwnd,lParam);
-                    FgVect2I    delta = pos-lastPos;
+                    Vec2I    pos = winScreenPos(hwnd,lParam);
+                    Vec2I    delta = pos-lastPos;
                     lastPos = pos;
                     // SendMessage doesn't return until msg is processed.
                     // We can't just forward the WM_MOUSEMOVE since the coords
@@ -89,25 +90,25 @@ struct  FgGuiWinSplitDivider
     }
 };
 
-struct  FgGuiWinSplitAdj : public FgGuiOsBase
+struct  GuiSplitAdjWin : public GuiBaseImpl
 {
-    FgGuiApiSplitAdj                m_api;
-    HWND                            hwndThis;   // Must receive user messages from divider
-    FgPtr<FgGuiOsBase>        m_pane0;
-    FgPtr<FgGuiOsBase>        m_pane1;
-    double                          m_relSize;
+    GuiSplitAdj                 m_api;
+    HWND                        hwndThis;   // Must receive user messages from divider
+    GuiImplPtr                  m_pane0;
+    GuiImplPtr                  m_pane1;
+    double                      m_relSize;
     struct  Div
     {
-        FgGuiWinSplitDivider        win;
-        HWND                        hwnd;
+        GuiSplitWinDivider      win;
+        HWND                    hwnd;
     };
-    Div                             m_div;
-    FgVect2I                        m_client;
-    FgString                        m_store;
+    Div                         m_div;
+    Vec2I                    m_client;
+    Ustring                    m_store;
     // Cache border-padded pane min sizes to avoid exponentially repeated calls:
-    mutable FgVect2UI               m_minSizes[2];  
+    mutable Vec2UI           m_minSizes[2];  
 
-    FgGuiWinSplitAdj(const FgGuiApiSplitAdj & api) :
+    GuiSplitAdjWin(const GuiSplitAdj & api) :
         m_api(api),
         m_relSize(0.5)  // Default must be fixed since we can't yet call getMinSize of subwindows.
     {
@@ -116,7 +117,7 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const FgString & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,const Ustring & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
         m_store = store;
@@ -124,10 +125,10 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
         if (fgLoadXml(m_store+".xml",rs,false))
             if ((rs > 0.0) && (rs < 1.0))
                 m_relSize = rs;
-        FgCreateChild   cc;
+        WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        fgCreateChild(parentHwnd,ident,this,cc);
+        winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
 
@@ -141,17 +142,17 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     void
     minSizes() const
     {
-        m_minSizes[0] = m_pane0->getMinSize() + FgVect2UI(2*borderThickness);
-        m_minSizes[1] = m_pane1->getMinSize() + FgVect2UI(2*borderThickness);
+        m_minSizes[0] = m_pane0->getMinSize() + Vec2UI(2*borderThickness);
+        m_minSizes[1] = m_pane1->getMinSize() + Vec2UI(2*borderThickness);
     }
 
-    virtual FgVect2UI
+    virtual Vec2UI
     getMinSize() const
     {
         minSizes();     // Upadate cache of subwindow sizes
         uint        sd = splitDim(),
                     nd = 1 - sd;
-        FgVect2UI   max = fgMax(m_minSizes[0],m_minSizes[1]),
+        Vec2UI   max = maxEl(m_minSizes[0],m_minSizes[1]),
                     sum = m_minSizes[0] + m_minSizes[1],
                     ret;
         ret[sd] = sum[sd] + dividerThickness;
@@ -159,7 +160,7 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
         return ret;
     }
 
-    virtual FgVect2B
+    virtual Vec2B
     wantStretch() const
     {return fgOr(m_pane0->wantStretch(),m_pane1->wantStretch()); }
 
@@ -173,7 +174,7 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     }
 
     virtual void
-    moveWindow(FgVect2I lo,FgVect2I sz)
+    moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "SplitAdj::moveWindow: " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
@@ -205,14 +206,14 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
             DWORD       extStyle = WS_EX_CLIENTEDGE;
             m_pane0->create(hwnd,0,m_store+"_0",extStyle);
             m_pane1->create(hwnd,1,m_store+"_1",extStyle);
-            FgCreateChild   cc;
+            WinCreateChild   cc;
             cc.cursor = LoadCursor(NULL,m_api.horiz ? IDC_SIZEWE : IDC_SIZENS);
-            m_div.hwnd = fgCreateChild(hwnd,2,&m_div.win,cc);
+            m_div.hwnd = winCreateChild(hwnd,2,&m_div.win,cc);
 //fgout << fgpop;
         }
         else if (msg == WM_SIZE) {      // Sends new size of client area:
             minSizes();     // Upadate cache of subwindow sizes
-            m_client = FgVect2I(LOWORD(lParam),HIWORD(lParam));
+            m_client = Vec2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] == 0)
                 return 0;
 //fgout << fgnl << "SplitAdj::WM_SIZE: " << m_client << fgpush;
@@ -228,7 +229,7 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
         }
         else if (msg == WM_USER) {      // Divider has been moved:
             minSizes();     // Upadate cache of subwindow sizes
-            FgVect2I    delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I    delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             uint        sd = splitDim();
             if (delta[sd] != 0)
             {
@@ -252,8 +253,8 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
 
     struct  Pos
     {
-        FgVect2I    lo;
-        FgVect2I    sz;
+        Vec2I    lo;
+        Vec2I    sz;
     };
     struct  Layout
     {
@@ -269,9 +270,9 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
                     nd = 1-sd;
         int         sizei = m_client[sd]-dividerThickness;
         double      sized = sizei;
-        FgVect2I    lo(0),sz(0);
+        Vec2I    lo(0),sz(0);
         sz[nd] = m_client[nd];
-        sz[sd] = fgRound(m_relSize*sized);
+        sz[sd] = round<int>(m_relSize*sized);
         // Adjust relative sizing if window resize hits one of the mins:
         int         min0 = m_minSizes[0][sd],
                     min1 = m_minSizes[1][sd];
@@ -303,6 +304,8 @@ struct  FgGuiWinSplitAdj : public FgGuiOsBase
     }
 };
 
-FgPtr<FgGuiOsBase>
-fgGuiGetOsInstance(const FgGuiApiSplitAdj & def)
-{return FgPtr<FgGuiOsBase>(new FgGuiWinSplitAdj(def)); }
+GuiImplPtr
+guiGetOsImpl(const GuiSplitAdj & def)
+{return GuiImplPtr(new GuiSplitAdjWin(def)); }
+
+}

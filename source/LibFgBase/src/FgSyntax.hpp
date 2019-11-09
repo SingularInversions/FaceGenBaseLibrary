@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Date: Nov 27, 2010
+
 //
 // Make command-line syntax handling easier
 
@@ -16,20 +15,22 @@
 #include "FgMain.hpp"
 #include "FgString.hpp"
 
+namespace Fg {
+
 struct  FgExceptionCommandSyntax
 {};
 
-struct  FgSyntax
+struct  Syntax
 {
-    FgSyntax(
-        const FgArgs &  args,   // Accepts UTF-8 here
+    Syntax(
+        const CLArgs &  args,   // Accepts UTF-8 here
         // Wraparound for console width is aplied to this text. Any occurence of " - "
         // sets the indent level for wraparound:
-        const string &  syntax);
+        const String &  syntax);
 
-    ~FgSyntax();
+    ~Syntax();
 
-    const string &
+    const String &
     next()
     {
         if (m_idx+1 == m_args.size())
@@ -41,17 +42,17 @@ struct  FgSyntax
     T
     nextAs()
     {
-        FgOpt<T>    ret = fgFromStr<T>(next());
+        Opt<T>    ret = fgFromStr<T>(next());
         if (!ret.valid())
-            error("Unable to convert string to "+string(typeid(T).name()),curr());
+            error("Unable to convert string to "+String(typeid(T).name()),curr());
         return ret.val();
     }
 
-    FgString
+    Ustring
     nextLower()             // As above but lower case
-    {return fgToLower(FgString(next())); }
+    {return fgToLower(Ustring(next())); }
 
-    const string &
+    const String &
     curr() const
     {return m_args[m_idx]; }
 
@@ -59,10 +60,10 @@ struct  FgSyntax
     more() const
     {return (m_idx+1 < m_args.size()); }
 
-    const string &
+    const String &
     peekNext();
 
-    FgArgs
+    CLArgs
     rest();             // Starting with current
 
     void
@@ -70,10 +71,10 @@ struct  FgSyntax
     {throwSyntax(); }
 
     void
-    error(const string & errMsg);
+    error(const String & errMsg);
 
     void
-    error(const string & errMsg,const FgString & data);
+    error(const String & errMsg,const Ustring & data);
 
     void
     incorrectNumArgs();
@@ -81,12 +82,12 @@ struct  FgSyntax
     // Throws appropriate syntax error:
     void
     checkExtension(
-        const FgString & fname,
-        const string & ext);
+        const Ustring & fname,
+        const String & ext);
     void
     checkExtension(
-        const string &                 fname,
-        const std::vector<string> &    exts);
+        const String &          fname,
+        const Strings &         exts);
 
     // Throws appropriate syntax error if different:
     void
@@ -95,17 +96,19 @@ struct  FgSyntax
     // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
     // referencing 'argDescription':
     uint
-    nextSelectionIndex(const FgStrs & validValues,const string & argDescription);
+    nextSelectionIndex(const Strings & validValues,const String & argDescription);
 
 
 private:
-    string                 m_syntax;
-    std::vector<string>    m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
-    size_t                 m_idx;
+    String              m_syntax;
+    Strings             m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
+    size_t              m_idx;
 
     void
     throwSyntax();
 };
+
+}
 
 #endif
 

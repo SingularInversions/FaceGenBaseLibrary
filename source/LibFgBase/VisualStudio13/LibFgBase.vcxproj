@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}</ProjectGuid>
+    <ProjectGuid>{5B961373-F4B8-DA15-075F-4A80089B758B}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
@@ -184,13 +184,10 @@
     <ClCompile Include="..\src\Fg3dMeshXsi.cpp" />
     <ClCompile Include="..\src\Fg3dNormals.cpp" />
     <ClInclude Include="..\src\Fg3dNormals.hpp" />
-    <ClInclude Include="..\src\Fg3dOpenGL.hpp" />
-    <ClInclude Include="..\src\Fg3dOpenGLImpl.hpp" />
     <ClCompile Include="..\src\Fg3dPose.cpp" />
     <ClInclude Include="..\src\Fg3dPose.hpp" />
     <ClCompile Include="..\src\Fg3dRayCaster.cpp" />
     <ClInclude Include="..\src\Fg3dRayCaster.hpp" />
-    <ClInclude Include="..\src\Fg3dRenderOptions.hpp" />
     <ClCompile Include="..\src\Fg3dSurface.cpp" />
     <ClInclude Include="..\src\Fg3dSurface.hpp" />
     <ClCompile Include="..\src\Fg3dTest.cpp" />
@@ -200,8 +197,6 @@
     <ClInclude Include="..\src\FgAffineC.hpp" />
     <ClInclude Include="..\src\FgAffineCwC.hpp" />
     <ClInclude Include="..\src\FgAffineCwPreC.hpp" />
-    <ClCompile Include="..\src\FgAlgs.cpp" />
-    <ClInclude Include="..\src\FgAlgs.hpp" />
     <ClInclude Include="..\src\FgAny.hpp" />
     <ClInclude Include="..\src\FgApproxEqual.hpp" />
     <ClCompile Include="..\src\FgApproxFunc.cpp" />
@@ -235,12 +230,8 @@
     <ClCompile Include="..\src\FgConsMakefiles.cpp" />
     <ClCompile Include="..\src\FgConsVisualStudio201x.cpp" />
     <ClInclude Include="..\src\FgCoordSystem.hpp" />
-    <ClInclude Include="..\src\FgDefaultVal.hpp" />
-    <ClCompile Include="..\src\FgDepGraph.cpp" />
-    <ClInclude Include="..\src\FgDepGraph.hpp" />
-    <ClCompile Include="..\src\FgDepGraphSt.cpp" />
-    <ClCompile Include="..\src\FgDepGraphTest.cpp" />
-    <ClCompile Include="..\src\FgDepGraphUtils.cpp" />
+    <ClCompile Include="..\src\FgDataflow.cpp" />
+    <ClInclude Include="..\src\FgDataflow.hpp" />
     <ClCompile Include="..\src\FgDiagnostics.cpp" />
     <ClInclude Include="..\src\FgDiagnostics.hpp" />
     <ClCompile Include="..\src\FgDraw.cpp" />
@@ -254,8 +245,6 @@
     <ClCompile Include="..\src\FgFileSystemTest.cpp" />
     <ClCompile Include="..\src\FgFileUtils.cpp" />
     <ClInclude Include="..\src\FgFileUtils.hpp" />
-    <ClInclude Include="..\src\FgGaBase.hpp" />
-    <ClCompile Include="..\src\FgGaTest.cpp" />
     <ClCompile Include="..\src\FgGeometry.cpp" />
     <ClInclude Include="..\src\FgGeometry.hpp" />
     <ClCompile Include="..\src\FgGeometryTest.cpp" />
@@ -307,8 +296,6 @@
     <ClInclude Include="..\src\FgIter.hpp" />
     <ClCompile Include="..\src\FgKdTree.cpp" />
     <ClInclude Include="..\src\FgKdTree.hpp" />
-    <ClCompile Include="..\src\FgLazy.cpp" />
-    <ClInclude Include="..\src\FgLazy.hpp" />
     <ClCompile Include="..\src\FgLighting.cpp" />
     <ClInclude Include="..\src\FgLighting.hpp" />
     <ClInclude Include="..\src\FgLinkGraph.hpp" />
@@ -329,9 +316,7 @@
     <ClInclude Include="..\src\FgMetaFormat.hpp" />
     <ClCompile Include="..\src\FgNc.cpp" />
     <ClInclude Include="..\src\FgNc.hpp" />
-    <ClInclude Include="..\src\FgNonCopyable.hpp" />
     <ClInclude Include="..\src\FgNormal.hpp" />
-    <ClInclude Include="..\src\FgOpenGL.hpp" />
     <ClInclude Include="..\src\FgOpt.hpp" />
     <ClCompile Include="..\src\FgOut.cpp" />
     <ClInclude Include="..\src\FgOut.hpp" />
@@ -351,15 +336,16 @@
     <ClCompile Include="..\src\FgSampler.cpp" />
     <ClInclude Include="..\src\FgSampler.hpp" />
     <ClInclude Include="..\src\FgScopeGuard.hpp" />
+    <ClCompile Include="..\src\FgSerial.cpp" />
+    <ClInclude Include="..\src\FgSerial.hpp" />
     <ClInclude Include="..\src\FgSerialize.hpp" />
-    <ClInclude Include="..\src\FgSerialSimple.hpp" />
     <ClInclude Include="..\src\FgSet.hpp" />
-    <ClInclude Include="..\src\FgSharedPtr.hpp" />
-    <ClCompile Include="..\src\FgSharedPtrTest.cpp" />
     <ClCompile Include="..\src\FgSimilarity.cpp" />
     <ClInclude Include="..\src\FgSimilarity.hpp" />
     <ClCompile Include="..\src\FgSoftRender.cpp" />
     <ClInclude Include="..\src\FgSoftRender.hpp" />
+    <ClInclude Include="..\src\FgStdArray.hpp" />
+    <ClInclude Include="..\src\FgStdExtensions.hpp" />
     <ClInclude Include="..\src\FgStdFunction.hpp" />
     <ClCompile Include="..\src\FgStdio.cpp" />
     <ClInclude Include="..\src\FgStdio.hpp" />
@@ -377,7 +363,6 @@
     <ClCompile Include="..\src\FgString.cpp" />
     <ClInclude Include="..\src\FgString.hpp" />
     <ClCompile Include="..\src\FgStringTest.cpp" />
-    <ClInclude Include="..\src\FgStringUtils.hpp" />
     <ClCompile Include="..\src\FgSyntax.cpp" />
     <ClInclude Include="..\src\FgSyntax.hpp" />
     <ClInclude Include="..\src\FgSystemInfo.hpp" />
@@ -388,19 +373,19 @@
     <ClInclude Include="..\src\FgTensorV.hpp" />
     <ClCompile Include="..\src\FgTestUtils.cpp" />
     <ClInclude Include="..\src\FgTestUtils.hpp" />
-    <ClCompile Include="..\src\FgThread.cpp" />
-    <ClInclude Include="..\src\FgThread.hpp" />
     <ClCompile Include="..\src\FgTime.cpp" />
     <ClInclude Include="..\src\FgTime.hpp" />
     <ClInclude Include="..\src\FgTypes.hpp" />
-    <ClCompile Include="..\src\FgVariant.cpp" />
-    <ClInclude Include="..\src\FgVariant.hpp" />
     <ClInclude Include="..\src\FgVersion.hpp" />
     <ClCompile Include="..\src\FgViz.cpp" />
     <ClInclude Include="..\src\FgViz.hpp" />
     <ClInclude Include="..\src\FgWinSpecific.hpp" />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp" />
     <ClCompile Include="..\src\jpeg_mem_src.cpp" />
+    <ClCompile Include="..\src\MurmurHash2.cpp" />
+    <ClInclude Include="..\src\MurmurHash2.h" />
+    <ClCompile Include="..\src\MurmurHash3.cpp" />
+    <ClInclude Include="..\src\MurmurHash3.h" />
     <ClInclude Include="..\src\portable_binary_archive.hpp" />
     <ClCompile Include="..\src\portable_binary_iarchive.cpp" />
     <ClInclude Include="..\src\portable_binary_iarchive.hpp" />

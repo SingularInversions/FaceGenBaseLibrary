@@ -1,14 +1,14 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 14, 2009
+
 //
-// Similarity transform: v' = sRv + t
+// Geometric similarity transform: v' = sRv + t
+// (shape preserving: scale, rotation, translation)
 //
-// USE: If applying to many vectors, more efficient to transform to 'asAffine()' first.
+// USE: If applying repeatedly, more efficient to transform to 'asAffine()' first.
 //
 
 #ifndef FGSIMILARITY_HPP
@@ -18,87 +18,129 @@
 #include "FgAffineC.hpp"
 #include "FgStdStream.hpp"
 
-struct  FgSimilarity
+namespace Fg {
+
+template<typename T>
+struct  Similarity
 {
-    double          m_scale;        // Scale and rotation applied first
-    FgQuaternionD   m_rot;
-    FgVect3D        m_trans;        // Translation applied last
+    T               scale = 1;      // Scale and rotation applied first
+    Quaternion<T>   rot;
+    Mat<T,3,1>      trans;          // Translation applied last
 
-    FG_SERIALIZE3(m_scale,m_rot,m_trans);
+    FG_SERIALIZE3(scale,rot,trans);
 
-    FgSimilarity()
-    : m_scale(1.0)
-    {}
+    Similarity() {}
 
     explicit
-    FgSimilarity(const double & s)
-    : m_scale(s)
-    {}
+    Similarity(T s) : scale(s) {}
 
     explicit
-    FgSimilarity(const FgVect3D & t)
-    : m_scale(1.0), m_trans(t)
-    {}
+    Similarity(Mat<T,3,1> const & t) : trans(t) {}
 
     explicit
-    FgSimilarity(const FgQuaternionD & r)
-    : m_scale(1.0), m_rot(r)
-    {}
+    Similarity(Quaternion<T> const & r) : rot(r) {}
 
-    FgSimilarity(
-        double                  scale,
-        const FgQuaternionD &   rot,
-        const FgVect3D &        trans)
-    : m_scale(scale), m_rot(rot), m_trans(trans)
-    {FGASSERT(m_scale > 0.0); }
-
-    // We use xformCoord() instead of operator*() because similarity transforms work differently
-    // for coordinate, covariant and contravariant vectors:
-    template<uint ncols>
-    FgMatrixC<double,3,ncols>
-    xformCoord(const FgMatrixC<double,3,ncols> & coords);   // Columns are coordinate vectors.
+    Similarity(T s,Quaternion<T> const & r,const Mat<T,3,1> & t)
+    : scale(s), rot(r), trans(t)
+    {FGASSERT(scale > 0); }
 
     // More efficient if applying the transform to many vectors:
-    FgAffine3D
+    Affine<T,3>
     asAffine() const
-    {return FgAffine3D(m_rot.asMatrix() * m_scale,m_trans); }
+    {return Affine<T,3>(rot.asMatrix() * scale,trans); }
 
     // operator* in this context means composition:
-    FgSimilarity
-    operator*(const FgSimilarity & rhs) const;
+    Similarity operator*(const Similarity & rhs) const
+    {
+        // Transform:   sRv+t
+        // Composition: s'R'(sRv+t)+t'
+        //            = s'R'sR(v) + (s'R't+t')
+        Similarity    ret;
+        ret.scale = scale * rhs.scale;
+        ret.rot = rot * rhs.rot;
+        ret.trans = scale * (rot * rhs.trans) + trans;
+        return ret;
+    }
 
-    FgSimilarity
-    inverse() const;
+    Similarity inverse() const
+    {
+        // Let R' = R.inverse() then:
+        // Transform:   v' = sRv+t
+        //             (v'-t)/s = Rv
+        //              v = R'(v'-t)/s
+        //              v = R'v'/s - R't/s
+        Similarity    ret;
+        ret.scale = 1 / scale;
+        ret.rot = rot.inverse();
+        ret.trans = - ret.scale * (ret.rot * trans);
+        return ret;
+    }
+
+    // Be more explicit than using default constructor:
+    static Similarity identity() {return Similarity(1,Quaternion<T>(),Mat<T,3,1>(0)); }
 };
 
-typedef std::vector<FgSimilarity>   FgSimilaritys;
+typedef Similarity<float>   SimilarityF;
+typedef Similarity<double>  SimilarityD;
 
-template<uint ncols>
-FgMatrixC<double,3,ncols>
-FgSimilarity::xformCoord(
-    const FgMatrixC<double,3,ncols> & coords)
+template<typename T>
+std::ostream &
+operator<<(std::ostream & os,const Similarity<T> & v)
 {
-    FgMatrixC<double,3,ncols>   tmp = (m_rot * coords) * m_scale;
-    for (uint rr=0; rr<3; rr++)
-        for (uint cc=0; cc<ncols; cc++)
-            tmp.rc(rr,cc) += m_trans[rr];
-    return tmp;
+    return
+        os << "Scale: " << v.scale << fgnl
+            << "Rotation: " << v.rot << fgnl
+            << "Translation: " << v.trans;
 }
 
-std::ostream &
-operator<<(std::ostream & os,const FgSimilarity & v);
+SimilarityD
+similarityRand();
 
-FgSimilarity
-fgSimilarityRand();
-
-FgSimilarity
-fgSimilarityApprox(
-    const std::vector<FgVect3D> &    domainPts,
-    const std::vector<FgVect3D> &    rangePts);
+SimilarityD
+similarityApprox(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
 
 inline
-FgSimilarity
-fgSimilarityApprox(const FgVerts & d,const FgVerts & r)
-{return fgSimilarityApprox(fgToDouble(d),fgToDouble(r)); }
+SimilarityD
+similarityApprox(Vec3Fs const & d,Vec3Fs const & r)
+{return similarityApprox(scast<double>(d),scast<double>(r)); }
+
+// Translation-rotation-scale version: v' = sR(v + t) = sRv + sRt
+// Useful when you want the translation relative to the input shape (v) not the output (v').
+// Also fewer operations and doesn't lose precision on 'trans' during 'inverse' operation.
+struct  TransSim
+{
+    Vec3D           trans;          // Translation applied first
+    QuaternionD     rot;
+    double          scale;          // Scale and rotation applied last
+
+    FG_SERIALIZE3(trans,rot,scale);
+
+    TransSim() {}
+
+    TransSim(const Vec3D & t,const QuaternionD & r,double s)
+    : trans(t), rot(r), scale(s)
+    {FGASSERT(s > 0.0); }
+
+    TransSim(const SimilarityD & s)
+        : trans(s.rot * s.trans * s.scale), rot(s.rot), scale(s.scale)
+    {}
+
+    // More efficient if applying the transform to many vectors:
+    Affine3D asAffine() const;
+
+    // Let R' = R.inverse() then:
+    // Transform:   v' = sR(v+t)
+    //              v' = sRv + sRt
+    //              sRv = v' - sRt
+    //              v = R'v'/s - t
+    TransSim inverse() const
+    {return TransSim(-trans,rot.inverse(),1.0/scale); }
+
+    static TransSim identity() {return TransSim(Vec3D(0),QuaternionD(),1.0); }
+};
+
+typedef Svec<TransSim>   TransSims;
+
+}
 
 #endif

@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Andrew Beatty
-// Created: August 17, 2013
+
 //
 
 #include "stdafx.h"
@@ -18,15 +17,17 @@
 
 using namespace std;
 
+namespace Fg {
+
 /**
    \ingroup Base_Commands
    Apply morphs by name to meshes.
  */
 static
 void
-anim(const FgArgs & args)
+anim(const CLArgs & args)
 {
-    FgSyntax    syn(args,
+    Syntax    syn(args,
         "<fileSuffix> (<mesh>.tri)+ (<morphName> <morphValue>)+\n"
         "    <fileSuffix> - Will be added to the mesh name for the respective output file.\n"
         "    <morphName>  - Exact name of morph to be applied. Need not exist on all meshes.\n"
@@ -36,10 +37,10 @@ anim(const FgArgs & args)
         "      to the vertex list necessarily invalidates the morph data."
         );
     string                          suffix = syn.next();
-    vector<pair<string,Fg3dMesh> >  meshes;
+    vector<pair<string,Mesh> >  meshes;
     while (fgEndsWith(syn.peekNext(),".tri")) {
         string                      name = syn.next();
-        meshes.push_back(make_pair(name,fgLoadTri(name)));
+        meshes.push_back(make_pair(name,loadTri(name)));
     }
     vector<pair<string,float> >     morphs;
     while (syn.more()) {
@@ -47,21 +48,21 @@ anim(const FgArgs & args)
         morphs.push_back(make_pair(name,syn.nextAs<float>()));
     }
     for (auto & mp : meshes) {
-        FgFlts              coord(mp.second.numMorphs(),0);
+        Floats              coord(mp.second.numMorphs(),0);
         for (const auto & rp : morphs) {
-            FgValid<size_t>     idx = mp.second.findMorph(rp.first);
+            Valid<size_t>     idx = mp.second.findMorph(rp.first);
             if (idx.valid())
                 coord[idx.val()] = rp.second;
         }
-        FgVerts         out;
+        Vec3Fs         out;
         mp.second.morph(coord,out);
         mp.second.verts = out;
         // The morphs are invalidated once the base verts are changed:
         mp.second.deltaMorphs.clear();
         mp.second.targetMorphs.clear();
-        FgPath          path(mp.first);
+        Path          path(mp.first);
         path.base += suffix;
-        fgSaveTri(path.str(),mp.second);
+        saveTri(path.str(),mp.second);
     }
 }
 
@@ -71,11 +72,11 @@ anim(const FgArgs & args)
  */
 static
 void
-apply(const FgArgs & args)
+apply(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
-        "    <ext>      - " + fgSaveMeshFormatsCLDescription() + "\n"
+        "    <ext>      - " + meshSaveFormatsCLDescription() + "\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)\n"
@@ -89,23 +90,23 @@ apply(const FgArgs & args)
                 outFile = syntax.next();
     if (!fgCheckExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
-    Fg3dMesh        mesh = fgLoadTri(inFile);
+    Mesh        mesh = loadTri(inFile);
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
                     targets(mesh.targetMorphs.size(),0.0f);
     while (syntax.more()) {
-        FgString    arg = syntax.nextLower();
+        Ustring    arg = syntax.nextLower();
         uint        idx = syntax.nextAs<uint>();
         float       val = syntax.nextAs<float>();
 
         //! Apply the morph:
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",fgToStr(idx));
+                fgThrow("Delta morph index out of bounds",toString(idx));
             deltas[idx] = val;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",fgToStr(idx));
+                fgThrow("Target morph index out of bounds",toString(idx));
             targets[idx] = val;
         }
         else
@@ -115,7 +116,7 @@ apply(const FgArgs & args)
     // The morphs are invalidated once the base verts are changed:
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
-    fgSaveMeshAnyFormat(mesh,outFile);
+    meshSaveAnyFormat(mesh,outFile);
 }
 
 /**
@@ -124,37 +125,37 @@ apply(const FgArgs & args)
  */
 static
 void
-clamp(const FgArgs & args)
+clamp(const CLArgs & args)
 {
-    FgSyntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
+    Syntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
         "    v - All vertices in <seam>.tri will be used to define the seam.\n"
         "    m - Only marked vertices in <seam>.tri will defin the seam.\n"
         "NOTES:\n"
         "    * Only delta morphs are affected.\n"
         "    * Vertex matching tolerance is 1/10,000 of the mesh max dimension."
     );
-    Fg3dMesh        mesh = fgLoadTri(syn.next());
+    Mesh        mesh = loadTri(syn.next());
     string          vm = syn.next();
-    FgVerts         seam;
+    Vec3Fs         seam;
     if (vm == "v")
-        seam = fgLoadTri(syn.next()).verts;
+        seam = loadTri(syn.next()).verts;
     else if (vm == "m")
-        seam = fgLoadTri(syn.next()).markedVertPositions();
+        seam = loadTri(syn.next()).markedVertPositions();
     else
         syn.error("Not a valid option",vm);
     if (seam.size() < 3)
-        syn.error("Too few vertices to be a seam",fgToStr(seam.size()));
+        syn.error("Too few vertices to be a seam",toString(seam.size()));
     FgKdTree        kd(seam);
     float           scale = fgMaxElem(fgDims(mesh.verts)),
-                    closeSqr = fgSqr(scale / 10000.0f);
+                    closeSqr = sqr(scale / 10000.0f);
     set<uint>       clampVertInds;
     for (size_t ii=0; ii<mesh.verts.size(); ++ii)
         if (kd.closest(mesh.verts[ii]).mag < closeSqr)
             clampVertInds.insert(uint(ii));
-    for (FgMorph & morph : mesh.deltaMorphs)
+    for (Morph & morph : mesh.deltaMorphs)
         for (uint ii : clampVertInds)
-            morph.verts[ii] = FgVect3F(0);
-    fgSaveTri(syn.next(),mesh);
+            morph.verts[ii] = Vec3F(0);
+    saveTri(syn.next(),mesh);
 }
 
 /**
@@ -163,14 +164,14 @@ clamp(const FgArgs & args)
  */
 static
 void
-clear(const FgArgs & args)
+clear(const CLArgs & args)
 {
-    FgSyntax    syntax(args,"<mesh>.tri");
+    Syntax    syntax(args,"<mesh>.tri");
     string      name = syntax.next();
-    Fg3dMesh    mesh = fgLoadTri(name);
+    Mesh    mesh = loadTri(name);
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
-    fgSaveTri(name,mesh);
+    saveTri(name,mesh);
 }
 
 /**
@@ -179,9 +180,9 @@ clear(const FgArgs & args)
  */
 static
 void
-copymorphs(const FgArgs & args)
+copymorphs(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)*\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -196,8 +197,8 @@ copymorphs(const FgArgs & args)
                 nameOut = syntax.next();
     if (nameIn == nameOut)
         syntax.error("Input and output meshes must be different");
-    Fg3dMesh    meshIn = fgLoadTri(nameIn);
-    Fg3dMesh    meshOut = fgLoadTri(nameOut);
+    Mesh    meshIn = loadTri(nameIn);
+    Mesh    meshOut = loadTri(nameOut);
     if (meshIn.verts.size() != meshOut.verts.size())
         syntax.error("Meshes have different vertex counts");
     if (!syntax.more()) {           // All morphs
@@ -213,16 +214,16 @@ copymorphs(const FgArgs & args)
         size_t      idx = syntax.nextAs<size_t>();
         if (delta) {
             if (idx >= meshIn.deltaMorphs.size())
-                syntax.error("Invalid delta morph index",fgToStr(idx));
+                syntax.error("Invalid delta morph index",toString(idx));
             meshOut.addDeltaMorph(meshIn.deltaMorphs[idx]);
         }
         else {
             if (idx >= meshIn.targetMorphs.size())
-                syntax.error("Invalid target morph index",fgToStr(idx));
+                syntax.error("Invalid target morph index",toString(idx));
             meshOut.addTargMorph(meshIn.targetMorphs[idx]);
         }
     }
-    fgSaveTri(nameOut,meshOut);
+    saveTri(nameOut,meshOut);
 }
 
 /**
@@ -231,19 +232,19 @@ copymorphs(const FgArgs & args)
  */
 static
 void
-create(const FgArgs & args)
+create(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
-        "    <extIn> = " + fgLoadMeshFormatsCLDescription() + "\n"
-        "    <extOut> = " + fgSaveMeshFormatsCLDescription() + "\n"
+        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
+        "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
         "    -i         - Ignore very small morphs (ie. do not create)\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         );
     string      baseName = syntax.next();
-    Fg3dMesh    base = fgLoadTri(baseName);
-    Fg3dMesh    target = fgLoadMeshAnyFormat(syntax.next());
+    Mesh    base = loadTri(baseName);
+    Mesh    target = meshLoadAnyFormat(syntax.next());
     if (base.verts.size() != target.verts.size())
         fgThrow("Different number of vertices between base and target");
     bool        ignoreSmall = false;
@@ -263,7 +264,7 @@ create(const FgArgs & args)
     }
     string      type = syntax.next();
     if (type == "d") {
-        FgMorph    m;
+        Morph    m;
         m.name = syntax.next();
         m.verts = target.verts - base.verts;
         base.deltaMorphs.push_back(m);
@@ -272,7 +273,7 @@ create(const FgArgs & args)
         base.addTargMorph(syntax.next(),target.verts);
     else
         syntax.error("Unrecognized morph type",type);
-    fgSaveTri(baseName,base);
+    saveTri(baseName,base);
 }
 
 /**
@@ -281,10 +282,10 @@ create(const FgArgs & args)
  */
 static
 void
-extract(const FgArgs & args)
+extract(const CLArgs & args)
 {
-    FgSyntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
-        "    <ext> - Output format " + fgSaveMeshFormatsCLDescription() + "\n"
+    Syntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
+        "    <ext> - Output format " + meshSaveFormatsCLDescription() + "\n"
         "OUTPUTS:\n"
         "    <mesh>_<name>.<ext> for each morph target, or\n"
         "    <base>_<name>.<ext> if <base> is specified.\n"
@@ -293,17 +294,17 @@ extract(const FgArgs & args)
     );
     string      meshName = syntax.next(),
                 ext = syntax.next();
-    FgString    baseName = fgPathToBase(meshName);
+    Ustring    baseName = fgPathToBase(meshName);
     if (syntax.more())
         baseName = syntax.next();
-    Fg3dMesh    base = fgLoadTri(meshName),
+    Mesh    base = loadTri(meshName),
                 out = base;
     out.deltaMorphs.clear();
     out.targetMorphs.clear();
     for (size_t ii=0; ii<base.numMorphs(); ++ii) {
         out.verts = base.morphSingle(ii);
-        FgString    morphName = fgRemoveChars(base.morphName(ii),":()");
-        fgSaveMeshAnyFormat(out,baseName+"_"+morphName+"."+ext);
+        Ustring    morphName = fgRemoveChars(base.morphName(ii),":()");
+        meshSaveAnyFormat(out,baseName+"_"+morphName+"."+ext);
     }
 }
 
@@ -313,9 +314,9 @@ extract(const FgArgs & args)
  */
 static
 void
-morphList(const FgArgs & args)
+morphList(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
             "<mesh>.tri\n"
             "    Show available delta and target morphs\n");
     if (args.size() != 2)
@@ -323,12 +324,12 @@ morphList(const FgArgs & args)
     string      inFile = syntax.next();
     if (!fgCheckExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
-    Fg3dMesh    mesh = fgLoadTri(inFile);
-    const vector<FgMorph> & dmorphs = mesh.deltaMorphs;
+    Mesh    mesh = loadTri(inFile);
+    const vector<Morph> & dmorphs = mesh.deltaMorphs;
     fgout << fgnl << dmorphs.size() << " delta morphs:" << fgpush;
     for (size_t ii=0; ii<dmorphs.size(); ++ii)
         fgout << fgnl << fgToStringDigits(ii,2) << " " << dmorphs[ii].name;
-    const vector<FgIndexedMorph> &   tmorphs = mesh.targetMorphs;
+    const vector<IndexedMorph> &   tmorphs = mesh.targetMorphs;
     fgout << fgpop << fgnl << tmorphs.size() << " target morphs:" << fgpush;
     for (size_t ii=0; ii<tmorphs.size(); ++ii)
         fgout << fgnl << fgToStringDigits(ii,2) << " " << tmorphs[ii].name;
@@ -341,19 +342,19 @@ morphList(const FgArgs & args)
  */
 static
 void
-removebrackets(const FgArgs & args)
+removebrackets(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri\n"
         );
-    Fg3dMesh            mesh = fgLoadTri(syntax.next());
-    vector<FgMorph> &   dms = mesh.deltaMorphs;
+    Mesh            mesh = loadTri(syntax.next());
+    vector<Morph> &   dms = mesh.deltaMorphs;
     for (size_t ii=0; ii<dms.size(); ++ii)
         dms[ii].name = fgRemoveChars(fgRemoveChars(dms[ii].name,'('),')');
-    vector<FgIndexedMorph> &    tms = mesh.targetMorphs;
+    vector<IndexedMorph> &    tms = mesh.targetMorphs;
     for (size_t ii=0; ii<tms.size(); ++ii)
         tms[ii].name = fgRemoveChars(fgRemoveChars(tms[ii].name,'('),')');
-    fgSaveMeshAnyFormat(mesh,syntax.next());
+    meshSaveAnyFormat(mesh,syntax.next());
 }
 
 /**
@@ -362,9 +363,9 @@ removebrackets(const FgArgs & args)
  */
 static
 void
-removemorphs(const FgArgs & args)
+removemorphs(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)+\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -377,26 +378,26 @@ removemorphs(const FgArgs & args)
         syntax.error("Not a TRI file",inFile);
     if (!fgCheckExt(outFile,"tri"))
         syntax.error("Not a TRI file",outFile);
-    Fg3dMesh    mesh = fgLoadTri(inFile);
+    Mesh    mesh = loadTri(inFile);
     vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
                     targets(mesh.targetMorphs.size(),true);
     while (syntax.more()) {
-        FgString    arg = syntax.nextLower();
+        Ustring    arg = syntax.nextLower();
         uint        idx = syntax.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",fgToStr(idx));
+                fgThrow("Delta morph index out of bounds",toString(idx));
             deltas[idx] = false;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",fgToStr(idx));
+                fgThrow("Target morph index out of bounds",toString(idx));
             targets[idx] = false;
         }
         else
             syntax.error("Invalid morph type",arg);
     }
-    Fg3dMesh                meshOut = mesh;
+    Mesh                meshOut = mesh;
     meshOut.deltaMorphs.clear();
     meshOut.targetMorphs.clear();
     for (size_t ii=0; ii<deltas.size(); ++ii)
@@ -405,7 +406,7 @@ removemorphs(const FgArgs & args)
     for (size_t ii=0; ii<targets.size(); ++ii)
         if (targets[ii])
             meshOut.targetMorphs.push_back(mesh.targetMorphs[ii]);
-    fgSaveMeshAnyFormat(meshOut,outFile);
+    meshSaveAnyFormat(meshOut,outFile);
 }
 
 /**
@@ -414,9 +415,9 @@ removemorphs(const FgArgs & args)
  */
 static
 void
-renameMorph(const FgArgs & args)
+renameMorph(const CLArgs & args)
 {
-    FgSyntax    syntax(args,
+    Syntax    syntax(args,
         "<mesh>.tri (d | t) <index> <name>\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -425,52 +426,54 @@ renameMorph(const FgArgs & args)
     string      fname = syntax.next();
     if (!fgCheckExt(fname,"tri"))
         syntax.error("Not a TRI file",fname);
-    Fg3dMesh    mesh = fgLoadTri(fname);
-    FgString    arg = syntax.nextLower();
+    Mesh    mesh = loadTri(fname);
+    Ustring    arg = syntax.nextLower();
     uint        idx = syntax.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
-            fgThrow("Delta morph index out of bounds",fgToStr(idx));
+            fgThrow("Delta morph index out of bounds",toString(idx));
         mesh.deltaMorphs[idx].name = syntax.next();
     }
     else if (arg == "t") {
         if (idx >= mesh.targetMorphs.size())
-            fgThrow("Target morph index out of bounds",fgToStr(idx));
+            fgThrow("Target morph index out of bounds",toString(idx));
         mesh.targetMorphs[idx].name = syntax.next();
     }
     else
         syntax.error("Invalid morph type",arg);
-    fgSaveTri(fname,mesh);
+    saveTri(fname,mesh);
 }
 
 static
 void
-morph(const FgArgs & args)
+morph(const CLArgs & args)
 {
-    vector<FgCmd>   cmds;
-    cmds.push_back(FgCmd(anim,"anim","Apply morphs by name to multiple meshes"));
-    cmds.push_back(FgCmd(apply,"apply","Apply morphs by index number in a single mesh"));
-    cmds.push_back(FgCmd(clamp,"clamp","Clamp delta morphs to zero on seam vertices"));
-    cmds.push_back(FgCmd(clear,"clear","Clear all morphs from a mesh"));
-    cmds.push_back(FgCmd(copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"));
-    cmds.push_back(FgCmd(create,"create","Create morphs for a mesh"));
-    cmds.push_back(FgCmd(extract,"extract","Extract all morphs to named files"));
-    cmds.push_back(FgCmd(morphList,"list","List available morphs in a mesh"));
-    cmds.push_back(FgCmd(removemorphs,"remove","Remove morphs from a mesh"));
-    cmds.push_back(FgCmd(removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"));
-    cmds.push_back(FgCmd(renameMorph,"rename","Rename a morph in a mesh"));
+    vector<Cmd>   cmds;
+    cmds.push_back(Cmd(anim,"anim","Apply morphs by name to multiple meshes"));
+    cmds.push_back(Cmd(apply,"apply","Apply morphs by index number in a single mesh"));
+    cmds.push_back(Cmd(clamp,"clamp","Clamp delta morphs to zero on seam vertices"));
+    cmds.push_back(Cmd(clear,"clear","Clear all morphs from a mesh"));
+    cmds.push_back(Cmd(copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"));
+    cmds.push_back(Cmd(create,"create","Create morphs for a mesh"));
+    cmds.push_back(Cmd(extract,"extract","Extract all morphs to named files"));
+    cmds.push_back(Cmd(morphList,"list","List available morphs in a mesh"));
+    cmds.push_back(Cmd(removemorphs,"remove","Remove morphs from a mesh"));
+    cmds.push_back(Cmd(removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"));
+    cmds.push_back(Cmd(renameMorph,"rename","Rename a morph in a mesh"));
     fgMenu(args,cmds);
 }
 
-FgCmd
+Cmd
 fgCmdMorphInfo()
-{return FgCmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
+{return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void
-fgMorphTest(const FgArgs & args)
+fgMorphTest(const CLArgs & args)
 {
     FGTESTDIR
     fgTestCopy("base/Jane.tri");
-    fgRunCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
+    runCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
     fgRegressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
+}
+
 }

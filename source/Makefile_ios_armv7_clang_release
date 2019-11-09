@@ -5,6 +5,6 @@ AR = ar
 RANLIB = ranlib
 CFLAGS = -arch armv7 -DNDEBUG -fno-common -Ofast -miphoneos-version-min=7.1 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk -fembed-bitcode -DENABLE_BITCODE -fPIC -fno-strict-aliasing
 CCFLAGS = $(CFLAGS)
-CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=1024 -stdlib=libc++
+CXXFLAGS = $(CFLAGS) -std=c++11 -ftemplate-depth=2048 -stdlib=libc++
 BUILDIR = ../build_ios/armv7/clang/release/
 include make_libs.mk

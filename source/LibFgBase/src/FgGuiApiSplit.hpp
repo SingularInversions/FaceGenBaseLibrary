@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 4, 2011
+
 //
 
 #ifndef FGGUIAPISPLIT_HPP
@@ -13,78 +12,101 @@
 #include "FgGuiApiBase.hpp"
 #include "FgStdVector.hpp"
 
+namespace Fg {
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiSplit;
+GuiImplPtr guiGetOsImpl(GuiSplit const & guiApi);
+
 // Algorithmically proportioned split window with all contents viewable:
-struct  FgGuiApiSplit : FgGuiApi<FgGuiApiSplit>
+struct  GuiSplit : GuiBase
 {
     bool                    horiz;
-    vector<FgGuiPtr>        panes;
+    Svec<GuiPtr>        panes;
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-FgGuiPtr
-fgGuiSplit(bool horiz,const vector<FgGuiPtr> & panes);
+GuiPtr
+guiSplit(bool horiz,const Svec<GuiPtr> & panes);
 
 inline
-FgGuiPtr
-fgGuiSplit(bool horiz,FgGuiPtr p0,FgGuiPtr p1)
-{return fgGuiSplit(horiz,fgSvec(p0,p1)); }
+GuiPtr
+guiSplit(bool horiz,GuiPtr p0,GuiPtr p1)
+{return guiSplit(horiz,fgSvec(p0,p1)); }
 
 inline
-FgGuiPtr
-fgGuiSplit(bool horiz,FgGuiPtr p0,FgGuiPtr p1,FgGuiPtr p2)
-{return fgGuiSplit(horiz,fgSvec(p0,p1,p2)); }
+GuiPtr
+guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2)
+{return guiSplit(horiz,fgSvec(p0,p1,p2)); }
 
 inline
-FgGuiPtr
-fgGuiSplit(bool horiz,FgGuiPtr p0,FgGuiPtr p1,FgGuiPtr p2,FgGuiPtr p3)
-{return fgGuiSplit(horiz,fgSvec(p0,p1,p2,p3)); }
+GuiPtr
+guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3)
+{return guiSplit(horiz,fgSvec(p0,p1,p2,p3)); }
 
 inline
-FgGuiPtr
-fgGuiSplit(bool horiz,FgGuiPtr p0,FgGuiPtr p1,FgGuiPtr p2,FgGuiPtr p3,FgGuiPtr p4)
-{return fgGuiSplit(horiz,fgSvec(p0,p1,p2,p3,p4)); }
+GuiPtr
+guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3,GuiPtr p4)
+{return guiSplit(horiz,fgSvec(p0,p1,p2,p3,p4)); }
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiSplitAdj;
+GuiImplPtr guiGetOsImpl(GuiSplitAdj const & guiApi);
 
 // Adjustable split dual window with central divider:
-struct  FgGuiApiSplitAdj : FgGuiApi<FgGuiApiSplitAdj>
+struct  GuiSplitAdj : GuiBase
 {
     bool                    horiz;
-    FgGuiPtr                pane0;
-    FgGuiPtr                pane1;
+    GuiPtr                pane0;
+    GuiPtr                pane1;
 
-    FgGuiApiSplitAdj(bool h,FgGuiPtr p0,FgGuiPtr p1)
+    GuiSplitAdj(bool h,GuiPtr p0,GuiPtr p1)
         : horiz(h), pane0(p0), pane1(p1)
         {}
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 inline
-FgGuiPtr
-fgGuiSplitAdj(bool horiz,FgGuiPtr p0,FgGuiPtr p1)
-{return fgnew<FgGuiApiSplitAdj>(horiz,p0,p1); }
+GuiPtr
+guiSplitAdj(bool horiz,GuiPtr p0,GuiPtr p1)
+{return std::make_shared<GuiSplitAdj>(horiz,p0,p1); }
+
+// This function must be defined in the corresponding OS-specific implementation:
+struct  GuiSplitScroll;
+GuiImplPtr guiGetOsImpl(GuiSplitScroll const & guiApi);
 
 // Vertically scrollable split window (panes thickness is fixed to minimum):
-struct  FgGuiApiSplitScroll : FgGuiApi<FgGuiApiSplitScroll>
+struct  GuiSplitScroll : GuiBase
 {
-    uint                        updateFlagIdx;  // Has the panes info been updated ?
+    DfgFPtr                 updateFlag;     // Has the panes info been updated ?
     // This function must not depend on the same guigraph node depended on by its children or
     // the windows will be destroyed and recreated with each child update and thus not work:
-    std::function<FgGuiPtrs(void)> getPanes;
-    FgVect2UI                   minSize;        // Of client area (not including scroll bar)
+    std::function<GuiPtrs(void)> getPanes;
+    Vec2UI                   minSize;        // Of client area (not including scroll bar)
     uint                        spacing;        // Insert this spacing above each sub-win
 
-    FgGuiApiSplitScroll() : minSize(300,300), spacing(0) {}
+    GuiSplitScroll() : minSize(300,300), spacing(0) {}
+
+    virtual
+    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-// Static:
+GuiPtr
+guiSplitScroll(const GuiPtrs & panes,uint spacing=0);
 
-FgGuiPtr
-fgGuiSplitScroll(const FgGuiPtrs & panes,uint spacing=0);
+GuiPtr
+guiSplitScroll(std::function<GuiPtrs(void)> getPanes);
 
-FgGuiPtr
-fgGuiSplitScroll(std::function<FgGuiPtrs(void)> getPanes);
-
-FgGuiPtr
-fgGuiSplitScroll(
-    uint                                updateNodeIdx,  // Must be unique to this object
-    std::function<FgGuiPtrs(void)>    getPanes,
+GuiPtr
+guiSplitScroll(
+    const DfgFPtr &                 updateNodeIdx,  // Must be unique to this object
+    std::function<GuiPtrs(void)>      getPanes,
     uint                                spacing=0);
+
+}
 
 #endif

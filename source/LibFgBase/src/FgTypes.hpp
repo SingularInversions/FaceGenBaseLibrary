@@ -1,10 +1,9 @@
 //
-// Copyright (c) 2015 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 23, 2004
+
 //
 // Basic type abbreviations and attributes
 //
@@ -13,8 +12,9 @@
 #define FGTYPES_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgBoostLibs.hpp"
 #include "FgPlatform.hpp"
+
+namespace Fg {
 
 // Shorter names for C++98 builtin types:
 typedef signed char     schar;      // The C/C++ Standard does not specify whether 'char' is
@@ -28,12 +28,12 @@ typedef long long       int64;      // C99 / C++0x but widely supported.
 typedef unsigned long long uint64;  // "
 
 // Shorter names for C++11 fixed size integers:
-typedef std::uint8_t  uint8;
-typedef std::int8_t   int8;
-typedef std::int16_t  int16;
-typedef std::uint16_t uint16;
-typedef std::int32_t  int32;
-typedef std::uint32_t uint32;
+typedef std::uint8_t    uint8;
+typedef std::int8_t     int8;
+typedef std::int16_t    int16;
+typedef std::uint16_t   uint16;
+typedef std::int32_t    int32;
+typedef std::uint32_t   uint32;
 
 // Useful if we need to initialize templated members only in the case of builtins:
 template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
@@ -50,114 +50,122 @@ template<> inline void fgInitializeBuiltinsToZero(float & v) {v=0.0f;}
 template<> inline void fgInitializeBuiltinsToZero(double & v) {v=0.0;}
 template<> inline void fgInitializeBuiltinsToZero(bool & v) {v=false;}
 
-// Similar to above but gcc doesn't recognize above as initialization:
-template<typename T> inline T fgDefaultVal() {return T(); }
-template<> inline float fgDefaultVal() {return 0.0f; }
-template<> inline double fgDefaultVal() {return 0.0; }
-template<> inline int fgDefaultVal() {return 0; }
-template<> inline uint fgDefaultVal() {return 0U; }
-template<> inline int64 fgDefaultVal() {return 0LL; }
-template<> inline uint64 fgDefaultVal() {return 0ULL; }
+template<class T> struct Traits;
 
-template<typename T> struct FgTypeAttributeFloatingS;   // Type must be floating point.
-template<> struct FgTypeAttributeFloatingS<float> {};
-template<> struct FgTypeAttributeFloatingS<double> {};
-
-template<typename T> struct FgTypeAttributeFixedS;      // Type must be fixed point.
-template<> struct FgTypeAttributeFixedS<uchar> {};
-template<> struct FgTypeAttributeFixedS<short> {};
-template<> struct FgTypeAttributeFixedS<ushort> {};
-template<> struct FgTypeAttributeFixedS<int> {};
-template<> struct FgTypeAttributeFixedS<uint> {};
-template<> struct FgTypeAttributeFixedS<long> {};
-template<> struct FgTypeAttributeFixedS<ulong> {};
-template<> struct FgTypeAttributeFixedS<int64> {};
-template<> struct FgTypeAttributeFixedS<uint64> {};
-
-template<class T> struct FgTraits;
-
-template<> struct FgTraits<uchar>
+template<> struct Traits<uchar>
 {
-    typedef uchar   Scalar;             // Stub for scalar type of templated vector/matrix types
+    // Stub for scalar type of templated vector/matrix types:
+    typedef uchar   Scalar;
     typedef uint    Accumulator;
-    typedef double  Floating;           // Stub for conversion of templated vec/mat to floating point
+    // Stub for conversion of templated vec/mat to floating point for fractional operations (not accumulation):
+    typedef float   Floating;
 };
-template<> struct FgTraits<schar>
+template<> struct Traits<schar>
 {
     typedef schar   Scalar;
     typedef int     Accumulator;
-    typedef double  Floating;
+    typedef float   Floating;
 };
-template<> struct FgTraits<int>
+template<> struct Traits<int>
 {
     typedef int     Scalar;
     typedef int64   Accumulator;
-    typedef double  Floating;
+    typedef float   Floating;
 };
-template<> struct FgTraits<uint>
+template<> struct Traits<uint>
 {
     typedef uint    Scalar;
     typedef uint64  Accumulator;
+    typedef float   Floating;
+};
+#ifndef _MSC_VER    // MSVC does not consider size_t to be its own type but nix does:
+template<> struct Traits<size_t>
+{
+    typedef size_t  Scalar;
+    typedef size_t  Accumulator;
     typedef double  Floating;
 };
-template<> struct FgTraits<long>
+#endif
+template<> struct Traits<int64>
 {
-    typedef long    Scalar;
+    typedef int64   Scalar;
     typedef int64   Accumulator;
     typedef double  Floating;
 };
-template<> struct FgTraits<ulong>
+template<> struct Traits<uint64>
 {
-    typedef ulong   Scalar;
+    typedef uint64  Scalar;
     typedef uint64  Accumulator;
     typedef double  Floating;
 };
-template<> struct FgTraits<long long>
-{
-    typedef long long   Scalar;
-    typedef long long   Accumulator;
-    typedef double      Floating;
-};
-template<> struct FgTraits<unsigned long long>
-{
-    typedef unsigned long long  Scalar;
-    typedef unsigned long long  Accumulator;
-    typedef double  Floating;
-};
-template<> struct FgTraits<float>
+template<> struct Traits<float>
 {
     typedef float   Scalar;
     typedef double  Accumulator;
-    typedef double  Floating;
+    typedef float   Floating;
 };
-template<> struct FgTraits<double>
+template<> struct Traits<double>
 {
     typedef double  Scalar;
     typedef double  Accumulator;
     typedef double  Floating;
 };
 
-// Template stubs:
+// Template resolution base case:
+template<typename T>
+inline T
+sfloor(T v)
+{return std::floor(v); }
 
-inline double fgMag(double v) {return v*v; }
-inline double fgMag(std::complex<double> v) {return std::norm(v); }
-inline double fgDot(double a,double b) {return a*b; }
+// Template resolution base base:
+template<typename To,typename From>
+inline void
+scast_(From from,To & to)
+{to = static_cast<To>(from); }
 
-inline void fgCast_(float  i,uchar &  o) {o = static_cast<uchar>(i); }
-inline void fgCast_(uchar  i,float &  o) {o = static_cast<float>(i); }
-inline void fgCast_(ushort i,float &  o) {o = static_cast<float>(i); }
-inline void fgCast_(double i,float &  o) {o = static_cast<float>(i); }
-inline void fgCast_(uchar  i,double & o) {o = static_cast<double>(i); }
-inline void fgCast_(ushort i,double & o) {o = static_cast<double>(i); }
-inline void fgCast_(float  i,double & o) {o = static_cast<double>(i); }
-inline void fgCast_(unsigned int i,double & o) {o = static_cast<double>(i); }
-inline void fgCast_(unsigned long i,double & o) {o = static_cast<double>(i); }
-inline void fgCast_(unsigned long long i,double & o) {o = static_cast<double>(i); }
+// Abbreviation for static_cast. Was unable to make recursive template resolution due
+// to difficulty of specifying return type. Instead, each combination of containers to be used
+// with it needs to be its own template function:
+template<typename To,typename From>
+inline To
+scast(From val)
+{return static_cast<To>(val); }
 
-inline void fgRound_(float in,int & out) {out = static_cast<int>(std::floor(in + 0.5f)); }
-inline void fgRound_(float in,uchar & out) {out = static_cast<uchar>(in + 0.5f); }
-inline int fgRound(double v) {return static_cast<int>(std::floor(v+0.5)); }
-inline uint fgRoundU(double v) {return static_cast<uint>(v+0.5); }
+// No bounds checking is done by these 'round' functions:
+template<
+    typename To,
+    typename From,
+    // Use this implementation if the output type is signed:
+    typename std::enable_if<std::is_signed<To>::value,To>::type* =nullptr
+>
+inline To
+round(From v)
+{
+    static_assert(std::is_floating_point<From>::value,"round only from floating point");
+    static_assert(std::is_integral<To>::value,"round only to integral");
+    return static_cast<To>(std::floor(v+From(0.5)));
+}
+
+template<
+    typename To,
+    typename From,
+    // Use this implementation if the output type is unsigned:
+    typename std::enable_if<std::is_unsigned<To>::value,To>::type* =nullptr
+>
+inline To
+round(From v)
+{
+    static_assert(std::is_floating_point<From>::value,"round only from floating point");
+    static_assert(std::is_integral<To>::value,"round only to integral");
+    return static_cast<To>(v+From(0.5));
+}
+
+template<typename To,typename From>
+void
+round_(From from,To & to)
+{to = round<To,From>(from); }
+
+}
 
 #endif
 
