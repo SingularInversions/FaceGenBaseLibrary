@@ -74,7 +74,7 @@ fgRegressFail(
 }
 
 void
-fgRegressFile(const Ustring & baselineRelPath,const Ustring & queryPath,const FgFnRegressFiles & fnEqual)
+regressFile(const Ustring & baselineRelPath,const Ustring & queryPath,const EquateFiles & fnEqual)
 {
     if (!pathExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
@@ -119,8 +119,8 @@ fgRegressImage(
     const string &      refPath,
     uint                maxDelta)
 {
-    FgFnRegressFiles       rt = std::bind(compareImages,_1,_2,maxDelta);
-    fgRegressFileRel(testFile,refPath,rt);
+    EquateFiles       rt = std::bind(compareImages,_1,_2,maxDelta);
+    regressFileRel(testFile,refPath,rt);
 }
 
 template<>

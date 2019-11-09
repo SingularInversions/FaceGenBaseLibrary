@@ -373,9 +373,9 @@ fgSaveFbxTest(const CLArgs & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     saveFbx("meshExportFbx",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportFbx.fbx","base/test/");
-    fgRegressFileRel("meshExportFbx0_0.png","base/test/");
-    fgRegressFileRel("meshExportFbx1_0.png","base/test/");
+    regressFileRel("meshExportFbx.fbx","base/test/");
+    regressFileRel("meshExportFbx0_0.png","base/test/");
+    regressFileRel("meshExportFbx1_0.png","base/test/");
 }
 
 }

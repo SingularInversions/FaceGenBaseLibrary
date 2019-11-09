@@ -473,7 +473,7 @@ fgMorphTest(const CLArgs & args)
     FGTESTDIR
     fgTestCopy("base/Jane.tri");
     runCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
-    fgRegressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
+    regressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
 }
 
 }

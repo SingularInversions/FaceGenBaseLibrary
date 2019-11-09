@@ -236,8 +236,8 @@ fgSaveDaeTest(const CLArgs & args)
     teethU.surfaces[0].material.albedoMap = teethImg;
     teethL.surfaces[0].material.albedoMap = teethImg;
     saveDae("teethExportDae",fgSvec(teethU,teethL));
-    fgRegressFileRel("teethExportDae.dae","base/test/");
-    fgRegressFileRel("teethExportDae0_0.png","base/test/");
+    regressFileRel("teethExportDae.dae","base/test/");
+    regressFileRel("teethExportDae0_0.png","base/test/");
 }
 
 }

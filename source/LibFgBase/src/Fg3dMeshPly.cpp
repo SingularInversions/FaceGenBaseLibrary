@@ -94,9 +94,9 @@ fgSavePlyTest(const CLArgs & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     savePly("meshExportPly",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportPly.ply","base/test/");
-    fgRegressFileRel("meshExportPly0.png","base/test/");
-    fgRegressFileRel("meshExportPly1.png","base/test/");
+    regressFileRel("meshExportPly.ply","base/test/");
+    regressFileRel("meshExportPly0.png","base/test/");
+    regressFileRel("meshExportPly1.png","base/test/");
 }
 
 }

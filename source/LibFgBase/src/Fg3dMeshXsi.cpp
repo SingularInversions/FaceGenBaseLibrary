@@ -766,9 +766,9 @@ fgSaveXsiTest(const CLArgs & args)
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     saveXsi("meshExportXsi",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportXsi.xsi","base/test/");
-    fgRegressFileRel("meshExportXsi0.png","base/test/");
-    fgRegressFileRel("meshExportXsi1.png","base/test/");
+    regressFileRel("meshExportXsi.xsi","base/test/");
+    regressFileRel("meshExportXsi0.png","base/test/");
+    regressFileRel("meshExportXsi1.png","base/test/");
 }
 
 }

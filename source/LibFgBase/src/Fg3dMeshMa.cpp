@@ -2053,9 +2053,9 @@ fgSaveMaTest(const CLArgs & args)
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     saveMa("meshExportMa",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportMa.ma","base/test/");
-    fgRegressFileRel("meshExportMa0.png","base/test/");
-    fgRegressFileRel("meshExportMa1.png","base/test/");
+    regressFileRel("meshExportMa.ma","base/test/");
+    regressFileRel("meshExportMa0.png","base/test/");
+    regressFileRel("meshExportMa1.png","base/test/");
 }
 
 }

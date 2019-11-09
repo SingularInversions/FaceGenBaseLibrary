@@ -2393,10 +2393,10 @@ fgSaveLwoTest(const CLArgs & args)
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     saveLwo("meshExportLwo",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportLwo.lwo","base/test/");
-    fgRegressFileRel("meshExportLwo.lws","base/test/");
-    fgRegressFileRel("meshExportLwo0.png","base/test/");
-    fgRegressFileRel("meshExportLwo1.png","base/test/");
+    regressFileRel("meshExportLwo.lwo","base/test/");
+    regressFileRel("meshExportLwo.lws","base/test/",equateFilesText);
+    regressFileRel("meshExportLwo0.png","base/test/");
+    regressFileRel("meshExportLwo1.png","base/test/");
 }
 
 }

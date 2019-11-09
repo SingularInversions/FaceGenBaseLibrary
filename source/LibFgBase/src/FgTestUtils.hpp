@@ -84,25 +84,25 @@ fgRegressionBaseline(
 }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef std::function<bool(const Ustring &,const Ustring &)> FgFnRegressFiles;
+typedef std::function<bool(const Ustring &,const Ustring &)> EquateFiles;
 
 // Calls the given regression check and deletes the query file if successful. If unsuccessful then:
 // '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
 // leave the query file in place.
 void
-fgRegressFile(
-    const Ustring &            baselineRelPath,    // Relative (to data dir) path to regression baseline file
-    const Ustring &            queryPath,          // Path to query file to be tested
-    const FgFnRegressFiles &    fnEqual = fgBinaryFileCompare); // Defaults to binary equality test
+regressFile(
+    Ustring const &         baselineRelPath,    // Relative (to data dir) path to regression baseline file
+    Ustring const &         queryPath,          // Path to query file to be tested
+    EquateFiles const &     equateFiles = equateFilesBinary); // Defaults to binary equality test
 
 // As above when query and baseline have same name:
 inline
 void
-fgRegressFileRel(
-    const Ustring &    name,       // file name to be regressed. Must exist in current directory and in 'relDir'.
-    const Ustring &    relDir,     // Relative path (within data dir) of the baseline file of the same name.
-    const FgFnRegressFiles & fnEqual = fgBinaryFileCompare)     // Defaults to binary equality test
-{fgRegressFile(relDir+name,name,fnEqual); }
+regressFileRel(
+    Ustring const &         fname,      // Must exist relative to current dir (query) AND dataDir() + 'relDir' (base).
+    Ustring const &         relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    EquateFiles const &     equateFiles = equateFilesBinary)     // Defaults to binary equality test
+{regressFile(relDir+fname,fname,equateFiles); }
 
 // As above but regression failure when max pixel diff greater than given:
 void

@@ -183,9 +183,13 @@ fgDump(const String & data,const Ustring & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool
-fgBinaryFileCompare(
-    const Ustring & file1,
-    const Ustring & file2);
+equateFilesBinary(Ustring const & file1,Ustring const & file2);
+
+// Returns true if identical except for line endings (LF, CRLF or CR):
+// Need to use this for text file regression since some users may have their VCS configured (eg. git default)
+// to auto convert all text files to CRLF on Windows. UTF-8 aware.
+bool
+equateFilesText(Ustring const & fname0,Ustring const & fname1);
 
 // Returns false if the given file or directory cannot be read.
 // The returned time is NOT compatible with std raw time and will in fact crash fgDateTimeString().

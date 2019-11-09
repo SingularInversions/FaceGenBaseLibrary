@@ -290,6 +290,7 @@ testLineFacetIntersect()
 void
 fgGeometryTest(const CLArgs &)
 {
+    randSeedRepeatable();
     testOriginToSegmentDistSqr();
     testPointToFacetDistSqr();
     testBarycentricCoords();

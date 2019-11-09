@@ -400,10 +400,10 @@ fgSaveObjTest(const CLArgs & args)
     Mesh        glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     saveObj("meshExportObj",fgSvec(mouth,glasses));
-    fgRegressFileRel("meshExportObj.obj","base/test/");
-    fgRegressFileRel("meshExportObj.mtl","base/test/");
-    fgRegressFileRel("meshExportObj1.png","base/test/");
-    fgRegressFileRel("meshExportObj2.png","base/test/");
+    regressFileRel("meshExportObj.obj","base/test/");
+    regressFileRel("meshExportObj.mtl","base/test/");
+    regressFileRel("meshExportObj1.png","base/test/");
+    regressFileRel("meshExportObj2.png","base/test/");
 }
 
 }

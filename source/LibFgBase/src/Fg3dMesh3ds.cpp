@@ -509,9 +509,9 @@ fgSave3dsTest(const CLArgs & args)
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
     save3ds("mshX3ds",fgSvec(mouth,glasses));
-    fgRegressFileRel("mshX3ds.3ds","base/test/");
-    fgRegressFileRel("mshX3ds0.png","base/test/");
-    fgRegressFileRel("mshX3ds1.png","base/test/");
+    regressFileRel("mshX3ds.3ds","base/test/");
+    regressFileRel("mshX3ds0.png","base/test/");
+    regressFileRel("mshX3ds1.png","base/test/");
 }
 
 }

@@ -14,6 +14,7 @@
 #include "FgStdString.hpp"
 #include "FgStdVector.hpp"
 #include "FgTime.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -168,13 +169,19 @@ fgDump(const string & data,const Ustring & filename,bool onlyIfChanged)
 }
 
 bool
-fgBinaryFileCompare(
+equateFilesBinary(
     const Ustring & file1,
     const Ustring & file2)
 {
     string contents1(fgSlurp(file1));
     string contents2(fgSlurp(file2));
     return contents1 == contents2;
+}
+
+bool
+equateFilesText(Ustring const & fname0,Ustring const & fname1)
+{
+    return (fgSplitLinesUtf8(fgSlurp(fname0)) == fgSplitLinesUtf8(fgSlurp(fname1)));
 }
 
 static Ustring s_fgDataDir;
