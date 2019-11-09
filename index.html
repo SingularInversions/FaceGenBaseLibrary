@@ -34,18 +34,18 @@ h2 ~ *:not(h2) {
 
 <h2>Developer Requirements</h2>
     <p>( Windows | Ubuntu | MacOS )</p>
-    <p><i>Windows: replace all <code>/</code> characters below with <code>\</code></i></p>
 <h2>Install</h2>
-    <p>Path in which you have placed this SDK: <code>~sdk</code></p>
     <p>FaceGen executables load data from <code> ~sdk/data/... </code>
-       This directory must be present in either <code> ~exe </code> or any of its
-       parent directories (where <code> ~exe </code> is the directory containing the executable).
+       This directory must be present in the directory containing the executable, or any of its
+       parent directories. It must contain the file <code> /data/_facegen_data_dir.flag </code>
+	<p> Example path setup:</p>
     <h3>Windows</h3>
-    <p><code> &gt PATH=%PATH%;~sdk\bin\win\x64\vs17\release\;~sdk\bin\win\x64\ </code>
+    <p><code> &gt PATH=%PATH%;~sdk\bin\win\x64\vs17\release\ </code>
     <h3>Ubuntu</h3>
-    <p><code> $ PATH=$PATH:~sdk/bin/ubuntu/x64/clang/release/:~sdk/bin/ubuntu/x64/ </code>
+    <p><code> $ PATH=$PATH:~sdk/bin/ubuntu/x64/clang/release/ </code>
     <h3>MacOS</h3>
-    <p><code> $ PATH=$PATH:~sdk/bin/macos/x64/clang/release/:~sdk/bin/macos/x64/ </code>
+    <p><code> $ PATH=$PATH:~sdk/bin/macos/x64/clang/release/ </code>
+    <p>Where <code>~sdk</code> is the path in which you have placed this SDK. </p>
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
 <div style="height:1px"></div>
