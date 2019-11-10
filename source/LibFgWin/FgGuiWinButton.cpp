@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     July 2, 2011
 //
 
 #include "stdafx.h"
@@ -100,7 +98,7 @@ struct  GuiButtonWin : public GuiBaseImpl
             int     hgt = HIWORD(lParam);
             if (wid*hgt > 0) {
 //fgout << fgnl << "Button::WM_SIZE: " << wid << "," << hgt;
-                int     buttonHgt = minEl(int(getMinSize()[1]),hgt),
+                int     buttonHgt = cMin(int(getMinSize()[1]),hgt),
                         vspace = hgt - buttonHgt;
                 MoveWindow(hwndButton,0,vspace/2,wid,buttonHgt,TRUE);
             }

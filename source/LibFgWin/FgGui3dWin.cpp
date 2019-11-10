@@ -582,7 +582,7 @@ struct      D3d
     loadMap(ImgC4UC const & map)
     {
         ImgC4UCs                  mip = fgMipMap(map);
-        uint                    numMips = minEl(uint(mip.size()),8);
+        uint                    numMips = cMin(uint(mip.size()),8);
         D3D11_SUBRESOURCE_DATA  initData[8] = {};
         for (size_t mm=0; mm<numMips; ++mm) {
             initData[mm].pSysMem = mip[mm].data();

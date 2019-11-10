@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgSimilarity.hpp"
@@ -76,7 +74,7 @@ similarityApprox(
     Vec3D            trans = -scale * (pose.asMatrix() * domMean) + ranMean;
     ret = SimilarityD(scale,pose,trans);
     // Measure residual:
-    double  resid = fgRms(rangePts-mapXft(domainPts,ret.asAffine())) / fgMaxElem(fgDims(rangePts));
+    double  resid = cRms(rangePts-mapXft(domainPts,ret.asAffine())) / fgMaxElem(cDims(rangePts));
     fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
     return ret;
 }
@@ -96,7 +94,7 @@ fgSimilarityTest(const CLArgs &)
     SimilarityD    sim(expSafe(randNormal()),QuaternionD(Vec4D::randNormal()),Vec3D::randNormal());
     SimilarityD    id = sim * sim.inverse();
     Mat33D        diff = id.asAffine() * Mat33D::identity() - Mat33D::identity();
-    FGASSERT(maxEl(mapAbs(diff.m)) < numeric_limits<double>::epsilon()*8);
+    FGASSERT(cMax(mapAbs(diff.m)) < numeric_limits<double>::epsilon()*8);
 }
 
 void

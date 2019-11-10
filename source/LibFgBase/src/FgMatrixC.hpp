@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Functions operating on Mat<>
 
 #ifndef FGMATRIXC_HPP
@@ -257,7 +255,7 @@ fgAsHomogMat(const Mat<T,dims,1> & translation)
 // RETURNS: The inverse of an invertible matrix. Throws an FGASSERT if not invertible.
 template <class T>
 Mat<T,2,2>
-fgMatInverse(const Mat<T,2,2> & m)
+cInverse(Mat<T,2,2> const & m)
 {
     static_assert(std::is_floating_point<T>::value,"Mat inverse requires floating point type");
     Mat<T,2,2>     ret;
@@ -271,8 +269,8 @@ fgMatInverse(const Mat<T,2,2> & m)
     return ret;
 }
 template <class T>
-Mat<T,3,3> fgMatInverse(
-    const Mat<T,3,3>&      m)
+Mat<T,3,3>
+cInverse(Mat<T,3,3> const & m)
 {
     static_assert(std::is_floating_point<T>::value,"Mat inverse requires floating point type");
     Mat<T,3,3>     r;
@@ -295,7 +293,7 @@ Mat<T,3,3> fgMatInverse(
 
 template <class T,uint nrows,uint ncols>
 T
-dotProd(
+cDot(
     const Mat<T,nrows,ncols> & lhs,
     const Mat<T,nrows,ncols> & rhs)
 {
@@ -557,14 +555,14 @@ FG_MATRIXC_ELEMWISE(fgSqrt,std::sqrt)
 
 template<class T,uint nrows,uint ncols>
 double
-dotProd(
+cDot(
     const Svec<Mat<T,nrows,ncols> > & v0,
     const Svec<Mat<T,nrows,ncols> > & v1)
 {
     FGASSERT(v0.size() == v1.size());
     double  acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += dotProd(v0[ii],v1[ii]);
+        acc += cDot(v0[ii],v1[ii]);
     return acc;
 }
 
@@ -580,7 +578,7 @@ fgDotWgt(
     FGASSERT(v0.size() == w.size());
     double  acc(0);
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += dotProd(v0[ii],v1[ii]) * w[ii];
+        acc += cDot(v0[ii],v1[ii]) * w[ii];
     return acc;
 }
 
@@ -801,7 +799,7 @@ cMag(Mat<T,nrows,ncols> m)
 
 template<class T,uint nrows,uint ncols>
 double
-fgRms(Mat<T,nrows,ncols> m)
+cRms(Mat<T,nrows,ncols> m)
 {return std::sqrt(m.mag()/static_cast<double>(nrows*ncols)); }
 
 template<typename T,uint nrows,uint ncols>

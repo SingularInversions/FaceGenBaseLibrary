@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     Oct 14, 2011
 //
 
 #include "stdafx.h"
@@ -59,7 +57,7 @@ struct  GuiSelectWin : public GuiBaseImpl
     {
         Vec2UI   max(0);
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            max = maxEl(max,m_panes[ii]->getMinSize());
+            max = cMax(max,m_panes[ii]->getMinSize());
         return max;
     }
 

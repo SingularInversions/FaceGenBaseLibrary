@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dMesh.hpp"
@@ -302,7 +300,7 @@ saveTri(
         const Morph &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
-        float           scale = float(numeric_limits<short>::max()-1) / fgMaxElem(mapAbs(getBounds(morph.verts)));
+        float           scale = float(numeric_limits<short>::max()-1) / fgMaxElem(mapAbs(cBounds(morph.verts)));
         fgWriteb(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)

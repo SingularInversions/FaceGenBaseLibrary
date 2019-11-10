@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // 2D grid spatial index
 
 #ifndef FG_GRIDINDEX_HPP
@@ -43,13 +41,13 @@ struct  FgGridIndex
     add(const T & val,Mat22F clientBounds)
     {
         Mat22F        ipcsBounds = clientToGridIpcs * clientBounds;
-        ipcsBounds[0] = maxEl(ipcsBounds[0],0.0f);
-        ipcsBounds[2] = maxEl(ipcsBounds[2],0.0f);
+        ipcsBounds[0] = cMax(ipcsBounds[0],0.0f);
+        ipcsBounds[2] = cMax(ipcsBounds[2],0.0f);
         if ((ipcsBounds[0] > ipcsBounds[1]) || (ipcsBounds[2] > ipcsBounds[3]))
             return;
         Mat22UI       ircsBounds = Mat22UI(ipcsBounds);         // All elements now guaranteed  positive
-        ircsBounds[1] = minEl(ircsBounds[1]+1,grid.width());        // Convert to exlusive upper bounds (EUB)
-        ircsBounds[3] = minEl(ircsBounds[3]+1,grid.height());       // and clip to grid.
+        ircsBounds[1] = cMin(ircsBounds[1]+1,grid.width());        // Convert to exlusive upper bounds (EUB)
+        ircsBounds[3] = cMin(ircsBounds[3]+1,grid.height());       // and clip to grid.
         for (uint yy=ircsBounds[2]; yy<ircsBounds[3]; ++yy) {      // Invalid bounds implicity skipped
             for (uint xx=ircsBounds[0]; xx<ircsBounds[1]; ++xx)
                 grid.xy(xx,yy).push_back(val);

@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
@@ -48,7 +46,7 @@ viewMesh(const CLArgs & args)
         else
             syn.error("Unrecognized option: ",syn.curr());
     }
-    Meshs           meshes;
+    Meshes           meshes;
     while (syn.more()) {
         Path            path(syn.next());
         Mesh            mesh = meshLoadAnyFormat(path.str());
@@ -150,9 +148,9 @@ fgCmdViewUvs(const CLArgs & args)
         else
             syntax.error("Unknown file type",fname);
     }
-    Mat22F            uvb = getBounds(mesh.uvs);
+    Mat22F            uvb = cBounds(mesh.uvs);
     fgout << fgnl << "UV Bounds: " << uvb;
-    VecF2            uvbb = getBounds(uvb.m);
+    VecF2            uvbb = cBounds(uvb.m);
     if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
         fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
     imgDisplay(fgUvWireframeImage(mesh,img));

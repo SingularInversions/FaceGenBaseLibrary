@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Makes use of boost::filesystem which requires native unicode representation arguments for unicode support
 // ie. UTF-16 wstring on Windows, UTF-8 string on *nix.
 

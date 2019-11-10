@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Multi-dimensional index iterator with offset and stride.
 //
 // If necessary it might be made faster by hard-coding 2D and 3D versions separately.

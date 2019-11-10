@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGGUIAPI3D_HPP
 #define FGGUIAPI3D_HPP
 

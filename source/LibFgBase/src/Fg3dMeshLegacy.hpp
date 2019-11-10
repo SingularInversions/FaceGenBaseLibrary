@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FG3DMESHLEGACY_HPP
 #define FG3DMESHLEGACY_HPP
 

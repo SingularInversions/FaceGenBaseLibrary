@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
@@ -146,7 +144,7 @@ clamp(const CLArgs & args)
     if (seam.size() < 3)
         syn.error("Too few vertices to be a seam",toString(seam.size()));
     FgKdTree        kd(seam);
-    float           scale = fgMaxElem(fgDims(mesh.verts)),
+    float           scale = fgMaxElem(cDims(mesh.verts)),
                     closeSqr = sqr(scale / 10000.0f);
     set<uint>       clampVertInds;
     for (size_t ii=0; ii<mesh.verts.size(); ++ii)
@@ -252,8 +250,8 @@ create(const CLArgs & args)
         ignoreSmall = true;
         syntax.next();
     }
-    float       baseSz = fgMaxElem(fgDims(base.verts)),
-                delSz = fgMaxElem(fgDims(target.verts-base.verts));
+    float       baseSz = fgMaxElem(cDims(base.verts)),
+                delSz = fgMaxElem(cDims(target.verts-base.verts));
     if ((delSz / baseSz) < 0.00001) {
         if (ignoreSmall) {
             fgout << "Very small or zero morph ignored";

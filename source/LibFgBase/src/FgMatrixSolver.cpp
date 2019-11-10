@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgMath.hpp"
@@ -102,7 +100,7 @@ testAsymEigs(const CLArgs &)
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
     Mat33D        regress = fgReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
-    double          residual = fgRms(mat - regress);
+    double          residual = cRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
         << fgnl << "Residual: " << residual;

@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Mesh format using little-endian int32, uint32, IEEE 754 single-precision and UTF-8 data
 //
 
@@ -42,7 +40,7 @@ saveFgmesh(const Ustring & fname,const Mesh & mesh)
 }
 
 void
-saveFgmesh(const Ustring & fname,const Meshs & meshes)
+saveFgmesh(const Ustring & fname,const Meshes & meshes)
 {saveFgmesh(fname,fgMergeMeshes(meshes)); }
 
 void

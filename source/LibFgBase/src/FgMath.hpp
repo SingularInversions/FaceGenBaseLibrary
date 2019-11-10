@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGMATH_HPP
 #define FGMATH_HPP
 
@@ -23,7 +21,15 @@ sqr(T a)
 inline float cMag(float v) {return v*v; }
 inline double cMag(double v) {return v*v; }
 inline double cMag(std::complex<double> v) {return std::norm(v); }
-
+template<typename T,size_t S>
+double
+cMag(std::array<T,S> const a)
+{
+    T       acc(0);
+    for (T const & e : a)
+        acc += cMag(e);
+    return acc;
+}
 template<class T>
 double
 cMag(const Svec<T> & v)              // Sum of squared magnitude values:
@@ -34,37 +40,28 @@ cMag(const Svec<T> & v)              // Sum of squared magnitude values:
     return ret;
 }
 
+// Euclidean length (L2 norm):
 template<typename T,size_t S>
-T
-cMag(std::array<T,S> const a)
-{
-    T       acc(0);
-    for (T const & e : a)
-        acc += cMag(e);
-    return acc;
-}
-
-template<typename T,size_t S>
-T
+double
 cLen(std::array<T,S> const a)
 {return std::sqrt(cMag(a)); }
-
 template<class T>
 double
-cLen(const Svec<T> & v)           // Euclidean length (L2 norm)
+cLen(const Svec<T> & v)
 {return std::sqrt(cMag(v)); }
 
 // Dot product function base case:
-inline double dotProd(double a,double b) {return a*b; }
+inline double
+cDot(double a,double b) {return a*b; }
 
 template<class T>
 double
-dotProd(const Svec<T> & v0,const Svec<T> & v1)
+cDot(const Svec<T> & v0,const Svec<T> & v1)
 {
     double      acc(0);
     FGASSERT(v0.size() == v1.size());
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += dotProd(v0[ii],v1[ii]);
+        acc += cDot(v0[ii],v1[ii]);
     return acc;
 }
 
@@ -136,19 +133,17 @@ cmpTernary(T val)
 // std::fmod gives a remainder not a modulus (ie it can be negative):
 template<typename T>
 T
-fgMod(T val,T divisor)
+cMod(T val,T divisor)
 {
     T       div = std::floor(val / divisor);
     return val - divisor * div;
 }
 
-inline double   fgPi()         {return 3.141592653589793237462643; }
-inline double   fgLn_pi()      {return 1.144729885849400173825117; }
-inline double   fgLn_2()       {return 0.693147180559945309417232; }
-inline double   fgLn_2pi()     {return 1.837877066409345483560659; }
-inline double   fgSqrt_2pi()   {return 2.506628274631000502415765; }
-inline double   fgRadToDeg(double radians) {return radians * 180.0 / fgPi(); }
-inline double   fgDegToRad(double degrees) {return degrees * fgPi() / 180.0; }
+inline double constexpr pi()        {return 3.141592653589793237462643; }
+inline double constexpr ln2Pi()     {return 1.837877066409345483560659; }
+inline double constexpr sqrt2Pi()   {return 2.506628274631000502415765; }
+inline double   fgRadToDeg(double radians) {return radians * 180.0 / pi(); }
+inline double   fgDegToRad(double degrees) {return degrees * pi() / 180.0; }
 inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; }
 inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
@@ -183,7 +178,7 @@ typedef Svec<Modulo> Modulos;
 
 template<class T>
 double
-fgSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
+cSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
     double      acc = 0;
@@ -194,7 +189,7 @@ fgSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
 
 template<class T>
 double
-fgSsd(const Svec<T> & vec,const T & val)          // Sum of square differences with a constant val
+cSsd(const Svec<T> & vec,const T & val)          // Sum of square differences with a constant val
 {
     double      acc = 0;
     for (size_t ii=0; ii<vec.size(); ++ii)
@@ -204,26 +199,39 @@ fgSsd(const Svec<T> & vec,const T & val)          // Sum of square differences w
 
 template<class T>
 double
-fgRms(const Svec<T> & v)                          // Root mean squared
+cRms(const Svec<T> & v)                          // Root mean squared
 {return std::sqrt(cMag(v) / v.size()); }
 
 // Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
 template<class T>
-inline T maxEl(T x1,T x2) {return std::max(x1,x2); }
+inline T cMax(T x1,T x2) {return std::max(x1,x2); }
 template<class T> 
-inline T maxEl(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
+inline T cMax(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
 template<class T> 
-inline T maxEl(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
-
+inline T cMax(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
 template<class T>
-inline T minEl(T x1,T x2) {return std::min(x1,x2); }
+inline T cMin(T x1,T x2) {return std::min(x1,x2); }
 template<class T>
-inline T minEl(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
+inline T cMin(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
 
 template<class T,size_t S>
-inline T maxEl(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
+inline T cMax(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
 template<class T,size_t S>
-inline T minEl(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
+inline T cMin(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
+template<typename T>
+T
+cMin(const Svec<T> & v)
+{
+    FGASSERT(!v.empty());
+    return *std::min_element(v.begin(),v.end());
+}
+template<class T>
+T
+cMax(const Svec<T> & v)
+{
+    FGASSERT(!v.empty());
+    return *std::max_element(v.begin(),v.end());
+}
 
 template<class T,size_t S>
 Arr<T,S> mapAbs(const Arr<T,S> & a)
@@ -235,8 +243,8 @@ Arr<T,S> mapAbs(const Arr<T,S> & a)
 }
 
 // Useful for min/max with different types:
-inline uint64 minEl(uint64 a,uint b) {return std::min(a,uint64(b)); }
-inline uint64 minEl(uint a,uint64 b) {return std::min(uint64(a),b); }
+inline uint64 cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
+inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
 // Avoid extra typing:
 inline double fgEpsilonD() {return std::numeric_limits<double>::epsilon(); }

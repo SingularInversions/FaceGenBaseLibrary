@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dNormals.hpp"
@@ -17,7 +15,7 @@ namespace Fg {
 // Vertex normals are just approximated by a simple average of the facet normals of all
 // facets containing the vertex:
 void
-calcNormals_(
+cNormals_(
     const vector<Surf> & surfs,
     const Vec3Fs &             verts,
     Normals &               norms)

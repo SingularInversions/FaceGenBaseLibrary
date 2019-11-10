@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Simple ray-casting fragment renderer.
 //
 
@@ -45,7 +43,7 @@ struct  FgRayCaster
     RgbaF                 background;     // Must be alpha-weighted
 
     FgRayCaster(
-        const Meshs &      meshes,
+        const Meshes &      meshes,
         Affine3D              modelview,      // to OECS
         AffineEw2D            itcsToIucs,
         const FgLighting &      lighting,       // In OECS

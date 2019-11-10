@@ -1,8 +1,6 @@
 //
 // Copyright (C) Singular Inversions Inc. 2011
 //
-
-//
 // Network Computing server.
 // Simplest possible server for handling scripts remotely for CI and CC setup.
 // Totally insecure, use only on private LAN.

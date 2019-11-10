@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgDraw.hpp"
@@ -27,10 +25,10 @@ fgDrawDotIrcs(
 {
     FGASSERT(img.height() * img.width() > 0);
     FGASSERT(radius >= 0);
-    int         xlo = maxEl(pos[0]-radius,0),
-                xhi = minEl(pos[0]+radius,int(img.width()-1)),
-                ylo = maxEl(pos[1]-radius,0),
-                yhi = minEl(pos[1]+radius,int(img.height()-1)),
+    int         xlo = cMax(pos[0]-radius,0),
+                xhi = cMin(pos[0]+radius,int(img.width()-1)),
+                ylo = cMax(pos[1]-radius,0),
+                yhi = cMin(pos[1]+radius,int(img.height()-1)),
                 rr = radius * radius;
     for (int yy=ylo; yy<=yhi; yy++) {
         for (int xx=xlo; xx<=xhi; xx++) {
@@ -98,7 +96,7 @@ fgDrawBarGraph(
         img.resize(uint(numBins),uint(numBins));
         fgImgFill(img,RgbaUC(0,0,0,255));
     }
-    double          maxVal = maxEl(data),
+    double          maxVal = cMax(data),
                     vscale = 0.9 * double(img.height()) / maxVal;
     for (uint xx=0; xx<img.width(); xx++) {
         uint    hgt = round<uint>(data[xx] * vscale);
@@ -168,7 +166,7 @@ fgDrawFunctions(
     VecD2s              fbounds(num);
     Doubles             fscale(num);
     for (uint jj=0; jj<num; ++jj) {
-        fbounds[jj] = getBounds(funcs.colVec(jj).m_data);
+        fbounds[jj] = cBounds(funcs.colVec(jj).m_data);
         fscale[jj] = double(dim) * 0.96 / (fbounds[jj][1] - fbounds[jj][0]);
     }
     ImgC4UC             img(dim,dim,RgbaUC(0,0,0,255));

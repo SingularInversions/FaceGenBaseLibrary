@@ -1,8 +1,6 @@
 //
 // Copyright (c) 2017 Singular Inversions Inc.
 //
-
-//
 // Ultra-simple binary serialization that:
 //
 // * Is 32/64 bit build portable on LLP64 and LP64 architectures

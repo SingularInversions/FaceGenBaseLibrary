@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgSoftRender.hpp"
@@ -31,13 +29,13 @@ namespace Fg {
 ImgC4UC
 renderSoft(
     Vec2UI                  pxSz,
-    Meshs const &           meshes,
+    Meshes const &           meshes,
     Affine3D                modelview,
     AffineEw2D              itcsToIucs,
     FgRenderOptions const & options)
 {
     ImgC4UC             img;
-    VecF2               colorBounds = getBounds(options.backgroundColor.m_c.m);
+    VecF2               colorBounds = cBounds(options.backgroundColor.m_c.m);
     FGASSERT((colorBounds[0] >= 0.0f) && (colorBounds[1] <= 255.0f));
     FgRayCaster         rc(meshes,modelview,itcsToIucs,options.lighting,options.backgroundColor);
     // The 'std::cref' for the 'rc' arg is critical; otherwise 'rc' gets copied on every call:
@@ -57,7 +55,7 @@ renderSoft(
                 spp.label = sp.label;
                 Vec3F               spOecs = surf.surfPointPos(verts,ii),
                                     spNorm = norms.facet[ss].triEquiv(sp.triEquivIdx);
-                spp.visible = (dotProd(spOecs,spNorm) < 0);           // Point is camera-facing
+                spp.visible = (cDot(spOecs,spNorm) < 0);           // Point is camera-facing
                 Vec3F               spIucs = rc.oecsToIucs(spOecs);
                 spp.posIucs = Vec2F(spIucs[0],spIucs[1]);
                 if (spIucs[2] > 0) {                                // Point is in front of the camera
@@ -104,7 +102,7 @@ fgSoftRenderTest(const CLArgs &)
     PushDir       pd(dataDir()+"base/test/render/");
 
     // Set up structures required for rendering:
-    Meshs      meshes(1);
+    Meshes      meshes(1);
     Mesh &      mesh = meshes[0];
     mesh.surfaces.resize(1);
     Surf &   surf = mesh.surfaces[0];

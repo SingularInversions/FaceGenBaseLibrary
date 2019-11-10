@@ -887,30 +887,6 @@ fgMapSqr(const Svec<T> & v)
     return ret;
 }
 
-template<typename T>
-T
-minEl(const Svec<T> & v)
-{
-    FGASSERT(!v.empty());
-    T       ret = v[0];
-    for (size_t ii=1; ii<v.size(); ++ii)
-        if (v[ii] < ret)
-            ret = v[ii];
-    return ret;
-}
-
-template<class T>
-T
-maxEl(const Svec<T> & v)
-{
-    FGASSERT(!v.empty());
-    T       ret = v[0];
-    for (size_t ii=1; ii<v.size(); ++ii)
-        if (v[ii] > ret)
-            ret = v[ii];
-    return ret;
-}
-
 template<class T>
 size_t
 minIdx(const Svec<T> & v)

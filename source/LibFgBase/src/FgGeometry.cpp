@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgGeometry.hpp"
@@ -27,8 +25,8 @@ fgClosestPointInSegment(Vec3D p0,Vec3D p1)
         ret.mag = p0.mag();
         return ret;
     }
-    double      b0 = dotProd(segment,p0),
-                b1 = dotProd(segment,p1);
+    double      b0 = cDot(segment,p0),
+                b1 = cDot(segment,p1);
     if (b0*b1 <= 0.0) {
         ret.vec = p0 - (b0*segment)/lenSqr;
         ret.mag = ret.vec.mag();
@@ -86,16 +84,16 @@ fgClosestPointInTri(
     double      p0ls = v0.mag(),
                 p1ls = v1.mag(),
                 p2ls = v2.mag(),
-                clipb0 = dotProd(clipn0,(p1ls > p0ls) ? v1 : v0),
-                clipb1 = dotProd(clipn1,(p2ls > p1ls) ? v2 : v1),
-                clipb2 = dotProd(clipn2,(p0ls > p2ls) ? v0 : v2);
+                clipb0 = cDot(clipn0,(p1ls > p0ls) ? v1 : v0),
+                clipb1 = cDot(clipn1,(p2ls > p1ls) ? v2 : v1),
+                clipb2 = cDot(clipn2,(p0ls > p2ls) ? v0 : v2);
     if (clipb0 > 0.0)
         return fgClosestPointInSegment(v0,v1);
     if (clipb1 > 0.0)
         return fgClosestPointInSegment(v1,v2);
     if (clipb2 > 0.0)
         return fgClosestPointInSegment(v2,v0);
-    double      dot = dotProd(norm,v0),
+    double      dot = cDot(norm,v0),
                 dmag = dot / normLensqr;
     FgVecMag    ret;
     ret.vec = norm * dmag;
@@ -161,7 +159,7 @@ fgPlaneH(Vec3D p0,Vec3D p1,Vec3D p2)
 {
     Vec3D    nrm = crossProduct(p1-p0,p2-p0);
     FGASSERT(nrm.mag() > 0.0);
-    double      w = -dotProd(nrm,p0);
+    double      w = -cDot(nrm,p0);
     FGASSERT(w != 0.0);
     Vec4D    ph(nrm[0],nrm[1],nrm[2],w);
     return ph;
@@ -211,11 +209,11 @@ fgLineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
         Vec3D                u(v1-v0),
                                 v(v2-v0),
                                 w(isect-p0);
-        double                  uv = dotProd(u,v),
-                                wv = dotProd(w,v),
-                                vv = dotProd(v,v),
-                                wu = dotProd(w,u),
-                                uu = dotProd(u,u),
+        double                  uv = cDot(u,v),
+                                wv = cDot(w,v),
+                                vv = cDot(v,v),
+                                wu = cDot(w,u),
+                                uu = cDot(u,u),
                                 s = (uv*wv-vv*wu) / (uv*uv-uu*vv),
                                 t = (uv*wu-uu*wv) / (uv*uv-uu*vv);
         if ((s >= 0.0) && (t >= 0.0) && (s+t < 1.0))

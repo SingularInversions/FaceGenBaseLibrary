@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgGridTriangles.hpp"
@@ -38,7 +36,7 @@ FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,cons
         if (vbc.valid() && (fgMinElem(vbc.val()) >= 0)) {       // We intersect:
             Vec3F        ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
                             bc = Vec3F(vbc.val());
-            float           invDepth = dotProd(bc,ids);           // Interpolation in projected values is harmonic
+            float           invDepth = cDot(bc,ids);           // Interpolation in projected values is harmonic
             if (invDepth > bestInvDepth) {                      // Closer on same ray
                 bestInvDepth = invDepth;
                 bestTp.triInd = bin[ii];
@@ -117,7 +115,7 @@ fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
                         p1 = verts[tri[1]],
                         p2 = verts[tri[2]];
         if ((p0 != invalid) && (p1 != invalid) && (p2 != invalid)) {
-            Mat22F    projBounds = fgInclToExcl(getBounds(
+            Mat22F    projBounds = fgInclToExcl(cBounds(
                 ret.clientToGridIpcs * p0,
                 ret.clientToGridIpcs * p1,
                 ret.clientToGridIpcs * p2));

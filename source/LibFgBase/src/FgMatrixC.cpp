@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgMatrixC.hpp"
@@ -114,7 +112,7 @@ testInverse()
         a = Mat<double,size,size>::randNormal();
     while
         (determinant(a) < 0.01);
-    b = fgMatInverse(a);
+    b = cInverse(a);
     a = (a * b + b * a) * 0.5;  // cancel errors from near-singularities in matrix
     b.setIdentity();
     double          res = (a-b).len();
@@ -126,7 +124,7 @@ static void     testFgMatRotateAxis()
     randSeedRepeatable();
     for (uint ii=0; ii<100; ii++)
     {
-        double          angle = randUniform(-fgPi(),fgPi());
+        double          angle = randUniform(-pi(),pi());
         Vec3D        axis = Vec3D::randNormal();
         axis /= axis.len();
         Mat33D     mat = matRotateAxis(angle,axis);
@@ -167,7 +165,7 @@ fgTanSphere(Vec3D v)
     Vec3D        r0(0),
                     vn = fgNormalize(v);
     r0[p[0]] = 1.0;
-    r0 -= vn * dotProd(vn,r0);
+    r0 -= vn * cDot(vn,r0);
     r0 /= r0.len();
     Vec3D        r1 = crossProduct(vn,r0);
     return fgJoinHoriz(r0,r1);

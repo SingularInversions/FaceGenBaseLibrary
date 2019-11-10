@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgGeometry.hpp"
@@ -187,7 +185,7 @@ testPlaneH()
                     b = randUniform(),
                     c = 1.0 - a - b;
         Vec3D    pt = s * (v0*a + v1*b + v2*c);
-        double      r = dotProd(pt,pln.subMatrix<3,1>(0,0)),
+        double      r = cDot(pt,pln.subMatrix<3,1>(0,0)),
                     mag = sqrt(pln.mag());
         FGASSERT(fgApproxEqualMag(-r,pln[3],mag));
     }
@@ -203,11 +201,11 @@ testRayPlaneIntersect()
                 zero;
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
-        Mat22D     rot = matRotate(randUniform()*2.0*fgPi());
+        Mat22D     rot = matRotate(randUniform()*2.0*pi());
         Vec2D        r0 = rot * v0,
                         r1 = rot * v1,
                         r2 = rot * v2;
-        Mat33D     rot3 = matRotateAxis((randUniform()*0.5-0.25)*fgPi(),Vec3D::randNormal());
+        Mat33D     rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),Vec3D::randNormal());
         Vec3D        p0 = rot3 * fgAsHomogVec(r0),
                         p1 = rot3 * fgAsHomogVec(r1),
                         p2 = rot3 * fgAsHomogVec(r2),
@@ -231,7 +229,7 @@ void
 pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
     for (size_t ii=0; ii<5; ++ii) {
-        Mat22D     rot = matRotate(randUniform()*2.0*fgPi());
+        Mat22D     rot = matRotate(randUniform()*2.0*pi());
         Vec2D        trn(randUniform(),randUniform());
         Affine2D      s(rot,trn);
         pit0(s*pt,s*v0,s*v1,s*v2,res); }

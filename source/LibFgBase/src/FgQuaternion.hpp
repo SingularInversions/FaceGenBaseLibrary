@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Keeps a normalized quaternion.
 //
 // If you must access members directly, keep normalized or some functions won't work.
@@ -62,7 +60,7 @@ struct  Quaternion
     operator*(const Quaternion & rhs) const
     {
         Quaternion    ret;
-        ret.real = real*(rhs.real) - dotProd(imag,rhs.imag);
+        ret.real = real*(rhs.real) - cDot(imag,rhs.imag);
         ret.imag = real*(rhs.imag) + (rhs.real)*imag + crossProduct(imag,rhs.imag);
         return ret;
     }

@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     April 12, 2011
 //
 // Win32 has no way to dynamically change the background color of specific tabs (ie currently selected).
 // The only way to do this is to override the default WM_ERASEBKGND and WM_PAINT and draw them yourself.
@@ -73,7 +71,7 @@ struct  GuiTabsWin : public GuiBaseImpl
         for (size_t ii=0; ii<m_panes.size(); ++ii) {
             const GuiTabDef &    tab = m_api.tabs[ii];
             Vec2UI           pad(tab.padLeft+tab.padRight,tab.padTop+tab.padBottom);
-            max = maxEl(max,m_panes[ii]->getMinSize()+pad);
+            max = cMax(max,m_panes[ii]->getMinSize()+pad);
         }
         return max + Vec2UI(0,37);
     }

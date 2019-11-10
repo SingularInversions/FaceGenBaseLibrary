@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 22, 2011
 //
 
 #include "stdafx.h"
@@ -152,7 +150,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         minSizes();     // Upadate cache of subwindow sizes
         uint        sd = splitDim(),
                     nd = 1 - sd;
-        Vec2UI   max = maxEl(m_minSizes[0],m_minSizes[1]),
+        Vec2UI   max = cMax(m_minSizes[0],m_minSizes[1]),
                     sum = m_minSizes[0] + m_minSizes[1],
                     ret;
         ret[sd] = sum[sd] + dividerThickness;

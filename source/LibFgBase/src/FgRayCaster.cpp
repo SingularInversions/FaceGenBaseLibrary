@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // * Possible improvments are marked 'TODO:'
 
 #include "stdafx.h"
@@ -25,7 +23,7 @@ FgTriInd::FgTriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
 }
 
 FgRayCaster::FgRayCaster(
-    const Meshs &      meshes,
+    const Meshes &      meshes,
     Affine3D              modelview,
     AffineEw2D            itcsToIucs_,
     const FgLighting &      lighting_,
@@ -57,7 +55,7 @@ FgRayCaster::FgRayCaster(
         Vec3Fs &           verts = vertss[mm];
         verts = mapXft(mesh.verts,Affine3F(modelview));
         uvsPtrs[mm] = &mesh.uvs;
-        normss[mm] = calcNormals(mesh.surfaces,verts);
+        normss[mm] = cNormals(mesh.surfaces,verts);
         Vec3Fs &           iucsVerts = iucsVertss[mm];
         iucsVerts.reserve(verts.size());
         for (Vec3F v : verts)
@@ -71,10 +69,10 @@ FgRayCaster::FgRayCaster(
                                 v2 = iucsVerts[t[2]];
                 if ((v0[2] > 0.0f) && (v1[2] > 0.0f) && (v2[2] > 0.0f)) {   // Only render tris fully in front of camera
                     Mat22F    bnds;
-                    bnds[0] = minEl(v0[0],v1[0],v2[0]);
-                    bnds[1] = maxEl(v0[0],v1[0],v2[0]);
-                    bnds[2] = minEl(v0[1],v1[1],v2[1]);
-                    bnds[3] = maxEl(v0[1],v1[1],v2[1]);
+                    bnds[0] = cMin(v0[0],v1[0],v2[0]);
+                    bnds[1] = cMax(v0[0],v1[0],v2[0]);
+                    bnds[2] = cMin(v0[1],v1[1],v2[1]);
+                    bnds[3] = cMax(v0[1],v1[1],v2[1]);
                     grid.add(FgTriInd(tt,ss,mm),bnds);
                 }
             }
@@ -115,7 +113,7 @@ FgRayCaster::cast(Vec2F posIucs) const
         Vec3F            surfColour = albedo.m_c.subMatrix<3,1>(0,0) * aw;
         for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
             FgLight         lgt = lighting.lights[ll];
-            float           fac = dotProd(norm,lgt.direction);
+            float           fac = cDot(norm,lgt.direction);
             if (fac > 0.0f) {
                 acc += fgMapMul(surfColour,lgt.colour) * fac;
                 if (material.shiny) {

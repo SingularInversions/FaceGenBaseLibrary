@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Typical assignment of mouse controls in FaceGen:
 //
 //                  Lbutton     Rbutton     Mbutton     LRbuttons
@@ -75,10 +73,10 @@ linkAllVerts(NPT<Mesh>);
 
 OPT<Vec3Fs>
 linkPosedVerts(
-    NPT<Mesh>        meshN,          // input
+    NPT<Mesh>           meshN,          // input
     NPT<Vec3Fs>         allVertsN,      // input
-    OPT<PoseVals>         posesN,         // output as an additional source
-    NPT<Doubles>          morphValsN);    // input as an additional sink
+    OPT<PoseVals>       posesN,         // output as an additional source
+    NPT<Doubles>        morphValsN);    // input as an additional sink
 
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
 OPT<Mesh>
@@ -94,18 +92,18 @@ typedef Svec<NPT<ImgC4UC> >   ImgNs;
 
 struct  GuiPosedMeshes
 {
-    RendMeshes           rendMeshes;
-    OPT<PoseVals>         poseLabelsN;        // Aggregates all unique pose labels
-    IPT<Doubles>          poseValsN;          // Use to set pose coefficients
+    RendMeshes          rendMeshes;
+    OPT<PoseVals>       poseLabelsN;        // Aggregates all unique pose labels
+    IPT<Doubles>        poseValsN;          // Use to set pose coefficients
 
     GuiPosedMeshes();
 
     void
     addMesh(
-        NPT<Mesh>    meshN,          // Name, verts, maps not used. Editing controls if IPT.
+        NPT<Mesh>       meshN,          // Name, verts, maps not used. Editing controls if IPT.
         NPT<Vec3Fs>     allVertsN,
-        ImgNs                   albedoNs,       // Must be 1-1 with meshN surfaces but can be empty (and the same)
-        ImgNs                   specularNs);    // "
+        ImgNs           albedoNs,       // Must be 1-1 with meshN surfaces but can be empty (and the same)
+        ImgNs           specularNs);    // "
 
     // As above with no maps:
     void
@@ -126,8 +124,8 @@ linkMeshStats(RendMeshes const &);
 // will be returned. Otherwise an empty mesh is returned:
 Mesh
 meshView(
-    const Meshs &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
-    bool                    compare=false);     // Radio button selects between meshes (if more than one)
+    const Meshes &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
+    bool                compare=false);     // Radio button selects between meshes (if more than one)
 
 inline
 Mesh

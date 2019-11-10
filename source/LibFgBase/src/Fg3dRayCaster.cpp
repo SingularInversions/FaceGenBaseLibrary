@@ -86,7 +86,7 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
     Vec3F        surfColour = texSample.m_c.subMatrix<3,1>(0,0) * aw;
     for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
         FgLight     lgt = lighting.lights[ll];
-        float       fac = dotProd(norm,lgt.direction);
+        float       fac = cDot(norm,lgt.direction);
         if (fac > 0.0f) {
             acc += fgMapMul(surfColour,lgt.colour) * fac;
             if (material.shiny) {
@@ -104,7 +104,7 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
 }
 
 Fg3dRayCaster::Fg3dRayCaster(
-    const Meshs &          meshes,
+    const Meshes &          meshes,
     const Vec3Fss &            vertss,
     const Normalss &        normss,
     const FgLighting &          lighting,

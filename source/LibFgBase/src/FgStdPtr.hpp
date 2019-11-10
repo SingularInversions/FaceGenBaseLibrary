@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // WARNING: libstdc++ specializes less<> for shared_ptr so custom
 // operator<(shared_ptr<MyType>,shared_ptr<MyType>)
 // will not work as expected with std::set etc. using libstdc++.

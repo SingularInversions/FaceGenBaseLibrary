@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
 // Output (not ordering) is threadsafe but modification of output selections is not.
 // Default output is 'cout' for systems supporting CLI, 'stringstream' otherwise (Android).

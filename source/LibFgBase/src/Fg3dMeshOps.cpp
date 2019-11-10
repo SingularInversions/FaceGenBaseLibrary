@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dMeshOps.hpp"
@@ -32,7 +30,7 @@ fgMeshFromImage(const ImgD & img)
     Mat22D                imgIdxBounds(0,img.width()-1,0,img.height()-1);
     AffineEw2D            imgIdxToSpace(imgIdxBounds,Mat22D(0,1,0,1)),
                             imgIdxToOtcs(imgIdxBounds,Mat22D(0,1,1,0));
-    Affine1D              imgValToSpace(getBounds(img.dataVec()),VecD2(0,1));
+    Affine1D              imgValToSpace(cBounds(img.dataVec()),VecD2(0,1));
     for (Iter2UI it(img.dims()); it.valid(); it.next()) {
         Vec2D            imgCrd = Vec2D(it()),
                             xy = imgIdxToSpace * imgCrd;
@@ -316,7 +314,7 @@ fgNTent(uint nn)
     FGASSERT(nn > 2);
     Vec3Fs             verts;
     verts.push_back(Vec3F(0.0f,1.0f,0.0f));
-    float   step = 2.0f * float(fgPi()) / float(nn);
+    float   step = 2.0f * float(pi()) / float(nn);
     for (uint ii=0; ii<nn; ++ii) {
         float   angle = step * float(ii);
         verts.push_back(Vec3F(cos(angle),0.0f,sin(angle)));
@@ -654,7 +652,7 @@ fgGetUvCover(const Mesh & mesh,Vec2UI dims)
 ImgC4UC
 fgUvWireframeImage(const Mesh & mesh,const ImgC4UC & in)
 {
-    Mat22F        uvb = getBounds(mesh.uvs);
+    Mat22F        uvb = cBounds(mesh.uvs);
     ImgC4UC     img(2048,2048,RgbaUC(128,128,128,255));
     if (!in.empty())
         img = fgImgMagnify(in,2);
@@ -689,7 +687,7 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
     // Don't check for UV seams, just let the emboss value be the last one traversed:
     Vec3Fs         deltas(mesh.verts.size());
     vector<size_t>  embossedVertInds;
-    Normals     norms = calcNormals(mesh);
+    Normals     norms = cNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Surf &     surf = mesh.surfaces[ss];
         for (size_t ii=0; ii<surf.numTris(); ++ii) {
@@ -719,7 +717,7 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
             }
         }
     }
-    float       fac = fgMaxElem(fgDims(fgReorder(mesh.verts,embossedVertInds))) * val;
+    float       fac = fgMaxElem(cDims(fgReorder(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
@@ -852,7 +850,7 @@ fgSortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaq
     size_t                  numTransparent = tris.size();
     cat_(tris,mergeSurfaces(opaque.surfaces).asTris());
     FGASSERT(tris.hasUvs());
-    Mat32F                  domain = getBounds(src.verts),
+    Mat32F                  domain = cBounds(src.verts),
                             range = {0,1, 0,1, 0,1};
     AffineEw3F              xform(domain,range);
     Vec3Fs                  verts = mapXft(src.verts,xform);

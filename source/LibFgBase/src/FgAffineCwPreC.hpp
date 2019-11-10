@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Element-wise affine transform of the form: f(x) = Diag(s)(x + b)
 //
 // USE:

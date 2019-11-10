@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // min/max bounds of n-D data structures, and operations on bounds.
 //
 // * bounds matrices (or vectors) always have 2 columns: [min,max]
@@ -33,7 +31,7 @@ setIfLess(T & min,T val)
 
 template<typename T>
 Mat<T,1,2>
-getBounds(const Svec<T> & data)
+cBounds(const Svec<T> & data)
 {
     FGASSERT(data.size() > 0);
     Mat<T,1,2>    ret(data[0]);
@@ -46,7 +44,7 @@ getBounds(const Svec<T> & data)
 
 template<typename T,size_t S>
 Mat<T,1,2>
-getBounds(Arr<T,S> const & arr)
+cBounds(Arr<T,S> const & arr)
 {
     Mat<T,1,2>          ret(arr[0]);
     for (size_t ii=1; ii<S; ++ii) {
@@ -59,7 +57,7 @@ getBounds(Arr<T,S> const & arr)
 // Returns inclusive bounds of vectors
 template<typename T,uint dim>
 Mat<T,dim,2>
-getBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,-max]
+cBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,-max]
 {
     T                       max = std::numeric_limits<T>::max(),
                             min = std::numeric_limits<T>::lowest();
@@ -93,7 +91,7 @@ boundsUnion(const Mat<T,dim,2> & b1,const Mat<T,dim,2> & b2)
 // Returns inclusive bounds of 3 column vectors:
 template<typename T,uint dim>
 Mat<T,dim,2>
-getBounds(
+cBounds(
     const Mat<T,dim,1> & v0,
     const Mat<T,dim,1> & v1,
     const Mat<T,dim,1> & v2)
@@ -222,26 +220,26 @@ fgMaxCrd(const MatV<T> & mat)
 // Element-wise max:
 template<class T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-maxEl(
+cMax(
     const Mat<T,nrows,ncols> & m1,
     const Mat<T,nrows,ncols> & m2)
 {
     Mat<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = maxEl(m1[ii],m2[ii]);
+        ret[ii] = cMax(m1[ii],m2[ii]);
     return ret;
 }
 
 template<typename T>
 inline T
 fgMaxElem(const MatV<T> & mat)
-{return maxEl(mat.dataVec()); }
+{return cMax(mat.dataVec()); }
 
 template<typename T,uint nrows>
 Mat<T,nrows,1>
-fgDims(const Svec<Mat<T,nrows,1> > & vec)
+cDims(const Svec<Mat<T,nrows,1> > & vec)
 {
-    Mat<T,nrows,2>    bounds = getBounds(vec);
+    Mat<T,nrows,2>    bounds = cBounds(vec);
     return (bounds.colVec(1)-bounds.colVec(0));
 }
 
@@ -334,7 +332,7 @@ template<typename T,uint dim>
 Mat<T,dim,1>
 fgBoundsCentre(const Svec<Mat<T,dim,1> > & verts)
 {
-    Mat<T,dim,2>  bounds = getBounds(verts);
+    Mat<T,dim,2>  bounds = cBounds(verts);
     return (bounds.colVector[0] + bounds.colVec(1)) * 0.5;
 }
 
@@ -368,7 +366,7 @@ Mat<T,dim,2>  // First column is lower bound corner of cube, second is upper
 fgCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
 {
     Mat<T,dim,2>  ret;
-    Mat<T,dim,2>  bounds = getBounds(verts);
+    Mat<T,dim,2>  bounds = cBounds(verts);
     Mat<T,dim,1>  lo = bounds.colVec(0),
                         hi = bounds.colVec(1),
                         centre = (lo + hi) * T(0.5);

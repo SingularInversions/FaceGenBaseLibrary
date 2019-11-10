@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Dataflow graph with lazy updates for handling DAG data dependencies.
 //
 // DESIGN:

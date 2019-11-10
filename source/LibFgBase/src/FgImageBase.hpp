@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Simple left-to-right, top-to-bottom (row major), tightly-packed, unaligned image templated by pixel type.
 // 
 // INVARIANTS:
@@ -243,7 +241,7 @@ operator<<(std::ostream & os,const Img<T> & img)
 {
     return
         os << "dimensions: " << img.dims()
-            << " bounds: " << getBounds(img.m_data);
+            << " bounds: " << cBounds(img.m_data);
 }
 
 }

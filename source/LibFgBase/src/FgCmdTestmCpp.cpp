@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Test C++ behaviour
 //
 
@@ -135,7 +133,7 @@ fgexp(const CLArgs &)
                 test = expFast(-dd),
                 meanVal = (test+baseline) * 0.5,
                 relDel = (test-baseline) / meanVal;
-        maxRel = maxEl(maxRel,relDel);
+        maxRel = cMax(maxRel,relDel);
         totRel += relDel;
         ++cnt;
     }

@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 22, 2011
 //
 
 #include "stdafx.h"
@@ -61,8 +59,8 @@ struct  GuiSplitWin : public GuiBaseImpl
     uint
     calcPadBetween(Uints const & paneMins) const
     {
-        uint        maxMin = paneMins.empty() ? 0 : maxEl(paneMins);
-        return minEl(8,scast<uint>(0.1*maxMin));
+        uint        maxMin = paneMins.empty() ? 0 : cMax(paneMins);
+        return cMin(8,scast<uint>(0.1*maxMin));
     }
 
     uint
@@ -84,7 +82,7 @@ struct  GuiSplitWin : public GuiBaseImpl
             Vec2UI          size = m_panes[ii]->getMinSize();
             paneMins[ii] = size[sd];
             sdSum += size[sd];
-            ndMax = maxEl(ndMax,size[nd]);
+            ndMax = cMax(ndMax,size[nd]);
         }
         Vec2UI              ret;
         uint                padTotal = calcPadTotal(calcPadBetween(paneMins));
@@ -99,8 +97,8 @@ struct  GuiSplitWin : public GuiBaseImpl
         //for (uint yy=0; yy<gd[1]; ++yy) {
         //    for (uint xx=0; xx<gd[0]; ++xx) {
         //        Vec2UI   minSize = m_panes[yy*gd[0]+xx]->getMinSize();
-        //        maxMinWid[yy] = maxEl(maxMinWid[yy],minSize[0]);
-        //        maxMinHgt[xx] = maxEl(maxMinHgt[xx],minSize[1]);
+        //        maxMinWid[yy] = cMax(maxMinWid[yy],minSize[0]);
+        //        maxMinHgt[xx] = cMax(maxMinHgt[xx],minSize[1]);
         //    }
         //}
         //Vec2UI           minSize = Vec2UI(cSum(maxMinWid),cSum(maxMinHgt));

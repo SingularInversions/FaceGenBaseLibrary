@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGSTDFUNCTION_HPP
 #define FGSTDFUNCTION_HPP
 

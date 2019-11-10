@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Command to software-render meshes to image files.
 //
 
@@ -172,7 +170,7 @@ fgCmdRender(const CLArgs & args)
     }
 
     //! Calculate view transforms:
-    Mat32F            bounds = getBounds(meshes);
+    Mat32F            bounds = cBounds(meshes);
     CameraParams    cps(fgF2D(bounds));
     cps.pose =
         fgRotateY(opts.rend.pose.panRadians) *

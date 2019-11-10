@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Constant dimension affine transform of the form: f(x) = Mx + b
 //
 // USE:
@@ -114,7 +112,7 @@ struct  Affine
     inverse() const
     {
         Affine       ret;
-        ret.linear = fgMatInverse(linear);
+        ret.linear = cInverse(linear);
         ret.translation = - ret.linear * translation;
         return ret;
     }

@@ -1,8 +1,6 @@
 //
 // Copyright (c) 2019 Singular Inversions Inc.
 //
-
-//
 // Compute clustering for synchronous batch jobs.
 //
 // Uses boost asio but those parts are defined in platform-specific libs due to header & define requirements.

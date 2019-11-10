@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgMatrixC.hpp"
@@ -318,7 +316,7 @@ Mesh::morphSingle(size_t idx,float val) const
 IndexedMorph
 Mesh::getMorphAsIndexedDelta(size_t idx) const
 {
-    float               tol = sqr(fgMaxElem(fgDims(verts)) * 0.0001);
+    float               tol = sqr(fgMaxElem(cDims(verts)) * 0.0001);
     IndexedMorph      ret;
     if (idx < deltaMorphs.size()) {
         const Morph & dm = deltaMorphs[idx];
@@ -367,7 +365,7 @@ Mesh::addDeltaMorphFromTarget(const Ustring & name_,const Vec3Fs & targetShape)
 void
 Mesh::addTargMorph(const IndexedMorph & morph)
 {
-    FGASSERT(maxEl(morph.baseInds) < verts.size());
+    FGASSERT(cMax(morph.baseInds) < verts.size());
     Valid<size_t>     idx = findTargMorph(morph.name);
     if (idx.valid()) {
         fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
@@ -501,7 +499,7 @@ fg3dMesh(const Vec3UIs & tris,const Vec3Fs & verts)
 }
 
 size_t
-fgNumTriEquivs(const Meshs & meshes)
+fgNumTriEquivs(const Meshes & meshes)
 {
     size_t      ret = 0;
     for (const Mesh & m : meshes)
@@ -510,7 +508,7 @@ fgNumTriEquivs(const Meshs & meshes)
 }
 
 std::set<Ustring>
-fgMorphs(const Meshs & meshes)
+fgMorphs(const Meshes & meshes)
 {
     std::set<Ustring>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
@@ -519,7 +517,7 @@ fgMorphs(const Meshs & meshes)
 }
 
 PoseVals
-fgPoses(const Meshs & meshes)
+fgPoses(const Meshes & meshes)
 {
     std::set<PoseVal>    ps;
     for (size_t ii=0; ii<meshes.size(); ++ii)
@@ -547,7 +545,7 @@ operator<<(std::ostream & os,const Mesh & m)
     os << fgnl << "Name: " << m.name << fgpush
         << fgnl << "Verts: " << m.verts.size() << "  "
         << fgnl << "UVs: " << m.uvs.size() << "  "
-        << fgnl << "Bounding Box: " << getBounds(m.verts)
+        << fgnl << "Bounding Box: " << cBounds(m.verts)
         << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
         << fgnl << "Target Morphs: " << m.targetMorphs.size()
         << fgnl << "Marked Verts: " << m.markedVerts.size()
@@ -589,7 +587,7 @@ operator<<(std::ostream & os,const Mesh & m)
 }
 
 std::ostream &
-operator<<(std::ostream & os,const Meshs & ms)
+operator<<(std::ostream & os,const Meshes & ms)
 {
     for (size_t ii=0; ii<ms.size(); ++ii)
         os << fgnl << "Mesh " << ii << ":" << fgpush << ms[ii] << fgpop;
@@ -657,12 +655,12 @@ subdivideTris(
 }
 
 Mat32F
-getBounds(const Meshs & meshes)
+cBounds(const Meshes & meshes)
 {
     FGASSERT(!meshes.empty());
-    Mat32F    ret = getBounds(meshes[0].verts);
+    Mat32F    ret = cBounds(meshes[0].verts);
     for (size_t mm=1; mm<meshes.size(); ++mm)
-        ret = boundsUnion(ret,getBounds(meshes[mm].verts));
+        ret = boundsUnion(ret,cBounds(meshes[mm].verts));
     return ret;
 }
 

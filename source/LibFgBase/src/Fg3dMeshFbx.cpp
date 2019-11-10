@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Basic FBX export
 
 #include "stdafx.h"
@@ -156,7 +154,7 @@ saveFbx(
             "            ReferenceInformationType: \"Direct\"\n"
             "            Normals: *" << mesh.verts.size()*3 << " {\n"
             "                a: ";
-        Normals     norms = calcNormals(mesh);
+        Normals     norms = cNormals(mesh);
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
             Vec3F    n = norms.vert[vv];
             if (vv > 0)

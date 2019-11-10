@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Polygonal mesh with multiple surfaces sharing a vertex list.
 //
 // DESIGN
@@ -275,7 +273,7 @@ struct  Mesh
     checkValidity();
 };
 
-typedef Svec<Mesh>   Meshs;
+typedef Svec<Mesh>   Meshes;
 
 std::ostream &
 operator<<(std::ostream &,const Mesh &);
@@ -284,16 +282,16 @@ void    fgReadp(std::istream &,Mesh &);
 void    fgWritep(std::ostream &,const Mesh &);
 
 std::ostream &
-operator<<(std::ostream &,const Meshs &);
+operator<<(std::ostream &,const Meshes &);
 
 Mat32F
-getBounds(const Meshs & meshes);
+cBounds(const Meshes & meshes);
 
 size_t
-fgNumTriEquivs(const Meshs & meshes);
+fgNumTriEquivs(const Meshes & meshes);
 
 std::set<Ustring>
-fgMorphs(const Meshs & meshes);
+fgMorphs(const Meshes & meshes);
 
 inline
 PoseVals

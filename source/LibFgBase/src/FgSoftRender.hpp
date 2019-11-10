@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Anti-aliased ray-casting software renderer
 //
 
@@ -46,7 +44,7 @@ struct  FgRenderOptions
 ImgC4UC
 renderSoft(
     Vec2UI                  pixelSize,
-    Meshs const &           meshes,
+    Meshes const &           meshes,
     Affine3D                modelview,              // Transform verts into OECS
     // This fully specifies the projection transform since we assume the optical centre is at the centre of the
     // image and the bounds are implicitly [0,1] in IUCS:

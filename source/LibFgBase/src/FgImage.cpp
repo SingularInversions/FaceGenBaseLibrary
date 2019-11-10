@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgImage.hpp"
@@ -283,7 +281,7 @@ fgImgPntRescaleConvert(
     const ImgD    &src,
     ImgUC         &dst)
 {
-    VecD2        bounds = getBounds(src.dataVec());
+    VecD2        bounds = cBounds(src.dataVec());
     double          scale = bounds[1] - bounds[0];
     scale = (scale > 0) ? scale : 1.0;
     ImgD          adjusted;
@@ -396,7 +394,7 @@ fgImgApplyTransparencyPow2(
     const ImgC4UC & transparency)
 {
     FGASSERT(!colour.empty() && !transparency.empty());
-    Vec2UI       dims = pow2Ceil(maxEl(colour.dims(),transparency.dims()));
+    Vec2UI       dims = pow2Ceil(cMax(colour.dims(),transparency.dims()));
     ImgC4UC     ctmp(dims),
                     ttmp(dims);
     fgImgResize(colour,ctmp);

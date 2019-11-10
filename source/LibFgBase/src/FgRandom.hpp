@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Not threadsafe. If threaded RNG is needed, make explicit generator for each thread so
 // that seeding policy for different threads is explicit:
 //

@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FG3DMESHIO_HPP
 #define FG3DMESHIO_HPP
 
@@ -34,7 +32,7 @@ meshLoadFormatsCLDescription();
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
 void
-meshSaveAnyFormat(Meshs const & meshes,Ustring const & fname,const String & imgFormat="png");
+meshSaveAnyFormat(Meshes const & meshes,Ustring const & fname,const String & imgFormat="png");
 
 inline
 void
@@ -63,7 +61,7 @@ loadFgmesh(Ustring const & fname);
 void
 saveFgmesh(Ustring const & fname,const Mesh & mesh);
 void
-saveFgmesh(Ustring const & fname,Meshs const & meshes);
+saveFgmesh(Ustring const & fname,Meshes const & meshes);
 
 // FaceGen legacy mesh format load / save:
 
@@ -79,7 +77,7 @@ saveTri(Ustring const & fname,const Mesh & mesh);
 // Merges all meshes and surfaces. Texture images not saved.
 inline
 void
-saveTri(Ustring const & fname,Meshs const & meshes)
+saveTri(Ustring const & fname,Meshes const & meshes)
 {return saveTri(fname,fgMergeMeshes(meshes)); }
 
 // Third party mesh formats:
@@ -92,33 +90,33 @@ loadWobj(
 
 // Ignores morphs:
 void
-saveObj(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
+saveObj(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // Ignores morphs:
 void
-saveVrml(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
+saveVrml(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // Meshes with shared morphs must be merged as different surfaces into a single Mesh for the
 // morphs to be unified in FBX (as imported into Unity). Unity will ignore albedo map file 
 // references so they must be manually added:
 void
-saveFbx(Ustring const & filename,Meshs const & meshes,String imgFormat = "png");
+saveFbx(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // All meshes merged, ignores UVs, textures, morphs, etc:
 void
-saveStl(Ustring const & fname,Meshs const & meshes);
+saveStl(Ustring const & fname,Meshes const & meshes);
 
 // Morph targets are also saved:
 void
-saveLwo(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+saveLwo(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-saveMa(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+saveMa(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-saveXsi(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+saveXsi(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // 3DS:
 // * No morph targets
@@ -127,16 +125,16 @@ saveXsi(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
 // * 8.3 tex names only
 // * 2^16 max verts & tris
 void
-save3ds(Ustring const & fname,Meshs meshes,String imgFormat = "png");
+save3ds(Ustring const & fname,Meshes meshes,String imgFormat = "png");
 
 // Vertices & surfaces must be merged to a single list but tex images are specified per facet.
 // Currently saves all facets as tris but can easily be changed to preverve quads:
 void
-savePly(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+savePly(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Collada. Does not yet support morphs.
 void
-saveDae(Ustring const & fname,Meshs const & meshes,String imgFormat = "png");
+saveDae(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 
 }
 

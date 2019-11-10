@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgMatrixV.hpp"
@@ -207,12 +205,12 @@ tt3(const MatD & lhs,const MatD & rhs)
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     for (size_t rr=0; rr<mat.nrows; rr+=CN) {
-        size_t          R2 = minEl(CN,mat.nrows-rr);
+        size_t          R2 = cMin(CN,mat.nrows-rr);
         for (size_t cc=0; cc<mat.ncols; cc+=CN) {
-            size_t          C2 = minEl(CN,mat.ncols-cc);
+            size_t          C2 = cMin(CN,mat.ncols-cc);
             if (C2 < CN) {                          // Keep paths separate so inner loop can be unrolled below
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = minEl(CN,lhs.ncols-kk);
+                    size_t          K2 = cMin(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t          mIdx = (rr+rr2)*mat.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
@@ -226,7 +224,7 @@ tt3(const MatD & lhs,const MatD & rhs)
             }
             else {
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t          K2 = minEl(CN,lhs.ncols-kk);
+                    size_t          K2 = cMin(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t          mIdx = (rr+rr2)*mat.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {

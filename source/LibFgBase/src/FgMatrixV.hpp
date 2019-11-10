@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Variable-size (heap based) matrix / vector
 
 #ifndef FGMATRIXV_HPP
@@ -354,7 +352,7 @@ struct  MatV
             MatV    vec = MatV::randNormal(1,dim);
             for (uint rr=0; rr<row; ++rr) {
                 MatV    axis = ret.rowVec(rr);
-                vec -=  axis * dotProd(vec,axis);
+                vec -=  axis * cDot(vec,axis);
             }
             ret.setSubMat(row,0,fgNormalize(vec));
         }
@@ -412,12 +410,12 @@ matMul(const MatV<T> & lhs,const MatV<T> & rhs)
     size_t constexpr    CN = 64 / sizeof(T);    // Number of elements that fit in L1 Cache (est)
     MatV<T>             ret(lhs.nrows,rhs.ncols,static_cast<T>(0));
     for (size_t rr=0; rr<ret.nrows; rr+=CN) {
-        size_t const        R2 = minEl(CN,ret.nrows-rr);
+        size_t const        R2 = cMin(CN,ret.nrows-rr);
         for (size_t cc=0; cc<ret.ncols; cc+=CN) {
-            size_t const        C2 = minEl(CN,ret.ncols-cc);
+            size_t const        C2 = cMin(CN,ret.ncols-cc);
             if (C2 < CN) {                          // Keep paths separate so inner loop can be unrolled below
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t const    K2 = minEl(CN,lhs.ncols-kk);
+                    size_t const    K2 = cMin(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t const    mIdx = (rr+rr2)*ret.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
@@ -431,7 +429,7 @@ matMul(const MatV<T> & lhs,const MatV<T> & rhs)
             }
             else {
                 for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
-                    size_t const    K2 = minEl(CN,lhs.ncols-kk);
+                    size_t const    K2 = cMin(CN,lhs.ncols-kk);
                     for (size_t rr2=0; rr2<R2; ++rr2) {
                         size_t const    mIdx = (rr+rr2)*ret.ncols + cc;
                         for (size_t kk2=0; kk2<K2; ++kk2) {
@@ -515,8 +513,8 @@ fgMatSumElems(const MatD & mat);
 
 template<class T>
 T
-dotProd(const MatV<T> & lhs,const MatV<T> & rhs)
-{return dotProd(lhs.m_data,rhs.m_data); }
+cDot(const MatV<T> & lhs,const MatV<T> & rhs)
+{return cDot(lhs.m_data,rhs.m_data); }
 
 // Map 'abs':
 template<class T>

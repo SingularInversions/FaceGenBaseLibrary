@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 #include "FgStdStream.hpp"
 #include "FgStdMap.hpp"
@@ -102,7 +100,7 @@ saveDae(
         "  <library_geometries>\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         const Mesh &    mesh = meshes[mm];
-        Normals         norms = calcNormals(mesh);
+        Normals         norms = cNormals(mesh);
         string              id = "mesh" + toString(mm);
         Ustring            name = mesh.name.empty() ? id : mesh.name;
         ofs <<

@@ -1,8 +1,6 @@
 //
 // Copyright (C) Singular Inversions Inc. 2018
 //
-
-//
 // Windows-specific functionality
 //
 // These function will immediately return null/invalid on other platforms.

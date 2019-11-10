@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors: Sohail Somani
-//
 // stdafx.cpp : source file that includes just the standard includes
 // stdafx.obj will contain the pre-compiled type information
 

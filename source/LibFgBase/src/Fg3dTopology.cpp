@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgStdSet.hpp"
@@ -313,7 +311,7 @@ Fg3dTopology::traceFold(
         const Edge &           edge = m_edges[edgeInds[ii]];
         if (edge.triInds.size() == 2) {         // Can not be part of a fold otherwise
             const FacetNormals &    facetNorms = norms.facet[0];
-            float       dot = dotProd(facetNorms.tri[edge.triInds[0]],facetNorms.tri[edge.triInds[1]]);
+            float       dot = cDot(facetNorms.tri[edge.triInds[0]],facetNorms.tri[edge.triInds[1]]);
             if (dot < 0.5f) {                   // > 60 degrees
                 ret.insert(vertIdx);
                 fgUnion_(ret,traceFold(norms,done,edge.otherVertIdx(vertIdx)));

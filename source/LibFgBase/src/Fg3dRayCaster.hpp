@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Keeps a separate grid index for each surface, despite the additional overhead:
 // * Naturally avoids indexing areas of the image with no objects maximizing cache efficiency
 // * No additional information about which surface needs to be stored with each triangle record
@@ -55,7 +53,7 @@ struct  Fg3dRayCaster
     Svec<Fg3dRayCastMesh>     rayMesh;
 
     Fg3dRayCaster(
-        const Meshs &      meshes,
+        const Meshes &      meshes,
         const Vec3Fss &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
         const Normalss &    normss,         // Current OECS normals. Must be 1-1 with above.
         const FgLighting &      lighting,

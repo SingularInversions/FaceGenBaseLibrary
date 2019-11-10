@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Keep up to N best key/val pairs in sorted order from largest to smallest.
 
 #ifndef FGBESTN_HPP

@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Authors:     Andrew Beatty
-// Created:     March 18, 2011
 //
 // GuiBaseImpl child objects may or may not be win32 windows. This is important for avoiding
 // excessive depth in the tree as win64 can choke on as little as 7 levels. Due to this,

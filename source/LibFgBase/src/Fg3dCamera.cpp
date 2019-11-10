@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dCamera.hpp"
@@ -67,7 +65,7 @@ CameraParams::camera(Vec2UI imgDims) const
                     zfar = zCentre + modelHalfDimMax * 1.7,
                     znearRaw = zCentre - modelHalfDimMax * 1.7,
                     zmin = zfar * 0.01,     // Precision issues below this
-                    znear = maxEl(znearRaw,zmin),
+                    znear = cMax(znearRaw,zmin),
                     frustumNearHalfWidth = modelHalfDimMax * znear / zCentreFillImage;
     trans *= modelHalfDimMax;
     trans[2] = -zCentre;

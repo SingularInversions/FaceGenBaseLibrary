@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgMath.hpp"
@@ -95,8 +93,8 @@ fgSolveCubicReal(
                         theta3 = acos(rr / pow(-qq,1.5)) / 3.0,
                         c23 = c2 / 3.0;
         retval.push_back(ss * cos(theta3) - c23);
-        retval.push_back(ss * cos(theta3 + 2.0 * fgPi() / 3.0) - c23);
-        retval.push_back(ss * cos(theta3 - 2.0 * fgPi() / 3.0) - c23);
+        retval.push_back(ss * cos(theta3 + 2.0 * pi() / 3.0) - c23);
+        retval.push_back(ss * cos(theta3 - 2.0 * pi() / 3.0) - c23);
     }
 
     return retval;

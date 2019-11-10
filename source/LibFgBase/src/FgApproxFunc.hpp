@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Simple function approximation using interpolated LUT.
 // Possible future optimization: Use Chebyshev approximation.
 //

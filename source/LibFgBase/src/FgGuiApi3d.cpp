@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgGuiApi.hpp"
@@ -60,7 +58,7 @@ intersectMeshes(
                         // Depth value range for unclipped polys is [-1,1]. These correspond to the
                         // negative inverse depth values of the frustum.
                         // Only an approximation to the depth value but who cares:
-                        double  dep = dotProd(bc,Vec3D(t0[2],t1[2],t2[2]));
+                        double  dep = cDot(bc,Vec3D(t0[2],t1[2],t2[2]));
                         if (!minDepth.valid() || (dep < minDepth.val())) {    // OGL prj inverts depth
                             minDepth = dep;
                             ret.meshIdx = mm;
@@ -211,7 +209,7 @@ Gui3d::markVertex(
                     Surf         tmpSurf;
                     tmpSurf.tris.vertInds = tris;
                     vector<FgBool>      done(meshIn.verts.size(),false);
-                    seam = topo.traceFold(calcNormals(fgSvec(tmpSurf),meshIn.verts),done,vertIdx);
+                    seam = topo.traceFold(cNormals(fgSvec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
                 for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
                     if (!fgContains(meshIn.markedVerts,*it))

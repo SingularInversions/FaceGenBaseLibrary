@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 #include "Fg3dMeshIo.hpp"
 #include "FgFileSystem.hpp"
@@ -20,7 +18,7 @@ static
 void
 saveStl(Ofstream & ff,const Mesh & mesh)
 {
-    Normals     norms = calcNormals(mesh);
+    Normals     norms = cNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         const Surf &         surf = mesh.surfaces[ss];
         const FacetNormals &    facetNorms = norms.facet[ss];

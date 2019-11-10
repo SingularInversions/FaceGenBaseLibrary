@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // An associative container for small collections based on std::vector and without the implicit insertion
 // semantics of std::map. The collections are assumed small enough that no sorting is done and lookup is O(n).
 // Key type must support operator==

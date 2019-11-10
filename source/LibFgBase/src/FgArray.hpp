@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Stack-based variable-size array with fixed max size.
 // Less verbose than boost::static_vector.
 

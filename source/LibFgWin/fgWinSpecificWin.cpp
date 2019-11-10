@@ -1,8 +1,6 @@
 //
 // Copyright (C) Singular Inversions Inc. 2018
 //
-// Authors:     Andrew Beatty
-// Created:     18.01.30
 //
 
 #include "stdafx.h"

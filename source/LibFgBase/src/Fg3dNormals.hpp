@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Compute normals for a mesh
 
 #ifndef FG3DNORMALS_HPP
@@ -42,24 +40,23 @@ struct  Normals
 typedef Svec<Normals>           Normalss;
 
 void
-calcNormals_(
-    Surfs const &       surfs,
+cNormals_(Surfs const & surfs,
     Vec3Fs const &      verts,
     Normals &           norms);     // RETURNED
 
 inline
 Normals
-calcNormals(Surfs const & surfs,Vec3Fs const & verts)
+cNormals(Surfs const & surfs,Vec3Fs const & verts)
 {
     Normals         norms;
-    calcNormals_(surfs,verts,norms);
+    cNormals_(surfs,verts,norms);
     return norms;
 }
 
 inline
 Normals
-calcNormals(Mesh const & mesh)
-{return calcNormals(mesh.surfaces,mesh.verts); }
+cNormals(Mesh const & mesh)
+{return cNormals(mesh.surfaces,mesh.verts); }
 
 }
 

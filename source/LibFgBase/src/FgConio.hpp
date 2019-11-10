@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // Provide platform-independent access to console functionality not available through C/C++ standards.
 
 #ifndef FGCONIO_HPP

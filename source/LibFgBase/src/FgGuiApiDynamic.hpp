@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // This approach didn't work so well since the dynamically created window often has
 // to modify depgraph state during creation, but any dependent nodes may already
 // have been updated.

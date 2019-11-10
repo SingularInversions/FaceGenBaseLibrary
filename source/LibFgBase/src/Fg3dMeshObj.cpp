@@ -102,7 +102,7 @@ parseFacet(
     vector<vector<uint> >   nums;
     for (size_t ii=0; ii<strs.size(); ++ii) {
         vector<string>  ns = splitChar(strs[ii],'/',true);
-        size_t          sz = minEl(ns.size(),size_t(2));    // Ignore normal indices
+        size_t          sz = cMin(ns.size(),size_t(2));    // Ignore normal indices
         vector<uint>    nms;
         for (size_t jj=0; jj<sz; ++jj) {
             size_t      numLim = ((jj == 0) ? numVerts : numUvs);
@@ -319,7 +319,7 @@ writeMesh(
         Vec2F    uv = mesh.uvs[ii];
         ofs << "vt " << uv[0] << " " << uv[1] << "\n";
     }
-    Normals         norms = calcNormals(mesh.surfaces,mesh.verts);
+    Normals         norms = cNormals(mesh.surfaces,mesh.verts);
     for (size_t ii=0; ii<norms.vert.size(); ++ii) {
         Vec3F    n = norms.vert[ii];
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << "\n";

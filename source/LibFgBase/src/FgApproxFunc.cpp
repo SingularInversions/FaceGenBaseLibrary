@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgApproxFunc.hpp"
@@ -30,8 +28,8 @@ fgApproxFuncTest(const CLArgs &)
     const double        accuracy = 0.0001;
     for (uint ii=0; ii<10; ++ii)
     {
-        double          base = randUniform(-fgPi(),fgPi()),
-                        len = randUniform(0.5,1.5) * fgPi();
+        double          base = randUniform(-pi(),pi()),
+                        len = randUniform(0.5,1.5) * pi();
         Sine            sine;
         FgApproxFunc<double>    af(sine,base,base+len,256);
         double          xx,delta;

@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgImgDisplay.hpp"
@@ -41,7 +39,7 @@ imgDisplay(const ImgUC &img)
 void
 imgDisplay(const Img<ushort> & img)
 {
-    Affine1F      aff(VecF2(getBounds(img.dataVec())),VecF2(0,255));
+    Affine1F      aff(VecF2(cBounds(img.dataVec())),VecF2(0,255));
     ImgC4UC     di(img.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         di[ii] = RgbaUC(aff * img[ii]);
@@ -51,7 +49,7 @@ imgDisplay(const Img<ushort> & img)
 void
 imgDisplay(const ImgF & img)
 {
-    Affine1F          aff(getBounds(img.m_data),VecF2(0,255));
+    Affine1F          aff(cBounds(img.m_data),VecF2(0,255));
     ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
         dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
@@ -61,7 +59,7 @@ imgDisplay(const ImgF & img)
 void
 imgDisplay(const ImgD & img)
 {
-    Affine1D          aff(getBounds(img.m_data),VecD2(0,255));
+    Affine1D          aff(cBounds(img.m_data),VecD2(0,255));
     ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
         dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
@@ -71,7 +69,7 @@ imgDisplay(const ImgD & img)
 void
 imgDisplay(const Img3F & img)
 {
-    VecF2               bounds = getBounds(getBounds(img.dataVec()).m);
+    VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
     AffineEwPre3F       xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
     Img3F               tmp = Img3F(img.dims(),mapXft(img.dataVec(),xform));
     ImgC4UC             disp(tmp.dims());
@@ -86,7 +84,7 @@ imgDisplay(const Img3F & img)
 void
 fgImgDisplayColorize(const ImgD & img)
 {
-    VecD2        ib = getBounds(img.dataVec());
+    VecD2        ib = cBounds(img.dataVec());
     Affine1D aff(ib,VecD2(0,4));
     ImgC4UC     di(img.dims());
     for (Iter2UI it(di.dims()); it.valid(); it.next()) {

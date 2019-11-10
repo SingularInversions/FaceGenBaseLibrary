@@ -2,8 +2,6 @@
 // Copyright (c) 2019 Singular Inversions Inc.
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgCluster.hpp"

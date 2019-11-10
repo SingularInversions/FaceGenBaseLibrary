@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // USE:
 //
 // When deciding to use string or size_t output below, choose string only if you need to actually use

@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dMeshOps.hpp"
@@ -54,7 +52,7 @@ savePly(
         "property list uchar float texcoord\n"
         "property int texnumber\n"
         "end_header\n";
-    Normals         norms = calcNormals(mesh);
+    Normals         norms = cNormals(mesh);
     for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
         Vec3F    pos = mesh.verts[vv],
                     nrm = norms.vert[vv];

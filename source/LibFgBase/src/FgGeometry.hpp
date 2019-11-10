@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGGEOMETRY_HPP
 #define FGGEOMETRY_HPP
 
@@ -82,7 +80,7 @@ double
 pointToPlaneDistSqr(Vec3D pnt,Vec4D planeH)
 {
     Vec3D    planeN(planeH[0],planeH[1],planeH[2]);
-    return (sqr(dotProd(pnt,planeN) + planeH[3]) / planeN.mag());
+    return (sqr(cDot(pnt,planeN) + planeH[3]) / planeN.mag());
 }
 
 }

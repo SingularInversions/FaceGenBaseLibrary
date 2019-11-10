@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dDisplay.hpp"
@@ -396,7 +394,7 @@ saveMesh2(
         return;
     Opt<Ustring>             fname = guiDialogFileSave("FaceGen",format);
     if (fname.valid()) {
-        Meshs              meshes;
+        Meshes              meshes;
         for (RendMesh const & rm : rms)
             meshes.push_back(rm.origMeshN.cref());
         meshSaveAnyFormat(meshes,fname.val());
@@ -693,7 +691,7 @@ linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN)
 {
     return link2_<Normals,Mesh,Vec3Fs>(meshN,posedVertsN,
         [](const Mesh & mesh,const Vec3Fs & verts,Normals & norms)
-        {calcNormals_(mesh.surfaces,verts,norms); });
+        {cNormals_(mesh.surfaces,verts,norms); });
 }
 
 OPT<Mesh>
@@ -727,7 +725,7 @@ linkLoadImage(NPT<Ustring> filenameN)
 
 GuiPosedMeshes::GuiPosedMeshes() :
     poseLabelsN(
-        linkN<Mesh,PoseVals>(vector<NPT<Mesh> >(),[](Meshs const & m){return fgPoses(m);})
+        linkN<Mesh,PoseVals>(vector<NPT<Mesh> >(),[](Meshes const & m){return fgPoses(m);})
     ),
     poseValsN(makeIPT(Doubles()))
 {}
@@ -834,7 +832,7 @@ linkBounds(RendMeshes const & rms)
     vector<NPT<Mat32F> >      boundsNs;
     for (RendMesh const & rm : rms) {
         boundsNs.push_back(link1<Mesh,Mat32F>(rm.origMeshN,
-            [](Mesh const & m){return getBounds(m.verts);}));
+            [](Mesh const & m){return cBounds(m.verts);}));
     }
     return linkN<Mat32F,Mat32D>(boundsNs,[](vector<Mat32F> const & bs)
     {
@@ -903,11 +901,11 @@ guiCaptureSaveImage(Sptr<Gui3d::Capture> const & capture)
 }
 
 Mesh
-meshView(const Meshs & meshes,bool compare)
+meshView(const Meshes & meshes,bool compare)
 {
     FGASSERT(meshes.size() > 0);
     Ustring                 store = fgDirUserAppDataLocalFaceGen("SDK","meshView");
-    IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(getBounds(meshes)));
+    IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(cBounds(meshes)));
     GuiPosedMeshes          mrms;
     vector<IPT<Mesh> >      meshNs;
     vector<IPT<MeshSurfsName> >  meshSurfsNameNs;

@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGSTATSNORMAL_HPP
 #define FGSTATSNORMAL_HPP
 
@@ -31,7 +29,7 @@ struct   FgNormal
     {
         Vec         mhlbs = root * (pos-mean);
         return (
-            std::pow(2.0 * fgPi(),double(dim) * -0.5) *
+            std::pow(2.0 * pi(),double(dim) * -0.5) *
             determinant(root) *
             expSafe(-0.5 * mhlbs.mag()));
     }
@@ -44,7 +42,7 @@ struct   FgNormal
     {
         Vec         mhlbs = root * (pos-mean);
         return (std::log(determinant(root)) -
-                0.5 * double(dim) * fgLn_2pi() -
+                0.5 * double(dim) * ln2Pi() -
                 0.5 * mhlbs.mag());
     }
 };

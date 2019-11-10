@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
@@ -179,7 +177,7 @@ markVerts(const CLArgs & args)
         );
     Mesh    mesh = loadTri(syntax.next());
     Vec3Fs     verts = meshLoadAnyFormat(syntax.next()).verts;
-    float       dim = fgMaxElem(fgDims(mesh.verts));
+    float       dim = fgMaxElem(cDims(mesh.verts));
     uint        poorMatches = 0,
                 totalMatches = 0;
     for (size_t vv=0; vv<verts.size(); ++vv) {
@@ -704,8 +702,8 @@ uvunwrap(const CLArgs & args)
     Mesh        in = meshLoadAnyFormat(syntax.next());
     for (size_t ii=0; ii<in.uvs.size(); ++ii) {
         Vec2F    uv = in.uvs[ii];
-        in.uvs[ii][0] = fgMod(uv[0],1.0f);
-        in.uvs[ii][1] = fgMod(uv[1],1.0f);
+        in.uvs[ii][0] = cMod(uv[0],1.0f);
+        in.uvs[ii][1] = cMod(uv[1],1.0f);
     }
     if (syntax.more())
         meshSaveAnyFormat(in,syntax.next());
@@ -746,8 +744,8 @@ xformCreateMeshes(const CLArgs & args)
     vector<Vec3D>    bv = scast<double>(base.verts),
                         tv = scast<double>(targ.verts);
     SimilarityD        sim = similarityApprox(bv,tv);
-    double              ssd = fgSsd(mapXft(bv,sim.asAffine()),tv),
-                        sz = fgMaxElem(fgDims(tv));
+    double              ssd = cSsd(mapXft(bv,sim.asAffine()),tv),
+                        sz = fgMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
     fgSaveXml(simFname,sim);
 }

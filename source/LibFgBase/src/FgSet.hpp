@@ -3,8 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
-//
 // An order-preserving set for small collections based on std::vector. For:
 // 1. Small sets where we don't want the overhead of std::set
 // 2. Sets which need to preserve ordering

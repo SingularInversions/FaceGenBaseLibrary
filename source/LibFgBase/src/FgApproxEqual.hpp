@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #ifndef FGAPPROXEQUAL_HPP
 #define FGAPPROXEQUAL_HPP
 
@@ -141,7 +139,7 @@ fgApproxEqualComponents(
     T                                               relTol)
 {
     FGASSERT(lhs.size() == rhs.size());
-    T   scale = fgMaxElem((fgDims(lhs) + fgDims(rhs)) * T(0.5));
+    T   scale = fgMaxElem((cDims(lhs) + cDims(rhs)) * T(0.5));
     for (size_t ii=0; ii<lhs.size(); ++ii)
         if (!fgApproxEqualComponentsAbs(lhs[ii],rhs[ii],scale * relTol))
             return false;

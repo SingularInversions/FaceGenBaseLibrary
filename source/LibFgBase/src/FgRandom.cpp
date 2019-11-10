@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "FgRandom.hpp"
@@ -141,7 +139,7 @@ fgRandomTest(const CLArgs &)
 
     // Make a bar graph of it:
     // numSamples = binScale * stdNormIntegral * binsPerStdev
-    double          binScale = double(numSamples) / (fgSqrt_2pi() * binsPerStdev),
+    double          binScale = double(numSamples) / (sqrt2Pi() * binsPerStdev),
                     hgtRatio = 0.9;
     ImgC4UC     img(sz,sz,RgbaUC(0));
     for (size_t xx=0; xx<sz; ++xx) {

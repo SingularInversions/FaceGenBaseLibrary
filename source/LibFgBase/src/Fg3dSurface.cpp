@@ -4,8 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-//
-
 #include "stdafx.h"
 
 #include "Fg3dSurface.hpp"
@@ -242,13 +240,13 @@ Surf::checkMeshConsistency(
     uint    uvsSize)
 {
     if (tris.size() > 0)
-        {FGASSERT(fgMaxElem(getBounds(tris.vertInds)) < coordsSize); }
+        {FGASSERT(fgMaxElem(cBounds(tris.vertInds)) < coordsSize); }
     if (quads.size() > 0)
-        {FGASSERT(fgMaxElem(getBounds(quads.vertInds)) < coordsSize); }
+        {FGASSERT(fgMaxElem(cBounds(quads.vertInds)) < coordsSize); }
     if (tris.uvInds.size() > 0)
-        {FGASSERT(fgMaxElem(getBounds(tris.uvInds)) < uvsSize); }
+        {FGASSERT(fgMaxElem(cBounds(tris.uvInds)) < uvsSize); }
     if (quads.uvInds.size() > 0)
-        {FGASSERT(fgMaxElem(getBounds(quads.uvInds)) < uvsSize); }
+        {FGASSERT(fgMaxElem(cBounds(quads.uvInds)) < uvsSize); }
 }
 
 void
