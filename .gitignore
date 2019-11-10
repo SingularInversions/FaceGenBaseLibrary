@@ -23,6 +23,7 @@ source/*/VisualStudio*/*/*/*.tmp
 source/*/VisualStudio*/*/*/*.cache
 source/*/VisualStudio*/*/*/*.ib_tag
 source/*/VisualStudio*/*/*/*pdb_index
+*.FileListAbsolute.txt
 # Android Studio:
 /android/*/.gradle
 /android/*/local.properties
