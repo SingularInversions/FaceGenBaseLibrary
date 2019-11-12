@@ -40,7 +40,7 @@ cmdStr(const Cmd & cmd)
 }
 
 void
-fgMenu(
+doMenu(
     vector<string>          args,
     const vector<Cmd> &   cmdsUnsorted,
     bool                    optionAll,
@@ -110,7 +110,7 @@ fgMenu(
 
 static Ustring s_rootTestDir;
 
-FgTestDir::FgTestDir(const string & name)
+TestDir::TestDir(const string & name)
 {
     FGASSERT(!name.empty());
     if (s_rootTestDir.empty()) {
@@ -130,7 +130,7 @@ FgTestDir::FgTestDir(const string & name)
         fgout.logFile("_log.txt");
 }
 
-FgTestDir::~FgTestDir()
+TestDir::~TestDir()
 {
     if (!pd.orig.empty()) {
         pd.pop();

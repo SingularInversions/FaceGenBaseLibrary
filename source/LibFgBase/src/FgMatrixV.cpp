@@ -311,7 +311,7 @@ fgMatrixVTest(const CLArgs & args)
     cmds.push_back(Cmd(eigenTest,"tem","Time eigen mat mul"));
     cmds.push_back(Cmd(testMul,"tlm","Time loop mat mul"));
     cmds.push_back(Cmd(loopStructTime,"lst","Loop structure timing experiment"));
-    fgMenu(args,cmds,true);
+    doMenu(args,cmds,true);
 }
 
 }

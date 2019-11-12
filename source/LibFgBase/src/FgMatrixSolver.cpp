@@ -158,7 +158,7 @@ testSymmEigen(const CLArgs & args)
     Cmds      cmds;
     cmds.push_back(Cmd(testSymmEigenAuto,"auto","Automated tests"));
     cmds.push_back(Cmd(testSymmEigenTime,"time","Timing test"));
-    fgMenu(args,cmds,true);
+    doMenu(args,cmds,true);
 }
 
 }
@@ -169,7 +169,7 @@ fgMatrixSolverTest(const CLArgs & args)
     Cmds      cmds;
     cmds.push_back(Cmd(testAsymEigs,"asym","Arbitrary real matrix eigensystem"));
     cmds.push_back(Cmd(testSymmEigen,"symm","Real symmetric matrix eigensystem"));
-    fgMenu(args,cmds,true);
+    doMenu(args,cmds,true);
 }
 
 }

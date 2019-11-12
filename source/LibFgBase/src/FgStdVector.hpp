@@ -381,7 +381,7 @@ fgTail(const Svec<T> & vec,size_t size)
 // Append is the functional equivalent of push_back:
 template<class T>
 Svec<T>
-fgAppend(const Svec<T> & vec,const T & val)
+append(const Svec<T> & vec,const T & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);
@@ -390,20 +390,10 @@ fgAppend(const Svec<T> & vec,const T & val)
     return ret;
 }
 
-template<class T>
-void
-fgAppendIfNotContained_(const T & val,Svec<T> & vec)
-{
-    for (const T & v : vec)
-        if (v == val)
-            return;
-    vec.push_back(val);
-}
-
 // Functional equivalent of insert at front:
 template<class T>
 Svec<T>
-fgPrepend(const T & val,const Svec<T> & vec)
+prepend(const T & val,const Svec<T> & vec)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);

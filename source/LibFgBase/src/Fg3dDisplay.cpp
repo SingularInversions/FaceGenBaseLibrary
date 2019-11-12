@@ -1019,7 +1019,7 @@ fgTestmGuiMesh(const CLArgs & args)
     vector<Cmd>       cmds;
     cmds.push_back(Cmd(simple,"simple","Jane face cutout"));
     cmds.push_back(Cmd(surfs,"surfs","Multiple surface mesh"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 }

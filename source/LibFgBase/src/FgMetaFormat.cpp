@@ -58,7 +58,7 @@ fgBoostSerializationTest(const CLArgs &)
 void
 fgMetaFormatTest(const CLArgs &)
 {
-    FgTestDir   td("MetaFormat");
+    TestDir   td("MetaFormat");
     int     a = 42;
     fgSaveBin("test.fgbin",a);
     int     b;
@@ -91,7 +91,7 @@ struct C
 void
 fgSerializeTest(const CLArgs &)
 {
-    FgTestDir   td("Serialize");
+    TestDir   td("Serialize");
     size_t                                  sz = 5;
     vector<A>                               va(sz);
     vector<B<text_iarchive,text_oarchive> > vb;

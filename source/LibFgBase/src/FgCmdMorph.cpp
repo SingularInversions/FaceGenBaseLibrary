@@ -458,7 +458,7 @@ morph(const CLArgs & args)
     cmds.push_back(Cmd(removemorphs,"remove","Remove morphs from a mesh"));
     cmds.push_back(Cmd(removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"));
     cmds.push_back(Cmd(renameMorph,"rename","Rename a morph in a mesh"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 Cmd

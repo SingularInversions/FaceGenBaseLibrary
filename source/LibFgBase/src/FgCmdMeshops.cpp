@@ -571,7 +571,7 @@ surf(const CLArgs & args)
     ops.push_back(Cmd(spList,"spList","List surface points in each surface"));
     ops.push_back(Cmd(spRen,"spRen","Rename a surface point"));
     ops.push_back(Cmd(spsToVerts,"spVert","Convert surface points to marked vertices"));
-    fgMenu(args,ops);
+    doMenu(args,ops);
 }
 
 void
@@ -819,7 +819,7 @@ xformCreateScale(const CLArgs & args)
 void
 xformCreate(const CLArgs & args)
 {
-    fgMenu(args,
+    doMenu(args,
         fgSvec(
             Cmd(xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"),
             Cmd(xformCreateIdentity,"identity","Create the identity similarity transform"),
@@ -863,7 +863,7 @@ xform(const CLArgs & args)
     cmds.push_back(Cmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"));
     cmds.push_back(Cmd(xformCreate,"create","Create a similarity transform (to .XML file)"));
     cmds.push_back(Cmd(xformMirror,"mirror","Mirror a mesh"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 void
@@ -896,7 +896,7 @@ meshops(const CLArgs & args)
     ops.push_back(Cmd(uvmask,"uvmask","Mask out geometry for any black areas of a texture image (auto symmetrized)"));
     ops.push_back(Cmd(uvunwrap,"uvunwrap","Unwrap wrap-around UV coords to the range [0,1]"));
     ops.push_back(Cmd(xform,"xform","Create or apply similarity transforms from/to meshes"));
-    fgMenu(args,ops);
+    doMenu(args,ops);
 }
 
 }

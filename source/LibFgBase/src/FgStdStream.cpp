@@ -14,8 +14,8 @@ namespace Fg {
 
 bool
 Ofstream::open(
-    const Ustring &        fname,
-    bool                    append,
+    Ustring const &         fname,
+    bool                    appendFile,
     bool                    throwOnFail)
 {
     // Opening a file can throw if ios::exceptions have been enabled (not the default):
@@ -27,7 +27,7 @@ Ofstream::open(
         string      fn = fname.as_utf8_string();
 #endif
         ios::openmode   om = ios::binary;
-        if (append)
+        if (appendFile)
             om = om | ios::app;
         ofstream::open(fn.c_str(),om);
     }
@@ -40,7 +40,7 @@ Ofstream::open(
 
 bool
 Ifstream::open(
-    const Ustring &        fname,
+    Ustring const &         fname,
     bool                    throwOnFail)
 {
     // Use try-catch in case client has enabled ios::exceptions (not enabled by default):
@@ -61,9 +61,9 @@ Ifstream::open(
 }
 
 void
-fgWriteFile(const Ustring & fname,const std::string & data,bool append)
+fgWriteFile(const Ustring & fname,const std::string & data,bool appendFile)
 {
-    Ofstream  ofs(fname,append);
+    Ofstream  ofs(fname,appendFile);
     ofs << data;
 }
 

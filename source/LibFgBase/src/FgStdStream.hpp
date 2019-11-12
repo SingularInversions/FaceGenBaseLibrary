@@ -30,15 +30,15 @@ struct  Ofstream : public std::ofstream
 
     explicit
     Ofstream(
-        const Ustring &        fname,
-        bool                    append = false,
+        Ustring const &         fname,
+        bool                    appendFile = false,
         bool                    throwOnFail = true)
-    {open(fname,append,throwOnFail); }
+    {open(fname,appendFile,throwOnFail); }
 
     bool
     open(
-        const Ustring &        fname,
-        bool                    append = false,
+        Ustring const &         fname,
+        bool                    appendFile = false,
         bool                    throwOnFail = true);
 
     template<class T>
@@ -175,7 +175,7 @@ fgReadpT(std::istream & is)
 
 // Handy for open-write-close:
 void
-fgWriteFile(const Ustring & fname,const String & data,bool append=true);
+fgWriteFile(const Ustring & fname,const String & data,bool appendFile=true);
 
 }
 

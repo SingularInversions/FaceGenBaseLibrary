@@ -85,11 +85,11 @@ FgOut::defOutEnabled()
 }
 
 void
-FgOut::logFile(const std::string & fnameUtf8,bool append,bool prependDate)
+FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
 {
     if (s_ofs.is_open())
         s_ofs.close();
-    s_ofs.open(fnameUtf8,append,true);
+    s_ofs.open(fnameUtf8,appendFile,true);
     s_ofs.precision(9);
     if (prependDate)
         s_ofs << '\n' << fgDateTimeString() << '\n';

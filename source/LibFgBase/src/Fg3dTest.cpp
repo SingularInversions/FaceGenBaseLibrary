@@ -58,7 +58,7 @@ test3dMeshSubdivision(const CLArgs &)
 void
 fg3dReadWobjTest(const CLArgs &)
 {
-    FgTestDir   tmp("readObj");
+    TestDir   tmp("readObj");
     ofstream    ofs("square.obj");
     ofs << 
         "v 0.0 0.0 0.0\n"
@@ -178,7 +178,7 @@ fg3dTest(const CLArgs & args)
         cmds.push_back(Cmd(fgSavePlyTest, "ply", ".PLY file format export"));
         cmds.push_back(Cmd(fgSaveXsiTest, "xsi", ".XSI file format export"));
     }
-    fgMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false,true);
 }
 
 void fgSaveFgmeshTest(CLArgs const &);
@@ -190,7 +190,7 @@ fg3dTestMan(const CLArgs & args)
     cmds.push_back(Cmd(edgeDist,"edgeDist"));
     cmds.push_back(Cmd(fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export"));  // Uses GUI
     cmds.push_back(Cmd(test3dMeshSubdivision,"subdivision"));
-    fgMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false,true);
 }
 
 }

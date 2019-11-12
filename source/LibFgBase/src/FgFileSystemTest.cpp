@@ -127,7 +127,7 @@ fgFileSystemTest(const CLArgs & args)
     cmds.push_back(Cmd(testDeleteDirectory,"delDir"));
     cmds.push_back(Cmd(testRecursiveCopy,"recurseCopy"));
     cmds.push_back(Cmd(testExists,"exists"));
-    fgMenu(args,cmds,true,true,true);
+    doMenu(args,cmds,true,true,true);
 }
 
 }

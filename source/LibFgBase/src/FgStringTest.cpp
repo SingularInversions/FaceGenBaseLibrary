@@ -108,7 +108,7 @@ static void Encoding()
         FGASSERT(character == fg_character[0]);
     }
     {
-        FgTestDir   td("string_encoding");
+        TestDir   td("string_encoding");
         Ustring    source("UTF-8:\xC5\xA1\xC4\x8E");
         {
             std::ofstream ofs("testString_utf8.txt");

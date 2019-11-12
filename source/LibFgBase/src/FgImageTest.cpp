@@ -96,7 +96,7 @@ fgImageTestm(const CLArgs & args)
     cmds.push_back(Cmd(resize,"resize"));
     cmds.push_back(Cmd(display,"display"));
     cmds.push_back(Cmd(sfs,"sfs","smoothFloat speed"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 void    fgImgTestWrite(const CLArgs &);
@@ -108,7 +108,7 @@ fgImageTest(const CLArgs & args)
     cmds.push_back(Cmd(composite,"composite"));
     cmds.push_back(Cmd(testConvolve,"conv"));
     cmds.push_back(Cmd(fgImgTestWrite,"write"));
-    fgMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false,true);
 }
 
 }

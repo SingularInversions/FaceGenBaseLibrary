@@ -40,7 +40,7 @@ struct Cmd
 typedef Svec<Cmd> Cmds;
 
 void
-fgMenu(
+doMenu(
     CLArgs              args,
     const Cmds &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
@@ -49,21 +49,21 @@ fgMenu(
 
 // Creates a temporary directory with a name giving the CL args and date/time on construction,
 // and removes the directory on destruction (unless the 'keep temp files' option has been selected):
-struct FgTestDir
+struct TestDir
 {
     PushDir         pd;
     Path            path;
 
-    FgTestDir() {}
+    TestDir() {}
 
-    FgTestDir(const String & name);
+    TestDir(const String & name);
 
-    ~FgTestDir();
+    ~TestDir();
 };
 
 // Creates a test directory with a name formed from the breadcrumb of commands, changes the
 // current directory to that, then reverts to the initial directory when it goes out of scope:
-#define FGTESTDIR FGASSERT(!args.empty()); FgTestDir fgTestDir(fgToLower(args[0]));
+#define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(fgToLower(args[0]));
 
 // Set the root test directory. Useful for sandboxed platforms:
 void

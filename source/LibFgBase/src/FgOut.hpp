@@ -56,7 +56,7 @@ struct  FgOut
     bool    defOutEnabled();            // As above. Non-const only for technical reasons.
 
     void
-    logFile(const std::string & fnameUtf8,bool append=true,bool prependDate=true);
+    logFile(const std::string & fnameUtf8,bool appendFile=true,bool prependDate=true);
 
     void logFileClose();
 

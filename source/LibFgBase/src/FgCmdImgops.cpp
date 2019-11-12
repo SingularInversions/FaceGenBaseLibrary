@@ -104,7 +104,7 @@ imgops(const CLArgs & args)
     ops.push_back(Cmd(convert,"convert","Convert images between different formats"));
     ops.push_back(Cmd(formats,"formats","List all supported formats by file extension"));
     ops.push_back(Cmd(shrink2,"shrink2","Shrink images by a factor of 2"));
-    fgMenu(args,ops);
+    doMenu(args,ops);
 }
 
 Cmd

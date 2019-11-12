@@ -94,7 +94,7 @@ testmGui(const CLArgs & args)
         {fgTestmGuiMesh,"mesh"},
         {fgGuiTestmDialogSplashScreen,"splash"}
     };
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 static
@@ -150,15 +150,15 @@ fgCmdBaseTestms()
 static
 void
 testm(const CLArgs & args)
-{fgMenu(args,fgCmdBaseTestms()); }
+{doMenu(args,fgCmdBaseTestms()); }
 
 void
 fgCmdBaseTest(const CLArgs & args)
-{fgMenu(args,fgCmdBaseTests(),true); }
+{doMenu(args,fgCmdBaseTests(),true); }
 
 void
 view(const CLArgs & args)
-{fgMenu(args,fgCmdViewInfos()); }
+{doMenu(args,fgCmdViewInfos()); }
 
 /**
    \defgroup Base_Commands Base Library Command Line
@@ -180,7 +180,7 @@ fgCmdFgbl(const CLArgs & args)
     cmds.push_back(Cmd(fgCmdBaseTest,"test","Automated tests"));
     cmds.push_back(Cmd(testm,"testm","Manual tests"));
     cmds.push_back(Cmd(view,"view","Interactively view various file types"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 }

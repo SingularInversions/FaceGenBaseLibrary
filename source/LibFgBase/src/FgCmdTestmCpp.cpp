@@ -291,7 +291,7 @@ fgCmdTestmCpp(const CLArgs & args)
     cmds.push_back(Cmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
     cmds.push_back(Cmd(rvo,"rvo","Return value optimization / copy elision"));
     cmds.push_back(Cmd(speedExp,"exp","Measure the speed of library exp(double)"));
-    fgMenu(args,cmds);
+    doMenu(args,cmds);
 }
 
 }
