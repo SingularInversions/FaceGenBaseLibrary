@@ -46,7 +46,7 @@ fgTestArchive()
 }
 
 void
-fgBoostSerializationTest(const CLArgs &)
+fgBoostSerializationTest(CLArgs const &)
 {
     using namespace boost::archive;
 
@@ -56,7 +56,7 @@ fgBoostSerializationTest(const CLArgs &)
 }
 
 void
-fgMetaFormatTest(const CLArgs &)
+fgMetaFormatTest(CLArgs const &)
 {
     TestDir   td("MetaFormat");
     int     a = 42;
@@ -89,7 +89,7 @@ struct C
 };
 
 void
-fgSerializeTest(const CLArgs &)
+fgSerializeTest(CLArgs const &)
 {
     TestDir   td("Serialize");
     size_t                                  sz = 5;

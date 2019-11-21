@@ -76,7 +76,7 @@ operator<<(std::ostream & os,const FgTimer & t)
 }
 
 void
-FgTimer::report(const string & label)
+FgTimer::report(string const & label)
 {
     fgout << fgnl << label << ": " << readMs() << "ms ";
     start();

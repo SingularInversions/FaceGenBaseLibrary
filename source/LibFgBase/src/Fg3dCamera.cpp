@@ -47,18 +47,18 @@ CameraParams::camera(Vec2UI imgDims) const
     if (dims == Vec3D(0))
         dims = Vec3D(1);
     else if (dims.cmpntsProduct() == 0)
-        dims = Vec3D(fgMaxElem(dims));
+        dims = Vec3D(cMaxElem(dims));
     // Hack orthographic by relying on precision:
     double          fovDegClamp = clampBounds(fovMaxDeg,0.0001,120.0),
-                    modelHalfDimMax = fgMaxElem(dims) * 0.5,
-                    imgDimMax = fgMaxElem(imgDims),
+                    modelHalfDimMax = cMaxElem(dims) * 0.5,
+                    imgDimMax = cMaxElem(imgDims),
                     relScale = exp(logRelScale),
                     halfFovMaxItcs = std::tan(fgDegToRad(fovDegClamp) * 0.5),
                     // Place the model at a distance such that it's max dim is equal to the given FOV max dim:
                     zCentreFillImage = modelHalfDimMax / halfFovMaxItcs,
                     // Adjust the distance to relatively scale the object:
                     zCentre = zCentreFillImage / relScale;
-    if (fgMinElem(imgDims) == 0)
+    if (cMinElem(imgDims) == 0)
         imgDims = Vec2UI(1);     // Avoid NaNs
     Vec2D        aspect = Vec2D(imgDims) / imgDimMax;
     double          // sqrt(3) ~= 1.7 is distance to BB corner relative to distance to plane:

@@ -19,13 +19,13 @@ namespace Fg {
 namespace fgCl {
 
 void
-unzip(const string &)
+unzip(string const &)
 {
     throw FgExceptionNotImplemented();
 }
 
 void
-zip(const string & ,const string & )
+zip(string const & ,string const & )
 {
     throw FgExceptionNotImplemented();
 }

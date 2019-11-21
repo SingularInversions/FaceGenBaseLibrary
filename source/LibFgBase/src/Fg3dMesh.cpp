@@ -150,7 +150,7 @@ Mesh::surfPointPos(const Vec3Fs & verts_,size_t num) const
 }
 
 Opt<Vec3F>
-Mesh::surfPointPos(const string & label) const
+Mesh::surfPointPos(string const & label) const
 {
     Opt<Vec3F>    ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss) {
@@ -173,7 +173,7 @@ Mesh::surfPointsAsVertLabels() const
 }
 
 Vec3Fs
-Mesh::surfPointPositions(const Strings & labels) const
+Mesh::surfPointPositions(Strings const & labels) const
 {
     Vec3Fs         ret;
     ret.reserve(labels.size());
@@ -230,7 +230,7 @@ Mesh::morphNames() const
 }
 
 Valid<size_t>
-Mesh::findDeltaMorph(const Ustring & name_) const
+Mesh::findDeltaMorph(Ustring const & name_) const
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
         if (Ustring(deltaMorphs[ii].name) == name_)
@@ -239,7 +239,7 @@ Mesh::findDeltaMorph(const Ustring & name_) const
 }
 
 Valid<size_t>
-Mesh::findTargMorph(const Ustring & name_) const
+Mesh::findTargMorph(Ustring const & name_) const
 {
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
         if (targetMorphs[ii].name == name_)
@@ -248,7 +248,7 @@ Mesh::findTargMorph(const Ustring & name_) const
 }
 
 Valid<size_t>
-Mesh::findMorph(const Ustring & name_) const
+Mesh::findMorph(Ustring const & name_) const
 {
     for (size_t ii=0; ii<numMorphs(); ++ii)
         if (morphName(ii) == name_)
@@ -316,7 +316,7 @@ Mesh::morphSingle(size_t idx,float val) const
 IndexedMorph
 Mesh::getMorphAsIndexedDelta(size_t idx) const
 {
-    float               tol = sqr(fgMaxElem(cDims(verts)) * 0.0001);
+    float               tol = sqr(cMaxElem(cDims(verts)) * 0.0001);
     IndexedMorph      ret;
     if (idx < deltaMorphs.size()) {
         const Morph & dm = deltaMorphs[idx];
@@ -354,7 +354,7 @@ Mesh::addDeltaMorph(const Morph & morph)
 }
 
 void
-Mesh::addDeltaMorphFromTarget(const Ustring & name_,const Vec3Fs & targetShape)
+Mesh::addDeltaMorphFromTarget(Ustring const & name_,const Vec3Fs & targetShape)
 {
     Morph                 dm;
     dm.name = name_;
@@ -376,7 +376,7 @@ Mesh::addTargMorph(const IndexedMorph & morph)
 }
 
 void
-Mesh::addTargMorph(const Ustring & name_,const Vec3Fs & targetShape)
+Mesh::addTargMorph(Ustring const & name_,const Vec3Fs & targetShape)
 {
     FGASSERT(targetShape.size() == verts.size());
     IndexedMorph       tm;

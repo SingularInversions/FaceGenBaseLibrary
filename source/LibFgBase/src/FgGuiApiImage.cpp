@@ -146,15 +146,15 @@ linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
     }
     const uint              maxDim = 2048;
     ImgC4UC             tmp = img;
-    while (fgMaxElem(img.dims()) > maxDim)
+    while (cMaxElem(img.dims()) > maxDim)
         tmp = fgImgShrink2(tmp);
-    pyr.resize(log2Floor(fgMinElem(tmp.dims()))+1);
+    pyr.resize(log2Floor(cMinElem(tmp.dims()))+1);
     pyr.back() = tmp;
     for (uint ii=0; ii<pyr.size()-1; ++ii)
         fgImgShrink2(pyr[pyr.size()-1-ii],pyr[pyr.size()-2-ii]);
     // Add up to 4x expansion for small images:
     for (size_t ii=0; ii<2; ++ii)
-        if (fgMaxElem(pyr.back().dims()) <= maxDim/2)
+        if (cMaxElem(pyr.back().dims()) <= maxDim/2)
             pyr.push_back(fgExpand2(pyr.back()));
 }
 

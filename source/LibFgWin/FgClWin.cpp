@@ -17,13 +17,13 @@ namespace Fg {
 namespace fgCl {
 
 void
-unzip(const string & fname)
+unzip(string const & fname)
 {
     run("\"C:\\Program Files\\7-Zip\\7z.exe\" x "+fname+" >> log.txt");
 }
 
 void
-zip(const string & dir,bool oldFormat)
+zip(string const & dir,bool oldFormat)
 {
     string      ext = (oldFormat ? ".zip " : ".7z ");
     run("\"C:\\Program Files\\7-Zip\\7z.exe\" a "+dir+ext+dir+" >> log.txt");

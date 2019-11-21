@@ -54,10 +54,10 @@ struct  Ustring
     Ustring(const std::u32string & utf32) : m_str(fgToUtf8(utf32)) {}
 
     Ustring &
-    operator+=(const Ustring&);
+    operator+=(Ustring const&);
 
     Ustring
-    operator+(const Ustring&) const;
+    operator+(Ustring const&) const;
 
     Ustring
     operator+(char const * utf8_c_str)
@@ -82,22 +82,22 @@ struct  Ustring
     clear()
     {m_str.clear(); }
 
-    bool operator==(const Ustring & rhs) const
+    bool operator==(Ustring const & rhs) const
     {return m_str == rhs.m_str; }
 
-    bool operator!=(const Ustring & other) const
+    bool operator!=(Ustring const & other) const
     {return !(*this == other); }
 
-    bool operator<(const Ustring & other) const
+    bool operator<(Ustring const & other) const
     {return m_str < other.m_str; }
 
-    int compare(const Ustring & rhs) const
+    int compare(Ustring const & rhs) const
     {return m_str.compare(rhs.m_str); }
 
     // The narrow-character stream operators do *not* do any
     // character set conversion:
     friend 
-    std::ostream& operator<<(std::ostream&, const Ustring &);
+    std::ostream& operator<<(std::ostream&, Ustring const &);
 
     friend
     std::istream& operator>>(std::istream&, Ustring &);
@@ -153,10 +153,10 @@ struct  Ustring
     split(char ch) const;
 
     bool
-    beginsWith(const Ustring & s) const;
+    beginsWith(Ustring const & s) const;
 
     bool
-    endsWith(const Ustring & str) const;
+    endsWith(Ustring const & str) const;
 
     uint
     maxWidth(char ch) const;
@@ -171,7 +171,7 @@ typedef Svec<Ustring>   Ustrings;
 
 template<>
 inline std::string
-toString(const Ustring & str)
+toString(Ustring const & str)
 {return str.m_str; }
 
 template<class T>
@@ -184,12 +184,12 @@ void fgThrow(const std::string & msg,const T data0,const U & data1)
 
 inline
 Ustring
-fgToLower(const Ustring & str)
+fgToLower(Ustring const & str)
 {return str.toLower(); }
 
 inline
 Ustring
-operator+(const std::string & lhs,const Ustring & rhs)
+operator+(const std::string & lhs,Ustring const & rhs)
 {return Ustring(lhs) + rhs; }
 
 // Translate an English message into a UTF-8 string. If the message is
@@ -201,31 +201,31 @@ fgTr(const std::string & message);
 
 // Remove all instances of a given character:
 Ustring
-fgRemoveChars(const Ustring & str,uchar chr);
+fgRemoveChars(Ustring const & str,uchar chr);
 
 // Remove all instances of any of the given characters:
 Ustring
-fgRemoveChars(const Ustring & str,Ustring chrs);
+fgRemoveChars(Ustring const & str,Ustring chrs);
 
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
 bool
-fgGlobMatch(const Ustring & globStr,const Ustring & str);
+fgGlobMatch(Ustring const & globStr,Ustring const & str);
 
 Ustring
-fgSubstring(const Ustring & str,size_t start,size_t size);
+fgSubstring(Ustring const & str,size_t start,size_t size);
 
 Ustring
 fgRest(Ustring const & s,size_t start);
 
 // Inspired by Python join():
 Ustring
-cat(const Ustrings & strings,const Ustring & separator);
+cat(const Ustrings & strings,Ustring const & separator);
 
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:
 std::string
-fgToVariableName(const Ustring & str);
+fgToVariableName(Ustring const & str);
 
 // Replace all instances of 'from' with 'to' in 'in':
 Ustring

@@ -24,11 +24,11 @@ namespace Fg {
 
 void
 fgClusterDeploy(
-    const string &          name,
+    string const &          name,
     const FgFuncCrdntor &   crdntor,
     const FgFnStr2Str &     worker,
-    const string &          coordIP,
-    const Strings &          workIPs,
+    string const &          coordIP,
+    Strings const &          workIPs,
     const Ustrings &       files)
 {
     Ustring        exeDir = fgExecutableDirectory();
@@ -95,7 +95,7 @@ fgClusterDeploy(
 
 static
 string
-testWorkerFunc(const string & msg)
+testWorkerFunc(string const & msg)
 {
     Doubles      vals;
     fgDeserialize(msg,vals);
@@ -124,7 +124,7 @@ testCoordinator(const FgClustDispatcher * dispatcher)
 // Fully automated test is limited to host computer so can only test with a single worker
 // (TCP connections are only unique to {IP+fgClusterPortDefault <-> IP+fgClusterPortDefault} 4-tuple)
 void
-fgClusterTest(const CLArgs &)
+fgClusterTest(CLArgs const &)
 {
     std::thread       worker(fgClustWorker,testWorkerFunc,fgClusterPortDefault());
     shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(fgSvec<string>("127.0.0.1"),fgClusterPortDefault());
@@ -132,7 +132,7 @@ fgClusterTest(const CLArgs &)
 }
 
 void
-fgClusterTestm(const CLArgs & args)
+fgClusterTestm(CLArgs const & args)
 {
     Syntax            syntax(args,"w | (c <ip>+)\n"
         "    w - start worker machine. Make sure you do this first on all computers to be referenced by <ip>+\n"
@@ -152,7 +152,7 @@ fgClusterTestm(const CLArgs & args)
 }
 
 void
-fgClusterDeployTestm(const CLArgs & args)
+fgClusterDeployTestm(CLArgs const & args)
 {
     Syntax        syntax(args,"<crdntorIP> <workerIP>+\n"
         "    <IP> - If no periods are entered then '192.168.0' is automatically prepended.\n"

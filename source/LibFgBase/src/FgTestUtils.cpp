@@ -65,14 +65,14 @@ using namespace std;
 
 void
 fgRegressFail(
-    const Ustring & testName,
-    const Ustring & refName)
+    Ustring const & testName,
+    Ustring const & refName)
 {
     fgThrow("Regression failure",testName + " != " + refName);
 }
 
 void
-regressFile(const Ustring & baselineRelPath,const Ustring & queryPath,const EquateFiles & fnEqual)
+regressFile(Ustring const & baselineRelPath,Ustring const & queryPath,const EquateFiles & fnEqual)
 {
     if (!pathExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
@@ -101,8 +101,8 @@ regressFile(const Ustring & baselineRelPath,const Ustring & queryPath,const Equa
 static
 bool
 compareImages(
-    const Ustring &    f1,
-    const Ustring &    f2,
+    Ustring const &    f1,
+    Ustring const &    f2,
     uint                maxDelta)
 {
     ImgC4UC         i1,i2;
@@ -113,8 +113,8 @@ compareImages(
 
 void
 fgRegressImage(
-    const string &      testFile,
-    const string &      refPath,
+    string const &      testFile,
+    string const &      refPath,
     uint                maxDelta)
 {
     EquateFiles       rt = std::bind(compareImages,_1,_2,maxDelta);
@@ -123,16 +123,16 @@ fgRegressImage(
 
 template<>
 ImgC4UC
-fgRegressLoad(const Ustring & path)
+fgRegressLoad(Ustring const & path)
 {return imgLoadAnyFormat(path); }
 
 template<>
 void
-fgRegressSave(const Ustring & path,const ImgC4UC & img)
+fgRegressSave(Ustring const & path,const ImgC4UC & img)
 {imgSaveAnyFormat(path,img); }
 
 void
-fgRegressString(const string & data,const Ustring & relPath)
+fgRegressString(string const & data,Ustring const & relPath)
 {
     Ustring        dd = dataDir();
     if (data == fgSlurp(dd+relPath))

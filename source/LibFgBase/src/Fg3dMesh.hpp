@@ -108,7 +108,7 @@ struct  Mesh
     numQuads() const;                   // Just the number of quads over all surfaces
 
     const Surf &
-    surface(const Ustring & surfName) const
+    surface(Ustring const & surfName) const
     {return fgFindFirst(surfaces,surfName); }
 
     size_t
@@ -128,7 +128,7 @@ struct  Mesh
     surfPointsAsVertLabels() const;
 
     Vec3Fs
-    surfPointPositions(const Strings & labels) const;
+    surfPointPositions(Strings const & labels) const;
 
     Vec3F
     markedVertPos(const String & name_) const
@@ -194,14 +194,14 @@ struct  Mesh
     morphNames() const;
 
     Valid<size_t>
-    findDeltaMorph(const Ustring & name) const;
+    findDeltaMorph(Ustring const & name) const;
 
     Valid<size_t>
-    findTargMorph(const Ustring & name) const;
+    findTargMorph(Ustring const & name) const;
 
     // Return the combined morph index:
     Valid<size_t>
-    findMorph(const Ustring & name) const;
+    findMorph(Ustring const & name) const;
 
     // Morph using member base and target vertices:
     void
@@ -238,7 +238,7 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorphFromTarget(const Ustring & name,const Vec3Fs & targetShape);
+    addDeltaMorphFromTarget(Ustring const & name,const Vec3Fs & targetShape);
 
     // Overwrites any existing morph of the same name:
     void
@@ -246,7 +246,7 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addTargMorph(const Ustring & name,const Vec3Fs & targetShape);
+    addTargMorph(Ustring const & name,const Vec3Fs & targetShape);
 
     Vec3Fs
     poseShape(const Vec3Fs & allVerts,const std::map<Ustring,float> & poseVals) const;

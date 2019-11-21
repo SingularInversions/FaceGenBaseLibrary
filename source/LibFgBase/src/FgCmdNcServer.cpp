@@ -26,7 +26,7 @@ namespace Fg {
 
 static
 bool
-run(const string & logFile,const string & cmd)
+run(string const & logFile,string const & cmd)
 {
     fgWriteFile(logFile,"<h3>" + cmd + "</h3>\n<pre>\n");
 #ifdef _MSC_VER         // win
@@ -46,12 +46,12 @@ run(const string & logFile,const string & cmd)
 
 static
 bool
-runScript(const string & logFile,const vector<string> & cmds)
+runScript(string const & logFile,const vector<string> & cmds)
 {
-    const string    push = "fgPush ",
+    string const    push = "fgPush ",
                     pop = "fgPop";
     PushDir       dirStack;
-    for (const string & cmd : cmds) {
+    for (string const & cmd : cmds) {
         if (fgBeginsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
             Ofstream  ofs(logFile,true);
@@ -79,8 +79,8 @@ runScript(const string & logFile,const vector<string> & cmds)
 static
 bool
 handler(
-    const string &  addr,
-    const string &  dataIn,
+    string const &  addr,
+    string const &  dataIn,
     string &)
 {
     FgNcScript      script;
@@ -115,7 +115,7 @@ handler(
 }
 
 void
-fgCmdNcServer(const CLArgs & args)
+fgCmdNcServer(CLArgs const & args)
 {
     if (args.size() > 1)
         fgThrow(args[0]+" takes no arguments");

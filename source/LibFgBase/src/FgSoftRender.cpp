@@ -97,7 +97,7 @@ renderSoft(
 }
 
 void
-fgSoftRenderTest(const CLArgs &)
+fgSoftRenderTest(CLArgs const &)
 {
     PushDir       pd(dataDir()+"base/test/render/");
 

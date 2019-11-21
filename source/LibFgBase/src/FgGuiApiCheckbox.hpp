@@ -26,7 +26,7 @@ struct GuiCheckbox : GuiBase
 };
 
 GuiPtr
-guiCheckbox(const Ustring & label,const IPT<bool> & valInp);
+guiCheckbox(Ustring const & label,const IPT<bool> & valInp);
 
 GuiPtr
 guiCheckboxes(Ustrings const & labels,Svec<IPT<bool> > const & selNs);

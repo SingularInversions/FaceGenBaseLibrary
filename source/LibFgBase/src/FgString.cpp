@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 u32string
-fgToUtf32(const string & str)
+fgToUtf32(string const & str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -86,14 +86,14 @@ Ustring::as_wstring() const
 #endif
 
 Ustring&
-Ustring::operator+=(const Ustring & s)
+Ustring::operator+=(Ustring const & s)
 {
     m_str += s.m_str;
     return *this;
 }
 
 Ustring
-Ustring::operator+(const Ustring& s) const
+Ustring::operator+(Ustring const& s) const
 {
     return Ustring(m_str+s.m_str);
 }
@@ -128,7 +128,7 @@ Ustring::is_ascii() const
     return true;
 }
 
-const string &
+string const &
 Ustring::ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
@@ -172,7 +172,7 @@ Ustring::split(char ch) const
 }
 
 bool
-Ustring::beginsWith(const Ustring & s) const
+Ustring::beginsWith(Ustring const & s) const
 {
     if(s.m_str.size() > m_str.size())
         return false;
@@ -181,7 +181,7 @@ Ustring::beginsWith(const Ustring & s) const
 
 // Can't put this inline without include file recursive dependency:
 bool
-Ustring::endsWith(const Ustring & str) const
+Ustring::endsWith(Ustring const & str) const
 {return fgEndsWith(as_utf32(),str.as_utf32()); }
 
 Ustring
@@ -197,7 +197,7 @@ Ustring::toLower() const
 }
 
 std::ostream& 
-operator<<(std::ostream & os, const Ustring & s)
+operator<<(std::ostream & os, Ustring const & s)
 {
     return os << s.m_str;
 }
@@ -209,14 +209,14 @@ operator>>(std::istream & is, Ustring & s)
 }
 
 Ustring
-fgTr(const string & msg)
+fgTr(string const & msg)
 {
     // Just a stub for now:
     return msg;
 }
 
 Ustring
-fgRemoveChars(const Ustring & str,uchar chr)
+fgRemoveChars(Ustring const & str,uchar chr)
 {
     FGASSERT(chr < 128);
     u32string       s32 = str.as_utf32(),
@@ -228,7 +228,7 @@ fgRemoveChars(const Ustring & str,uchar chr)
 }
 
 Ustring
-fgRemoveChars(const Ustring & str,Ustring chrs)
+fgRemoveChars(Ustring const & str,Ustring chrs)
 {
     u32string       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
@@ -240,7 +240,7 @@ fgRemoveChars(const Ustring & str,Ustring chrs)
 }
 
 bool
-fgGlobMatch(const Ustring & globStr,const Ustring & str)
+fgGlobMatch(Ustring const & globStr,Ustring const & str)
 {
     if (globStr.empty())
         return str.empty();
@@ -256,7 +256,7 @@ fgGlobMatch(const Ustring & globStr,const Ustring & str)
 }
 
 Ustring
-fgSubstring(const Ustring & str,size_t start,size_t size)
+fgSubstring(Ustring const & str,size_t start,size_t size)
 {
     Ustring        ret;
     u32string       s = str.as_utf32();
@@ -276,7 +276,7 @@ fgRest(Ustring const & str,size_t start)
 }
 
 Ustring
-cat(const Ustrings & strings,const Ustring & separator)
+cat(const Ustrings & strings,Ustring const & separator)
 {
     Ustring        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -288,7 +288,7 @@ cat(const Ustrings & strings,const Ustring & separator)
 }
 
 string
-fgToVariableName(const Ustring & str)
+fgToVariableName(Ustring const & str)
 {
     string          ret;
     u32string    str32 = str.as_utf32();

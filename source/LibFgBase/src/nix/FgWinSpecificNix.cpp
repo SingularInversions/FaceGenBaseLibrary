@@ -15,11 +15,11 @@ using namespace std;
 namespace Fg {
 
 Opt<ulong>
-winRegistryLookupUlong(const Ustring &,const Ustring &)
+winRegistryLookupUlong(Ustring const &,Ustring const &)
 {return Opt<ulong>(); }
 
 Opt<Ustring>
-fgWinRegistryLookupString(const Ustring &,const Ustring &)
+fgWinRegistryLookupString(Ustring const &,Ustring const &)
 {return Opt<Ustring>(); }
 
 }

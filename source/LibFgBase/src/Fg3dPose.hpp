@@ -28,7 +28,7 @@ struct  Morph
     Vec3Fs              verts;      // 1-1 correspondence with base verts
 
     Morph() {}
-    Morph(const Ustring & n,const Vec3Fs & v)
+    Morph(Ustring const & n,const Vec3Fs & v)
         : name(n), verts(v) {}
 
     void
@@ -125,7 +125,7 @@ struct  PoseVal
 
     // Allow for finding by name:
     bool
-    operator==(const Ustring & rhsName) const
+    operator==(Ustring const & rhsName) const
     {return (name == rhsName); }
 };
 

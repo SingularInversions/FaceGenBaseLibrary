@@ -25,7 +25,7 @@ namespace Fg {
 namespace {
 
 void
-combinesurfs(const CLArgs & args)
+combinesurfs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
@@ -46,7 +46,7 @@ combinesurfs(const CLArgs & args)
 }
 
 void
-convert(const CLArgs & args)
+convert(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -58,7 +58,7 @@ convert(const CLArgs & args)
 }
 
 void
-copyUvList(const CLArgs & args)
+copyUvList(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
@@ -75,7 +75,7 @@ copyUvList(const CLArgs & args)
 }
 
 void
-copyUvs(const CLArgs & args)
+copyUvs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<from>.<ext0> <to>.<ext1>\n"
@@ -101,7 +101,7 @@ copyUvs(const CLArgs & args)
 }
 
 void
-copyverts(const CLArgs & args)
+copyverts(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext0> <out>.<ext1>\n"
@@ -119,7 +119,7 @@ copyverts(const CLArgs & args)
 }
 
 void
-emboss(const CLArgs & args)
+emboss(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<uvImage>.<img> <meshin>.<ext0> <val> <out>.<ext1>\n"
@@ -144,7 +144,7 @@ emboss(const CLArgs & args)
 }
 
 void
-invWind(const CLArgs & args)
+invWind(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -168,7 +168,7 @@ invWind(const CLArgs & args)
 }
 
 void
-markVerts(const CLArgs & args)
+markVerts(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.tri <verts>.<ext> <out>.tri\n"
@@ -177,7 +177,7 @@ markVerts(const CLArgs & args)
         );
     Mesh    mesh = loadTri(syntax.next());
     Vec3Fs     verts = meshLoadAnyFormat(syntax.next()).verts;
-    float       dim = fgMaxElem(cDims(mesh.verts));
+    float       dim = cMaxElem(cDims(mesh.verts));
     uint        poorMatches = 0,
                 totalMatches = 0;
     for (size_t vv=0; vv<verts.size(); ++vv) {
@@ -207,7 +207,7 @@ markVerts(const CLArgs & args)
 }
 
 void
-mmerge(const CLArgs & args)
+mmerge(CLArgs const & args)
 {
     Syntax    syntax(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
@@ -225,7 +225,7 @@ mmerge(const CLArgs & args)
 }
 
 void
-mergesurfs(const CLArgs & args)
+mergesurfs(CLArgs const & args)
 {
     Syntax      syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -241,7 +241,7 @@ mergesurfs(const CLArgs & args)
 }
 
 void
-rdf(const CLArgs & args)
+rdf(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.tri [<out>.tri]\n"
@@ -258,7 +258,7 @@ rdf(const CLArgs & args)
 }
 
 void
-rt(const CLArgs & args)
+rt(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut> (<surfIndex> <triEquivIndex>)+\n"
@@ -302,7 +302,7 @@ rt(const CLArgs & args)
 }
 
 void
-ruv(const CLArgs & args)
+ruv(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -338,7 +338,7 @@ sortFacets(CLArgs const & args)
 }
 
 void
-mergenamedsurfs(const CLArgs & args)
+mergenamedsurfs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -351,7 +351,7 @@ mergenamedsurfs(const CLArgs & args)
 }
 
 void
-splitObjByMtl(const CLArgs & args)
+splitObjByMtl(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<mesh>.[w]obj <base>\n"
@@ -366,7 +366,7 @@ splitObjByMtl(const CLArgs & args)
 }
 
 void
-splitsurfsbyuvs(const CLArgs & args)
+splitsurfsbyuvs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -379,7 +379,7 @@ splitsurfsbyuvs(const CLArgs & args)
 }
 
 void
-splitsurface(const CLArgs & args)
+splitsurface(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn>\n"
@@ -402,7 +402,7 @@ splitsurface(const CLArgs & args)
 }
 
 void
-surfAdd(const CLArgs & args)
+surfAdd(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
@@ -417,7 +417,7 @@ surfAdd(const CLArgs & args)
 }
 
 void
-surfCopy(const CLArgs & args)
+surfCopy(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
@@ -430,7 +430,7 @@ surfCopy(const CLArgs & args)
 }
 
 void
-surfDel(const CLArgs & args)
+surfDel(CLArgs const & args)
 {
     Syntax        syntax(args,
         "<in>.<ext> <idx> <out>.<ext>\n"
@@ -446,7 +446,7 @@ surfDel(const CLArgs & args)
 }
 
 void
-surfList(const CLArgs & args)
+surfList(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext>\n"
@@ -460,7 +460,7 @@ surfList(const CLArgs & args)
 }
 
 void
-surfRen(const CLArgs & args)
+surfRen(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.fgmesh <idx> <name>\n"
@@ -477,7 +477,7 @@ surfRen(const CLArgs & args)
 }
 
 void
-spCopy(const CLArgs & args)
+spCopy(CLArgs const & args)
 {
     Syntax    syntax(args,"<from>.fgmesh <to>.fgmesh <out>.fgmesh");
     Mesh    from = loadFgmesh(syntax.next()),
@@ -490,7 +490,7 @@ spCopy(const CLArgs & args)
 }
 
 void
-spDel(const CLArgs & args)
+spDel(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.tri <ptIdx>\n"
@@ -507,7 +507,7 @@ spDel(const CLArgs & args)
 }
 
 void
-spList(const CLArgs & args)
+spList(CLArgs const & args)
 {
     Syntax    syntax(args,"<in>.fgmesh");
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
@@ -521,7 +521,7 @@ spList(const CLArgs & args)
 }
 
 void
-spRen(const CLArgs & args)
+spRen(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
@@ -543,7 +543,7 @@ spRen(const CLArgs & args)
 }
 
 void
-spsToVerts(const CLArgs & args)
+spsToVerts(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.tri <out>.tri\n"
@@ -556,7 +556,7 @@ spsToVerts(const CLArgs & args)
 }
 
 void
-surf(const CLArgs & args)
+surf(CLArgs const & args)
 {
     vector<Cmd>   ops;
     ops.push_back(Cmd(surfAdd,"add","Add an empty surface to a mesh"));
@@ -575,7 +575,7 @@ surf(const CLArgs & args)
 }
 
 void
-toTris(const CLArgs & args)
+toTris(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -588,7 +588,7 @@ toTris(const CLArgs & args)
 }
 
 void
-unifyuvs(const CLArgs & args)
+unifyuvs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -601,7 +601,7 @@ unifyuvs(const CLArgs & args)
 }
 
 void
-unifyverts(const CLArgs & args)
+unifyverts(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -614,7 +614,7 @@ unifyverts(const CLArgs & args)
 }
 
 void
-uvclamp(const CLArgs & args)
+uvclamp(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
@@ -633,7 +633,7 @@ uvclamp(const CLArgs & args)
 }
 
 void
-uvSolidImage(const CLArgs & args)
+uvSolidImage(CLArgs const & args)
 {
     Syntax    syn(args,
         "<mesh>.<extM> <size> <image>.<extI>\n"
@@ -654,7 +654,7 @@ uvSolidImage(const CLArgs & args)
 }
 
 void
-uvWireframeImage(const CLArgs & args)
+uvWireframeImage(CLArgs const & args)
 {
     Syntax    syn(args,
         "<mesh>.<extM> <image>.<extI>\n"
@@ -671,7 +671,7 @@ uvWireframeImage(const CLArgs & args)
 }
 
 void
-uvmask(const CLArgs & args)
+uvmask(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
@@ -692,7 +692,7 @@ uvmask(const CLArgs & args)
 }
 
 void
-uvunwrap(const CLArgs & args)
+uvunwrap(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
@@ -713,7 +713,7 @@ uvunwrap(const CLArgs & args)
 }
 
 void
-xformApply(const CLArgs & args)
+xformApply(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
@@ -730,7 +730,7 @@ xformApply(const CLArgs & args)
 }
 
 void
-xformCreateMeshes(const CLArgs & args)
+xformCreateMeshes(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
@@ -745,13 +745,13 @@ xformCreateMeshes(const CLArgs & args)
                         tv = scast<double>(targ.verts);
     SimilarityD        sim = similarityApprox(bv,tv);
     double              ssd = cSsd(mapXft(bv,sim.asAffine()),tv),
-                        sz = fgMaxElem(cDims(tv));
+                        sz = cMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
     fgSaveXml(simFname,sim);
 }
 
 void
-xformCreateIdentity(const CLArgs & args)
+xformCreateIdentity(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml\n"
@@ -762,7 +762,7 @@ xformCreateIdentity(const CLArgs & args)
 }
 
 void
-xformCreateTrans(const CLArgs & args)
+xformCreateTrans(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml <X> <Y> <Z>"
@@ -779,7 +779,7 @@ xformCreateTrans(const CLArgs & args)
 }
 
 void
-xformCreateRotate(const CLArgs & args)
+xformCreateRotate(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml <axis> <degrees>\n"
@@ -803,7 +803,7 @@ xformCreateRotate(const CLArgs & args)
 }
 
 void
-xformCreateScale(const CLArgs & args)
+xformCreateScale(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<similarity>.xml <scale>"
@@ -817,7 +817,7 @@ xformCreateScale(const CLArgs & args)
 }
 
 void
-xformCreate(const CLArgs & args)
+xformCreate(CLArgs const & args)
 {
     doMenu(args,
         fgSvec(
@@ -830,7 +830,7 @@ xformCreate(const CLArgs & args)
 }
 
 void
-xformMirror(const CLArgs & args)
+xformMirror(CLArgs const & args)
 {
     Syntax        syn(args,
         "<axis> <meshIn>.<ext1> [<meshOut>.<ext2>]\n"
@@ -857,7 +857,7 @@ xformMirror(const CLArgs & args)
 }
 
 void
-xform(const CLArgs & args)
+xform(CLArgs const & args)
 {
     Cmds      cmds;
     cmds.push_back(Cmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"));
@@ -867,7 +867,7 @@ xform(const CLArgs & args)
 }
 
 void
-meshops(const CLArgs & args)
+meshops(CLArgs const & args)
 {
     vector<Cmd>   ops;
     ops.push_back(Cmd(combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"));

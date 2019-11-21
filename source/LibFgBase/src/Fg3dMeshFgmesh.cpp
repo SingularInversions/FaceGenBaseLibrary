@@ -21,7 +21,7 @@ using namespace std;
 namespace Fg {
 
 Mesh
-loadFgmesh(const Ustring & fname)
+loadFgmesh(Ustring const & fname)
 {
     Mesh        ret;
     Ifstream      ifs(fname);
@@ -32,7 +32,7 @@ loadFgmesh(const Ustring & fname)
 }
 
 void
-saveFgmesh(const Ustring & fname,const Mesh & mesh)
+saveFgmesh(Ustring const & fname,const Mesh & mesh)
 {
     Ofstream          ofs(fname);
     fgWritep(ofs,string("FgMesh01"));
@@ -40,11 +40,11 @@ saveFgmesh(const Ustring & fname,const Mesh & mesh)
 }
 
 void
-saveFgmesh(const Ustring & fname,const Meshes & meshes)
+saveFgmesh(Ustring const & fname,const Meshes & meshes)
 {saveFgmesh(fname,fgMergeMeshes(meshes)); }
 
 void
-fgSaveFgmeshTest(const CLArgs & args)
+fgSaveFgmeshTest(CLArgs const & args)
 {
     FGTESTDIR;
     saveFgmesh("Mouth.tri",loadTri(dataDir()+"base/Mouth.tri"));

@@ -141,7 +141,7 @@ fgMaxColwise(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 T
-fgMaxElem(const Mat<T,nrows,ncols> & mat)
+cMaxElem(const Mat<T,nrows,ncols> & mat)
 {
     T           ret(mat[0]);
     size_t      sz = mat.size();
@@ -152,7 +152,7 @@ fgMaxElem(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 T
-fgMinElem(const Mat<T,nrows,ncols> & mat)
+cMinElem(const Mat<T,nrows,ncols> & mat)
 {
     T           ret(mat[0]);
     size_t      sz = mat.size();
@@ -232,7 +232,7 @@ cMax(
 
 template<typename T>
 inline T
-fgMaxElem(const MatV<T> & mat)
+cMaxElem(const MatV<T> & mat)
 {return cMax(mat.dataVec()); }
 
 template<typename T,uint nrows>
@@ -324,7 +324,7 @@ template<uint dim>
 Mat<uint,dim,2>
 fgRangeToBounds(Mat<uint,dim,1> range)
 {
-    FGASSERT(fgMinElem(range) > 0);
+    FGASSERT(cMinElem(range) > 0);
     return fgJoinHoriz(Mat<uint,dim,1>(0),range-Mat<uint,dim,1>(1));
 }
 
@@ -370,7 +370,7 @@ fgCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
     Mat<T,dim,1>  lo = bounds.colVec(0),
                         hi = bounds.colVec(1),
                         centre = (lo + hi) * T(0.5);
-    T                   hsize = fgMaxElem(hi - lo) * 0.5f * padRatio;
+    T                   hsize = cMaxElem(hi - lo) * 0.5f * padRatio;
     ret = fgJoinHoriz(centre-Mat<T,dim,1>(hsize),centre+Mat<T,dim,1>(hsize));
     return ret;
 }

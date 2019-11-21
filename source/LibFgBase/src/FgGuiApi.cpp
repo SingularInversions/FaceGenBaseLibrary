@@ -15,7 +15,7 @@ using namespace std;
 namespace Fg {
 
 void
-fgGuiTestmDialogSplashScreen(const CLArgs &)
+fgGuiTestmDialogSplashScreen(CLArgs const &)
 {
     std::function<void(void)>     f = guiDialogSplashScreen();
     fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
@@ -24,7 +24,7 @@ fgGuiTestmDialogSplashScreen(const CLArgs &)
 }
 
 GuiVal<string>
-guiImageFormat(const string & label,bool warnTransparency)
+guiImageFormat(string const & label,bool warnTransparency)
 {
     GuiVal<string>     ret;
     Strings              ids {"png","jpg","tga","tif"};
@@ -38,7 +38,7 @@ guiImageFormat(const string & label,bool warnTransparency)
 }
 
 void
-fgTestmGui2(const CLArgs &)
+fgTestmGui2(CLArgs const &)
 {
     Ustring        store = fgDirUserAppDataLocalFaceGen("base","testm gui2");
     GuiVal<vector<bool> >    checkboxes;

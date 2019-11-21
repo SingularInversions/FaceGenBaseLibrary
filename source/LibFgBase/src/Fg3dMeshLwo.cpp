@@ -89,7 +89,7 @@ struct LwoTextureInfoS
 //****************************************************************************
 // Local functions
 //****************************************************************************
-static bool saveLwoLwsFile(const Ustring &fname,
+static bool saveLwoLwsFile(Ustring const &fname,
                 const FffMultiObjectC &model,
                 const vector<FffMultiObjectC> *targets,
                 const vector<string>          *names);
@@ -97,7 +97,7 @@ static bool saveLwoLwsFile(const Ustring &fname,
 static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
                 const vector<Vec2F> &texCoord);
-static bool errorFcloseExit(FILE *fptr, const Ustring &fname);
+static bool errorFcloseExit(FILE *fptr, Ustring const &fname);
 static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
 static bool swap2BytesWrite(FILE *fptr, const void *ptr);
@@ -127,10 +127,10 @@ static bool writeBboxChunks(FILE *fptr, unsigned long &chunkSize,
 static bool writeVmapTxuvChunks(FILE *fptr, unsigned long &chunkSize,
                 vector<unsigned long> &tmpVtxList,
                 vector<Vec2F> &tmpTexCoord,
-                const string &uvTexName,
+                string const &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeVmapMorfChunks(FILE *fptr, unsigned long &chunkSize,
-                const FffMultiObjectC &target, const string &targetName,
+                const FffMultiObjectC &target, string const &targetName,
                 const FffMultiObjectC &model, int objIndex);
 static bool writePolsChunks(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model, int objIndex);
@@ -139,14 +139,14 @@ static bool writePtagChunks(FILE *fptr, unsigned long &chunkSize,
 static bool writeVmadChunks(FILE *fptr, unsigned long &chunkSize,
                 const vector<unsigned long> &tmpVtxList,
                 const vector<Vec2F> &tmpTexCoord,
-                const string &uvTexName,
+                string const &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeClipChunks(FILE *fptr, unsigned long &chunkSize,
                 vector<unsigned long> &clipIdList, 
                 const FffMultiObjectC &model);
 static bool writeSurfChunk(FILE *fptr, unsigned long &chunkSize,
-                const string &tagName, const string &sourceName,
-                const string &uvTexName, unsigned long clipIdx);
+                string const &tagName, string const &sourceName,
+                string const &uvTexName, unsigned long clipIdx);
 static bool writeSurfColrSubChunk(FILE *fptr, unsigned short &chunkSize,
                 float red, float green, float blue,
                 unsigned long envelope);
@@ -155,7 +155,7 @@ static bool writeSurfSideSubChunk(FILE *fptr, unsigned short &chunkSize,
 static bool writeSurfSmanSubChunk(FILE *fptr, unsigned short &chunkSize,
                 float angle);
 static bool writeSurfBlokSubChunk(FILE *fptr, unsigned short &chunkSize,
-                const string &uvTexName, unsigned long clipIdx);
+                string const &uvTexName, unsigned long clipIdx);
 static bool writeSurfBlokImapSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokTmapSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokProjSubChunk(FILE *fptr, unsigned short &chunkSize);
@@ -166,11 +166,11 @@ static bool writeSurfBlokWrapSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokWrpwSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokWrphSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokVmapSubChunk(FILE *fptr, unsigned short &chunkSize,
-                const string &uvTexName);
+                string const &uvTexName);
 static bool writeSurfBlokAastSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize);
 
-static bool writeLwsFile(const Ustring &lwsName, const Ustring &lwoName,
+static bool writeLwsFile(Ustring const &lwsName, Ustring const &lwoName,
                 Vec3F minVect, Vec3F maxVect,
                 unsigned long numLayers, unsigned long numMorphs, 
                 const vector<string> *morphNames);
@@ -180,7 +180,7 @@ static bool writeLwsFile(const Ustring &lwsName, const Ustring &lwoName,
 //                              fffSaveLwoLwsFile
 //****************************************************************************
 static bool    fffSaveLwoLwsFile(
-    const Ustring            &fname,
+    Ustring const            &fname,
     const FffMultiObjectC   &model)
 {
     return saveLwoLwsFile(fname,model,0,0);
@@ -198,7 +198,7 @@ static string translateName(string input)
 
 static bool    fffSaveLwoLwsFile(
 
-    const Ustring                    &fname,
+    Ustring const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,  // Only use the vertices.
     const vector<string>            &morphNames)
@@ -216,7 +216,7 @@ static bool    fffSaveLwoLwsFile(
 //                              saveLwoLwsFile
 //****************************************************************************
 static bool saveLwoLwsFile(
-    const Ustring                  &fname,
+    Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *targets,       // Only use the vertices.
     const vector<string>            *names)
@@ -427,7 +427,7 @@ static bool searchVtxTexMap(
 //****************************************************************************
 //                              errorFcloseExit
 //****************************************************************************
-static bool errorFcloseExit(FILE *fptr, const Ustring &)
+static bool errorFcloseExit(FILE *fptr, Ustring const &)
 {
     fclose(fptr);
     return false;
@@ -800,7 +800,7 @@ static bool writeVmapTxuvChunks(
     unsigned long           &chunkSize,
     vector<unsigned long>   &tmpVtxList,
     vector<Vec2F>      &tmpTxtCoord,
-    const string            &uvTexName,
+    string const            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
     bool                    singleLayer)
@@ -953,7 +953,7 @@ static bool writeVmapMorfChunks(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     const FffMultiObjectC   &target,
-    const string            &targetName,
+    string const            &targetName,
     const FffMultiObjectC   &model,
     int                     objIdx)
 {
@@ -1263,7 +1263,7 @@ static bool writeVmadChunks(
     unsigned long           &chunkSize,
     const vector<unsigned long> &tmpVtxList,
     const vector<Vec2F> &tmpTexCoord,
-    const string            &uvTexName,
+    string const            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
     bool                    singleLayer)
@@ -1531,9 +1531,9 @@ static bool writeSurfChunk(
 
     FILE            *fptr,
     unsigned long   &chunkSize,
-    const string    &tagName,
-    const string    &sourceName,
-    const string    &uvTexName,
+    string const    &tagName,
+    string const    &sourceName,
+    string const    &uvTexName,
     unsigned long   clipIdx)
 {
     chunkSize = 0;
@@ -1708,7 +1708,7 @@ static bool writeSurfBlokSubChunk(
 
     FILE            *fptr,
     unsigned short  &chunkSize,
-    const string    &uvTexName,
+    string const    &uvTexName,
     unsigned long   clipIdx)
 {
     chunkSize = 0;
@@ -2180,7 +2180,7 @@ static bool writeSurfBlokVmapSubChunk(
 
     FILE            *fptr,
     unsigned short  &chunkSize,
-    const string    &uvTexName)
+    string const    &uvTexName)
 {
     chunkSize = 0;
 
@@ -2264,8 +2264,8 @@ static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize)
 // programs using LWO2 format (ie replacing the ": " with ".").
 //
 static bool writeLwsFile(
-    const Ustring            &lwsName, 
-    const Ustring            &lwoName,
+    Ustring const            &lwsName, 
+    Ustring const            &lwoName,
     Vec3F              minVect,
     Vec3F              maxVect,
     unsigned long           numLayers,
@@ -2368,7 +2368,7 @@ static bool writeLwsFile(
 
 void
 saveLwo(
-    const Ustring &        fname,
+    Ustring const &        fname,
     const vector<Mesh> & meshes,
     string                  imgFormat)
 {
@@ -2381,7 +2381,7 @@ saveLwo(
 }
 
 void
-fgSaveLwoTest(const CLArgs & args)
+fgSaveLwoTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring    dd = dataDir();

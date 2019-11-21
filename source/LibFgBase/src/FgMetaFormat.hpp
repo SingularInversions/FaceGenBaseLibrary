@@ -31,7 +31,7 @@ template<> inline           String fgArchiveString<portable_binary_iarchive>() {
 template<class Archive,class T>
 bool
 fgLoadDeserial(
-    const Ustring &    filename,
+    Ustring const &    filename,
     T &                 val,
     bool                throwOnFail)
 {
@@ -64,27 +64,27 @@ fgLoadDeserial(
 
 template<class T>
 inline bool
-fgLoadText(const Ustring & filename,T & val,bool throwOnFail=true)
+fgLoadText(Ustring const & filename,T & val,bool throwOnFail=true)
 {return fgLoadDeserial<boost::archive::text_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadXml(const Ustring & filename,T & val,bool throwOnFail=true)
+fgLoadXml(Ustring const & filename,T & val,bool throwOnFail=true)
 {return fgLoadDeserial<boost::archive::xml_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadBin(const Ustring & filename,T & val,bool throwOnFail=true)
+fgLoadBin(Ustring const & filename,T & val,bool throwOnFail=true)
 {return fgLoadDeserial<boost::archive::binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadPBin(const Ustring & filename,T & val,bool throwOnFail=true)
+fgLoadPBin(Ustring const & filename,T & val,bool throwOnFail=true)
 {return fgLoadDeserial<portable_binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 T
-fgLoadBinT(const Ustring & fname)
+fgLoadBinT(Ustring const & fname)
 {
     T       ret;
     fgLoadBin(fname,ret,true);
@@ -93,7 +93,7 @@ fgLoadBinT(const Ustring & fname)
 
 template<class T>
 T
-fgLoadPBinT(const Ustring & fname)
+fgLoadPBinT(Ustring const & fname)
 {
     T       ret;
     fgLoadPBin(fname,ret,true);
@@ -103,7 +103,7 @@ fgLoadPBinT(const Ustring & fname)
 template<class Archive,class T>
 bool
 fgSaveSerial(
-    const Ustring &    filename,
+    Ustring const &    filename,
     const T &           val,
     bool                throwOnFail)
 {
@@ -139,22 +139,22 @@ fgSaveSerial(
 
 template<class T>
 inline bool
-fgSaveText(const Ustring & filename,const T & val,bool throwOnFail=true)
+fgSaveText(Ustring const & filename,const T & val,bool throwOnFail=true)
 {return fgSaveSerial<boost::archive::text_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSaveXml(const Ustring & filename,const T & val,bool throwOnFail=true)
+fgSaveXml(Ustring const & filename,const T & val,bool throwOnFail=true)
 {return fgSaveSerial<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSaveBin(const Ustring & filename,const T & val,bool throwOnFail=true)
+fgSaveBin(Ustring const & filename,const T & val,bool throwOnFail=true)
 {return fgSaveSerial<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSavePBin(const Ustring & filename,const T & val,bool throwOnFail=true)
+fgSavePBin(Ustring const & filename,const T & val,bool throwOnFail=true)
 {return fgSaveSerial<portable_binary_oarchive>(filename,val,throwOnFail); }
 
 }

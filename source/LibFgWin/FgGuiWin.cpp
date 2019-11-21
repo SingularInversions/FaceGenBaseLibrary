@@ -284,7 +284,7 @@ winNcSize(HWND hwnd)
 }
 
 LRESULT
-winCallCatch(std::function<LRESULT(void)> func,const string & className)
+winCallCatch(std::function<LRESULT(void)> func,string const & className)
 {
     Ustring    msg;
     try

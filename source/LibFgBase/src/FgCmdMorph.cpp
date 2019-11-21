@@ -23,7 +23,7 @@ namespace Fg {
  */
 static
 void
-anim(const CLArgs & args)
+anim(CLArgs const & args)
 {
     Syntax    syn(args,
         "<fileSuffix> (<mesh>.tri)+ (<morphName> <morphValue>)+\n"
@@ -70,7 +70,7 @@ anim(const CLArgs & args)
  */
 static
 void
-apply(const CLArgs & args)
+apply(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
@@ -123,7 +123,7 @@ apply(const CLArgs & args)
  */
 static
 void
-clamp(const CLArgs & args)
+clamp(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
         "    v - All vertices in <seam>.tri will be used to define the seam.\n"
@@ -144,7 +144,7 @@ clamp(const CLArgs & args)
     if (seam.size() < 3)
         syn.error("Too few vertices to be a seam",toString(seam.size()));
     FgKdTree        kd(seam);
-    float           scale = fgMaxElem(cDims(mesh.verts)),
+    float           scale = cMaxElem(cDims(mesh.verts)),
                     closeSqr = sqr(scale / 10000.0f);
     set<uint>       clampVertInds;
     for (size_t ii=0; ii<mesh.verts.size(); ++ii)
@@ -162,7 +162,7 @@ clamp(const CLArgs & args)
  */
 static
 void
-clear(const CLArgs & args)
+clear(CLArgs const & args)
 {
     Syntax    syntax(args,"<mesh>.tri");
     string      name = syntax.next();
@@ -178,7 +178,7 @@ clear(const CLArgs & args)
  */
 static
 void
-copymorphs(const CLArgs & args)
+copymorphs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)*\n"
@@ -230,7 +230,7 @@ copymorphs(const CLArgs & args)
  */
 static
 void
-create(const CLArgs & args)
+create(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
@@ -250,8 +250,8 @@ create(const CLArgs & args)
         ignoreSmall = true;
         syntax.next();
     }
-    float       baseSz = fgMaxElem(cDims(base.verts)),
-                delSz = fgMaxElem(cDims(target.verts-base.verts));
+    float       baseSz = cMaxElem(cDims(base.verts)),
+                delSz = cMaxElem(cDims(target.verts-base.verts));
     if ((delSz / baseSz) < 0.00001) {
         if (ignoreSmall) {
             fgout << "Very small or zero morph ignored";
@@ -280,7 +280,7 @@ create(const CLArgs & args)
  */
 static
 void
-extract(const CLArgs & args)
+extract(CLArgs const & args)
 {
     Syntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
         "    <ext> - Output format " + meshSaveFormatsCLDescription() + "\n"
@@ -312,7 +312,7 @@ extract(const CLArgs & args)
  */
 static
 void
-morphList(const CLArgs & args)
+morphList(CLArgs const & args)
 {
     Syntax    syntax(args,
             "<mesh>.tri\n"
@@ -340,7 +340,7 @@ morphList(const CLArgs & args)
  */
 static
 void
-removebrackets(const CLArgs & args)
+removebrackets(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri\n"
@@ -361,7 +361,7 @@ removebrackets(const CLArgs & args)
  */
 static
 void
-removemorphs(const CLArgs & args)
+removemorphs(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)+\n"
@@ -413,7 +413,7 @@ removemorphs(const CLArgs & args)
  */
 static
 void
-renameMorph(const CLArgs & args)
+renameMorph(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<mesh>.tri (d | t) <index> <name>\n"
@@ -444,7 +444,7 @@ renameMorph(const CLArgs & args)
 
 static
 void
-morph(const CLArgs & args)
+morph(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(anim,"anim","Apply morphs by name to multiple meshes"));
@@ -466,7 +466,7 @@ fgCmdMorphInfo()
 {return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void
-fgMorphTest(const CLArgs & args)
+fgMorphTest(CLArgs const & args)
 {
     FGTESTDIR
     fgTestCopy("base/Jane.tri");

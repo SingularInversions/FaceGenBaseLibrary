@@ -24,7 +24,7 @@ const char lf = 0x0A;       // Unix line ending
 void
 targets(
     ostream &               ofs,
-    const string &          prjName,
+    string const &          prjName,
     const FgConsSrcDir &    grp)
 {
     vector<pair<string,string> >    srcNames;
@@ -42,7 +42,7 @@ targets(
 void
 group(
     ostream &               ofs,
-    const string &          prjName,
+    string const &          prjName,
     const FgConsSrcDir &  grp)
 {
     string  odir = "$(ODIR" + prjName + ")" + fgReplace(grp.dir,'/','_'),
@@ -82,7 +82,7 @@ linkLibs(
 {
     // gcc link is single-pass; order of linkage is important:
     Strings      libDeps = sln.getLnkDeps(prj.name);
-    for (const string & name : libDeps) {
+    for (string const & name : libDeps) {
         if (sln.contains(name)) {
             const FgConsProj &  p = sln.at(name);
             if (p.isDynamicLib())
@@ -98,8 +98,8 @@ linkLibs(
 // Collapse common case of 'ThisLib/../OtherLib':
 string
 collapse(
-    const string &  prjName,
-    const string &  incDir)
+    string const &  prjName,
+    string const &  incDir)
 {
     if (fgBeginsWith(incDir,"../"))
         return string(incDir.begin()+3,incDir.end());
@@ -121,9 +121,9 @@ consProj(
         ofs << " -w";                   // disables warnings (for all compilers)
     else
         ofs << " -Wall -Wextra";        // Amazingly, the latter does not encompass all of the former
-    for (const string & def : defs)
+    for (string const & def : defs)
         ofs << " -D" << def;
-    for (const string & id : incDirs) {
+    for (string const & id : incDirs) {
         string      libName = collapse(prj.name,id);
         ofs << " -I" << libName;
     }
@@ -134,7 +134,7 @@ consProj(
     // Make compiles dependent on ALL possible .hpp files since we're not about
     // to go parsing the source code to find the specific dependencies:
     ofs << "INCS" << prj.name << " := ";
-    for (const string & id : headerDirs)
+    for (string const & id : headerDirs)
         ofs << "$(wildcard " << collapse(prj.name,id) << "*.hpp) ";
     ofs << lf << targetPath(prj) << ": ";
     for (size_t ii=0; ii<prj.srcGroups.size(); ++ii)
@@ -166,7 +166,7 @@ consProj(
 }
 
 bool
-constIncludeFileNative(const FgConsSolution & sln,const string & fname)
+constIncludeFileNative(const FgConsSolution & sln,string const & fname)
 {
     set<string>         prereqs;        // All project names which are depended on
     for (const FgConsProj & p : sln.projects)
@@ -195,7 +195,7 @@ constIncludeFileNative(const FgConsSolution & sln,const string & fname)
 }
 
 bool
-constIncludeFileBox(const FgConsSolution & sln,const string & fname)
+constIncludeFileBox(const FgConsSolution & sln,string const & fname)
 {
     ostringstream       ofs;
     ofs
@@ -221,7 +221,7 @@ consMakefileOsArch(
     FgCompiler              compiler,
     FgArch                  arch,
     bool                    debug,      // release if false
-    const string &          fnameBuild) // includes this makefile
+    string const &          fnameBuild) // includes this makefile
 {
     string          debrel = debug ? "debug" : "release",
                     osStr = (os == FgBuildOS::linux) ? "linux" : toString(os),

@@ -304,10 +304,10 @@ Svec<T>
 fgSvec(const std::array<T,N> & v)
 {return Svec<T>(v.cbegin(),v.cend()); }
 
-// Generate elements using a function that takes no args (typically a random generator):
+// Generate elements using a function (eg. random generator):
 template<class T>
 Svec<T>
-fgGenerate(std::function<T()> generator,size_t num)
+generate(std::function<T()> generator,size_t num)
 {
     Svec<T>       ret;
     ret.reserve(num);
@@ -459,7 +459,7 @@ fgSnip(const Svec<T> & v,size_t idx)
 
 template<class T>
 Svec<T>
-fgFlat(const Svec<Svec<T> > & v)
+flat(const Svec<Svec<T> > & v)
 {
     Svec<T>       ret;
     size_t          sz = 0;
@@ -1058,14 +1058,15 @@ fgFill(Svec<T> & vec,T val)
 // All sub-vectors must have the same size():
 template<class T>
 Svec<Svec<T> >
-fgZip(const Svec<Svec<T> > & v)
+transpose(const Svec<Svec<T> > & v)
 {
     Svec<Svec<T> >  ret;
     if (!v.empty()) {
+        size_t      sz = v[0].size();
         for (size_t jj=1; jj<v.size(); ++jj)
-            FGASSERT(v[jj].size() == v[0].size());
-        ret.resize(v[0].size());
-        for (size_t ii=0; ii<ret.size(); ++ii) {
+            FGASSERT(v[jj].size() == sz);
+        ret.resize(sz);
+        for (size_t ii=0; ii<sz; ++ii) {
             ret[ii].reserve(v.size());
             for (size_t jj=0; jj<v.size(); ++jj)
                 ret[ii].push_back(v[jj][ii]);

@@ -18,7 +18,7 @@ namespace Fg {
 // An alias for strings that can contain UTF-8:
 typedef std::vector<std::string>    CLArgs;
 
-typedef std::function<void(const CLArgs &)> CmdFunc;
+typedef std::function<void(CLArgs const &)> CmdFunc;
 
 #ifdef _WIN32
 typedef wchar_t NativeUtfChar;

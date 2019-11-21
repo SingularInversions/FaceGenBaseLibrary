@@ -485,7 +485,7 @@ fgResampleSimple(
     if (in.dims().cmpntsProduct() == 0)
         out.clear();
     else {
-        FGASSERT(fgMinElem(out.dims()) > 0);
+        FGASSERT(cMinElem(out.dims()) > 0);
         Mat22F        inBoundsIucs( 0.0f,1.0f,    // sampleClip takes UICS
                                       0.0f,1.0f),
                         outBoundsIrcs(-0.5f,float(out.width())-0.5f,

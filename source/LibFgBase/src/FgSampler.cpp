@@ -26,10 +26,10 @@ valsDiffer(
     float                           maxDiff)
 {
     return (
-        (fgMaxElem(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
-        (fgMaxElem(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
+        (cMaxElem(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
 }
 
 static uint64 rayCount;
@@ -156,7 +156,7 @@ halfMoon(Vec2F ics)
 }
 
 void
-fgSamplerTest(const CLArgs &)
+fgSamplerTest(CLArgs const &)
 {
     imgDisplay(fgSampler(Vec2UI(128),halfMoon,4));
 }
@@ -182,7 +182,7 @@ mandelbrot(Vec2F ics)
 }
 
 void
-fgSamplerMLTest(const CLArgs &)
+fgSamplerMLTest(CLArgs const &)
 {
     FgTimer         time;
     ImgC4UC     img = fgSampler(Vec2UI(1024),mandelbrot,3);

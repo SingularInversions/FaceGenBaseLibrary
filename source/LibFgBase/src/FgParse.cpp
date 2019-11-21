@@ -18,7 +18,7 @@ using namespace std;
 namespace Fg {
 
 Strings
-fgTokenize(const string & str)
+fgTokenize(string const & str)
 {
     Strings      ret;
     string      acc;
@@ -91,7 +91,7 @@ splitLines(const u32string & src,bool incEmpty)
 }
 
 Ustrings
-fgSplitLinesUtf8(const string & utf8,bool includeEmptyLines)
+fgSplitLinesUtf8(string const & utf8,bool includeEmptyLines)
 {
     Ustrings               ret;
     FgStr32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
@@ -179,7 +179,7 @@ csvGetLine(
 }
 
 Stringss
-fgLoadCsv(const Ustring & fname,size_t fieldsPerLine)
+fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
     u32string       data = fgToUtf32(fgSlurp(fname));
@@ -196,7 +196,7 @@ fgLoadCsv(const Ustring & fname,size_t fieldsPerLine)
 }
 
 map<string,Strings>
-fgLoadCsvToMap(const Ustring & fname,size_t keyIdx,size_t fieldsPerLine)
+fgLoadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
@@ -206,7 +206,7 @@ fgLoadCsvToMap(const Ustring & fname,size_t keyIdx,size_t fieldsPerLine)
         Strings          line = csvGetLine(data,idx);
         if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
             fgThrow("CSV file contains a line with incorrect field width",fname);
-        const string &  key = line[keyIdx];
+        string const &  key = line[keyIdx];
         auto            it = ret.find(key);
         if (it == ret.end())
             ret[key] = line;
@@ -218,7 +218,7 @@ fgLoadCsvToMap(const Ustring & fname,size_t keyIdx,size_t fieldsPerLine)
 
 static
 string
-csvField(const string & data)
+csvField(string const & data)
 {
     string          ret = "\"";
     u32string       utf32 = fgToUtf32(data);
@@ -233,7 +233,7 @@ csvField(const string & data)
 }
 
 void
-fgSaveCsv(const Ustring & fname,const Stringss & csvLines)
+fgSaveCsv(Ustring const & fname,const Stringss & csvLines)
 {
     Ofstream      ofs(fname);
     for (Strings line : csvLines) {
@@ -248,7 +248,7 @@ fgSaveCsv(const Ustring & fname,const Stringss & csvLines)
 }
 
 Strings
-splitChar(const string & str,char ch,bool ie)
+splitChar(string const & str,char ch,bool ie)
 {
     Strings         ret;
     string          curr;
@@ -268,7 +268,7 @@ splitChar(const string & str,char ch,bool ie)
 }
 
 Strings
-fgWhiteBreak(const string & str)
+fgWhiteBreak(string const & str)
 {
     Strings  retval;
     bool            symbolFlag = false,
@@ -317,12 +317,12 @@ fgWhiteBreak(const string & str)
 }
 
 void
-fgTestmLoadCsv(const CLArgs & args)
+fgTestmLoadCsv(CLArgs const & args)
 {
     Syntax        syntax(args,"<file>.csv");
     Stringss         data = fgLoadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
-        const Strings &  fields = data[rr];
+        Strings const &  fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
         for (size_t ff=0; ff<fields.size(); ++ff)
             fgout << fgnl << "Field " << ff << ": " << fields[ff];
@@ -331,7 +331,7 @@ fgTestmLoadCsv(const CLArgs & args)
 }
 
 string
-fgAsciify(const string & in)
+fgAsciify(string const & in)
 {
     string          ret;
     map<char32_t,char>  hg;     // homoglyph map

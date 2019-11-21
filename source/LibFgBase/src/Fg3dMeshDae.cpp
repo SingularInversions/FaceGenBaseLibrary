@@ -21,7 +21,7 @@ namespace Fg {
 
 void
 saveDae(
-    const Ustring &            filename,
+    Ustring const &            filename,
     const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
@@ -224,7 +224,7 @@ saveDae(
 }
 
 void
-fgSaveDaeTest(const CLArgs & args)
+fgSaveDaeTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring        dd = dataDir() + "base/test/";

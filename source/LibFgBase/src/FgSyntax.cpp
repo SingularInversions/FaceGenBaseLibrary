@@ -18,8 +18,8 @@ using namespace std;
 namespace Fg {
 
 Syntax::Syntax(
-    const CLArgs &      args,
-    const string & syntax)
+    CLArgs const &      args,
+    string const & syntax)
     :
     m_args(args), m_idx(0)
 {
@@ -45,7 +45,7 @@ Syntax::~Syntax()
 }
 
 void
-Syntax::error(const string & errMsg)
+Syntax::error(string const & errMsg)
 {
     fgout.setDefOut(true);    // Don't write directly to cout to ensure proper logging:
     fgout << "\nERROR: " << errMsg << '\n';
@@ -53,7 +53,7 @@ Syntax::error(const string & errMsg)
 }
 
 void
-Syntax::error(const string & errMsg,const Ustring & data)
+Syntax::error(string const & errMsg,Ustring const & data)
 {
     fgout.setDefOut(true);
     fgout << "\nERROR: " << errMsg << ": " << data << '\n';
@@ -67,7 +67,7 @@ Syntax::incorrectNumArgs()
 }
 
 void
-Syntax::checkExtension(const Ustring & fname,const string & ext)
+Syntax::checkExtension(Ustring const & fname,string const & ext)
 {
     if (!fgCheckExt(fname,ext))
         error("File must have extension "+ext,fname);
@@ -75,7 +75,7 @@ Syntax::checkExtension(const Ustring & fname,const string & ext)
 
 void
 Syntax::checkExtension(
-    const string &                 fname,
+    string const &                 fname,
     const std::vector<string> &    exts)
 {
     string      fext = fgToLower(fgPathToExt(fname));
@@ -85,7 +85,7 @@ Syntax::checkExtension(
     error("Filename did not have on of the required extensions",fname + " : " + toString(exts));
 }
 
-const string &
+string const &
 Syntax::peekNext()
 {
     if (m_idx+1 == m_args.size())
@@ -110,7 +110,7 @@ removeEndline(string & line)
 }
 static
 bool
-hasLeadingSpaces(const string & line,size_t num)
+hasLeadingSpaces(string const & line,size_t num)
 {
     for (size_t ii=0; ii<num; ++ii)
         if (line[ii] != ' ')
@@ -119,7 +119,7 @@ hasLeadingSpaces(const string & line,size_t num)
 }
 static
 string
-formatLine(const string & line,size_t indent,size_t maxWidth)
+formatLine(string const & line,size_t indent,size_t maxWidth)
 {
     --maxWidth;         // CRLF takes up a space
     string      ret;
@@ -156,13 +156,13 @@ formatLine(const string & line,size_t indent,size_t maxWidth)
 }
 static
 string
-formatLines(const string & desc)
+formatLines(string const & desc)
 {
     // Convert from old-style manual formatting to long lines:
     Strings     ins = splitLines(desc),
                 outs;
     size_t      indent = 0;
-    for (const string & line : ins) {
+    for (string const & line : ins) {
         size_t      mark = line.find(" - ",0);
         if (mark == string::npos) {
             if ((indent > 0) && (line.size() > indent) && (hasLeadingSpaces(line,indent))) {
@@ -185,7 +185,7 @@ formatLines(const string & desc)
     // Now format the lines:
     string              ret;
     uint                maxWidth = std::min(fgConsoleWidth(),160U);     // 160 upper limit for readability
-    for (const string & line : outs) {
+    for (string const & line : outs) {
         size_t      mark = line.find(" - ",0);
         if (mark == string::npos)
             ret += formatLine(line,0,maxWidth);
@@ -211,7 +211,7 @@ Syntax::numArgsMustBe(uint num)
 }
 
 uint
-Syntax::nextSelectionIndex(const Strings & validValues,const string & argDescription)
+Syntax::nextSelectionIndex(Strings const & validValues,string const & argDescription)
 {
     size_t      idx = fgFindFirstIdx(validValues,next());
     if (idx == validValues.size())

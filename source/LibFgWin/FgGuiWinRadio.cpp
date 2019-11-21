@@ -30,7 +30,7 @@ struct  GuiRadioWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiRadioWin::create " << m_api.labels[0];
         WinCreateChild   cc;

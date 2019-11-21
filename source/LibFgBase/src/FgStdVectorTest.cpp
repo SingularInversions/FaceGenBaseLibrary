@@ -13,7 +13,7 @@
 namespace Fg {
 
 void
-fgStdVectorTest(const CLArgs &)
+fgStdVectorTest(CLArgs const &)
 {
     Ints          v = { 1, 2, 3 };
     Intss         subs = fgSubsets(v,0,4);

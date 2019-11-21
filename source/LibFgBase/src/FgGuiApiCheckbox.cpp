@@ -14,7 +14,7 @@ using namespace std;
 namespace Fg {
 
 GuiPtr
-guiCheckbox(const Ustring & label,const IPT<bool> & node)
+guiCheckbox(Ustring const & label,const IPT<bool> & node)
 {
     GuiCheckbox      cb;
     cb.label = label;

@@ -13,6 +13,7 @@
 #include "FgStdLibs.hpp"
 #include "FgStdExtensions.hpp"
 #include "FgTypes.hpp"
+#include "FgMatrixCBase.hpp"
 
 namespace Fg {
 
@@ -64,6 +65,31 @@ randNearUnit();
 
 Svec<double>
 randNearUnits(size_t num);
+
+template<uint dim>
+Mat<double,dim,1>
+randVecNormal()
+{
+    Mat<double,dim,1>   ret;
+    for (uint ii=0; ii<dim; ++ii)
+        ret[ii] = randNormal();
+    return ret;
+}
+
+template<uint dim>
+Svec<Mat<double,dim,1> >
+randVecNormals(size_t sz,double stdev)
+{
+    Svec<Mat<double,dim,1> >    ret;
+    ret.reserve(sz);
+    for (size_t ii=0; ii<sz; ++ii) {
+        Mat<double,dim,1>       v;
+        for (uint jj=0; jj<dim; ++jj)
+            v[jj] = randNormal()*stdev;
+        ret.push_back(v);
+    }
+    return ret;
+}
 
 }
 

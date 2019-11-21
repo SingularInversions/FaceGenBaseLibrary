@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 void
-imgLoadAnyFormat(const Ustring & fname,ImgUC & ret)
+imgLoadAnyFormat(Ustring const & fname,ImgUC & ret)
 {
     ImgC4UC     img = imgLoadAnyFormat(fname);
     ret.resize(img.dims());
@@ -25,7 +25,7 @@ imgLoadAnyFormat(const Ustring & fname,ImgUC & ret)
 }
 
 void
-imgLoadAnyFormat(const Ustring & fname,ImgF & img)
+imgLoadAnyFormat(Ustring const & fname,ImgF & img)
 {
     ImgC4UC     tmp;
     imgLoadAnyFormat(fname,tmp);
@@ -35,7 +35,7 @@ imgLoadAnyFormat(const Ustring & fname,ImgF & img)
 }
 
 void
-imgSaveAnyFormat(const Ustring & fname,const ImgUC & img)
+imgSaveAnyFormat(Ustring const & fname,const ImgUC & img)
 {
     ImgC4UC         tmp;
     imgConvert_(img,tmp);
@@ -60,14 +60,14 @@ imgFileExtensionsDescription()
 }
 
 bool
-hasImgExtension(const Ustring & fname)
+hasImgExtension(Ustring const & fname)
 {
     string          ext = fgToLower(fgPathToExt(fname).m_str);
     return fgContains(imgFileExtensions(),ext);
 }
 
 std::vector<std::string>
-imgFindFiles(const Ustring & baseName)
+imgFindFiles(Ustring const & baseName)
 {
     vector<string>      ret,
                         cifs = imgFileExtensions();
@@ -78,7 +78,7 @@ imgFindFiles(const Ustring & baseName)
 }
 
 bool
-imgFindLoadAnyFormat(const Ustring & baseName,ImgC4UC & img)
+imgFindLoadAnyFormat(Ustring const & baseName,ImgC4UC & img)
 {
     vector<string>  exts = imgFindFiles(baseName);
     if (exts.empty())
@@ -91,7 +91,7 @@ imgFindLoadAnyFormat(const Ustring & baseName,ImgC4UC & img)
 }
 
 void
-fgImgTestWrite(const CLArgs & args)
+fgImgTestWrite(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        ch = 0x00004EE5;            // A Chinese character

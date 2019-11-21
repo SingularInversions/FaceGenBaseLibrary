@@ -15,7 +15,7 @@ namespace Fg {
 
 // Appends the information from Windows' "GetLastError" into the exception message:
 void
-throwWindows(const std::string & msg,const Ustring & data=Ustring());
+throwWindows(const std::string & msg,Ustring const & data=Ustring());
 
 inline
 void

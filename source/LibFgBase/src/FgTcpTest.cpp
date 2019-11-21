@@ -18,8 +18,8 @@ namespace Fg {
 static
 bool
 handler(
-    const string &  ipAddr,
-    const string &  dataIn,
+    string const &  ipAddr,
+    string const &  dataIn,
     string &        response)
 {
     fgout << fgnl << "Message received from " << ipAddr << " : " << dataIn;
@@ -30,14 +30,14 @@ handler(
 }
 
 void
-fgTcpServerTest(const CLArgs &)
+fgTcpServerTest(CLArgs const &)
 {
     fgout.setDefOut(true);
     fgTcpServer(fgNcServerPort(),true,handler,1024);
 }
 
 void
-fgTcpClientTest(const CLArgs &)
+fgTcpClientTest(CLArgs const &)
 {
     fgout.setDefOut(true);
     string          message = "Please respond",

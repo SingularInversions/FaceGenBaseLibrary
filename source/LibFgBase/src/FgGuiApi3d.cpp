@@ -51,8 +51,8 @@ intersectMeshes(
                 Vec2D        v0 = Vec2D(t0.subMatrix<2,1>(0,0)),
                                 v1 = Vec2D(t1.subMatrix<2,1>(0,0)),
                                 v2 = Vec2D(t2.subMatrix<2,1>(0,0));
-                if (fgPointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
-                    Opt<Vec3D>    vbc = fgBarycentricCoords(pnt,v0,v1,v2);
+                if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
+                    Opt<Vec3D>    vbc = barycentricCoord(pnt,v0,v1,v2);
                     if (vbc.valid()) {
                         Vec3D    bc = vbc.val();
                         // Depth value range for unclipped polys is [-1,1]. These correspond to the
@@ -252,7 +252,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
         Vec4F                    vertPos0d3ps = worldToD3ps * fgAsHomogVec(vertPos0Hcs);
         // Convert delta to D3PS. Y inverted and Viewport aspect (compensated for in frustum)
         // is ratio to largest dimension:
-        Vec2F                    delD3ps2 = 2.0f * Vec2F(delta) / float(fgMaxElem(winSize));
+        Vec2F                    delD3ps2 = 2.0f * Vec2F(delta) / float(cMaxElem(winSize));
         Vec4F                    delD3ps(delD3ps2[0],-delD3ps2[1],0,0),
                                     // Normalize vector for valid addition of delta:
                                     vertPos1d3ps = vertPos0d3ps / vertPos0d3ps[3] + delD3ps,

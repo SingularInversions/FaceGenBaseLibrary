@@ -27,7 +27,7 @@ struct GuiButton : GuiBase
 };
 
 GuiPtr
-guiButton(const Ustring & label,FgFnVoid2Void action);
+guiButton(Ustring const & label,FgFnVoid2Void action);
 
 GuiPtr
 guiButtonTr(const std::string & label,FgFnVoid2Void action);

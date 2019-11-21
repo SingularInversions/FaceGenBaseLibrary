@@ -22,7 +22,7 @@ fgDiagString(const char * fname,int line)
 }
 
 string
-fgDiagString(const char * fname,int line,const string & msg)
+fgDiagString(const char * fname,int line,string const & msg)
 {
     ostringstream   retval;
     retval << fname << ": " << line;
@@ -32,7 +32,7 @@ fgDiagString(const char * fname,int line,const string & msg)
 }
 
 void
-fgAssert(const char * fname,int line,const string &  msg)
+fgAssert(const char * fname,int line,string const &  msg)
 {
     fgThrow("Internal program error", fgDiagString(fname,line,msg));
 }
@@ -44,7 +44,7 @@ fgWarn(const std::string & msg,const std::string & dataUtf8)
 }
 
 void
-fgWarn(const char * fname,int line,const string & msg)
+fgWarn(const char * fname,int line,string const & msg)
 {
     fgout << "\nWARNING at : " <<  fgDiagString(fname,line,msg);
 }

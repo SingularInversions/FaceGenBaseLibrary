@@ -27,7 +27,7 @@ struct  GuiButtonWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Button::create visible: " << visible << " extStyle: " << extStyle << fgpush;
         // We need a parent window in order to catch the button command messages:

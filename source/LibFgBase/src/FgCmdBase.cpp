@@ -86,7 +86,7 @@ void fgGuiTestmDialogSplashScreen(CLArgs const &);
 
 static
 void
-testmGui(const CLArgs & args)
+testmGui(CLArgs const & args)
 {
     Cmds      cmds {
         {fgImgGuiTestm,"image"},
@@ -99,7 +99,7 @@ testmGui(const CLArgs & args)
 
 static
 void
-sysinfo(const CLArgs &)
+sysinfo(CLArgs const &)
 {
     fgout
         << fgnl << "Computer name: " << fgComputerName()
@@ -149,15 +149,15 @@ fgCmdBaseTestms()
 
 static
 void
-testm(const CLArgs & args)
+testm(CLArgs const & args)
 {doMenu(args,fgCmdBaseTestms()); }
 
 void
-fgCmdBaseTest(const CLArgs & args)
+fgCmdBaseTest(CLArgs const & args)
 {doMenu(args,fgCmdBaseTests(),true); }
 
 void
-view(const CLArgs & args)
+view(CLArgs const & args)
 {doMenu(args,fgCmdViewInfos()); }
 
 /**
@@ -165,7 +165,7 @@ view(const CLArgs & args)
    Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
  */
 void
-fgCmdFgbl(const CLArgs & args)
+fgCmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 

@@ -171,7 +171,7 @@ struct  IPT
     void init(const T & val,bool setDefault=false) const {ptr->init(val,setDefault); }
     void initSaved(
         const T &           defaultVal,             // Will be the initial value if no valid one is stored
-        const Ustring &    storeFile,
+        Ustring const &    storeFile,
         bool                binary=false)           // Store to binary format rather than XML for efficiency
     {
         FGASSERT(!storeFile.empty());
@@ -269,7 +269,7 @@ template<class T>
 IPT<T>
 makeSavedIPT(
     const T &           defaultVal,             // Will be the initial value if no valid one is stored
-    const Ustring &    storeFile,
+    Ustring const &    storeFile,
     bool                binary=false)           // Store to binary format rather than XML for efficiency
 {
     IPT<T>          ret;

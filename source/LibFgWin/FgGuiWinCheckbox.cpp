@@ -27,7 +27,7 @@ struct  GuiCheckboxWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiCheckboxWin::create " << m_api.label << fgpush;
         WinCreateChild   cc;

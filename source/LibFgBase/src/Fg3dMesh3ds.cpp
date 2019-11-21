@@ -44,7 +44,7 @@ using namespace std;
 
 namespace Fg {
 
-static string fffMdlNameTo3dsName(const string & mdlName,vector<string> & nameList)
+static string fffMdlNameTo3dsName(string const & mdlName,vector<string> & nameList)
 {
     string name = mdlName;
     if (name.size() > 10) {
@@ -94,7 +94,7 @@ static bool fffWriteChunkHeader_local(FILE *fptr,unsigned short id,int ln)
     return true;
 }
 
-static bool fffWrite3dsString_local(FILE *fptr, const string &str)
+static bool fffWrite3dsString_local(FILE *fptr, string const &str)
 {
     if (fwrite(str.c_str(),sizeof(char),str.size()+1,fptr) !=
             str.size()+1)
@@ -429,7 +429,7 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
 
 static
 bool
-fffSave3dsFile(const Ustring &name, const FffMultiObjectC &model)
+fffSave3dsFile(Ustring const &name, const FffMultiObjectC &model)
 {
     Path      path(name);
     path.ext = "3ds";
@@ -482,7 +482,7 @@ fffSave3dsFile(const Ustring &name, const FffMultiObjectC &model)
 
 void
 save3ds(
-    const Ustring &        fname,
+    Ustring const &        fname,
     vector<Mesh>        meshes,
     string                  imgFormat)
 {
@@ -497,7 +497,7 @@ save3ds(
 }
 
 void
-fgSave3dsTest(const CLArgs & args)
+fgSave3dsTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring    dd = dataDir();

@@ -24,10 +24,10 @@ namespace Fg {
 // Local function prototypes
 //****************************************************************************
 static bool saveXsiFile(
-        const Ustring                    &fname,
+        Ustring const                    &fname,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
-        const string                    &appName);
+        string const                    &appName);
 static Vec3F calTriNormals(
         const vector<Vec3F>        &vtxList,
         const vector<Vec3UI>        &triList,
@@ -44,7 +44,7 @@ static string floatToString(float val);
 //****************************************************************************
 static bool    fffSaveXsiFile(
 
-    const Ustring          &fname,
+    Ustring const          &fname,
     const FffMultiObjectC   &model,
     string                  appName)
 {
@@ -53,7 +53,7 @@ static bool    fffSaveXsiFile(
 
 static bool    fffSaveXsiFile(
 
-    const Ustring                  &fname,
+    Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,
     string                          appName)
@@ -67,10 +67,10 @@ static bool    fffSaveXsiFile(
 //****************************************************************************
 static bool saveXsiFile(
 
-    const Ustring                  &fname,
+    Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
-    const string                    &appName)
+    string const                    &appName)
 {
     size_t numTargets=0;
     if (morphTargets)
@@ -742,7 +742,7 @@ static string floatToString(float val)
 
 void
 saveXsi(
-    const Ustring &        fname,
+    Ustring const &        fname,
     const vector<Mesh> & meshes,
     string                  imgFormat)
 {
@@ -754,7 +754,7 @@ saveXsi(
 }
 
 void
-fgSaveXsiTest(const CLArgs & args)
+fgSaveXsiTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring    dd = dataDir();

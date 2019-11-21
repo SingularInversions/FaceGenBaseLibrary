@@ -28,7 +28,7 @@ typedef Svec<LabelledVert>  LabelledVerts;
 
 // Returns the vertices with the selected labels in that order:
 Vec3Fs
-fgSelectVerts(const LabelledVerts & labVerts,const Strings & labels);
+fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels);
 
 struct SurfPoint
 {
@@ -309,7 +309,7 @@ struct  Surf
 
     // Useful for searching by name:
     bool
-    operator==(const Ustring & str) const
+    operator==(Ustring const & str) const
     {return (name == str); }
 
     void
@@ -359,7 +359,7 @@ fgSplitSurface(const Surf & surf);
 // Name any unnamed surfaces as numbered extensions of the given base name,
 // or just the base name if there is only a single (unnamed) surface:
 Surfs
-fgEnsureNamed(const Surfs & surfs,const Ustring & baseName);
+fgEnsureNamed(const Surfs & surfs,Ustring const & baseName);
 
 Vec3Fs
 fgVertsUsed(const Vec3UIs & tris,const Vec3Fs & verts);

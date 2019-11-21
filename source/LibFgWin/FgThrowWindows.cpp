@@ -17,7 +17,7 @@ namespace Fg {
 // Get the Windows text description of the last error to create an FgException, then append the
 // client exception message.
 void
-throwWindows(const string & msg,const Ustring & data)
+throwWindows(string const & msg,Ustring const & data)
 {
     DWORD           errNum = GetLastError();
     if (errNum != ERROR_SUCCESS) {

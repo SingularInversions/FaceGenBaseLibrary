@@ -20,7 +20,7 @@ namespace Fg {
 
 void
 savePly(
-    const Ustring &        fname,
+    Ustring const &        fname,
     const vector<Mesh> & meshes,
     string                  imgFormat)
 {
@@ -82,7 +82,7 @@ savePly(
 }
 
 void
-fgSavePlyTest(const CLArgs & args)
+fgSavePlyTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring            dd = dataDir();

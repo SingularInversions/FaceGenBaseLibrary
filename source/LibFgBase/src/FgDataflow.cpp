@@ -221,7 +221,7 @@ void setInputsToDefault(const DfgNPtrs & nptrs)
 }
 
 void
-fgCmdTestDfg(const CLArgs &)
+fgCmdTestDfg(CLArgs const &)
 {
     IPT<int>        n0 = makeIPT(5),
                     n1 = makeIPT(6);
@@ -238,7 +238,7 @@ fgCmdTestDfg(const CLArgs &)
 //string
 //fgDepGraph2Dot(
 //    const ... lg,
-//    const string &                          label,
+//    string const &                          label,
 //    const vector<uint> &                    paramInds)
 //{
 //    ostringstream    ret;

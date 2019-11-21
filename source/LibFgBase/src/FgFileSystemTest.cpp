@@ -22,7 +22,7 @@ namespace Fg {
 
 static
 void
-testCurrentDirectory(const CLArgs & args)
+testCurrentDirectory(CLArgs const & args)
 {
     FGTESTDIR
     try
@@ -52,7 +52,7 @@ testCurrentDirectory(const CLArgs & args)
 
 static
 void
-testOfstreamUnicode(const CLArgs & args)
+testOfstreamUnicode(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        cent = 0x000000A2;              // The cent sign
@@ -65,7 +65,7 @@ testOfstreamUnicode(const CLArgs & args)
 
 static
 void
-testReadableFile(const CLArgs & args)
+testReadableFile(CLArgs const & args)
 {
     FGTESTDIR
     std::ofstream ofs("testReadableFile.txt");
@@ -78,7 +78,7 @@ testReadableFile(const CLArgs & args)
 
 static
 void
-testDeleteDirectory(const CLArgs & args)
+testDeleteDirectory(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        ch = 0x000000A2;              // The cent sign
@@ -95,7 +95,7 @@ testDeleteDirectory(const CLArgs & args)
 
 static
 void
-testRecursiveCopy(const CLArgs & args)
+testRecursiveCopy(CLArgs const & args)
 {
     FGTESTDIR
     string          path = "silly-v3.4.7/subdir/";
@@ -112,13 +112,13 @@ testRecursiveCopy(const CLArgs & args)
 
 static
 void
-testExists(const CLArgs &)
+testExists(CLArgs const &)
 {
     FGASSERT(!pathExists("//doesNotExists"));
 }
 
 void
-fgFileSystemTest(const CLArgs & args)
+fgFileSystemTest(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(testCurrentDirectory,"curDir"));

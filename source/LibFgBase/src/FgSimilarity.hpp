@@ -102,10 +102,10 @@ SimilarityD
 similarityApprox(Vec3Fs const & d,Vec3Fs const & r)
 {return similarityApprox(scast<double>(d),scast<double>(r)); }
 
-// Translation-rotation-scale version: v' = sR(v + t) = sRv + sRt
+// Reverse-order similarity transform: v' = sR(v + t) = sRv + sRt
 // Useful when you want the translation relative to the input shape (v) not the output (v').
 // Also fewer operations and doesn't lose precision on 'trans' during 'inverse' operation.
-struct  TransSim
+struct  SimilarityRD
 {
     Vec3D           trans;          // Translation applied first
     QuaternionD     rot;
@@ -113,14 +113,15 @@ struct  TransSim
 
     FG_SERIALIZE3(trans,rot,scale);
 
-    TransSim() {}
+    SimilarityRD() {}
 
-    TransSim(const Vec3D & t,const QuaternionD & r,double s)
+    SimilarityRD(const Vec3D & t,const QuaternionD & r,double s)
     : trans(t), rot(r), scale(s)
     {FGASSERT(s > 0.0); }
 
-    TransSim(const SimilarityD & s)
-        : trans(s.rot * s.trans * s.scale), rot(s.rot), scale(s.scale)
+    // SimilarityD: v' = sRv + t = sR(v + s^-1 R^-1 t)
+    SimilarityRD(const SimilarityD & s)
+        : trans(s.rot.inverse() * s.trans / s.scale), rot(s.rot), scale(s.scale)
     {}
 
     // More efficient if applying the transform to many vectors:
@@ -131,13 +132,13 @@ struct  TransSim
     //              v' = sRv + sRt
     //              sRv = v' - sRt
     //              v = R'v'/s - t
-    TransSim inverse() const
-    {return TransSim(-trans,rot.inverse(),1.0/scale); }
+    SimilarityRD inverse() const
+    {return SimilarityRD(-trans,rot.inverse(),1.0/scale); }
 
-    static TransSim identity() {return TransSim(Vec3D(0),QuaternionD(),1.0); }
+    static SimilarityRD identity() {return SimilarityRD(Vec3D(0),QuaternionD(),1.0); }
 };
 
-typedef Svec<TransSim>   TransSims;
+typedef Svec<SimilarityRD>   SimilarityRDs;
 
 }
 

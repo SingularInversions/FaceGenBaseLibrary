@@ -40,14 +40,14 @@ meshSaveAnyFormat(const Mesh & mesh,Ustring const & fname)
 {meshSaveAnyFormat(fgSvec(mesh),fname); }
 
 // Does not include FaceGen formats:
-const Strings &
+Strings const &
 meshExportFormatExts();
 
 // 1-1 with above
-const Strings &
+Strings const &
 meshExportFormatDescriptions();
 
-const Strings &
+Strings const &
 meshExportFormatsWithMorphs();
 
 // Includes 'tri':

@@ -23,7 +23,7 @@ namespace Fg {
 
 static
 void
-viewMesh(const CLArgs & args)
+viewMesh(CLArgs const & args)
 {
     Syntax            syn(args,
         "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]])+\n"
@@ -94,7 +94,7 @@ viewMesh(const CLArgs & args)
 }
 
 void
-fgViewImage(const CLArgs & args)
+fgViewImage(CLArgs const & args)
 {
     Syntax    syntax(args,"<imageFileName>");
     if (args.size() > 2)
@@ -106,7 +106,7 @@ fgViewImage(const CLArgs & args)
 }
 
 void
-fgViewImagef(const CLArgs & args)
+fgViewImagef(CLArgs const & args)
 {
     Syntax    syntax(args,"<imageFileName> [<saveName>]");
     ImgF      img;
@@ -124,7 +124,7 @@ fgViewImagef(const CLArgs & args)
 }
 
 void
-fgCmdViewUvs(const CLArgs & args)
+fgCmdViewUvs(CLArgs const & args)
 {
     Syntax            syntax(args,
         "(<mesh>.<ext>)+ [<texImage>]\n"

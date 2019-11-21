@@ -66,12 +66,12 @@ fgPublicDocumentsDirectory();
 // Find FaceGen data directory from path of current executable, searching up one directory
 // at a time for a directory named 'data' containing the file '_facegen_data_dir.flag'.
 // If 'throwIfNotFound' is false, check the return value for the empty string (failure):
-const Ustring & dataDir(bool throwIfNotFound=true);
+Ustring const & dataDir(bool throwIfNotFound=true);
 
 // Manually set data directory. Useful for sandboxed platforms and debugging apps on native
 // platforms:
 void
-fgSetDataDir(const Ustring & dirEndingWithSlash);
+fgSetDataDir(Ustring const & dirEndingWithSlash);
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
@@ -80,27 +80,27 @@ fgSetDataDir(const Ustring & dirEndingWithSlash);
 // We can't use boost::filesystem::is_directory inline here since it doesn't work on Windows 10 as of
 // 18.04 update.
 bool
-isDirectory(const Ustring & path);   // Doesn't throw - returns false for invalid path
+isDirectory(Ustring const & path);   // Doesn't throw - returns false for invalid path
 
 // Both 'src' and 'dst' must be file paths; 'dst' should not be a directory.
 // Note that both the creation time and last modification time are preserved on the copy !
 void
-fileCopy(const Ustring & srcFilePath,const Ustring & dstFilePath,bool overwrite = false);
+fileCopy(Ustring const & srcFilePath,Ustring const & dstFilePath,bool overwrite = false);
 
 // Copy then delete original (safer than rename which doesn't work across volumes):
 void
-fileMove(const Ustring & srcFilePath,const Ustring & dstFilePath,bool overwrite = false);
+fileMove(Ustring const & srcFilePath,Ustring const & dstFilePath,bool overwrite = false);
 
 // Will not throw, returns false for any kind of failure on 'fname':
 bool
-pathExists(const Ustring & path);
+pathExists(Ustring const & path);
 
 inline bool
 fileExists(Ustring const & fname)
 {return (!isDirectory(fname) && pathExists(fname)); }
 
 inline void
-fgRename(const Ustring & from,const Ustring & to)
+fgRename(Ustring const & from,Ustring const & to)
 {return boost::filesystem::rename(from.ns(),to.ns()); }
 
 // Update last written time on existing file (will not create). Avoid large files as it current re-writes:
@@ -117,7 +117,7 @@ struct      DirectoryContents
 // The names strings are returned without the path.
 // Directory names "." and ".." are NOT returned.
 DirectoryContents
-directoryContents(const Ustring & dirName);
+directoryContents(Ustring const & dirName);
 
 // Directory names end with a delimiter:
 Ustring
@@ -125,7 +125,7 @@ fgGetCurrentDir();
 
 bool                                // true if successful
 fgSetCurrentDir(
-    const Ustring &    dir,        // Accepts full path or relative path
+    Ustring const &    dir,        // Accepts full path or relative path
     bool throwOnFail=true);
 
 bool                                // true if successful
@@ -133,31 +133,31 @@ fgSetCurrentDirUp();
 
 // Doesn't remove read-only files / dirs:
 inline void
-pathRemove(const Ustring & fname)
+pathRemove(Ustring const & fname)
 {boost::filesystem::remove(fname.ns()); }
 
 // Ignores read-only or hidden attribs on Windows (identical to pathRemove on nix):
 void
-fgDeleteFile(const Ustring &);
+fgDeleteFile(Ustring const &);
 
 // Only works on empty dirs, return true if successful:
 bool
 fgRemoveDirectory(
-    const Ustring &    dirName,
+    Ustring const &    dirName,
     bool                throwOnFail=false);
 
 // Throws on failure:
 void
-fgRemoveDirectoryRecursive(const Ustring &);      // Full recursive delete
+fgRemoveDirectoryRecursive(Ustring const &);      // Full recursive delete
 
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
-fgCreateDirectory(const Ustring &);
+fgCreateDirectory(Ustring const &);
 
 // Create all non-existing directories in given path.
 // An undelimited name will be created as a directory:
 void
-fgCreatePath(const Ustring &);
+fgCreatePath(Ustring const &);
 
 Ustring                        // Return the full path of the executable
 fgExecutablePath();
@@ -168,7 +168,7 @@ fgExecutableDirectory();
 // Returns true if the supplied filename is a file which can be read
 // by the calling process:
 bool
-fileReadable(const Ustring & filename);
+fileReadable(Ustring const & filename);
 
 String
 fgSlurp(Ustring const & filename);
@@ -177,7 +177,7 @@ fgSlurp(Ustring const & filename);
 // regardless of whether the new data may be identical.
 // Leaving 'true' is useful to avoid triggering unwanted change detections.
 bool    // Returns true if the file was written
-fgDump(const String & data,const Ustring & filename,bool onlyIfChanged=true);
+fgDump(const String & data,Ustring const & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool
@@ -192,12 +192,12 @@ equateFilesText(Ustring const & fname0,Ustring const & fname1);
 // Returns false if the given file or directory cannot be read.
 // The returned time is NOT compatible with std raw time and will in fact crash fgDateTimeString().
 bool
-getCreationTime(const Ustring & path,uint64 & time);
+getCreationTime(Ustring const & path,uint64 & time);
 
 // Works for both files and directories:
 // Don't use boost::filesystem::last_write_time(); it doesn't work; returns create time on Win.
 std::time_t
-getLastWriteTime(const Ustring & node);
+getLastWriteTime(Ustring const & node);
 
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
 // of if any of the sinks don't exist (an error results if any of the sources don't exist):
@@ -206,13 +206,13 @@ fileNewer(const Ustrings & sources,const Ustrings & sinks);
 
 inline
 bool
-fileNewer(const Ustring & src,const Ustring & dst)
+fileNewer(Ustring const & src,Ustring const & dst)
 {return fileNewer(fgSvec(src),fgSvec(dst)); }
 
 // Usually only need to include the one last output of a code chunk as 'dst':
 inline
 bool
-fileNewer(const Ustrings & sources,const Ustring & dst)
+fileNewer(const Ustrings & sources,Ustring const & dst)
 {return fileNewer(sources,fgSvec(dst)); }
 
 struct  PushDir
@@ -223,7 +223,7 @@ struct  PushDir
     PushDir() {}
 
     explicit
-    PushDir(const Ustring & dir)
+    PushDir(Ustring const & dir)
     {push(dir); }
 
     ~PushDir()
@@ -232,7 +232,7 @@ struct  PushDir
             fgSetCurrentDir(orig[0]);
     }
 
-    void push(const Ustring & dir)
+    void push(Ustring const & dir)
     {
         orig.push_back(fgGetCurrentDir());
         fgSetCurrentDir(dir);
@@ -244,7 +244,7 @@ struct  PushDir
         orig.resize(orig.size()-1);
     }
 
-    void change(const Ustring & dir)
+    void change(Ustring const & dir)
     {fgSetCurrentDir(dir); }
 };
 
@@ -262,12 +262,12 @@ globFiles(const Path & path);
 
 // As above but the full path is given by 'basePath + keepPath' and the return paths include 'keepPath':
 Ustrings
-globFiles(const Ustring & basePath,const Ustring & relPath,const Ustring & filePattern);
+globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & filePattern);
 
 // 'toDir' must exist.
 // Returns true if there were any files in 'toDir' with the same name as a 'fromDir' file:
 bool
-fgCopyAllFiles(const Ustring & fromDir,const Ustring & toDir,bool overwrite=false);
+fgCopyAllFiles(Ustring const & fromDir,Ustring const & toDir,bool overwrite=false);
 
 // Throws an exception if the filename already exists in the current directory:
 void
@@ -277,7 +277,7 @@ fgCopyToCurrentDir(const Path & file);
 // The tip of 'toDir' will be created.
 // Will throw on overwrite of any file or directory:
 void
-fgCopyRecursive(const Ustring & fromDir,const Ustring & toDir);
+fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir);
 
 // Copy 'src' to 'dst' if 'src' is newer or 'dst' (or its path) doesn't exist.
 // Doesn't work reliably across network shares due to time differences.
@@ -287,7 +287,7 @@ fgMirrorFile(const Path & src,const Path & dst);
 // Modify permissions to allow all users to write to given file (not directory).
 // Of course client must have right to do this:
 void
-fgMakeWritableByAll(const Ustring & name);
+fgMakeWritableByAll(Ustring const & name);
 
 }
 

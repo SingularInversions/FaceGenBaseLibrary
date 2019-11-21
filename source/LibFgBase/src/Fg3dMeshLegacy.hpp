@@ -221,7 +221,7 @@ struct  FgMeshLegacy
 FgMeshLegacy
 fgMeshLegacy(
     const Svec<Mesh> &   meshes,
-    const Ustring &                fname,
+    Ustring const &                fname,
     const std::string &             imgFormat,
     uint                            maxLen=0);      // If non-zero, maxmum base filename length allowed (eg. 3DS)
 

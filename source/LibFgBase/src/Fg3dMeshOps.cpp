@@ -717,7 +717,7 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
             }
         }
     }
-    float       fac = fgMaxElem(cDims(fgReorder(mesh.verts,embossedVertInds))) * val;
+    float       fac = cMaxElem(cDims(fgReorder(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;

@@ -770,7 +770,7 @@ fgVecVecToMatrix(const Svec<Svec<T> > & vss)    // vss must be non-empty with al
     FGASSERT(!vss.empty());
     size_t          numRows = vss.size(),
                     numCols = vss[0].size();
-    Svec<T>       data = fgFlat(vss);
+    Svec<T>       data = flat(vss);
     FGASSERT(data.size() == numRows*numCols);
     return MatV<T>(numRows,numCols,data);
 }

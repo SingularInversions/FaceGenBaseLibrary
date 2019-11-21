@@ -121,7 +121,7 @@ randString(uint numChars)
 }
 
 void
-fgRandomTest(const CLArgs &)
+fgRandomTest(CLArgs const &)
 {
     fgout << fgnl << "sizeof(RNG) = " << sizeof(RNG);
     // Create a histogram of normal samples:
@@ -172,7 +172,7 @@ randNearUnit()
 
 std::vector<double>
 randNearUnits(size_t num)
-{return fgGenerate<double>(randNearUnit,num); }
+{return generate<double>(randNearUnit,num); }
 
 }
 

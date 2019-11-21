@@ -27,7 +27,7 @@ fgDirSep()
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
-Path::Path(const Ustring & path)
+Path::Path(Ustring const & path)
 : root(false)
 {
     if (path.empty())
@@ -140,7 +140,7 @@ Path::popDirs(uint n)
 }
 
 Path
-fgPathFromDir(const Ustring & directory)
+fgPathFromDir(Ustring const & directory)
 {
     Path      ret(directory);
     if (!ret.base.empty()) {
@@ -152,15 +152,15 @@ fgPathFromDir(const Ustring & directory)
 }
 
 Ustring
-fgPathToBase(const Ustring & f)
+fgPathToBase(Ustring const & f)
 {return Path(f).base; }
 
 Ustring
-fgPathToDirBase(const Ustring & p)
+fgPathToDirBase(Ustring const & p)
 {return Path(p).dirBase(); }
 
 Ustring
-fgPathToExt(const Ustring & p)
+fgPathToExt(Ustring const & p)
 {return Path(p).ext; }
 
 std::string
@@ -168,18 +168,18 @@ fgPathToExt(const std::string & p)
 {return fgPathToExt(Ustring(p)).m_str; }
 
 bool
-fgCheckExt(const Ustring & path,const string & ext)
+fgCheckExt(Ustring const & path,string const & ext)
 {
     Path      p(path);
     return (p.ext.toLower() == fgToLower(ext));
 }
 
 Ustring
-fgPathToName(const Ustring & f)
+fgPathToName(Ustring const & f)
 {return Path(f).baseExt(); }
 
 Ustring
-fgAsDirectory(const Ustring & path)
+fgAsDirectory(Ustring const & path)
 {
     Ustring        ret = path;
     if (path.empty())
@@ -196,11 +196,11 @@ fgAsDirectory(const Ustring & path)
 }
 
 string
-fgAsDirectory(const string & path)
+fgAsDirectory(string const & path)
 {return fgAsDirectory(Ustring(path)).m_str; }
 
 void
-fgPathTest(const CLArgs &)
+fgPathTest(CLArgs const &)
 {
     Path  p;
 

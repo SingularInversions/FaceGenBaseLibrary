@@ -102,7 +102,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
     io_service              ios;
     Svec<SockPtr>         sockPtrs;
 
-    FgClustDispatcherImpl(const Strings & hosts,const String & port)
+    FgClustDispatcherImpl(Strings const & hosts,const String & port)
     {
         sockPtrs.reserve(hosts.size());
         for (size_t hh=0; hh<hosts.size(); ++hh) {
@@ -123,7 +123,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
 
     virtual
     void
-    batchProcess(const Strings & msgsSend,Strings & msgsRecv) const
+    batchProcess(Strings const & msgsSend,Strings & msgsRecv) const
     {
         FGASSERT(msgsSend.size() == sockPtrs.size());
         msgsRecv.resize(msgsSend.size());
@@ -152,7 +152,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
 };
 
 std::shared_ptr<FgClustDispatcher>
-fgClustDispatcher(const Strings & hostnames,uint16 port)
+fgClustDispatcher(Strings const & hostnames,uint16 port)
 {
     return std::make_shared<FgClustDispatcherImpl>(hostnames,toString(port));
 }

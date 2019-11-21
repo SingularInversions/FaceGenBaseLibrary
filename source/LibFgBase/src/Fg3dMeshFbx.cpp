@@ -66,7 +66,7 @@ nmVideo(size_t mm,size_t tt)
 
 void
 saveFbx(
-    const Ustring &            filename,
+    Ustring const &            filename,
     const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
@@ -361,7 +361,7 @@ saveFbx(
 }
 
 void
-fgSaveFbxTest(const CLArgs & args)
+fgSaveFbxTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring            dd = dataDir();

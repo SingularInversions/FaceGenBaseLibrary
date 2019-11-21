@@ -179,7 +179,7 @@ testFgRand()
 }
 
 void
-fgMathTest(const CLArgs &)
+fgMathTest(CLArgs const &)
 {
     OutPush       op("Testing rand");
     testFgRand();

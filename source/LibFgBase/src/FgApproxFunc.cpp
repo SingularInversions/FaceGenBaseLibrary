@@ -23,7 +23,7 @@ struct  Sine
 };
 
 void
-fgApproxFuncTest(const CLArgs &)
+fgApproxFuncTest(CLArgs const &)
 {
     const double        accuracy = 0.0001;
     for (uint ii=0; ii<10; ++ii)

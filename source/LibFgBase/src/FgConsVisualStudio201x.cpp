@@ -29,7 +29,7 @@ string
 fgConsVsPreprocessorDefs(
     bool                release,
     const FgConsProj &  proj,
-    const Strings &      defs)
+    Strings const &      defs)
 {
     string  ret = "WIN32";
     if (release)
@@ -46,7 +46,7 @@ fgConsVsPreprocessorDefs(
         ret += ";_LIB";
     else
         fgThrow("fgConsVsPreprocessorDefs unhandled type",proj.type);
-    for (const string & def : defs)
+    for (string const & def : defs)
         ret += ";" + def;
     return ret;
 }
@@ -197,7 +197,7 @@ writeVcxproj(
                     "      <IntrinsicFunctions>true</IntrinsicFunctions>\n";
             ofs <<
                 "      <AdditionalIncludeDirectories>";
-            for (const string & relPath : includes) {
+            for (string const & relPath : includes) {
                 string          dir = fgReplace(relPath,'/','\\');
                 ofs << "..\\" << dir << ";";    // .vcxproj file is in a subdir of project dir
             }
@@ -239,7 +239,7 @@ writeVcxproj(
                     "      <TargetMachine>MachineX" << ((bb == 0) ? "86" : "64") << "</TargetMachine>\n"
                     "      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;"
                         "opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;";
-                for (const string & dll : lnkDeps)
+                for (string const & dll : lnkDeps)
                     if (!sln.contains(dll))         // Binary-only DLL
                         ofs << dll << ".lib;";
                 ofs
@@ -267,7 +267,7 @@ writeVcxproj(
     }
     if (proj.isLinked()) {
         ofs << "  <ItemGroup>\n";
-        for (const string & name : lnkDeps) {
+        for (string const & name : lnkDeps) {
             if (sln.contains(name))     // Only projects with source are referenced:
                 ofs <<
                     "    <ProjectReference Include=\"..\\..\\" << name << "\\VisualStudio"
@@ -372,7 +372,7 @@ static
 bool
 writeSln(
     const FgConsSolution &      sln,
-    const string &              merkle,         // Concatenation of project GUIDs
+    string const &              merkle,         // Concatenation of project GUIDs
     const map<string,string> &  nameToGuid,     // Must contain all project names
     uint                        vsver)
 {
@@ -418,7 +418,7 @@ writeSln(
             ofs <<
                 "	EndProjectSection\n"
                 "EndProject\n";
-            for (const Ustring & dir : dc.dirnames) {
+            for (Ustring const & dir : dc.dirnames) {
                 Ustring            cmf = dir + "\\CMakeLists.txt";
                 if (pathExists(cmf)) {
                     string          uuid = fgCreateMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
@@ -440,7 +440,7 @@ writeSln(
                 // These GUIDs are specific to generic folders with text files in them:
                 "Project(\"" + uuidFolder + "\") = \"unix\", \"unix\", \"" + uuidNixFolder + "\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n";
-            for (const Ustring & fname : dc.filenames)
+            for (Ustring const & fname : dc.filenames)
                 ofs << "		" + nixPath+fname + " = " + nixPath+fname + "\n";
             ofs <<
                 "	EndProjectSection\n"

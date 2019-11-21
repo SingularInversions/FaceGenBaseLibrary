@@ -123,7 +123,7 @@ fgMainArgs()
 {
     string      ret;
     for (size_t aa=0; aa<s_mainArgs.size(); ++aa) {
-        const string &      arg = s_mainArgs[aa];
+        string const &      arg = s_mainArgs[aa];
         if (fgContains(arg,' ') || fgContains(arg,'"')) {
             ret += '"';
             for (size_t cc=0; cc<arg.size(); ++cc) {

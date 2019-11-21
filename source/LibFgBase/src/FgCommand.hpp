@@ -67,7 +67,7 @@ struct TestDir
 
 // Set the root test directory. Useful for sandboxed platforms:
 void
-fgSetRootTestDir(const Ustring & dir);
+fgSetRootTestDir(Ustring const & dir);
 
 // Make a copy of a data file in current directory:
 void
@@ -78,15 +78,15 @@ void
 runCmd(const CmdFunc & func,const String & argStr);
 
 // Useful for writing command dispatch commands - as long as Svec<Cmd> is named 'cmds':
-#define FGADDCMD1(fn,name) void fn(const CLArgs &); cmds.push_back(Cmd(fn,name))
-#define FGADDCMD(fn,name,desc) void fn(const CLArgs &); cmds.push_back(Cmd(fn,name,desc))
+#define FGADDCMD1(fn,name) void fn(CLArgs const &); cmds.push_back(Cmd(fn,name))
+#define FGADDCMD(fn,name,desc) void fn(CLArgs const &); cmds.push_back(Cmd(fn,name,desc))
 
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();
 
 // Returns true if the user is doing a 'test all', so we can choose to skip non-automatable tests:
 bool
-fgAutomatedTest(const CLArgs &);
+fgAutomatedTest(CLArgs const &);
 
 }
 

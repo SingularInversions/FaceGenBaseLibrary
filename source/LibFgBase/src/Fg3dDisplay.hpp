@@ -28,7 +28,7 @@ GuiPtr
 makeCameraCtrls(
     Gui3d &                 gui3d,
     NPT<Mat32D>    viewBoundsN,
-    const Ustring &        storePath,
+    Ustring const &        storePath,
     // 0 - all render ctls, default marked points viewable, default unconstrained rotation
     // 1 - only color/shiny/flat/wireframe,
     // 2 - only color/shiny, and limit pan/tilt,
@@ -44,19 +44,19 @@ makeRendCtrls(
     // 2 - only color/shiny
     // 3 - only shiny/flat/wireframe
     uint    simple,
-    const Ustring & storePath);
+    Ustring const & storePath);
 
 GuiPtr
 makeLightingCtrls(
     RPT<FgLighting>         lightingR,                              // Assigned
     IPT<BothButtonsDragAction> bothButtonsDragActionI,    // "
-    const Ustring &        storePath);
+    Ustring const &        storePath);
 
 GuiPtr
 makeViewCtrls(
     Gui3d &                 gui3d,
     NPT<Mat32D>    viewBoundsN,
-    const Ustring &        storePath,
+    Ustring const &        storePath,
     // 0 - all render ctls, default marked points viewable, default unconstrained rotation
     // 1 - only color/shiny/flat/wireframe,
     // 2 - only color/shiny, and limit pan/tilt,

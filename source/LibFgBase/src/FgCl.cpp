@@ -23,7 +23,7 @@ namespace fgCl {
 bool preview = false;
 
 bool
-run(const string & cmd,bool throwIfError,int rvalMask)
+run(string const & cmd,bool throwIfError,int rvalMask)
 {
     fgout << fgnl << cmd << "\n";   // DOS output lines will always start in zero'th column anyway
     int     retval = 0;

@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 void
-guiStartImpl(const Ustring &,GuiPtr,const Ustring &,const GuiOptions &)
+guiStartImpl(Ustring const &,GuiPtr,Ustring const &,const GuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \
@@ -43,18 +43,18 @@ STUB(GuiText)
 STUB(GuiTextEdit)
 
 void
-guiDialogMessage(const Ustring &,const Ustring &)
+guiDialogMessage(Ustring const &,Ustring const &)
 {throw FgExceptionNotImplemented(); }
 
 Opt<Ustring>
-guiDialogFileLoad(const Ustring &,const vector<std::string> &,const string &)
+guiDialogFileLoad(Ustring const &,const vector<std::string> &,string const &)
 {
     throw FgExceptionNotImplemented();
     return Opt<Ustring>();
 }
 
 Opt<Ustring>
-guiDialogFileSave(const Ustring &,const std::string &)
+guiDialogFileSave(Ustring const &,const std::string &)
 {
     throw FgExceptionNotImplemented();
     return Opt<Ustring>();
@@ -68,7 +68,7 @@ guiDialogDirSelect()
 }
 
 bool
-guiDialogProgress(const Ustring &,uint,WorkerFunc)
+guiDialogProgress(Ustring const &,uint,WorkerFunc)
 {throw FgExceptionNotImplemented(); return false; }
 
 std::function<void(void)>

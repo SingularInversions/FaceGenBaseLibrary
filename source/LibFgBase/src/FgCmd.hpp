@@ -16,7 +16,7 @@ Cmd   fgCmdMeshopsInfo();
 Cmd   fgCmdMorphInfo();
 Cmd   fgCmdRenderInfo();
 Cmd   fgCmdTriexportInfo();
-void    fgCmdCons(const CLArgs &);
+void    fgCmdCons(CLArgs const &);
 Svec<Cmd> fgCmdViewInfos();
 
 }

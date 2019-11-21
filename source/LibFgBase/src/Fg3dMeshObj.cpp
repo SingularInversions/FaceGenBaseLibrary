@@ -41,7 +41,7 @@ namespace Fg {
 
 static
 float
-parseFloat(const string & str)
+parseFloat(string const & str)
 {
     istringstream   iss(str);
     float           ret;
@@ -75,7 +75,7 @@ parseVert(
 
 static
 Vec2F
-parseUv(const string & str)
+parseUv(string const & str)
 {
     vector<string>  nums = splitChar(str,' ');
     // A third homogenous coord value can also be specified but is only used for rational
@@ -90,7 +90,7 @@ parseUv(const string & str)
 static
 bool
 parseFacet(
-    const string &      str,
+    string const &      str,
     size_t              numVerts,
     size_t              numUvs,
     FacetInds<3> &    tris,
@@ -305,7 +305,7 @@ writeMesh(
     const Mesh &    mesh,
     const Path &      fpath,
     Offsets             offsets,
-    const string &      imgFormat,
+    string const &      imgFormat,
     bool                mtlFile)        // Is there an associated MTL file
 {
     if (!mesh.deltaMorphs.empty())
@@ -353,7 +353,7 @@ writeMesh(
 
 void
 saveObj(
-    const Ustring &            filename,
+    Ustring const &            filename,
     const vector<Mesh> &    meshes,
     string                      imgFormat)
 {
@@ -388,7 +388,7 @@ saveObj(
 }
 
 void
-fgSaveObjTest(const CLArgs & args)
+fgSaveObjTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring        dd = dataDir();

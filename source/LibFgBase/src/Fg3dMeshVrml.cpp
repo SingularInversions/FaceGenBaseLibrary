@@ -74,7 +74,7 @@ writeIndices(
 
 void
 saveVrml(
-    const Ustring &            filename,
+    Ustring const &            filename,
     const vector<Mesh> &    meshes,
     string                      imgFormat)
 {

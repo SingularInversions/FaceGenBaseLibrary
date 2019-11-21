@@ -22,8 +22,8 @@ using Unique = std::unique_ptr<T,Fg::Release<T> >;
 
 void
 guiDialogMessage(
-    const Ustring & cap,
-    const Ustring & msg)
+    Ustring const & cap,
+    Ustring const & msg)
 {
     MessageBox(
         // Sending the main window handle makes it the OWNER of this window (not parent since
@@ -36,9 +36,9 @@ guiDialogMessage(
 
 Opt<Ustring>
 guiDialogFileLoad(
-    const Ustring &         description,
-    const Strings &         extensions,
-    const string &          storeID)
+    Ustring const &         description,
+    Strings const &         extensions,
+    string const &          storeID)
 {
     FGASSERT(!extensions.empty());
     Opt<Ustring>          ret;
@@ -96,8 +96,8 @@ guiDialogFileLoad(
 
 Opt<Ustring>
 guiDialogFileSave(
-    const Ustring &    description,
-    const string &      extension)
+    Ustring const &    description,
+    string const &      extension)
 {
     FGASSERT(!extension.empty());
     Opt<Ustring>          ret;

@@ -27,7 +27,7 @@ struct  StbiFree
 };
 
 void
-imgLoadAnyFormat(const Ustring & fname,ImgC4UC & img)
+imgLoadAnyFormat(Ustring const & fname,ImgC4UC & img)
 {
     FILE *              fPtr = fgOpen(fname,false);     // Throws if unable to open
     int                 width,height,channels;
@@ -47,7 +47,7 @@ imgLoadAnyFormat(const Ustring & fname,ImgC4UC & img)
 }
 
 ImgC4UC
-imgLoadAnyFormat(const Ustring & fname)
+imgLoadAnyFormat(Ustring const & fname)
 {
     ImgC4UC         ret;
     imgLoadAnyFormat(fname,ret);
@@ -62,7 +62,7 @@ writeToFile(void *context,void * data,int size)
 }
 
 void
-imgSaveAnyFormat(const Ustring & fname,const ImgC4UC & img)
+imgSaveAnyFormat(Ustring const & fname,const ImgC4UC & img)
 {
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);

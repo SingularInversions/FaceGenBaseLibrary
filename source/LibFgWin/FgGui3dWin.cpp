@@ -723,7 +723,7 @@ struct      D3d
         {   // Background image polys:
             Vec2F        im = Vec2F(bgi.origDimsN.val()),
                             xr(im[0]*viewportSize[1],im[1]*viewportSize[0]);
-            Vec2F        sz = Vec2F(xr) / fgMaxElem(xr) * exp(bgi.lnScale.val()),
+            Vec2F        sz = Vec2F(xr) / cMaxElem(xr) * exp(bgi.lnScale.val()),
                             off = bgi.offset.val();
             float           xo = off[0] * 2.0f,
                             yo = -off[1] * 2.0f,
@@ -1136,7 +1136,7 @@ struct  Gui3dWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;

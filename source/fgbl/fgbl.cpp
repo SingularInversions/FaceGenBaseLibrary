@@ -10,7 +10,7 @@
 #include "FgMain.hpp"
 
 namespace Fg {
-void    fgCmdFgbl(const CLArgs &);
+void    fgCmdFgbl(CLArgs const &);
 }
 
 using namespace Fg;

@@ -32,8 +32,8 @@ FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,cons
         Vec2F            v0 = verts[tri[0]],
                             v1 = verts[tri[1]],
                             v2 = verts[tri[2]];
-        Opt<Vec3D>     vbc = fgBarycentricCoords(pos,v0,v1,v2);
-        if (vbc.valid() && (fgMinElem(vbc.val()) >= 0)) {       // We intersect:
+        Opt<Vec3D>     vbc = barycentricCoord(pos,v0,v1,v2);
+        if (vbc.valid() && (cMinElem(vbc.val()) >= 0)) {       // We intersect:
             Vec3F        ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
                             bc = Vec3F(vbc.val());
             float           invDepth = cDot(bc,ids);           // Interpolation in projected values is harmonic
@@ -68,10 +68,10 @@ FgGridTriangles::intersects_(const Vec3UIs & tris,const Vec2Fs & verts,Vec2F pos
         Vec2F            p0 = verts[tp.pointInds[0]],
                             p1 = verts[tp.pointInds[1]],
                             p2 = verts[tp.pointInds[2]];
-        vbc = fgBarycentricCoords(pos,p0,p1,p2);
+        vbc = barycentricCoord(pos,p0,p1,p2);
         if (vbc.valid()) {
             tp.baryCoord = Vec3F(vbc.val());
-            if (fgMinElem(tp.baryCoord) >= 0.0f)
+            if (cMinElem(tp.baryCoord) >= 0.0f)
                 ret.push_back(tp);
         }
     }
@@ -130,7 +130,7 @@ fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
 }
 
 void
-fgGridTrianglesTest(const CLArgs &)
+fgGridTrianglesTest(CLArgs const &)
 {
     // Create a triangular patch of tris:
     const uint                  dim = 10,
@@ -162,7 +162,7 @@ fgGridTrianglesTest(const CLArgs &)
                     verts[isect.pointInds[0]] * isect.baryCoord[0] +
                     verts[isect.pointInds[1]] * isect.baryCoord[1] +
                     verts[isect.pointInds[2]] * isect.baryCoord[2]);
-            FGASSERT(fgApproxEqual(pos,rpos,64));
+            FGASSERT(approxEqualRelMag(pos,rpos,30));
         }
         else
             FGASSERT(res.size() == 0);

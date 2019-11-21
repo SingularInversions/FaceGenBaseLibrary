@@ -42,7 +42,7 @@ operator<<(std::ostream & os ,FgBuildOS bos)
 }
 
 FgBuildOS
-fgStrToBuildOS(const string & str)
+fgStrToBuildOS(string const & str)
 {
     const vector<pair<FgBuildOS,string> > & lst = fgBuildOSStrs();
     for (const pair<FgBuildOS,string> & l : lst)
@@ -94,7 +94,7 @@ operator<<(std::ostream & os,FgArch arch)
 }
 
 FgArch
-fgStrToArch(const string & str)
+fgStrToArch(string const & str)
 {
     const vector<pair<FgArch,string> > &    lst = fgArchStrs();
     for (const pair<FgArch,string> & l : lst)
@@ -149,7 +149,7 @@ operator<<(std::ostream & os,FgCompiler comp)
     FG_UNREACHABLE_RETURN(os);
 }
 
-FgCompiler fgStrToCompiler(const string & str)
+FgCompiler fgStrToCompiler(string const & str)
 {
     const vector<pair<FgCompiler,string> > &    lst = fgCompilerStrs();
     for (const pair<FgCompiler,string> & l : lst)
@@ -230,7 +230,7 @@ fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
 }
 
 uint64
-fgUuidHash64(const string & str)
+fgUuidHash64(string const & str)
 {
     FGASSERT(str.size() >= 8);
     std::hash<string>   hf;         // Returns size_t
@@ -244,7 +244,7 @@ fgUuidHash64(const string & str)
 }
 
 FgUint128
-fgUuidHash128(const string & str)
+fgUuidHash128(string const & str)
 {
     FgUint128       ret;
     FGASSERT(str.size() >= 16);
@@ -259,7 +259,7 @@ fgUuidHash128(const string & str)
 // the first bits representing time values, although we just use all hash bits for repeatability
 // (we don't want to force rebuilds every time we generate new solution/project files):
 string
-fgCreateMicrosoftGuid(const string & name,bool wsb)
+fgCreateMicrosoftGuid(string const & name,bool wsb)
 {
     FgUint128       val = fgUuidHash128(name);
     uchar           *valPtr = &val.m[0];
@@ -276,7 +276,7 @@ fgCreateMicrosoftGuid(const string & name,bool wsb)
 }
 
 void
-fgTestmCreateMicrosoftGuid(const CLArgs &)
+fgTestmCreateMicrosoftGuid(CLArgs const &)
 {
     fgout << fgnl << fgCreateMicrosoftGuid("This string should hash to a consistent value");
 }

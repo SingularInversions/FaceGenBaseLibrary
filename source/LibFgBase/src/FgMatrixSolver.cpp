@@ -93,7 +93,7 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 }
 
 void
-testAsymEigs(const CLArgs &)
+testAsymEigs(CLArgs const &)
 {
     Mat33D        mat = matRotateAxis(1.0,Vec3D(1,1,1));
     FgEigsC<3>      eigs = fgEigs(mat);
@@ -107,7 +107,7 @@ testAsymEigs(const CLArgs &)
 }
 
 void
-testSymmEigenAuto(const CLArgs &)
+testSymmEigenAuto(CLArgs const &)
 {
     randSeedRepeatable();
     testSymmEigenProblem(10,fgEigsRsm_,true);
@@ -119,7 +119,7 @@ testSymmEigenAuto(const CLArgs &)
 }
 
 void
-testSymmEigenTime(const CLArgs & args)
+testSymmEigenTime(CLArgs const & args)
 {
     if (fgAutomatedTest(args))
         return;
@@ -153,7 +153,7 @@ testSymmEigenTime(const CLArgs & args)
 }
 
 void
-testSymmEigen(const CLArgs & args)
+testSymmEigen(CLArgs const & args)
 {
     Cmds      cmds;
     cmds.push_back(Cmd(testSymmEigenAuto,"auto","Automated tests"));
@@ -164,7 +164,7 @@ testSymmEigen(const CLArgs & args)
 }
 
 void
-fgMatrixSolverTest(const CLArgs & args)
+fgMatrixSolverTest(CLArgs const & args)
 {
     Cmds      cmds;
     cmds.push_back(Cmd(testAsymEigs,"asym","Arbitrary real matrix eigensystem"));

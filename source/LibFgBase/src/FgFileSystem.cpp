@@ -20,7 +20,7 @@ using namespace boost::filesystem;
 namespace Fg {
 
 void
-fileCopy(const Ustring & src,const Ustring & dst,bool overwrite)
+fileCopy(Ustring const & src,Ustring const & dst,bool overwrite)
 {
     if (pathExists(dst)) {
         if (overwrite) {
@@ -39,7 +39,7 @@ fileCopy(const Ustring & src,const Ustring & dst,bool overwrite)
 }
 
 void
-fileMove(const Ustring & src,const Ustring & dst,bool overwrite)
+fileMove(Ustring const & src,Ustring const & dst,bool overwrite)
 {
     // We use copy and delete since boost::filesystem::rename will fail if the target
     // is on a different volume:
@@ -48,7 +48,7 @@ fileMove(const Ustring & src,const Ustring & dst,bool overwrite)
 }
 
 bool
-pathExists(const Ustring & fname)
+pathExists(Ustring const & fname)
 {
     // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
     // We don't want that - consider it just not there:
@@ -82,7 +82,7 @@ fgSetCurrentDirUp()
 }
 
 void
-fgRemoveDirectoryRecursive(const Ustring & dirname)
+fgRemoveDirectoryRecursive(Ustring const & dirname)
 {
 #ifdef _WIN32
     // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
@@ -103,7 +103,7 @@ fgRemoveDirectoryRecursive(const Ustring & dirname)
 }
 
 void
-fgCreatePath(const Ustring & path)
+fgCreatePath(Ustring const & path)
 {
     Path          p(fgAsDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
@@ -126,7 +126,7 @@ fgExecutableDirectory()
 }
 
 bool
-fileReadable(const Ustring & filename)
+fileReadable(Ustring const & filename)
 {
     Ifstream ifs(filename,false);
     if (!ifs.is_open()) return false;
@@ -145,7 +145,7 @@ fgDirUserAppDataLocal(const vector<string> & subPath)
 }
 
 string
-fgSlurp(const Ustring & filename)
+fgSlurp(Ustring const & filename)
 {
     Ifstream          ifs(filename);
     ostringstream       ss;
@@ -154,7 +154,7 @@ fgSlurp(const Ustring & filename)
 }
 
 bool
-fgDump(const string & data,const Ustring & filename,bool onlyIfChanged)
+fgDump(string const & data,Ustring const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
         string      fileData = fgSlurp(filename);
@@ -168,8 +168,8 @@ fgDump(const string & data,const Ustring & filename,bool onlyIfChanged)
 
 bool
 equateFilesBinary(
-    const Ustring & file1,
-    const Ustring & file2)
+    Ustring const & file1,
+    Ustring const & file2)
 {
     string contents1(fgSlurp(file1));
     string contents2(fgSlurp(file2));
@@ -184,7 +184,7 @@ equateFilesText(Ustring const & fname0,Ustring const & fname1)
 
 static Ustring s_fgDataDir;
 
-const Ustring &
+Ustring const &
 dataDir(bool throwIfNotFound)
 {
     // Typical locations relative to executable:
@@ -217,7 +217,7 @@ dataDir(bool throwIfNotFound)
 }
 
 void
-fgSetDataDir(const Ustring & dir)
+fgSetDataDir(Ustring const & dir)
 {
     if (!pathExists(dir+"_facegen_data_dir.flag"))
         fgThrow("fgSetDataDir FaceGen data flag not found",dir);
@@ -272,7 +272,7 @@ globFiles(const Path & path)
 }
 
 Ustrings
-globFiles(const Ustring & basePath,const Ustring & relPath,const Ustring & filePattern)
+globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & filePattern)
 {
     Ustrings       ret = globFiles(basePath+relPath+filePattern);
     for (Ustring & r : ret)
@@ -281,7 +281,7 @@ globFiles(const Ustring & basePath,const Ustring & relPath,const Ustring & fileP
 }
 
 bool
-fgCopyAllFiles(const Ustring & fromDir_,const Ustring & toDir_,bool overwrite)
+fgCopyAllFiles(Ustring const & fromDir_,Ustring const & toDir_,bool overwrite)
 {
     bool                    ret = false;
     Ustring                fromDir = fgAsDirectory(fromDir_),  // Ensure ends with delim
@@ -308,7 +308,7 @@ fgCopyToCurrentDir(const Path & file)
 }
 
 void
-fgCopyRecursive(const Ustring & fromDir,const Ustring & toDir)
+fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir)
 {
     if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
@@ -323,7 +323,7 @@ fgCopyRecursive(const Ustring & fromDir,const Ustring & toDir)
         fileCopy(from+fn,to+fn);
     }
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
-        const Ustring &    dn = dc.dirnames[ii];
+        Ustring const &    dn = dc.dirnames[ii];
         fgCopyRecursive(from+dn,to+dn);
     }
 }

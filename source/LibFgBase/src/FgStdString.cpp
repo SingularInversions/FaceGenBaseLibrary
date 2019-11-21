@@ -87,7 +87,7 @@ fgReplace(
 }
 
 string
-fgPad(const string & str,size_t len,char ch)
+fgPad(string const & str,size_t len,char ch)
 {
     string  ret = str;
     if (len > str.size())
@@ -96,7 +96,7 @@ fgPad(const string & str,size_t len,char ch)
 }
 
 string
-cat(const vector<string> & strings,const string & separator)
+cat(const vector<string> & strings,string const & separator)
 {
     string      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -109,7 +109,7 @@ cat(const vector<string> & strings,const string & separator)
 
 template<>
 Opt<int>
-fgFromStr(const string & str)
+fgFromStr(string const & str)
 {
     Opt<int>              ret;
     if (str.empty())
@@ -138,7 +138,7 @@ fgFromStr(const string & str)
 
 template<>
 Opt<uint>
-fgFromStr<uint>(const string & str)
+fgFromStr<uint>(string const & str)
 {
     Opt<uint>             ret;
     if (str.empty())

@@ -24,7 +24,7 @@ namespace {
 // MANUAL:
 
 void
-display(const CLArgs &)
+display(CLArgs const &)
 {
     Ustring    dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
@@ -37,7 +37,7 @@ display(const CLArgs &)
 }
 
 void
-resize(const CLArgs &)
+resize(CLArgs const &)
 {
     string              fname("base/test/testorig.jpg");
     ImgC4UC         img;
@@ -48,7 +48,7 @@ resize(const CLArgs &)
 }
 
 void
-sfs(const CLArgs &)
+sfs(CLArgs const &)
 {
     ImgC4UC         orig = imgLoadAnyFormat(dataDir()+"base/Mandrill512.png");
     Img<Vec3F>   img(orig.dims());
@@ -65,7 +65,7 @@ sfs(const CLArgs &)
 // AUTOMATIC:
 
 void
-composite(const CLArgs &)
+composite(CLArgs const &)
 {
     Ustring            dd = dataDir();
     ImgC4UC         overlay = imgLoadAnyFormat(dd+"base/Teeth512.png"),
@@ -74,7 +74,7 @@ composite(const CLArgs &)
 }
 
 void
-testConvolve(const CLArgs &)
+testConvolve(CLArgs const &)
 {
     randSeedRepeatable();
     ImgF          tst(16,16);
@@ -84,13 +84,13 @@ testConvolve(const CLArgs &)
     fgSmoothFloat(tst,i0,1);
     fgConvolveFloat(tst,Mat33F(1,2,1,2,4,2,1,2,1)/16.0f,i1,1);
     //fgout << fgnl << i0.m_data << fgnl << i1.m_data;
-    FGASSERT(fgApproxEqual(i0.m_data,i1.m_data));
+    FGASSERT(approxEqualRelMag(i0.m_data,i1.m_data));
 }
 
 }
 
 void
-fgImageTestm(const CLArgs & args)
+fgImageTestm(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(resize,"resize"));
@@ -99,10 +99,10 @@ fgImageTestm(const CLArgs & args)
     doMenu(args,cmds);
 }
 
-void    fgImgTestWrite(const CLArgs &);
+void    fgImgTestWrite(CLArgs const &);
 
 void
-fgImageTest(const CLArgs & args)
+fgImageTest(CLArgs const & args)
 {
     vector<Cmd>       cmds;
     cmds.push_back(Cmd(composite,"composite"));

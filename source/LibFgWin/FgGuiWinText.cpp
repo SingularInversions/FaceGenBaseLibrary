@@ -38,13 +38,13 @@ struct  GuiTextWin : public GuiBaseImpl
         m_minSize(m_maxMinWid,m_minHgt)
     {
         static HMODULE hmRichEdit = LoadLibrary(L"RichEd20.dll");
-        const Ustring &        text = m_api.content.cref();
+        Ustring const &        text = m_api.content.cref();
         m_content = text.as_wstring();
         m_updateFlag = makeUpdateFlag(m_api.content);
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiTextWin::create" << fgpush;
         WinCreateChild   cc;
@@ -115,7 +115,7 @@ struct  GuiTextWin : public GuiBaseImpl
     updateIfChanged()
     {
         if (m_updateFlag->checkUpdate()) {
-            const Ustring &        text = m_api.content.cref();
+            Ustring const &        text = m_api.content.cref();
             m_content = text.as_wstring(); 
             updateText();
             // TODO: if updateText() changes m_minSize we need to return a value (recursively)

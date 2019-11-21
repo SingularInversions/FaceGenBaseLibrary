@@ -34,7 +34,7 @@ addSubdivisions(
 
 static
 void
-test3dMeshSubdivision(const CLArgs &)
+test3dMeshSubdivision(CLArgs const &)
 {
     Mesh        meanMesh = loadTri(dataDir()+"base/Jane.tri");
     meanMesh.surfaces[0] = meanMesh.surfaces[0].convertToTris();
@@ -49,14 +49,14 @@ test3dMeshSubdivision(const CLArgs &)
     for (size_t ii=0; ii<numPts; ++ii) {
         surfPoints1[ii] = meanMesh.surfPointPos(ii);
         FGASSERT(
-            fgApproxEqual(surfPoints0[ii][0],surfPoints1[ii][0]) &&
-            fgApproxEqual(surfPoints0[ii][1],surfPoints1[ii][1]) &&
-            fgApproxEqual(surfPoints0[ii][2],surfPoints1[ii][2]));
+            approxEqualRel(surfPoints0[ii][0],surfPoints1[ii][0]) &&
+            approxEqualRel(surfPoints0[ii][1],surfPoints1[ii][1]) &&
+            approxEqualRel(surfPoints0[ii][2],surfPoints1[ii][2]));
     }    
 }
 
 void
-fg3dReadWobjTest(const CLArgs &)
+fg3dReadWobjTest(CLArgs const &)
 {
     TestDir   tmp("readObj");
     ofstream    ofs("square.obj");
@@ -79,7 +79,7 @@ fg3dReadWobjTest(const CLArgs &)
 }
 
 void
-fgTextureImageMappingRenderTest(const CLArgs &)
+fgTextureImageMappingRenderTest(CLArgs const &)
 {
     ofstream    ofs("square.obj");
     ofs << 
@@ -103,7 +103,7 @@ fgTextureImageMappingRenderTest(const CLArgs &)
 }
 
 void
-fgSubdivisionTest(const CLArgs &)
+fgSubdivisionTest(CLArgs const &)
 {
     vector<Mesh>    meshes;
     addSubdivisions(meshes,fgTetrahedron());
@@ -122,7 +122,7 @@ fgSubdivisionTest(const CLArgs &)
 
 static
 void
-edgeDist(const CLArgs &)
+edgeDist(CLArgs const &)
 {
     Mesh        mesh = loadTri(dataDir()+"base/Jane.tri");
     Surf     surf = mergeSurfaces(mesh.surfaces).convertToTris();
@@ -163,7 +163,7 @@ void fgSavePlyTest(CLArgs const &);
 void fgSaveXsiTest(CLArgs const &);
 
 void
-fg3dTest(const CLArgs & args)
+fg3dTest(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(fgSave3dsTest,"3ds",".3DS file format export"));
@@ -184,7 +184,7 @@ fg3dTest(const CLArgs & args)
 void fgSaveFgmeshTest(CLArgs const &);
 
 void
-fg3dTestMan(const CLArgs & args)
+fg3dTestMan(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(edgeDist,"edgeDist"));

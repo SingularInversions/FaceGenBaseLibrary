@@ -18,7 +18,7 @@ namespace Fg {
 namespace {
 
 void
-addalpha(const CLArgs & args)
+addalpha(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<rgb>.<ext> <alpha>.<ext> <out>.<ext>\n"
@@ -37,7 +37,7 @@ addalpha(const CLArgs & args)
 }
 
 void
-composite(const CLArgs & args)
+composite(CLArgs const & args)
 {
     Syntax    syn(args,
         "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
@@ -52,7 +52,7 @@ composite(const CLArgs & args)
 }
 
 void
-convert(const CLArgs & args)
+convert(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext> <out>.<ext>\n"
@@ -64,7 +64,7 @@ convert(const CLArgs & args)
 }
 
 void
-shrink2(const CLArgs & args)
+shrink2(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<in>.<ext> <out>.<ext>\n"
@@ -77,12 +77,12 @@ shrink2(const CLArgs & args)
 }
 
 void
-formats(const CLArgs &)
+formats(CLArgs const &)
 {
     Strings      fs = imgFileExtensions();
     fgout << fgnl << fs.size() << " formats supported:" << fgpush;
     char        previous = 'Z';
-    for (const string & f : fs) {
+    for (string const & f : fs) {
         if (f[0] != previous) {
             previous = f[0];
             fgout << fgnl;
@@ -96,7 +96,7 @@ formats(const CLArgs &)
 
 static
 void
-imgops(const CLArgs & args)
+imgops(CLArgs const & args)
 {
     vector<Cmd>   ops;
     ops.push_back(Cmd(addalpha,"addalpha","Add/replace an alpha channel from an another image"));

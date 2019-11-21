@@ -82,7 +82,7 @@ fgTestmNrvoMr(bool sel)
 
 static
 void
-rvo(const CLArgs &)
+rvo(CLArgs const &)
 {
     FgTestmRvo      t;
     rvoCount = 0;
@@ -104,7 +104,7 @@ rvo(const CLArgs &)
 
 static
 void
-speedExp(const CLArgs &)
+speedExp(CLArgs const &)
 {
     double      val = 0,
                 inc = 2.718281828,
@@ -123,7 +123,7 @@ speedExp(const CLArgs &)
 
 static
 void
-fgexp(const CLArgs &)
+fgexp(CLArgs const &)
 {
     double      maxRel = 0,
                 totRel = 0;
@@ -155,7 +155,7 @@ fgexp(const CLArgs &)
 
 static
 void
-any(const CLArgs &)
+any(CLArgs const &)
 {
     boost::any      v0 = 42,
                     v1 = v0;
@@ -172,7 +172,7 @@ any(const CLArgs &)
 
 static
 void
-thash(const CLArgs &)
+thash(CLArgs const &)
 {
     for (uint ii=0; ii<3; ++ii) {
         string              str = "Does this string give a consistent hash on subsequent runs ?";
@@ -191,7 +191,7 @@ thash(const CLArgs &)
 
 static
 void
-parr(const CLArgs &)
+parr(CLArgs const &)
 {
     // Generate data and put in both parallel and packed arrays:
     size_t          N = 100000,
@@ -199,7 +199,7 @@ parr(const CLArgs &)
     Doubless         pins(A),
                     pouts(A);
     for (Doubles & pin : pins)
-        pin = fgGenerate<double>(randNormal,N);
+        pin = generate<double>(randNormal,N);
     for (Doubles & pout : pouts)
         pout.resize(N,0);
     Doubles          sins,
@@ -282,7 +282,7 @@ parr(const CLArgs &)
 }
 
 void
-fgCmdTestmCpp(const CLArgs & args)
+fgCmdTestmCpp(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(any,"any","Test boost any copy semantics"));

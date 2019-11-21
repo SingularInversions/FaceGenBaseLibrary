@@ -27,6 +27,20 @@ using namespace std;
 
 namespace Fg {
 
+Doubles
+toDoubles(Floatss const & v)
+{
+    size_t          sz = 0;
+    for (Floats const & fs : v)
+        sz += fs.size();
+    Doubles         ret;
+    ret.reserve(sz);
+    for (Floats const & fs : v)
+        for (float f : fs)
+            ret.push_back(scast<double>(f));
+    return ret;
+}
+
 Vec3Fs
 fgVertsRandNormal(size_t num,float scale)
 {
@@ -138,7 +152,7 @@ static void     testFgMatRotateAxis()
 }
 
 void
-fgMatrixCTest(const CLArgs &)
+fgMatrixCTest(CLArgs const &)
 {
     randSeedRepeatable();
     for (size_t ii=0; ii<10; ++ii)

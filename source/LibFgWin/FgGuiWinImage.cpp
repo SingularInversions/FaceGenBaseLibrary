@@ -29,7 +29,7 @@ struct  GuiImageWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
@@ -157,7 +157,7 @@ struct  GuiImageWin : public GuiBaseImpl
             if (wParam == MK_LBUTTON) {
                 if (dragging == false) {
                     // Add hysteresis to avoid annoying missed clicks due to very slight movement:
-                    if (fgMaxElem(mapAbs(pos-m_posWhenLButtonClicked)) > 1)
+                    if (cMaxElem(mapAbs(pos-m_posWhenLButtonClicked)) > 1)
                         dragging = true;
                 }
                 if (dragging) {

@@ -21,7 +21,7 @@ namespace Fg {
 
 static
 vector<string>
-glob(const string & dir)
+glob(string const & dir)
 {
     vector<string>      ret;
     DirectoryContents dc = directoryContents(dir);
@@ -37,7 +37,7 @@ glob(const string & dir)
     return ret;
 }
 
-FgConsSrcDir::FgConsSrcDir(const string & baseDir,const string & relDir)
+FgConsSrcDir::FgConsSrcDir(string const & baseDir,string const & relDir)
     : dir(relDir), files(glob(baseDir+relDir))
     {}
 
@@ -51,7 +51,7 @@ FgConsProj::descriptor() const
 }
 
 FgConsProj
-FgConsSolution::addApp(const string & name,const string & lnkDep)
+FgConsSolution::addApp(string const & name,string const & lnkDep)
 {
     if (!pathExists(name))
         fgThrow("Unable to find directory",name);
@@ -65,7 +65,7 @@ FgConsSolution::addApp(const string & name,const string & lnkDep)
 }
 
 void
-FgConsSolution::addAppClp(const string & name,const string & lnkDep)
+FgConsSolution::addAppClp(string const & name,string const & lnkDep)
 {
     FgConsProj          proj = addApp(name,lnkDep);
     proj.type = FgConsProj::Type::clp;
@@ -73,7 +73,7 @@ FgConsSolution::addAppClp(const string & name,const string & lnkDep)
 }
 
 void
-FgConsSolution::addAppGui(const string & name,const string & lnkDep)
+FgConsSolution::addAppGui(string const & name,string const & lnkDep)
 {
     FgConsProj          proj = addApp(name,lnkDep);
     proj.type = FgConsProj::Type::gui;
@@ -81,7 +81,7 @@ FgConsSolution::addAppGui(const string & name,const string & lnkDep)
 }
 
 bool
-FgConsSolution::contains(const string & projName) const
+FgConsSolution::contains(string const & projName) const
 {
     for (const FgConsProj & p : projects)
         if (p.name == projName)
@@ -90,7 +90,7 @@ FgConsSolution::contains(const string & projName) const
 }
 
 const FgConsProj &
-FgConsSolution::at(const string & projName) const
+FgConsSolution::at(string const & projName) const
 {
     for (const FgConsProj & p : projects)
         if (p.name == projName)
@@ -101,7 +101,7 @@ FgConsSolution::at(const string & projName) const
 
 // Topological sort of transitive includes:
 Strings
-FgConsSolution::getTransitiveIncludes(const string & projName,bool fileDir,set<string> & done) const
+FgConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<string> & done) const
 {
     const FgConsProj &  p = at(projName);
     Strings              ret;
@@ -126,7 +126,7 @@ FgConsSolution::getTransitiveIncludes(const string & projName,bool fileDir,set<s
 }
 
 Strings
-FgConsSolution::getIncludes(const string & projName,bool fileDir) const
+FgConsSolution::getIncludes(string const & projName,bool fileDir) const
 {
     const FgConsProj &  p = at(projName);
     Strings              ret;
@@ -144,7 +144,7 @@ FgConsSolution::getIncludes(const string & projName,bool fileDir) const
 
 // Topological sort of transitive defines:
 Strings
-FgConsSolution::getTransitiveDefs(const string & projName,set<string> & done) const
+FgConsSolution::getTransitiveDefs(string const & projName,set<string> & done) const
 {
     const FgConsProj &  p = at(projName);
     Strings              ret;
@@ -164,7 +164,7 @@ FgConsSolution::getTransitiveDefs(const string & projName,set<string> & done) co
 }
 
 Strings
-FgConsSolution::getDefs(const string & projName) const
+FgConsSolution::getDefs(string const & projName) const
 {
     const FgConsProj &  p = at(projName);
     Strings              ret;
@@ -177,7 +177,7 @@ FgConsSolution::getDefs(const string & projName) const
 }
 
 Strings
-FgConsSolution::getTransitiveLnkDeps(const string & projName,set<string> & done) const
+FgConsSolution::getTransitiveLnkDeps(string const & projName,set<string> & done) const
 {
     Strings              ret;
     if (fgContains(done,projName))
@@ -194,7 +194,7 @@ FgConsSolution::getTransitiveLnkDeps(const string & projName,set<string> & done)
 }
 
 Strings
-FgConsSolution::getLnkDeps(const string & projName) const
+FgConsSolution::getLnkDeps(string const & projName) const
 {
     const FgConsProj &  p = at(projName);
     Strings              ret;
@@ -205,7 +205,7 @@ FgConsSolution::getLnkDeps(const string & projName) const
 }
 
 Strings
-FgConsSolution::getAllDeps(const string & projName,set<string> & done,bool dllSource) const
+FgConsSolution::getAllDeps(string const & projName,set<string> & done,bool dllSource) const
 {
     Strings      ret;
     if (fgContains(done,projName))
@@ -221,18 +221,18 @@ FgConsSolution::getAllDeps(const string & projName,set<string> & done,bool dllSo
 }
 
 Strings
-FgConsSolution::getAllDeps(const string & projName,bool dllSource) const
+FgConsSolution::getAllDeps(string const & projName,bool dllSource) const
 {
     set<string>     done;
     return getAllDeps(projName,done,dllSource);
 }
 
 Strings
-FgConsSolution::getAllDeps(const Strings & projNames,bool dllSource) const
+FgConsSolution::getAllDeps(Strings const & projNames,bool dllSource) const
 {
     set<string>     done;
     Strings          ret;
-    for (const string & projName : projNames)
+    for (string const & projName : projNames)
         cat_(ret,getAllDeps(projName,done,dllSource));
     return ret;
 }
@@ -344,7 +344,7 @@ fgConsBuildAllFiles()
 }
 
 void
-fgCmdCons(const CLArgs & args)
+fgCmdCons(CLArgs const & args)
 {
     Syntax        syntax(args,
         "(sln | make) <option>*\n"

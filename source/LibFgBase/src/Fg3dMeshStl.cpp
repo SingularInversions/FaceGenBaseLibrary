@@ -58,7 +58,7 @@ saveStl(Ofstream & ff,const Mesh & mesh)
 }
 
 void
-saveStl(const Ustring & fname,const vector<Mesh> & meshes)
+saveStl(Ustring const & fname,const vector<Mesh> & meshes)
 {
     FGASSERT(!meshes.empty());
     Ofstream      ff(fname);

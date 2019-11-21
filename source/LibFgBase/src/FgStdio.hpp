@@ -18,7 +18,7 @@ namespace Fg {
 // Always opens in 'binary' mode. Throws a descriptive error if the file cannot be opened.
 FILE *
 fgOpen(
-    const Ustring &    filename,
+    Ustring const &    filename,
     bool                write);         // false = read
 
 #endif

@@ -35,7 +35,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     {return m_fontDims[1]+6; }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
@@ -63,7 +63,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     {
         if (!m_keyboardFocus) {
             if (m_api.updateFlag->checkUpdate()) {
-                const Ustring &    txt = m_api.getInput();
+                Ustring const &    txt = m_api.getInput();
                 SetWindowText(hwndText,txt.as_wstring().c_str());
             }
         }
@@ -100,7 +100,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
                 GetTextMetrics(GetDC(hwndThis),&tm);
                 m_fontDims[0] = tm.tmAveCharWidth;
                 m_fontDims[1] = tm.tmHeight + tm.tmExternalLeading;
-                const Ustring &    txt = m_api.getInput();
+                Ustring const &    txt = m_api.getInput();
                 m_api.updateFlag->checkUpdate();
                 SetWindowText(hwndText,txt.as_wstring().c_str());
                 m_currText = txt;
@@ -147,7 +147,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
                 }
                 else if (nc == EN_KILLFOCUS) {
                     m_keyboardFocus = false;
-                    const Ustring &    txt = m_api.getInput();
+                    Ustring const &    txt = m_api.getInput();
                     SetWindowText(hwndText,txt.as_wstring().c_str());
                 }
             }

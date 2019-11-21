@@ -120,7 +120,7 @@ fgPartition(const MatD & m,size_t loSize)
 namespace {
 
 void
-testCorrect(const CLArgs &)
+testCorrect(CLArgs const &)
 {
     MatD       M = {2,2,{1,2,3,5}},
                     N = M * M,
@@ -242,7 +242,7 @@ tt3(const MatD & lhs,const MatD & rhs)
 }
 
 void
-showMul(function<MatD(const MatD &,const MatD &)> fn,const MatD & l,const MatD & r,const string & desc)
+showMul(function<MatD(const MatD &,const MatD &)> fn,const MatD & l,const MatD & r,string const & desc)
 {
     fgout << fgnl << desc << " : ";
     FgTimer         timer;
@@ -252,7 +252,7 @@ showMul(function<MatD(const MatD &,const MatD &)> fn,const MatD & l,const MatD &
 }
 
 void
-testMul(const CLArgs & args)
+testMul(CLArgs const & args)
 {
     if (fgAutomatedTest(args))
         return;
@@ -267,7 +267,7 @@ testMul(const CLArgs & args)
 }
 
 void
-loopStructTime(const CLArgs & args)
+loopStructTime(CLArgs const & args)
 {
     if (fgAutomatedTest(args))
         return;
@@ -281,7 +281,7 @@ loopStructTime(const CLArgs & args)
 }
 
 void
-eigenTest(const CLArgs & args)
+eigenTest(CLArgs const & args)
 {
     if (fgAutomatedTest(args))
         return;
@@ -304,7 +304,7 @@ eigenTest(const CLArgs & args)
 }
 
 void
-fgMatrixVTest(const CLArgs & args)
+fgMatrixVTest(CLArgs const & args)
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(testCorrect,"correct"));

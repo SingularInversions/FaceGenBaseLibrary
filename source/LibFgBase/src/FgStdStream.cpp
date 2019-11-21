@@ -61,7 +61,7 @@ Ifstream::open(
 }
 
 void
-fgWriteFile(const Ustring & fname,const std::string & data,bool appendFile)
+fgWriteFile(Ustring const & fname,const std::string & data,bool appendFile)
 {
     Ofstream  ofs(fname,appendFile);
     ofs << data;

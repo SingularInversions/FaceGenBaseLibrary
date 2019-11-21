@@ -110,7 +110,7 @@ doMenu(
 
 static Ustring s_rootTestDir;
 
-TestDir::TestDir(const string & name)
+TestDir::TestDir(string const & name)
 {
     FGASSERT(!name.empty());
     if (s_rootTestDir.empty()) {
@@ -145,11 +145,11 @@ TestDir::~TestDir()
 }
 
 void
-fgSetRootTestDir(const Ustring & dir)
+fgSetRootTestDir(Ustring const & dir)
 { s_rootTestDir = dir; }
 
 void
-fgTestCopy(const string & relPath)
+fgTestCopy(string const & relPath)
 {
     Ustring        name = fgPathToName(relPath);
     if (pathExists(name))
@@ -159,7 +159,7 @@ fgTestCopy(const string & relPath)
 }
 
 void
-runCmd(const CmdFunc & func,const string & argStr)
+runCmd(const CmdFunc & func,string const & argStr)
 {
     fgout << fgnl << argStr << " " << fgpush;
     func(splitChar(argStr));
@@ -171,7 +171,7 @@ fgKeepTempFiles()
 {return s_keepTempFiles; }
 
 bool
-fgAutomatedTest(const CLArgs & args)
+fgAutomatedTest(CLArgs const & args)
 {
     return ((args.size() == 2) && (args[1] == "all"));
 }

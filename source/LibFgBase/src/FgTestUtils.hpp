@@ -63,8 +63,8 @@ private:
 
 void
 fgRegressFail(
-    const Ustring & testName,
-    const Ustring & refName);
+    Ustring const & testName,
+    Ustring const & refName);
 
 // Returns corresponding regression baseline value:
 template<class T>
@@ -82,7 +82,7 @@ fgRegressionBaseline(
 }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef std::function<bool(const Ustring &,const Ustring &)> EquateFiles;
+typedef std::function<bool(Ustring const &,Ustring const &)> EquateFiles;
 
 // Calls the given regression check and deletes the query file if successful. If unsuccessful then:
 // '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
@@ -118,7 +118,7 @@ fgRegressCompare(const T & lhs,const T & rhs)
 
 template<class T>
 T
-fgRegressLoad(const Ustring & fname)
+fgRegressLoad(Ustring const & fname)
 {
     T       ret;
     fgLoadXml(fname,ret);
@@ -127,15 +127,15 @@ fgRegressLoad(const Ustring & fname)
 
 template<class T>
 void
-fgRegressSave(const Ustring & fname,const T & val)
+fgRegressSave(Ustring const & fname,const T & val)
 {fgSaveXml(fname,val); }
 
 template<>
 ImgC4UC
-fgRegressLoad(const Ustring &);
+fgRegressLoad(Ustring const &);
 template<>
 void
-fgRegressSave(const Ustring &,const ImgC4UC &);
+fgRegressSave(Ustring const &,const ImgC4UC &);
 
 // Developers with source control create this (empty) flag file locally:
 inline
@@ -147,7 +147,7 @@ template<class T>
 void
 fgRegress(
     const T &           query,
-    const Ustring &    baselinePath,
+    Ustring const &    baselinePath,
     const std::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
 {
     // This flag should be set on a developer's machine (and ignored by source control) for
@@ -183,7 +183,7 @@ fgRegress(
 // Regress a string against a data file. Throws if file is different.
 // For dev instances (_overwrite_baselines.flag), also overwrites file if different.
 void
-fgRegressString(const String & data,const Ustring & relPath);
+fgRegressString(const String & data,Ustring const & relPath);
 
 }
 

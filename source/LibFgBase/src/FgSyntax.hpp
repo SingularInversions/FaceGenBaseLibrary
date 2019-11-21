@@ -21,7 +21,7 @@ struct  FgExceptionCommandSyntax
 struct  Syntax
 {
     Syntax(
-        const CLArgs &  args,   // Accepts UTF-8 here
+        CLArgs const &  args,   // Accepts UTF-8 here
         // Wraparound for console width is aplied to this text. Any occurence of " - "
         // sets the indent level for wraparound:
         const String &  syntax);
@@ -72,7 +72,7 @@ struct  Syntax
     error(const String & errMsg);
 
     void
-    error(const String & errMsg,const Ustring & data);
+    error(const String & errMsg,Ustring const & data);
 
     void
     incorrectNumArgs();
@@ -80,12 +80,12 @@ struct  Syntax
     // Throws appropriate syntax error:
     void
     checkExtension(
-        const Ustring & fname,
+        Ustring const & fname,
         const String & ext);
     void
     checkExtension(
         const String &          fname,
-        const Strings &         exts);
+        Strings const &         exts);
 
     // Throws appropriate syntax error if different:
     void
@@ -94,7 +94,7 @@ struct  Syntax
     // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
     // referencing 'argDescription':
     uint
-    nextSelectionIndex(const Strings & validValues,const String & argDescription);
+    nextSelectionIndex(Strings const & validValues,const String & argDescription);
 
 
 private:

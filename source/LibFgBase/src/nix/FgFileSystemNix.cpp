@@ -24,11 +24,11 @@ using boost::filesystem::directory_iterator;
 namespace Fg {
 
 bool
-isDirectory(const Ustring & name)
+isDirectory(Ustring const & name)
 {return is_directory(name.ns()); }
 
 DirectoryContents
-directoryContents(const Ustring & dirName)
+directoryContents(Ustring const & dirName)
 {
     Ustring        dn = dirName;
     if (dn.empty())     // Interpret this as current directory, which boost filesystem does not
@@ -60,7 +60,7 @@ fgGetCurrentDir()
 
 bool
 fgSetCurrentDir(
-    const Ustring &    dir,
+    Ustring const &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -71,19 +71,19 @@ fgSetCurrentDir(
 }
 
 bool
-fgCreateDirectory(const Ustring & dir)
+fgCreateDirectory(Ustring const & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
 }
 
 void
-fgDeleteFile(const Ustring & fname)
+fgDeleteFile(Ustring const & fname)
 {pathRemove(fname); }
 
 bool
 fgRemoveDirectory(
-    const Ustring &    dir,
+    Ustring const &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -139,7 +139,7 @@ fgPublicDocumentsDirectory()
 
 struct  Dir
 {
-    Dir(const Ustring & dirName)
+    Dir(Ustring const & dirName)
     {handle = opendir(dirName.as_utf8_string().c_str()); }
 
     ~Dir()
@@ -149,18 +149,18 @@ struct  Dir
 };
 
 bool
-getCreationTime(const Ustring &,uint64 &)
+getCreationTime(Ustring const &,uint64 &)
 {
     throw FgExceptionNotImplemented();
     return false;
 }
 
 std::time_t
-getLastWriteTime(const Ustring & path)
+getLastWriteTime(Ustring const & path)
 {return boost::filesystem::last_write_time(path.ns()); }
 
 void
-fgMakeWritableByAll(const Ustring &)
+fgMakeWritableByAll(Ustring const &)
 {throw FgExceptionNotImplemented(); }
 
 #if defined(__APPLE__)

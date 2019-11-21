@@ -58,7 +58,7 @@ guiTextEdit(IPT<Ustring> node,bool wantStretch)
 
 static
 void
-textToVal2(IPT<double> valN,VecD2 clip,FgFuncD2D t2v,const Ustring & str)
+textToVal2(IPT<double> valN,VecD2 clip,FgFuncD2D t2v,Ustring const & str)
 {
     double          val = 0.0;
     try {val = fgFromString<double>(str.as_ascii()); }

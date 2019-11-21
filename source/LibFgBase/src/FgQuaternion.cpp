@@ -27,7 +27,7 @@ fgTanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs)
 }
 
 void
-fgQuaternionTest(const CLArgs &)
+fgQuaternionTest(CLArgs const &)
 {
     QuaternionD           id;
     // Axis rotations:

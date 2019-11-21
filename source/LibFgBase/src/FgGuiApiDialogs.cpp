@@ -27,10 +27,10 @@ fileLoad2(Ustring fileTypesDescription,Strings extensions,string storeID,IPT<Ust
 
 GuiPtr
 guiLoadButton(
-    const Ustring &            buttonText,
-    const Ustring &            fileTypesDescription,
-    const Strings &              extensions,
-    const string &              storeID,
+    Ustring const &            buttonText,
+    Ustring const &            fileTypesDescription,
+    Strings const &              extensions,
+    string const &              storeID,
     const IPT<Ustring> &       selection)
 {
     GuiButton          b;

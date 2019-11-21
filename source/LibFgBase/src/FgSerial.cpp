@@ -70,7 +70,7 @@ fgSerSig<FgSerTest>()
 }
 
 void
-fgSerTest(const CLArgs &)
+fgSerTest(CLArgs const &)
 {
     uint64  sig = fgSerSig<FgSerTest>();
     fgout << fgnl << sig;

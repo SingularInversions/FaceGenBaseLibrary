@@ -38,7 +38,7 @@ typedef EdgeMapT::const_iterator EdgeMapCItr;
 // Local function prototypes
 //****************************************************************************
 static bool saveMayaAsciiFile(
-        const Ustring                    &fname,
+        Ustring const                    &fname,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
         const vector<string>            *morphNames,
@@ -70,13 +70,13 @@ static string getObjPolySoftEdgeGrpId(
 static string getObjPolySoftEdgeGrpParts(
         const FffMultiObjectC &model, unsigned long objId);
 
-static string getMorphName(const string &morphName);
+static string getMorphName(string const &morphName);
 static string getObjMorphName(
         const FffMultiObjectC &model, unsigned long objId, 
-        const string &morphName);
+        string const &morphName);
 static string getObjMorphShapeName(
         const FffMultiObjectC &model, unsigned long objId, 
-        const string &morphName);
+        string const &morphName);
 
 static string getObjectShadingEngName(
         const FffMultiObjectC &model, unsigned long mm);
@@ -90,15 +90,15 @@ static string getObjectNodeGrpIdName(
         const FffMultiObjectC &model, unsigned long mm);
 
 static string getObjMorphShadingEngName(
-        const FffMultiObjectC &model, unsigned long mm, const string &name);
+        const FffMultiObjectC &model, unsigned long mm, string const &name);
 static string getObjMorphMaterialName(
-        const FffMultiObjectC &model, unsigned long mm, const string &name);
+        const FffMultiObjectC &model, unsigned long mm, string const &name);
 static string getObjMorphPhongName(
-        const FffMultiObjectC &model, unsigned long mm, const string &name);
+        const FffMultiObjectC &model, unsigned long mm, string const &name);
 static string getObjMorphShadeGrpIdName(
-        const FffMultiObjectC &model, unsigned long mm, const string &name);
+        const FffMultiObjectC &model, unsigned long mm, string const &name);
 static string getObjMorphNodeGrpIdName(
-        const FffMultiObjectC &model, unsigned long mm, const string &name);
+        const FffMultiObjectC &model, unsigned long mm, string const &name);
 
 static string getBlendShapeName();
 static string getBlendShapeSetName();
@@ -167,7 +167,7 @@ static void connectAttributes(
 //****************************************************************************
 static bool    fffSaveMayaAsciiFile(
 
-    const Ustring            &fname,
+    Ustring const            &fname,
     const FffMultiObjectC   &model,
     const vector<string>    *cmts)
 {
@@ -176,7 +176,7 @@ static bool    fffSaveMayaAsciiFile(
 
 static bool    fffSaveMayaAsciiFile(
 
-    const Ustring                    &fname,
+    Ustring const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,
     const vector<string>            &morphNames,
@@ -191,7 +191,7 @@ static bool    fffSaveMayaAsciiFile(
 //****************************************************************************
 static bool saveMayaAsciiFile(
 
-    const Ustring                  &fname,
+    Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
     const vector<string>            *morphNames,
@@ -515,7 +515,7 @@ static string getObjPolySoftEdgeGrpParts(
 //****************************************************************************
 //                              getMorphName
 //****************************************************************************
-static string getMorphName(const string &morphName)
+static string getMorphName(string const &morphName)
 {
     string name = morphName;
 
@@ -539,7 +539,7 @@ static string getObjMorphName(
 
     const FffMultiObjectC   &model, 
     unsigned long           objId, 
-    const string            &morphName)
+    string const            &morphName)
 {
     return (model.getModelName(objId)+string("_")+getMorphName(morphName));
 }
@@ -552,7 +552,7 @@ static string getObjMorphShapeName(
 
     const FffMultiObjectC   &model, 
     unsigned long           objId, 
-    const string            &morphName)
+    string const            &morphName)
 {
     return (getObjMorphName(model,objId,morphName) + string("Shape"));
 }
@@ -625,7 +625,7 @@ static string getObjMorphShadingEngName(
 
     const FffMultiObjectC   &model, 
     unsigned long           mm, 
-    const string            &name)
+    string const            &name)
 {
     return (getObjMorphName(model,mm,name) + string("ShadingEngine"));
 }
@@ -638,7 +638,7 @@ static string getObjMorphMaterialName(
 
     const FffMultiObjectC   &model, 
     unsigned long           mm, 
-    const string            &name)
+    string const            &name)
 {
     return (getObjMorphName(model,mm,name) + string("Material"));
 }
@@ -651,7 +651,7 @@ static string getObjMorphPhongName(
 
     const FffMultiObjectC   &model, 
     unsigned long           mm, 
-    const string            &name)
+    string const            &name)
 {
     return (getObjMorphName(model,mm,name) + string("Phong"));
 }
@@ -664,7 +664,7 @@ static string getObjMorphShadeGrpIdName(
 
     const FffMultiObjectC   &model, 
     unsigned long           mm, 
-    const string            &name)
+    string const            &name)
 {
     return (getObjMorphName(model,mm,name) + string("ShadeGrpId"));
 }
@@ -677,7 +677,7 @@ static string getObjMorphNodeGrpIdName(
 
     const FffMultiObjectC   &model, 
     unsigned long           mm, 
-    const string            &name)
+    string const            &name)
 {
     return (getObjMorphName(model,mm,name) + string("NodeGrpId"));
 }
@@ -1971,7 +1971,7 @@ static void connectAttributes(
 }
 
 FgMeshLegacy
-fgMeshLegacy(const vector<Mesh> & meshes,const Ustring & fname,const string & imgFormat,uint maxLen)
+fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & imgFormat,uint maxLen)
 {
     FgMeshLegacy                    ret;
     Path                          path(fname);
@@ -2028,7 +2028,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,const Ustring & fname,const string & im
 
 void
 saveMa(
-    const Ustring &        fname,
+    Ustring const &        fname,
     const vector<Mesh> & meshes,
     string                  imgFormat)
 {
@@ -2041,7 +2041,7 @@ saveMa(
 }
 
 void
-fgSaveMaTest(const CLArgs & args)
+fgSaveMaTest(CLArgs const & args)
 {
     FGTESTDIR
     Ustring    dd = dataDir();

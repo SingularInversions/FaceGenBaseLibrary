@@ -155,6 +155,16 @@ struct  OutPush
     {fgout << fgpop; }
 };
 
+struct  PushLogFile
+{
+    explicit
+    PushLogFile(std::string const & fname)
+    {fgout.logFile(fname,false,false); }
+
+    ~PushLogFile()
+    {fgout.logFileClose(); }
+};
+
 #define FGOUT1(X) fgout << fgnl << #X ": " << (X)
 
 #define FGOUT2(X,Y) fgout << fgnl << #X ": " << (X) << "  " << #Y ": " << (Y)

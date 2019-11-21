@@ -32,7 +32,7 @@ struct  GuiGroupboxWin : public GuiBaseImpl
     {m_contents = m_api.contents->getInstance(); }
 
     virtual void
-    create(HWND parentHwnd,int,const Ustring & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int,Ustring const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiGroupboxWin::create " << m_api.label << fgpush;
         m_store = store;

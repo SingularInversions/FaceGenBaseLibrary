@@ -75,20 +75,20 @@ fgSplitLinesUtf8(const String & utf8,bool includeEmptyLines=false);
 //   up until the next single-quote is taken as the value, and double-quotes are taken as single-quotes.
 Stringss
 fgLoadCsv(
-    const Ustring &    fname,
+    Ustring const &    fname,
     size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
 
 // Each non-empty line in the CSV must have at least keyIdx+1 fields or an error will occur.
 // The map value will contain all fields in original order (including key):
 std::map<std::string,Strings>
 fgLoadCsvToMap(
-    const Ustring &    fname,
+    Ustring const &    fname,
     size_t              keyIdx,
     size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
 
 // Quotes all fields and uses double-quotes to escape quote literals.
 void
-fgSaveCsv(const Ustring & fname,const Stringss & csvLines);
+fgSaveCsv(Ustring const & fname,const Stringss & csvLines);
 
 // Split up a string based on a seperator.
 // Output does not include separators or (by default) empty strings.

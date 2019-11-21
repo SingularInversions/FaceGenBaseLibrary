@@ -18,7 +18,7 @@ namespace Fg {
 
 bool
 meshLoadAnyFormat(
-    const Ustring &    fname,
+    Ustring const &    fname,
     Mesh &          mesh)
 {
     Path      path(fname);
@@ -47,7 +47,7 @@ meshLoadAnyFormat(
 }
 
 Mesh
-meshLoadAnyFormat(const Ustring & fname)
+meshLoadAnyFormat(Ustring const & fname)
 {
     Mesh    ret;
     if (!meshLoadAnyFormat(fname,ret))
@@ -66,8 +66,8 @@ meshLoadFormatsCLDescription()
 void
 meshSaveAnyFormat(
     const vector<Mesh> &    meshes,
-    const Ustring &            fname,
-    const string &              imgFormat)
+    Ustring const &            fname,
+    string const &              imgFormat)
 {
     Ustring    ext = fgPathToExt(fname).toLower();
     if(ext == "tri")
@@ -128,7 +128,7 @@ meshExportFormatsWithMorphs()
  */
 static
 void
-triexport(const CLArgs & args)
+triexport(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"

@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 Vec3Fs
-fgSelectVerts(const LabelledVerts & labVerts,const Strings & labels)
+fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels)
 {
     Vec3Fs         ret;
     ret.reserve(labels.size());
@@ -177,7 +177,7 @@ Surf::vertsUsed() const
 }
 
 Vec3F
-Surf::surfPointPos(const Vec3Fs & verts,const string & label) const
+Surf::surfPointPos(const Vec3Fs & verts,string const & label) const
 {
     const SurfPoint & sp = fgFindFirst(surfPoints,label);
     Vec3UI           tri = getTriEquivPosInds(sp.triEquivIdx);
@@ -240,13 +240,13 @@ Surf::checkMeshConsistency(
     uint    uvsSize)
 {
     if (tris.size() > 0)
-        {FGASSERT(fgMaxElem(cBounds(tris.vertInds)) < coordsSize); }
+        {FGASSERT(cMaxElem(cBounds(tris.vertInds)) < coordsSize); }
     if (quads.size() > 0)
-        {FGASSERT(fgMaxElem(cBounds(quads.vertInds)) < coordsSize); }
+        {FGASSERT(cMaxElem(cBounds(quads.vertInds)) < coordsSize); }
     if (tris.uvInds.size() > 0)
-        {FGASSERT(fgMaxElem(cBounds(tris.uvInds)) < uvsSize); }
+        {FGASSERT(cMaxElem(cBounds(tris.uvInds)) < uvsSize); }
     if (quads.uvInds.size() > 0)
-        {FGASSERT(fgMaxElem(cBounds(quads.uvInds)) < uvsSize); }
+        {FGASSERT(cMaxElem(cBounds(quads.uvInds)) < uvsSize); }
 }
 
 void
@@ -497,7 +497,7 @@ fgSplitSurface(const Surf & surf)
 }
 
 vector<Surf>
-fgEnsureNamed(const vector<Surf> & surfs,const Ustring & baseName)
+fgEnsureNamed(const vector<Surf> & surfs,Ustring const & baseName)
 {
     vector<Surf>     ret = surfs;
     if ((ret.size() == 1) && (ret[0].name.empty()))

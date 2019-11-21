@@ -86,11 +86,11 @@ guiSliders(
     VecD2               range,
     double              initVal,
     double              tickSpacing,
-    const Ustring &     relStore="");   // Relative store name for saving state (null if no save)
+    Ustring const &     relStore="");   // Relative store name for saving state (null if no save)
 
 // Use to auto create labels for above. Labels will have numbers appended:
 Ustrings
-numberedLabels(const Ustring & baseLabel,size_t num);
+numberedLabels(Ustring const & baseLabel,size_t num);
 
 // Generate equispaced tick labels:
 GuiTickLabels

@@ -31,7 +31,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int,const Ustring & store,DWORD /*extStyle*/,bool visible)
+    create(HWND parentHwnd,int,Ustring const & store,DWORD /*extStyle*/,bool visible)
     {
 //fgout << fgnl << "GuiDynamicWin::create" << fgpush;
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.

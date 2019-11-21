@@ -192,7 +192,7 @@ loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail)
 }
 
 Mesh
-loadTri(const Ustring & fname)
+loadTri(Ustring const & fname)
 {
     Mesh        ret;
     try {
@@ -209,8 +209,8 @@ loadTri(const Ustring & fname)
 
 Mesh
 loadTri(
-    const Ustring &    meshFile,
-    const Ustring &    texImage)
+    Ustring const &    meshFile,
+    Ustring const &    texImage)
 {
     Mesh        mesh = loadTri(meshFile);
     imgLoadAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
@@ -219,7 +219,7 @@ loadTri(
 
 static
 void
-writeLabel(ostream & ostr,const string & str)
+writeLabel(ostream & ostr,string const & str)
 {
     // The spec requires writing a null terminator after the string:
     fgWriteb(ostr,uint32(str.size()+1));
@@ -300,7 +300,7 @@ saveTri(
         const Morph &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
-        float           scale = float(numeric_limits<short>::max()-1) / fgMaxElem(mapAbs(cBounds(morph.verts)));
+        float           scale = float(numeric_limits<short>::max()-1) / cMaxElem(mapAbs(cBounds(morph.verts)));
         fgWriteb(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)

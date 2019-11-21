@@ -27,7 +27,7 @@ struct  GuiSpacerWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND,int,const Ustring &,DWORD,bool)
+    create(HWND,int,Ustring const &,DWORD,bool)
     {}
 
     virtual void

@@ -37,7 +37,7 @@ struct  FgClustDispatcher
 
     // Dispatches outgoing messages to all workers, receives all responses, then returns:
     virtual void batchProcess(
-        const Strings &  msgsSend,   // Messages serialized to byte strings by client
+        Strings const &  msgsSend,   // Messages serialized to byte strings by client
         // Worker-serialized responses, unless an error happened in which case it's the error description:
         Strings &        msgsRecv) const = 0;
 };
@@ -45,7 +45,7 @@ struct  FgClustDispatcher
 // Must be called after 'fgClustWorker' has been called on worker machines:
 std::shared_ptr<FgClustDispatcher>
 fgClustDispatcher(
-    const Strings &      hostnames,      // DNS or IP
+    Strings const &      hostnames,      // DNS or IP
     uint16              port=fgClusterPortDefault());
 
 typedef std::function<void(const FgClustDispatcher *)>    FgFuncCrdntor;
@@ -57,7 +57,7 @@ fgClusterDeploy(
     const FgFuncCrdntor &   crdntor,    // Coordinates cluster work and returns on completion of all work
     const FgFnStr2Str &     worker,     // Cluster worker function
     const String &          coordIP,    // IP address (or domain name) of coordinator
-    const Strings &          workIPs,    // IP addresses (or domain names) of workers
+    Strings const &          workIPs,    // IP addresses (or domain names) of workers
     const Ustrings &       files);     // Data files to sync before deployment (relative to data directory)
 
 // Handy for passing the current role through functions (none means no clustering)

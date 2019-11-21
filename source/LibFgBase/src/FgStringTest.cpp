@@ -188,7 +188,7 @@ static void Convert()
 }
 
 void
-fgStringTest(const CLArgs &)
+fgStringTest(CLArgs const &)
 {
     Construct();
     Copy();

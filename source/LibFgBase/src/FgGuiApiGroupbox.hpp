@@ -18,7 +18,7 @@ GuiImplPtr guiGetOsImpl(GuiGroupbox const & guiApi);
 struct
 GuiGroupbox : GuiBase
 {
-    GuiGroupbox(const Ustring & l,GuiPtr c)
+    GuiGroupbox(Ustring const & l,GuiPtr c)
     : label(l), contents(c)
     {}
 
@@ -36,7 +36,7 @@ guiGroupboxTr(const std::string & label,GuiPtr p)
 
 inline
 GuiPtr
-guiGroupbox(const Ustring & label,GuiPtr p)
+guiGroupbox(Ustring const & label,GuiPtr p)
 {return std::make_shared<GuiGroupbox>(label,p); }
 
 }

@@ -74,7 +74,7 @@ fgWritep(std::ostream & os,const String & str)
 
 // Has to be here since FgStdStream.hpp depends on FgString.hpp
 inline void
-fgWritep(std::ostream & os,const Ustring & s)
+fgWritep(std::ostream & os,Ustring const & s)
 {fgWritep(os,s.m_str); }
 
 template<class T>
@@ -96,13 +96,13 @@ struct  Ifstream : public std::ifstream
 
     explicit
     Ifstream(
-        const Ustring &        fname,
+        Ustring const &        fname,
         bool                    throwOnFail=true)
     {open(fname,throwOnFail); }
 
     bool
     open(
-        const Ustring &        fname,
+        Ustring const &        fname,
         bool                    throwOnFail=true);
 
     template<typename T>
@@ -175,7 +175,7 @@ fgReadpT(std::istream & is)
 
 // Handy for open-write-close:
 void
-fgWriteFile(const Ustring & fname,const String & data,bool appendFile=true);
+fgWriteFile(Ustring const & fname,const String & data,bool appendFile=true);
 
 }
 

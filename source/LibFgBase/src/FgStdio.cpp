@@ -15,7 +15,7 @@ namespace Fg {
 #ifdef _WIN32
 
 FILE *
-fgOpen(const Ustring & fname,bool write)
+fgOpen(Ustring const & fname,bool write)
 {
     FILE *          fPtr;
     const wchar_t * mode = write ? L"wb" : L"rb";
@@ -34,7 +34,7 @@ fgOpen(const Ustring & fname,bool write)
 #else
 
 FILE *
-fgOpen(const Ustring & fname,bool write)
+fgOpen(Ustring const & fname,bool write)
 {
     FILE *          fPtr;
     const char *    mode = write ? "wb" : "rb";
@@ -49,7 +49,7 @@ fgOpen(const Ustring & fname,bool write)
 #endif
 
 void
-fgOpenTest(const CLArgs & args)
+fgOpenTest(CLArgs const & args)
 {
     FGTESTDIR;
     char32_t        ch = 0x00004EE5;            // A Chinese character

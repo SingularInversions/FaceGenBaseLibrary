@@ -85,7 +85,7 @@ using namespace FgCmdRender;
    Command to render a mesh and colour map to an image.
  */
 void
-fgCmdRender(const CLArgs & args)
+fgCmdRender(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext1>])*\n"
@@ -215,7 +215,7 @@ fgCmdRenderInfo()
 
 static
 bool
-imgApproxEqual(const Ustring & file0,const Ustring & file1)
+imgApproxEqual(Ustring const & file0,Ustring const & file1)
 {
     ImgC4UC     img0 = imgLoadAnyFormat(file0),
                     img1 = imgLoadAnyFormat(file1);
@@ -223,7 +223,7 @@ imgApproxEqual(const Ustring & file0,const Ustring & file1)
 }
 
 void
-fgCmdRenderTest(const CLArgs & args)
+fgCmdRenderTest(CLArgs const & args)
 {
     FGTESTDIR
     fgTestCopy("base/Jane.tri");

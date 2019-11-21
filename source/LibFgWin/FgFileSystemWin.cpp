@@ -19,7 +19,7 @@ using namespace std;
 namespace Fg {
 
 bool
-isDirectory(const Ustring & name)
+isDirectory(Ustring const & name)
 {
     wstring         nameW = name.as_wstring();
     DWORD           attr = GetFileAttributesW(nameW.c_str());
@@ -30,7 +30,7 @@ isDirectory(const Ustring & name)
 
 // Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
 DirectoryContents
-directoryContents(const Ustring & dirName)
+directoryContents(Ustring const & dirName)
 {
     Path              dir(fgAsDirectory(dirName));
     DirectoryContents ret;
@@ -68,7 +68,7 @@ fgGetCurrentDir()
 // doesn't return a success flag:
 bool
 fgSetCurrentDir(
-    const Ustring &    dir,
+    Ustring const &    dir,
     bool                throwOnFail)
 {
     wstring wdir = dir.as_wstring();
@@ -80,7 +80,7 @@ fgSetCurrentDir(
 
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
 void
-fgDeleteFile(const Ustring & fname)
+fgDeleteFile(Ustring const & fname)
 {
     wstring wfname = fname.as_wstring();
     DWORD   attributes = GetFileAttributes(wfname.c_str());
@@ -94,7 +94,7 @@ fgDeleteFile(const Ustring & fname)
 
 bool
 fgRemoveDirectory(
-    const Ustring &    dirname,
+    Ustring const &    dirname,
     bool                throwOnFail)
 {
     wstring wdirname = dirname.as_wstring();
@@ -107,7 +107,7 @@ fgRemoveDirectory(
 }
 
 bool
-fgCreateDirectory(const Ustring & dirname)
+fgCreateDirectory(Ustring const & dirname)
 {
     wstring     curr = fgGetCurrentDir().as_wstring(),
                 dirn = dirname.as_wstring();
@@ -225,7 +225,7 @@ fgPublicDocumentsDirectory()
 }
 
 bool
-getCreationTime(const Ustring & path,uint64 & time)
+getCreationTime(Ustring const & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -250,7 +250,7 @@ getCreationTime(const Ustring & path,uint64 & time)
 }
 
 std::time_t
-getLastWriteTime(const Ustring & fname)
+getLastWriteTime(Ustring const & fname)
 {
     // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
     HANDLE hndl =
@@ -274,7 +274,7 @@ getLastWriteTime(const Ustring & fname)
 }
 
 void
-fgMakeWritableByAll(const Ustring & name)
+fgMakeWritableByAll(Ustring const & name)
 {
     HANDLE          hFile =
         CreateFile(name.ns().c_str(),READ_CONTROL|WRITE_DAC,0,NULL,OPEN_EXISTING,NULL,NULL);

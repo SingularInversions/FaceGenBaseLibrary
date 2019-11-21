@@ -33,22 +33,22 @@ testOriginToSegmentDistSqr()
         Vec3D    r0 = rot * p0,
                     r1 = rot * p1,
                     r2 = rot * p2;
-        FgVecMag    delta;
+        VecMag    delta;
         // Degenerate case:
-        delta = fgClosestPointInSegment(r0,r0);
-        FGASSERT(fgApproxEqual(delta.mag,1.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0,0.0,0.0)));
+        delta = closestPointInSegment(r0,r0);
+        FGASSERT(approxEqualRel(delta.mag,1.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         // edge closest point (both directions):
-        delta = fgClosestPointInSegment(r0,r1);
-        FGASSERT(fgApproxEqual(delta.mag,0.5,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(0.5,0.5,0.0)));
-        delta = fgClosestPointInSegment(r1,r2);
-        FGASSERT(fgApproxEqual(delta.mag,0.5,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(0.5,0.5,0.0)));
+        delta = closestPointInSegment(r0,r1);
+        FGASSERT(approxEqualRel(delta.mag,0.5));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        delta = closestPointInSegment(r1,r2);
+        FGASSERT(approxEqualRel(delta.mag,0.5));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // vertex closest point:
-        delta = fgClosestPointInSegment(r0,r2);
-        FGASSERT(fgApproxEqual(delta.mag,1.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0,0.0,0.0)));
+        delta = closestPointInSegment(r0,r2);
+        FGASSERT(approxEqualRel(delta.mag,1.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
@@ -71,32 +71,32 @@ testPointToFacetDistSqr()
                     r2 = rot * p2,
                     r3 = rot * p3,
                     r4 = rot * p4;
-        FgVecMag    delta;
+        VecMag    delta;
         // surface closest point (both orientations):
-        delta = fgClosestPointInTri(origin,r0,r1,r2);
-        FGASSERT(fgApproxEqual(delta.mag,1.0/3.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0/3.0)));
-        delta = fgClosestPointInTri(origin,r0,r2,r1);
-        FGASSERT(fgApproxEqual(delta.mag,1.0/3.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0/3.0)));
+        delta = closestPointInTri(origin,r0,r1,r2);
+        FGASSERT(approxEqualRel(delta.mag,1.0/3.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
+        delta = closestPointInTri(origin,r0,r2,r1);
+        FGASSERT(approxEqualRel(delta.mag,1.0/3.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
         // degenerate facet edge closest point:
-        delta = fgClosestPointInTri(origin,r0,r1,r3);
-        FGASSERT(fgApproxEqual(delta.mag,0.5,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(0.5,0.5,0.0)));
+        delta = closestPointInTri(origin,r0,r1,r3);
+        FGASSERT(approxEqualRel(delta.mag,0.5));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // edge closest point (both orientations):
-        delta = fgClosestPointInTri(origin,r0,r2,r3);
-        FGASSERT(fgApproxEqual(delta.mag,0.5,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(0.5,0.0,0.5)));
-        delta = fgClosestPointInTri(origin,r0,r3,r2);
-        FGASSERT(fgApproxEqual(delta.mag,0.5,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(0.5,0.0,0.5)));
+        delta = closestPointInTri(origin,r0,r2,r3);
+        FGASSERT(approxEqualRel(delta.mag,0.5));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
+        delta = closestPointInTri(origin,r0,r3,r2);
+        FGASSERT(approxEqualRel(delta.mag,0.5));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
         // vertex closest point:
-        delta = fgClosestPointInTri(origin,r0,r3,r4);
-        FGASSERT(fgApproxEqual(delta.mag,1.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0,0.0,0.0)));
-        delta = fgClosestPointInTri(origin,r0,r0*2.0,r3);
-        FGASSERT(fgApproxEqual(delta.mag,1.0,10));
-        FGASSERT(fgApproxEqual(delta.vec,rot * Vec3D(1.0,0.0,0.0)));
+        delta = closestPointInTri(origin,r0,r3,r4);
+        FGASSERT(approxEqualRel(delta.mag,1.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        delta = closestPointInTri(origin,r0,r0*2.0,r3);
+        FGASSERT(approxEqualRel(delta.mag,1.0));
+        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
@@ -117,11 +117,11 @@ testBarycentricCoords()
                         c1 = randUniform() * (1.0 - c0),
                         c2 = 1.0 - c1 - c0;
             Vec2D    pnt = v0*c0 + v1*c1 + v2*c2;
-            Vec3D    res = fgBarycentricCoords(pnt,v0,v1,v2).val();
-            FGASSERT(fgMinElem(res)>=0.0f);     // Inside.
+            Vec3D    res = barycentricCoord(pnt,v0,v1,v2).val();
+            FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(fgApproxEqual(pnt,chk,256));
-            FGASSERT(fgApproxEqual(res[0]+res[1]+res[2],1.0,64));
+            FGASSERT(approxEqualRelMag(pnt,chk,30));
+            FGASSERT(approxEqualRel(res[0]+res[1]+res[2],1.0));
         }
     }
     // Test points outside triangle:
@@ -138,11 +138,11 @@ testBarycentricCoords()
                         c[2] = 1.0f - c[1] - c[0];
             c = fgPermuteAxes<double>(ii%3) * c;
             Vec2D        pnt = v0*c[0] + v1*c[1] + v2*c[2];
-            Vec3D        res = fgBarycentricCoords(pnt,v0,v1,v2).val();
-            FGASSERT(fgMinElem(res)<0.0f);     // Outside
+            Vec3D        res = barycentricCoord(pnt,v0,v1,v2).val();
+            FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(fgApproxEqual(pnt,chk,128));
-            FGASSERT(fgApproxEqual(res[0]+res[1]+res[2],1.0,64));
+            FGASSERT(approxEqualRelMag(pnt,chk,30));
+            FGASSERT(approxEqualRel(res[0]+res[1]+res[2],1.0));
         }
     }
 }
@@ -159,7 +159,7 @@ testBarycentricCoords3D()
                     bc = Vec3D::randNormal();
         bc /= bc[0] + bc[1] + bc[2];
         Vec3D    pt = bc[0]*v0 + bc[1]*v1 + bc[2]*v2;
-        Opt<Vec3D>    ret = fgBarycentricCoords(pt,v0,v1,v2);
+        Opt<Vec3D>    ret = barycentricCoord(pt,v0,v1,v2);
         if (ret.valid()) {
             Vec3D        res = ret.val(),
                             delta = res-bc;
@@ -180,14 +180,14 @@ testPlaneH()
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
         Affine3D  s = similarityRand().asAffine();
-        Vec4D    pln = fgPlaneH(s*v0,s*v1,s*v2);
+        Vec4D    pln = cPlaneH(s*v0,s*v1,s*v2);
         double      a = randUniform(),
                     b = randUniform(),
                     c = 1.0 - a - b;
         Vec3D    pt = s * (v0*a + v1*b + v2*c);
         double      r = cDot(pt,pln.subMatrix<3,1>(0,0)),
                     mag = sqrt(pln.mag());
-        FGASSERT(fgApproxEqualMag(-r,pln[3],mag));
+        FGASSERT(approxEqualAbs(-r,pln[3],mag));
     }
 }
 
@@ -210,9 +210,9 @@ testRayPlaneIntersect()
                         p1 = rot3 * fgAsHomogVec(r1),
                         p2 = rot3 * fgAsHomogVec(r2),
                         pt = rot3 * fgAsHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
-        Vec4D        pln = fgPlaneH(p0,p1,p2);
-        Vec4D        is = fgLinePlaneIntersect(pt*exp(randNormal()),pln);
-        FGASSERT(fgApproxEqual(pt,fgFromHomogVec(is)));
+        Vec4D        pln = cPlaneH(p0,p1,p2);
+        Vec4D        is = linePlaneIntersect(pt*exp(randNormal()),pln);
+        FGASSERT(approxEqualRelMag(pt,fgFromHomogVec(is),30));
     }
 }
 
@@ -220,8 +220,8 @@ static
 void
 pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
-    FGASSERT(fgPointInTriangle(pt,v0,v1,v2) == res);
-    FGASSERT(fgPointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
+    FGASSERT(pointInTriangle(pt,v0,v1,v2) == res);
+    FGASSERT(pointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
 }
 
 static
@@ -273,20 +273,20 @@ testLineFacetIntersect()
                 v1(1,0,0),
                 v2(0,1,0);
     Opt<Vec3D>    ret;
-    ret = fgLineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,-1),v0,v1,v2);
+    ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,-1),v0,v1,v2);
     FGASSERT(ret.val() == Vec3D(s,s,0));
-    ret = fgLineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,1),v0,v1,v2);
+    ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,1),v0,v1,v2);
     FGASSERT(ret.val() == Vec3D(s,s,0));
-    ret = fgLineTriIntersect(Vec3D(-s,-s,1),Vec3D(0,0,1),v0,v1,v2);
+    ret = lineTriIntersect(Vec3D(-s,-s,1),Vec3D(0,0,1),v0,v1,v2);
     FGASSERT(!ret.valid());
-    ret = fgLineTriIntersect(Vec3D(0,0,1),Vec3D(-s,-s,-1),v0,v1,v2);
+    ret = lineTriIntersect(Vec3D(0,0,1),Vec3D(-s,-s,-1),v0,v1,v2);
     FGASSERT(!ret.valid());
-    ret = fgLineTriIntersect(Vec3D(0,0,1),Vec3D(s,s,-1),v0,v1,v2);
+    ret = lineTriIntersect(Vec3D(0,0,1),Vec3D(s,s,-1),v0,v1,v2);
     FGASSERT(ret.val() == Vec3D(s,s,0));
 }
 
 void
-fgGeometryTest(const CLArgs &)
+fgGeometryTest(CLArgs const &)
 {
     randSeedRepeatable();
     testOriginToSegmentDistSqr();
@@ -300,7 +300,7 @@ fgGeometryTest(const CLArgs &)
 }
 
 void
-fgGeometryManTest(const CLArgs &)
+fgGeometryManTest(CLArgs const &)
 {
     // Give visual feedback on continuity along a line passing through all 3 cases;
     // facet, edge and vertex closest point:
@@ -313,7 +313,7 @@ fgGeometryManTest(const CLArgs &)
     double          step = 6.0 / double(ns-1);
     for (uint ii=0; ii<ns; ++ii) {
         pnt[0] += step;
-        func.push_back(fgClosestPointInTri(pnt,v0,v1,v2).mag);
+        func.push_back(closestPointInTri(pnt,v0,v1,v2).mag);
     }
     uint            sz = ns-2;
     MatD       derivs(sz,3);

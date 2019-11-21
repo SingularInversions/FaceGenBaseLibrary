@@ -23,7 +23,7 @@ namespace Fg {
 namespace {
 
 GuiVal<Vec3F>
-makeColorSliders(const Ustring & store,double init,double tickSpacing)
+makeColorSliders(Ustring const & store,double init,double tickSpacing)
 {
     IPT<Vec3F>           valN = makeSavedIPT(Vec3F(init),store);
     array<GuiPtr,3>       sliders = guiSliders(valN,array<Ustring,3>(),VecD2(0,1),tickSpacing);
@@ -38,7 +38,7 @@ makeColorSliders(const Ustring & store,double init,double tickSpacing)
 }
 
 GuiVal<Vec3F>
-makeDirectionSliders(array<IPT<double>,3> inputNs,const Ustring & store)
+makeDirectionSliders(array<IPT<double>,3> inputNs,Ustring const & store)
 {
     Vec3D            defaultVal(0,0,1);
     VecD2            bounds(-100000,100000);
@@ -66,7 +66,7 @@ struct  LightCtrls
 };
 
 LightCtrls
-makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,const Ustring & store)
+makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,Ustring const & store)
 {
     LightCtrls              ret;
     GuiVal<Vec3F>     color = makeColorSliders(store+"Color",defaultBrightness,0.1);
@@ -105,7 +105,7 @@ GuiPtr
 makeLightingCtrls(
     RPT<FgLighting>         lightingR,
     IPT<BothButtonsDragAction> bothButtonsDragActionI,
-    const Ustring &        store)
+    Ustring const &        store)
 {
     GuiVal<Vec3F>     ambient = makeColorSliders(store+"Ambient",0.4,0.1);
     Ustring                sp = store + "Diffuse";
@@ -165,7 +165,7 @@ bgImageLoad2(BackgroundImage bgi)
 }
 
 GuiPtr
-backgroundCtrls(BackgroundImage bgImg,const Ustring & store)
+backgroundCtrls(BackgroundImage bgImg,Ustring const & store)
 {
     bgImg.imgN.initSaved(ImgC4UC(),store+"Image",true);
     bgImg.origDimsN.initSaved(Vec2UI(0),store+"OrigDims");
@@ -212,7 +212,7 @@ makeRendCtrls(
     RPT<RendOptions>    rendOptionsR,
     BackgroundImage     bgImg,
     uint                simple,
-    const Ustring &    store)
+    Ustring const &    store)
 {
     vector<OptInit>         opts = {
         {(simple != 3),"ColorMaps","Color Maps"},           // 0
@@ -520,7 +520,7 @@ makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
 // Empty names will be assigned the baseName plus a number.
 // Non-unique names will have a number added.
 Ustrings
-makeUniqueNames(const Ustrings & names,const Ustring & baseName)
+makeUniqueNames(const Ustrings & names,Ustring const & baseName)
 {
     Ustrings           ret;
     ret.reserve(names.size());
@@ -545,7 +545,7 @@ GuiPtr
 makeCameraCtrls(
     Gui3d &                 api,
     NPT<Mat32D>           viewBoundsN,
-    const Ustring &        store,
+    Ustring const &        store,
     uint                    simple,
     bool                    textEditBoxes)
 {
@@ -805,7 +805,7 @@ makePoseCtrlSliders(NPT<PoseVals> posesN,IPT<Doubles> valsN,bool textEditBoxes)
             te.minWidth = 50;
             te.wantStretch = false;
             te.getInput = [valsN,ii](){return fgToFixed(valsN.cref()[ii],2); };
-            te.setOutput = [valsN,ii](const Ustring & s)
+            te.setOutput = [valsN,ii](Ustring const & s)
             {
                 valsN.ref()[ii] = clampBounds(fgFromString<double>(s.m_str),-1.0,2.0);
             };
@@ -982,7 +982,7 @@ meshView(const Meshes & meshes,bool compare)
 namespace {
 
 void
-simple(const CLArgs &)
+simple(CLArgs const &)
 {
     Ustring    dir = dataDir() + "base/";
     Mesh    mesh = loadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
@@ -990,7 +990,7 @@ simple(const CLArgs &)
 }
 
 void
-surfs(const CLArgs &)
+surfs(CLArgs const &)
 {
     Mesh        mesh;
     mesh.verts.push_back(Vec3F(0,0,0));
@@ -1014,7 +1014,7 @@ surfs(const CLArgs &)
 }
 
 void
-fgTestmGuiMesh(const CLArgs & args)
+fgTestmGuiMesh(CLArgs const & args)
 {
     vector<Cmd>       cmds;
     cmds.push_back(Cmd(simple,"simple","Jane face cutout"));

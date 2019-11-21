@@ -50,7 +50,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitScroll::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         m_store = store;

@@ -42,7 +42,7 @@ struct  GuiBaseImpl
     create(
         HWND            hwndParent,
         int             ident,          // WinImpl window index
-        const Ustring & store,         // Root filename for storing state.
+        Ustring const & store,         // Root filename for storing state.
         DWORD           extStyle=NULL,
         bool            visible=true)   // Visible on creation ?
         = 0;
@@ -207,7 +207,7 @@ winCreateChild(
 template<class WinImpl>
 HWND
 winCreateDialog(
-    const Ustring &    title,
+    Ustring const &    title,
     HWND                ownerHwnd,
     WinImpl *           thisPtr)
 {

@@ -74,13 +74,13 @@ similarityApprox(
     Vec3D            trans = -scale * (pose.asMatrix() * domMean) + ranMean;
     ret = SimilarityD(scale,pose,trans);
     // Measure residual:
-    double  resid = cRms(rangePts-mapXft(domainPts,ret.asAffine())) / fgMaxElem(cDims(rangePts));
+    double  resid = cRms(rangePts-mapXft(domainPts,ret.asAffine())) / cMaxElem(cDims(rangePts));
     fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
     return ret;
 }
 
 Affine3D
-TransSim::asAffine() const
+SimilarityRD::asAffine() const
 {
     Affine3D      ret;
     ret.linear = rot.asMatrix() * scale;
@@ -89,7 +89,7 @@ TransSim::asAffine() const
 }
 
 void
-fgSimilarityTest(const CLArgs &)
+fgSimilarityTest(CLArgs const &)
 {
     SimilarityD    sim(expSafe(randNormal()),QuaternionD(Vec4D::randNormal()),Vec3D::randNormal());
     SimilarityD    id = sim * sim.inverse();
@@ -98,7 +98,7 @@ fgSimilarityTest(const CLArgs &)
 }
 
 void
-fgSimilarityApproxTest(const CLArgs &)
+fgSimilarityApproxTest(CLArgs const &)
 {
     randSeedRepeatable();
     for (uint nn=0; nn<10; nn++) {
@@ -112,7 +112,7 @@ fgSimilarityApproxTest(const CLArgs &)
             mapXf_(domain,simRef.asAffine(),range);
             SimilarityD     sim = similarityApprox(domain,range);
             mapXf_(domain,sim.asAffine());
-            FGASSERT(fgApproxEqual(domain,range));
+            FGASSERT(approxEqualRelMag(domain,range));
         }
         numPts *= 2;
     }

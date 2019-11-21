@@ -178,13 +178,59 @@ cat(const Mat<T,1,dim> & vec,T val)
 // Flatten a Svec of matrices into a Svec of scalars:
 template<class T,uint nrows,uint ncols>
 Svec<T>
-fgFlat(const Svec<Mat<T,nrows,ncols> > & ms)
+flat(const Svec<Mat<T,nrows,ncols> > & ms)
 {
     Svec<T>       ret;
     ret.reserve(ms.size()*nrows*ncols);
     for (size_t ii=0; ii<ms.size(); ++ii)
         for (uint jj=0; jj<nrows*ncols; ++jj)
             ret.push_back(ms[ii].m[jj]);
+    return ret;
+}
+
+inline Doubles
+toDoubles(Doubless const & v)
+{return flat(v); }
+
+Doubles
+toDoubles(Floatss const & v);
+
+template<class T,uint nrows,uint ncols>
+Doubles
+toDoubles(Mat<T,nrows,ncols> const & mat)
+{
+    Doubles         ret;
+    ret.reserve(mat.numElems());
+    for (T e : mat.m)
+        ret.push_back(scast<double>(e));
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+Doubles
+toDoubles(const Svec<Mat<T,nrows,ncols> > & ms)
+{
+    Doubles         ret;
+    ret.reserve(ms.size()*nrows*ncols);
+    for (Mat<T,nrows,ncols> const & m : ms)
+        for (T e : m.m)
+            ret.push_back(scast<double>(e));
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+Doubles
+toDoubles(const Svec<Svec<Mat<T,nrows,ncols> > > & mss)
+{
+    size_t          sz = 0;
+    for (Svec<Mat<T,nrows,ncols> > const & ms : mss)
+        sz += ms.size() * nrows * ncols;
+    Doubles         ret;
+    ret.reserve(sz);
+    for (Svec<Mat<T,nrows,ncols> > const & ms : mss)
+        for (Mat<T,nrows,ncols> const & m : ms)
+            for (T e : m.m)
+                ret.push_back(scast<double>(e));
     return ret;
 }
 
@@ -842,7 +888,7 @@ scast_(const Mat<T,nrows,ncols> & i,Mat<U,nrows,ncols> & o)
 // Transpose a matrix stored as an array of arrays. All sub-arrays must have same size:
 template<class T,uint nrows,uint ncols>
 Mat<Svec<T>,nrows,ncols>
-fgZip(const Svec<Mat<T,nrows,ncols> > & v)
+transpose(const Svec<Mat<T,nrows,ncols> > & v)
 {
     Mat<Svec<T>,nrows,ncols>   ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -864,7 +910,7 @@ fgIsValidPermutation(Mat<uint,dim,1> perm)
             return false;
         chk[perm[dd]] = 1;
     }
-    if (fgMinElem(chk) == 1)
+    if (cMinElem(chk) == 1)
         return true;
     return false;
 }

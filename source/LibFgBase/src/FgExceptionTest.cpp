@@ -15,13 +15,13 @@ using namespace std;
 
 namespace Fg {
 
-static const string   state1 = "State1";
-static const Ustring state2("State2");
+static string const   state1 = "State1";
+static Ustring const state2("State2");
 // TODO: Check for a specific language translation here once implemented:
-static const string   tr_correct = 
+static string const   tr_correct = 
     "While executing func1 with state : State1\n"
     "Problem in func2 with state : State2";
-static const string   no_tr_correct = 
+static string const   no_tr_correct = 
     "While executing func1 with state : State1\n"
     "Problem in func2 with state : State2";
 
@@ -50,7 +50,7 @@ struct FgMyException : public FgException
 };
 
 void
-fgExceptionTest(const CLArgs &)
+fgExceptionTest(CLArgs const &)
 {
     try
     {

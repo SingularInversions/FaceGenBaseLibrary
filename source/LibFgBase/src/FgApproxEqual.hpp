@@ -15,106 +15,59 @@
 namespace Fg {
 
 template<typename T>
-bool
-fgApproxEqualScalarRel(T v0,T v1,double relDiff)
-{
-    T   del = v1-v0;
-    if (del == T(0))
-        return true;
-    T   rel = (T(2) * std::abs(del)) / (std::abs(v0) + std::abs(v1));
-    return (rel <= relDiff);
-}
+uint constexpr defaultPrecisionBits();
 
+template<>
+inline uint constexpr defaultPrecisionBits<float>() {return 20;}
+
+template<>
+inline uint constexpr defaultPrecisionBits<double>() {return 40;}
+
+// Are two numbers approximately equal relative to their absolute sizes ?
 template<typename T>
 bool
-fgApproxEqualScalar(T v0,T v1,uint relTolEpsilons=8)
+approxEqualRel(T v0,T v1,uint precisionBits=defaultPrecisionBits<T>())
 {
-    return
-        fgApproxEqualScalarRel(
-            v0,v1,
-            double(T(relTolEpsilons) * std::numeric_limits<T>::epsilon()));
+    double      precision = scast<double>(1ULL << precisionBits);
+    FGASSERT(precision > 0.0);
+    double      d0 = scast<double>(v0),
+                d1 = scast<double>(v1),
+                del = d1 - d0;
+    if (del == 0.0)
+        return true;
+    double      rel = std::abs(del) / cMax(std::abs(d0),std::abs(d1));
+    return (rel < precision);
 }
 
-inline bool
-fgApproxEqual(float v0,float v1,uint relTolEpsilsons=2)
-{return fgApproxEqualScalar(v0,v1,relTolEpsilsons); }
-
-inline bool
-fgApproxEqual(double v0,double v1,uint relTolEpsilsons=2)
-{return fgApproxEqualScalar(v0,v1,relTolEpsilsons); }
-
-inline bool
-fgApproxEqualRel(float v0,float v1,double relDiff)
-{return fgApproxEqualScalarRel(v0,v1,relDiff); }
-
-inline bool
-fgApproxEqualRel(double v0,double v1,double relDiff)
-{return fgApproxEqualScalarRel(v0,v1,relDiff); }
-
-inline
+// Are two number approximately equal relative to the given scale ?
+template<typename T>
 bool
-fgApproxEqual(
-    const Svec<float> &   lhs,
-    const Svec<float> &   rhs,
-    float       relAccuracy = 0.000001)
+approxEqualAbs(T v0,T v1,T scale,uint precisionBits=defaultPrecisionBits<T>())
+{
+    double      precision = scast<double>(1ULL << precisionBits);
+    FGASSERT(precision > 0.0);
+    double      d0 = scast<double>(v0),
+                d1 = scast<double>(v1),
+                s = scast<double>(scale),
+                rel = std::abs(d1 - d0)/std::abs(s);
+    return (rel < precision);
+}
+
+// Ensure the L2 norms are equal to the given number of bits of precision.
+// The arguments must be numerical containers supporting 'cMag' and subtraction:
+template<typename Container>
+bool
+approxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits=20)
 {
     FGASSERT(lhs.size() == rhs.size());
-    FGASSERT(relAccuracy > std::numeric_limits<float>::epsilon());
-    float   mag1 = cMag(lhs),
-        mag2 = cMag(rhs),
-        mag = sqrt((mag1 + mag2) * float(0.5));
-    if (mag == float(0))
+    double          precision = scast<double>(1ULL << precisionBits),
+                    precSqr = sqr(precision);
+    FGASSERT(precSqr > 0.0);
+    double          mag = cMax(cMag(lhs),cMag(rhs));
+    if (mag == 0.0)
         return true;
-    float   rdelta = cLen(lhs-rhs) / mag,
-        eps =  relAccuracy * float(lhs.size());
-    return (rdelta <= eps);
-}
-
-template<typename T,uint nrows,uint ncols>
-bool
-fgApproxEqual(
-    const Mat<T,nrows,ncols> &    m0,
-    const Mat<T,nrows,ncols> &    m1,
-    uint    relTolEpsilons=4)
-{
-    T           delSqr = (m1-m0).mag();
-    if (delSqr == 0)
-        return true;
-    double      relTolerance = relTolEpsilons*std::numeric_limits<T>::epsilon();
-    T           relDiff = T(4) * delSqr / (m0+m1).mag();
-    return (sqr(relTolerance) >= relDiff);
-}
-
-template<typename T,uint nrows,uint ncols>
-bool
-fgApproxEqual(
-    const Svec<Mat<T,nrows,ncols> > &  lhs,
-    const Svec<Mat<T,nrows,ncols> > &  rhs,
-    T       relAccuracy = 0.000001)
-{
-    FGASSERT(lhs.size() == rhs.size());
-    FGASSERT(relAccuracy > std::numeric_limits<T>::epsilon());
-    T   mag1 = cMag(lhs),
-        mag2 = cMag(rhs),
-        mag = sqrt((mag1 + mag2) * T(0.5));
-    if (mag == T(0)) return true;
-    T   rdelta = cLen(lhs-rhs) / mag,
-        eps =  relAccuracy * T(nrows*ncols*lhs.size());
-    return (rdelta <= eps);
-}
-
-template<typename T,uint nrows,uint ncols>
-bool
-fgApproxEqualComponents(
-    const Mat<T,nrows,ncols> &    m0,
-    const Mat<T,nrows,ncols> &    m1,
-    uint                                relEpsilons=2)
-{
-    FGASSERT(m0.numElems() == m1.numElems());
-    bool    retval = true;
-    for (uint ii=0; ii<m0.numElems(); ++ii)
-        retval = retval && fgApproxEqualScalar(m0[ii],m1[ii],relEpsilons);
-    return retval;
+    double          rel = cMag(lhs-rhs) / mag;
+    return (rel < precSqr);
 }
 
 template<typename T,uint nrows,uint ncols>
@@ -139,27 +92,12 @@ fgApproxEqualComponents(
     T                                               relTol)
 {
     FGASSERT(lhs.size() == rhs.size());
-    T   scale = fgMaxElem((cDims(lhs) + cDims(rhs)) * T(0.5));
+    T   scale = cMaxElem((cDims(lhs) + cDims(rhs)) * T(0.5));
     for (size_t ii=0; ii<lhs.size(); ++ii)
         if (!fgApproxEqualComponentsAbs(lhs[ii],rhs[ii],scale * relTol))
             return false;
     return true;
 }
-
-inline
-bool
-fgApproxEqual(
-    uint        lhs,
-    uint        rhs,
-    uint        maxDelta)
-{return (uint(std::abs(int(lhs)-int(rhs))) <= maxDelta); }
-
-// Approximately equal relative to a magnitude (from which epsilon is calculated):
-template<typename T>
-inline
-bool
-fgApproxEqualMag(T v0,T v1,T mag)
-{return (std::abs(v0-v1) < mag * std::numeric_limits<T>::epsilon() * 10); }
 
 }
 

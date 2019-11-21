@@ -37,7 +37,7 @@ guiTickLabels(
 }
 
 Ustrings
-numberedLabels(const Ustring & baseLabel,size_t num)
+numberedLabels(Ustring const & baseLabel,size_t num)
 {
     Ustrings       ret;
     ret.reserve(num);
@@ -104,7 +104,7 @@ guiSliders(
     VecD2                range,
     double                  initVal,
     double                  tickSpacing,
-    const Ustring &        relStore)
+    Ustring const &        relStore)
 {
     GuiSliders           ret;
     vector<IPT<double> >    slidersN;

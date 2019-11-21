@@ -117,7 +117,7 @@ struct  FgMorphVal
     float           val;            // 0 - no change, 1 - full application
 
     FgMorphVal() {}
-    FgMorphVal(const Ustring & name_,float val_) : name(name_), val(val_) {}
+    FgMorphVal(Ustring const & name_,float val_) : name(name_), val(val_) {}
 };
 
 // Only applies those morphs which mesh supports, ignores the rest:

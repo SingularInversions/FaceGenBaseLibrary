@@ -43,7 +43,7 @@ fgNs(const String & path)
 }
 
 inline Ustring
-fgNfs(const Ustring & path)
+fgNfs(Ustring const & path)
 {
 #ifdef _WIN32
     return path.replace('/','\\');
@@ -70,11 +70,11 @@ struct  Path
 
     // Leaving this implicit allows Ustring to be used as an arg for functions taking Path.
     // Anything in 'path' not suffixed by a directory delimiter is assumed to be a file.
-    Path(const Ustring & path);
+    Path(Ustring const & path);
 
     Path(
-        const Ustring & d,bool r,const Ustrings & ds,
-        const Ustring & b,const Ustring & e)
+        Ustring const & d,bool r,const Ustrings & ds,
+        Ustring const & b,Ustring const & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}
 
@@ -112,30 +112,30 @@ struct  Path
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
 Path
-fgPathFromDir(const Ustring & directory);
+fgPathFromDir(Ustring const & directory);
 
 Ustring
-fgPathToBase(const Ustring & path);
+fgPathToBase(Ustring const & path);
 
 Ustring
-fgPathToDirBase(const Ustring & path);
+fgPathToDirBase(Ustring const & path);
 
 Ustring
-fgPathToExt(const Ustring & path);
+fgPathToExt(Ustring const & path);
 
 String
 fgPathToExt(const String & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-fgCheckExt(const Ustring & path,const String & ext);
+fgCheckExt(Ustring const & path,const String & ext);
 
 Ustring
-fgPathToName(const Ustring & path);
+fgPathToName(Ustring const & path);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
 Ustring
-fgAsDirectory(const Ustring & path);
+fgAsDirectory(Ustring const & path);
 
 String
 fgAsDirectory(const String & path);

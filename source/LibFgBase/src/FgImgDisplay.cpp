@@ -124,7 +124,7 @@ imgDisplay(const ImgC4F & img)
 }
 
 void
-fgImgGuiTestm(const CLArgs &)
+fgImgGuiTestm(CLArgs const &)
 {
     imgDisplay(imgLoadAnyFormat(dataDir()+"base/trees.jpg"));
 }

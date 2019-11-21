@@ -469,7 +469,7 @@ fgPaintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC c,uint radius)
 vector<ImgC4UC>
 fgMipMap(const ImgC4UC & img)
 {
-    vector<ImgC4UC>     ret(log2Ceil(fgMinElem(img.dims()))); // To min elem size 2
+    vector<ImgC4UC>     ret(log2Ceil(cMinElem(img.dims()))); // To min elem size 2
     fgResizePow2Ceil_(img,ret[0]);   // Just copies if already pow2 dims
     for (size_t sl=1; sl<ret.size(); ++sl) {
         const ImgC4UC & src = ret[sl-1];
@@ -492,7 +492,7 @@ fgImgToF3(const ImgC4UC & img)
 Img3Fs
 fgSsi(const Img3F & img,uchar borderPolicy)
 {
-    Img3Fs        ret(log2Floor(fgMinElem(img.dims()))+1);
+    Img3Fs        ret(log2Floor(cMinElem(img.dims()))+1);
     ret[0] = img;
     for (size_t ii=0; ii<ret.size()-1; ++ii) {
         fgSmoothFloat(ret[ii],ret[ii],borderPolicy);
@@ -514,7 +514,7 @@ fgSsiItcsToIpcs(Vec2UI dims,Vec2F principalPointIpcs,Vec2F fovItcs)
                 fovItcs[dd] *= float(dims[dd]-1)/float(dims[dd]);
         dims /= 2U;
         principalPointIpcs *= 0.5f;
-    } while (fgMinElem(dims) > 1);
+    } while (cMinElem(dims) > 1);
     return ret;
 }
 

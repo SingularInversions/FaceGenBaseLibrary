@@ -35,7 +35,7 @@ struct  GuiSelectWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int,const Ustring & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int,Ustring const & store,DWORD extStyle,bool visible)
     {
         m_store = store;
         for (size_t ii=0; ii<m_panes.size(); ++ii)

@@ -115,7 +115,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
         m_store = store;

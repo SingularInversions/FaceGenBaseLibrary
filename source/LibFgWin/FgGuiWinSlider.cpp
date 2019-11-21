@@ -30,7 +30,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     {m_apiToWin = Affine1D(m_api.range,VecD2(0.0,double(numTicks))); }
 
     virtual void
-    create(HWND parentHwnd,int ident,const Ustring &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Slider::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         WinCreateChild   cc;

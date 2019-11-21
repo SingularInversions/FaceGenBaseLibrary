@@ -26,7 +26,7 @@ struct  FgConsSrcDir
 
     FgConsSrcDir() {}
 
-    FgConsSrcDir(const String & d,const Strings & f)
+    FgConsSrcDir(const String & d,Strings const & f)
     : dir(d), files(f)
     {}
 
@@ -47,7 +47,7 @@ struct  FgIncDir
 };
 typedef Svec<FgIncDir>        FgIncDirs;
 
-inline FgIncDirs fgIncDirs(const Strings & dirs)
+inline FgIncDirs fgIncDirs(Strings const & dirs)
 {
     FgIncDirs   ret;
     for (const String & d : dirs)
@@ -65,7 +65,7 @@ struct  FgConsDef
 };
 typedef Svec<FgConsDef>   FgConsDefs;
 
-inline FgConsDefs fgConsDefs(const Strings & defs)
+inline FgConsDefs fgConsDefs(Strings const & defs)
 {
     FgConsDefs  ret;
     for (const String & d : defs)
@@ -189,7 +189,7 @@ struct  FgConsSolution
 
     // Returns a list of all prerequisite projects including the given one, topologically sorted
     Strings
-    getAllDeps(const Strings & projNames,bool dllSource=true) const;
+    getAllDeps(Strings const & projNames,bool dllSource=true) const;
 
 private:
     FgConsProj
