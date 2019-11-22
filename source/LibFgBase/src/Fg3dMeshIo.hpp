@@ -32,7 +32,7 @@ meshLoadFormatsCLDescription();
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
 void
-meshSaveAnyFormat(Meshes const & meshes,Ustring const & fname,const String & imgFormat="png");
+meshSaveAnyFormat(Meshes const & meshes,Ustring const & fname,String const & imgFormat="png");
 
 inline
 void

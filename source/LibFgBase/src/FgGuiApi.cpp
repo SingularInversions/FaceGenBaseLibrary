@@ -81,9 +81,9 @@ fgTestmGui2(CLArgs const &)
     {
         string          text1,text2;
         for (size_t ii=0; ii<100; ++ii)
-            text1 += "Tab 1 Line " + fgToStringDigits(ii,3) + "\n";
+            text1 += "Tab 1 Line " + toStringDigits(ii,3) + "\n";
         for (size_t ii=0; ii<10; ++ii)
-            text2 += "Tab 2 Line " + fgToStringDigits(ii,3) + "\n";
+            text2 += "Tab 2 Line " + toStringDigits(ii,3) + "\n";
         GuiTabDef        tab1 = guiTab("Tab 1",guiSplitScroll(fgSvec(guiText(text1)))),
                         tab2 = guiTab("Tab 2",guiSplitScroll(fgSvec(guiText(text2))));
         scroll = guiTabs(fgSvec(tab1,tab2));

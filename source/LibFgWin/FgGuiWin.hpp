@@ -103,7 +103,7 @@ struct  GuiWinStatics
 extern GuiWinStatics s_guiWin;
 
 LRESULT
-winCallCatch(std::function<LRESULT(void)> func,const String & className);
+winCallCatch(std::function<LRESULT(void)> func,String const & className);
 
 template<class WinImpl>
 LRESULT CALLBACK

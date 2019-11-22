@@ -78,7 +78,7 @@ fgCreateDirectory(Ustring const & dir)
 }
 
 void
-fgDeleteFile(Ustring const & fname)
+deleteFile(Ustring const & fname)
 {pathRemove(fname); }
 
 bool

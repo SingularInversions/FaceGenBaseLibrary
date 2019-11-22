@@ -49,7 +49,7 @@ fgDirUserAppDataLocal(const Svec<String> & subDirs);
 // As above but verifies/creates subdirectory for "FaceGen" then for specified:
 inline
 Ustring
-fgDirUserAppDataLocalFaceGen(const String & subd0,const String & subd1)
+fgDirUserAppDataLocalFaceGen(String const & subd0,String const & subd1)
 {return fgDirUserAppDataLocal(fgSvec<String>("FaceGen",subd0,subd1)); }
 
 // Can and does sometimes fail on Windows, possibly when using roaming identities.
@@ -138,7 +138,7 @@ pathRemove(Ustring const & fname)
 
 // Ignores read-only or hidden attribs on Windows (identical to pathRemove on nix):
 void
-fgDeleteFile(Ustring const &);
+deleteFile(Ustring const &);
 
 // Only works on empty dirs, return true if successful:
 bool
@@ -177,7 +177,7 @@ fgSlurp(Ustring const & filename);
 // regardless of whether the new data may be identical.
 // Leaving 'true' is useful to avoid triggering unwanted change detections.
 bool    // Returns true if the file was written
-fgDump(const String & data,Ustring const & filename,bool onlyIfChanged=true);
+fgDump(String const & data,Ustring const & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool

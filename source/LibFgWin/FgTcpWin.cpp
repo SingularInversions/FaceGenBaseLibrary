@@ -49,9 +49,9 @@ initWinsock()
 
 bool
 fgTcpClient(
-    const String &      hostname,
+    String const &      hostname,
     uint16              port,
-    const String &      data,
+    String const &      data,
     bool                getResponse,
     String &            response)
 {

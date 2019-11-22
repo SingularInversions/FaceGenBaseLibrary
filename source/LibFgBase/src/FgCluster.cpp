@@ -73,7 +73,7 @@ fgClusterDeploy(
     copyData.push_back("cp -r " + filesDirUbu + "* .");
     for (size_t ww=0; ww<workIPs.size(); ++ww) {
         FgNcScript      script;
-        string          idxStr = fgToStringDigits(ww,3);
+        string          idxStr = toStringDigits(ww,3);
         script.logFile = "cc/" + name + "/_log.html";
         script.title = name + " worker " + idxStr + " (" + workIPs[ww] + ")";
         script.cmds = copyData;

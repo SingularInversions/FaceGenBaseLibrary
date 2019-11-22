@@ -44,7 +44,7 @@ fileMove(Ustring const & src,Ustring const & dst,bool overwrite)
     // We use copy and delete since boost::filesystem::rename will fail if the target
     // is on a different volume:
     fileCopy(src,dst,overwrite);
-    fgDeleteFile(src);
+    deleteFile(src);
 }
 
 bool
@@ -90,7 +90,7 @@ fgRemoveDirectoryRecursive(Ustring const & dirname)
     for (size_t ii=0; ii<dc.dirnames.size(); ii++)
         fgRemoveDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
-        fgDeleteFile(dirname+"/"+dc.filenames[ii]);
+        deleteFile(dirname+"/"+dc.filenames[ii]);
     // Get around windows filesystem recursive folder delete bug by trying a second time
     // after a pause for the filesystem to catch up:
     if (fgRemoveDirectory(dirname))

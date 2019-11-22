@@ -33,7 +33,7 @@ namespace Fg {
 
 // Native directory separator converter:
 inline String
-fgNs(const String & path)
+fgNs(String const & path)
 {
 #ifdef _WIN32
     return fgReplace(path,'/','\\');
@@ -124,11 +124,11 @@ Ustring
 fgPathToExt(Ustring const & path);
 
 String
-fgPathToExt(const String & path);
+fgPathToExt(String const & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-fgCheckExt(Ustring const & path,const String & ext);
+fgCheckExt(Ustring const & path,String const & ext);
 
 Ustring
 fgPathToName(Ustring const & path);
@@ -138,7 +138,7 @@ Ustring
 fgAsDirectory(Ustring const & path);
 
 String
-fgAsDirectory(const String & path);
+fgAsDirectory(String const & path);
 
 }
 

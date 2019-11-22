@@ -62,7 +62,7 @@ writeVcxproj(
     Strings          includes = sln.getIncludes(proj.name,false),
                     defines = sln.getDefs(proj.name),
                     lnkDeps = sln.getLnkDeps(proj.name);
-    string          verStr = fgToStringDigits(vsver,2),
+    string          verStr = toStringDigits(vsver,2),
                     projDir = proj.name + "/VisualStudio" + verStr + "/";
     fgCreateDirectory(projDir);
     string          projFile = projDir + proj.name + ".vcxproj";
@@ -378,7 +378,7 @@ writeSln(
 {
     // Create solution file:
     string          rootName("VisualStudio"),
-                    verStr = fgToStringDigits(vsver,2),
+                    verStr = toStringDigits(vsver,2),
     // Visual studio completely changes the SLN UUID if any project is added or removed.
     // It does not change either UUID if project properties are modified:
                     slnGuid = fgCreateMicrosoftGuid(merkle+verStr);

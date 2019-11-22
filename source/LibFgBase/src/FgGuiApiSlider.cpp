@@ -46,7 +46,7 @@ numberedLabels(Ustring const & baseLabel,size_t num)
     while ((tmp/=10) > 9)
         ++numDigits;
     for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(baseLabel+fgToStringDigits(ii,numDigits));
+        ret.push_back(baseLabel+toStringDigits(ii,numDigits));
     return ret;
 }
 

@@ -16,15 +16,15 @@ namespace Fg {
 // Returns false if unable to connect to server:
 bool
 fgTcpClient(
-    const String &      hostname,       // DNS or IP
+    String const &      hostname,       // DNS or IP
     uint16              port,
-    const String &      data,
+    String const &      data,
     bool                getResponse,
     String &            response);      // Ignored if 'getResponse' == false
 
 inline
 bool
-fgTcpClient(const String & hostname,uint16 port,const String & data)
+fgTcpClient(String const & hostname,uint16 port,String const & data)
 {
     String     dummy;
     return fgTcpClient(hostname,port,data,false,dummy);
@@ -32,12 +32,12 @@ fgTcpClient(const String & hostname,uint16 port,const String & data)
 
 inline
 bool
-fgTcpClient(const String & hostname,uint16 port,const String & data,String & response)
+fgTcpClient(String const & hostname,uint16 port,String const & data,String & response)
 {return fgTcpClient(hostname,port,data,true,response); }
 
 typedef std::function<bool        // Return false to terminate server
-    (const String &,                // IP Address of the client
-     const String &,                // Data from the client
+    (String const &,                // IP Address of the client
+     String const &,                // Data from the client
      String &)>                     // Data to be returned to client (ignored if server not supposed to respond)
      FgFuncTcpHandler;
 

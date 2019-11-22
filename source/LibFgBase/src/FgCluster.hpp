@@ -53,10 +53,10 @@ typedef std::function<void(const FgClustDispatcher *)>    FgFuncCrdntor;
 // Deploys Ubuntu version to LAN:
 void
 fgClusterDeploy(
-    const String &          name,       // Name of this run (for file logging)
+    String const &          name,       // Name of this run (for file logging)
     const FgFuncCrdntor &   crdntor,    // Coordinates cluster work and returns on completion of all work
     const FgFnStr2Str &     worker,     // Cluster worker function
-    const String &          coordIP,    // IP address (or domain name) of coordinator
+    String const &          coordIP,    // IP address (or domain name) of coordinator
     Strings const &          workIPs,    // IP addresses (or domain names) of workers
     const Ustrings &       files);     // Data files to sync before deployment (relative to data directory)
 

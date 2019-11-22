@@ -326,11 +326,11 @@ morphList(CLArgs const & args)
     const vector<Morph> & dmorphs = mesh.deltaMorphs;
     fgout << fgnl << dmorphs.size() << " delta morphs:" << fgpush;
     for (size_t ii=0; ii<dmorphs.size(); ++ii)
-        fgout << fgnl << fgToStringDigits(ii,2) << " " << dmorphs[ii].name;
+        fgout << fgnl << toStringDigits(ii,2) << " " << dmorphs[ii].name;
     const vector<IndexedMorph> &   tmorphs = mesh.targetMorphs;
     fgout << fgpop << fgnl << tmorphs.size() << " target morphs:" << fgpush;
     for (size_t ii=0; ii<tmorphs.size(); ++ii)
-        fgout << fgnl << fgToStringDigits(ii,2) << " " << tmorphs[ii].name;
+        fgout << fgnl << toStringDigits(ii,2) << " " << tmorphs[ii].name;
     fgout << fgpop << fgnl;
 }
 

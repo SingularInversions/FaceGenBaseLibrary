@@ -55,7 +55,7 @@ fgMerge(const std::map<Key,Val> & l,const std::map<Key,Val> & r)
 // Useful for frequency maps or weight maps:
 template<class T,class W>
 void
-fgMapAccWeight_(std::map<T,W> & map,const T & val,W weight=W(1))
+mapAccWeight_(std::map<T,W> & map,const T & val,W weight=W(1))
 {
     auto    it = map.find(val);
     if (it == map.end())
@@ -67,10 +67,10 @@ fgMapAccWeight_(std::map<T,W> & map,const T & val,W weight=W(1))
 // As above but accumulate all weights in 'rhs' to 'lhs':
 template<class T,class W>
 void
-fgMapAccWeight_(std::map<T,W> & lhs,const std::map<T,W> & rhs)
+mapAccWeight_(std::map<T,W> & lhs,const std::map<T,W> & rhs)
 {
     for (const auto & it : rhs)
-        fgMapAccWeight_(lhs,it.first,it.second);
+        mapAccWeight_(lhs,it.first,it.second);
 }
 
 }

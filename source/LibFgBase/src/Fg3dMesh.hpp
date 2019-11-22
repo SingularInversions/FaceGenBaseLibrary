@@ -39,12 +39,12 @@ struct  MarkedVert
     explicit
     MarkedVert(uint i) : idx(i) {}
 
-    MarkedVert(uint i,const String & l) : idx(i), label(l) {}
+    MarkedVert(uint i,String const & l) : idx(i), label(l) {}
 
     bool operator==(uint rhs) const
     {return (idx == rhs); }
 
-    bool operator==(const String & rhs) const
+    bool operator==(String const & rhs) const
     {return (label == rhs); }
 };
 
@@ -122,7 +122,7 @@ struct  Mesh
     {return surfPointPos(verts,num); }
 
     Opt<Vec3F>
-    surfPointPos(const String & label) const;
+    surfPointPos(String const & label) const;
 
     LabelledVerts
     surfPointsAsVertLabels() const;
@@ -131,14 +131,14 @@ struct  Mesh
     surfPointPositions(Strings const & labels) const;
 
     Vec3F
-    markedVertPos(const String & name_) const
+    markedVertPos(String const & name_) const
     {return verts[fgFindFirst(markedVerts,name_).idx]; }
 
     Vec3Fs
     markedVertPositions() const;        // Return positions of all marked verts
 
     void
-    addMarkedVert(Vec3F pos,const String & label)
+    addMarkedVert(Vec3F pos,String const & label)
     {
         markedVerts.push_back(MarkedVert(uint(verts.size()),label));
         verts.push_back(pos);

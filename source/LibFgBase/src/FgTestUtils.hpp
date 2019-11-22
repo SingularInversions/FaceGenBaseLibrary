@@ -183,7 +183,7 @@ fgRegress(
 // Regress a string against a data file. Throws if file is different.
 // For dev instances (_overwrite_baselines.flag), also overwrites file if different.
 void
-fgRegressString(const String & data,Ustring const & relPath);
+fgRegressString(String const & data,Ustring const & relPath);
 
 }
 

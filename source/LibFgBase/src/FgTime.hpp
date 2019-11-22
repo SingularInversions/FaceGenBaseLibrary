@@ -62,7 +62,7 @@ struct  FgTimer
 
     // Outputs 'label' to 'fgout' newline along with the time taken in 'ms', then resets the timer:
     void
-    report(const String & label);
+    report(String const & label);
 };
 
 std::ostream &
@@ -72,7 +72,7 @@ struct FgTimeScope
 {
     uint64          startTime;
 
-    FgTimeScope(const String & msg)
+    FgTimeScope(String const & msg)
     {
         fgout << fgnl << "Beginning " << msg << ":" << fgpush << fgnl;
         startTime = fgTimeMs();

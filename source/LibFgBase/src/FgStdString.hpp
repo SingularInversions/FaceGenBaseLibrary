@@ -33,7 +33,7 @@ toString(const T & val)
 }
 template<>
 inline String
-toString(const String & str)
+toString(String const & str)
 {return str; }
 
 // Default uses standard stream input "lexical conversions".
@@ -41,7 +41,7 @@ toString(const String & str)
 // Define fully specialized versions where this behaviour is not desired:
 template<class T>
 Opt<T>
-fgFromStr(const String & str)
+fgFromStr(String const & str)
 {
     T                   val;
     std::istringstream  iss(str);
@@ -51,13 +51,13 @@ fgFromStr(const String & str)
     return Opt<T>(val);
 }
 // Only valid integer representations within the range of int32 will return a valid value, whitespace invalid:
-template<> Opt<int> fgFromStr<int>(const String &);
-template<> Opt<uint> fgFromStr<uint>(const String &);
+template<> Opt<int> fgFromStr<int>(String const &);
+template<> Opt<uint> fgFromStr<uint>(String const &);
 
 // Throws if the String is not formatted correctly:
 template<class T>
 T
-fgFromString(const String & str)
+fgFromString(String const & str)
 {
     Opt<T>    oval = fgFromStr<T>(str);
     if (!oval.valid())
@@ -68,7 +68,7 @@ fgFromString(const String & str)
 // Ensures a minimum number of digits are printed:
 template<class T>
 String
-fgToStringDigits(T val,uint numDigits)
+toStringDigits(T val,uint numDigits)
 {
     std::ostringstream   oss;
     oss << std::setw(numDigits) << std::setfill('0') << val;
@@ -95,30 +95,30 @@ String
 fgToPercent(double val,uint fractionalDigits=0);
 
 String
-fgToLower(const String & s);
+fgToLower(String const & s);
 
 String
-fgToUpper(const String & s);
+fgToUpper(String const & s);
 
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
 Svec<String>
-fgSplitAtSeparators(const String & str,char sep);
+fgSplitAtSeparators(String const & str,char sep);
 
 String
-fgReplace(const String & str,char orig,char repl);
+fgReplace(String const & str,char orig,char repl);
 
 // Pad a String to desired len (does not truncate of longer):
 String
-fgPad(const String & str,size_t len,char ch=' ');
+fgPad(String const & str,size_t len,char ch=' ');
 
 // Inspired by Python join():
 String
-cat(const Svec<String> & strings,const String & separator);
+cat(const Svec<String> & strings,String const & separator);
 
 inline
 String
-cat(const String & s0,const String & s1)
+cat(String const & s0,String const & s1)
 {
     String      ret(s0);
     ret.append(s1);
@@ -127,7 +127,7 @@ cat(const String & s0,const String & s1)
 
 inline
 String
-cat(const String & s0,const String & s1,const String & s2)
+cat(String const & s0,String const & s1,String const & s2)
 {
     String      ret(s0);
     ret.append(s1);
@@ -138,7 +138,7 @@ cat(const String & s0,const String & s1,const String & s2)
 // C++98 doesn't support .back() for strings:
 inline
 char
-fgBack(const String & s)
+fgBack(String const & s)
 {
     FGASSERT(!s.empty());
     return *(--s.end());

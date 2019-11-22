@@ -56,7 +56,7 @@ struct TestDir
 
     TestDir() {}
 
-    TestDir(const String & name);
+    TestDir(String const & name);
 
     ~TestDir();
 };
@@ -71,11 +71,11 @@ fgSetRootTestDir(Ustring const & dir);
 
 // Make a copy of a data file in current directory:
 void
-fgTestCopy(const String & nameRelativeToDataDir);
+fgTestCopy(String const & nameRelativeToDataDir);
 
 // fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
 void
-runCmd(const CmdFunc & func,const String & argStr);
+runCmd(const CmdFunc & func,String const & argStr);
 
 // Useful for writing command dispatch commands - as long as Svec<Cmd> is named 'cmds':
 #define FGADDCMD1(fn,name) void fn(CLArgs const &); cmds.push_back(Cmd(fn,name))

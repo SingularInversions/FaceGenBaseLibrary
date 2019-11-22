@@ -65,7 +65,7 @@ inline void fgWritep(std::ostream & os,double val) {fgWriteb(os,val); }
 inline void fgWritep(std::ostream & os,bool val) {fgWriteb(os,uchar(val)); }
 
 inline void
-fgWritep(std::ostream & os,const String & str)
+fgWritep(std::ostream & os,String const & str)
 {
     fgWritep(os,uint32(str.size()));
     if (!str.empty())
@@ -175,7 +175,7 @@ fgReadpT(std::istream & is)
 
 // Handy for open-write-close:
 void
-fgWriteFile(Ustring const & fname,const String & data,bool appendFile=true);
+fgWriteFile(Ustring const & fname,String const & data,bool appendFile=true);
 
 }
 

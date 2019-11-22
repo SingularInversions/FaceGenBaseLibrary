@@ -24,11 +24,11 @@ struct  Syntax
         CLArgs const &  args,   // Accepts UTF-8 here
         // Wraparound for console width is aplied to this text. Any occurence of " - "
         // sets the indent level for wraparound:
-        const String &  syntax);
+        String const &  syntax);
 
     ~Syntax();
 
-    const String &
+    String const &
     next()
     {
         if (m_idx+1 == m_args.size())
@@ -50,7 +50,7 @@ struct  Syntax
     nextLower()             // As above but lower case
     {return fgToLower(Ustring(next())); }
 
-    const String &
+    String const &
     curr() const
     {return m_args[m_idx]; }
 
@@ -58,7 +58,7 @@ struct  Syntax
     more() const
     {return (m_idx+1 < m_args.size()); }
 
-    const String &
+    String const &
     peekNext();
 
     CLArgs
@@ -69,10 +69,10 @@ struct  Syntax
     {throwSyntax(); }
 
     void
-    error(const String & errMsg);
+    error(String const & errMsg);
 
     void
-    error(const String & errMsg,Ustring const & data);
+    error(String const & errMsg,Ustring const & data);
 
     void
     incorrectNumArgs();
@@ -81,10 +81,10 @@ struct  Syntax
     void
     checkExtension(
         Ustring const & fname,
-        const String & ext);
+        String const & ext);
     void
     checkExtension(
-        const String &          fname,
+        String const &          fname,
         Strings const &         exts);
 
     // Throws appropriate syntax error if different:
@@ -94,7 +94,7 @@ struct  Syntax
     // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
     // referencing 'argDescription':
     uint
-    nextSelectionIndex(Strings const & validValues,const String & argDescription);
+    nextSelectionIndex(Strings const & validValues,String const & argDescription);
 
 
 private:

@@ -28,7 +28,7 @@ namespace Fg {
 
 // Gives choice of supported image load/save formats:
 GuiVal<String>
-guiImageFormat(const String & label,bool warnTransparency);
+guiImageFormat(String const & label,bool warnTransparency);
 
 }
 

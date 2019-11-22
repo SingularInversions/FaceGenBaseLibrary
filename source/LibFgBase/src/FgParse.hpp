@@ -56,7 +56,7 @@ fgAsciiToDigit(char cc)
 // grouping all connected digit-letter-dash-underscore characters and considering any others as single-character
 // tokens:
 Strings
-fgTokenize(const String &);
+fgTokenize(String const &);
 
 // Split a string into non-empty lines at CR/LF and remove all CR/LF characters.
 // Use this instead of useless std::getline which leaves in CR characters on Windows.
@@ -67,7 +67,7 @@ FgStr32s
 splitLines(const std::u32string & src,bool includeEmptyLines=false);
 
 Ustrings
-fgSplitLinesUtf8(const String & utf8,bool includeEmptyLines=false);
+fgSplitLinesUtf8(String const & utf8,bool includeEmptyLines=false);
 
 // The exact UTF-8 string between commas will be taken as the value except for:
 // * Newlines, which are interpreted as the start of a new record.
@@ -94,17 +94,17 @@ fgSaveCsv(Ustring const & fname,const Stringss & csvLines);
 // Output does not include separators or (by default) empty strings.
 // More convenient than boost::split
 Strings
-splitChar(const String & str,char sep=' ',bool includeEmptyStrings=false);
+splitChar(String const & str,char sep=' ',bool includeEmptyStrings=false);
 
 // Breaks the given string into a vector of strings according to any whitespace, which is 
 // removed. Quotation marks can be used to enclose symbols containing whitespace.
 Strings
-fgWhiteBreak(const String &);
+fgWhiteBreak(String const &);
 
 // Map all non-ASCII characters that look like an ASCII character (homoglyphs) to that ASCII character,
 // and all others to '?':
 String
-fgAsciify(const String &);
+fgAsciify(String const &);
 
 std::u32string
 fgReplace(const std::u32string & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'

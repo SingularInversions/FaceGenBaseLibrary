@@ -62,7 +62,7 @@ inline String fgSer(long v) {return fgSerBuiltin(int64(v)); }
 
 inline
 String
-fgSer(const String & str)
+fgSer(String const & str)
 {return cat(fgSer(uint64(str.size())),str); }
 
 template<class T>

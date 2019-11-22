@@ -80,7 +80,7 @@ fgSetCurrentDir(
 
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
 void
-fgDeleteFile(Ustring const & fname)
+deleteFile(Ustring const & fname)
 {
     wstring wfname = fname.as_wstring();
     DWORD   attributes = GetFileAttributes(wfname.c_str());

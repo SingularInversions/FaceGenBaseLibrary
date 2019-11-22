@@ -88,11 +88,11 @@ regressFile(Ustring const & baselineRelPath,Ustring const & queryPath,const Equa
             fgThrow("Regression baseline not found",baselinePath);
     }
     if (fnEqual(baselinePath,queryPath))
-        fgDeleteFile(queryPath);        // Passed test
+        deleteFile(queryPath);        // Passed test
     else {                              // Failed test
         if (regressOverwrite) {
             fileCopy(queryPath,baselinePath,true);
-            fgDeleteFile(queryPath);
+            deleteFile(queryPath);
         }
         fgThrow("Regression failure",queryPath+" != "+baselineRelPath);
     }

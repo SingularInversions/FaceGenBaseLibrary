@@ -26,11 +26,11 @@ struct  FgConsSrcDir
 
     FgConsSrcDir() {}
 
-    FgConsSrcDir(const String & d,Strings const & f)
+    FgConsSrcDir(String const & d,Strings const & f)
     : dir(d), files(f)
     {}
 
-    FgConsSrcDir(const String & baseDir,const String & relDir);
+    FgConsSrcDir(String const & baseDir,String const & relDir);
 };
 typedef Svec<FgConsSrcDir>    FgConsSrcDirs;
 
@@ -42,15 +42,15 @@ struct  FgIncDir
     String      relFiles;
     bool        transitive;     // True if the include path is public, false if private
     FgIncDir() {}
-    FgIncDir(const String & r,bool t) : relPath(r), transitive(t) {}
-    FgIncDir(const String & r,const String & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
+    FgIncDir(String const & r,bool t) : relPath(r), transitive(t) {}
+    FgIncDir(String const & r,String const & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
 };
 typedef Svec<FgIncDir>        FgIncDirs;
 
 inline FgIncDirs fgIncDirs(Strings const & dirs)
 {
     FgIncDirs   ret;
-    for (const String & d : dirs)
+    for (String const & d : dirs)
         ret.push_back(FgIncDir(d,true));
     return ret;
 }
@@ -61,14 +61,14 @@ struct  FgConsDef
     bool        transitive;
 
     FgConsDef() {}
-    FgConsDef(const String & n,bool t) : name(n), transitive(t) {}
+    FgConsDef(String const & n,bool t) : name(n), transitive(t) {}
 };
 typedef Svec<FgConsDef>   FgConsDefs;
 
 inline FgConsDefs fgConsDefs(Strings const & defs)
 {
     FgConsDefs  ret;
-    for (const String & d : defs)
+    for (String const & d : defs)
         ret.push_back(FgConsDef(d,true));
     return ret;
 }
@@ -81,7 +81,7 @@ struct  FgProjDep
     bool            transitive;
 
     FgProjDep() {}
-    FgProjDep(const String & n,bool t) : name(n), transitive(t) {}
+    FgProjDep(String const & n,bool t) : name(n), transitive(t) {}
 };
 typedef Svec<FgProjDep>   FgProjDeps;
 
@@ -108,7 +108,7 @@ struct  FgConsProj
 
     FgConsProj() {}
 
-    FgConsProj(const String & n,const String & sbd) : name(n), baseDir(sbd) {}
+    FgConsProj(String const & n,String const & sbd) : name(n), baseDir(sbd) {}
 
     bool isStaticLib() const {return (type==Type::lib); }
     bool isClExecutable() const {return (type==Type::clp); }
@@ -118,19 +118,19 @@ struct  FgConsProj
     bool isLinked() const {return (isExecutable() || isDynamicLib()); }
 
     void
-    addSrcDir(const String & relDir)
+    addSrcDir(String const & relDir)
     {srcGroups.push_back(FgConsSrcDir(name+'/'+baseDir,relDir)); }
 
     void
-    addIncDir(const String & relDir,bool transitive)
+    addIncDir(String const & relDir,bool transitive)
     {incDirs.push_back(FgIncDir(relDir,transitive)); }
 
     void
-    addIncDir(const String & relDir,const String & relFiles,bool transitive)
+    addIncDir(String const & relDir,String const & relFiles,bool transitive)
     {incDirs.push_back(FgIncDir(relDir,relFiles,transitive)); }
 
     void
-    addDep(const String & depName,bool transitiveIncludesAndDefs)
+    addDep(String const & depName,bool transitiveIncludesAndDefs)
     {projDeps.push_back(FgProjDep(depName,transitiveIncludesAndDefs)); }
 
     String
@@ -158,34 +158,34 @@ struct  FgConsSolution
     explicit FgConsSolution(FgConsType t) : type(t) {}
 
     void
-    addAppClp(const String &  name,const String & lnkDep);
+    addAppClp(String const &  name,String const & lnkDep);
 
     void
-    addAppGui(const String &  name,const String & lnkDep);
+    addAppGui(String const &  name,String const & lnkDep);
 
     bool
-    contains(const String & projName) const;
+    contains(String const & projName) const;
 
     const FgConsProj &
-    at(const String & projName) const;
+    at(String const & projName) const;
 
     // Return transitive include directories, reverse topologically sorted. The 'fileDir'
     // option returns the directly directly containing the headers, rather than the expected
     // include directiry, if different:
     Strings
-    getIncludes(const String & projName,bool fileDir) const;
+    getIncludes(String const & projName,bool fileDir) const;
 
     Strings
-    getDefs(const String & projName) const;
+    getDefs(String const & projName) const;
 
     // Returns transitive required libraries (static and dynamic) for linking, reverse topologically sorted.
     // Library names not contained in 'projects' are binary-only DLLs.
     Strings
-    getLnkDeps(const String & projName) const;
+    getLnkDeps(String const & projName) const;
 
     // Returns a list of all prerequisite projects including the given one, topologically sorted
     Strings
-    getAllDeps(const String & projName,bool dllSource=true) const;
+    getAllDeps(String const & projName,bool dllSource=true) const;
 
     // Returns a list of all prerequisite projects including the given one, topologically sorted
     Strings
@@ -193,19 +193,19 @@ struct  FgConsSolution
 
 private:
     FgConsProj
-    addApp(const String & name,const String & lnkDep);
+    addApp(String const & name,String const & lnkDep);
 
     Strings
-    getTransitiveDefs(const String & projName,std::set<String> & done) const;
+    getTransitiveDefs(String const & projName,std::set<String> & done) const;
 
     Strings
-    getTransitiveIncludes(const String & projName,bool fileDir,std::set<String> & done) const;
+    getTransitiveIncludes(String const & projName,bool fileDir,std::set<String> & done) const;
 
     Strings
-    getTransitiveLnkDeps(const String & projName,std::set<String> & done) const;
+    getTransitiveLnkDeps(String const & projName,std::set<String> & done) const;
 
     Strings
-    getAllDeps(const String & projName,std::set<String> & done,bool dllSource) const;
+    getAllDeps(String const & projName,std::set<String> & done,bool dllSource) const;
 };
 
 // Current dir must be ~repo/source/

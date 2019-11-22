@@ -20,7 +20,7 @@ namespace Fg {
 
 static
 void
-sendFrame(ip::tcp::socket & sock,const String & msg)
+sendFrame(ip::tcp::socket & sock,String const & msg)
 {
     boost::system::error_code err;
     size_t              msgSz = msg.size();
@@ -102,7 +102,7 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
     io_service              ios;
     Svec<SockPtr>         sockPtrs;
 
-    FgClustDispatcherImpl(Strings const & hosts,const String & port)
+    FgClustDispatcherImpl(Strings const & hosts,String const & port)
     {
         sockPtrs.reserve(hosts.size());
         for (size_t hh=0; hh<hosts.size(); ++hh) {

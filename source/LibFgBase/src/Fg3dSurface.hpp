@@ -21,7 +21,7 @@ struct  LabelledVert
     String      label;
 
     // Handy for lookup:
-    bool operator==(const String & lab) const {return (label == lab); }
+    bool operator==(String const & lab) const {return (label == lab); }
 };
 
 typedef Svec<LabelledVert>  LabelledVerts;
@@ -40,7 +40,7 @@ struct SurfPoint
     SurfPoint(uint t,const Vec3F & w) : triEquivIdx(t), weights(w) {}
 
     bool
-    operator==(const String & rhs) const
+    operator==(String const & rhs) const
     {return (label == rhs); }
 };
 
@@ -276,7 +276,7 @@ struct  Surf
 
     // Label must correspond to a surface point:
     Vec3F
-    surfPointPos(const Vec3Fs & verts,const String & label) const;
+    surfPointPos(const Vec3Fs & verts,String const & label) const;
 
     LabelledVerts
     surfPointsAsVertLabels(const Vec3Fs &) const;

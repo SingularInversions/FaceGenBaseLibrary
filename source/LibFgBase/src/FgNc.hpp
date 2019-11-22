@@ -59,7 +59,7 @@ struct  FgNcScript
         return ret;
     }
 
-    void dsrMsg(const String & msg)
+    void dsrMsg(String const & msg)
     {
         const char *ptr = &msg[0],*end = ptr+msg.size();
         uint64 ver;

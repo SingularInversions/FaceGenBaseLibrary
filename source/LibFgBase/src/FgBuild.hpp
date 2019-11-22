@@ -16,7 +16,7 @@ namespace Fg {
 enum struct FgBuildOS { win, linux, macos, ios, android };
 typedef Svec<FgBuildOS>      FgBuildOSs;
 std::ostream & operator<<(std::ostream &,FgBuildOS);
-FgBuildOS fgStrToBuildOS(const String &);
+FgBuildOS fgStrToBuildOS(String const &);
 
 // Supported native-build OS families (ie. not cross-compiled):
 inline FgBuildOSs
@@ -35,7 +35,7 @@ fgCurrentBuildOS();
 enum struct FgArch { x86, x64, armv7, arm64, arm64e };
 typedef Svec<FgArch>     FgArchs;
 std::ostream & operator<<(std::ostream &,FgArch);
-FgArch fgStrToArch(const String &);
+FgArch fgStrToArch(String const &);
 
 FgArchs
 fgBuildArchitectures(FgBuildOS os);
@@ -44,7 +44,7 @@ fgBuildArchitectures(FgBuildOS os);
 enum struct FgCompiler { vs13, vs15, vs17, vs19, gcc, clang, icpc };
 typedef Svec<FgCompiler>     FgCompilers;
 std::ostream & operator<<(std::ostream &,FgCompiler);
-FgCompiler fgStrToCompiler(const String &);
+FgCompiler fgStrToCompiler(String const &);
 
 // Supported build compilers for given OS.
 // The first listed compiler is the default for binary distribution:
@@ -62,7 +62,7 @@ fgCurrentBuildDescription();
 
 inline
 String
-fgNsOs(const String & path,FgBuildOS os)
+fgNsOs(String const & path,FgBuildOS os)
 {return (os == FgBuildOS::win) ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
 
 // Return bin directory for given configuration relative to the repo root:
@@ -74,7 +74,7 @@ fgRelBin(FgBuildOS,FgArch,FgCompiler,bool release,bool backslash=false);
 // 64 and 32 bit versions will NOT generate the same value, nor will different compilers (per std::hash).
 // In future may upgrade to MurmurHash3 to ensure fully deterministic mapping:
 uint64
-fgUuidHash64(const String & uniqueString);
+fgUuidHash64(String const & uniqueString);
 
 struct  FgUint128
 {
@@ -83,13 +83,13 @@ struct  FgUint128
 
 // As above but requires unique string at least length 16:
 FgUint128
-fgUuidHash128(const String & uniqueString);
+fgUuidHash128(String const & uniqueString);
 
 // See comments on fgUuidHash64. Fills UUID 'time' fields with random bits for deterministic
 // regression testing; all randomness generated from 'name' argument:
 String
 fgCreateMicrosoftGuid(
-    const String &  name,   // Must be at least 16 bytes long.
+    String const &  name,   // Must be at least 16 bytes long.
     bool            withSquiglyBrackets=true);
 
 }

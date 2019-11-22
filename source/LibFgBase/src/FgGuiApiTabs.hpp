@@ -41,12 +41,12 @@ typedef Svec<GuiTabDef>  GuiTabDefs;
 
 inline
 GuiTabDef
-guiTab(const String & l,GuiPtr w)
+guiTab(String const & l,GuiPtr w)
 {return GuiTabDef(fgTr(l),w); }
 
 inline
 GuiTabDef
-guiTab(const String & label,bool spacer,GuiPtr w)
+guiTab(String const & label,bool spacer,GuiPtr w)
 {return GuiTabDef(fgTr(label),spacer,w); }
 
 // This function must be defined in the corresponding OS-specific implementation:
