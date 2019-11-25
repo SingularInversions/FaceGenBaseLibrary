@@ -51,6 +51,9 @@ namespace Fg {
 template<class T>
 using Unique = std::unique_ptr<T,Release<T> >;
 
+template<class T>
+using ComPtr = Microsoft::WRL::ComPtr<T>;
+
 namespace {
 
 struct  Map
@@ -87,325 +90,693 @@ struct D3dMesh
     void reset() {surfPoints.reset(); markedPoints.reset(); }
 };
 
-struct      D3d
-{
+
+
+class GraphicsPSO {
+public:
+	enum class ShaderType {
+		Vertex,
+		Pixel
+	};
+public:
+
+	GraphicsPSO(ComPtr<ID3D11Device> pDevice) {
+		m_pDevice = pDevice;
+	}
+
+	auto attachShader(std::wstring const& fileName, std::string const& shaderName, ShaderType type) -> void {
+
+		auto compileShader = [](auto file, auto entrypoint, auto target) -> ComPtr<ID3DBlob> {
+
+			ComPtr<ID3DBlob> pCodeBlob;
+			ComPtr<ID3DBlob> pErrorBlob;
+
+			uint32_t shaderFlags = 0;
+#ifdef _DEBUG
+			shaderFlags |= D3DCOMPILE_DEBUG;
+			shaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+			shaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#endif
+
+
+			if (FAILED(D3DCompileFromFile(file.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, entrypoint.c_str(), target, shaderFlags, 0, pCodeBlob.GetAddressOf(), pErrorBlob.GetAddressOf())))
+				throw std::runtime_error(static_cast<const char*>(pErrorBlob->GetBufferPointer()));
+			return pCodeBlob;
+		};
+
+		switch (type) {
+		case ShaderType::Vertex: {
+			auto pShaderBlob = compileShader(fileName, shaderName, "vs_5_0");
+			DX::ThrowIfFailed(m_pDevice->CreateVertexShader(pShaderBlob->GetBufferPointer(), pShaderBlob->GetBufferSize(), nullptr, m_pVertexShader.GetAddressOf()));
+
+			Microsoft::WRL::ComPtr<ID3D11ShaderReflection> pShaderReflection;
+			DX::ThrowIfFailed(D3DReflect(pShaderBlob->GetBufferPointer(), pShaderBlob->GetBufferSize(), IID_PPV_ARGS(&pShaderReflection)));
+
+			D3D11_SHADER_DESC shaderDesc = {};
+			pShaderReflection->GetDesc(&shaderDesc);
+
+			std::vector<D3D11_INPUT_ELEMENT_DESC> inputLayoutDescs;
+
+			for (auto index = 0u; index < shaderDesc.InputParameters; index++) {
+				D3D11_SIGNATURE_PARAMETER_DESC paramDesc = {};
+				pShaderReflection->GetInputParameterDesc(index, &paramDesc);
+
+				// fill out input element desc
+				D3D11_INPUT_ELEMENT_DESC elementDesc = {};
+				elementDesc.SemanticName = paramDesc.SemanticName;
+				elementDesc.SemanticIndex = paramDesc.SemanticIndex;
+				elementDesc.AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+				elementDesc.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+
+				// determine DXGI format
+				if (paramDesc.Mask == 1) {
+					if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32_UINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32_SINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32_FLOAT;
+				}
+				else if (paramDesc.Mask <= 3) {
+					if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32_UINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32_SINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+				}
+				else if (paramDesc.Mask <= 7) {
+					if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_UINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_SINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32B32_FLOAT;
+				}
+				else if (paramDesc.Mask <= 15) {
+					if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_UINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_UINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_SINT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_SINT;
+					else if (paramDesc.ComponentType == D3D_REGISTER_COMPONENT_FLOAT32) elementDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+				}
+
+				//save element desc
+				inputLayoutDescs.push_back(elementDesc);
+			}
+
+
+			DX::ThrowIfFailed(m_pDevice->CreateInputLayout(std::data(inputLayoutDescs), static_cast<uint32_t>(std::size(inputLayoutDescs)), pShaderBlob->GetBufferPointer(), pShaderBlob->GetBufferSize(), m_pInputLayout.ReleaseAndGetAddressOf()));
+			break;
+		}
+		case ShaderType::Pixel: {
+			auto pShaderBlob = compileShader(fileName, shaderName, "ps_5_0");
+			DX::ThrowIfFailed(m_pDevice->CreatePixelShader(pShaderBlob->GetBufferPointer(), pShaderBlob->GetBufferSize(), nullptr, m_pPixelShader.GetAddressOf()));
+			break;
+		}
+		default:
+			break;
+		}
+
+	}
+
+	auto applay(ComPtr<ID3D11DeviceContext> pContext) -> void {
+
+		pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		pContext->IASetInputLayout(m_pInputLayout.Get());
+		pContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+		pContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+	
+	}
+
+
+private:
+	ComPtr<ID3D11Device>            m_pDevice;
+	ComPtr<ID3D11VertexShader>      m_pVertexShader;
+	ComPtr<ID3D11PixelShader>       m_pPixelShader;
+	ComPtr<ID3D11InputLayout>       m_pInputLayout;
+
+};
+
+
+
+//Better use CompPtr. This stadart praction for application on DX
+struct D3d {
     uint                            maxMapSize = 4096;  // Play it safe
+	uint32_t                        layerCount = 32;    //Layer count for trasnaperent
     // Created in constructor:
-    Unique<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator
-    // The immediate-mode context holds all rendering state for this main thread. Deferred mode contexts
-    // can also be created for other threads:
-    Unique<ID3D11DeviceContext>     pContext;
-    Unique<IDXGISwapChain>          pSwapchain;         // Created by DXGI factor from 'pDevice'
-    Unique<ID3D11InputLayout>       pVertexLayout;
-    Unique<ID3D11VertexShader>      pVertShader;
-    Unique<ID3D11PixelShader>       pPixelShader;
-    Unique<ID3D11BlendState>        pBlendState;        // Control alpha-blending in the output merger (OM) stage
+	ComPtr<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator
+	ComPtr<ID3D11DeviceContext>     pImmediateContext;
+	ComPtr<IDXGISwapChain>          pSwapChain;         // Created by DXGI factor from 'pDevice'
+
+
+
+	ComPtr<ID3D11RenderTargetView>  pRTV;         // View into the back buffer of 'pSwapchain'
+	ComPtr<ID3D11DepthStencilView>  pDSV;
+
+
     Map                             greyMap;            // For surfaces without an albedo map
     Map                             blackMap;           // For surfaces without a specular map
     Map                             whiteMap;           // 'shiny' rendering option specular map
 
-    // Created in resize:
-    Unique<ID3D11Texture2D>         pBackBuffer;
-    Unique<ID3D11RenderTargetView>  pRenderView;         // View into the back buffer of 'pSwapchain'
-    Unique<ID3D11Texture2D>         pDepthStencil;
-    Unique<ID3D11DepthStencilState> pDepthStencilState;
-    Unique<ID3D11DepthStencilView>  pDepthStencilView;
+
+	ComPtr<ID3D11DepthStencilState> pDepthStencilStateDisable;
+	ComPtr<ID3D11DepthStencilState> pDepthStencilStateWriteDisable;
+	ComPtr<ID3D11BlendState>        pBlendStateColorWriteDisable;       
+	ComPtr<ID3D11BlendState>        pBlendStateDefault;
+ 
 
     // Created in render:
     Map                             bgImg;
     // TODO: this needs to live with D3dMesh struct:
     bool                            flatShaded = false;     // Are the tri lists currently flat shaded ?
 
-    D3d(HWND hwnd)
-    {
-        HRESULT         hr = S_OK;
-        {   // Get device and context:
-            UINT            createDeviceFlags = 0;
+
+
+
+	//ComPtr<ID3D11Buffer>			  pConstantBufferFrame;
+	ComPtr<ID3D11UnorderedAccessView> pUAVTextureHeadOIT;
+	ComPtr<ID3D11UnorderedAccessView> pUAVBufferLinkedListOIT;
+
+	std::shared_ptr<GraphicsPSO>    pOpaquePassPSO;
+	std::shared_ptr<GraphicsPSO>    pTransparentFirstPassPSO;
+	std::shared_ptr<GraphicsPSO>    pTransparentSecondPassPSO;
+
+
+    D3d(HWND hwnd) {
+
+	
+
+		{
+			//Get Window size
+			RECT windowRect;
+			GetWindowRect(hwnd, &windowRect);
+
+			uint32_t width  = 8;
+			uint32_t height = 8;
+
+			//Create device and swapchain
+			{
+			
+				DXGI_SWAP_CHAIN_DESC desc = {};
+				desc.BufferCount = 1;
+				desc.BufferDesc.Width = width;
+				desc.BufferDesc.Height = height;
+				desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+				desc.BufferDesc.RefreshRate.Numerator = 60;
+				desc.BufferDesc.RefreshRate.Denominator = 1;
+				desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+				desc.OutputWindow = hwnd;
+				desc.SampleDesc.Count = 1;
+				desc.SampleDesc.Quality = 0;
+				desc.Windowed = true;
+
+
+				D3D_FEATURE_LEVEL pFutureLever[] = { D3D_FEATURE_LEVEL_11_1 };
+				uint32_t createFlag = 0;
+
 #ifdef _DEBUG
-            createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+				createFlag |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-            D3D_DRIVER_TYPE driverTypes[] = {
-                D3D_DRIVER_TYPE_HARDWARE,
-                D3D_DRIVER_TYPE_WARP,       // High performance software renderer
-                D3D_DRIVER_TYPE_REFERENCE,  // Reference software renderer is very slow.
-            };
-            ID3D11Device*   pDev;
-            ID3D11DeviceContext* pCtxt;
-            for(UINT ii=0; ii<3; ++ii) {
-                D3D_FEATURE_LEVEL       featureLevel = D3D_FEATURE_LEVEL_11_0;
-                hr = D3D11CreateDevice(
-                    NULL,                   // Use first video adapter (card/driver) if more than one of this type
-                    driverTypes[ii],
-                    nullptr,                // No software rasterizer DLL handle
-                    createDeviceFlags,
-                    &featureLevel,1,        // We only want 11.0 so that's all that's in the list
-                    D3D11_SDK_VERSION,      // Required
-                    &pDev,                  // Returned
-                    NULL,                   // Don't need to know which featureLevel was chosen (only 1)
-                    &pCtxt);                // Returned
-                if(SUCCEEDED(hr))
-                    break;
-            }
-            if(hr < 0)
-                throwWindows("Microsoft Direct3D 11.0 not supported",hr);
-            pDevice.reset(pDev);
-            pContext.reset(pCtxt);
-        }
-        {   // Get swapchain:
-            Unique<IDXGIFactory1>   dxgiFactory;
-            {        // Obtain DXGI 1.1 factory:
-                Unique<IDXGIDevice>     dxgiDevice;
-                {
-                    IDXGIDevice*            pDd;
-                    hr = pDevice->QueryInterface(__uuidof(IDXGIDevice),reinterpret_cast<void**>(&pDd));
-                    FGASSERTWINOK(hr);
-                    dxgiDevice.reset(pDd);
-                }
-                Unique<IDXGIAdapter>        adapter;
-                {
-                    IDXGIAdapter*               pA;
-                    hr = dxgiDevice->GetAdapter(&pA);
-                    FGASSERTWINOK(hr);
-                    adapter.reset(pA);
-                }
-                IDXGIFactory1*      pDf;
-                hr = adapter->GetParent(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&pDf));
-                FGASSERTWINOK(hr);
-                dxgiFactory.reset(pDf);
-                // Don't handle full-screen swapchains so block the ALT+ENTER shortcut
-                dxgiFactory->MakeWindowAssociation(hwnd,DXGI_MWA_NO_ALT_ENTER);
-            }
-            DXGI_SWAP_CHAIN_DESC sd = {};
-            sd.BufferDesc.Width = 8;        // Start with an arbitrary size that doesn't cause debug logging
-            sd.BufferDesc.Height = 8;
-            sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            sd.BufferDesc.RefreshRate.Numerator = 60;
-            sd.BufferDesc.RefreshRate.Denominator = 1;
-            sd.SampleDesc.Count = 1;
-            sd.SampleDesc.Quality = 0;
-            sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            sd.BufferCount = 1;                 // Number of back buffers (so 2 including front buffer)
-            sd.OutputWindow = hwnd;
-            sd.Windowed = TRUE;
-            // This gives debug logs on Win10 that we should use DXGI_SWAP_EFFECT_FLIP_DISCARD instead,
-            // but that can't be used on Win7 so leave it for now:
-            sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-            IDXGISwapChain*         pSc;
-            hr = dxgiFactory->CreateSwapChain(pDevice.get(),&sd,&pSc);
-            FGASSERTWINOK(hr);
-            pSwapchain.reset(pSc);
-        }
-        // Compile shader dynamically per Carmack's recommendation:
-        DWORD               dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-        dwShaderFlags |= D3DCOMPILE_DEBUG;
-        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-        dwShaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#endif
-        Ustring             shaderPath = dataDir()+"base/shaders/directx11_main.hlsl";
-        string              src =  fgSlurp(shaderPath);
-        {   // Vertex shader
-            Unique<ID3DBlob>        pVSBlob;
-            {
-                ID3DBlob*           pErrorBlob = nullptr;
-                ID3DBlob*               ptr;
-                hr = D3DCompile(src.data(),src.size(),
-                    nullptr,            // Don't send a source file path from which include directories would be relative
-                    nullptr,            // No macro definitions
-                    nullptr,            // No include info since no #includes in source
-                    "VS",               // Entry point function. IGNORED due to below being specified.
-                    "vs_4_0",
-                    dwShaderFlags,      // See above
-                    0,                  // Does nothing
-                    &ptr,               // Returned
-                    &pErrorBlob);       // Only set if there were errors
-                if (pErrorBlob) {       // Compilation error is not the same as function error
-                    const char *    errPtr = static_cast<const char *>(pErrorBlob->GetBufferPointer());
-                    size_t          errSz = pErrorBlob->GetBufferSize();
-                    string          errStr(errPtr,errSz);
-                    pErrorBlob->Release();
-                    cerr << errStr;
-                    fgThrow("VS compilation failed",errStr);
-                }
-                pVSBlob.reset(ptr);
-            }
-            {
-                ID3D11VertexShader*     ptr;
-	            hr = pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),pVSBlob->GetBufferSize(),nullptr,&ptr);
-                FGASSERTWINOK(hr);
-                pVertShader.reset(ptr);
-            }
-            {   // Define the input layout.
-                // * The driver can auto convert vect3 to vect4 if corresponding semantic label in the shader is vect4.
-                // * For non-interleaved indexed vertex buffers give them different input slots (must be same for non-indexed).
-                D3D11_INPUT_ELEMENT_DESC layout[] =
-                {
-                    {"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0 ,D3D11_INPUT_PER_VERTEX_DATA,0},
-                    {"NORMAL",  0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0},
-                    {"TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,   0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0},
-	            };
-                ID3D11InputLayout*      ptr;
-	            hr = pDevice->CreateInputLayout(
-                    layout,ARRAYSIZE(layout),
-                    pVSBlob->GetBufferPointer(),        // Compiled vertex shader is validated against layout
-                    pVSBlob->GetBufferSize(),
-                    &ptr);                              // Returned
-                FGASSERTWINOK(hr);
-                pVertexLayout.reset(ptr);
-            }
-        }
-        pContext->IASetInputLayout(pVertexLayout.get());
-        {   // Pixel shader
-	        Unique<ID3DBlob>        pPSBlob;
-            {
-                ID3DBlob*           pErrorBlob = nullptr;
-                ID3DBlob*           ptr;
-                hr = D3DCompile(&src[0],src.size(),nullptr,nullptr,nullptr,"PS","ps_4_0",dwShaderFlags,0,&ptr,&pErrorBlob);
-                if (pErrorBlob) {       // Compilation error is not the same as function error
-                    const char *    errPtr = static_cast<const char *>(pErrorBlob->GetBufferPointer());
-                    size_t          errSz = pErrorBlob->GetBufferSize();
-                    string          errStr(errPtr,errSz);
-                    pErrorBlob->Release();
-                    cerr << errStr;
-                    fgThrow("PS compilation failed",errStr);
-                }
-                pPSBlob.reset(ptr);
-            }
-            {
-                ID3D11PixelShader*      ptr;
-	            hr = pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),pPSBlob->GetBufferSize(),nullptr,&ptr);
-                FGASSERTWINOK(hr);
-                pPixelShader.reset(ptr);
-            }
-        }
-        {
-            D3D11_RENDER_TARGET_BLEND_DESC  rt = {};
-            rt.BlendEnable = true;
-            rt.SrcBlend = D3D11_BLEND_SRC_ALPHA;        // Multiply RGB_shader by A_shader
-            rt.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;   // Multiply RGB_target by (1-A_shader)
-            rt.BlendOp = D3D11_BLEND_OP_ADD;            // Add the two
-            rt.SrcBlendAlpha = D3D11_BLEND_ONE;
-            rt.DestBlendAlpha = D3D11_BLEND_ONE;
-            rt.BlendOpAlpha = D3D11_BLEND_OP_MAX;
-            rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;    // Do not leave as zero !
-            D3D11_BLEND_DESC            bd = {};
-            bd.AlphaToCoverageEnable = false;
-            bd.IndependentBlendEnable = false;
-            bd.RenderTarget[0] = rt;                    // Only define blending for one render target
-            ID3D11BlendState*           ptr;
-            pDevice->CreateBlendState(&bd,&ptr);
-            pBlendState.reset(ptr);
-        }
+
+				DX::ThrowIfFailed(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createFlag, pFutureLever, _countof(pFutureLever),
+					D3D11_SDK_VERSION,
+					&desc,
+					pSwapChain.GetAddressOf(),
+					pDevice.GetAddressOf(), nullptr,
+					nullptr));
+
+			}
+
+			//Create RTV from BackBuffer
+			{
+				ComPtr<ID3D11Texture2D> pBackBuffer;
+				DX::ThrowIfFailed(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(pBackBuffer.GetAddressOf())));
+				DX::ThrowIfFailed(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, pRTV.GetAddressOf()));
+			}
+
+			//Create DSV from Depth Buffer
+			{
+				ComPtr<ID3D11Texture2D> pDepthBuffer;
+				D3D11_TEXTURE2D_DESC desc = {};
+				desc.ArraySize = 1;
+				desc.SampleDesc.Count = 1;
+				desc.SampleDesc.Quality = 0;
+				desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+				desc.Width  = width;
+				desc.Height = height;
+				desc.MipLevels = 1;
+				desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+				DX::ThrowIfFailed(pDevice->CreateTexture2D(&desc, nullptr, pDepthBuffer.GetAddressOf()));
+				DX::ThrowIfFailed(pDevice->CreateDepthStencilView(pDepthBuffer.Get(), nullptr, pDSV.GetAddressOf()));
+			}
+			
+			//Create Head texture for OIT
+			{
+				ComPtr<ID3D11Texture2D> pTextureOIT;
+				D3D11_TEXTURE2D_DESC desc = {};
+				desc.ArraySize = 1;
+				desc.Width = width;
+				desc.Height = height;
+				desc.MipLevels = 1;
+				desc.SampleDesc.Count = 1;
+				desc.SampleDesc.Quality = 0;
+				desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+				desc.Format = DXGI_FORMAT_R32_UINT;
+
+
+				DX::ThrowIfFailed(pDevice->CreateTexture2D(&desc, nullptr, pTextureOIT.GetAddressOf()));
+				DX::ThrowIfFailed(pDevice->CreateUnorderedAccessView(pTextureOIT.Get(), nullptr, pUAVTextureHeadOIT.GetAddressOf()));
+			}
+
+			//Create LinkedList with atomic counter for OIT 
+			{
+				
+
+				struct ListNode {
+					uint32_t  Next;
+					uint32_t  Color;
+					float     Depth;
+
+				};
+
+				auto pBufferOIT = DX::CreateStructuredBuffer<ListNode>(pDevice, width * height * layerCount, false, true);
+
+				{
+					D3D11_UNORDERED_ACCESS_VIEW_DESC desc = {};
+					desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+					desc.Buffer.FirstElement = 0;
+					desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
+					desc.Buffer.NumElements = width * height * layerCount;
+					DX::ThrowIfFailed(pDevice->CreateUnorderedAccessView(pBufferOIT.Get(), &desc, pUAVBufferLinkedListOIT.GetAddressOf()));
+				}
+
+			}
+
+
+
+			pDevice->GetImmediateContext(pImmediateContext.GetAddressOf());
+		}
+
+	
+
+		pTransparentFirstPassPSO  = std::make_shared<GraphicsPSO>(pDevice);
+		pTransparentSecondPassPSO = std::make_shared<GraphicsPSO>(pDevice);
+		pOpaquePassPSO            = std::make_shared<GraphicsPSO>(pDevice);
+
+
+		pOpaquePassPSO->attachShader(L"base/shaders/directx11_main.hlsl", "VS", GraphicsPSO::ShaderType::Vertex);
+		pOpaquePassPSO->attachShader(L"base/shaders/directx11_main.hlsl", "PS", GraphicsPSO::ShaderType::Pixel);
+
+		pTransparentFirstPassPSO->attachShader(L"base/shaders/Transparent.hlsl", "VertexShaderTransparentFirstPass", GraphicsPSO::ShaderType::Vertex);
+		pTransparentFirstPassPSO->attachShader(L"base/shaders/Transparent.hlsl", "PixelShaderTransparentFirstPass", GraphicsPSO::ShaderType::Pixel);
+		
+		pTransparentSecondPassPSO->attachShader(L"base/shaders/Transparent.hlsl", "VertexShaderTransparentSecondPass", GraphicsPSO::ShaderType::Vertex);
+		pTransparentSecondPassPSO->attachShader(L"base/shaders/Transparent.hlsl", "PixelShaderTransparentSecondPass", GraphicsPSO::ShaderType::Pixel);
+	
+
+		{
+			auto desc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
+			desc.RenderTarget[0].RenderTargetWriteMask = 0;
+		    DX::ThrowIfFailed(pDevice->CreateBlendState(&desc, pBlendStateColorWriteDisable.GetAddressOf()));
+		}
+
+		{
+			auto desc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());	
+			DX::ThrowIfFailed(pDevice->CreateBlendState(&desc, pBlendStateDefault.GetAddressOf()));
+		}
+
+		{
+			auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+			desc.DepthEnable = false;
+			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateDisable.GetAddressOf()));
+		}
+
+		{
+			auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+			desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateWriteDisable.GetAddressOf()));
+		}
+
+		
+
+//
+//        HRESULT         hr = S_OK;
+//        {   // Get device and context:
+//            UINT            createDeviceFlags = 0;
+//#ifdef _DEBUG
+//            createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+//#endif
+//            D3D_DRIVER_TYPE driverTypes[] = {
+//                D3D_DRIVER_TYPE_HARDWARE,
+//                D3D_DRIVER_TYPE_WARP,       // High performance software renderer
+//                D3D_DRIVER_TYPE_REFERENCE,  // Reference software renderer is very slow.
+//            };
+//            ID3D11Device*   pDev;
+//            ID3D11DeviceContext* pCtxt;
+//            for(UINT ii=0; ii<3; ++ii) {
+//                D3D_FEATURE_LEVEL       featureLevel = D3D_FEATURE_LEVEL_11_0;
+//                hr = D3D11CreateDevice(
+//                    NULL,                   // Use first video adapter (card/driver) if more than one of this type
+//                    driverTypes[ii],
+//                    nullptr,                // No software rasterizer DLL handle
+//                    createDeviceFlags,
+//                    &featureLevel,1,        // We only want 11.0 so that's all that's in the list
+//                    D3D11_SDK_VERSION,      // Required
+//                    &pDev,                  // Returned
+//                    NULL,                   // Don't need to know which featureLevel was chosen (only 1)
+//                    &pCtxt);                // Returned
+//                if(SUCCEEDED(hr))
+//                    break;
+//            }
+//            if(hr < 0)
+//                throwWindows("Microsoft Direct3D 11.0 not supported",hr);
+//            pDevice.reset(pDev);
+//            pContext.reset(pCtxt);
+//        }
+//        {   // Get swapchain:
+//            Unique<IDXGIFactory1>   dxgiFactory;
+//            {        // Obtain DXGI 1.1 factory:
+//                Unique<IDXGIDevice>     dxgiDevice;
+//                {
+//                    IDXGIDevice*            pDd;
+//                    hr = pDevice->QueryInterface(__uuidof(IDXGIDevice),reinterpret_cast<void**>(&pDd));
+//                    FGASSERTWINOK(hr);
+//                    dxgiDevice.reset(pDd);
+//                }
+//                Unique<IDXGIAdapter>        adapter;
+//                {
+//                    IDXGIAdapter*               pA;
+//                    hr = dxgiDevice->GetAdapter(&pA);
+//                    FGASSERTWINOK(hr);
+//                    adapter.reset(pA);
+//                }
+//                IDXGIFactory1*      pDf;
+//                hr = adapter->GetParent(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&pDf));
+//                FGASSERTWINOK(hr);
+//                dxgiFactory.reset(pDf);
+//                // Don't handle full-screen swapchains so block the ALT+ENTER shortcut
+//                dxgiFactory->MakeWindowAssociation(hwnd,DXGI_MWA_NO_ALT_ENTER);
+//            }
+//            DXGI_SWAP_CHAIN_DESC sd = {};
+//            sd.BufferDesc.Width = 8;        // Start with an arbitrary size that doesn't cause debug logging
+//            sd.BufferDesc.Height = 8;
+//            sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+//            sd.BufferDesc.RefreshRate.Numerator = 60;
+//            sd.BufferDesc.RefreshRate.Denominator = 1;
+//            sd.SampleDesc.Count = 1;
+//            sd.SampleDesc.Quality = 0;
+//            sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+//            sd.BufferCount = 1;                 // Number of back buffers (so 2 including front buffer)
+//            sd.OutputWindow = hwnd;
+//            sd.Windowed = TRUE;
+//            // This gives debug logs on Win10 that we should use DXGI_SWAP_EFFECT_FLIP_DISCARD instead,
+//            // but that can't be used on Win7 so leave it for now:
+//            sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+//            IDXGISwapChain*         pSc;
+//            hr = dxgiFactory->CreateSwapChain(pDevice.get(),&sd,&pSc);
+//            FGASSERTWINOK(hr);
+//            pSwapchain.reset(pSc);
+//        }
+
+
+//        // Compile shader dynamically per Carmack's recommendation:
+//        DWORD               dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+//#ifdef _DEBUG
+//        dwShaderFlags |= D3DCOMPILE_DEBUG;
+//        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+//        dwShaderFlags |= D3DCOMPILE_WARNINGS_ARE_ERRORS;
+//#endif
+//        Ustring             shaderPath = dataDir()+"base/shaders/directx11_main.hlsl";
+//        string              src =  fgSlurp(shaderPath);
+//        {   // Vertex shader
+//            Unique<ID3DBlob>        pVSBlob;
+//            {
+//                ID3DBlob*           pErrorBlob = nullptr;
+//                ID3DBlob*               ptr;
+//                hr = D3DCompile(src.data(),src.size(),
+//                    nullptr,            // Don't send a source file path from which include directories would be relative
+//                    nullptr,            // No macro definitions
+//                    nullptr,            // No include info since no #includes in source
+//                    "VS",               // Entry point function. IGNORED due to below being specified.
+//                    "vs_4_0",
+//                    dwShaderFlags,      // See above
+//                    0,                  // Does nothing
+//                    &ptr,               // Returned
+//                    &pErrorBlob);       // Only set if there were errors
+//                if (pErrorBlob) {       // Compilation error is not the same as function error
+//                    const char *    errPtr = static_cast<const char *>(pErrorBlob->GetBufferPointer());
+//                    size_t          errSz = pErrorBlob->GetBufferSize();
+//                    string          errStr(errPtr,errSz);
+//                    pErrorBlob->Release();
+//                    cerr << errStr;
+//                    fgThrow("VS compilation failed",errStr);
+//                }
+//                pVSBlob.reset(ptr);
+//            }
+//            {
+//                ID3D11VertexShader*     ptr;
+//	            hr = pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(),pVSBlob->GetBufferSize(),nullptr,&ptr);
+//                FGASSERTWINOK(hr);
+//                pVertShader.reset(ptr);
+//            }
+//            {   // Define the input layout.
+//                // * The driver can auto convert vect3 to vect4 if corresponding semantic label in the shader is vect4.
+//                // * For non-interleaved indexed vertex buffers give them different input slots (must be same for non-indexed).
+//                D3D11_INPUT_ELEMENT_DESC layout[] =
+//                {
+//                    {"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0 ,D3D11_INPUT_PER_VERTEX_DATA,0},
+//                    {"NORMAL",  0,DXGI_FORMAT_R32G32B32_FLOAT,0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0},
+//                    {"TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,   0,D3D11_APPEND_ALIGNED_ELEMENT,D3D11_INPUT_PER_VERTEX_DATA,0},
+//	            };
+//                ID3D11InputLayout*      ptr;
+//	            hr = pDevice->CreateInputLayout(
+//                    layout,ARRAYSIZE(layout),
+//                    pVSBlob->GetBufferPointer(),        // Compiled vertex shader is validated against layout
+//                    pVSBlob->GetBufferSize(),
+//                    &ptr);                              // Returned
+//                FGASSERTWINOK(hr);
+//                pVertexLayout.reset(ptr);
+//            }
+//        }
+//        pContext->IASetInputLayout(pVertexLayout.get());
+//        {   // Pixel shader
+//	        Unique<ID3DBlob>        pPSBlob;
+//            {
+//                ID3DBlob*           pErrorBlob = nullptr;
+//                ID3DBlob*           ptr;
+//                hr = D3DCompile(&src[0],src.size(),nullptr,nullptr,nullptr,"PS","ps_4_0",dwShaderFlags,0,&ptr,&pErrorBlob);
+//                if (pErrorBlob) {       // Compilation error is not the same as function error
+//                    const char *    errPtr = static_cast<const char *>(pErrorBlob->GetBufferPointer());
+//                    size_t          errSz = pErrorBlob->GetBufferSize();
+//                    string          errStr(errPtr,errSz);
+//                    pErrorBlob->Release();
+//                    cerr << errStr;
+//                    fgThrow("PS compilation failed",errStr);
+//                }
+//                pPSBlob.reset(ptr);
+//            }
+//            {
+//                ID3D11PixelShader*      ptr;
+//	            hr = pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(),pPSBlob->GetBufferSize(),nullptr,&ptr);
+//                FGASSERTWINOK(hr);
+//                pPixelShader.reset(ptr);
+//            }
+//        }
+//        {
+//            D3D11_RENDER_TARGET_BLEND_DESC  rt = {};
+//            rt.BlendEnable = true;
+//            rt.SrcBlend = D3D11_BLEND_SRC_ALPHA;        // Multiply RGB_shader by A_shader
+//            rt.DestBlend = D3D11_BLEND_INV_SRC_ALPHA;   // Multiply RGB_target by (1-A_shader)
+//            rt.BlendOp = D3D11_BLEND_OP_ADD;            // Add the two
+//            rt.SrcBlendAlpha = D3D11_BLEND_ONE;
+//            rt.DestBlendAlpha = D3D11_BLEND_ONE;
+//            rt.BlendOpAlpha = D3D11_BLEND_OP_MAX;
+//            rt.RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;    // Do not leave as zero !
+//            D3D11_BLEND_DESC            bd = {};
+//            bd.AlphaToCoverageEnable = false;
+//            bd.IndependentBlendEnable = false;
+//            bd.RenderTarget[0] = rt;                    // Only define blending for one render target
+//            ID3D11BlendState*           ptr;
+//            pDevice->CreateBlendState(&bd,&ptr);
+//            pBlendState.reset(ptr);
+//        }
         // Just in case 1x1 image has memory alignment and two-sided interpolation edge-case issues:
         greyMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(200,200,200,255)));
         blackMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(0,0,0,255)));
         whiteMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(255,255,255,255)));
     }
 
-    void resize(Vec2UI sz)
-    {
-        if (!pContext)                          // Don't execute before D3D is set up
-            return;
-        // All buffer references must be released before 'ResizeBuffers'. It only appears to care about
-        // pRenderView though, and unless called within WM_SIZE seems to complain regardless:
-        pContext->OMSetRenderTargets(0,nullptr,nullptr);    // Unbind RenderView & DepthStencilView
-        pDepthStencilView.reset();
-        pDepthStencilState.reset();
-        pDepthStencil.reset();
-        pRenderView.reset();
-        pBackBuffer.reset();
-        pContext->Flush();                                  // Wait for complete
-        HRESULT         hr;
-        hr = pSwapchain->ResizeBuffers(
-            1,                                      // We only have 1 buffer
-            sz[0],sz[1],
-            DXGI_FORMAT_UNKNOWN,                    // Don't change the format
-            0);                                     // No special flags
-        FGASSERTWINOK(hr);
-        {   // Create new viewport:
-            {
-                ID3D11Texture2D*                ptr;
-                hr = pSwapchain->GetBuffer(0,__uuidof(ID3D11Texture2D),reinterpret_cast<void**>(&ptr));
-                FGASSERTWINOK(hr);
-                pBackBuffer.reset(ptr);
-            }
-            {
-                ID3D11RenderTargetView*         ptr;
-                hr = pDevice->CreateRenderTargetView(pBackBuffer.get(),nullptr,&ptr);
-                FGASSERTWINOK(hr);
-                pRenderView.reset(ptr);
-            }
-        }
-        // D3D version of Z buffer
-        pDepthStencilView.reset();
-        pDepthStencil.reset();
-        {
-            D3D11_TEXTURE2D_DESC    dd = {};
-            dd.Width = sz[0];
-            dd.Height = sz[1];
-            dd.MipLevels = 1;
-            dd.ArraySize = 1;
-            dd.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-            dd.SampleDesc.Count = 1;
-            dd.SampleDesc.Quality = 0;
-            dd.Usage = D3D11_USAGE_DEFAULT;
-            dd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-            dd.CPUAccessFlags = 0;
-            dd.MiscFlags = 0;
-            {
-                ID3D11Texture2D*            ptr;
-                hr = pDevice->CreateTexture2D(&dd,nullptr,&ptr);
-                FGASSERTWINOK(hr);
-                pDepthStencil.reset(ptr);
-            }
-        }
-        {
-            // Copied from MSDN - not actually using stencils, only depth test:
-            D3D11_DEPTH_STENCILOP_DESC      sod;
-            sod.StencilFailOp = D3D11_STENCIL_OP_KEEP;
-            sod.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
-            sod.StencilPassOp = D3D11_STENCIL_OP_KEEP;
-            sod.StencilFunc = D3D11_COMPARISON_ALWAYS;
-            D3D11_DEPTH_STENCIL_DESC        dsd;
-            dsd.DepthEnable = true;
-            dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;    // Enable writing to depth buffer
-            dsd.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;        // Override default 'LESS'
-            dsd.StencilEnable = true;
-            dsd.StencilReadMask = 0xFF;
-            dsd.StencilWriteMask = 0xFF;
-            dsd.FrontFace = sod;
-            dsd.BackFace = sod;
-            dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
-            ID3D11DepthStencilState*        dss;
-            pDevice->CreateDepthStencilState(&dsd,&dss);
-            pDepthStencilState.reset(dss);
-            pContext->OMSetDepthStencilState(pDepthStencilState.get(),1);
-        }
-        {
-            D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
-            descDSV.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-            descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-            descDSV.Texture2D.MipSlice = 0;
-            {
-                ID3D11DepthStencilView*         ptr;
-                hr = pDevice->CreateDepthStencilView(pDepthStencil.get(),&descDSV,&ptr);
-                FGASSERTWINOK(hr);
-                pDepthStencilView.reset(ptr);
-            }
-        }
-        {
-            ID3D11RenderTargetView*         pRvs[] = { pRenderView.get() };
-            pContext->OMSetRenderTargets(1,pRvs,pDepthStencilView.get());
-        }
-        // D3D 11 supports fractional viewport coordinates in the range [-32768,32767]:
-        D3D11_VIEWPORT          vp;
-        vp.TopLeftX = 0;
-        vp.TopLeftY = 0;
-        vp.Width = FLOAT(sz[0]);
-        vp.Height = FLOAT(sz[1]);
-        vp.MinDepth = 0.0f;
-        vp.MaxDepth = 1.0f;
-        pContext->RSSetViewports(1,&vp);
+    void resize(Vec2UI windowSize) {
+
+
+		if (pImmediateContext == nullptr)
+			return;
+
+		pImmediateContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+		pRTV.Reset();
+		DX::ThrowIfFailed(pSwapChain->ResizeBuffers(1, windowSize[0], windowSize[1], DXGI_FORMAT_UNKNOWN, 0));
+
+		{
+			ComPtr<ID3D11Texture2D> pBackBuffer;
+			DX::ThrowIfFailed(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(pBackBuffer.GetAddressOf())));
+			DX::ThrowIfFailed(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, pRTV.ReleaseAndGetAddressOf()));
+		}
+
+		{
+			ComPtr<ID3D11Texture2D> pDepthBuffer;
+			D3D11_TEXTURE2D_DESC desc = {};
+			desc.ArraySize = 1;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+			desc.Width  = windowSize[0];
+			desc.Height = windowSize[1];
+			desc.MipLevels = 1;
+			desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+			DX::ThrowIfFailed(pDevice->CreateTexture2D(&desc, nullptr, pDepthBuffer.GetAddressOf()));
+			DX::ThrowIfFailed(pDevice->CreateDepthStencilView(pDepthBuffer.Get(), nullptr, pDSV.ReleaseAndGetAddressOf()));
+		}
+		{
+			ComPtr<ID3D11Texture2D> pTextureOIT;
+			D3D11_TEXTURE2D_DESC desc = {};
+			desc.ArraySize = 1;
+			desc.Width = windowSize[0];
+			desc.Height = windowSize[1];
+			desc.MipLevels = 1;
+			desc.SampleDesc.Count = 1;
+			desc.SampleDesc.Quality = 0;
+			desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+			desc.Format = DXGI_FORMAT_R32_UINT;
+
+
+			DX::ThrowIfFailed(pDevice->CreateTexture2D(&desc, nullptr, pTextureOIT.GetAddressOf()));
+			DX::ThrowIfFailed(pDevice->CreateUnorderedAccessView(pTextureOIT.Get(), nullptr, pUAVTextureHeadOIT.ReleaseAndGetAddressOf()));
+		}
+
+	
+		{
+			
+
+			struct ListNode {
+				uint32_t  Next;
+				uint32_t  Color;
+				float     Depth;
+				
+			};
+
+			auto pBufferOIT = DX::CreateStructuredBuffer<ListNode>(pDevice, windowSize[0] * windowSize[1] * layerCount, false, true);
+
+			{
+				D3D11_UNORDERED_ACCESS_VIEW_DESC desc = {};
+				desc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+				desc.Buffer.FirstElement = 0;
+				desc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_COUNTER;
+				desc.Buffer.NumElements = windowSize[0] * windowSize[1] * layerCount;
+				DX::ThrowIfFailed(pDevice->CreateUnorderedAccessView(pBufferOIT.Get(), &desc, pUAVBufferLinkedListOIT.ReleaseAndGetAddressOf()));
+			}
+
+		}
+	
+
+		auto viwports = { CD3D11_VIEWPORT(0.0f, 0.0f, static_cast<float>(windowSize[0]),  static_cast<float>(windowSize[1])) };
+		pImmediateContext->RSSetViewports(static_cast<uint32_t>(std::size(viwports)), std::data(viwports) );
+	
+
+
+
+        //if (!pContext)                          // Don't execute before D3D is set up
+        //    return;
+        //// All buffer references must be released before 'ResizeBuffers'. It only appears to care about
+        //// pRenderView though, and unless called within WM_SIZE seems to complain regardless:
+        //pContext->OMSetRenderTargets(0,nullptr,nullptr);    // Unbind RenderView & DepthStencilView
+        //pDepthStencilView.reset();
+        //pDepthStencilState.reset();
+        //pDepthStencil.reset();
+        //pRenderView.reset();
+        //pBackBuffer.reset();
+        //pContext->Flush();                                  // Wait for complete
+        //HRESULT         hr;
+        //hr = pSwapchain->ResizeBuffers(
+        //    1,                                      // We only have 1 buffer
+        //    sz[0],sz[1],
+        //    DXGI_FORMAT_UNKNOWN,                    // Don't change the format
+        //    0);                                     // No special flags
+        //FGASSERTWINOK(hr);
+        //{   // Create new viewport:
+        //    {
+        //        ID3D11Texture2D*                ptr;
+        //        hr = pSwapchain->GetBuffer(0,__uuidof(ID3D11Texture2D),reinterpret_cast<void**>(&ptr));
+        //        FGASSERTWINOK(hr);
+        //        pBackBuffer.reset(ptr);
+        //    }
+        //    {
+        //        ID3D11RenderTargetView*         ptr;
+        //        hr = pDevice->CreateRenderTargetView(pBackBuffer.get(),nullptr,&ptr);
+        //        FGASSERTWINOK(hr);
+        //        pRenderView.reset(ptr);
+        //    }
+        //}
+        //// D3D version of Z buffer
+        //pDepthStencilView.reset();
+        //pDepthStencil.reset();
+        //{
+        //    D3D11_TEXTURE2D_DESC    dd = {};
+        //    dd.Width = sz[0];
+        //    dd.Height = sz[1];
+        //    dd.MipLevels = 1;
+        //    dd.ArraySize = 1;
+        //    dd.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        //    dd.SampleDesc.Count = 1;
+        //    dd.SampleDesc.Quality = 0;
+        //    dd.Usage = D3D11_USAGE_DEFAULT;
+        //    dd.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+        //    dd.CPUAccessFlags = 0;
+        //    dd.MiscFlags = 0;
+        //    {
+        //        ID3D11Texture2D*            ptr;
+        //        hr = pDevice->CreateTexture2D(&dd,nullptr,&ptr);
+        //        FGASSERTWINOK(hr);
+        //        pDepthStencil.reset(ptr);
+        //    }
+        //}
+        //{
+        //    // Copied from MSDN - not actually using stencils, only depth test:
+        //    D3D11_DEPTH_STENCILOP_DESC      sod;
+        //    sod.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+        //    sod.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+        //    sod.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+        //    sod.StencilFunc = D3D11_COMPARISON_ALWAYS;
+        //    D3D11_DEPTH_STENCIL_DESC        dsd;
+        //    dsd.DepthEnable = true;
+        //    dsd.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;    // Enable writing to depth buffer
+        //    dsd.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;        // Override default 'LESS'
+        //    dsd.StencilEnable = true;
+        //    dsd.StencilReadMask = 0xFF;
+        //    dsd.StencilWriteMask = 0xFF;
+        //    dsd.FrontFace = sod;
+        //    dsd.BackFace = sod;
+        //    dsd.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+        //    ID3D11DepthStencilState*        dss;
+        //    pDevice->CreateDepthStencilState(&dsd,&dss);
+        //    pDepthStencilState.reset(dss);
+        //    pContext->OMSetDepthStencilState(pDepthStencilState.get(),1);
+        //}
+        //{
+        //    D3D11_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+        //    descDSV.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+        //    descDSV.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+        //    descDSV.Texture2D.MipSlice = 0;
+        //    {
+        //        ID3D11DepthStencilView*         ptr;
+        //        hr = pDevice->CreateDepthStencilView(pDepthStencil.get(),&descDSV,&ptr);
+        //        FGASSERTWINOK(hr);
+        //        pDepthStencilView.reset(ptr);
+        //    }
+        //}
+        //{
+        //    ID3D11RenderTargetView*         pRvs[] = { pRenderView.get() };
+        //    pContext->OMSetRenderTargets(1,pRvs,pDepthStencilView.get());
+        //}
+        //// D3D 11 supports fractional viewport coordinates in the range [-32768,32767]:
+        //D3D11_VIEWPORT          vp;
+        //vp.TopLeftX = 0;
+        //vp.TopLeftY = 0;
+        //vp.Width = FLOAT(sz[0]);
+        //vp.Height = FLOAT(sz[1]);
+        //vp.MinDepth = 0.0f;
+        //vp.MaxDepth = 1.0f;
+        //pContext->RSSetViewports(1,&vp);
     }
 
     // All member sizes must be multiples of 8 bytes (presumably for alignment).
@@ -432,8 +803,7 @@ struct      D3d
 
     typedef Svec<Vert>    Verts;
 
-    Unique<ID3D11Buffer>
-    makeConstBuff(const Scene & scene)
+    Unique<ID3D11Buffer> makeConstBuff(const Scene & scene)
     {
         D3D11_BUFFER_DESC       bd = {};
         bd.Usage = D3D11_USAGE_DEFAULT;             // read/write by GPU only
@@ -443,12 +813,11 @@ struct      D3d
         ID3D11Buffer*           ptr;
         HRESULT                 hr = pDevice->CreateBuffer(&bd,nullptr,&ptr);
         FGASSERTWINOK(hr);
-	    pContext->UpdateSubresource(ptr,0,nullptr,&scene,0,0);
+	    pImmediateContext->UpdateSubresource(ptr,0,nullptr,&scene,0,0);
         return Unique<ID3D11Buffer>(ptr);
     }
 
-    Unique<ID3D11Buffer>
-    makeVertBuff(const Verts & verts)
+    Unique<ID3D11Buffer> makeVertBuff(const Verts & verts)
     {
         if (verts.empty())
             return Unique<ID3D11Buffer>();  // D3D gives error for zero size buffer creation
@@ -466,8 +835,7 @@ struct      D3d
     }
 
     // Returns null pointer if no surf points:
-    Unique<ID3D11Buffer>
-    makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
+    Unique<ID3D11Buffer> makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
     {
         Verts                   verts;
         Vec3Fs const &       rendVerts = rendMesh.posedVertsN.cref();
@@ -484,8 +852,7 @@ struct      D3d
     }
 
     // Returns null pointer if no marked verts:
-    Unique<ID3D11Buffer>
-    makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
+    Unique<ID3D11Buffer> makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
     {
         Verts                   verts;
         Vec3Fs const &       rendVerts = rendMesh.posedVertsN.cref();
@@ -499,8 +866,7 @@ struct      D3d
         return makeVertBuff(verts);
     }
 
-    Unique<ID3D11Buffer>
-    makeAllVerts(Vec3Fs const & verts)
+    Unique<ID3D11Buffer> makeAllVerts(Vec3Fs const & verts)
     {
         Verts               avs;
         for (Vec3F pos : verts) {
@@ -513,8 +879,7 @@ struct      D3d
         return makeVertBuff(avs);
     }
 
-    Verts
-    makeVertList(
+    Verts makeVertList(
         RendMesh const &        rendMesh,
         Mesh const &            origMesh,
         size_t                  surfNum,
@@ -547,9 +912,7 @@ struct      D3d
         return vertList;
     }
 
-    Verts
-    makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum)
-    {
+    Verts makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum) {
         Verts                       ret;
         Vec3Fs const &           verts = rendMesh.posedVertsN.cref();
         Surf const &         origSurf = origMesh.surfaces[surfNum];
@@ -578,9 +941,7 @@ struct      D3d
         return ret;
     }
 
-    Unique<ID3D11Texture2D>
-    loadMap(ImgC4UC const & map)
-    {
+    Unique<ID3D11Texture2D> loadMap(ImgC4UC const & map) {
         ImgC4UCs                  mip = fgMipMap(map);
         uint                    numMips = cMin(uint(mip.size()),8);
         D3D11_SUBRESOURCE_DATA  initData[8] = {};
@@ -660,8 +1021,8 @@ struct      D3d
         Unique<ID3D11Buffer>        sceneBuff = makeConstBuff(scene);
         {
             ID3D11Buffer*           sbs[] = { sceneBuff.get() };
-	        pContext->VSSetConstantBuffers(0,1,sbs);
-            pContext->PSSetConstantBuffers(0,1,sbs);
+	        pImmediateContext->VSSetConstantBuffers(0,1,sbs);
+            pImmediateContext->PSSetConstantBuffers(0,1,sbs);
         }
         return sceneBuff;
     }
@@ -703,12 +1064,7 @@ struct      D3d
         bgImg = makeMap(map);
     }
 
-    void
-    renderBgImg(
-        BackgroundImage const & bgi,
-        Vec2UI               viewportSize,
-        bool                    transparentPass)
-    {
+    void renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass) {
         Unique<ID3D11RasterizerState> rasterizer;
         {
             D3D11_RASTERIZER_DESC       rd = {};
@@ -718,7 +1074,7 @@ struct      D3d
             pDevice->CreateRasterizerState(&rd,&ptr);
             rasterizer.reset(ptr);
         }
-        pContext->RSSetState(rasterizer.get());
+        pImmediateContext->RSSetState(rasterizer.get());
         Unique<ID3D11Buffer>            bgImageVerts;
         {   // Background image polys:
             Vec2F        im = Vec2F(bgi.origDimsN.val()),
@@ -759,7 +1115,7 @@ struct      D3d
         ID3D11ShaderResourceView*       mapViews[2];    // Albedo, specular resp.
         mapViews[0] = bgImg.view.get();
         mapViews[1] = blackMap.view.get();
-        pContext->PSSetShaderResources(0,2,mapViews);
+        pImmediateContext->PSSetShaderResources(0,2,mapViews);
         Scene                       scene;
         scene.mvm = Mat44F::identity();
         scene.projection = Mat44F::identity();
@@ -769,29 +1125,27 @@ struct      D3d
             scene.ambient[3] = static_cast<float>(ft);
         }
         Unique<ID3D11Buffer>        sceneBuff = setScene(scene);
-        pContext->Draw(6,0);
+        pImmediateContext->Draw(6,0);
     }
 
     D3dMesh &
     getD3dMesh(RendMesh const & rm) const
     {
-        Any &                       gpuMesh = *rm.gpuData;
+        Any &  gpuMesh = *rm.gpuData;
         if (gpuMesh.empty())
             gpuMesh.reset(D3dMesh());
         return gpuMesh.ref<D3dMesh>();
     }
 
-    D3dSurf &
-    getD3dSurf(RendSurf const & rs) const
+    D3dSurf & getD3dSurf(RendSurf const & rs) const
     {
-        Any &                       gpuSurf = *rs.gpuData;
+        Any &  gpuSurf = *rs.gpuData;
         if (gpuSurf.empty())
             gpuSurf.reset(D3dSurf());
         return gpuSurf.ref<D3dSurf>();
     }
 
-    void
-    renderBackBuffer(
+    void renderBackBuffer(
         BackgroundImage const &     bgi,
         RendMeshes const &          rendMeshes,
         FgLighting                  lighting,
@@ -801,7 +1155,7 @@ struct      D3d
         const RendOptions &         rendOpts)
     {
         // No render view during create - created by first resize:
-        if (!pRenderView)
+        if (pRTV == nullptr)
             return;
         // Update 'd3dMeshes' (mesh and map data) if required:
         for (RendMesh const & rendMesh : rendMeshes) {
@@ -856,26 +1210,38 @@ struct      D3d
 
         // RENDER:
 
-        pContext->OMSetBlendState(pBlendState.get(),nullptr,0xffffffff);
-        Vec4F                    bgc = fgAsHomogVec(rendOpts.backgroundColor);
-        pContext->ClearRenderTargetView(pRenderView.get(),bgc.data());
-        pContext->ClearDepthStencilView(pDepthStencilView.get(),D3D11_CLEAR_DEPTH,1.0f,0);
+   
+        pImmediateContext->ClearRenderTargetView(pRTV.Get(), std::data(fgAsHomogVec(rendOpts.backgroundColor)));
+        pImmediateContext->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		pImmediateContext->ClearUnorderedAccessViewUint(pUAVTextureHeadOIT.Get(), std::data({ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF }));
+		pImmediateContext->OMSetRenderTargetsAndUnorderedAccessViews(1, pRTV.GetAddressOf(), pDSV.Get(), 1, 2, std::data({ pUAVTextureHeadOIT.Get(), pUAVBufferLinkedListOIT.Get() }), std::data({ 0x0u, 0x0u }));
+
+
         Unique<ID3D11Buffer>        sceneBuff;
         Unique<ID3D11SamplerState>  samplerState = makeSamplerState();
         {
             ID3D11SamplerState*         sss[] = { samplerState.get() };
-            pContext->PSSetSamplers(0,1,sss);
+            pImmediateContext->PSSetSamplers(0,1,sss);
         }
         // Currently use same shaders for all render options:
-	    pContext->VSSetShader(pVertShader.get(),nullptr,0);
-	    pContext->PSSetShader(pPixelShader.get(),nullptr,0);
+
+
+
+		//FIRST PASS
+
+		pImmediateContext->OMSetBlendState(pBlendStateColorWriteDisable.Get(), nullptr, 0xFFFFFFFF);
+		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateWriteDisable.Get(), 0);
+		pTransparentFirstPassPSO->applay(pImmediateContext);
+
+
+
         if (bgImg.valid()) {
-            pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             renderBgImg(bgi,viewportSize,false);
         }
         // Triangle rendering (faces and wireframe):
         if (rendOpts.facets) {
-            pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
             sceneBuff = makeScene(lighting,worldToD3vs,d3vsToD3ps);
             Unique<ID3D11RasterizerState>   rasterizer;
             {
@@ -893,12 +1259,12 @@ struct      D3d
                 pDevice->CreateRasterizerState(&rd,&ptr);
                 rasterizer.reset(ptr);
             }
-            pContext->RSSetState(rasterizer.get());
+            pImmediateContext->RSSetState(rasterizer.get());
             renderTris(rendMeshes,rendOpts,false);
             renderTris(rendMeshes,rendOpts,true);
         }
         if (rendOpts.wireframe) {
-            pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+            pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
             if (rendOpts.facets)        // Render wireframe blue over facets, white otherwise:
                 sceneBuff = makeScene(Vec3F(0,0,1),worldToD3vs,d3vsToD3ps);
             else
@@ -912,7 +1278,7 @@ struct      D3d
                 pDevice->CreateRasterizerState(&rd,&ptr);
                 rasterizer.reset(ptr);
             }
-            pContext->RSSetState(rasterizer.get());
+            pImmediateContext->RSSetState(rasterizer.get());
             for (RendMesh const & rendMesh : rendMeshes) {
                 Mesh const &            origMesh = rendMesh.origMeshN.cref();
                 // Must loop through origMesh surfaces in case the mesh has been emptied (and the redsurfs remain):
@@ -932,18 +1298,18 @@ struct      D3d
                         mapViews[1] = d3dSurf.specularMap.view.get();
                     else
                         mapViews[1] = blackMap.view.get();
-                    pContext->PSSetShaderResources(0,2,mapViews);
-                    pContext->Draw(uint(origSurf.numTris()*6+origSurf.numQuads()*8),0);
+                    pImmediateContext->PSSetShaderResources(0,2,mapViews);
+                    pImmediateContext->Draw(uint(origSurf.numTris()*6+origSurf.numQuads()*8),0);
                 }
             }
         }
         // Point rendering (doesn't use rasterizer):
-        pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+        pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
         {
             ID3D11ShaderResourceView*       mapViews[2];    // Albedo, specular resp.
             mapViews[0] = whiteMap.view.get();
             mapViews[1] = blackMap.view.get();
-            pContext->PSSetShaderResources(0,2,mapViews);
+            pImmediateContext->PSSetShaderResources(0,2,mapViews);
         }
         if (rendOpts.allVerts) {
             sceneBuff = makeScene(Vec3F(0,1,0),worldToD3vs,d3vsToD3ps);
@@ -952,19 +1318,19 @@ struct      D3d
                 if (d3dMesh.allVerts) {
                     Mesh const &        origMesh = rendMesh.origMeshN.cref();
                     setVertexBuffer(d3dMesh.allVerts.get());
-                    pContext->Draw(uint(origMesh.verts.size()),0);
+                    pImmediateContext->Draw(uint(origMesh.verts.size()),0);
                 }
             }
         }
         if (rendOpts.surfPoints) {
             sceneBuff = makeScene(Vec3F(1,0,0),worldToD3vs,d3vsToD3ps);
-            for (RendMesh const & rendMesh : rendMeshes) {
-                Mesh const &            origMesh = rendMesh.origMeshN.cref();
+            for (auto const & rendMesh : rendMeshes) {
+                auto const & origMesh = rendMesh.origMeshN.cref();
                 if (origMesh.surfPointNum()>0) {
-                    D3dMesh &                      d3dMesh = getD3dMesh(rendMesh);
+                    auto&  d3dMesh = getD3dMesh(rendMesh);
                     if (d3dMesh.surfPoints) {   // Can be null if no surf points
                         setVertexBuffer(d3dMesh.surfPoints.get());
-                        pContext->Draw(uint(origMesh.surfPointNum()),0);
+                        pImmediateContext->Draw(uint(origMesh.surfPointNum()),0);
                     }
                 }
             }
@@ -977,36 +1343,41 @@ struct      D3d
                     D3dMesh &                      d3dMesh = getD3dMesh(rendMesh);
                     if (d3dMesh.markedPoints) {   // Can be null if no marked verts
                         setVertexBuffer(d3dMesh.markedPoints.get());
-                        pContext->Draw(uint(origMesh.surfPointNum()),0);
+                        pImmediateContext->Draw(uint(origMesh.surfPointNum()),0);
                     }
                 }
             }
         }
-        if (bgImg.valid()) {
-            pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-            pContext->ClearDepthStencilView(pDepthStencilView.get(),D3D11_CLEAR_DEPTH,1.0f,0);
-            renderBgImg(bgi,viewportSize,true);
-        }
+
+		//Second PASS
+
+		pImmediateContext->OMSetBlendState(pBlendStateDefault.Get(), nullptr, 0xFFFFFFFF);
+		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
+		pTransparentSecondPassPSO->applay(pImmediateContext);
+		pImmediateContext->Draw(3, 0);
+
+		//TODO
+        //if (bgImg.valid()) {
+        //    pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        //    pImmediateContext->ClearDepthStencilView(pDSV.Get(),D3D11_CLEAR_DEPTH,1.0f,0);
+        //    renderBgImg(bgi,viewportSize,true);
+        //}
     }
 
-    void
-    showBackBuffer()
-    {
+    void showBackBuffer() {
         // No render view during create - created by first resize:
-        if (!pRenderView)
+        if (pRTV == nullptr)
             return;
-        HRESULT  hr = pSwapchain->Present(0,0);      // Swap back buffer to display
+        HRESULT  hr = pSwapChain->Present(0,0);      // Swap back buffer to display
         FGASSERTWINOK(hr);
     }
 
-    ImgC4UC
-    capture(Vec2UI viewportSize)
-    {
+    ImgC4UC capture(Vec2UI viewportSize) {
         HRESULT                     hr;
         Unique<ID3D11Texture2D>     pBuffer;
         {
             ID3D11Texture2D*        ptr;
-            hr = pSwapchain->GetBuffer(0,__uuidof(ID3D11Texture2D),(LPVOID*)&ptr);
+            hr = pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(LPVOID*)&ptr);
             FGASSERTWINOK(hr);
             pBuffer.reset(ptr);
         }
@@ -1022,10 +1393,10 @@ struct      D3d
             FGASSERTWINOK(hr);
             pTexture.reset(ptr);
         }
-        pContext->CopyResource(pTexture.get(),pBuffer.get());
+        pImmediateContext->CopyResource(pTexture.get(),pBuffer.get());
         D3D11_MAPPED_SUBRESOURCE    resource;
         unsigned int                subresource = D3D11CalcSubresource(0,0,0);
-        hr = pContext->Map(pTexture.get(),subresource,D3D11_MAP_READ_WRITE,0,&resource);
+        hr = pImmediateContext->Map(pTexture.get(),subresource,D3D11_MAP_READ_WRITE,0,&resource);
         FGASSERTWINOK(hr);
         ImgC4UC                 ret(viewportSize);
         uchar*                      dst = (uchar*)resource.pData;
@@ -1036,22 +1407,15 @@ struct      D3d
         return ret;
     }
 
-    void
-    setVertexBuffer(ID3D11Buffer * vertBuff)
-    {
+    void setVertexBuffer(ID3D11Buffer * vertBuff) {
         UINT                stride[] = { sizeof(Vert) };
         UINT                offset[] = { 0 };
         ID3D11Buffer*       buffers[] = { vertBuff };
         // The way these buffers are interpreted by the HLSL is determined by 'IASetInputLayout' above:
-        pContext->IASetVertexBuffers(0,1,buffers,stride,offset);
+        pImmediateContext->IASetVertexBuffers(0,1,buffers,stride,offset);
     }
 
-    void
-    renderTris(
-        RendMeshes const &          rendMeshes,
-        RendOptions const &         rendOpts,
-        bool                        transparentPass)
-    {
+    void renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, bool transparentPass) {
         for (RendMesh const & rendMesh : rendMeshes) {
             if (rendMesh.posedVertsN.cref().empty())    // Not selected
                 continue;
@@ -1076,8 +1440,8 @@ struct      D3d
                         mapViews[1] = d3dSurf.specularMap.view.get();
                     else
                         mapViews[1] = blackMap.view.get();
-                    pContext->PSSetShaderResources(0,2,mapViews);
-                    pContext->Draw(uint(origSurf.numTriEquivs())*3,0);
+                    pImmediateContext->PSSetShaderResources(0,2,mapViews);
+                    pImmediateContext->Draw(uint(origSurf.numTriEquivs())*3,0);
                 }
             }
         }
@@ -1085,8 +1449,8 @@ struct      D3d
 
     void reset()
     {
-        if (pContext)
-            pContext->ClearState();
+        if (pImmediateContext != nullptr)
+            pImmediateContext->ClearState();
     }
 };
 
@@ -1157,9 +1521,7 @@ struct  Gui3dWin : public GuiBaseImpl
     getMinSize() const
     {return Vec2UI(400,500); }
 
-    virtual Vec2B
-    wantStretch() const
-    {return Vec2B(true,true); }
+    virtual Vec2B wantStretch() const { return Vec2B(true, true); }
 
     virtual void
     updateIfChanged()   // Just always render
@@ -1172,13 +1534,9 @@ struct  Gui3dWin : public GuiBaseImpl
         UpdateWindow(m_hwnd);
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
-    {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
+    virtual void moveWindow(Vec2I lo, Vec2I sz) { MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
 
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
+    virtual void showWindow(bool s)  { ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
 
     LRESULT
     wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
@@ -1385,12 +1743,11 @@ struct  Gui3dWin : public GuiBaseImpl
         return 0;
     }
 
-    void
-    renderBackBuffer()
-    {
+    void renderBackBuffer() {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
-        const Camera &          camera = m_api.xform.cref();
+
+        const Camera &   camera = m_api.xform.cref();
         // A negative determinant matrix as D3D is a LEFT handed coordinate system:
         Mat33D                    oecsToD3vs = 
             {
@@ -1413,9 +1770,7 @@ struct  Gui3dWin : public GuiBaseImpl
             options);
     }
 
-    void
-    render()
-    {
+    void render() {
         renderBackBuffer();
         m_d3d->showBackBuffer();
     }
@@ -1438,8 +1793,8 @@ struct  Gui3dWin : public GuiBaseImpl
 };
 
 GuiImplPtr
-guiGetOsImpl(const Gui3d & def)
-{return GuiImplPtr(new Gui3dWin(def)); }
+guiGetOsImpl(const Gui3d & def) {
+	return GuiImplPtr(new Gui3dWin(def)); }
 
 }
 

@@ -169,6 +169,7 @@
     <ClCompile Include="..\FgFileSystemWin.cpp" />
     <ClCompile Include="..\FgGui3dWin.cpp" />
     <ClCompile Include="..\FgGuiWin.cpp" />
+    <ClInclude Include="..\DX.hpp" />
     <ClInclude Include="..\FgGuiWin.hpp" />
     <ClCompile Include="..\FgGuiWinButton.cpp" />
     <ClCompile Include="..\FgGuiWinCheckbox.cpp" />
