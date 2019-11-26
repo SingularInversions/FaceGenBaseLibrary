@@ -38,17 +38,17 @@ float4 ComputeLight(InputPS input)
     float4 specular = TextureSpecular.Sample(LinearSamplerState, input.Texcoord);
 
  
-    float4 N = normalize(input.Normal); 
+    float3 N = normalize(input.Normal.xyz); 
 
-    float4 result = float4(0.0, 0.0, 0.0f, 0.0f);
+    float3 color = float3(0.0, 0.0, 0.0f);
 
     for (uint index = 0; index < 2; index++) {
-        float4 L = FrameBuffer.LightDirection[index];
-        float4 diffuse = albedo * FrameBuffer.LightColor[index] * abs(dot(N, L));
-        result += diffuse;
+        float3 L = FrameBuffer.LightDirection[index].xyz;
+        float3 diffuse = albedo.rgb * FrameBuffer.LightColor[index].rgb * abs(dot(N, L));
+        color += diffuse;
     }
 
-    return albedo;
+    return float4(color, albedo.a);
 
 }
 
