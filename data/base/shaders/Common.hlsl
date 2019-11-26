@@ -21,9 +21,9 @@ uint PackColor(float4 color) {
 
 float4 UnpackColor(uint color) {
     float4 result;
-    result.r = float((color >> 24) & 0x000000ff) / 255.0f;
-    result.g = float((color >> 16) & 0x000000ff) / 255.0f;
-    result.b = float((color >> 8) & 0x000000ff) / 255.0f;
-    result.a = float(color & 0x000000ff) / 255.0f;
+    result.r = float((color >> 24) & 0x000000FF) / 255.0f;
+    result.g = float((color >> 16) & 0x000000FF) / 255.0f;
+    result.b = float((color >> 8)  & 0x000000FF) / 255.0f;
+    result.a = float(color & 0x000000FF)         / 255.0f;
     return saturate(result);
 }

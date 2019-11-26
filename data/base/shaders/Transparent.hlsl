@@ -48,7 +48,7 @@ float4 ComputeLight(InputPS input)
         result += diffuse;
     }
 
-    return result;
+    return albedo;
 
 }
 
@@ -86,7 +86,7 @@ float4 PixelShaderTransparentFirstPass(InputPS input) : SV_TARGET0
     return float4(0.0, 0.0, 0.0, 0.0);
 }
 
-
+Texture2D<float4> TextureBackground : register(t0);
 
 
 void VertexShaderTransparentSecondPass(uint vertexID : SV_VertexID, out float4 position : SV_Position, out float2 texcoord: TEXCOORD) {
@@ -103,14 +103,17 @@ float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 te
 	uint count = 0;
     uint idx  = HeadPointersUAV[uint2(position.xy)];
 	
-  
+    [loop]
     while (idx != 0xFFFFFFFF && count < FRAGMENT_COUNT) {
         nodes[count] = LinkedListUAV[idx];
 		idx = nodes[count].Next;
 		count++;
-	}
+       // if (count >= FRAGMENT_COUNT)
+       //     return float4(1.0, 0.0, 0.0, 1.0);
+    }
 	
   
+    [loop]
     for (uint i = 1u; i < count; i++) {
         uint j = i;
         while (j > 0 && nodes[j - 1].Depth < nodes[j + 0].Depth) {
@@ -121,7 +124,7 @@ float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 te
         }
     }
 	
-    float4 color = float4(0.5, 0.5, 0.5, 1.0);
+    float4 color = TextureBackground.Sample(LinearSamplerState, texcoord);
     for (uint index = 0u; index < count; index++) {
         float4 t = UnpackColor(nodes[index].Color);
         color = lerp(color, t, t.a);
