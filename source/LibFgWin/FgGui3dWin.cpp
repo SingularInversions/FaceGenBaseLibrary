@@ -238,11 +238,13 @@ struct D3d {
     Map                             blackMap;           // For surfaces without a specular map
     Map                             whiteMap;           // 'shiny' rendering option specular map
 
-
+	ComPtr<ID3D11DepthStencilState> pDepthStencilStateDefault;
 	ComPtr<ID3D11DepthStencilState> pDepthStencilStateDisable;
 	ComPtr<ID3D11DepthStencilState> pDepthStencilStateWriteDisable;
-	ComPtr<ID3D11BlendState>        pBlendStateColorWriteDisable;       
+	ComPtr<ID3D11DepthStencilState> pDepthStencilStateWrite;
+
 	ComPtr<ID3D11BlendState>        pBlendStateDefault;
+	ComPtr<ID3D11BlendState>        pBlendStateColorWriteDisable;       
 	ComPtr<ID3D11BlendState>        pBlendStateLerp;
 
     // Created in render:
@@ -354,8 +356,16 @@ struct D3d {
 
 		{
 			auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
-			desc.DepthEnable = false;
+			desc.DepthEnable = false;		
+		
 			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateDisable.GetAddressOf()));
+		}
+
+		{
+			auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+			desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+			desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateWrite.GetAddressOf()));
 		}
 
 		{
@@ -364,7 +374,10 @@ struct D3d {
 			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateWriteDisable.GetAddressOf()));
 		}
 
-		
+		{
+			auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
+			DX::ThrowIfFailed(pDevice->CreateDepthStencilState(&desc, pDepthStencilStateDefault.GetAddressOf()));
+		}
 
 		
         // Just in case 1x1 image has memory alignment and two-sided interpolation edge-case issues:
@@ -850,6 +863,10 @@ struct D3d {
         return gpuSurf.ref<D3dSurf>();
     }
 
+
+
+
+
     void renderBackBuffer(
         BackgroundImage const &     bgi,
         RendMeshes const &          rendMeshes,
@@ -863,13 +880,13 @@ struct D3d {
         if (pRTV == nullptr)
             return;
         // Update 'd3dMeshes' (mesh and map data) if required:
-        for (RendMesh const & rendMesh : rendMeshes) {
-            Mesh const &            origMesh = rendMesh.origMeshN.cref();
-            D3dMesh &               d3dMesh = getD3dMesh(rendMesh);
-            bool                    vertsChanged = rendMesh.surfVertsFlag->checkUpdate(),
-                                    trisChanged = vertsChanged || (flatShaded != rendOpts.flatShaded),
-                                    // Is this mesh valid (ie. currently selected and has displayable content):
-                                    valid = !origMesh.verts.empty();
+        for (auto const & rendMesh : rendMeshes) {
+            auto const &  origMesh = rendMesh.origMeshN.cref();
+            auto & d3dMesh = getD3dMesh(rendMesh);
+			auto vertsChanged = rendMesh.surfVertsFlag->checkUpdate();
+			auto trisChanged = vertsChanged || (flatShaded != rendOpts.flatShaded);                          
+            auto valid = !origMesh.verts.empty();
+
             if (rendOpts.allVerts && rendMesh.allVertsFlag->checkUpdate()) {
                 d3dMesh.allVerts.reset();
                 if (valid)
@@ -914,7 +931,9 @@ struct D3d {
         flatShaded = rendOpts.flatShaded;
 
         // RENDER:
+	
 		Unique<ID3D11Buffer>        sceneBuff;
+
 		Unique<ID3D11SamplerState>  samplerState = makeSamplerState();
 		{
 			pImmediateContext->PSSetSamplers(0, 1, std::data({ samplerState.get() }));
@@ -929,31 +948,54 @@ struct D3d {
 
         // Currently use same shaders for all render options:
 
+
+		//Opaque pass
 		pImmediateContext->ClearRenderTargetView(pRTVBackGround.Get(), std::data(fgAsHomogVec(rendOpts.backgroundColor)));
+		pImmediateContext->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
 		pImmediateContext->OMSetBlendState(pBlendStateDefault.Get(), nullptr, 0xFFFFFFFF);
-		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
-		pImmediateContext->OMSetRenderTargets(1, std::data({ pRTVBackGround.Get() }), nullptr);
+		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(), 0);
+		pImmediateContext->OMSetRenderTargets(1, std::data({ pRTVBackGround.Get() }), pDSV.Get());
 		pOpaquePassPSO->applay(pImmediateContext);
-	    if (bgImg.valid()) {
-	        pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	        renderBgImg(bgi, viewportSize, false);
-	    }
+		if (bgImg.valid()) {
+			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			renderBgImg(bgi, viewportSize, false);
+		}
+
+		if (rendOpts.facets) {
+			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			sceneBuff = makeScene(lighting, worldToD3vs, d3vsToD3ps);
+			Unique<ID3D11RasterizerState>   rasterizer;
+			{
+				D3D11_RASTERIZER_DESC       rd = {};
+				rd.FillMode = D3D11_FILL_SOLID;
+				rd.CullMode = rendOpts.twoSided ? D3D11_CULL_NONE : D3D11_CULL_BACK;
+				if (rendOpts.wireframe || rendOpts.allVerts || rendOpts.surfPoints || rendOpts.markedVerts) {
+					// Increase depth values small amount to wireframe & allverts get shown.
+					// Only do this when necessary just in case some small confusting artifacts result.
+					rd.DepthBias = 1000;
+					rd.SlopeScaledDepthBias = 0.5f;
+					rd.DepthBiasClamp = 0.001f;
+				}
+				ID3D11RasterizerState* ptr;
+				pDevice->CreateRasterizerState(&rd, &ptr);
+				rasterizer.reset(ptr);
+			}
+			pImmediateContext->RSSetState(rasterizer.get());
+			renderTris(rendMeshes, rendOpts, false);
+		}
 
 		pImmediateContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
 
 
-
-		//FIRST PASS
-
-
-		pImmediateContext->ClearRenderTargetView(pRTV.Get(), std::data({0.0f, 0.0f, 0.0f, 0.0f}));
-		pImmediateContext->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+		//Transparent pass
+	
+		pImmediateContext->ClearRenderTargetView(pRTV.Get(), std::data({0.0f, 0.0f, 0.0f, 1.f}));
 		pImmediateContext->ClearUnorderedAccessViewUint(pUAVTextureHeadOIT.Get(), std::data({ 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF }));
 		pImmediateContext->OMSetRenderTargetsAndUnorderedAccessViews(1, pRTV.GetAddressOf(), pDSV.Get(), 1, 2, std::data({ pUAVTextureHeadOIT.Get(), pUAVBufferLinkedListOIT.Get() }), std::data({ 0x0u, 0x0u }));
 		pImmediateContext->OMSetBlendState(pBlendStateColorWriteDisable.Get(), nullptr, 0xFFFFFFFF);
 		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateWriteDisable.Get(), 0);
 		pTransparentFirstPassPSO->applay(pImmediateContext);
-
 
 	
         // Triangle rendering (faces and wireframe):
@@ -977,123 +1019,130 @@ struct D3d {
                 rasterizer.reset(ptr);
             }
             pImmediateContext->RSSetState(rasterizer.get());
-            renderTris(rendMeshes,rendOpts,false);
             renderTris(rendMeshes,rendOpts,true);
         }
-        if (rendOpts.wireframe) {
-            pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
-            if (rendOpts.facets)        // Render wireframe blue over facets, white otherwise:
-                sceneBuff = makeScene(Vec3F(0,0,1),worldToD3vs,d3vsToD3ps);
-            else
-                sceneBuff = makeScene(Vec3F(1,1,1),worldToD3vs,d3vsToD3ps);
-            Unique<ID3D11RasterizerState>   rasterizer;
-            {
-                D3D11_RASTERIZER_DESC       rd = {};
-                rd.FillMode = D3D11_FILL_WIREFRAME;
-                rd.CullMode = rendOpts.twoSided ? D3D11_CULL_NONE : D3D11_CULL_BACK;
-                ID3D11RasterizerState*      ptr;
-                pDevice->CreateRasterizerState(&rd,&ptr);
-                rasterizer.reset(ptr);
-            }
-            pImmediateContext->RSSetState(rasterizer.get());
-            for (RendMesh const & rendMesh : rendMeshes) {
-                Mesh const &            origMesh = rendMesh.origMeshN.cref();
-                // Must loop through origMesh surfaces in case the mesh has been emptied (and the redsurfs remain):
-                for (size_t ss=0; ss<origMesh.surfaces.size(); ++ss) {
-                    D3dSurf &               d3dSurf = getD3dSurf(rendMesh.rendSurfs[ss]);
-                    Surf const &            origSurf = origMesh.surfaces[ss];
-                    if (origSurf.empty())
-                        continue;
-                    if (!d3dSurf.lineVerts)     // GPU needs updating
-                        d3dSurf.lineVerts = makeVertBuff(makeLineVerts(rendMesh,origMesh,ss));
-                    setVertexBuffer(d3dSurf.lineVerts.get());
-                    ID3D11ShaderResourceView* mapViews[2];    // Albedo, specular resp.
-                    mapViews[0] = greyMap.view.get();
-                    if (rendOpts.shiny)
-                        mapViews[1] = whiteMap.view.get();
-                    else if (d3dSurf.specularMap.valid())
-                        mapViews[1] = d3dSurf.specularMap.view.get();
-                    else
-                        mapViews[1] = blackMap.view.get();
-                    pImmediateContext->PSSetShaderResources(0,2,mapViews);
-                    pImmediateContext->Draw(uint(origSurf.numTris()*6+origSurf.numQuads()*8),0);
-                }
-            }
-        }
-        // Point rendering (doesn't use rasterizer):
-        pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-        {
-            ID3D11ShaderResourceView*       mapViews[2];    // Albedo, specular resp.
-            mapViews[0] = whiteMap.view.get();
-            mapViews[1] = blackMap.view.get();
-            pImmediateContext->PSSetShaderResources(0,2,mapViews);
-        }
-        if (rendOpts.allVerts) {
-            sceneBuff = makeScene(Vec3F(0,1,0),worldToD3vs,d3vsToD3ps);
-            for (RendMesh const & rendMesh : rendMeshes) {
-                D3dMesh const &         d3dMesh = getD3dMesh(rendMesh);
-                if (d3dMesh.allVerts) {
-                    Mesh const &        origMesh = rendMesh.origMeshN.cref();
-                    setVertexBuffer(d3dMesh.allVerts.get());
-                    pImmediateContext->Draw(uint(origMesh.verts.size()),0);
-                }
-            }
-        }
-        if (rendOpts.surfPoints) {
-            sceneBuff = makeScene(Vec3F(1,0,0),worldToD3vs,d3vsToD3ps);
-            for (auto const & rendMesh : rendMeshes) {
-                auto const & origMesh = rendMesh.origMeshN.cref();
-                if (origMesh.surfPointNum()>0) {
-                    auto&  d3dMesh = getD3dMesh(rendMesh);
-                    if (d3dMesh.surfPoints) {   // Can be null if no surf points
-                        setVertexBuffer(d3dMesh.surfPoints.get());
-                        pImmediateContext->Draw(uint(origMesh.surfPointNum()),0);
-                    }
-                }
-            }
-        }
-        if (rendOpts.markedVerts) {
-            sceneBuff = makeScene(Vec3F(1,0,0),worldToD3vs,d3vsToD3ps);
-            for (RendMesh const & rendMesh : rendMeshes) {
-                Mesh const &            origMesh = rendMesh.origMeshN.cref();
-                if (!origMesh.markedVerts.empty()) {
-                    D3dMesh &                      d3dMesh = getD3dMesh(rendMesh);
-                    if (d3dMesh.markedPoints) {   // Can be null if no marked verts
-                        setVertexBuffer(d3dMesh.markedPoints.get());
-                        pImmediateContext->Draw(uint(origMesh.surfPointNum()),0);
-                    }
-                }
-            }
-        }
-
+      
+    
 		//Second PASS
-
 		pImmediateContext->OMSetBlendState(pBlendStateDefault.Get(), nullptr, 0xFFFFFFFF);
 		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
 		pTransparentSecondPassPSO->applay(pImmediateContext);
 		pImmediateContext->PSSetShaderResources(0, 1, std::data({ pSRVBackGround.Get() }));
 		pImmediateContext->Draw(3, 0);
 
-
-	
 		pImmediateContext->OMSetRenderTargetsAndUnorderedAccessViews(_countof(ppRTVClear), ppRTVClear, nullptr, 1, _countof(ppUAVClear), ppUAVClear, std::data({ 0x0u, 0x0u }));
 		pImmediateContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
 		
 
 
+		pImmediateContext->OMSetRenderTargets(1, std::data({ pRTV.Get() }), pDSV.Get());
+		pImmediateContext->OMSetBlendState(pBlendStateDefault.Get(), nullptr, 0xFFFFFFFF);
+		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(), 0);
+		pOpaquePassPSO->applay(pImmediateContext);
 
-        if (bgImg.valid()) {
 
-			pImmediateContext->OMSetRenderTargets(1, std::data({ pRTV.Get() }), nullptr);
-			pImmediateContext->OMSetBlendState(pBlendStateLerp.Get(), nullptr, 0xFFFFFFFF);
-			pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
+		if (rendOpts.wireframe) {
+
+
+			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+			if (rendOpts.facets)        // Render wireframe blue over facets, white otherwise:
+				sceneBuff = makeScene(Vec3F(0, 0, 1), worldToD3vs, d3vsToD3ps);
+			else
+				sceneBuff = makeScene(Vec3F(1, 1, 1), worldToD3vs, d3vsToD3ps);
+			Unique<ID3D11RasterizerState>   rasterizer;
+			{
+				D3D11_RASTERIZER_DESC       rd = {};
+				rd.FillMode = D3D11_FILL_WIREFRAME;
+				rd.CullMode = rendOpts.twoSided ? D3D11_CULL_NONE : D3D11_CULL_BACK;
+				ID3D11RasterizerState* ptr;
+				pDevice->CreateRasterizerState(&rd, &ptr);
+				rasterizer.reset(ptr);
+			}
+			pImmediateContext->RSSetState(rasterizer.get());
+			for (auto const& rendMesh : rendMeshes) {
+				auto const& origMesh = rendMesh.origMeshN.cref();
+				// Must loop through origMesh surfaces in case the mesh has been emptied (and the redsurfs remain):
+				for (size_t ss = 0; ss < origMesh.surfaces.size(); ++ss) {
+					D3dSurf& d3dSurf = getD3dSurf(rendMesh.rendSurfs[ss]);
+					Surf const& origSurf = origMesh.surfaces[ss];
+					if (origSurf.empty())
+						continue;
+					if (!d3dSurf.lineVerts)     // GPU needs updating
+						d3dSurf.lineVerts = makeVertBuff(makeLineVerts(rendMesh, origMesh, ss));
+					setVertexBuffer(d3dSurf.lineVerts.get());
+					ID3D11ShaderResourceView* mapViews[2];    // Albedo, specular resp.
+					mapViews[0] = greyMap.view.get();
+					if (rendOpts.shiny)
+						mapViews[1] = whiteMap.view.get();
+					else if (d3dSurf.specularMap.valid())
+						mapViews[1] = d3dSurf.specularMap.view.get();
+					else
+						mapViews[1] = blackMap.view.get();
+					pImmediateContext->PSSetShaderResources(0, 2, mapViews);
+					pImmediateContext->Draw(uint(origSurf.numTris() * 6 + origSurf.numQuads() * 8), 0);
+				}
+			}
+
+		}
+
+
+
+
+
+		// Point rendering (doesn't use rasterizer):
+		pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		pImmediateContext->PSSetShaderResources(0, 2, std::data({ whiteMap.view.get(), blackMap.view.get() }));
 		
-			pOpaquePassPSO->applay(pImmediateContext);
-            pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);       
-            renderBgImg(bgi,viewportSize, true);
 
-			pImmediateContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
-        }
+		if (rendOpts.allVerts) {
+			sceneBuff = makeScene(Vec3F(0, 1, 0), worldToD3vs, d3vsToD3ps);
+			for (auto const& rendMesh : rendMeshes) {
+				auto const& d3dMesh = getD3dMesh(rendMesh);
+				if (d3dMesh.allVerts) {
+					auto const& origMesh = rendMesh.origMeshN.cref();
+					setVertexBuffer(d3dMesh.allVerts.get());
+					pImmediateContext->Draw(uint(origMesh.verts.size()), 0);
+				}
+			}
+		}
+
+		if (rendOpts.surfPoints) {
+			sceneBuff = makeScene(Vec3F(1, 0, 0), worldToD3vs, d3vsToD3ps);
+			for (auto const& rendMesh : rendMeshes) {
+				auto const& origMesh = rendMesh.origMeshN.cref();
+				if (origMesh.surfPointNum() > 0) {
+					auto& d3dMesh = getD3dMesh(rendMesh);
+					if (d3dMesh.surfPoints) {   // Can be null if no surf points
+						setVertexBuffer(d3dMesh.surfPoints.get());
+						pImmediateContext->Draw(uint(origMesh.surfPointNum()), 0);
+					}
+				}
+			}
+		}
+
+		if (rendOpts.markedVerts) {
+			sceneBuff = makeScene(Vec3F(1, 0, 0), worldToD3vs, d3vsToD3ps);
+			for (auto const& rendMesh : rendMeshes) {
+				auto const& origMesh = rendMesh.origMeshN.cref();
+				if (!origMesh.markedVerts.empty()) {
+					D3dMesh& d3dMesh = getD3dMesh(rendMesh);
+					if (d3dMesh.markedPoints) {   // Can be null if no marked verts
+						setVertexBuffer(d3dMesh.markedPoints.get());
+						pImmediateContext->Draw(uint(origMesh.surfPointNum()), 0);
+					}
+				}
+			}
+		}
+
+		if (bgImg.valid()) {		
+			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
+			pImmediateContext->OMSetBlendState(pBlendStateLerp.Get(), nullptr, 0xFFFFFFFF);
+			renderBgImg(bgi, viewportSize, true);
+		
+		}
+	
+		pImmediateContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
 
 
 	

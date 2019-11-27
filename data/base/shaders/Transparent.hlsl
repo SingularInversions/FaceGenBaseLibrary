@@ -33,6 +33,8 @@ globallycoherent RWStructuredBuffer<ListNode> LinkedListUAV;
 float4 ComputeLight(InputPS input)
 {
 
+    
+  
 
     float4 albedo   = TextureAlbedo.Sample(LinearSamplerState, input.Texcoord);
     float4 specular = TextureSpecular.Sample(LinearSamplerState, input.Texcoord);
@@ -40,12 +42,14 @@ float4 ComputeLight(InputPS input)
  
     float3 N = normalize(input.Normal.xyz); 
 
-    float3 color = float3(0.0, 0.0, 0.0f);
+    float3 color = albedo.xyz * FrameBuffer.AmbientColor.xyz;
 
     for (uint index = 0; index < 2; index++) {
         float3 L = FrameBuffer.LightDirection[index].xyz;
-        float3 diffuse = albedo.rgb * FrameBuffer.LightColor[index].rgb * abs(dot(N, L));
-        color += diffuse;
+        float3 R = reflect(-L, N);
+        float3 kD = albedo.rgb * FrameBuffer.LightColor[index].rgb * abs(dot(N, L));
+        float3 kS = specular.rgb * FrameBuffer.LightColor[index].rgb * pow(max(dot(float3(0.0f, 0.0, 1.0), R), 0.0), 128);
+        color += (kD + kS);
     }
 
     return float4(color, albedo.a);
@@ -94,7 +98,8 @@ void VertexShaderTransparentSecondPass(uint vertexID : SV_VertexID, out float4 p
 	position = float4(texcoord * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 1.0f, 1.0f);
 }
 
-float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_TARGET0 {
+float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 texcoord : TEXCOORD, out float depth : SV_Depth) : SV_TARGET0
+{
 
     const uint FRAGMENT_COUNT = 32;
 
@@ -112,7 +117,7 @@ float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 te
        //     return float4(1.0, 0.0, 0.0, 1.0);
     }
 	
-  
+   
     [loop]
     for (uint i = 1u; i < count; i++) {
         uint j = i;
@@ -129,7 +134,10 @@ float4 PixelShaderTransparentSecondPass(float4 position : SV_Position, float2 te
         float4 t = UnpackColor(nodes[index].Color);
         color = lerp(color, t, t.a);
     }
-       
-		
+    
+    
+    //Try z buffer transpancety
+    depth = count > 0 ? nodes[count - 1].Depth : 1.0f;
+    
 	return color;
 }
