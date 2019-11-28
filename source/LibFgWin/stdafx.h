@@ -6,3 +6,4 @@
 #include "FgStdLibs.hpp"            // C/C++ standard libraries
 #include "FgBoostLibs.hpp"
 #include "FgWindows.hpp"            // Windows includes
+#include "DX.hpp"
