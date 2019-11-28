@@ -954,13 +954,16 @@ struct D3d {
 		pImmediateContext->ClearDepthStencilView(pDSV.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
 		pImmediateContext->OMSetBlendState(pBlendStateDefault.Get(), nullptr, 0xFFFFFFFF);
-		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(), 0);
 		pImmediateContext->OMSetRenderTargets(1, std::data({ pRTVBackGround.Get() }), pDSV.Get());
 		pOpaquePassPSO->applay(pImmediateContext);
 		if (bgImg.valid()) {
+			pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
 			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			renderBgImg(bgi, viewportSize, false);
 		}
+
+		
+		pImmediateContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(), 0);
 
 		if (rendOpts.facets) {
 			pImmediateContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
