@@ -36,7 +36,7 @@ anim(CLArgs const & args)
         );
     string                          suffix = syn.next();
     vector<pair<string,Mesh> >  meshes;
-    while (fgEndsWith(syn.peekNext(),".tri")) {
+    while (endsWith(syn.peekNext(),".tri")) {
         string                      name = syn.next();
         meshes.push_back(make_pair(name,loadTri(name)));
     }
@@ -86,7 +86,7 @@ apply(CLArgs const & args)
         );
     string      inFile = syntax.next(),
                 outFile = syntax.next();
-    if (!fgCheckExt(inFile,"tri"))
+    if (!checkExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
     Mesh        mesh = loadTri(inFile);
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
@@ -99,12 +99,12 @@ apply(CLArgs const & args)
         //! Apply the morph:
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",toString(idx));
+                fgThrow("Delta morph index out of bounds",toStr(idx));
             deltas[idx] = val;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",toString(idx));
+                fgThrow("Target morph index out of bounds",toStr(idx));
             targets[idx] = val;
         }
         else
@@ -142,7 +142,7 @@ clamp(CLArgs const & args)
     else
         syn.error("Not a valid option",vm);
     if (seam.size() < 3)
-        syn.error("Too few vertices to be a seam",toString(seam.size()));
+        syn.error("Too few vertices to be a seam",toStr(seam.size()));
     FgKdTree        kd(seam);
     float           scale = cMaxElem(cDims(mesh.verts)),
                     closeSqr = sqr(scale / 10000.0f);
@@ -212,12 +212,12 @@ copymorphs(CLArgs const & args)
         size_t      idx = syntax.nextAs<size_t>();
         if (delta) {
             if (idx >= meshIn.deltaMorphs.size())
-                syntax.error("Invalid delta morph index",toString(idx));
+                syntax.error("Invalid delta morph index",toStr(idx));
             meshOut.addDeltaMorph(meshIn.deltaMorphs[idx]);
         }
         else {
             if (idx >= meshIn.targetMorphs.size())
-                syntax.error("Invalid target morph index",toString(idx));
+                syntax.error("Invalid target morph index",toStr(idx));
             meshOut.addTargMorph(meshIn.targetMorphs[idx]);
         }
     }
@@ -292,7 +292,7 @@ extract(CLArgs const & args)
     );
     string      meshName = syntax.next(),
                 ext = syntax.next();
-    Ustring    baseName = fgPathToBase(meshName);
+    Ustring    baseName = pathToBase(meshName);
     if (syntax.more())
         baseName = syntax.next();
     Mesh    base = loadTri(meshName),
@@ -301,7 +301,7 @@ extract(CLArgs const & args)
     out.targetMorphs.clear();
     for (size_t ii=0; ii<base.numMorphs(); ++ii) {
         out.verts = base.morphSingle(ii);
-        Ustring    morphName = fgRemoveChars(base.morphName(ii),":()");
+        Ustring    morphName = removeChars(base.morphName(ii),":()");
         meshSaveAnyFormat(out,baseName+"_"+morphName+"."+ext);
     }
 }
@@ -320,17 +320,17 @@ morphList(CLArgs const & args)
     if (args.size() != 2)
         syntax.incorrectNumArgs();
     string      inFile = syntax.next();
-    if (!fgCheckExt(inFile,"tri"))
+    if (!checkExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
     Mesh    mesh = loadTri(inFile);
     const vector<Morph> & dmorphs = mesh.deltaMorphs;
     fgout << fgnl << dmorphs.size() << " delta morphs:" << fgpush;
     for (size_t ii=0; ii<dmorphs.size(); ++ii)
-        fgout << fgnl << toStringDigits(ii,2) << " " << dmorphs[ii].name;
+        fgout << fgnl << toStrDigits(ii,2) << " " << dmorphs[ii].name;
     const vector<IndexedMorph> &   tmorphs = mesh.targetMorphs;
     fgout << fgpop << fgnl << tmorphs.size() << " target morphs:" << fgpush;
     for (size_t ii=0; ii<tmorphs.size(); ++ii)
-        fgout << fgnl << toStringDigits(ii,2) << " " << tmorphs[ii].name;
+        fgout << fgnl << toStrDigits(ii,2) << " " << tmorphs[ii].name;
     fgout << fgpop << fgnl;
 }
 
@@ -348,10 +348,10 @@ removebrackets(CLArgs const & args)
     Mesh            mesh = loadTri(syntax.next());
     vector<Morph> &   dms = mesh.deltaMorphs;
     for (size_t ii=0; ii<dms.size(); ++ii)
-        dms[ii].name = fgRemoveChars(fgRemoveChars(dms[ii].name,'('),')');
+        dms[ii].name = removeChars(removeChars(dms[ii].name,'('),')');
     vector<IndexedMorph> &    tms = mesh.targetMorphs;
     for (size_t ii=0; ii<tms.size(); ++ii)
-        tms[ii].name = fgRemoveChars(fgRemoveChars(tms[ii].name,'('),')');
+        tms[ii].name = removeChars(removeChars(tms[ii].name,'('),')');
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -372,9 +372,9 @@ removemorphs(CLArgs const & args)
 
     string      inFile = syntax.next(),
                 outFile = syntax.next();
-    if (!fgCheckExt(inFile,"tri"))
+    if (!checkExt(inFile,"tri"))
         syntax.error("Not a TRI file",inFile);
-    if (!fgCheckExt(outFile,"tri"))
+    if (!checkExt(outFile,"tri"))
         syntax.error("Not a TRI file",outFile);
     Mesh    mesh = loadTri(inFile);
     vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
@@ -384,12 +384,12 @@ removemorphs(CLArgs const & args)
         uint        idx = syntax.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
-                fgThrow("Delta morph index out of bounds",toString(idx));
+                fgThrow("Delta morph index out of bounds",toStr(idx));
             deltas[idx] = false;
         }
         else if (arg == "t") {
             if (idx >= targets.size())
-                fgThrow("Target morph index out of bounds",toString(idx));
+                fgThrow("Target morph index out of bounds",toStr(idx));
             targets[idx] = false;
         }
         else
@@ -422,19 +422,19 @@ renameMorph(CLArgs const & args)
         "    <index>    - Morph index number (see 'morph list' command)"
         );
     string      fname = syntax.next();
-    if (!fgCheckExt(fname,"tri"))
+    if (!checkExt(fname,"tri"))
         syntax.error("Not a TRI file",fname);
     Mesh    mesh = loadTri(fname);
     Ustring    arg = syntax.nextLower();
     uint        idx = syntax.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
-            fgThrow("Delta morph index out of bounds",toString(idx));
+            fgThrow("Delta morph index out of bounds",toStr(idx));
         mesh.deltaMorphs[idx].name = syntax.next();
     }
     else if (arg == "t") {
         if (idx >= mesh.targetMorphs.size())
-            fgThrow("Target morph index out of bounds",toString(idx));
+            fgThrow("Target morph index out of bounds",toStr(idx));
         mesh.targetMorphs[idx].name = syntax.next();
     }
     else
@@ -462,7 +462,7 @@ morph(CLArgs const & args)
 }
 
 Cmd
-fgCmdMorphInfo()
+getMorphCmd()
 {return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void

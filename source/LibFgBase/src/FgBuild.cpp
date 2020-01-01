@@ -216,8 +216,8 @@ string
 fgCurrentBuildDescription()
 {
     return 
-        toString(fgCurrentBuildOS()) + " " +
-        toString(fgCurrentCompiler()) + " " +
+        toStr(fgCurrentBuildOS()) + " " +
+        toStr(fgCurrentCompiler()) + " " +
         fgBitsString() + " " + fgCurrentBuildConfig();
 }
 
@@ -226,7 +226,7 @@ fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
 {
     string          ds = backslash ? "\\" : "/",
                     debrel = release ? "release" : "debug";
-    return "bin" + ds + toString(os) + ds + toString(arch) + ds + toString(comp) + ds + debrel + ds;
+    return "bin" + ds + toStr(os) + ds + toStr(arch) + ds + toStr(comp) + ds + debrel + ds;
 }
 
 uint64
@@ -238,7 +238,7 @@ fgUuidHash64(string const & str)
     return hf(str);
 #else           // size_t is 32 bits:
     uint64      lo = hf(str),
-                hi = hf(str+toString(lo));
+                hi = hf(str+toStr(lo));
     return (lo | (hi << 32));
 #endif
 }
@@ -251,7 +251,7 @@ fgUuidHash128(string const & str)
     uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
                     *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
     *pLo = fgUuidHash64(str);
-    *pHi = fgUuidHash64(str+toString(*pLo));
+    *pHi = fgUuidHash64(str+toStr(*pLo));
     return ret;
 }
 
@@ -266,11 +266,11 @@ fgCreateMicrosoftGuid(string const & name,bool wsb)
     string          ret;
     if (wsb) ret += '{';
     ret += 
-        fgAsHex(valPtr,4) + '-' +
-        fgAsHex(valPtr+4,2) + '-' +
-        fgAsHex(valPtr+6,2) + '-' +
-        fgAsHex(valPtr+8,2) + '-' +
-        fgAsHex(valPtr+10,6);
+        toHexString(valPtr,4) + '-' +
+        toHexString(valPtr+4,2) + '-' +
+        toHexString(valPtr+6,2) + '-' +
+        toHexString(valPtr+8,2) + '-' +
+        toHexString(valPtr+10,6);
     if (wsb) ret += '}';
     return ret;
 }

@@ -22,13 +22,14 @@ namespace Fg {
 
 namespace {
 
-GuiVal<Vec3F>
+// Output value has range [0,1]:
+static GuiVal<Vec3F>
 makeColorSliders(Ustring const & store,double init,double tickSpacing)
 {
-    IPT<Vec3F>           valN = makeSavedIPT(Vec3F(init),store);
-    array<GuiPtr,3>       sliders = guiSliders(valN,array<Ustring,3>(),VecD2(0,1),tickSpacing);
-    array<Ustring,3>       labels {{"Red","Green","Blue"}};
-    GuiPtrs               wins;
+    IPT<Vec3F>          valN = makeSavedIPT(Vec3F(init),store);
+    array<GuiPtr,3>     sliders = guiSliders(valN,array<Ustring,3>(),VecD2(0,1),tickSpacing);
+    array<Ustring,3>    labels {{"Red","Green","Blue"}};
+    GuiPtrs             wins;
     for (uint ii=0; ii<3; ++ii) {
         wins.push_back(guiSplit(true,
             guiText(labels[ii],45),       // Fixed width larger than all colors to align sliders
@@ -40,14 +41,14 @@ makeColorSliders(Ustring const & store,double init,double tickSpacing)
 GuiVal<Vec3F>
 makeDirectionSliders(array<IPT<double>,3> inputNs,Ustring const & store)
 {
-    Vec3D            defaultVal(0,0,1);
-    VecD2            bounds(-100000,100000);
+    Vec3D               defaultVal(0,0,1);
+    VecD2               bounds(-100000,100000);
     array<string,3>     labels {{"Right:","Up:","Backward:"}};
-    GuiPtrs           ctls;
+    GuiPtrs             ctls;
     for (uint xx=0; xx<3; ++xx) {
-        inputNs[xx].initSaved(defaultVal[xx],store+toString(xx));
+        inputNs[xx].initSaved(defaultVal[xx],store+toStr(xx));
         ctls.push_back(guiText(labels[xx]));
-        ctls.push_back(guiTextEditFloat(inputNs[xx],bounds));
+        ctls.push_back(guiTextEditFloat(inputNs[xx],bounds,6));
     }
     GuiVal<Vec3F> ret;
     ret.valN = link3<Vec3F,double,double,double>(inputNs[0],inputNs[1],inputNs[2],
@@ -62,7 +63,7 @@ struct  LightCtrls
 {
     GuiPtr                clrSliders;
     GuiPtr                dirSliders;
-    OPT<FgLight>            light;
+    OPT<Light>            light;
 };
 
 LightCtrls
@@ -71,7 +72,7 @@ makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,Ustring con
     LightCtrls              ret;
     GuiVal<Vec3F>     color = makeColorSliders(store+"Color",defaultBrightness,0.1);
     GuiVal<Vec3F>     dir = makeDirectionSliders(inputNs,store+"Direction");
-    ret.light = link2<FgLight,Vec3F,Vec3F>(color.valN,dir.valN,[](Vec3F c,Vec3F d){return FgLight(c,d); });
+    ret.light = link2<Light,Vec3F,Vec3F>(color.valN,dir.valN,[](Vec3F c,Vec3F d){return Light(c,d); });
     ret.clrSliders = color.win;
     ret.dirSliders = dir.win;
     return ret;
@@ -79,16 +80,16 @@ makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,Ustring con
 
 void
 lightDirectionDrag(
-    bool                        shiftKey,
-    Vec2I                    pixels,
-    array<IPT<double>,3>        light1,
-    array<IPT<double>,3>        light2)
+    bool                    shiftKey,
+    Vec2I                   pixels,
+    array<IPT<double>,3>    light1,
+    array<IPT<double>,3>    light2)
 {
     const array<IPT<double>,3> &    lgt = shiftKey ? light2 : light1;
     Vec3D                        dir;
     for (uint ii=0; ii<3; ++ii)
         dir[ii] = lgt[ii].val();
-    dir = fgNormalize(dir);
+    dir = normalize(dir);
     Vec3D                    axis(pixels[1],pixels[0],0);
     double                      axisLen = axis.len();
     if (axisLen > 0.0) {
@@ -103,7 +104,7 @@ lightDirectionDrag(
 
 GuiPtr
 makeLightingCtrls(
-    RPT<FgLighting>         lightingR,
+    RPT<Lighting>         lightingR,
     IPT<BothButtonsDragAction> bothButtonsDragActionI,
     Ustring const &        store)
 {
@@ -113,10 +114,10 @@ makeLightingCtrls(
                             dir2Ns;
     LightCtrls              light1 = makeLightCtrls(dir1Ns,0.6,sp+"1"),
                             light2 = makeLightCtrls(dir2Ns,0.0,sp+"2");
-    NPT<FgLighting>         lightingN =
-        link3<FgLighting,Vec3F,FgLight,FgLight>(ambient.valN,light1.light,light2.light,
-            [](Vec3F a,FgLight l1,FgLight l2)
-            {return FgLighting(a,fgSvec(l1,l2)); }
+    NPT<Lighting>         lightingN =
+        link3<Lighting,Vec3F,Light,Light>(ambient.valN,light1.light,light2.light,
+            [](Vec3F a,Light l1,Light l2)
+            {return Lighting(a,fgSvec(l1,l2)); }
         );
     connect(lightingR,lightingN);
     bothButtonsDragActionI.init(std::bind(lightDirectionDrag,_1,_2,dir1Ns,dir2Ns));
@@ -180,8 +181,10 @@ backgroundCtrls(BackgroundImage bgImg,Ustring const & store)
     return guiGroupbox("Background Image",guiSplit(false,bgImageButtons,bgImageSlider,text));
 }
 
-RendOptions
-linkRenderOpts2(const Bools & opts,const Vec3F & bgColor)
+static RendOptions
+linkRenderOpts2(
+    Bools const &       opts,
+    Vec3F const &       bgColor)    // Elements [0,1]
 {
     RendOptions       r;
     r.useTexture = opts[0];
@@ -232,8 +235,8 @@ makeRendCtrls(
         optNs.push_back(makeSavedIPT(opt.defVal,store+opt.store));
         optWs.push_back(guiCheckbox(opt.desc,optNs.back()));
     }
-    NPT<Bools>            optsN = linkCollate<bool>(optNs);
-    GuiVal<Vec3F>       bgColor = makeColorSliders(store+"BgColor",0.0,0.1);
+    NPT<Bools>              optsN = linkCollate<bool>(optNs);
+    GuiVal<Vec3F>           bgColor = makeColorSliders(store+"BgColor",0.0,0.1);
     NPT<RendOptions>        rendOptionsN = link2<RendOptions,Bools,Vec3F>(optsN,bgColor.valN,linkRenderOpts2);
     connect(rendOptionsR,rendOptionsN);
     GuiPtr                  renderCtls;
@@ -270,7 +273,7 @@ expr_load2(NPT<PoseVals> posesN,IPT<Doubles> valsN)
         vector<pair<Ustring,double> >  lvs;
         fgLoadXml(fname.val(),lvs);
         for (size_t ii=0; ii<lvs.size(); ++ii) {
-            size_t      idx = fgFindFirstIdx(poses,lvs[ii].first);
+            size_t      idx = findFirstIdx(poses,lvs[ii].first);
             if (idx < poses.size())
                 vals[idx] = lvs[ii].second;
         }
@@ -372,7 +375,7 @@ assignPaint2(
                 Vec3UI           tri = meshPtr->surfaces[isct.surfIdx].getTriEquivPosInds(isct.surfPnt.triEquivIdx);
                 Surfs        surfs = fgSplitSurface(meshPtr->surfaces[isct.surfIdx]);
                 for (size_t ss=0; ss<surfs.size(); ++ss) {
-                    if (fgContains(surfs[ss].tris.vertInds,tri)) {
+                    if (contains(surfs[ss].tris.vertInds,tri)) {
                         meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
                         surfs.erase(surfs.begin()+ss);
                         meshPtr->surfaces[isct.surfIdx] = mergeSurfaces(surfs);
@@ -413,7 +416,7 @@ makeEditFacetsPane(NPT<RendMeshes> rendMeshesN,Gui3d & viewport)
     for (size_t ss=0; ss<meshPtr->surfaces.size(); ++ss) {
         Surf &       surf = meshPtr->surfaces[ss];
         if (surf.name.empty())      // Generally not the case since default surf names assigned on load
-            surf.name = toString(ss);
+            surf.name = toStr(ss);
         surfNames.push_back(surf.name);
     }
     GuiPtr                facets;
@@ -423,7 +426,7 @@ makeEditFacetsPane(NPT<RendMeshes> rendMeshesN,Gui3d & viewport)
         IPT<size_t>     surfChoiceN(0);
         GuiPtr        surfChoiceW = guiRadio(surfNames,surfChoiceN);
         viewport.shiftRightDragActionI.init(bind(assignTri2,rendMeshesN,surfChoiceN,_1,_2,_3));
-        viewport.ctrlShiftMiddleClickActionI.init(bind(assignPaint2,rendMeshesN,surfChoiceN,_1,_2,_3));
+        viewport.shiftMiddleClickActionI.init(bind(assignPaint2,rendMeshesN,surfChoiceN,_1,_2,_3));
         facets = guiSplit(false,
             guiText("Assign tri to surface selection: shift-right-drag\n"
                 "Assign connected tris (not quads) to surface: shift-middle-click"),
@@ -527,12 +530,12 @@ makeUniqueNames(const Ustrings & names,Ustring const & baseName)
     for (size_t nn=0; nn<names.size(); ++nn) {
         Ustring            name = names[nn];
         if (name.empty())
-            name = baseName + "_" + toString(nn);
-        if (fgContains(ret,name)) {
+            name = baseName + "_" + toStr(nn);
+        if (contains(ret,name)) {
             size_t      idx = 1;
-            while (fgContains(ret,name+"_"+toString(idx)))
+            while (contains(ret,name+"_"+toStr(idx)))
                 ++idx;
-            name += "_"+toString(idx);
+            name += "_"+toStr(idx);
         }
         ret.push_back(name);
     }
@@ -587,8 +590,8 @@ makeCameraCtrls(
         {
             CameraParams    cps = cp;
             if (m == 0) {
-                QuaternionD   pan(fgDegToRad(pt[0]),1),
-                                tilt(fgDegToRad(pt[1]),0);
+                QuaternionD   pan(degToRad(pt[0]),1),
+                                tilt(degToRad(pt[1]),0);
                 cps.pose = pan*tilt;
             }
             return cps.camera(v);
@@ -625,23 +628,23 @@ makeCameraCtrls(
                 textEditBoxes
             )
         );
-    // Required to disambiguate float / double overloads:
-    double (*pexpd)(double) = &std::exp;
-    double (*plogd)(double) = &std::log;
-    GuiPtr        viewCtlScaleTe = guiTextEditFloat(api.logRelSize,logScaleRange,6,pexpd,plogd);
-    GuiPtr        viewCtlScale =
-                guiSlider(
-                    api.logRelSize,
-                    Ustring(),
-                    logScaleRange,
-                    (logScaleRange[1]-logScaleRange[0])/4.0,
-                    fgSvec(
-                        GuiTickLabel(logScaleRange[0],"0.2"),
-                        GuiTickLabel(0.0,"1.0"),
-                        GuiTickLabel(logScaleRange[1],"5.0")),
-                    vector<GuiTickLabel>(),
-                    30      // Match width of slider above
-                );
+    IPT<double>     lnRelSizeN = api.logRelSize;
+    auto            getVal = [=](){return std::exp(lnRelSizeN.val()); };
+    auto            setVal = [=](double val){lnRelSizeN.set(std::log(val)); };
+    GuiPtr          viewCtlScaleTe = guiTextEditFloat(
+        makeUpdateFlag(lnRelSizeN),getVal,setVal,VecD2{exp(-20.0),exp(20.0)},6);
+    GuiPtr          viewCtlScale = guiSlider(
+                        api.logRelSize,
+                        Ustring(),
+                        logScaleRange,
+                        (logScaleRange[1]-logScaleRange[0])/4.0,
+                        fgSvec(
+                            GuiTickLabel(logScaleRange[0],"0.2"),
+                            GuiTickLabel(0.0,"1.0"),
+                            GuiTickLabel(logScaleRange[1],"5.0")),
+                        vector<GuiTickLabel>(),
+                        30      // Match width of slider above
+                    );
     if (textEditBoxes)
         viewCtlScale = guiSplit(true,viewCtlScale,viewCtlScaleTe);
     viewCtlScale = guiGroupboxTr("Object relative scale",viewCtlScale);
@@ -697,17 +700,15 @@ linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN)
 OPT<Mesh>
 linkLoadMesh(NPT<Ustring> pathBaseN)
 {
-    return link1_<Ustring,Mesh>(pathBaseN,
-        [](Ustring const & pathBase,Mesh & mesh)
+    return link1<Ustring,Mesh>(pathBaseN,
+        [](Ustring const & pathBase)
         {
             if (pathBase.empty())
-                mesh = Mesh();                      // Deselected
-            else if (pathExists(pathBase+".tri"))
-                loadTri_(pathBase+".tri",mesh,false); // Ignore if can't load
+                return Mesh();                      // Deselected
+            else
+                return loadTri(pathBase+".tri");
             //else if (pathExists(pathBase+".fgMesh"))
             //    loadFgmesh(pathBase+".fgmesh",mesh);
-            else
-                fgWarn("linkLoadMesh mesh file not found",pathBase.m_str);
         });
 }
 
@@ -733,18 +734,18 @@ GuiPosedMeshes::GuiPosedMeshes() :
 void
 GuiPosedMeshes::addMesh(
         NPT<Mesh>           meshN,
-        NPT<Vec3Fs>            allVertsN,
-        ImgNs                   albedoNs,
-        ImgNs                   specularNs)
+        NPT<Vec3Fs>         allVertsN,
+        ImgNs               albedoNs,
+        ImgNs               specularNs)
 {
     // We can't check against mesh surfaces at this time since it may not be selected:
     FGASSERT(albedoNs.size() == specularNs.size());
     addLink(meshN.ptr,poseLabelsN.ptr);
-    RendMesh                   rm;
+    RendMesh            rm;
     rm.origMeshN = meshN;
-    size_t                      S = albedoNs.size();
+    size_t              S = albedoNs.size();
     for (size_t ss=0; ss<S; ++ss) {
-        RendSurf               rs;
+        RendSurf            rs;
         rs.albedoMap = albedoNs[ss];
         rs.albedoMapFlag = makeUpdateFlag(albedoNs[ss]);
         rs.albedoHasTransparencyN = link1<ImgC4UC,bool>(rs.albedoMap,
@@ -800,16 +801,10 @@ makePoseCtrlSliders(NPT<PoseVals> posesN,IPT<Doubles> valsN,bool textEditBoxes)
         slider.range[1] = poses[ii].bounds[1];
         slider.tickSpacing = 0.1;
         if (textEditBoxes) {
-            GuiTextEdit      te;
-            te.updateFlag = makeUpdateFlag(valsN);
-            te.minWidth = 50;
-            te.wantStretch = false;
-            te.getInput = [valsN,ii](){return fgToFixed(valsN.cref()[ii],2); };
-            te.setOutput = [valsN,ii](Ustring const & s)
-            {
-                valsN.ref()[ii] = clampBounds(fgFromString<double>(s.m_str),-1.0,2.0);
-            };
-            sliders.push_back(guiSplit(true,guiMakePtr(slider),guiMakePtr(te)));
+            auto            getVal = [=](){return valsN.cref()[ii]; };
+            auto            setVal = [=](double val){valsN.ref()[ii] = val; };
+            GuiPtr          teW = guiTextEditFixed(makeUpdateFlag(valsN),getVal,setVal,VecD2{-1,2},2);
+            sliders.push_back(guiSplit(true,guiMakePtr(slider),teW));
         }
         else
             sliders.push_back(guiMakePtr(slider));
@@ -878,25 +873,38 @@ makeViewCtrls(
     return guiTabs(viewTabs);
 }
 
-static
-void
-saveCapImage(NPT<string> const & formatN,Sptr<Gui3d::Capture> const & capture)
-{
-    Opt<Ustring>     fname = guiDialogFileSave("",formatN.cref());
-    if (fname.valid()) {
-        if (capture->getImg)
-            imgSaveAnyFormat(fname.val(),capture->getImg(capture->getDims()));
-    }
-}
-
 GuiPtr
-guiCaptureSaveImage(Sptr<Gui3d::Capture> const & capture)
+guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture> const & capture,Ustring const & store)
 {
-    GuiVal<string>     capImgFormat = guiImageFormat("Image Format",false);
+    IPT<double>         widN = makeSavedIPT(1024.0,store+"Width"),
+                        hgtN = makeSavedIPT(1024.0,store+"Height");
+    IPT<size_t>         szSelN = makeSavedIPT<size_t>(0,store+"Manual");
+    NPT<Ustring>        vpDimsN = link1<Vec2UI,Ustring>(viewportDims,[](Vec2UI dims)
+        {return "(" + toStr(dims[0]) + "," + toStr(dims[1]) + ")"; });
+    GuiPtr              widW = guiTextEditFixed(widN,VecD2(256,4096),0),
+                        hgtW = guiTextEditFixed(hgtN,VecD2(256,4096),0),
+                        dimsLW = guiRadio({"Current render size","Custom"},szSelN),
+                        dimsRUW = guiText(vpDimsN),
+                        dimsRLW = guiSplit(true,{guiText("Width"),widW,guiText("Height"),hgtW}),
+                        dimsRW = guiSplit(false,guiSpacer(1,3),dimsRUW,guiSpacer(1,3),dimsRLW),
+                        dims3W = guiSplit(true,{dimsLW,dimsRW}),
+                        dimsW = guiGroupbox("Pixel size",dims3W);
+    GuiVal<string>      capImgFormat = guiImageFormat("Image Format",false,store+"Format");
+    NPT<string>         formatN = capImgFormat.valN;
+    auto                save = [=]()
+        {
+            if (capture->getImg) {
+                Vec2UI          dims = szSelN.val() ? Vec2UI(widN.val(),hgtN.val()) : viewportDims.val();
+                Opt<Ustring>    fname = guiDialogFileSave("",formatN.cref());
+                if (fname.valid()) {
+                    imgSaveAnyFormat(fname.val(),capture->getImg(dims));
+                }
+            }
+        };
     GuiPtr              saveImage = guiSplit(false,
         guiText("Save the current render image to a file"),
-        capImgFormat.win,
-        guiButton("Save",bind(saveCapImage,capImgFormat.valN,capture)));
+        guiSplit(false,dimsW,capImgFormat.win),
+        guiButton("Save",save));
     return saveImage;
 }
 
@@ -910,7 +918,7 @@ meshView(const Meshes & meshes,bool compare)
     vector<IPT<Mesh> >      meshNs;
     vector<IPT<MeshSurfsName> >  meshSurfsNameNs;
     // Ensure we have valid, unique names:
-    Ustrings                meshNames = makeUniqueNames(fgSliceMember(meshes,&Mesh::name),"Mesh");
+    Ustrings                meshNames = makeUniqueNames(sliceMember(meshes,&Mesh::name),"Mesh");
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         const Mesh &        mesh = meshes[mm];
         IPT<Mesh>           meshN = makeIPT(mesh);
@@ -933,7 +941,7 @@ meshView(const Meshes & meshes,bool compare)
         {
             MeshSurfsName       msn;
             msn.meshName = meshNames[mm];
-            msn.surfNames = makeUniqueNames(fgSliceMember(mesh.surfaces,&Surf::name),"Surf");
+            msn.surfNames = makeUniqueNames(sliceMember(mesh.surfaces,&Surf::name),"Surf");
             meshSurfsNameNs.push_back(makeIPT(msn));
         }
     }
@@ -970,7 +978,7 @@ meshView(const Meshes & meshes,bool compare)
         guiTab("Select",true,meshSelect),
         guiTab("Edit",true,makeEditPane(meshSurfsNamesN,gui3d)),
         guiTab("Info",true,guiSplitScroll(fgSvec(guiText(linkMeshStats(mrms.rendMeshes))))),
-        guiTab("System",true,guiTextLines(gui3d.systemInfo,16,true))
+        guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
     };
     guiStartImpl(
         Ustring("FaceGen SDK meshView"),

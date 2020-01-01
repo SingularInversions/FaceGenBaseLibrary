@@ -151,7 +151,7 @@ struct  GuiWinMain
                 // Translates multi-key combos into appropriate unicode. Intercept application-wide
                 // special combos before calling this:
                 TranslateMessage(&msg);
-//fgout << fgnl << "Message Dispatch: " << fgAsHex(msg.message);
+//fgout << fgnl << "Message Dispatch: " << toHexString(msg.message);
                 DispatchMessage(&msg);
             }
         }
@@ -317,7 +317,7 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
     try
     {
         sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
-            + fgOsName() + "\n" + className + "\n";
+            + osDescription() + "\n" + className + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else

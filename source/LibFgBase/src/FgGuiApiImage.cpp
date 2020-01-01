@@ -23,7 +23,7 @@ GuiImage::disp(Vec2UI winSize)
         // Ensure level has been initialized using window size so dispN will be correctly calculated:
         uint                    level = currLevelN.val();
         if (level == 0) {    // not yet initialized:
-            const vector<ImgC4UC> & pyr = pyramidN.cref();
+            const ImgC4UCs & pyr = pyramidN.cref();
             while (
                 (level+1 < pyr.size()) &&
                 (pyr[level].width() < winSize[0]) &&
@@ -88,7 +88,7 @@ GuiImage::zoom(int delta)
     zoom += delta;
     if (zoom > 30) {
         zoom = 0;
-        const vector<ImgC4UC> &     pyr = pyramidN.cref();
+        const ImgC4UCs &     pyr = pyramidN.cref();
         uint    level = currLevelN.val();
         if (level < pyr.size()-1)
             currLevelN.set(level+1);
@@ -144,17 +144,13 @@ linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
         pyr.clear();
         return;
     }
-    const uint              maxDim = 2048;
-    ImgC4UC             tmp = img;
-    while (cMaxElem(img.dims()) > maxDim)
-        tmp = fgImgShrink2(tmp);
-    pyr.resize(log2Floor(cMinElem(tmp.dims()))+1);
-    pyr.back() = tmp;
+    pyr.resize(log2Floor(cMinElem(img.dims()))+1);
+    pyr.back() = img;
     for (uint ii=0; ii<pyr.size()-1; ++ii)
-        fgImgShrink2(pyr[pyr.size()-1-ii],pyr[pyr.size()-2-ii]);
+        imgShrink2(pyr[pyr.size()-1-ii],pyr[pyr.size()-2-ii]);
     // Add up to 4x expansion for small images:
     for (size_t ii=0; ii<2; ++ii)
-        if (cMaxElem(pyr.back().dims()) <= maxDim/2)
+        if (cMaxElem(pyr.back().dims()) <= 1024)    // Create up to 2048
             pyr.push_back(fgExpand2(pyr.back()));
 }
 

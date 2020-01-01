@@ -39,7 +39,7 @@ fgVecToSet(const std::vector<T> & v)
 template<class T,class Lt>
 inline
 bool
-fgContains(const std::set<T,Lt> & s,const T & v)
+contains(const std::set<T,Lt> & s,const T & v)
 {return (s.find(v) != s.end()); }
 
 // Returns true if the intersect of s0 and s1 is non-empty. Loop is through s1 so prefer s0 for the larger set.
@@ -48,7 +48,7 @@ bool
 containsAny(const std::set<T> & s0,const std::set<T> & s1)
 {
     for (auto it=s1.begin(); it != s1.end(); ++it)
-        if (fgContains(s0,*it))
+        if (contains(s0,*it))
             return true;
     return false;
 }
@@ -59,7 +59,7 @@ bool
 containsAll(const std::set<T> & s0,const std::set<T> & s1)
 {
     for (auto it=s1.begin(); it != s1.end(); ++it)
-        if (!fgContains(s0,*it))
+        if (!contains(s0,*it))
             return false;
     return true;
 }
@@ -92,7 +92,7 @@ fgIntersection(const std::set<T> & s0,const std::set<T> & s1)
 {
     std::set<T>         ret;
     for (const T & s : s1)
-        if (fgContains(s0,s))
+        if (contains(s0,s))
             ret.insert(s);
     return ret;
 }
@@ -112,7 +112,7 @@ operator-(const std::set<T> & lhs,const std::set<T> & rhs)
 {
     std::set<T>         ret;
     for (const T & l : lhs)
-        if (!fgContains(rhs,l))
+        if (!contains(rhs,l))
             ret.insert(l);
     return ret;
 }
@@ -176,7 +176,7 @@ fgInsert(const std::set<T> & s,const T & v)
 
 template<class T>
 bool
-fgContains(const std::unordered_set<T> & s,const T & v)
+contains(const std::unordered_set<T> & s,const T & v)
 {
     return (s.find(v) != s.end());
 }

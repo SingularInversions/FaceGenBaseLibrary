@@ -42,10 +42,25 @@ imgSaveAnyFormat(Ustring const & fname,const ImgUC & img)
     imgSaveAnyFormat(fname,tmp);
 }
 
-vector<string>
+ImgFileFormats
+imgFileFormats()
+{
+    static ImgFileFormats   ret = {
+        {"PNG - RGBA, lossless compression low ratio",{"png"}},
+        {"JPEG - RGB, lossy compression high ratio",{"jpg","jpeg"}},
+        {"TARGA - RGBA, lossless compression very low ratio",{"tga"}},
+        {"BMP - RGB Lossless compression medium ratio",{"bmp"}}
+    };
+    return ret;
+}
+
+Strings
 imgFileExtensions()
 {
-    return fgSvec<string>("png","jpg","jpeg","bmp","tga");
+    Strings         ret;
+    for (ImgFileFormat const & iff : imgFileFormats())
+        cat_(ret,iff.extensions);
+    return ret;
 }
 
 string
@@ -62,8 +77,8 @@ imgFileExtensionsDescription()
 bool
 hasImgExtension(Ustring const & fname)
 {
-    string          ext = fgToLower(fgPathToExt(fname).m_str);
-    return fgContains(imgFileExtensions(),ext);
+    string          ext = toLower(pathToExt(fname).m_str);
+    return contains(imgFileExtensions(),ext);
 }
 
 std::vector<std::string>

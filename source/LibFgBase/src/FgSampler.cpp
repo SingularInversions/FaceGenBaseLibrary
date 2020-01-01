@@ -37,7 +37,7 @@ static uint64 rayCount;
 static
 RgbaF
 sampleRecurse(
-    FgFuncSample            sample,
+    SampleFunc            sample,
     Mat22F                bounds,
     Mat<RgbaF,2,2>  cornerVals,
     float                   maxDiff)
@@ -81,9 +81,9 @@ sampleRecurse(
 }
 
 ImgC4F
-fgSamplerF(
+sampleAdaptiveF(
     Vec2UI           dims,
-    FgFuncSample        sample,
+    SampleFunc        sample,
     uint                antiAliasBitDepth)
 {
     ImgC4F          img(dims);
@@ -124,14 +124,14 @@ fgSamplerF(
 }
 
 ImgC4UC
-fgSampler(
+sampleAdaptive(
     Vec2UI           dims,
-    FgFuncSample        sample,
+    SampleFunc        sample,
     uint                antiAliasBitDepth)
 {
     ImgC4UC         img(dims);
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 8));
-    ImgC4F          fimg = fgSamplerF(img.dims(),sample,antiAliasBitDepth);
+    ImgC4F          fimg = sampleAdaptiveF(img.dims(),sample,antiAliasBitDepth);
     for (Iter2UI it(img.dims()); it.valid(); it.next())
     {
         const RgbaF & fpix = fimg[it()];
@@ -158,7 +158,7 @@ halfMoon(Vec2F ics)
 void
 fgSamplerTest(CLArgs const &)
 {
-    imgDisplay(fgSampler(Vec2UI(128),halfMoon,4));
+    imgDisplay(sampleAdaptive(Vec2UI(128),halfMoon,4));
 }
 
 static
@@ -185,7 +185,7 @@ void
 fgSamplerMLTest(CLArgs const &)
 {
     FgTimer         time;
-    ImgC4UC     img = fgSampler(Vec2UI(1024),mandelbrot,3);
+    ImgC4UC     img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
     fgout << "Time: " << time.read() << "s";
     imgDisplay(img);
 }

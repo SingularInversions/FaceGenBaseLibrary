@@ -63,7 +63,7 @@ fgCurrentBuildDescription();
 inline
 String
 fgNsOs(String const & path,FgBuildOS os)
-{return (os == FgBuildOS::win) ? fgReplace(path,'/','\\') : fgReplace(path,'\\','/'); }
+{return (os == FgBuildOS::win) ? replaceAll(path,'/','\\') : replaceAll(path,'\\','/'); }
 
 // Return bin directory for given configuration relative to the repo root:
 String

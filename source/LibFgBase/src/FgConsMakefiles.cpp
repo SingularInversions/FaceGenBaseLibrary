@@ -34,7 +34,7 @@ targets(
         if ((ext == "cpp") || (ext == "c"))
             srcNames.push_back(make_pair(p.base.ascii(),ext));
     }
-    string  odir = "$(ODIR" + prjName + ")" + fgReplace(grp.dir,'/','_');
+    string  odir = "$(ODIR" + prjName + ")" + replaceAll(grp.dir,'/','_');
     for (size_t ii=0; ii<srcNames.size(); ++ii)
         ofs << odir << srcNames[ii].first << ".o ";
 }
@@ -45,7 +45,7 @@ group(
     string const &          prjName,
     const FgConsSrcDir &  grp)
 {
-    string  odir = "$(ODIR" + prjName + ")" + fgReplace(grp.dir,'/','_'),
+    string  odir = "$(ODIR" + prjName + ")" + replaceAll(grp.dir,'/','_'),
             sdir = "$(SDIR" + prjName + ")" + grp.dir;
     for (size_t ii=0; ii<grp.files.size(); ++ii) {
         Path      path(grp.files[ii]);
@@ -101,7 +101,7 @@ collapse(
     string const &  prjName,
     string const &  incDir)
 {
-    if (fgBeginsWith(incDir,"../"))
+    if (beginsWith(incDir,"../"))
         return string(incDir.begin()+3,incDir.end());
     else
         return prjName + "/" + incDir;
@@ -179,7 +179,7 @@ constIncludeFileNative(const FgConsSolution & sln,string const & fname)
         << ".PHONY: all" << lf
         << "all: ";
     for (const FgConsProj & p : sln.projects)
-        if (!fgContains(prereqs,p.name) && !p.srcGroups.empty())
+        if (!contains(prereqs,p.name) && !p.srcGroups.empty())
             ofs << targetPath(p) << " ";
     ofs << lf;
     for (const FgConsProj & proj : sln.projects)
@@ -191,7 +191,7 @@ constIncludeFileNative(const FgConsSolution & sln,string const & fname)
         << "\trm -r $(BUILDIR)" << lf
         << "cleanTargs:" << lf
         << "\trm -r $(BINDIR)" << lf;
-    return fgDump(ofs.str(),fname);
+    return saveRaw(ofs.str(),fname);
 }
 
 bool
@@ -212,7 +212,7 @@ constIncludeFileBox(const FgConsSolution & sln,string const & fname)
     ofs << ".PHONY: clean cleanObjs cleanTargs" << lf
         << "clean:" << lf
         << "\trm -r $(BUILDIR)" << lf;
-    return fgDump(ofs.str(),fname);
+    return saveRaw(ofs.str(),fname);
 }
 
 bool
@@ -224,8 +224,8 @@ consMakefileOsArch(
     string const &          fnameBuild) // includes this makefile
 {
     string          debrel = debug ? "debug" : "release",
-                    osStr = (os == FgBuildOS::linux) ? "linux" : toString(os),
-                    makefile = cat(fgSvec<string>("Makefile",osStr,toString(arch),toString(compiler),debrel),"_"),
+                    osStr = (os == FgBuildOS::linux) ? "linux" : toStr(os),
+                    makefile = cat(fgSvec<string>("Makefile",osStr,toStr(arch),toStr(compiler),debrel),"_"),
                     cc,
                     cxx,
                     link,
@@ -356,7 +356,7 @@ consMakefileOsArch(
         //    this dll to search for at run-time. The $ORIGIN method below requires it.
         dllarg = "-shared -Wl,-soname,";
     }
-    bool    native = fgContains(fgBuildNativeOSs(),os);
+    bool    native = contains(fgBuildNativeOSs(),os);
     ostringstream   ofs;
     ofs << "CC = " << cc << lf
         << "CXX = " << cxx << lf
@@ -376,7 +376,7 @@ consMakefileOsArch(
     ofs
         << "BUILDIR = ../build_" << os << "/" << arch << "/" << compiler << "/" << debrel << "/" << lf
         << "include " << fnameBuild << lf;
-    return fgDump(ofs.str(),makefile);
+    return saveRaw(ofs.str(),makefile);
 }
 
 bool
@@ -473,7 +473,7 @@ consMakefileAndroidArch(
         << "CXXFLAGS = $(CFLAGS) " << cat(cxxflags," ") << lf
         << "BUILDIR = ../build_android/" << archCMakeStr << "/clang/" << debrel << "/" << lf
         << "include make_libs.mk" << lf;
-    return fgDump(ofs.str(),"Makefile_android_" + toString(arch) + "_clang_" + debrel);
+    return saveRaw(ofs.str(),"Makefile_android_" + toStr(arch) + "_clang_" + debrel);
 }
 
 bool
@@ -496,7 +496,7 @@ consMakefileIos(const FgConsSolution & sln)
             string          fatLib = "$(OUTDIR)"+p.name+".a";
             string          srcLibs;
             for (FgArch arch : archs)
-                srcLibs += " $(OUTDIR)" + toString(arch) + "/clang/release/" + p.name + ".a";
+                srcLibs += " $(OUTDIR)" + toStr(arch) + "/clang/release/" + p.name + ".a";
             oss << fatLib << ":" << srcLibs << lf;
             // Using 'xcrun' here avoid problems according to some sources.
             oss << "\txcrun -sdk iphoneos lipo -create -output " << fatLib << srcLibs << lf;
@@ -511,7 +511,7 @@ consMakefileIos(const FgConsSolution & sln)
     oss << "FORCE:" << lf
         << "clean:" << lf
         << "\trm -r $(OUTDIR)" << lf;
-    return fgDump(oss.str(),"Makefile_ios");
+    return saveRaw(oss.str(),"Makefile_ios");
 }
 
 bool
@@ -526,7 +526,7 @@ consMakefileAndroid(const FgConsSolution &)
         oss << "\t$(MAKE) -j4 -f Makefile_android_" << arch << "_clang_release" << lf;
     oss << "clean:" << lf
         << "\trm -r $(OUTDIR)" << lf;
-    return fgDump(oss.str(),"Makefile_android");
+    return saveRaw(oss.str(),"Makefile_android");
 }
 
 }

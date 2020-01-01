@@ -9,6 +9,7 @@
 #include "FgThrowWindows.hpp"
 #include "FgException.hpp"
 #include "FgDiagnostics.hpp"
+#include "FgHex.hpp"
 
 using namespace std;
 
@@ -41,9 +42,7 @@ throwWindows(string const & msg,Ustring const & data)
 }
 
 void
-assertWindows(
-    const char *    fname,
-    int             line)
+assertWindows(const char * fname,int line)
 {
     throwWindows("Internal program error",fgDiagString(fname,line));
 }
@@ -51,7 +50,15 @@ assertWindows(
 void
 assertWinReturnZero(const char * fname,int line,long rval)
 {
-    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toString(rval));
+    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toStr(rval));
+}
+
+void
+assertHResult(char const * fpath,uint lineNum,HRESULT hr)
+{
+    if (hr < 0)
+        throw FgException("Windows HRESULT",
+            pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr));
 }
 
 }

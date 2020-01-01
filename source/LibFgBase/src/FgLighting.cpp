@@ -15,7 +15,7 @@ using namespace std;
 namespace Fg {
 
 ImgC4UC
-FgLighting::createSpecularMap() const
+Lighting::createSpecularMap() const
 {
     FGASSERT(lights.size() > 0);
 

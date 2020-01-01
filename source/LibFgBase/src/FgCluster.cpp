@@ -31,7 +31,7 @@ fgClusterDeploy(
     Strings const &          workIPs,
     const Ustrings &       files)
 {
-    Ustring        exeDir = fgExecutableDirectory();
+    Ustring        exeDir = getExecutableDirectory();
     if (pathExists(exeDir+"cluster_worker.flag"))         // Client could be in an arbitrary data subdirectory at this point
         return fgClustWorker(worker,fgClusterPortDefault());
     if (pathExists(exeDir+"cluster_coordinator.flag")) {
@@ -47,11 +47,11 @@ fgClusterDeploy(
     // Use coordinator machine to copy executable to file server via CIFS, preserving executable bit permission:
     string          filesDirLocal = fgNcShare() + "cc/" + name + '/',
                     filesDirUbu = fgNcShare(FgBuildOS::linux) + "cc/" + name + '/';
-    fgCreatePath(filesDirLocal+"data/");
+    createPath(filesDirLocal+"data/");
     FgNcScript      scriptCrdntor;
     scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
-    Ustring        binBase = Path(fgExecutablePath()).base;
+    Ustring        binBase = Path(getExecutablePath()).base;
     scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot(FgBuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
     if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
@@ -62,7 +62,7 @@ fgClusterDeploy(
                     td = filesDirLocal+"data/";
     for (size_t ff=0; ff<files.size(); ++ff) {
         Ustring    dest = td + files[ff];
-        fgCreatePath(Path(dest).dir());
+        createPath(Path(dest).dir());
         fileCopy(dd+files[ff],dest,true);
     }
     // Start workers:
@@ -73,7 +73,7 @@ fgClusterDeploy(
     copyData.push_back("cp -r " + filesDirUbu + "* .");
     for (size_t ww=0; ww<workIPs.size(); ++ww) {
         FgNcScript      script;
-        string          idxStr = toStringDigits(ww,3);
+        string          idxStr = toStrDigits(ww,3);
         script.logFile = "cc/" + name + "/_log.html";
         script.title = name + " worker " + idxStr + " (" + workIPs[ww] + ")";
         script.cmds = copyData;
@@ -160,12 +160,12 @@ fgClusterDeployTestm(CLArgs const & args)
         "    * All <IP> machines must be running fgNcServer under Ubuntu"
     );
     string      crdntorIP = syntax.next();
-    if (!fgContains(crdntorIP,'.'))
+    if (!contains(crdntorIP,'.'))
         crdntorIP = "192.168.0." + crdntorIP;
     Strings      workerIPs;
     do {
         string  wip = syntax.next();
-        if (!fgContains(wip,'.'))
+        if (!contains(wip,'.'))
             wip = "192.168.0." + wip;
         workerIPs.push_back(wip);
     }

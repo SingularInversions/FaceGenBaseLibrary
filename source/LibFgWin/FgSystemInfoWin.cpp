@@ -26,68 +26,35 @@ fg64bitOS()
 #endif
 }
 
-// Don't warn about deprecation ('GetVersionEx'). TODO: Make os version detection actually work.
-#  pragma warning(disable:4996)
-
 string
-fgOsName()
+osDescription()
 {
-    OSVERSIONINFOEX     osvi;
-    ZeroMemory(&osvi,sizeof(OSVERSIONINFOEX));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    GetVersionEx(LPOSVERSIONINFOW(&osvi));
-    string              verStr,
-                        unknown = toString(osvi.dwMajorVersion) + "." + toString(osvi.dwMinorVersion);
-    if (osvi.wProductType != VER_NT_WORKSTATION)
-        unknown += " (server)";
-    if (osvi.dwMajorVersion == 6) {
-        if (osvi.dwMinorVersion == 0) {
-            if (osvi.wProductType == VER_NT_WORKSTATION)
-                verStr = "Vista";
-            else
-                verStr = "Server 2008";
-        }
-        else if (osvi.dwMinorVersion == 1) {
-            if (osvi.wProductType == VER_NT_WORKSTATION)
-                verStr = "7";
-            else
-                verStr = "Server 2008 R2";
-        }
-        else if (osvi.dwMinorVersion == 2) {
-            if (osvi.wProductType == VER_NT_WORKSTATION)
-                verStr = "8";
-            else
-                verStr = "Server 2012";
-        }
-        else if (osvi.dwMinorVersion == 3) {
-            if (osvi.wProductType == VER_NT_WORKSTATION)
-                verStr = "8.1";
-            else
-                verStr = "Server 2012 R2";
-        }
-        else {
-            verStr = unknown;
-        }
-    }
-    else if (osvi.dwMajorVersion == 10) {   // Doesn't work, Win10 appears as Win8. VS2015 libs required to detect.
-        if (osvi.dwMinorVersion == 0) {
-            if (osvi.wProductType == VER_NT_WORKSTATION)
-                verStr = "10";
-            else
-                verStr = "Server 2016 TP";
-        }
-        else {
-            verStr = unknown;
-        }
-    }
-    else {
-        verStr = unknown;
-    }
-    if (fg64bitOS())
-        verStr += " 64bit ";
+    // Note that GetVersionEx, VerifyVersionInfo and IsWindows10OrGreater will all report Windows 8,
+    // Unless your program manifest *requires* a version of Windows higher than that, in which case
+    // that's what it will report. Because of course MS is so much smarter than developers that
+    // they can't be trusted to use version info correctly.
+    // In order to bypass this sh*t you have to call 'RtlGetVersion' which means accessing the
+    // drivers API which isn't worth the effort, so for now we'll just always get back Win 8 or lower:
+    string              ret = "Windows ";
+    if (IsWindows10OrGreater())
+        ret += "10";
+    else if (IsWindows8Point1OrGreater())
+        ret += "8.1";
+    else if (IsWindows8OrGreater())
+        ret += "8";
+    else if (IsWindows7SP1OrGreater())
+        ret += "7 SP1";
+    else if (IsWindows7OrGreater())
+        ret += "7";
     else
-        verStr += " 32bit ";
-    return "Windows " + verStr + Ustring(wstring(osvi.szCSDVersion)).m_str;
+        ret += "Vista/XP";
+    if (IsWindowsServer())
+        ret += " Server";
+    if (fg64bitOS())
+        ret += " 64bit ";
+    else
+        ret += " 32bit ";
+    return ret;
 }
 
 Ustring

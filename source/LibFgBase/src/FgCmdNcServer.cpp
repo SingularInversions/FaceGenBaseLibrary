@@ -52,12 +52,12 @@ runScript(string const & logFile,const vector<string> & cmds)
                     pop = "fgPop";
     PushDir       dirStack;
     for (string const & cmd : cmds) {
-        if (fgBeginsWith(cmd,push)) {
+        if (beginsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
             Ofstream  ofs(logFile,true);
             ofs << "<h3> pushd " << dir << "</h3>\n";
             if (!pathExists(dir))
-                fgCreateDirectory(dir);
+                createDirectory(dir);
             if (isDirectory(dir))
                 dirStack.push(dir);
             else {
@@ -65,7 +65,7 @@ runScript(string const & logFile,const vector<string> & cmds)
                 return false;
             }
         }
-        else if (fgBeginsWith(cmd,pop)) {
+        else if (beginsWith(cmd,pop)) {
             Ofstream  ofs(logFile,true);
             ofs << "<h3> popd </h3>\n";
             dirStack.pop();
@@ -87,8 +87,8 @@ handler(
     script.dsrMsg(dataIn);
     Path          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
-        logPath = Path(fgGetCurrentDir()+script.logFile);     // Make absolute
-    fgCreatePath(logPath.dir());                                // Create path if necessary
+        logPath = Path(getCurrentDir()+script.logFile);     // Make absolute
+    createPath(logPath.dir());                                // Create path if necessary
     script.logFile = logPath.str().m_str;
     string          dirBase = logPath.dirBase().m_str;
     ImgC4UC     img(32,32,RgbaUC(255,255,0,255));

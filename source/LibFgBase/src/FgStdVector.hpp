@@ -327,11 +327,24 @@ fgMapConvert(const Svec<From> & in)
     return ret;
 }
 
+// Linear interpolation between vectors of equal lengths:
+template<class T>
+void
+interpolate_(Svec<T> const & v0,Svec<T> const & v1,float val,Svec<T> & ret)
+{
+    size_t              sz = v0.size();
+    FGASSERT(v1.size() == sz);
+    ret.resize(sz);
+    float               omv = 1.0f - val;
+    for (size_t ii=0; ii<sz; ++ii)
+        ret[ii] = round<T>(scast<float>(v0[ii]) * omv + scast<float>(v1[ii]) * val);
+}
+
 // Returns a vector one larger in size than 'vec', where each element is the integral of all elements of 'vec'
 // up to but not including the current one:
 template<class T>
 Svec<T>
-fgIntegrate(const Svec<T> & vec)
+integrate(const Svec<T> & vec)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);
@@ -348,7 +361,7 @@ fgIntegrate(const Svec<T> & vec)
 
 template<class T>
 Svec<T>
-fgSubvec(const Svec<T> & vec,size_t start,size_t size)
+cutSubvec(const Svec<T> & vec,size_t start,size_t size)
 {
     FGASSERT(start+size <= vec.size());
     return  Svec<T>(vec.begin()+start,vec.begin()+start+size);
@@ -356,7 +369,7 @@ fgSubvec(const Svec<T> & vec,size_t start,size_t size)
 
 template<class T>
 Svec<T>
-fgHead(const Svec<T> & vec,size_t size)
+cutHead(const Svec<T> & vec,size_t size)
 {
     FGASSERT(size <= vec.size());
     return Svec<T>(vec.begin(),vec.begin()+size);
@@ -364,7 +377,7 @@ fgHead(const Svec<T> & vec,size_t size)
 
 template<class T>
 Svec<T>
-fgRest(const Svec<T> & vec,size_t start=1)
+cutRest(const Svec<T> & vec,size_t start=1)
 {
     FGASSERT(start <= vec.size());      // Can be size zero
     return Svec<T>(vec.begin()+start,vec.end());
@@ -372,7 +385,7 @@ fgRest(const Svec<T> & vec,size_t start=1)
 
 template<class T>
 Svec<T>
-fgTail(const Svec<T> & vec,size_t size)
+cutTail(const Svec<T> & vec,size_t size)
 {
     FGASSERT(size <= vec.size());
     return Svec<T>(vec.end()-size,vec.end());
@@ -457,9 +470,10 @@ fgSnip(const Svec<T> & v,size_t idx)
     return ret;
 }
 
+// Not recursive; only flattens vector<vector> to vector<>:
 template<class T>
 Svec<T>
-flat(const Svec<Svec<T> > & v)
+flatten(const Svec<Svec<T> > & v)
 {
     Svec<T>       ret;
     size_t          sz = 0;
@@ -475,10 +489,10 @@ flat(const Svec<Svec<T> > & v)
 // If not found, returns v.size() or throws:
 template<class T,class U>
 size_t
-fgFindFirstIdx(
-    const Svec<T> &  vec,
-    const U &          val,     // Allow for T::operator==(U)
-    bool               throwOnFail=false)
+findFirstIdx(
+    Svec<T> const &     vec,
+    U const &           val,     // Allow for T::operator==(U)
+    bool                throwOnFail=false)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
@@ -488,38 +502,21 @@ fgFindFirstIdx(
     return vec.size();
 }
 
-// Search for first occurence of match with a member. Returns vec.size() if not found.
-template<class T,class U>
-size_t
-fgFindFirstMemberIdx(const Svec<T> & vec,const U & val,U T::*member,bool throwOnFail=false)
-{
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (vec[ii].*member == val)
-            return ii;
-    FGASSERT(!throwOnFail);
-    return vec.size();
-}
-
+// Throws if value not found:
 template<class T,class U>
 const T &
-fgFindFirst(
-    const Svec<T> &  vec,
-    const U &          val)     // Allow for T::operator==(U)
+findFirst(
+    Svec<T> const &     vec,
+    U const &           val)     // Allow for T::operator==(U)
 {
-    size_t      retIdx = std::numeric_limits<size_t>::max();
-    for (size_t ii=0; ii<vec.size(); ++ii) {
-        if (vec[ii] == val) {
-            retIdx = ii;
-            break;
-        }
-    }
-    FGASSERT(retIdx < std::numeric_limits<size_t>::max());
-    return vec[retIdx];
+    auto const &    it = std::find(vec.begin(),vec.end(),val);
+    FGASSERT(it != vec.end());
+    return *it;
 }
 
 template<class T,class U>
 size_t
-fgFindLastIdx(const Svec<T> & vec,const U & val)
+findLastIdx(const Svec<T> & vec,const U & val)
 {
     for (size_t ii=vec.size(); ii!=0; --ii)
         if (vec[ii-1] == val)
@@ -527,21 +524,9 @@ fgFindLastIdx(const Svec<T> & vec,const U & val)
     return vec.size();
 }
 
-// Return first index of 'val' in 'vec' or if not found append and return index:
-template<class T>
-size_t
-fgFindOrAppend(Svec<T> & vec,const T & val)
-{
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (vec[ii] == val)
-            return ii;
-    vec.push_back(val);
-    return vec.size()-1;
-}
-
 template<class T,class U>
 bool
-fgContains(const Svec<T> & vec,const U & val)     // Allows for T::operator==(U)
+contains(const Svec<T> & vec,const U & val)     // Allows for T::operator==(U)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
@@ -554,7 +539,7 @@ bool
 containsAny(const Svec<T> & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
 {
     for (size_t ii=0; ii<vals.size(); ++ii)
-        if (fgContains(ctr,vals[ii]))
+        if (contains(ctr,vals[ii]))
             return true;
     return false;
 }
@@ -564,7 +549,7 @@ bool
 containsAll(const Svec<T> & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
 {
     for (size_t ii=0; ii<vals.size(); ++ii)
-        if (!fgContains(ctr,vals[ii]))
+        if (!contains(ctr,vals[ii]))
             return false;
     return true;
 }
@@ -580,7 +565,7 @@ fgReplace_(Svec<T> & v,T a,T b)       // Replace each 'a' with 'b'
 
 template<class T>
 Svec<T>
-fgReplace(const Svec<T> & vec,const T & a,const T & b) // Replace each 'a' with 'b'
+replaceAll(const Svec<T> & vec,const T & a,const T & b) // Replace each 'a' with 'b'
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
@@ -596,7 +581,7 @@ fgReplace(const Svec<T> & vec,const T & a,const T & b) // Replace each 'a' with 
 // Returns at least size 1, with 1 additional for each split element:
 template<class T>
 Svec<Svec<T> >
-fgSplit(const Svec<T> & str,T ch)
+splitAtChar(const Svec<T> & str,T ch)
 {
     Svec<Svec<T> >    ret;
     Svec<T>                  ss;
@@ -623,7 +608,7 @@ fgSetSubVec(Svec<T> & mod,size_t pos,const Svec<T> & sub)
 
 template<class T>
 bool
-fgBeginsWith(const Svec<T> & base,const Svec<T> & pattern)
+beginsWith(const Svec<T> & base,const Svec<T> & pattern)
 {
     if (pattern.size() > base.size())
         return false;
@@ -635,7 +620,7 @@ fgBeginsWith(const Svec<T> & base,const Svec<T> & pattern)
 
 template<class T>
 bool
-fgEndsWith(const Svec<T> & base,const Svec<T> & pattern)
+endsWith(const Svec<T> & base,const Svec<T> & pattern)
 {
     if (pattern.size() > base.size())
         return false;
@@ -843,7 +828,7 @@ fgMapSubConst(const Svec<T> & vec,const T & val)
 // Element-wise division:
 template<class T>
 Svec<T>
-fgMapDiv(
+mapDiv(
     const Svec<T> &   lhs,
     const Svec<T> &   rhs)
 {
@@ -879,7 +864,7 @@ fgMapSqr(const Svec<T> & v)
 
 template<class T>
 size_t
-minIdx(const Svec<T> & v)
+cMinIdx(const Svec<T> & v)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -891,7 +876,7 @@ minIdx(const Svec<T> & v)
 
 template<class T>
 size_t
-maxIdx(const Svec<T> & v)
+cMaxIdx(const Svec<T> & v)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -904,7 +889,7 @@ maxIdx(const Svec<T> & v)
 // To get a min version, just use greater than for 'lessThan':
 template<class T>
 size_t
-maxIdx(const Svec<T> & v,const std::function<bool(const T & lhs,const T & rhs)> & lessThan)
+cMaxIdx(const Svec<T> & v,const std::function<bool(const T & lhs,const T & rhs)> & lessThan)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -956,7 +941,7 @@ fgSortIndsGt(const T * v,size_t l,size_t r)
 // Make use of a permuted indices list to re-order a list (or subset thereof):
 template<class T>
 Svec<T>
-fgReorder(const Svec<T> & v,const Svec<uint> & inds)
+reorder(const Svec<T> & v,const Svec<uint> & inds)
 {
     Svec<T>       ret;
     ret.reserve(inds.size());
@@ -969,7 +954,7 @@ fgReorder(const Svec<T> & v,const Svec<uint> & inds)
 // Make use of a permuted indices list to re-order a list (or subset thereof):
 template<class T>
 Svec<T>
-fgReorder(const Svec<T> & v,const Svec<size_t> & inds)
+reorder(const Svec<T> & v,const Svec<size_t> & inds)
 {
     Svec<T>       ret;
     ret.reserve(inds.size());
@@ -981,7 +966,7 @@ fgReorder(const Svec<T> & v,const Svec<size_t> & inds)
 
 template<class T>
 bool
-fgContainsDuplicates(const Svec<T> & mustBeSorted)
+containsDuplicates(const Svec<T> & mustBeSorted)
 {
     for (size_t ii=1; ii<mustBeSorted.size(); ++ii)
         if (mustBeSorted[ii] == mustBeSorted[ii-1])
@@ -992,34 +977,21 @@ fgContainsDuplicates(const Svec<T> & mustBeSorted)
 // Removes duplicates from a sorted vector (I don't get std::unique):
 template<class T>
 Svec<T>
-fgUnique(const Svec<T> & v)
+cUnique(const Svec<T> & sorted)
 {
     Svec<T>       ret;
-    if (!v.empty()) {
-        ret.push_back(v[0]);
-        for (size_t ii=1; ii<v.size(); ++ii)
-            if (!(v[ii] == ret.back()))     // In case type only defines operator==
-                ret.push_back(v[ii]);
+    if (!sorted.empty()) {
+        ret.push_back(sorted[0]);
+        for (size_t ii=1; ii<sorted.size(); ++ii)
+            if (!(sorted[ii] == ret.back()))     // In case type only defines operator==
+                ret.push_back(sorted[ii]);
     }
-    return ret;
-}
-
-// Take a slice of a multi-dimensional array in a vector:
-template<class T>
-Svec<T>
-fgSlice(const Svec<T> & v,size_t initial,size_t stride)
-{
-    Svec<T>       ret;
-    FGASSERT(initial < v.size());
-    ret.reserve((v.size()-initial+stride-1)/stride);
-    for (size_t ii=initial; ii<ret.size(); ii+=stride)
-        ret.push_back(v[ii]);
     return ret;
 }
 
 template<class T,class U>
 Svec<U>
-fgSliceMember(const Svec<T> & ts,U T::*m)
+sliceMember(const Svec<T> & ts,U T::*m)
 {
     Svec<U>       ret;
     ret.reserve(ts.size());
@@ -1188,7 +1160,7 @@ fgSetIntersection(const Svec<T> & v0,const Svec<T> & v1)
 {
     Svec<T>       ret;
     for (const T & v : v0) {
-        if (fgContains(v1,v) && !fgContains(ret,v))
+        if (contains(v1,v) && !contains(ret,v))
             ret.push_back(v);
     }
     return ret;
@@ -1242,7 +1214,7 @@ void
 fgSetwiseAdd_(Svec<T> & lhs,const Svec<T> & rhs)
 {
     for (const T & r : rhs)
-        if (!fgContains(lhs,r))
+        if (!contains(lhs,r))
             lhs.push_back(r);
 }
 
@@ -1262,7 +1234,7 @@ fgSetwiseSubtract(const Svec<T> & lhs,const Svec<T> & rhs)
 {
     Svec<T>       ret;
     for (const T & l : lhs) {
-        if (!fgContains(rhs,l))
+        if (!contains(rhs,l))
             ret.push_back(l);
     }
     return ret;

@@ -65,9 +65,7 @@ saveFgmesh(Ustring const & fname,Meshes const & meshes);
 
 // FaceGen legacy mesh format load / save:
 
-void        loadTri_(std::istream & is,Mesh & ret);
 Mesh        loadTri(std::istream & is);
-void        loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail=true);
 Mesh        loadTri(Ustring const & fname);
 Mesh        loadTri(Ustring const & meshFile,Ustring const & texFile);
 
@@ -78,7 +76,7 @@ saveTri(Ustring const & fname,const Mesh & mesh);
 inline
 void
 saveTri(Ustring const & fname,Meshes const & meshes)
-{return saveTri(fname,fgMergeMeshes(meshes)); }
+{return saveTri(fname,mergeMeshes(meshes)); }
 
 // Third party mesh formats:
 

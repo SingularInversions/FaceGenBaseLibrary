@@ -109,7 +109,7 @@ struct  Mesh
 
     const Surf &
     surface(Ustring const & surfName) const
-    {return fgFindFirst(surfaces,surfName); }
+    {return findFirst(surfaces,surfName); }
 
     size_t
     surfPointNum() const;              // Over all surfaces
@@ -132,7 +132,7 @@ struct  Mesh
 
     Vec3F
     markedVertPos(String const & name_) const
-    {return verts[fgFindFirst(markedVerts,name_).idx]; }
+    {return verts[findFirst(markedVerts,name_).idx]; }
 
     Vec3Fs
     markedVertPositions() const;        // Return positions of all marked verts

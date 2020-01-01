@@ -67,10 +67,10 @@ imgSaveAnyFormat(Ustring const & fname,const ImgC4UC & img)
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);
     Path              path(fname);
-    Ustring            ext = fgToLower(path.ext);
+    Ustring            ext = toLower(path.ext);
     if (ext.empty())
         fgThrow("No image file extension specified",fname);
-    if (!fgContains(fgSvec<string>("jpg","jpeg","png","bmp","tga"),ext.m_str))
+    if (!contains(imgFileExtensions(),ext.m_str))
         fgThrow("File extension is not a supported image output format",fname);
     uint                wid = img.width(),
                         hgt = img.height();

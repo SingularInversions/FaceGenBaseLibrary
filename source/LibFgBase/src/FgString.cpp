@@ -163,7 +163,7 @@ Ustring::replace(char a, char b) const
 Ustrings
 Ustring::split(char ch) const
 {
-    FgStr32s            strs = fgSplit(fgToUtf32(m_str),char32_t(ch));
+    String32s            strs = splitAtChar(fgToUtf32(m_str),char32_t(ch));
     Ustrings           ret;
     ret.reserve(strs.size());
     for (const u32string & str : strs)
@@ -182,7 +182,7 @@ Ustring::beginsWith(Ustring const & s) const
 // Can't put this inline without include file recursive dependency:
 bool
 Ustring::endsWith(Ustring const & str) const
-{return fgEndsWith(as_utf32(),str.as_utf32()); }
+{return Fg::endsWith(as_utf32(),str.as_utf32()); }
 
 Ustring
 Ustring::toLower() const
@@ -208,6 +208,16 @@ operator>>(std::istream & is, Ustring & s)
     return is >> s.m_str;
 }
 
+Ustrings
+toUstrings(Strings const & strs)
+{
+    Ustrings        ret;
+    ret.reserve(strs.size());
+    for (String const & s : strs)
+        ret.push_back(Ustring(s));
+    return ret;
+}
+
 Ustring
 fgTr(string const & msg)
 {
@@ -216,7 +226,7 @@ fgTr(string const & msg)
 }
 
 Ustring
-fgRemoveChars(Ustring const & str,uchar chr)
+removeChars(Ustring const & str,uchar chr)
 {
     FGASSERT(chr < 128);
     u32string       s32 = str.as_utf32(),
@@ -228,19 +238,19 @@ fgRemoveChars(Ustring const & str,uchar chr)
 }
 
 Ustring
-fgRemoveChars(Ustring const & str,Ustring chrs)
+removeChars(Ustring const & str,Ustring chrs)
 {
     u32string       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
-        if (!fgContains(c32,s32[ii]))
+        if (!contains(c32,s32[ii]))
             r32.push_back(s32[ii]);
     return Ustring(r32);
 }
 
 bool
-fgGlobMatch(Ustring const & globStr,Ustring const & str)
+isGlobMatch(Ustring const & globStr,Ustring const & str)
 {
     if (globStr.empty())
         return str.empty();
@@ -249,28 +259,28 @@ fgGlobMatch(Ustring const & globStr,Ustring const & str)
     u32string           gs = globStr.as_utf32(),
                         ts = str.as_utf32();
     if (gs[0] == '*')
-        return fgEndsWith(ts,fgRest(gs,1));
+        return endsWith(ts,cutRest(gs,1));
     else if (gs.back() == '*')
-        return fgBeginsWith(ts,fgHead(gs,gs.size()-1));
+        return beginsWith(ts,cutHead(gs,gs.size()-1));
     return (str == globStr);
 }
 
 Ustring
-fgSubstring(Ustring const & str,size_t start,size_t size)
+cSubstr(Ustring const & str,size_t start,size_t size)
 {
     Ustring        ret;
     u32string       s = str.as_utf32();
-    s = fgSubstr(s,start,size);
+    s = cutSubstr(s,start,size);
     ret = Ustring(s);
     return ret;
 }
 
 Ustring
-fgRest(Ustring const & str,size_t start)
+cutRest(Ustring const & str,size_t start)
 {
     Ustring        ret;
     u32string       s = str.as_utf32();
-    s = fgRest(s,start);
+    s = cutRest(s,start);
     ret = Ustring(s);
     return ret;
 }

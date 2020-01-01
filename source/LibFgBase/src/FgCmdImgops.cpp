@@ -72,7 +72,7 @@ shrink2(CLArgs const & args)
         );
     ImgC4UC     img;
     imgLoadAnyFormat(syntax.next(),img);
-    img = fgImgShrink2(img);
+    img = imgShrink2(img);
     imgSaveAnyFormat(syntax.next(),img);
 }
 
@@ -108,7 +108,7 @@ imgops(CLArgs const & args)
 }
 
 Cmd
-fgCmdImgopsInfo()
+getImgopsCmd()
 {return Cmd(imgops,"image","Image operations"); }
 
 }

@@ -39,7 +39,7 @@ struct  GuiSelectWin : public GuiBaseImpl
     {
         m_store = store;
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+toString(ii),extStyle,false);
+            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+toStr(ii),extStyle,false);
         m_currPane = m_api.selection.val();
         if (visible)
             m_panes[m_currPane]->showWindow(true);

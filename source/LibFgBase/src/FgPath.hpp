@@ -36,9 +36,9 @@ inline String
 fgNs(String const & path)
 {
 #ifdef _WIN32
-    return fgReplace(path,'/','\\');
+    return replaceAll(path,'/','\\');
 #else
-    return fgReplace(path,'\\','/');
+    return replaceAll(path,'\\','/');
 #endif
 }
 
@@ -61,7 +61,7 @@ struct  Path
     // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
     // OR drive letter on Windows (eg C:), in which case 'root' can be either.
     Ustring            drive;
-    bool                root;   // Path starts at root ? (otherwise relative)
+    bool               root;   // Path starts at root ? (otherwise relative)
     Ustrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
     Ustring            base;   // Base filename
     Ustring            ext;    // Filename extension (no '.')
@@ -112,33 +112,33 @@ struct  Path
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
 Path
-fgPathFromDir(Ustring const & directory);
+pathFromDir(Ustring const & directory);
 
 Ustring
-fgPathToBase(Ustring const & path);
+pathToBase(Ustring const & path);
 
 Ustring
-fgPathToDirBase(Ustring const & path);
+pathToDirBase(Ustring const & path);
 
 Ustring
-fgPathToExt(Ustring const & path);
+pathToExt(Ustring const & path);
 
 String
-fgPathToExt(String const & path);
+pathToExt(String const & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-fgCheckExt(Ustring const & path,String const & ext);
+checkExt(Ustring const & path,String const & ext);
 
 Ustring
-fgPathToName(Ustring const & path);
+pathToName(Ustring const & path);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
 Ustring
-fgAsDirectory(Ustring const & path);
+asDirectory(Ustring const & path);
 
 String
-fgAsDirectory(String const & path);
+asDirectory(String const & path);
 
 }
 

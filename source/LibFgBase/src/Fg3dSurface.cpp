@@ -21,7 +21,7 @@ fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels)
     Vec3Fs         ret;
     ret.reserve(labels.size());
     for (std::string str : labels)
-        ret.push_back(fgFindFirst(labVerts,str).pos);
+        ret.push_back(findFirst(labVerts,str).pos);
     return ret;
 }
 
@@ -179,7 +179,7 @@ Surf::vertsUsed() const
 Vec3F
 Surf::surfPointPos(const Vec3Fs & verts,string const & label) const
 {
-    const SurfPoint & sp = fgFindFirst(surfPoints,label);
+    const SurfPoint & sp = findFirst(surfPoints,label);
     Vec3UI           tri = getTriEquivPosInds(sp.triEquivIdx);
     return fgBarycentricPos(tri,sp.weights,verts);
 }
@@ -506,7 +506,7 @@ fgEnsureNamed(const vector<Surf> & surfs,Ustring const & baseName)
         size_t                  cnt = 0;
         for (size_t ss=0; ss<ret.size(); ++ss)
             if (ret[ss].name.empty())
-                ret[ss].name = baseName + toString(cnt++);
+                ret[ss].name = baseName + toStr(cnt++);
     }
     return ret;
 }

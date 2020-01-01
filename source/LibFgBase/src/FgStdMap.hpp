@@ -39,7 +39,7 @@ fgLookup(std::map<Key,Val> const & map,Key const & key)
 
 template<class Key,class Val,class Lt>
 bool
-fgContains(const std::map<Key,Val,Lt> & map,const Key & key)
+contains(const std::map<Key,Val,Lt> & map,const Key & key)
 {return (map.find(key) != map.end()); }
 
 template<class Key,class Val>

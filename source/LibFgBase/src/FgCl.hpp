@@ -15,21 +15,15 @@
 
 namespace Fg {
 
-namespace fgCl {
-
-extern bool preview;
-
 // Returns true if success, false if failed and throwIfError=false
 bool
-run(const std::string & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
+clRun(const std::string & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
 
 void
-unzip(const std::string & fname);
+clUnzip(const std::string & fname);
 
 void
-zip(const std::string & dir,bool oldFormat=false);
-
-}   // namespace
+clZip(const std::string & dir,bool oldFormat=false);
 
 }
 

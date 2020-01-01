@@ -14,30 +14,30 @@
 
 namespace Fg {
 
-struct  FgLight
+struct  Light
 {
     Vec3F       colour {0.6f,0.6f,0.6f}; // RGB range [0,1]
     Vec3F       direction {0,0,1};       // Unit direction vector to light in OECS (all lights at infinity)
 
     FG_SERIALIZE2(colour,direction);
 
-    FgLight() {}
-    FgLight(Vec3F c,Vec3F d) : colour(c), direction(d) {}
+    Light() {}
+    Light(Vec3F c,Vec3F d) : colour(c), direction(d) {}
 };
 
-typedef Svec<FgLight>    FgLights;
+typedef Svec<Light>    Lights;
 
-struct  FgLighting
+struct  Lighting
 {
-    Vec3F            ambient;    // RGB range [0,1]
-    FgLights            lights;
+    Vec3F               ambient;    // RGB range [0,1]
+    Lights              lights;
 
     FG_SERIALIZE2(ambient,lights);
 
-    FgLighting() : ambient(0.4f) {lights.resize(1); }
-    FgLighting(Vec3F a) : ambient(a) {}
-    FgLighting(Vec3F a,FgLight l) : ambient(a), lights(fgSvec(l)) {}
-    FgLighting(Vec3F a,FgLights const & l) : ambient(a), lights(l) {}
+    Lighting() : ambient(0.4f) {lights.resize(1); }
+    Lighting(Vec3F a) : ambient(a) {}
+    Lighting(Vec3F a,Light l) : ambient(a), lights(fgSvec(l)) {}
+    Lighting(Vec3F a,Lights const & l) : ambient(a), lights(l) {}
 
     ImgC4UC
     createSpecularMap() const;

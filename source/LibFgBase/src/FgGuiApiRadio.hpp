@@ -30,7 +30,7 @@ GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
 struct GuiRadio : GuiBase
 {
     bool                horiz;
-    Ustrings           labels;
+    Ustrings            labels;
     IPT<size_t>         selection;
 
     virtual

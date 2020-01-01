@@ -178,7 +178,7 @@ cat(const Mat<T,1,dim> & vec,T val)
 // Flatten a Svec of matrices into a Svec of scalars:
 template<class T,uint nrows,uint ncols>
 Svec<T>
-flat(const Svec<Mat<T,nrows,ncols> > & ms)
+flatten(const Svec<Mat<T,nrows,ncols> > & ms)
 {
     Svec<T>       ret;
     ret.reserve(ms.size()*nrows*ncols);
@@ -190,7 +190,7 @@ flat(const Svec<Mat<T,nrows,ncols> > & ms)
 
 inline Doubles
 toDoubles(Doubless const & v)
-{return flat(v); }
+{return flatten(v); }
 
 Doubles
 toDoubles(Floatss const & v);
@@ -236,7 +236,7 @@ toDoubles(const Svec<Svec<Mat<T,nrows,ncols> > > & mss)
 
 template<class T,uint dim>
 Mat<T,dim+1,1>
-fgAsHomogVec(Mat<T,dim,1> v)
+asHomogVec(Mat<T,dim,1> v)
 {
     Mat<T,dim+1,1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -365,7 +365,7 @@ crossProduct(
 // Element-wise multiplication (aka Hadamard product):
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-fgMapMul(
+mapMul(
     const Mat<T,nrows,ncols> &    lhs,
     const Mat<T,nrows,ncols> &    rhs)
 {
@@ -376,7 +376,7 @@ fgMapMul(
 }
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-fgMapMul(const Mat<T,nrows,ncols> & m0,const Mat<T,nrows,ncols> & m1,const Mat<T,nrows,ncols> & m2)
+mapMul(const Mat<T,nrows,ncols> & m0,const Mat<T,nrows,ncols> & m1,const Mat<T,nrows,ncols> & m2)
 {
     Mat<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -402,7 +402,7 @@ fgTransposeMul(
 // Element-wise division:
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-fgMapDiv(
+mapDiv(
     const Mat<T,nrows,ncols> &    lhs,
     const Mat<T,nrows,ncols> &    rhs)
 {
@@ -718,7 +718,7 @@ fgDiagonal(T v0,T v1,T v2)
 
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-fgNormalize(Mat<T,nrows,ncols> m)
+normalize(Mat<T,nrows,ncols> m)
 {
     return m / m.len();
 }
@@ -746,7 +746,7 @@ fgMapMag(const Svec<Mat<T,nrows,ncols> > & v)
 // Find first index of an element in a Svec. Return 'size' if not found:
 template<typename T,uint nrows>
 uint
-fgFindFirstIdx(Mat<T,nrows,1> m,T v)
+findFirstIdx(Mat<T,nrows,1> m,T v)
 {
     for (uint ii=0; ii<nrows; ++ii)
         if (m[ii] == v)

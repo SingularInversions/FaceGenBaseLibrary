@@ -154,7 +154,7 @@ loadWobj(
     Mesh                mesh;
     string              currName;
     map<string,Surf>    surfs;
-    Strings             lines = splitLines(fgSlurp(fname));   // Removes empty lines
+    Strings             lines = splitLines(loadRawString(fname));   // Removes empty lines
     Surf                surf;
     size_t              numNgons = 0;
     bool                vertexColors = false,
@@ -175,8 +175,8 @@ loadWobj(
                         ++numNgons;
                 }
             }
-            if (!surfSeparator.empty() && fgBeginsWith(line,surfSeparator)) {
-                vector<string>  words = fgSplitAtSeparators(line,' ');
+            if (!surfSeparator.empty() && beginsWith(line,surfSeparator)) {
+                vector<string>  words = splitAtSeparators(line,' ');
                 if (words.size() != 2) {
                     fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii << " of " << fname;
                     break;
@@ -213,7 +213,7 @@ loadWobj(
         else
             surfs[currName].merge(surf);
     }
-    mesh.name = fgPathToBase(fname);
+    mesh.name = pathToBase(fname);
     for (map<string,Surf>::iterator it = surfs.begin(); it != surfs.end(); ++it) {
         Surf &   srf = it->second;
         if (!srf.tris.valid() || !srf.quads.valid()) {
@@ -290,7 +290,7 @@ writeMtlBase(
     Ofstream &    ofs,
     uint            idx)
 {
-    ofs << "newmtl " << "Texture" << toString(idx) << "\n"
+    ofs << "newmtl " << "Texture" << toStr(idx) << "\n"
         "    illum 0\n"
         "    Kd 0.7 0.7 0.7\n"
         "    Ks 0 0 0\n"
@@ -326,7 +326,7 @@ writeMesh(
     }
     for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
         if (mesh.surfaces[tt].material.albedoMap) {
-            string  idxString = toString(offsets.mat+tt);
+            string  idxString = toStr(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
             Ustring        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
             imgSaveAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
@@ -338,10 +338,10 @@ writeMesh(
     }
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         const Surf & surf = mesh.surfaces[ii];
-        Ustring    name = (surf.name.empty() ? Ustring("Surf")+toString(ii) : surf.name);
+        Ustring    name = (surf.name.empty() ? Ustring("Surf")+toStr(ii) : surf.name);
         ofs << "g " << name << "\n";
         if (mtlFile)    // Meshlab can't handle 'usemtl' if there is no MTL file:
-            ofs << "usemtl Texture" << toString(offsets.mat+ii) << "\n";
+            ofs << "usemtl Texture" << toStr(offsets.mat+ii) << "\n";
         writeFacets(ofs,surf.tris.vertInds,surf.tris.uvInds,offsets);
         writeFacets(ofs,surf.quads.vertInds,surf.quads.uvInds,offsets);
     }

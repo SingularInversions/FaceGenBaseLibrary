@@ -21,23 +21,28 @@ operator<<(std::ostream &,const ImgC4UC &);
 
 inline
 AffineEw2F
-fgOicsToIucs()
+cOicsToIucs()
 {return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
 
 inline
 AffineEw2F
-fgIucsToIpcs(Vec2UI dims)
+cIucsToIpcs(Vec2UI dims)
 {return AffineEw2F(Mat22F(0,1,0,1),Mat22F(0,dims[0],0,dims[1])); }
 
 inline
 AffineEw2F
-calcIrcsToIucs(Vec2UI imageDims)
+cIrcsToIucs(Vec2UI imageDims)
 {return AffineEw2F(Mat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),Mat22F(0,1,0,1)); }
 
 inline
 Vec2F
-fgIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord)
-{return (fgMapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
+cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord)
+{return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
+
+inline
+AffineEw2D
+cIucsToIrcs(Vec2UI ircsDims)
+{return AffineEw2D {Mat22D{0,1,0,1},Mat22D{-0.5,ircsDims[0]-0.5,-0.5,ircsDims[1]-0.5}}; }
 
 template<uint dim>
 inline
@@ -59,27 +64,38 @@ blerpCoordsCull(Vec2UI dims,Vec2F coordIucs);
 // Bilinear interpolation coordinates and co-efficients with coordinates clamped to image.
 // Returned matrix weights sum to 1. Cols are X Lo,Hi and rows are Y Lo,Hi.
 Mat<CoordWgt,2,2>
-blerpCoordsClip(Vec2UI dims,Vec2F coordIucs);
+blerpCoordsClipIrcs(Vec2UI dims,Vec2D coordIrcs);
+Mat<CoordWgt,2,2>
+blerpCoordsClipIucs(Vec2UI dims,Vec2F coordIucs);
 
-// Bilinear interpolation. Returns alpha-weighted linear-interpolated value.
+// Bilinear interpolated alpha-weighted RGBA image sampling.
 // Source points outside image considered to have alpha zero:
 RgbaF
 sampleAlpha(const ImgC4UC & img,Vec2F coordIucs);
 
-// Sample an image with coordinates clipped to image boundaries:
+// Sample an image with given matrix of coordinates (must be in image bounds) and weights:
 template<typename T>
 typename Traits<T>::Floating
-sampleClip(Img<T> const & img,Vec2F coordIucs)
+sampleClip(Img<T> const & img,Mat<CoordWgt,2,2> const & cws)
 {
     typedef typename Traits<T>::Floating    Acc;
     Acc                 ret(0);
-    Mat<CoordWgt,2,2>   bc = blerpCoordsClip(img.dims(),coordIucs);
-    for (uint ii=0; ii<4; ++ii) {
-        CoordWgt        cw = bc.m[ii];
+    for (CoordWgt const & cw : cws.m)
         ret += Acc(img[cw.coordIrcs]) * cw.wgt;
-    }
     return ret;
 }
+
+// Bilinear image sample clamped to image bounds:
+template<typename T>
+typename Traits<T>::Floating
+sampleClipIucs(Img<T> const & img,Vec2F coordIucs)
+{return sampleClip(img,blerpCoordsClipIucs(img.dims(),coordIucs)); }
+
+// Bilinear image sample clamped to image bounds:
+template<typename T>
+typename Traits<T>::Floating
+sampleClipIrcs(Img<T> const & img,Vec2D coordIrcs)
+{return sampleClip(img,blerpCoordsClipIrcs(img.dims(),coordIrcs)); }
 
 template<class T>
 Mat<T,2,2>
@@ -113,16 +129,31 @@ fgThreshold(const Img<T> & img,T minRoundUp)
     return ret;
 }
 
+template<class T>
+Img<T>
+interpolate(Img<T> const & i0,Img<T> const & i1,float val)
+{
+    Vec2UI          dims = i0.dims();
+    FGASSERT(i1.dims() == dims);
+    Img<T>          ret(dims);
+    float           omv = 1.0f - val;
+    for (size_t ii=0; ii<ret.numPixels(); ++ii) {
+        auto        v = scast<float>(i0.m_data[ii]) * omv + scast<float>(i1.m_data[ii]) * val;
+        round_(v,ret.m_data[ii]);
+    }
+    return ret;
+}
+
 // Shrink an image by 2x2 averaging blocks, rounding down the image size if odd:
 void
-fgImgShrink2(const ImgC4UC & src,ImgC4UC & dst);
+imgShrink2(const ImgC4UC & src,ImgC4UC & dst);
 
 inline
 ImgC4UC
-fgImgShrink2(const ImgC4UC & src)
+imgShrink2(const ImgC4UC & src)
 {
     ImgC4UC ret;
-    fgImgShrink2(src,ret);
+    imgShrink2(src,ret);
     return ret;
 }
 
@@ -475,57 +506,37 @@ fgConvolveFloat(
     fgConvolveFloatHoriz(srcPtrs,krn,dst.rowPtr(dst.height()-1),wid,borderPolicy);
 }
 
-// Resample 'in' at the centre of each pixel in 'out' (assuming images are spatially 1-1):
-template<class T>
-void
-fgResampleSimple(
-    const Img<T> &  in,
-    Img<T> &        out)
-{
-    if (in.dims().cmpntsProduct() == 0)
-        out.clear();
-    else {
-        FGASSERT(cMinElem(out.dims()) > 0);
-        Mat22F        inBoundsIucs( 0.0f,1.0f,    // sampleClip takes UICS
-                                      0.0f,1.0f),
-                        outBoundsIrcs(-0.5f,float(out.width())-0.5f,
-                                      -0.5f,float(out.height())-0.5f);
-        AffineEw2F    o2i(outBoundsIrcs,inBoundsIucs);
-        for (Iter2UI it(out.dims()); it.valid(); it.next()) {
-            Vec2F    pt = o2i * Vec2F(it());
-            round_(sampleClip(in,pt),out[it]);
-        }
-    }
-}
+// Preserves intrinsic aspect ratio, scales to minimally cover output dimensions.
+// Returns transform from output image IRCS to input image IRCS (ie. inverse transform for resampling):
+AffineEw2D
+imgScaleToCover(Vec2UI inDims,Vec2UI outDims);
+
+// Intrinsic aspect ratio is warped for an exact fit:
+// Returns transform from output image IRCS to input image IRCS (ie. inverse transform for resampling):
+AffineEw2D
+imgScaleToFit(Vec2UI inDims,Vec2UI outDims);
+
+// Resample an image to the given size with the given inverse transform with boundary clip policy:
 template<class T>
 Img<T>
-fgResampleSimple(const Img<T> & in,Vec2UI dims)
+resample(Img<T> const & in,Vec2UI outDims,AffineEw2D outToInIrcs)
 {
-    Img<T>      ret(dims);
-    fgResampleSimple(in,ret);
+    Img<T>              ret {outDims};
+    if (outDims.cmpntsProduct() == 0)
+        return ret;
+    FGASSERT(in.dims().cmpntsProduct() > 0);
+    for (Iter2UI it(outDims); it.valid(); it.next()) {
+        Vec2D           inIrcs = outToInIrcs * Vec2D{it()};
+        round_(sampleClipIrcs(in,inIrcs),ret[it()]);
+    }
     return ret;
 }
 
-template<class T>
-void
-fgResizePow2Ceil_(const Img<T> & in,Img<T> & out)
-{
-    if (!isPow2(in.dims())) {
-        out.resize(pow2Ceil(in.dims()));
-        fgResampleSimple(in,out);
-    }
-    else
-        out = in;
-}
-
+// Note that the image will be distorted if aspect ratio changes:
 template<class T>
 Img<T>
-fgResizePow2Ceil(const Img<T> & img)
-{
-    Img<T>      ret;
-    fgResizePow2Ceil_(img,ret);
-    return ret;
-}
+resampleToFit(const Img<T> & in,Vec2UI dims)
+{return resample(in,dims,imgScaleToFit(in.dims(),dims)); }
 
 bool
 fgImgApproxEqual(const ImgC4UC & img0,const ImgC4UC & img1,uint maxDelta=0);
@@ -658,7 +669,7 @@ fgComposite(
     FGASSERT(foreground.dims() == background.dims());
     Img<T>      ret(foreground.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
-        ret[ii] = fgCompositeFragmentUnweighted(foreground[ii],background[ii]);
+        ret[ii] = compositeFragmentUnweighted(foreground[ii],background[ii]);
     return ret;
 }
 

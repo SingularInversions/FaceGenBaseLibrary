@@ -69,7 +69,7 @@ meshSaveAnyFormat(
     Ustring const &            fname,
     string const &              imgFormat)
 {
-    Ustring    ext = fgPathToExt(fname).toLower();
+    Ustring    ext = pathToExt(fname).toLower();
     if(ext == "tri")
         saveTri(fname,meshes);
     else if ((ext == "obj") || (ext == "wobj"))
@@ -139,15 +139,15 @@ triexport(CLArgs const & args)
     vector<Mesh>    meshes;
     while (syntax.more()) {
         string          triFile(syntax.next());
-        if (!fgCheckExt(triFile,"tri"))
+        if (!checkExt(triFile,"tri"))
             syntax.error("Not a .TRI file",triFile);
         Mesh        mesh = loadTri(triFile);
         size_t          cnt = 0;
-        while (syntax.more() && fgToLower(fgPathToExt(syntax.peekNext())) != "tri") {
-            string                      imgFile(syntax.next()),
-                                        ext = fgPathToExt(imgFile);
-            vector<string>              exts = imgFileExtensions();
-            vector<string>::iterator    it = find(exts.begin(),exts.end(),ext);
+        while (syntax.more() && toLower(pathToExt(syntax.peekNext())) != "tri") {
+            string              imgFile(syntax.next()),
+                                ext = pathToExt(imgFile);
+            Strings             exts = imgFileExtensions();
+            auto                it = find(exts.begin(),exts.end(),ext);
             if (it == exts.end())
                 syntax.error("Unknown image file type",imgFile);
             if (cnt < mesh.surfaces.size())
@@ -163,7 +163,7 @@ triexport(CLArgs const & args)
 }
 
 Cmd
-fgCmdTriexportInfo()
+getTriExportCmd()
 {return Cmd(triexport,"triexport","Export meshes from FaceGen TRI format to other formats"); }
 
 }

@@ -130,7 +130,7 @@ testInverse()
     a = (a * b + b * a) * 0.5;  // cancel errors from near-singularities in matrix
     b.setIdentity();
     double          res = (a-b).len();
-    FGASSERT(res < (10.0 * size * size * numeric_limits<double>::epsilon()));
+    FGASSERT(res < (10.0 * size * size * epsilonD()));
 }
 
 static void     testFgMatRotateAxis()
@@ -145,8 +145,8 @@ static void     testFgMatRotateAxis()
         double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
                         err2 = (mat * axis - axis).len();
 
-        FGASSERT(err < (std::numeric_limits<double>::epsilon() * 10.0));
-        FGASSERT(err2 < (std::numeric_limits<double>::epsilon() * 10.0));
+        FGASSERT(err < (epsilonD() * 10.0));
+        FGASSERT(err2 < (epsilonD() * 10.0));
         FGASSERT(determinant(mat) > 0.0);      // Ensure SO(3) not just O(3)
     }
 }
@@ -177,7 +177,7 @@ fgTanSphere(Vec3D v)
         std::swap(p[0],p[1]);
     // Gram-Schmidt starting with least co-linear axes:
     Vec3D        r0(0),
-                    vn = fgNormalize(v);
+                    vn = normalize(v);
     r0[p[0]] = 1.0;
     r0 -= vn * cDot(vn,r0);
     r0 /= r0.len();

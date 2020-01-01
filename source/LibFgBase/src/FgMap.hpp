@@ -54,7 +54,7 @@ struct  FgMap
 
 template<typename K,typename V>
 bool
-fgContains(const FgMap<K,V> & map,const K & key)
+contains(const FgMap<K,V> & map,const K & key)
 {
     for (const std::pair<K,V> & p : map.map)
         if (p.first == key)

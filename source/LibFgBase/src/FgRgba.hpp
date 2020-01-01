@@ -87,7 +87,7 @@ struct      Rgba
 
     Rgba
     operator*(const Rgba &rhs) const
-    {return Rgba(fgMapMul(m_c,rhs.m_c)); }
+    {return Rgba(mapMul(m_c,rhs.m_c)); }
 
     Rgba
     operator*(T val) const
@@ -177,7 +177,7 @@ FgOut & operator<<(FgOut & out, const Rgba<T> & pixel)
 // NB: This function assumes pre-weighted colour values !!!
 inline
 RgbaUC
-fgCompositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
+compositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
 {
 	uint		fga = foreground.alpha(),
 				bga = background.alpha(),
@@ -193,7 +193,7 @@ fgCompositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
 // NB: This function assumes pre-weighted colour values !!!
 inline
 RgbaUC
-fgCompositeFragment(RgbaUC foreground,RgbaUC background)
+compositeFragment(RgbaUC foreground,RgbaUC background)
 {
     uint        fac = 255 - foreground.alpha();
     Vec4UI   acc = Vec4UI(background.m_c) * fac + Vec4UI(127);
@@ -201,7 +201,7 @@ fgCompositeFragment(RgbaUC foreground,RgbaUC background)
 }
 inline
 RgbaF
-fgCompositeFragment(RgbaF foreground,RgbaF background)
+compositeFragment(RgbaF foreground,RgbaF background)
 {
     float       fac = (255.0f - foreground.alpha()) / 255.0f;
     return (foreground + background * fac);
@@ -212,10 +212,15 @@ Rgba<To>
 round(Rgba<From> const & v)
 {return Rgba<To>(round<To>(v.m_c)); }
 
-template<class T,class U>
+template<class From,class To>
 void
-scast_(const Rgba<T> & i,Rgba<U> & o)
-{scast_(i.m_c,o.m_c); }
+scast_(const Rgba<From> & from,Rgba<To> & to)
+{scast_(from.m_c,to.m_c); }
+
+template<class To,class From>
+Rgba<To>
+scast(Rgba<From> const & from)
+{return Rgba<To>{scast<To,From>(from.m_c)}; }
 
 }
 

@@ -67,45 +67,45 @@ void
 fileTouch(Ustring const & fname)
 {
     // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
-    String      tmp = fgSlurp(fname);
-    fgDump(tmp,fname,false);
+    String      tmp = loadRawString(fname);
+    saveRaw(tmp,fname,false);
 }
 
 bool
-fgSetCurrentDirUp()
+setCurrentDirUp()
 {
-    Path      cd = fgAsDirectory(fgGetCurrentDir());
+    Path      cd = asDirectory(getCurrentDir());
     if (cd.dirs.empty())
         return false;
-    fgSetCurrentDir(cd.dir(cd.dirs.size()-1));
+    setCurrentDir(cd.dir(cd.dirs.size()-1));
     return true;
 }
 
 void
-fgRemoveDirectoryRecursive(Ustring const & dirname)
+deleteDirectoryRecursive(Ustring const & dirname)
 {
 #ifdef _WIN32
     // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
     DirectoryContents     dc = directoryContents(dirname);
     for (size_t ii=0; ii<dc.dirnames.size(); ii++)
-        fgRemoveDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
+        deleteDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
         deleteFile(dirname+"/"+dc.filenames[ii]);
     // Get around windows filesystem recursive folder delete bug by trying a second time
     // after a pause for the filesystem to catch up:
-    if (fgRemoveDirectory(dirname))
+    if (removeDirectory(dirname))
         return;
     fgSleep(1);
-    fgRemoveDirectory(dirname,true);
+    removeDirectory(dirname,true);
 #else
     boost::filesystem::remove_all(dirname.m_str);
 #endif
 }
 
 void
-fgCreatePath(Ustring const & path)
+createPath(Ustring const & path)
 {
-    Path          p(fgAsDirectory(path));
+    Path          p(asDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
         Ustring    dir = p.dir(ii+1);
         if (pathExists(dir)) {
@@ -113,15 +113,15 @@ fgCreatePath(Ustring const & path)
                 fgThrow("Not a directory (unable to create)",dir);
         }
         else
-            fgCreateDirectory(dir);
+            createDirectory(dir);
     }
 }
 
 Ustring
-fgExecutableDirectory()
+getExecutableDirectory()
 {
-    //return fgGetCurrentDir();         // For debugging installed versions
-    Path      p(fgExecutablePath());
+    //return getCurrentDir();         // For debugging installed versions
+    Path      p(getExecutablePath());
     return p.dir();
 }
 
@@ -139,13 +139,13 @@ fgDirUserAppDataLocal(const vector<string> & subPath)
     Ustring    ret = fgDirUserAppDataLocalRoot();
     for (size_t ii=0; ii<subPath.size(); ++ii) {
         ret += subPath[ii] + fgDirSep();
-        fgCreateDirectory(ret);
+        createDirectory(ret);
     }
     return ret;
 }
 
 string
-fgSlurp(Ustring const & filename)
+loadRawString(Ustring const & filename)
 {
     Ifstream          ifs(filename);
     ostringstream       ss;
@@ -154,10 +154,10 @@ fgSlurp(Ustring const & filename)
 }
 
 bool
-fgDump(string const & data,Ustring const & filename,bool onlyIfChanged)
+saveRaw(string const & data,Ustring const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
-        string      fileData = fgSlurp(filename);
+        string      fileData = loadRawString(filename);
         if (data == fileData)
             return false;
     }
@@ -171,15 +171,15 @@ equateFilesBinary(
     Ustring const & file1,
     Ustring const & file2)
 {
-    string contents1(fgSlurp(file1));
-    string contents2(fgSlurp(file2));
+    string contents1(loadRawString(file1));
+    string contents2(loadRawString(file2));
     return contents1 == contents2;
 }
 
 bool
 equateFilesText(Ustring const & fname0,Ustring const & fname1)
 {
-    return (fgSplitLinesUtf8(fgSlurp(fname0)) == fgSplitLinesUtf8(fgSlurp(fname1)));
+    return (fgSplitLinesUtf8(loadRawString(fname0)) == fgSplitLinesUtf8(loadRawString(fname1)));
 }
 
 static Ustring s_fgDataDir;
@@ -193,8 +193,8 @@ dataDir(bool throwIfNotFound)
     //  ../../../../../data     (dev & sdk binaries)
     if (!s_fgDataDir.empty())
         return s_fgDataDir;
-    Ustring        pathStr = fgExecutableDirectory();
-    Path          path(pathStr);
+    Ustring         pathStr = getExecutableDirectory();
+    Path            path(pathStr);
     string          data("data/"),
                     flag("_facegen_data_dir.flag");
     bool            keepSearching = true;
@@ -212,7 +212,11 @@ dataDir(bool throwIfNotFound)
             path.dirs.pop_back();
     }
     if (throwIfNotFound)
-        fgThrow("dataDir unable to find FaceGen data directory",pathStr);
+        fgThrow("Unable to find FaceGen data directory.\n"
+            "If you moved this executable from its original path (see below),\n"
+            "You must also copy the 'data' directory (including contents)\n"
+            "to the same location or one of its parent directories",
+            pathStr);
     return s_fgDataDir;
 }
 
@@ -265,7 +269,7 @@ globFiles(const Path & path)
     DirectoryContents     dc = directoryContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         Path              fn = dc.filenames[ii];
-        if (fgGlobMatch(path.base,fn.base) && (fgGlobMatch(path.ext,fn.ext)))
+        if (isGlobMatch(path.base,fn.base) && (isGlobMatch(path.ext,fn.ext)))
             ret.push_back(dc.filenames[ii]);
     }
     return ret;
@@ -284,8 +288,8 @@ bool
 fgCopyAllFiles(Ustring const & fromDir_,Ustring const & toDir_,bool overwrite)
 {
     bool                    ret = false;
-    Ustring                fromDir = fgAsDirectory(fromDir_),  // Ensure ends with delim
-                            toDir = fgAsDirectory(toDir_);
+    Ustring                fromDir = asDirectory(fromDir_),  // Ensure ends with delim
+                            toDir = asDirectory(toDir_);
     DirectoryContents     dc = directoryContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         Ustring            fn = dc.filenames[ii];
@@ -312,9 +316,9 @@ fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir)
 {
     if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
-    fgCreateDirectory(toDir);
-    Path                  fromP(fgAsDirectory(fromDir)),
-                            toP(fgAsDirectory(toDir));
+    createDirectory(toDir);
+    Path                  fromP(asDirectory(fromDir)),
+                            toP(asDirectory(toDir));
     Ustring                from = fromP.str(),     // Ensures delimiter at end when appropriate
                             to = toP.str();
     DirectoryContents     dc = directoryContents(fromDir);
@@ -340,7 +344,7 @@ fgMirrorFile(const Path & src,const Path & dst)
                 fgThrow("Not a directory (unable to mirror)",dir);
         }
         else
-            fgCreateDirectory(dir);
+            createDirectory(dir);
     }
     if (fileNewer(src.str(),dst.str()))
         fileCopy(src.str(),dst.str(),true);

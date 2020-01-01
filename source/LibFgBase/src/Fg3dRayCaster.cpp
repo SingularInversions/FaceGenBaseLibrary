@@ -43,13 +43,13 @@ Fg3dRayCastMesh::Fg3dRayCastMesh(
     grid = fgGridTriangles(vertsIucs,surfs[0].tris.vertInds);
 }
 
-FgBestN<float,FgTriPoint,8>
+FgBestN<float,TriPoint,8>
 Fg3dRayCastMesh::cast(Vec2F posIucs) const
 {
-    FgBestN<float,FgTriPoint,8> retval;
-    vector<FgTriPoint>          intersects = grid.intersects(surfs[0].tris.vertInds,vertsIucs,posIucs);
+    FgBestN<float,TriPoint,8> retval;
+    vector<TriPoint>          intersects = grid.intersects(surfs[0].tris.vertInds,vertsIucs,posIucs);
     for (size_t ii=0; ii<intersects.size(); ++ii) {
-        FgTriPoint  isect = intersects[ii];
+        TriPoint  isect = intersects[ii];
         float   newInvDepth =
             isect.baryCoord[0] * invDepths[isect.pointInds[0]] +
             isect.baryCoord[1] * invDepths[isect.pointInds[1]] +
@@ -60,7 +60,7 @@ Fg3dRayCastMesh::cast(Vec2F posIucs) const
 }
 
 RgbaF
-Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting) const
+Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) const
 {
     Vec3UI           tri = intersect.pointInds;
     Vec3F            bCoord = intersect.baryCoord;
@@ -80,15 +80,15 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
     const ImgC4UC * img = (surfs[0].material.albedoMap) ? &(*surfs[0].material.albedoMap) : NULL;
     Vec3F           acc {0};
     RgbaF           texSample = (img && (!img->empty())) ?
-        RgbaF(sampleClip(*img,uv)) :
+        RgbaF(sampleClipIucs(*img,uv)) :
         RgbaF(230.0f,230.0f,230.0f,255.0f);
 	float	        aw = texSample.alpha() / 255.0f;
     Vec3F        surfColour = texSample.m_c.subMatrix<3,1>(0,0) * aw;
     for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
-        FgLight     lgt = lighting.lights[ll];
+        Light     lgt = lighting.lights[ll];
         float       fac = cDot(norm,lgt.direction);
         if (fac > 0.0f) {
-            acc += fgMapMul(surfColour,lgt.colour) * fac;
+            acc += mapMul(surfColour,lgt.colour) * fac;
             if (material.shiny) {
                 Vec3F    reflectDir = norm * fac * 2.0f - lgt.direction;
                 if (reflectDir[2] > 0.0f) {
@@ -99,7 +99,7 @@ Fg3dRayCastMesh::shade(const FgTriPoint & intersect,const FgLighting & lighting)
             }
         }
     }
-    acc += fgMapMul(surfColour,lighting.ambient);
+    acc += mapMul(surfColour,lighting.ambient);
     return RgbaF(acc[0],acc[1],acc[2],texSample.alpha());
 }
 
@@ -107,7 +107,7 @@ Fg3dRayCaster::Fg3dRayCaster(
     const Meshes &          meshes,
     const Vec3Fss &            vertss,
     const Normalss &        normss,
-    const FgLighting &          lighting,
+    const Lighting &          lighting,
     AffineEw2F                itcsToIucs,
     RgbaF                     background)
     :
@@ -127,14 +127,14 @@ Fg3dRayCaster::cast(Vec2F posIucs) const
     // Find closest ray intersection:
     FgBestN<float,Best,8>   bestAll;
     for (size_t ii=0; ii<rayMesh.size(); ++ii) {
-        FgBestN<float,FgTriPoint,8>     best = rayMesh[ii].cast(posIucs);
+        FgBestN<float,TriPoint,8>     best = rayMesh[ii].cast(posIucs);
         for (uint jj=0; jj<best.size(); ++jj)
             if (!bestAll.update(best[jj].first,Best(ii,best[jj].second)))
                 break;
     }
     RgbaF     acc = m_background;
     for (uint ii=bestAll.size(); ii>0; --ii)    // Render back to front
-        acc = fgCompositeFragment(rayMesh[bestAll[ii-1].second.surfIdx].shade(bestAll[ii-1].second.intersect,*lightingPtr),acc);
+        acc = compositeFragment(rayMesh[bestAll[ii-1].second.surfIdx].shade(bestAll[ii-1].second.intersect,*lightingPtr),acc);
     return acc;
 }
 

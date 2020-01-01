@@ -37,7 +37,7 @@
 namespace Fg {
 
 inline String
-signature(const boost::any & data)
+signature(boost::any const & data)
 {return boost::core::demangled_name(data.type()); }
 
 struct  DfgDependent;
@@ -48,7 +48,7 @@ struct  DfgNode
 {
     virtual ~DfgNode() {}
     virtual void update() const = 0;
-    virtual const boost::any & getDataCref() const = 0;
+    virtual boost::any const & getDataCref() const = 0;
     virtual void addSink(const DfgDPtr &) = 0;
 };
 typedef std::shared_ptr<DfgNode>    DfgNPtr;
@@ -66,17 +66,17 @@ struct  DfgInput : DfgNode
 private:
     mutable boost::any          data;
     boost::any                  dataDefault;        // Can be empty if no default
-    DfgDPtrs                       sinks;              // Can be empty
+    DfgDPtrs                    sinks;              // Can be empty
 public:
     // Called with 'data' on destruct only if non-empty and 'data' non-empty. Can be used to save state:
-    std::function<void(const boost::any&)> onDestruct;
+    std::function<void(boost::any const&)> onDestruct;
 
     DfgInput() {}
     template<class T> explicit DfgInput(const T & v) : data(v) {}
 
     virtual                 ~DfgInput();
     virtual void            update() const {}
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void            addSink(const DfgDPtr & snk);
 
     void                    makeDirty() const;
@@ -101,7 +101,7 @@ struct  DfgOutput : DfgNode, DfgDependent
     virtual ~DfgOutput() {}
     virtual void update() const;
     virtual void markDirty() const;
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void addSink(const DfgDPtr & snk);
 
     void addSource(const DfgNPtr & src);
@@ -123,7 +123,7 @@ public:
     virtual ~DfgReceptor() {}
     virtual void update() const;
     virtual void markDirty() const;
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void addSink(const DfgDPtr & snk);
     void setSource(DfgNPtr const & nptr);
 };
@@ -151,7 +151,8 @@ void addLink(const DfgNPtr & src,const DfgOPtr & snk);
 // Typed versions for static type checking. Client should always use this form:
 
 // Type-safe inputs:
-// * Allocate DfgInput in default constructor but do not initialize data/default within DfgInput.
+// * All constructors allocate DfgInput and contained data so we can never dereference null
+//   (although we may of course need to check if the contained data is empty).
 //   This way we don't have to pass back loads of pointers from the functions creating the GUI parts
 //   and assign them all to the right places; but can just pass them forward instead.
 // * Use 'init' or 'initSaved' to initialize the DfgInput data & default later if default constructed.
@@ -160,8 +161,8 @@ void addLink(const DfgNPtr & src,const DfgOPtr & snk);
 template<class T>
 struct  IPT
 {
-    DfgIPtr            ptr;
-    IPT() : ptr(std::make_shared<DfgInput>()) {}
+    DfgIPtr            ptr;                         // Never null and contained data never null
+    IPT() : ptr(std::make_shared<DfgInput>(T{})) {}
     explicit IPT(const DfgIPtr & n) : ptr(n) {}
     explicit IPT(T const & val) : ptr(std::make_shared<DfgInput>(val)) {}
     explicit IPT(T const & val,T const & defaultVal) : ptr(std::make_shared<DfgInput>(val,defaultVal)) {}
@@ -179,7 +180,7 @@ struct  IPT
         if (binary) {
             if (pathExists(storeFile))
                 fgLoadPBin(storeFile,ref(),false);
-            ptr->onDestruct = [storeFile](const boost::any & v)
+            ptr->onDestruct = [storeFile](boost::any const & v)
             {
                 if (v.empty())
                     fgWarn("IPT onDestruct save with empty data",signature(v));
@@ -191,7 +192,7 @@ struct  IPT
             Ustring        fname = storeFile + ".xml";
             if (pathExists(fname))
                 fgLoadXml(fname,ref(),false);
-            ptr->onDestruct = [fname](const boost::any & v)
+            ptr->onDestruct = [fname](boost::any const & v)
             {
                 if (v.empty())
                     fgWarn("IPT onDestruct binary save with empty data",signature(v));
@@ -269,7 +270,7 @@ template<class T>
 IPT<T>
 makeSavedIPT(
     const T &           defaultVal,             // Will be the initial value if no valid one is stored
-    Ustring const &    storeFile,
+    Ustring const &     storeFile,
     bool                binary=false)           // Store to binary format rather than XML for efficiency
 {
     IPT<T>          ret;

@@ -344,7 +344,7 @@ fgNTent(uint nn)
 //}
 
 Mesh
-fgMergeSameNameSurfaces(const Mesh & in)
+mergeSameNameSurfaces(const Mesh & in)
 {
     Mesh            ret = in;
     vector<Surf> surfs;
@@ -367,7 +367,7 @@ fgMergeSameNameSurfaces(const Mesh & in)
 }
 
 Mesh
-fgUnifyIdenticalVerts(const Mesh & mesh)
+unifyIdenticalVerts(const Mesh & mesh)
 {
     Mesh            ret(mesh);
     Vec3Fs             verts;
@@ -419,7 +419,7 @@ fgUnifyIdenticalVerts(const Mesh & mesh)
 }
 
 Mesh
-fgUnifyIdenticalUvs(const Mesh & in)
+unifyIdenticalUvs(const Mesh & in)
 {
     Mesh                    ret(in);
     const vector<Vec2F> &    uvs = ret.uvs;
@@ -478,7 +478,7 @@ traverse(
 }
 
 Mesh
-fgSplitSurfsByUvs(const Mesh & in)
+splitSurfsByUvs(const Mesh & in)
 {
     Mesh                ret,
                         mesh = in;
@@ -512,7 +512,7 @@ fgSplitSurfsByUvs(const Mesh & in)
 }
 
 Mesh
-fgMergeMeshSurfaces(
+mergeMeshSurfaces(
     const Mesh &    m0,
     const Mesh &    m1)
 {
@@ -529,7 +529,7 @@ fgMergeMeshSurfaces(
 }
 
 Mesh
-fgMergeMeshes(
+mergeMeshes(
     const Mesh &    m0,
     const Mesh &    m1)
 {
@@ -582,14 +582,14 @@ fgMergeMeshes(
 }
 
 Mesh
-fgMergeMeshes(const vector<Mesh> & meshes)
+mergeMeshes(const vector<Mesh> & meshes)
 {
     Mesh        ret;
     if (meshes.empty())
         return ret;
     ret = meshes[0];
     for (size_t mm=1; mm<meshes.size(); ++mm)
-        ret = fgMergeMeshes(ret,meshes[mm]);
+        ret = mergeMeshes(ret,meshes[mm]);
     return ret;
 }
 
@@ -676,12 +676,12 @@ fgUvWireframeImage(const Mesh & mesh,const ImgC4UC & in)
         }
     }
     ImgC4UC     final;
-    fgImgShrink2(img,final);
+    imgShrink2(img,final);
     return final;
 }
 
 Vec3Fs
-fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
+embossMesh(const Mesh & mesh,const ImgUC & logoImg,double val)
 {
     Vec3Fs         ret;
     // Don't check for UV seams, just let the emboss value be the last one traversed:
@@ -694,9 +694,9 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
             Vec3UI   uvInds = surf.tris.uvInds[ii],
                         vtInds = surf.tris.vertInds[ii];
             for (uint jj=0; jj<3; ++jj) {
-                Vec2F        uv = mesh.uvs[uvInds[jj]];
+                Vec2F           uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = sampleClip(logoImg,uv) / 255.0f;
+                float           imgSamp = sampleClipIucs(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
@@ -707,9 +707,9 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
             Vec4UI   uvInds = surf.quads.uvInds[ii],
                         vtInds = surf.quads.vertInds[ii];
             for (uint jj=0; jj<4; ++jj) {
-                Vec2F        uv = mesh.uvs[uvInds[jj]];
+                Vec2F           uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = sampleClip(logoImg,uv) / 255.0f;
+                float           imgSamp = sampleClipIucs(logoImg,uv) / 255.0f;
                 uint            vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
@@ -717,7 +717,7 @@ fgEmboss(const Mesh & mesh,const ImgUC & logoImg,double val)
             }
         }
     }
-    float       fac = cMaxElem(cDims(fgReorder(mesh.verts,embossedVertInds))) * val;
+    float       fac = cMaxElem(cDims(reorder(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
@@ -863,15 +863,15 @@ fgSortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaq
         Vec2F            p = (Vec2F(it()) + Vec2F(0.5f)) / 512.0f;
         FgTriPoints         tps = grid.intersects(tris.vertInds,pts,p);
         Floats              depths;
-        for (FgTriPoint const & tp : tps)
+        for (TriPoint const & tp : tps)
             depths.push_back(fgBarycentricPos(tp.pointInds,tp.baryCoord,verts)[2]);
-        tps = fgReorder(tps,fgSortInds(depths));
+        tps = reorder(tps,fgSortInds(depths));
         float               transTotal = 1.0f;
         for (size_t ii=1; ii<tps.size(); ++ii) {
-            FgTriPoint const &  tp = tps[ii];
+            TriPoint const &  tp = tps[ii];
             if (tp.triInd >= numTransparent)
                 continue;                           // Don't analyze opaque
-            FgTriPoint const &  tpp = tps[ii-1];    // Obsfucating tri
+            TriPoint const &  tpp = tps[ii-1];    // Obsfucating tri
             if (tpp.triInd >= numTransparent)
                 continue;                           // Blocked by opaque
             Vec2F            uv = fgBarycentricUv(tpp.pointInds,tpp.baryCoord,src.uvs);
@@ -892,7 +892,7 @@ fgSortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaq
     Uints                 order;
     set<uint>               done;
     while (done.size() < numTransparent) {
-        float               minObs = numeric_limits<float>::max();
+        float               minObs = maxFloat();
         uint                mini = 0;
         for (uint ii=0; ii<numTransparent; ++ii) {
             if (done.find(ii) == done.end()) {
@@ -913,8 +913,8 @@ fgSortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaq
     }
     order = fgReverse(order);
     Surf     surf;
-    surf.tris.vertInds = fgReorder(tris.vertInds,order);
-    surf.tris.uvInds = fgReorder(tris.uvInds,order);
+    surf.tris.vertInds = reorder(tris.vertInds,order);
+    surf.tris.uvInds = reorder(tris.uvInds,order);
     Mesh        ret;
     ret.verts = src.verts;
     ret.uvs = src.uvs;

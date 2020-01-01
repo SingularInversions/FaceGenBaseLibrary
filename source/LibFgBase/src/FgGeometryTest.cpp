@@ -206,10 +206,10 @@ testRayPlaneIntersect()
                         r1 = rot * v1,
                         r2 = rot * v2;
         Mat33D     rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),Vec3D::randNormal());
-        Vec3D        p0 = rot3 * fgAsHomogVec(r0),
-                        p1 = rot3 * fgAsHomogVec(r1),
-                        p2 = rot3 * fgAsHomogVec(r2),
-                        pt = rot3 * fgAsHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
+        Vec3D        p0 = rot3 * asHomogVec(r0),
+                        p1 = rot3 * asHomogVec(r1),
+                        p2 = rot3 * asHomogVec(r2),
+                        pt = rot3 * asHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
         Vec4D        pln = cPlaneH(p0,p1,p2);
         Vec4D        is = linePlaneIntersect(pt*exp(randNormal()),pln);
         FGASSERT(approxEqualRelMag(pt,fgFromHomogVec(is),30));
@@ -242,7 +242,7 @@ testPointInTriangle()
     Vec2D    v0(0.0,0.0),
                 v1(1.0,0.0),
                 v2(0.0,1.0);
-    double      d = numeric_limits<double>::epsilon() * 100,
+    double      d = epsilonD() * 100,
                 d1 = 1.0 - d * 2.0;
     randSeedRepeatable();
     // In middle:

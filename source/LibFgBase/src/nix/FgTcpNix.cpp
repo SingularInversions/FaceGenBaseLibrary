@@ -74,7 +74,7 @@ fgTcpClient(
     // write() is same as send() with flag=0:
     int nBytes = write(clientSock,data.data(),int(data.size()));
     if (nBytes < int(data.size()))
-        FGASSERT_FALSE1(toString(nBytes));
+        FGASSERT_FALSE1(toStr(nBytes));
     //fgout << "done" << std::flush;
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
@@ -133,7 +133,7 @@ fgTcpServer(
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-    int rv = getaddrinfo(NULL,toString(port).c_str(),&hints,&servinfo);
+    int rv = getaddrinfo(NULL,toStr(port).c_str(),&hints,&servinfo);
     FGASSERT1(rv == 0,std::string(gai_strerror(rv)));
 
     // loop through all the results and bind to the first we can

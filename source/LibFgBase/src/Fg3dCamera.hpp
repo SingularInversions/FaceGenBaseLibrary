@@ -43,7 +43,7 @@ struct  CameraParams
 {
     Mat32D          modelBounds;
     // Model rotation around centre of model bounds:
-    QuaternionD   pose;
+    QuaternionD     pose;
     // Model translation parallel to image plane, relative to half max model bound:
     Vec2D           relTrans;
     // Scale relative to automatically determined size of object in image:

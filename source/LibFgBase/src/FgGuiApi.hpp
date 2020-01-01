@@ -26,9 +26,12 @@
 
 namespace Fg {
 
-// Gives choice of supported image load/save formats:
+// Gives radio button choice of supported image load/save formats:
 GuiVal<String>
-guiImageFormat(String const & label,bool warnTransparency);
+guiImageFormat(
+    String const &      label,
+    bool                warnTransparency,
+    Ustring const &     store);     // Don't store if empty
 
 }
 

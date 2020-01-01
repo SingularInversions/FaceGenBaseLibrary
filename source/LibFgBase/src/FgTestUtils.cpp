@@ -135,10 +135,10 @@ void
 fgRegressString(string const & data,Ustring const & relPath)
 {
     Ustring        dd = dataDir();
-    if (data == fgSlurp(dd+relPath))
+    if (data == loadRawString(dd+relPath))
         return;
     if (pathExists(dd+"_overwrite_baselines.flag"))
-        fgDump(data,dd+relPath);
+        saveRaw(data,dd+relPath);
 }
 
 }

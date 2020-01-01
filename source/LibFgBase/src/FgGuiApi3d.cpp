@@ -37,7 +37,7 @@ intersectMeshes(
         Vec3Fs const &         verts = rendMesh.posedVertsN.cref();
         Vec3Fs                 pvs(verts.size());
         for (size_t ii=0; ii<pvs.size(); ++ii) {
-            Vec4F            v = invXform * fgAsHomogVec(verts[ii]);
+            Vec4F            v = invXform * asHomogVec(verts[ii]);
             pvs[ii] = v.subMatrix<3,1>(0,0) / v[3];
         }
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
@@ -192,11 +192,11 @@ Gui3d::markVertex(
         if (origMeshPtr) {
             Mesh &              meshIn = *origMeshPtr;
             const Surf &     surf = meshIn.surfaces[pt.surfIdx];
-            uint                    facetIdx = maxIdx(pt.surfPnt.weights);
+            uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
             uint                    vertIdx = fgTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
             if (vertMarkMode == 0) {
-                if (!fgContains(meshIn.markedVerts,vertIdx))
+                if (!contains(meshIn.markedVerts,vertIdx))
                     meshIn.markedVerts.push_back(MarkedVert(vertIdx));
             }
             else if (vertMarkMode < 3) {
@@ -212,7 +212,7 @@ Gui3d::markVertex(
                     seam = topo.traceFold(cNormals(fgSvec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
                 for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
-                    if (!fgContains(meshIn.markedVerts,*it))
+                    if (!contains(meshIn.markedVerts,*it))
                         meshIn.markedVerts.push_back(MarkedVert(*it));
             }
         }
@@ -226,7 +226,7 @@ Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
     if (vpt.valid()) {
         MeshesIntersect       pt = vpt.val();
-        uint                    mi = maxIdx(pt.surfPnt.weights);
+        uint                    mi = cMaxIdx(pt.surfPnt.weights);
         RendMesh const &       rm = rms[pt.meshIdx];
         Mesh const &        mesh = rm.origMeshN.cref();
         Surf const &     surf = mesh.surfaces[pt.surfIdx];
@@ -249,7 +249,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
         RendMeshes const &          rms = rendMeshesN.cref();
         Vec3Fs const &             verts = rms[lastCtlClick.meshIdx].posedVertsN.cref();
         Vec3F                    vertPos0Hcs = verts[lastCtlClick.vertIdx];
-        Vec4F                    vertPos0d3ps = worldToD3ps * fgAsHomogVec(vertPos0Hcs);
+        Vec4F                    vertPos0d3ps = worldToD3ps * asHomogVec(vertPos0Hcs);
         // Convert delta to D3PS. Y inverted and Viewport aspect (compensated for in frustum)
         // is ratio to largest dimension:
         Vec2F                    delD3ps2 = 2.0f * Vec2F(delta) / float(cMaxElem(winSize));
@@ -270,7 +270,7 @@ Gui3d::ctrlShiftLeftDrag(Vec2UI winSize,Vec2I delta)
     if (bgImg.imgN.ptr) {
         const ImgC4UC & img = bgImg.imgN.cref();
         if (!img.empty()) {
-            Vec2F        del = fgMapDiv(Vec2F(delta),Vec2F(winSize));
+            Vec2F        del = mapDiv(Vec2F(delta),Vec2F(winSize));
             Vec2F &      offset = bgImg.offset.ref();
             offset += del;
         }

@@ -14,7 +14,7 @@
 namespace Fg {
 
 template<typename T>
-struct  FgGridIndex
+struct  GridIndex
 {
     AffineEw2F                clientToGridIpcs;
     Img<Svec<T> >    grid;       // Bins of client objects (bins not exactly square)

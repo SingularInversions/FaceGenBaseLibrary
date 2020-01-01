@@ -64,7 +64,6 @@ viewMesh(CLArgs const & args)
                     << syn.peekNext() << " will not be seen.";
             ImgC4UC         albedo = imgLoadAnyFormat(syn.next());
             fgout << fgnl << "Albedo map: " << albedo;
-            albedo = fgResizePow2Ceil(albedo);
             if (syn.more() && (syn.peekNext()[0] == '-')) {
                 if(syn.next() == "-t") {
                     ImgC4UC         trans = imgLoadAnyFormat(syn.next());
@@ -110,7 +109,7 @@ fgViewImagef(CLArgs const & args)
 {
     Syntax    syntax(args,"<imageFileName> [<saveName>]");
     ImgF      img;
-    if (fgToLower(fgPathToExt(syntax.next())) == "fgpbn")
+    if (toLower(pathToExt(syntax.next())) == "fgpbn")
         fgLoadPBin(syntax.curr(),img);
     else {
         if (fgCurrentBuildOS() != FgBuildOS::win)
@@ -133,12 +132,12 @@ fgCmdViewUvs(CLArgs const & args)
     ImgC4UC         img;
     while (syntax.more()) {
         string          fname = syntax.next(),
-                        ext = fgToLower(fgPathToExt(fname));
-        if (fgContains(meshLoadFormats(),ext)) {
+                        ext = toLower(pathToExt(fname));
+        if (contains(meshLoadFormats(),ext)) {
             Mesh    tmp = meshLoadAnyFormat(fname);
             if (tmp.uvs.empty())
                 syntax.error("Mesh has no UVs",fname);
-            mesh = fgMergeMeshes(mesh,tmp);
+            mesh = mergeMeshes(mesh,tmp);
         }
         else if (hasImgExtension(fname)) {
             if (!img.empty())
@@ -157,7 +156,7 @@ fgCmdViewUvs(CLArgs const & args)
 }
 
 vector<Cmd>
-fgCmdViewInfos()
+getViewCmds()
 {
     vector<Cmd>   cmds;
     cmds.push_back(Cmd(viewMesh,"mesh","Interactively view 3D meshes"));

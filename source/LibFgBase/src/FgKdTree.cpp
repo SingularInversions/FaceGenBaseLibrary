@@ -24,7 +24,7 @@ FgMagPnt
 FgKdTree::closest(Vec3F pos) const
 {
     FgMagPnt    none;
-    none.mag = numeric_limits<float>::max();
+    none.mag = maxFloat();
     return findBest(pos,none,uint(m_tree.size()-1),0);
 }
 

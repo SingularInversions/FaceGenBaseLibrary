@@ -135,10 +135,10 @@ FgLinkGraph<NodeData,LinkData>::addLink(
     // Update the node cross-referencing:
     for (size_t ii=0; ii<sinks.size(); ii++) {
         FGASSERT(sinks[ii] < uint(m_nodes.size()));
-        FGASSERT(!fgContains(sources,sinks[ii]));       // Causes nasty bugs later
+        FGASSERT(!contains(sources,sinks[ii]));       // Causes nasty bugs later
         Node &  node = m_nodes[sinks[ii]];
         if (node.incomingLink.valid())
-            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",toString(ii));
+            fgThrow("A FgLinkGraph node cannot be a sink for more than 1 link",toStr(ii));
         node.incomingLink = linkIdx;
     }
     for (size_t ii=0; ii<sources.size(); ii++) {

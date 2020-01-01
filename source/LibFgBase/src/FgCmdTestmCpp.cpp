@@ -182,7 +182,7 @@ thash(CLArgs const &)
 #else                                   // size_t is 32 bits:
         size_t              hval32 = hfn(str);
         uint64              lo = hval32,
-                            hi = hfn(str+toString(lo)),
+                            hi = hfn(str+toStr(lo)),
                             hval64 = lo | (hi << 32);
         fgout << fgnl << "32 bit hash: " << hval32 << " and 64 composite: " << hval64;
 #endif

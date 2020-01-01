@@ -178,7 +178,7 @@ static void StartsWith()
 
 static void Convert()
 {
-    string      utf8 = fgSlurp(dataDir()+"base/test/utf8_language_samples.txt"),
+    string      utf8 = loadRawString(dataDir()+"base/test/utf8_language_samples.txt"),
                 reg32 = fgToUtf8(fgToUtf32(utf8));
     FGASSERT(utf8 == reg32);
 #ifdef _WIN32

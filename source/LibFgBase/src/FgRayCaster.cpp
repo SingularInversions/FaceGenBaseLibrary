@@ -14,7 +14,7 @@ using namespace std;
 
 namespace Fg {
 
-FgTriInd::FgTriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
+TriInd::TriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
     : triIdx(uint32(triIdx_)), surfIdx(uint16(surfIdx_)), meshIdx(uint16(meshIdx_))
 {
     FGASSERT(triIdx < numeric_limits<uint32>::max());
@@ -22,11 +22,11 @@ FgTriInd::FgTriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
     FGASSERT(meshIdx < numeric_limits<uint16>::max());
 }
 
-FgRayCaster::FgRayCaster(
+RayCaster::RayCaster(
     const Meshes &      meshes,
     Affine3D              modelview,
     AffineEw2D            itcsToIucs_,
-    const FgLighting &      lighting_,
+    const Lighting &      lighting_,
     RgbaF                 background_)
     :
     itcsToIucs(itcsToIucs_),
@@ -73,7 +73,7 @@ FgRayCaster::FgRayCaster(
                     bnds[1] = cMax(v0[0],v1[0],v2[0]);
                     bnds[2] = cMin(v0[1],v1[1],v2[1]);
                     bnds[3] = cMax(v0[1],v1[1],v2[1]);
-                    grid.add(FgTriInd(tt,ss,mm),bnds);
+                    grid.add(TriInd(tt,ss,mm),bnds);
                 }
             }
         }
@@ -81,43 +81,48 @@ FgRayCaster::FgRayCaster(
 }
 
 RgbaF
-FgRayCaster::cast(Vec2F posIucs) const
+RayCaster::cast(Vec2F posIucs) const
 {
     FgBestN<float,Intersect,4>      best = closestIntersects(posIucs);
 
     // Compute ray color:
-    RgbaF             color = background;
+    RgbaF               color = background;
     for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
-        Intersect                   isct = best[ii-1].second;
-        const Tris &              tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
-        Material                  material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
-        const Normals &         norms = normss[isct.triInd.meshIdx];
-        Vec3UI                   vis = tris.vertInds[isct.triInd.triIdx];
+        Intersect           isct = best[ii-1].second;
+        const Tris &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
+        Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
+        const Normals &     norms = normss[isct.triInd.meshIdx];
+        Vec3UI              vis = tris.vertInds[isct.triInd.triIdx];
         // TODO: Use perspective-correct normal and UV interpolation (makes very little difference for small tris):
-        Vec3F                    n0 = norms.vert[vis[0]],
-                                    n1 = norms.vert[vis[1]],
-                                    n2 = norms.vert[vis[2]],
-                                    bc = Vec3F(isct.barycentric),
-                                    norm = fgNormalize(bc[0]*n0 + bc[1]*n1 + bc[2]*n2);
-        RgbaF                     albedo(230,230,230,255);
-        const Vec2Fs &           uvs = *uvsPtrs[isct.triInd.meshIdx];
+        Vec3F               n0 = norms.vert[vis[0]],
+                            n1 = norms.vert[vis[1]],
+                            n2 = norms.vert[vis[2]],
+                            bc = Vec3F(isct.barycentric),
+                            norm = normalize(bc[0]*n0 + bc[1]*n1 + bc[2]*n2);
+        RgbaF               albedo(230,230,230,255);
+        const Vec2Fs &      uvs = *uvsPtrs[isct.triInd.meshIdx];
+        Vec2F               uv {maxFloat()};
         if ((!tris.uvInds.empty()) && (!uvs.empty()) && (material.albedoMap) && (!material.albedoMap->empty())) {
-            Vec2F                uv;
-            Vec3UI               uvInds = tris.uvInds[isct.triInd.triIdx];
+            Vec3UI              uvInds = tris.uvInds[isct.triInd.triIdx];
             uv = bc[0]*uvs[uvInds[0]] + bc[1]*uvs[uvInds[1]] + bc[2]*uvs[uvInds[2]];
             uv[1] = 1.0f - uv[1];   // OTCS to IUCS
-            albedo = RgbaF(sampleClip(*material.albedoMap,uv));
+            albedo = RgbaF(sampleClipIucs(*material.albedoMap,uv));
         }
-        Vec3F            acc(0.0f);
+        Vec3F               acc(0.0f);
 	    float	            aw = albedo.alpha() / 255.0f;
-        Vec3F            surfColour = albedo.m_c.subMatrix<3,1>(0,0) * aw;
+        Vec3F               surfColour = albedo.m_c.subMatrix<3,1>(0,0) * aw;
         for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
-            FgLight         lgt = lighting.lights[ll];
-            float           fac = cDot(norm,lgt.direction);
+            Light               lgt = lighting.lights[ll];
+            float               fac = cDot(norm,lgt.direction);
             if (fac > 0.0f) {
-                acc += fgMapMul(surfColour,lgt.colour) * fac;
-                if (material.shiny) {
-                    Vec3F        reflectDir = norm * fac * 2.0f - lgt.direction;
+                acc += mapMul(surfColour,lgt.colour) * fac;
+                float           shininess = material.shiny ? 1.0f : 0.0f;
+                if ((uv[0] != maxFloat()) && material.specularMap && !material.specularMap->empty()) {
+                    RgbaF           s = sampleClipIucs(*material.specularMap,uv);
+                    shininess = scast<float>(s.red()) / 255.0f;
+                }
+                if (shininess > 0.0f) {
+                    Vec3F           reflectDir = norm * fac * 2.0f - lgt.direction;
                     if (reflectDir[2] > 0.0f) {
                         float       deltaSqr = sqr(reflectDir[0]) + sqr(reflectDir[1]),
                                     val = exp(-deltaSqr * 32.0f);
@@ -126,42 +131,42 @@ FgRayCaster::cast(Vec2F posIucs) const
                 }
             }
         }
-        acc += fgMapMul(surfColour,lighting.ambient);
-        RgbaF    isctColor = RgbaF(acc[0],acc[1],acc[2],albedo.alpha());
-        color = fgCompositeFragment(isctColor,color);
+        acc += mapMul(surfColour,lighting.ambient);
+        RgbaF           isctColor = RgbaF(acc[0],acc[1],acc[2],albedo.alpha());
+        color = compositeFragment(isctColor,color);
      }
      return color;
 }
 
 Vec3F
-FgRayCaster::oecsToIucs(Vec3F posOecs) const
+RayCaster::oecsToIucs(Vec3F posOecs) const
 {
     // Inverse depth value (map to -1 for points behind camera (OECS)):
     double          id = (posOecs[2] == 0.0f) ? -1.0 : (-1.0 / posOecs[2]);
-    Vec2D        itcs(posOecs[0]*id,-posOecs[1]*id),     // Both Y and Z change sign in OECS -> ITCS
+    Vec2D           itcs(posOecs[0]*id,-posOecs[1]*id),     // Both Y and Z change sign in OECS -> ITCS
                     iucs = itcsToIucs * itcs;
     return Vec3F(iucs[0],iucs[1],id);
 }
 
-FgBestN<float,FgRayCaster::Intersect,4>
-FgRayCaster::closestIntersects(Vec2F posIucs) const
+FgBestN<float,RayCaster::Intersect,4>
+RayCaster::closestIntersects(Vec2F posIucs) const
 {
-    const FgTriInds &           triInds = grid[posIucs];
+    const TriInds &     triInds = grid[posIucs];
     FgBestN<float,Intersect,4> best;
-    for (FgTriInd ti : triInds) {
-        const Tris &          tris = trisss[ti.meshIdx][ti.surfIdx];
-        Vec3UI               vis = tris.vertInds[ti.triIdx];
-        const Vec3Fs &         iucsVerts = iucsVertss[ti.meshIdx];
-        Vec3F                v0 = iucsVerts[vis[0]],
-                                v1 = iucsVerts[vis[1]],
-                                v2 = iucsVerts[vis[2]];
-        Vec2D                u0(v0[0],v0[1]),
-                                u1(v1[0],v1[1]),
-                                u2(v2[0],v2[1]);
+    for (TriInd ti : triInds) {
+        const Tris &        tris = trisss[ti.meshIdx][ti.surfIdx];
+        Vec3UI              vis = tris.vertInds[ti.triIdx];
+        const Vec3Fs &      iucsVerts = iucsVertss[ti.meshIdx];
+        Vec3F               v0 = iucsVerts[vis[0]],
+                            v1 = iucsVerts[vis[1]],
+                            v2 = iucsVerts[vis[2]];
+        Vec2D               u0(v0[0],v0[1]),
+                            u1(v1[0],v1[1]),
+                            u2(v2[0],v2[1]);
         // TODO: make a float version of fgBarycentriCoords:
-        Opt<Vec3D>         bco = barycentricCoord(Vec2D(posIucs),u0,u1,u2);
+        Opt<Vec3D>          bco = barycentricCoord(Vec2D(posIucs),u0,u1,u2);
         if (bco.valid()) {       // TODO: filter out degenerate projected tris during cache setup
-            Vec3D            bc = bco.val();
+            Vec3D               bc = bco.val();
             // TODO: Use a consistent intersection policy to ensure only 1 tri of an edge-connected pair
             // is ever intersected:
             if ((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)) {     // Point landed on triangle:

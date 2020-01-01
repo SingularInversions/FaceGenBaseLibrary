@@ -8,5 +8,4 @@ add_library(LibFgWin STATIC ${SOURCES})
 
 target_link_libraries(LibFgWin
 	PUBLIC LibFgBase
-    PRIVATE opengl32.lib
     PRIVATE comctl32.lib)

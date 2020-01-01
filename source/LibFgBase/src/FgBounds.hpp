@@ -163,7 +163,7 @@ cMinElem(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
-maxIdx(const Mat<T,nrows,ncols> & mat)
+cMaxIdx(const Mat<T,nrows,ncols> & mat)
 {
     uint        idx(0);
     for (uint ii=1; ii<mat.numElems(); ++ii)
@@ -174,7 +174,7 @@ maxIdx(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
-minIdx(const Mat<T,nrows,ncols> & mat)
+cMinIdx(const Mat<T,nrows,ncols> & mat)
 {
     uint        idx(0);
     for (uint ii=1; ii<mat.numElems(); ++ii)
@@ -395,6 +395,11 @@ template<typename T>
 inline T
 clampBounds(T val,T lo,T hi)
 {return val < lo ? lo : (val > hi ? hi : val); }
+
+template<typename T>
+inline T
+clampBounds(T val,Mat<T,1,2> bounds)
+{return val < bounds[0] ? bounds[0] : (val > bounds[1] ? bounds[1] : val); }
 
 template<typename T>
 inline T

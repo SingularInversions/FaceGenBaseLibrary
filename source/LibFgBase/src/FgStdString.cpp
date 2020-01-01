@@ -14,7 +14,7 @@ using namespace std;
 namespace Fg {
 
 string
-fgToFixed(double val,uint fractionalDigits)
+toStrFixed(double val,uint fractionalDigits)
 {
     ostringstream   os;
     os << std::fixed << std::setprecision(fractionalDigits) << val;
@@ -22,11 +22,11 @@ fgToFixed(double val,uint fractionalDigits)
 }
 
 string
-fgToPercent(double val,uint fractionalDigits)
-{return fgToFixed(val*100.0,fractionalDigits) + "%"; }
+toStrPercent(double val,uint fractionalDigits)
+{return toStrFixed(val*100.0,fractionalDigits) + "%"; }
 
 std::string
-fgToLower(const std::string & s)
+toLower(const std::string & s)
 {
     string  retval;
     retval.reserve(s.size());
@@ -38,7 +38,7 @@ fgToLower(const std::string & s)
 }
 
 std::string
-fgToUpper(const std::string & s)
+toUpper(const std::string & s)
 {
     string  retval;
     retval.reserve(s.size());
@@ -50,7 +50,7 @@ fgToUpper(const std::string & s)
 }
 
 std::vector<string>
-fgSplitAtSeparators(
+splitAtSeparators(
     const std::string & str,
     char                sep)
 {
@@ -74,7 +74,7 @@ fgSplitAtSeparators(
 }
 
 std::string
-fgReplace(
+replaceAll(
     const std::string & str,
     char                orig,
     char                repl)
@@ -87,7 +87,7 @@ fgReplace(
 }
 
 string
-fgPad(string const & str,size_t len,char ch)
+padToLen(string const & str,size_t len,char ch)
 {
     string  ret = str;
     if (len > str.size())
@@ -109,7 +109,7 @@ cat(const vector<string> & strings,string const & separator)
 
 template<>
 Opt<int>
-fgFromStr(string const & str)
+fromStr(string const & str)
 {
     Opt<int>              ret;
     if (str.empty())
@@ -138,7 +138,7 @@ fgFromStr(string const & str)
 
 template<>
 Opt<uint>
-fgFromStr<uint>(string const & str)
+fromStr<uint>(string const & str)
 {
     Opt<uint>             ret;
     if (str.empty())

@@ -27,7 +27,7 @@ struct  RendOptions
     bool            markedVerts;
     bool            allVerts;
     bool            twoSided;
-    Vec3F           backgroundColor;
+    Vec3F           backgroundColor;    // Elements in [0,1]
     // Set by render impl not by client:
     bool            colorBySurface=false;
     bool            showAxes=false;
@@ -73,6 +73,7 @@ typedef Svec<RendSurf>  RendSurfs;
 
 struct  RendMesh
 {
+    // The original mesh will be empty if this mesh is not currently selected:
     NPT<Mesh>               origMeshN;          // Should point to an Input if client wants mesh editing
     NPT<Vec3Fs>             posedVertsN;
     DfgFPtr                 surfVertsFlag;      // Must point to 'posedVertsN'
@@ -110,17 +111,16 @@ struct  Gui3d : GuiBase
     // Unmodified sources. Must be defined unless labelled [opt]:
     NPT<RendMeshes>             rendMeshesN;
     NPT<size_t>                 panTiltMode;    // 0 - pan/tilt, 1 - unconstrained
-    RPT<FgLighting>             light;
-    NPT<Camera>             xform;
+    RPT<Lighting>               light;
+    NPT<Camera>                 xform;
     RPT<RendOptions>            renderOptions;
     IPT<bool>                   colorBySurface {false}; // Render each surface within a mesh a different color
     NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam
-    NPT<Ustring>               pointLabel;     // Label for surface point creation
+    NPT<Ustring>                pointLabel;     // Label for surface point creation
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
     struct  Capture {
-        Sfun<Vec2UI()>          getDims;
-        Sfun<ImgC4UC(Vec2UI)>       getImg;
+        Sfun<ImgC4UC(Vec2UI)>   getImg;
     };
     // Will contain the functions for capturing current render once the GPU is set up:
     Sptr<Capture> const         capture = std::make_shared<Capture>();
@@ -128,11 +128,11 @@ struct  Gui3d : GuiBase
     // Modified (by mouse/keyboard commands processed by viewport):
     IPT<double>                 panDegrees;
     IPT<double>                 tiltDegrees;
-    IPT<QuaternionD>          pose;
-    IPT<Vec2D>               trans;
+    IPT<QuaternionD>            pose;
+    IPT<Vec2D>                  trans;
     IPT<double>                 logRelSize;
-    IPT<Vec2UI>              viewportDims;
-    IPT<Ustring>               systemInfo;     // OpenGL system info placed here
+    IPT<Vec2UI>                 viewportDims;
+    IPT<Ustring>                gpuInfo;
 
     // Actions:
     struct  VertIdx
@@ -144,12 +144,12 @@ struct  Gui3d : GuiBase
     // WARNING: drag actions are subject to click actions before the drag since click actions
     // currently take effect on button down, not up:
     // bool: is shift key down as well ?
-    std::function<void(bool,VertIdx,Vec3F)>      ctlDragAction;          // Can be empty
-    IPT<BothButtonsDragAction>                      bothButtonsDragActionI;
-    IPT<ShiftRightDragAction>                       shiftRightDragActionI;
-    IPT<CtrlShiftMiddleClickAction>                 ctrlShiftMiddleClickActionI;
+    Sfun<void(bool,VertIdx,Vec3F)>  ctlDragAction;          // Can be empty
+    IPT<BothButtonsDragAction>      bothButtonsDragActionI;
+    IPT<ShiftRightDragAction>       shiftRightDragActionI;
+    IPT<CtrlShiftMiddleClickAction> shiftMiddleClickActionI;
 
-    Gui3d() {systemInfo.init(Ustring()); }
+    Gui3d() {}
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
@@ -187,7 +187,7 @@ struct  Gui3d : GuiBase
     ctrlShiftRightDrag(Vec2UI winSize,Vec2I delta);
 
 private:
-    VertIdx         lastCtlClick;
+    VertIdx             lastCtlClick;
 };
 
 }

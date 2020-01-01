@@ -63,7 +63,7 @@ fgTokenize(String const &);
 Strings
 splitLines(String const & src);
 
-FgStr32s
+String32s
 splitLines(const std::u32string & src,bool includeEmptyLines=false);
 
 Ustrings
@@ -107,7 +107,7 @@ String
 fgAsciify(String const &);
 
 std::u32string
-fgReplace(const std::u32string & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
+replaceAll(const std::u32string & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
 
 }
 

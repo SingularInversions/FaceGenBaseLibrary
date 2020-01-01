@@ -100,7 +100,7 @@ fileExists(Ustring const & fname)
 {return (!isDirectory(fname) && pathExists(fname)); }
 
 inline void
-fgRename(Ustring const & from,Ustring const & to)
+renameNode(Ustring const & from,Ustring const & to)
 {return boost::filesystem::rename(from.ns(),to.ns()); }
 
 // Update last written time on existing file (will not create). Avoid large files as it current re-writes:
@@ -121,15 +121,15 @@ directoryContents(Ustring const & dirName);
 
 // Directory names end with a delimiter:
 Ustring
-fgGetCurrentDir();
+getCurrentDir();
 
 bool                                // true if successful
-fgSetCurrentDir(
+setCurrentDir(
     Ustring const &    dir,        // Accepts full path or relative path
     bool throwOnFail=true);
 
 bool                                // true if successful
-fgSetCurrentDirUp();
+setCurrentDirUp();
 
 // Doesn't remove read-only files / dirs:
 inline void
@@ -142,28 +142,28 @@ deleteFile(Ustring const &);
 
 // Only works on empty dirs, return true if successful:
 bool
-fgRemoveDirectory(
+removeDirectory(
     Ustring const &    dirName,
     bool                throwOnFail=false);
 
 // Throws on failure:
 void
-fgRemoveDirectoryRecursive(Ustring const &);      // Full recursive delete
+deleteDirectoryRecursive(Ustring const &);      // Full recursive delete
 
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
-fgCreateDirectory(Ustring const &);
+createDirectory(Ustring const &);
 
 // Create all non-existing directories in given path.
 // An undelimited name will be created as a directory:
 void
-fgCreatePath(Ustring const &);
+createPath(Ustring const &);
 
 Ustring                        // Return the full path of the executable
-fgExecutablePath();
+getExecutablePath();
 
 Ustring                        // Return the full directory of the current application binary
-fgExecutableDirectory();
+getExecutableDirectory();
 
 // Returns true if the supplied filename is a file which can be read
 // by the calling process:
@@ -171,13 +171,13 @@ bool
 fileReadable(Ustring const & filename);
 
 String
-fgSlurp(Ustring const & filename);
+loadRawString(Ustring const & filename);
 
 // Setting 'onlyIfChanged' to false will result in the file always being written,
 // regardless of whether the new data may be identical.
 // Leaving 'true' is useful to avoid triggering unwanted change detections.
 bool    // Returns true if the file was written
-fgDump(String const & data,Ustring const & filename,bool onlyIfChanged=true);
+saveRaw(String const & data,Ustring const & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool
@@ -191,10 +191,12 @@ equateFilesText(Ustring const & fname0,Ustring const & fname1);
 
 // Returns false if the given file or directory cannot be read.
 // The returned time is NOT compatible with std raw time and will in fact crash fgDateTimeString().
+// Some *nix systems don't support creation time.
+// WINE API bug returns last modification time.
 bool
 getCreationTime(Ustring const & path,uint64 & time);
 
-// Works for both files and directories:
+// Works for both files and directories.
 // Don't use boost::filesystem::last_write_time(); it doesn't work; returns create time on Win.
 std::time_t
 getLastWriteTime(Ustring const & node);
@@ -229,23 +231,23 @@ struct  PushDir
     ~PushDir()
     {
         if (!orig.empty())
-            fgSetCurrentDir(orig[0]);
+            setCurrentDir(orig[0]);
     }
 
     void push(Ustring const & dir)
     {
-        orig.push_back(fgGetCurrentDir());
-        fgSetCurrentDir(dir);
+        orig.push_back(getCurrentDir());
+        setCurrentDir(dir);
     }
 
     void pop()
     {
-        fgSetCurrentDir(orig.back());
+        setCurrentDir(orig.back());
         orig.resize(orig.size()-1);
     }
 
     void change(Ustring const & dir)
-    {fgSetCurrentDir(dir); }
+    {setCurrentDir(dir); }
 };
 
 // Returns name of each matching file & dir:
@@ -283,11 +285,6 @@ fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir);
 // Doesn't work reliably across network shares due to time differences.
 void
 fgMirrorFile(const Path & src,const Path & dst);
-
-// Modify permissions to allow all users to write to given file (not directory).
-// Of course client must have right to do this:
-void
-fgMakeWritableByAll(Ustring const & name);
 
 }
 

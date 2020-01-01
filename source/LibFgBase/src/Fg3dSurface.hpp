@@ -191,8 +191,8 @@ fgSurfPointPos(
 struct  Material
 {
     bool                        shiny = false;  // Ignored if 'specularMap' below is non-empty
-    Sptr<ImgC4UC>                albedoMap;      // Can be nullptr but should not be the empty image
-    Sptr<ImgC4UC>                specularMap;    // TODO: Change to greyscale
+    Sptr<ImgC4UC>               albedoMap;      // Can be nullptr but should not be the empty image
+    Sptr<ImgC4UC>               specularMap;    // TODO: Change to greyscale
 };
 typedef Svec<Material>          Materials;
 typedef Svec<Materials>         Materialss;

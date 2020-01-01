@@ -47,10 +47,10 @@ saveDae(
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             const Surf &     surf = mesh.surfaces[ss];
             if (surf.hasUvIndices() && surf.material.albedoMap) {
-                string              id = toString(mm) + "_" + toString(ss);
+                string              id = toStr(mm) + "_" + toStr(ss);
                 Ustring            imgFile = fpath.base + id + "." + imgFormat;
                 ImgC4UC         *imgPtr = surf.material.albedoMap.get();
-                if (fgContains(imagesSaved,imgPtr))
+                if (contains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
                 else {
                     imgSaveAnyFormat(fpath.dir()+imgFile,*surf.material.albedoMap);
@@ -101,7 +101,7 @@ saveDae(
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         const Mesh &    mesh = meshes[mm];
         Normals         norms = cNormals(mesh);
-        string              id = "mesh" + toString(mm);
+        string              id = "mesh" + toStr(mm);
         Ustring            name = mesh.name.empty() ? id : mesh.name;
         ofs <<
             "    <geometry id=\"" << id << "\" name=\"" << name << "\">\n"

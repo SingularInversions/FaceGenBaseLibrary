@@ -13,7 +13,7 @@
 
 namespace Fg {
 
-struct  FgTriPoint
+struct  TriPoint
 {
     uint        triInd;         // Index of triangle in list
     // Indices of vertices of triangle in winding order (redundant to above for efficiency):
@@ -22,14 +22,14 @@ struct  FgTriPoint
     // must be used to linaerly interpolate attributes in the original space:
     Vec3F    baryCoord;
 };
-typedef Svec<FgTriPoint>     FgTriPoints;
+typedef Svec<TriPoint>     FgTriPoints;
 
 struct  FgGridTriangles
 {
     AffineEw2F            clientToGridIpcs;
     Img<Uints>        grid;               // Bins of indices into client triangle array
 
-    Opt<FgTriPoint>
+    Opt<TriPoint>
     nearestIntersect(
         const Vec3UIs &  tris,           // Must be same list used to initialize index
         const Vec2Fs &   verts,          // "

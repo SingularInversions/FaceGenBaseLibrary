@@ -138,8 +138,8 @@ emboss(CLArgs const & args)
         fgThrow("Only 1 surface currently supported",syntax.curr());
     float           val = syntax.nextAs<float>();
     if (!(val > 0.0f))
-        fgThrow("Emboss value must be > 0",toString(val));
-    mesh.verts = fgEmboss(mesh,img,val);
+        fgThrow("Emboss value must be > 0",toStr(val));
+    mesh.verts = embossMesh(mesh,img,val);
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -182,7 +182,7 @@ markVerts(CLArgs const & args)
                 totalMatches = 0;
     for (size_t vv=0; vv<verts.size(); ++vv) {
         Vec3F        v = verts[vv];
-        float           bestMag = numeric_limits<float>::max();
+        float           bestMag = maxFloat();
         uint            bestIdx = 0;
         for (size_t ii=0; ii<mesh.verts.size(); ++ii) {
             float       mag = cMag(mesh.verts[ii]-v);
@@ -193,7 +193,7 @@ markVerts(CLArgs const & args)
         }
         if (sqrt(bestMag) / dim > 0.00001f)
             ++poorMatches;
-        if (!fgContains(mesh.markedVerts,bestIdx)) {
+        if (!contains(mesh.markedVerts,bestIdx)) {
             mesh.markedVerts.push_back(MarkedVert(bestIdx));
             ++totalMatches;
         }
@@ -218,7 +218,7 @@ mmerge(CLArgs const & args)
     while (syntax.more()) {
         string  name = syntax.next();
         if (syntax.more())
-            mesh = fgMergeMeshes(mesh,meshLoadAnyFormat(name));
+            mesh = mergeMeshes(mesh,meshLoadAnyFormat(name));
         else
             meshSaveAnyFormat(mesh,name);
     }
@@ -272,10 +272,10 @@ rt(CLArgs const & args)
         size_t          si = syntax.nextAs<size_t>(),
                         ti = syntax.nextAs<size_t>();
         if (si >= mesh.surfaces.size())
-            fgThrow("Surface index out of bounds",toString(si),toString(mesh.surfaces.size()));
+            fgThrow("Surface index out of bounds",toStr(si),toStr(mesh.surfaces.size()));
         Surf &   surf = mesh.surfaces[si];
         if (ti >= surf.numTriEquivs())
-            fgThrow("Tri equiv index out of bounds",toString(ti),toString(surf.numTriEquivs()));
+            fgThrow("Tri equiv index out of bounds",toStr(ti),toStr(surf.numTriEquivs()));
         if (ti < surf.tris.size())
             surf.removeTri(ti);
         else {
@@ -332,7 +332,7 @@ sortFacets(CLArgs const & args)
     Ustring        outName = syn.next();
     Mesh        opaque;
     while (syn.more())
-        opaque = fgMergeMeshes(opaque,meshLoadAnyFormat(syn.next()));
+        opaque = mergeMeshes(opaque,meshLoadAnyFormat(syn.next()));
     mesh = fgSortTransparentFaces(mesh,albedo,opaque);
     meshSaveAnyFormat(mesh,outName);
 }
@@ -346,7 +346,7 @@ mergenamedsurfs(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
-    mesh = fgMergeSameNameSurfaces(mesh);
+    mesh = mergeSameNameSurfaces(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -374,7 +374,7 @@ splitsurfsbyuvs(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
-    mesh = fgSplitSurfsByUvs(mesh);
+    mesh = splitSurfsByUvs(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -389,14 +389,14 @@ splitsurface(CLArgs const & args)
         "    * Stores results to separate meshes with suffix '_<num>.tri'"
         );
     Mesh                mesh = meshLoadAnyFormat(syntax.next());
-    Ustring                base = fgPathToBase(syntax.curr());
+    Ustring                base = pathToBase(syntax.curr());
     uint                    idx = 0;
     Mesh                out = mesh;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         vector<Surf>     surfs = fgSplitSurface(mesh.surfaces[ss]);
         for (size_t ii=0; ii<surfs.size(); ++ii) {
             out.surfaces = fgSvec(surfs[ii]);
-            saveTri(base+"_"+toString(idx++)+".tri",out);
+            saveTri(base+"_"+toStr(idx++)+".tri",out);
         }
     }
 }
@@ -440,7 +440,7 @@ surfDel(CLArgs const & args)
     Mesh        mesh = meshLoadAnyFormat(syntax.next());
     size_t          idx = syntax.nextAs<uint>();
     if (idx >= mesh.surfaces.size())
-        syntax.error("Selected surface index out of range",toString(idx));
+        syntax.error("Selected surface index out of range",toStr(idx));
     mesh.surfaces.erase(mesh.surfaces.begin()+idx);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -596,7 +596,7 @@ unifyuvs(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
-    mesh = fgUnifyIdenticalUvs(mesh);
+    mesh = unifyIdenticalUvs(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -609,7 +609,7 @@ unifyverts(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
-    mesh = fgUnifyIdenticalVerts(mesh);
+    mesh = unifyIdenticalVerts(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -794,7 +794,7 @@ xformCreateRotate(CLArgs const & args)
         syntax.error("<axis> cannot be the empty string");
     char            axisName = std::tolower(axisStr[0]);
     double          degs = syntax.nextAs<double>(),
-                    rads = fgDegToRad(degs);
+                    rads = degToRad(degs);
     int             axisNum = int(axisName) - int('x');
     if ((axisNum < 0) || (axisNum > 2))
         syntax.error("Invalid value for <axis>",axisStr);
@@ -902,7 +902,7 @@ meshops(CLArgs const & args)
 }
 
 Cmd
-fgCmdMeshopsInfo()
+getMeshopsCmd()
 {return Cmd(meshops,"mesh","3D Mesh tools"); }
 
 }

@@ -63,7 +63,7 @@ struct TestDir
 
 // Creates a test directory with a name formed from the breadcrumb of commands, changes the
 // current directory to that, then reverts to the initial directory when it goes out of scope:
-#define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(fgToLower(args[0]));
+#define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(toLower(args[0]));
 
 // Set the root test directory. Useful for sandboxed platforms:
 void

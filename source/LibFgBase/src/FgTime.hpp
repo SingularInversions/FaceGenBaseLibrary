@@ -37,6 +37,9 @@ fgDate(time_t rawTime);
 String
 fgDateTimePath();
 
+String
+yearString();
+
 struct  FgTimer
 {
     uint64      m_startTime;

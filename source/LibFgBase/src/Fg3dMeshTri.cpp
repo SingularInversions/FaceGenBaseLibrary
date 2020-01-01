@@ -42,11 +42,12 @@ readString(istream & istr,bool wchar)
     return str;
 }
 
-void
-loadTri(istream & istr,Mesh & mesh)
+Mesh
+loadTri(istream & istr)
 {
+    Mesh            mesh;
     // Check for file type identifier
-    char                cdata[9];
+    char            cdata[9];
     istr.read(cdata,8);
     if (strncmp(cdata,"FRTRI103",8) == 0)
         fgThrow("File is encrypted, use 'fileconvert' utility to decrypt");
@@ -162,33 +163,12 @@ loadTri(istream & istr,Mesh & mesh)
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
             tm.baseInds.resize(numTargVerts);
             istr.read((char*)&tm.baseInds[0],4*numTargVerts);
-            tm.verts = fgSubvec(targVerts,targVertsStart,numTargVerts);
+            tm.verts = cutSubvec(targVerts,targVertsStart,numTargVerts);
             targVertsStart += numTargVerts;
             mesh.targetMorphs.push_back(tm);
         }
     }
-}
-
-Mesh
-loadTri(std::istream & is)
-{
-    Mesh        ret;
-    loadTri(is,ret);
-    return ret;
-}
-
-void
-loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail)
-{
-    try {
-        Ifstream      ff(fname);
-        loadTri(ff,ret);
-    }
-    catch (...) {
-        if (throwOnFail)
-            throw;
-    }
-    ret.name = fgPathToBase(fname);
+    return mesh;
 }
 
 Mesh
@@ -203,14 +183,12 @@ loadTri(Ustring const & fname)
         e.m_ct.back().dataUtf8 = fname.m_str;
         throw;
     }
-    ret.name = fgPathToBase(fname);
+    ret.name = pathToBase(fname);
     return ret;
 }
 
 Mesh
-loadTri(
-    Ustring const &    meshFile,
-    Ustring const &    texImage)
+loadTri(Ustring const & meshFile,Ustring const & texImage)
 {
     Mesh        mesh = loadTri(meshFile);
     imgLoadAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());

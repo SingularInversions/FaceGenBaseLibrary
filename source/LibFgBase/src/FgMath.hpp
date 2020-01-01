@@ -142,10 +142,8 @@ cMod(T val,T divisor)
 inline double constexpr pi()        {return 3.141592653589793237462643; }
 inline double constexpr ln2Pi()     {return 1.837877066409345483560659; }
 inline double constexpr sqrt2Pi()   {return 2.506628274631000502415765; }
-inline double   fgRadToDeg(double radians) {return radians * 180.0 / pi(); }
-inline double   fgDegToRad(double degrees) {return degrees * pi() / 180.0; }
-inline float    fgRadToDeg(float radians) {return radians * 180.0f / 3.14159265f; }
-inline float    fgDegToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
+inline double   degToRad(double degrees) {return degrees * pi() / 180.0; }
+inline float    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
 struct   Modulo
 {
@@ -247,7 +245,8 @@ inline uint64 cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
 inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
 // Avoid extra typing:
-inline double fgEpsilonD() {return std::numeric_limits<double>::epsilon(); }
+inline double epsilonD() {return std::numeric_limits<double>::epsilon(); }
+inline float maxFloat() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
 Svec<double>
@@ -269,7 +268,7 @@ fgConvolveGauss(
 // (important when one value may be very small or zero).
 inline
 double
-fgRelDiff(double a,double b,double minAbs=fgEpsilonD())
+fgRelDiff(double a,double b,double minAbs=epsilonD())
 {
     double      del = b-a,
                 denom = std::abs(b)+std::abs(a);
@@ -278,7 +277,7 @@ fgRelDiff(double a,double b,double minAbs=fgEpsilonD())
 }
 
 Svec<double>
-fgRelDiff(const Svec<double> & a,const Svec<double> & b,double minAbs=fgEpsilonD());
+fgRelDiff(const Svec<double> & a,const Svec<double> & b,double minAbs=epsilonD());
 
 // Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
 template<class T>

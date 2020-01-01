@@ -47,7 +47,7 @@ doMenu(
     bool                    optionQuiet,
     bool                    optionKeep)
 {
-    s_breadcrumb += fgToLower(fgPathToBase(args[0]).m_str) + "_";
+    s_breadcrumb += toLower(pathToBase(args[0]).m_str) + "_";
     string      cl,desc;
     if (optionQuiet) {
         cl +=   "[-s] ";
@@ -82,7 +82,7 @@ doMenu(
             syntax.error("Invalid option");
     }
     string      cmd = syntax.next(),
-                cmdl = fgToLower(cmd);
+                cmdl = toLower(cmd);
     if (optionAll) {
         if (cmdl == "all") {
             fgout << fgnl << "Testing: " << fgpush;
@@ -96,7 +96,7 @@ doMenu(
         }
     }
     for (size_t ii=0; ii<cmds.size(); ++ii) {
-        if (cmdl == fgToLower(cmds[ii].name)) {
+        if (cmdl == toLower(cmds[ii].name)) {
             cmds[ii].func(syntax.rest());
             if (optionAll && (cmdl == "all"))
                 fgout << fgpop << fgnl << "Passed.";
@@ -124,7 +124,7 @@ TestDir::TestDir(string const & name)
     if (s_annotateTestDir.size() > 0)
         dt += " " + s_annotateTestDir;
     path.dirs.push_back(dt);
-    fgCreatePath(path.dir());
+    createPath(path.dir());
     pd.push(path.str());
     if (s_keepTempFiles)
         fgout.logFile("_log.txt");
@@ -136,10 +136,10 @@ TestDir::~TestDir()
         pd.pop();
         if (!s_keepTempFiles) {
             // Recursively delete the directory for this test:
-            fgRemoveDirectoryRecursive(path.str());
+            deleteDirectoryRecursive(path.str());
             // Remove the test name directory if empty:
             path.dirs.resize(path.dirs.size()-1);
-            fgRemoveDirectory(path.str());
+            removeDirectory(path.str());
         }
     }
 }
@@ -151,7 +151,7 @@ fgSetRootTestDir(Ustring const & dir)
 void
 fgTestCopy(string const & relPath)
 {
-    Ustring        name = fgPathToName(relPath);
+    Ustring        name = pathToName(relPath);
     if (pathExists(name))
         fgThrow("Test copy filename collision",name);
     Ustring        source = dataDir() + relPath;

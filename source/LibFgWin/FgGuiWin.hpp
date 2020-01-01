@@ -155,8 +155,8 @@ winCreateChild(
 {
     std::string     classNameA = typeid(ChildImpl).name();
     // Different class options mean different classes:
-    classNameA +=   toString(size_t(opt.cursor)) + "_" +
-                    toString(size_t(opt.useFillBrush));
+    classNameA +=   toStr(size_t(opt.cursor)) + "_" +
+                    toStr(size_t(opt.useFillBrush));
     std::wstring    className = Ustring(classNameA).as_wstring();
     FGASSERT(className.size() < 256);     // Windows limit
     WNDCLASSEX  wcl;

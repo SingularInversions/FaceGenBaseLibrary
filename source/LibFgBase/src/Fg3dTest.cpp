@@ -131,12 +131,12 @@ edgeDist(CLArgs const &)
     vector<float>   edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
     float           distMax = 0;
     for (size_t ii=0; ii<edgeDists.size(); ++ii)
-        if (edgeDists[ii] < numeric_limits<float>::max())
+        if (edgeDists[ii] < maxFloat())
             setIfGreater(distMax,edgeDists[ii]);
     float           distToCol = 255.99f / distMax;
     vector<uchar>   colVal(edgeDists.size(),255);
     for (size_t ii=0; ii<colVal.size(); ++ii)
-        if (edgeDists[ii] < numeric_limits<float>::max())
+        if (edgeDists[ii] < maxFloat())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(ImgC4UC(128,128,RgbaUC(255)));
     AffineEw2F    otcsToIpcs = fgOtcsToIpcs(Vec2UI(128));

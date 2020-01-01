@@ -47,7 +47,7 @@ directoryContents(Ustring const & dirName)
 }
 
 Ustring
-fgGetCurrentDir()
+getCurrentDir()
 {
     char    buff[512] = {0};
     if (!getcwd(buff,511))
@@ -59,7 +59,7 @@ fgGetCurrentDir()
 }
 
 bool
-fgSetCurrentDir(
+setCurrentDir(
     Ustring const &    dir,
     bool                throwOnFail)
 {
@@ -71,7 +71,7 @@ fgSetCurrentDir(
 }
 
 bool
-fgCreateDirectory(Ustring const & dir)
+createDirectory(Ustring const & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
@@ -82,7 +82,7 @@ deleteFile(Ustring const & fname)
 {pathRemove(fname); }
 
 bool
-fgRemoveDirectory(
+removeDirectory(
     Ustring const &    dir,
     bool                throwOnFail)
 {
@@ -159,17 +159,13 @@ std::time_t
 getLastWriteTime(Ustring const & path)
 {return boost::filesystem::last_write_time(path.ns()); }
 
-void
-fgMakeWritableByAll(Ustring const &)
-{throw FgExceptionNotImplemented(); }
-
 #if defined(__APPLE__)
 
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
 
 Ustring
-fgExecutablePath()
+getExecutablePath()
 {
     CFURLRef bundleUrlRef(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
     FGASSERT(bundleUrlRef);
@@ -190,7 +186,7 @@ fgExecutablePath()
 #else
 
 Ustring
-fgExecutablePath()
+getExecutablePath()
 {
     std::ostringstream os;
     os.imbue(std::locale::classic());

@@ -24,7 +24,7 @@ savePly(
     const vector<Mesh> & meshes,
     string                  imgFormat)
 {
-    Mesh    mesh = fgMergeMeshes(meshes);
+    Mesh    mesh = mergeMeshes(meshes);
     Path      path(fname);
     path.ext = "ply";
     Ofstream  ofs(path.str());
@@ -35,7 +35,7 @@ savePly(
     size_t      imgCnt = 0;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         if (mesh.surfaces[ii].material.albedoMap) {
-            Ustring    texFile = path.base + toString(ii) + "." + imgFormat;
+            Ustring    texFile = path.base + toStr(ii) + "." + imgFormat;
             imgSaveAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
             ofs << "comment TextureFile " << texFile << "\n";
         }

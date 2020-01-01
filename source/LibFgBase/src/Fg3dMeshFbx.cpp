@@ -62,7 +62,7 @@ idVideo(size_t mm,size_t tt)
 static
 string
 nmVideo(size_t mm,size_t tt)
-{return "\"Video::Video"+toString(mm)+"_"+toString(tt)+"\""; }
+{return "\"Video::Video"+toStr(mm)+"_"+toStr(tt)+"\""; }
 
 void
 saveFbx(
@@ -298,7 +298,7 @@ saveFbx(
                 "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
                 "        }\n"
                 "    }\n";
-            Ustring    texBaseExt = path.base + toString(mm) + "_" + toString(tt) + "." + imgFormat;
+            Ustring    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
                 imgSaveAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<

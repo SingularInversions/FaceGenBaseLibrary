@@ -52,7 +52,7 @@ struct  FgException
         std::string                 // UTF-8
         noTrans() const;
     };
-    std::vector<Context>    m_ct;
+    std::vector<Context>    m_ct;       // From lowest stack/context to highest
 
     virtual
     ~FgException()

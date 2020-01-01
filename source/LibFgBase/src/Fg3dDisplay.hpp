@@ -48,7 +48,7 @@ makeRendCtrls(
 
 GuiPtr
 makeLightingCtrls(
-    RPT<FgLighting>         lightingR,                              // Assigned
+    RPT<Lighting>         lightingR,                              // Assigned
     IPT<BothButtonsDragAction> bothButtonsDragActionI,    // "
     Ustring const &        storePath);
 
@@ -66,7 +66,10 @@ makeViewCtrls(
 
 // Returns an image save dialog window to save from the given render capture function:
 GuiPtr
-guiCaptureSaveImage(Sptr<Gui3d::Capture> const & capture);
+guiCaptureSaveImage(
+    NPT<Vec2UI>                     viewportDims,
+    Sptr<Gui3d::Capture> const &    capture,
+    Ustring const &                 store);
 
 OPT<Vec3Fs>
 linkAllVerts(NPT<Mesh>);

@@ -44,7 +44,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         m_panes.resize(m_api.panes.size());
         for (size_t ii=0; ii<m_api.panes.size(); ++ii) {
             m_panes[ii] = m_api.panes[ii]->getInstance();
-            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+toString(ii),NULL,visible);
+            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
         }
 //fgout << fgpop;
     }

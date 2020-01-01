@@ -68,11 +68,22 @@ fgDateTimePath()
     return string(buffer);
 }
 
+String
+yearString()
+{
+    time_t          rawTime;
+    time(&rawTime);
+    struct tm *     fmtTime = gmtime(&rawTime);
+    ostringstream   oss;
+    oss << fmtTime->tm_year+1900;
+    return oss.str();
+}
+
 std::ostream &
 operator<<(std::ostream & os,const FgTimer & t)
 {
     double      et = t.read();
-    return os << "Elapsed time: " << fgToStringPrecision(et,4) << " s";
+    return os << "Elapsed time: " << toStrPrecision(et,4) << " s";
 }
 
 void

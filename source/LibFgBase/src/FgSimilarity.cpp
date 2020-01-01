@@ -82,6 +82,7 @@ similarityApprox(
 Affine3D
 SimilarityRD::asAffine() const
 {
+    // Since 'Affine' applies translation second: v' = sR(v+t) = sRv + sRt
     Affine3D      ret;
     ret.linear = rot.asMatrix() * scale;
     ret.translation = ret.linear * trans;
@@ -94,7 +95,7 @@ fgSimilarityTest(CLArgs const &)
     SimilarityD    sim(expSafe(randNormal()),QuaternionD(Vec4D::randNormal()),Vec3D::randNormal());
     SimilarityD    id = sim * sim.inverse();
     Mat33D        diff = id.asAffine() * Mat33D::identity() - Mat33D::identity();
-    FGASSERT(cMax(mapAbs(diff.m)) < numeric_limits<double>::epsilon()*8);
+    FGASSERT(cMax(mapAbs(diff.m)) < epsilonD()*8);
 }
 
 void

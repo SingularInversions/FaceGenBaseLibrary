@@ -18,22 +18,16 @@ using namespace std;
 
 namespace Fg {
 
-namespace fgCl {
-
-bool preview = false;
-
 bool
-run(string const & cmd,bool throwIfError,int rvalMask)
+clRun(string const & cmd,bool throwIfError,int rvalMask)
 {
     fgout << fgnl << cmd << "\n";   // DOS output lines will always start in zero'th column anyway
-    int     retval = 0;
-    if (!preview)
-        retval = system(cmd.c_str());
+    int         retval = system(cmd.c_str());
     // Some commands such as robocopy have several non-error return codes.
     if ((retval & rvalMask) != 0)
     {
         if (throwIfError)
-            fgThrow("Error exit code from command",toString(retval));
+            fgThrow("Error exit code from command",toStr(retval));
         else
             fgout << fgnl << "Error exit code from command: " << retval;
         return false;
@@ -41,7 +35,36 @@ run(string const & cmd,bool throwIfError,int rvalMask)
     return true;
 }
 
-}   // namespace
+#ifdef _WIN32
+
+void
+clUnzip(string const & fname)
+{
+    clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" x "+fname+" >> log.txt");
+}
+
+void
+clZip(string const & dir,bool oldFormat)
+{
+    string      ext = (oldFormat ? ".zip " : ".7z ");
+    clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" a "+dir+ext+dir+" >> log.txt");
+}
+
+#else
+
+void
+unzip(string const &)
+{
+    throw FgExceptionNotImplemented();
+}
+
+void
+zip(string const & ,string const & )
+{
+    throw FgExceptionNotImplemented();
+}
+
+#endif
 
 }
 

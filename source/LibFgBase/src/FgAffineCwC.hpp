@@ -31,7 +31,6 @@ struct  AffineEw
 
     // Conversion constructor:
     template<class U>
-    explicit
     AffineEw(const AffineEw<U,dim> & rhs) :
         m_scales(Mat<T,dim,1>(rhs.m_scales)),
         m_trans(Mat<T,dim,1>(rhs.m_trans))
@@ -65,14 +64,17 @@ struct  AffineEw
         return ret;
     }
 
-    // Composition: y = Sx + t, z = S'y + t' = S'(Sx+t) + t'
+    // Composition:
+    // y = Sx + t
+    // z = S'y + t' = S'(Sx+t) + t' = (S'S)x + (S't + t')
+    // rhs below is 'y' above:
     AffineEw<T,dim>
     operator*(AffineEw<T,dim> rhs) const
     {
         AffineEw<T,dim>      ret;
         for (uint dd=0; dd<dim; ++dd) {
             ret.m_scales[dd] = m_scales[dd] * rhs.m_scales[dd];
-            ret.m_trans[dd] = m_trans[dd] + m_scales[dd] * rhs.m_trans[dd];
+            ret.m_trans[dd] = m_scales[dd] * rhs.m_trans[dd] + m_trans[dd];
         }
         return ret;
     }

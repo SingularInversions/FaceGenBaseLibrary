@@ -29,15 +29,15 @@ testCurrentDirectory(CLArgs const & args)
     {
         char32_t        ch = 0x00004EE5;            // A Chinese character
         Ustring        chinese(ch);
-        Ustring        oldDir = fgGetCurrentDir();
+        Ustring        oldDir = getCurrentDir();
         Ustring        dirName = chinese + fgDirSep();
-        fgCreateDirectory(dirName);
-        fgSetCurrentDir(dirName);
-        Ustring        newDir = fgGetCurrentDir();
+        createDirectory(dirName);
+        setCurrentDir(dirName);
+        Ustring        newDir = getCurrentDir();
         Ustring        expected = oldDir + dirName;
-        fgSetCurrentDir(oldDir);
-        Ustring        restored = fgGetCurrentDir();
-        FGASSERT(fgRemoveDirectory(dirName));
+        setCurrentDir(oldDir);
+        Ustring        restored = getCurrentDir();
+        FGASSERT(removeDirectory(dirName));
         fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
         fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
         fgout << fgnl << "Expected directory:    " << expected.as_utf8_string();
@@ -84,12 +84,12 @@ testDeleteDirectory(CLArgs const & args)
     char32_t        ch = 0x000000A2;              // The cent sign
     Ustring        cent = Ustring(ch)+"/";
     Ustring        name = "testDeleteDirectory/";
-    fgCreateDirectory(name);
+    createDirectory(name);
     FGASSERT(pathExists(name));
-    fgCreateDirectory(name+cent);
+    createDirectory(name+cent);
     fgSaveXml(name+cent+"a",42);
     fgSaveXml(name+"b",21);
-    fgRemoveDirectoryRecursive(name);
+    deleteDirectoryRecursive(name);
     FGASSERT(!pathExists(name));
 }
 
@@ -99,7 +99,7 @@ testRecursiveCopy(CLArgs const & args)
 {
     FGTESTDIR
     string          path = "silly-v3.4.7/subdir/";
-    fgCreatePath("tst1/"+path);
+    createPath("tst1/"+path);
     Ofstream      ofs("tst1/"+path+"file");
     ofs << "hello";
     ofs.close();

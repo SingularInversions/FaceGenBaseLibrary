@@ -19,9 +19,9 @@ struct  GuiImageWin : public GuiBaseImpl
 {
     HWND                m_hwnd;
     GuiImage            m_api;
-    Vec2UI           m_size;
-    Vec2I            m_posWhenLButtonClicked;
-    Vec2I            m_lastPos;                  // Last mouse position in CC
+    Vec2UI              m_size;
+    Vec2I               m_posWhenLButtonClicked;
+    Vec2I               m_lastPos;                  // Last mouse position in CC
     bool                dragging;
 
     GuiImageWin(const GuiImage & api)

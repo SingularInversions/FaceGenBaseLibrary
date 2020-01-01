@@ -129,39 +129,65 @@ inline To
 scast(From val)
 {return static_cast<To>(val); }
 
+// 'round' for static cast which does proper rounding when necessary:
 // No bounds checking is done by these 'round' functions:
+
 template<
     typename To,
     typename From,
-    // Use this implementation if the output type is signed:
-    typename std::enable_if<std::is_signed<To>::value,To>::type* =nullptr
+    // Use this implementation if the output type is signed integral
+    typename std::enable_if<std::is_signed<To>::value,To>::type* =nullptr,
+    typename std::enable_if<std::is_integral<To>::value,To>::type* =nullptr
 >
 inline To
 round(From v)
 {
     static_assert(std::is_floating_point<From>::value,"round only from floating point");
-    static_assert(std::is_integral<To>::value,"round only to integral");
     return static_cast<To>(std::floor(v+From(0.5)));
 }
 
 template<
     typename To,
     typename From,
-    // Use this implementation if the output type is unsigned:
-    typename std::enable_if<std::is_unsigned<To>::value,To>::type* =nullptr
+    // Use this implementation if the output type is unsigned integral
+    typename std::enable_if<std::is_unsigned<To>::value,To>::type* =nullptr,
+    typename std::enable_if<std::is_integral<To>::value,To>::type* =nullptr
 >
 inline To
 round(From v)
 {
     static_assert(std::is_floating_point<From>::value,"round only from floating point");
-    static_assert(std::is_integral<To>::value,"round only to integral");
     return static_cast<To>(v+From(0.5));
+}
+
+template<
+    typename To,
+    typename From,
+    // Use this implementation if the output type is floating (no rounding necessary):
+    typename std::enable_if<std::is_floating_point<To>::value,To>::type* =nullptr
+>
+inline To
+round(From v)
+{
+    static_assert(std::is_floating_point<From>::value,"round only from floating point");
+    return static_cast<To>(v);
 }
 
 template<typename To,typename From>
 void
 round_(From from,To & to)
 {to = round<To,From>(from); }
+
+template<
+    typename T,
+    typename std::enable_if<std::is_arithmetic<T>::value,T>::type* =nullptr
+>
+T
+interpolate(T v0,T v1,float val)   // returns v0 when val==0, v1 when val==1
+{
+    float       v = static_cast<float>(v0) * (1.0f-val) + static_cast<float>(v1) * val;
+    return round<T,float>(v);
+}
 
 }
 

@@ -11,13 +11,14 @@
 
 namespace Fg {
 
-Cmd   fgCmdImgopsInfo();
-Cmd   fgCmdMeshopsInfo();
-Cmd   fgCmdMorphInfo();
-Cmd   fgCmdRenderInfo();
-Cmd   fgCmdTriexportInfo();
-void    fgCmdCons(CLArgs const &);
-Svec<Cmd> fgCmdViewInfos();
+Cmd     getImgopsCmd();
+Cmd     getMeshopsCmd();
+Cmd     getMorphCmd();
+Cmd     getRenderCmd();
+Cmd     getTriExportCmd();
+void    cmdCons(CLArgs const &);
+Cmds    getViewCmds();
+Cmd     getCompileShadersCmd();
 
 }
 

@@ -65,33 +65,31 @@ fgNTent(uint nn);
 //fgFddCage(float size,float thick);
 
 Mesh
-fgMergeSameNameSurfaces(const Mesh &);
+mergeSameNameSurfaces(const Mesh &);
 
 Mesh
-fgUnifyIdenticalVerts(const Mesh &);
+unifyIdenticalVerts(const Mesh &);
 
 Mesh
-fgUnifyIdenticalUvs(const Mesh &);
+unifyIdenticalUvs(const Mesh &);
 
 Mesh
-fgSplitSurfsByUvs(const Mesh &);
+splitSurfsByUvs(const Mesh &);
 
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:
 Mesh
-fgMergeMeshSurfaces(
-    const Mesh &    m0,
-    const Mesh &    m1);
+mergeMeshSurfaces(const Mesh & m0,const Mesh & m1);
 
 // Material of second mesh is discarded, all else (including names) are merged:
 Mesh
-fgMergeMeshes(
+mergeMeshes(
     const Mesh &    m0,
     const Mesh &    m1);
 
 // As above:
 Mesh
-fgMergeMeshes(const Svec<Mesh> & meshes);
+mergeMeshes(const Svec<Mesh> & meshes);
 
 // Doesn't preserve uvs, surface points or marked verts:
 Mesh
@@ -109,7 +107,7 @@ fgUvWireframeImage(const Mesh &,const ImgC4UC & img=ImgC4UC());
 // corresponding to a displacement (in the direction of surface normal) by 'ratio' times the
 // max bounding box dimensions of all vertices whose UV coordinate in 'pattern' sample to non-zero:
 Vec3Fs
-fgEmboss(const Mesh & mesh,const ImgUC & pattern,double ratio=0.05);
+embossMesh(const Mesh & mesh,const ImgUC & pattern,double ratio=0.05);
 
 struct  FgMorphVal
 {

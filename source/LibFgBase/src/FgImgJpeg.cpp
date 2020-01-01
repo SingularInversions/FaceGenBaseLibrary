@@ -148,7 +148,7 @@ ok:
 cleanup:
     jpeg_destroy_decompress(&cinfo);
     if (allocError)
-        fgThrow("Allocation error in loadJpeg for size: "+toString(allocErrorSz));
+        fgThrow("Allocation error in loadJpeg for size: "+toStr(allocErrorSz));
     return succeeded;
 }
 

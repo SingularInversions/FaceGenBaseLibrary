@@ -14,6 +14,7 @@
 #include "FgBuild.hpp"
 #include "FgVersion.hpp"
 #include "FgSystemInfo.hpp"
+#include "FgCl.hpp"
 
 using namespace std;
 
@@ -103,7 +104,7 @@ sysinfo(CLArgs const &)
 {
     fgout
         << fgnl << "Computer name: " << fgComputerName()
-        << fgnl << "OS: " << fgOsName() << (fg64bitOS() ? " (64 bit)" : " (32 bit)")
+        << fgnl << "OS: " << osDescription()
         << fgnl << "CPU hardware threads: " << std::thread::hardware_concurrency()
         << fgnl << "Executable:" << fgpush
 #ifdef __APPLE__
@@ -158,7 +159,7 @@ fgCmdBaseTest(CLArgs const & args)
 
 void
 view(CLArgs const & args)
-{doMenu(args,fgCmdViewInfos()); }
+{doMenu(args,getViewCmds()); }
 
 /**
    \defgroup Base_Commands Base Library Command Line
@@ -169,18 +170,47 @@ fgCmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 
-    vector<Cmd>   cmds;
-    cmds.push_back(fgCmdImgopsInfo());
-    cmds.push_back(fgCmdMeshopsInfo());
-    cmds.push_back(fgCmdMorphInfo());
-    cmds.push_back(fgCmdRenderInfo());
-    cmds.push_back(fgCmdTriexportInfo());
-    cmds.push_back(Cmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
-    cmds.push_back(Cmd(sysinfo,"sys","Show system info"));
-    cmds.push_back(Cmd(fgCmdBaseTest,"test","Automated tests"));
-    cmds.push_back(Cmd(testm,"testm","Manual tests"));
-    cmds.push_back(Cmd(view,"view","Interactively view various file types"));
+    Cmds        cmds {
+        {getImgopsCmd()},
+        {getMeshopsCmd()},
+        {getCompileShadersCmd()},
+        {getMorphCmd()},
+        {getRenderCmd()},
+        {getTriExportCmd()},
+        {cmdCons,"cons","Construct makefiles / solution file / project files"},
+        {sysinfo,"sys","Show system info"},
+        {fgCmdBaseTest,"test","Automated tests"},
+        {testm,"testm","Manual tests"},
+        {view,"view","Interactively view various file types"}
+    };
     doMenu(args,cmds);
+}
+
+Cmd
+getCompileShadersCmd()
+{
+    Cmd         ret;
+#ifdef _WIN32
+    ret = Cmd {
+        [](CLArgs const &)
+        {
+            PushDir     pd(dataDir()+"base/shaders/");
+            // Seems from online chat that the default optimization /O1 is no different than /O2 or /O3 ...
+            // /WX - warnings as errors
+            // CSO - compiled shader object (.fxc is legacy; effects compiler)
+            clRun("fxc /T vs_5_0 /E VSTransform /WX /Fo dx11_shared_VS.cso dx11_shared.hlsl");
+            clRun("fxc /T vs_5_0 /E VSTransparentPass2 /WX /Fo dx11_transparent_VS.cso dx11_transparent.hlsl");
+            clRun("fxc /T ps_5_0 /E PSOpaque /WX /Fo dx11_opaque_PS.cso dx11_opaque.hlsl");
+            clRun("fxc /T ps_5_0 /E PSTransparentPass1 /WX /Fo dx11_transparent_PS1.cso dx11_transparent.hlsl");
+            clRun("fxc /T ps_5_0 /E PSTransparentPass2 /WX /Fo dx11_transparent_PS2.cso dx11_transparent.hlsl");
+        },
+        "d3d",
+        "Compile Direct3D shaders"
+    };
+#else
+    fgThrow("Shader compilation not supported on this platform");
+#endif
+    return ret;
 }
 
 }

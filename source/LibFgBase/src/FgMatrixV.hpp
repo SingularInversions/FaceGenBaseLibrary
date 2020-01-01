@@ -354,7 +354,7 @@ struct  MatV
                 MatV    axis = ret.rowVec(rr);
                 vec -=  axis * cDot(vec,axis);
             }
-            ret.setSubMat(row,0,fgNormalize(vec));
+            ret.setSubMat(row,0,normalize(vec));
         }
         return ret;
     }
@@ -515,6 +515,17 @@ template<class T>
 T
 cDot(const MatV<T> & lhs,const MatV<T> & rhs)
 {return cDot(lhs.m_data,rhs.m_data); }
+
+// Linear interpolation between matrices of equal dimensions:
+template<class T>
+void
+interpolate_(MatV<T> const & v0,MatV<T> const & v1,T val,MatV<T> & ret)
+{
+    Vec2UI              dims = v0.dims();
+    FGASSERT(v1.dims() == dims);
+    ret.resize(dims);
+    interpolate_(v0.m_data,v1.m_data,val,ret.m_data);
+}
 
 // Map 'abs':
 template<class T>
@@ -744,7 +755,7 @@ fgDiagonal(const MatV<T> & vec)
 
 template<class T>
 MatV<T>
-fgNormalize(const MatV<T> & m)
+normalize(const MatV<T> & m)
 {return m * (1/std::sqrt(m.mag())); }
 
 template<class T>
@@ -770,7 +781,7 @@ fgVecVecToMatrix(const Svec<Svec<T> > & vss)    // vss must be non-empty with al
     FGASSERT(!vss.empty());
     size_t          numRows = vss.size(),
                     numCols = vss[0].size();
-    Svec<T>       data = flat(vss);
+    Svec<T>       data = flatten(vss);
     FGASSERT(data.size() == numRows*numCols);
     return MatV<T>(numRows,numCols,data);
 }

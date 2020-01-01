@@ -29,7 +29,7 @@
 // USAGE NOTES:
 //
 // * posIrcs = posIpcs - 0.5 (thus floor(posIpcs) rounds to nearest int posIpcs)
-// * posIpcs = fgMapMul(posIucs,image.dims())
+// * posIpcs = mapMul(posIucs,image.dims())
 
 #ifndef FGIMGBASE_HPP
 #define FGIMGBASE_HPP

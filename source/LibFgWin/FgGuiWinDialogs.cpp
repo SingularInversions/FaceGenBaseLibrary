@@ -17,9 +17,6 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-template<class T>
-using Unique = std::unique_ptr<T,Fg::Release<T> >;
-
 void
 guiDialogMessage(
     Ustring const & cap,
@@ -46,7 +43,7 @@ guiDialogFileLoad(
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -82,7 +79,7 @@ guiDialogFileLoad(
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if ((hr == S_OK) && (pszFilePath != NULL)) {
@@ -105,7 +102,7 @@ guiDialogFileSave(
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -141,7 +138,7 @@ guiDialogFileSave(
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
@@ -161,7 +158,7 @@ guiDialogDirSelect()
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
@@ -174,13 +171,13 @@ guiDialogDirSelect()
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
                 Ustring         str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
-                return fgAsDirectory(str);
+                return asDirectory(str);
             }
         }
     }
@@ -292,8 +289,10 @@ guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
     progBar.progressSteps = progressSteps;
     // Create the dialog window with the main window as its parent window:
     HWND                    hwndMain = winCreateDialog(title,s_guiWin.hwndMain,&progBar);
-    EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     ShowWindow(hwndMain,SW_SHOWNORMAL);
+    // Don't disable until dialog showing, then enable before dialog is destroyed, or else
+    // the main window focus can be lost:
+    EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     UpdateWindow(hwndMain);
     Ustring                 errMsg;
     thread                  compute(threadWorker,
@@ -308,8 +307,9 @@ guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
             break;
     }
     compute.join();
+    EnableWindow(s_guiWin.hwndMain,TRUE);       // Re-enable main window
     DestroyWindow(hwndMain);
-    EnableWindow(s_guiWin.hwndMain,TRUE);    // Re-enable main window
+    UpdateWindow(s_guiWin.hwndMain);            // Avoid losing focus ... doesn't always work.
     if (!errMsg.empty())
         fgThrow("Exception in guiDialogProgress",errMsg);
     return !progBar.cancelFlag;

@@ -90,7 +90,7 @@ struct  Quaternion
     }
 
     Mat<T,4,1>
-    asVect4() const
+    asVec4() const
     {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
 
     bool            // false if zero magnitude
@@ -122,30 +122,30 @@ operator*(const Quaternion<T> & lhs,const Mat<T,3,ncols> & rhs)
 
 template <class T>
 std::ostream& operator<<(std::ostream& s,const Quaternion<T> & q)
-{return (s << q.asVect4()); }
+{return (s << q.asVec4()); }
 
 typedef Quaternion<float>    QuaternionF;
 typedef Quaternion<double>   QuaternionD;
 
 inline
 QuaternionD
-fgRotateX(double radians)
+cRotateX(double radians)
 {return QuaternionD(radians,0); }
 
 inline
 QuaternionD
-fgRotateY(double radians)
+cRotateY(double radians)
 {return QuaternionD(radians,1); }
 
 inline
 QuaternionD
-fgRotateZ(double radians)
+cRotateZ(double radians)
 {return QuaternionD(radians,2); }
 
 // Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
 // Useful for rotation prior.
 double
-fgTanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
+tanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
 
 }
 

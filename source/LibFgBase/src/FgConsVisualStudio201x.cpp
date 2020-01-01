@@ -62,9 +62,9 @@ writeVcxproj(
     Strings          includes = sln.getIncludes(proj.name,false),
                     defines = sln.getDefs(proj.name),
                     lnkDeps = sln.getLnkDeps(proj.name);
-    string          verStr = toStringDigits(vsver,2),
+    string          verStr = toStrDigits(vsver,2),
                     projDir = proj.name + "/VisualStudio" + verStr + "/";
-    fgCreateDirectory(projDir);
+    createDirectory(projDir);
     string          projFile = projDir + proj.name + ".vcxproj";
     ostringstream   ofs;
     string          config[] = {"Debug","Release"};
@@ -198,7 +198,7 @@ writeVcxproj(
             ofs <<
                 "      <AdditionalIncludeDirectories>";
             for (string const & relPath : includes) {
-                string          dir = fgReplace(relPath,'/','\\');
+                string          dir = replaceAll(relPath,'/','\\');
                 ofs << "..\\" << dir << ";";    // .vcxproj file is in a subdir of project dir
             }
             ofs <<
@@ -214,7 +214,7 @@ writeVcxproj(
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
             // Tried "EnableAllWarnings" but got tons of warning from boost include files:
-            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + toString(proj.warn);
+            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + toStr(proj.warn);
             ofs <<
                 "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
                 "      <WarningLevel>" << warnStr << "</WarningLevel>\n"
@@ -222,9 +222,12 @@ writeVcxproj(
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
                 // Note that MSVC fast floating point model is an extension to the standard and thus cannot
                 // be used in combination with disabling MSVC language extensions:
-                "      <FloatingPointModel>Fast</FloatingPointModel>\n"
-                // No downside to supporting OpenMP in Visual Studio:
-                "      <OpenMPSupport>true</OpenMPSupport>\n";
+                "      <FloatingPointModel>Fast</FloatingPointModel>\n";
+                // Don't support OpenMP in Visual Studio since:
+                // * It's a pain to get working cross platform
+                // * If used it requires VCOMP140.DLL which is not always present with Win7
+                // * Threads aren't much more work
+                //"      <OpenMPSupport>true</OpenMPSupport>\n";
             if (vsver >= 17)    // Improved error position indicator:
                 ofs <<
                 "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n";
@@ -237,8 +240,10 @@ writeVcxproj(
                         << "</GenerateDebugInformation>\n"
                     "      <SubSystem>" << (proj.isGuiExecutable() ? "Windows" : "Console") << "</SubSystem>\n"
                     "      <TargetMachine>MachineX" << ((bb == 0) ? "86" : "64") << "</TargetMachine>\n"
+                    // As far as I can tell, the DLLs associated with these libs are always included with
+                    // windows so do not need redistribution:
                     "      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;"
-                        "opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;";
+                        "advapi32.lib;comdlg32.lib;Shell32.lib;";
                 for (string const & dll : lnkDeps)
                     if (!sln.contains(dll))         // Binary-only DLL
                         ofs << dll << ".lib;";
@@ -282,10 +287,10 @@ writeVcxproj(
     ofs << "  <ItemGroup>\n";
     for (const FgConsSrcDir & grp : proj.srcGroups) {
         for (size_t ff=0; ff<grp.files.size(); ++ff) {
-            string path = fgReplace(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
-            if (fgEndsWith(grp.files[ff],".cpp") || fgEndsWith(grp.files[ff],".c"))
+            string path = replaceAll(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
+            if (endsWith(grp.files[ff],".cpp") || endsWith(grp.files[ff],".c"))
                 ofs << "    <ClCompile Include=\"..\\" << path << "\"";
-            else if (fgEndsWith(grp.files[ff],".hpp") || fgEndsWith(grp.files[ff],".h"))
+            else if (endsWith(grp.files[ff],".hpp") || endsWith(grp.files[ff],".h"))
                 ofs << "    <ClInclude Include=\"..\\" << path << "\"";
             else
                 fgThrow("Unrecognized source file type",grp.files[ff]);
@@ -365,7 +370,7 @@ writeVcxproj(
         "  <ImportGroup Label=\"ExtensionTargets\">\n"
         "  </ImportGroup>\n"
         "</Project>\n";
-    return fgDump(ofs.str(),projFile.c_str());
+    return saveRaw(ofs.str(),projFile.c_str());
 }
 
 static
@@ -378,7 +383,7 @@ writeSln(
 {
     // Create solution file:
     string          rootName("VisualStudio"),
-                    verStr = toStringDigits(vsver,2),
+                    verStr = toStrDigits(vsver,2),
     // Visual studio completely changes the SLN UUID if any project is added or removed.
     // It does not change either UUID if project properties are modified:
                     slnGuid = fgCreateMicrosoftGuid(merkle+verStr);
@@ -482,7 +487,7 @@ writeSln(
         "		SolutionGuid = {39B2BC3E-9FF2-4906-92AE-80DBB3FF9746}\n"
         "	EndGlobalSection\n"
         "EndGlobal\n";
-    return fgDump(ofs.str(),rootName+verStr+".sln");
+    return saveRaw(ofs.str(),rootName+verStr+".sln");
 }
 
 bool

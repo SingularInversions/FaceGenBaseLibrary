@@ -1997,7 +1997,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
                     if (maxLen > 0)
                         if (baseName.size() > maxLen)
                             baseName.resize(maxLen);
-                    texBase = baseName + toString(imgIdx++) + "." + imgFormat;
+                    texBase = baseName + toStr(imgIdx++) + "." + imgFormat;
                     imgSaveAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
                 }
                 od.triList = surf.tris.vertInds;

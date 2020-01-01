@@ -84,7 +84,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -107,7 +106,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -129,7 +127,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -154,7 +151,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -163,8 +159,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\FgClusterWin.cpp" />
-    <ClCompile Include="..\FgClWin.cpp" />
     <ClCompile Include="..\FgConioWin.cpp" />
+    <ClCompile Include="..\FgDirect3D.cpp" />
+    <ClInclude Include="..\FgDirect3D.hpp" />
     <ClCompile Include="..\FgFileSystemWin.cpp" />
     <ClCompile Include="..\FgGui3dWin.cpp" />
     <ClCompile Include="..\FgGuiWin.cpp" />
@@ -199,7 +196,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClInclude Include="..\stdafx.h" />
-    <ClInclude Include="..\wglext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

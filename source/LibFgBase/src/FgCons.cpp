@@ -109,7 +109,7 @@ FgConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<s
     if (p.isDynamicLib())
         return ret;
     for (const FgProjDep & pd : p.projDeps) {
-        if (!fgContains(done,pd.name) && pd.transitive) {
+        if (!Fg::contains(done,pd.name) && pd.transitive) {
             cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
             done.insert(pd.name);
         }
@@ -152,7 +152,7 @@ FgConsSolution::getTransitiveDefs(string const & projName,set<string> & done) co
     if (p.isDynamicLib())
         return ret;
     for (const FgProjDep & pd : p.projDeps) {
-        if (!fgContains(done,pd.name) && pd.transitive) {
+        if (!Fg::contains(done,pd.name) && pd.transitive) {
             fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
             done.insert(pd.name);
         }
@@ -180,7 +180,7 @@ Strings
 FgConsSolution::getTransitiveLnkDeps(string const & projName,set<string> & done) const
 {
     Strings              ret;
-    if (fgContains(done,projName))
+    if (Fg::contains(done,projName))
         return ret;
     const FgConsProj &  p = at(projName);
     if (p.isStaticLib())                // Only static libs link transitively, not DLLs:
@@ -208,7 +208,7 @@ Strings
 FgConsSolution::getAllDeps(string const & projName,set<string> & done,bool dllSource) const
 {
     Strings      ret;
-    if (fgContains(done,projName))
+    if (Fg::contains(done,projName))
         return ret;
     const FgConsProj &  p = at(projName);
     if (!dllSource && p.isDynamicLib())
@@ -344,7 +344,7 @@ fgConsBuildAllFiles()
 }
 
 void
-fgCmdCons(CLArgs const & args)
+cmdCons(CLArgs const & args)
 {
     Syntax        syntax(args,
         "(sln | make) <option>*\n"

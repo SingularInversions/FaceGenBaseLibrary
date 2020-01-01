@@ -48,8 +48,8 @@ struct  AffineEwPre
                             rangeHi = range.colVec(1),
                             rangeSize = rangeHi-rangeLo;
         FGASSERT(domainSize.cmpntsProduct() > 0);
-        m_scales = fgMapDiv(rangeSize,domainSize);
-        m_trans = fgMapDiv(rangeLo,m_scales) - domainLo;
+        m_scales = mapDiv(rangeSize,domainSize);
+        m_trans = mapDiv(rangeLo,m_scales) - domainLo;
     }
 
     template<uint ncols>

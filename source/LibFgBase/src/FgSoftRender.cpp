@@ -29,17 +29,17 @@ namespace Fg {
 ImgC4UC
 renderSoft(
     Vec2UI                  pxSz,
-    Meshes const &           meshes,
+    Meshes const &          meshes,
     Affine3D                modelview,
     AffineEw2D              itcsToIucs,
-    FgRenderOptions const & options)
+    RenderOptions const &   options)
 {
     ImgC4UC             img;
     VecF2               colorBounds = cBounds(options.backgroundColor.m_c.m);
     FGASSERT((colorBounds[0] >= 0.0f) && (colorBounds[1] <= 255.0f));
-    FgRayCaster         rc(meshes,modelview,itcsToIucs,options.lighting,options.backgroundColor);
-    // The 'std::cref' for the 'rc' arg is critical; otherwise 'rc' gets copied on every call:
-    img = fgSampler(pxSz,std::bind(&FgRayCaster::cast,std::cref(rc),_1),options.antiAliasBitDepth);
+    RayCaster         rc(meshes,modelview,itcsToIucs,options.lighting,options.backgroundColor);
+    // The 'cref' for the 'rc' arg is critical; otherwise 'rc' gets copied on every call:
+    img = sampleAdaptive(pxSz,bind(&RayCaster::cast,cref(rc),_1),options.antiAliasBitDepth);
 
     // Calculate where the surface points land:
     FgProjSurfPoints    spps;
@@ -59,9 +59,9 @@ renderSoft(
                 Vec3F               spIucs = rc.oecsToIucs(spOecs);
                 spp.posIucs = Vec2F(spIucs[0],spIucs[1]);
                 if (spIucs[2] > 0) {                                // Point is in front of the camera
-                    FgBestN<float,FgRayCaster::Intersect,4>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
+                    FgBestN<float,RayCaster::Intersect,4>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
                     if (!intscts.empty()) {                         // Point is in view of camaera
-                        FgRayCaster::Intersect  intsct = intscts[0].second;     // First is closest
+                        RayCaster::Intersect  intsct = intscts[0].second;     // First is closest
                         if ((intsct.triInd.meshIdx != mm) ||
                             (intsct.triInd.surfIdx != ss) ||
                             (intsct.triInd.triIdx != sp.triEquivIdx)) {         // Point is occluded
@@ -108,7 +108,7 @@ fgSoftRenderTest(CLArgs const &)
     Surf &   surf = mesh.surfaces[0];
     Affine3D      modelview;      // Default is identity
     AffineEw2D    itcsToIucs(Vec2D(0.5),Vec2D(0.5));
-    FgRenderOptions ro;
+    RenderOptions ro;
 
     // Model a single triangle of equal width and height intersected by the optical axis in OECS at the barycentric centre:
     mesh.verts = { {-1,1.5,-4}, {-1,-1.5,-4}, {2,0,-4} };
@@ -117,17 +117,17 @@ fgSoftRenderTest(CLArgs const &)
     // Test that the point is visible in the current configuration:
     ro.renderSurfPoints = FgRenderSurfPoints::whenVisible;
     ImgC4UC     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t0.png",std::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<ImgC4UC>(img,"t0.png",bind(fgImgApproxEqual,_1,_2,2U));
     // Flip the winding to test the surface point is not visible from behind:
     surf.tris.vertInds.back() = {1,0,2};
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t4.png",std::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<ImgC4UC>(img,"t4.png",bind(fgImgApproxEqual,_1,_2,2U));
     surf.tris.vertInds.back() = {0,1,2};    // Restore
     // Place a triangle just in front to test occlusion of the surface point:
     mesh.verts.push_back( {2,0,-3.9} );
     surf.tris.vertInds.push_back( {0,1,3} );
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t3.png",std::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<ImgC4UC>(img,"t3.png",bind(fgImgApproxEqual,_1,_2,2U));
 
 
     // Model 2 right angle triangles making a sqaure with a checkerboard color map (preserving aspect ratio):
@@ -140,14 +140,14 @@ fgSoftRenderTest(CLArgs const &)
         bool        alternate = (it()[0] & 16) != (it()[1] & 16);
         map[it()] = alternate ? RgbaUC(0,0,0,255) : RgbaUC(255,255,255,255);
     }
-    surf.material.albedoMap = std::make_shared<ImgC4UC>(map);
+    surf.material.albedoMap = make_shared<ImgC4UC>(map);
     // View undistorted checkerboard flat on:
     img = renderSoft(Vec2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t1.png",std::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<ImgC4UC>(img,"t1.png",bind(fgImgApproxEqual,_1,_2,2U));
     // View at an angle to see perspective distortion:
     modelview = Affine3D(Vec3D(0,0,-4)) * Affine3D(matRotateY(1.0)) * Affine3D(Vec3D(0,0,4));
     img = renderSoft(Vec2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t2.png",std::bind(fgImgApproxEqual,_1,_2,2U));
+    fgRegress<ImgC4UC>(img,"t2.png",bind(fgImgApproxEqual,_1,_2,2U));
 }
 
 Cmd

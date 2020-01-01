@@ -74,7 +74,7 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
             residual += sqr(recon.rc(ii,jj) - mat.rc(ii,jj));
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
-    double          tol = numeric_limits<double>::epsilon() * sqrt(dim) * 2.0;
+    double          tol = epsilonD() * sqrt(dim) * 2.0;
     fgout << fgnl << "Dim: " << dim << fgpush
         << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol
         << fgnl << "Time: " << time
@@ -144,7 +144,7 @@ testSymmEigenTime(CLArgs const & args)
             residual += sqr(recon.rc(ii,jj) - mat.rc(ii,jj));
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
-    double          tol = numeric_limits<double>::epsilon() * sqrt(dim) * 2.0;
+    double          tol = epsilonD() * sqrt(dim) * 2.0;
     fgout << fgnl << "Dim: " << dim << fgpush
         << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol
         << fgnl << "Time: " << time;

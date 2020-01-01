@@ -257,7 +257,7 @@ testMul(CLArgs const & args)
     if (fgAutomatedTest(args))
         return;
     Syntax        syn(args,"<size>");
-    size_t          sz = fgFromStr<size_t>(syn.next()).val();
+    size_t          sz = fromStr<size_t>(syn.next()).val();
     MatD       m0 = MatD::randNormal(sz,sz),
                     m1 = MatD::randNormal(sz,sz);
     FgTimer         timer;
@@ -286,7 +286,7 @@ eigenTest(CLArgs const & args)
     if (fgAutomatedTest(args))
         return;
     Syntax            syn(args,"<size>");
-    size_t              sz = fgFromStr<size_t>(syn.next()).val();
+    size_t              sz = fromStr<size_t>(syn.next()).val();
     MatrixXd            l(sz,sz),
                         r(sz,sz);
     for (size_t rr=0; rr<sz; ++rr) {
@@ -296,7 +296,7 @@ eigenTest(CLArgs const & args)
         }
     }
     {
-        FgTimeScope     ts("Eigen mat mul " + toString(sz));
+        FgTimeScope     ts("Eigen mat mul " + toStr(sz));
         MatrixXd        m = l * r;
     }
 }

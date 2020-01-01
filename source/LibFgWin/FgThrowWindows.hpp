@@ -25,7 +25,7 @@ throwWindows(const std::string & msg,const std::string & data)
 template<class T>
 void
 throwWindows(const std::string & msg,const T & data)
-{return throwWindows(msg,Ustring(toString(data))); }
+{return throwWindows(msg,Ustring(toStr(data))); }
 
 void
 assertWindows(const char * fname,int line);
@@ -35,13 +35,25 @@ assertWinReturnZero(const char * fname,int line,long rval);
 
 // Templated custom destructor superior to function object since it's compatible with containers:
 template<class T>
-struct      Release
+struct      WinRelease
 {
     // unique_ptr only calls this if ptr != nullptr:
     void operator()(T* ptr) const {ptr->Release(); }
 };
 
+template<class T>
+using WinPtr = std::unique_ptr<T,WinRelease<T> >;
+
+// Reference-counted pointer:
+template<class T>
+using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+void
+assertHResult(char const * fpath,uint lineNum,HRESULT hr);
+
 }
+
+#define FG_ASSERT_HR(hr) Fg::assertHResult(__FILE__,__LINE__,hr)
 
 #define FGASSERTWIN(X)                                                  \
     if(X) (void) 0;                                                     \

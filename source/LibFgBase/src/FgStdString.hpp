@@ -19,13 +19,13 @@ namespace Fg {
 typedef std::string             String;
 typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
-typedef Svec<std::u32string>    FgStr32s;
+typedef Svec<std::u32string>    String32s;
 
 // More general than std::to_string since it uses operator<< which can be defined for
 // user-defined types as well. Also, to_string can cause ambiguous call errors.
 template<class T>
 String
-toString(const T & val)
+toStr(const T & val)
 {
     std::ostringstream   msg;
     msg << val;
@@ -33,7 +33,7 @@ toString(const T & val)
 }
 template<>
 inline String
-toString(String const & str)
+toStr(String const & str)
 {return str; }
 
 // Default uses standard stream input "lexical conversions".
@@ -41,7 +41,7 @@ toString(String const & str)
 // Define fully specialized versions where this behaviour is not desired:
 template<class T>
 Opt<T>
-fgFromStr(String const & str)
+fromStr(String const & str)
 {
     T                   val;
     std::istringstream  iss(str);
@@ -51,15 +51,15 @@ fgFromStr(String const & str)
     return Opt<T>(val);
 }
 // Only valid integer representations within the range of int32 will return a valid value, whitespace invalid:
-template<> Opt<int> fgFromStr<int>(String const &);
-template<> Opt<uint> fgFromStr<uint>(String const &);
+template<> Opt<int> fromStr<int>(String const &);
+template<> Opt<uint> fromStr<uint>(String const &);
 
 // Throws if the String is not formatted correctly:
 template<class T>
 T
-fgFromString(String const & str)
+fromStrThrow(String const & str)
 {
-    Opt<T>    oval = fgFromStr<T>(str);
+    Opt<T>    oval = fromStr<T>(str);
     if (!oval.valid())
         throw FgException("Unable to convert String to type",String(typeid(T).name())+":"+str);
     return oval.val();
@@ -68,7 +68,7 @@ fgFromString(String const & str)
 // Ensures a minimum number of digits are printed:
 template<class T>
 String
-toStringDigits(T val,uint numDigits)
+toStrDigits(T val,uint numDigits)
 {
     std::ostringstream   oss;
     oss << std::setw(numDigits) << std::setfill('0') << val;
@@ -78,39 +78,39 @@ toStringDigits(T val,uint numDigits)
 // Sets the desired total number of digits (precision):
 template<class T>
 String
-fgToStringPrecision(T val,uint precision)
+toStrPrecision(T val,uint numDigits)
 {
     std::ostringstream   oss;
-    oss.precision(precision);
+    oss.precision(numDigits);
     oss << val;
     return oss.str();
 }
 
 // Set the number of digits beyond fixed point:
 String
-fgToFixed(double val,uint fractionalDigits=0);
+toStrFixed(double val,uint fractionalDigits=0);
 
 // Multiply by 100 and put a percent sign after:
 String
-fgToPercent(double val,uint fractionalDigits=0);
+toStrPercent(double val,uint fractionalDigits=0);
 
 String
-fgToLower(String const & s);
+toLower(String const & s);
 
 String
-fgToUpper(String const & s);
+toUpper(String const & s);
 
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
 Svec<String>
-fgSplitAtSeparators(String const & str,char sep);
+splitAtSeparators(String const & str,char sep);
 
 String
-fgReplace(String const & str,char orig,char repl);
+replaceAll(String const & str,char orig,char repl);
 
 // Pad a String to desired len (does not truncate of longer):
 String
-fgPad(String const & str,size_t len,char ch=' ');
+padToLen(String const & str,size_t len,char ch=' ');
 
 // Inspired by Python join():
 String
@@ -135,40 +135,24 @@ cat(String const & s0,String const & s1,String const & s2)
     return ret;
 }
 
-// C++98 doesn't support .back() for strings:
-inline
-char
-fgBack(String const & s)
-{
-    FGASSERT(!s.empty());
-    return *(--s.end());
-}
-inline
-char &
-fgBack(String & s)
-{
-    FGASSERT(!s.empty());
-    return *(--s.end());
-}
-
 template<typename T>
 bool
-fgContains(const std::basic_string<T> & str,T ch)
+contains(const std::basic_string<T> & str,T ch)
 {return (str.find(ch) != std::basic_string<T>::npos); }
 
 template<typename T>
 bool
-fgContains(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
+contains(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
 {return (str.find(pattern) != std::basic_string<T>::npos); }
 
 template<typename T>
 bool
-fgContains(const std::basic_string<T> & str,const T * pattern_c_str)
-{return fgContains(str,std::basic_string<T>(pattern_c_str)); }
+contains(const std::basic_string<T> & str,const T * pattern_c_str)
+{return contains(str,std::basic_string<T>(pattern_c_str)); }
 
 template<typename T>
 std::basic_string<T>
-fgHead(const std::basic_string<T> & str,size_t size)
+cutHead(const std::basic_string<T> & str,size_t size)
 {
     FGASSERT(size <= str.size());
     return std::basic_string<T>(str.begin(),str.begin()+size);
@@ -176,7 +160,7 @@ fgHead(const std::basic_string<T> & str,size_t size)
 
 template<class T>
 std::basic_string<T>
-fgRest(const std::basic_string<T> & str,size_t start=1)
+cutRest(const std::basic_string<T> & str,size_t start=1)
 {
     FGASSERT(start <= str.size());      // Can be size zero
     return std::basic_string<T>(str.begin()+start,str.end());
@@ -184,7 +168,7 @@ fgRest(const std::basic_string<T> & str,size_t start=1)
 
 template<class T>
 std::basic_string<T>
-fgSubstr(const std::basic_string<T> & str,size_t start,size_t size)
+cutSubstr(const std::basic_string<T> & str,size_t start,size_t size)
 {
     FGASSERT(start+size <= str.size());
     return  std::basic_string<T>(str.begin()+start,str.begin()+start+size);
@@ -193,7 +177,7 @@ fgSubstr(const std::basic_string<T> & str,size_t start,size_t size)
 // Returns at least size 1, with 1 additional for each split element:
 template<class T>
 Svec<std::basic_string<T> >
-fgSplit(const std::basic_string<T> & str,T ch)
+splitAtChar(const std::basic_string<T> & str,T ch)
 {
     Svec<std::basic_string<T> >  ret;
     std::basic_string<T>                ss;
@@ -210,49 +194,34 @@ fgSplit(const std::basic_string<T> & str,T ch)
 }
 
 template<class T>
-size_t
-fgFindLastIdx(const std::basic_string<T> & str,T val)
+bool
+beginsWith(const std::basic_string<T> & base,const std::basic_string<T> & pattern)
 {
-    for (size_t ii=str.size(); ii!=0; --ii)
-        if (str[ii-1] == val)
-            return ii-1;
-    return str.size();
+    return (base.rfind(pattern,0) != std::basic_string<T>::npos);
 }
 
 template<class T>
 bool
-fgBeginsWith(const std::basic_string<T> & base,const std::basic_string<T> & pattern)
+beginsWith(const std::basic_string<T> & base,const T * pattern_c_str)
 {
-    if (pattern.size() > base.size())
-        return false;
-    for (size_t ii=0; ii<pattern.size(); ++ii)
-        if (pattern[ii] != base[ii])
-            return false;
-    return true;
+    return (base.rfind(pattern_c_str,0) != std::basic_string<T>::npos);
 }
 
 template<class T>
 bool
-fgBeginsWith(const std::basic_string<T> & base,const T * pattern_c_str)
-{return fgBeginsWith(base,std::basic_string<T>(pattern_c_str)); }
-
-template<class T>
-bool
-fgEndsWith(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
+endsWith(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
 {
     if (pattern.size() > str.size())
         return false;
-    size_t      offset = str.size() - pattern.size();
-    for (size_t ii=0; ii<pattern.size(); ++ii)
-        if (pattern[ii] != str[ii+offset])
-            return false;
-    return true;
+    return (str.find(pattern,str.size()-pattern.size()) != std::basic_string<T>::npos);
 }
 
 template<class T>
 bool
-fgEndsWith(const std::basic_string<T> & str,const T * pattern_c_str)
-{return fgEndsWith(str,std::basic_string<T>(pattern_c_str)); }
+endsWith(const std::basic_string<T> & str,const T * pattern_c_str)
+{
+    return endsWith(str,std::basic_string<T>(pattern_c_str));
+}
 
 }
 

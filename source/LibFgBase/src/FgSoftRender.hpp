@@ -26,17 +26,17 @@ struct  FgProjSurfPoint
 };
 typedef Svec<FgProjSurfPoint>   FgProjSurfPoints;
 
-struct  FgRenderOptions
+struct  RenderOptions
 {
-    FgLighting          lighting;   // In OECS (not transformed)
+    Lighting          lighting;   // In OECS (not transformed)
     // Values in range [0,255]. Alpha = 0 is transparent and all color values must be alpha-weighted:
-    RgbaF             backgroundColor=RgbaF(0);
+    RgbaF               backgroundColor=RgbaF(0);
     // Values in range [1,8]. Higher is slower:
     uint                antiAliasBitDepth=3;
     // Render marked surface points in meshes as green dots:
     FgRenderSurfPoints  renderSurfPoints=FgRenderSurfPoints::never;
     // If defined, place the projected surface point data here:
-    std::shared_ptr<FgProjSurfPoints> projSurfPoints;
+    Sptr<FgProjSurfPoints> projSurfPoints;
 
     FG_SERIALIZE4(lighting,backgroundColor,antiAliasBitDepth,renderSurfPoints);
 };
@@ -44,12 +44,12 @@ struct  FgRenderOptions
 ImgC4UC
 renderSoft(
     Vec2UI                  pixelSize,
-    Meshes const &           meshes,
+    Meshes const &          meshes,
     Affine3D                modelview,              // Transform verts into OECS
     // This fully specifies the projection transform since we assume the optical centre is at the centre of the
     // image and the bounds are implicitly [0,1] in IUCS:
     AffineEw2D              itcsToIucs,
-    FgRenderOptions const & options=FgRenderOptions());
+    RenderOptions const &   options=RenderOptions());
 
 #endif
 

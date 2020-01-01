@@ -54,6 +54,14 @@ scast(Arr<From,S> const & v)
     return ret;
 }
 
+template<class To,class From,size_t S>
+void
+round_(Arr<From,S> const & from,Arr<To,S> & to)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        round_(from[ii],to[ii]);
+}
+
 template<class T,size_t S>
 std::ostream &
 operator<<(std::ostream & os,const Arr<T,S> & arr)
@@ -152,6 +160,28 @@ template<class T,size_t S>
 T
 cProd(Arr<T,S> const & a)
 {return std::accumulate(cbegin(a)+1,cend(a),a[0],std::multiplies<T>{}); }
+
+template<class T,size_t S>
+size_t
+cMinIdx(const Arr<T,S> & v)
+{
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (v[ii] < v[ret])
+            ret = ii;
+    return ret;
+}
+
+template<class T,size_t S>
+size_t
+cMaxIdx(const Arr<T,S> & v)
+{
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (v[ii] > v[ret])
+            ret = ii;
+    return ret;
+}
 
 }
 

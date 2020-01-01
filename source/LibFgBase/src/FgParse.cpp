@@ -75,10 +75,10 @@ splitLines(string const & src)
     return ret;
 }
 
-FgStr32s
+String32s
 splitLines(const u32string & src,bool incEmpty)
 {
-    FgStr32s            ret;
+    String32s            ret;
     size_t              base = 0;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
@@ -94,7 +94,7 @@ Ustrings
 fgSplitLinesUtf8(string const & utf8,bool includeEmptyLines)
 {
     Ustrings               ret;
-    FgStr32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
+    String32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
         ret[ii] = Ustring(res[ii]);
@@ -182,7 +182,7 @@ Stringss
 fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    u32string       data = fgToUtf32(fgSlurp(fname));
+    u32string       data = fgToUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -200,7 +200,7 @@ fgLoadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
-    u32string           data = fgToUtf32(fgSlurp(fname));
+    u32string           data = fgToUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings          line = csvGetLine(data,idx);
@@ -394,7 +394,7 @@ fgAsciify(string const & in)
 }
 
 u32string
-fgReplace(const u32string & str,char32_t a,char32_t b)
+replaceAll(const u32string & str,char32_t a,char32_t b)
 {
     u32string       ret;
     ret.reserve(str.size());

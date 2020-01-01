@@ -24,6 +24,12 @@ typedef Svec<std::string>    strings;
 template<class T>
 using Sfun = std::function<T>;
 
+// Like C++17 std::data() but better named:
+template <class _Elem>
+static
+constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
+{return _Ilist.begin(); }
+
 }
 
 #endif

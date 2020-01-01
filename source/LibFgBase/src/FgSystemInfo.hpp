@@ -16,10 +16,9 @@ namespace Fg {
 // Is the OS we're currently running on a 64-bit version ?
 bool        fg64bitOS();
 
-// Note that this will return the EMULATED OS version if the install manifest is for an earlier
-// version of Windows. For example, building with vs2012 will return Windows 8 for Win8.1 and Win10
-// hosts:
-String      fgOsName();
+// Will always return Windows 8 or lower unless the manifest *requires* a higher version of Windows,
+// in which case that version will be returned:
+String      osDescription();
 
 Ustring    fgComputerName();
 

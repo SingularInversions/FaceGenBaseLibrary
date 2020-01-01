@@ -39,16 +39,16 @@ struct  Fg3dRayCastMesh
         const Normals &     normss,     // Current OECS normals.
         AffineEw2F            itcsToIucs);
 
-    FgBestN<float,FgTriPoint,8>
+    FgBestN<float,TriPoint,8>
     cast(Vec2F posIucs) const;
 
     RgbaF
-    shade(const FgTriPoint & intersect,const FgLighting & lighting) const;
+    shade(const TriPoint & intersect,const Lighting & lighting) const;
 };
 
 struct  Fg3dRayCaster
 {
-    const FgLighting *          lightingPtr;
+    const Lighting *          lightingPtr;
     RgbaF                     m_background;
     Svec<Fg3dRayCastMesh>     rayMesh;
 
@@ -56,7 +56,7 @@ struct  Fg3dRayCaster
         const Meshes &      meshes,
         const Vec3Fss &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
         const Normalss &    normss,         // Current OECS normals. Must be 1-1 with above.
-        const FgLighting &      lighting,
+        const Lighting &      lighting,
         AffineEw2F            itcsToIucs,
         RgbaF                 background);
 
@@ -66,11 +66,11 @@ struct  Fg3dRayCaster
     struct Best
     {
         size_t                  surfIdx;
-        FgTriPoint              intersect;
+        TriPoint              intersect;
 
         Best() {}
 
-        Best(size_t s,FgTriPoint i)
+        Best(size_t s,TriPoint i)
         : surfIdx(s), intersect(i)
         {}
     };

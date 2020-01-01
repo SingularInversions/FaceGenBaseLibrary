@@ -58,49 +58,71 @@ guiTextEdit(IPT<Ustring> node,bool wantStretch)
 
 static
 void
-textToVal2(IPT<double> valN,VecD2 clip,FgFuncD2D t2v,Ustring const & str)
+strToSetVal(Ustring str,VecD2 bounds,Sfun<void(double)> setVal)
 {
-    double          val = 0.0;
-    try {val = fgFromString<double>(str.as_ascii()); }
-    catch (...) {}
-    if (t2v)
-        val = t2v(val);
-    val = clampBounds(val,clip[0],clip[1]);
-    valN.set(val);
+    if (str.is_ascii()) {
+        Opt<double>     vo = fromStr<double>(str.m_str);
+        if (vo.valid()) {
+            double      val = clampBounds(vo.val(),bounds);
+            setVal(val);
+        }
+    }
+};
+
+GuiPtr
+guiTextEditFixed(
+    DfgFPtr                 updateFlag,
+    Sfun<double()>          getVal,
+    Sfun<void(double)>      setVal,
+    VecD2                   bounds,
+    uint                    numFraction)
+{
+    GuiTextEdit         te;
+    te.updateFlag = updateFlag;
+    te.minWidth = 50;
+    te.wantStretch = false;
+    te.getInput = [=]()
+        {
+            return toStrFixed(getVal(),numFraction);
+        };
+    te.setOutput = bind(strToSetVal,_1,bounds,setVal);
+    return guiMakePtr(te);
 }
 
 GuiPtr
 guiTextEditFixed(IPT<double> valN,VecD2 bounds,uint numFraction)
 {
-    GuiTextEdit    te;
-    te.updateFlag = makeUpdateFlag(valN);
-    te.minWidth = 50;
-    te.wantStretch = false;
-    te.getInput = [valN,numFraction](){return fgToFixed(valN.val(),numFraction); };
-    te.setOutput = std::bind(textToVal2,valN,bounds,FgFuncD2D(),_1);
-    return guiMakePtr(te);
-}
-
-static
-Ustring
-valToTextFloat2(IPT<double> valN,uint numDigits,FgFuncD2D v2t)
-{
-    double      te = valN.val();
-    if (v2t)
-        te = v2t(te);
-    return Ustring(fgToStringPrecision(te,numDigits));
+    auto            getVal = [=](){return valN.val(); };
+    auto            setVal = [=](double val){valN.set(val); };
+    return guiTextEditFixed(makeUpdateFlag(valN),getVal,setVal,bounds,numFraction);
 }
 
 GuiPtr
-guiTextEditFloat(IPT<double> valN,VecD2 bounds,uint numDigits,FgFuncD2D v2t,FgFuncD2D t2v)
+guiTextEditFloat(
+    DfgFPtr                 updateFlag,
+    Sfun<double()>          getVal,
+    Sfun<void(double)>      setVal,
+    VecD2                   bounds,
+    uint                    numDigits)
 {
-    GuiTextEdit      te;
-    te.updateFlag = makeUpdateFlag(valN);
-    te.getInput = std::bind(valToTextFloat2,valN,numDigits,v2t);
-    te.setOutput = std::bind(textToVal2,valN,bounds,t2v,_1);
+    GuiTextEdit         te;
+    te.updateFlag = updateFlag;
     te.minWidth = 80;
     te.wantStretch = false;
-    return std::make_shared<GuiTextEdit>(te);
+    te.getInput = [=]()
+        {
+            return toStrPrecision(getVal(),numDigits);
+        };
+    te.setOutput = bind(strToSetVal,_1,bounds,setVal);
+    return guiMakePtr(te);
+}
+
+GuiPtr
+guiTextEditFloat(IPT<double> valN,VecD2 bounds,uint numDigits)
+{
+    auto            getVal = [=](){return valN.val(); };
+    auto            setVal = [=](double val){valN.set(val); };
+    return guiTextEditFloat(makeUpdateFlag(valN),getVal,setVal,bounds,numDigits);
 }
 
 }

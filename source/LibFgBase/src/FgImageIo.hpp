@@ -28,7 +28,18 @@ imgSaveAnyFormat(Ustring const & fname,const ImgC4UC & img);
 void
 imgSaveAnyFormat(Ustring const & fname,const ImgUC & img);
 
-// List of filename extensions of supported image file formats in LOWER CASE:
+struct  ImgFileFormat
+{
+    String      description;
+    Strings     extensions;     // Usually 1 but can be 2 (eg. 'jpg', 'jpeg'). Preferred listed first.
+};
+typedef Svec<ImgFileFormat>     ImgFileFormats;
+
+// List of image file formats supported by above in order of common use in upper case:
+ImgFileFormats
+imgFileFormats();
+
+// List all supported image file format extensions in lower case, including synonyms:
 Strings
 imgFileExtensions();
 

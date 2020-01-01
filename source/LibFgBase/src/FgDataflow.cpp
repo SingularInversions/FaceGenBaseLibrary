@@ -25,11 +25,10 @@ DfgInput::~DfgInput()
     }
 }
 
-const boost::any &
+boost::any const &
 DfgInput::getDataCref() const
 {
-    if (data.empty())
-        fgThrow("DfgInput data not allocated",signature(data));
+    // Don't check if data is initialized here since client needs to be able to check:
     return data;
 }
 
@@ -113,7 +112,7 @@ DfgOutput::markDirty() const
 //fgout << fgpop;
 }
 
-const boost::any &
+boost::any const &
 DfgOutput::getDataCref() const
 {
     update();
@@ -152,7 +151,8 @@ void DfgReceptor::markDirty() const
             snk.lock()->markDirty();
 //fgout << fgpop;
 }
-const boost::any & DfgReceptor::getDataCref() const
+boost::any const &
+DfgReceptor::getDataCref() const
 {
     update();
     return src->getDataCref();

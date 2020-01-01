@@ -89,13 +89,12 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\..\bin\win\x86\</AdditionalLibraryDirectories>
       <OutputFile>$(SolutionDir)\..\bin\win\x86\vs15\debug\$(ProjectName).exe</OutputFile>
     </Link>
@@ -117,13 +116,12 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\..\bin\win\x64\</AdditionalLibraryDirectories>
       <OutputFile>$(SolutionDir)\..\bin\win\x64\vs15\debug\$(ProjectName).exe</OutputFile>
     </Link>
@@ -144,13 +142,12 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\..\bin\win\x86\</AdditionalLibraryDirectories>
       <OutputFile>$(SolutionDir)\..\bin\win\x86\vs15\release\$(ProjectName).exe</OutputFile>
     </Link>
@@ -174,13 +171,12 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\..\bin\win\x64\</AdditionalLibraryDirectories>
       <OutputFile>$(SolutionDir)\..\bin\win\x64\vs15\release\$(ProjectName).exe</OutputFile>
     </Link>

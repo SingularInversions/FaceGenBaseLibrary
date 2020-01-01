@@ -347,8 +347,8 @@ Fg3dTopology::isManifold() const
             // Check that winding directions of the two facets are opposite on this edge:
             Tri         tri0 = m_tris[edge.triInds[0]],
                         tri1 = m_tris[edge.triInds[1]];
-            uint        edgeIdx0 = fgFindFirstIdx(tri0.edgeInds,uint(ee)),
-                        edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
+            uint        edgeIdx0 = findFirstIdx(tri0.edgeInds,uint(ee)),
+                        edgeIdx1 = findFirstIdx(tri1.edgeInds,uint(ee));
             if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
                 ++ret[2];
             // Worked on all 3DP meshes but doesn't work for some screwy input (eg. frameforge base):
@@ -372,7 +372,7 @@ Fg3dTopology::unusedVerts() const
 vector<float>
 Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const
 {
-    vector<float>       ret(verts.size(),std::numeric_limits<float>::max());
+    vector<float>       ret(verts.size(),maxFloat());
     FGASSERT(vertIdx < verts.size());
     ret[vertIdx] = 0;
     edgeDistanceMap(verts,ret);
@@ -390,7 +390,7 @@ Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,vector<float> & vertDists) co
         for (size_t vv=0; vv<vertDists.size(); ++vv) {
             // Important: check each vertex each time since the topology will often result in 
             // the first such assignment not being the optimal:
-            if (vertDists[vv] < std::numeric_limits<float>::max()) {
+            if (vertDists[vv] < maxFloat()) {
                 const vector<uint> &    edges = m_verts[vv].edgeInds;
                 for (size_t ee=0; ee<edges.size(); ++ee) {
                     uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));

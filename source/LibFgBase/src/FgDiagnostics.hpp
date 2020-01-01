@@ -16,14 +16,20 @@
 
 namespace Fg {
 
-std::string
-fgDiagString(const char *fname,int line);
-
-// With visual studio 2012 the __FILE__ macro always includes the full path in release compiles,
+// With visual studio the __FILE__ macro always includes the full path in release compiles,
 // there is no way to specify otherwise. When this includes unicode, the literal becomes
 // a wchar_t* instead of char*. Macros can be used to cast to wchar_t* in both cases, then
 // dealt with but I haven't bothered; currently the source will not compile properly in a
 // non-ascii path.
+
+// Remove path from filename (see above).
+// This simple version does NOT handle base filenames after Windows drive specifiers (eg. C:filename)
+// as it only detects the '\' character:
+std::string
+pathToName(const char * asciiFilePath);
+
+std::string
+fgDiagString(const char *fname,int line);
 
 // If you're trying to pass a UTF-8 'msg' here, you should probably be using 'fgThrow' instead:
 void

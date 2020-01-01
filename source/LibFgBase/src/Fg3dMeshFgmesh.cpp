@@ -41,7 +41,7 @@ saveFgmesh(Ustring const & fname,const Mesh & mesh)
 
 void
 saveFgmesh(Ustring const & fname,const Meshes & meshes)
-{saveFgmesh(fname,fgMergeMeshes(meshes)); }
+{saveFgmesh(fname,mergeMeshes(meshes)); }
 
 void
 fgSaveFgmeshTest(CLArgs const & args)

@@ -40,7 +40,7 @@ struct  Syntax
     T
     nextAs()
     {
-        Opt<T>    ret = fgFromStr<T>(next());
+        Opt<T>    ret = fromStr<T>(next());
         if (!ret.valid())
             error("Unable to convert string to "+String(typeid(T).name()),curr());
         return ret.val();
@@ -48,7 +48,7 @@ struct  Syntax
 
     Ustring
     nextLower()             // As above but lower case
-    {return fgToLower(Ustring(next())); }
+    {return toLower(Ustring(next())); }
 
     String const &
     curr() const

@@ -162,29 +162,32 @@ struct  Ustring
     maxWidth(char ch) const;
 
     Ustring
-    toLower() const;        // Member func avoids ambiguity with fgToLower on string literals
+    toLower() const;        // Member func avoids ambiguity with toLower on string literals
 
     FG_SERIALIZE1(m_str)
 };
 
 typedef Svec<Ustring>   Ustrings;
 
+Ustrings
+toUstrings(Strings const & strs);
+
 template<>
 inline std::string
-toString(Ustring const & str)
+toStr(Ustring const & str)
 {return str.m_str; }
 
 template<class T>
 void fgThrow(const std::string & msg,const T & data) 
-{throw FgException(msg,toString(data));  }
+{throw FgException(msg,toStr(data));  }
 
 template<class T,class U>
 void fgThrow(const std::string & msg,const T data0,const U & data1) 
-{throw FgException(msg,toString(data0)+","+toString(data1)); }
+{throw FgException(msg,toStr(data0)+","+toStr(data1)); }
 
 inline
 Ustring
-fgToLower(Ustring const & str)
+toLower(Ustring const & str)
 {return str.toLower(); }
 
 inline
@@ -201,22 +204,22 @@ fgTr(const std::string & message);
 
 // Remove all instances of a given character:
 Ustring
-fgRemoveChars(Ustring const & str,uchar chr);
+removeChars(Ustring const & str,uchar chr);
 
 // Remove all instances of any of the given characters:
 Ustring
-fgRemoveChars(Ustring const & str,Ustring chrs);
+removeChars(Ustring const & str,Ustring chrs);
 
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
 bool
-fgGlobMatch(Ustring const & globStr,Ustring const & str);
+isGlobMatch(Ustring const & globStr,Ustring const & str);
 
 Ustring
-fgSubstring(Ustring const & str,size_t start,size_t size);
+cSubstr(Ustring const & str,size_t start,size_t size);
 
 Ustring
-fgRest(Ustring const & s,size_t start);
+cutRest(Ustring const & s,size_t start);
 
 // Inspired by Python join():
 Ustring

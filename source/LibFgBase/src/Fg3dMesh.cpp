@@ -154,7 +154,7 @@ Mesh::surfPointPos(string const & label) const
 {
     Opt<Vec3F>    ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss) {
-        size_t  idx = fgFindFirstIdx(surfaces[ss].surfPoints,label);
+        size_t  idx = findFirstIdx(surfaces[ss].surfPoints,label);
         if (idx < surfaces[ss].surfPoints.size()) {
             ret = surfaces[ss].surfPointPos(verts,idx);
             break;
@@ -276,10 +276,10 @@ Mesh::morph(
     const Floats &      coord,
     Vec3Fs &           outVerts) const
 {
-    outVerts = fgHead(allVerts,verts.size());
+    outVerts = cutHead(allVerts,verts.size());
     size_t          ndms = deltaMorphs.size();
-    fgAccDeltaMorphs(deltaMorphs,fgHead(coord,ndms),outVerts);
-    fgAccTargetMorphs(allVerts,targetMorphs,fgRest(coord,ndms),outVerts);
+    fgAccDeltaMorphs(deltaMorphs,cutHead(coord,ndms),outVerts);
+    fgAccTargetMorphs(allVerts,targetMorphs,cutRest(coord,ndms),outVerts);
 }
 
 Vec3Fs
@@ -402,10 +402,10 @@ Mesh::addTargMorph(Ustring const & name_,const Vec3Fs & targetShape)
 Vec3Fs
 Mesh::poseShape(const Vec3Fs & allVerts,const std::map<Ustring,float> & poseVals) const
 {
-    Vec3Fs     ret = fgHead(allVerts,verts.size()),
+    Vec3Fs     ret = cutHead(allVerts,verts.size()),
                 base = ret;
     fgPoseDeltas(poseVals,deltaMorphs,ret);
-    fgPoseDeltas(poseVals,targetMorphs,base,fgRest(allVerts,verts.size()),ret);
+    fgPoseDeltas(poseVals,targetMorphs,base,cutRest(allVerts,verts.size()),ret);
     return ret;
 }
 
@@ -542,9 +542,12 @@ vertLt(const Vec3F & v0,const Vec3F & v1)
 std::ostream &
 operator<<(std::ostream & os,const Mesh & m)
 {
-    os << fgnl << "Name: " << m.name << fgpush
-        << fgnl << "Verts: " << m.verts.size() << "  "
-        << fgnl << "UVs: " << m.uvs.size() << "  "
+    os  << fgnl << "Name: " << m.name << fgpush
+        << fgnl << "Verts: " << m.verts.size();
+    size_t      allVerts = m.allVerts().size();
+    if (allVerts != m.verts.size())
+        os << " (" << allVerts << " with targ morphs)";
+    os  << fgnl << "UVs: " << m.uvs.size()
         << fgnl << "Bounding Box: " << cBounds(m.verts)
         << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
         << fgnl << "Target Morphs: " << m.targetMorphs.size()
@@ -706,7 +709,7 @@ fgSubdivide(const Mesh & in,bool loop)
             if (topo.vertOnBoundary(ii)) {
                 vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
                 if (vertInds.size() != 2)
-                    fgThrow("Cannot subdivide non-manifold mesh at vert index",toString(ii));
+                    fgThrow("Cannot subdivide non-manifold mesh at vert index",toStr(ii));
                 ret.verts[ii] = (in.verts[ii] * 6.0 + in.verts[vertInds[0]] + in.verts[vertInds[1]]) * 0.125f;
             }
             else {
@@ -740,7 +743,7 @@ fgSubdivide(const Mesh & in,bool loop)
         Surf & surf = ret.surfaces[ss];
         const Surf & inSurf = in.surfaces[ss];
         size_t      num = inSurf.tris.size() * 4;
-        cat_(surf.tris.vertInds,fgSubvec(ssurf.tris.vertInds,sidx,num));    // Clearer (and slower) than iterators
+        cat_(surf.tris.vertInds,cutSubvec(ssurf.tris.vertInds,sidx,num));    // Clearer (and slower) than iterators
         for (size_t ii=0; ii<inSurf.surfPoints.size(); ++ii) {
             SurfPoint     sp = ssurf.surfPoints[spidx+ii];
             sp.triEquivIdx -= uint(sidx);

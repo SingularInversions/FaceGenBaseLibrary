@@ -22,7 +22,7 @@ fgOpen(Ustring const & fname,bool write)
     errno_t         err = _wfopen_s(&fPtr,fname.as_wstring().c_str(),mode);
     if (err != 0) {
         FgException     e;
-        e.pushMsg("_wfopen_s error code",toString(err));
+        e.pushMsg("_wfopen_s error code",toStr(err));
         string          msg = "Unable to open file for " + string(write ? "writing" : "reading");
         e.pushMsg(msg,fname.m_str);
         throw e;

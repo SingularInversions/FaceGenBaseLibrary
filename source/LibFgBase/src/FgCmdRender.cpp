@@ -60,7 +60,7 @@ struct  RenderArgs
     vector<ModelFiles>      models;
     Pose                    pose;
     Vec2UI               imagePixelSize = Vec2UI(512,512);
-    FgRenderOptions         options;
+    RenderOptions         options;
 
     FG_SERIALIZE4(models,pose,imagePixelSize,options);
 };
@@ -173,9 +173,9 @@ fgCmdRender(CLArgs const & args)
     Mat32F            bounds = cBounds(meshes);
     CameraParams    cps(fgF2D(bounds));
     cps.pose =
-        fgRotateY(opts.rend.pose.panRadians) *
-        fgRotateX(opts.rend.pose.tiltRadians) *
-        fgRotateZ(opts.rend.pose.rollRadians);
+        cRotateY(opts.rend.pose.panRadians) *
+        cRotateX(opts.rend.pose.tiltRadians) *
+        cRotateZ(opts.rend.pose.rollRadians);
     cps.relTrans = opts.rend.pose.relTrans;
     cps.logRelScale = std::log(opts.rend.pose.relScale);
     cps.fovMaxDeg = opts.rend.pose.fovMaxDeg;
@@ -210,7 +210,7 @@ fgCmdRender(CLArgs const & args)
 }
 
 Cmd
-fgCmdRenderInfo()
+getRenderCmd()
 {return Cmd(fgCmdRender,"render","Render TRI files with optional texture images to an image file"); }
 
 static
@@ -230,7 +230,7 @@ fgCmdRenderTest(CLArgs const & args)
     fgTestCopy("base/Jane.jpg");
     Options             opts;
     opts.rend.imagePixelSize = Vec2UI(120,160);
-    opts.rend.pose.panRadians = fgDegToRad(55.0f);
+    opts.rend.pose.panRadians = degToRad(55.0f);
     opts.outputFile = "render_test.png";
     opts.rend.options.renderSurfPoints = FgRenderSurfPoints::whenVisible;
     opts.saveSurfPointFile = true;

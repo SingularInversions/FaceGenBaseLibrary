@@ -53,7 +53,7 @@ CameraParams::camera(Vec2UI imgDims) const
                     modelHalfDimMax = cMaxElem(dims) * 0.5,
                     imgDimMax = cMaxElem(imgDims),
                     relScale = exp(logRelScale),
-                    halfFovMaxItcs = std::tan(fgDegToRad(fovDegClamp) * 0.5),
+                    halfFovMaxItcs = std::tan(degToRad(fovDegClamp) * 0.5),
                     // Place the model at a distance such that it's max dim is equal to the given FOV max dim:
                     zCentreFillImage = modelHalfDimMax / halfFovMaxItcs,
                     // Adjust the distance to relatively scale the object:

@@ -18,7 +18,7 @@ fg64bitOS()     // Nix is simple, OS bits = build bits:
 {return fgIs64bit(); }
 
 string
-fgOsName()
+osDescription()
 {
     string      ret;
 #ifdef __APPLE__
