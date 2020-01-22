@@ -1,6 +1,6 @@
 # FaceGen Base Library
 
-Copyright (c) 2019 Singular Inversions Inc.
+Copyright (c) 2020 Singular Inversions Inc.
 
 A simple cross-platform C++11 library for developing computational 3D graphics applications.
 
@@ -21,8 +21,7 @@ A simple cross-platform C++11 library for developing computational 3D graphics a
 * Functional and declarative design in as much as makes sense for C++.
   * Extensive use of return value elision.
   * Declarative GUI layout, declarative dataflow graph for computations.
-* Minimal OOP-fuscation; Some member functions and constructors, few private members, no inheritance.
-  * Prefer std::function and std::bind to abstract class interface.
+* Minimal OOP-fuscation; Some member functions and constructors, few private members, no impl inheritance.
 * Templates are used when they provide clear benefit; Avoid complex template metaprogramming.
 * Exceptions and RAII used throughout.
 * Compiles out of the box; No dependencies, install scripts or special make packages required.
