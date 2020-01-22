@@ -3,6 +3,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <style>
 a {
     text-decoration: none;
@@ -27,7 +28,8 @@ h2 ~ *:not(h2) {
 <title>FaceGen Base Library Manual </title>
 </head>
 <body>
-<nav><p>Install<p><a style="color:#FFFFFF" href="quick.html">Quick Start</a><p><a style="color:#FFFFFF" href="compile.html">Compile</a>
+<nav>
+<p>Install<p><a style="color:#FFFFFF" href="quick.html">Quick Start</a><p><a style="color:#FFFFFF" href="compile.html">Compile</a>
 </nav>
 <section class="body">
 <h1 style="font-size:200%"><span style="color:#CCCCCC"><span style="color:#4471AF">F</span>ace<span style="color:#4471AF">G</span>en</span> Base Library Manual </h1>
@@ -35,21 +37,20 @@ h2 ~ *:not(h2) {
 <h2>Developer Requirements</h2>
     <p>( Windows | Ubuntu | MacOS )</p>
 <h2>Install</h2>
-    <p>FaceGen executables load data from <code> ~sdk/data/... </code>
+    <p>Path in which you have placed this sdk: <code>~sdk</code></p>
+    <p>FaceGen executables load data from <code> ~sdk/data/ </code>
        This directory must be present in the directory containing the executable, or any of its
-       parent directories. It must contain the file <code> /data/_facegen_data_dir.flag </code>
-	<p> Example path setup:</p>
+       parent directories. It must contain the file <code> _facegen_data_dir.flag </code>
     <h3>Windows</h3>
-    <p><code> &gt PATH=%PATH%;~sdk\bin\win\x64\vs17\release\ </code>
+    <p><code> &gt PATH=%PATH%;~sdk\bin\win\x64\vs19\release\;~sdk\bin\win\x64\ </code>
     <h3>Ubuntu</h3>
-    <p><code> $ PATH=$PATH:~sdk/bin/ubuntu/x64/clang/release/ </code>
+    <p><code> $ PATH=$PATH:~sdk/bin/ubuntu/x64/clang/release/:~sdk/bin/ubuntu/x64/ </code>
     <h3>MacOS</h3>
-    <p><code> $ PATH=$PATH:~sdk/bin/macos/x64/clang/release/ </code>
-    <p>Where <code>~sdk</code> is the path in which you have placed this SDK. </p>
+    <p><code> $ PATH=$PATH:~sdk/bin/macos/x64/clang/release/:~sdk/bin/macos/x64/ </code> 
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
 <div style="height:1px"></div>
-<p>&copy; Singular Inversions 2019
+<p>&copy; Singular Inversions 2020
 <div style="height:1px"></div>
 </footer>
 </body>

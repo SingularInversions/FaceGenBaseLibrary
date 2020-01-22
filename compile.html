@@ -3,6 +3,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+
 <style>
 a {
     text-decoration: none;
@@ -27,7 +28,8 @@ h2 ~ *:not(h2) {
 <title>FaceGen Base Library Manual </title>
 </head>
 <body>
-<nav><p><a style="color:#FFFFFF" href="index.html">Install</a><p><a style="color:#FFFFFF" href="quick.html">Quick Start</a><p>Compile
+<nav>
+<p><a style="color:#FFFFFF" href="index.html">Install</a><p><a style="color:#FFFFFF" href="quick.html">Quick Start</a><p>Compile
 </nav>
 <section class="body">
 <h1 style="font-size:200%"><span style="color:#CCCCCC"><span style="color:#4471AF">F</span>ace<span style="color:#4471AF">G</span>en</span> Base Library Manual </h1>
@@ -73,8 +75,8 @@ h2 ~ *:not(h2) {
             <code>~sdk/source/</code> directory, add each of the following (expand glob):
             <code> LibFg* LibFgBase/src LibTpBoost/boost_1_67_0 </code>
     </ul>
-    <p>Make a copy of the directory <code>~sdk/data/</code> containing only the data you need  
-        (see <a href="deploy.html">Deployment</a>), and add that data into your app bundle
+    <p>Make a copy of the directory <code>~sdk/data/</code> containing only the data you need
+         and add that data into your app bundle
         preserving the directory structure (one way to do this is to right-click on your application directory
         in Xcode, select 'Add Files', select 'Create folder references', ensure 'Copy items if needed' is
         de-selected, than select your copy of the <code>~sdk/data/</code> directory). </li> 
@@ -129,18 +131,17 @@ h2 ~ *:not(h2) {
           &nbsp &nbsp &nbsp &nbsp LibTpBoost ) <br>
           </samp> <br>
       <li> Create an assets folder for FaceGen data: <code> File -> New -> Folder -> Assets Folder </code>
-          and copy in the data you need (see <a href="deploy.html">Deployment</a>) preserving the directory
+          and copy in the data you need  preserving the directory
           structure.
     </ul>
-    <p> Android is poorly designed as asset files cannot be accessed via standard filesystem
+    <p> In Android, asset files cannot be accessed via standard filesystem
         calls. The simplest approach is to make a local filesystem copy of all bundled data you need with
-        FaceGen when your app first runs. You can then pass this location to <code> fgSetDataDir() </code>.
-          
+        FaceGen when your app first runs. You can then pass this location to <code> setDataDir() </code>.
 
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
 <div style="height:1px"></div>
-<p>&copy; Singular Inversions 2019
+<p>&copy; Singular Inversions 2020
 <div style="height:1px"></div>
 </footer>
 </body>
