@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,10 +31,22 @@ toStr(const T & val)
     msg << val;
     return msg.str();
 }
+
 template<>
 inline String
 toStr(String const & str)
 {return str; }
+
+template<class T>
+Strings
+toStrings(Svec<T> const & v)
+{
+    Strings         ret;
+    ret.reserve(v.size());
+    for (T const & e : v)
+        ret.push_back(toStr(e));
+    return ret;
+}
 
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors

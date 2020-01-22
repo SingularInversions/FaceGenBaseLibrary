@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,12 +13,12 @@ using namespace std;
 namespace Fg {
 
 bool
-fgUpdateFiles(uint num,const Ustrings & ins,const Ustrings & outs,FgUpdateFilesFunc func)
+fgUpdateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func)
 {
     if (fileNewer(ins,outs)) {
         fgout.logFile(toStr(num)+"_log.txt",false,false);
         fgout << fgnl << "(" << cat(ins,",") << ") -> (" << cat(outs,",") << ")" << fgpush;
-        FgTimer     time;
+        Timer     time;
         func(ins,outs);
         double      elapsed = time.read();
         fgout << fgpop;

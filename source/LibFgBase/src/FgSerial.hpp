@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 Singular Inversions Inc.
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 //
 // Ultra-simple binary serialization that:
 //

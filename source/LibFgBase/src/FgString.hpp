@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,23 +18,23 @@
 namespace Fg {
 
 std::u32string
-fgToUtf32(const std::string & utf8);
+toUtf32(const std::string & utf8);
 
 std::string
-fgToUtf8(const char32_t & utf32_char);
+toUtf8(const char32_t & utf32_char);
 
 std::string
-fgToUtf8(const std::u32string & utf32);
+toUtf8(const std::u32string & utf32);
 
 // The following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
 #ifdef _WIN32
 
 std::wstring
-fgToUtf16(const std::string & utf8);
+toUtf16(const std::string & utf8);
 
 std::string
-fgToUtf8(const std::wstring & utf16);
+toUtf8(const std::wstring & utf16);
 
 #endif
 
@@ -48,10 +48,10 @@ struct  Ustring
 
     Ustring(const std::string & utf8_string) : m_str(utf8_string) {};
 
-    explicit Ustring(char32_t utf32_char) : m_str(fgToUtf8(utf32_char)) {}
+    explicit Ustring(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
 
     explicit
-    Ustring(const std::u32string & utf32) : m_str(fgToUtf8(utf32)) {}
+    Ustring(const std::u32string & utf32) : m_str(toUtf8(utf32)) {}
 
     Ustring &
     operator+=(Ustring const&);
@@ -108,7 +108,7 @@ struct  Ustring
 
     std::u32string
     as_utf32() const
-    {return fgToUtf32(m_str); }
+    {return toUtf32(m_str); }
 
     // Return native unicode string (UTF-16 for Win, UTF-8 for Nix):
 #ifdef _WIN32
@@ -223,7 +223,7 @@ cutRest(Ustring const & s,size_t start);
 
 // Inspired by Python join():
 Ustring
-cat(const Ustrings & strings,Ustring const & separator);
+cat(Ustrings const & strings,Ustring const & separator);
 
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -179,25 +179,25 @@ struct  IPT
         ptr->init(defaultVal,true);
         if (binary) {
             if (pathExists(storeFile))
-                fgLoadPBin(storeFile,ref(),false);
+                loadBsaPBin(storeFile,ref(),false);
             ptr->onDestruct = [storeFile](boost::any const & v)
             {
                 if (v.empty())
                     fgWarn("IPT onDestruct save with empty data",signature(v));
                 else
-                    fgSavePBin(storeFile,boost::any_cast<const T &>(v),false);
+                    saveBsaPBin(storeFile,boost::any_cast<const T &>(v),false);
             };
         }
         else {
             Ustring        fname = storeFile + ".xml";
             if (pathExists(fname))
-                fgLoadXml(fname,ref(),false);
+                loadBsaXml(fname,ref(),false);
             ptr->onDestruct = [fname](boost::any const & v)
             {
                 if (v.empty())
                     fgWarn("IPT onDestruct binary save with empty data",signature(v));
                 else
-                    fgSaveXml(fname,boost::any_cast<const T &>(v),false);
+                    saveBsaXml(fname,boost::any_cast<const T &>(v),false);
             };
         }
     }

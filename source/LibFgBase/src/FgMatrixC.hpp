@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -247,19 +247,20 @@ asHomogVec(Mat<T,dim,1> v)
 
 template<class T,uint dim>
 Mat<T,dim-1,1>
-fgFromHomogVec(Mat<T,dim,1> v)
+fromHomogVec(Mat<T,dim,1> v)
 {
     Mat<T,dim-1,1>    ret;
-    T                       w = v[dim-1];
+    T                 w = v[dim-1];
+    FGASSERT(w != T(0));
     for (uint ii=0; ii<dim-1; ++ii)
         ret[ii] = v[ii] / w;
     return ret;
 }
 
-// Return homogenous matrix representation of an affine transform:
+// Return homogeneous matrix representation of an affine transform:
 template<class T, uint dims>
 Mat<T,dims+1,dims+1>
-fgAsHomogMat(
+asHomogMat(
     const Mat<T,dims,dims>  & linTrans,
     const Mat<T,dims,1>     & translation)
 {
@@ -273,10 +274,10 @@ fgAsHomogMat(
     return ret;
 }
 
-// Return homogenous matrix representation of a linear transform:
+// Return homogeneous matrix representation of a linear transform:
 template<class T, uint dims>
 Mat<T,dims+1,dims+1>
-fgAsHomogMat(const Mat<T,dims,dims> & linear)
+asHomogMat(const Mat<T,dims,dims> & linear)
 {
     Mat<T,dims+1,dims+1>    ret;
     for (uint rr=0; rr<dims; ++rr)
@@ -286,10 +287,10 @@ fgAsHomogMat(const Mat<T,dims,dims> & linear)
     return ret;
 }
 
-// Return homogenous matrix representation of a translation:
+// Return homogeneous matrix representation of a translation:
 template<class T, uint dims>
 Mat<T,dims+1,dims+1>
-fgAsHomogMat(const Mat<T,dims,1> & translation)
+asHomogMat(const Mat<T,dims,1> & translation)
 {
     Mat<T,dims+1,dims+1>    ret;
     ret.setIdentity();
@@ -594,10 +595,8 @@ cMean(const Mat<T,nrows,ncols> & mat)
 FG_MATRIXC_ELEMWISE(pos2Floor,pos2Floor)
 FG_MATRIXC_ELEMWISE(pow2Ceil,pow2Ceil)
 FG_MATRIXC_ELEMWISE(mapAbs,std::abs)
-FG_MATRIXC_ELEMWISE(fgSquare,sqr)
-FG_MATRIXC_ELEMWISE(fgLog,std::log)
-FG_MATRIXC_ELEMWISE(expSafe,std::exp)
-FG_MATRIXC_ELEMWISE(fgSqrt,std::sqrt)
+FG_MATRIXC_ELEMWISE(mapLog,std::log)
+FG_MATRIXC_ELEMWISE(mapExp,std::exp)
 
 template<class T,uint nrows,uint ncols>
 double
@@ -647,6 +646,12 @@ fgTrace(const Mat<T,dim,dim> & m)
         ret += m[ii];
     return ret;
 }
+
+// For Mat/Vec use linear interpolation
+template<uint nrows,uint ncols>
+Mat<double,nrows,ncols>
+interpolate(Mat<double,nrows,ncols> m0,Mat<double,nrows,ncols> m1,double val)   // val [0,1]
+{return m0*(1.0-val) + m1*(val); }
 
 template<typename Flt,typename Int,uint dim>
 void
@@ -735,7 +740,7 @@ mapft(Mat<T,nrows,ncols> m,T(*func)(T))
 
 template<class T,uint nrows,uint ncols>
 Svec<T>
-fgMapMag(const Svec<Mat<T,nrows,ncols> > & v)
+mapMag(const Svec<Mat<T,nrows,ncols> > & v)
 {
     Svec<T>   ret(v.size());
     for (size_t ii=0; ii<v.size(); ++ii)
@@ -830,7 +835,7 @@ fgSumRows(const Mat<T,nrows,ncols> & m)
 
 template<class T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-fgMapSqr(Mat<T,nrows,ncols> m)
+mapSqr(Mat<T,nrows,ncols> m)
 {
     Mat<T,nrows,ncols>    r;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -899,6 +904,13 @@ transpose(const Svec<Mat<T,nrows,ncols> > & v)
     }
     return ret;
 }
+
+// Return a vector normal to 'unitMag' (which must have .mag() == 1) by Gram-Schmidt of 'seed'.
+// Resulting value is not normalized. 'seed' must not be parallel to 'unitMag'.
+template<class T,uint dim>
+Mat<T,dim,1>
+orthogonalize(Mat<T,dim,1> seed,Mat<T,dim,1> unitMag)
+{return seed - dotProd(seed,unitMag)*unitMag; }
 
 template<uint dim>
 bool

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -99,7 +99,7 @@ saveFbx(
         "}\n"
         "Objects:  {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs <<
             "    Model: " << idModel(mm) << ", \"Model::" << mesh.name << "\", \"Mesh\" {\n"
             "        Version: 232\n"
@@ -126,9 +126,9 @@ saveFbx(
             "            a: ";
         bool        start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-                Vec3UI   i = surf.tris.vertInds[tt];
+                Vec3UI   i = surf.tris.posInds[tt];
                 if (start)
                     start = false;
                 else
@@ -136,7 +136,7 @@ saveFbx(
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
             for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-                Vec4UI   i = surf.quads.vertInds[tt];
+                Vec4UI   i = surf.quads.posInds[tt];
                 if (start)
                     start = false;
                 else
@@ -183,7 +183,7 @@ saveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
                 Vec3UI   i = surf.tris.uvInds[tt];
                 if (start)
@@ -214,7 +214,7 @@ saveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             size_t              num = surf.tris.uvInds.size() + surf.quads.uvInds.size();
             for (size_t ii=0; ii<num; ++ii) {
                 if (start)
@@ -282,7 +282,7 @@ saveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<
                 "    Material: " << idMaterial(mm,tt) << ", \"Material::Material" << mm << "_" << tt << "\", \"\" {\n"
@@ -335,7 +335,7 @@ saveFbx(
         "}\n"
         "Connections: {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idModel(mm) << ",0\n";
         for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
             ofs << "    C: \"OO\", " << idGeoExp(mm,ee) << "," << idSubdeformer(mm,ee) << "\n";
@@ -345,7 +345,7 @@ saveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idGeometry(mm) << "," << idModel(mm) << "\n";
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<

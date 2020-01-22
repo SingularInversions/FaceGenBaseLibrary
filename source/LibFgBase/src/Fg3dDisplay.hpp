@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -99,7 +99,7 @@ struct  GuiPosedMeshes
     OPT<PoseVals>       poseLabelsN;        // Aggregates all unique pose labels
     IPT<Doubles>        poseValsN;          // Use to set pose coefficients
 
-    GuiPosedMeshes();
+    GuiPosedMeshes(Ustring const & store);
 
     void
     addMesh(
@@ -132,7 +132,7 @@ meshView(
 
 inline
 Mesh
-meshView(const Mesh & mesh)
+meshView(Mesh const & mesh)
 {return meshView(fgSvec(mesh)); }
 
 }

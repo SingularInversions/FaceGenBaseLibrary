@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -111,7 +111,7 @@ speedExp(CLArgs const &)
                 mod = 3.141592653,
                 acc = 0;
     size_t      reps = 10000000;
-    FgTimer     tm;
+    Timer     tm;
     for (size_t ii=0; ii<reps; ++ii) {
         acc += exp(-val);
         val += inc;
@@ -143,7 +143,7 @@ fgexp(CLArgs const &)
                 mod = 3.141592653,
                 acc = 0;
     size_t      reps = 10000000;
-    FgTimer     tm;
+    Timer     tm;
     for (size_t ii=0; ii<reps; ++ii) {
         acc += expFast(-val);
         val += inc;
@@ -209,7 +209,7 @@ parr(CLArgs const &)
             sins.push_back(pins[jj][ii]);
 
     // Parallel -> Parallel
-    FgTimer         tm;
+    Timer         tm;
     for (size_t rr=0; rr<100; ++rr) {
         for (size_t ii=0; ii<N; ++ii) {
             pouts[0][ii] += pins[0][ii]*pins[1][ii] + pins[2][ii]*pins[3][ii];
@@ -284,7 +284,7 @@ parr(CLArgs const &)
 void
 fgCmdTestmCpp(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(any,"any","Test boost any copy semantics"));
     cmds.push_back(Cmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
     cmds.push_back(Cmd(thash,"hash","Test std::hash behaviour"));

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -110,20 +110,20 @@ fgViewImagef(CLArgs const & args)
     Syntax    syntax(args,"<imageFileName> [<saveName>]");
     ImgF      img;
     if (toLower(pathToExt(syntax.next())) == "fgpbn")
-        fgLoadPBin(syntax.curr(),img);
+        loadBsaPBin(syntax.curr(),img);
     else {
-        if (fgCurrentBuildOS() != FgBuildOS::win)
+        if (getCurrentBuildOS() != BuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
         imgLoadAnyFormat(syntax.curr(),img);
     }
     if (syntax.more())
-        fgSavePBin(syntax.next(),img);
+        saveBsaPBin(syntax.next(),img);
     fgout << fgnl << img;
     imgDisplay(img);
 }
 
 void
-fgCmdViewUvs(CLArgs const & args)
+cmdViewUvs(CLArgs const & args)
 {
     Syntax            syntax(args,
         "(<mesh>.<ext>)+ [<texImage>]\n"
@@ -152,17 +152,17 @@ fgCmdViewUvs(CLArgs const & args)
     VecF2            uvbb = cBounds(uvb.m);
     if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
         fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
-    imgDisplay(fgUvWireframeImage(mesh,img));
+    imgDisplay(cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
 }
 
-vector<Cmd>
+Cmds
 getViewCmds()
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(viewMesh,"mesh","Interactively view 3D meshes"));
     cmds.push_back(Cmd(fgViewImage,"image","Basic image viewer"));
     cmds.push_back(Cmd(fgViewImagef,"imagef","Floating point image viewer"));
-    cmds.push_back(Cmd(fgCmdViewUvs,"uvs","View the UV layout of a 3D mesh"));
+    cmds.push_back(Cmd(cmdViewUvs,"uvs","View the UV layout of a 3D mesh"));
     return cmds;
 }
 

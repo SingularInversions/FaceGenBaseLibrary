@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -98,7 +98,7 @@ static
 void
 imgops(CLArgs const & args)
 {
-    vector<Cmd>   ops;
+    Cmds   ops;
     ops.push_back(Cmd(addalpha,"addalpha","Add/replace an alpha channel from an another image"));
     ops.push_back(Cmd(composite,"composite","Composite an image with transparency over another"));
     ops.push_back(Cmd(convert,"convert","Convert images between different formats"));

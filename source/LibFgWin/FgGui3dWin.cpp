@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -57,7 +57,7 @@ struct  Gui3dWin : public GuiBaseImpl
         // Including api.viewBounds, api.pan/tiltDegrees and api.logRelSize in the below caused a feedback
         // issue that broke updates of the other sliders:
         m_updateBgImg = makeUpdateFlag(api.bgImg.imgN);
-        m_api.gpuInfo.set(getGpusDescription());
+        m_api.gpuInfo.set(cat(getGpusDescription(),"\n"));
     }
 
     virtual void
@@ -319,7 +319,7 @@ struct  Gui3dWin : public GuiBaseImpl
                 0, 1, 0,
                 0, 0,-1,
             };
-        Mat44F                      worldToD3vs = Mat44F((oecsToD3vs * camera.modelview).asHomogenous()),
+        Mat44F                      worldToD3vs = Mat44F(asHomogMat(oecsToD3vs * camera.modelview.asAffine())),
                                     d3vsToD3ps = calcProjection(camera.frustum);
         m_worldToD3ps = d3vsToD3ps * worldToD3vs;
         RendOptions               options = m_api.renderOptions.cref();

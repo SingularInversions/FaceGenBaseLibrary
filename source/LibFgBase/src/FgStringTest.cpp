@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -179,10 +179,10 @@ static void StartsWith()
 static void Convert()
 {
     string      utf8 = loadRawString(dataDir()+"base/test/utf8_language_samples.txt"),
-                reg32 = fgToUtf8(fgToUtf32(utf8));
+                reg32 = toUtf8(toUtf32(utf8));
     FGASSERT(utf8 == reg32);
 #ifdef _WIN32
-    string     reg16 = fgToUtf8(fgToUtf16(utf8));
+    string     reg16 = toUtf8(toUtf16(utf8));
     FGASSERT(utf8 == reg16);
 #endif
 }

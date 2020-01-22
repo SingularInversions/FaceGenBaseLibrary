@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -184,7 +184,7 @@ mandelbrot(Vec2F ics)
 void
 fgSamplerMLTest(CLArgs const &)
 {
-    FgTimer         time;
+    Timer         time;
     ImgC4UC     img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
     fgout << "Time: " << time.read() << "s";
     imgDisplay(img);

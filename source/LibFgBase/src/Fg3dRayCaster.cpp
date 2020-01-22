@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,8 +14,8 @@ using namespace std;
 namespace Fg {
 
 Fg3dRayCastMesh::Fg3dRayCastMesh(
-    const Mesh &        mesh,
-    const Vec3Fs &         verts,
+    Mesh const &        mesh,
+    Vec3Fs const &         verts,
     const Normals &     norms,
     AffineEw2F            itcsToIucs)
     :
@@ -24,7 +24,7 @@ Fg3dRayCastMesh::Fg3dRayCastMesh(
     uvsPtr(&mesh.uvs),
     material(mesh.surfaces[0].material)
 {
-    for (const Surf & s : mesh.surfaces) {
+    for (Surf const & s : mesh.surfaces) {
         surfs.push_back(s.convertToTris());
         surfs.back().material.albedoMap = s.material.albedoMap;
     }
@@ -40,14 +40,14 @@ Fg3dRayCastMesh::Fg3dRayCastMesh(
         vertItcs[1] = vertOecs[1] / vertOecs[2];
         vertsIucs[ii] = itcsToIucs * vertItcs;
     }
-    grid = fgGridTriangles(vertsIucs,surfs[0].tris.vertInds);
+    grid = gridTriangles(vertsIucs,surfs[0].tris.posInds);
 }
 
 FgBestN<float,TriPoint,8>
 Fg3dRayCastMesh::cast(Vec2F posIucs) const
 {
     FgBestN<float,TriPoint,8> retval;
-    vector<TriPoint>          intersects = grid.intersects(surfs[0].tris.vertInds,vertsIucs,posIucs);
+    vector<TriPoint>          intersects = grid.intersects(surfs[0].tris.posInds,vertsIucs,posIucs);
     for (size_t ii=0; ii<intersects.size(); ++ii) {
         TriPoint  isect = intersects[ii];
         float   newInvDepth =
@@ -68,7 +68,7 @@ Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) con
                             bCoord[1] * normsPtr->vert[tri[1]] +
                             bCoord[2] * normsPtr->vert[tri[2]];
     norm /= norm.len();
-    const Vec2Fs &       uvs = *uvsPtr;
+    Vec2Fs const &       uvs = *uvsPtr;
     Vec2F                uv {0};
     if (!uvs.empty()) {
         Vec3UI           uvInds = surfs[0].tris.uvInds[intersect.triInd];

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -60,9 +60,9 @@ fgMetaFormatTest(CLArgs const &)
 {
     TestDir   td("MetaFormat");
     int     a = 42;
-    fgSaveBin("test.fgbin",a);
+    saveBsaBin("test.fgbin",a);
     int     b;
-    fgLoadBin("test.fgbin",b);
+    loadBsaBin("test.fgbin",b);
     FGASSERT(a == b);
 }
 
@@ -98,10 +98,10 @@ fgSerializeTest(CLArgs const &)
     vector<C>                               vc;
     for (size_t ii=0; ii<sz; ++ii)
         va[ii].m0 = ii*ii;
-    fgSaveText("t0",va);
-    fgLoadText("t0",vb);
-    fgSaveText("t1",vb);
-    fgLoadText("t1",vc);
+    saveBsaText("t0",va);
+    loadBsaText("t0",vb);
+    saveBsaText("t1",vb);
+    loadBsaText("t1",vc);
     for (size_t ii=0; ii<sz; ++ii)
         FGASSERT(va[ii].m0 == vc[ii].m0);
 }

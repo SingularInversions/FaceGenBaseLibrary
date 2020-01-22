@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,11 +16,11 @@ namespace Fg {
 
 static
 void
-saveStl(Ofstream & ff,const Mesh & mesh)
+saveStl(Ofstream & ff,Mesh const & mesh)
 {
     Normals     norms = cNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        const Surf &         surf = mesh.surfaces[ss];
+        Surf const &         surf = mesh.surfaces[ss];
         const FacetNormals &    facetNorms = norms.facet[ss];
         for (uint ii=0; ii<surf.numTris(); ++ii) {
             Vec3UI           tri = surf.getTriPosInds(ii);

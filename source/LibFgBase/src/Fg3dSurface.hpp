@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -51,7 +51,7 @@ void    fgWritep(std::ostream &,const SurfPoint &);
 
 inline
 Vec3F
-fgBarycentricPos(Vec3UI inds,Vec3F weights,const Vec3Fs & verts)
+cBarycentricVert(Vec3UI inds,Vec3F weights,Vec3Fs const & verts)
 {
     return
         verts[inds[0]] * weights[0] +
@@ -61,7 +61,7 @@ fgBarycentricPos(Vec3UI inds,Vec3F weights,const Vec3Fs & verts)
 
 inline
 Vec2F
-fgBarycentricUv(Vec3UI inds,Vec3F weights,Vec2Fs const & uvs)
+cBarycentricUv(Vec3UI inds,Vec3F weights,Vec2Fs const & uvs)
 {
     return
         uvs[inds[0]] * weights[0] +
@@ -73,41 +73,41 @@ template<uint dim>
 struct  FacetInds
 {
     typedef Mat<uint,dim,1>     Ind;
-    Svec<Ind>                   vertInds;   // CC winding
-    Svec<Ind>                   uvInds;     // Empty or same size as 'vertInds'
+    Svec<Ind>                   posInds;    // CC winding
+    Svec<Ind>                   uvInds;     // CC winding. Empty or same size as 'posInds'
 
     FacetInds() {}
 
     explicit
-    FacetInds(const Svec<Ind> & vtInds) : vertInds(vtInds) {}
+    FacetInds(const Svec<Ind> & vtInds) : posInds(vtInds) {}
 
-    FacetInds(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : vertInds(vtInds), uvInds(uvIds) {}
+    FacetInds(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : posInds(vtInds), uvInds(uvIds) {}
 
     bool
     valid() const
-    {return ((uvInds.size() == 0) || (uvInds.size() == vertInds.size())); }
+    {return ((uvInds.size() == 0) || (uvInds.size() == posInds.size())); }
 
     size_t
     size() const
-    {return vertInds.size(); }
+    {return posInds.size(); }
 
     bool
     empty() const
-    {return vertInds.empty(); }
+    {return posInds.empty(); }
 
     bool
     hasUvs() const
-    {return (vertInds.size() == uvInds.size()); }
+    {return (posInds.size() == uvInds.size()); }
 
     void
     erase(size_t idx)       // Erase a facet
     {
-        FGASSERT(idx < vertInds.size());
+        FGASSERT(idx < posInds.size());
         if (!uvInds.empty()) {
-            FGASSERT(uvInds.size() == vertInds.size());
+            FGASSERT(uvInds.size() == posInds.size());
             uvInds.erase(uvInds.begin()+idx);
         }
-        vertInds.erase(vertInds.begin()+idx);
+        posInds.erase(posInds.begin()+idx);
     }
 
     void
@@ -115,8 +115,8 @@ struct  FacetInds
     {
         Ind     vo = Ind(uint(vertsOff)),
                 uo = Ind(uint(uvsOff));
-        for (size_t ii=0; ii<vertInds.size(); ++ii)
-            vertInds[ii] += vo;
+        for (size_t ii=0; ii<posInds.size(); ++ii)
+            posInds[ii] += vo;
         for (size_t ii=0; ii<uvInds.size(); ++ii)
             uvInds[ii] += uo;
     }
@@ -130,7 +130,7 @@ template<uint dim>
 void
 fgReadp(std::istream & is,FacetInds<dim> & fi)
 {
-    fgReadp(is,fi.vertInds);
+    fgReadp(is,fi.posInds);
     fgReadp(is,fi.uvInds);
 }
 
@@ -138,7 +138,7 @@ template<uint dim>
 void
 fgWritep(std::ostream & os,const FacetInds<dim> & fi)
 {
-    fgWritep(os,fi.vertInds);
+    fgWritep(os,fi.posInds);
     fgWritep(os,fi.uvInds);
 }
 
@@ -159,7 +159,7 @@ cat_(FacetInds<dim> & lhs,const FacetInds<dim> & rhs)
     }
     else
         cat_(lhs.uvInds,rhs.uvInds);
-    cat_(lhs.vertInds,rhs.vertInds);
+    cat_(lhs.posInds,rhs.posInds);
 }
 
 Vec3UIs
@@ -186,7 +186,7 @@ fgSurfPointPos(
     const SurfPoint &           sp,
     const Tris &                tris,
     const Quads &               quads,
-    const Vec3Fs &              verts);
+    Vec3Fs const &              verts);
 
 struct  Material
 {
@@ -200,20 +200,22 @@ typedef Svec<Materials>         Materialss;
 // A grouping of facets (tri and quad) sharing material properties:
 struct  Surf
 {
-    Ustring                    name;
-    Tris                      tris;
-    Quads                     quads;
-    SurfPoints                surfPoints;
+    Ustring                     name;
+    Tris                        tris;
+    Quads                       quads;
+    SurfPoints                  surfPoints;
 
-    Material                  material;       // Not saved with mesh - set dynamically
+    Material                    material;       // Not saved with mesh - set dynamically
 
     Surf() {}
 
     explicit
-    Surf(const Vec3UIs & ts) : tris(ts) {}
+    Surf(Vec3UIs const & ts) : tris(ts) {}
 
     explicit
     Surf(const Vec4UIs & ts) : quads(ts) {}
+
+    Surf(Vec3UIs const & triPosInds,Vec4UIs const & quadPosInds) : tris(triPosInds), quads(quadPosInds) {}
 
     Surf(const Svec<Vec4UI> & verts,const Svec<Vec4UI> & uvs) : quads(verts,uvs) {}
 
@@ -249,11 +251,11 @@ struct  Surf
 
     Vec3UI
     getTriPosInds(uint ind) const
-    {return tris.vertInds[ind]; }
+    {return tris.posInds[ind]; }
 
     Vec4UI
     getQuadPosInds(uint ind) const
-    {return quads.vertInds[ind]; }
+    {return quads.posInds[ind]; }
 
     // Returns the vertex indices for the tri equiv:
     Vec3UI
@@ -271,15 +273,18 @@ struct  Surf
     {return !(tris.uvInds.empty() && quads.uvInds.empty()); }
 
     inline Vec3F
-    surfPointPos(const Vec3Fs & verts,size_t idx) const
+    surfPointPos(Vec3Fs const & verts,size_t idx) const
     {return fgSurfPointPos(surfPoints[idx],tris,quads,verts); }
 
     // Label must correspond to a surface point:
     Vec3F
-    surfPointPos(const Vec3Fs & verts,String const & label) const;
+    surfPointPos(Vec3Fs const & verts,String const & label) const;
+
+    Vec3Fs
+    surfPointPositions(Vec3Fs const & verts) const;
 
     LabelledVerts
-    surfPointsAsVertLabels(const Vec3Fs &) const;
+    surfPointsAsVertLabels(Vec3Fs const &) const;
 
     FacetInds<3>
     asTris() const;
@@ -288,7 +293,7 @@ struct  Surf
     convertToTris() const;
 
     void
-    merge(const Surf & surf);
+    merge(Surf const & surf);
 
     void
     checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx);
@@ -336,25 +341,25 @@ private:
 };
 
 void    fgReadp(std::istream &,Surf &);
-void    fgWritep(std::ostream &,const Surf &);
+void    fgWritep(std::ostream &,Surf const &);
 
-std::ostream& operator<<(std::ostream&,const Surf&);
+std::ostream& operator<<(std::ostream&,Surf const&);
 
 typedef Svec<Surf>      Surfs;
 
 // Return a surface with only the selected tris (no quads), and any surface points that remain valid:
 Surf
-fgSelectTris(const Surf & surf,const Svec<FgBool> & sel);
+fgSelectTris(Surf const & surf,const Svec<FgBool> & sel);
 
 Surf
-fgRemoveDuplicateFacets(const Surf &);
+fgRemoveDuplicateFacets(Surf const &);
 
 Surf
 mergeSurfaces(const Surfs & surfs);
 
 // Split a surface into its (one or more) discontiguous surfaces
 Svec<Surf>
-fgSplitSurface(const Surf & surf);
+fgSplitSurface(Surf const & surf);
 
 // Name any unnamed surfaces as numbered extensions of the given base name,
 // or just the base name if there is only a single (unnamed) surface:
@@ -362,13 +367,13 @@ Surfs
 fgEnsureNamed(const Surfs & surfs,Ustring const & baseName);
 
 Vec3Fs
-fgVertsUsed(const Vec3UIs & tris,const Vec3Fs & verts);
+fgVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
 
 bool
-fgHasUnusedVerts(const Vec3UIs & tris,const Vec3Fs & verts);
+fgHasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
 
 Uints
-fgRemoveUnusedVertsRemap(const Vec3UIs & tris,const Vec3Fs & verts);
+fgRemoveUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts);
 
 struct  TriSurf
 {
@@ -381,7 +386,7 @@ struct  TriSurf
 };
 
 TriSurf
-meshRemoveUnusedVerts(const Vec3Fs & verts,const Vec3UIs & tris);
+meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
 
 inline
 TriSurf

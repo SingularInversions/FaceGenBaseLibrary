@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -219,7 +219,7 @@ typedef Svec<Img3F>    Img3Fs;
 
 typedef Img<Arr4UC>    Img4UC;
 typedef Svec<Img4UC>   Img4UCs;
-typedef Img<Arr4F>     Img4F;
+typedef Img<Vec4F>     Img4F;
 
 // Deprecated:
 typedef Img<RgbaUC>    ImgC4UC;

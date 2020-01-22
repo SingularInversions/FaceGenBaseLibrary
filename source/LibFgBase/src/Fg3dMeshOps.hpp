@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -39,12 +39,12 @@ Mesh
 fgCreateSphere(float radius,uint subdivisions);
 
 Mesh
-fgRemoveDuplicateFacets(const Mesh &);
+fgRemoveDuplicateFacets(Mesh const &);
 
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
 // Retains only those morphs which affect the remaining vertices:
 Mesh
-meshRemoveUnusedVerts(const Mesh &);
+meshRemoveUnusedVerts(Mesh const &);
 
 Mesh
 fg3dCube(bool open=false);
@@ -65,27 +65,27 @@ fgNTent(uint nn);
 //fgFddCage(float size,float thick);
 
 Mesh
-mergeSameNameSurfaces(const Mesh &);
+mergeSameNameSurfaces(Mesh const &);
 
 Mesh
-unifyIdenticalVerts(const Mesh &);
+unifyIdenticalVerts(Mesh const &);
 
 Mesh
-unifyIdenticalUvs(const Mesh &);
+unifyIdenticalUvs(Mesh const &);
 
 Mesh
-splitSurfsByUvs(const Mesh &);
+splitSurfsByUvs(Mesh const &);
 
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:
 Mesh
-mergeMeshSurfaces(const Mesh & m0,const Mesh & m1);
+mergeMeshSurfaces(Mesh const & m0,Mesh const & m1);
 
 // Material of second mesh is discarded, all else (including names) are merged:
 Mesh
 mergeMeshes(
-    const Mesh &    m0,
-    const Mesh &    m1);
+    Mesh const &    m0,
+    Mesh const &    m1);
 
 // As above:
 Mesh
@@ -93,39 +93,40 @@ mergeMeshes(const Svec<Mesh> & meshes);
 
 // Doesn't preserve uvs, surface points or marked verts:
 Mesh
-fg3dMaskFromUvs(const Mesh & mesh,const Img<FgBool> & mask);
+fg3dMaskFromUvs(Mesh const & mesh,const Img<FgBool> & mask);
 
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
 ImgUC
-fgGetUvCover(const Mesh & mesh,Vec2UI dims);
+getUvCover(Mesh const & mesh,Vec2UI dims);
 
 // Wireframe image of UV layout of each facet:
 ImgC4UC
-fgUvWireframeImage(const Mesh &,const ImgC4UC & img=ImgC4UC());
+cUvWireframeImage(Mesh const &,RgbaUC wireColor,const ImgC4UC & background=ImgC4UC());
 
 // Emboss the given pattern onto a mesh with UVs, with max magnitude given by image value 255,
 // corresponding to a displacement (in the direction of surface normal) by 'ratio' times the
 // max bounding box dimensions of all vertices whose UV coordinate in 'pattern' sample to non-zero:
 Vec3Fs
-embossMesh(const Mesh & mesh,const ImgUC & pattern,double ratio=0.05);
+embossMesh(Mesh const & mesh,const ImgUC & pattern,double ratio=0.05);
 
-struct  FgMorphVal
+struct  MorphVal
 {
-    Ustring        name;
+    Ustring         name;
     float           val;            // 0 - no change, 1 - full application
 
-    FgMorphVal() {}
-    FgMorphVal(Ustring const & name_,float val_) : name(name_), val(val_) {}
+    MorphVal() {}
+    MorphVal(Ustring const & name_,float val_) : name(name_), val(val_) {}
 };
+typedef Svec<MorphVal>  MorphVals;
 
 // Only applies those morphs which mesh supports, ignores the rest:
 Vec3Fs
-fgApplyExpression(const Mesh & mesh,const Svec<FgMorphVal> &  expression);
+poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
 
 // Cannot be functional since marked verts are stored as indices into the vertex array, which must
 // be updated in sync:
 void
-surfPointsToMarkedVerts_(const Mesh & in,Mesh & out);
+surfPointsToMarkedVerts_(Mesh const & in,Mesh & out);
 
 struct  MeshMirror
 {
@@ -140,17 +141,17 @@ meshMirrorX(Mesh const &);
 
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
 Mesh
-fgCopySurfaceStructure(const Mesh & from,const Mesh & to);
+fgCopySurfaceStructure(Mesh const & from,Mesh const & to);
 
 // Merge all surface facets converted to tris:
 Svec<Vec3UI>
-fgMeshSurfacesAsTris(const Mesh &);
+fgMeshSurfacesAsTris(Mesh const &);
 
 TriSurf
-fgTriSurface(const Mesh & src,size_t surfIdx);
+fgTriSurface(Mesh const & src,size_t surfIdx);
 
 Mesh
-fgSortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque);
+sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque);
 
 }
 

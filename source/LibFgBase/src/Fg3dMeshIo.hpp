@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -36,7 +36,7 @@ meshSaveAnyFormat(Meshes const & meshes,Ustring const & fname,String const & img
 
 inline
 void
-meshSaveAnyFormat(const Mesh & mesh,Ustring const & fname)
+meshSaveAnyFormat(Mesh const & mesh,Ustring const & fname)
 {meshSaveAnyFormat(fgSvec(mesh),fname); }
 
 // Does not include FaceGen formats:
@@ -59,7 +59,7 @@ meshSaveFormatsCLDescription();
 Mesh
 loadFgmesh(Ustring const & fname);
 void
-saveFgmesh(Ustring const & fname,const Mesh & mesh);
+saveFgmesh(Ustring const & fname,Mesh const & mesh);
 void
 saveFgmesh(Ustring const & fname,Meshes const & meshes);
 
@@ -71,7 +71,7 @@ Mesh        loadTri(Ustring const & meshFile,Ustring const & texFile);
 
 // Merges all surfaces:
 void
-saveTri(Ustring const & fname,const Mesh & mesh);
+saveTri(Ustring const & fname,Mesh const & mesh);
 // Merges all meshes and surfaces. Texture images not saved.
 inline
 void
@@ -80,15 +80,16 @@ saveTri(Ustring const & fname,Meshes const & meshes)
 
 // Third party mesh formats:
 
+// Load from Wavefront OBJ file
 Mesh
-loadWobj(
+loadWObj(
     Ustring const &     filename,
     // Break up the surfaces by the given WOBJ separator. Valid values are 'usemtl', 'o' and 'g':
     String              surfSeparator=String());
 
-// Ignores morphs:
+// Save to Wavefront OBJ file (ignores morphs)
 void
-saveObj(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
+saveWObj(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // Ignores morphs:
 void

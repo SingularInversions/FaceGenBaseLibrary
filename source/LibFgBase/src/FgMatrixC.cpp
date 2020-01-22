@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -168,7 +168,7 @@ fgTanSphere(Vec3D v)
 {
     // Find permutation that sorts 'v' smallest to largest:
     Vec3UI           p(0,1,2);
-    Vec3D            m = fgMapSqr(v);
+    Vec3D            m = mapSqr(v);
     if (m[0] > m[1])
         std::swap(p[0],p[1]);
     if (m[p[1]] > m[p[2]])

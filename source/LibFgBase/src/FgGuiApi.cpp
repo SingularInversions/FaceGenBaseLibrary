@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ fgGuiTestmDialogSplashScreen(CLArgs const &)
 {
     std::function<void(void)>     f = guiDialogSplashScreen();
     fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
-    fgSleep(3);
+    sleepSeconds(3);
     f();
 }
 
@@ -44,7 +44,7 @@ guiImageFormat(string const & label,bool warnTransparency,Ustring const & store)
 void
 fgTestmGui2(CLArgs const &)
 {
-    Ustring        store = fgDirUserAppDataLocalFaceGen("base","testm gui2");
+    Ustring        store = getDirUserAppDataLocalFaceGen("base","testm gui2");
     GuiVal<vector<bool> >    checkboxes;
     {
         Ustrings                   labels;
@@ -96,7 +96,7 @@ fgTestmGui2(CLArgs const &)
                 tab1 = guiSplit(true,left,img),
                 tab2 = guiSplit(false,txt,sliders),
                 win = guiTabs(fgSvec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));
-    guiStartImpl("GUI2 testm",win,fgDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
+    guiStartImpl("GUI2 testm",win,getDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
 }
 
 }

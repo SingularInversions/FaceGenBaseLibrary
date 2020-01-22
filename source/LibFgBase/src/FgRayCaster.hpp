@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,7 @@
 #include "FgGridIndex.hpp"
 #include "FgBestN.hpp"
 #include "FgAffineCwC.hpp"
+#include "FgSimilarity.hpp"
 
 namespace Fg {
 
@@ -37,17 +38,21 @@ struct  RayCaster
     Svec<Vec2Fs const *>    uvsPtrs;        // By mesh, in OTCS
     Normalss                normss;         // By mesh, in OECS
     AffineEw2D              itcsToIucs;
-    Vec3Fss                 iucsVertss;     // By mesh, X,Y in IUCS, Z component is inverse CCS depth
+    Vec3Fss                 iucsVertss;     // By mesh, X,Y in IUCS, Z component is inverse FCCS depth
     GridIndex<TriInd>       grid;           // Index from IUCS to bin of TriInds
     Lighting                lighting;
     RgbaF                   background;     // Must be alpha-weighted
+    bool                    useMaps = true;
+    bool                    allShiny = false;
 
     RayCaster(
         Meshes const &      meshes,
-        Affine3D            modelview,      // to OECS
+        SimilarityD         modelview,      // to OECS
         AffineEw2D          itcsToIucs,
         Lighting const &    lighting,       // In OECS
-        RgbaF               background);    // Must be alpha-weighted
+        RgbaF               background,      // Must be alpha-weighted
+        bool                useMaps = true,
+        bool                allShiny = false);
 
     RgbaF
     cast(Vec2F posIucs) const;

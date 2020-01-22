@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,194 +16,189 @@ using namespace std;
 
 namespace Fg {
 
-const vector<pair<FgBuildOS,string> > &
+const vector<pair<BuildOS,string> > &
 fgBuildOSStrs()
 {
-    static vector<pair<FgBuildOS,string> >  ret =
+    static vector<pair<BuildOS,string> >  ret =
     {
-        {FgBuildOS::win,"win"},
-        {FgBuildOS::linux,"ubuntu"},
-        {FgBuildOS::macos,"macos"},
-        {FgBuildOS::ios,"ios"},
-        {FgBuildOS::android,"android"}
+        {BuildOS::win,"win"},
+        {BuildOS::linux,"ubuntu"},
+        {BuildOS::macos,"macos"},
+        {BuildOS::ios,"ios"},
+        {BuildOS::android,"android"}
     };
     return ret;
 }
 
 std::ostream &
-operator<<(std::ostream & os ,FgBuildOS bos)
+operator<<(std::ostream & os ,BuildOS bos)
 {
-    const vector<pair<FgBuildOS,string> > & lst = fgBuildOSStrs();
-    for (const pair<FgBuildOS,string> & l : lst)
+    const vector<pair<BuildOS,string> > & lst = fgBuildOSStrs();
+    for (const pair<BuildOS,string> & l : lst)
         if (l.first == bos)
             return os << l.second;
-    fgThrow("ostream unhandled FgBuildOS",int(bos));
+    fgThrow("ostream unhandled BuildOS",int(bos));
     FG_UNREACHABLE_RETURN(os);
 }
 
-FgBuildOS
-fgStrToBuildOS(string const & str)
+BuildOS
+strToBuildOS(string const & str)
 {
-    const vector<pair<FgBuildOS,string> > & lst = fgBuildOSStrs();
-    for (const pair<FgBuildOS,string> & l : lst)
+    const vector<pair<BuildOS,string> > & lst = fgBuildOSStrs();
+    for (const pair<BuildOS,string> & l : lst)
         if (l.second == str)
             return l.first;
-    fgThrow("fgStrToBuildOS unhandled string",str);
-    FG_UNREACHABLE_RETURN(FgBuildOS::win);
+    fgThrow("strToBuildOS unhandled string",str);
+    FG_UNREACHABLE_RETURN(BuildOS::win);
 }
 
-FgBuildOS
-fgCurrentBuildOS()
+BuildOS
+getCurrentBuildOS()
 {
 #ifdef _WIN32
-    return FgBuildOS::win;
+    return BuildOS::win;
 #elif defined __APPLE__
     #ifdef FG_SANDBOX
-        return FgBuildOS::ios;
+        return BuildOS::ios;
     #else
-        return FgBuildOS::macos;
+        return BuildOS::macos;
     #endif
 #else
-    return FgBuildOS::linux;
+    return BuildOS::linux;
 #endif
 }
 
-const vector<pair<FgArch,string> > &
+const vector<pair<Arch,string> > &
 fgArchStrs()
 {
-    static vector<pair<FgArch,string> >  ret =
+    static vector<pair<Arch,string> >  ret =
     {
-        {FgArch::x86,"x86"},
-        {FgArch::x64,"x64"},
-        {FgArch::armv7,"armv7"},
-        {FgArch::arm64,"arm64"},
-        {FgArch::arm64e,"arm64e"}
+        {Arch::x86,"x86"},
+        {Arch::x64,"x64"},
+        {Arch::armv7,"armv7"},
+        {Arch::arm64,"arm64"},
+        {Arch::arm64e,"arm64e"}
     };
     return ret;
 }
 
 std::ostream &
-operator<<(std::ostream & os,FgArch arch)
+operator<<(std::ostream & os,Arch arch)
 {
-    const vector<pair<FgArch,string> > &    lst = fgArchStrs();
-    for (const pair<FgArch,string> & l : lst)
+    const vector<pair<Arch,string> > &    lst = fgArchStrs();
+    for (const pair<Arch,string> & l : lst)
         if (l.first == arch)
             return os << l.second;
-    fgThrow("ostream unhandled FgArch",int(arch));
+    fgThrow("ostream unhandled Arch",int(arch));
     FG_UNREACHABLE_RETURN(os);
 }
 
-FgArch
-fgStrToArch(string const & str)
+Arch
+strToArch(string const & str)
 {
-    const vector<pair<FgArch,string> > &    lst = fgArchStrs();
-    for (const pair<FgArch,string> & l : lst)
+    const vector<pair<Arch,string> > &    lst = fgArchStrs();
+    for (const pair<Arch,string> & l : lst)
         if (l.second == str)
             return l.first;
-    fgThrow("fgStrToArch unhandled string",str);
-    FG_UNREACHABLE_RETURN(FgArch::x86);
+    fgThrow("strToArch unhandled string",str);
+    FG_UNREACHABLE_RETURN(Arch::x86);
 }
 
-FgArchs
-fgBuildArchitectures(FgBuildOS os)
+Archs
+getBuildArchs(BuildOS os)
 {
-    if ((os == FgBuildOS::win) || (os == FgBuildOS::linux))
-        return fgSvec(FgArch::x86,FgArch::x64);
-    else if (os == FgBuildOS::macos)
-        return fgSvec(FgArch::x64);
-    else if (os == FgBuildOS::ios)
+    if ((os == BuildOS::win) || (os == BuildOS::linux))
+        return fgSvec(Arch::x86,Arch::x64);
+    else if (os == BuildOS::macos)
+        return fgSvec(Arch::x64);
+    else if (os == BuildOS::ios)
         // These are the iOS standard architectures (plus simulator) as of 2019.
         // They support iPhone 5s (not 5,5c) and later.
-        return fgSvec(FgArch::x64,FgArch::armv7,FgArch::arm64,FgArch::arm64e);
-    else if (os == FgBuildOS::android)
-        return fgSvec(FgArch::x86,FgArch::x64,FgArch::armv7,FgArch::arm64);
+        return fgSvec(Arch::x64,Arch::armv7,Arch::arm64,Arch::arm64e);
+    else if (os == BuildOS::android)
+        return fgSvec(Arch::x86,Arch::x64,Arch::armv7,Arch::arm64);
     else
         fgThrow("fgBuildArchitecture unhandled OS",int(os));
-    FG_UNREACHABLE_RETURN(FgArchs());
+    FG_UNREACHABLE_RETURN(Archs());
 }
 
-const vector<pair<FgCompiler,string> > &
-fgCompilerStrs()
+const vector<pair<Compiler,string> > &
+compilerStrs()
 {
-    static vector<pair<FgCompiler,string> >  ret =
+    static vector<pair<Compiler,string> >  ret =
     {
-        {FgCompiler::vs13,"vs13"},
-        {FgCompiler::vs15,"vs15"},
-        {FgCompiler::vs17,"vs17"},
-        {FgCompiler::vs19,"vs19"},
-        {FgCompiler::gcc,"gcc"},
-        {FgCompiler::clang,"clang"},
-        {FgCompiler::icpc,"icpc"}
+        {Compiler::vs15,"vs15"},
+        {Compiler::vs17,"vs17"},
+        {Compiler::vs19,"vs19"},
+        {Compiler::gcc,"gcc"},
+        {Compiler::clang,"clang"},
+        {Compiler::icpc,"icpc"}
     };
     return ret;
 }
 
 std::ostream &
-operator<<(std::ostream & os,FgCompiler comp)
+operator<<(std::ostream & os,Compiler comp)
 {
-    const vector<pair<FgCompiler,string> > &    lst = fgCompilerStrs();
-    for (const pair<FgCompiler,string> & l : lst)
+    for (auto const & l : compilerStrs())
         if (l.first == comp)
             return os << l.second;
-    fgThrow("ostream unhandled FgCompiler",int(comp));
+    fgThrow("ostream unhandled Compiler",int(comp));
     FG_UNREACHABLE_RETURN(os);
 }
 
-FgCompiler fgStrToCompiler(string const & str)
+Compiler strToCompiler(string const & str)
 {
-    const vector<pair<FgCompiler,string> > &    lst = fgCompilerStrs();
-    for (const pair<FgCompiler,string> & l : lst)
+    for (auto const & l : compilerStrs())
         if (l.second == str)
             return l.first;
-    fgThrow("fgStrToCompiler unhandled string",str);
-    FG_UNREACHABLE_RETURN(FgCompiler::vs13);
+    fgThrow("strToCompiler unhandled string",str);
+    FG_UNREACHABLE_RETURN(Compiler::vs15);
 }
 
-FgCompilers
-fgBuildCompilers(FgBuildOS os)
+Compilers
+getBuildCompilers(BuildOS os)
 {
-    if (os == FgBuildOS::win)   // No longer support vs13:
-        return fgSvec(FgCompiler::vs19,FgCompiler::vs17,FgCompiler::vs15);
-    else if (os == FgBuildOS::linux)
-        return fgSvec(FgCompiler::clang,FgCompiler::gcc,FgCompiler::icpc);
-    else if (os == FgBuildOS::macos)
-        return fgSvec(FgCompiler::clang);
-    else if (os == FgBuildOS::ios)
-        return fgSvec(FgCompiler::clang);
-    else if (os == FgBuildOS::android)
-        return fgSvec(FgCompiler::clang);
-    fgThrow("fgBuildCompilers unhandled OS",int(os));
-    FG_UNREACHABLE_RETURN(FgCompilers());
+    if (os == BuildOS::win)
+        return fgSvec(Compiler::vs19,Compiler::vs17,Compiler::vs15);
+    else if (os == BuildOS::linux)
+        return fgSvec(Compiler::clang,Compiler::gcc,Compiler::icpc);
+    else if (os == BuildOS::macos)
+        return fgSvec(Compiler::clang);
+    else if (os == BuildOS::ios)
+        return fgSvec(Compiler::clang);
+    else if (os == BuildOS::android)
+        return fgSvec(Compiler::clang);
+    fgThrow("getBuildCompilers unhandled OS",int(os));
+    FG_UNREACHABLE_RETURN(Compilers());
 }
 
-FgCompiler
-fgCurrentCompiler()
+Compiler
+getCurrentCompiler()
 {
 #if defined _MSC_VER
-    #if (_MSC_VER == 1800)
-		return FgCompiler::vs13;
-    #elif(_MSC_VER == 1900)
-        return FgCompiler::vs15;
+    #if(_MSC_VER == 1900)
+        return Compiler::vs15;
     #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
-        return FgCompiler::vs17;
+        return Compiler::vs17;
     #elif((_MSC_VER >= 1920) && (_MSC_VER < 1930))
-        return FgCompiler::vs19;
+        return Compiler::vs19;
     #else
         define_new_visual_studio_version_here
     #endif
 #elif defined __INTEL_COMPILER
-    return FgCompiler::icpc;
+    return Compiler::icpc;
 #elif defined __clang__
-    return FgCompiler::clang;
+    return Compiler::clang;
 #elif defined __GNUC__      // Must be second as it's also defined by CLANG
-    return FgCompiler::gcc;
+    return Compiler::gcc;
 #else
     define_new_compiler_here
 #endif
 }
 
 string
-fgCurrentBuildConfig()
+getCurrentBuildConfig()
 {
 #ifdef _DEBUG
     return "debug";
@@ -213,16 +208,16 @@ fgCurrentBuildConfig()
 }
 
 string
-fgCurrentBuildDescription()
+getCurrentBuildDescription()
 {
     return 
-        toStr(fgCurrentBuildOS()) + " " +
-        toStr(fgCurrentCompiler()) + " " +
-        fgBitsString() + " " + fgCurrentBuildConfig();
+        toStr(getCurrentBuildOS()) + " " +
+        toStr(getCurrentCompiler()) + " " +
+        fgBitsString() + " " + getCurrentBuildConfig();
 }
 
 string
-fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
+getRelBin(BuildOS os,Arch arch,Compiler comp,bool release,bool backslash)
 {
     string          ds = backslash ? "\\" : "/",
                     debrel = release ? "release" : "debug";
@@ -230,7 +225,7 @@ fgRelBin(FgBuildOS os,FgArch arch,FgCompiler comp,bool release,bool backslash)
 }
 
 uint64
-fgUuidHash64(string const & str)
+cUuidHash64(string const & str)
 {
     FGASSERT(str.size() >= 8);
     std::hash<string>   hf;         // Returns size_t
@@ -244,14 +239,14 @@ fgUuidHash64(string const & str)
 }
 
 FgUint128
-fgUuidHash128(string const & str)
+cUuidHash128(string const & str)
 {
     FgUint128       ret;
     FGASSERT(str.size() >= 16);
     uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
                     *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
-    *pLo = fgUuidHash64(str);
-    *pHi = fgUuidHash64(str+toStr(*pLo));
+    *pLo = cUuidHash64(str);
+    *pHi = cUuidHash64(str+toStr(*pLo));
     return ret;
 }
 
@@ -259,9 +254,9 @@ fgUuidHash128(string const & str)
 // the first bits representing time values, although we just use all hash bits for repeatability
 // (we don't want to force rebuilds every time we generate new solution/project files):
 string
-fgCreateMicrosoftGuid(string const & name,bool wsb)
+createMicrosoftGuid(string const & name,bool wsb)
 {
-    FgUint128       val = fgUuidHash128(name);
+    FgUint128       val = cUuidHash128(name);
     uchar           *valPtr = &val.m[0];
     string          ret;
     if (wsb) ret += '{';
@@ -278,7 +273,7 @@ fgCreateMicrosoftGuid(string const & name,bool wsb)
 void
 fgTestmCreateMicrosoftGuid(CLArgs const &)
 {
-    fgout << fgnl << fgCreateMicrosoftGuid("This string should hash to a consistent value");
+    fgout << fgnl << createMicrosoftGuid("This string should hash to a consistent value");
 }
 
 }

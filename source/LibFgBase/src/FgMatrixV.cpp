@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -245,7 +245,7 @@ void
 showMul(function<MatD(const MatD &,const MatD &)> fn,const MatD & l,const MatD & r,string const & desc)
 {
     fgout << fgnl << desc << " : ";
-    FgTimer         timer;
+    Timer         timer;
     MatD       m3 = fn(l,r);
     size_t          elapsed = timer.readMs();
     fgout << elapsed << " ms";
@@ -260,7 +260,7 @@ testMul(CLArgs const & args)
     size_t          sz = fromStr<size_t>(syn.next()).val();
     MatD       m0 = MatD::randNormal(sz,sz),
                     m1 = MatD::randNormal(sz,sz);
-    FgTimer         timer;
+    Timer         timer;
     MatD       m2 = m0 * m1;
     size_t          time = timer.readMs();
     fgout << sz << ": " << time << "ms";
@@ -296,7 +296,7 @@ eigenTest(CLArgs const & args)
         }
     }
     {
-        FgTimeScope     ts("Eigen mat mul " + toStr(sz));
+        TimeScope     ts("Eigen mat mul " + toStr(sz));
         MatrixXd        m = l * r;
     }
 }
@@ -306,7 +306,7 @@ eigenTest(CLArgs const & args)
 void
 fgMatrixVTest(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(testCorrect,"correct"));
     cmds.push_back(Cmd(eigenTest,"tem","Time eigen mat mul"));
     cmds.push_back(Cmd(testMul,"tlm","Time loop mat mul"));

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,7 +42,7 @@ fgDrawDotIrcs(
 // improved by clippping begin/end points to valid image area, updating 'acc' appropriately,
 // and then calling 'xy' instead of 'paint':
 void
-fgDrawLineIrcs(
+drawLineIrcs(
     ImgC4UC &       img,
     Vec2I            beg,
     Vec2I            end,
@@ -125,7 +125,7 @@ fgDrawFunction(
         int         val = round<uint>(func(abscissa)*vscale);
         Vec2I    point(xx,hgt-1-val);
         if (xx > 0)
-            fgDrawLineIrcs(img,lastPoint,point,colour);   // Ignores out of bounds points
+            drawLineIrcs(img,lastPoint,point,colour);   // Ignores out of bounds points
         lastPoint = point;
     }
 }

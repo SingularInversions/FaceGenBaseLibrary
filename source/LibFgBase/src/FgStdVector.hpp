@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -853,7 +853,7 @@ fgMapAbs(const Svec<T> & v)
 
 template<class T>
 Svec<T>
-fgMapSqr(const Svec<T> & v)
+mapSqr(const Svec<T> & v)
 {
     Svec<T>  ret;
     ret.reserve(v.size());
@@ -939,9 +939,13 @@ fgSortIndsGt(const T * v,size_t l,size_t r)
 {return (v[l] > v[r]); }
 
 // Make use of a permuted indices list to re-order a list (or subset thereof):
-template<class T>
+template<class T,class U,
+    // Can be uint or uint64, and on some platforms size_t is different from these:
+    typename std::enable_if<std::is_unsigned<U>::value,U>::type* =nullptr,
+    typename std::enable_if<std::is_integral<U>::value,U>::type* =nullptr
+>
 Svec<T>
-reorder(const Svec<T> & v,const Svec<uint> & inds)
+reorder(const Svec<T> & v,const Svec<U> & inds)
 {
     Svec<T>       ret;
     ret.reserve(inds.size());
@@ -949,20 +953,6 @@ reorder(const Svec<T> & v,const Svec<uint> & inds)
         ret.push_back(v[inds[ii]]);
     return ret;
 }
-
-#ifdef FG_64
-// Make use of a permuted indices list to re-order a list (or subset thereof):
-template<class T>
-Svec<T>
-reorder(const Svec<T> & v,const Svec<size_t> & inds)
-{
-    Svec<T>       ret;
-    ret.reserve(inds.size());
-    for (size_t ii=0; ii<inds.size(); ++ii)
-        ret.push_back(v[inds[ii]]);
-    return ret;
-}
-#endif
 
 template<class T>
 bool

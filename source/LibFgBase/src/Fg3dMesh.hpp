@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -66,16 +66,16 @@ struct  Mesh
     Mesh() {}
 
     explicit
-    Mesh(const Vec3Fs & vts) : verts(vts) {}
+    Mesh(Vec3Fs const & vts) : verts(vts) {}
 
     explicit
     Mesh(const TriSurf & ts) : verts(ts.verts), surfaces(fgSvec(Surf(ts.tris))) {}
 
-    Mesh(const Vec3Fs & vts,const Vec3UIs & ts) : verts(vts), surfaces(fgSvec(Surf(ts))) {}
+    Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(fgSvec(Surf(ts))) {}
 
-    Mesh(const Vec3Fs & vts,const Surf & surf) : verts(vts), surfaces(fgSvec(surf)) {}
+    Mesh(Vec3Fs const & vts,Surf const & surf) : verts(vts), surfaces(fgSvec(surf)) {}
 
-    Mesh(const Vec3Fs & vts,const Surfs & surfs) : verts(vts), surfaces(surfs) {}
+    Mesh(Vec3Fs const & vts,const Surfs & surfs) : verts(vts), surfaces(surfs) {}
 
     // Total number of verts including target morph verts:
     size_t
@@ -87,7 +87,7 @@ struct  Mesh
 
     // Update base verts and all target morph verts:
     void
-    updateAllVerts(const Vec3Fs &);
+    updateAllVerts(Vec3Fs const &);
 
     uint
     numFacets() const;                  // tris plus quads over all surfaces
@@ -107,7 +107,7 @@ struct  Mesh
     size_t
     numQuads() const;                   // Just the number of quads over all surfaces
 
-    const Surf &
+    Surf const &
     surface(Ustring const & surfName) const
     {return findFirst(surfaces,surfName); }
 
@@ -115,7 +115,7 @@ struct  Mesh
     surfPointNum() const;              // Over all surfaces
 
     Vec3F
-    surfPointPos(const Vec3Fs & verts,size_t num) const;
+    surfPointPos(Vec3Fs const & verts,size_t num) const;
 
     Vec3F
     surfPointPos(size_t num) const
@@ -129,6 +129,9 @@ struct  Mesh
 
     Vec3Fs
     surfPointPositions(Strings const & labels) const;
+
+    Vec3Fs
+    surfPointPositions() const;
 
     Vec3F
     markedVertPos(String const & name_) const
@@ -213,7 +216,7 @@ struct  Mesh
     // Morph using given base and target vertices:
     void
     morph(
-        const Vec3Fs &      allVerts,       // Must have same number of verts as base plus targets
+        Vec3Fs const &      allVerts,       // Must have same number of verts as base plus targets
         const Floats &      coord,          // Combined morph coordinate over delta then targer morphs
         Vec3Fs &            outVerts)       // RETURNED. Same size as base verts
         const;
@@ -234,11 +237,11 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorph(const Morph & deltaMorph);
+    addDeltaMorph(Morph const & deltaMorph);
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorphFromTarget(Ustring const & name,const Vec3Fs & targetShape);
+    addDeltaMorphFromTarget(Ustring const & name,Vec3Fs const & targetShape);
 
     // Overwrites any existing morph of the same name:
     void
@@ -246,10 +249,10 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addTargMorph(Ustring const & name,const Vec3Fs & targetShape);
+    addTargMorph(Ustring const & name,Vec3Fs const & targetShape);
 
     Vec3Fs
-    poseShape(const Vec3Fs & allVerts,const std::map<Ustring,float> & poseVals) const;
+    poseShape(Vec3Fs const & allVerts,const std::map<Ustring,float> & poseVals) const;
 
     // EDITING:
 
@@ -276,10 +279,10 @@ struct  Mesh
 typedef Svec<Mesh>   Meshes;
 
 std::ostream &
-operator<<(std::ostream &,const Mesh &);
+operator<<(std::ostream &,Mesh const &);
 
 void    fgReadp(std::istream &,Mesh &);
-void    fgWritep(std::ostream &,const Mesh &);
+void    fgWritep(std::ostream &,Mesh const &);
 
 std::ostream &
 operator<<(std::ostream &,const Meshes &);
@@ -295,20 +298,15 @@ fgMorphs(const Meshes & meshes);
 
 inline
 PoseVals
-fgPoses(const Mesh & mesh)
-{return cat(fgPoses(mesh.deltaMorphs),fgPoses(mesh.targetMorphs)); }
+cPoseVals(Mesh const & mesh)
+{return cat(cPoseVals(mesh.deltaMorphs),cPoseVals(mesh.targetMorphs)); }
 
 PoseVals
-fgPoses(const Svec<Mesh> & meshes);
-
-inline
-AffineEw2F
-fgOtcsToIpcs(Vec2UI imgDims)
-{return AffineEw2F(Mat22F(0,1,1,0),Mat22F(0,imgDims[0],0,imgDims[1])); }
+cPoseVals(const Svec<Mesh> & meshes);
 
 // If 'loop' not selected then just do flat subdivision:
 Mesh
-fgSubdivide(const Mesh &,bool loop = true);
+fgSubdivide(Mesh const &,bool loop = true);
 
 }
 

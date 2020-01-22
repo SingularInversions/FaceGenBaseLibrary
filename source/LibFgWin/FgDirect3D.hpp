@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,9 @@
 #include "FgGuiApi3d.hpp"
 
 namespace Fg {
+
+Ustrings        // Empty if fails
+getGpusDescription();
 
 struct  D3dMap
 {
@@ -34,8 +37,8 @@ struct  D3dSurf
 {
     WinPtr<ID3D11Buffer>        triVerts;       // 3 Verts for each tri. Null if no facets for this surf.
     WinPtr<ID3D11Buffer>        lineVerts;      // 2 Verts for each edge. Null if no facets or computation delayed.
-    D3dMap                         albedoMap;      // Can be empty
-    D3dMap                         specularMap;    // "
+    D3dMap                      albedoMap;      // Can be empty
+    D3dMap                      specularMap;    // "
 
     void reset() {triVerts.reset(); lineVerts.reset(); albedoMap.reset(); specularMap.reset(); }
 };
@@ -48,9 +51,6 @@ struct D3dMesh
 
     void reset() {surfPoints.reset(); markedPoints.reset(); }
 };
-
-ComPtr<ID3DBlob>
-compileShader(std::string const & file,std::string const & entrypoint,LPCSTR target);
 
 struct  PipelineState
 {
@@ -70,12 +70,10 @@ struct  PipelineState
     apply(ComPtr<ID3D11DeviceContext> pContext);
 };
 
-Ustring
-getGpusDescription();
-
 struct D3d {
     uint                            maxMapSize = 4096;  // Play it safe
     bool                            supports11_1;       // Does GPU support D3D 11.1 ? Otherwise use 11.0
+    bool                            supportsFlip;       // Supports DXGI_SWAP_EFFECT_FLIP_DISCARD ?
     // Created in constructor:
     ComPtr<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator
     ComPtr<ID3D11DeviceContext>     pContext;
@@ -117,7 +115,7 @@ struct D3d {
         Mat44F      mvm;
         Mat44F      projection;
         Vec4F       ambient;            // RGBA [0,1]
-        Vec4F       lightDir[2];        // Normalized direction TO light in CCS
+        Vec4F       lightDir[2];        // Normalized direction TO light in FCCS
         Vec4F       lightColor[2];      // RGBA [0,1]
     };
 

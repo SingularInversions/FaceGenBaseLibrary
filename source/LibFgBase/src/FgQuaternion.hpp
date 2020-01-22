@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -72,11 +72,11 @@ struct  Quaternion
     Mat<T,3,3>
     asMatrix() const
     {
-        Mat<T,3,3>    ret;
-        T                   rm = sqr(real),
-                            im = sqr(imag[0]), 
-                            jm = sqr(imag[1]),
-                            km = sqr(imag[2]);
+        Mat<T,3,3>      ret;
+        T               rm = sqr(real),
+                        im = sqr(imag[0]), 
+                        jm = sqr(imag[1]),
+                        km = sqr(imag[2]);
         ret[0] = rm + im - jm - km;
         ret[4] = rm - im + jm - km;
         ret[8] = rm - im - jm + km;
@@ -146,6 +146,18 @@ cRotateZ(double radians)
 // Useful for rotation prior.
 double
 tanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
+
+template<typename T>
+Mat<T,4,4>
+asHomogMat(Quaternion<T> q)
+{return asHomogMat(q.asMatrix()); }
+
+// Approx exponential map interpolation. 'val' must be [0,1]:
+QuaternionD
+interpolate(
+    QuaternionD         q0,         // Must be normalized
+    QuaternionD         q1,         // Must be normalized
+    double              val);       // Must be [0,1]
 
 }
 

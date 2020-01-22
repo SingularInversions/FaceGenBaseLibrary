@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 u32string
-fgToUtf32(string const & str)
+toUtf32(string const & str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -33,7 +33,7 @@ fgToUtf32(string const & str)
 }
 
 string
-fgToUtf8(const u32string & in)
+toUtf8(const u32string & in)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -49,38 +49,38 @@ fgToUtf8(const u32string & in)
 }
 
 string
-fgToUtf8(const char32_t & utf32_char)
-{return fgToUtf8(u32string(1,utf32_char)); }
+toUtf8(const char32_t & utf32_char)
+{return toUtf8(u32string(1,utf32_char)); }
 
 // Following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
 #ifdef _WIN32
 
 std::wstring
-fgToUtf16(const std::string & utf8)
+toUtf16(const std::string & utf8)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.from_bytes(utf8);
 }
 
 std::string
-fgToUtf8(const std::wstring & utf16)
+toUtf8(const std::wstring & utf16)
 {
     // codecvt_utf8_utf16 inherits from codecvt
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.to_bytes(utf16);
 }
 
-Ustring::Ustring(const wchar_t * s) : m_str(fgToUtf8(wstring(s)))
+Ustring::Ustring(const wchar_t * s) : m_str(toUtf8(wstring(s)))
 {}
 
-Ustring::Ustring(const wstring & s) : m_str(fgToUtf8(s))
+Ustring::Ustring(const wstring & s) : m_str(toUtf8(s))
 {}
 
 wstring
 Ustring::as_wstring() const
 {
-    return fgToUtf16(m_str);
+    return toUtf16(m_str);
 }
 
 #endif
@@ -110,13 +110,13 @@ Ustring::operator+(char c) const
 uint32
 Ustring::operator[](size_t idx) const
 {
-    return uint32(fgToUtf32(m_str).at(idx));
+    return uint32(toUtf32(m_str).at(idx));
 }
 
 size_t
 Ustring::size() const
 {
-    return fgToUtf32(m_str).size();
+    return toUtf32(m_str).size();
 }
 
 bool
@@ -151,7 +151,7 @@ Ustring
 Ustring::replace(char a, char b) const
 {
     FGASSERT((uchar(a) < 128) && (uchar(b) < 128));
-    u32string           str = fgToUtf32(m_str);
+    u32string           str = toUtf32(m_str);
     char32_t            a32 = a,
                         b32 = b;
     for (char32_t & c : str)
@@ -163,7 +163,7 @@ Ustring::replace(char a, char b) const
 Ustrings
 Ustring::split(char ch) const
 {
-    String32s            strs = splitAtChar(fgToUtf32(m_str),char32_t(ch));
+    String32s            strs = splitAtChar(toUtf32(m_str),char32_t(ch));
     Ustrings           ret;
     ret.reserve(strs.size());
     for (const u32string & str : strs)
@@ -286,7 +286,7 @@ cutRest(Ustring const & str,size_t start)
 }
 
 Ustring
-cat(const Ustrings & strings,Ustring const & separator)
+cat(Ustrings const & strings,Ustring const & separator)
 {
     Ustring        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {

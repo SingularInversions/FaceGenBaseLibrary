@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,7 @@ namespace Fg {
 
 // Native directory separator converter:
 inline String
-fgNs(String const & path)
+toNativeSeparator(String const & path)
 {
 #ifdef _WIN32
     return replaceAll(path,'/','\\');
@@ -73,7 +73,7 @@ struct  Path
     Path(Ustring const & path);
 
     Path(
-        Ustring const & d,bool r,const Ustrings & ds,
+        Ustring const & d,bool r,Ustrings const & ds,
         Ustring const & b,Ustring const & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}

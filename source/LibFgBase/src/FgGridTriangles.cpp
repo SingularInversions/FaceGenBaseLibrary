@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 Opt<TriPoint>
-FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,const Floats & invDepths,Vec2F pos) const
+GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,const Floats & invDepths,Vec2F pos) const
 {
     Opt<TriPoint>   ret;
     Vec2F            gridCoord = clientToGridIpcs * pos;
@@ -51,7 +51,7 @@ FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,cons
 }
 
 void
-FgGridTriangles::intersects_(const Vec3UIs & tris,const Vec2Fs & verts,Vec2F pos,vector<TriPoint> & ret) const
+GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,vector<TriPoint> & ret) const
 {
     ret.clear();
     Vec2F            gridCoord = clientToGridIpcs * pos;
@@ -77,10 +77,10 @@ FgGridTriangles::intersects_(const Vec3UIs & tris,const Vec2Fs & verts,Vec2F pos
     }
 }
 
-FgGridTriangles
-fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
+GridTriangles
+gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 {
-    FgGridTriangles     ret;
+    GridTriangles     ret;
     FGASSERT(tris.size() > 0);
     float               fmax = maxFloat();
     Vec2F            domainLo(fmax),
@@ -149,7 +149,7 @@ fgGridTrianglesTest(CLArgs const &)
     }
     // Create the grid and query:
     const vector<Vec2F> &    verts = vertImg.dataVec();
-    FgGridTriangles             gts = fgGridTriangles(verts,tris);
+    GridTriangles             gts = gridTriangles(verts,tris);
     for (uint ii=0; ii<100; ++ii) {
         Vec2D        posd(randUniform(),randUniform());
         Vec2F        pos = Vec2F(posd) * 10.0f;

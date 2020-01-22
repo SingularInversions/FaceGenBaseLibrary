@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -446,18 +446,19 @@ static
 void
 morph(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
-    cmds.push_back(Cmd(anim,"anim","Apply morphs by name to multiple meshes"));
-    cmds.push_back(Cmd(apply,"apply","Apply morphs by index number in a single mesh"));
-    cmds.push_back(Cmd(clamp,"clamp","Clamp delta morphs to zero on seam vertices"));
-    cmds.push_back(Cmd(clear,"clear","Clear all morphs from a mesh"));
-    cmds.push_back(Cmd(copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"));
-    cmds.push_back(Cmd(create,"create","Create morphs for a mesh"));
-    cmds.push_back(Cmd(extract,"extract","Extract all morphs to named files"));
-    cmds.push_back(Cmd(morphList,"list","List available morphs in a mesh"));
-    cmds.push_back(Cmd(removemorphs,"remove","Remove morphs from a mesh"));
-    cmds.push_back(Cmd(removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"));
-    cmds.push_back(Cmd(renameMorph,"rename","Rename a morph in a mesh"));
+    Cmds   cmds {
+        {anim,"anim","Apply morphs by name to multiple meshes"},
+        {apply,"apply","Apply morphs by index number in a single mesh"},
+        {clamp,"clamp","Clamp delta morphs to zero on seam vertices"},
+        {clear,"clear","Clear all morphs from a mesh"},
+        {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
+        {create,"create","Create morphs for a mesh"},
+        {extract,"extract","Extract all morphs to named files"},
+        {morphList,"list","List available morphs in a mesh"},
+        {removemorphs,"remove","Remove morphs from a mesh"},
+        {removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"},
+        {renameMorph,"rename","Rename a morph in a mesh"}
+    };
     doMenu(args,cmds);
 }
 

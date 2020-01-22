@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -88,7 +88,7 @@ copyUvs(CLArgs const & args)
     if (in.surfaces.size() != out.surfaces.size())
         fgThrow("Incompatible number of surfaces");
     for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
-        const Surf &     sin = in.surfaces[ss];
+        Surf const &     sin = in.surfaces[ss];
         Surf &           sout = out.surfaces[ss];
         if ((sin.tris.size() != sout.tris.size()) ||
             (sin.quads.size() != sout.quads.size()))
@@ -156,11 +156,11 @@ invWind(CLArgs const & args)
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf &   surf = mesh.surfaces[ss];
         for (size_t ii=0; ii<surf.tris.size(); ++ii)
-            std::swap(surf.tris.vertInds[ii][1],surf.tris.vertInds[ii][2]);
+            std::swap(surf.tris.posInds[ii][1],surf.tris.posInds[ii][2]);
         for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii)
             std::swap(surf.tris.uvInds[ii][1],surf.tris.uvInds[ii][2]);
         for (size_t ii=0; ii<surf.quads.size(); ++ii)
-            std::swap(surf.quads.vertInds[ii][1],surf.quads.vertInds[ii][3]);
+            std::swap(surf.quads.posInds[ii][1],surf.quads.posInds[ii][3]);
         for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii)
             std::swap(surf.quads.uvInds[ii][1],surf.quads.uvInds[ii][3]);
     }
@@ -280,16 +280,16 @@ rt(CLArgs const & args)
             surf.removeTri(ti);
         else {
             ti -= surf.tris.size();
-            Vec4UI       qvs = surf.quads.vertInds[ti/2];
+            Vec4UI       qvs = surf.quads.posInds[ti/2];
             Vec4UI       uvs(0);
             if (!surf.quads.uvInds.empty())
                 uvs = surf.quads.uvInds[ti/2];
             surf.removeQuad(ti/2);
             // The other tri making up the quad needs to be appended to tris:
             if (ti & 0x1)
-                surf.tris.vertInds.push_back(Vec3UI(qvs[0],qvs[1],qvs[2]));
+                surf.tris.posInds.push_back(Vec3UI(qvs[0],qvs[1],qvs[2]));
             else
-                surf.tris.vertInds.push_back(Vec3UI(qvs[2],qvs[3],qvs[0]));
+                surf.tris.posInds.push_back(Vec3UI(qvs[2],qvs[3],qvs[0]));
             if (!surf.tris.uvInds.empty()) {
                 if (ti & 0x1)
                     surf.tris.uvInds.push_back(Vec3UI(uvs[0],uvs[1],uvs[2]));
@@ -333,7 +333,7 @@ sortFacets(CLArgs const & args)
     Mesh        opaque;
     while (syn.more())
         opaque = mergeMeshes(opaque,meshLoadAnyFormat(syn.next()));
-    mesh = fgSortTransparentFaces(mesh,albedo,opaque);
+    mesh = sortTransparentFaces(mesh,albedo,opaque);
     meshSaveAnyFormat(mesh,outName);
 }
 
@@ -356,7 +356,7 @@ splitObjByMtl(CLArgs const & args)
     Syntax    syntax(args,
         "<mesh>.[w]obj <base>\n"
         "    Creates a <base>_<name>.tri file for each 'usemtl' name referenced");
-    Mesh    mesh = loadWobj(syntax.next(),"usemtl");
+    Mesh    mesh = loadWObj(syntax.next(),"usemtl");
     string      base = syntax.next();
     Mesh    m = mesh;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
@@ -454,7 +454,7 @@ surfList(CLArgs const & args)
         );
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        const Surf & surf = mesh.surfaces[ss];
+        Surf const & surf = mesh.surfaces[ss];
         fgout << fgnl << ss << ": " << surf.name;
     }
 }
@@ -512,7 +512,7 @@ spList(CLArgs const & args)
     Syntax    syntax(args,"<in>.fgmesh");
     Mesh    mesh = meshLoadAnyFormat(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        const Surf & surf = mesh.surfaces[ss];
+        Surf const & surf = mesh.surfaces[ss];
         fgout << fgnl << "Surface " << ss << ": " << surf.name << fgpush;
         for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
             fgout << fgnl << ii << " : " << surf.surfPoints[ii].label;
@@ -558,7 +558,7 @@ spsToVerts(CLArgs const & args)
 void
 surf(CLArgs const & args)
 {
-    vector<Cmd>   ops;
+    Cmds   ops;
     ops.push_back(Cmd(surfAdd,"add","Add an empty surface to a mesh"));
     ops.push_back(Cmd(surfCopy,"copy","Copy surface structure between aligned meshes"));
     ops.push_back(Cmd(surfDel,"del","Delete a surface in a mesh (leaves verts unchanged)"));
@@ -647,7 +647,7 @@ uvSolidImage(CLArgs const & args)
     uint            sz = syn.nextAs<uint>();
     if (sz > (1 << 12))
         syn.error("<size> is too large",syn.curr());
-    ImgUC         img = fgGetUvCover(mesh,Vec2UI(sz*4));
+    ImgUC         img = getUvCover(mesh,Vec2UI(sz*4));
     img = fgShrink2(img);
     img = fgShrink2(img);
     imgSaveAnyFormat(syn.next(),img);
@@ -667,7 +667,7 @@ uvWireframeImage(CLArgs const & args)
     ImgC4UC     img;
     if (pathExists(syn.peekNext()))
         imgLoadAnyFormat(syn.peekNext(),img);
-    imgSaveAnyFormat(syn.next(),fgUvWireframeImage(mesh,img));
+    imgSaveAnyFormat(syn.next(),cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
 }
 
 void
@@ -720,13 +720,23 @@ xformApply(CLArgs const & args)
         "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
         "    <ext1> = " + meshSaveFormatsCLDescription()
         );
-    SimilarityD    xform;
-    fgLoadXml(syntax.next(),xform);
-    Mesh        in = meshLoadAnyFormat(syntax.next());
-    Mesh        out(in);
+    SimilarityD     xform;
+    loadBsaXml(syntax.next(),xform);
+    Mesh            in = meshLoadAnyFormat(syntax.next());
+    Mesh            out(in);
     out.transform(Affine3F(xform.asAffine()));
     meshSaveAnyFormat(out,syntax.next());
-    return;
+}
+
+void
+xformCreateIdentity(CLArgs const & args)
+{
+    Syntax    syntax(args,
+        "<output>.xml \n"
+        "    Edit the values in this file or apply subsequent transforms with other commands"
+        );
+    string      simFname = syntax.next();
+    saveBsaXml(simFname,SimilarityD::identity());
 }
 
 void
@@ -741,65 +751,44 @@ xformCreateMeshes(CLArgs const & args)
     Mesh    targ = meshLoadAnyFormat(syntax.next());
     if (base.verts.size() != targ.verts.size())
         fgThrow("Base and target mesh vertex counts are different");
-    vector<Vec3D>    bv = scast<double>(base.verts),
+    Vec3Ds    bv = scast<double>(base.verts),
                         tv = scast<double>(targ.verts);
     SimilarityD        sim = similarityApprox(bv,tv);
     double              ssd = cSsd(mapXft(bv,sim.asAffine()),tv),
                         sz = cMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
-    fgSaveXml(simFname,sim);
-}
-
-void
-xformCreateIdentity(CLArgs const & args)
-{
-    Syntax    syntax(args,
-        "<similarity>.xml\n"
-        "    Edit the values in this file or apply subsequent transforms with other commands"
-        );
-    string      simFname = syntax.next();
-    fgSaveXml(simFname,SimilarityD::identity());
-}
-
-void
-xformCreateTrans(CLArgs const & args)
-{
-    Syntax    syntax(args,
-        "<similarity>.xml <X> <Y> <Z>"
-        );
-    string          simFname = syntax.next();
-    SimilarityD    sim;
-    if (pathExists(simFname))
-        fgLoadXml(simFname,sim);
-    Vec3D    trans;
-    trans[0] = syntax.nextAs<double>();
-    trans[1] = syntax.nextAs<double>();
-    trans[2] = syntax.nextAs<double>();
-    fgSaveXml(simFname,SimilarityD(trans)*sim);
+    saveBsaXml(simFname,sim);
 }
 
 void
 xformCreateRotate(CLArgs const & args)
 {
-    Syntax    syntax(args,
-        "<similarity>.xml <axis> <degrees>\n"
-        "    <axis> = (x | y | z)   - Right-hand-rule axis of rotation"
+    Syntax          syntax(args,
+        "<output>.xml <axis> <degrees> <point> [<input>.xml]\n"
+        "    <output>   - Save here\n"
+        "    <axis>     - (x | y | z)  Right-hand-rule axis of rotation\n"
+        "    <point>    - <x> <y> <z>  Point around which rotation is applied\n"
+        "    <input>    - Compose rotation after this transform, if specified"
         );
-    string          simFname = syntax.next();
-    SimilarityD    sim;
-    if (pathExists(simFname))
-        fgLoadXml(simFname,sim);
+    string          outName = syntax.next();
     string          axisStr = syntax.next();
-    if (axisStr.empty())
-        syntax.error("<axis> cannot be the empty string");
-    char            axisName = std::tolower(axisStr[0]);
-    double          degs = syntax.nextAs<double>(),
-                    rads = degToRad(degs);
+    if (axisStr.size() != 1)
+        syntax.error("<axis> must be one character");
+    char            axisName = tolower(axisStr[0]);
     int             axisNum = int(axisName) - int('x');
     if ((axisNum < 0) || (axisNum > 2))
         syntax.error("Invalid value for <axis>",axisStr);
-    QuaternionD   rot(rads,uint(axisNum));
-    fgSaveXml(simFname,SimilarityD(rot)*sim);
+    double          degs = syntax.nextAs<double>(),
+                    rads = degToRad(degs);
+    QuaternionD     rot(rads,uint(axisNum));
+    Vec3D           point {0};
+    point[0] = syntax.nextAs<double>();
+    point[1] = syntax.nextAs<double>();
+    point[2] = syntax.nextAs<double>();
+    SimilarityD     xf = SimilarityD{point} * SimilarityD{rot} * SimilarityD{-point};
+    if (syntax.more())
+        xf = xf * loadBsaXml<SimilarityD>(syntax.next());
+    saveBsaXml(outName,xf);
 }
 
 void
@@ -811,22 +800,39 @@ xformCreateScale(CLArgs const & args)
     string          simFname = syntax.next();
     SimilarityD    sim;
     if (pathExists(simFname))
-        fgLoadXml(simFname,sim);
+        loadBsaXml(simFname,sim);
     double          scale = syntax.nextAs<double>();
-    fgSaveXml(simFname,SimilarityD(scale)*sim);
+    saveBsaXml(simFname,SimilarityD(scale)*sim);
+}
+
+void
+xformCreateTrans(CLArgs const & args)
+{
+    Syntax    syntax(args,
+        "<similarity>.xml <X> <Y> <Z>"
+        );
+    string          simFname = syntax.next();
+    SimilarityD    sim;
+    if (pathExists(simFname))
+        loadBsaXml(simFname,sim);
+    Vec3D    trans;
+    trans[0] = syntax.nextAs<double>();
+    trans[1] = syntax.nextAs<double>();
+    trans[2] = syntax.nextAs<double>();
+    saveBsaXml(simFname,SimilarityD(trans)*sim);
 }
 
 void
 xformCreate(CLArgs const & args)
 {
-    doMenu(args,
-        fgSvec(
-            Cmd(xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"),
-            Cmd(xformCreateIdentity,"identity","Create the identity similarity transform"),
-            Cmd(xformCreateTrans,"translate","Apply a translation to a similarity transform"),
-            Cmd(xformCreateRotate,"rotate","Apply a rotation to a similarity transform"),
-            Cmd(xformCreateScale,"scale","Apply a scaling to a similarity transform")
-            ));
+    Cmds        cmds {
+        {xformCreateIdentity,"identity","Create identity similarity transform XML file for editing"},
+        {xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"},
+        {xformCreateRotate,"rotate","Combine a rotation with a similarity transform XML file"},
+        {xformCreateScale,"scale","Combine a scaling with a similarity transform XML file"},
+        {xformCreateTrans,"translate","Combine a translation with a similarity transform XML file"}
+    };
+    doMenu(args,cmds);
 }
 
 void
@@ -860,8 +866,8 @@ void
 xform(CLArgs const & args)
 {
     Cmds      cmds;
-    cmds.push_back(Cmd(xformApply,"apply","Apply a simiarlity transform (from .XML file) to a mesh"));
-    cmds.push_back(Cmd(xformCreate,"create","Create a similarity transform (to .XML file)"));
+    cmds.push_back(Cmd(xformApply,"apply","Apply a simiarlity transform (from XML file) to a mesh"));
+    cmds.push_back(Cmd(xformCreate,"create","Create a similarity transform XML file"));
     cmds.push_back(Cmd(xformMirror,"mirror","Mirror a mesh"));
     doMenu(args,cmds);
 }
@@ -869,7 +875,7 @@ xform(CLArgs const & args)
 void
 meshops(CLArgs const & args)
 {
-    vector<Cmd>   ops;
+    Cmds   ops;
     ops.push_back(Cmd(combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"));
     ops.push_back(Cmd(convert,"convert","Convert the mesh between different formats"));
     ops.push_back(Cmd(copyUvList,"copyUvList","Copy UV list from one mesh to another with same UV count"));

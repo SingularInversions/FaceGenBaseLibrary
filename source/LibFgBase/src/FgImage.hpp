@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -23,6 +23,11 @@ inline
 AffineEw2F
 cOicsToIucs()
 {return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
+
+template<typename T>
+AffineEw<T,2>
+cIpcsToIucs(Vec2UI dims)
+{return AffineEw<T,2>{Mat<T,2,2>(0,dims[0],0,dims[1]),Mat<T,2,2>(0,1,0,1)}; }
 
 inline
 AffineEw2F
@@ -289,7 +294,7 @@ fgImgFill(
         img[ii] = val;
 }
 
-// Note that 'trans' is applied BEFORE scale, unlike homogenous representation, since this is
+// Note that 'trans' is applied BEFORE scale, unlike homogeneous representation, since this is
 // usually more convenient & precise for what needs to be done.
 template<class T>
 void
@@ -715,15 +720,15 @@ inline Vec4UC fgRed() {return Vec4UC(255,0,0,255); }
 inline Vec4UC fgGreen() {return Vec4UC(255,0,0,255); }
 inline Vec4UC fgBlue() {return Vec4UC(255,0,0,255); }
 
-// Thickness must be and odd number:
+// Thickness must be an odd number:
 void
-fgPaintCrossHair(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint thickness=1);
+paintCrosshair(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint thickness=1);
 
 void
-fgPaintDot(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
+paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
 
 void
-fgPaintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
+paintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
 
 // Returns only 2-block-filtered 2-subsampled images of the original.
 // Smallest is when the largest dimension is of size 1 (smallest dim clamped to size 1).

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -156,7 +156,7 @@ linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
 
 static
 void
-linkDisp2(const ImgC4UCs & pyr,const uint & levIn,const Vec2Fs & pts,ImgC4UC & img)
+linkDisp2(const ImgC4UCs & pyr,const uint & levIn,Vec2Fs const & pts,ImgC4UC & img)
 {
     if (pyr.empty()) {
         img = ImgC4UC();

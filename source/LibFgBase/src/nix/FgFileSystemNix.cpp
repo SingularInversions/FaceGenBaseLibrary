@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -96,42 +96,42 @@ removeDirectory(
 }
 
 Ustring
-fgDirSystemAppDataRoot()
+getDirSystemAppData()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirSystemAppData(Ustring const &,Ustring const &)
+getDirSystemAppData(Ustring const &,Ustring const &)
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirUserAppDataLocalRoot()
+getDirUserAppDataLocal()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirUserAppDataRoamingRoot()
+getDirUserAppDataRoaming()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgUserDocumentsDirectory(bool)
+getUserDocsDir(bool)
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgPublicDocumentsDirectory()
+getPublicDocsDir()
 {
     throw FgExceptionNotImplemented();
     return Ustring();

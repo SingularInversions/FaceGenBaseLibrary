@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -92,7 +92,7 @@ FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
     s_ofs.open(fnameUtf8,appendFile,true);
     s_ofs.precision(9);
     if (prependDate)
-        s_ofs << '\n' << fgDateTimeString() << '\n';
+        s_ofs << '\n' << getDateTimeString() << '\n';
     auto    it = find(m_streams.begin(),m_streams.end(),&s_ofs);
     if (it == m_streams.end())
         m_streams.push_back(&s_ofs);

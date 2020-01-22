@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,7 +38,7 @@ meshLoadAnyFormat(
     if(ext == "tri")
         mesh = loadTri(path.str());
     else if ((ext == "obj") || (ext == "wobj"))
-        mesh = loadWobj(path.str());
+        mesh = loadWObj(path.str());
     else if (ext == "fgmesh")
         mesh = loadFgmesh(path.str());
     else
@@ -73,7 +73,7 @@ meshSaveAnyFormat(
     if(ext == "tri")
         saveTri(fname,meshes);
     else if ((ext == "obj") || (ext == "wobj"))
-        saveObj(fname,meshes,imgFormat);
+        saveWObj(fname,meshes,imgFormat);
     else if (ext == "wrl")
         saveVrml(fname,meshes,imgFormat);
     else if (ext == "fbx")

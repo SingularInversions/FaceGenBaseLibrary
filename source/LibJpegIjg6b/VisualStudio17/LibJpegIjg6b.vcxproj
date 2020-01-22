@@ -22,6 +22,7 @@
     <ProjectGuid>{4AF91011-C9A9-6CA0-290D-FAB7104EDF4E}</ProjectGuid>
     <RootNamespace>LibJpegIjg6b</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

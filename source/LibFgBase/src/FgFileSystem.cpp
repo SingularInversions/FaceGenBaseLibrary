@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -95,7 +95,7 @@ deleteDirectoryRecursive(Ustring const & dirname)
     // after a pause for the filesystem to catch up:
     if (removeDirectory(dirname))
         return;
-    fgSleep(1);
+    sleepSeconds(1);
     removeDirectory(dirname,true);
 #else
     boost::filesystem::remove_all(dirname.m_str);
@@ -134,9 +134,9 @@ fileReadable(Ustring const & filename)
 }
 
 Ustring
-fgDirUserAppDataLocal(const vector<string> & subPath)
+getDirUserAppDataLocal(const vector<string> & subPath)
 {
-    Ustring    ret = fgDirUserAppDataLocalRoot();
+    Ustring    ret = getDirUserAppDataLocal();
     for (size_t ii=0; ii<subPath.size(); ++ii) {
         ret += subPath[ii] + fgDirSep();
         createDirectory(ret);
@@ -221,15 +221,15 @@ dataDir(bool throwIfNotFound)
 }
 
 void
-fgSetDataDir(Ustring const & dir)
+setDataDir(Ustring const & dir)
 {
     if (!pathExists(dir+"_facegen_data_dir.flag"))
-        fgThrow("fgSetDataDir FaceGen data flag not found",dir);
+        fgThrow("setDataDir FaceGen data flag not found",dir);
     s_fgDataDir = dir;
 }
 
 bool
-fileNewer(const Ustrings & sources,const Ustrings & sinks)
+fileNewer(Ustrings const & sources,Ustrings const & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
     time_t      srcTime = getLastWriteTime(sources[0]);
@@ -246,20 +246,6 @@ fileNewer(const Ustrings & sources,const Ustrings & sinks)
             return true;
     }
     return false;
-}
-
-DirectoryContents
-globDirStartsWith(const Path & path)
-{
-    DirectoryContents ret;
-    DirectoryContents dc = directoryContents(path.dir());
-    for (size_t ii=0; ii<dc.filenames.size(); ++ii)
-        if (dc.filenames[ii].beginsWith(path.base))
-            ret.filenames.push_back(dc.filenames[ii]);
-    for (size_t ii=0; ii<dc.dirnames.size(); ++ii)
-        if (dc.dirnames[ii].beginsWith(path.base))
-            ret.dirnames.push_back(dc.dirnames[ii]);
-    return ret;
 }
 
 Ustrings
@@ -281,6 +267,34 @@ globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & fileP
     Ustrings       ret = globFiles(basePath+relPath+filePattern);
     for (Ustring & r : ret)
         r = relPath + r;
+    return ret;
+}
+
+DirectoryContents
+globNodeStartsWith(const Path & path)
+{
+    DirectoryContents ret;
+    DirectoryContents dc = directoryContents(path.dir());
+    for (Ustring const & fname : dc.filenames)
+        if (fname.beginsWith(path.baseExt()))
+            ret.filenames.push_back(fname);
+    for (Ustring const & dname : dc.dirnames)
+        if (dname.beginsWith(path.baseExt()))
+            ret.dirnames.push_back(dname);
+    return ret;
+}
+
+Ustrings
+globBaseVariants(const Ustring & pathBaseExt)
+{
+    Path            path {pathBaseExt};
+    Ustrings        fnames = globNodeStartsWith(path.dirBase()).filenames;
+    Ustrings        ret;
+    for (Ustring const & fname : fnames) {
+        Path            fp {fname};
+        if ((fp.base != path.base) && (fp.ext == path.ext))
+            ret.push_back(cutRest(fp.base,path.base.size()));
+    }
     return ret;
 }
 
@@ -312,7 +326,7 @@ fgCopyToCurrentDir(const Path & file)
 }
 
 void
-fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir)
+copyRecursive(Ustring const & fromDir,Ustring const & toDir)
 {
     if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
@@ -328,12 +342,12 @@ fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir)
     }
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
         Ustring const &    dn = dc.dirnames[ii];
-        fgCopyRecursive(from+dn,to+dn);
+        copyRecursive(from+dn,to+dn);
     }
 }
 
 void
-fgMirrorFile(const Path & src,const Path & dst)
+mirrorFile(const Path & src,const Path & dst)
 {
     FGASSERT(!src.base.empty());
     FGASSERT(!dst.base.empty());

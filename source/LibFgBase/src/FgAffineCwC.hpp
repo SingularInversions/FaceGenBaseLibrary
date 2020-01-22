@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -134,6 +134,29 @@ fgD2F(const AffineEw<double,dim> & v)
     return AffineEw<float,dim>(
         Mat<float,dim,1>(v.m_scales),
         Mat<float,dim,1>(v.m_trans));
+}
+
+template<typename T,uint dim>
+Mat<T,dim+1,dim+1>
+asHomogMat(AffineEw<T,dim> a)
+{
+    Mat<T,dim+1,dim+1>  ret(0);
+    for (uint ii=0; ii<dim; ++ii) {
+        ret.rc(ii,ii) = a.m_scales[ii];
+        ret.rc(ii,dim) = a.m_trans[ii];
+    }
+    ret.rc(dim,dim) = T(1);
+    return ret;
+}
+
+template<uint dim>
+AffineEw<double,dim>
+interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
+{
+    return AffineEw<double,dim> {
+        mapExp(interpolate(mapLog(a0.m_scales),mapLog(a1.m_scales),val)),
+        interpolate(a0.m_trans,a1.m_trans,val)
+    };
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -212,7 +212,7 @@ testRayPlaneIntersect()
                         pt = rot3 * asHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
         Vec4D        pln = cPlaneH(p0,p1,p2);
         Vec4D        is = linePlaneIntersect(pt*exp(randNormal()),pln);
-        FGASSERT(approxEqualRelMag(pt,fgFromHomogVec(is),30));
+        FGASSERT(approxEqualRelMag(pt,fromHomogVec(is),30));
     }
 }
 

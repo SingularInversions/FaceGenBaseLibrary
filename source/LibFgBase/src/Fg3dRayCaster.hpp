@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,18 +24,18 @@ typedef std::function<RgbaF(Vec3F,Vec2F,Material,const ImgC4UC *)>   FgFuncShade
 
 struct  Fg3dRayCastMesh
 {
-    const Vec3Fs *             vertsPtr;   // OECS
+    Vec3Fs const *             vertsPtr;   // OECS
     const Normals *         normsPtr;   // OECS
-    const Vec2Fs *           uvsPtr;
+    Vec2Fs const *           uvsPtr;
     Surfs                surfs;      // Converted to tris
     Material                  material;
-    FgGridTriangles             grid;       // IUCS
+    GridTriangles             grid;       // IUCS
     Floats                      invDepths;  // Inverse depth values. 1-1 with 'verts'
     Vec2Fs                   vertsIucs;  // Vertex projections into image plane
 
     Fg3dRayCastMesh(
-        const Mesh &        mesh,       // Ignore base vertex positions here
-        const Vec3Fs &         verts,      // Current OECS vertex positions.
+        Mesh const &        mesh,       // Ignore base vertex positions here
+        Vec3Fs const &         verts,      // Current OECS vertex positions.
         const Normals &     normss,     // Current OECS normals.
         AffineEw2F            itcsToIucs);
 

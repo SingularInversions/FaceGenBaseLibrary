@@ -82,7 +82,7 @@ PSTransparentPass2(float4 pos : SV_POSITION)
     : SV_TARGET0
 {
     // Copy linked list into local memory contiguous list for faster sorting:
-    const uint      NODES_MAX_SIZE = 64;
+    const uint      NODES_MAX_SIZE = 32;    // Don't increase to 64, crashes at least 1 AMD GPU
     Node            nodes[NODES_MAX_SIZE];
     uint            numNodes = 0;
     uint            nodeIdx  = HeadPointersUAV[uint2(pos.xy)];

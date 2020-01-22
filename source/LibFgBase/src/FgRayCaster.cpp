@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,14 +24,18 @@ TriInd::TriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
 
 RayCaster::RayCaster(
     const Meshes &      meshes,
-    Affine3D              modelview,
-    AffineEw2D            itcsToIucs_,
-    const Lighting &      lighting_,
-    RgbaF                 background_)
+    SimilarityD         modelview,
+    AffineEw2D          itcsToIucs_,
+    const Lighting &    lighting_,
+    RgbaF               background_,
+    bool                useMaps_,
+    bool                allShiny_)
     :
     itcsToIucs(itcsToIucs_),
     lighting(lighting_),
-    background(background_)
+    background(background_),
+    useMaps(useMaps_),
+    allShiny(allShiny_)
 {
     trisss.resize(meshes.size());
     materialss.resize(meshes.size());
@@ -43,7 +47,7 @@ RayCaster::RayCaster(
     // and what their bounding box is for setting client to grid transform:
     grid.setup(Mat22F(0,1,0,1),uint(fgNumTriEquivs(meshes)));
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         Triss &           triss = trisss[mm];
         Materials &       materials = materialss[mm];
         triss.reserve(mesh.surfaces.size());
@@ -53,7 +57,7 @@ RayCaster::RayCaster(
             materials.push_back(mesh.surfaces[ss].material);
         }
         Vec3Fs &           verts = vertss[mm];
-        verts = mapXft(mesh.verts,Affine3F(modelview));
+        verts = mapXft(mesh.verts,Affine3F(modelview.asAffine()));
         uvsPtrs[mm] = &mesh.uvs;
         normss[mm] = cNormals(mesh.surfaces,verts);
         Vec3Fs &           iucsVerts = iucsVertss[mm];
@@ -62,8 +66,8 @@ RayCaster::RayCaster(
             iucsVerts.push_back(oecsToIucs(v));
         for (size_t ss=0; ss<triss.size(); ++ss) {
             const Tris &  tris = triss[ss];
-            for (size_t tt=0; tt<tris.vertInds.size(); ++tt) {
-                Vec3UI       t = tris.vertInds[tt];
+            for (size_t tt=0; tt<tris.posInds.size(); ++tt) {
+                Vec3UI       t = tris.posInds[tt];
                 Vec3F        v0 = iucsVerts[t[0]],
                                 v1 = iucsVerts[t[1]],
                                 v2 = iucsVerts[t[2]];
@@ -84,7 +88,6 @@ RgbaF
 RayCaster::cast(Vec2F posIucs) const
 {
     FgBestN<float,Intersect,4>      best = closestIntersects(posIucs);
-
     // Compute ray color:
     RgbaF               color = background;
     for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
@@ -92,7 +95,7 @@ RayCaster::cast(Vec2F posIucs) const
         const Tris &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         const Normals &     norms = normss[isct.triInd.meshIdx];
-        Vec3UI              vis = tris.vertInds[isct.triInd.triIdx];
+        Vec3UI              vis = tris.posInds[isct.triInd.triIdx];
         // TODO: Use perspective-correct normal and UV interpolation (makes very little difference for small tris):
         Vec3F               n0 = norms.vert[vis[0]],
                             n1 = norms.vert[vis[1]],
@@ -100,9 +103,10 @@ RayCaster::cast(Vec2F posIucs) const
                             bc = Vec3F(isct.barycentric),
                             norm = normalize(bc[0]*n0 + bc[1]*n1 + bc[2]*n2);
         RgbaF               albedo(230,230,230,255);
-        const Vec2Fs &      uvs = *uvsPtrs[isct.triInd.meshIdx];
+        Vec2Fs const &      uvs = *uvsPtrs[isct.triInd.meshIdx];
         Vec2F               uv {maxFloat()};
-        if ((!tris.uvInds.empty()) && (!uvs.empty()) && (material.albedoMap) && (!material.albedoMap->empty())) {
+        if ((!tris.uvInds.empty()) && (!uvs.empty()) && (material.albedoMap) &&
+            (!material.albedoMap->empty()) && useMaps) {
             Vec3UI              uvInds = tris.uvInds[isct.triInd.triIdx];
             uv = bc[0]*uvs[uvInds[0]] + bc[1]*uvs[uvInds[1]] + bc[2]*uvs[uvInds[2]];
             uv[1] = 1.0f - uv[1];   // OTCS to IUCS
@@ -121,6 +125,8 @@ RayCaster::cast(Vec2F posIucs) const
                     RgbaF           s = sampleClipIucs(*material.specularMap,uv);
                     shininess = scast<float>(s.red()) / 255.0f;
                 }
+                if (allShiny)
+                    shininess = 1.0f;
                 if (shininess > 0.0f) {
                     Vec3F           reflectDir = norm * fac * 2.0f - lgt.direction;
                     if (reflectDir[2] > 0.0f) {
@@ -155,8 +161,8 @@ RayCaster::closestIntersects(Vec2F posIucs) const
     FgBestN<float,Intersect,4> best;
     for (TriInd ti : triInds) {
         const Tris &        tris = trisss[ti.meshIdx][ti.surfIdx];
-        Vec3UI              vis = tris.vertInds[ti.triIdx];
-        const Vec3Fs &      iucsVerts = iucsVertss[ti.meshIdx];
+        Vec3UI              vis = tris.posInds[ti.triIdx];
+        Vec3Fs const &      iucsVerts = iucsVertss[ti.meshIdx];
         Vec3F               v0 = iucsVerts[vis[0]],
                             v1 = iucsVerts[vis[1]],
                             v2 = iucsVerts[vis[2]];

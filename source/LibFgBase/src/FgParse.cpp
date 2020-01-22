@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -109,7 +109,7 @@ consumeCrLf(const u32string & in,size_t & idx)    // Current idx must point to C
     if (idx == in.size())
         return;
     char32_t        ch1 = in[idx];
-    if (fgIsCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
+    if (isCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
         ++idx;
     return;
 }
@@ -134,7 +134,7 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
                     return ret;         // End of quoted field
             }
             else
-                ret += fgToUtf8(ch);
+                ret += toUtf8(ch);
         }
     }
     else {                             // Unquoted field
@@ -142,9 +142,9 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
             if (idx == in.size())
                 return ret;
             char32_t    ch = in[idx];
-            if ((ch == ',') || (fgIsCrLf(ch)))
+            if ((ch == ',') || (isCrLf(ch)))
                 return ret;
-            ret += fgToUtf8(ch);
+            ret += toUtf8(ch);
             ++idx;
         }
     }
@@ -157,7 +157,7 @@ csvGetLine(
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     Strings      ret;
-    if (fgIsCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
+    if (isCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
         consumeCrLf(in,idx);
         return ret;
     }
@@ -165,7 +165,7 @@ csvGetLine(
         ret.push_back(csvGetField(in,idx));
         if (idx == in.size())
             return ret;
-        if (fgIsCrLf(in[idx])) {
+        if (isCrLf(in[idx])) {
             consumeCrLf(in,idx);
             return ret;
         }
@@ -182,7 +182,7 @@ Stringss
 fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    u32string       data = fgToUtf32(loadRawString(fname));
+    u32string       data = toUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -196,11 +196,11 @@ fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
 }
 
 map<string,Strings>
-fgLoadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
+loadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
-    u32string           data = fgToUtf32(loadRawString(fname));
+    u32string           data = toUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings          line = csvGetLine(data,idx);
@@ -221,12 +221,12 @@ string
 csvField(string const & data)
 {
     string          ret = "\"";
-    u32string       utf32 = fgToUtf32(data);
+    u32string       utf32 = toUtf32(data);
     for (char32_t ch32 : utf32) {
         if (ch32 == char32_t('"'))      // VS2013 doesn't support char32_t literal U
             ret += "\"\"";
         else
-            ret += fgToUtf8(ch32);
+            ret += toUtf8(ch32);
     }
     ret += "\"";
     return ret;
@@ -377,9 +377,9 @@ fgAsciify(string const & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    u32string       utf32 = fgToUtf32(in);
+    u32string       utf32 = toUtf32(in);
     for (char32_t ch32 : utf32) {
-        string  utf8 = fgToUtf8(ch32);
+        string  utf8 = toUtf8(ch32);
         if (utf8.size() == 1)
             ret.push_back(utf8[0]);
         else {

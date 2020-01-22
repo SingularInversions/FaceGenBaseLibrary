@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -76,7 +76,10 @@ template<> struct Traits<uint>
     typedef uint64  Accumulator;
     typedef float   Floating;
 };
-#ifndef _MSC_VER    // MSVC does not consider size_t to be its own type but nix does:
+// MSVC and Android do not consider size_t to be its own type but others do:
+#ifdef _MSC_VER
+#elif defined(__ANDROID__)
+#else
 template<> struct Traits<size_t>
 {
     typedef size_t  Scalar;

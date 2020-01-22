@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,6 +47,34 @@
 using namespace std;
 
 namespace Fg {
+
+Ustrings
+getGpusDescription()
+{
+    Ustrings                ret;
+    IDXGIAdapter1 *         pAdapter; 
+    IDXGIFactory1*          pFactory = nullptr; 
+    if(FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory) ,(void**)&pFactory)))
+        return ret;
+    for (uint ii=0;pFactory->EnumAdapters1(ii,&pAdapter) != DXGI_ERROR_NOT_FOUND;++ii) {
+        DXGI_ADAPTER_DESC1      desc;
+        pAdapter->GetDesc1(&desc);
+        ret.push_back("Adapter"+toStr(ii)+": "+Ustring(wstring(desc.Description)));
+    }
+    if(pFactory)
+        pFactory->Release();
+    return ret;
+}
+
+Ustring
+getDefaultGpuDescription()
+{
+    Ustrings        gpus = getGpusDescription();
+    if (gpus.empty())
+        return "No GPUs detected";
+    else
+        return gpus[0];
+}
 
 void
 PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
@@ -117,24 +145,6 @@ PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
     pContext->PSSetShader(m_pPixelShader.Get(),nullptr,0);
 }
 
-Ustring
-getGpusDescription()
-{
-    Ustring                 info;
-    IDXGIAdapter1 *         pAdapter; 
-    IDXGIFactory1*          pFactory = nullptr; 
-    if(FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory) ,(void**)&pFactory)))
-        return "CreateDXGIFactory1 failed\n";
-    for (uint ii=0;pFactory->EnumAdapters1(ii,&pAdapter) != DXGI_ERROR_NOT_FOUND;++ii) {
-        DXGI_ADAPTER_DESC1      desc;
-        pAdapter->GetDesc1(&desc);
-        info += "Adapter"+toStr(ii)+": "+Ustring(wstring(desc.Description))+"\n";
-    }
-    if(pFactory)
-        pFactory->Release();
-    return info;
-}
-
 D3d::D3d(HWND hwnd)
 {
     HRESULT             hr = 0;
@@ -144,7 +154,7 @@ D3d::D3d(HWND hwnd)
                         height = 8;
         //Create device and swapchain
         DXGI_SWAP_CHAIN_DESC desc = {};
-        desc.BufferCount = 1;
+        desc.BufferCount = 2;           // Front and back buffer
         desc.BufferDesc.Width = width;
         desc.BufferDesc.Height = height;
         desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -161,21 +171,27 @@ D3d::D3d(HWND hwnd)
 #endif
         // We must attempt multiple setup calls until we find the best available driver.
         // Software driver for 11.1 with OIT didn't work (Win7SP1) so don't go there.
-        Svec<pair<D3D_FEATURE_LEVEL,D3D_DRIVER_TYPE> >  configs = {
-            {D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE},
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_HARDWARE},
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_WARP},      // This combo is still fast
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_REFERENCE}
+        Svec<tuple<D3D_FEATURE_LEVEL,D3D_DRIVER_TYPE,DXGI_SWAP_EFFECT> >  configs = {
+            // FLIP_DISCARD only supported by Win 10 but must be used in that case as some systems
+            // with fail to consistently display buffer without it:
+            {D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_FLIP_DISCARD},
+            {D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD},
+            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD},
+            // Warp driver is very fast:
+            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_WARP,DXGI_SWAP_EFFECT_DISCARD},
+            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_REFERENCE,DXGI_SWAP_EFFECT_DISCARD}
         };
         string      failString;
         for (auto config : configs) {
-            supports11_1 = (config.first == D3D_FEATURE_LEVEL_11_1);
+            supports11_1 = (get<0>(config) == D3D_FEATURE_LEVEL_11_1);
+            supportsFlip = (get<2>(config) == DXGI_SWAP_EFFECT_FLIP_DISCARD);
+            desc.SwapEffect = get<2>(config);
             hr = D3D11CreateDeviceAndSwapChain(
                 nullptr,                // Use first video adapter (card/driver) if more than one of this type
-                config.second,          // Driver type
+                get<1>(config),         // Driver type
                 nullptr,                // No software rasterizer DLL handle
                 createFlag,
-                &config.first,1,        // Feature level
+                &get<0>(config),1,      // Feature level
                 D3D11_SDK_VERSION,
                 &desc,
                 pSwapChain.GetAddressOf(),  // Returned
@@ -186,7 +202,7 @@ D3d::D3d(HWND hwnd)
             failString += "HR="+toHexString(hr)+" ";
         }
         if (FAILED(hr))
-            throwWindows("No Direct3D 11.0 support",getGpusDescription()+failString);
+            throwWindows("No Direct3D 11.0 support",failString);
         this->initializeRenderTexture(Vec2UI(width,height));
         pDevice->GetImmediateContext(pContext.GetAddressOf());
     }
@@ -202,12 +218,12 @@ D3d::D3d(HWND hwnd)
         auto desc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
         desc.RenderTarget[0].RenderTargetWriteMask = 0;
         hr = pDevice->CreateBlendState(&desc,pBlendStateColorWriteDisable.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());    
         hr = pDevice->CreateBlendState(&desc,pBlendStateDefault.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_BLEND_DESC(CD3D11_DEFAULT());
@@ -220,31 +236,31 @@ D3d::D3d(HWND hwnd)
         desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_MAX;
         desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;   
         hr = pDevice->CreateBlendState(&desc,pBlendStateLerp.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
         desc.DepthEnable = false;        
         hr = pDevice->CreateDepthStencilState(&desc,pDepthStencilStateDisable.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
         desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
         desc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
         hr = pDevice->CreateDepthStencilState(&desc,pDepthStencilStateWrite.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
         desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
         hr = pDevice->CreateDepthStencilState(&desc,pDepthStencilStateWriteDisable.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {
         auto desc = CD3D11_DEPTH_STENCIL_DESC(CD3D11_DEFAULT());
         hr = pDevice->CreateDepthStencilState(&desc,pDepthStencilStateDefault.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     // Just in case 1x1 image has memory alignment and two-sided interpolation edge-case issues:
     greyMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(200,200,200,255)));
@@ -262,9 +278,9 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
         ComPtr<ID3D11Texture2D> pBackBuffer;
         hr = pSwapChain->GetBuffer(
             0,__uuidof(ID3D11Texture2D),reinterpret_cast<LPVOID*>(pBackBuffer.GetAddressOf()));
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         hr = pDevice->CreateRenderTargetView(pBackBuffer.Get(),nullptr,pRTV.ReleaseAndGetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {   //Create DSV from Depth Buffer
         ComPtr<ID3D11Texture2D> pDepthBuffer;
@@ -278,9 +294,9 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
         desc.MipLevels = 1;
         desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
         hr = pDevice->CreateTexture2D(&desc,nullptr,pDepthBuffer.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         hr = pDevice->CreateDepthStencilView(pDepthBuffer.Get(),nullptr,pDSV.ReleaseAndGetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     if (!supports11_1)
         return;
@@ -296,10 +312,10 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
         desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
         desc.Format = DXGI_FORMAT_R32_UINT;
         hr = pDevice->CreateTexture2D(&desc,nullptr,pTextureOIT.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         hr = pDevice->CreateUnorderedAccessView(
             pTextureOIT.Get(),nullptr,pUAVTextureHeadOIT.ReleaseAndGetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
     {   //Create LinkedList with atomic counter for OIT 
         struct ListNode
@@ -318,7 +334,7 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
         obd.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
         obd.StructureByteStride = sizeof(ListNode);
         hr = pDevice->CreateBuffer(&obd,nullptr,pBufferOIT.GetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         D3D11_UNORDERED_ACCESS_VIEW_DESC uavd = {};
         uavd.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
         uavd.Buffer.FirstElement = 0;
@@ -326,7 +342,7 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
         uavd.Buffer.NumElements = windowSize[0] * windowSize[1] * maxAverageLayers;
         hr = pDevice->CreateUnorderedAccessView(
             pBufferOIT.Get(),&uavd,pUAVBufferLinkedListOIT.ReleaseAndGetAddressOf());
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
     }
 }
 
@@ -338,8 +354,8 @@ D3d::resize(Vec2UI windowSize)
     pContext->OMSetRenderTargets(0,nullptr,nullptr);
     pRTV.Reset();
     HRESULT             hr =
-        pSwapChain->ResizeBuffers(1,windowSize[0],windowSize[1],DXGI_FORMAT_UNKNOWN,0);
-    FG_ASSERT_HR(hr);
+        pSwapChain->ResizeBuffers(2,windowSize[0],windowSize[1],DXGI_FORMAT_UNKNOWN,0);
+    FG_ASSERT_D3D(hr);
     this->initializeRenderTexture(windowSize);
     CD3D11_VIEWPORT     viewport {0.0f,0.0f,scast<float>(windowSize[0]),scast<float>(windowSize[1])};
     pContext->RSSetViewports(1,&viewport);
@@ -355,7 +371,7 @@ D3d::makeConstBuff(const Scene & scene)
     bd.CPUAccessFlags = 0;
     ID3D11Buffer*           ptr;
     HRESULT                 hr = pDevice->CreateBuffer(&bd,nullptr,&ptr);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     pContext->UpdateSubresource(ptr,0,nullptr,&scene,0,0);
     return WinPtr<ID3D11Buffer>(ptr);
 }
@@ -374,7 +390,7 @@ D3d::makeVertBuff(const Verts & verts)
     D3D11_SUBRESOURCE_DATA  initData = {};
     initData.pSysMem = verts.data();
     HRESULT                 hr = pDevice->CreateBuffer(&bd,&initData,&ptr);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     return WinPtr<ID3D11Buffer>(ptr);
 }
 
@@ -465,8 +481,8 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
     D3d::Verts              ret;
     Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    Vec3UIs const &         tris = origSurf.tris.vertInds;
-    Vec4UIs const &         quads = origSurf.quads.vertInds;
+    Vec3UIs const &         tris = origSurf.tris.posInds;
+    Vec4UIs const &         quads = origSurf.quads.posInds;
     ret.reserve(8*quads.size()+6*tris.size());
     Vert                        v;
     v.norm = Vec3F(0,0,1);
@@ -520,7 +536,7 @@ D3d::loadMap(ImgC4UC const & map) {
     //desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
     ID3D11Texture2D*    ptr;
     HRESULT             hr = pDevice->CreateTexture2D(&desc,initData,&ptr);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     return WinPtr<ID3D11Texture2D>(ptr);
 }
 
@@ -533,7 +549,7 @@ D3d::makeMapView(ID3D11Texture2D* mapPtr)
     SRVDesc.Texture2D.MipLevels = uint(-1);   // Use all available mipmap levels
     ID3D11ShaderResourceView*           ptr;
     HRESULT         hr = pDevice->CreateShaderResourceView(mapPtr,&SRVDesc,&ptr);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     // Couldn't get this to work. mipmaps currently generated in CPU:
     //pContext->GenerateMips(ptr);
     return WinPtr<ID3D11ShaderResourceView>(ptr);
@@ -561,7 +577,7 @@ D3d::makeSamplerState()
     sampDesc.MaxLOD = D3D11_FLOAT32_MAX;                    // Make use of all mipmap levels available
     ID3D11SamplerState* ptr;
     HRESULT             hr = pDevice->CreateSamplerState(&sampDesc,&ptr);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     return WinPtr<ID3D11SamplerState>(ptr);
 }
 
@@ -922,7 +938,7 @@ D3d::showBackBuffer()
     if (pRTV == nullptr)
         return;
     HRESULT  hr = pSwapChain->Present(0,0);      // Swap back buffer to display
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
 }
 
 ImgC4UC
@@ -933,7 +949,7 @@ D3d::capture(Vec2UI viewportSize)
     {
         ID3D11Texture2D*        ptr;
         hr = pSwapChain->GetBuffer(0,__uuidof(ID3D11Texture2D),(LPVOID*)&ptr);
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         pBuffer.reset(ptr);
     }
     D3D11_TEXTURE2D_DESC    desc;
@@ -945,14 +961,14 @@ D3d::capture(Vec2UI viewportSize)
     {
         ID3D11Texture2D*        ptr;
         hr = pDevice->CreateTexture2D(&desc,NULL,&ptr);
-        FG_ASSERT_HR(hr);
+        FG_ASSERT_D3D(hr);
         pTexture.reset(ptr);
     }
     pContext->CopyResource(pTexture.get(),pBuffer.get());
     D3D11_MAPPED_SUBRESOURCE    resource;
     unsigned int                subresource = D3D11CalcSubresource(0,0,0);
     hr = pContext->Map(pTexture.get(),subresource,D3D11_MAP_READ_WRITE,0,&resource);
-    FG_ASSERT_HR(hr);
+    FG_ASSERT_D3D(hr);
     ImgC4UC                 ret(viewportSize);
     uchar*                      dst = (uchar*)resource.pData;
     for (size_t rr=0; rr<viewportSize[1]; ++rr) {
@@ -980,7 +996,7 @@ D3d::renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, boo
             continue;
         Mesh const &                origMesh = rendMesh.origMeshN.cref();
         for (size_t ss=0; ss<origMesh.surfaces.size(); ++ss) {
-            const Surf &         origSurf = origMesh.surfaces[ss];
+            Surf const &         origSurf = origMesh.surfaces[ss];
             if (origSurf.empty())
                 continue;
             RendSurf const &            rendSurf = rendMesh.rendSurfs[ss];

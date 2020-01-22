@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,7 +47,7 @@ struct  GuiTabsWin : public GuiBaseImpl
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
         m_store = store;
         uint        cp;
-        if (fgLoadXml(m_store+".xml",cp,false))
+        if (loadBsaXml(m_store+".xml",cp,false))
             if (cp < m_panes.size())
                 m_currPane = cp;
         WinCreateChild   cc;
@@ -112,7 +112,7 @@ struct  GuiTabsWin : public GuiBaseImpl
     virtual void
     saveState()
     {
-        fgSaveXml(m_store+".xml",m_currPane,false);
+        saveBsaXml(m_store+".xml",m_currPane,false);
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             m_panes[ii]->saveState();
     }

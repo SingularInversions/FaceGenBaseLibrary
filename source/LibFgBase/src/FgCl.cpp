@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,7 +22,16 @@ bool
 clRun(string const & cmd,bool throwIfError,int rvalMask)
 {
     fgout << fgnl << cmd << "\n";   // DOS output lines will always start in zero'th column anyway
-    int         retval = system(cmd.c_str());
+    int             retval = 0;
+#ifdef _WIN32
+    // Windows calls 'cmd /c' for system(), which usually works UNLESS there are both spaces in the
+    // command path AND spaces to options, in which case it does something magically stupid and removes
+    // the quotes around the path. Solution is another set of quotes:
+    string          wcmd = '"' + cmd + '"';
+    retval = system(wcmd.c_str());
+#else
+    retval = system(cmd.c_str());
+#endif
     // Some commands such as robocopy have several non-error return codes.
     if ((retval & rvalMask) != 0)
     {

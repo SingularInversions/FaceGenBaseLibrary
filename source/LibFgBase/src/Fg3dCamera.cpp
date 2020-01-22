@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,14 +31,15 @@ Camera::projectIpcs(Vec2UI dims) const
     itcsToIpcs4H.rc(1,3) = itcsToIpcs.m_trans[1];
     itcsToIpcs4H.rc(2,2) = 1;
     itcsToIpcs4H.rc(3,3) = 1;
-    return Mat44F(itcsToIpcs4H * projection * modelview.asHomogenous());
+    return Mat44F(itcsToIpcs4H * projection * asHomogMat(modelview));
 }
 
 Camera
 CameraParams::camera(Vec2UI imgDims) const
 {
-    Camera      ret;
-    Vec3D        min = modelBounds.colVec(0),
+    FGASSERT(imgDims.cmpntsProduct() > 0);
+    Camera          ret;
+    Vec3D           min = modelBounds.colVec(0),
                     max = modelBounds.colVec(1),
                     dims = max - min,
                     centre = (min+max) * 0.5,
@@ -69,7 +70,7 @@ CameraParams::camera(Vec2UI imgDims) const
                     frustumNearHalfWidth = modelHalfDimMax * znear / zCentreFillImage;
     trans *= modelHalfDimMax;
     trans[2] = -zCentre;
-    ret.modelview =  Affine3D(trans) * Affine3D(-centre,pose.asMatrix());
+    ret.modelview =  SimilarityD{trans} * SimilarityD{pose} * SimilarityD{-centre};
     ret.frustum.nearHalfWidth  = frustumNearHalfWidth * aspect[0];
     ret.frustum.nearHalfHeight = frustumNearHalfWidth * aspect[1];
     ret.frustum.nearDist = znear;

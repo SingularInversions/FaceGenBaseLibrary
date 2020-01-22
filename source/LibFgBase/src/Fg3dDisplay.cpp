@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -271,7 +271,7 @@ expr_load2(NPT<PoseVals> posesN,IPT<Doubles> valsN)
         Doubles &                vals = valsN.ref();
         FGASSERT(poses.size() == vals.size());
         vector<pair<Ustring,double> >  lvs;
-        fgLoadXml(fname.val(),lvs);
+        loadBsaXml(fname.val(),lvs);
         for (size_t ii=0; ii<lvs.size(); ++ii) {
             size_t      idx = findFirstIdx(poses,lvs[ii].first);
             if (idx < poses.size())
@@ -292,7 +292,7 @@ expr_save2(NPT<PoseVals> posesN,NPT<Doubles > valsN)
         lvs.reserve(poses.size());
         for (size_t ii=0; ii<poses.size(); ++ii)
             lvs.push_back(make_pair(poses[ii].name,vals[ii]));
-        fgSaveXml(fname.val(),lvs);
+        saveBsaXml(fname.val(),lvs);
     }
 }
 
@@ -327,7 +327,7 @@ assignTri2(      // Re-assign a tri (or quad) to a different surface if intersec
                     size_t          idx = isct.surfPnt.triEquivIdx;
                     if (srcSurf.tris.hasUvs() && dstSurf.tris.hasUvs())
                         dstSurf.tris.uvInds.push_back(srcSurf.tris.uvInds[idx]);
-                    dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[idx]);
+                    dstSurf.tris.posInds.push_back(srcSurf.tris.posInds[idx]);
                     srcSurf.removeTri(isct.surfPnt.triEquivIdx);
                 }
                 else {                      // It's a quad
@@ -346,7 +346,7 @@ assignTri2(      // Re-assign a tri (or quad) to a different surface if intersec
                     // Move selected quad to destination surface:
                     if (srcSurf.quads.hasUvs() && dstSurf.quads.hasUvs())
                         dstSurf.quads.uvInds.push_back(srcSurf.quads.uvInds[quadIdx]);
-                    dstSurf.quads.vertInds.push_back(srcSurf.quads.vertInds[quadIdx]);
+                    dstSurf.quads.posInds.push_back(srcSurf.quads.posInds[quadIdx]);
                     srcSurf.removeQuad(quadIdx);
                 }
             }
@@ -375,7 +375,7 @@ assignPaint2(
                 Vec3UI           tri = meshPtr->surfaces[isct.surfIdx].getTriEquivPosInds(isct.surfPnt.triEquivIdx);
                 Surfs        surfs = fgSplitSurface(meshPtr->surfaces[isct.surfIdx]);
                 for (size_t ss=0; ss<surfs.size(); ++ss) {
-                    if (contains(surfs[ss].tris.vertInds,tri)) {
+                    if (contains(surfs[ss].tris.posInds,tri)) {
                         meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
                         surfs.erase(surfs.begin()+ss);
                         meshPtr->surfaces[isct.surfIdx] = mergeSurfaces(surfs);
@@ -488,7 +488,7 @@ makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
                     for (RendMesh const & rm : rms) {
                         Mesh *          meshPtr = rm.origMeshN.valPtr();
                         if (meshPtr) {
-                            Fg3dTopology        topo(meshPtr->verts,meshPtr->getTriEquivs().vertInds);
+                            Fg3dTopology        topo(meshPtr->verts,meshPtr->getTriEquivs().posInds);
                             vector<set<uint> >  seams = topo.seams();
                             for (size_t ss=0; ss<seams.size(); ++ss) {
                                 const set<uint> &   seam = seams[ss];
@@ -523,7 +523,7 @@ makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
 // Empty names will be assigned the baseName plus a number.
 // Non-unique names will have a number added.
 Ustrings
-makeUniqueNames(const Ustrings & names,Ustring const & baseName)
+makeUniqueNames(Ustrings const & names,Ustring const & baseName)
 {
     Ustrings           ret;
     ret.reserve(names.size());
@@ -668,20 +668,20 @@ linkAllVerts(NPT<Mesh> meshN)
 {return link1<Mesh,Vec3Fs>(meshN,[](Mesh const & mesh){return mesh.allVerts();}); }
 
 OPT<Vec3Fs>
-linkPosedVerts(NPT<Mesh> meshN,NPT<Vec3Fs> allVertsN,OPT<PoseVals> posesN,NPT<Doubles> morphValsN)
+linkPosedVerts(NPT<Mesh> meshN,NPT<Vec3Fs> allVertsN,OPT<PoseVals> posesN,NPT<Doubles> poseValsN)
 {
-    return link4_<Vec3Fs,Mesh,Vec3Fs,PoseVals,Doubles>(meshN,allVertsN,posesN,morphValsN,[=](
+    return link4_<Vec3Fs,Mesh,Vec3Fs,PoseVals,Doubles>(meshN,allVertsN,posesN,poseValsN,[=](
             Mesh const &            mesh,
-            Vec3Fs const &             allVerts,
-            PoseVals const &             poses,
-            Doubles const &              poseVals,
-            Vec3Fs &                   verts)
+            Vec3Fs const &          allVerts,
+            PoseVals const &        poses,
+            Doubles const &         poseVals,
+            Vec3Fs &                verts)
         {
             // 'poseVals' may not be initialized yet since it's set by GUI so fake it until then:
             Floats              vals = scast<float>(poseVals);
             if (vals.size() != poses.size())
                 vals.resize(poses.size(),0);
-            map<Ustring,float>         poseMap;
+            map<Ustring,float>  poseMap;
             for (size_t ii=0; ii<poses.size(); ++ii)
                 poseMap[poses[ii].name] = vals[ii];
             verts = mesh.poseShape(allVerts,poseMap);
@@ -692,9 +692,9 @@ linkPosedVerts(NPT<Mesh> meshN,NPT<Vec3Fs> allVertsN,OPT<PoseVals> posesN,NPT<Do
 OPT<Normals>
 linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN)
 {
-    return link2_<Normals,Mesh,Vec3Fs>(meshN,posedVertsN,
-        [](const Mesh & mesh,const Vec3Fs & verts,Normals & norms)
-        {cNormals_(mesh.surfaces,verts,norms); });
+    return link2<Normals,Mesh,Vec3Fs>(meshN,posedVertsN,
+        [](Mesh const & mesh,Vec3Fs const & verts)
+        {return cNormals(mesh.surfaces,verts); });
 }
 
 OPT<Mesh>
@@ -724,11 +724,9 @@ linkLoadImage(NPT<Ustring> filenameN)
         });
 }
 
-GuiPosedMeshes::GuiPosedMeshes() :
-    poseLabelsN(
-        linkN<Mesh,PoseVals>(vector<NPT<Mesh> >(),[](Meshes const & m){return fgPoses(m);})
-    ),
-    poseValsN(makeIPT(Doubles()))
+GuiPosedMeshes::GuiPosedMeshes(Ustring const & store) :
+    poseLabelsN(linkN<Mesh,PoseVals>(vector<NPT<Mesh> >(),[](Meshes const & m){return cPoseVals(m);})),
+    poseValsN(makeSavedIPT(Doubles(),store+"PoseVals"))
 {}
 
 void
@@ -912,21 +910,21 @@ Mesh
 meshView(const Meshes & meshes,bool compare)
 {
     FGASSERT(meshes.size() > 0);
-    Ustring                 store = fgDirUserAppDataLocalFaceGen("SDK","meshView");
+    Ustring                 store = getDirUserAppDataLocalFaceGen("SDK","meshView");
     IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(cBounds(meshes)));
-    GuiPosedMeshes          mrms;
+    GuiPosedMeshes          gpms {store};
     vector<IPT<Mesh> >      meshNs;
     vector<IPT<MeshSurfsName> >  meshSurfsNameNs;
     // Ensure we have valid, unique names:
     Ustrings                meshNames = makeUniqueNames(sliceMember(meshes,&Mesh::name),"Mesh");
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &        mesh = meshes[mm];
+        Mesh const &        mesh = meshes[mm];
         IPT<Mesh>           meshN = makeIPT(mesh);
         IPT<Vec3Fs>         allVertsN = makeIPT(mesh.allVerts());
         ImgNs               albedoNs,
                             specularNs;
         IPT<ImgC4UC>        emptyImageN = makeIPT(ImgC4UC());
-        for (const Surf & surf : mesh.surfaces) {
+        for (Surf const & surf : mesh.surfaces) {
             if (surf.material.albedoMap)
                 albedoNs.push_back(makeIPT(*surf.material.albedoMap));
             else
@@ -936,7 +934,7 @@ meshView(const Meshes & meshes,bool compare)
             else
                 specularNs.push_back(emptyImageN);
         }
-        mrms.addMesh(meshN,allVertsN,albedoNs,specularNs);
+        gpms.addMesh(meshN,allVertsN,albedoNs,specularNs);
         meshNs.push_back(meshN);
         {
             MeshSurfsName       msn;
@@ -968,16 +966,16 @@ meshView(const Meshes & meshes,bool compare)
         selsN = cbs.valN;
         meshSelect = cbs.win;
     }
-    IPT<RendMeshes>     rmsN {mrms.rendMeshes};
+    IPT<RendMeshes>     rmsN {gpms.rendMeshes};
     Gui3d               gui3d;
     gui3d.rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,
         [](const RendMeshes & m,const Bools & s){return fgFilter(m,s); });
     GuiTabDefs          mainTabs = {
         guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View",0,true)),
-        guiTab("Morphs",true,mrms.makePoseCtrls(true)),
+        guiTab("Morphs",true,gpms.makePoseCtrls(true)),
         guiTab("Select",true,meshSelect),
         guiTab("Edit",true,makeEditPane(meshSurfsNamesN,gui3d)),
-        guiTab("Info",true,guiSplitScroll(fgSvec(guiText(linkMeshStats(mrms.rendMeshes))))),
+        guiTab("Info",true,guiSplitScroll(fgSvec(guiText(linkMeshStats(gpms.rendMeshes))))),
         guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
     };
     guiStartImpl(
@@ -987,44 +985,40 @@ meshView(const Meshes & meshes,bool compare)
     return meshNs[0].cref();
 }
 
-namespace {
-
-void
+static void
 simple(CLArgs const &)
 {
-    Ustring    dir = dataDir() + "base/";
-    Mesh    mesh = loadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
-    meshView(fgSvec(mesh),false);
+    Ustring         dir = dataDir() + "base/";
+    Mesh            mesh = loadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
+    meshView(mesh);
 }
 
-void
+static void
 surfs(CLArgs const &)
 {
-    Mesh        mesh;
+    Mesh            mesh;
     mesh.verts.push_back(Vec3F(0,0,0));
     mesh.verts.push_back(Vec3F(1,0,0));
     mesh.verts.push_back(Vec3F(1,1,0));
     mesh.verts.push_back(Vec3F(0,1,0));
     mesh.verts.push_back(Vec3F(0,0,-1));
     mesh.verts.push_back(Vec3F(0,1,-1));
-    Surf     surf;
+    Surf            surf;
     surf.name = "1";
-    surf.tris.vertInds.push_back(Vec3UI(0,1,2));
-    surf.tris.vertInds.push_back(Vec3UI(2,3,0));
+    surf.tris.posInds.push_back(Vec3UI(0,1,2));
+    surf.tris.posInds.push_back(Vec3UI(2,3,0));
     //mesh.surfaces.push_back(surf);
     //surf.name = "2";
-    surf.tris.vertInds.push_back(Vec3UI(0,3,5));
-    surf.tris.vertInds.push_back(Vec3UI(5,4,0));
+    surf.tris.posInds.push_back(Vec3UI(0,3,5));
+    surf.tris.posInds.push_back(Vec3UI(5,4,0));
     mesh.surfaces.push_back(surf);
-    meshView(fgSvec(mesh),false);
-}
-
+    meshView(mesh);
 }
 
 void
 fgTestmGuiMesh(CLArgs const & args)
 {
-    vector<Cmd>       cmds;
+    Cmds       cmds;
     cmds.push_back(Cmd(simple,"simple","Jane face cutout"));
     cmds.push_back(Cmd(surfs,"surfs","Multiple surface mesh"));
     doMenu(args,cmds);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,7 +47,7 @@ void fgTensorTest(CLArgs const &);
 
 Cmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
-vector<Cmd>
+Cmds
 fgCmdBaseTests()
 {
     Cmds      cmds {
@@ -169,11 +169,10 @@ void
 fgCmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
-        fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 
+        fgout << fgnl << "FaceGen Base Library CLI " << getSdkVersion(".") << " (" << getCurrentBuildDescription() << ")"; 
     Cmds        cmds {
         {getImgopsCmd()},
         {getMeshopsCmd()},
-        {getCompileShadersCmd()},
         {getMorphCmd()},
         {getRenderCmd()},
         {getTriExportCmd()},
@@ -183,6 +182,9 @@ fgCmdFgbl(CLArgs const & args)
         {testm,"testm","Manual tests"},
         {view,"view","Interactively view various file types"}
     };
+#ifdef _WIN32
+    cmds.push_back(getCompileShadersCmd());
+#endif
     doMenu(args,cmds);
 }
 

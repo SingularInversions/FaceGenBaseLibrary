@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -119,7 +119,7 @@ barycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>      ret;
     // Transform into the coordinate system v0 = (0,0), v1 = (1,0), v2 = (0,1) by defining
-    // the inverse homogenous transform then inverting and taking only the top 2 rows to
+    // the inverse homogeneous transform then inverting and taking only the top 2 rows to
     // form 'xf' below. Converting to barycentric is then trivial, and barycentric coords
     // are preserved by linear xforms.
     Vec3D           e01 = v1-v0,
@@ -191,7 +191,7 @@ lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
     Vec4D                planeH = cPlaneH(p0,v1-pnt,v2-pnt);
     Vec4D                isectH = linePlaneIntersect(dir,planeH);
     if (isectH[3] != 0.0) {     // line can't be parallel to facet plane
-        Vec3D                isect = fgFromHomogVec(isectH);
+        Vec3D                isect = fromHomogVec(isectH);
         // Now calculate barycentric coords s,t (with axes v1-v0,v2-v0) of intersection point:
         Vec3D                u(v1-v0),
                                 v(v2-v0),

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -138,7 +138,7 @@ getExecutablePath()
 }
 
 Ustring
-fgDirSystemAppDataRoot()
+getDirSystemAppData()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -230,9 +230,9 @@ setAllUsersFullControl(Ustring const path)  // Directory or file
 }
 
 Ustring
-fgDirSystemAppData(Ustring const & groupName,Ustring const & appName)
+getDirSystemAppData(Ustring const & groupName,Ustring const & appName)
 {
-    Ustring    appDir = fgDirSystemAppDataRoot() + groupName;
+    Ustring    appDir = getDirSystemAppData() + groupName;
     if (!pathExists(appDir)) {
         createDirectory(appDir);
         // AllUsers by default has limited access to directories created within '\ProgramData', so
@@ -247,7 +247,7 @@ fgDirSystemAppData(Ustring const & groupName,Ustring const & appName)
 }
 
 Ustring
-fgDirUserAppDataRoamingRoot()
+getDirUserAppDataRoaming()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -263,7 +263,7 @@ fgDirUserAppDataRoamingRoot()
 }
 
 Ustring
-fgDirUserAppDataLocalRoot()
+getDirUserAppDataLocal()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -279,7 +279,7 @@ fgDirUserAppDataLocalRoot()
 }
 
 Ustring
-fgUserDocumentsDirectory(bool throwOnFail)
+getUserDocsDir(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -299,7 +299,7 @@ fgUserDocumentsDirectory(bool throwOnFail)
 }
 
 Ustring
-fgPublicDocumentsDirectory()
+getPublicDocsDir()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =

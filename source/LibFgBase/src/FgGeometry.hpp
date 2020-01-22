@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -48,7 +48,7 @@ Opt<Vec3D>
 barycentricCoord(Vec2F point,Vec2F v0,Vec2F v1,Vec2F v2)
 {return barycentricCoord(Vec2D(point),Vec2D(v0),Vec2D(v1),Vec2D(v2)); }
 
-// Homogenous plane representation from 3 points on plane:
+// Homogeneous plane representation from 3 points on plane:
 Vec4D
 cPlaneH(Vec3D p0,Vec3D p1,Vec3D p2);
 
@@ -58,7 +58,7 @@ cPlaneH(Vec3D p0,Vec3D p1,Vec3D p2);
 Vec4D
 linePlaneIntersect(
     Vec3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
-    Vec4D        plane);     // Homogenous representation
+    Vec4D        plane);     // Homogeneous representation
 
 // Returns: 0: point not in triangle or degenerate triangle.
 //          1: point in triangle, CC winding

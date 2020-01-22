@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -87,7 +87,7 @@ saveVrml(
         "# For more information, please visit https://facegen.com\n";
     Path          fpath(filename);
     for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Mesh &    mesh = meshes[ii];
+        Mesh const &    mesh = meshes[ii];
         Ustring            nameUtf;
         if (mesh.name.empty())
             nameUtf = fpath.base + toStr(ii);
@@ -134,16 +134,16 @@ saveVrml(
             "        coordIndex\n"
             "        [\n";
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             if (surf.numTris() > 0) {
-                writeIndices(ofs,surf.tris.vertInds);
+                writeIndices(ofs,surf.tris.posInds);
                 if (surf.numQuads() > 0)
                     ofs << ",\n";
                 else
                     ofs << "\n";
             }
             if (surf.numQuads() > 0) {
-                writeIndices(ofs,surf.quads.vertInds);
+                writeIndices(ofs,surf.quads.posInds);
                 ofs << "\n";
             }
         }
@@ -159,7 +159,7 @@ saveVrml(
                 "        texCoordIndex\n"
                 "        [\n";
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-                const Surf & surf = mesh.surfaces[ss];
+                Surf const & surf = mesh.surfaces[ss];
                 if (surf.tris.uvInds.size() > 0) {
                     writeIndices(ofs,surf.tris.uvInds);
                     if (surf.quads.uvInds.size() > 0)

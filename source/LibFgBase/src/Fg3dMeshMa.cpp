@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -1979,7 +1979,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
     vector<size_t>                  meshesInds;
     size_t                          imgIdx = 0;
     for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const Mesh &            mesh = meshes[ii];
+        Mesh const &            mesh = meshes[ii];
         FffMultiObjectC::objData    od;
         od.ptList = mesh.verts;
         od.textCoord = mesh.uvs;
@@ -1990,7 +1990,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
         }
         else {
             for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-                const Surf &         surf = mesh.surfaces[ss];
+                Surf const &         surf = mesh.surfaces[ss];
                 string                      texBase;
                 if (surf.material.albedoMap) {
                     string                  baseName = path.base.as_ascii();
@@ -2000,8 +2000,8 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
                     texBase = baseName + toStr(imgIdx++) + "." + imgFormat;
                     imgSaveAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
                 }
-                od.triList = surf.tris.vertInds;
-                od.quadList = surf.quads.vertInds;
+                od.triList = surf.tris.posInds;
+                od.quadList = surf.quads.posInds;
                 od.texTriList = surf.tris.uvInds;
                 od.texQuadList = surf.quads.uvInds;
                 od.textureFile = texBase;
@@ -2016,7 +2016,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
     for (size_t mm=0; mm<morphs.size(); ++mm) {
         vector<FffMultiObjectC::objData> &  ods = ret.morphs[mm].m_objs;
         for (size_t ii=0; ii<ods.size(); ++ii) {
-            const Mesh &    mesh = meshes[meshesInds[ii]];
+            Mesh const &    mesh = meshes[meshesInds[ii]];
             Valid<size_t>     morphIdx = mesh.findMorph(morphs[mm]);
             if (morphIdx.valid())
                 ods[ii].ptList = mesh.morphSingle(mesh.findMorph(morphs[mm]).val());

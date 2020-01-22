@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -60,10 +60,10 @@ savePly(
     }
     imgCnt = 0;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        const Surf &     surf = mesh.surfaces[ss];
+        Surf const &     surf = mesh.surfaces[ss];
         FacetInds<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
-            Vec3UI           vinds = tris.vertInds[ii];
+            Vec3UI           vinds = tris.posInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";
             if (surf.tris.uvInds.empty())
                 ofs << "0 0 0 0 0 0 ";

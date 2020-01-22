@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,6 +19,9 @@ bool        fg64bitOS();
 // Will always return Windows 8 or lower unless the manifest *requires* a higher version of Windows,
 // in which case that version will be returned:
 String      osDescription();
+
+// Only currently implemented on Windows:
+Ustring     getDefaultGpuDescription();
 
 Ustring    fgComputerName();
 

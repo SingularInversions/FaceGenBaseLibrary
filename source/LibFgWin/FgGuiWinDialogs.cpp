@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -258,11 +258,11 @@ threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & can
     }
     catch(FgException const & e)
     {
-        errMsg = "FG Exception: " + e.no_tr_message();
+        errMsg = "FG Exception\n" + e.no_tr_message();
     }
     catch(std::bad_alloc const &)
     {
-        errMsg = "OUT OF MEMORY ";
+        errMsg = "OUT OF MEMORY\n";
 #ifndef FG_64
         if (fg64bitOS())
             errMsg += "(install 64-bit version if possible) ";
@@ -270,11 +270,11 @@ threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & can
     }
     catch(std::exception const & e)
     {
-        errMsg = "std::exception: " + Ustring(e.what());
+        errMsg = "std::exception\n" + Ustring(e.what());
     }
     catch(...)
     {
-        errMsg = "Unknown type: ";
+        errMsg = "Unknown type\n";
     }
     // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
     // the message queue so the modal message loop below would have no way of knowing when it's

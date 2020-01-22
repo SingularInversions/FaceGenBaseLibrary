@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,8 +18,7 @@ struct  GridIndex
 {
     AffineEw2F                clientToGridIpcs;
     Img<Svec<T> >    grid;       // Bins of client objects (bins not exactly square)
-    // Return when client request out of bounds. Should be 'const' but VS13 can't handle that:
-    Svec<T>              empty;
+    Svec<T> const   empty;
 
     // Typically use the number of lookup objects for 'numBins':
     void

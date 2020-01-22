@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -10,6 +10,7 @@
 #include "FgApproxEqual.hpp"
 #include "FgRandom.hpp"
 #include "FgMain.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
@@ -24,6 +25,21 @@ tanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs)
     if (cDot(lv,rv) < 0.0)
         rv *= -1.0;
     return cMag(rv-lv);
+}
+
+QuaternionD
+interpolate(QuaternionD q0, QuaternionD q1,double val)
+{
+    Vec4D       v0 = q0.asVec4(),
+                v1 = q1.asVec4();
+    double      dot = cDot(v0,v1);
+    // Get closest representation from projective space. The degenerate case is when the dot
+    // product is exactly zero so the inequality choice breaks that symmetry:
+    if (dot < 0.0)
+        v1 *= -1.0;
+    // Just lerp then normalize - not a real exponential map but a passable approx:
+    Vec4D       vi = v0 * (1.0-val) + v1 * val;
+    return QuaternionD {vi}; // normalizes
 }
 
 void

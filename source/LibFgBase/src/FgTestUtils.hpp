@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -75,9 +75,9 @@ fgRegressionBaseline(
     const std::string & name)
 {
     if (fgKeepTempFiles())
-        fgSaveXml(name+"_baseline.xml",val);
+        saveBsaXml(name+"_baseline.xml",val);
     T       base;
-    fgLoadXml(dataDir()+path+name+"_baseline.xml",base);
+    loadBsaXml(dataDir()+path+name+"_baseline.xml",base);
     return base;
 }
 
@@ -121,14 +121,14 @@ T
 fgRegressLoad(Ustring const & fname)
 {
     T       ret;
-    fgLoadXml(fname,ret);
+    loadBsaXml(fname,ret);
     return ret;
 }
 
 template<class T>
 void
 fgRegressSave(Ustring const & fname,const T & val)
-{fgSaveXml(fname,val); }
+{saveBsaXml(fname,val); }
 
 template<>
 ImgC4UC

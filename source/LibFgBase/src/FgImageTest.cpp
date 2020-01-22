@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -54,7 +54,7 @@ sfs(CLArgs const &)
     Img<Vec3F>   img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii] = Vec3F(orig[ii].m_c.subMatrix<3,1>(0,0));
-    FgTimer             time;
+    Timer             time;
     for (uint ii=0; ii<100; ++ii)
         fgSmoothFloat(img,img,1);
     double              ms = time.read();
@@ -92,7 +92,7 @@ testConvolve(CLArgs const &)
 void
 fgImageTestm(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(resize,"resize"));
     cmds.push_back(Cmd(display,"display"));
     cmds.push_back(Cmd(sfs,"sfs","smoothFloat speed"));
@@ -104,7 +104,7 @@ void    fgImgTestWrite(CLArgs const &);
 void
 fgImageTest(CLArgs const & args)
 {
-    vector<Cmd>       cmds;
+    Cmds       cmds;
     cmds.push_back(Cmd(composite,"composite"));
     cmds.push_back(Cmd(testConvolve,"conv"));
     cmds.push_back(Cmd(fgImgTestWrite,"write"));

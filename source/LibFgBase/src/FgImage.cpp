@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -495,7 +495,7 @@ fgUsesAlpha(const ImgC4UC & img,uchar minVal)
 }
 
 void
-fgPaintCrossHair(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint thickness)
+paintCrosshair(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint thickness)
 {
     RgbaUC    clr(c[0],c[1],c[2],c[3]);
     int         rad = int(thickness/2),
@@ -511,7 +511,7 @@ fgPaintCrossHair(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint thickness)
 }
 
 void
-fgPaintDot(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint radius)
+paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint radius)
 {
     RgbaUC    clr(c[0],c[1],c[2],c[3]);
     int         rad = int(radius);
@@ -521,9 +521,9 @@ fgPaintDot(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint radius)
 }
 
 void
-fgPaintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC c,uint radius)
+paintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC c,uint radius)
 {
-    fgPaintDot(img,Vec2I(cFloor(ipcs)),c,radius);
+    paintDot(img,Vec2I(cFloor(ipcs)),c,radius);
 }
 
 // Creates a mipmap from the given image; the original will be downsampled
@@ -665,7 +665,7 @@ imgModulate(ImgC4UC const & imgIn,ImgC4UC const & imgMod,float modulationFactor)
     }
     // Using threads directly instead of OpenMP here is slightly slower (82ms vs 79ms on i9-9900K)
     // for very large image which takes 783ms single-threaded:
-    //FgTimeScope     tm("mod1");
+    //TimeScope     tm("mod1");
     int             mod = int(modulationFactor*256.0f + 0.5f);
     if (imgMod.width() > imgIn.width()) {
         ret.resize(imgMod.dims());

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -120,7 +120,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
         m_store = store;
         double      rs;
-        if (fgLoadXml(m_store+".xml",rs,false))
+        if (loadBsaXml(m_store+".xml",rs,false))
             if ((rs > 0.0) && (rs < 1.0))
                 m_relSize = rs;
         WinCreateChild   cc;
@@ -190,7 +190,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
     virtual void
     saveState()
     {
-        fgSaveXml(m_store+".xml",m_relSize,false);
+        saveBsaXml(m_store+".xml",m_relSize,false);
         m_pane0->saveState();
         m_pane1->saveState();
     }

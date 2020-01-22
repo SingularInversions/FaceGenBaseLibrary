@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,7 +42,7 @@ cmdStr(const Cmd & cmd)
 void
 doMenu(
     vector<string>          args,
-    const vector<Cmd> &   cmdsUnsorted,
+    const Cmds &   cmdsUnsorted,
     bool                    optionAll,
     bool                    optionQuiet,
     bool                    optionKeep)
@@ -64,7 +64,7 @@ doMenu(
     else
         cl += "<command>\n";
     desc += "    <command>:";
-    vector<Cmd>       cmds = cmdsUnsorted;
+    Cmds       cmds = cmdsUnsorted;
     std::sort(cmds.begin(),cmds.end());
     for (size_t ii=0; ii<cmds.size(); ++ii)
         desc += cmdStr(cmds[ii]);
@@ -120,7 +120,7 @@ TestDir::TestDir(string const & name)
     else
         path = s_rootTestDir;
     path.dirs.push_back(s_breadcrumb+name);
-    string          dt = fgDateTimePath();
+    string          dt = getDateTimeFilename();
     if (s_annotateTestDir.size() > 0)
         dt += " " + s_annotateTestDir;
     path.dirs.push_back(dt);

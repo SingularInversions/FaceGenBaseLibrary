@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,7 +25,7 @@ fgReadp(std::istream & is,Morph & m)
 }
 
 void
-fgWritep(std::ostream & os,const Morph & m)
+fgWritep(std::ostream & os,Morph const & m)
 {
     fgWritep(os,m.name);
     fgWritep(os,m.verts);
@@ -48,6 +48,22 @@ fgWritep(std::ostream & os,const IndexedMorph & m)
 }
 
 void
+macAsTargetMorph_(
+    Vec3Fs const &  baseVerts,
+    Uints const &   indices,
+    Vec3F const *   targVertsPtr,
+    float           val,
+    Vec3Fs &        accVerts)
+{
+    FGASSERT(baseVerts.size() == accVerts.size());
+    for (size_t ii=0; ii<indices.size(); ++ii) {
+        size_t      idx = indices[ii];
+        Vec3F       del = targVertsPtr[ii] - baseVerts.at(idx);
+        accVerts[idx] += del * val;
+    }
+}
+
+void
 fgAccDeltaMorphs(
     const vector<Morph> &     deltaMorphs,
     const Floats &              coord,
@@ -55,7 +71,7 @@ fgAccDeltaMorphs(
 {
     FGASSERT(deltaMorphs.size() == coord.size());
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
-        const Morph &     morph = deltaMorphs[ii];
+        Morph const &     morph = deltaMorphs[ii];
         FGASSERT(morph.verts.size() == accVerts.size());
         for (size_t jj=0; jj<accVerts.size(); ++jj)
             accVerts[jj] += morph.verts[jj] * coord[ii];
@@ -64,7 +80,7 @@ fgAccDeltaMorphs(
 
 void
 fgAccTargetMorphs(
-    const Vec3Fs &             allVerts,
+    Vec3Fs const &             allVerts,
     const vector<IndexedMorph> & targMorphs,
     const Floats &              coord,
     Vec3Fs &                   accVerts)
@@ -86,26 +102,31 @@ fgAccTargetMorphs(
 }
 
 void
-fgPoseDeltas(const std::map<Ustring,float> & poseVals,const Morphs & deltaMorphs,Vec3Fs & acc)
+accPoseDeltas_(const std::map<Ustring,float> & poseVals,const Morphs & deltaMorphs,Vec3Fs & acc)
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
-        const Morph &     morph = deltaMorphs[ii];
+        Morph const &     morph = deltaMorphs[ii];
         std::map<Ustring,float>::const_iterator it = poseVals.find(morph.name);
         if (it != poseVals.end())
-            morph.applyAsDelta(acc,it->second);
+            morph.accAsDelta_(it->second,acc);
     }
 }
 
 void
-fgPoseDeltas(const std::map<Ustring,float> & poseVals,const IndexedMorphs & targMorphs,const Vec3Fs & indivShape,
-    const Vec3Fs & targShape,Vec3Fs & acc)
+accPoseDeltas_(
+    map<Ustring,float> const &      poseVals,
+    IndexedMorphs const &           targMorphs,
+    Vec3Fs const &                  baseShape,
+    Vec3Fs const &                  targShapes,
+    Vec3Fs &                        acc)
 {
     size_t      idx = 0;
-    for (size_t ii=0; ii<targMorphs.size(); ++ii) {
-        const IndexedMorph &  morph = targMorphs[ii];
-        std::map<Ustring,float>::const_iterator  it = poseVals.find(morph.name);
+    for (IndexedMorph const & morph : targMorphs) {
+        FGASSERT(targShapes.size() >= idx+morph.baseInds.size());
+        auto        it = poseVals.find(morph.name);
         if (it != poseVals.end())
-            morph.applyAsTarget_(indivShape,targShape,idx,it->second,acc);
+            macAsTargetMorph_(baseShape,morph.baseInds,&targShapes[idx],it->second,acc);
+        idx += morph.baseInds.size();
     }
 }
 

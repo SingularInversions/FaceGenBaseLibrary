@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,7 +31,7 @@ struct Fg3dTopology
     };
     struct      Edge
     {
-        Vec2UI           vertInds;   // Lower index first
+        Vec2UI            vertInds;   // Lower index first
         Svec<uint>        triInds;
 
         uint
@@ -47,7 +47,7 @@ struct Fg3dTopology
     Svec<Vert>            m_verts;
 
     Fg3dTopology(
-        const Vec3Fs &            verts,
+        Vec3Fs const &            verts,
         const Svec<Vec3UI> &  tris);
 
     Vec2UI
@@ -92,11 +92,11 @@ struct Fg3dTopology
     // Returns the minimum edge distance to the given vertex for each vertex.
     // Unconnected verts will have value float_max.
     Svec<float>
-    edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const;
+    edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const;
 
     // As above where 'init' has at least 1 distance defined, the rest set to float_max:
     void
-    edgeDistanceMap(const Vec3Fs & verts,Svec<float> & init) const;
+    edgeDistanceMap(Vec3Fs const & verts,Svec<float> & init) const;
 
 private:
 

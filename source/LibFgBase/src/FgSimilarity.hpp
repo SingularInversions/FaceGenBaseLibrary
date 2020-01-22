@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -41,6 +41,10 @@ struct  Similarity
     Similarity(T s,Quaternion<T> const & r,const Mat<T,3,1> & t)
     : scale(s), rot(r), trans(t)
     {FGASSERT(scale > 0); }
+
+    Mat<T,3,1>
+    operator*(Mat<T,3,1> vec) const
+    {return rot*vec*scale + trans; }
 
     // More efficient if applying the transform to many vectors:
     Affine<T,3>
@@ -91,6 +95,11 @@ operator<<(std::ostream & os,const Similarity<T> & v)
             << "Translation: " << v.trans;
 }
 
+template<typename T>
+Mat<T,4,4>
+asHomogMat(Similarity<T> const & s)
+{return asHomogMat(s.asAffine()); }
+
 SimilarityD
 similarityRand();
 
@@ -101,6 +110,9 @@ inline
 SimilarityD
 similarityApprox(Vec3Fs const & d,Vec3Fs const & r)
 {return similarityApprox(scast<double>(d),scast<double>(r)); }
+
+SimilarityD
+interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
 
 // Reverse-order similarity transform: v' = sR(v + t) = sRv + sRt
 // Useful when you want the translation relative to the input shape (v) not the output (v').

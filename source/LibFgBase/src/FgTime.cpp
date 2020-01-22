@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 std::string
-fgDateTimeString(time_t rawTime)
+getDateTimeString(time_t rawTime)
 {
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
@@ -35,15 +35,15 @@ fgDateTimeString(time_t rawTime)
 }
 
 std::string
-fgDateTimeString()
+getDateTimeString()
 {
     time_t          rawTime;
     time(&rawTime);
-    return fgDateTimeString(rawTime);
+    return getDateTimeString(rawTime);
 }
 
 std::string
-fgDate(time_t rawTime)
+getDateString(time_t rawTime)
 {
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
@@ -57,7 +57,7 @@ fgDate(time_t rawTime)
 }
 
 std::string
-fgDateTimePath()
+getDateTimeFilename()
 {
     time_t          rawtime;
     time(&rawtime);
@@ -69,7 +69,7 @@ fgDateTimePath()
 }
 
 String
-yearString()
+getYearString()
 {
     time_t          rawTime;
     time(&rawTime);
@@ -80,23 +80,23 @@ yearString()
 }
 
 std::ostream &
-operator<<(std::ostream & os,const FgTimer & t)
+operator<<(std::ostream & os,const Timer & t)
 {
     double      et = t.read();
     return os << "Elapsed time: " << toStrPrecision(et,4) << " s";
 }
 
 void
-FgTimer::report(string const & label)
+Timer::report(string const & label)
 {
     fgout << fgnl << label << ": " << readMs() << "ms ";
     start();
 }
 
 bool
-fgTick()
+secondPassedSinceLast()
 {
-    static FgTimer  timer;
+    static Timer  timer;
     if (timer.read() > 1.0) {
         timer.start();
         return true;

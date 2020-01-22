@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -89,7 +89,7 @@ struct  GuiWinMain
         // x - right, y - down, origin - upper left corner of MAIN screen.
         Mat22I        posDims(CW_USEDEFAULT,1400,CW_USEDEFAULT,900),
                         pdTmp;
-        if (fgLoadXml(m_store+".xml",pdTmp,false)) {
+        if (loadBsaXml(m_store+".xml",pdTmp,false)) {
             Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
             Vec2I    pdMin = Vec2I(m_win->getMinSize());
             if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
@@ -220,7 +220,7 @@ struct  GuiWinMain
             FGASSERTWIN(GetWindowPlacement(hwnd,&wp));
             const RECT &        rect = wp.rcNormalPosition;
             Mat22I dims(rect.left,rect.right-rect.left,rect.top,rect.bottom-rect.top);
-            fgSaveXml(m_store+".xml",dims,false);
+            saveBsaXml(m_store+".xml",dims,false);
             m_win->saveState();
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
         }
@@ -293,11 +293,11 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
     }
     catch(FgException const & e)
     {
-        msg = "FG Exception: " + e.no_tr_message();
+        msg = "FG Exception\n" + e.no_tr_message();
     }
     catch(std::bad_alloc const &)
     {
-        msg = "OUT OF MEMORY ";
+        msg = "OUT OF MEMORY\n";
 #ifndef FG_64
         if (fg64bitOS())
             msg += "(install 64-bit version if possible) ";
@@ -305,19 +305,19 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
     }
     catch(std::exception const & e)
     {
-        msg = "std::exception: " + Ustring(e.what());
+        msg = "std::exception\n" + Ustring(e.what());
     }
     catch(...)
     {
-        msg = "Unknown type: ";
+        msg = "Unknown type\n";
     }
-    msg = "ERROR @ winCallCatch: " + msg;
-    Ustring        caption = "ERROR",
+    msg = "winCallCatch: " + msg;
+    Ustring         caption = "ERROR",
                     sysInfo;
     try
     {
         sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
-            + osDescription() + "\n" + className + "\n";
+            + osDescription() + "\n" + className + "\n" + getDefaultGpuDescription() + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
         else
@@ -326,15 +326,15 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
     }
     catch(FgException const & e)
     {
-        msg += "FG Exception: " + e.no_tr_message();
+        msg += "FG Exception\n" + e.no_tr_message();
     }
     catch(std::exception const & e)
     {
-        msg += "std::exception: " + Ustring(e.what());
+        msg += "std::exception\n" + Ustring(e.what());
     }
     catch(...)
     {
-        msg += "Unknown type: ";
+        msg += "Unknown type\n";
     }
     guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
     return LRESULT(0);

@@ -39,7 +39,7 @@ run(string const & logFile,string const & cmd)
 #endif
     // Log file must be closed for this command to write to it.
     int         ret = system(cmdLog.c_str());
-    fgSleep(1);   // VS17 returns before releasing log file
+    sleepSeconds(1);   // VS17 returns before releasing log file
     fgWriteFile(logFile,"</pre>\n");
     return (ret == 0);
 }
@@ -83,7 +83,7 @@ handler(
     string const &  dataIn,
     string &)
 {
-    FgNcScript      script;
+    NcScript      script;
     script.dsrMsg(dataIn);
     Path          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
@@ -100,7 +100,7 @@ handler(
             "</head>\n"
             "<body>\n"
             "<h1>" + script.title + "</h1>\n"
-            "<h3>" + fgDateTimeString() + " (client: " + addr + ")</h3>\n"
+            "<h3>" + getDateTimeString() + " (client: " + addr + ")</h3>\n"
             "<font size=\"2\">\n",false);
     bool            res = runScript(script.logFile,script.cmds);
     Ofstream      ofs(script.logFile,true);
@@ -123,7 +123,7 @@ fgCmdNcServer(CLArgs const & args)
     fgout.logFile("fgNcServerLog.txt");
     // Despite this running in a new process each time, TCP errors can render
     // the port unusable on Windows until an OS reboot.
-    fgTcpServer(fgNcServerPort(),false,handler,0x10000);
+    fgTcpServer(getNcServerPort(),false,handler,0x10000);
 }
 
 }

@@ -1,5 +1,7 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc.
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Use, modification and distribution is subject to the MIT License,
+// see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
@@ -29,7 +31,7 @@ fgClusterDeploy(
     const FgFnStr2Str &     worker,
     string const &          coordIP,
     Strings const &          workIPs,
-    const Ustrings &       files)
+    Ustrings const &       files)
 {
     Ustring        exeDir = getExecutableDirectory();
     if (pathExists(exeDir+"cluster_worker.flag"))         // Client could be in an arbitrary data subdirectory at this point
@@ -45,18 +47,18 @@ fgClusterDeploy(
     if (uint(fgGetch()) != 13)
         return;
     // Use coordinator machine to copy executable to file server via CIFS, preserving executable bit permission:
-    string          filesDirLocal = fgNcShare() + "cc/" + name + '/',
-                    filesDirUbu = fgNcShare(FgBuildOS::linux) + "cc/" + name + '/';
+    string          filesDirLocal = getNcShare() + "cc/" + name + '/',
+                    filesDirUbu = getNcShare(BuildOS::linux) + "cc/" + name + '/';
     createPath(filesDirLocal+"data/");
-    FgNcScript      scriptCrdntor;
+    NcScript      scriptCrdntor;
     scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
     Ustring        binBase = Path(getExecutablePath()).base;
-    scriptCrdntor.cmds.push_back("cp " + fgCiShareBoot(FgBuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
-    if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
+    scriptCrdntor.cmds.push_back("cp " + getCiShareBoot(BuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
+    if (!fgTcpClient(coordIP,getNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):
-    fgSleep(1);
+    sleepSeconds(1);
     // Deploy data files from current repo:
     Ustring        dd = dataDir(),
                     td = filesDirLocal+"data/";
@@ -72,24 +74,24 @@ fgClusterDeploy(
     copyData.push_back("fgPush " + name);
     copyData.push_back("cp -r " + filesDirUbu + "* .");
     for (size_t ww=0; ww<workIPs.size(); ++ww) {
-        FgNcScript      script;
+        NcScript      script;
         string          idxStr = toStrDigits(ww,3);
         script.logFile = "cc/" + name + "/_log.html";
         script.title = name + " worker " + idxStr + " (" + workIPs[ww] + ")";
         script.cmds = copyData;
         script.cmds.push_back("> cluster_worker.flag");
         script.cmds.push_back("./" + args);
-        if (!fgTcpClient(workIPs[ww],fgNcServerPort(),script.serMsg()))
+        if (!fgTcpClient(workIPs[ww],getNcServerPort(),script.serMsg()))
             fgThrow("Cluster deploy unable to start worker",workIPs[ww]);
     }
     // Wait to ensure workers ready to receive (asynchronous operation):
-    fgSleep(1);
+    sleepSeconds(1);
     // Start Coordinator:
     scriptCrdntor.logFile = "cc/" + name + "/_log.html";
     scriptCrdntor.cmds = copyData;
     scriptCrdntor.cmds.push_back("> cluster_coordinator.flag");
     scriptCrdntor.cmds.push_back("./" + args);
-    if (!fgTcpClient(coordIP,fgNcServerPort(),scriptCrdntor.serMsg()))
+    if (!fgTcpClient(coordIP,getNcServerPort(),scriptCrdntor.serMsg()))
         fgThrow("Cluster deploy unable to start coordinator",coordIP);
 }
 

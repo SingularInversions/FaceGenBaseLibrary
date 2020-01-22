@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -39,19 +39,8 @@ struct  Normals
 };
 typedef Svec<Normals>           Normalss;
 
-void
-cNormals_(Surfs const & surfs,
-    Vec3Fs const &      verts,
-    Normals &           norms);     // RETURNED
-
-inline
 Normals
-cNormals(Surfs const & surfs,Vec3Fs const & verts)
-{
-    Normals         norms;
-    cNormals_(surfs,verts,norms);
-    return norms;
-}
+cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 inline
 Normals

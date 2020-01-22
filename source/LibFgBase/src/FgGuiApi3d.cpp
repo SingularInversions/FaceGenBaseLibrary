@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ intersectMeshes(
     Mat32F            d3ps(-1,1,1,-1,0,1);
     Mat32F            rcs(-0.5f,winSize[0]-0.5f,-0.5f,winSize[1]-0.5f,0,1);
     AffineEw3F        d3psToRcs(d3ps,rcs);
-    Mat44F            invXform = d3psToRcs.asAffine().asHomogenous() * worldToD3ps;
+    Mat44F            invXform = asHomogMat(d3psToRcs.asAffine()) * worldToD3ps;
     for (size_t mm=0; mm<rendMeshes.size(); ++mm) {
         RendMesh const &       rendMesh = rendMeshes[mm];
         Mesh const &        mesh = rendMesh.origMeshN.cref();
@@ -41,7 +41,7 @@ intersectMeshes(
             pvs[ii] = v.subMatrix<3,1>(0,0) / v[3];
         }
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             size_t              numTriEquivs = surf.numTriEquivs();
             for (size_t tt=0; tt<numTriEquivs; ++tt) {
                 Vec3UI       tri = surf.getTriEquivPosInds(tt);
@@ -191,7 +191,7 @@ Gui3d::markVertex(
         Mesh *              origMeshPtr = rm.origMeshN.valPtr();
         if (origMeshPtr) {
             Mesh &              meshIn = *origMeshPtr;
-            const Surf &     surf = meshIn.surfaces[pt.surfIdx];
+            Surf const &     surf = meshIn.surfaces[pt.surfIdx];
             uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
             uint                    vertIdx = fgTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
@@ -200,14 +200,14 @@ Gui3d::markVertex(
                     meshIn.markedVerts.push_back(MarkedVert(vertIdx));
             }
             else if (vertMarkMode < 3) {
-                Vec3UIs          tris = surf.getTriEquivs().vertInds;
+                Vec3UIs          tris = surf.getTriEquivs().posInds;
                 Fg3dTopology        topo(meshIn.verts,tris);
                 set<uint>           seam;
                 if (vertMarkMode == 1)
                     seam = topo.seamContaining(vertIdx);
                 else {
                     Surf         tmpSurf;
-                    tmpSurf.tris.vertInds = tris;
+                    tmpSurf.tris.posInds = tris;
                     vector<FgBool>      done(meshIn.verts.size(),false);
                     seam = topo.traceFold(cNormals(fgSvec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
@@ -243,7 +243,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
 {
     if (lastCtlClick.valid) {
         // Interestingly, the concept of a delta vector doesn't work in projective space;
-        // a homogenous component equal to zero is a direction. Conceptually, we can't
+        // a homogeneous component equal to zero is a direction. Conceptually, we can't
         // transform a delta in D3PS to FHCS without knowing it's absolute position since. Hence
         // we transform the end point back into FHCS and take the difference:
         RendMeshes const &          rms = rendMeshesN.cref();

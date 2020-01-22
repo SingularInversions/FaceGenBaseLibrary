@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -82,7 +82,7 @@ struct  GuiSliders
 
 GuiSliders
 guiSliders(
-    const Ustrings &    labels,
+    Ustrings const &    labels,
     VecD2               range,
     double              initVal,
     double              tickSpacing,

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,7 @@ void
 fgTcpServerTest(CLArgs const &)
 {
     fgout.setDefOut(true);
-    fgTcpServer(fgNcServerPort(),true,handler,1024);
+    fgTcpServer(getNcServerPort(),true,handler,1024);
 }
 
 void
@@ -42,10 +42,10 @@ fgTcpClientTest(CLArgs const &)
     fgout.setDefOut(true);
     string          message = "Please respond",
                     response;
-    fgTcpClient("peano",fgNcServerPort(),message,response);
+    fgTcpClient("peano",getNcServerPort(),message,response);
     fgout << fgnl << "Response received: " << response;
     message = "My god, it's full of stars";
-    fgTcpClient("peano",fgNcServerPort(),message);
+    fgTcpClient("peano",getNcServerPort(),message);
 }
 
 }

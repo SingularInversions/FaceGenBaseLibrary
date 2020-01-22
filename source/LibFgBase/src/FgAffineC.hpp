@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -116,16 +116,6 @@ struct  Affine
         ret.translation = - ret.linear * translation;
         return ret;
     }
-
-    Mat<T,dim+1,dim+1>
-    asHomogenous() const
-    {
-        Mat<T,dim+1,dim+1>    ret;
-        ret.setSubMat(linear,0,0);
-        ret.setSubMat(translation,0,dim);
-        ret.cr(dim,dim) = T(1);
-        return ret;
-    }
 };
 
 typedef Affine<float,2>        Affine2F;
@@ -151,6 +141,16 @@ operator<<(std::ostream & os,const Affine<T,dim> & v)
     return
         os  << fgnl << "Linear: " << v.linear 
             << fgnl << " Translation: " << v.translation;
+}
+
+template<typename T,uint dim>
+Mat<T,dim+1,dim+1>
+asHomogMat(Affine<T,dim> a)
+{
+    Mat<T,dim+1,dim+1>      ret = asHomogMat(a.linear);
+    for (uint ii=0; ii<dim; ++ii)
+        ret.rc(ii,dim) = a.translation[ii];
+    return ret;
 }
 
 }

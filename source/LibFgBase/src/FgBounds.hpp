@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -401,6 +401,7 @@ inline T
 clampBounds(T val,Mat<T,1,2> bounds)
 {return val < bounds[0] ? bounds[0] : (val > bounds[1] ? bounds[1] : val); }
 
+// Base case for template specialization same as std::max:
 template<typename T>
 inline T
 clampLo(T val,T lo)

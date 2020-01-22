@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -104,7 +104,7 @@ struct  TriVerts
     }
 };
 
-Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
+Fg3dTopology::Fg3dTopology(Vec3Fs const & verts,Vec3UIs const & tris)
 {
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
@@ -370,7 +370,7 @@ Fg3dTopology::unusedVerts() const
 }
 
 vector<float>
-Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const
+Fg3dTopology::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 {
     vector<float>       ret(verts.size(),maxFloat());
     FGASSERT(vertIdx < verts.size());
@@ -380,7 +380,7 @@ Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const
 }
 
 void
-Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,vector<float> & vertDists) const
+Fg3dTopology::edgeDistanceMap(Vec3Fs const & verts,vector<float> & vertDists) const
 {
     FGASSERT(verts.size() == m_verts.size());
     FGASSERT(vertDists.size() == verts.size());

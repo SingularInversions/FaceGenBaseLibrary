@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -87,8 +87,8 @@ testDeleteDirectory(CLArgs const & args)
     createDirectory(name);
     FGASSERT(pathExists(name));
     createDirectory(name+cent);
-    fgSaveXml(name+cent+"a",42);
-    fgSaveXml(name+"b",21);
+    saveBsaXml(name+cent+"a",42);
+    saveBsaXml(name+"b",21);
     deleteDirectoryRecursive(name);
     FGASSERT(!pathExists(name));
 }
@@ -103,7 +103,7 @@ testRecursiveCopy(CLArgs const & args)
     Ofstream      ofs("tst1/"+path+"file");
     ofs << "hello";
     ofs.close();
-    fgCopyRecursive("tst1","tst2");
+    copyRecursive("tst1","tst2");
     Ifstream      ifs("tst2/"+path+"file");
     string          hello;
     ifs >> hello;
@@ -120,7 +120,7 @@ testExists(CLArgs const &)
 void
 fgFileSystemTest(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(testCurrentDirectory,"curDir"));
     cmds.push_back(Cmd(testOfstreamUnicode,"ofsUni"));
     cmds.push_back(Cmd(testReadableFile,"readable"));
