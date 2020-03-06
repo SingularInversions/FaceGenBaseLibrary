@@ -12,6 +12,45 @@ using namespace std;
 
 namespace Fg {
 
+template<class T>
+static Vec3D
+cFacetNorm(Svec<Mat<T,3,1> > const & verts,Vec3UI tri)
+{
+    Vec3D       v0(verts[tri[0]]),
+                v1(verts[tri[1]]),
+                v2(verts[tri[2]]);
+    Vec3D       cross = crossProduct((v1-v0),(v2-v0)),    // CC winding
+                norm;
+    double      crossLen = cross.len();
+    if (crossLen == 0.0)
+        norm = Vec3D(0);
+    else
+        norm = cross * (1.0 / crossLen);
+    return norm;
+}
+
+Vec3Ds
+cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
+{
+    Vec3Ds          vertNorms(verts.size(),Vec3D(0));
+    for (Vec3UI tri : tris) {
+        Vec3D       norm = cFacetNorm(verts,tri);
+        vertNorms[tri[0]] += norm;
+        vertNorms[tri[1]] += norm;
+        vertNorms[tri[2]] += norm;
+    }
+    Vec3Ds          ret;
+    ret.reserve(verts.size());
+    for (Vec3D norm : vertNorms) {
+        double          len = cLen(norm);
+        if(len > 0.0)
+            ret.push_back(norm/len);
+        else
+            ret.push_back(Vec3D(0,0,1));     // Arbitrary
+    }
+    return ret;
+}
+
 // Vertex normals are just approximated by a simple average of the facet normals of all
 // facets containing the vertex:
 Normals
@@ -28,16 +67,7 @@ cNormals(Surfs const & surfs,Vec3Fs const & verts)
         fnorms.quad.reserve(surf.numQuads());
         // TRIs
         for (Vec3UI tri : surf.tris.posInds) {
-            Vec3D       v0(verts[tri[0]]),
-                        v1(verts[tri[1]]),
-                        v2(verts[tri[2]]);
-            Vec3D       cross = crossProduct((v1-v0),(v2-v0)),    // CC winding
-                        norm;
-            double      crossMag = cross.len();
-            if (crossMag == 0.0)
-                norm = Vec3D(0);
-            else
-                norm = cross * (1.0 / crossMag);
+            Vec3D       norm = cFacetNorm(verts,tri);
             vertNorms[tri[0]] += norm;
             vertNorms[tri[1]] += norm;
             vertNorms[tri[2]] += norm;

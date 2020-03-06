@@ -226,7 +226,7 @@ static bool saveXsiFile(
         {
             // Get the image size by loading the image
             ImgC4UC     tmpImg;
-            imgLoadAnyFormat(path.dir()+txtFname,tmpImg);
+            loadImage(path.dir()+txtFname,tmpImg);
             {
                 imgWd = tmpImg.width();
                 imgHgt = tmpImg.height();
@@ -619,7 +619,7 @@ static string floatToString(float val)
 void
 saveXsi(
     Ustring const &        fname,
-    const vector<Mesh> & meshes,
+    Meshes const & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat);
@@ -636,10 +636,10 @@ fgSaveXsiTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveXsi("meshExportXsi",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveXsi("meshExportXsi",svec(mouth,glasses));
     regressFileRel("meshExportXsi.xsi","base/test/");
     regressFileRel("meshExportXsi0.png","base/test/");
     regressFileRel("meshExportXsi1.png","base/test/");

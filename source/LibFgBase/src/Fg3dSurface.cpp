@@ -34,7 +34,7 @@ fgReadp(std::istream & is,SurfPoint & sp)
 }
 
 void
-fgWritep(std::ostream & os,const SurfPoint & sp)
+fgWritep(std::ostream & os,SurfPoint const & sp)
 {
     fgWritep(os,sp.triEquivIdx);
     fgWritep(os,sp.weights);
@@ -42,7 +42,7 @@ fgWritep(std::ostream & os,const SurfPoint & sp)
 }
 
 vector<Vec3UI>
-fgQuadsToTris(const vector<Vec4UI> & quads)
+quadsToTris(const vector<Vec4UI> & quads)
 {
     vector<Vec3UI>   ret;
     for (size_t ii=0; ii<quads.size(); ++ii) {
@@ -55,7 +55,7 @@ fgQuadsToTris(const vector<Vec4UI> & quads)
 }
 
 TriUv
-fgTriEquiv(const Tris & tris,const Quads & quads,size_t tt)
+cTriEquiv(Tris const & tris,Quads const & quads,size_t tt)
 {
     TriUv       ret;
     ret.uvInds = Vec3UI(0);
@@ -95,7 +95,7 @@ fgTriEquiv(const Tris & tris,const Quads & quads,size_t tt)
 }
 
 Vec3UI
-fgTriEquivPosInds(const Tris & tris,const Quads & quads,size_t tt)
+cTriEquivPosInds(Tris const & tris,Quads const & quads,size_t tt)
 {
     if (tt < tris.size())
         return tris.posInds[tt];
@@ -120,7 +120,7 @@ fgTriEquivPosInds(const Tris & tris,const Quads & quads,size_t tt)
 }
 
 Tris
-fgTriEquivs(const Tris & tris,const Quads & quads)
+cTriEquivs(Tris const & tris,Quads const & quads)
 {
     Tris          ret = tris;
     for (size_t ii=0; ii<quads.size(); ++ii) {
@@ -137,13 +137,13 @@ fgTriEquivs(const Tris & tris,const Quads & quads)
 }
 
 Vec3F
-fgSurfPointPos(
-    const SurfPoint &         sp,
-    const Tris &              tris,
-    const Quads &             quads,
+cSurfPointPos(
+    SurfPoint const &         sp,
+    Tris const &              tris,
+    Quads const &             quads,
     Vec3Fs const &             verts)
 {
-    Vec3UI           vertInds = fgTriEquivPosInds(tris,quads,sp.triEquivIdx);
+    Vec3UI           vertInds = cTriEquivPosInds(tris,quads,sp.triEquivIdx);
     Vec3F            vertWeights = sp.weights;
     return (verts[vertInds[0]] * vertWeights[0] +
             verts[vertInds[1]] * vertWeights[1] +
@@ -179,7 +179,7 @@ Surf::vertsUsed() const
 Vec3F
 Surf::surfPointPos(Vec3Fs const & verts,string const & label) const
 {
-    const SurfPoint & sp = findFirst(surfPoints,label);
+    SurfPoint const & sp = findFirst(surfPoints,label);
     Vec3UI           tri = getTriEquivPosInds(sp.triEquivIdx);
     return cBarycentricVert(tri,sp.weights,verts);
 }
@@ -213,8 +213,8 @@ FacetInds<3>
 Surf::asTris() const
 {
     FacetInds<3>      ret;
-    ret.posInds = cat(tris.posInds,fgQuadsToTris(quads.posInds));
-    ret.uvInds = cat(tris.uvInds,fgQuadsToTris(quads.uvInds));
+    ret.posInds = cat(tris.posInds,quadsToTris(quads.posInds));
+    ret.uvInds = cat(tris.uvInds,quadsToTris(quads.uvInds));
     return ret;
 }
 
@@ -400,7 +400,7 @@ fgSelectTris(Surf const & surf,const vector<FgBool> & sel)
 }
 
 Surf
-fgRemoveDuplicateFacets(Surf const & s)
+removeDuplicateFacets(Surf const & s)
 {
     if (!s.surfPoints.empty())
         fgThrow("Duplicate facet removal with surface points not implemented");

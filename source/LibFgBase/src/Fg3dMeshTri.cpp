@@ -191,7 +191,7 @@ Mesh
 loadTri(Ustring const & meshFile,Ustring const & texImage)
 {
     Mesh        mesh = loadTri(meshFile);
-    imgLoadAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
+    loadImage(texImage,mesh.surfaces[0].albedoMapRef());
     return mesh;
 }
 
@@ -257,7 +257,7 @@ saveTri(
 
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
-        const SurfPoint &   sp = surfPoints[ii];
+        SurfPoint const &   sp = surfPoints[ii];
         fgWriteb(ff,sp.triEquivIdx);
         fgWriteb(ff,sp.weights);
         writeLabel(ff,sp.label);

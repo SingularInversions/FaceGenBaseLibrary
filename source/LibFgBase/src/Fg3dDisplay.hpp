@@ -126,14 +126,26 @@ linkMeshStats(RendMeshes const &);
 // If only one mesh is provided then edit controls will also be available and the resulting mesh
 // will be returned. Otherwise an empty mesh is returned:
 Mesh
-meshView(
-    const Meshes &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
+viewMesh(
+    Meshes const &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
     bool                compare=false);     // Radio button selects between meshes (if more than one)
 
 inline
 Mesh
-meshView(Mesh const & mesh)
-{return meshView(fgSvec(mesh)); }
+viewMesh(Mesh const & mesh)
+{return viewMesh(Svec<Mesh>(1,mesh)); }
+
+// GUI queries user for any given fids not already labelled surface 0 points.
+// Returns true if user enters all fids, false if user closes before entering all fids:
+bool
+guiSelectFids(
+    Mesh &              mesh,
+    Strings const &     fidLabels,
+    // 0 - simple, 1 - expert, 2 - edit.
+    // Simple prompts for each fiducial separately and allows multiple tries per fiducial.
+    // Expert prompts only once and expects all fiducials to be placed without repeats.
+    // Edit allows changing existing fiducials.
+    uint                mode=0);
 
 }
 

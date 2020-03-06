@@ -43,7 +43,7 @@ struct  Ofstream : public std::ofstream
 
     template<class T>
     void
-    writeb(const T & val)
+    writeb(T const & val)
     {write(reinterpret_cast<const char*>(&val),sizeof(val)); }
 };
 
@@ -52,7 +52,7 @@ struct  Ofstream : public std::ofstream
 
 template<class T>
 void
-fgWriteb(std::ostream & os,const T & val)    // Only use for builtins !
+fgWriteb(std::ostream & os,T const & val)    // Only use for builtins !
 {os.write(reinterpret_cast<const char*>(&val),sizeof(val)); }
 
 // Handle builtins:
@@ -79,7 +79,7 @@ fgWritep(std::ostream & os,Ustring const & s)
 
 template<class T>
 void
-fgWritep(std::ostream & os,const Svec<T> & vec)
+fgWritep(std::ostream & os,Svec<T> const & vec)
 {
     fgWritep(os,uint32(vec.size()));        // Always store size_t as 32 bit for 32/64 portability
     if (!vec.empty())

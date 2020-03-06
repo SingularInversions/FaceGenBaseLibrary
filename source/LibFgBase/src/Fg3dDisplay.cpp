@@ -117,7 +117,7 @@ makeLightingCtrls(
     NPT<Lighting>         lightingN =
         link3<Lighting,Vec3F,Light,Light>(ambient.valN,light1.light,light2.light,
             [](Vec3F a,Light l1,Light l2)
-            {return Lighting(a,fgSvec(l1,l2)); }
+            {return Lighting(a,svec(l1,l2)); }
         );
     connect(lightingR,lightingN);
     bothButtonsDragActionI.init(std::bind(lightDirectionDrag,_1,_2,dir1Ns,dir2Ns));
@@ -131,7 +131,7 @@ makeLightingCtrls(
                 nodes.push_back(i.ptr);
             setInputsToDefault(nodes);
         };
-    return guiSplitScroll(fgSvec(
+    return guiSplitScroll(svec(
         guiGroupbox("Ambient",ambient.win),
         guiGroupbox("Light 1",guiSplit(false,light1.clrSliders,light1.dirSliders)),
         guiGroupbox("Light 2",guiSplit(false,light2.clrSliders,light2.dirSliders)),
@@ -154,7 +154,7 @@ bgImageLoad2(BackgroundImage bgi)
         return;
     ImgC4UC &       img = bgi.imgN.ref();
     try {
-        imgLoadAnyFormat(fname.val(),img);
+        loadImage(fname.val(),img);
     }
     catch (const FgException & e) {
         guiDialogMessage("Unable to load background image",e.no_tr_message());
@@ -265,7 +265,7 @@ namespace {
 void
 expr_load2(NPT<PoseVals> posesN,IPT<Doubles> valsN)
 {
-    Opt<Ustring> fname = guiDialogFileLoad("FaceGen XML expression file",fgSvec<string>("xml"));
+    Opt<Ustring> fname = guiDialogFileLoad("FaceGen XML expression file",svec<string>("xml"));
     if (fname.valid()) {
         const PoseVals &         poses = posesN.cref();
         Doubles &                vals = valsN.ref();
@@ -286,7 +286,7 @@ expr_save2(NPT<PoseVals> posesN,NPT<Doubles > valsN)
     Opt<Ustring> fname = guiDialogFileSave("FaceGen XML expression file","xml");
     if (fname.valid()) {
         const PoseVals &             poses = posesN.cref();
-        const Doubles &              vals = valsN.cref();
+        Doubles const &              vals = valsN.cref();
         FGASSERT(poses.size() == vals.size());
         vector<pair<Ustring,double> >  lvs;
         lvs.reserve(poses.size());
@@ -456,7 +456,7 @@ makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
     api.pointLabel = pointLabelN;
     NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
     GuiPtr            points = 
-        guiSplit(false,fgSvec(
+        guiSplit(false,svec(
             guiText(
                 "Mark Surface Point: ctrl-shift-left-click on surface.\n"
                 "A point with an identical non-null name will be overwritten"
@@ -478,7 +478,7 @@ makeEditPane(const OPT<MeshSurfsNames> & meshSurfsNamesN,Gui3d & api)
                 })
         ));
     GuiPtr            verts =
-        guiSplit(false,fgSvec(
+        guiSplit(false,svec(
             guiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
             guiGroupbox("Vertex Selection Mode",vertSelModeW),
             guiButtonTr("Mark all seam vertices",
@@ -572,7 +572,7 @@ makeCameraCtrls(
     OPT<CameraParams>   camParamsN =
         link5<CameraParams,Mat32D,QuaternionD,Vec2D,double,double>(
             viewBoundsN,api.pose,api.trans,api.logRelSize,lensFovDeg,
-            [](const Mat32D & vb,const QuaternionD & p,const Vec2D & t,const double & lrs,const double & lfd)
+            [](const Mat32D & vb,const QuaternionD & p,const Vec2D & t,double const & lrs,double const & lfd)
             {
                 CameraParams    r;
                 r.modelBounds = vb;
@@ -583,7 +583,7 @@ makeCameraCtrls(
                 return r;
             });
     OPT<Vec2D>   panTiltN = link2<Vec2D,double,double>(api.panDegrees,api.tiltDegrees,
-        [](const double & p,const double & t){return Vec2D(p,t); });
+        [](double const & p,double const & t){return Vec2D(p,t); });
     api.xform = link4<Camera,CameraParams,size_t,Vec2D,Vec2UI>(
         camParamsN,api.panTiltMode,panTiltN,api.viewportDims,
         [](const CameraParams & cp,const size_t & m,const Vec2D & pt,const Vec2UI & v)
@@ -620,7 +620,7 @@ makeCameraCtrls(
                 VecD2(0.0,60.0),
                 15.0,
                 guiTickLabels(VecD2(0.0,60.0),15.0,0.0),
-                fgSvec(
+                svec(
                     GuiTickLabel(0.0,fgTr("Orthographic")),
                     GuiTickLabel(30.0,fgTr("Normal")),
                     GuiTickLabel(60.0,fgTr("Wide"))),
@@ -638,7 +638,7 @@ makeCameraCtrls(
                         Ustring(),
                         logScaleRange,
                         (logScaleRange[1]-logScaleRange[0])/4.0,
-                        fgSvec(
+                        svec(
                             GuiTickLabel(logScaleRange[0],"0.2"),
                             GuiTickLabel(0.0,"1.0"),
                             GuiTickLabel(logScaleRange[1],"5.0")),
@@ -659,7 +659,7 @@ makeCameraCtrls(
     if (simple == 2)
         return guiSplit(false,viewCtlText,viewCtlScale,viewCtlReset);
     else
-        return guiSplit(false,fgSvec(
+        return guiSplit(false,svec(
             viewCtlText,viewCtlRotation,viewCtlFov,viewCtlScale,viewCtlReset));
 }
 
@@ -720,7 +720,7 @@ linkLoadImage(NPT<Ustring> filenameN)
         {
             img.clear();        // Ensure cleared in case load fails.
             if (!fn.empty())
-                imgLoadAnyFormat(fn,img);
+                loadImage(fn,img);
         });
 }
 
@@ -783,7 +783,7 @@ makePoseCtrlSliders(NPT<PoseVals> posesN,IPT<Doubles> valsN,bool textEditBoxes)
             output[ii] = poses[ii].neutral;
     }
     GuiPtrs               buttons;
-    buttons.push_back(guiButton("Set All Zero",[valsN](){fgFill(valsN.ref(),0.0);}));
+    buttons.push_back(guiButton("Set All Zero",[valsN](){cFill(valsN.ref(),0.0);}));
     buttons.push_back(guiButton("Load File",bind(expr_load2,posesN,valsN)));
     buttons.push_back(guiButton("Save File",bind(expr_save2,posesN,valsN)));
     GuiPtrs               sliders;
@@ -829,7 +829,7 @@ linkBounds(RendMeshes const & rms)
     }
     return linkN<Mat32F,Mat32D>(boundsNs,[](vector<Mat32F> const & bs)
     {
-        Mat32F    bounds = boundsUnion(bs);
+        Mat32F    bounds = cBoundsUnion(bs);
         if (bounds[1] < bounds[0])      // No meshes selected
             bounds = Mat32F(0,1,0,1,0,1);
         return Mat32D(bounds);
@@ -895,22 +895,22 @@ guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture> const & captur
                 Vec2UI          dims = szSelN.val() ? Vec2UI(widN.val(),hgtN.val()) : viewportDims.val();
                 Opt<Ustring>    fname = guiDialogFileSave("",formatN.cref());
                 if (fname.valid()) {
-                    imgSaveAnyFormat(fname.val(),capture->getImg(dims));
+                    saveImage(fname.val(),capture->getImg(dims));
                 }
             }
         };
-    GuiPtr              saveImage = guiSplit(false,
+    GuiPtr              saveImageW = guiSplit(false,
         guiText("Save the current render image to a file"),
         guiSplit(false,dimsW,capImgFormat.win),
         guiButton("Save",save));
-    return saveImage;
+    return saveImageW;
 }
 
 Mesh
-meshView(const Meshes & meshes,bool compare)
+viewMesh(Meshes const & meshes,bool compare)
 {
     FGASSERT(meshes.size() > 0);
-    Ustring                 store = getDirUserAppDataLocalFaceGen("SDK","meshView");
+    Ustring                 store = getDirUserAppDataLocalFaceGen("SDK","viewMesh");
     IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(cBounds(meshes)));
     GuiPosedMeshes          gpms {store};
     vector<IPT<Mesh> >      meshNs;
@@ -969,20 +969,101 @@ meshView(const Meshes & meshes,bool compare)
     IPT<RendMeshes>     rmsN {gpms.rendMeshes};
     Gui3d               gui3d;
     gui3d.rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,
-        [](const RendMeshes & m,const Bools & s){return fgFilter(m,s); });
+        [](const RendMeshes & m,const Bools & s){return cFilter(m,s); });
     GuiTabDefs          mainTabs = {
         guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View",0,true)),
         guiTab("Morphs",true,gpms.makePoseCtrls(true)),
         guiTab("Select",true,meshSelect),
         guiTab("Edit",true,makeEditPane(meshSurfsNamesN,gui3d)),
-        guiTab("Info",true,guiSplitScroll(fgSvec(guiText(linkMeshStats(gpms.rendMeshes))))),
+        guiTab("Info",true,guiSplitScroll(svec(guiText(linkMeshStats(gpms.rendMeshes))))),
         guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
     };
     guiStartImpl(
-        Ustring("FaceGen SDK meshView"),
-        guiSplitAdj(true,std::make_shared<Gui3d>(gui3d),guiTabs(mainTabs)),
+        Ustring("FaceGen SDK viewMesh"),
+        guiSplitAdj(true,make_shared<Gui3d>(gui3d),guiTabs(mainTabs)),
         store);
     return meshNs[0].cref();
+}
+
+bool
+guiSelectFids(Mesh & mesh,Strings const & fidLabels,uint mode)
+{
+    FGASSERT(!mesh.surfaces.empty());
+    Surf &              surf = mesh.surfaces[0];
+    Sptr<ImgC4UC>       imgOrig = surf.material.albedoMap;
+    if (imgOrig) {
+        surf.material.albedoMap = make_shared<ImgC4UC>(*imgOrig);
+        // Reduce contrast so underlying surface shape is easily visible in combination:
+        //ImgC4UC &   img = *surf.material.albedoMap;
+        //for (size_t pp=0; pp<img.numPixels(); ++pp)
+        //    img[pp] = img[pp] / 2 + RgbaUC(127,127,127,127);
+    }
+    SurfPoints &        sps = surf.surfPoints;
+    if (mode == 1) {
+        fgout << fgnl << "Place the following surface points in order then close the window:";
+        for (size_t ii=0; ii<fidLabels.size(); ++ii)
+            if (!contains(sps,fidLabels[ii]))
+                fgout << fgnl << fidLabels[ii];
+        Mesh                editMesh = viewMesh(mesh);
+        SurfPoints const  & editSps = editMesh.surfaces[0].surfPoints;
+        if (editSps.size() == fidLabels.size()) {
+            sps.clear();
+            sps.resize(fidLabels.size());
+            for (size_t ii=0; ii<editSps.size(); ++ii) {
+                SurfPoint       sp(editSps[ii]);
+                if (sp.label.empty()) {
+                    size_t          idx = findFirstIdx(sps,"");
+                    FGASSERT(idx < sps.size());
+                    sp.label = fidLabels[idx];
+                    sps[idx] = (sp);
+                }
+                else {
+                    size_t          idx = findFirstIdx(fidLabels,sp.label);
+                    FGASSERT(idx < fidLabels.size());
+                    sps[idx] = sp;
+                }
+            }
+        }
+        else {
+            surf.material.albedoMap = imgOrig;
+            return false;
+        }
+    }
+    else {
+        for (size_t ii=0; ii<fidLabels.size(); ++ii) {
+            if (!contains(sps,fidLabels[ii])) {
+                fgout
+                    << fgnl << "Place the following surface point (ctrl-shift-left-click) then close the window."
+                    << fgnl << "Only your last selection will be used:"
+                    << fgnl << fidLabels[ii];
+                Mesh                editMesh = viewMesh(mesh);
+                if (editMesh.surfaces[0].surfPoints.size() > sps.size()) {
+                    SurfPoint         sp(editMesh.surfaces[0].surfPoints.back());
+                    sp.label = fidLabels[ii];
+                    sps.push_back(sp);
+                }
+                else {
+                    surf.material.albedoMap = imgOrig;
+                    return false;
+                }
+            }
+            else if (mode == 2) {
+                fgout
+                    << fgnl << "Modify the following surface point (ctrl-shift-left-click) if desired."
+                    << fgnl << "Only your last selection will be used:"
+                    << fgnl << fidLabels[ii];
+                Mesh                editMesh = viewMesh(mesh);
+                if (editMesh.surfaces[0].surfPoints.size() > sps.size()) {
+                    size_t              idx = findFirstIdx(sps,fidLabels[ii],true);
+                    SurfPoint         sp(editMesh.surfaces[0].surfPoints.back());
+                    sp.label = fidLabels[ii];
+                    sps[idx] = sp;
+                }
+            }
+        }
+    }
+    surf.material.albedoMap = imgOrig;
+    return true;
 }
 
 static void
@@ -990,7 +1071,7 @@ simple(CLArgs const &)
 {
     Ustring         dir = dataDir() + "base/";
     Mesh            mesh = loadTri(dir+"JaneLoresFace.tri",dir+"JaneLoresFace.jpg");
-    meshView(mesh);
+    viewMesh(mesh);
 }
 
 static void
@@ -1012,7 +1093,7 @@ surfs(CLArgs const &)
     surf.tris.posInds.push_back(Vec3UI(0,3,5));
     surf.tris.posInds.push_back(Vec3UI(5,4,0));
     mesh.surfaces.push_back(surf);
-    meshView(mesh);
+    viewMesh(mesh);
 }
 
 void

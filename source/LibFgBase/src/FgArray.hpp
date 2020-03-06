@@ -24,7 +24,7 @@ struct VArray
     size() const
     {return sz; }
 
-    const T &
+    T const &
     operator[](uint i) const
     {FGASSERT(i < sz); return m[i]; }
 
@@ -33,7 +33,7 @@ struct VArray
     {FGASSERT(i < sz); return m[i]; }
 
     void
-    add(const T & v)    // 'push_back' too verbose
+    add(T const & v)    // 'push_back' too verbose
     {
         FGASSERT(sz < maxSize);
         m[sz] = v;

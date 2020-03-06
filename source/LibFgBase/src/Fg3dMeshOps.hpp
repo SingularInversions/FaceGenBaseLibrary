@@ -31,38 +31,42 @@ typedef Svec<IdxDelta>      IdxDeltas;
 //   centres should fill the domain bounds wheras the texture image bounds should map the domain
 //   bounds).
 Mesh
-fgMeshFromImage(const ImgD & img);
+meshFromImage(const ImgD & img);
+
+// Create a grid of SxS squares filling XY in [-1,1] at Z=0:
+QuadSurf
+cGrid(uint squaresPerSide);
 
 // Creates a sphere centred at the origin by subdividing a tetrahedron and renormalizing the 
 // vertex distances from the origin 'subdivision' times:
 Mesh
-fgCreateSphere(float radius,uint subdivisions);
+cSphere(float radius,uint subdivisions);
 
 Mesh
-fgRemoveDuplicateFacets(Mesh const &);
+c3dCube(bool open=false);
+
+Mesh
+cPyramid(bool open=false);
+
+Mesh
+cTetrahedron(bool open=false);
+
+Mesh
+cOctahedron();
+
+Mesh
+cNTent(uint nn);
+
+//Mesh
+//fgFddCage(float size,float thick);
+
+Mesh
+removeDuplicateFacets(Mesh const &);
 
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
 // Retains only those morphs which affect the remaining vertices:
 Mesh
 meshRemoveUnusedVerts(Mesh const &);
-
-Mesh
-fg3dCube(bool open=false);
-
-Mesh
-fgPyramid(bool open=false);
-
-Mesh
-fgTetrahedron(bool open=false);
-
-Mesh
-fgOctahedron();
-
-Mesh
-fgNTent(uint nn);
-
-//Mesh
-//fgFddCage(float size,float thick);
 
 Mesh
 mergeSameNameSurfaces(Mesh const &);
@@ -128,6 +132,15 @@ poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
 void
 surfPointsToMarkedVerts_(Mesh const & in,Mesh & out);
 
+// Mirror vertices around the given axis and reverse facet winding:
+TriSurf
+cMirror(TriSurf const &,uint axis);
+
+// Mirror vertices around the given axis, reverse facet winding and UV winding.
+// UVs, maps, points left unchanged, morphs removed:
+Mesh
+cMirror(Mesh const &,uint axis);
+
 struct  MeshMirror
 {
     Mesh        mesh;
@@ -141,14 +154,14 @@ meshMirrorX(Mesh const &);
 
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
 Mesh
-fgCopySurfaceStructure(Mesh const & from,Mesh const & to);
+copySurfaceStructure(Mesh const & from,Mesh const & to);
 
 // Merge all surface facets converted to tris:
 Svec<Vec3UI>
-fgMeshSurfacesAsTris(Mesh const &);
+meshSurfacesAsTris(Mesh const &);
 
 TriSurf
-fgTriSurface(Mesh const & src,size_t surfIdx);
+cTriSurface(Mesh const & src,size_t surfIdx);
 
 Mesh
 sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque);

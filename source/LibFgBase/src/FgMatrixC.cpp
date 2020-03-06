@@ -41,19 +41,9 @@ toDoubles(Floatss const & v)
     return ret;
 }
 
-Vec3Fs
-fgVertsRandNormal(size_t num,float scale)
-{
-    Vec3Fs         ret;
-    ret.reserve(num);
-    for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(Vec3F::randNormal(scale));
-    return ret;
-}
-
 // Gaussian elimination can be very simply explicit in this case:
 Opt<Vec2F>
-fgSolve(Mat22F A,Vec2F b)
+solveLinear(Mat22F A,Vec2F b)
 {
     Opt<Vec2F>    ret;
     float                   a0 = A[0]*A[3],
@@ -78,7 +68,7 @@ fgSolve(Mat22F A,Vec2F b)
 }
 
 Opt<Vec3D>
-fgSolve(Mat33D A,Vec3D b)
+solveLinear(Mat33D A,Vec3D b)
 {
     Eigen::Matrix3d         mat;
     Eigen::Vector3d         vec;
@@ -98,7 +88,7 @@ fgSolve(Mat33D A,Vec3D b)
 }
 
 Opt<Vec4D>
-fgSolve(Mat44D A,Vec4D b)
+solveLinear(Mat44D A,Vec4D b)
 {
     Eigen::Matrix4d         mat;
     Eigen::Vector4d         vec;
@@ -182,7 +172,7 @@ fgTanSphere(Vec3D v)
     r0 -= vn * cDot(vn,r0);
     r0 /= r0.len();
     Vec3D        r1 = crossProduct(vn,r0);
-    return fgJoinHoriz(r0,r1);
+    return catHoriz(r0,r1);
 }
 
 }

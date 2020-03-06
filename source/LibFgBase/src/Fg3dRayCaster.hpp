@@ -53,8 +53,8 @@ struct  Fg3dRayCaster
     Svec<Fg3dRayCastMesh>     rayMesh;
 
     Fg3dRayCaster(
-        const Meshes &      meshes,
-        const Vec3Fss &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
+        Meshes const &      meshes,
+        Vec3Fss const &        vertss,         // Current OECS vertex positions. Must be 1-1 with above.
         const Normalss &    normss,         // Current OECS normals. Must be 1-1 with above.
         const Lighting &      lighting,
         AffineEw2F            itcsToIucs,

@@ -72,7 +72,7 @@ public:
     std::function<void(boost::any const&)> onDestruct;
 
     DfgInput() {}
-    template<class T> explicit DfgInput(const T & v) : data(v) {}
+    template<class T> explicit DfgInput(T const & v) : data(v) {}
 
     virtual                 ~DfgInput();
     virtual void            update() const {}
@@ -81,7 +81,7 @@ public:
 
     void                    makeDirty() const;
     boost::any &            getDataRef() const;
-    template<class T> void  init(const T & val,bool setDefault=false)
+    template<class T> void  init(T const & val,bool setDefault=false)
     {data = val; if (setDefault) dataDefault = val; makeDirty(); }
     void                    setToDefault() const;      // Reset value to default if exists
 };
@@ -169,9 +169,9 @@ struct  IPT
     // Must use one of these two before attempting to access values as they will allocate the
     // 'any' with the value and also set the default value. If it's an input for a dynamic window
     // then it's possible it could be initialized more than once:
-    void init(const T & val,bool setDefault=false) const {ptr->init(val,setDefault); }
+    void init(T const & val,bool setDefault=false) const {ptr->init(val,setDefault); }
     void initSaved(
-        const T &           defaultVal,             // Will be the initial value if no valid one is stored
+        T const &           defaultVal,             // Will be the initial value if no valid one is stored
         Ustring const &    storeFile,
         bool                binary=false)           // Store to binary format rather than XML for efficiency
     {
@@ -185,7 +185,7 @@ struct  IPT
                 if (v.empty())
                     fgWarn("IPT onDestruct save with empty data",signature(v));
                 else
-                    saveBsaPBin(storeFile,boost::any_cast<const T &>(v),false);
+                    saveBsaPBin(storeFile,boost::any_cast<T const &>(v),false);
             };
         }
         else {
@@ -197,17 +197,17 @@ struct  IPT
                 if (v.empty())
                     fgWarn("IPT onDestruct binary save with empty data",signature(v));
                 else
-                    saveBsaXml(fname,boost::any_cast<const T &>(v),false);
+                    saveBsaXml(fname,boost::any_cast<T const &>(v),false);
             };
         }
     }
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
     // Value modification is still const because it's the value pointed to not the smart
     // pointer that is being modified. This is useful because we sometimes need this
     // object to be const - for example in a lambda capture:
     T &             ref() const {return boost::any_cast<T&>(ptr->getDataRef()); }
-    void set(const T & val) const {ref() = val; }           // Prefer assignment below for visual clarity
+    void set(T const & val) const {ref() = val; }           // Prefer assignment below for visual clarity
 };
 
 template<class T>
@@ -216,7 +216,7 @@ struct  OPT
     DfgOPtr            ptr;
     OPT() {}
     explicit OPT(const DfgOPtr & o) : ptr(o) {}
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
 };
 
@@ -226,7 +226,7 @@ struct  RPT
 {
     DfgRPtr            ptr;                            // Never null but what the DfgReceptor points to may be null.
     RPT() {ptr = std::make_shared<DfgReceptor>(); }    // Always allocated
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
 };
 
@@ -239,7 +239,7 @@ struct  NPT
     NPT(const OPT<T> & opt) : ptr(opt.ptr) {}
     NPT(const RPT<T> & rpt) : ptr(rpt.ptr) {}
     explicit NPT(const DfgNPtr & n) : ptr(n) {}
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
     // This will only return a valid pointer if the Node happens to be an DfgInput, otherwise, nullptr:
     T*              valPtr() const
@@ -263,13 +263,13 @@ connect(RPT<T> const & rpt,NPT<T> const & npt)
 // Can use instead of constructor for type deduction from argument:
 template<class T>
 IPT<T>
-makeIPT(const T & val)
+makeIPT(T const & val)
 {return IPT<T>(std::make_shared<DfgInput>(val)); }
 
 template<class T>
 IPT<T>
 makeSavedIPT(
-    const T &           defaultVal,             // Will be the initial value if no valid one is stored
+    T const &           defaultVal,             // Will be the initial value if no valid one is stored
     Ustring const &     storeFile,
     bool                binary=false)           // Store to binary format rather than XML for efficiency
 {
@@ -280,12 +280,12 @@ makeSavedIPT(
 
 DfgFPtr makeUpdateFlag(const DfgNPtrs & nptrs);
 // Cannot make use of implicit conversion to NPT because of above overload:
-template<class T> DfgFPtr makeUpdateFlag(const IPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const OPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const NPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const RPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const IPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const OPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const NPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const RPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
 template<class T0,class T1> DfgFPtr makeUpdateFlag(const T0 & n0,const T1 & n1)
-{return makeUpdateFlag(fgSvec<DfgNPtr>(n0.ptr,n1.ptr)); }
+{return makeUpdateFlag(svec<DfgNPtr>(n0.ptr,n1.ptr)); }
 
 // Traverses up the tree to set all inputs to the default value:
 void setInputsToDefault(const DfgNPtrs &);
@@ -297,7 +297,7 @@ adapterCollate(const DfgNPtrs & srcs,boost::any & snk)
     Svec<T> &    out = boost::any_cast<Svec<T> &>(snk);
     out.resize(srcs.size());
     for (size_t ii=0; ii<out.size(); ++ii)
-        out[ii] = boost::any_cast<const T &>(srcs[ii]->getDataCref());
+        out[ii] = boost::any_cast<T const &>(srcs[ii]->getDataCref());
 }
 
 template<class T>
@@ -317,7 +317,7 @@ linkCollate(const Svec<NPT<T> > & ins = Svec<NPT<T> >())
 template<class T>
 OPT<Svec<T> >
 linkCollate(const Svec<IPT<T> > & ins)
-{return linkCollate(fgMapConvert<IPT<T>,NPT<T> >(ins)); }
+{return linkCollate(mapConvert<IPT<T>,NPT<T> >(ins)); }
 
 template<class In,class Out>
 void
@@ -346,7 +346,7 @@ linkN(const Svec<NPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn
 template<class In,class Out>
 OPT<Out>
 linkN(const Svec<IPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn)
-{return linkN(fgMapConvert<IPT<In>,NPT<In> >(ins),fn); }
+{return linkN(mapConvert<IPT<In>,NPT<In> >(ins),fn); }
 
 template<class In,class Out>
 void

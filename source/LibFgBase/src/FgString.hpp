@@ -178,11 +178,11 @@ toStr(Ustring const & str)
 {return str.m_str; }
 
 template<class T>
-void fgThrow(const std::string & msg,const T & data) 
+void fgThrow(const std::string & msg,T const & data) 
 {throw FgException(msg,toStr(data));  }
 
 template<class T,class U>
-void fgThrow(const std::string & msg,const T data0,const U & data1) 
+void fgThrow(const std::string & msg,T const data0,const U & data1) 
 {throw FgException(msg,toStr(data0)+","+toStr(data1)); }
 
 inline

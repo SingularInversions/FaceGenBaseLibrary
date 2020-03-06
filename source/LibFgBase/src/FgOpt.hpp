@@ -30,10 +30,10 @@ class   Opt
 public:
     Opt() : m_valid(false) {}
 
-    Opt(const T & v) : m_valid(true), m_val(v) {}
+    Opt(T const & v) : m_valid(true), m_val(v) {}
 
     Opt &
-    operator=(const T & v)
+    operator=(T const & v)
     {m_val=v; m_valid=true; return *this; }
 
     bool
@@ -48,7 +48,7 @@ public:
     ref()
     {FGASSERT(m_valid); return m_val; }
 
-    const T &
+    T const &
     val() const
     {FGASSERT(m_valid); return m_val; }
 
@@ -99,12 +99,12 @@ struct Valid
     {}
 
     explicit
-    Valid(const T & v)
+    Valid(T const & v)
     : m_val(v)
     {}
 
     Valid &
-    operator=(const T & v)
+    operator=(T const & v)
     {m_val = v; return *this; }
 
     bool
@@ -123,7 +123,7 @@ struct Valid
 
     // The constPtr() and ptr() functions below couldn't be overloads of operator&() since
     // this doesn't play nice with standard library containers:
-    const T *
+    T const *
     constPtr() const
     {FGASSERT(valid()); return &m_val; }
 

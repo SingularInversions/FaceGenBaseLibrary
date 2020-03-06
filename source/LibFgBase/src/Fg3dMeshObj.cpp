@@ -80,7 +80,7 @@ static
 Vec2F
 parseUv(string const & str)
 {
-    vector<string>  nums = splitChar(str,' ');
+    Strings  nums = splitChar(str,' ');
     // A third homogeneous coord value can also be specified but is only used for rational
     // cureves so we ignore:
     FGASSERT((nums.size() > 1) && (nums.size() < 4));
@@ -100,11 +100,11 @@ parseFacet(
     FacetInds<4> &    quads)
 {
     bool            ret = false;
-    vector<string>  strs = splitChar(str,' ');
+    Strings  strs = splitChar(str,' ');
     FGASSERT(strs.size() > 2);
     vector<vector<uint> >   nums;
     for (size_t ii=0; ii<strs.size(); ++ii) {
-        vector<string>  ns = splitChar(strs[ii],'/',true);
+        Strings  ns = splitChar(strs[ii],'/',true);
         size_t          sz = cMin(ns.size(),size_t(2));    // Ignore normal indices
         vector<uint>    nms;
         for (size_t jj=0; jj<sz; ++jj) {
@@ -179,7 +179,7 @@ loadWObj(
                 }
             }
             if (!surfSeparator.empty() && beginsWith(line,surfSeparator)) {
-                vector<string>  words = splitAtSeparators(line,' ');
+                Strings  words = splitAtSeparators(line,' ');
                 if (words.size() != 2) {
                     fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii << " of " << fname;
                     break;
@@ -332,7 +332,7 @@ writeMesh(
             string  idxString = toStr(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
             Ustring        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
-            imgSaveAnyFormat(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
+            saveImage(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
             if (ofsMtl) {
                 writeMtlBase(ofsMtl,offsets.mat+tt);
                 ofsMtl << "    map_Kd " << imgName << "\n";
@@ -399,10 +399,10 @@ fgSaveObjTest(CLArgs const & args)
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.deltaMorphs.clear();       // Remove morphs to avoid warning
     mouth.targetMorphs.clear();
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveWObj("meshExportObj.obj",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveWObj("meshExportObj.obj",svec(mouth,glasses));
     regressFileRel("meshExportObj.obj","base/test/");
     regressFileRel("meshExportObj.mtl","base/test/");
     regressFileRel("meshExportObj1.png","base/test/");

@@ -21,11 +21,10 @@ typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
 typedef Svec<std::u32string>    String32s;
 
-// More general than std::to_string since it uses operator<< which can be defined for
-// user-defined types as well. Also, to_string can cause ambiguous call errors.
+// std::to_string can cause ambiguous call errors and doesn't let you adjust precision:
 template<class T>
 String
-toStr(const T & val)
+toStr(T const & val)
 {
     std::ostringstream   msg;
     msg << val;
@@ -36,6 +35,24 @@ template<>
 inline String
 toStr(String const & str)
 {return str; }
+
+// ostringstream defaults to stupidly little precision. Default to full:
+template<>
+inline String
+toStr(float const & val)
+{
+    std::ostringstream   msg;
+    msg << std::setprecision(7) << val;
+    return msg.str();
+}
+template<>
+inline String
+toStr(double const & val)
+{
+    std::ostringstream   msg;
+    msg << std::setprecision(17) << val;
+    return msg.str();
+}
 
 template<class T>
 Strings
@@ -159,7 +176,7 @@ contains(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
 
 template<typename T>
 bool
-contains(const std::basic_string<T> & str,const T * pattern_c_str)
+contains(const std::basic_string<T> & str,T const * pattern_c_str)
 {return contains(str,std::basic_string<T>(pattern_c_str)); }
 
 template<typename T>
@@ -214,7 +231,7 @@ beginsWith(const std::basic_string<T> & base,const std::basic_string<T> & patter
 
 template<class T>
 bool
-beginsWith(const std::basic_string<T> & base,const T * pattern_c_str)
+beginsWith(const std::basic_string<T> & base,T const * pattern_c_str)
 {
     return (base.rfind(pattern_c_str,0) != std::basic_string<T>::npos);
 }
@@ -230,7 +247,7 @@ endsWith(const std::basic_string<T> & str,const std::basic_string<T> & pattern)
 
 template<class T>
 bool
-endsWith(const std::basic_string<T> & str,const T * pattern_c_str)
+endsWith(const std::basic_string<T> & str,T const * pattern_c_str)
 {
     return endsWith(str,std::basic_string<T>(pattern_c_str));
 }

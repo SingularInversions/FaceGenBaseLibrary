@@ -47,7 +47,7 @@ struct SurfPoint
 typedef Svec<SurfPoint>    SurfPoints;
 
 void    fgReadp(std::istream &,SurfPoint &);
-void    fgWritep(std::ostream &,const SurfPoint &);
+void    fgWritep(std::ostream &,SurfPoint const &);
 
 inline
 Vec3F
@@ -163,7 +163,7 @@ cat_(FacetInds<dim> & lhs,const FacetInds<dim> & rhs)
 }
 
 Vec3UIs
-fgQuadsToTris(const Vec4UIs & quads);
+quadsToTris(const Vec4UIs & quads);
 
 struct      TriUv
 {
@@ -173,19 +173,19 @@ struct      TriUv
 
 // the returned 'uvInds' is all zeros if there are no UVs:
 TriUv
-fgTriEquiv(const Tris & tris,const Quads & quads,size_t tt);
+cTriEquiv(Tris const & tris,Quads const & quads,size_t tt);
 
 Vec3UI
-fgTriEquivPosInds(const Tris & tris,const Quads & quads,size_t tt);
+cTriEquivPosInds(Tris const & tris,Quads const & quads,size_t tt);
 
 Tris
-fgTriEquivs(const Tris & tris,const Quads & quads);
+cTriEquivs(Tris const & tris,Quads const & quads);
 
 Vec3F
-fgSurfPointPos(
-    const SurfPoint &           sp,
-    const Tris &                tris,
-    const Quads &               quads,
+cSurfPointPos(
+    SurfPoint const &           sp,
+    Tris const &                tris,
+    Quads const &               quads,
     Vec3Fs const &              verts);
 
 struct  Material
@@ -247,7 +247,7 @@ struct  Surf
 
     TriUv
     getTriEquiv(size_t idx) const
-    {return fgTriEquiv(tris,quads,idx); }
+    {return cTriEquiv(tris,quads,idx); }
 
     Vec3UI
     getTriPosInds(uint ind) const
@@ -259,10 +259,10 @@ struct  Surf
 
     // Returns the vertex indices for the tri equiv:
     Vec3UI
-    getTriEquivPosInds(size_t ind) const {return fgTriEquivPosInds(tris,quads,ind); }
+    getTriEquivPosInds(size_t ind) const {return cTriEquivPosInds(tris,quads,ind); }
 
     Tris
-    getTriEquivs() const {return fgTriEquivs(tris,quads); }
+    getTriEquivs() const {return cTriEquivs(tris,quads); }
 
     bool
     isTri(size_t triEquivIdx) const
@@ -274,7 +274,7 @@ struct  Surf
 
     inline Vec3F
     surfPointPos(Vec3Fs const & verts,size_t idx) const
-    {return fgSurfPointPos(surfPoints[idx],tris,quads,verts); }
+    {return cSurfPointPos(surfPoints[idx],tris,quads,verts); }
 
     // Label must correspond to a surface point:
     Vec3F
@@ -352,7 +352,7 @@ Surf
 fgSelectTris(Surf const & surf,const Svec<FgBool> & sel);
 
 Surf
-fgRemoveDuplicateFacets(Surf const &);
+removeDuplicateFacets(Surf const &);
 
 Surf
 mergeSurfaces(const Surfs & surfs);
@@ -390,7 +390,7 @@ meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
 
 inline
 TriSurf
-meshRemoveUnusedVerts(const TriSurf & ts)
+meshRemoveUnusedVerts(TriSurf const & ts)
 {return meshRemoveUnusedVerts(ts.verts,ts.tris); }
 
 struct      TriSurfFids
@@ -400,6 +400,12 @@ struct      TriSurfFids
 };
 
 typedef Svec<TriSurfFids>   TriSurfFidss;
+
+struct      QuadSurf
+{
+    Vec3Fs          verts;
+    Vec4UIs         quads;
+};
 
 }
 

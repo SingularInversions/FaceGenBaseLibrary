@@ -113,7 +113,7 @@ template<class Archive,class T>
 bool
 saveBsa(
     Ustring const &     filename,
-    const T &           val,
+    T const &           val,
     bool                throwOnFail)
 {
     try
@@ -148,22 +148,22 @@ saveBsa(
 
 template<class T>
 inline bool
-saveBsaText(Ustring const & filename,const T & val,bool throwOnFail=true)
+saveBsaText(Ustring const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::text_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaXml(Ustring const & filename,const T & val,bool throwOnFail=true)
+saveBsaXml(Ustring const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaBin(Ustring const & filename,const T & val,bool throwOnFail=true)
+saveBsaBin(Ustring const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaPBin(Ustring const & filename,const T & val,bool throwOnFail=true)
+saveBsaPBin(Ustring const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<portable_binary_oarchive>(filename,val,throwOnFail); }
 
 }

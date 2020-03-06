@@ -25,7 +25,7 @@ struct  Sine
 void
 fgApproxFuncTest(CLArgs const &)
 {
-    const double        accuracy = 0.0001;
+    double const        accuracy = 0.0001;
     for (uint ii=0; ii<10; ++ii)
     {
         double          base = randUniform(-pi(),pi()),

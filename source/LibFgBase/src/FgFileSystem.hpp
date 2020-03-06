@@ -50,7 +50,7 @@ getDirUserAppDataLocal(const Svec<String> & subDirs);
 inline
 Ustring
 getDirUserAppDataLocalFaceGen(String const & subd0,String const & subd1)
-{return getDirUserAppDataLocal(fgSvec<String>("FaceGen",subd0,subd1)); }
+{return getDirUserAppDataLocal(svec<String>("FaceGen",subd0,subd1)); }
 
 // Can and does sometimes fail on Windows, possibly when using roaming identities.
 // If it fails but 'throwOnFail' is false, it returns the empty string.
@@ -209,13 +209,13 @@ fileNewer(Ustrings const & sources,Ustrings const & sinks);
 inline
 bool
 fileNewer(Ustring const & src,Ustring const & dst)
-{return fileNewer(fgSvec(src),fgSvec(dst)); }
+{return fileNewer(svec(src),svec(dst)); }
 
 // Usually only need to include the one last output of a code chunk as 'dst':
 inline
 bool
 fileNewer(Ustrings const & sources,Ustring const & dst)
-{return fileNewer(sources,fgSvec(dst)); }
+{return fileNewer(sources,svec(dst)); }
 
 struct  PushDir
 {

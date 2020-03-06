@@ -155,7 +155,7 @@ fgRandomTest(CLArgs const &)
         img.xy(xx,hgt) = RgbaUC(255,0,0,255); }
 
     // Display:
-    fgImgFlipVertical(img);
+    flipVertical_(img);
     imgDisplay(img);
 }
 
@@ -172,7 +172,7 @@ randNearUnit()
 
 std::vector<double>
 randNearUnits(size_t num)
-{return generate<double>(randNearUnit,num); }
+{return generate<double>(num,randNearUnit); }
 
 }
 

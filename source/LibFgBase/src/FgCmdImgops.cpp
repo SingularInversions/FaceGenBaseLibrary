@@ -27,13 +27,13 @@ addalpha(CLArgs const & args)
         "    <alpha>    - If this is not a single-channel image, a greyscale mapping will be applied"
         );
     ImgC4UC     rgb,alpha;
-    imgLoadAnyFormat(syntax.next(),rgb);
-    imgLoadAnyFormat(syntax.next(),alpha);
+    loadImage(syntax.next(),rgb);
+    loadImage(syntax.next(),alpha);
     if (rgb.dims() != alpha.dims())
         fgThrow("<rgb> and <alpha> images have different pixel dimensions");
     for (size_t ii=0; ii<rgb.m_data.size(); ++ii)
         rgb.m_data[ii].alpha() = alpha.m_data[ii].rec709();
-    imgSaveAnyFormat(syntax.next(),rgb);
+    saveImage(syntax.next(),rgb);
 }
 
 void
@@ -44,11 +44,11 @@ composite(CLArgs const & args)
         "    Composite images of equal pixel dimensions.\n"
         "    <overlay>.<imgExt> must have an alpha channel\n"
         "    <imgExt> = " + imgFileExtensionsDescription());
-    ImgC4UC     base = imgLoadAnyFormat(syn.next()),
-                    overlay = imgLoadAnyFormat(syn.next());
+    ImgC4UC     base = loadImage(syn.next()),
+                    overlay = loadImage(syn.next());
     if (base.dims() != overlay.dims())
         syn.error("The images must have identical pixel dimensions");
-    imgSaveAnyFormat(syn.next(),fgComposite(overlay,base));
+    saveImage(syn.next(),fgComposite(overlay,base));
 }
 
 void
@@ -59,8 +59,8 @@ convert(CLArgs const & args)
         "    <ext>      - " + imgFileExtensionsDescription()
         );
     ImgC4UC     img;
-    imgLoadAnyFormat(syntax.next(),img);
-    imgSaveAnyFormat(syntax.next(),img);
+    loadImage(syntax.next(),img);
+    saveImage(syntax.next(),img);
 }
 
 void
@@ -71,9 +71,9 @@ shrink2(CLArgs const & args)
         "    <ext>      - " + imgFileExtensionsDescription()
         );
     ImgC4UC     img;
-    imgLoadAnyFormat(syntax.next(),img);
+    loadImage(syntax.next(),img);
     img = imgShrink2(img);
-    imgSaveAnyFormat(syntax.next(),img);
+    saveImage(syntax.next(),img);
 }
 
 void

@@ -17,23 +17,39 @@ using namespace std;
 
 namespace Fg {
 
+static bool
+isDigit(char c)
+{return ((c >= '0') && (c <= '9')); }
+
+static bool
+isLetter(char c)
+{return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'))); }
+
+static bool
+isDigitLetterDashUnderscore(char c)
+{return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
+
+static bool
+isWhitespaceOrInvalid(char c)
+{return ((c < 0x21) || (c > 0x7E)); }
+
 Strings
-fgTokenize(string const & str)
+tokenize(string const & str)
 {
     Strings      ret;
     string      acc;
     for (char c : str) {
-        if (fgIsWhitespaceOrInvalid(c)) {
+        if (isWhitespaceOrInvalid(c)) {
             if (!acc.empty()) {
                 ret.push_back(acc);
                 acc.clear();
             }
         }
-        else if (fgIsDigitLetterDashUnderscore(c)) {
+        else if (isDigitLetterDashUnderscore(c)) {
             if (acc.empty())
                 acc.push_back(c);
             else {
-                if (fgIsDigitLetterDashUnderscore(acc.back()))
+                if (isDigitLetterDashUnderscore(acc.back()))
                     acc.push_back(c);
                 else {
                     ret.push_back(acc);
@@ -91,7 +107,7 @@ splitLines(const u32string & src,bool incEmpty)
 }
 
 Ustrings
-fgSplitLinesUtf8(string const & utf8,bool includeEmptyLines)
+splitLinesUtf8(string const & utf8,bool includeEmptyLines)
 {
     Ustrings               ret;
     String32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
@@ -179,7 +195,7 @@ csvGetLine(
 }
 
 Stringss
-fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
+loadCsv(Ustring const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
     u32string       data = toUtf32(loadRawString(fname));
@@ -233,7 +249,7 @@ csvField(string const & data)
 }
 
 void
-fgSaveCsv(Ustring const & fname,const Stringss & csvLines)
+saveCsv(Ustring const & fname,const Stringss & csvLines)
 {
     Ofstream      ofs(fname);
     for (Strings line : csvLines) {
@@ -268,7 +284,7 @@ splitChar(string const & str,char ch,bool ie)
 }
 
 Strings
-fgWhiteBreak(string const & str)
+splitWhitespace(string const & str)
 {
     Strings  retval;
     bool            symbolFlag = false,
@@ -320,7 +336,7 @@ void
 fgTestmLoadCsv(CLArgs const & args)
 {
     Syntax        syntax(args,"<file>.csv");
-    Stringss         data = fgLoadCsv(syntax.next());
+    Stringss         data = loadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
         Strings const &  fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
@@ -331,7 +347,7 @@ fgTestmLoadCsv(CLArgs const & args)
 }
 
 string
-fgAsciify(string const & in)
+asciify(string const & in)
 {
     string          ret;
     map<char32_t,char>  hg;     // homoglyph map

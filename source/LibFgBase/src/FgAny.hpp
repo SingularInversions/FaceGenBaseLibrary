@@ -71,7 +71,7 @@ public:
     }
 
     template<class T>
-    const T &
+    T const &
     as() const
     {
         const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(asShared().get());
@@ -103,7 +103,7 @@ public:
 
     // Implicit conversion is very useful here, for example 'Any x = 5;' or argument passing:
     template<class T>
-    Any(const T & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
+    Any(T const & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
 
     Any(const Any & rhs) : objPtr(rhs.objPtr) {}
 
@@ -120,7 +120,7 @@ public:
 
     template<class T>
     void
-    operator=(const T & val)
+    operator=(T const & val)
     {objPtr = std::make_shared<AnyPoly<T> >(val); }
 
     void
@@ -138,7 +138,7 @@ public:
     }
 
     template<class T>
-    const T &
+    T const &
     as() const
     {
         if (!objPtr)
@@ -151,7 +151,7 @@ public:
 
     // Follows the idiom of returning a null pointer if the type differs:
     template<class T>
-    const T *
+    T const *
     asp() const
     {
         if (!objPtr)

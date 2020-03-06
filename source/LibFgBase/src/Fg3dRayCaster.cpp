@@ -104,8 +104,8 @@ Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) con
 }
 
 Fg3dRayCaster::Fg3dRayCaster(
-    const Meshes &          meshes,
-    const Vec3Fss &            vertss,
+    Meshes const &          meshes,
+    Vec3Fss const &            vertss,
     const Normalss &        normss,
     const Lighting &          lighting,
     AffineEw2F                itcsToIucs,

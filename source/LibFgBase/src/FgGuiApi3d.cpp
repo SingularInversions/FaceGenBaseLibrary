@@ -193,7 +193,7 @@ Gui3d::markVertex(
             Mesh &              meshIn = *origMeshPtr;
             Surf const &     surf = meshIn.surfaces[pt.surfIdx];
             uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
-            uint                    vertIdx = fgTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
+            uint                    vertIdx = cTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
             if (vertMarkMode == 0) {
                 if (!contains(meshIn.markedVerts,vertIdx))
@@ -209,7 +209,7 @@ Gui3d::markVertex(
                     Surf         tmpSurf;
                     tmpSurf.tris.posInds = tris;
                     vector<FgBool>      done(meshIn.verts.size(),false);
-                    seam = topo.traceFold(cNormals(fgSvec(tmpSurf),meshIn.verts),done,vertIdx);
+                    seam = topo.traceFold(cNormals(svec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
                 for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
                     if (!contains(meshIn.markedVerts,*it))
@@ -231,7 +231,7 @@ Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
         Mesh const &        mesh = rm.origMeshN.cref();
         Surf const &     surf = mesh.surfaces[pt.surfIdx];
         lastCtlClick.meshIdx = pt.meshIdx;
-        lastCtlClick.vertIdx = fgTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[mi];
+        lastCtlClick.vertIdx = cTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[mi];
         lastCtlClick.valid = true;
     }
     else
@@ -257,7 +257,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
                                     // Normalize vector for valid addition of delta:
                                     vertPos1d3ps = vertPos0d3ps / vertPos0d3ps[3] + delD3ps,
                                     // We don't expect worldToD3ps to be singular:
-                                    vertPos1HcsH = fgSolve(worldToD3ps,vertPos1d3ps).val();
+                                    vertPos1HcsH = solveLinear(worldToD3ps,vertPos1d3ps).val();
         Vec3F                    vertPos1Hcs = vertPos1HcsH.subMatrix<3,1>(0,0) / vertPos1HcsH[3],
                                     delHcs = vertPos1Hcs - vertPos0Hcs;
         ctlDragAction(left,lastCtlClick,delHcs);

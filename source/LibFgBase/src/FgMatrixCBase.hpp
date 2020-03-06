@@ -128,7 +128,7 @@ struct  Mat
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
-    const T &
+    T const &
     rc(size_t row,size_t col) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
@@ -141,7 +141,7 @@ struct  Mat
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m[row*ncols+col];
     }
-    const T &
+    T const &
     cr(size_t col,size_t row) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
@@ -153,7 +153,7 @@ struct  Mat
         FGASSERT_FAST(xx < nrows*ncols);
         return m[xx];
     }
-    const T &
+    T const &
     operator[](size_t xx) const
     {
         FGASSERT_FAST(xx < nrows*ncols);
@@ -165,13 +165,13 @@ struct  Mat
         FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
         return m[crd.m[1]*ncols+crd.m[0]];
     }
-    const T &
+    T const &
     operator[](Mat<uint,2,1> crd) const
     {
         FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
         return m[crd.m[1]*ncols+crd.m[0]];
     }
-    const T *
+    T const *
     data() const
     {return m.data(); }
 
@@ -371,8 +371,8 @@ struct  Mat
     // 2. Accidental interpretation of '0' value as a pointer (run-time error)
     struct  FromPtr
     {
-        FromPtr(const T * p) : _p(p) {}
-        const T * _p;
+        FromPtr(T const * p) : _p(p) {}
+        T const * _p;
     };
     explicit
     Mat(FromPtr p)
@@ -382,7 +382,7 @@ struct  Mat
     }
     static
     Mat
-    fromPtr(const T * p)
+    fromPtr(T const * p)
     {return Mat(FromPtr(p)); }
 
     T
@@ -440,37 +440,25 @@ struct  Traits<Mat<T,nrows,ncols> >
     typedef Mat<typename Traits<T>::Floating,nrows,ncols>       Floating;
 };
 
-typedef Mat<float,2,2>          Mat22F;
-typedef Mat<double,2,2>         Mat22D;
-typedef Mat<int,2,2>            Mat22I;
-typedef Mat<uint,2,2>           Mat22UI;
-typedef Mat<float,3,3>          Mat33F;
-typedef Mat<double,3,3>         Mat33D;
-typedef Mat<float,4,4>          Mat44F;
-typedef Mat<double,4,4>         Mat44D;
-
-typedef Mat<float,2,3>          Mat23F;
-typedef Mat<double,2,3>         Mat23D;
-typedef Mat<float,3,2>          Mat32F;
-typedef Mat<double,3,2>         Mat32D;
-typedef Mat<int,3,2>            Mat32I;
-typedef Mat<uint,3,2>           Mat32UI;
-typedef Mat<double,3,4>         Mat34D;
-
 typedef Mat<float,2,1>          Vec2F;
 typedef Mat<double,2,1>         Vec2D;
 typedef Mat<short,2,1>          Vec2S;
 typedef Mat<int,2,1>            Vec2I;
 typedef Mat<uint,2,1>           Vec2UI;
+typedef Mat<size_t,2,1>         Vec2SZ;
 typedef Mat<bool,2,1>           Vec2B;
+
 typedef Mat<float,3,1>          Vec3F;
 typedef Mat<double,3,1>         Vec3D;
-typedef Mat<short,3,1>          Vec3S;
-typedef Mat<int,3,1>            Vec3I;
-typedef Mat<uint,3,1>           Vec3UI;
-typedef Mat<int16,3,1>          Vec3I16;
 typedef Mat<schar,3,1>          Vec3SC;
 typedef Mat<uchar,3,1>          Vec3UC;
+typedef Mat<int16,3,1>          Vec3S;
+typedef Mat<int,3,1>            Vec3I;
+typedef Mat<uint,3,1>           Vec3UI;
+typedef Mat<size_t,3,1>         Vec3SZ;
+typedef Mat<int64,3,1>          Vec3L;
+typedef Mat<uint64,3,1>         Vec3UL;
+
 typedef Mat<float,4,1>          Vec4F;
 typedef Mat<double,4,1>         Vec4D;
 typedef Mat<int,4,1>            Vec4I;
@@ -495,6 +483,25 @@ typedef Svec<Vec3Fs>            Vec3Fss;
 typedef Svec<Vec3Ds>            Vec3Dss;
 typedef Svec<Vec4UIs>           Vec4UIss;
 
+typedef Mat<float,2,2>          Mat22F;
+typedef Mat<double,2,2>         Mat22D;
+typedef Mat<int,2,2>            Mat22I;
+typedef Mat<uint,2,2>           Mat22UI;
+typedef Mat<float,3,3>          Mat33F;
+typedef Mat<double,3,3>         Mat33D;
+typedef Mat<float,4,4>          Mat44F;
+typedef Mat<double,4,4>         Mat44D;
+
+typedef Mat<float,2,3>          Mat23F;
+typedef Mat<double,2,3>         Mat23D;
+typedef Mat<float,3,2>          Mat32F;
+typedef Mat<double,3,2>         Mat32D;
+typedef Mat<int,3,2>            Mat32I;
+typedef Mat<size_t,3,2>         Mat32SZ;
+typedef Mat<int64,3,2>          Mat32L;
+typedef Mat<uint,3,2>           Mat32UI;
+typedef Mat<double,3,4>         Mat34D;
+
 template<typename To,typename From,uint nrows,uint ncols>
 inline
 Mat<To,nrows,ncols>
@@ -508,17 +515,28 @@ scast(Svec<Mat<From,nrows,ncols> > const & vm)
 {
     Svec<Mat<To,nrows,ncols> >      ret;
     ret.reserve(vm.size());
-    for (auto it=vm.cbegin(); it!=vm.cend(); ++it)
-        ret.push_back(scast<To>(*it));
+    for (auto const & m : vm)
+        ret.push_back(scast<To,From,nrows,ncols>(m));
+    return ret;
+}
+
+template<typename To,typename From,uint nrows,uint ncols>
+inline
+Svec<Svec<Mat<To,nrows,ncols> > >
+scast(Svec<Svec<Mat<From,nrows,ncols> > > const & vvm)
+{
+    Svec<Svec<Mat<To,nrows,ncols> > >   ret;
+    ret.reserve(vvm.size());
+    for (auto const & vm : vvm)
+        ret.push_back(scast<To,From,nrows,ncols>(vm));
     return ret;
 }
 
 template <class T,uint nrows,uint ncols>
 std::ostream &
-operator<<(std::ostream& ss,const Mat<T,nrows,ncols> & mm)
+operator<<(std::ostream& ss,Mat<T,nrows,ncols> const & mm)
 {
-    FGASSERT(mm.numRows()*mm.numCols()>0);
-    bool        isVec((mm.numRows() == 1) || mm.numCols() == 1);
+    bool        isVec = ((mm.numRows() == 1) || mm.numCols() == 1);
     std::ios::fmtflags
         oldFlag = ss.setf(
             std::ios::fixed |
@@ -558,7 +576,7 @@ fgReadp(std::istream & is,Mat<T,nrows,ncols> & m)
 
 template<class T,uint nrows,uint ncols>
 void
-fgWritep(std::ostream & os,const Mat<T,nrows,ncols> & m)
+fgWritep(std::ostream & os,Mat<T,nrows,ncols> const & m)
 {
     for (uint ii=0; ii<nrows*ncols; ++ii)
         fgWritep(os,m[ii]);
@@ -578,7 +596,7 @@ cMat(T * const ptr)
 
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-cMat(const Svec<T> & v)
+cMat(Svec<T> const & v)
 {
     Mat<T,nrows,ncols>    ret;
     FGASSERT(v.size() == nrows*ncols);
@@ -589,7 +607,7 @@ cMat(const Svec<T> & v)
 
 template<class T,uint nrows,uint ncols>
 Mat<int,nrows,ncols>
-fgToInt(const Mat<T,nrows,ncols> & m)
+fgToInt(Mat<T,nrows,ncols> const & m)
 {return Mat<int,nrows,ncols>(m); }
 
 }

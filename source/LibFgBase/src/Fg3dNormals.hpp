@@ -16,6 +16,9 @@
 
 namespace Fg {
 
+Vec3Ds
+cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
+
 struct  FacetNormals
 {
     Vec3Fs               tri;        // Tri facet normals for a surface

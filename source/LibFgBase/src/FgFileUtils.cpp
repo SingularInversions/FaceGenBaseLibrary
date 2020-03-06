@@ -13,7 +13,7 @@ using namespace std;
 namespace Fg {
 
 bool
-fgUpdateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func)
+updateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func)
 {
     if (fileNewer(ins,outs)) {
         fgout.logFile(toStr(num)+"_log.txt",false,false);

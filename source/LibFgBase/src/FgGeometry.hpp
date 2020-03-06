@@ -12,23 +12,27 @@
 
 namespace Fg {
 
+template<typename T>
 struct  VecMag
 {
-    Vec3D       vec;
-    double      mag;    // Squared magnitude of vec. Initialized to invalid.
+    Mat<T,3,1>  vec;
+    T           mag;    // Squared magnitude of vec. Initialized to invalid.
 
-    VecMag() : mag(std::numeric_limits<double>::max()) {}
+    VecMag() : mag {std::numeric_limits<T>::max()} {}
+    explicit VecMag(Mat<T,3,1> v) : vec(v), mag(cMag(v)) {}
 
     bool valid() const
-    {return (mag != std::numeric_limits<double>::max()); }
+    {return (mag != std::numeric_limits<T>::max()); }
 };
+typedef VecMag<float>   VecMagF;
+typedef VecMag<double>  VecMagD;
 
 // Returns closest point in given line segment from origin:
-VecMag
+VecMagD
 closestPointInSegment(Vec3D p0,Vec3D p1);
 
 // Returns delta from point to tri:
-VecMag
+VecMagD
 closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
 
 // Returns the barycentric coord of point relative to triangle.

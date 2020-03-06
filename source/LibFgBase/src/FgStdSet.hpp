@@ -39,7 +39,7 @@ fgVecToSet(const std::vector<T> & v)
 template<class T,class Lt>
 inline
 bool
-contains(const std::set<T,Lt> & s,const T & v)
+contains(const std::set<T,Lt> & s,T const & v)
 {return (s.find(v) != s.end()); }
 
 // Returns true if the intersect of s0 and s1 is non-empty. Loop is through s1 so prefer s0 for the larger set.
@@ -91,7 +91,7 @@ std::set<T>
 fgIntersection(const std::set<T> & s0,const std::set<T> & s1)
 {
     std::set<T>         ret;
-    for (const T & s : s1)
+    for (T const & s : s1)
         if (contains(s0,s))
             ret.insert(s);
     return ret;
@@ -111,7 +111,7 @@ std::set<T>
 operator-(const std::set<T> & lhs,const std::set<T> & rhs)
 {
     std::set<T>         ret;
-    for (const T & l : lhs)
+    for (T const & l : lhs)
         if (!contains(rhs,l))
             ret.insert(l);
     return ret;
@@ -131,14 +131,14 @@ operator+=(std::set<T> & l,const std::vector<T> & r)
 // In case you prefer arithmetic notation for all:
 template<class T>
 void
-operator+=(std::set<T> & l,const T & r)
+operator+=(std::set<T> & l,T const & r)
 {l.insert(r); }
 
 template<class T>
 void
 operator-=(std::set<T> & lhs,const std::set<T> & rhs)
 {
-    for (const T & r : rhs) {
+    for (T const & r : rhs) {
         auto it = lhs.find(r);
         if (it != lhs.end())
             lhs.erase(it);
@@ -147,7 +147,7 @@ operator-=(std::set<T> & lhs,const std::set<T> & rhs)
 
 template<class T>
 void
-operator-=(std::set<T> & lhs,const T & rhs)
+operator-=(std::set<T> & lhs,T const & rhs)
 {
     auto it = lhs.find(rhs);
     if (it != lhs.end())
@@ -158,7 +158,7 @@ template<class T>
 void
 operator-=(std::set<T> & lhs,const std::vector<T> & rhs)
 {
-    for (const T & r : rhs) {
+    for (T const & r : rhs) {
         auto it = lhs.find(r);
         if (it != lhs.end())
             lhs.erase(it);
@@ -167,7 +167,7 @@ operator-=(std::set<T> & lhs,const std::vector<T> & rhs)
 
 template<class T>
 std::set<T>
-fgInsert(const std::set<T> & s,const T & v)
+fgInsert(const std::set<T> & s,T const & v)
 {
     std::set<T>         ret = s;
     ret.insert(v);
@@ -176,7 +176,7 @@ fgInsert(const std::set<T> & s,const T & v)
 
 template<class T>
 bool
-contains(const std::unordered_set<T> & s,const T & v)
+contains(const std::unordered_set<T> & s,T const & v)
 {
     return (s.find(v) != s.end());
 }

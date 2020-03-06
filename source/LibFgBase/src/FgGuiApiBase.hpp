@@ -63,7 +63,7 @@ typedef Svec<GuiPtrs>               GuiPtrss;
 
 template<class T>
 std::shared_ptr<GuiBase>
-guiMakePtr(const T & stackVal)
+guiMakePtr(T const & stackVal)
 {return std::make_shared<T>(stackVal); }
 
 struct  GuiEvent

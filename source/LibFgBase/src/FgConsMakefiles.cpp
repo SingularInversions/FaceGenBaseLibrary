@@ -225,7 +225,7 @@ consMakefileOsArch(
 {
     string          debrel = debug ? "debug" : "release",
                     osStr = (os == BuildOS::linux) ? "linux" : toStr(os),
-                    makefile = cat(fgSvec<string>("Makefile",osStr,toStr(arch),toStr(compiler),debrel),"_"),
+                    makefile = cat(svec<string>("Makefile",osStr,toStr(arch),toStr(compiler),debrel),"_"),
                     cc,
                     cxx,
                     link,

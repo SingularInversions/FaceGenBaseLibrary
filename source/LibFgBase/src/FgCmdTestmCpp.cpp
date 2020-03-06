@@ -23,6 +23,8 @@ using namespace std;
 
 namespace Fg {
 
+namespace {
+
 static size_t rvoCount;
 
 struct  FgTestmRvo
@@ -199,7 +201,7 @@ parr(CLArgs const &)
     Doubless         pins(A),
                     pouts(A);
     for (Doubles & pin : pins)
-        pin = generate<double>(randNormal,N);
+        pin = generate<double>(N,randNormal);
     for (Doubles & pout : pouts)
         pout.resize(N,0);
     Doubles          sins,
@@ -224,7 +226,7 @@ parr(CLArgs const &)
     }
     size_t          time = tm.readMs();
     double          val = 0;
-    for (const Doubles & outs : pouts)
+    for (Doubles const & outs : pouts)
         val += cSum(outs);
     fgout << fgnl << "Paral arrays in, paral arrays out: " << time << "ms. (" << val << ")";
 
@@ -254,7 +256,7 @@ parr(CLArgs const &)
     // disassembler (on Goldbolt using just 4 vals and a single mult) and the multiply, add, store
     // operands were identical ...
     for (Doubles & pout : pouts)
-        fgFill(pout,0.0);
+        cFill(pout,0.0);
     tm.start();
     for (size_t rr=0; rr<100; ++rr) {
         for (size_t ii=0; ii<N; ++ii) {
@@ -273,24 +275,24 @@ parr(CLArgs const &)
     }
     time = tm.readMs();
     val = 0;
-    for (const Doubles & outs : pouts)
+    for (Doubles const & outs : pouts)
         val += cSum(outs);
     fgout << fgnl << "Packed array in, paral arrays out: " << time << "ms. (" << val << ")";
-
-
+}
 
 }
 
 void
 fgCmdTestmCpp(CLArgs const & args)
 {
-    Cmds   cmds;
-    cmds.push_back(Cmd(any,"any","Test boost any copy semantics"));
-    cmds.push_back(Cmd(fgexp,"fgexp","Test and mesaure speed of interal optimized exp"));
-    cmds.push_back(Cmd(thash,"hash","Test std::hash behaviour"));
-    cmds.push_back(Cmd(parr,"parr","Test speedup of switching from parallel to packed arrays"));
-    cmds.push_back(Cmd(rvo,"rvo","Return value optimization / copy elision"));
-    cmds.push_back(Cmd(speedExp,"exp","Measure the speed of library exp(double)"));
+    Cmds        cmds {
+        {any,"any","Test boost any copy semantics"},
+        {fgexp,"fgexp","Test and mesaure speed of interal optimized exp"},
+        {thash,"hash","Test std::hash behaviour"},
+        {parr,"parr","Test speedup of switching from parallel to packed arrays"},
+        {rvo,"rvo","Return value optimization / copy elision"},
+        {speedExp,"exp","Measure the speed of library exp(double)"},
+    };
     doMenu(args,cmds);
 }
 

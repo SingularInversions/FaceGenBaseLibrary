@@ -40,7 +40,7 @@ saveFgmesh(Ustring const & fname,Mesh const & mesh)
 }
 
 void
-saveFgmesh(Ustring const & fname,const Meshes & meshes)
+saveFgmesh(Ustring const & fname,Meshes const & meshes)
 {saveFgmesh(fname,mergeMeshes(meshes)); }
 
 void
@@ -48,7 +48,7 @@ fgSaveFgmeshTest(CLArgs const & args)
 {
     FGTESTDIR;
     saveFgmesh("Mouth.tri",loadTri(dataDir()+"base/Mouth.tri"));
-    meshView(loadFgmesh("Mouth.tri"));
+    viewMesh(loadFgmesh("Mouth.tri"));
 }
 
 }

@@ -10,28 +10,8 @@
 
 namespace Fg {
 
-bool
-fgIs64bit()
-{
-#ifdef FG_64
-    return true;
-#else
-    return false;
-#endif
-}
-
-bool
-fgIsDebug()
-{
-#ifdef _DEBUG
-    return true;
-#else
-    return false;
-#endif
-}
-
 std::string
-fgBitsString()
+bitsString()
 {
 #ifdef FG_64
     return "64";

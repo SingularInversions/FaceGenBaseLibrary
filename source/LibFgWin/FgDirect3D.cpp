@@ -403,7 +403,7 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
     for (Surf const & origSurf : origMesh.surfaces) {
         for (SurfPoint const & sp : origSurf.surfPoints) {
             Vert                v;
-            v.pos = fgSurfPointPos(sp,origSurf.tris,origSurf.quads,rendVerts);
+            v.pos = cSurfPointPos(sp,origSurf.tris,origSurf.quads,rendVerts);
             v.norm = Vec3F(0,0,1);   // Random non-zero value can be normalized by shader
             v.uv = Vec2F(0);
             verts.push_back(v);
@@ -613,7 +613,7 @@ WinPtr<ID3D11Buffer>
 D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
 {
     Light             diffuseBlack(Vec3F(0),Vec3F(0,0,1));
-    Lighting          lighting(ambient,fgSvec(diffuseBlack,diffuseBlack));
+    Lighting          lighting(ambient,svec(diffuseBlack,diffuseBlack));
     return makeScene(lighting,worldToD3vs,d3vsToD3ps);
 }
 

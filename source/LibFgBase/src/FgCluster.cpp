@@ -109,7 +109,7 @@ static
 void
 testCoordinator(const FgClustDispatcher * dispatcher)
 {
-    Doubles              vals = fgSvec(3.14,2.72,1.41);
+    Doubles              vals = svec(3.14,2.72,1.41);
     string              msg = fgSerialize(vals);
     size_t              sz = dispatcher->numMachines();
     Strings              msgsOut(sz,msg),
@@ -129,7 +129,7 @@ void
 fgClusterTest(CLArgs const &)
 {
     std::thread       worker(fgClustWorker,testWorkerFunc,fgClusterPortDefault());
-    shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(fgSvec<string>("127.0.0.1"),fgClusterPortDefault());
+    shared_ptr<FgClustDispatcher>   dispatcher = fgClustDispatcher(svec<string>("127.0.0.1"),fgClusterPortDefault());
     testCoordinator(dispatcher.get());      // Local host loop-back IP for testing
 }
 

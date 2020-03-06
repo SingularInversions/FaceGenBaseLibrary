@@ -41,8 +41,8 @@ static bool saveMayaAsciiFile(
         Ustring const                    &fname,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
-        const vector<string>            *morphNames,
-        const vector<string>            *cmts);
+        Strings const            *morphNames,
+        Strings const            *cmts);
 static void buildEdgeList(
         const vector<Vec3UI>    &triList,
         const vector<Vec4UI>    &quadList,
@@ -141,25 +141,25 @@ static void writeObjects(
         ofstream                        &ofs,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
-        const vector<string>            *morphNames,
+        Strings const            *morphNames,
         vector<int>                     &edgeSizeList);
 static int writeShadingMaterialPhong(
         ofstream                        &ofs,
         const FffMultiObjectC           &model,
-        const vector<string>            *morphNames);
+        Strings const            *morphNames);
 static void writeBlendShapes(
         ofstream                        &ofs, 
         const FffMultiObjectC           &model,
-        const vector<string>            *morphNames);
+        Strings const            *morphNames);
 static void writePolySoftEdge(
         ofstream                        &ofs, 
         const FffMultiObjectC           &model,
-        const vector<string>            *morphNames,
+        Strings const            *morphNames,
         const vector<int>               &edgeSizeList);
 static void connectAttributes(
         ofstream                        &ofs,
         const FffMultiObjectC           &model,
-        const vector<string>            *morphNames);
+        Strings const            *morphNames);
 
 
 //****************************************************************************
@@ -169,7 +169,7 @@ static bool    fffSaveMayaAsciiFile(
 
     Ustring const            &fname,
     const FffMultiObjectC   &model,
-    const vector<string>    *cmts)
+    Strings const    *cmts)
 {
     return saveMayaAsciiFile(fname,model,0,0,cmts);
 }
@@ -179,8 +179,8 @@ static bool    fffSaveMayaAsciiFile(
     Ustring const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,
-    const vector<string>            &morphNames,
-    const vector<string>            *cmts)
+    Strings const            &morphNames,
+    Strings const            *cmts)
 {
     return saveMayaAsciiFile(fname,model,
                              &morphTargets,&morphNames,cmts);
@@ -194,8 +194,8 @@ static bool saveMayaAsciiFile(
     Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
-    const vector<string>            *morphNames,
-    const vector<string>            *cmts)
+    Strings const            *morphNames,
+    Strings const            *cmts)
 {
     unsigned long totalNumTargets=0;
     if (morphTargets && morphNames)
@@ -1017,7 +1017,7 @@ static void writeObjects(
     ofstream                        &ofs,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
-    const vector<string>            *morphNames,
+    Strings const            *morphNames,
     vector<int>                     &edgeSizeList)
 {
     // Number of morph targets
@@ -1194,7 +1194,7 @@ static int writeShadingMaterialPhong(
 
     ofstream                    &ofs,
     const FffMultiObjectC       &model,
-    const vector<string>        *morphNames)
+    Strings const        *morphNames)
 {
     size_t  numObjWithTextureFile = 0;
     size_t  totalNumTargets = 0;
@@ -1261,7 +1261,7 @@ static void writeBlendShapes(
 
     ofstream                    &ofs, 
     const FffMultiObjectC       &model,
-    const vector<string>        *morphNames)
+    Strings const        *morphNames)
 {
     size_t      totalNumMorphs = 0;
     if (morphNames)
@@ -1368,7 +1368,7 @@ static void writePolySoftEdge(
 
     ofstream                    &ofs, 
     const FffMultiObjectC       &model,
-    const vector<string>        *morphNames,
+    Strings const        *morphNames,
     const vector<int>           &edgeSizeList)
 {
     size_t      totalNumMorphs = 0;
@@ -1412,7 +1412,7 @@ static void connectAttributes(
 
     ofstream                        &ofs,
     const FffMultiObjectC           &model,
-    const vector<string>            *morphNames)
+    Strings const            *morphNames)
 {
     //
     // First make the attribute connections for the shading engine groups 
@@ -1971,7 +1971,7 @@ static void connectAttributes(
 }
 
 FgMeshLegacy
-fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & imgFormat,uint maxLen)
+fgMeshLegacy(Meshes const & meshes,Ustring const & fname,string const & imgFormat,uint maxLen)
 {
     FgMeshLegacy                    ret;
     Path                          path(fname);
@@ -1998,7 +1998,7 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
                         if (baseName.size() > maxLen)
                             baseName.resize(maxLen);
                     texBase = baseName + toStr(imgIdx++) + "." + imgFormat;
-                    imgSaveAnyFormat(path.dir()+texBase,*surf.material.albedoMap);
+                    saveImage(path.dir()+texBase,*surf.material.albedoMap);
                 }
                 od.triList = surf.tris.posInds;
                 od.quadList = surf.quads.posInds;
@@ -2029,11 +2029,11 @@ fgMeshLegacy(const vector<Mesh> & meshes,Ustring const & fname,string const & im
 void
 saveMa(
     Ustring const &        fname,
-    const vector<Mesh> & meshes,
+    Meshes const & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
-    vector<string>          cmnts;
+    Strings          cmnts;
     if (leg.morphs.empty())
         fffSaveMayaAsciiFile(fname,leg.base,&cmnts);
     else
@@ -2047,10 +2047,10 @@ fgSaveMaTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveMa("meshExportMa",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveMa("meshExportMa",svec(mouth,glasses));
     regressFileRel("meshExportMa.ma","base/test/");
     regressFileRel("meshExportMa0.png","base/test/");
     regressFileRel("meshExportMa1.png","base/test/");

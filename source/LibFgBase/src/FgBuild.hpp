@@ -18,7 +18,7 @@ typedef Svec<BuildOS>      BuildOSs;
 
 std::ostream & operator<<(std::ostream &,BuildOS);
 
-BuildOS strToBuildOS(String const &);
+BuildOS         strToBuildOS(String const &);
 
 // Supported native-build OS families (ie. not cross-compiled):
 inline BuildOSs
@@ -30,8 +30,7 @@ inline BuildOSs
 getCrossBuildOSs()
 {return {BuildOS::ios,BuildOS::android}; }
 
-BuildOS
-getCurrentBuildOS();
+BuildOS         getCurrentBuildOS();
 
 // Instruction set architectures:
 enum struct Arch { x86, x64, armv7, arm64, arm64e };
@@ -39,8 +38,7 @@ typedef Svec<Arch>     Archs;
 std::ostream & operator<<(std::ostream &,Arch);
 Arch strToArch(String const &);
 
-Archs
-getBuildArchs(BuildOS os);
+Archs           getBuildArchs(BuildOS os);
 
 // Supported compilers (based on platform):
 enum struct Compiler { vs15, vs17, vs19, gcc, clang, icpc };
@@ -53,14 +51,14 @@ Compiler strToCompiler(String const &);
 Compilers
 getBuildCompilers(BuildOS os);
 
-Compiler
-getCurrentCompiler();
+Compilers       getBuildCompilers();                // For current Build OS (starting with default)
+Compiler        getCurrentCompiler();
+String          getCurrentBuildConfig();
+String          getCurrentBuildDescription();
 
-String
-getCurrentBuildConfig();
-
-String
-getCurrentBuildDescription();
+// The primary configuration is used in development for testing exact equality on tests with floating
+// point results that can vary on different configs. It is currently win/x64/vs19/release:
+bool            isPrimaryConfig();
 
 inline
 String

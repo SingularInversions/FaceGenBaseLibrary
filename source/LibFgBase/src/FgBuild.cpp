@@ -108,15 +108,15 @@ Archs
 getBuildArchs(BuildOS os)
 {
     if ((os == BuildOS::win) || (os == BuildOS::linux))
-        return fgSvec(Arch::x86,Arch::x64);
+        return svec(Arch::x86,Arch::x64);
     else if (os == BuildOS::macos)
-        return fgSvec(Arch::x64);
+        return svec(Arch::x64);
     else if (os == BuildOS::ios)
         // These are the iOS standard architectures (plus simulator) as of 2019.
         // They support iPhone 5s (not 5,5c) and later.
-        return fgSvec(Arch::x64,Arch::armv7,Arch::arm64,Arch::arm64e);
+        return svec(Arch::x64,Arch::armv7,Arch::arm64,Arch::arm64e);
     else if (os == BuildOS::android)
-        return fgSvec(Arch::x86,Arch::x64,Arch::armv7,Arch::arm64);
+        return svec(Arch::x86,Arch::x64,Arch::armv7,Arch::arm64);
     else
         fgThrow("fgBuildArchitecture unhandled OS",int(os));
     FG_UNREACHABLE_RETURN(Archs());
@@ -160,18 +160,22 @@ Compilers
 getBuildCompilers(BuildOS os)
 {
     if (os == BuildOS::win)
-        return fgSvec(Compiler::vs19,Compiler::vs17,Compiler::vs15);
+        return {Compiler::vs19,Compiler::vs17,Compiler::vs15};
     else if (os == BuildOS::linux)
-        return fgSvec(Compiler::clang,Compiler::gcc,Compiler::icpc);
+        return {Compiler::clang,Compiler::gcc,Compiler::icpc};
     else if (os == BuildOS::macos)
-        return fgSvec(Compiler::clang);
+        return {Compiler::clang};
     else if (os == BuildOS::ios)
-        return fgSvec(Compiler::clang);
+        return {Compiler::clang};
     else if (os == BuildOS::android)
-        return fgSvec(Compiler::clang);
+        return {Compiler::clang};
     fgThrow("getBuildCompilers unhandled OS",int(os));
     FG_UNREACHABLE_RETURN(Compilers());
 }
+
+Compilers
+getBuildCompilers()
+{return getBuildCompilers(getCurrentBuildOS()); }
 
 Compiler
 getCurrentCompiler()
@@ -213,8 +217,12 @@ getCurrentBuildDescription()
     return 
         toStr(getCurrentBuildOS()) + " " +
         toStr(getCurrentCompiler()) + " " +
-        fgBitsString() + " " + getCurrentBuildConfig();
+        bitsString() + " " + getCurrentBuildConfig();
 }
+
+bool
+isPrimaryConfig()
+{return (is64Bit() && isRelease() && (getCurrentCompiler() == getBuildCompilers()[0])); }
 
 string
 getRelBin(BuildOS os,Arch arch,Compiler comp,bool release,bool backslash)

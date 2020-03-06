@@ -69,7 +69,7 @@ sampleRecurse(
             acc += 
                 sampleRecurse(
                     sample,
-                    fgJoinHoriz(lc2,lc2+del),
+                    catHoriz(lc2,lc2+del),
                     vals.subMatrix<2,2>(coord[1],coord[0]), // Matrices are (row,col) not (x,y)
                     maxDiff*2.0f);
         }

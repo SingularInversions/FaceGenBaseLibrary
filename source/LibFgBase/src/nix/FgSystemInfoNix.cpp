@@ -15,7 +15,7 @@ namespace Fg {
 
 bool
 fg64bitOS()     // Nix is simple, OS bits = build bits:
-{return fgIs64bit(); }
+{return is64Bit(); }
 
 string
 osDescription()

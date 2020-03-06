@@ -20,10 +20,10 @@ using namespace std;
 namespace Fg {
 
 static
-vector<string>
+Strings
 glob(string const & dir)
 {
-    vector<string>      ret;
+    Strings      ret;
     DirectoryContents dc = directoryContents(dir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         string      fn = dc.filenames[ii].as_utf8_string();
@@ -139,7 +139,7 @@ ConsSolution::getIncludes(string const & projName,bool fileDir) const
         else
             ret.push_back(p.baseDir+id.relPath);
     }
-    return fgReverse(ret);      // Includes need to be search from most proximal to least
+    return cReverse(ret);      // Includes need to be search from most proximal to least
 }
 
 // Topological sort of transitive defines:
@@ -201,7 +201,7 @@ ConsSolution::getLnkDeps(string const & projName) const
     set<string>         done;
     for (const ProjDep & pd : p.projDeps)
         cat_(ret,getTransitiveLnkDeps(pd.name,done));
-    return fgReverse(ret);
+    return cReverse(ret);
 }
 
 Strings

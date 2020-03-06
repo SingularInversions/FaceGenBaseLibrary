@@ -13,7 +13,7 @@
 #include "Fg3dMeshOps.hpp"
 #include "FgSyntax.hpp"
 #include "FgImgDisplay.hpp"
-#include "FgDraw.hpp"
+#include "FgImageDraw.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgBuild.hpp"
 
@@ -23,7 +23,7 @@ namespace Fg {
 
 static
 void
-viewMesh(CLArgs const & args)
+cmdViewMesh(CLArgs const & args)
 {
     Syntax            syn(args,
         "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]])+\n"
@@ -49,7 +49,7 @@ viewMesh(CLArgs const & args)
     Meshes           meshes;
     while (syn.more()) {
         Path            path(syn.next());
-        Mesh            mesh = meshLoadAnyFormat(path.str());
+        Mesh            mesh = loadMesh(path.str());
         mesh.name = path.base;
         if (removeUnused) {
             size_t          origVerts = mesh.verts.size();
@@ -62,17 +62,17 @@ viewMesh(CLArgs const & args)
             if (mesh.uvs.empty())
                 fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, texture image "
                     << syn.peekNext() << " will not be seen.";
-            ImgC4UC         albedo = imgLoadAnyFormat(syn.next());
+            ImgC4UC         albedo = loadImage(syn.next());
             fgout << fgnl << "Albedo map: " << albedo;
             if (syn.more() && (syn.peekNext()[0] == '-')) {
                 if(syn.next() == "-t") {
-                    ImgC4UC         trans = imgLoadAnyFormat(syn.next());
+                    ImgC4UC         trans = loadImage(syn.next());
                     fgout << fgnl << "Transparency map: " << trans;
                     albedo = fgImgApplyTransparencyPow2(albedo,trans);
                 }
                 else if (syn.curr() == "-s") {
                     ImgC4UC         spec;
-                    imgLoadAnyFormat(syn.next(),spec);
+                    loadImage(syn.next(),spec);
                     fgout << fgnl << "Specularity map: " << spec;
                     auto                specPtr = make_shared<ImgC4UC>(spec);
                     for (Surf & surf : mesh.surfaces)
@@ -89,7 +89,7 @@ viewMesh(CLArgs const & args)
     }
     if (meshes.empty())
         syn.error("No meshes specified");
-    Mesh        ignoreModified = meshView(meshes,compare);
+    Mesh        ignoreModified = viewMesh(meshes,compare);
 }
 
 void
@@ -99,7 +99,7 @@ fgViewImage(CLArgs const & args)
     if (args.size() > 2)
         syntax.incorrectNumArgs();
     ImgC4UC     img;
-    imgLoadAnyFormat(syntax.next(),img);
+    loadImage(syntax.next(),img);
     fgout << fgnl << img;
     imgDisplay(img);
 }
@@ -114,7 +114,7 @@ fgViewImagef(CLArgs const & args)
     else {
         if (getCurrentBuildOS() != BuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
-        imgLoadAnyFormat(syntax.curr(),img);
+        loadImage(syntax.curr(),img);
     }
     if (syntax.more())
         saveBsaPBin(syntax.next(),img);
@@ -134,7 +134,7 @@ cmdViewUvs(CLArgs const & args)
         string          fname = syntax.next(),
                         ext = toLower(pathToExt(fname));
         if (contains(meshLoadFormats(),ext)) {
-            Mesh    tmp = meshLoadAnyFormat(fname);
+            Mesh    tmp = loadMesh(fname);
             if (tmp.uvs.empty())
                 syntax.error("Mesh has no UVs",fname);
             mesh = mergeMeshes(mesh,tmp);
@@ -142,7 +142,7 @@ cmdViewUvs(CLArgs const & args)
         else if (hasImgExtension(fname)) {
             if (!img.empty())
                 syntax.error("Only one image allowed");
-            img = imgLoadAnyFormat(fname);
+            img = loadImage(fname);
         }
         else
             syntax.error("Unknown file type",fname);
@@ -159,7 +159,7 @@ Cmds
 getViewCmds()
 {
     Cmds   cmds;
-    cmds.push_back(Cmd(viewMesh,"mesh","Interactively view 3D meshes"));
+    cmds.push_back(Cmd(cmdViewMesh,"mesh","Interactively view 3D meshes"));
     cmds.push_back(Cmd(fgViewImage,"image","Basic image viewer"));
     cmds.push_back(Cmd(fgViewImagef,"imagef","Floating point image viewer"));
     cmds.push_back(Cmd(cmdViewUvs,"uvs","View the UV layout of a 3D mesh"));

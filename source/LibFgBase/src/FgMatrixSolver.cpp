@@ -20,7 +20,7 @@ using namespace std;
 namespace Fg {
 
 MatD
-FgEigsRsm::matrix() const
+EigsRsm::matrix() const
 {
     MatD       rhs = vecs.transpose();
     for (size_t rr=0; rr<rhs.nrows; ++rr)
@@ -44,7 +44,7 @@ randSymmMatrix(uint dim)
     return mat;
 }
 
-typedef function<void(const MatD &,Doubles &,MatD &)>  FnSolve;
+typedef function<void(MatD const &,Doubles &,MatD &)>  FnSolve;
 
 void
 testSymmEigenProblem(uint dim,FnSolve solve,bool print)
@@ -96,10 +96,10 @@ void
 testAsymEigs(CLArgs const &)
 {
     Mat33D        mat = matRotateAxis(1.0,Vec3D(1,1,1));
-    FgEigsC<3>      eigs = fgEigs(mat);
+    EigsC<3>      eigs = cEigs(mat);
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
-    Mat33D        regress = fgReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
+    Mat33D        regress = cReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
     double          residual = cRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
@@ -110,11 +110,11 @@ void
 testSymmEigenAuto(CLArgs const &)
 {
     randSeedRepeatable();
-    testSymmEigenProblem(10,fgEigsRsm_,true);
-    testSymmEigenProblem(30,fgEigsRsm_,false);
+    testSymmEigenProblem(10,cEigsRsm_,true);
+    testSymmEigenProblem(30,cEigsRsm_,false);
 #ifndef _DEBUG
-    testSymmEigenProblem(100,fgEigsRsm_,false);
-    testSymmEigenProblem(300,fgEigsRsm_,false);
+    testSymmEigenProblem(100,cEigsRsm_,false);
+    testSymmEigenProblem(300,cEigsRsm_,false);
 #endif
 }
 
@@ -131,7 +131,7 @@ testSymmEigenTime(CLArgs const & args)
     Doubles              eigVals;
     MatD           eigVecs;
     Timer             timer;
-    fgEigsRsm_(mat,eigVals,eigVecs);
+    cEigsRsm_(mat,eigVals,eigVecs);
     size_t              time = timer.readMs();
     MatD           eigValMat(dim,dim);
     eigValMat.setZero();

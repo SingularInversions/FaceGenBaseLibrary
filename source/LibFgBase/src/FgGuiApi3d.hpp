@@ -54,7 +54,7 @@ struct  BackgroundImage
 
     DfgNPtrs
     deps() const
-    {return fgSvec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr); }
+    {return svec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr); }
 };
 
 struct  RendSurf

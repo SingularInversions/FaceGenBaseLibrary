@@ -36,11 +36,11 @@ struct  MatV
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(numRows*numCols,val)
     {}
 
-    MatV(size_t numRows,size_t numCols,const T *ptr)
+    MatV(size_t numRows,size_t numCols,T const *ptr)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(ptr,ptr+numRows*numCols)
     {}
 
-    MatV(size_t nr,size_t nc,const Svec<T> & v) : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
+    MatV(size_t nr,size_t nc,Svec<T> const & v) : nrows(uint(nr)), ncols(uint(nc)), m_data(v)
     {FGASSERT(nr*nc == v.size()); }
 
     explicit
@@ -85,7 +85,7 @@ struct  MatV
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
-    const T &
+    T const &
     rc(size_t row,size_t col) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
@@ -98,7 +98,7 @@ struct  MatV
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
-    const T &
+    T const &
     cr(size_t col,size_t row) const
     {
         FGASSERT_FAST((row < nrows) && (col < ncols));
@@ -109,7 +109,7 @@ struct  MatV
     operator[](size_t ii)
     {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
 
-    const T &
+    T const &
     operator[](size_t ii) const
     {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
 
@@ -117,15 +117,15 @@ struct  MatV
     operator[](Vec2UI coord)
     {return cr(coord[0],coord[1]); }
 
-    const T &
+    T const &
     operator[](Vec2UI coord) const
     {return cr(coord[0],coord[1]); }
 
-    const T *
+    T const *
     data() const
     {FGASSERT(!m_data.empty()); return &m_data[0]; }
 
-    const T *
+    T const *
     rowPtr(size_t row) const
     {
         FGASSERT(!m_data.empty());
@@ -133,14 +133,14 @@ struct  MatV
         return &m_data[row*ncols];
     }
 
-    const Svec<T> &
+    Svec<T> const &
     dataVec() const
     {return m_data; }
 
     Svec<T>
     rowData(uint row) const
     {
-        const T *       rPtr = rowPtr(row);
+        T const *       rPtr = rowPtr(row);
         return Svec<T>(rPtr,rPtr+ncols);
     }
 
@@ -156,7 +156,7 @@ struct  MatV
     }
 
     void
-    addRow(const Svec<T> & data)
+    addRow(Svec<T> const & data)
     {
         FGASSERT(data.size() == ncols);
         cat_(m_data,data);
@@ -459,21 +459,24 @@ operator*(const MatF & lhs,const MatF & rhs);
 
 template<>
 MatD
-operator*(const MatD & lhs,const MatD & rhs);
+operator*(MatD const & lhs,MatD const & rhs);
 
 template<class T>
 MatV<T>
-operator*(const T & lhs,const MatV<T> & rhs)
+operator*(T const & lhs,const MatV<T> & rhs)
 {return (rhs*lhs); }
 
 template<typename T>
 MatV<T>
-fgColVec(const Svec<T> & v)
-{return MatV<T>(uint(v.size()),1,v.data()); }
+asColVec(Svec<T> const & v)
+{
+    FGASSERT(!v.empty());
+    return MatV<T>(uint(v.size()),1,v.data());
+}
 
 template<typename T>
 MatV<T>
-fgRowVec(const Svec<T> & v)
+asRowVec(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return MatV<T>(1,uint(v.size()),&v[0]);
@@ -485,7 +488,7 @@ operator/=(MatD & mat,double div);
 // MatV<> * Svec<> treats rhs side as a column vector and returns same:
 template<class T>
 Svec<T>
-operator*(const MatV<T> & lhs,const Svec<T> & rhs)
+operator*(const MatV<T> & lhs,Svec<T> const & rhs)
 {
     Svec<T>       ret(lhs.nrows,T(0));
     FGASSERT(lhs.ncols == rhs.size());
@@ -498,7 +501,7 @@ operator*(const MatV<T> & lhs,const Svec<T> & rhs)
 // Svec<> * MatV<> treats lhs side as a row vector and returns same:
 template<class T>
 Svec<T>
-operator*(const Svec<T> & lhs,const MatV<T> & rhs)
+operator*(Svec<T> const & lhs,const MatV<T> & rhs)
 {
     Svec<T>       ret(rhs.ncols,T(0));
     FGASSERT(lhs.size() == rhs.nrows);
@@ -509,7 +512,7 @@ operator*(const Svec<T> & lhs,const MatV<T> & rhs)
 }
 
 double
-fgMatSumElems(const MatD & mat);
+fgMatSumElems(MatD const & mat);
 
 template<class T>
 T
@@ -550,7 +553,7 @@ fgJoin(const MatV<T> & ul,const MatV<T> & ur,const MatV<T> & ll,const MatV<T> & 
 }
 template <class T>
 MatV<T>
-fgJoinHoriz(const Svec<MatV<T> > & ms)
+catHoriz(const Svec<MatV<T> > & ms)
 {
     MatV<T>    ret;
     FGASSERT(!ms.empty());
@@ -570,7 +573,7 @@ fgJoinHoriz(const Svec<MatV<T> > & ms)
 }
 template <class T>
 MatV<T>
-fgJoinHoriz(const MatV<T> & left,const MatV<T> & right)
+catHoriz(const MatV<T> & left,const MatV<T> & right)
 {
     MatV<T>        retval;
     if (left.empty())
@@ -594,7 +597,7 @@ fgJoinHoriz(const MatV<T> & left,const MatV<T> & right)
 }
 template <class T>
 MatV<T>
-fgJoinVert(const Svec<MatV<T> > & ms)
+catVertical(const Svec<MatV<T> > & ms)
 {
     MatV<T>    ret;
     FGASSERT(!ms.empty());
@@ -614,7 +617,7 @@ fgJoinVert(const Svec<MatV<T> > & ms)
 }
 template <class T>
 MatV<T>
-fgJoinVert(const MatV<T> & upper,const MatV<T> & lower)
+catVertical(const MatV<T> & upper,const MatV<T> & lower)
 {
     MatV<T>      ret;
     if (upper.empty())
@@ -634,7 +637,7 @@ fgJoinVert(const MatV<T> & upper,const MatV<T> & lower)
 }
 template <class T>
 MatV<T>
-fgJoinVert(const MatV<T> & upper,const MatV<T> & middle,const MatV<T> & lower)
+catVertical(const MatV<T> & upper,const MatV<T> & middle,const MatV<T> & lower)
 {
     FGASSERT(upper.numCols() == middle.numCols());
     FGASSERT(middle.numCols() == lower.numCols());
@@ -651,11 +654,12 @@ fgJoinVert(const MatV<T> & upper,const MatV<T> & middle,const MatV<T> & lower)
             retval.rc(row++,col) = lower.rc(rr,col);
     return retval;
 }
-// Diagonal block matrix join. Off-diagonal blocks are all set to zero.
-// Blocks are not required to be square.
+
+// Matrix "Direct Sum" - concatenate diagonally with all off-diagonal blocks set to zero.
+// If all matrices are square the result will be block diagonal.
 template<class T>
 MatV<T>
-fgJoinDiagonal(const Svec<MatV<T> > & blocks)
+catDiagonal(const Svec<MatV<T> > & blocks)
 {
     MatV<T>        ret;
     Sizes             rows(blocks.size(),0),
@@ -678,7 +682,7 @@ fgJoinDiagonal(const Svec<MatV<T> > & blocks)
 }
 template<class T>
 MatV<T>
-fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1)
+catDiagonal(const MatV<T> & b0,const MatV<T> & b1)
 {
     MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows,
@@ -690,7 +694,7 @@ fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1)
 }
 template<class T>
 MatV<T>
-fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
+catDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
 {
     MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows + b2.nrows,
@@ -704,7 +708,7 @@ fgJoinDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
 
 // Partition a square matrix into 4 matrices symmetrically:
 Mat<MatD,2,2>
-fgPartition(const MatD & m,size_t loSize);
+fgPartition(MatD const & m,size_t loSize);
 
 template<class T>
 MatV<T>
@@ -722,7 +726,7 @@ fgModulateCols(
 
 template<class T>
 MatV<T>
-fgDiagonal(size_t dim,const T & val)
+fgDiagonal(size_t dim,T const & val)
 {
     MatV<T>    ret(dim,dim,T(0));
     for (uint ii=0; ii<dim; ++ii)
@@ -732,7 +736,7 @@ fgDiagonal(size_t dim,const T & val)
 
 template<class T>
 MatV<T>
-fgDiagonal(const Svec<T> & vec)
+fgDiagonal(Svec<T> const & vec)
 {
     uint            dim = uint(vec.size());
     MatV<T>    ret(dim,dim,T(0));
@@ -760,7 +764,7 @@ normalize(const MatV<T> & m)
 
 template<class T>
 MatV<T>
-fgOuterProduct(const Svec<T> & rowFacs,const Svec<T> & colFacs)
+fgOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFacs)
 {
     MatV<T>        ret(rowFacs.size(),colFacs.size());
     size_t              cnt = 0;
@@ -771,12 +775,12 @@ fgOuterProduct(const Svec<T> & rowFacs,const Svec<T> & colFacs)
 }
 
 MatD
-fgRelDiff(const MatD & a,const MatD & b,double minAbs=0.0);
+cRelDiff(MatD const & a,MatD const & b,double minAbs=0.0);
 
 // Form a matrix from a vector of vectors representing each row:
 template<class T>
 MatV<T>
-fgVecVecToMatrix(const Svec<Svec<T> > & vss)    // vss must be non-empty with all sub-vects of same size
+fgVecVecToMatrix(Svec<Svec<T> > const & vss)    // vss must be non-empty with all sub-vects of same size
 {
     FGASSERT(!vss.empty());
     size_t          numRows = vss.size(),

@@ -225,7 +225,7 @@ fgCmdTestDfg(CLArgs const &)
 {
     IPT<int>        n0 = makeIPT(5),
                     n1 = makeIPT(6);
-    NPT<int>        n2 = linkN<int,int>(fgSvec<NPT<int> >(n0,n1),cSum<int>);
+    NPT<int>        n2 = linkN<int,int>(svec<NPT<int> >(n0,n1),cSum<int>);
     FGASSERT(n2.cref() == 11);
     n0.ref() = 6;
     FGASSERT(n2.val() == 12);

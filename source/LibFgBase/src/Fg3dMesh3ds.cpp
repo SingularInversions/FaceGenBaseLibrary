@@ -44,7 +44,7 @@ using namespace std;
 
 namespace Fg {
 
-static string fffMdlNameTo3dsName(string const & mdlName,vector<string> & nameList)
+static string fffMdlNameTo3dsName(string const & mdlName,Strings & nameList)
 {
     string name = mdlName;
     if (name.size() > 10) {
@@ -483,7 +483,7 @@ fffSave3dsFile(Ustring const &name, const FffMultiObjectC &model)
 void
 save3ds(
     Ustring const &        fname,
-    vector<Mesh>        meshes,
+    Meshes        meshes,
     string                  imgFormat)
 {
     for (size_t ii=0; ii<meshes.size(); ++ii) {
@@ -503,10 +503,10 @@ fgSave3dsTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    save3ds("mshX3ds",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    save3ds("mshX3ds",svec(mouth,glasses));
     regressFileRel("mshX3ds.3ds","base/test/");
     regressFileRel("mshX3ds0.png","base/test/");
     regressFileRel("mshX3ds1.png","base/test/");

@@ -15,12 +15,15 @@ namespace Fg {
 // Returns false if 'fname' has no extension and no mesh file was found with a valid extension.
 // Returns true otherwise. Throws an exception if the specified extension cannot be read as a mesh.
 bool
-meshLoadAnyFormat(
+loadMesh(
     Ustring const &     fname,  // If no extension specified will search readable mesh types.
     Mesh &              mesh);  // RETURNED
 
-Mesh
-meshLoadAnyFormat(Ustring const & fname);
+// As above but throws if no mesh found:
+Mesh    loadMesh(Ustring const & fname);
+
+// Loads both mesh and albedo map (if present) and specular map (if present):
+Mesh    loadMeshMaps(Ustring const & baseName);
 
 // Returns lower case list of supported extensions:
 Strings
@@ -37,7 +40,7 @@ meshSaveAnyFormat(Meshes const & meshes,Ustring const & fname,String const & img
 inline
 void
 meshSaveAnyFormat(Mesh const & mesh,Ustring const & fname)
-{meshSaveAnyFormat(fgSvec(mesh),fname); }
+{meshSaveAnyFormat(svec(mesh),fname); }
 
 // Does not include FaceGen formats:
 Strings const &

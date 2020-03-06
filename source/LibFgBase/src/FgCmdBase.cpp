@@ -29,8 +29,9 @@ void fgOpenTest(CLArgs const &);
 void fgGeometryTest(CLArgs const &);
 void fgGridTrianglesTest(CLArgs const &);
 void fgImageTest(CLArgs const &);
+void testKdTree(CLArgs const &);
 void fgMatrixSolverTest(CLArgs const &);
-void fgMathTest(CLArgs const &);
+void testMath(CLArgs const &);
 void fgMatrixCTest(CLArgs const &);
 void fgMatrixVTest(CLArgs const &);
 void fgMetaFormatTest(CLArgs const &);
@@ -43,9 +44,8 @@ void fgSimilarityTest(CLArgs const &);
 void fgSimilarityApproxTest(CLArgs const &);
 void fgStdVectorTest(CLArgs const &);
 void fgStringTest(CLArgs const &);
-void fgTensorTest(CLArgs const &);
 
-Cmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
+Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
 Cmds
 fgCmdBaseTests()
@@ -60,8 +60,9 @@ fgCmdBaseTests()
         {fgGeometryTest,"geometry"},
         {fgGridTrianglesTest,"gridTriangles"},
         {fgImageTest,"image"},
+        {testKdTree,"kd"},
         {fgMatrixSolverTest,"matSol","Matrix Solver"},
-        {fgMathTest,"math"},
+        {testMath,"math"},
         {fgMatrixCTest,"matC","MatrixC"},
         {fgMatrixVTest,"matV","MatrixV"},
         {fgMetaFormatTest,"metaFormat"},
@@ -74,9 +75,8 @@ fgCmdBaseTests()
         {fgSimilarityApproxTest,"similarityApprox"},
         {fgStdVectorTest,"vector"},
         {fgStringTest,"string"},
-        {fgTensorTest,"tensor"}
     };
-    cmds.push_back(fgSoftRenderTestInfo());
+    cmds.push_back(testSoftRenderInfo());
     return cmds;
 }
 

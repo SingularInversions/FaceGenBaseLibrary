@@ -316,7 +316,7 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
                     sysInfo;
     try
     {
-        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + fgBitsString() + "bit\n"
+        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + bitsString() + "bit\n"
             + osDescription() + "\n" + className + "\n" + getDefaultGpuDescription() + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);

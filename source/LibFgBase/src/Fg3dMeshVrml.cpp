@@ -75,7 +75,7 @@ writeIndices(
 void
 saveVrml(
     Ustring const &            filename,
-    const vector<Mesh> &    meshes,
+    Meshes const &    meshes,
     string                      imgFormat)
 {
     FGASSERT(meshes.size() > 0);
@@ -113,7 +113,7 @@ saveVrml(
             // Some software (Meshlab:) can't deal with spaces in the image filename:
             Ustring    imgFile = fpath.base.replace(' ','_') + toStr(ii);
             imgFile += "." + imgFormat;
-            imgSaveAnyFormat(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
+            saveImage(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
             ofs <<
                 "        texture ImageTexture\n"
                 "        {\n"

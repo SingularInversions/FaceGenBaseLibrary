@@ -132,15 +132,14 @@ inline To
 scast(From val)
 {return static_cast<To>(val); }
 
+#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
+
 // 'round' for static cast which does proper rounding when necessary:
 // No bounds checking is done by these 'round' functions:
 
-template<
-    typename To,
-    typename From,
-    // Use this implementation if the output type is signed integral
-    typename std::enable_if<std::is_signed<To>::value,To>::type* =nullptr,
-    typename std::enable_if<std::is_integral<To>::value,To>::type* =nullptr
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_signed),
+    FG_ENABLE_IF(To,is_integral)
 >
 inline To
 round(From v)
@@ -149,12 +148,9 @@ round(From v)
     return static_cast<To>(std::floor(v+From(0.5)));
 }
 
-template<
-    typename To,
-    typename From,
-    // Use this implementation if the output type is unsigned integral
-    typename std::enable_if<std::is_unsigned<To>::value,To>::type* =nullptr,
-    typename std::enable_if<std::is_integral<To>::value,To>::type* =nullptr
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_unsigned),
+    FG_ENABLE_IF(To,is_integral)
 >
 inline To
 round(From v)
@@ -163,11 +159,8 @@ round(From v)
     return static_cast<To>(v+From(0.5));
 }
 
-template<
-    typename To,
-    typename From,
-    // Use this implementation if the output type is floating (no rounding necessary):
-    typename std::enable_if<std::is_floating_point<To>::value,To>::type* =nullptr
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_floating_point)
 >
 inline To
 round(From v)
@@ -181,15 +174,28 @@ void
 round_(From from,To & to)
 {to = round<To,From>(from); }
 
-template<
-    typename T,
-    typename std::enable_if<std::is_arithmetic<T>::value,T>::type* =nullptr
+template<typename T,
+    FG_ENABLE_IF(T,is_arithmetic)
 >
 T
 interpolate(T v0,T v1,float val)   // returns v0 when val==0, v1 when val==1
 {
     float       v = static_cast<float>(v0) * (1.0f-val) + static_cast<float>(v1) * val;
     return round<T,float>(v);
+}
+
+// Squared magnitude function base cases:
+inline float cMag(float v) {return v*v; }
+inline double cMag(double v) {return v*v; }
+inline double cMag(std::complex<double> v) {return std::norm(v); }
+template<typename T,size_t S>
+double
+cMag(std::array<T,S> const a)
+{
+    T       acc(0);
+    for (T const & e : a)
+        acc += cMag(e);
+    return acc;
 }
 
 }

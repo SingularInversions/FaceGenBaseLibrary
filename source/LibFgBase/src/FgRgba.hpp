@@ -68,10 +68,10 @@ struct      Rgba
     T & blue() {return m_c[2]; }
     T & alpha() {return m_c[3]; }
 
-    const T & red() const {return m_c[0]; }
-    const T & green() const {return m_c[1]; }
-    const T & blue() const {return m_c[2]; }
-    const T & alpha() const {return m_c[3]; }
+    T const & red() const {return m_c[0]; }
+    T const & green() const {return m_c[1]; }
+    T const & blue() const {return m_c[2]; }
+    T const & alpha() const {return m_c[3]; }
 
     Mat<T,3,1>
     rgb() const
@@ -126,7 +126,7 @@ struct      Rgba
 
     static
     Rgba<T>
-    fromRgbaPtr(const T * v)
+    fromRgbaPtr(T const * v)
     {return Rgba<T>(v[0],v[1],v[2],v[3]); }
 
     void

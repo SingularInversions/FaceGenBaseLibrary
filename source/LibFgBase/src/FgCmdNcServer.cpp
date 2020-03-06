@@ -46,7 +46,7 @@ run(string const & logFile,string const & cmd)
 
 static
 bool
-runScript(string const & logFile,const vector<string> & cmds)
+runScript(string const & logFile,Strings const & cmds)
 {
     string const    push = "fgPush ",
                     pop = "fgPop";
@@ -92,7 +92,7 @@ handler(
     script.logFile = logPath.str().m_str;
     string          dirBase = logPath.dirBase().m_str;
     ImgC4UC     img(32,32,RgbaUC(255,255,0,255));
-    imgSaveAnyFormat(dirBase+".jpg",img);
+    saveImage(dirBase+".jpg",img);
     fgWriteFile(script.logFile,
             "<html>\n"
             "<head>\n"
@@ -110,7 +110,7 @@ handler(
         img = ImgC4UC(32,32,RgbaUC(0,255,0,255));
     else
         img = ImgC4UC(32,32,RgbaUC(255,0,0,255));
-    imgSaveAnyFormat(dirBase+".jpg",img);
+    saveImage(dirBase+".jpg",img);
     return true;
 }
 

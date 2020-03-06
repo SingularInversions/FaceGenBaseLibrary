@@ -65,8 +65,8 @@ similarityApprox(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
     N.cr(1,1) = Sxx-Syy-Szz;
     N.cr(2,2) = Syy-Sxx-Szz;
     N.cr(3,3) = Szz-Sxx-Syy;
-    // Calculate rotation from N per [Jain '95]. 'fgEigsRsm' Leaves largest eigVal in last index:
-    QuaternionD         pose(fgEigsRsm(N).vecs.colVec(3));
+    // Calculate rotation from N per [Jain '95]. 'cEigsRsm' Leaves largest eigVal in last index:
+    QuaternionD         pose(cEigsRsm(N).vecs.colVec(3));
     // Calculate the 'trans' term: The transform is given by:
     // X = SR(d-dm)+rm = SR(d)-SR(dm)+rm
     Vec3D               trans = -scale * (pose.asMatrix() * domMean) + ranMean;
@@ -131,7 +131,7 @@ fgSimilarityApproxTest(CLArgs const &)
             mapXf_(domain,simRef.asAffine(),range);
             SimilarityD     sim = similarityApprox(domain,range);
             mapXf_(domain,sim.asAffine());
-            FGASSERT(approxEqualRelMag(domain,range));
+            FGASSERT(isApproxEqualRelMag(domain,range));
         }
         numPts *= 2;
     }

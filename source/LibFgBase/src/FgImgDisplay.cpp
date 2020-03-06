@@ -10,7 +10,6 @@
 #include "FgGuiApiImage.hpp"
 #include "FgFileSystem.hpp"
 #include "FgAffine1.hpp"
-#include "FgAffineCwPreC.hpp"
 #include "FgBounds.hpp"
 #include "FgCommand.hpp"
 
@@ -70,7 +69,7 @@ void
 imgDisplay(const Img3F & img)
 {
     VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
-    AffineEwPre3F       xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
+    AffineEw3F          xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
     Img3F               tmp = Img3F(img.dims(),mapXft(img.dataVec(),xform));
     ImgC4UC             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
@@ -126,7 +125,7 @@ imgDisplay(const ImgC4F & img)
 void
 fgImgGuiTestm(CLArgs const &)
 {
-    imgDisplay(imgLoadAnyFormat(dataDir()+"base/trees.jpg"));
+    imgDisplay(loadImage(dataDir()+"base/trees.jpg"));
 }
 
 }

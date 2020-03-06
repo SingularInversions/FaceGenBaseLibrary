@@ -213,7 +213,7 @@ Mesh::asTriSurf() const
     for (Surf const & surf : surfaces) {
         cat_(ret.tris,surf.tris.posInds);
         if (!surf.quads.posInds.empty())
-            cat_(ret.tris,fgQuadsToTris(surf.quads.posInds));
+            cat_(ret.tris,quadsToTris(surf.quads.posInds));
     }
     return ret;
 }
@@ -508,7 +508,7 @@ fg3dMesh(Vec3UIs const & tris,Vec3Fs const & verts)
 }
 
 size_t
-fgNumTriEquivs(const Meshes & meshes)
+fgNumTriEquivs(Meshes const & meshes)
 {
     size_t      ret = 0;
     for (Mesh const & m : meshes)
@@ -517,7 +517,7 @@ fgNumTriEquivs(const Meshes & meshes)
 }
 
 std::set<Ustring>
-fgMorphs(const Meshes & meshes)
+fgMorphs(Meshes const & meshes)
 {
     std::set<Ustring>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
@@ -526,7 +526,7 @@ fgMorphs(const Meshes & meshes)
 }
 
 PoseVals
-cPoseVals(const Meshes & meshes)
+cPoseVals(Meshes const & meshes)
 {
     std::set<PoseVal>    ps;
     for (size_t ii=0; ii<meshes.size(); ++ii)
@@ -599,7 +599,7 @@ operator<<(std::ostream & os,Mesh const & m)
 }
 
 std::ostream &
-operator<<(std::ostream & os,const Meshes & ms)
+operator<<(std::ostream & os,Meshes const & ms)
 {
     for (size_t ii=0; ii<ms.size(); ++ii)
         os << fgnl << "Mesh " << ii << ":" << fgpush << ms[ii] << fgpop;
@@ -667,17 +667,17 @@ subdivideTris(
 }
 
 Mat32F
-cBounds(const Meshes & meshes)
+cBounds(Meshes const & meshes)
 {
     FGASSERT(!meshes.empty());
     Mat32F    ret = cBounds(meshes[0].verts);
     for (size_t mm=1; mm<meshes.size(); ++mm)
-        ret = boundsUnion(ret,cBounds(meshes[mm].verts));
+        ret = cBoundsUnion(ret,cBounds(meshes[mm].verts));
     return ret;
 }
 
 Mesh
-fgSubdivide(Mesh const & in,bool loop)
+subdivide(Mesh const & in,bool loop)
 {
     Mesh            ret;
     vector<Vec3UI>   allTris;

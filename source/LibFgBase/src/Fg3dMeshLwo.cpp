@@ -92,7 +92,7 @@ struct LwoTextureInfoS
 static bool saveLwoLwsFile(Ustring const &fname,
                 const FffMultiObjectC &model,
                 const vector<FffMultiObjectC> *targets,
-                const vector<string>          *names);
+                Strings const          *names);
 
 static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
@@ -115,7 +115,7 @@ static bool updateSubChunkSize(FILE *fptr, unsigned short sz, long pos);
 
 static bool writeTagsChunk(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model,
-                vector<string> &tagNameList);
+                Strings &tagNameList);
 static bool writeLayrChunk(FILE *fptr, unsigned long &chunkSize,
                 unsigned short num, string name,
                 Vec3F pivot);
@@ -173,7 +173,7 @@ static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeLwsFile(Ustring const &lwsName, Ustring const &lwoName,
                 Vec3F minVect, Vec3F maxVect,
                 unsigned long numLayers, unsigned long numMorphs, 
-                const vector<string> *morphNames);
+                Strings const *morphNames);
 
 
 //****************************************************************************
@@ -201,9 +201,9 @@ static bool    fffSaveLwoLwsFile(
     Ustring const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,  // Only use the vertices.
-    const vector<string>            &morphNames)
+    Strings const            &morphNames)
 {
-	vector<string>					names;
+	Strings					names;
 
 	names.resize(morphNames.size());
 	for (uint ii=0; ii<names.size(); ii++)
@@ -219,7 +219,7 @@ static bool saveLwoLwsFile(
     Ustring const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *targets,       // Only use the vertices.
-    const vector<string>            *names)
+    Strings const            *names)
 {
     Path          path(fname);
     Ustring        lwsName = path.dirBase() + ".lws";
@@ -252,7 +252,7 @@ static bool saveLwoLwsFile(
 
     // TAGS chunk
     unsigned long tagChunkSize = 0;
-    vector<string> tagNameList;
+    Strings tagNameList;
     if (!writeTagsChunk(fptr,tagChunkSize,model,tagNameList))
         return errorFcloseExit(fptr,fname);
     fileChunkSize += tagChunkSize;
@@ -590,7 +590,7 @@ static bool writeTagsChunk(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     const FffMultiObjectC   &model,
-    vector<string>          &tagNameList)
+    Strings          &tagNameList)
 {
     unsigned long localChunkSize=0;
     long localChunkStart = ftell(fptr);
@@ -2270,7 +2270,7 @@ static bool writeLwsFile(
     Vec3F              maxVect,
     unsigned long           numLayers,
     unsigned long           numMorphs, 
-    const vector<string>    *morphNames)
+    Strings const    *morphNames)
 {
     Ofstream file(lwsName);
     if (!file)
@@ -2369,7 +2369,7 @@ static bool writeLwsFile(
 void
 saveLwo(
     Ustring const &        fname,
-    const vector<Mesh> & meshes,
+    Meshes const & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
@@ -2387,10 +2387,10 @@ fgSaveLwoTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveLwo("meshExportLwo",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveLwo("meshExportLwo",svec(mouth,glasses));
     regressFileRel("meshExportLwo.lwo","base/test/");
     regressFileRel("meshExportLwo.lws","base/test/",equateFilesText);
     regressFileRel("meshExportLwo0.png","base/test/");

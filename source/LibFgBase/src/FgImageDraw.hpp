@@ -14,19 +14,11 @@
 
 namespace Fg {
 
-void
-fgDrawDotIrcs(
-    ImgC4UC &       img,
-    Vec2I            pos,
-    int                 radius,
-    RgbaUC val);
+// Simple (aliased) filled circle. Radius 0 yields a single pixel (ie. actual radius is 0.5 larger):
+void    drawDotIrcs(ImgC4UC & img,Vec2I posIrcs,uint radius,RgbaUC color);
+void    drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color);
 
-void
-drawLineIrcs(
-    ImgC4UC &       img,
-    Vec2I            beg,
-    Vec2I            end,
-    RgbaUC            val);
+void    drawLineIrcs(ImgC4UC & img,Vec2I begin,Vec2I end,RgbaUC color);
 
 void
 fgPaintRectangle(
@@ -44,7 +36,7 @@ fgDrawBarGraph(
 
 template<typename T>
 ImgC4UC
-fgGraph(const Svec<T> & data)
+fgGraph(Svec<T> const & data)
 {
     ImgC4UC         img;
     Svec<double> dt;
@@ -63,7 +55,7 @@ fgDrawFunction(
 
 void
 fgDrawFunctions(
-    const MatD &   funcs);     // Columns are function values
+    MatD const &   funcs);     // Columns are function values
 
 }
 

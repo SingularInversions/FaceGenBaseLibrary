@@ -143,7 +143,7 @@ clamp(CLArgs const & args)
         syn.error("Not a valid option",vm);
     if (seam.size() < 3)
         syn.error("Too few vertices to be a seam",toStr(seam.size()));
-    FgKdTree        kd(seam);
+    KdTree        kd(seam);
     float           scale = cMaxElem(cDims(mesh.verts)),
                     closeSqr = sqr(scale / 10000.0f);
     set<uint>       clampVertInds;
@@ -242,7 +242,7 @@ create(CLArgs const & args)
         );
     string      baseName = syntax.next();
     Mesh    base = loadTri(baseName);
-    Mesh    target = meshLoadAnyFormat(syntax.next());
+    Mesh    target = loadMesh(syntax.next());
     if (base.verts.size() != target.verts.size())
         fgThrow("Different number of vertices between base and target");
     bool        ignoreSmall = false;

@@ -67,7 +67,7 @@ nmVideo(size_t mm,size_t tt)
 void
 saveFbx(
     Ustring const &            filename,
-    const vector<Mesh> &    meshes,
+    Meshes const &    meshes,
     string                      imgFormat)
 {
     FGASSERT(!meshes.empty());
@@ -300,7 +300,7 @@ saveFbx(
                 "    }\n";
             Ustring    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
-                imgSaveAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
+                saveImage(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
                 "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
                 "        Type: \"TextureVideoClip\"\n"
@@ -367,10 +367,10 @@ fgSaveFbxTest(CLArgs const & args)
     Ustring            dd = dataDir();
     string              rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveFbx("meshExportFbx",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveFbx("meshExportFbx",svec(mouth,glasses));
     regressFileRel("meshExportFbx.fbx","base/test/");
     regressFileRel("meshExportFbx0_0.png","base/test/");
     regressFileRel("meshExportFbx1_0.png","base/test/");

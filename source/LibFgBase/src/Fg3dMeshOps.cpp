@@ -12,8 +12,7 @@
 #include "FgAffineCwC.hpp"
 #include "FgAffine1.hpp"
 #include "FgBounds.hpp"
-#include "FgDraw.hpp"
-#include "FgAffineCwPreC.hpp"
+#include "FgImageDraw.hpp"
 #include "FgBestN.hpp"
 #include "FgGridTriangles.hpp"
 #include "FgGeometry.hpp"
@@ -24,7 +23,7 @@ using namespace std;
 namespace Fg {
 
 Mesh
-fgMeshFromImage(const ImgD & img)
+meshFromImage(const ImgD & img)
 {
     Mesh                ret;
     FGASSERT((img.height() > 1) && (img.width() > 1));
@@ -54,46 +53,66 @@ fgMeshFromImage(const ImgD & img)
     return ret;
 }
 
+QuadSurf
+cGrid(uint sz)
+{
+    FGASSERT(sz > 0);
+    QuadSurf            ret;
+    AffineEw2D          itToCoord {Mat22D(0,sz,0,sz),Mat22D{-1,1,-1,1}};
+    for (Iter2UI it(sz+1); it.valid(); it.next()) {
+        Vec2D           p = itToCoord * Vec2D(it());
+        ret.verts.push_back(Vec3F(p[0],p[1],0));
+    }
+    for (Iter2UI it(sz); it.valid(); it.next()) {
+        uint            i0 = it()[0],
+                        i1 = it()[1]*(sz+1),
+                        v0 = i0+i1,
+                        v1 = i0+i1+1,
+                        v2 = i0+i1+1+(sz+1),
+                        v3 = i0+i1+(sz+1);
+        ret.quads.push_back(Vec4UI(v0,v1,v2,v3));
+    }
+    return ret;
+}
+
 Mesh
-fgCreateSphere(
-    float       radius,
-    uint        subdivisions)
+cSphere(float radius,uint subdivisions)
 {
     FGASSERT(subdivisions < 10);    // 1M faces is probably overkill.
-    Vec3Fs            verts(4);
-    vector<Vec3UI>  tris(4);
-
     // Tetrahedron centred on the origin:
-    verts[0] = Vec3F(1.0f,1.0f,1.0f);
-    verts[1] = Vec3F(1.0f,-1.0f,-1.0f);
-    verts[2] = Vec3F(-1.0f,1.0f,-1.0f);
-    verts[3] = Vec3F(-1.0f,-1.0f,1.0f);
-    tris[0] =  Vec3UI(0,1,2);                // CC winding is the default.
-    tris[1] =  Vec3UI(0,3,1);
-    tris[2] =  Vec3UI(0,2,3);
-    tris[3] =  Vec3UI(1,3,2);
-
+    Vec3Fs          verts {
+        {1,1,1},
+        {1,-1,-1},
+        {-1,1,-1},
+        {-1,-1,1},
+    };
+    Vec3UIs         tris {      // CC winding is the default.
+        {0,1,2},
+        {0,3,1},
+        {0,2,3},
+        {1,3,2},
+    };
     // Equilateral triangle with radius 2 around origin (CC):
     double              root3 = sqrt(3.0);
-    vector<Vec2D>    equi =
-        fgSvec(
-            Vec2D(-root3,-1.0),
-            Vec2D( root3,-1.0),
-            Vec2D(     0,root3));
+    Vec2Ds              equi {
+        {-root3,   -1},
+        { root3,   -1},
+        {     0,root3}
+    };
     // Put 4 of these in OpenGL texture coordinates:
-    AffineEwPre2D     xform(Vec2D(root3,1.0),Vec2D(0.5/(1.0+root3)));
+    AffineEw2D          xform {Vec2D{root3,1},Vec2D{0.5/(1.0+root3)}};
     equi = mapXft(equi,xform);
     Vec2Ds              uvd = equi;
-    cat_(uvd,fgMapAddConst(equi,Vec2D(0.5,0.0)));
-    cat_(uvd,fgMapAddConst(equi,Vec2D(0.5,0.5)));
-    cat_(uvd,fgMapAddConst(equi,Vec2D(0.0,0.5)));
+    cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.0)));
+    cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.5)));
+    cat_(uvd,mapAddConst(equi,Vec2D(0.0,0.5)));
     Vec2Fs              uvs = scast<float>(uvd);
     Surf                surf(tris);
     Mesh                mesh(verts,surf);
     for (uint ss=0; ss<subdivisions; ss++) {
         for (uint ii=0; ii<mesh.verts.size(); ii++)
             mesh.verts[ii] *= radius / mesh.verts[ii].len();
-        mesh = fgSubdivide(mesh,false);
+        mesh = subdivide(mesh,false);
     }
     for (uint ii=0; ii<mesh.verts.size(); ii++)
         mesh.verts[ii] *= radius / mesh.verts[ii].len();
@@ -101,11 +120,11 @@ fgCreateSphere(
 }
 
 Mesh
-fgRemoveDuplicateFacets(Mesh const & mesh)
+removeDuplicateFacets(Mesh const & mesh)
 {
     Mesh    ret = mesh;
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
-        ret.surfaces[ss] = fgRemoveDuplicateFacets(ret.surfaces[ss]);
+        ret.surfaces[ss] = removeDuplicateFacets(ret.surfaces[ss]);
     }
     return ret;
 }
@@ -217,7 +236,7 @@ meshRemoveUnusedVerts(Mesh const & mesh)
 }
 
 Mesh
-fgTetrahedron(bool open)
+cTetrahedron(bool open)
 {
     // Coordinates of a regular tetrahedron with edges of length 2*sqrt(2):
     Vec3Fs             verts;
@@ -237,7 +256,7 @@ fgTetrahedron(bool open)
 }
 
 Mesh
-fgPyramid(bool open)
+cPyramid(bool open)
 {
     Vec3Fs         verts;
     verts.push_back(Vec3F(-1.0f,0.0f,-1.0f));
@@ -258,7 +277,7 @@ fgPyramid(bool open)
 }
 
 Mesh
-fg3dCube(bool open)
+c3dCube(bool open)
 {
     Vec3Fs             verts;
     for (uint vv=0; vv<8; ++vv)
@@ -290,7 +309,7 @@ fg3dCube(bool open)
 }
 
 Mesh
-fgOctahedron()
+cOctahedron()
 {
     Vec3Fs             verts(6);
     uint                cnt = 0;
@@ -310,7 +329,7 @@ fgOctahedron()
 }
 
 Mesh
-fgNTent(uint nn)
+cNTent(uint nn)
 {
     FGASSERT(nn > 2);
     Vec3Fs             verts;
@@ -583,7 +602,7 @@ mergeMeshes(
 }
 
 Mesh
-mergeMeshes(const vector<Mesh> & meshes)
+mergeMeshes(Meshes const & meshes)
 {
     Mesh        ret;
     if (meshes.empty())
@@ -750,6 +769,45 @@ surfPointsToMarkedVerts_(Mesh const & in,Mesh & out)
     }
 }
 
+TriSurf
+cMirror(TriSurf const & ts,uint axis)
+{
+    FGASSERT(axis < 3);
+    TriSurf         ret;
+    ret.verts = ts.verts;
+    for (Vec3F & vert : ret.verts)
+        vert[axis] *= -1.0f;
+    ret.tris = ts.tris;
+    for (Vec3UI & tri : ret.tris)
+        swap(tri[1],tri[2]);
+    return ret;
+}
+
+Mesh
+cMirror(Mesh const & m,uint axis)
+{
+    FGASSERT(axis < 3);
+    Mesh        ret;
+    ret.verts = m.verts;
+    for (Vec3F & vert : ret.verts)
+        vert[axis] *= -1.0f;
+    ret.surfaces = m.surfaces;
+    for (Surf & surf : ret.surfaces) {
+        for (Vec3UI & t : surf.tris.posInds)
+            swap(t[1],t[2]);
+        for (Vec3UI & t : surf.tris.uvInds)
+            swap(t[1],t[2]);
+        for (Vec4UI & q : surf.quads.posInds)
+            q = Vec4UI {q[0],q[3],q[2],q[1]};
+        for (Vec4UI & q : surf.quads.uvInds)
+            q = Vec4UI {q[0],q[3],q[2],q[1]};
+    }
+    // Unchanged:
+    ret.uvs = m.uvs;
+    ret.markedVerts = m.markedVerts;
+    return ret;
+}
+
 MeshMirror
 meshMirrorX(Mesh const & in)
 {
@@ -793,7 +851,7 @@ meshMirrorX(Mesh const & in)
 }
 
 Mesh
-fgCopySurfaceStructure(Mesh const & from,Mesh const & to)
+copySurfaceStructure(Mesh const & from,Mesh const & to)
 {
     Mesh            ret(to);
     ret.surfaces = {mergeSurfaces(ret.surfaces)};
@@ -824,7 +882,7 @@ fgCopySurfaceStructure(Mesh const & from,Mesh const & to)
 }
 
 vector<Vec3UI>
-fgMeshSurfacesAsTris(Mesh const & m)
+meshSurfacesAsTris(Mesh const & m)
 {
     vector<Vec3UI>   ret;
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
@@ -833,7 +891,7 @@ fgMeshSurfacesAsTris(Mesh const & m)
 }
 
 TriSurf
-fgTriSurface(Mesh const & src,size_t surfIdx)
+cTriSurface(Mesh const & src,size_t surfIdx)
 {
     TriSurf       ts;
     FGASSERT(src.surfaces.size() > surfIdx);
@@ -865,7 +923,7 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
         Floats              depths;
         for (TriPoint const & tp : tps)
             depths.push_back(cBarycentricVert(tp.pointInds,tp.baryCoord,verts)[2]);
-        tps = reorder(tps,fgSortInds(depths));
+        tps = reorder(tps,sortInds(depths));
         float               transTotal = 1.0f;
         for (size_t ii=1; ii<tps.size(); ++ii) {
             TriPoint const &  tp = tps[ii];
@@ -911,7 +969,7 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
         order.push_back(mini);
         done.insert(mini);
     }
-    order = fgReverse(order);
+    order = cReverse(order);
     Surf     surf;
     surf.tris.posInds = reorder(tris.posInds,order);
     surf.tris.uvInds = reorder(tris.uvInds,order);

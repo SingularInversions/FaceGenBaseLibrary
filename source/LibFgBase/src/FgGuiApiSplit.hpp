@@ -32,22 +32,22 @@ guiSplit(bool horiz,const Svec<GuiPtr> & panes);
 inline
 GuiPtr
 guiSplit(bool horiz,GuiPtr p0,GuiPtr p1)
-{return guiSplit(horiz,fgSvec(p0,p1)); }
+{return guiSplit(horiz,svec(p0,p1)); }
 
 inline
 GuiPtr
 guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2)
-{return guiSplit(horiz,fgSvec(p0,p1,p2)); }
+{return guiSplit(horiz,svec(p0,p1,p2)); }
 
 inline
 GuiPtr
 guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3)
-{return guiSplit(horiz,fgSvec(p0,p1,p2,p3)); }
+{return guiSplit(horiz,svec(p0,p1,p2,p3)); }
 
 inline
 GuiPtr
 guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3,GuiPtr p4)
-{return guiSplit(horiz,fgSvec(p0,p1,p2,p3,p4)); }
+{return guiSplit(horiz,svec(p0,p1,p2,p3,p4)); }
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiSplitAdj;

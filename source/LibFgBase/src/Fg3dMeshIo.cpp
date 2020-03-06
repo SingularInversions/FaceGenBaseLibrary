@@ -11,15 +11,16 @@
 #include "FgException.hpp"
 #include "FgSyntax.hpp"
 #include "FgCommand.hpp"
+#include "FgImageIo.hpp"
 
 using namespace std;
 
 namespace Fg {
 
 bool
-meshLoadAnyFormat(
-    Ustring const &    fname,
-    Mesh &          mesh)
+loadMesh(
+    Ustring const &     fname,
+    Mesh &              mesh)
 {
     Path      path(fname);
     if (path.ext.empty()) {
@@ -47,17 +48,33 @@ meshLoadAnyFormat(
 }
 
 Mesh
-meshLoadAnyFormat(Ustring const & fname)
+loadMesh(Ustring const & fname)
 {
     Mesh    ret;
-    if (!meshLoadAnyFormat(fname,ret))
+    if (!loadMesh(fname,ret))
         fgThrow("No mesh format found for:",fname);
     return ret;
 }
 
-vector<string>
+Mesh
+loadMeshMaps(Ustring const & baseName)
+{
+    Mesh            ret = loadMesh(baseName);
+    if (!ret.surfaces.empty()) {
+        Strings         albExts = imgFindFiles(baseName);
+        if (!albExts.empty())
+            ret.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(baseName+"."+albExts[0]));
+        Ustring         specBase = baseName+"_Specular";
+        Strings         specExts = imgFindFiles(specBase);
+        if (!specExts.empty())
+            ret.surfaces[0].material.specularMap = make_shared<ImgC4UC>(loadImage(specBase+"."+specExts[0]));
+    }
+    return ret;
+}
+
+Strings
 meshLoadFormats()
-{return fgSvec<string>("fgmesh","obj","wobj","tri"); }
+{return svec<string>("fgmesh","obj","wobj","tri"); }
 
 string
 meshLoadFormatsCLDescription()
@@ -65,7 +82,7 @@ meshLoadFormatsCLDescription()
 
 void
 meshSaveAnyFormat(
-    const vector<Mesh> &    meshes,
+    Meshes const &    meshes,
     Ustring const &            fname,
     string const &              imgFormat)
 {
@@ -96,17 +113,17 @@ meshSaveAnyFormat(
         fgThrow("Not a writeable 3D mesh format",fname);
 }
 
-const vector<string> &
+Strings const &
 meshExportFormatExts()
 {
-    static vector<string> ret = fgSvec<string>("obj","wrl","stl","3ds","fbx","ma","lwo","xsi");
+    static Strings ret = svec<string>("obj","wrl","stl","3ds","fbx","ma","lwo","xsi");
     return ret;
 }
 
-const vector<string> &
+Strings const &
 meshExportFormatDescriptions()
 {
-    static vector<string> ret = fgSvec<string>(
+    static Strings ret = svec<string>(
         "Wavefront OBJ","VRML 97","STL","Autodesk 3DS","Filmbox ASCII","Maya ASCII","Lightwave Object","Softimage XSI");
     return ret;
 }
@@ -115,10 +132,10 @@ std::string
 meshSaveFormatsCLDescription()
 {return string("(tri | [w]obj | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
-const vector<string> &
+Strings const &
 meshExportFormatsWithMorphs()
 {
-    static vector<string> ret = fgSvec<string>("fbx","ma","lwo","xsi");
+    static Strings ret = svec<string>("fbx","ma","lwo","xsi");
     return ret;
 }
 
@@ -136,7 +153,7 @@ triexport(CLArgs const & args)
         "    <imgExt>       - " + imgFileExtensionsDescription()
         );
     string              outFile(syntax.next());
-    vector<Mesh>    meshes;
+    Meshes    meshes;
     while (syntax.more()) {
         string          triFile(syntax.next());
         if (!checkExt(triFile,"tri"))
@@ -151,7 +168,7 @@ triexport(CLArgs const & args)
             if (it == exts.end())
                 syntax.error("Unknown image file type",imgFile);
             if (cnt < mesh.surfaces.size())
-                imgLoadAnyFormat(imgFile,mesh.surfaces[cnt++].albedoMapRef());
+                loadImage(imgFile,mesh.surfaces[cnt++].albedoMapRef());
             else
                 syntax.error("More albedo map images specified than surfaces in",mesh.name);
         }

@@ -41,7 +41,7 @@ cmdStr(const Cmd & cmd)
 
 void
 doMenu(
-    vector<string>          args,
+    Strings          args,
     const Cmds &   cmdsUnsorted,
     bool                    optionAll,
     bool                    optionQuiet,
@@ -88,7 +88,7 @@ doMenu(
             fgout << fgnl << "Testing: " << fgpush;
             for (size_t ii=0; ii<cmds.size(); ++ii) {
                 fgout << fgnl << cmds[ii].name << ": " << fgpush;
-                cmds[ii].func(fgSvec(cmds[ii].name,cmdl));      // Pass on the 'all'
+                cmds[ii].func(svec(cmds[ii].name,cmdl));      // Pass on the 'all'
                 fgout << fgpop;
             }
             fgout << fgpop << fgnl << "All Passed.";

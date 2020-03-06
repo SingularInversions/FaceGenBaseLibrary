@@ -14,50 +14,75 @@
 
 namespace Fg {
 
+// Convert from bits of precision to an epsilon value for that precision:
+inline double bitsToPrecision(uint bits) {return 1.0 / double(1ULL << bits); }
+inline float  bitsToPrecisionF(uint bits) {return 1.0f / float(1ULL << bits); }
+
+// Are two numbers approximately equal relative to an absolute scale ?
+template<typename T>
+inline bool
+isApproxEqual(T v0,T v1,T maxDiff)
+{return (std::abs(v1-v0) <= maxDiff); }
+
+template<typename T,uint nrows,uint ncols>
+bool
+isApproxEqual(
+    Mat<T,nrows,ncols> const &    m0,
+    Mat<T,nrows,ncols> const &    m1,
+    T                             maxDiff)
+{
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        if (std::abs(m0[ii]-m1[ii]) > maxDiff)
+            return false;
+    return true;
+}
+
 template<typename T>
 uint constexpr defaultPrecisionBits();
 
-template<>
-inline uint constexpr defaultPrecisionBits<float>() {return 20;}
-
-template<>
-inline uint constexpr defaultPrecisionBits<double>() {return 40;}
+template<> uint constexpr defaultPrecisionBits<float>() {return 20;}
+template<> uint constexpr defaultPrecisionBits<double>() {return 40;}
 
 // Are two numbers approximately equal relative to their absolute sizes ?
-template<typename T>
+template<typename T,
+    FG_ENABLE_IF(T,is_floating_point)>
 bool
-approxEqualRel(T v0,T v1,uint precisionBits=defaultPrecisionBits<T>())
+isApproxEqualRel(T v0,T v1,double maxRelDiff)
 {
-    double      precision = scast<double>(1ULL << precisionBits);
-    FGASSERT(precision > 0.0);
     double      d0 = scast<double>(v0),
                 d1 = scast<double>(v1),
-                del = d1 - d0;
-    if (del == 0.0)
+                denom = std::abs(d0) + std::abs(d1);
+    if (denom == 0.0)
         return true;
-    double      rel = std::abs(del) / cMax(std::abs(d0),std::abs(d1));
-    return (rel < precision);
+    double      rel = (2.0 * std::abs(d1-d0)) / (std::abs(d0) + std::abs(d1));
+    return (rel < maxRelDiff);
 }
 
-// Are two number approximately equal relative to the given scale ?
-template<typename T>
+template<typename T,
+    FG_ENABLE_IF(T,is_floating_point)>
 bool
-approxEqualAbs(T v0,T v1,T scale,uint precisionBits=defaultPrecisionBits<T>())
+isApproxEqualRelPrec(T v0,T v1,uint precisionBits=defaultPrecisionBits<T>())
 {
-    double      precision = scast<double>(1ULL << precisionBits);
-    FGASSERT(precision > 0.0);
-    double      d0 = scast<double>(v0),
-                d1 = scast<double>(v1),
-                s = scast<double>(scale),
-                rel = std::abs(d1 - d0)/std::abs(s);
-    return (rel < precision);
+    FGASSERT(precisionBits <= defaultPrecisionBits<T>());   // Close to max
+    double      maxRelDiff = 1.0 / scast<double>(1ULL << precisionBits);
+    return isApproxEqualRel(v0,v1,maxRelDiff);
+}
+
+template<typename T,
+    FG_ENABLE_IF(T,is_floating_point)>
+bool
+isApproxEqualAbsPrec(T v0,T v1,T scale,uint precisionBits=defaultPrecisionBits<T>())
+{
+    FGASSERT(precisionBits <= defaultPrecisionBits<T>());   // default close to max
+    T           precision = T(1) / T(1ULL << precisionBits);
+    return isApproxEqual(v0,v1,scale*precision);
 }
 
 // Ensure the L2 norms are equal to the given number of bits of precision.
 // The arguments must be numerical containers supporting 'cMag' and subtraction:
 template<typename Container>
 bool
-approxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits=20)
+isApproxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits=20)
 {
     FGASSERT(lhs.size() == rhs.size());
     double          precision = scast<double>(1ULL << precisionBits),
@@ -70,31 +95,51 @@ approxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits
     return (rel < precSqr);
 }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T>
 bool
-fgApproxEqualComponentsAbs(
-    const Mat<T,nrows,ncols> &    m0,
-    const Mat<T,nrows,ncols> &    m1,
-    T                                   absDelta)
+isApproxEqualRelPrec(
+    MatV<T> const &             lhs,
+    MatV<T> const &             rhs,
+    uint                        precisionBits=defaultPrecisionBits<T>())
 {
-    FGASSERT(m0.numElems() == m1.numElems());
-    for (uint ii=0; ii<m0.numElems(); ++ii)
-        if (std::abs(m0[ii]-m1[ii])>absDelta)
+    FGASSERT(lhs.dims() == rhs.dims());
+    T           scale = cMax(mapAbs(lhs.m_data)) + cMax(mapAbs(rhs.m_data));
+    if (scale == 0)
+        return true;
+    T           maxDiff = scale / T(2ULL << precisionBits);     // 2 gives extra 1/2 factor for 'scale' sum
+    for (size_t ii=0; ii<lhs.numElems(); ++ii)
+        if (std::abs(rhs[ii]-lhs[ii]) > maxDiff)
             return false;
     return true;
 }
 
 template<typename T,uint nrows,uint ncols>
 bool
-fgApproxEqualComponents(
-    const Svec<Mat<T,nrows,ncols> > &  lhs,
-    const Svec<Mat<T,nrows,ncols> > &  rhs,
-    T                                               relTol)
+isApproxEqualRelPrec(
+    Mat<T,nrows,ncols> const &  lhs,
+    Mat<T,nrows,ncols> const &  rhs,
+    uint                        precisionBits=defaultPrecisionBits<T>())
+{
+    T           scale = (cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs))) * T(0.5);
+    if (scale == 0)
+        return true;
+    T           maxDiff = scale * bitsToPrecision(precisionBits);
+    return isApproxEqual(lhs,rhs,maxDiff);
+}
+
+template<typename T,uint nrows,uint ncols>
+bool
+isApproxEqualRelPrec(
+    Svec<Mat<T,nrows,ncols> > const &   lhs,
+    Svec<Mat<T,nrows,ncols> > const &   rhs,
+    uint                                precisionBits=defaultPrecisionBits<T>())
 {
     FGASSERT(lhs.size() == rhs.size());
-    T   scale = cMaxElem((cDims(lhs) + cDims(rhs)) * T(0.5));
+    T           scale = cMaxElem((mapAbs(cDims(lhs)) + mapAbs(cDims(rhs))) * T(0.5)),
+                precision = bitsToPrecision(precisionBits),
+                maxDiff = scale * precision;
     for (size_t ii=0; ii<lhs.size(); ++ii)
-        if (!fgApproxEqualComponentsAbs(lhs[ii],rhs[ii],scale * relTol))
+        if (!isApproxEqual(lhs[ii],rhs[ii],maxDiff))
             return false;
     return true;
 }

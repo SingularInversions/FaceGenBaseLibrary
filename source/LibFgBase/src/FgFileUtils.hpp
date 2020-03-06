@@ -20,7 +20,7 @@ typedef std::function<void(Ustrings const &,Ustrings const &)>  FgUpdateFilesFun
 // Log output to log file starting with given log number.
 // Returns true if updates were required:
 bool
-fgUpdateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func);
+updateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func);
 
 }
 

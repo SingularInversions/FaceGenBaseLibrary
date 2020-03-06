@@ -17,38 +17,11 @@ inline T
 sqr(T a)
 {return (a*a); }
 
-// Squared magnitude function base cases:
-inline float cMag(float v) {return v*v; }
-inline double cMag(double v) {return v*v; }
-inline double cMag(std::complex<double> v) {return std::norm(v); }
-template<typename T,size_t S>
-double
-cMag(std::array<T,S> const a)
-{
-    T       acc(0);
-    for (T const & e : a)
-        acc += cMag(e);
-    return acc;
-}
-template<class T>
-double
-cMag(const Svec<T> & v)              // Sum of squared magnitude values:
-{
-    double      ret(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret += cMag(v[ii]);
-    return ret;
-}
-
 // Euclidean length (L2 norm):
 template<typename T,size_t S>
 double
 cLen(std::array<T,S> const a)
 {return std::sqrt(cMag(a)); }
-template<class T>
-double
-cLen(const Svec<T> & v)
-{return std::sqrt(cMag(v)); }
 
 // Dot product function base case:
 inline double
@@ -56,7 +29,7 @@ cDot(double a,double b) {return a*b; }
 
 template<class T>
 double
-cDot(const Svec<T> & v0,const Svec<T> & v1)
+cDot(Svec<T> const & v0,Svec<T> const & v1)
 {
     double      acc(0);
     FGASSERT(v0.size() == v1.size());
@@ -65,10 +38,22 @@ cDot(const Svec<T> & v0,const Svec<T> & v1)
     return acc;
 }
 
-inline
+template<class T>
+double
+cCos(Svec<T> const & v0,Svec<T> const & v1)
+{
+    double      mag = cMag(v0) * cMag(v1);
+    FGASSERT(mag > 0.0);
+    return cDot(v0,v1) / sqrt(mag);
+}
+
+template<typename T,
+    FG_ENABLE_IF(T,is_unsigned),
+    FG_ENABLE_IF(T,is_integral)
+>
 bool
-isPow2(uint xx)
-{return ((xx != 0) && ((xx & (xx-1)) == 0)); }
+isPow2(T val)
+{return ((val != 0) && ((val & (val-1)) == 0)); }
 
 uint
 numLeadingZeros(uint32 xx);                   // 0 returns 32.
@@ -142,6 +127,7 @@ cMod(T val,T divisor)
 inline double constexpr pi()        {return 3.141592653589793237462643; }
 inline double constexpr ln2Pi()     {return 1.837877066409345483560659; }
 inline double constexpr sqrt2Pi()   {return 2.506628274631000502415765; }
+inline double constexpr exp1()      {return 2.718281828459045235360287; }
 inline double   degToRad(double degrees) {return degrees * pi() / 180.0; }
 inline float    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
@@ -176,7 +162,7 @@ typedef Svec<Modulo> Modulos;
 
 template<class T>
 double
-cSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
+cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
     double      acc = 0;
@@ -187,7 +173,7 @@ cSsd(const Svec<T> & v0,const Svec<T> & v1)    // Sum of square differences
 
 template<class T>
 double
-cSsd(const Svec<T> & vec,const T & val)          // Sum of square differences with a constant val
+cSsd(Svec<T> const & vec,T const & val)          // Sum of square differences with a constant val
 {
     double      acc = 0;
     for (size_t ii=0; ii<vec.size(); ++ii)
@@ -197,8 +183,13 @@ cSsd(const Svec<T> & vec,const T & val)          // Sum of square differences wi
 
 template<class T>
 double
-cRms(const Svec<T> & v)                          // Root mean squared
+cRms(Svec<T> const & v)                          // Root mean squared
 {return std::sqrt(cMag(v) / v.size()); }
+
+template<class T,size_t S>
+double
+cRms(Arr<T,S> const & a)
+{return cMag(a) / double(S); }
 
 // Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
 template<class T>
@@ -218,14 +209,14 @@ template<class T,size_t S>
 inline T cMin(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
 template<typename T>
 T
-cMin(const Svec<T> & v)
+cMin(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return *std::min_element(v.begin(),v.end());
 }
 template<class T>
 T
-cMax(const Svec<T> & v)
+cMax(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return *std::max_element(v.begin(),v.end());
@@ -249,40 +240,43 @@ inline double epsilonD() {return std::numeric_limits<double>::epsilon(); }
 inline float maxFloat() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
-Svec<double>
-fgConvolve(
-    const Doubles &         data,
-    const Doubles &         kernel);    // Must be odd size with convolution centre in middle.
+Doubles
+convolve(
+    Doubles const &         data,
+    Doubles const &         kernel);    // Must be odd size with convolution centre in middle.
 
 // 1D Gaussian convolution for large kernels (direct sampled kernel)
 // with zero-value boundary handling:
-Svec<double>
-fgConvolveGauss(
-    const Doubles &         in,
+Doubles
+convolveGauss(
+    Doubles const &         in,
     double                  stdev); // Kernel stdev relative to sample spacing.
 
-// Gives relative difference of 'b' vs 'a'.
+// Gives relative difference of 'b' vs 'a' with a minimum given scale.
 // Exact in the limit of small differences above the minimum scale (see below).
 // Limit values of +/- 2 for very different values.
 // 'minAbs' is used as the minimum scale for determining relative difference
 // (important when one value may be very small or zero).
 inline
 double
-fgRelDiff(double a,double b,double minAbs=epsilonD())
+cRelDiff(double a,double b,double minAbs=epsilonD())
 {
     double      del = b-a,
                 denom = std::abs(b)+std::abs(a);
-    denom = (denom < minAbs) ? minAbs : denom;
+    if (denom == 0.0)
+        return 0.0;
+    else if (denom < minAbs)
+        denom = minAbs;
     return del * 2.0 / denom;
 }
 
-Svec<double>
-fgRelDiff(const Svec<double> & a,const Svec<double> & b,double minAbs=epsilonD());
+Doubles
+cRelDiff(Doubles const & a,Doubles const & b,double minAbs=epsilonD());
 
 // Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
 template<class T>
 Svec<Svec<T> >
-fgSubsets(const Svec<T> & v,size_t min,size_t max)
+cSubsets(Svec<T> const & v,size_t min,size_t max)
 {
     Svec<Svec<T> >      ret;
     if (!v.empty() && (max>=min)) {
@@ -303,8 +297,12 @@ fgSubsets(const Svec<T> & v,size_t min,size_t max)
     return ret;
 }
 
-Svec<double>
-fgSolveCubicReal(double c0,double c1,double c2);
+Doubles
+solveCubicReal(double c0,double c1,double c2);
+
+// Z-order curve aka Lebesgue curve aka Morton number
+// interleave bits of v0,v1,v2 respectively right to left. Values must all be < 2^10.
+size_t  zorder(size_t v0,size_t v1,size_t v2);
 
 }
 

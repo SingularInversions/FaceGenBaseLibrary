@@ -51,7 +51,7 @@ renderSoft(
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const &        surf = mesh.surfaces[ss];
             for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
-                const SurfPoint &   sp = surf.surfPoints[ii];
+                SurfPoint const &   sp = surf.surfPoints[ii];
                 ProjectedSurfPoint     spp;
                 spp.label = sp.label;
                 Vec3F               spOecs = surf.surfPointPos(verts,ii),
@@ -106,8 +106,8 @@ renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor)
     return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,ro);
 }
 
-void
-fgSoftRenderTest(CLArgs const &)
+static void
+testSoftRender(CLArgs const &)
 {
     PushDir         pd(dataDir()+"base/test/render/");
 
@@ -123,21 +123,21 @@ fgSoftRenderTest(CLArgs const &)
     // Model a single triangle of equal width and height intersected by the optical axis in OECS at the barycentric centre:
     mesh.verts = { {-1,1.5,-4}, {-1,-1.5,-4}, {2,0,-4} };
     surf.tris.posInds = {{0,1,2}};         // CC winding
-    surf.surfPoints = fgSvec(SurfPoint(0,Vec3F(1.0f/3.0f)));
+    surf.surfPoints = svec(SurfPoint(0,Vec3F(1.0f/3.0f)));
     // Test that the point is visible in the current configuration:
     ro.renderSurfPoints = RenderSurfPoints::whenVisible;
     ImgC4UC     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t0.png",bind(fgImgApproxEqual,_1,_2,2U));
+    regressTestApprox<ImgC4UC>(img,"t0.png",bind(fgImgApproxEqual,_1,_2,2U));
     // Flip the winding to test the surface point is not visible from behind:
     surf.tris.posInds.back() = {1,0,2};
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t4.png",bind(fgImgApproxEqual,_1,_2,2U));
+    regressTestApprox<ImgC4UC>(img,"t4.png",bind(fgImgApproxEqual,_1,_2,2U));
     surf.tris.posInds.back() = {0,1,2};    // Restore
     // Place a triangle just in front to test occlusion of the surface point:
     mesh.verts.push_back( {2,0,-3.9} );
     surf.tris.posInds.push_back( {0,1,3} );
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t3.png",bind(fgImgApproxEqual,_1,_2,2U));
+    regressTestApprox<ImgC4UC>(img,"t3.png",bind(fgImgApproxEqual,_1,_2,2U));
 
 
     // Model 2 right angle triangles making a sqaure with a checkerboard color map (preserving aspect ratio):
@@ -153,16 +153,16 @@ fgSoftRenderTest(CLArgs const &)
     surf.material.albedoMap = make_shared<ImgC4UC>(map);
     // View undistorted checkerboard flat on:
     img = renderSoft(Vec2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t1.png",bind(fgImgApproxEqual,_1,_2,2U));
+    regressTestApprox<ImgC4UC>(img,"t1.png",bind(fgImgApproxEqual,_1,_2,2U));
     // View at an angle to see perspective distortion:
     modelview = SimilarityD(Vec3D(0,0,-4)) * SimilarityD(cRotateY(1.0)) * SimilarityD(Vec3D(0,0,4));
     img = renderSoft(Vec2UI(256),meshes,modelview,itcsToIucs,ro);
-    fgRegress<ImgC4UC>(img,"t2.png",bind(fgImgApproxEqual,_1,_2,2U));
+    regressTestApprox<ImgC4UC>(img,"t2.png",bind(fgImgApproxEqual,_1,_2,2U));
 }
 
 Cmd
-fgSoftRenderTestInfo()
-{return Cmd(fgSoftRenderTest,"rend","renderSoft function"); }
+testSoftRenderInfo()
+{return Cmd(testSoftRender,"rend","renderSoft function"); }
 
 }
 

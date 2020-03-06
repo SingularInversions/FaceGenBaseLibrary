@@ -67,7 +67,7 @@ fgSer(String const & str)
 
 template<class T>
 String
-fgSer(const Svec<T> & v)
+fgSer(Svec<T> const & v)
 {
     String      ret = fgSer(uint64(v.size()));
     for (size_t ii=0; ii<v.size(); ++ii)

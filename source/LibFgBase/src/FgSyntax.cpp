@@ -74,9 +74,7 @@ Syntax::checkExtension(Ustring const & fname,string const & ext)
 }
 
 void
-Syntax::checkExtension(
-    string const &                 fname,
-    const std::vector<string> &    exts)
+Syntax::checkExtension(string const & fname,Strings const & exts)
 {
     string      fext = toLower(pathToExt(fname));
     for (size_t ii=0; ii<exts.size(); ++ii)

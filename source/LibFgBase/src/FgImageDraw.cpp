@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgDraw.hpp"
+#include "FgImageDraw.hpp"
 #include "FgMath.hpp"
 #include "FgBounds.hpp"
 #include "FgImgDisplay.hpp"
@@ -15,27 +15,28 @@ using namespace std;
 
 namespace Fg {
 
-// Simple (aliased) filled circle. Radius 0 yields a single pixel:
 void
-fgDrawDotIrcs(
-    ImgC4UC &       img,
-    Vec2I            pos,
-    int                 radius,
-    RgbaUC            val)
+drawDotIrcs(ImgC4UC & img,Vec2I pos,uint radius,RgbaUC color)
 {
-    FGASSERT(img.height() * img.width() > 0);
-    FGASSERT(radius >= 0);
-    int         xlo = cMax(pos[0]-radius,0),
-                xhi = cMin(pos[0]+radius,int(img.width()-1)),
-                ylo = cMax(pos[1]-radius,0),
-                yhi = cMin(pos[1]+radius,int(img.height()-1)),
-                rr = radius * radius;
+    FGASSERT(!img.empty());
+    int         rad = scast<int>(radius),
+                xlo = cMax(pos[0]-rad,0),
+                xhi = cMin(pos[0]+rad,int(img.width()-1)),
+                ylo = cMax(pos[1]-rad,0),
+                yhi = cMin(pos[1]+rad,int(img.height()-1)),
+                rr = rad * rad;
     for (int yy=ylo; yy<=yhi; yy++) {
         for (int xx=xlo; xx<=xhi; xx++) {
             if ((sqr(yy-pos[1]) + sqr(xx-pos[0])) <= rr)
-                img.xy(xx,yy) = val;
+                img.xy(xx,yy) = color;
         }
     }
+}
+void
+drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color)
+{
+    Vec2F               ircs = cIucsToIrcs(img.dims(),Vec2F(posIucs));
+    drawDotIrcs(img,round<int,float,2,1>(ircs),radius,color);
 }
 
 // Simple (aliased) Bresenham line draw, single-pixel thickness. Efficiency could be greatly
@@ -94,7 +95,7 @@ fgDrawBarGraph(
     size_t          numBins = data.size();
     if (img.width() != numBins) {                                   // Start clean if wrong size
         img.resize(uint(numBins),uint(numBins));
-        fgImgFill(img,RgbaUC(0,0,0,255));
+        cFill(img.m_data,RgbaUC(0,0,0,255));
     }
     double          maxVal = cMax(data),
                     vscale = 0.9 * double(img.height()) / maxVal;
@@ -132,7 +133,7 @@ fgDrawFunction(
 
 void
 fgDrawFunctions(
-    const MatD &   funcs)      // Columns are function values
+    MatD const &   funcs)      // Columns are function values
 {
     uint            dim = funcs.numRows(),
                     num = funcs.numCols();

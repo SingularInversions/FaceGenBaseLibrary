@@ -118,6 +118,7 @@ typedef AffineEw<double,3>      AffineEw3D;
 
 typedef Svec<AffineEw2F>        AffineEw2Fs;
 typedef Svec<AffineEw3F>        AffineEw3Fs;
+typedef Svec<AffineEw3D>        AffineEw3Ds;
 
 template<class T,uint dim>
 inline std::ostream &

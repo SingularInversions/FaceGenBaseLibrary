@@ -23,6 +23,7 @@
 // C++ standard libraries:
 
 #include <algorithm>
+#include <atomic>
 #include <codecvt>
 #include <complex>
 #include <condition_variable>

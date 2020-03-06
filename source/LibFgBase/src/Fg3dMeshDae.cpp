@@ -22,7 +22,7 @@ namespace Fg {
 void
 saveDae(
     Ustring const &            filename,
-    const vector<Mesh> &    meshes,
+    Meshes const &    meshes,
     string                      imgFormat)
 {
     Path          fpath(filename);
@@ -53,7 +53,7 @@ saveDae(
                 if (contains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
                 else {
-                    imgSaveAnyFormat(fpath.dir()+imgFile,*surf.material.albedoMap);
+                    saveImage(fpath.dir()+imgFile,*surf.material.albedoMap);
                     imagesSaved[imgPtr] = imgFile;
                 }
                 lib_img <<
@@ -230,10 +230,10 @@ fgSaveDaeTest(CLArgs const & args)
     Ustring        dd = dataDir() + "base/test/";
     Mesh        teethU = loadTri(dd+"teethUpper.tri"),
                     teethL = loadTri(dd+"teethLower.tri");
-    auto            teethImg = make_shared<ImgC4UC>(imgLoadAnyFormat(dd+"teeth.png"));
+    auto            teethImg = make_shared<ImgC4UC>(loadImage(dd+"teeth.png"));
     teethU.surfaces[0].material.albedoMap = teethImg;
     teethL.surfaces[0].material.albedoMap = teethImg;
-    saveDae("teethExportDae",fgSvec(teethU,teethL));
+    saveDae("teethExportDae",svec(teethU,teethL));
     regressFileRel("teethExportDae.dae","base/test/");
     regressFileRel("teethExportDae0_0.png","base/test/");
 }

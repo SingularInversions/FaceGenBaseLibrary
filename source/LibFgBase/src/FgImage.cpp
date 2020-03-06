@@ -20,7 +20,7 @@ operator<<(std::ostream & os,const ImgC4UC & img)
     if (img.empty())
         return os << "Empty image";
     Mat<uchar,4,1>    init = img[0].m_c;
-    Mat<uchar,4,2>    bounds = fgJoinHoriz(init,init);
+    Mat<uchar,4,2>    bounds = catHoriz(init,init);
     for (Iter2UI it(img.dims()); it.next(); it.valid()) {
         RgbaUC    pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {
@@ -34,7 +34,7 @@ operator<<(std::ostream & os,const ImgC4UC & img)
 }
 
 Img<FgBool>
-fgAnd(const Img<FgBool> & lhs,const Img<FgBool> & rhs)
+mapAnd(const Img<FgBool> & lhs,const Img<FgBool> & rhs)
 {
     FGASSERT(lhs.dims() == rhs.dims());
     Img<FgBool>     ret(lhs.dims());
@@ -44,19 +44,17 @@ fgAnd(const Img<FgBool> & lhs,const Img<FgBool> & rhs)
 }
 
 VArray<CoordWgt,4>
-blerpCoordsCull(Vec2UI dims,Vec2F coordIucs)
+cLerpCullIrcs(Vec2UI dims,Vec2F coordIrcs)
 {
     VArray<CoordWgt,4>   ret;
-    float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
-                yf = coordIucs[1] * float(dims[1]) - 0.5f;
-    int         xil = int(std::floor(xf)),
-                yil = int(std::floor(yf)),
+    int         xil = int(std::floor(coordIrcs[0])),
+                yil = int(std::floor(coordIrcs[1])),
                 xih = xil + 1,
                 yih = yil + 1,
                 wid(dims[0]),
                 hgt(dims[1]);
-    float       wxh = xf - float(xil),
-                wyh = yf - float(yil),
+    float       wxh = coordIrcs[0] - float(xil),
+                wyh = coordIrcs[1] - float(yil),
                 wxl = 1.0f - wxh,
                 wyl = 1.0f - wyh;
     if ((yil >= 0) && (yil < hgt)) {
@@ -90,11 +88,20 @@ blerpCoordsCull(Vec2UI dims,Vec2F coordIucs)
     return ret;
 }
 
+VArray<CoordWgt,4>
+cLerpCullIucs(Vec2UI dims,Vec2F coordIucs)
+{
+    VArray<CoordWgt,4>   ret;
+    float       xf = coordIucs[0] * float(dims[0]) - 0.5f,     // IRCS
+                yf = coordIucs[1] * float(dims[1]) - 0.5f;
+    return cLerpCullIrcs(dims,Vec2F{xf,yf});
+}
+
 RgbaF
 sampleAlpha(const ImgC4UC & img,Vec2F coordIucs)
 {
     RgbaF                 ret(0);
-    VArray<CoordWgt,4>   ics = blerpCoordsCull(img.dims(),coordIucs);
+    VArray<CoordWgt,4>   ics = cLerpCullIucs(img.dims(),coordIucs);
     for (uint ii=0; ii<ics.size(); ++ii)
         ret += RgbaF(img[ics[ii].coordIrcs]) * ics[ii].wgt;
     return ret;
@@ -557,9 +564,9 @@ fgSsi(const Img3F & img,uchar borderPolicy)
     Img3Fs        ret(log2Floor(cMinElem(img.dims()))+1);
     ret[0] = img;
     for (size_t ii=0; ii<ret.size()-1; ++ii) {
-        fgSmoothFloat(ret[ii],ret[ii],borderPolicy);
-        fgSmoothFloat(ret[ii],ret[ii],borderPolicy);
-        fgShrink2Float(ret[ii],ret[ii+1]);
+        smoothFloat(ret[ii],ret[ii],borderPolicy);
+        smoothFloat(ret[ii],ret[ii],borderPolicy);
+        shrink2Float(ret[ii],ret[ii+1]);
     }
     return ret;
 }

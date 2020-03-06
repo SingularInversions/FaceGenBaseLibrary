@@ -15,56 +15,13 @@
 #include "FgNc.hpp"
 #include "FgParse.hpp"
 
+using namespace std;
 using namespace std::placeholders;
 
 namespace Fg {
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-
-#include <crtdbg.h>
-
-struct FgMemoryLeakDetector::impl
-{
-    _CrtMemState before;
-};
-
-FgMemoryLeakDetector::FgMemoryLeakDetector():
-    m_p(new impl)
-{
-    _CrtMemCheckpoint(&m_p->before);
-}
-
-FgMemoryLeakDetector::~FgMemoryLeakDetector()
-{
-    delete m_p;
-}
-
 void
-FgMemoryLeakDetector::throw_if_leaked(const char * whichfn)
-{
-    _CrtMemState after;
-    _CrtMemCheckpoint(&after);
-    _CrtMemState diff;
-    if(_CrtMemDifference(&diff,
-                         &m_p->before,
-                         &after))
-    {
-        TEST_THROW("The test " << whichfn << " has a memory leak");
-    }
-}
-
-#else
-
-FgMemoryLeakDetector::FgMemoryLeakDetector(){}
-FgMemoryLeakDetector::~FgMemoryLeakDetector(){}
-void FgMemoryLeakDetector::throw_if_leaked(const char * /*whichfn*/){}
-
-#endif
-
-using namespace std;
-
-void
-fgRegressFail(
+regressFail(
     Ustring const & testName,
     Ustring const & refName)
 {
@@ -76,7 +33,7 @@ regressFile(Ustring const & baselineRelPath,Ustring const & queryPath,const Equa
 {
     if (!pathExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
-    bool                    regressOverwrite = fgOverwriteBaselines();
+    bool                    regressOverwrite = overwriteBaselines();
     Ustring                baselinePath = dataDir() + baselineRelPath;
     if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
@@ -106,13 +63,13 @@ compareImages(
     uint                maxDelta)
 {
     ImgC4UC         i1,i2;
-    imgLoadAnyFormat(f1,i1);
-    imgLoadAnyFormat(f2,i2);
+    loadImage(f1,i1);
+    loadImage(f2,i2);
     return fgImgApproxEqual(i1,i2,maxDelta);
 }
 
 void
-fgRegressImage(
+regressImage(
     string const &      testFile,
     string const &      refPath,
     uint                maxDelta)
@@ -123,16 +80,11 @@ fgRegressImage(
 
 template<>
 ImgC4UC
-fgRegressLoad(Ustring const & path)
-{return imgLoadAnyFormat(path); }
-
-template<>
-void
-fgRegressSave(Ustring const & path,const ImgC4UC & img)
-{imgSaveAnyFormat(path,img); }
+regressLoad(Ustring const & path)
+{return loadImage(path); }
 
 void
-fgRegressString(string const & data,Ustring const & relPath)
+regressString(string const & data,Ustring const & relPath)
 {
     Ustring        dd = dataDir();
     if (data == loadRawString(dd+relPath))

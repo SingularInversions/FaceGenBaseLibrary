@@ -21,7 +21,7 @@ namespace Fg {
 void
 savePly(
     Ustring const &        fname,
-    const vector<Mesh> & meshes,
+    Meshes const & meshes,
     string                  imgFormat)
 {
     Mesh    mesh = mergeMeshes(meshes);
@@ -36,7 +36,7 @@ savePly(
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         if (mesh.surfaces[ii].material.albedoMap) {
             Ustring    texFile = path.base + toStr(ii) + "." + imgFormat;
-            imgSaveAnyFormat(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
+            saveImage(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
             ofs << "comment TextureFile " << texFile << "\n";
         }
     }
@@ -88,10 +88,10 @@ fgSavePlyTest(CLArgs const & args)
     Ustring            dd = dataDir();
     string              rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    savePly("meshExportPly",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    savePly("meshExportPly",svec(mouth,glasses));
     regressFileRel("meshExportPly.ply","base/test/");
     regressFileRel("meshExportPly0.png","base/test/");
     regressFileRel("meshExportPly1.png","base/test/");

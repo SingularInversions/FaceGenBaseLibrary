@@ -21,7 +21,7 @@ GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,const 
 {
     Opt<TriPoint>   ret;
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!fgBoundsIncludes(grid.dims(),gridCoord))
+    if (!boundsIncludes(grid.dims(),gridCoord))
         return ret;
     Vec2UI           binIdx = Vec2UI(gridCoord);
     const Uints &     bin = grid[binIdx];
@@ -55,7 +55,7 @@ GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,v
 {
     ret.clear();
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!fgBoundsIncludes(grid.dims(),gridCoord))
+    if (!boundsIncludes(grid.dims(),gridCoord))
         return;
     Vec2UI           binIdx = Vec2UI(gridCoord);
     const Uints &     bin = grid[binIdx];
@@ -107,7 +107,7 @@ gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
-    ret.clientToGridIpcs = AffineEw2F(fgJoinHoriz(domainLo,domainHi),range);
+    ret.clientToGridIpcs = AffineEw2F(catHoriz(domainLo,domainHi),range);
     ret.grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Vec3UI       tri = tris[ii];
@@ -119,7 +119,7 @@ gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
                 ret.clientToGridIpcs * p0,
                 ret.clientToGridIpcs * p1,
                 ret.clientToGridIpcs * p2));
-            if (fgBoundsIntersect(projBounds,range,projBounds)) {
+            if (boundsIntersect(projBounds,range,projBounds)) {
                 Mat22UI       bnds = Mat22UI(projBounds);
                 for (Iter2UI it(bnds); it.valid(); it.next())
                     ret.grid[it()].push_back(uint(ii));
@@ -162,7 +162,7 @@ fgGridTrianglesTest(CLArgs const &)
                     verts[isect.pointInds[0]] * isect.baryCoord[0] +
                     verts[isect.pointInds[1]] * isect.baryCoord[1] +
                     verts[isect.pointInds[2]] * isect.baryCoord[2]);
-            FGASSERT(approxEqualRelMag(pos,rpos,30));
+            FGASSERT(isApproxEqualRelMag(pos,rpos,30));
         }
         else
             FGASSERT(res.size() == 0);

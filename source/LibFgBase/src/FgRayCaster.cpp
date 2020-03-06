@@ -23,7 +23,7 @@ TriInd::TriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
 }
 
 RayCaster::RayCaster(
-    const Meshes &      meshes,
+    Meshes const &      meshes,
     SimilarityD         modelview,
     AffineEw2D          itcsToIucs_,
     const Lighting &    lighting_,
@@ -65,7 +65,7 @@ RayCaster::RayCaster(
         for (Vec3F v : verts)
             iucsVerts.push_back(oecsToIucs(v));
         for (size_t ss=0; ss<triss.size(); ++ss) {
-            const Tris &  tris = triss[ss];
+            Tris const &  tris = triss[ss];
             for (size_t tt=0; tt<tris.posInds.size(); ++tt) {
                 Vec3UI       t = tris.posInds[tt];
                 Vec3F        v0 = iucsVerts[t[0]],
@@ -92,7 +92,7 @@ RayCaster::cast(Vec2F posIucs) const
     RgbaF               color = background;
     for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
         Intersect           isct = best[ii-1].second;
-        const Tris &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
+        Tris const &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         const Normals &     norms = normss[isct.triInd.meshIdx];
         Vec3UI              vis = tris.posInds[isct.triInd.triIdx];
@@ -160,7 +160,7 @@ RayCaster::closestIntersects(Vec2F posIucs) const
     const TriInds &     triInds = grid[posIucs];
     FgBestN<float,Intersect,4> best;
     for (TriInd ti : triInds) {
-        const Tris &        tris = trisss[ti.meshIdx][ti.surfIdx];
+        Tris const &        tris = trisss[ti.meshIdx][ti.surfIdx];
         Vec3UI              vis = tris.posInds[ti.triIdx];
         Vec3Fs const &      iucsVerts = iucsVertss[ti.meshIdx];
         Vec3F               v0 = iucsVerts[vis[0]],

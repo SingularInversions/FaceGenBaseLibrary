@@ -67,7 +67,7 @@ std::ostream &
 operator<<(std::ostream & os,const Arr<T,S> & arr)
 {
     os << "[";
-    for (const T & e : arr)
+    for (T const & e : arr)
         os << e << " ";
     return os << "]";
 }

@@ -15,18 +15,20 @@
 
 namespace Fg {
 
-void    imgLoadAnyFormat(Ustring const & fname,ImgC4UC & img);
-void    imgLoadAnyFormat(Ustring const & fname,ImgF & img);
-void    imgLoadAnyFormat(Ustring const & fname,ImgUC & img);
+// Load an image from any supported format:
+void    loadImage(Ustring const & fname,ImgC4UC & img);
+void    loadImage(Ustring const & fname,ImgF & img);
+void    loadImage(Ustring const & fname,ImgUC & img);
 
 ImgC4UC
-imgLoadAnyFormat(Ustring const & fname);
+loadImage(Ustring const & fname);
+
+// Save an image to any supported format:
+void
+saveImage(Ustring const & fname,const ImgC4UC & img);
 
 void
-imgSaveAnyFormat(Ustring const & fname,const ImgC4UC & img);
-
-void
-imgSaveAnyFormat(Ustring const & fname,const ImgUC & img);
+saveImage(Ustring const & fname,const ImgUC & img);
 
 struct  ImgFileFormat
 {

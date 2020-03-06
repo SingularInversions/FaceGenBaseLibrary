@@ -33,11 +33,11 @@ combinesurfs(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
         "    All input meshes must have identical vertex lists.\n"
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     while (syntax.more()) {
         string  name = syntax.next();
         if (syntax.more()) {
-            Mesh    next = meshLoadAnyFormat(name);
+            Mesh    next = loadMesh(name);
             cat_(mesh.surfaces,next.surfaces);
         }
         else
@@ -53,7 +53,7 @@ convert(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     meshSaveAnyFormat(mesh,syntax.next());
 }
 
@@ -65,8 +65,8 @@ copyUvList(CLArgs const & args)
         "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
         "    <ext1> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        in = meshLoadAnyFormat(syntax.next());
-    Mesh        out = meshLoadAnyFormat(syntax.next());
+    Mesh        in = loadMesh(syntax.next());
+    Mesh        out = loadMesh(syntax.next());
     if (in.uvs.size() != out.uvs.size())
         syntax.error("Incompatible UV list sizes");
     out.uvs = in.uvs;
@@ -82,8 +82,8 @@ copyUvs(CLArgs const & args)
         "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
         "    <ext1> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        in = meshLoadAnyFormat(syntax.next());
-    Mesh        out = meshLoadAnyFormat(syntax.next());
+    Mesh        in = loadMesh(syntax.next());
+    Mesh        out = loadMesh(syntax.next());
     out.uvs = in.uvs;
     if (in.surfaces.size() != out.surfaces.size())
         fgThrow("Incompatible number of surfaces");
@@ -109,8 +109,8 @@ copyverts(CLArgs const & args)
         "    <ext1> = " + meshSaveFormatsCLDescription() + "\n"
         "    <out> is modified to have the vertex list from <in>"
         );
-    Mesh        in = meshLoadAnyFormat(syntax.next());
-    Mesh        out = meshLoadAnyFormat(syntax.next());
+    Mesh        in = loadMesh(syntax.next());
+    Mesh        out = loadMesh(syntax.next());
     if (in.verts.size() != out.verts.size())
         syntax.error("Incompatible vertex list sizes");
     out.verts = in.verts;
@@ -130,8 +130,8 @@ emboss(CLArgs const & args)
         "    <ext1>    = " + meshSaveFormatsCLDescription()
         );
     ImgUC         img;
-    imgLoadAnyFormat(syntax.next(),img);      // Treat as greyscale
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    loadImage(syntax.next(),img);      // Treat as greyscale
+    Mesh        mesh = loadMesh(syntax.next());
     if (mesh.uvs.empty())
         fgThrow("Mesh has no UVs",syntax.curr());
     if (mesh.surfaces.size() != 1)
@@ -152,7 +152,7 @@ invWind(CLArgs const & args)
         "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
         "    Inverts the winding of all facets in <in> and saves to <out>"
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf &   surf = mesh.surfaces[ss];
         for (size_t ii=0; ii<surf.tris.size(); ++ii)
@@ -176,7 +176,7 @@ markVerts(CLArgs const & args)
         "    <out>.tri will be saved after marking a vertex in <in>.tri that is closest to each vertex in <verts>.<ext>."
         );
     Mesh    mesh = loadTri(syntax.next());
-    Vec3Fs     verts = meshLoadAnyFormat(syntax.next()).verts;
+    Vec3Fs     verts = loadMesh(syntax.next()).verts;
     float       dim = cMaxElem(cDims(mesh.verts));
     uint        poorMatches = 0,
                 totalMatches = 0;
@@ -214,11 +214,11 @@ mmerge(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     while (syntax.more()) {
         string  name = syntax.next();
         if (syntax.more())
-            mesh = mergeMeshes(mesh,meshLoadAnyFormat(name));
+            mesh = mergeMeshes(mesh,loadMesh(name));
         else
             meshSaveAnyFormat(mesh,name);
     }
@@ -232,7 +232,7 @@ mergesurfs(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    Mesh        mesh = loadMesh(syntax.next());
     if (mesh.surfaces.size() < 2)
         fgout << "WARNING: No extra surfaces to merge.";
     else
@@ -254,7 +254,7 @@ rdf(CLArgs const & args)
                     fno = fni;
     if (syntax.more())
         fno = syntax.next();
-    saveTri(fno,fgRemoveDuplicateFacets(loadTri(fni)));
+    saveTri(fno,removeDuplicateFacets(loadTri(fni)));
 }
 
 void
@@ -266,7 +266,7 @@ rt(CLArgs const & args)
         "    <extOut>   - " + meshSaveFormatsCLDescription() + "\n"
         "    <triEquivIndex> - Tri-equivalent index of triangle or half-quad to remove."
         );
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    Mesh        mesh = loadMesh(syntax.next());
     Ustring        outName = syntax.next();
     while (syntax.more()) {
         size_t          si = syntax.nextAs<size_t>(),
@@ -309,7 +309,7 @@ ruv(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh = meshRemoveUnusedVerts(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -327,12 +327,12 @@ sortFacets(CLArgs const & args)
         "Will find the best compromise sorted rendering order for front/back (+/-Z), side (+/-X)\n"
         "and top (Y) views, on a per-surface basis, and save the sorted result. All quads are\n"
         "converted to tris and all surfaces are merged into one.");
-    Mesh        mesh = meshLoadAnyFormat(syn.next());
-    ImgC4UC     albedo = imgLoadAnyFormat(syn.next());
+    Mesh        mesh = loadMesh(syn.next());
+    ImgC4UC     albedo = loadImage(syn.next());
     Ustring        outName = syn.next();
     Mesh        opaque;
     while (syn.more())
-        opaque = mergeMeshes(opaque,meshLoadAnyFormat(syn.next()));
+        opaque = mergeMeshes(opaque,loadMesh(syn.next()));
     mesh = sortTransparentFaces(mesh,albedo,opaque);
     meshSaveAnyFormat(mesh,outName);
 }
@@ -345,7 +345,7 @@ mergenamedsurfs(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh = mergeSameNameSurfaces(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -360,7 +360,7 @@ splitObjByMtl(CLArgs const & args)
     string      base = syntax.next();
     Mesh    m = mesh;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
-        m.surfaces = fgSvec(mesh.surfaces[ii]);
+        m.surfaces = svec(mesh.surfaces[ii]);
         saveTri(base+"_"+mesh.surfaces[ii].name+".tri",m);
     }
 }
@@ -373,7 +373,7 @@ splitsurfsbyuvs(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh = splitSurfsByUvs(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -388,14 +388,14 @@ splitsurface(CLArgs const & args)
         "    * Splits surfaces by connected vertex indices.\n"
         "    * Stores results to separate meshes with suffix '_<num>.tri'"
         );
-    Mesh                mesh = meshLoadAnyFormat(syntax.next());
+    Mesh                mesh = loadMesh(syntax.next());
     Ustring                base = pathToBase(syntax.curr());
     uint                    idx = 0;
     Mesh                out = mesh;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         vector<Surf>     surfs = fgSplitSurface(mesh.surfaces[ss]);
         for (size_t ii=0; ii<surfs.size(); ++ii) {
-            out.surfaces = fgSvec(surfs[ii]);
+            out.surfaces = svec(surfs[ii]);
             saveTri(base+"_"+toStr(idx++)+".tri",out);
         }
     }
@@ -409,7 +409,7 @@ surfAdd(CLArgs const & args)
         "    <ext>  - " + meshLoadFormatsCLDescription() + "\n"
         "    <name> - Surface name"
         );
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    Mesh        mesh = loadMesh(syntax.next());
     Surf     surf;
     surf.name = syntax.next();
     mesh.surfaces.push_back(surf);
@@ -425,8 +425,8 @@ surfCopy(CLArgs const & args)
         " * tris only, uvs not preserved."
         );
     Mesh        from = loadFgmesh(syntax.next()),
-                    to = meshLoadAnyFormat(syntax.next());
-    saveFgmesh(syntax.next(),fgCopySurfaceStructure(from,to));
+                    to = loadMesh(syntax.next());
+    saveFgmesh(syntax.next(),copySurfaceStructure(from,to));
 }
 
 void
@@ -437,7 +437,7 @@ surfDel(CLArgs const & args)
         "    <ext> - " + meshLoadFormatsCLDescription() + "\n"
         "    <idx> - Which surface index to delete"
         );
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    Mesh        mesh = loadMesh(syntax.next());
     size_t          idx = syntax.nextAs<uint>();
     if (idx >= mesh.surfaces.size())
         syntax.error("Selected surface index out of range",toStr(idx));
@@ -452,7 +452,7 @@ surfList(CLArgs const & args)
         "<in>.<ext>\n"
         "    <ext> - " + meshLoadFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const & surf = mesh.surfaces[ss];
         fgout << fgnl << ss << ": " << surf.name;
@@ -510,7 +510,7 @@ void
 spList(CLArgs const & args)
 {
     Syntax    syntax(args,"<in>.fgmesh");
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const & surf = mesh.surfaces[ss];
         fgout << fgnl << "Surface " << ss << ": " << surf.name << fgpush;
@@ -582,7 +582,7 @@ toTris(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh.convertToTris();
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -595,7 +595,7 @@ unifyuvs(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh = unifyIdenticalUvs(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -608,7 +608,7 @@ unifyverts(CLArgs const & args)
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription()
         );
-    Mesh    mesh = meshLoadAnyFormat(syntax.next());
+    Mesh    mesh = loadMesh(syntax.next());
     mesh = unifyIdenticalVerts(mesh);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -621,7 +621,7 @@ uvclamp(CLArgs const & args)
         "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
         "    <ext1> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        in = meshLoadAnyFormat(syntax.next());
+    Mesh        in = loadMesh(syntax.next());
     Mat22F        cb(0,1,0,1);
     for (size_t ii=0; ii<in.uvs.size(); ++ii)
         in.uvs[ii] = clampBounds(in.uvs[ii],cb);
@@ -643,14 +643,14 @@ uvSolidImage(CLArgs const & args)
         "    <image>    - Output image.\n"
         "    <extI>     - " + imgFileExtensionsDescription()
         );
-    Mesh        mesh = meshLoadAnyFormat(syn.next());
+    Mesh        mesh = loadMesh(syn.next());
     uint            sz = syn.nextAs<uint>();
     if (sz > (1 << 12))
         syn.error("<size> is too large",syn.curr());
     ImgUC         img = getUvCover(mesh,Vec2UI(sz*4));
     img = fgShrink2(img);
     img = fgShrink2(img);
-    imgSaveAnyFormat(syn.next(),img);
+    saveImage(syn.next(),img);
 }
 
 void
@@ -663,11 +663,11 @@ uvWireframeImage(CLArgs const & args)
         "    <image>    - If this file already exists it will be used as the background.\n"
         "    <extI>     - " + imgFileExtensionsDescription()
         );
-    Mesh        mesh = meshLoadAnyFormat(syn.next());
+    Mesh        mesh = loadMesh(syn.next());
     ImgC4UC     img;
     if (pathExists(syn.peekNext()))
-        imgLoadAnyFormat(syn.peekNext(),img);
-    imgSaveAnyFormat(syn.next(),cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
+        loadImage(syn.peekNext(),img);
+    saveImage(syn.next(),cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
 }
 
 void
@@ -679,14 +679,14 @@ uvmask(CLArgs const & args)
         "    <ext1> = " + imgFileExtensionsDescription() + "\n"
         "    <ext2> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        mesh = meshLoadAnyFormat(syntax.next());
+    Mesh        mesh = loadMesh(syntax.next());
     ImgC4UC     img;
-    imgLoadAnyFormat(syntax.next(),img);
+    loadImage(syntax.next(),img);
     Img<FgBool> mask = Img<FgBool>(img.dims());
     for (Iter2UI it(img.dims()); it.valid(); it.next()) {
         Vec4UC   px = img[it()].m_c;
         mask[it()] = (px[0] > 0) || (px[1] > 0) || (px[2] > 0); }
-    mask = fgAnd(mask,fgFlipHoriz(mask));
+    mask = mapAnd(mask,flipHoriz(mask));
     mesh = fg3dMaskFromUvs(mesh,mask);
     meshSaveAnyFormat(mesh,syntax.next());
 }
@@ -699,7 +699,7 @@ uvunwrap(CLArgs const & args)
         "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
         "    <ext1> = " + meshSaveFormatsCLDescription()
         );
-    Mesh        in = meshLoadAnyFormat(syntax.next());
+    Mesh        in = loadMesh(syntax.next());
     for (size_t ii=0; ii<in.uvs.size(); ++ii) {
         Vec2F    uv = in.uvs[ii];
         in.uvs[ii][0] = cMod(uv[0],1.0f);
@@ -722,7 +722,7 @@ xformApply(CLArgs const & args)
         );
     SimilarityD     xform;
     loadBsaXml(syntax.next(),xform);
-    Mesh            in = meshLoadAnyFormat(syntax.next());
+    Mesh            in = loadMesh(syntax.next());
     Mesh            out(in);
     out.transform(Affine3F(xform.asAffine()));
     meshSaveAnyFormat(out,syntax.next());
@@ -747,8 +747,8 @@ xformCreateMeshes(CLArgs const & args)
         "    <ex> = " + meshLoadFormatsCLDescription()
         );
     string      simFname = syntax.next();
-    Mesh    base = meshLoadAnyFormat(syntax.next());
-    Mesh    targ = meshLoadAnyFormat(syntax.next());
+    Mesh    base = loadMesh(syntax.next());
+    Mesh    targ = loadMesh(syntax.next());
     if (base.verts.size() != targ.verts.size())
         fgThrow("Base and target mesh vertex counts are different");
     Vec3Ds    bv = scast<double>(base.verts),
@@ -854,7 +854,7 @@ xformMirror(CLArgs const & args)
         axis = 3;
     else
         syn.error("Invalid value of <axis>",axisStr);
-    Mesh        mesh = meshLoadAnyFormat(syn.next());
+    Mesh        mesh = loadMesh(syn.next());
     Mat33F        xf = Mat33F::identity();
     xf.rc(axis,axis) = -1.0f;
     mesh.transform(xf);

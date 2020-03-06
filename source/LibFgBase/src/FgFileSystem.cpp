@@ -134,7 +134,7 @@ fileReadable(Ustring const & filename)
 }
 
 Ustring
-getDirUserAppDataLocal(const vector<string> & subPath)
+getDirUserAppDataLocal(Strings const & subPath)
 {
     Ustring    ret = getDirUserAppDataLocal();
     for (size_t ii=0; ii<subPath.size(); ++ii) {
@@ -179,7 +179,7 @@ equateFilesBinary(
 bool
 equateFilesText(Ustring const & fname0,Ustring const & fname1)
 {
-    return (fgSplitLinesUtf8(loadRawString(fname0)) == fgSplitLinesUtf8(loadRawString(fname1)));
+    return (splitLinesUtf8(loadRawString(fname0)) == splitLinesUtf8(loadRawString(fname1)));
 }
 
 static Ustring s_fgDataDir;

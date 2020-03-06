@@ -69,11 +69,16 @@ struct  Mesh
     Mesh(Vec3Fs const & vts) : verts(vts) {}
 
     explicit
-    Mesh(const TriSurf & ts) : verts(ts.verts), surfaces(fgSvec(Surf(ts.tris))) {}
+    Mesh(TriSurf const & ts) : verts{ts.verts}, surfaces{{Surf{ts.tris}}} {}
 
-    Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(fgSvec(Surf(ts))) {}
+    explicit
+    Mesh(QuadSurf const & qs) : verts{qs.verts}, surfaces{{Surf{qs.quads}}} {}
 
-    Mesh(Vec3Fs const & vts,Surf const & surf) : verts(vts), surfaces(fgSvec(surf)) {}
+    Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(svec(Surf(ts))) {}
+
+    Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
+
+    Mesh(Vec3Fs const & vts,Surf const & surf) : verts(vts), surfaces(svec(surf)) {}
 
     Mesh(Vec3Fs const & vts,const Surfs & surfs) : verts(vts), surfaces(surfs) {}
 
@@ -285,16 +290,16 @@ void    fgReadp(std::istream &,Mesh &);
 void    fgWritep(std::ostream &,Mesh const &);
 
 std::ostream &
-operator<<(std::ostream &,const Meshes &);
+operator<<(std::ostream &,Meshes const &);
 
 Mat32F
-cBounds(const Meshes & meshes);
+cBounds(Meshes const & meshes);
 
 size_t
-fgNumTriEquivs(const Meshes & meshes);
+fgNumTriEquivs(Meshes const & meshes);
 
 std::set<Ustring>
-fgMorphs(const Meshes & meshes);
+fgMorphs(Meshes const & meshes);
 
 inline
 PoseVals
@@ -306,7 +311,7 @@ cPoseVals(const Svec<Mesh> & meshes);
 
 // If 'loop' not selected then just do flat subdivision:
 Mesh
-fgSubdivide(Mesh const &,bool loop = true);
+subdivide(Mesh const &,bool loop = true);
 
 }
 

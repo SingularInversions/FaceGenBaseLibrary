@@ -14,10 +14,10 @@ using namespace std;
 
 namespace Fg {
 
-VecMag
+VecMagD
 closestPointInSegment(Vec3D p0,Vec3D p1)
 {
-    VecMag    ret;
+    VecMagD    ret;
     Vec3D    segment = p1-p0;
     double      lenSqr = segment.mag();
     if (lenSqr == 0.0) {
@@ -44,7 +44,7 @@ closestPointInSegment(Vec3D p0,Vec3D p1)
     return ret;
 }
 
-VecMag
+VecMagD
 closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2)
 {
     Vec3D       v0 = vert0 - point,
@@ -91,7 +91,7 @@ closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2)
         return closestPointInSegment(v2,v0);
     double      dot = cDot(norm,v0),
                 dmag = dot / normLensqr;
-    VecMag    ret;
+    VecMagD    ret;
     ret.vec = norm * dmag;
     ret.mag = dot * dmag;
     return ret;

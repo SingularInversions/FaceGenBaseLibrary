@@ -116,7 +116,7 @@ struct  Iter
 
     Mat<T,dim,2>
     inclusiveRange() const
-    {return fgJoinHoriz(m_bndsLoIncl,m_bndsHiExcl - Mat<T,dim,1>(1)); }
+    {return catHoriz(m_bndsLoIncl,m_bndsHiExcl - Mat<T,dim,1>(1)); }
 
     Mat<T,dim,1>
     dims() const
@@ -130,7 +130,7 @@ struct  Iter
     {
         return 
             Mat<T,dim,2>(
-                fgBoundsIntersection(
+                cBoundsIntersection(
                     Mat<int,dim,1>(m_idx) * Mat<int,1,2>(1) +
                         Mat<int,dim,2>(-1,1,-1,1,-1,1),
                     Mat<int,dim,2>(inclusiveRange())));
@@ -142,7 +142,7 @@ private:
     validRange()
     {
         for (uint dd=0; dd<dim; dd++)
-            if (m_bndsHiExcl[dd] < m_bndsLoIncl[dd])
+            if (m_bndsHiExcl[dd] <= m_bndsLoIncl[dd])
                 return false;
         return true;
     }
@@ -168,9 +168,13 @@ operator<<(std::ostream & os,const Iter<T,dim> & it)
         << " valid: " << it.m_inBounds;
 }
 
-typedef Iter<int,2>   Iter2I;
-typedef Iter<uint,2>  Iter2UI;
-typedef Iter<uint,3>  Iter3UI;
+typedef Iter<int,2>         Iter2I;
+typedef Iter<uint,2>        Iter2UI;
+typedef Iter<uint64,2>      Iter2UL;
+
+typedef Iter<uint,3>        Iter3UI;
+typedef Iter<size_t,3>      Iter3SZ;
+typedef Iter<uint64,3>      Iter3UL;
 
 // Inclusive bounds iterator:
 template<typename T,uint dim>

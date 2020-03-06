@@ -25,12 +25,12 @@ namespace Fg {
 static
 void
 addSubdivisions(
-    vector<Mesh> &  meshes,
+    Meshes &  meshes,
     Mesh const &    mesh)
 {
     meshes.push_back(mesh);
     for (uint ii=0; ii<5; ++ii)
-        meshes.push_back(fgSubdivide(meshes.back()));
+        meshes.push_back(subdivide(meshes.back()));
 }
 
 static
@@ -45,14 +45,14 @@ test3dMeshSubdivision(CLArgs const &)
     vector<Vec3F>    surfPoints0(numPts);
     for (uint ii=0; ii<numPts; ++ii)
         surfPoints0[ii] = meanMesh.surfPointPos(ii);
-    meanMesh = fgSubdivide(meanMesh,false);
+    meanMesh = subdivide(meanMesh,false);
     vector<Vec3F>    surfPoints1(numPts);
     for (size_t ii=0; ii<numPts; ++ii) {
         surfPoints1[ii] = meanMesh.surfPointPos(ii);
         FGASSERT(
-            approxEqualRel(surfPoints0[ii][0],surfPoints1[ii][0]) &&
-            approxEqualRel(surfPoints0[ii][1],surfPoints1[ii][1]) &&
-            approxEqualRel(surfPoints0[ii][2],surfPoints1[ii][2]));
+            isApproxEqualRelPrec(surfPoints0[ii][0],surfPoints1[ii][0]) &&
+            isApproxEqualRelPrec(surfPoints0[ii][1],surfPoints1[ii][1]) &&
+            isApproxEqualRelPrec(surfPoints0[ii][2],surfPoints1[ii][2]));
     }    
 }
 
@@ -76,7 +76,7 @@ fg3dReadWobjTest(CLArgs const &)
         ;
     ofs.close();
     Mesh    mesh = loadWObj("square.obj");
-    meshView(mesh);
+    viewMesh(mesh);
 }
 
 void
@@ -99,26 +99,26 @@ fgTextureImageMappingRenderTest(CLArgs const &)
     ofs.close();
     Mesh    mesh = loadWObj("square.obj");
     string      textureFile("base/test/TextureMapOrdering.jpg");
-    imgLoadAnyFormat(dataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
-    meshView(mesh);
+    loadImage(dataDir()+textureFile,mesh.surfaces[0].albedoMapRef());
+    viewMesh(mesh);
 }
 
 void
 fgSubdivisionTest(CLArgs const &)
 {
-    vector<Mesh>    meshes;
-    addSubdivisions(meshes,fgTetrahedron());
-    addSubdivisions(meshes,fgTetrahedron(true));
-    addSubdivisions(meshes,fgPyramid());
-    addSubdivisions(meshes,fgPyramid(true));
-    addSubdivisions(meshes,fg3dCube());
-    addSubdivisions(meshes,fg3dCube(true));
-    addSubdivisions(meshes,fgOctahedron());
-    addSubdivisions(meshes,fgNTent(5));
-    addSubdivisions(meshes,fgNTent(6));
-    addSubdivisions(meshes,fgNTent(7));
-    addSubdivisions(meshes,fgNTent(8));
-    meshView(meshes,true);
+    Meshes    meshes;
+    addSubdivisions(meshes,cTetrahedron());
+    addSubdivisions(meshes,cTetrahedron(true));
+    addSubdivisions(meshes,cPyramid());
+    addSubdivisions(meshes,cPyramid(true));
+    addSubdivisions(meshes,c3dCube());
+    addSubdivisions(meshes,c3dCube(true));
+    addSubdivisions(meshes,cOctahedron());
+    addSubdivisions(meshes,cNTent(5));
+    addSubdivisions(meshes,cNTent(6));
+    addSubdivisions(meshes,cNTent(7));
+    addSubdivisions(meshes,cNTent(8));
+    viewMesh(meshes,true);
 }
 
 static
@@ -151,7 +151,7 @@ edgeDist(CLArgs const &)
             mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
     }
-    meshView(mesh);
+    viewMesh(mesh);
 }
 
 void fgSave3dsTest(CLArgs const &);

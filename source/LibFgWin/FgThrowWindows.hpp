@@ -24,7 +24,7 @@ throwWindows(const std::string & msg,const std::string & data)
 
 template<class T>
 void
-throwWindows(const std::string & msg,const T & data)
+throwWindows(const std::string & msg,T const & data)
 {return throwWindows(msg,Ustring(toStr(data))); }
 
 void

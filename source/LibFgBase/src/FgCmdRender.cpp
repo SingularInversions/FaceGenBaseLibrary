@@ -157,14 +157,14 @@ fgCmdRender(CLArgs const & args)
     }
 
     //! Load data from files:
-    vector<Mesh>    meshes(opts.rend.models.size());
+    Meshes    meshes(opts.rend.models.size());
     Mat33F            rotMatrix = Mat33F(opts.rend.pose.rotateToHcs.asMatrix());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = opts.rend.models[ii];
         Mesh &          mesh = meshes[ii];
         mesh = loadTri(mf.triFilename);
         if (!mf.imgFilename.empty())
-            imgLoadAnyFormat(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
+            loadImage(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
         mesh.transform(rotMatrix);
         mesh.surfaces[0].material.shiny = mf.shiny;
     }
@@ -201,7 +201,7 @@ fgCmdRender(CLArgs const & args)
     fgout << fgnl << "Render time: " << timer.read() << "s ";
 
     //! Save results:
-    imgSaveAnyFormat(Ustring(opts.outputFile),image);
+    saveImage(Ustring(opts.outputFile),image);
     if (opts.saveSurfPointFile) {
         Ofstream      ofs(renderName+".csv");
         for (const ProjectedSurfPoint & psp : *opts.rend.options.projSurfPoints)
@@ -217,8 +217,8 @@ static
 bool
 imgApproxEqual(Ustring const & file0,Ustring const & file1)
 {
-    ImgC4UC     img0 = imgLoadAnyFormat(file0),
-                    img1 = imgLoadAnyFormat(file1);
+    ImgC4UC     img0 = loadImage(file0),
+                    img1 = loadImage(file1);
     return fgImgApproxEqual(img0,img1,2);
 }
 

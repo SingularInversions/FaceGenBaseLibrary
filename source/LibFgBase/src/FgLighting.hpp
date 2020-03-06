@@ -36,7 +36,7 @@ struct  Lighting
 
     Lighting() : ambient(0.4f) {lights.resize(1); }
     Lighting(Vec3F a) : ambient(a) {}
-    Lighting(Vec3F a,Light l) : ambient(a), lights(fgSvec(l)) {}
+    Lighting(Vec3F a,Light l) : ambient(a), lights(svec(l)) {}
     Lighting(Vec3F a,Lights const & l) : ambient(a), lights(l) {}
 
     ImgC4UC

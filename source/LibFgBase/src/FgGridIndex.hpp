@@ -37,7 +37,7 @@ struct  GridIndex
     }
 
     void
-    add(const T & val,Mat22F clientBounds)
+    add(T const & val,Mat22F clientBounds)
     {
         Mat22F        ipcsBounds = clientToGridIpcs * clientBounds;
         ipcsBounds[0] = cMax(ipcsBounds[0],0.0f);
@@ -53,7 +53,7 @@ struct  GridIndex
         }
     }
 
-    const Svec<T> &
+    Svec<T> const &
     operator[](const Vec2F & clientPos) const
     {
         Vec2F        posIpcs = clientToGridIpcs*clientPos;

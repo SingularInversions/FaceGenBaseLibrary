@@ -31,7 +31,7 @@ setIfLess(T & min,T val)
 
 template<typename T>
 Mat<T,1,2>
-cBounds(const Svec<T> & data)
+cBounds(Svec<T> const & data)
 {
     FGASSERT(data.size() > 0);
     Mat<T,1,2>    ret(data[0]);
@@ -78,7 +78,7 @@ cBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,-max]
 // Returns combined bounds of two bounds (inclusive or exclusive):
 template<typename T,uint dim>
 Mat<T,dim,2>
-boundsUnion(const Mat<T,dim,2> & b1,const Mat<T,dim,2> & b2)
+cBoundsUnion(const Mat<T,dim,2> & b1,const Mat<T,dim,2> & b2)
 {
     Mat<T,dim,2>     ret(b1);
     for (uint dd=0; dd<dim; ++dd) {
@@ -110,7 +110,7 @@ cBounds(
 // If bounds is empty, returns [max,-max]
 template<class T,uint dim>
 Mat<T,dim,2>
-boundsUnion(Svec<Mat<T,dim,2> > const & bounds)
+cBoundsUnion(Svec<Mat<T,dim,2> > const & bounds)
 {
     T                       max = std::numeric_limits<T>::max(),
                             min = std::numeric_limits<T>::lowest();
@@ -130,7 +130,7 @@ boundsUnion(Svec<Mat<T,dim,2> > const & bounds)
 
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,1>
-fgMaxColwise(const Mat<T,nrows,ncols> & mat)
+cMaxColumnwise(Mat<T,nrows,ncols> const & mat)
 {
     Mat<T,nrows,1>    ret(mat.colVec(0));
     for (uint row=0; row<nrows; ++row)
@@ -141,7 +141,7 @@ fgMaxColwise(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 T
-cMaxElem(const Mat<T,nrows,ncols> & mat)
+cMaxElem(Mat<T,nrows,ncols> const & mat)
 {
     T           ret(mat[0]);
     size_t      sz = mat.size();
@@ -152,7 +152,7 @@ cMaxElem(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 T
-cMinElem(const Mat<T,nrows,ncols> & mat)
+cMinElem(Mat<T,nrows,ncols> const & mat)
 {
     T           ret(mat[0]);
     size_t      sz = mat.size();
@@ -163,7 +163,7 @@ cMinElem(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
-cMaxIdx(const Mat<T,nrows,ncols> & mat)
+cMaxIdx(Mat<T,nrows,ncols> const & mat)
 {
     uint        idx(0);
     for (uint ii=1; ii<mat.numElems(); ++ii)
@@ -174,7 +174,7 @@ cMaxIdx(const Mat<T,nrows,ncols> & mat)
 
 template<typename T,uint nrows,uint ncols>
 uint
-cMinIdx(const Mat<T,nrows,ncols> & mat)
+cMinIdx(Mat<T,nrows,ncols> const & mat)
 {
     uint        idx(0);
     for (uint ii=1; ii<mat.numElems(); ++ii)
@@ -183,46 +183,12 @@ cMinIdx(const Mat<T,nrows,ncols> & mat)
     return idx;
 }
 
-template<typename T,uint nrows,uint ncols>
-Vec2UI
-fgMaxCrd(const Mat<T,nrows,ncols> & mat)
-{
-    Vec2UI       crd;
-    T               max = std::numeric_limits<T>::min();
-    for (uint rr=0; rr<nrows; ++rr) {
-        for (uint cc=0; cc<ncols; ++cc) {
-            if (mat.rc(rr,cc) > max) {
-                max = mat.rc(rr,cc);
-                crd = Vec2UI(rr,cc);
-            }
-        }
-    }
-    return crd;
-}
-
-template<typename T>
-Vec2UI
-fgMaxCrd(const MatV<T> & mat)
-{
-    Vec2UI       crd;
-    T               max = std::numeric_limits<T>::min();
-    for (uint rr=0; rr<mat.nrows; ++rr) {
-        for (uint cc=0; cc<mat.ncols; ++cc) {
-            if (mat.rc(rr,cc) > max) {
-                max = mat.rc(rr,cc);
-                crd = Vec2UI(rr,cc);
-            }
-        }
-    }
-    return crd;
-}
-
 // Element-wise max:
 template<class T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
 cMax(
-    const Mat<T,nrows,ncols> & m1,
-    const Mat<T,nrows,ncols> & m2)
+    Mat<T,nrows,ncols> const & m1,
+    Mat<T,nrows,ncols> const & m2)
 {
     Mat<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -245,7 +211,7 @@ cDims(const Svec<Mat<T,nrows,1> > & vec)
 
 template<typename T,uint dim>
 bool
-fgBoundsIntersect(
+boundsIntersect(
     const Mat<T,dim,2> &  bnds1,
     const Mat<T,dim,2> &  bnds2)
 {
@@ -261,7 +227,7 @@ fgBoundsIntersect(
 
 template<typename T,uint dim>
 bool
-fgBoundsIntersect(
+boundsIntersect(
     const Mat<T,dim,2> &  bnds1,
     const Mat<T,dim,2> &  bnds2,
     Mat<T,dim,2> &        retval)     // Not assigned if bounds do not intersect
@@ -277,24 +243,25 @@ fgBoundsIntersect(
     return true;
 }
 
-// The returned bounds will have negative volume if the bounds do not intersect:
+// The returned bounds will have negative volume if the bounds do not intersect.
+// Bounds must both be EUB or both be IUB:
 template<typename T,uint dim>
 Mat<T,dim,2>
-fgBoundsIntersection(
+cBoundsIntersection(
     const Mat<T,dim,2> &  b1,
     const Mat<T,dim,2> &  b2)
 {
-    Mat<T,dim,2>      ret(b1);
+    Mat<T,dim,2>      ret;
     for (uint dd=0; dd<dim; ++dd) {
-        setIfGreater(ret.cr(0,dd),b2.cr(0,dd));
-        setIfLess(ret.cr(1,dd),b2.cr(1,dd));
+        ret.rc(dd,0) = cMax(b1.rc(dd,0),b2.rc(dd,0));
+        ret.rc(dd,1) = cMin(b1.rc(dd,1),b2.rc(dd,1));
     }
     return ret;
 }
 
 template<typename T,uint dim>
 bool
-fgBoundsIncludes(
+boundsIncludes(
     const Mat<T,dim,2> &  inclusiveBounds,
     const Mat<T,dim,1> &  point)
 {
@@ -308,7 +275,7 @@ fgBoundsIncludes(
 
 template<typename T,uint dim>
 bool
-fgBoundsIncludes(Mat<uint,dim,1> dims,Mat<T,dim,1> pnt)
+boundsIncludes(Mat<uint,dim,1> dims,Mat<T,dim,1> pnt)
 {
     for (uint dd=0; dd<dim; ++dd) {
         if (pnt[dd] < 0)
@@ -320,37 +287,19 @@ fgBoundsIncludes(Mat<uint,dim,1> dims,Mat<T,dim,1> pnt)
     return true;
 }
 
+// Returns inclusive bounds for the given [0,eub]^dim range:
 template<uint dim>
 Mat<uint,dim,2>
-fgRangeToBounds(Mat<uint,dim,1> range)
+rangeToBounds(Mat<uint,dim,1> rangeEub)
 {
-    FGASSERT(cMinElem(range) > 0);
-    return fgJoinHoriz(Mat<uint,dim,1>(0),range-Mat<uint,dim,1>(1));
-}
-
-template<typename T,uint dim>
-Mat<T,dim,1>
-fgBoundsCentre(const Svec<Mat<T,dim,1> > & verts)
-{
-    Mat<T,dim,2>  bounds = cBounds(verts);
-    return (bounds.colVector[0] + bounds.colVec(1)) * 0.5;
-}
-
-// Returns true if (upper > lower) for all dims:
-template<typename T,uint dim>
-bool
-fgBoundsNonempty(Mat<T,dim,2> bounds)
-{
-    bool        ret = true;
-    for (uint dd=0; dd<dim; ++dd)
-        ret = ret && (bounds.rc(dd,1)>bounds.rc(dd,0));
-    return ret;
+    FGASSERT(cMinElem(rangeEub) > 0);
+    return catHoriz(Mat<uint,dim,1>(0),rangeEub-Mat<uint,dim,1>(1));
 }
 
 // Returns true if (upper >= lower) for all dims:
 template<typename T,uint dim>
 bool
-fgBoundsValid(Mat<T,dim,2> bounds)
+boundsValid(Mat<T,dim,2> bounds)
 {
     bool        ret = true;
     for (uint dd=0; dd<dim; ++dd)
@@ -363,16 +312,15 @@ fgBoundsValid(Mat<T,dim,2> bounds)
 // optionally scaled by 'padRatio':
 template<typename T,uint dim>
 Mat<T,dim,2>  // First column is lower bound corner of cube, second is upper
-fgCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
+cCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
 {
-    Mat<T,dim,2>  ret;
-    Mat<T,dim,2>  bounds = cBounds(verts);
-    Mat<T,dim,1>  lo = bounds.colVec(0),
+    Mat<T,dim,2>        bounds = cBounds(verts);
+    Mat<T,dim,1>        lo = bounds.colVec(0),
                         hi = bounds.colVec(1),
                         centre = (lo + hi) * T(0.5);
-    T                   hsize = cMaxElem(hi - lo) * 0.5f * padRatio;
-    ret = fgJoinHoriz(centre-Mat<T,dim,1>(hsize),centre+Mat<T,dim,1>(hsize));
-    return ret;
+    T                   halfSize = cMaxElem(hi - lo) * 0.5f * padRatio;
+    Mat<T,dim,1>        halfDim {halfSize};
+    return catHoriz(centre-halfDim,centre+halfDim);
 }
 
 // Convert bounds from inclusive upper to exclusive upper:
