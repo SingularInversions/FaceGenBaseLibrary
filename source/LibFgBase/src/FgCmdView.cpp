@@ -26,12 +26,12 @@ void
 cmdViewMesh(CLArgs const & args)
 {
     Syntax            syn(args,
-        "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]])+\n"
-        "    -c         - Compare meshes rather than view all at once\n"
+        "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+ )+\n"
+        "    -c         - Compare meshes rather than view all at once (use 'Select' tab to toggle)\n"
         "    -r         - Remove unused vertices for viewing\n"
         "    <mesh>     - Mesh to view\n"
         "    <ext>      - " + meshLoadFormatsCLDescription() +
-        "    <color>    - Color / albedo map (can contain transparency in alpha channel)\n"
+        "    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.\n"
         "    <transparency> - Transparency map\n"
         "    <specular> - Specularity map\n"
         "    <img>      - " + imgFileExtensionsDescription()
@@ -57,33 +57,37 @@ cmdViewMesh(CLArgs const & args)
             if (mesh.verts.size() < origVerts)
                 fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
         }
-        fgout << fgnl << mesh;
+        fgout << fgnl << path.baseExt() << fgpush << mesh << fgpop;
         if (syn.more() && hasImgExtension(syn.peekNext())) {
             if (mesh.uvs.empty())
-                fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, texture image "
-                    << syn.peekNext() << " will not be seen.";
-            ImgC4UC         albedo = loadImage(syn.next());
-            fgout << fgnl << "Albedo map: " << albedo;
-            if (syn.more() && (syn.peekNext()[0] == '-')) {
-                if(syn.next() == "-t") {
-                    ImgC4UC         trans = loadImage(syn.next());
-                    fgout << fgnl << "Transparency map: " << trans;
-                    albedo = fgImgApplyTransparencyPow2(albedo,trans);
+                fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
+            size_t              mapIdx = 0;
+            while (syn.more() && hasImgExtension(syn.peekNext())) {
+                ImgC4UC         albedo = loadImage(syn.next()),
+                                specular;
+                fgout << fgnl << syn.curr() << fgpush << albedo << fgpop;
+                if (syn.more() && (syn.peekNext()[0] == '-')) {
+                    if(syn.next() == "-t") {
+                        ImgC4UC         trans = loadImage(syn.next());
+                        fgout << fgnl << syn.curr() << fgpush << trans << fgpop;
+                        albedo = fgImgApplyTransparencyPow2(albedo,trans);
+                    }
+                    else if (syn.curr() == "-s") {
+                        loadImage_(syn.next(),specular);
+                        fgout << fgnl << syn.curr() << fgpush << specular << fgpop;
+                    }
+                    else
+                        syn.error("Unrecognized image map option",syn.curr());
                 }
-                else if (syn.curr() == "-s") {
-                    ImgC4UC         spec;
-                    loadImage(syn.next(),spec);
-                    fgout << fgnl << "Specularity map: " << spec;
-                    auto                specPtr = make_shared<ImgC4UC>(spec);
-                    for (Surf & surf : mesh.surfaces)
-                        surf.material.specularMap = specPtr;
+                if (mapIdx < mesh.surfaces.size()) {
+                    Surf &              surf = mesh.surfaces[mapIdx++];
+                    surf.setAlbedoMap(albedo);
+                    if (!specular.empty())
+                        surf.material.specularMap = make_shared<ImgC4UC>(specular);
                 }
                 else
-                    syn.error("Unrecognized image map option",syn.curr());
+                    fgout << fgnl << "WARNING: " << path.baseExt() << " does not have enough surfaces for the given number of maps.";
             }
-            auto        albPtr = make_shared<ImgC4UC>(albedo);
-            for (Surf & surf : mesh.surfaces)
-                surf.material.albedoMap = albPtr;
         }
         meshes.push_back(mesh);
     }
@@ -98,8 +102,7 @@ fgViewImage(CLArgs const & args)
     Syntax    syntax(args,"<imageFileName>");
     if (args.size() > 2)
         syntax.incorrectNumArgs();
-    ImgC4UC     img;
-    loadImage(syntax.next(),img);
+    ImgC4UC     img = loadImage(syntax.next());
     fgout << fgnl << img;
     imgDisplay(img);
 }
@@ -114,7 +117,7 @@ fgViewImagef(CLArgs const & args)
     else {
         if (getCurrentBuildOS() != BuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
-        loadImage(syntax.curr(),img);
+        loadImage_(syntax.curr(),img);
     }
     if (syntax.more())
         saveBsaPBin(syntax.next(),img);

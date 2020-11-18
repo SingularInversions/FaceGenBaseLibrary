@@ -142,6 +142,13 @@ inline void fgReadp(std::istream & is,uint64 & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,float & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,double & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,bool & val) {val = bool(fgReadt<uchar>(is)); }
+// MSVC and Android do not consider size_t to be its own type but others do:
+#ifdef _MSC_VER
+#elif defined(__ANDROID__)
+#else
+inline void fgWritep(std::ostream & os,size_t val) {fgWriteb(os,uint64(val)); }
+inline void fgReadp(std::istream & is,size_t & val) {uint64 tmp; readb(is,tmp); val = size_t(tmp); }
+#endif
 
 inline void
 fgReadp(std::istream & is,String & str)

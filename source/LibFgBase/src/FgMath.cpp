@@ -205,7 +205,7 @@ testFgRand()
 void
 testMath(CLArgs const &)
 {
-    OutPush       op("Testing rand");
+    PushIndent       op("Testing rand");
     testFgRand();
     testZorder();
 }

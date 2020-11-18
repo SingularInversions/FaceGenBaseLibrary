@@ -6,9 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
-#include "Fg3dMesh.hpp"
+#include "Fg3dMeshOps.hpp"
 #include "FgException.hpp"
 #include "FgStdStream.hpp"
 #include "FgBounds.hpp"
@@ -20,18 +18,14 @@ using namespace std;
 
 namespace Fg {
 
-void
-fgReadp(std::istream & is,MarkedVert & m)
+Mesh::Mesh(TriSurfFids const & tsf) :
+    verts {cat(tsf.surf.verts,tsf.fids)},
+    surfaces {Surf{tsf.surf.tris}}
 {
-    fgReadp(is,m.idx);
-    fgReadp(is,m.label);
-}
-
-void
-fgWritep(std::ostream & os,const MarkedVert & m)
-{
-    fgWritep(os,m.idx);
-    fgWritep(os,m.label);
+    size_t          V = tsf.surf.verts.size(),
+                    F = tsf.fids.size();
+    for (size_t ii=V; ii<V+F; ++ii)
+        markedVerts.push_back(MarkedVert{ii});
 }
 
 size_t
@@ -164,11 +158,11 @@ Mesh::surfPointPos(string const & label) const
 }
 
 LabelledVerts
-Mesh::surfPointsAsVertLabels() const
+Mesh::surfPointsAsLabelledVerts() const
 {
     LabelledVerts     ret;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        cat_(ret,surfaces[ss].surfPointsAsVertLabels(verts));
+        cat_(ret,surfaces[ss].surfPointsAsLabelledVerts(verts));
     return ret;
 }
 
@@ -202,6 +196,16 @@ Mesh::markedVertPositions() const
     ret.reserve(markedVerts.size());
     for (const MarkedVert & m : markedVerts)
         ret.push_back(verts[m.idx]);
+    return ret;
+}
+
+LabelledVerts
+Mesh::markedVertsAsLabelledVerts() const
+{
+    LabelledVerts       ret;
+    ret.reserve(markedVerts.size());
+    for (MarkedVert const & mv : markedVerts)
+        ret.push_back(LabelledVert{verts[mv.idx],mv.label});
     return ret;
 }
 
@@ -267,7 +271,7 @@ Mesh::findMorph(Ustring const & name_) const
 
 void
 Mesh::morph(
-    const Floats &      morphCoord,
+    Floats const &      morphCoord,
     Vec3Fs &           outVerts) const
 {
     FGASSERT(morphCoord.size() == numMorphs());
@@ -282,19 +286,19 @@ Mesh::morph(
 void
 Mesh::morph(
     Vec3Fs const &     allVerts,
-    const Floats &      coord,
+    Floats const &      coord,
     Vec3Fs &           outVerts) const
 {
-    outVerts = cutHead(allVerts,verts.size());
+    outVerts = cHead(allVerts,verts.size());
     size_t          ndms = deltaMorphs.size();
-    fgAccDeltaMorphs(deltaMorphs,cutHead(coord,ndms),outVerts);
-    fgAccTargetMorphs(allVerts,targetMorphs,cutRest(coord,ndms),outVerts);
+    accDeltaMorphs(deltaMorphs,cHead(coord,ndms),outVerts);
+    accTargetMorphs(allVerts,targetMorphs,cRest(coord,ndms),outVerts);
 }
 
 Vec3Fs
 Mesh::morph(
-    const Floats &      deltaMorphCoord,
-    const Floats &      targMorphCoord) const
+    Floats const &      deltaMorphCoord,
+    Floats const &      targMorphCoord) const
 {
     Vec3Fs     ret = verts;
     FGASSERT(deltaMorphCoord.size() == deltaMorphs.size());
@@ -411,16 +415,15 @@ Mesh::addTargMorph(Ustring const & name_,Vec3Fs const & targetShape)
 Vec3Fs
 Mesh::poseShape(Vec3Fs const & allVerts,const std::map<Ustring,float> & poseVals) const
 {
-    Vec3Fs      ret = cutHead(allVerts,verts.size()),
+    Vec3Fs      ret = cHead(allVerts,verts.size()),
                 base = ret;
     accPoseDeltas_(poseVals,deltaMorphs,ret);
-    accPoseDeltas_(poseVals,targetMorphs,base,cutRest(allVerts,verts.size()),ret);
+    accPoseDeltas_(poseVals,targetMorphs,base,cRest(allVerts,verts.size()),ret);
     return ret;
 }
 
 void
-Mesh::addSurfaces(
-    const std::vector<Surf> & surfs)
+Mesh::addSurfaces(const Surfs & surfs)
 {
     for (size_t ss=0; ss<surfs.size(); ++ss)
         surfaces.push_back(surfs[ss]);
@@ -428,23 +431,33 @@ Mesh::addSurfaces(
 }
 
 void
+Mesh::scale(float val)
+{
+    mapMul_(val,verts);
+    for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
+        mapMul_(val,deltaMorphs[ii].verts);
+    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
+        mapMul_(val,targetMorphs[ii].verts);
+}
+
+void
 Mesh::transform(Mat33F xform)
 {
-    mapXf_(verts,xform);
+    mapMul_(xform,verts);
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        mapXf_(deltaMorphs[ii].verts,xform);
+        mapMul_(xform,deltaMorphs[ii].verts);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        mapXf_(targetMorphs[ii].verts,xform);
+        mapMul_(xform,targetMorphs[ii].verts);
 }
 
 void
 Mesh::transform(Affine3F xform)
 {
-    mapXf_(verts,xform);
+    mapMul_(xform,verts);
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        mapXf_(deltaMorphs[ii].verts,xform.linear);
+        mapMul_(xform.linear,deltaMorphs[ii].verts);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        mapXf_(targetMorphs[ii].verts,xform);
+        mapMul_(xform,targetMorphs[ii].verts);
 }
 
 void
@@ -475,28 +488,6 @@ Mesh::checkValidity()
         FGASSERT(markedVerts[mm].idx < numVerts);
 }
 
-void
-fgReadp(std::istream & is,Mesh & mesh)
-{
-    fgReadp(is,mesh.verts);
-    fgReadp(is,mesh.uvs);
-    fgReadp(is,mesh.surfaces);
-    fgReadp(is,mesh.deltaMorphs);
-    fgReadp(is,mesh.targetMorphs);
-    fgReadp(is,mesh.markedVerts);
-}
-
-void
-fgWritep(std::ostream & os,Mesh const & mesh)
-{
-    fgWritep(os,mesh.verts);
-    fgWritep(os,mesh.uvs);
-    fgWritep(os,mesh.surfaces);
-    fgWritep(os,mesh.deltaMorphs);
-    fgWritep(os,mesh.targetMorphs);
-    fgWritep(os,mesh.markedVerts);
-}
-
 Mesh
 fg3dMesh(Vec3UIs const & tris,Vec3Fs const & verts)
 {
@@ -517,11 +508,11 @@ fgNumTriEquivs(Meshes const & meshes)
 }
 
 std::set<Ustring>
-fgMorphs(Meshes const & meshes)
+getMorphNames(Meshes const & meshes)
 {
     std::set<Ustring>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        fgUnion_(ret,meshes[ii].morphNames());
+        cUnion_(ret,meshes[ii].morphNames());
     return ret;
 }
 
@@ -530,13 +521,13 @@ cPoseVals(Meshes const & meshes)
 {
     std::set<PoseVal>    ps;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        fgUnion_(ps,cPoseVals(meshes[ii]));
+        cUnion_(ps,cPoseVals(meshes[ii]));
     return vector<PoseVal>(ps.begin(),ps.end());
 }
 
 static
 bool
-vertLt(const Vec3F & v0,const Vec3F & v1)
+vertLt(Vec3F const & v0,Vec3F const & v1)
 {
     if (v0[0] == v1[0]) {
         if (v0[1] == v1[1])
@@ -551,13 +542,14 @@ vertLt(const Vec3F & v0,const Vec3F & v1)
 std::ostream &
 operator<<(std::ostream & os,Mesh const & m)
 {
-    os  << fgnl << "Name: " << m.name << fgpush
+    os  << fgnl << "Name: " << m.name
         << fgnl << "Verts: " << m.verts.size();
     size_t      allVerts = m.allVerts().size();
     if (allVerts != m.verts.size())
         os << " (" << allVerts << " with targ morphs)";
     os  << fgnl << "UVs: " << m.uvs.size()
         << fgnl << "Bounding Box: " << cBounds(m.verts)
+        << fgnl << "Vertex Mean:  " << cMean(m.verts)
         << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
         << fgnl << "Target Morphs: " << m.targetMorphs.size()
         << fgnl << "Marked Verts: " << m.markedVerts.size()
@@ -580,8 +572,8 @@ operator<<(std::ostream & os,Mesh const & m)
         if (sortVerts[ii] == sortVerts[ii-1])
             ++numDups;
     os << fgnl << "Duplicate vertices: " << numDups;
-    Fg3dTopology        topo(m.verts,m.getTriEquivs().posInds);
-    Vec3UI           te = topo.isManifold();
+    MeshTopology        topo(m.verts.size(),m.getTriEquivs().posInds);
+    Vec3UI              te = topo.isManifold();
     os << fgnl << "Watertight: ";
     if (te == Vec3UI(0))
         os << "YES";
@@ -593,8 +585,7 @@ operator<<(std::ostream & os,Mesh const & m)
     else
         os << "NO (" << te[1] << " intersection edges, " << te[2] << " reversed edges)";
     os << fgnl << "Seams: " << topo.seams().size()
-        << fgnl << "Unused verts: " << topo.unusedVerts()
-        << fgpop;
+        << fgnl << "Unused verts: " << topo.unusedVerts();
     return os;
 }
 
@@ -606,28 +597,38 @@ operator<<(std::ostream & os,Meshes const & ms)
     return os;
 }
 
-static
+Vec3UIs
+subdivideTris(
+    Vec3UIs const &             tris,
+    Svec<MeshTopology::Tri> const &   topoTris,
+    uint                        newVertsBaseIdx)
+{
+    Vec3UIs             ret;
+    for (size_t ii=0; ii<tris.size(); ii++) {
+        Vec3UI          vertInds = tris[ii];
+        Vec3UI          edgeInds = topoTris[ii].edgeInds;
+        uint            ni0 = newVertsBaseIdx + edgeInds[0],
+                        ni1 = newVertsBaseIdx + edgeInds[1],
+                        ni2 = newVertsBaseIdx + edgeInds[2];
+        ret.push_back(Vec3UI(vertInds[0],ni0,ni2));
+        ret.push_back(Vec3UI(vertInds[1],ni1,ni0));
+        ret.push_back(Vec3UI(vertInds[2],ni2,ni1));
+        ret.push_back(Vec3UI(ni0,ni1,ni2));
+    }
+    return ret;
+}
+
 Surf
 subdivideTris(
-    const vector<Vec3UI> &       tris,
-    const vector<SurfPoint> &     sps,
-    const vector<Fg3dTopology::Tri> &   topoTris,
-    uint                            newVertsBaseIdx)
+    Vec3UIs const &             tris,
+    Svec<MeshTopology::Tri> const &   topoTris,
+    uint                        newVertsBaseIdx,
+    SurfPoints const &          sps)
 {
-    Surf     ret;
-    for (size_t ii=0; ii<tris.size(); ii++) {
-        Vec3UI   vertInds = tris[ii];
-        Vec3UI   edgeInds = topoTris[ii].edgeInds;
-        uint        ni0 = newVertsBaseIdx + edgeInds[0],
-                    ni1 = newVertsBaseIdx + edgeInds[1],
-                    ni2 = newVertsBaseIdx + edgeInds[2];
-        ret.tris.posInds.push_back(Vec3UI(vertInds[0],ni0,ni2));
-        ret.tris.posInds.push_back(Vec3UI(vertInds[1],ni1,ni0));
-        ret.tris.posInds.push_back(Vec3UI(vertInds[2],ni2,ni1));
-        ret.tris.posInds.push_back(Vec3UI(ni0,ni1,ni2));
-    }
+    Surf            ret;
+    ret.tris.posInds = subdivideTris(tris,topoTris,newVertsBaseIdx);
     // Set up surface point weight transforms:
-    Mat33F        wgtXform(1),
+    Mat33F          wgtXform(1),
                     wgtXform0(0),
                     wgtXform1(0),
                     wgtXform2(0);
@@ -652,7 +653,7 @@ subdivideTris(
     // Update surface points:
     for (size_t ii=0; ii<sps.size(); ++ii) {
         uint        facetIdx = sps[ii].triEquivIdx * 4;
-        Vec3F    weights = sps[ii].weights,
+        Vec3F       weights = sps[ii].weights,
                     wgtCentre = wgtXform * weights;
         if (wgtCentre[0] < 0.0)
             ret.surfPoints.push_back(SurfPoint(facetIdx+2,wgtXform2*weights));
@@ -670,7 +671,7 @@ Mat32F
 cBounds(Meshes const & meshes)
 {
     FGASSERT(!meshes.empty());
-    Mat32F    ret = cBounds(meshes[0].verts);
+    Mat32F          ret = cBounds(meshes[0].verts);
     for (size_t mm=1; mm<meshes.size(); ++mm)
         ret = cBoundsUnion(ret,cBounds(meshes[mm].verts));
     return ret;
@@ -679,33 +680,31 @@ cBounds(Meshes const & meshes)
 Mesh
 subdivide(Mesh const & in,bool loop)
 {
-    Mesh            ret;
-    vector<Vec3UI>   allTris;
-    vector<SurfPoint> allSps;
-    for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
-        Surf const & surf = in.surfaces[ss];
-        for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
-            SurfPoint     sp = surf.surfPoints[ii];
+    Tris                allTris;
+    SurfPoints          allSps;
+    for (Surf const & surf : in.surfaces) {
+        for (SurfPoint sp : surf.surfPoints) {
             sp.triEquivIdx += uint(allTris.size());
             allSps.push_back(sp);
         }
-        cat_(allTris,surf.tris.posInds);
+        cat_(allTris,surf.tris);
     }
+    Mesh                ret;
     ret.verts = in.verts;   // Modified later in case of Loop:
-    ret.surfaces.resize(in.surfaces.size());
-    Fg3dTopology        topo(in.verts,allTris);
-    uint                newVertsBaseIdx = uint(in.verts.size());
+    ret.markedVerts = in.markedVerts;
+    MeshTopology            topo {in.verts.size(),allTris.posInds};
+    uint                    newVertsBaseIdx = uint(in.verts.size());
     if (loop) {
         // Add the edge-split "odd" verts:
         for (uint ii=0; ii<topo.m_edges.size(); ++ii) {
-            Vec2UI       vertInds0 = topo.m_edges[ii].vertInds;
+            Vec2UI              vertInds0 = topo.m_edges[ii].vertInds;
             if (topo.m_edges[ii].triInds.size() == 1) {     // Boundary
                 ret.verts.push_back((
                     in.verts[vertInds0[0]] + 
                     in.verts[vertInds0[1]])*0.5f);
             }
             else {
-                Vec2UI   vertInds1 = topo.edgeFacingVertInds(ii);
+                Vec2UI          vertInds1 = topo.edgeFacingVertInds(ii);
                 ret.verts.push_back((
                     in.verts[vertInds0[0]] * 3.0f +
                     in.verts[vertInds0[1]] * 3.0f +
@@ -716,7 +715,7 @@ subdivide(Mesh const & in,bool loop)
         // Modify the original "even" verts:
         for (uint ii=0; ii<newVertsBaseIdx; ++ii) {
             if (topo.vertOnBoundary(ii)) {
-                vector<uint>    vertInds = topo.vertBoundaryNeighbours(ii);
+                Uints           vertInds = topo.vertBoundaryNeighbours(ii);
                 if (vertInds.size() != 2)
                     fgThrow("Cannot subdivide non-manifold mesh at vert index",toStr(ii));
                 ret.verts[ii] = (in.verts[ii] * 6.0 + in.verts[vertInds[0]] + in.verts[vertInds[1]]) * 0.125f;
@@ -724,8 +723,8 @@ subdivide(Mesh const & in,bool loop)
             else {
                 // Note that there will always be at least 3 neighbours since 
                 // this is not a boundary vertex:
-                const vector<uint> &    neighbours = topo.vertNeighbours(ii);
-                Vec3F    acc;
+                const Uints &   neighbours = topo.vertNeighbours(ii);
+                Vec3F           acc;
                 for (size_t jj=0; jj<neighbours.size(); ++jj)
                     acc += in.verts[neighbours[jj]];
                 if (neighbours.size() == 3)
@@ -741,27 +740,76 @@ subdivide(Mesh const & in,bool loop)
     }
     else {
         for (size_t ii=0; ii<topo.m_edges.size(); ++ii) {
-            Vec2UI       vertInds = topo.m_edges[ii].vertInds;
+            Vec2UI          vertInds = topo.m_edges[ii].vertInds;
             ret.verts.push_back((in.verts[vertInds[0]]+in.verts[vertInds[1]])*0.5);
         }
     }
-    Surf     ssurf = subdivideTris(allTris,allSps,topo.m_tris,newVertsBaseIdx);
-    size_t          sidx = 0;
-    size_t          spidx = 0;
-    for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
-        Surf & surf = ret.surfaces[ss];
-        Surf const & inSurf = in.surfaces[ss];
-        size_t      num = inSurf.tris.size() * 4;
-        cat_(surf.tris.posInds,cutSubvec(ssurf.tris.posInds,sidx,num));    // Clearer (and slower) than iterators
-        for (size_t ii=0; ii<inSurf.surfPoints.size(); ++ii) {
-            SurfPoint     sp = ssurf.surfPoints[spidx+ii];
+    Surf                ssurf = subdivideTris(allTris.posInds,topo.m_tris,newVertsBaseIdx,allSps);
+    // Can only carry over UVs if they exist and are defined for all tris (ie on all surfaces):
+    if (!in.uvs.empty() && (allTris.uvInds.size() == allTris.posInds.size())) {
+        ret.uvs = in.uvs;
+        MeshTopology        topoUvs {in.uvs.size(),allTris.uvInds};
+        uint                newUvsBaseIdx = uint(in.uvs.size());
+        for (MeshTopology::Edge const & edge : topoUvs.m_edges) {
+            Vec2UI              vi = edge.vertInds;
+            ret.uvs.push_back((in.uvs[vi[0]]+in.uvs[vi[1]])*0.5);
+        }
+        ssurf.tris.uvInds = subdivideTris(allTris.uvInds,topoUvs.m_tris,newUvsBaseIdx);
+    }
+    size_t              sidx = 0,
+                        spidx = 0;
+    ret.surfaces.reserve(in.surfaces.size());
+    for (Surf const & surfIn : in.surfaces) {
+        Tris                tris;
+        SurfPoints          surfPoints;
+        size_t              num = surfIn.tris.size() * 4;
+        tris.posInds = cSubvec(ssurf.tris.posInds,sidx,num);
+        if (!ssurf.tris.uvInds.empty())
+            tris.uvInds = cSubvec(ssurf.tris.uvInds,sidx,num);
+        for (size_t ii=0; ii<surfIn.surfPoints.size(); ++ii) {
+            SurfPoint           sp = ssurf.surfPoints[spidx+ii];
             sp.triEquivIdx -= uint(sidx);
-            surf.surfPoints.push_back(sp);
+            surfPoints.push_back(sp);
         }
         sidx += num;
-        spidx += inSurf.surfPoints.size();
+        spidx += surfIn.surfPoints.size();
+        ret.surfaces.emplace_back(surfIn.name,tris,surfPoints,surfIn.material);
     }
     return ret;
+}
+
+// Hack this for now:
+TriSurf
+subdivide(TriSurf const & surf,bool loop)
+{
+    Mesh        mesh = subdivide(Mesh{surf},loop);
+    Tris        tris = sliceMember(mesh.surfaces,&Surf::tris)[0];
+    return TriSurf {mesh.verts,tris.posInds};
+}
+
+TriSurf
+cullVolume(TriSurf triSurf,Mat32F const & bounds)
+{
+    Bools               vertInBounds;
+    vertInBounds.reserve(triSurf.verts.size());
+    for (Vec3F const & v : triSurf.verts)
+        vertInBounds.push_back(isInBounds(bounds,v));
+    Bools               triInBounds;
+    triInBounds.reserve(triSurf.tris.size());
+    MeshTopology        topo {triSurf.verts.size(),triSurf.tris};
+    for (MeshTopology::Tri const & t : topo.m_tris) {
+        bool            inBounds = true;
+        for (uint vertIdx : t.vertInds.m) {
+            if (!vertInBounds[vertIdx])
+                inBounds = false;
+        }
+        triInBounds.push_back(inBounds);
+    }
+    Vec3UIs             nTris;
+    for (size_t tt=0; tt<triSurf.tris.size(); ++tt)
+        if (triInBounds[tt])
+            nTris.push_back(triSurf.tris[tt]);
+    return meshRemoveUnusedVerts(triSurf.verts,nTris);
 }
 
 }

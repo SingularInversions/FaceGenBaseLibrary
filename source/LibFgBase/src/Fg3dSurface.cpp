@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 Vec3Fs
-fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels)
+selectVerts(const LabelledVerts & labVerts,Strings const & labels)
 {
     Vec3Fs         ret;
     ret.reserve(labels.size());
@@ -25,26 +25,10 @@ fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels)
     return ret;
 }
 
-void
-fgReadp(std::istream & is,SurfPoint & sp)
-{
-    fgReadp(is,sp.triEquivIdx);
-    fgReadp(is,sp.weights);
-    fgReadp(is,sp.label);
-}
-
-void
-fgWritep(std::ostream & os,SurfPoint const & sp)
-{
-    fgWritep(os,sp.triEquivIdx);
-    fgWritep(os,sp.weights);
-    fgWritep(os,sp.label);
-}
-
-vector<Vec3UI>
+Vec3UIs
 quadsToTris(const vector<Vec4UI> & quads)
 {
-    vector<Vec3UI>   ret;
+    Vec3UIs   ret;
     for (size_t ii=0; ii<quads.size(); ++ii) {
         const Vec4UI &   quad = quads[ii];
         // Ordering must match triEquiv ordering for surface point to remain valid:
@@ -196,7 +180,7 @@ Surf::surfPointPositions(Vec3Fs const & verts) const
 }
 
 LabelledVerts
-Surf::surfPointsAsVertLabels(Vec3Fs const & verts) const
+Surf::surfPointsAsLabelledVerts(Vec3Fs const & verts) const
 {
     LabelledVerts     ret;
     ret.reserve(surfPoints.size());
@@ -215,16 +199,6 @@ Surf::asTris() const
     FacetInds<3>      ret;
     ret.posInds = cat(tris.posInds,quadsToTris(quads.posInds));
     ret.uvInds = cat(tris.uvInds,quadsToTris(quads.uvInds));
-    return ret;
-}
-
-Surf
-Surf::convertToTris() const
-{
-    Surf     ret;
-    ret.name = name;
-    ret.tris = asTris();
-    ret.surfPoints = surfPoints;
     return ret;
 }
 
@@ -268,30 +242,6 @@ Surf::checkInternalConsistency()
         {FGASSERT(tris.uvInds.size() == tris.size()); }
     if (quads.uvInds.size() > 0)
         {FGASSERT(quads.uvInds.size() == quads.size()); }
-}
-
-void
-Surf::clear()
-{
-    *this = Surf();
-}
-
-void
-fgReadp(std::istream & is,Surf & s)
-{
-    fgReadp(is,s.name);
-    fgReadp(is,s.tris);
-    fgReadp(is,s.quads);
-    fgReadp(is,s.surfPoints);
-}
-
-void
-fgWritep(std::ostream & os,Surf const & s)
-{
-    fgWritep(os,s.name);
-    fgWritep(os,s.tris);
-    fgWritep(os,s.quads);
-    fgWritep(os,s.surfPoints);
 }
 
 ostream &
@@ -374,32 +324,6 @@ struct  SQuad
 };
 
 Surf
-fgSelectTris(Surf const & surf,const vector<FgBool> & sel)
-{
-    Surf     ret;
-    ret.name = surf.name;
-    FGASSERT(surf.tris.size() == sel.size());
-    vector<uint>    remap(surf.tris.size());
-    uint            idx = 0;
-    for (size_t ii=0; ii<surf.tris.size(); ++ii) {
-        if (sel[ii]) {
-            ret.tris.posInds.push_back(surf.tris.posInds[ii]);
-            if (!surf.tris.uvInds.empty())
-                ret.tris.uvInds.push_back(surf.tris.uvInds[ii]);
-            remap[ii] = idx++;
-        }
-    }
-    for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
-        SurfPoint     sp = surf.surfPoints[ii];
-        if ((sp.triEquivIdx < sel.size()) && (sel[sp.triEquivIdx])) {
-            sp.triEquivIdx = remap[sp.triEquivIdx];
-            ret.surfPoints.push_back(sp);
-        }
-    }
-    return ret;
-}
-
-Surf
 removeDuplicateFacets(Surf const & s)
 {
     if (!s.surfPoints.empty())
@@ -441,7 +365,7 @@ removeDuplicateFacets(Surf const & s)
 }
 
 Surf
-mergeSurfaces(const vector<Surf> & surfs)
+mergeSurfaces(const Surfs & surfs)
 {
     Surf     ret;
     for (size_t ii=0; ii<surfs.size(); ++ii)
@@ -449,68 +373,79 @@ mergeSurfaces(const vector<Surf> & surfs)
     return ret;
 }
 
-vector<Surf>
-fgSplitSurface(Surf const & surf)
+Surfs
+splitByContiguous(Surf const & surf)
 {
-    vector<Surf>     ret;
+    Surfs           ret;
     FGASSERT(!surf.empty());
-    // Construct a lookup from vert inds back to triEquivs (FgTopology is overkill for this):
-    uint                    idxBnd = surf.vertIdxMax() + 1;
-    vector<vector<uint> >   vertIdxToTriIdx(idxBnd);
+    // Construct a lookup from vert inds back to triEquivs (MeshTopology is overkill for this):
+    uint            idxBnd = surf.vertIdxMax() + 1;
+    Uintss          vertIdxToTriIdx(idxBnd);
     for (uint tt=0; tt<surf.numTriEquivs(); ++tt) {
-        Vec3UI           vertInds = surf.getTriEquivPosInds(tt);
+        Vec3UI          vertInds = surf.getTriEquivPosInds(tt);
         for (uint jj=0; jj<3; ++jj)
             vertIdxToTriIdx[vertInds[jj]].push_back(tt);
     }
     // Start with separate group for each tri, then merge until no change:
-    vector<uint>            groups(surf.numTriEquivs());
-    for (uint ii=0; ii<groups.size(); ++ii)
-        groups[ii] = ii;
-    bool                    done = false;
+    Uints           groupLut;
+    for (uint ii=0; ii<surf.numTriEquivs(); ++ii)
+        groupLut.push_back(ii);
+    bool            done = false;
     while (!done) {
         done = true;
         for (uint tt=0; tt<surf.numTriEquivs(); ++tt) {
-            Vec3UI       vertInds = surf.getTriEquivPosInds(tt);
+            Vec3UI          vertInds = surf.getTriEquivPosInds(tt);
             for (uint jj=0; jj<3; ++jj) {
-                const vector<uint> & triInds = vertIdxToTriIdx[vertInds[jj]];
+                Uints const &   triInds = vertIdxToTriIdx[vertInds[jj]];
                 for (uint kk=0; kk<triInds.size(); ++kk) {
-                    uint    ntt = triInds[kk];
-                    if (groups[tt] != groups[ntt]) {
-                        fgReplace_(groups,groups[ntt],groups[tt]);
+                    uint            ntt = triInds[kk];
+                    if (groupLut[tt] != groupLut[ntt]) {
+                        fgReplace_(groupLut,groupLut[ntt],groupLut[tt]);
                         done = false;
                     }
                 }
             }
         }
     }
-    set<uint>           surfGroups(groups.begin(),groups.end());
-    for (set<uint>::const_iterator it(surfGroups.begin()); it != surfGroups.end(); ++it) {
-        uint            groupVal = *it;
-        Surf     s;
+    set<uint>       groups = svecToSet(groupLut);
+    for (uint groupVal : groups) {
+        Surf                sub;
+        map<size_t,size_t>  surfIdxToSubIdx;        // Where indices are both tri equiv
         for (size_t ii=0; ii<surf.tris.size(); ++ii) {
-            if (groups[ii] == groupVal) {
-                s.tris.posInds.push_back(surf.tris.posInds[ii]);
+            if (groupLut[ii] == groupVal) {
+                surfIdxToSubIdx[ii] = sub.tris.size();
+                sub.tris.posInds.push_back(surf.tris.posInds[ii]);
                 if (!surf.tris.uvInds.empty())
-                    s.tris.uvInds.push_back(surf.tris.uvInds[ii]);
+                    sub.tris.uvInds.push_back(surf.tris.uvInds[ii]);
             }
         }
         for (size_t ii=0; ii<surf.quads.size(); ++ii) {
-            uint        triEquiv = uint(surf.tris.size() + 2 * ii);
-            if (groups[triEquiv] == groupVal) {
-                s.quads.posInds.push_back(surf.quads.posInds[ii]);
+            size_t          triEquiv = surf.tris.size() + 2*ii;
+            if (groupLut[triEquiv] == groupVal) {
+                size_t          subTriEquiv = sub.tris.size() + 2*sub.quads.size();
+                surfIdxToSubIdx[triEquiv] = subTriEquiv;
+                surfIdxToSubIdx[triEquiv+1] = subTriEquiv+1;
+                sub.quads.posInds.push_back(surf.quads.posInds[ii]);
                 if (!surf.quads.uvInds.empty())
-                    s.quads.uvInds.push_back(surf.quads.uvInds[ii]);
+                    sub.quads.uvInds.push_back(surf.quads.uvInds[ii]);
             }
         }
-        ret.push_back(s);
+        for (SurfPoint const & sp : surf.surfPoints) {
+            if (groupLut[sp.triEquivIdx] == groupVal) {
+                SurfPoint       nsp = sp;
+                nsp.triEquivIdx = uint(surfIdxToSubIdx[sp.triEquivIdx]);
+                sub.surfPoints.push_back(nsp);
+            }
+        }
+        ret.push_back(sub);
     }
     return ret;
 }
 
-vector<Surf>
-fgEnsureNamed(const vector<Surf> & surfs,Ustring const & baseName)
+Surfs
+fgEnsureNamed(const Surfs & surfs,Ustring const & baseName)
 {
-    vector<Surf>     ret = surfs;
+    Surfs     ret = surfs;
     if ((ret.size() == 1) && (ret[0].name.empty()))
         ret[0].name = baseName;
     else {
@@ -559,10 +494,10 @@ Surf::removeQuad(size_t quadIdx)
 }
 
 Vec3Fs
-fgVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts)
+cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts)
 {
     vector<bool>    used(verts.size(),false);
-    for (const Vec3UI & tri : tris)
+    for (Vec3UI const & tri : tris)
         for (size_t xx=0; xx<3; ++xx)
             used.at(tri[xx]) = true;
     Vec3Fs         ret;
@@ -573,10 +508,10 @@ fgVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts)
 }
 
 bool
-fgHasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts)
+hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts)
 {
     vector<bool>    unused(verts.size(),true);
-    for (const Vec3UI & tri : tris)
+    for (Vec3UI const & tri : tris)
         for (size_t xx=0; xx<3; ++xx)
             unused.at(tri[xx]) = false;
     for (vector<bool>::const_iterator it=unused.begin(); it != unused.end(); ++it)
@@ -586,7 +521,7 @@ fgHasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts)
 }
 
 Uints
-fgRemoveUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts)
+removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts)
 {
     Uints         remap(verts.size(),numeric_limits<uint>::max());
     for (size_t ii=0; ii<tris.size(); ++ii)
@@ -599,11 +534,27 @@ fgRemoveUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts)
     return remap;
 }
 
+Vec3UIs
+reverseWinding(Vec3UIs const & tris)
+{
+    Vec3UIs             ret;
+    ret.reserve(tris.size());
+    for (Vec3UI const & t : tris)
+        ret.push_back(Vec3UI{t[1],t[0],t[2]});
+    return ret;
+}
+
+TriSurf
+reverseWinding(TriSurf const & ts)
+{
+    return TriSurf {ts.verts,reverseWinding(ts.tris)};
+}
+
 TriSurf
 meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
 {
     TriSurf       ret;
-    Uints         remap = fgRemoveUnusedVertsRemap(tris,verts);
+    Uints         remap = removeUnusedVertsRemap(tris,verts);
     for (size_t ii=0; ii<verts.size(); ++ii)
         if (remap[ii] != numeric_limits<uint>::max())
             ret.verts.push_back(verts[ii]);

@@ -18,10 +18,6 @@ using namespace std;
 namespace Fg {
 
 static bool
-isDigit(char c)
-{return ((c >= '0') && (c <= '9')); }
-
-static bool
 isLetter(char c)
 {return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'))); }
 
@@ -32,6 +28,15 @@ isDigitLetterDashUnderscore(char c)
 static bool
 isWhitespaceOrInvalid(char c)
 {return ((c < 0x21) || (c > 0x7E)); }
+
+bool
+containsOnlyDigits(String const & str)
+{
+    for (char c : str)
+        if (!isDigit(c))
+            return false;
+    return true;
+}
 
 Strings
 tokenize(string const & str)

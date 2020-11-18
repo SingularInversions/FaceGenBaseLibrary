@@ -64,12 +64,8 @@ struct  Syntax
     CLArgs
     rest();             // Starting with current
 
-    void
-    error()
-    {throwSyntax(); }
-
-    void
-    error(String const & errMsg);
+    void                error() {throwSyntax(); }
+    void                error(String const & errMsg);
 
     void
     error(String const & errMsg,Ustring const & data);
@@ -96,14 +92,14 @@ struct  Syntax
     uint
     nextSelectionIndex(Strings const & validValues,String const & argDescription);
 
+    void                noMoreArgsExpected();       // Throws is the user has supplied more arguments
 
 private:
     String              m_syntax;
     Strings             m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
     size_t              m_idx;
 
-    void
-    throwSyntax();
+    void                throwSyntax();
 };
 
 }

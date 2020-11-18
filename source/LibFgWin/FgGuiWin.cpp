@@ -32,6 +32,8 @@
 #include "FgHex.hpp"
 #include "FgSystemInfo.hpp"
 #include "FgGuiApiDialogs.hpp"
+#include "FgTime.hpp"
+#include "FgScopeGuard.hpp"
 
 using namespace std;
 
@@ -39,26 +41,89 @@ namespace Fg {
 
 GuiWinStatics s_guiWin;
 
-struct  GuiWinMain
+struct  GuiWinMain : GuiMainBase
 {
-    Ustring                     m_title;
-    Ustring                     m_store;        // Base filename for state storage
-    GuiImplPtr                  m_win;
-    Vec2UI                      m_size;         // Current size of client area
-    vector<HANDLE>              eventHandles;   // Client event handles to trigger message loop
-    vector<FgFnVoid2Void>       eventHandlers;  // Respective event handlers
-    vector<GuiKeyHandle>        keyHandlers;
-    function<void()>            onUpdate;       // Run on each screen update
+    NPTF<Ustring>           titleNF;
+    Ustring                 m_store;            // Base filename for state storage
+    GuiImplPtr              m_win;
+    Vec2UI                  m_size;             // Current size of client area (including maximization)
+    Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
+    Svec<FgFnVoid2Void>     eventHandlers;      // Respective event handlers
+    Svec<GuiKeyHandle>      keyHandlers;
+    function<void()>        onUpdate;           // Run on each screen update
+
+    GuiWinMain(NPT<Ustring> const & t,Ustring const & s,GuiImplPtr const & w) :
+        titleNF{t}, m_store{s}, m_win{w}
+    {}
+/*
+    uint64                      startTime;      // Set when start() called
+    map<UINT,uint64>            profile;        // Track time used processing each message
+
+    ~GuiWinMain()
+    {
+        uint64                  totalTime = getTimeMs() - startTime;
+        fgout << fgnl << "Total time in GuiWinMain: " << msToPrettyTime(totalTime);
+        Svec<UINT>              msgs;
+        Svec<uint64>            times;
+        for (auto const & p : profile) {
+            msgs.push_back(p.first);
+            times.push_back(p.second);
+        }
+        Sizes                   perm = cReverse(sortInds(times));
+        double                  tot = cSum(times);
+        fgout << fgnl << "Time processing main WndProc messages: " << toStrPercent(tot/totalTime);
+        for (size_t ii=0; ii<cMin(10,msgs.size()); ++ii) {
+            size_t              idx = perm[ii];
+            fgout << fgnl << "Msg: " << msgs[idx] << " time " << toStrPercent(times[idx]/tot);
+        }
+    }
+*/
+    void
+    updateGui() const
+    {
+    //fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
+        if (titleNF.checkUpdate()) {
+            Ustring const &     title = titleNF.node.cref();
+            SetWindowTextW(s_guiWin.hwndMain,title.as_wstring().c_str());
+        }
+        SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
+    //    LRESULT     ret = SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
+    //fgout << fgnl << "SendMessage returned: " << ret << flush;
+    }
 
     void
     start()
     {
+        // startTime = getTimeMs();
         // Load common controls DLL:
         INITCOMMONCONTROLSEX    icc;
         icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
         icc.dwICC = ICC_BAR_CLASSES;
         InitCommonControlsEx(&icc);
 
+        // Retrieve previously saved window state if present and valid:
+        // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
+        // col vec 1 is size. Windows screen coordinates:
+        // x - right, y - down, origin - upper left corner of MAIN screen.
+        Mat22I          posDims(CW_USEDEFAULT,1400,CW_USEDEFAULT,900),
+                        pdTmp;
+        if (loadBsaXml(m_store+"Dims.xml",pdTmp,false)) {
+            Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
+            Vec2I    pdMin = Vec2I(m_win->getMinSize());
+            if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
+                (pdAbs[1] < 32000) &&
+                (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
+                (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
+                posDims = pdTmp;
+        }
+        // TODO: Testing to see if the remembered window position is visible in a multi-monitor
+        // setup is possible but I can't test it right now. Here are functions:
+        // Get raw pixel area of primary screen not including taskbar or application toolbars:
+        //RECT            screenArea;
+        //SystemParametersInfoW(SPI_GETWORKAREA,0,&screenArea,0);
+        // FG_HI4(screenArea.left,screenArea.right,screenArea.top,screenArea.bottom);
+        // GetMonitorInfoW() for virtual screen coords of all monitors
+        // https://stackoverflow.com/questions/18112616/how-do-i-get-the-dimensions-rect-of-all-the-screens-in-win32-api
         wchar_t constexpr   className[] = L"GuiWinMain";
         // The following will give us a handle to the current instance aka 'module',
         // which corresponds to the binary file in which this code is compiled
@@ -83,30 +148,17 @@ struct  GuiWinMain
             wcl.hIconSm = NULL;
             FGASSERTWIN(RegisterClassEx(&wcl));
         }
-        // Retrieve previously saved window state if present and valid:
-        // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
-        // col vec 1 is size. Windows screen coordinates:
-        // x - right, y - down, origin - upper left corner of MAIN screen.
-        Mat22I        posDims(CW_USEDEFAULT,1400,CW_USEDEFAULT,900),
-                        pdTmp;
-        if (loadBsaXml(m_store+".xml",pdTmp,false)) {
-            Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
-            Vec2I    pdMin = Vec2I(m_win->getMinSize());
-            if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
-                (pdAbs[1] < 32000) &&
-                (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
-                (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
-                posDims = pdTmp;
-        }
+
 //fgout << fgnl << "CreateWindowEx" << fgpush;
         // CreateWindowEx sends WM_CREATE and certain other messages before returning.
         // This is done so that the caller can send messages to the child window immediately
         // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
         // after creation, so that dynamic windows can be created and setting can be udpated:
+        Ustring const &     title = titleNF.cref();
         s_guiWin.hwndMain =
             CreateWindowEx(0,
                 className,
-                m_title.as_wstring().c_str(),
+                title.as_wstring().c_str(),
                 WS_OVERLAPPEDWINDOW,
                 posDims[0],posDims[2],
                 posDims[1],posDims[3],
@@ -119,9 +171,15 @@ struct  GuiWinMain
 //fgout << fgpop;
 
 //fgout << fgnl << "ShowWindow";
+        // Retrieve Win32 maximization state:
+        bool                maximized = false;
+        bool                maxTmp;
+        if (loadBsaXml(m_store+"Maximized.xml",maxTmp,false))
+            maximized = maxTmp;
         // Set the currently selected windows to show, which also causes the WM_SIZE message
         // to be sent (and for the builtin controls, WM_PAINT):
-        ShowWindow(s_guiWin.hwndMain,SW_SHOWNORMAL);
+        int             showState = maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+        ShowWindow(s_guiWin.hwndMain,showState);
         // The first draw doesn't work properly without this; for some reason the initial
         // window isn't fully invalidated, especially within windows using win32 controls:
         InvalidateRect(s_guiWin.hwndMain,NULL,TRUE);
@@ -160,6 +218,8 @@ struct  GuiWinMain
     LRESULT
     wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
+        LRESULT         ret = 0;
+        Timer           timer;
         if (msg == WM_CREATE) {
 //fgout << fgnl <<  "Main::WM_CREATE" << fgpush;
             m_win->create(hwnd,0,m_store+"_s");
@@ -169,7 +229,7 @@ struct  GuiWinMain
         // Enforce minimum windows sizes. This only works on the main window so
         // we must calculate the minimum size from that of all sub-windows:
         else if (msg == WM_GETMINMAXINFO) {
-            Vec2UI       min = m_win->getMinSize() + winNcSize(hwnd);
+            Vec2UI          min = m_win->getMinSize() + winNcSize(hwnd);
             MINMAXINFO *    mmi = (MINMAXINFO*)lParam;
             POINT           pnt;
             pnt.x = min[0];
@@ -198,9 +258,9 @@ struct  GuiWinMain
         //else if (msg == WM_QUERYOPEN)     // Queries window state before restore
         //    fgout << "WM_QUERYOPEN";
         else if (msg == WM_CHAR) {
-            wchar_t     wkey = wchar_t(wParam);
+            wchar_t         wkey = wchar_t(wParam);
             for (size_t ii=0; ii<keyHandlers.size(); ++ii) {
-                GuiKeyHandle  kh = keyHandlers[ii];
+                GuiKeyHandle    kh = keyHandlers[ii];
                 if (wkey == wchar_t(kh.key))
                     kh.handler();
             }
@@ -214,13 +274,20 @@ struct  GuiWinMain
 //fgout << fgnl << "updateIfChanged done " << flush << fgpop;
         }
         else if (msg == WM_DESTROY) {       // User is closing application
+            // GetWindowRect show the current window placement regardless of mazimization.
+            // Its size is larger than m_size (by [16,39] on my system) presumably due to borders & title bar.
+            RECT                rc;         // Current window placement
+            FGASSERTWIN(GetWindowRect(hwnd,&rc));
+            Mat22I              dimsCurr {rc.left,rc.right-rc.left,rc.top,rc.bottom-rc.top};
+            // This function gives the window placement for the Win32 non-maximized state:
             WINDOWPLACEMENT     wp;
             wp.length = sizeof(wp);
-            // Don't use GetWindowRect here as it's affected by minimization and maximization:
-            FGASSERTWIN(GetWindowPlacement(hwnd,&wp));
-            const RECT &        rect = wp.rcNormalPosition;
-            Mat22I dims(rect.left,rect.right-rect.left,rect.top,rect.bottom-rect.top);
-            saveBsaXml(m_store+".xml",dims,false);
+            FGASSERTWIN(GetWindowPlacement(hwnd,&wp));  // Gets the non-maximezed window rect
+            RECT const &        r = wp.rcNormalPosition;
+            Mat22I              dimsNorm {r.left,r.right-r.left,r.top,r.bottom-r.top};
+            saveBsaXml(m_store+"Dims.xml",dimsNorm,false);
+            bool                maximized = dimsCurr != dimsNorm;
+            saveBsaXml(m_store+"Maximized.xml",maximized,false);
             m_win->saveState();
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
         }
@@ -230,29 +297,45 @@ struct  GuiWinMain
         //        SendMessage(child.val(),msg,wParam,lParam);
         //}
         else
-            return DefWindowProc(hwnd,msg,wParam,lParam);
-        return 0;
+            ret = DefWindowProc(hwnd,msg,wParam,lParam);
+/*
+        uint64          elapsed = timer.readMs();
+        auto            it = profile.find(msg);
+        if (it == profile.end())
+            profile[msg] = elapsed;
+        else
+            it->second += elapsed;
+*/
+        return ret;
     }
 };
 
 void
 guiStartImpl(
-    Ustring const &                title,
-    GuiPtr                        gui,
-    Ustring const &                store,
-    GuiOptions const &            options)
+    NPT<Ustring>                titleN,
+    GuiPtr                      gui,
+    Ustring const &             store,
+    GuiOptions const &          options)
 {
     s_guiWin.hinst = GetModuleHandle(NULL);
-    GuiWinMain        win;
-    win.m_title = title;
-    win.m_store = store + "Win";
-    win.m_win = gui->getInstance();
+    // Initialize COM. This wasn't necessary on my computer but on some computers the call to CoCreateInstance
+    // (for dialog box creation) failed with CO_E_NOTINITIALIZED (0x800401F0). I initially tried with the
+    // COINIT_MULTITHREADED argument but this causes the app to hang when file dialog was called. Since I don't
+    // use explicit multithreading in the GUI, one init suffices since all callbacks take place from the main thread.
+    // I tested this by looking at the return value of CoInitializeEx(NULL,COINIT_APARTMENTTHREADED) where dialogs
+    // are invoked (eg. worker func called from button callback) and it always returned S_FALSE indicated that
+    // COM was already initialized:
+    HRESULT             hr = CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
+    FGASSERTWIN((hr==S_OK)||(hr==S_FALSE));     // Repeat initialization is OK, even though it should not happen here
+    ScopeGuard          sg {[](){CoUninitialize();}};
+    GuiWinMain          win {titleN,store+"Win",gui->getInstance()};
     for (GuiEvent const & event : options.events) {
         win.eventHandles.push_back(event.handle);
         win.eventHandlers.push_back(event.handler);
     }
     win.keyHandlers = options.keyHandlers;
     win.onUpdate = options.onUpdate;
+    s_guiWin.guiMainPtr = &win;
     win.start();
     s_guiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
 }
@@ -316,7 +399,7 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
                     sysInfo;
     try
     {
-        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + bitsString() + "bit\n"
+        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + cBitsString() + "bit\n"
             + osDescription() + "\n" + className + "\n" + getDefaultGpuDescription() + "\n";
         if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
             guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
@@ -342,10 +425,7 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
 
 void winUpdateScreen()
 {
-//fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
-    SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
-//    LRESULT     ret = SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
-//fgout << fgnl << "SendMessage returned: " << ret << flush;
+    s_guiWin.guiMainPtr->updateGui();
 }
 
 void

@@ -18,36 +18,6 @@ using namespace std;
 namespace Fg {
 
 void
-fgReadp(std::istream & is,Morph & m)
-{
-    fgReadp(is,m.name);
-    fgReadp(is,m.verts);
-}
-
-void
-fgWritep(std::ostream & os,Morph const & m)
-{
-    fgWritep(os,m.name);
-    fgWritep(os,m.verts);
-}
-
-void
-fgReadp(std::istream & is,IndexedMorph & m)
-{
-    fgReadp(is,m.name);
-    fgReadp(is,m.baseInds);
-    fgReadp(is,m.verts);
-}
-
-void
-fgWritep(std::ostream & os,const IndexedMorph & m)
-{
-    fgWritep(os,m.name);
-    fgWritep(os,m.baseInds);
-    fgWritep(os,m.verts);
-}
-
-void
 macAsTargetMorph_(
     Vec3Fs const &  baseVerts,
     Uints const &   indices,
@@ -64,9 +34,9 @@ macAsTargetMorph_(
 }
 
 void
-fgAccDeltaMorphs(
-    const vector<Morph> &     deltaMorphs,
-    const Floats &              coord,
+accDeltaMorphs(
+    Morphs const &     deltaMorphs,
+    Floats const &              coord,
     Vec3Fs &                   accVerts)
 {
     FGASSERT(deltaMorphs.size() == coord.size());
@@ -79,10 +49,10 @@ fgAccDeltaMorphs(
 }
 
 void
-fgAccTargetMorphs(
+accTargetMorphs(
     Vec3Fs const &             allVerts,
-    const vector<IndexedMorph> & targMorphs,
-    const Floats &              coord,
+    IndexedMorphs const & targMorphs,
+    Floats const &              coord,
     Vec3Fs &                   accVerts)
 {
     FGASSERT(targMorphs.size() == coord.size());
@@ -92,7 +62,7 @@ fgAccTargetMorphs(
     FGASSERT(accVerts.size() + numTargVerts == allVerts.size());
     size_t          idx = accVerts.size();
     for (size_t ii=0; ii<targMorphs.size(); ++ii) {
-        const Uints &     inds = targMorphs[ii].baseInds;
+        Uints const &     inds = targMorphs[ii].baseInds;
         for (size_t jj=0; jj<inds.size(); ++jj) {
             size_t          baseIdx = inds[jj];
             Vec3F        del = allVerts[idx++] - allVerts[baseIdx];
@@ -102,7 +72,7 @@ fgAccTargetMorphs(
 }
 
 void
-accPoseDeltas_(const std::map<Ustring,float> & poseVals,const Morphs & deltaMorphs,Vec3Fs & acc)
+accPoseDeltas_(const std::map<Ustring,float> & poseVals,Morphs const & deltaMorphs,Vec3Fs & acc)
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
         Morph const &     morph = deltaMorphs[ii];

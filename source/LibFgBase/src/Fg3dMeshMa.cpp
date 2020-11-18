@@ -44,7 +44,7 @@ static bool saveMayaAsciiFile(
         Strings const            *morphNames,
         Strings const            *cmts);
 static void buildEdgeList(
-        const vector<Vec3UI>    &triList,
+        Vec3UIs const    &triList,
         const vector<Vec4UI>    &quadList,
         EdgeMapT                    &edgeMap,
         vector<Vec2UI>          &edgeList);
@@ -131,11 +131,11 @@ static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList);
 static void writeFacets(
         ofstream                    &ofs,
         const vector<Vec3F>    &vtxList,
-        const vector<Vec3UI>    &triList,
+        Vec3UIs const    &triList,
         const vector<Vec4UI>    &quadList,
         const EdgeMapT              &edgeMap,
         const vector<Vec2F>    &texCoord,
-        const vector<Vec3UI>    &texTriList,
+        Vec3UIs const    &texTriList,
         const vector<Vec4UI>    &texQuadList);
 static void writeObjects(
         ofstream                        &ofs,
@@ -354,7 +354,7 @@ static bool saveMayaAsciiFile(
 //****************************************************************************
 static void buildEdgeList(
 
-    const vector<Vec3UI>    &triList,
+    Vec3UIs const    &triList,
     const vector<Vec4UI>    &quadList,
     EdgeMapT                    &edgeMap,
     vector<Vec2UI>          &edgeList)
@@ -918,11 +918,11 @@ static void writeFacets(
 
     ofstream                    &ofs,
     const vector<Vec3F>    &vtxList,
-    const vector<Vec3UI>    &triList,
+    Vec3UIs const    &triList,
     const vector<Vec4UI>    &quadList,
     const EdgeMapT              &edgeMap,
     const vector<Vec2F>    &texCoord,
-    const vector<Vec3UI>    &texTriList,
+    Vec3UIs const    &texTriList,
     const vector<Vec4UI>    &texQuadList)
 {
     // Per-facet or per-vertex texture
@@ -1042,10 +1042,10 @@ static void writeObjects(
     {
         // Get an alias to the list data
         const vector<Vec3F> &vtxList = model.getPtList(objId);
-        const vector<Vec3UI> &triList = model.getTriList(objId);
+        Vec3UIs const &triList = model.getTriList(objId);
         const vector<Vec4UI> &quadList = model.getQuadList(objId);
         const vector<Vec2F> &texCoord = model.getTextCoord(objId);
-        const vector<Vec3UI> &texTriList = model.getTexTriList(objId);
+        Vec3UIs const &texTriList = model.getTexTriList(objId);
         const vector<Vec4UI> &texQuadList = model.getTexQuadList(objId);
 
         // Build an edge list first
@@ -1142,10 +1142,10 @@ static void writeObjects(
             const vector<Vec3F> &mVtxList = 
                 (*morphTargets)[mm].getPtList(objId);
             const vector<Vec3F> &vtxList = model.getPtList(objId);
-            const vector<Vec3UI> &triList = model.getTriList(objId);
+            Vec3UIs const &triList = model.getTriList(objId);
             const vector<Vec4UI> &quadList = model.getQuadList(objId);
             const vector<Vec2F> &texCoord = model.getTextCoord(objId);
-            const vector<Vec3UI> &texTriList = model.getTexTriList(objId);
+            Vec3UIs const &texTriList = model.getTexTriList(objId);
             const vector<Vec4UI> &texQuadList=model.getTexQuadList(objId);
 
             size_t  numFacets = triList.size() + quadList.size();
@@ -2010,7 +2010,7 @@ fgMeshLegacy(Meshes const & meshes,Ustring const & fname,string const & imgForma
             }
         }
     }
-    set<Ustring>           morphSet = fgMorphs(meshes);
+    set<Ustring>           morphSet = getMorphNames(meshes);
     Ustrings        morphs(morphSet.begin(),morphSet.end());
     ret.morphs.resize(morphs.size(),ret.base);
     for (size_t mm=0; mm<morphs.size(); ++mm) {

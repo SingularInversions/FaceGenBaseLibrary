@@ -11,28 +11,33 @@
 #include "FgMath.hpp"
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
+#include "FgBounds.hpp"
 
 namespace Fg {
 
-// Convert from bits of precision to an epsilon value for that precision:
-inline double bitsToPrecision(uint bits) {return 1.0 / double(1ULL << bits); }
-inline float  bitsToPrecisionF(uint bits) {return 1.0f / float(1ULL << bits); }
+// Return a value with given bits of precision relative to epsilon:
+inline double epsPrec(uint bits) {return 1.0 / double(1ULL << bits); }
 
 // Are two numbers approximately equal relative to an absolute scale ?
-template<typename T>
-inline bool
-isApproxEqual(T v0,T v1,T maxDiff)
-{return (std::abs(v1-v0) <= maxDiff); }
+inline bool isApproxEqual(double v0,double v1,double maxDiff) {return (std::abs(v1-v0) <= maxDiff); }
 
 template<typename T,uint nrows,uint ncols>
 bool
-isApproxEqual(
-    Mat<T,nrows,ncols> const &    m0,
-    Mat<T,nrows,ncols> const &    m1,
-    T                             maxDiff)
+isApproxEqual(Mat<T,nrows,ncols> const & l,Mat<T,nrows,ncols> const & r,double maxDiff)
 {
     for (uint ii=0; ii<nrows*ncols; ++ii)
-        if (std::abs(m0[ii]-m1[ii]) > maxDiff)
+        if (!isApproxEqual(l[ii],r[ii],maxDiff))
+            return false;
+    return true;
+}
+
+template<typename T>
+bool
+isApproxEqual(Svec<T> const & l,Svec<T> const & r,double maxDiff)
+{
+    FGASSERT(l.size() == r.size());
+    for (size_t ii=0; ii<l.size(); ++ii)
+        if (!isApproxEqual(l[ii],r[ii],maxDiff))
             return false;
     return true;
 }
@@ -123,7 +128,7 @@ isApproxEqualRelPrec(
     T           scale = (cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs))) * T(0.5);
     if (scale == 0)
         return true;
-    T           maxDiff = scale * bitsToPrecision(precisionBits);
+    T           maxDiff = scale * epsPrec(precisionBits);
     return isApproxEqual(lhs,rhs,maxDiff);
 }
 
@@ -136,7 +141,7 @@ isApproxEqualRelPrec(
 {
     FGASSERT(lhs.size() == rhs.size());
     T           scale = cMaxElem((mapAbs(cDims(lhs)) + mapAbs(cDims(rhs))) * T(0.5)),
-                precision = bitsToPrecision(precisionBits),
+                precision = epsPrec(precisionBits),
                 maxDiff = scale * precision;
     for (size_t ii=0; ii<lhs.size(); ++ii)
         if (!isApproxEqual(lhs[ii],rhs[ii],maxDiff))

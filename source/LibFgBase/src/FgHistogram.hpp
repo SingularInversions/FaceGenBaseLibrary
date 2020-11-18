@@ -22,7 +22,7 @@ struct  FgHistogram
         size_t              numBins);
 
     FgHistogram(
-        const Svec<double> & samples,
+        const Doubles & samples,
         VecD2            bounds,
         size_t              numBins);
 
@@ -37,7 +37,7 @@ struct  FgHistogram
     {return binCounts[ii]; }
 
     // Return an L1 normalized density of the samples over the range:
-    Svec<double>
+    Doubles
     asDensity() const;
 };
 

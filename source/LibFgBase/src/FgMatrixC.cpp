@@ -10,6 +10,8 @@
 #include "FgSyntax.hpp"
 #include "FgMath.hpp"
 #include "FgRandom.hpp"
+#include "FgQuaternion.hpp"
+#include "FgCommand.hpp"
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings
@@ -123,7 +125,8 @@ testInverse()
     FGASSERT(res < (10.0 * size * size * epsilonD()));
 }
 
-static void     testFgMatRotateAxis()
+static void
+testFgMatRotateAxis(CLArgs const &)
 {
     randSeedRepeatable();
     for (uint ii=0; ii<100; ii++)
@@ -141,16 +144,33 @@ static void     testFgMatRotateAxis()
     }
 }
 
-void
-fgMatrixCTest(CLArgs const &)
+static void
+testMatrixCInverse(CLArgs const &)
 {
     randSeedRepeatable();
-    for (size_t ii=0; ii<10; ++ii)
-    {
+    for (size_t ii=0; ii<10; ++ii) {
         testInverse<2>();
         testInverse<3>();
     }
-    testFgMatRotateAxis();
+}
+
+static void
+testMatrixUT(CLArgs const &)
+{
+    for (size_t ii=0; ii<100; ++ii) {
+        MatUT33D        m;
+    }
+}
+
+void
+testMatrixC(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testMatrixCInverse,"inv"},
+        {testFgMatRotateAxis,"rot"},
+        {testMatrixUT,"ut"},
+    };
+    doMenu(args,cmds,true);
 }
 
 Mat32D
@@ -173,6 +193,48 @@ fgTanSphere(Vec3D v)
     r0 /= r0.len();
     Vec3D        r1 = crossProduct(vn,r0);
     return catHoriz(r0,r1);
+}
+
+MatUT33D
+MatUT33D::inverse() const
+{
+    MatUT33D    ret;
+    ret.m[0] = 1.0/m[0];
+    ret.m[1] = -m[1]/(m[0]*m[3]);
+    ret.m[2] = (m[1]*m[4]/m[3] - m[2])/(m[0]*m[5]);
+    ret.m[3] = 1.0/m[3];
+    ret.m[4] = -m[4]/(m[3]*m[5]);
+    ret.m[5] = 1.0/m[5];
+    return ret;
+}
+
+std::ostream &
+operator<<(std::ostream & os,MatUT33D const & ut)
+{
+    Vec3D       diag {ut.m[0],ut.m[3],ut.m[5]},
+                upper {ut.m[1],ut.m[2],ut.m[4]};
+    return os << "Diag: " << diag << " UT: " << upper;
+}
+
+MatS33D
+randMatSpd3D(double lnEigStdev)
+{
+    // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
+    Mat33D          D = asDiagMat(mapFunc(Vec3D::randNormal(lnEigStdev),exp)),
+                    R = QuaternionD::rand().asMatrix(),
+                    M = R.transpose() * D * R;
+    // M will have precision-level asymmetry so manually construct return value from upper triangular values
+    // (Eigen's QR decomp fails badly if symmetry is not precise):
+    return MatS33D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
+}
+
+MatS33D::MatS33D(Mat33D const & m) :
+    diag {{m[0],m[4],m[8]}},
+    offd {{m[1],m[2],m[5]}}
+{
+    for (uint rr=0; rr<3; ++rr)
+        for (uint cc=rr+1; cc<3; ++cc)
+            FGASSERT(m.rc(rr,cc) == m.rc(cc,rr));
 }
 
 }

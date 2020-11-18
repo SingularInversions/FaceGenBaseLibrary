@@ -16,7 +16,7 @@ namespace Fg {
 Fg3dRayCastMesh::Fg3dRayCastMesh(
     Mesh const &        mesh,
     Vec3Fs const &         verts,
-    const Normals &     norms,
+    MeshNormals const &     norms,
     AffineEw2F            itcsToIucs)
     :
     vertsPtr(&verts),
@@ -43,10 +43,10 @@ Fg3dRayCastMesh::Fg3dRayCastMesh(
     grid = gridTriangles(vertsIucs,surfs[0].tris.posInds);
 }
 
-FgBestN<float,TriPoint,8>
+BestN<float,TriPoint,8>
 Fg3dRayCastMesh::cast(Vec2F posIucs) const
 {
-    FgBestN<float,TriPoint,8> retval;
+    BestN<float,TriPoint,8> retval;
     vector<TriPoint>          intersects = grid.intersects(surfs[0].tris.posInds,vertsIucs,posIucs);
     for (size_t ii=0; ii<intersects.size(); ++ii) {
         TriPoint  isect = intersects[ii];
@@ -60,7 +60,7 @@ Fg3dRayCastMesh::cast(Vec2F posIucs) const
 }
 
 RgbaF
-Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) const
+Fg3dRayCastMesh::shade(const TriPoint & intersect,Lighting const & lighting) const
 {
     Vec3UI           tri = intersect.pointInds;
     Vec3F            bCoord = intersect.baryCoord;
@@ -77,7 +77,7 @@ Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) con
              bCoord[2] * uvs[uvInds[2]];
         uv[1] = 1.0f - uv[1];   // OTCS to IUCS
     }
-    const ImgC4UC * img = (surfs[0].material.albedoMap) ? &(*surfs[0].material.albedoMap) : NULL;
+    ImgC4UC const * img = (surfs[0].material.albedoMap) ? &(*surfs[0].material.albedoMap) : NULL;
     Vec3F           acc {0};
     RgbaF           texSample = (img && (!img->empty())) ?
         RgbaF(sampleClipIucs(*img,uv)) :
@@ -106,8 +106,8 @@ Fg3dRayCastMesh::shade(const TriPoint & intersect,const Lighting & lighting) con
 Fg3dRayCaster::Fg3dRayCaster(
     Meshes const &          meshes,
     Vec3Fss const &            vertss,
-    const Normalss &        normss,
-    const Lighting &          lighting,
+    MeshNormalss const &        normss,
+    Lighting const &          lighting,
     AffineEw2F                itcsToIucs,
     RgbaF                     background)
     :
@@ -125,11 +125,11 @@ RgbaF
 Fg3dRayCaster::cast(Vec2F posIucs) const
 {
     // Find closest ray intersection:
-    FgBestN<float,Best,8>   bestAll;
+    BestN<float,Intersect,8>   bestAll;
     for (size_t ii=0; ii<rayMesh.size(); ++ii) {
-        FgBestN<float,TriPoint,8>     best = rayMesh[ii].cast(posIucs);
+        BestN<float,TriPoint,8>     best = rayMesh[ii].cast(posIucs);
         for (uint jj=0; jj<best.size(); ++jj)
-            if (!bestAll.update(best[jj].first,Best(ii,best[jj].second)))
+            if (!bestAll.update(best[jj].first,Intersect(ii,best[jj].second)))
                 break;
     }
     RgbaF     acc = m_background;

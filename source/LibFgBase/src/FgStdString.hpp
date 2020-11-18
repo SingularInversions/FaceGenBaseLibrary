@@ -181,7 +181,7 @@ contains(const std::basic_string<T> & str,T const * pattern_c_str)
 
 template<typename T>
 std::basic_string<T>
-cutHead(const std::basic_string<T> & str,size_t size)
+cHead(const std::basic_string<T> & str,size_t size)
 {
     FGASSERT(size <= str.size());
     return std::basic_string<T>(str.begin(),str.begin()+size);
@@ -189,7 +189,7 @@ cutHead(const std::basic_string<T> & str,size_t size)
 
 template<class T>
 std::basic_string<T>
-cutRest(const std::basic_string<T> & str,size_t start=1)
+cRest(const std::basic_string<T> & str,size_t start=1)
 {
     FGASSERT(start <= str.size());      // Can be size zero
     return std::basic_string<T>(str.begin()+start,str.end());

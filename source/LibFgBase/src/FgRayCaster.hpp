@@ -36,7 +36,7 @@ struct  RayCaster
     Materialss              materialss;     // By mesh, by surface
     Vec3Fss                 vertss;         // By mesh, in OECS
     Svec<Vec2Fs const *>    uvsPtrs;        // By mesh, in OTCS
-    Normalss                normss;         // By mesh, in OECS
+    MeshNormalss                normss;         // By mesh, in OECS
     AffineEw2D              itcsToIucs;
     Vec3Fss                 iucsVertss;     // By mesh, X,Y in IUCS, Z component is inverse FCCS depth
     GridIndex<TriInd>       grid;           // Index from IUCS to bin of TriInds
@@ -71,7 +71,7 @@ struct  RayCaster
     };
 
     // Return closest tri intersects for given ray:
-    FgBestN<float,Intersect,4>
+    BestN<float,Intersect,4>
     closestIntersects(Vec2F posIucs) const;
 };
 

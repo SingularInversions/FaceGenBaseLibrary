@@ -259,9 +259,9 @@ isGlobMatch(Ustring const & globStr,Ustring const & str)
     u32string           gs = globStr.as_utf32(),
                         ts = str.as_utf32();
     if (gs[0] == '*')
-        return endsWith(ts,cutRest(gs,1));
+        return endsWith(ts,cRest(gs,1));
     else if (gs.back() == '*')
-        return beginsWith(ts,cutHead(gs,gs.size()-1));
+        return beginsWith(ts,cHead(gs,gs.size()-1));
     return (str == globStr);
 }
 
@@ -276,11 +276,11 @@ cSubstr(Ustring const & str,size_t start,size_t size)
 }
 
 Ustring
-cutRest(Ustring const & str,size_t start)
+cRest(Ustring const & str,size_t start)
 {
     Ustring        ret;
     u32string       s = str.as_utf32();
-    s = cutRest(s,start);
+    s = cRest(s,start);
     ret = Ustring(s);
     return ret;
 }

@@ -11,7 +11,7 @@
 namespace Fg {
 
 std::string
-bitsString()
+cBitsString()
 {
 #ifdef FG_64
     return "64";

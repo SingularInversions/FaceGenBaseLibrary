@@ -20,19 +20,19 @@ using namespace std;
 
 namespace Fg {
 
-void fg3dTest(CLArgs const &);
+void test3d(CLArgs const &);
 void fgBoostSerializationTest(CLArgs const &);
 void fgCmdTestDfg(CLArgs const &);
 void fgExceptionTest(CLArgs const &);
 void fgFileSystemTest(CLArgs const &);
 void fgOpenTest(CLArgs const &);
-void fgGeometryTest(CLArgs const &);
+void testGeometry(CLArgs const &);
 void fgGridTrianglesTest(CLArgs const &);
 void fgImageTest(CLArgs const &);
 void testKdTree(CLArgs const &);
 void fgMatrixSolverTest(CLArgs const &);
 void testMath(CLArgs const &);
-void fgMatrixCTest(CLArgs const &);
+void testMatrixC(CLArgs const &);
 void fgMatrixVTest(CLArgs const &);
 void fgMetaFormatTest(CLArgs const &);
 void fgMorphTest(CLArgs const &);
@@ -51,19 +51,19 @@ Cmds
 fgCmdBaseTests()
 {
     Cmds      cmds {
-        {fg3dTest,"3d"},
+        {test3d,"3d"},
         {fgBoostSerializationTest,"boostSerialization"},
         {fgCmdTestDfg,"dataflow"},
         {fgExceptionTest,"exception"},
         {fgFileSystemTest,"filesystem"},
         {fgOpenTest,"open"},
-        {fgGeometryTest,"geometry"},
+        {testGeometry,"geometry"},
         {fgGridTrianglesTest,"gridTriangles"},
         {fgImageTest,"image"},
         {testKdTree,"kd"},
         {fgMatrixSolverTest,"matSol","Matrix Solver"},
         {testMath,"math"},
-        {fgMatrixCTest,"matC","MatrixC"},
+        {testMatrixC,"matC","MatrixC"},
         {fgMatrixVTest,"matV","MatrixV"},
         {fgMetaFormatTest,"metaFormat"},
         {fgMorphTest,"morph"},
@@ -116,15 +116,14 @@ sysinfo(CLArgs const &)
         << fgpop;
 }
 
-void fg3dTestMan(CLArgs const &);
+void testm3d(CLArgs const &);
 void fgClusterTest(CLArgs const &);
 void fgClusterTestm(CLArgs const &);
 void fgClusterDeployTestm(CLArgs const &);
 void fgCmdTestmCpp(CLArgs const &);
 void fg3dReadWobjTest(CLArgs const &);
 void fgRandomTest(CLArgs const &);
-void fgGeometryManTest(CLArgs const &);
-void fgSubdivisionTest(CLArgs const &);
+void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
 void fgImageTestm(CLArgs const &);
 
@@ -133,15 +132,14 @@ fgCmdBaseTestms()
 {
     Cmds      cmds {
         {testmGui,"gui"},
-        {fg3dTestMan,"3d"},
+        {testm3d,"3d"},
         {fgClusterTest,"cluster"},
         {fgClusterTestm,"clusterm"},
         {fgClusterDeployTestm,"clusterDeploy"},
         {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
         {fg3dReadWobjTest,"readWobj"},
         {fgRandomTest,"random"},
-        {fgGeometryManTest,"geometry"},
-        {fgSubdivisionTest,"subdivision"},
+        {testmGeometry,"geometry"},
         {fgTextureImageMappingRenderTest,"texturemap"},
         {fgImageTestm,"image"}
     };

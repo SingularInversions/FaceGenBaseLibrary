@@ -38,7 +38,11 @@ String
 getDateTimeFilename();
 
 String
-getYearString();
+cYearString();
+
+// Show the time in appropriate units (milliseconds, seconds, minutes, hours, days):
+String
+msToPrettyTime(uint64 durationInMilliseconds);
 
 struct  Timer
 {
@@ -63,7 +67,7 @@ struct  Timer
     readMs() const
     {return getTimeMs()-m_startTime; }
 
-    // Outputs 'label' to 'fgout' newline along with the time taken in 'ms', then resets the timer:
+    // Outputs 'label' to 'fgout' newline along with pretty print of duration
     void
     report(String const & label);
 };
@@ -71,20 +75,20 @@ struct  Timer
 std::ostream &
 operator<<(std::ostream &,const Timer &);
 
-struct TimeScope
+struct PushTimer
 {
     uint64          startTime;
 
-    TimeScope(String const & msg)
+    PushTimer(String const & msg)
     {
         fgout << fgnl << "Beginning " << msg << ":" << fgpush << fgnl;
         startTime = getTimeMs();
     }
 
-    ~TimeScope()
+    ~PushTimer()
     {
         uint64      t = getTimeMs() - startTime;
-        fgout << fgpop << fgnl << "Done. " << t << " ms ";
+        fgout << fgpop << fgnl << "Completed in " << msToPrettyTime(t);
     }
 };
 

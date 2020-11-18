@@ -47,7 +47,7 @@ renderSoft(
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
         Vec3Fs const &      verts = rc.vertss[mm];
-        const Normals & norms = rc.normss[mm];
+        MeshNormals const & norms = rc.normss[mm];
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const &        surf = mesh.surfaces[ss];
             for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
@@ -60,7 +60,7 @@ renderSoft(
                 Vec3F               spIucs = rc.oecsToIucs(spOecs);
                 spp.posIucs = Vec2F(spIucs[0],spIucs[1]);
                 if (spIucs[2] > 0) {                                // Point is in front of the camera
-                    FgBestN<float,RayCaster::Intersect,4>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
+                    BestN<float,RayCaster::Intersect,4>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
                     if (!intscts.empty()) {                         // Point is in view of camaera
                         RayCaster::Intersect  intsct = intscts[0].second;     // First is closest
                         if ((intsct.triInd.meshIdx != mm) ||

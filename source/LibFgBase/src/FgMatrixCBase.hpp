@@ -353,17 +353,6 @@ struct  Mat
         return ret;
     }
 
-    static
-    Mat
-    identity()
-    {
-        static_assert(nrows == ncols,"Identity matrix must be square");
-        Mat               ret(T(0));
-        for (uint ii=0; ii<nrows; ++ii)
-            ret.rc(ii,ii) = T(1);
-        return ret;
-    }
-
     // Initialize from array data. This is done via a proxy type (accessed via a convenient
     // static member) since compilers interpret '0' as either 'int' or pointer, potentially
     // resulting in either:
@@ -428,6 +417,22 @@ struct  Mat
 
     // Static creation functions:
 
+    static Mat identity()
+    {
+        static_assert(nrows == ncols,"Identity matrix must be square");
+        Mat               ret(T(0));
+        for (uint ii=0; ii<nrows; ++ii)
+            ret.rc(ii,ii) = T(1);
+        return ret;
+    }
+    static Mat diagonal(T v)
+    {
+        static_assert(nrows == ncols,"Diagonal matrix must be square");
+        Mat               ret(T(0));
+        for (uint ii=0; ii<nrows; ++ii)
+            ret.rc(ii,ii) = v;
+        return ret;
+    }
     static Mat randUniform(T lo,T hi);
     static Mat randNormal(T stdev=T(1));
 };
@@ -487,10 +492,17 @@ typedef Mat<float,2,2>          Mat22F;
 typedef Mat<double,2,2>         Mat22D;
 typedef Mat<int,2,2>            Mat22I;
 typedef Mat<uint,2,2>           Mat22UI;
+typedef Svec<Mat22F>            Mat22Fs;
+typedef Svec<Mat22D>            Mat22Ds;
+
 typedef Mat<float,3,3>          Mat33F;
 typedef Mat<double,3,3>         Mat33D;
+typedef Svec<Mat33F>            Mat33Fs;
+typedef Svec<Mat33D>            Mat33Ds;
+
 typedef Mat<float,4,4>          Mat44F;
 typedef Mat<double,4,4>         Mat44D;
+
 
 typedef Mat<float,2,3>          Mat23F;
 typedef Mat<double,2,3>         Mat23D;
@@ -609,6 +621,16 @@ template<class T,uint nrows,uint ncols>
 Mat<int,nrows,ncols>
 fgToInt(Mat<T,nrows,ncols> const & m)
 {return Mat<int,nrows,ncols>(m); }
+
+template<class T,uint nrows,uint ncols>
+bool
+isFinite(Mat<T,nrows,ncols> const & m)
+{
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        if (!std::isfinite(m[ii]))
+            return false;
+    return true;
+}
 
 }
 

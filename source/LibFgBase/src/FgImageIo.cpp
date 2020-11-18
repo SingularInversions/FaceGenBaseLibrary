@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 void
-loadImage(Ustring const & fname,ImgUC & ret)
+loadImage_(Ustring const & fname,ImgUC & ret)
 {
     ImgC4UC     img = loadImage(fname);
     ret.resize(img.dims());
@@ -25,10 +25,10 @@ loadImage(Ustring const & fname,ImgUC & ret)
 }
 
 void
-loadImage(Ustring const & fname,ImgF & img)
+loadImage_(Ustring const & fname,ImgF & img)
 {
     ImgC4UC     tmp;
-    loadImage(fname,tmp);
+    loadImage_(fname,tmp);
     img.resize(tmp.dims());
     for (size_t ii=0; ii<tmp.numPixels(); ++ii)
         img.m_data[ii] = tmp.m_data[ii].rec709();
@@ -101,7 +101,7 @@ imgFindLoadAnyFormat(Ustring const & baseName,ImgC4UC & img)
     Ustring        fname = baseName + "." + exts[0];
     if (exts.size() > 1)
         fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
-    loadImage(fname,img);
+    loadImage_(fname,img);
     return true;
 }
 

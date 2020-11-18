@@ -43,20 +43,20 @@ Path::Path(Ustring const & pathUtf8)
                 return;
             }
             size_t      slashPos = it-path.begin();
-            drive = Ustring(cutHead(path,slashPos));
-            path = cutRest(path,slashPos);
+            drive = Ustring(cHead(path,slashPos));
+            path = cRest(path,slashPos);
         }
         // Strictly else since we don't combine UNC and LFS:
         else if (path[1] == ':') {
-            drive = Ustring(cutHead(path,2));
-            path = cutRest(path,2);
+            drive = Ustring(cHead(path,2));
+            path = cRest(path,2);
         }
     }
     if (path.empty())
         return;
     if (path[0] == '/') {
         root = true;
-        path = cutRest(path,1);
+        path = cRest(path,1);
     }
     if (path.empty())
         return;
@@ -68,7 +68,7 @@ Path::Path(Ustring const & pathUtf8)
                 if (Ustring(dirs.back()) == str)
                     dirs.push_back(str);            // '..' does not back up over '..' !
                 else
-                    dirs = cutHead(dirs,dirs.size()-1);
+                    dirs = cHead(dirs,dirs.size()-1);
             }
             else if (str != ".")
                 dirs.push_back(Ustring(s[ii]));
@@ -121,7 +121,7 @@ Path::baseExt() const
 }
 
 Path
-Path::operator+(const Path &  rhs) const
+Path::operator+(Path const &  rhs) const
 {
     FGASSERT((base.empty()) && (ext.empty()));      // lhs is directory only
     FGASSERT((rhs.drive.empty()) && (!rhs.root));   // rhs is relative path

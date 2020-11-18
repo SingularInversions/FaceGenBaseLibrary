@@ -17,14 +17,14 @@ using namespace std;
 namespace Fg {
 
 Opt<TriPoint>
-GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,const Floats & invDepths,Vec2F pos) const
+GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,Floats const & invDepths,Vec2F pos) const
 {
     Opt<TriPoint>   ret;
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!boundsIncludes(grid.dims(),gridCoord))
+    if (!isInUpperBounds(grid.dims(),gridCoord))
         return ret;
     Vec2UI           binIdx = Vec2UI(gridCoord);
-    const Uints &     bin = grid[binIdx];
+    Uints const &     bin = grid[binIdx];
     float               bestInvDepth = 0.0f;
     TriPoint          bestTp;
     for (size_t ii=0; ii<bin.size(); ++ii) {
@@ -55,10 +55,10 @@ GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,v
 {
     ret.clear();
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!boundsIncludes(grid.dims(),gridCoord))
+    if (!isInUpperBounds(grid.dims(),gridCoord))
         return;
     Vec2UI           binIdx = Vec2UI(gridCoord);
-    const Uints &     bin = grid[binIdx];
+    Uints const &     bin = grid[binIdx];
     for (size_t ii=0; ii<bin.size(); ++ii) {
         TriPoint      tp;
         tp.triInd = bin[ii];
@@ -138,7 +138,7 @@ fgGridTrianglesTest(CLArgs const &)
     Img2F           vertImg(dimp,dimp);
     for (Iter2UI vit(dimp); vit.valid(); vit.next())
         vertImg[vit()] = Vec2F(vit());
-    vector<Vec3UI>           tris;
+    Vec3UIs           tris;
     for (uint row=0; row<dim; ++row) {
         uint    col=0;
         for (; col<row; ++col) {

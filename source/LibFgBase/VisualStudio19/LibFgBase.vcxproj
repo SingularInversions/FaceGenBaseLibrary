@@ -335,6 +335,7 @@
     <ClInclude Include="..\src\FgRgba.hpp" />
     <ClCompile Include="..\src\FgSampler.cpp" />
     <ClInclude Include="..\src\FgSampler.hpp" />
+    <ClInclude Include="..\src\FgScaleTrans.hpp" />
     <ClInclude Include="..\src\FgScopeGuard.hpp" />
     <ClCompile Include="..\src\FgSerial.cpp" />
     <ClInclude Include="..\src\FgSerial.hpp" />

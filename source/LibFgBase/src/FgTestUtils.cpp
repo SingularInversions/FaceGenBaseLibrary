@@ -62,9 +62,8 @@ compareImages(
     Ustring const &    f2,
     uint                maxDelta)
 {
-    ImgC4UC         i1,i2;
-    loadImage(f1,i1);
-    loadImage(f2,i2);
+    ImgC4UC         i1 = loadImage(f1),
+                    i2 = loadImage(f2);
     return fgImgApproxEqual(i1,i2,maxDelta);
 }
 

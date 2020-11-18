@@ -35,7 +35,7 @@ drawDotIrcs(ImgC4UC & img,Vec2I pos,uint radius,RgbaUC color)
 void
 drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color)
 {
-    Vec2F               ircs = cIucsToIrcs(img.dims(),Vec2F(posIucs));
+    Vec2F               ircs = cIucsToIrcsXf(img.dims(),Vec2F(posIucs));
     drawDotIrcs(img,round<int,float,2,1>(ircs),radius,color);
 }
 
@@ -95,7 +95,7 @@ fgDrawBarGraph(
     size_t          numBins = data.size();
     if (img.width() != numBins) {                                   // Start clean if wrong size
         img.resize(uint(numBins),uint(numBins));
-        cFill(img.m_data,RgbaUC(0,0,0,255));
+        mapAsgn_(img.m_data,RgbaUC(0,0,0,255));
     }
     double          maxVal = cMax(data),
                     vscale = 0.9 * double(img.height()) / maxVal;

@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 double
-tanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs)
+tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs)
 {
     Vec4D    lv = lhs.asVec4(),
                 rv = rhs.asVec4();

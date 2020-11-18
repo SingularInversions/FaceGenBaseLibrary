@@ -38,18 +38,15 @@ struct  D3dSurf
     WinPtr<ID3D11Buffer>        triVerts;       // 3 Verts for each tri. Null if no facets for this surf.
     WinPtr<ID3D11Buffer>        lineVerts;      // 2 Verts for each edge. Null if no facets or computation delayed.
     D3dMap                      albedoMap;      // Can be empty
+    D3dMap                      modulationMap;  // Can be empty
     D3dMap                      specularMap;    // "
-
-    void reset() {triVerts.reset(); lineVerts.reset(); albedoMap.reset(); specularMap.reset(); }
 };
 
 struct D3dMesh
 {
-    WinPtr<ID3D11Buffer>        surfPoints;
+    WinPtr<ID3D11Buffer>        surfPoints;     // 3 verts/tri x 20 tris/icosahedron x numSurfPoints. Null if none.
     WinPtr<ID3D11Buffer>        markedPoints;
     WinPtr<ID3D11Buffer>        allVerts;
-
-    void reset() {surfPoints.reset(); markedPoints.reset(); }
 };
 
 struct  PipelineState
@@ -70,11 +67,34 @@ struct  PipelineState
     apply(ComPtr<ID3D11DeviceContext> pContext);
 };
 
-struct D3d {
+struct      D3d
+{
+    D3d(HWND hwnd,NPT<RendMeshes> rms);
+
+    void
+    renderBackBuffer(
+        BackgroundImage const &     bgi,
+        Lighting                    lighting,
+        Mat44F                      worldToD3vs,    // modelview
+        Mat44F                      d3vsToD3ps,     // projection
+        Vec2UI                      viewportSize,
+        RendOptions const &         rendOpts,
+        bool                        backgroundTransparent=false);   // For screen grab option
+
+    void                            setBgImage(BackgroundImage const & bgi);
+    void                            resize(Vec2UI windowSize);
+    void                            showBackBuffer();
+    ImgC4UC                         capture(Vec2UI viewportSize);
+    void                            reset();
+
+private:
     uint                            maxMapSize = 4096;  // Play it safe
     bool                            supports11_1;       // Does GPU support D3D 11.1 ? Otherwise use 11.0
     bool                            supportsFlip;       // Supports DXGI_SWAP_EFFECT_FLIP_DISCARD ?
     // Created in constructor:
+    NPT<RendMeshes>                 rendMeshesN;
+    OPT<Vec3F>                      origMeshesDimsN;    // Bounding box size of original meshes
+    DfgFPtr                         origMeshChangeFlag; // If any of the original meshes are changed
     ComPtr<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator
     ComPtr<ID3D11DeviceContext>     pContext;
     ComPtr<IDXGISwapChain>          pSwapChain;         // Created by DXGI factor from 'pDevice'
@@ -83,6 +103,9 @@ struct D3d {
     D3dMap                          greyMap;            // For surfaces without an albedo map
     D3dMap                          blackMap;           // For surfaces without a specular map
     D3dMap                          whiteMap;           // 'shiny' rendering option specular map
+    Arr<D3dMap,4>                   tintMaps;           // For surface coloring display option
+    Arr<D3dMap,4>                   tintTransMaps;      // With transparency for mesh coloring display option
+    D3dMap                          noModulationMap;    // Modulate all with value 1
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDefault;
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDisable;
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateWriteDisable;
@@ -90,23 +113,18 @@ struct D3d {
     ComPtr<ID3D11BlendState>        pBlendStateDefault;
     ComPtr<ID3D11BlendState>        pBlendStateColorWriteDisable;       
     ComPtr<ID3D11BlendState>        pBlendStateLerp;
-    // Created in render:
+    TriSurf                         icosahedron;            // For rendering points. CW winding.
+    // Set in renderBackBuffer:
     D3dMap                          bgImg;
-    // TODO: this needs to live with D3dMesh struct:
-    bool                            flatShaded = false;     // Are the tri lists currently flat shaded ?
+    bool                            flatShaded = false;     // Are D3dSurf::triVerts buffers currently flat shaded ?
     ComPtr<ID3D11UnorderedAccessView> pUAVTextureHeadOIT;
     ComPtr<ID3D11UnorderedAccessView> pUAVBufferLinkedListOIT;
     PipelineState                   opaquePassPSO;
     PipelineState                   transparentFirstPassPSO;
     PipelineState                   transparentSecondPassPSO;
 
-    D3d(HWND hwnd);
-
     void
     initializeRenderTexture(Vec2UI windowSize);
-
-    void
-    resize(Vec2UI windowSize);
 
     // All member sizes must be multiples of 8 bytes (presumably for alignment).
     // HLSL uses column-major matrices so we need to transpose:
@@ -179,9 +197,6 @@ struct D3d {
     WinPtr<ID3D11Buffer>
     makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
 
-    void
-    setBgImage(BackgroundImage const & bgi);
-
     void renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass);
 
     D3dMesh &
@@ -191,29 +206,13 @@ struct D3d {
     getD3dSurf(RendSurf const & rs) const;
 
     void
-    renderBackBuffer(
-        BackgroundImage const &     bgi,
-        RendMeshes const &          rendMeshes,
-        Lighting                    lighting,
-        Mat44F                      worldToD3vs,    // modelview
-        Mat44F                      d3vsToD3ps,     // projection
-        Vec2UI                      viewportSize,
-        const RendOptions &         rendOpts);
-
-    void
-    showBackBuffer();
-
-    ImgC4UC
-    capture(Vec2UI viewportSize);
+    updateMap_(NPTF<ImgC4UC> const & in,D3dMap & out);
 
     void
     setVertexBuffer(ID3D11Buffer * vertBuff);
 
     void
     renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, bool transparentPass);
-
-    void
-    reset();
 };
 
 }

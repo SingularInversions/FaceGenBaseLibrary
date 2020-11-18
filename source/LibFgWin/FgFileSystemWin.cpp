@@ -315,7 +315,7 @@ getPublicDocsDir()
 }
 
 bool
-getCreationTime(Ustring const & path,uint64 & time)
+getCreationTimePrecise(Ustring const & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -339,11 +339,19 @@ getCreationTime(Ustring const & path,uint64 & time)
     return true;
 }
 
-std::time_t
+uint64
+getCreationTime(Ustring const & path)
+{
+    uint64          tn;
+    FGASSERT(getCreationTimePrecise(path,tn));
+    return tn / 10000000;       // Convert to seconds
+}
+
+uint64
 getLastWriteTime(Ustring const & fname)
 {
     // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
-    HANDLE hndl =
+    HANDLE          hndl =
         CreateFile(
             fname.as_wstring().c_str(),
             NULL,                           // Leaving zero means we're only getting meta-data about the file/dir
@@ -354,13 +362,16 @@ getLastWriteTime(Ustring const & fname)
             NULL);                          // don't get template info
     if (hndl == INVALID_HANDLE_VALUE)
         return false;
-    FILETIME    creation,
-                lastAccess,
-                lastWrite;
-    BOOL    ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
+    FILETIME        creation,
+                    lastAccess,
+                    lastWrite;
+    BOOL            ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
     CloseHandle(hndl);
     FGASSERTWIN(ret);
-    return uint64(lastWrite.dwLowDateTime) +(uint64(lastWrite.dwHighDateTime) << 32);
+    // Time in 100 nanosecond intervals since 1601.01.01:
+    uint64          time = uint64(lastWrite.dwLowDateTime) +(uint64(lastWrite.dwHighDateTime) << 32);
+    // Return in seconds:
+    return time / 10000000;
 }
 
 }

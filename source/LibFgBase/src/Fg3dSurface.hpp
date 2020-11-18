@@ -23,12 +23,11 @@ struct  LabelledVert
     // Handy for lookup:
     bool operator==(String const & lab) const {return (label == lab); }
 };
-
 typedef Svec<LabelledVert>  LabelledVerts;
 
 // Returns the vertices with the selected labels in that order:
 Vec3Fs
-fgSelectVerts(const LabelledVerts & labVerts,Strings const & labels);
+selectVerts(const LabelledVerts & labVerts,Strings const & labels);
 
 struct SurfPoint
 {
@@ -37,7 +36,7 @@ struct SurfPoint
     String          label;          // Optional
 
     SurfPoint() {};
-    SurfPoint(uint t,const Vec3F & w) : triEquivIdx(t), weights(w) {}
+    SurfPoint(uint t,Vec3F const & w) : triEquivIdx(t), weights(w) {}
 
     bool
     operator==(String const & rhs) const
@@ -45,9 +44,6 @@ struct SurfPoint
 };
 
 typedef Svec<SurfPoint>    SurfPoints;
-
-void    fgReadp(std::istream &,SurfPoint &);
-void    fgWritep(std::ostream &,SurfPoint const &);
 
 inline
 Vec3F
@@ -128,22 +124,6 @@ typedef Svec<Triss>         Trisss;
 
 template<uint dim>
 void
-fgReadp(std::istream & is,FacetInds<dim> & fi)
-{
-    fgReadp(is,fi.posInds);
-    fgReadp(is,fi.uvInds);
-}
-
-template<uint dim>
-void
-fgWritep(std::ostream & os,const FacetInds<dim> & fi)
-{
-    fgWritep(os,fi.posInds);
-    fgWritep(os,fi.uvInds);
-}
-
-template<uint dim>
-void
 cat_(FacetInds<dim> & lhs,const FacetInds<dim> & rhs)
 {
     // Avoid 'hasUvs()' compare if one is empty:
@@ -204,20 +184,15 @@ struct  Surf
     Tris                        tris;
     Quads                       quads;
     SurfPoints                  surfPoints;
-
     Material                    material;       // Not saved with mesh - set dynamically
 
     Surf() {}
-
-    explicit
-    Surf(Vec3UIs const & ts) : tris(ts) {}
-
-    explicit
-    Surf(const Vec4UIs & ts) : quads(ts) {}
-
+    explicit Surf(Vec3UIs const & ts) : tris(ts) {}
+    explicit Surf(const Vec4UIs & ts) : quads(ts) {}
     Surf(Vec3UIs const & triPosInds,Vec4UIs const & quadPosInds) : tris(triPosInds), quads(quadPosInds) {}
-
     Surf(const Svec<Vec4UI> & verts,const Svec<Vec4UI> & uvs) : quads(verts,uvs) {}
+    Surf(Ustring const & n,Tris const & ts,SurfPoints const & sps,Material const & m) :
+        name(n), tris(ts), surfPoints(sps), material(m) {}
 
     bool
     empty() const
@@ -268,39 +243,16 @@ struct  Surf
     isTri(size_t triEquivIdx) const
     {return (triEquivIdx < tris.size()); }
 
-    bool
-    hasUvIndices() const
-    {return !(tris.uvInds.empty() && quads.uvInds.empty()); }
-
-    inline Vec3F
-    surfPointPos(Vec3Fs const & verts,size_t idx) const
-    {return cSurfPointPos(surfPoints[idx],tris,quads,verts); }
-
+    bool            hasUvIndices() const {return !(tris.uvInds.empty() && quads.uvInds.empty()); }
+    Vec3F           surfPointPos(Vec3Fs const & verts,size_t idx) const {return cSurfPointPos(surfPoints[idx],tris,quads,verts); }
     // Label must correspond to a surface point:
-    Vec3F
-    surfPointPos(Vec3Fs const & verts,String const & label) const;
-
-    Vec3Fs
-    surfPointPositions(Vec3Fs const & verts) const;
-
-    LabelledVerts
-    surfPointsAsVertLabels(Vec3Fs const &) const;
-
-    FacetInds<3>
-    asTris() const;
-
-    Surf
-    convertToTris() const;
-
-    void
-    merge(Surf const & surf);
-
-    void
-    checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx);
-
-    // Clears everything but debug
-    void
-    clear();
+    Vec3F           surfPointPos(Vec3Fs const & verts,String const & label) const;
+    Vec3Fs          surfPointPositions(Vec3Fs const & verts) const;
+    LabelledVerts   surfPointsAsLabelledVerts(Vec3Fs const &) const;
+    FacetInds<3>    asTris() const;
+    Surf            convertToTris() const {return Surf {name,asTris(),surfPoints,material}; }
+    void            merge(Surf const & surf);
+    void            checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx);
 
     // Return a surface with all indices offset by the given amounts:
     Surf
@@ -318,7 +270,7 @@ struct  Surf
     {return (name == str); }
 
     void
-    setAlbedoMap(const ImgC4UC & img)
+    setAlbedoMap(ImgC4UC const & img)
     {material.albedoMap = std::make_shared<ImgC4UC>(img); }
 
     ImgC4UC &
@@ -347,19 +299,15 @@ std::ostream& operator<<(std::ostream&,Surf const&);
 
 typedef Svec<Surf>      Surfs;
 
-// Return a surface with only the selected tris (no quads), and any surface points that remain valid:
-Surf
-fgSelectTris(Surf const & surf,const Svec<FgBool> & sel);
-
 Surf
 removeDuplicateFacets(Surf const &);
 
 Surf
 mergeSurfaces(const Surfs & surfs);
 
-// Split a surface into its (one or more) discontiguous surfaces
-Svec<Surf>
-fgSplitSurface(Surf const & surf);
+// Split a surface into its (one or more) discontiguous (by vertex index) surfaces:
+Surfs
+splitByContiguous(Surf const & surf);
 
 // Name any unnamed surfaces as numbered extensions of the given base name,
 // or just the base name if there is only a single (unnamed) surface:
@@ -367,13 +315,13 @@ Surfs
 fgEnsureNamed(const Surfs & surfs,Ustring const & baseName);
 
 Vec3Fs
-fgVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
+cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
 
 bool
-fgHasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
+hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
 
 Uints
-fgRemoveUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts);
+removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts);
 
 struct  TriSurf
 {
@@ -382,8 +330,14 @@ struct  TriSurf
 
     bool
     hasUnusedVerts() const
-    {return fgHasUnusedVerts(tris,verts); }
+    {return Fg::hasUnusedVerts(tris,verts); }
 };
+
+Vec3UIs
+reverseWinding(Vec3UIs const &);
+
+TriSurf
+reverseWinding(TriSurf const &);
 
 TriSurf
 meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);

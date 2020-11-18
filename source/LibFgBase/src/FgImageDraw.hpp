@@ -31,7 +31,7 @@ fgPaintRectangle(
 double
 fgDrawBarGraph(
     ImgC4UC &               img,
-    const Svec<double> & data,
+    const Doubles & data,
     RgbaUC                    colour=RgbaUC(255,255,255,255));
 
 template<typename T>
@@ -39,7 +39,7 @@ ImgC4UC
 fgGraph(Svec<T> const & data)
 {
     ImgC4UC         img;
-    Svec<double> dt;
+    Doubles dt;
     scast_(data,dt);
     fgDrawBarGraph(img,dt);
     return img;

@@ -14,9 +14,10 @@ cbuffer ConstantFrameBuffer : register(b0)
     } Scene;
 }
 
-// t0 and t1 correspond to the ordering in PSSetShaderResources:
+// t0,t1,t2 correspond to the ordering in PSSetShaderResources:
 Texture2D<float4>   albedoMap : register(t0);
 Texture2D<float4>   specularMap : register(t1);
+Texture2D<float4>   modulationMap : register(t2);
 
 // Binds to the first sampler state as defined by PSSetSamplers:
 SamplerState        sstate : register(s0);
@@ -60,7 +61,7 @@ calcColor(Frag frag,float3 albedo)
     for (uint ii=0; ii<2; ++ii) {
         float3      ld = Scene.lightDir[ii].xyz;
         float3      lc = Scene.lightColor[ii].rgb;
-        float       adp = abs(dot(normal,ld));          // abs allows 2-sided rendering (when backface culling is off)
+        float       adp = saturate(dot(normal,ld));             // saturate clamps to [0,1]
         color += albedo * lc * adp;                 // Add diffuse term
         float3      halfAngle = normalize(float3(ld[0],ld[1],ld[2]-1));
         float3      del = halfAngle - normal;

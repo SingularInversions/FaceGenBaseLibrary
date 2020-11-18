@@ -18,7 +18,7 @@ static
 void
 saveStl(Ofstream & ff,Mesh const & mesh)
 {
-    Normals     norms = cNormals(mesh);
+    MeshNormals     norms = cNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const &         surf = mesh.surfaces[ss];
         const FacetNormals &    facetNorms = norms.facet[ss];

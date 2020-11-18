@@ -183,6 +183,8 @@
     <ClCompile Include="..\FgGuiWinTabs.cpp" />
     <ClCompile Include="..\FgGuiWinText.cpp" />
     <ClCompile Include="..\FgGuiWinTextEdit.cpp" />
+    <ClCompile Include="..\FgStdioWin.cpp" />
+    <ClCompile Include="..\FgStdStreamWin.cpp" />
     <ClCompile Include="..\FgSystemInfoWin.cpp" />
     <ClCompile Include="..\FgTcpWin.cpp" />
     <ClCompile Include="..\FgThrowWindows.cpp" />

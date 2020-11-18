@@ -72,7 +72,7 @@ similarityApprox(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
     Vec3D               trans = -scale * (pose.asMatrix() * domMean) + ranMean;
     ret = SimilarityD(scale,pose,trans);
     // Measure residual:
-    double  resid = cRms(rangePts-mapXft(domainPts,ret.asAffine())) / cMaxElem(cDims(rangePts));
+    double  resid = cRms(rangePts-mapMul(ret.asAffine(),domainPts)) / cMaxElem(cDims(rangePts));
     fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
     return ret;
 }
@@ -128,13 +128,22 @@ fgSimilarityApproxTest(CLArgs const &)
             domain[ii] = Vec3D::randNormal();
         for (uint mm=0; mm<10; mm++) {
             SimilarityD     simRef(expSafe(3.0 * randNormal()),QuaternionD::rand(),Vec3D::randNormal());
-            mapXf_(domain,simRef.asAffine(),range);
+            mapMul_(simRef.asAffine(),domain,range);
             SimilarityD     sim = similarityApprox(domain,range);
-            mapXf_(domain,sim.asAffine());
+            mapMul_(sim.asAffine(),domain);
             FGASSERT(isApproxEqualRelMag(domain,range));
         }
         numPts *= 2;
     }
+}
+
+std::ostream &
+operator<<(std::ostream & os,SimilarityRD const & v)
+{
+    return os
+        << "Translation: " << v.trans
+        << " Scale: " << v.scale
+        << " Rotation: " << v.rot;
 }
 
 }

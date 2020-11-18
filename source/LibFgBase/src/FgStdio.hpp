@@ -16,8 +16,10 @@
 namespace Fg {
 
 // Always opens in 'binary' mode. Throws a descriptive error if the file cannot be opened.
+// Avoid this function on Windows, especially for writing, as it seems to encounter denied permissions
+// in situations where opening an ofstream doesn't:
 FILE *
-fgOpen(
+openFile(
     Ustring const &    filename,
     bool                write);         // false = read
 

@@ -153,7 +153,7 @@ ConsSolution::getTransitiveDefs(string const & projName,set<string> & done) cons
         return ret;
     for (const ProjDep & pd : p.projDeps) {
         if (!Fg::contains(done,pd.name) && pd.transitive) {
-            fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+            setwiseAdd_(ret,getTransitiveDefs(pd.name,done));
             done.insert(pd.name);
         }
     }
@@ -170,7 +170,7 @@ ConsSolution::getDefs(string const & projName) const
     Strings              ret;
     set<string>         done;
     for (const ProjDep & pd : p.projDeps)
-        fgSetwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+        setwiseAdd_(ret,getTransitiveDefs(pd.name,done));
     for (const ConsDef & d : p.defs)
         ret.push_back(d.name);
     return ret;

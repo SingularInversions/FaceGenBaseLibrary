@@ -219,7 +219,7 @@ Ustring
 cSubstr(Ustring const & str,size_t start,size_t size);
 
 Ustring
-cutRest(Ustring const & s,size_t start);
+cRest(Ustring const & s,size_t start);
 
 // Inspired by Python join():
 Ustring

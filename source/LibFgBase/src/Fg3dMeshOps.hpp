@@ -34,28 +34,16 @@ Mesh
 meshFromImage(const ImgD & img);
 
 // Create a grid of SxS squares filling XY in [-1,1] at Z=0:
-QuadSurf
-cGrid(uint squaresPerSide);
-
+QuadSurf        cGrid(uint squaresPerSide);
 // Creates a sphere centred at the origin by subdividing a tetrahedron and renormalizing the 
 // vertex distances from the origin 'subdivision' times:
-Mesh
-cSphere(float radius,uint subdivisions);
-
-Mesh
-c3dCube(bool open=false);
-
-Mesh
-cPyramid(bool open=false);
-
-Mesh
-cTetrahedron(bool open=false);
-
-Mesh
-cOctahedron();
-
-Mesh
-cNTent(uint nn);
+Mesh            cSphere(float radius,uint subdivisions);
+Mesh            c3dCube(bool open=false);
+Mesh            cPyramid(bool open=false);
+Mesh            cTetrahedron(bool open=false);
+TriSurf         cOctahedron();                          // Size (max width) 2 centred around origin. CC winding.
+TriSurf         cIcosahedron();                         // Centred around origin, all vertices distance 1 from origin. CC winding.
+Mesh            cNTent(uint nn);
 
 //Mesh
 //fgFddCage(float size,float thick);
@@ -105,7 +93,7 @@ getUvCover(Mesh const & mesh,Vec2UI dims);
 
 // Wireframe image of UV layout of each facet:
 ImgC4UC
-cUvWireframeImage(Mesh const &,RgbaUC wireColor,const ImgC4UC & background=ImgC4UC());
+cUvWireframeImage(Mesh const &,RgbaUC wireColor,ImgC4UC const & background=ImgC4UC());
 
 // Emboss the given pattern onto a mesh with UVs, with max magnitude given by image value 255,
 // corresponding to a displacement (in the direction of surface normal) by 'ratio' times the
@@ -140,17 +128,6 @@ cMirror(TriSurf const &,uint axis);
 // UVs, maps, points left unchanged, morphs removed:
 Mesh
 cMirror(Mesh const &,uint axis);
-
-struct  MeshMirror
-{
-    Mesh        mesh;
-    // For each vertex, contains the index of it's mirror vertex (which is itself for vertices on saggital plane):
-    Uints       mirrorInds;
-};
-// Mirrors geometry around X=0 plane. All input verts must have X>=0. Tris only.
-// Surface points preserved but not mirrored. Morphs removed.
-MeshMirror
-meshMirrorX(Mesh const &);
 
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
 Mesh

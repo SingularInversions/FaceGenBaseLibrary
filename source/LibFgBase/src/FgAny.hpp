@@ -105,7 +105,7 @@ public:
     template<class T>
     Any(T const & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
 
-    Any(const Any & rhs) : objPtr(rhs.objPtr) {}
+    Any(Any const & rhs) : objPtr(rhs.objPtr) {}
 
     explicit operator bool() const
     {return bool(objPtr); }
@@ -124,7 +124,7 @@ public:
     {objPtr = std::make_shared<AnyPoly<T> >(val); }
 
     void
-    operator=(const Any & var)
+    operator=(Any const & var)
     {objPtr = var.objPtr; }
 
     template<class T>

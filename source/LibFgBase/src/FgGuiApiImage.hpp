@@ -14,11 +14,11 @@ namespace Fg {
 
 struct  GuiImageDisp
 {
-    uint        width;
-    uint        height;
-    const RgbaUC * dataPtr;
-    int         offsetx;
-    int         offsety;
+    uint                width;
+    uint                height;
+    RgbaUC const *      dataPtr;
+    int                 offsetx;
+    int                 offsety;
 };
 
 // This function must be defined in the corresponding OS-specific implementation:
@@ -29,7 +29,9 @@ struct  GuiImage : GuiBase
 {
     DfgFPtr             updateFill;
     NPT<ImgC4UC>        imgN;
-    Sfun<void()>        onClick;            // if non-NULL, call this when user left-clicks on image
+    // If defined, this is called when the user clicks on the image.
+    // The argument is the coordinate in IUCS (cannot be in pixels because view scale varies):
+    Sfun<void(Vec2F)>   onClick;
     // If mouse controls are disabled the image is treated as a thumbnail; it's minimum
     // window size is given by the image and is non-adjustable:
     bool                allowMouseCtls = false; // The below are only used when true:
@@ -55,7 +57,7 @@ struct  GuiImage : GuiBase
     zoom(int delta);            // in pixels
 
     void
-    click(Vec2I pos);           // in pixels of entire view area
+    click(Vec2I posIrcs);       // Position in display window
 
     // Sets the update flag to false and returns the currently required update state:
     // 0 - unchanged, 1 - changed but same area, 2 - size may have changed
@@ -67,16 +69,16 @@ struct  GuiImage : GuiBase
 GuiPtr
 guiImage(NPT<ImgC4UC> imgN);
 
-// Thumbnail image that can be click on:
+// Thumbnail image that can be clicked on for custom action:
 GuiPtr
-guiImage(NPT<ImgC4UC> imgN,Sfun<void()> const & onClick);
+guiImage(NPT<ImgC4UC> const & imgN,Sfun<void(Vec2F)> const & onClick);
 
 // Zoomable, scrollable, clickable image of variable size:
 GuiPtr
 guiImage(
-    NPT<ImgC4UC>        imgN,           // input
-    IPT<Vec2Fs>         ptsIucsN,       // output: user-selected points
-    Sfun<void()>        onClick=nullptr);
+    NPT<ImgC4UC> const &        imgN,           // input
+    IPT<Vec2Fs> const &         ptsIucsN,       // output: user-selected points
+    Sfun<void(Vec2F)> const &   onClick=nullptr);
 
 }
 

@@ -101,7 +101,7 @@ cSphere(float radius,uint subdivisions)
     };
     // Put 4 of these in OpenGL texture coordinates:
     AffineEw2D          xform {Vec2D{root3,1},Vec2D{0.5/(1.0+root3)}};
-    equi = mapXft(equi,xform);
+    equi = mapMul(xform,equi);
     Vec2Ds              uvd = equi;
     cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.0)));
     cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.5)));
@@ -164,7 +164,7 @@ meshRemoveUnusedVerts(Mesh const & mesh)
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii)
         vertUsed[mesh.markedVerts[ii].idx] = true;
     // Create the new vertex list:
-    vector<uint>    mapVerts(mesh.verts.size(),numeric_limits<uint>::max());
+    Uints    mapVerts(mesh.verts.size(),numeric_limits<uint>::max());
     uint            cnt = 0;
     for (size_t ii=0; ii<vertUsed.size(); ++ii) {
         if (vertUsed[ii]) {
@@ -173,7 +173,7 @@ meshRemoveUnusedVerts(Mesh const & mesh)
         }
     }
     // Create the new uv list:
-    vector<uint>    mapUvs(mesh.uvs.size(),numeric_limits<uint>::max());
+    Uints    mapUvs(mesh.uvs.size(),numeric_limits<uint>::max());
     cnt = 0;
     for (size_t ii=0; ii<uvsUsed.size(); ++ii) {
         if (uvsUsed[ii]) {
@@ -245,7 +245,7 @@ cTetrahedron(bool open)
     verts.push_back(Vec3F(-1.0f, 1.0f,-1.0f));
     verts.push_back(Vec3F( 1.0f,-1.0f,-1.0f));
 
-    vector<Vec3UI>   tris;
+    Vec3UIs   tris;
     tris.push_back(Vec3UI(0,1,3));
     tris.push_back(Vec3UI(0,2,1));
     tris.push_back(Vec3UI(2,0,3));
@@ -264,7 +264,7 @@ cPyramid(bool open)
     verts.push_back(Vec3F(-1.0f,0.0f,1.0f));
     verts.push_back(Vec3F(1.0f,0.0f,1.0f));
     verts.push_back(Vec3F(0.0f,1.0f,0.0f));
-    vector<Vec3UI>   tris;
+    Vec3UIs   tris;
     tris.push_back(Vec3UI(0,4,1));
     tris.push_back(Vec3UI(0,2,4));
     tris.push_back(Vec3UI(2,3,4));
@@ -287,7 +287,7 @@ c3dCube(bool open)
                 float((vv >> 1) & 0x01),
                 float((vv >> 2) & 0x01)) * 2.0f -
             Vec3F(1.0f));
-    vector<Vec3UI>   tris;
+    Vec3UIs   tris;
     // X planes:
     tris.push_back(Vec3UI(0,4,6));
     tris.push_back(Vec3UI(6,2,0));
@@ -308,24 +308,79 @@ c3dCube(bool open)
     return Mesh(verts,Surf(tris));
 }
 
-Mesh
+TriSurf
 cOctahedron()
 {
-    Vec3Fs             verts(6);
-    uint                cnt = 0;
-    for (uint dd=0; dd<3; ++dd)
-        for (int ss=-1; ss<=1; ss+=2)
-            verts[cnt++][dd] = float(ss);
-    vector<Vec3UI>   tris;
-    tris.push_back(Vec3UI(0,2,5));
-    tris.push_back(Vec3UI(0,3,4));
-    tris.push_back(Vec3UI(0,4,2));
-    tris.push_back(Vec3UI(0,5,3));
-    tris.push_back(Vec3UI(1,2,4));
-    tris.push_back(Vec3UI(1,3,5));
-    tris.push_back(Vec3UI(1,4,3));
-    tris.push_back(Vec3UI(1,5,2));
-    return Mesh(verts,Surf(tris));
+    // Visualize as a diamond with opposite vertices axially aligned:
+    return TriSurf {
+    {
+        {-1, 0, 0},
+        { 1, 0, 0},
+        { 0,-1, 0},
+        { 0, 1, 0},
+        { 0, 0,-1},
+        { 0, 0, 1},
+    },
+    {
+        {0,2,5},
+        {0,3,4},
+        {0,4,2},
+        {0,5,3},
+        {1,2,4},
+        {1,3,5},
+        {1,4,3},
+        {1,5,2},
+    },
+    };
+}
+
+TriSurf
+cIcosahedron()
+{
+    // Data copied from github cginternals:
+    float const         t = 0.5f * (1.0f + sqrt(5.0f)),
+                        i = 1.0f / sqrt(sqr(t) + 1.0f),
+                        a = t * i;
+    return TriSurf
+    {
+        {
+            // sqr(i) + sqr(a) = 1
+            {-i, a, 0},
+            { i, a, 0},
+            {-i,-a, 0},
+            { i,-a, 0},
+            { 0,-i, a},
+            { 0, i, a},
+            { 0,-i,-a},
+            { 0, i,-a},
+            { a, 0,-i},
+            { a, 0, i},
+            {-a, 0,-i},
+            {-a, 0, i},
+        },
+        {
+            { 0,11, 5},
+            { 0, 5, 1},
+            { 0, 1, 7},
+            { 0, 7,10},
+            { 0,10,11},
+            { 1, 5, 9},
+            { 5,11, 4},
+            {11,10, 2},
+            {10, 7, 6},
+            { 7, 1, 8},
+            { 3, 9, 4},
+            { 3, 4, 2},
+            { 3, 2, 6},
+            { 3, 6, 8},
+            { 3, 8, 9},
+            { 4, 9, 5},
+            { 2, 4,11},
+            { 6, 2,10},
+            { 8, 6, 7},
+            { 9, 8, 1},
+        },
+    };
 }
 
 Mesh
@@ -339,7 +394,7 @@ cNTent(uint nn)
         float   angle = step * float(ii);
         verts.push_back(Vec3F(cos(angle),0.0f,sin(angle)));
     }
-    vector<Vec3UI>   tris;
+    Vec3UIs   tris;
     for (uint ii=0; ii<nn; ++ii)
         tris.push_back(Vec3UI(0,ii+1,((ii+1)%nn)+1));
     return Mesh(verts,Surf(tris));
@@ -355,7 +410,7 @@ cNTent(uint nn)
 //    sqrVerts.push_back(Vec3F(thick,thick,0));
 //    sqrVerts.push_back(Vec3F(thick,-thick,0));
 //    Vec4UI           sqrInds(0,1,2,3);
-//    //cat_(ret.verts,mapft(sqrVerts
+//    //cat_(ret.verts,mapFunc(sqrVerts
 //    for (uint axis=0; axis<3; ++axis) {
 //        Vec3F    l(0);
 //        for (int aa=-1; aa<2; aa+=2)
@@ -367,7 +422,7 @@ Mesh
 mergeSameNameSurfaces(Mesh const & in)
 {
     Mesh            ret = in;
-    vector<Surf> surfs;
+    Surfs surfs;
     for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
         Surf const & surf = in.surfaces[ss];
         bool    found = false;
@@ -391,7 +446,7 @@ unifyIdenticalVerts(Mesh const & mesh)
 {
     Mesh            ret(mesh);
     Vec3Fs             verts;
-    vector<uint>        map;
+    Uints        map;
     map.reserve(mesh.verts.size());
     uint                cnt = 0;
     for (uint vv=0; vv<mesh.verts.size(); ++vv) {
@@ -452,7 +507,7 @@ unifyIdenticalUvs(Mesh const & in)
                 merge[ii] = uint(jj), ++cnt0;
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         Surf &           surf = ret.surfaces[ss];
-        vector<Vec3UI> &     triUvInds = surf.tris.uvInds;
+        Vec3UIs &     triUvInds = surf.tris.uvInds;
         for (size_t ii=0; ii<triUvInds.size(); ++ii) {
             for (uint jj=0; jj<3; ++jj) {
                 if (merge[triUvInds[ii][jj]].valid()) {
@@ -480,8 +535,8 @@ unifyIdenticalUvs(Mesh const & in)
 static
 void
 traverse(
-    const vector<vector<uint> > &   uvToQuadsIndex,
-    vector<uint> &              colourMap,
+    const vector<Uints > &   uvToQuadsIndex,
+    Uints &              colourMap,
     const vector<Vec4UI> &   uvInds,
     uint                        colour,
     uint                        quadIdx)
@@ -490,7 +545,7 @@ traverse(
     colourMap[quadIdx] = colour;
     for (uint ii=0; ii<4; ++ii) {
         uint                    uvIdx = uvInds[quadIdx][ii];
-        const vector<uint> &    quadInds = uvToQuadsIndex[uvIdx];
+        const Uints &    quadInds = uvToQuadsIndex[uvIdx];
         for (size_t jj=0; jj<quadInds.size(); ++jj)
             if (colourMap[quadInds[jj]] == 0)
                 traverse(uvToQuadsIndex,colourMap,uvInds,colour,quadInds[jj]);
@@ -561,7 +616,7 @@ mergeMeshes(
     ret.verts = cat(m0.verts,m1.verts);
     ret.uvs = cat(m0.uvs,m1.uvs);
     ret.surfaces = fgEnsureNamed(m0.surfaces,m0.name);
-    vector<Surf>     s1s = fgEnsureNamed(m1.surfaces,m1.name);
+    Surfs     s1s = fgEnsureNamed(m1.surfaces,m1.name);
     for (uint ss=0; ss<s1s.size(); ++ss)
         ret.surfaces.push_back(s1s[ss].offsetIndices(m0.verts.size(),m0.uvs.size()));
     for (size_t ii=0; ii<m0.deltaMorphs.size(); ++ii) {
@@ -636,7 +691,7 @@ fg3dMaskFromUvs(Mesh const & mesh,const Img<FgBool> & mask)
         }
     }
     // Remove the facets that use those vertices:
-    vector<Surf> nsurfs;
+    Surfs nsurfs;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         Surf const & surf = mesh.surfaces[ii];
         Surf         nsurf;
@@ -670,7 +725,7 @@ getUvCover(Mesh const & mesh,Vec2UI dims)
 }
 
 ImgC4UC
-cUvWireframeImage(Mesh const & mesh,RgbaUC wireColor,const ImgC4UC & in)
+cUvWireframeImage(Mesh const & mesh,RgbaUC wireColor,ImgC4UC const & in)
 {
     Mat22F          uvb = cBounds(mesh.uvs);
     ImgC4UC         img(2048,2048,RgbaUC(128,128,128,255));
@@ -706,7 +761,7 @@ embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
     // Don't check for UV seams, just let the emboss value be the last one traversed:
     Vec3Fs         deltas(mesh.verts.size());
     vector<size_t>  embossedVertInds;
-    Normals     norms = cNormals(mesh);
+    MeshNormals     norms = cNormals(mesh);
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const &     surf = mesh.surfaces[ss];
         for (size_t ii=0; ii<surf.numTris(); ++ii) {
@@ -736,7 +791,7 @@ embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
             }
         }
     }
-    float       fac = cMaxElem(cDims(reorder(mesh.verts,embossedVertInds))) * val;
+    float       fac = cMaxElem(cDims(permute(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
@@ -808,48 +863,6 @@ cMirror(Mesh const & m,uint axis)
     return ret;
 }
 
-MeshMirror
-meshMirrorX(Mesh const & in)
-{
-    MeshMirror    ret;
-    ret.mesh = in;
-    ret.mesh.deltaMorphs.clear();
-    ret.mesh.targetMorphs.clear();
-    // Mirror the vertices not on the saggital plane. Track this by index not position
-    // since lip touch may have co-incident (but different) verts:
-    ret.mirrorInds.resize(in.verts.size());
-    for (size_t ii=0; ii<in.verts.size(); ++ii) {
-        Vec3F    pos = in.verts[ii];
-        if (pos[0] == 0)
-            ret.mirrorInds[ii] = uint(ii);
-        else {
-            ret.mirrorInds[ii] = uint(ret.mesh.verts.size());
-            pos[0] *= -1;
-            ret.mesh.verts.push_back(pos);
-            ret.mirrorInds.push_back(uint(ii));
-        }
-    }
-    for (size_t ss=0; ss<ret.mesh.surfaces.size(); ++ss) {
-        Surf const &     si = in.surfaces[ss];
-        Surf &           so = ret.mesh.surfaces[ss];
-        FGASSERT(si.quads.empty());
-        for (size_t ff=0; ff<si.tris.size(); ++ff) {
-            Vec3UI           tri = si.tris.posInds[ff],
-                                ntri;
-            for (uint ii=0; ii<3; ++ii) {
-                Vec3F        p = in.verts[tri[ii]];
-                if (p[0] == 0)
-                    ntri[ii] = tri[ii];
-                else
-                    ntri[ii] = ret.mirrorInds[tri[ii]];
-            }
-            std::swap(ntri[1],ntri[2]);     // Avoid mirrored winding
-            so.tris.posInds.push_back(ntri);
-        }
-    }
-    return ret;
-}
-
 Mesh
 copySurfaceStructure(Mesh const & from,Mesh const & to)
 {
@@ -866,7 +879,7 @@ copySurfaceStructure(Mesh const & from,Mesh const & to)
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Vec3UI   inds = tris[ii];
         Vec3F    tpos = (ret.verts[inds[0]] + ret.verts[inds[1]] + ret.verts[inds[2]]) / 3;
-        FgMin<float,size_t>     minSurf;
+        Min<float,size_t>     minSurf;
         for (size_t ss=0; ss<from.surfaces.size(); ++ss) {
             Surf const &     fs = from.surfaces[ss];
             for (size_t jj=0; jj<fs.tris.size(); ++jj) {
@@ -881,10 +894,10 @@ copySurfaceStructure(Mesh const & from,Mesh const & to)
     return ret;
 }
 
-vector<Vec3UI>
+Vec3UIs
 meshSurfacesAsTris(Mesh const & m)
 {
-    vector<Vec3UI>   ret;
+    Vec3UIs   ret;
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
         cat_(ret,m.surfaces[ss].convertToTris().tris.posInds);
     return ret;
@@ -911,10 +924,10 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
     Mat32F                  domain = cBounds(src.verts),
                             range = {0,1, 0,1, 0,1};
     AffineEw3F              xform(domain,range);
-    Vec3Fs                  verts = mapXft(src.verts,xform);
+    Vec3Fs                  verts = mapMul(xform,src.verts);
     Mat23F                  proj {1,0,0,0,1,0};
-    Vec2Fs                  pts = mapXf<Vec2F>(verts,proj);
-    GridTriangles         grid = gridTriangles(pts,tris.posInds);
+    Vec2Fs                  pts = mapMulT<Vec2F>(proj,verts);
+    GridTriangles           grid = gridTriangles(pts,tris.posInds);
     // Map obsfucating tri indices to extents for each tri:
     vector<map<uint,float> > obsfs(tris.posInds.size());
     for (Iter2UI it(512); it.valid(); it.next()) {
@@ -923,7 +936,7 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
         Floats              depths;
         for (TriPoint const & tp : tps)
             depths.push_back(cBarycentricVert(tp.pointInds,tp.baryCoord,verts)[2]);
-        tps = reorder(tps,sortInds(depths));
+        tps = permute(tps,sortInds(depths));
         float               transTotal = 1.0f;
         for (size_t ii=1; ii<tps.size(); ++ii) {
             TriPoint const &  tp = tps[ii];
@@ -971,8 +984,8 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
     }
     order = cReverse(order);
     Surf     surf;
-    surf.tris.posInds = reorder(tris.posInds,order);
-    surf.tris.uvInds = reorder(tris.uvInds,order);
+    surf.tris.posInds = permute(tris.posInds,order);
+    surf.tris.uvInds = permute(tris.uvInds,order);
     Mesh        ret;
     ret.verts = src.verts;
     ret.uvs = src.uvs;

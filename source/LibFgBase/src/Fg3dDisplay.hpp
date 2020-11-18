@@ -38,13 +38,12 @@ makeCameraCtrls(
 
 GuiPtr
 makeRendCtrls(
-    RPT<RendOptions>          rendOptionsR,
-    // 0 - all controls and default marked points & verts to visible.
-    // 1 - only color/shiny/flat
-    // 2 - only color/shiny
-    // 3 - only shiny/flat/wireframe
-    uint    simple,
-    Ustring const & storePath);
+    RPT<RendOptions>    rendOptionsR,
+    BackgroundImage     bgImg,
+    Ustring const &     store,
+    bool                structureOptions,       // color by mesh, wire, flat, allverts, facets
+    bool                twoSidedOption,
+    bool                pointOptions);          // surf points, marked verts
 
 GuiPtr
 makeLightingCtrls(
@@ -52,17 +51,9 @@ makeLightingCtrls(
     IPT<BothButtonsDragAction> bothButtonsDragActionI,    // "
     Ustring const &        storePath);
 
+// View controls with all option selectors enabled:
 GuiPtr
-makeViewCtrls(
-    Gui3d &                 gui3d,
-    NPT<Mat32D>    viewBoundsN,
-    Ustring const &        storePath,
-    // 0 - all render ctls, default marked points viewable, default unconstrained rotation
-    // 1 - only color/shiny/flat/wireframe,
-    // 2 - only color/shiny, and limit pan/tilt,
-    // 3 - only shiny/flat/wireframe:
-    uint                        simple=0,
-    bool                        textEditBoxes=false);       // Display for sliders
+makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,Ustring const & storePath);
 
 // Returns an image save dialog window to save from the given render capture function:
 GuiPtr
@@ -85,7 +76,7 @@ linkPosedVerts(
 OPT<Mesh>
 linkLoadMesh(NPT<Ustring> pathBaseN);          // Empty filename -> empty mesh
 
-OPT<Normals>
+OPT<MeshNormals>
 linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
 
 OPT<ImgC4UC>
@@ -99,18 +90,22 @@ struct  GuiPosedMeshes
     OPT<PoseVals>       poseLabelsN;        // Aggregates all unique pose labels
     IPT<Doubles>        poseValsN;          // Use to set pose coefficients
 
-    GuiPosedMeshes(Ustring const & store);
+    GuiPosedMeshes();
 
     void
     addMesh(
         NPT<Mesh>       meshN,          // Name, verts, maps not used. Editing controls if IPT.
         NPT<Vec3Fs>     allVertsN,
-        ImgNs           albedoNs,       // Must be 1-1 with meshN surfaces but can be empty (and the same)
-        ImgNs           specularNs);    // "
+        // Albedo before any texture modulation. Must be 1-1 with meshN surfaces (num surfaces not yet dynamic:
+        ImgNs           smoothNs,
+        // Specular maps must be 1-1 if non-empty. Images can also be empty:
+        ImgNs           specularNs=ImgNs{},
+        // Optional texture modulation images must be 1-1 if non-empty. Images can also be empty:
+        ImgNs           modulationNs=ImgNs{});
 
-    // As above with no maps:
+    // Add mesh with no maps. Number of surfaces is not yet dynamic so must be specified for static construction:
     void
-    addMesh(NPT<Mesh>,NPT<Vec3Fs>);
+    addMesh(NPT<Mesh>,NPT<Vec3Fs>,size_t numSurfs);
 
     GuiPtr
     makePoseCtrls(bool editBoxes) const;

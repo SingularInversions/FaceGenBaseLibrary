@@ -146,9 +146,11 @@ removeDirectory(
     Ustring const &    dirName,
     bool                throwOnFail=false);
 
+// Delete all files in a directory (does not delete subdirectories):
+void        deleteDirectoryFiles(Ustring const &);
+
 // Throws on failure:
-void
-deleteDirectoryRecursive(Ustring const &);      // Full recursive delete
+void        deleteDirectoryRecursive(Ustring const &);      // Full recursive delete
 
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
@@ -190,15 +192,27 @@ bool
 equateFilesText(Ustring const & fname0,Ustring const & fname1);
 
 // Returns false if the given file or directory cannot be read.
+// On windows, sets time to 100 nanosecond intervals since 1601.01.01
+// On Unix, sets time in seconds since 1970.01.01
 // The returned time is NOT compatible with std raw time and will in fact crash getDateTimeString().
 // Some *nix systems don't support creation time.
 // WINE API bug returns last modification time.
-bool
-getCreationTime(Ustring const & path,uint64 & time);
+// Note that sub-second precision is basically random due to OS filesystem workings.
+bool        getCreationTimePrecise(Ustring const & path,uint64 & time);
 
 // Works for both files and directories.
+// Value in seconds since filesystem resolution only gives about that anyway.
+// On windows, returns time in seconds since 1601.01.01
+// On unix, returns time in seconds since 1970.01.01
+uint64      getCreationTime(Ustring const & path);
+
+
+// Works for both files and directories.
+// Value in seconds since filesystem resolution only gives about that anyway.
+// On windows, returns time in seconds since 1601.01.01
+// On unix, returns time in seconds since 1970.01.01
 // Don't use boost::filesystem::last_write_time(); it doesn't work; returns create time on Win.
-std::time_t
+uint64
 getLastWriteTime(Ustring const & node);
 
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
@@ -256,7 +270,7 @@ struct  PushDir
 // Does not glob on input directory name.
 // RETURNS: Matching filenames without directory:
 Ustrings
-globFiles(const Path & path);
+globFiles(Path const & path);
 
 // As above but the full path is given by 'basePath + keepPath' and the return paths include 'keepPath':
 Ustrings
@@ -264,7 +278,7 @@ globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & fileP
 
 // Returns name of each matching file & dir:
 DirectoryContents
-globNodeStartsWith(const Path & path);
+globNodeStartsWith(Path const & path);
 
 // Returns the additional (delta) Ustring of every file that starts with the same base name and has
 // additional characters and the same extension:
@@ -278,7 +292,7 @@ fgCopyAllFiles(Ustring const & fromDir,Ustring const & toDir,bool overwrite=fals
 
 // Throws an exception if the filename already exists in the current directory:
 void
-fgCopyToCurrentDir(const Path & file);
+fgCopyToCurrentDir(Path const & file);
 
 // WARNING: Does not check if dirs are sym/hard links so be careful.
 // The tip of 'toDir' will be created.
@@ -289,7 +303,7 @@ copyRecursive(Ustring const & fromDir,Ustring const & toDir);
 // Copy 'src' to 'dst' if 'src' is newer or 'dst' (or its path) doesn't exist.
 // Doesn't work reliably across network shares due to time differences.
 void
-mirrorFile(const Path & src,const Path & dst);
+mirrorFile(Path const & src,Path const & dst);
 
 }
 

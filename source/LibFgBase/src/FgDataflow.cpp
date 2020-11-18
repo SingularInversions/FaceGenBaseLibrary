@@ -8,10 +8,23 @@
 
 #include "FgDataflow.hpp"
 #include "FgCommand.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 
 namespace Fg {
+
+String
+cSignature(boost::any const & data)
+{
+    String              ret = boost::core::demangled_name(data.type());
+    if (beginsWith(ret,"struct "))
+        return cRest(ret,7);
+    else if (beginsWith(ret,"class "))
+        return cRest(ret,6);
+    else
+        return ret;
+}
 
 DfgInput::~DfgInput()
 {
@@ -39,7 +52,7 @@ DfgInput::addSink(const DfgDPtr & snk)
 void
 DfgInput::makeDirty() const
 {
-//fgout << fgnl << "Dirty DfgInput: " << signature(data) << fgpush;
+//fgout << fgnl << "Dirty DfgInput: " << cSignature(data) << fgpush;
     for (const DfgDPtr & snk : sinks)
         // Structure is dynamic so some of the sinks may have expired (all cannot be or this node won't exist):
         if (!snk.expired())
@@ -63,6 +76,17 @@ DfgInput::setToDefault() const
     }
 }
 
+DfgOutput::~DfgOutput()
+{
+    // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions:
+    if ((time > 0) && (isConsoleProgram())) {   // Cannot throw
+        string      sig;
+        for (DfgNPtr const & source : sources)
+            sig += cSignature(source->getDataCref()) + " ";
+        fgout << fgnl << time << " : " << sig ;
+    }
+}
+
 // The update algorithm does not need to track visited nodes to avoid exponential re-visiting
 // for highly connected graphs because the dirty bit already handles that:
 void
@@ -73,27 +97,30 @@ DfgOutput::update() const
     // Change flag here because we want to mark clean even if there is an exception so that we
     // don't keep throwing the same exception:
     dirty = false;
-//fgout << fgnl << "Update DfgOutput: " << signature(data) << fgpush;
+//fgout << fgnl << "Update DfgOutput: " << cSignature(data) << fgpush;
     for (const DfgNPtr & src : sources)
         src->update();      // Ensure sources updated
 //fgout << fgpop;
     try {
+        uint64      t0 = getTimeMs();
         func(sources,data);
+        uint64      t1 = getTimeMs();
+        time += t1-t0;
     }
     catch(FgException & e)
     {
-        e.pushMsg("Executing DfgOutput link",signature(data));
+        e.pushMsg("Executing DfgOutput link",cSignature(data));
         throw;
     }
     catch(std::exception const & e)
     {
         FgException     ex("std::exception",e.what());
-        ex.pushMsg("Executing DfgOutput link",signature(data));
+        ex.pushMsg("Executing DfgOutput link",cSignature(data));
         throw ex;
     }
     catch(...)
     {
-        fgThrow("Unknown exception executing DfgOutput link",signature(data));
+        fgThrow("Unknown exception executing DfgOutput link",cSignature(data));
     }
 }
 void
@@ -104,7 +131,7 @@ DfgOutput::markDirty() const
     if (dirty)
         return;
     dirty = true;
-//fgout << fgnl << "Dirty DfgOutput: " << signature(data) << fgpush;
+//fgout << fgnl << "Dirty DfgOutput: " << cSignature(data) << fgpush;
     for (const DfgDPtr & snk : sinks)
         // Structure is dynamic so some of the sinks may have expired (all cannot be or this node won't exist):
         if (!snk.expired())
@@ -166,6 +193,7 @@ void DfgReceptor::setSource(DfgNPtr const & nptr)
 {
     FGASSERT(!src);
     src = nptr;
+    markDirty();
 }
 
 void
@@ -198,7 +226,7 @@ addLink(const DfgNPtr & src,const DfgOPtr & snk)
 }
 
 DfgFPtr
-makeUpdateFlag(const DfgNPtrs & nptrs)
+makeUpdateFlag(DfgNPtrs const & nptrs)
 {
     DfgFPtr        ret = std::make_shared<DirtyFlag>(nptrs);
     for (const DfgNPtr & nptr : nptrs)
@@ -206,7 +234,7 @@ makeUpdateFlag(const DfgNPtrs & nptrs)
     return ret;
 }
 
-void setInputsToDefault(const DfgNPtrs & nptrs)
+void setInputsToDefault(DfgNPtrs const & nptrs)
 {
     for (const DfgNPtr & nptr : nptrs) {
         if (const DfgInput * iptr = dynamic_cast<const DfgInput*>(nptr.get()))
@@ -239,7 +267,7 @@ fgCmdTestDfg(CLArgs const &)
 //fgDepGraph2Dot(
 //    const ... lg,
 //    string const &                          label,
-//    const vector<uint> &                    paramInds)
+//    const Uints &                    paramInds)
 //{
 //    ostringstream    ret;
 //    ret << "digraph DepGraph\n{\n";
@@ -247,8 +275,8 @@ fgCmdTestDfg(CLArgs const &)
 //    for (size_t ii=0; ii<paramInds.size(); ++ii)
 //        ret << "    \"" << lg.nodeData(paramInds[ii]).name(paramInds[ii]) << "\" [shape=doubleoctagon]\n";
 //    for (uint ii=0; ii<lg.numLinks(); ii++) {
-//        vector<uint>    sources = lg.linkSources(ii);
-//        vector<uint>    sinks = lg.linkSinks(ii);
+//        Uints    sources = lg.linkSources(ii);
+//        Uints    sinks = lg.linkSinks(ii);
 //        // Skip stubs (used by GUI) as they obsfucate:
 //        if ((sinks.size() == 1) && (lg.nodeData(sinks[0]).label == "stub"))
 //            continue;
@@ -282,7 +310,7 @@ fgCmdTestDfg(CLArgs const &)
 //fgDepGraph2Pdf(
 //    const ...  lg,
 //    const std::string &                     rootName,
-//    const vector<uint> &                    paramInds)
+//    const Uints &                    paramInds)
 //{
 //    Ofstream      ofs(rootName+".dot");
 //    ofs << fgDepGraph2Dot(lg,"",paramInds);

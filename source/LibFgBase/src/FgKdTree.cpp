@@ -11,123 +11,114 @@
 #include "FgKdTree.hpp"
 #include "FgMath.hpp"
 #include "FgCommand.hpp"
+#include "FgIter.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-KdTree::KdTree(Vec3Fs const & pnts)
-{
-    FGASSERT(!pnts.empty());
-    m_tree.reserve(pnts.size());
-    createNode(pnts,0);
-}
-
-struct  Less
+struct  KdLess
 {
     uint    dim;
 
-    explicit Less(uint d) : dim(d) {}
+    explicit KdLess(uint d) : dim(d) {}
 
     bool
     operator()(Vec3F lhs,Vec3F rhs)
     {return (lhs[dim] < rhs[dim]); }
 };
 
+static
 uint
-KdTree::createNode(Vec3Fs const & v,uint dim)
+createNode(Svec<KdTree::Node> & tree,Vec3Fs const & v,uint dim)
 {
-    FGASSERT(v.size() > 0);
+    FGASSERT(!v.empty());
     if (v.size() == 1) {
-        m_tree.push_back(Node(v[0]));
-        return uint(m_tree.size()-1);
+        uint        ret = uint(tree.size());
+        tree.push_back(KdTree::Node{v[0]});
+        return ret;
     }
-    Vec3Fs    verts(v);
-    sort(verts.begin(),verts.end(),Less(dim));  // Smallest first
-    uint        split = uint(verts.size() / 2),
-                newDim = (dim+1)%3;
-    if (verts.size() > 2)
-        m_tree.push_back(
-            Node(
+    Vec3Fs          verts(v);
+    sort(verts.begin(),verts.end(),KdLess(dim));  // Smallest first
+    uint            split = uint(verts.size() / 2),
+                    nextDim = (dim+1)%3;
+    if (v.size() == 2)
+        tree.push_back(KdTree::Node{verts[split],createNode(tree,cHead(verts,split),nextDim)});
+    else            // > 2 verts
+        tree.push_back(
+            KdTree::Node{
                 verts[split],
-                createNode(
-                    Vec3Fs(verts.begin(),verts.begin()+split),
-                    newDim),
-                createNode(
-                    Vec3Fs(verts.begin()+split+1,verts.end()),
-                    newDim)));
-    else
-        m_tree.push_back(
-            Node(
-                verts[split],
-                createNode(
-                    Vec3Fs(verts.begin(),verts.begin()+split),
-                    newDim)));
-    return uint(m_tree.size()-1);
+                createNode(tree,cHead(verts,split),nextDim),
+                createNode(tree,cRest(verts,split+1),nextDim)});
+    return uint(tree.size()-1);   // Last node pushed was child for caller
 }
 
-VecMagF
-KdTree::findBest(Vec3F pos,VecMagF best,uint rootIdx,uint dim) const
+KdTree::KdTree(Vec3Fs const & pnts)
 {
-    const uint      maxDepth = 18;
-    FGASSERT(m_tree.size() < (1 << (maxDepth-2)));      // Safe bound check
-    Valid<uint>   idxArr[maxDepth];                     // keep on stack for speed
-    idxArr[0] = rootIdx;
-    int             idxCnt = 0;
-    do {
-        uint    idx = idxArr[idxCnt].val();
-        idxArr[++idxCnt] =
-            (pos[dim] < m_tree[idx].vert[dim]) ?
-                m_tree[idx].idxLo :
-                m_tree[idx].idxHi;
-        dim = (dim+1)%3;
+    FGASSERT(!pnts.empty());
+    m_tree.reserve(pnts.size());
+    createNode(m_tree,pnts,0);
+}
+
+static
+KdVal
+findClst(Svec<KdTree::Node> const & tree,Vec3D query,KdVal best,uint idx,uint dim)
+{
+    KdTree::Node const &    node = tree[idx];
+    double                  distMag = cMag(query-Vec3D(node.vert));
+    if (distMag < best.distMag) {
+        best.distMag = distMag;
+        best.closest = node.vert;
     }
-    while (idxArr[idxCnt].valid());
-    --idxCnt;
-    dim = (dim+2)%3;
-    do {
-        const Node &    node = m_tree[idxArr[idxCnt].val()];
-        float          mag = (node.vert-pos).mag();
-        if (mag < best.mag) {
-            best.mag = mag;
-            best.vec = node.vert;
-        }
-        float           planeDelta = pos[dim] - node.vert[dim];
-        Valid<uint>   mirrorIdx =
-            (planeDelta > 0.0) ? node.idxLo : node.idxHi;
-        if (mirrorIdx.valid() && (sqr(planeDelta) < best.mag))
-            best = findBest(pos,best,mirrorIdx.val(),(dim+1)%3);
-        --idxCnt;
-        dim = (dim+2)%3;
-    }
-    while (idxCnt >= 0);
+    uint                nextDim = (dim+1)%3;
+    bool                lte = (query[dim] <= node.vert[dim]);
+    Valid<uint>         checkFirst = lte ? node.idxLo : node.idxHi,
+                        checkSecond = lte ? node.idxHi : node.idxLo;
+    if (checkFirst.valid())
+        best = findClst(tree,query,best,checkFirst.val(),nextDim);
+    if (best.distMag < sqr(query[dim]-node.vert[dim]))          // Closest point cannot be in other node
+        return best;
+    if (checkSecond.valid())                                    // Must check other node to be sure:
+        best = findClst(tree,query,best,checkSecond.val(),nextDim);
     return best;
 }
 
-VecMagF
-KdTree::closest(Vec3F pos) const
+KdVal
+KdTree::findClosest(Vec3D pos) const
 {
-    VecMagF    none;
-    none.mag = maxFloat();
-    return findBest(pos,none,uint(m_tree.size()-1),0);
+    return findClst(m_tree,pos,KdVal{},uint(m_tree.size()-1),0);
+}
+
+static
+double
+testClosest(Svec<KdTree::Node> const & tree,Vec3D query)
+{
+    double          ret = doubleMax;
+    for (KdTree::Node const & node : tree) {
+        double          mag = cMag(query - Vec3D(node.vert));
+        if (mag < ret)
+            ret = mag;
+    }
+    return ret;
 }
 
 void
 testKdTree(CLArgs const &)
 {
-    Vec3Fs      targs = randVecNormals<float,3>(512,1.0);
-    KdTree      kd {targs};
+    // Random data:
+    Vec3Fs          targs = randVecNormals<float,3>(512,1.0f);
+    // Grid data (challenging for KD tree):
+    for (Iter3UI it(4); it.valid(); it.next())
+        targs.push_back(Vec3F(it()) * 0.5f - Vec3F(0.75f));
+    KdTree          kd {targs};
+    // Test random query points:
     for (size_t ii=0; ii<512; ++ii) {
-        Vec3F       p = randVecNormal<float,3>();
-        VecMagF     closestKd = kd.closest(p);
-        VecMagF     closestVec;
-        for (Vec3F t : targs) {
-            VecMagF     c {t-p};
-            if (c.mag < closestVec.mag)
-                closestVec = c;
-        }
-        FGASSERT(closestKd.mag == closestVec.mag);
+        Vec3D       p = randVecNormal<double,3>();
+        FGASSERT(kd.findClosest(p).distMag == testClosest(kd.m_tree,p));
     }
+    // Test exact matches:
+    for (Vec3F t : targs)
+        FGASSERT(kd.findClosest(t).distMag == 0.0f);
 }
 
 }

@@ -92,7 +92,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     }
         // Here's how it would look for a grid layout ... but resizing more complex:
         //Vec2UI           gd = m_api.grid;
-        //vector<uint>        maxMinWid(gd[1],0),
+        //Uints        maxMinWid(gd[1],0),
         //                    maxMinHgt(gd[0],0);
         //for (uint yy=0; yy<gd[1]; ++yy) {
         //    for (uint xx=0; xx<gd[0]; ++xx) {

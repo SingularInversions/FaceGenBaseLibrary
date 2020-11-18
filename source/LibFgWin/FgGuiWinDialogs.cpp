@@ -38,7 +38,7 @@ guiDialogFileLoad(
     string const &          storeID)
 {
     FGASSERT(!extensions.empty());
-    Opt<Ustring>          ret;
+    Opt<Ustring>            ret;
     HRESULT                 hr;
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
@@ -184,6 +184,8 @@ guiDialogDirSelect()
     return ret;
 }
 
+namespace {
+
 struct  GuiDialogProgressWin
 {
     uint        progressSteps;
@@ -234,25 +236,22 @@ struct  GuiDialogProgressWin
     }
 };
 
-static
 void
 threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & cancelFlag,Ustring & errMsg)
 {
-    WorkerCallback          callback = [=](bool isMilestone)
-        {
-            if (cancelFlag) {
-                // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
-                // the message queue so the modal message loop below would have no way of knowing when it's
-                // being closed:
-                PostMessage(hwndMain,WM_CLOSE,0,0);
-                return true;
-            }
-            if (isMilestone)
-                SendMessage(hwndProgBar,PBM_STEPIT,0,0);
-            return false;
-        };
-
-        //fnUpdateDialog = bind(updateDialog,hwndMain,hwndProgBar,_1);
+    WorkerCallback      callback = [&worker,hwndMain,hwndProgBar,&cancelFlag,&errMsg](bool isMilestone)
+    {
+        if (cancelFlag) {
+            // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
+            // the message queue so the modal message loop below would have no way of knowing when it's
+            // being closed:
+            PostMessage(hwndMain,WM_CLOSE,0,0);
+            return true;
+        }
+        if (isMilestone)
+            SendMessage(hwndProgBar,PBM_STEPIT,0,0);
+        return false;
+    };
     try {
         worker(callback);
     }
@@ -280,6 +279,8 @@ threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & can
     // the message queue so the modal message loop below would have no way of knowing when it's
     // being closed:
     PostMessage(hwndMain,WM_CLOSE,0,0);
+}
+
 }
 
 bool

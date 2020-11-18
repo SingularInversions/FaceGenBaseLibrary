@@ -19,36 +19,34 @@
 
 namespace Fg {
 
-struct Fg3dTopology
+struct MeshTopology
 {
     struct      Tri
     {
-        Vec3UI           vertInds;
-        Vec3UI           edgeInds;   // In same order as verts (0-1,1-2,3-0)
+        Vec3UI          vertInds;
+        Vec3UI          edgeInds;   // In same order as verts (0-1,1-2,3-0)
 
         Vec2UI
         edge(uint relIdx) const;        // Return ordered vert inds of 0,1,2 edge of tri
     };
     struct      Edge
     {
-        Vec2UI            vertInds;   // Lower index first
-        Svec<uint>        triInds;
+        Vec2UI          vertInds;   // Lower index first
+        Uints           triInds;
 
         uint
         otherVertIdx(uint vertIdx) const;
     };
     struct      Vert
     {
-        Svec<uint>        edgeInds;   // Can be zero if vert is unused
-        Svec<uint>        triInds;    // "
+        Uints           edgeInds;   // Can be zero if vert is unused
+        Uints           triInds;    // "
     };
-    Svec<Tri>             m_tris;
-    Svec<Edge>            m_edges;
-    Svec<Vert>            m_verts;
+    Svec<Tri>           m_tris;
+    Svec<Edge>          m_edges;
+    Svec<Vert>          m_verts;
 
-    Fg3dTopology(
-        Vec3Fs const &            verts,
-        const Svec<Vec3UI> &  tris);
+    MeshTopology(size_t numVerts,Vec3UIs const & tris);
 
     Vec2UI
     edgeFacingVertInds(uint edgeIdx) const;
@@ -58,10 +56,10 @@ struct Fg3dTopology
 
     // Returns a list of vertex indices which are separated by a boundary edge. This list
     // is always non-empty, and will always be of size 2 for a manifold surface:
-    Svec<uint>
+    Uints
     vertBoundaryNeighbours(uint vertIdx) const;
 
-    Svec<uint>
+    Uints
     vertNeighbours(uint vertIdx) const;
 
     // Sets of vertex indices corresponding to each connected seam.
@@ -77,7 +75,7 @@ struct Fg3dTopology
     // Trace a fold consisting only of edges whose facet normals differ by at least 60 degrees.
     std::set<uint>
     traceFold(
-        const Normals & norms,  // Must be created from a single (unified) tri-only surface
+        MeshNormals const & norms,  // Must be created from a single (unified) tri-only surface
         Svec<FgBool> &    done,
         uint                vertIdx) const;
     
@@ -91,21 +89,26 @@ struct Fg3dTopology
 
     // Returns the minimum edge distance to the given vertex for each vertex.
     // Unconnected verts will have value float_max.
-    Svec<float>
+    Floats
     edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const;
 
     // As above where 'init' has at least 1 distance defined, the rest set to float_max:
     void
-    edgeDistanceMap(Vec3Fs const & verts,Svec<float> & init) const;
+    edgeDistanceMap(Vec3Fs const & verts,Floats & init) const;
 
 private:
 
-    Svec<uint>
+    Uints
     findSeam(Svec<FgBool> & done) const;
 
     uint
     oppositeVert(uint triIdx,uint edgeIdx) const;
 };
+
+// Return inds of all connected verts starting at 'seedIdx' in a region bounded by marked verts,
+// including the boundary marked verts:
+std::set<uint>
+cFillMarkedVertRegion(Mesh const &,MeshTopology const &,uint seedIdx);
 
 }
 

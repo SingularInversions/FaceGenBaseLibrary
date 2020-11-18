@@ -14,6 +14,16 @@
 
 namespace Fg {
 
+struct  KdVal
+{
+    Vec3F       closest;    // Closest vertex to query (if valid)
+    double      distMag;    // if == ::max() this object is invalid
+
+    KdVal() : distMag(std::numeric_limits<double>::max()) {}
+
+    bool valid() const {return (distMag != std::numeric_limits<double>::max()); }
+};
+
 struct  KdTree
 {
     struct  Node
@@ -26,26 +36,14 @@ struct  KdTree
         Node(Vec3F v,uint l) : vert(v), idxLo(l) {}
         Node(Vec3F v,uint l,uint h) : vert(v), idxLo(l), idxHi(h) {}
     };
-    Svec<Node>      m_tree;
+    Svec<Node>      m_tree;                     // Last node is root
 
-    explicit KdTree(Vec3Fs const & pnts);    // Can't be empty
+    explicit KdTree(Vec3Fs const & pnts);       // Can't be empty
 
-    VecMagF
-    closest(Vec3F pos) const;
+    KdVal   findClosest(Vec3D query) const;     // If multiple points are equidistant 1 is arbirarily chosen
 
-    VecMagD
-    closest(Vec3D pos) const
-    {
-        VecMagF     vm = closest(Vec3F(pos));
-        return VecMagD(Vec3D(vm.vec));
-    }
-
-private:
-    uint
-    createNode(Vec3Fs const & verts,uint dim);
-
-    VecMagF
-    findBest(Vec3F pos,VecMagF currBest,uint rootIdx,uint dim) const;
+    KdVal   findClosest(Vec3F query) const
+    {return findClosest(Vec3D(query)); }
 };
 
 }

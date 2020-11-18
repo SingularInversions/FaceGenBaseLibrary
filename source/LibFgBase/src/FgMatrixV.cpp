@@ -296,7 +296,7 @@ eigenTest(CLArgs const & args)
         }
     }
     {
-        TimeScope     ts("Eigen mat mul " + toStr(sz));
+        PushTimer     ts("Eigen mat mul " + toStr(sz));
         MatrixXd        m = l * r;
     }
 }

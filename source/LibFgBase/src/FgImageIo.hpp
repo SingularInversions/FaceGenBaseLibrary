@@ -16,16 +16,16 @@
 namespace Fg {
 
 // Load an image from any supported format:
-void    loadImage(Ustring const & fname,ImgC4UC & img);
-void    loadImage(Ustring const & fname,ImgF & img);
-void    loadImage(Ustring const & fname,ImgUC & img);
+void    loadImage_(Ustring const & fname,ImgC4UC & img);
+void    loadImage_(Ustring const & fname,ImgF & img);
+void    loadImage_(Ustring const & fname,ImgUC & img);
 
 ImgC4UC
 loadImage(Ustring const & fname);
 
 // Save an image to any supported format:
 void
-saveImage(Ustring const & fname,const ImgC4UC & img);
+saveImage(Ustring const & fname,ImgC4UC const & img);
 
 void
 saveImage(Ustring const & fname,const ImgUC & img);

@@ -49,7 +49,7 @@ struct  GuiImageWin : public GuiBaseImpl
     {
         if (m_api.allowMouseCtls)
             return Vec2UI(100,100);
-        const ImgC4UC & img = m_api.imgN.cref();
+        ImgC4UC const & img = m_api.imgN.cref();
         return img.dims();
     }
 
@@ -143,9 +143,9 @@ struct  GuiImageWin : public GuiBaseImpl
         }
         else if (msg == WM_LBUTTONUP) {
             ClipCursor(NULL);
-            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I           posIrcs = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             if (!dragging) {
-                m_api.click(pos);
+                m_api.click(posIrcs);
                 winUpdateScreen();
             }
             dragging = false;

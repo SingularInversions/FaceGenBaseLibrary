@@ -16,8 +16,12 @@
 
 namespace Fg {
 
+Vec3Ds      cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
+
+inline
 Vec3Ds
-cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
+cVertNorms(TriSurf const & ts)
+{return cVertNorms(scast<double>(ts.verts),ts.tris); }
 
 struct  FacetNormals
 {
@@ -35,18 +39,18 @@ struct  FacetNormals
 };
 typedef Svec<FacetNormals>      FacetNormalss;
 
-struct  Normals
+struct  MeshNormals
 {
     FacetNormalss       facet;       // Facet normals for each surface
     Vec3Fs              vert;        // Vertex normals.
 };
-typedef Svec<Normals>           Normalss;
+typedef Svec<MeshNormals>       MeshNormalss;
 
-Normals
+MeshNormals
 cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 inline
-Normals
+MeshNormals
 cNormals(Mesh const & mesh)
 {return cNormals(mesh.surfaces,mesh.verts); }
 

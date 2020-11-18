@@ -111,7 +111,7 @@ loadTri(istream & istr)
     // Surface points:
     for (uint ii=0; ii<numSurfPts; ii++) {
         SurfPoint     sp;
-        readb(istr,sp.triEquivIdx);
+        sp.triEquivIdx = fgReadt<uint32>(istr);
         readb(istr,sp.weights);
         sp.label = readString(istr,wchar);
         surf.surfPoints.push_back(sp);
@@ -163,7 +163,7 @@ loadTri(istream & istr)
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
             tm.baseInds.resize(numTargVerts);
             istr.read((char*)&tm.baseInds[0],4*numTargVerts);
-            tm.verts = cutSubvec(targVerts,targVertsStart,numTargVerts);
+            tm.verts = cSubvec(targVerts,targVertsStart,numTargVerts);
             targVertsStart += numTargVerts;
             mesh.targetMorphs.push_back(tm);
         }
@@ -191,7 +191,7 @@ Mesh
 loadTri(Ustring const & meshFile,Ustring const & texImage)
 {
     Mesh        mesh = loadTri(meshFile);
-    loadImage(texImage,mesh.surfaces[0].albedoMapRef());
+    loadImage_(texImage,mesh.surfaces[0].albedoMapRef());
     return mesh;
 }
 
@@ -211,7 +211,7 @@ saveTri(
 {
     Surf const          surf = mergeSurfaces(mesh.surfaces);
     SurfPoints const &  surfPoints = surf.surfPoints;
-    size_t              numTargetMorphVerts = fgSumVerts(mesh.targetMorphs),
+    size_t              numTargetMorphVerts = cNumVerts(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
     Ofstream            ff(fname);
     ff.write(triIdent.data(),8);
@@ -251,14 +251,14 @@ saveTri(
 
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
-        fgWriteb(ff,mesh.markedVerts[ii].idx);
+        fgWriteb(ff,uint32(mesh.markedVerts[ii].idx));
         writeLabel(ff,mesh.markedVerts[ii].label);
     }
 
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
         SurfPoint const &   sp = surfPoints[ii];
-        fgWriteb(ff,sp.triEquivIdx);
+        fgWriteb(ff,uint32(sp.triEquivIdx));
         fgWriteb(ff,sp.weights);
         writeLabel(ff,sp.label);
     }

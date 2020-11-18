@@ -228,6 +228,7 @@ typedef Img<Vec4F>     Img4F;
 // Deprecated:
 typedef Img<RgbaUC>    ImgC4UC;
 typedef Svec<ImgC4UC>  ImgC4UCs;
+typedef Svec<ImgC4UCs> ImgC4UCss;
 typedef Img<RgbaF>     ImgC4F;
 
 template<typename T,typename U>

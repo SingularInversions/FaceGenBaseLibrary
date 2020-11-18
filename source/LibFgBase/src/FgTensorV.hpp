@@ -18,7 +18,7 @@ namespace Fg {
 
 inline
 size_t
-cTensorIdx(const Sizes & dims,const Sizes & coord)
+cTensorIdx(Sizes const & dims,Sizes const & coord)
 {
     FGASSERT(coord.size() == dims.size());
     size_t          idx = 0,
@@ -39,12 +39,12 @@ struct  Tensor
 
     Tensor() {}                                  // Uninitialized is not a valid tensor value
 
-    explicit Tensor(const Sizes & d) : dims(d)
+    explicit Tensor(Sizes const & d) : dims(d)
     {data.resize(fgProduct(dims),0); }              // 'fgProduct' returns 1 for zero-size 'dims'
 
     explicit Tensor(T v) : data(1,v) {}          // Scalar
 
-    Tensor(const Sizes & dims_,Svec<T> const & data_) : dims(dims_), data(data_)
+    Tensor(Sizes const & dims_,Svec<T> const & data_) : dims(dims_), data(data_)
     {FGASSERT(data.size() == fgProduct(dims)); }
 
     T
@@ -52,7 +52,7 @@ struct  Tensor
     {FGASSERT(dims.empty() && !data.empty()); return data[0]; }
 
     T &
-    operator[](const Sizes & coord)       // Similar to matrix classes, coordinate elements from minor to major
+    operator[](Sizes const & coord)       // Similar to matrix classes, coordinate elements from minor to major
     {
         size_t      idx = cTensorIdx(dims,coord);
         FGASSERT(idx < data.size());
@@ -60,7 +60,7 @@ struct  Tensor
     }
 
     T const &
-    operator[](const Sizes & coord) const
+    operator[](Sizes const & coord) const
     {
         size_t      idx = cTensorIdx(dims,coord);
         FGASSERT(idx < data.size());
@@ -80,10 +80,10 @@ struct  TsrIter
     bool                minorToMajor = true;    // 'bounds' and 'coord' are minor to major. Vice versa if false.
 
     explicit
-    TsrIter(const Sizes & b) : bounds(b), coord(b.size(),0)
+    TsrIter(Sizes const & b) : bounds(b), coord(b.size(),0)
     {FGASSERT(fgProduct(b) > 0); }
 
-    TsrIter(const Sizes & b,bool minorToMajor_)
+    TsrIter(Sizes const & b,bool minorToMajor_)
         : bounds(b), coord(b.size(),0), minorToMajor(minorToMajor_)
         {FGASSERT(fgProduct(b) > 0); }
 
@@ -103,7 +103,7 @@ struct  TsrIter
         return false;
     }
 
-    const Sizes &
+    Sizes const &
     operator()() const
     {return coord; }
 

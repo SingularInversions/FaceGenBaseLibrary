@@ -3,7 +3,8 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// * Requires D3D 11.1 runtime / DXGI 11.1 (guaranteed on Win7 SP1 and higher, released 12.08)
+// * Requires D3D 11.1 runtime / DXGI 11.1 (guaranteed on Win7 SP1 and higher, released 12.08.
+//   Direct3D 11 subset of DirectX 11.
 // * Requires GPU hardware support for 11.0 (no OIT) or 11.1 (OIT)
 // * D3D 11.2 is NOT supported on Win7 but we don't need its features anyway.
 // * D3D 11.0 is the earliest version to use shader model 5.0. As of 19.08 you can't buy a standalone
@@ -29,6 +30,13 @@
 //   add triangle stripping (via indices created at file load time).
 // * Quad rendering is not built-in (to any modern GPU) and complicated to do manually, so create
 //   the edges in CPU and use line rendering on GPU.
+//
+// TODO:
+//
+// * Handle DXGI_ERROR_DEVICE_REMOVED (0x887A0005). This has happened many users (at CreateBuffer & other calls)
+//      The GPU device instance has been suspended. Use GetDeviceRemovedReason to determine the appropriate action.
+//      MS lists 4 possible reasons: GPU stops responding. GPU changes power-saving states. GPU driver updated. GPU literally removed.
+//
 
 #include "stdafx.h"
 
@@ -43,6 +51,7 @@
 #include "FgCoordSystem.hpp"
 #include "FgFileSystem.hpp"
 #include "FgHex.hpp"
+#include "Fg3dMeshOps.hpp"
 
 using namespace std;
 
@@ -145,8 +154,16 @@ PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
     pContext->PSSetShader(m_pPixelShader.Get(),nullptr,0);
 }
 
-D3d::D3d(HWND hwnd)
+D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN) : rendMeshesN(rmsN)
 {
+    origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms){
+        Mat32F      bounds {floatMax,-floatMax, floatMax,-floatMax, floatMax,-floatMax};
+        for (RendMesh const & rm : rms) {
+            Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
+            bounds = cBoundsUnion(bounds,bnds);
+        }
+        return bounds.colVec(1) - bounds.colVec(0);
+    });
     HRESULT             hr = 0;
     {
         // Use dummy size; window size not yet determined:
@@ -186,6 +203,10 @@ D3d::D3d(HWND hwnd)
             supports11_1 = (get<0>(config) == D3D_FEATURE_LEVEL_11_1);
             supportsFlip = (get<2>(config) == DXGI_SWAP_EFFECT_FLIP_DISCARD);
             desc.SwapEffect = get<2>(config);
+            // If a system doesn't support 11.1 this returns E_INVALIDARG (0x80070057)
+            // If a system doesn't support 11.0 this returns DXGI_ERROR_UNSUPPORTED (0x887A0004)
+            // E_FAIL (0x80004005) "debug layer enabled but not installed" happens quite a bit ...
+            // DXGI_ERROR_SDK_COMPONENT_MISSING (0x887A002D) SDK needed for debug layer ? only seen once
             hr = D3D11CreateDeviceAndSwapChain(
                 nullptr,                // Use first video adapter (card/driver) if more than one of this type
                 get<1>(config),         // Driver type
@@ -266,6 +287,16 @@ D3d::D3d(HWND hwnd)
     greyMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(200,200,200,255)));
     blackMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(0,0,0,255)));
     whiteMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(255,255,255,255)));
+    {
+        Arr<Vec3UC,4>           colors {{{200,200,200},{255,200,200},{200,255,200},{200,200,255}}};
+        for (size_t ii=0; ii<colors.size(); ++ii) {
+            Vec3UC              c = colors[ii];
+            tintMaps[ii] = makeMap(ImgC4UC(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],255}));
+            tintTransMaps[ii] = makeMap(ImgC4UC(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],150}));
+        }
+    }
+    noModulationMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(64,64,64,255)));
+    icosahedron = reverseWinding(cIcosahedron());                               // CC to CW
 }
 
 void
@@ -398,15 +429,23 @@ D3d::makeVertBuff(const Verts & verts)
 WinPtr<ID3D11Buffer>
 D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 {
+    // This isn't quite right since it will recalc when anything in rendMeshesN changes ...
+    // but it's not clear what the perfect solution would look like:
+    float                   sz = cMaxElem(origMeshesDimsN.val()) * (1.0f / 256.0f);
     Verts                   verts;
-    Vec3Fs const &       rendVerts = rendMesh.posedVertsN.cref();
+    Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
     for (Surf const & origSurf : origMesh.surfaces) {
         for (SurfPoint const & sp : origSurf.surfPoints) {
-            Vert                v;
-            v.pos = cSurfPointPos(sp,origSurf.tris,origSurf.quads,rendVerts);
-            v.norm = Vec3F(0,0,1);   // Random non-zero value can be normalized by shader
-            v.uv = Vec2F(0);
-            verts.push_back(v);
+            Vec3F               pos = cSurfPointPos(sp,origSurf.tris,origSurf.quads,rendVerts);
+            for (Vec3UI tri : icosahedron.tris) {
+                for (uint idx : tri.m) {
+                    Vert            v;
+                    v.pos = pos + icosahedron.verts[idx] * sz;
+                    v.norm = icosahedron.verts[idx];            // icosahedron verts are unit distance from origin
+                    v.uv = Vec2F{0};
+                    verts.push_back(v);
+                }
+            }
         }
     }
     return makeVertBuff(verts);
@@ -416,13 +455,13 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 WinPtr<ID3D11Buffer>
 D3d::makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
 {
-    Verts                   verts;
-    Vec3Fs const &       rendVerts = rendMesh.posedVertsN.cref();
+    Verts               verts;
+    Vec3Fs const &      rendVerts = rendMesh.posedVertsN.cref();
     for (MarkedVert const & mv : origMesh.markedVerts) {
-        Vert                v;
+        Vert            v;
         v.pos = rendVerts[mv.idx];
-        v.norm = Vec3F(0,0,1);   // Random non-zero value can be normalized by shader
-        v.uv = Vec2F(0);
+        v.norm = Vec3F{0,0,1};      // Random non-zero value can be normalized by shader
+        v.uv = Vec2F{0};
         verts.push_back(v);
     }
     return makeVertBuff(verts);
@@ -451,7 +490,7 @@ D3d::makeVertList(
 {
     D3d::Verts              vertList;
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    Normals const &         normals = rendMesh.normalsN.cref();
+    MeshNormals const &         normals = rendMesh.normalsN.cref();
     Vec3Fs const &          norms = normals.vert;
     FacetNormals const &    normFlats = normals.facet[surfNum];
     Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
@@ -508,7 +547,7 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
 
 WinPtr<ID3D11Texture2D>
 D3d::loadMap(ImgC4UC const & map) {
-    ImgC4UCs                mip = fgMipMap(map);
+    ImgC4UCs                mip = cMipMap(map); // TODO need to speed up the remapping to pow2 in here for big images
     uint                    numMips = cMin(uint(mip.size()),8);
     D3D11_SUBRESOURCE_DATA  initData[8] = {};
     for (size_t mm=0; mm<numMips; ++mm) {
@@ -602,7 +641,8 @@ D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
     scene.projection = d3vsToD3ps.transpose();          // "
     scene.ambient = asHomogVec(lighting.ambient);
     for (uint ii=0; ii<2; ++ii) {
-        scene.lightDir[ii] = asHomogVec(-lighting.lights[ii].direction);
+        Vec3F               d = lighting.lights[ii].direction;
+        scene.lightDir[ii] = asHomogVec(Vec3F{d[0],d[1],-d[2]});    // OECS to D3VS
         scene.lightColor[ii] = asHomogVec(lighting.lights[ii].colour);
     }
     return setScene(scene);
@@ -626,7 +666,7 @@ D3d::setBgImage(BackgroundImage const & bgi)
         return;
     Vec2UI              p2dims = clampHi(pow2Ceil(img.dims()),maxMapSize);
     ImgC4UC             map(p2dims);
-    fgImgResize(img,map);
+    imgResize(img,map);
     bgImg = makeMap(map);
 }
 
@@ -679,10 +719,11 @@ D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transpa
         bgImageVerts = makeVertBuff(bgiVerts);
     }
     setVertexBuffer(bgImageVerts.get());
-    ID3D11ShaderResourceView*       mapViews[2];    // Albedo, specular resp.
+    ID3D11ShaderResourceView*       mapViews[3];    // Albedo, specular resp.
     mapViews[0] = bgImg.view.get();
     mapViews[1] = blackMap.view.get();
-    pContext->PSSetShaderResources(0,2,mapViews);
+    mapViews[2] = noModulationMap.view.get();
+    pContext->PSSetShaderResources(0,3,mapViews);
     Scene                       scene;
     scene.mvm = Mat44F::identity();
     scene.projection = Mat44F::identity();
@@ -714,19 +755,31 @@ D3d::getD3dSurf(RendSurf const & rs) const
 }
 
 void
+D3d::updateMap_(NPTF<ImgC4UC> const & in,D3dMap & out)
+{
+    if (in.checkUpdate()) {
+        out.reset();
+        ImgC4UC const &     img = in.cref();
+        if (!img.empty())
+            out = makeMap(img);
+    }
+}
+
+void
 D3d::renderBackBuffer(
     BackgroundImage const &     bgi,
-    RendMeshes const &          rendMeshes,
-    Lighting                    lighting,
+    Lighting                    lighting,       // OECS
     Mat44F                      worldToD3vs,    // modelview
     Mat44F                      d3vsToD3ps,     // projection
     Vec2UI                      viewportSize,
-    const RendOptions &         rendOpts)
+    RendOptions const &         rendOpts,
+    bool                        backgroundTransparent)
 {
     // No render view during create - created by first resize:
     if (pRTV == nullptr)
         return;
     // Update 'd3dMeshes' (mesh and map data) if required:
+    RendMeshes const &      rendMeshes = rendMeshesN.cref();
     for (RendMesh const & rendMesh : rendMeshes) {
         Mesh const &        origMesh = rendMesh.origMeshN.cref();
         D3dMesh &           d3dMesh = getD3dMesh(rendMesh);
@@ -748,21 +801,12 @@ D3d::renderBackBuffer(
         }
         if (valid)
             FGASSERT(rendMesh.rendSurfs.size() == origMesh.surfaces.size());
-        for (size_t ss=0; ss<rendMesh.rendSurfs.size(); ++ss) {
+        for (size_t ss=0; ss<rendMesh.rendSurfs.size(); ++ss) {     // TODO: don't duplicate shared maps ! (eg. multisurface mesh)
             RendSurf const &        rs = rendMesh.rendSurfs[ss];
             D3dSurf &               d3dSurf = getD3dSurf(rs);
-            if (rs.albedoMapFlag->checkUpdate()) {
-                d3dSurf.albedoMap.reset();
-                ImgC4UC const &     img = rs.albedoMap.cref();
-                if (!img.empty())
-                    d3dSurf.albedoMap = makeMap(img);
-            }
-            if (rs.specularMapFlag->checkUpdate()) {
-                d3dSurf.specularMap.reset();
-                ImgC4UC const &     img = rs.specularMap.cref();
-                if (!img.empty())
-                    d3dSurf.specularMap = makeMap(img);
-            }
+            updateMap_(rs.smoothMapN,d3dSurf.albedoMap);
+            updateMap_(rs.modulationMapN,d3dSurf.modulationMap);
+            updateMap_(rs.specularMapN,d3dSurf.specularMap);
             if (trisChanged) {
                 d3dSurf.lineVerts.reset();  // Release but delay computation in case not needed
                 d3dSurf.triVerts.reset();
@@ -786,7 +830,11 @@ D3d::renderBackBuffer(
     pContext->ClearDepthStencilView(pDSV.Get(),D3D11_CLEAR_DEPTH,1.0f,0);
     pContext->OMSetBlendState(pBlendStateDefault.Get(),nullptr,0xFFFFFFFF);
     // Needed for both paths since 11.1 with facets disabled doesn't overwrite this buffer:
-    pContext->ClearRenderTargetView(pRTV.Get(),asHomogVec(rendOpts.backgroundColor).data());
+    Arr<float,3>                bg = rendOpts.backgroundColor.m;
+    Arr<float,4>                bgColor {bg[0],bg[1],bg[2],255};
+    if (backgroundTransparent)
+        bgColor[3] = 0;
+    pContext->ClearRenderTargetView(pRTV.Get(),bgColor.data());
     pContext->OMSetRenderTargets(1,dataPtr({pRTV.Get()}),pDSV.Get());
     opaquePassPSO.apply(pContext);
     if (bgImg.valid()) {
@@ -843,6 +891,24 @@ D3d::renderBackBuffer(
     pContext->OMSetRenderTargets(1,dataPtr({pRTV.Get()}),pDSV.Get());
     pContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(),0);
     opaquePassPSO.apply(pContext);
+    if (rendOpts.surfPoints) {
+        sceneBuff = makeScene(Lighting{Vec3F{1,0,0}},worldToD3vs,d3vsToD3ps);
+        ID3D11ShaderResourceView*       mapViews[3];
+        mapViews[0] = whiteMap.view.get();
+        mapViews[1] = blackMap.view.get();              // No specular on point spheres
+        mapViews[2] = noModulationMap.view.get();
+        pContext->PSSetShaderResources(0,3,mapViews);
+        for (RendMesh const & rendMesh : rendMeshes) {
+            Mesh const &        origMesh = rendMesh.origMeshN.cref();
+            if (origMesh.surfPointNum() > 0) {
+                D3dMesh &       d3dMesh = getD3dMesh(rendMesh);
+                if (d3dMesh.surfPoints) {   // Can be null if no surf points
+                    setVertexBuffer(d3dMesh.surfPoints.get());
+                    pContext->Draw(uint(origMesh.surfPointNum()*60),0);
+                }
+            }
+        }
+    }
     if (rendOpts.wireframe) {
         pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         if (rendOpts.facets)        // Render wireframe blue over facets, white otherwise:
@@ -870,7 +936,7 @@ D3d::renderBackBuffer(
                 if (!d3dSurf.lineVerts)     // GPU needs updating
                     d3dSurf.lineVerts = makeVertBuff(makeLineVerts(rendMesh, origMesh, ss));
                 setVertexBuffer(d3dSurf.lineVerts.get());
-                ID3D11ShaderResourceView* mapViews[2];    // Albedo, specular resp.
+                ID3D11ShaderResourceView* mapViews[3];    // Albedo, specular resp.
                 mapViews[0] = greyMap.view.get();
                 if (rendOpts.shiny)
                     mapViews[1] = whiteMap.view.get();
@@ -878,46 +944,34 @@ D3d::renderBackBuffer(
                     mapViews[1] = d3dSurf.specularMap.view.get();
                 else
                     mapViews[1] = blackMap.view.get();
-                pContext->PSSetShaderResources(0,2,mapViews);
+                mapViews[2] = noModulationMap.view.get();
+                pContext->PSSetShaderResources(0,3,mapViews);
                 pContext->Draw(uint(origSurf.numTris() * 6 + origSurf.numQuads() * 8), 0);
             }
         }
     }
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-    pContext->PSSetShaderResources(0,2,dataPtr({whiteMap.view.get(),blackMap.view.get()}));
+    pContext->PSSetShaderResources(0,3,dataPtr({whiteMap.view.get(),blackMap.view.get(),noModulationMap.view.get()}));
     if (rendOpts.allVerts) {
-        sceneBuff = makeScene(Vec3F(0,1,0),worldToD3vs,d3vsToD3ps);
-        for (auto const& rendMesh : rendMeshes) {
-            auto const& d3dMesh = getD3dMesh(rendMesh);
+        sceneBuff = makeScene(Vec3F{0,1,0},worldToD3vs,d3vsToD3ps);
+        for (RendMesh const & rendMesh : rendMeshes) {
+            D3dMesh const &         d3dMesh = getD3dMesh(rendMesh);
             if (d3dMesh.allVerts) {
-                auto const& origMesh = rendMesh.origMeshN.cref();
+                Mesh const &        origMesh = rendMesh.origMeshN.cref();
                 setVertexBuffer(d3dMesh.allVerts.get());
                 pContext->Draw(uint(origMesh.verts.size()),0);
             }
         }
     }
-    if (rendOpts.surfPoints) {
-        sceneBuff = makeScene(Vec3F(1,0,0),worldToD3vs,d3vsToD3ps);
-        for (auto const& rendMesh : rendMeshes) {
-            auto const& origMesh = rendMesh.origMeshN.cref();
-            if (origMesh.surfPointNum() > 0) {
-                auto& d3dMesh = getD3dMesh(rendMesh);
-                if (d3dMesh.surfPoints) {   // Can be null if no surf points
-                    setVertexBuffer(d3dMesh.surfPoints.get());
-                    pContext->Draw(uint(origMesh.surfPointNum()),0);
-                }
-            }
-        }
-    }
     if (rendOpts.markedVerts) {
-        sceneBuff = makeScene(Vec3F(1,0,0),worldToD3vs,d3vsToD3ps);
-        for (auto const& rendMesh : rendMeshes) {
-            auto const& origMesh = rendMesh.origMeshN.cref();
+        sceneBuff = makeScene(Vec3F{1,1,0},worldToD3vs,d3vsToD3ps);
+        for (RendMesh const & rendMesh : rendMeshes) {
+            Mesh const &        origMesh = rendMesh.origMeshN.cref();
             if (!origMesh.markedVerts.empty()) {
-                D3dMesh& d3dMesh = getD3dMesh(rendMesh);
+                D3dMesh &       d3dMesh = getD3dMesh(rendMesh);
                 if (d3dMesh.markedPoints) {   // Can be null if no marked verts
                     setVertexBuffer(d3dMesh.markedPoints.get());
-                    pContext->Draw(uint(origMesh.surfPointNum()),0);
+                    pContext->Draw(uint(origMesh.markedVerts.size()),0);
                 }
             }
         }
@@ -952,7 +1006,7 @@ D3d::capture(Vec2UI viewportSize)
         FG_ASSERT_D3D(hr);
         pBuffer.reset(ptr);
     }
-    D3D11_TEXTURE2D_DESC    desc;
+    D3D11_TEXTURE2D_DESC        desc;
     pBuffer->GetDesc(&desc);
     desc.BindFlags = 0;
     desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
@@ -969,7 +1023,7 @@ D3d::capture(Vec2UI viewportSize)
     unsigned int                subresource = D3D11CalcSubresource(0,0,0);
     hr = pContext->Map(pTexture.get(),subresource,D3D11_MAP_READ_WRITE,0,&resource);
     FG_ASSERT_D3D(hr);
-    ImgC4UC                 ret(viewportSize);
+    ImgC4UC                     ret(viewportSize);
     uchar*                      dst = (uchar*)resource.pData;
     for (size_t rr=0; rr<viewportSize[1]; ++rr) {
         memcpy(&ret.xy(0,rr),dst,4ULL*viewportSize[0]);
@@ -989,24 +1043,38 @@ D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
 }
 
 void
-D3d::renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, bool transparentPass)
+D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass)
 {
+    size_t              mm {0};
     for (RendMesh const & rendMesh : rendMeshes) {
         if (rendMesh.posedVertsN.cref().empty())    // Not selected
             continue;
-        Mesh const &                origMesh = rendMesh.origMeshN.cref();
+        Mesh const &        origMesh = rendMesh.origMeshN.cref();
         for (size_t ss=0; ss<origMesh.surfaces.size(); ++ss) {
-            Surf const &         origSurf = origMesh.surfaces[ss];
+            Surf const &        origSurf = origMesh.surfaces[ss];
             if (origSurf.empty())
                 continue;
-            RendSurf const &            rendSurf = rendMesh.rendSurfs[ss];
-            if (transparentPass == rendSurf.albedoHasTransparencyN.val()) {
-                D3dSurf &                      d3dSurf = getD3dSurf(rendSurf);
+            RendSurf const &    rendSurf = rendMesh.rendSurfs[ss];
+            bool                transparency =
+                (rendSurf.albedoHasTransparencyN.val() || (rendOpts.albedoMode==AlbedoMode::byMesh));
+            if (transparentPass == transparency) {
+                D3dSurf &               d3dSurf = getD3dSurf(rendSurf);
                 FGASSERT(d3dSurf.triVerts);
                 setVertexBuffer(d3dSurf.triVerts.get());
-                ID3D11ShaderResourceView*       mapViews[2];    // Albedo, specular resp.
-                if (rendOpts.useTexture && d3dSurf.albedoMap.valid())
-                    mapViews[0] = d3dSurf.albedoMap.view.get();
+                ID3D11ShaderResourceView*       mapViews[3];    // Albedo, Specular, Modulation resp.
+                mapViews[2] = noModulationMap.view.get();
+                if (rendOpts.albedoMode==AlbedoMode::map) {
+                    if (d3dSurf.albedoMap.valid())
+                        mapViews[0] = d3dSurf.albedoMap.view.get();
+                    else
+                        mapViews[0] = greyMap.view.get();
+                    if (d3dSurf.modulationMap.valid())
+                        mapViews[2] = d3dSurf.modulationMap.view.get();
+                }
+                else if (rendOpts.albedoMode==AlbedoMode::bySurf)
+                    mapViews[0] = tintMaps[ss%tintMaps.size()].view.get();
+                else if (rendOpts.albedoMode==AlbedoMode::byMesh)
+                    mapViews[0] = tintTransMaps[mm%tintTransMaps.size()].view.get();
                 else
                     mapViews[0] = greyMap.view.get();
                 if (rendOpts.shiny)
@@ -1015,10 +1083,11 @@ D3d::renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, boo
                     mapViews[1] = d3dSurf.specularMap.view.get();
                 else
                     mapViews[1] = blackMap.view.get();
-                pContext->PSSetShaderResources(0,2,mapViews);
+                pContext->PSSetShaderResources(0,3,mapViews);
                 pContext->Draw(uint(origSurf.numTriEquivs())*3,0);
             }
         }
+        ++mm;
     }
 }
 

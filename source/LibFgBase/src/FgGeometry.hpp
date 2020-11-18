@@ -12,6 +12,11 @@
 
 namespace Fg {
 
+// Returns the barycentric coordinate (wrt the input points) of the closest point in the plane
+// spanned by the points to the origin.
+Vec3D
+closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2);
+
 template<typename T>
 struct  VecMag
 {
@@ -19,7 +24,7 @@ struct  VecMag
     T           mag;    // Squared magnitude of vec. Initialized to invalid.
 
     VecMag() : mag {std::numeric_limits<T>::max()} {}
-    explicit VecMag(Mat<T,3,1> v) : vec(v), mag(cMag(v)) {}
+    VecMag(Mat<T,3,1> v,T m) : vec(v), mag(m) {}
 
     bool valid() const
     {return (mag != std::numeric_limits<T>::max()); }
@@ -52,17 +57,23 @@ Opt<Vec3D>
 barycentricCoord(Vec2F point,Vec2F v0,Vec2F v1,Vec2F v2)
 {return barycentricCoord(Vec2D(point),Vec2D(v0),Vec2D(v1),Vec2D(v2)); }
 
-// Homogeneous plane representation from 3 points on plane:
-Vec4D
-cPlaneH(Vec3D p0,Vec3D p1,Vec3D p2);
+struct  Plane
+{
+    Vec3D           norm;       // Plane normal, NOT unit scaled
+    double          scalar;     // s such that: N * x + s = 0
+};
+
+// Plane from 3 points. Throws if points are colinear or coincident:
+Plane
+cPlane(Vec3D p0,Vec3D p1,Vec3D p2);
 
 // Returns the homogeneous coordinate of the intersection of a line through the origin with a plane.
 // The homogeneous component will be zero if there is no intersection. Otherwise, the dot product
 // of the intersection and the ray will determine the direction (along ray) to intersection.
 Vec4D
 linePlaneIntersect(
-    Vec3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
-    Vec4D        plane);     // Homogeneous representation
+    Vec3D           ray,        // Direction of ray emanating from origin. Does not need to be normalized
+    Plane           plane);
 
 // Returns: 0: point not in triangle or degenerate triangle.
 //          1: point in triangle, CC winding

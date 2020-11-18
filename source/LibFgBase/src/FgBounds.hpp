@@ -57,19 +57,18 @@ cBounds(Arr<T,S> const & arr)
 // Returns inclusive bounds of vectors
 template<typename T,uint dim>
 Mat<T,dim,2>
-cBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,-max]
+cBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,lowest]
 {
-    T                       max = std::numeric_limits<T>::max(),
-                            min = std::numeric_limits<T>::lowest();
     Mat<T,dim,2>      ret;
     for (uint dd=0; dd<dim; ++dd) {
-        ret.rc(dd,0) = max;
-        ret.rc(dd,1) = min;
+        ret.rc(dd,0) = std::numeric_limits<T>::max();
+        ret.rc(dd,1) = std::numeric_limits<T>::lowest();
     }
     for (Mat<T,dim,1> v : vecs) {
         for (uint dd=0; dd<dim; ++dd) {
-            setIfLess     (ret.rc(dd,0),v[dd]);
-            setIfGreater  (ret.rc(dd,1),v[dd]);
+            T           val = v[dd];
+            setIfLess     (ret.rc(dd,0),val);
+            setIfGreater  (ret.rc(dd,1),val);
         }
     }
     return ret;
@@ -261,13 +260,12 @@ cBoundsIntersection(
 
 template<typename T,uint dim>
 bool
-boundsIncludes(
-    const Mat<T,dim,2> &  inclusiveBounds,
-    const Mat<T,dim,1> &  point)
+isInBounds(Mat<T,dim,2> const & boundsEub,Mat<T,dim,1> const & point)
 {
     for (uint dd=0; dd<dim; ++dd) {
-        if ((inclusiveBounds.cr(1,dd) < point[dd]) ||
-            (inclusiveBounds.cr(0,dd) > point[dd]))
+        if (point[dd] < boundsEub.cr(0,dd))         // inclusive lower bound
+            return false;
+        if (!(point[dd] < boundsEub.cr(1,dd)))      // exclusive upper bound
            return false;
     }
     return true;
@@ -275,13 +273,13 @@ boundsIncludes(
 
 template<typename T,uint dim>
 bool
-boundsIncludes(Mat<uint,dim,1> dims,Mat<T,dim,1> pnt)
+isInUpperBounds(Mat<uint,dim,1> exclusiveUpperBounds,Mat<T,dim,1> pnt)
 {
     for (uint dd=0; dd<dim; ++dd) {
         if (pnt[dd] < 0)
             return false;
         // We can now safely cast T to uint since it's >= 0 (and one hopes smaller than 2Gig):
-        if (uint(pnt[dd]) >= dims[dd])
+        if (!(uint(pnt[dd]) < exclusiveUpperBounds[dd]))
             return false;
     }
     return true;

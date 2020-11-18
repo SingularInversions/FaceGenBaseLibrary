@@ -176,6 +176,14 @@ cat(const Mat<T,1,dim> & vec,T val)
     return ret;
 }
 
+template<class T,uint nrows,uint ncols>
+void
+cat_(Svec<T> & l,Mat<T,nrows,ncols> const & r)
+{
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        l.push_back(r[ii]);
+}
+
 // Flatten a Svec of matrices into a Svec of scalars:
 template<class T,uint nrows,uint ncols>
 Svec<T>
@@ -371,6 +379,18 @@ crossProduct(
     r[1] = v1[2] * v2[0] - v1[0] * v2[2];
     r[2] = v1[0] * v2[1] - v1[1] * v2[0];
     return r;
+}
+
+// Equivalent to V * Y.transpose() (but more efficient and succinct):
+template<typename T,uint nrows,uint ncols>
+Mat<T,nrows,ncols>
+outerProduct(Mat<T,nrows,1> const & lhs,Mat<T,ncols,1> const & rhs)
+{
+    Mat<T,nrows,ncols>      ret;
+    for (uint rr=0; rr<nrows; ++rr)
+        for (uint cc=0; cc<ncols; ++cc)
+            ret.rc(rr,cc) = lhs[rr] * rhs[cc];
+    return ret;
 }
 
 // Element-wise multiplication (aka Hadamard product):
@@ -721,7 +741,7 @@ fgSumElems(Mat<T,nrows,ncols> const & m)
 
 template<class T,uint sz>
 Mat<T,sz,sz>
-fgDiagonal(Mat<T,sz,1> vec)
+asDiagMat(Mat<T,sz,1> vec)
 {
     Mat<T,sz,sz>      ret(static_cast<T>(0));
     for (uint ii=0; ii<sz; ++ii)
@@ -731,7 +751,7 @@ fgDiagonal(Mat<T,sz,1> vec)
 
 template<class T>
 Mat<T,2,2>
-fgDiagonal(T v0,T v1)
+asDiagMat(T v0,T v1)
 {
     Mat<T,2,2>    ret(static_cast<T>(0));
     ret[0] = v0;
@@ -741,7 +761,7 @@ fgDiagonal(T v0,T v1)
 
 template<class T>
 Mat<T,3,3>
-fgDiagonal(T v0,T v1,T v2)
+asDiagMat(T v0,T v1,T v2)
 {
     Mat<T,3,3>    ret(static_cast<T>(0));
     ret[0] = v0;
@@ -761,7 +781,7 @@ normalize(Mat<T,nrows,ncols> m)
 
 template<typename T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-mapft(Mat<T,nrows,ncols> m,T(*func)(T))
+mapFunc(Mat<T,nrows,ncols> m,T(*func)(T))
 {
     Mat<T,nrows,ncols>    ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -937,6 +957,20 @@ fgPermute(const Mat<T,dim,1> & v,Mat<uint,dim,1> perm)  // Assumes a valid permu
     return ret;
 }
 
+// Change a square matrix representation under a permutation of 2 of the axes:
+template<class T,uint dim>
+Mat<T,dim,dim>
+permuteAxes(
+    Mat<T,dim,dim> const &      M,
+    Mat<uint,dim,1>             p)  // Permuation map from input index to output index. NOT checked for validity.
+{
+    Mat<T,dim,dim>      R;
+    for (uint rr=0; rr<dim; ++rr)
+        for (uint cc=0; cc<dim; ++cc)
+            R.rc(p[rr],p[cc]) = M.rc(rr,cc);
+    return R;
+}
+
 template<class T,uint nrows,uint ncols>
 Mat<T,ncols,nrows>
 fgHermitian(Mat<T,nrows,ncols> const & mat)
@@ -948,16 +982,127 @@ fgHermitian(Mat<T,nrows,ncols> const & mat)
     return ret;
 }
 
-template<class Xform,class T,uint nrows,uint ncols>
-Svec<Mat<T,nrows,ncols> >
-operator*(
-    const Xform &                                   xform,
-    Svec<Mat<T,nrows,ncols> > const &  rhs)
+// Symmetric matrix:
+struct  MatS33D
 {
-    Svec<Mat<T,nrows,ncols> >  ret(rhs.size());
-    mapXf_(rhs,xform,ret);
-    return ret;
-}
+    Arr<double,3>       diag;
+    Arr<double,3>       offd;       // In order 01, 02, 12
+
+    FG_SERIALIZE2(diag,offd);
+
+    MatS33D() {}
+    explicit MatS33D(Mat33D const &);   // Checks for symmetry
+    MatS33D(Arr<double,3> const & d,Arr<double,3> const & o) : diag(d), offd(o)  {}
+
+    Mat33D
+    asMatrixC() const
+    {return Mat33D {diag[0],offd[0],offd[1], offd[0],diag[1],offd[2], offd[1],offd[2],diag[2]}; }
+};
+
+// Upper triangular matrix non-zero entries in row-major order
+struct  MatUT33D
+{
+    Arr<double,6>     m;
+
+    FG_SERIALIZE1(m);
+
+    MatUT33D() {}
+
+    explicit MatUT33D(Arr<double,6> const & data) : m(data) {}
+
+    MatUT33D(double m0,double m1,double m2,double m3,double m4,double m5)
+    {m[0]=m0; m[1]=m1; m[2]=m2; m[3]=m3; m[4]=m4; m[5]=m5; }
+
+    explicit MatUT33D(Vec3D scales)             // Diagonal version
+    {
+        m[0]=scales[0]; m[1]=0.0;       m[2]=0.0;
+                        m[3]=scales[1]; m[4]=0.0;
+                                        m[5]=scales[2];
+    }
+
+    MatUT33D(Vec3D scales,Vec3D shears)         // Scales are the diag elems, shears are off-diag UT
+    {
+        m[0]=scales[0]; m[1]=shears[0]; m[2]=shears[1];
+                        m[3]=scales[1]; m[4]=shears[2];
+                                        m[5]=scales[2];
+    }
+
+    MatUT33D
+    operator-(MatUT33D const & rhs) const
+    {return MatUT33D(m-rhs.m); }
+
+    MatUT33D
+    operator*(double s) const
+    {return MatUT33D {m*s}; }
+
+    MatUT33D
+    operator/(double s) const
+    {return  MatUT33D {m/s}; }
+
+    Vec3D
+    operator*(Vec3D v) const
+    {return Vec3D(m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[1]+m[4]*v[2],m[5]*v[2]); }
+
+    MatUT33D
+    operator*(MatUT33D r) const
+    {
+        return MatUT33D(
+            m[0]*r.m[0],    m[0]*r.m[1]+m[1]*r.m[3],    m[0]*r.m[2]+m[1]*r.m[4]+m[2]*r.m[5],
+                            m[3]*r.m[3],                m[3]*r.m[4]+m[4]*r.m[5],
+                                                        m[5]*r.m[5]);
+    }
+
+    // U^T * v
+    Vec3D
+    tranposeMul(Vec3D r)
+    {
+        return Vec3D {
+            m[0]*r[0],
+            m[1]*r[0] + m[3]*r[1],
+            m[2]*r[0] + m[4]*r[1] + m[5]*r[2] };
+    }
+
+    double
+    determinant() const
+    {return m[0]*m[3]*m[5]; }
+
+    Mat33D
+    asMatrix() const
+    {return Mat33D(m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]); }
+
+    // Frobenius norm
+    double
+    frobenius() const
+    {return cMag(m); }
+
+    MatS33D
+    luProduct() const
+    {
+        double      m00 = sqr(m[0]),
+                    m01 = m[0]*m[1],
+                    m02 = m[0]*m[2],
+                    m11 = sqr(m[1]) + sqr(m[3]),
+                    m12 = m[1]*m[2] + m[3]*m[4],
+                    m22 = sqr(m[2]) + sqr(m[4]) + sqr(m[5]);
+        return MatS33D {{{m00,m11,m22}},{{m01,m02,m12}}};
+    }
+
+    MatUT33D
+    inverse() const;
+
+    static MatUT33D
+    identity()
+    {return MatUT33D(1,0,0,1,0,1); }
+};
+std::ostream &
+operator<<(std::ostream &,MatUT33D const &);
+
+inline double
+cRms(MatUT33D const & m)
+{return cRms(m.m); }
+
+MatS33D
+randMatSpd3D(double lnEigStdev);
 
 }
 

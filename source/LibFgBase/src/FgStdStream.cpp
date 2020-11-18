@@ -12,6 +12,12 @@ using namespace std;
 
 namespace Fg {
 
+#ifdef _WIN32
+
+// Defined in LibFgWin/FgStdStreamWin.cpp
+
+#else
+
 bool
 Ofstream::open(
     Ustring const &         fname,
@@ -21,11 +27,8 @@ Ofstream::open(
     // Opening a file can throw if ios::exceptions have been enabled (not the default):
     try
     {
-#ifdef _WIN32
-        wstring     fn = fname.as_wstring();
-#else       // Any sane OS will use UTF-8:
         string      fn = fname.as_utf8_string();
-#endif
+        // Always use binary read/write. Text translation mode is complex, error-prone and unnecessary:
         ios::openmode   om = ios::binary;
         if (appendFile)
             om = om | ios::app;
@@ -46,11 +49,7 @@ Ifstream::open(
     // Use try-catch in case client has enabled ios::exceptions (not enabled by default):
     try
     {
-#ifdef _WIN32
-        wstring     fn = fname.as_wstring();
-#else
         string      fn = fname.as_utf8_string();
-#endif
         ifstream::open(fn.c_str(),std::ios::binary);
     }
     catch (...)
@@ -59,6 +58,8 @@ Ifstream::open(
         fgThrow("Unable to open file for reading",fname);
     return is_open();
 }
+
+#endif
 
 void
 fgWriteFile(Ustring const & fname,const std::string & data,bool appendFile)

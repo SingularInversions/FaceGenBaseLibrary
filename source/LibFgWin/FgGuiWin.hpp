@@ -35,9 +35,8 @@ struct  GuiBaseImpl
     ~GuiBaseImpl()
     {};
 
-    // Recursively create the win32 window objects using the idiomatic approach of
-    // recursing the creation call within the WM_CREATE handler. This function
-    // is only called once:
+    // Recursively create the win32 window objects using the idiomatic approach of recursing
+    // the creation call within the WM_CREATE handler.
     virtual void
     create(
         HWND            hwndParent,
@@ -92,10 +91,16 @@ struct  GuiBaseImpl
     {}
 };
 
+struct  GuiMainBase
+{
+    virtual void    updateGui() const = 0;
+};
+
 struct  GuiWinStatics
 {
-    HINSTANCE       hinst;
-    HWND            hwndMain;
+    HINSTANCE           hinst;
+    HWND                hwndMain;
+    GuiMainBase const * guiMainPtr;
 
     GuiWinStatics() : hinst(0), hwndMain(0) {}
 };

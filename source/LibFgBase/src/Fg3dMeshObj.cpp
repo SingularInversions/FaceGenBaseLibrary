@@ -5,7 +5,7 @@
 //
 // Wavefront OBJ import / export.
 //
-// * OBJ does not support units
+// * OBJ does not support morphs, hierarchies, animation or units.
 //
 
 #include "stdafx.h"
@@ -102,11 +102,11 @@ parseFacet(
     bool            ret = false;
     Strings  strs = splitChar(str,' ');
     FGASSERT(strs.size() > 2);
-    vector<vector<uint> >   nums;
+    vector<Uints >   nums;
     for (size_t ii=0; ii<strs.size(); ++ii) {
         Strings  ns = splitChar(strs[ii],'/',true);
         size_t          sz = cMin(ns.size(),size_t(2));    // Ignore normal indices
-        vector<uint>    nms;
+        Uints    nms;
         for (size_t jj=0; jj<sz; ++jj) {
             size_t      numLim = ((jj == 0) ? numVerts : numUvs);
             if (!ns[jj].empty()) {
@@ -306,7 +306,7 @@ writeMesh(
     Ofstream &          ofs,
     Ofstream &          ofsMtl,
     Mesh const &        mesh,
-    const Path &        fpath,
+    Path const &        fpath,
     Offsets             offsets,
     string const &      imgFormat,
     bool                mtlFile)        // Is there an associated MTL file
@@ -322,7 +322,7 @@ writeMesh(
         Vec2F    uv = mesh.uvs[ii];
         ofs << "vt " << uv[0] << " " << uv[1] << "\n";
     }
-    Normals         norms = cNormals(mesh.surfaces,mesh.verts);
+    MeshNormals         norms = cNormals(mesh.surfaces,mesh.verts);
     for (size_t ii=0; ii<norms.vert.size(); ++ii) {
         Vec3F    n = norms.vert[ii];
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << "\n";

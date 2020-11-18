@@ -27,13 +27,13 @@ operator<<(std::ostream & os,const std::set<T> & v)
 template<class T,class U>
 inline
 std::vector<T>
-fgSetToVec(const std::set<T,U> & s)
+setToSvec(const std::set<T,U> & s)
 {return std::vector<T>(s.begin(),s.end()); }
 
 template<class T>
 inline
 std::set<T>
-fgVecToSet(const std::vector<T> & v)
+svecToSet(const std::vector<T> & v)
 {return std::set<T>(v.begin(),v.end()); }
 
 template<class T,class Lt>
@@ -66,17 +66,17 @@ containsAll(const std::set<T> & s0,const std::set<T> & s1)
 
 template<class T>
 void
-fgUnion_(std::set<T> & s0,const std::set<T> & s1)
+cUnion_(std::set<T> & s0,const std::set<T> & s1)
 {s0.insert(s1.begin(),s1.end()); }
 
 template<class T>
 void
-fgUnion_(std::set<T> & s0,const std::vector<T> & s1)
+cUnion_(std::set<T> & s0,const std::vector<T> & s1)
 {s0.insert(s1.begin(),s1.end()); }
 
 template<class T>
 std::set<T>
-fgUnion(const std::set<T> & s0,const std::set<T> & s1)
+cUnion(const std::set<T> & s0,const std::set<T> & s1)
 {
     // WTF is with set_union ...
     std::set<T>     ret = s0;
@@ -88,7 +88,7 @@ fgUnion(const std::set<T> & s0,const std::set<T> & s1)
 // Loop is through s1 so prefer s0 for the larger set.
 template<class T>
 std::set<T>
-fgIntersection(const std::set<T> & s0,const std::set<T> & s1)
+cIntersect(const std::set<T> & s0,const std::set<T> & s1)
 {
     std::set<T>         ret;
     for (T const & s : s1)

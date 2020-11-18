@@ -41,7 +41,7 @@ Syntax::~Syntax()
     size_t      unused = m_args.size() - m_idx - 1;
     if ((unused > 0) && (!std::uncaught_exception()))
         fgout << fgnl << "WARNING: last " << unused
-            << " argument(s) not used : " << cat(cutTail(m_args,unused)," ");
+            << " argument(s) not used : " << cat(cTail(m_args,unused)," ");
 }
 
 void
@@ -215,6 +215,13 @@ Syntax::nextSelectionIndex(Strings const & validValues,string const & argDescrip
     if (idx == validValues.size())
         error("Invalid value for",argDescription);
     return uint(idx);
+}
+
+void
+Syntax::noMoreArgsExpected()
+{
+    if (more())
+        error("too many arguments supplied");
 }
 
 }

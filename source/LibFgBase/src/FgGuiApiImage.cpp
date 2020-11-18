@@ -23,7 +23,7 @@ GuiImage::disp(Vec2UI winSize)
         // Ensure level has been initialized using window size so dispN will be correctly calculated:
         uint                    level = currLevelN.val();
         if (level == 0) {    // not yet initialized:
-            const ImgC4UCs & pyr = pyramidN.cref();
+            ImgC4UCs const & pyr = pyramidN.cref();
             while (
                 (level+1 < pyr.size()) &&
                 (pyr[level].width() < winSize[0]) &&
@@ -34,7 +34,7 @@ GuiImage::disp(Vec2UI winSize)
         // Adjust offset here to be able to respond properly to window resize.
         // Image can only be moved if it's larger than display window, and movement is clamped
         // to keep image boundaries at or outside window boundaries.
-        const ImgC4UC & img = dispN.cref();
+        ImgC4UC const & img = dispN.cref();
         Vec2I            offset = offsetN.val();
         Vec2I            delsz = Vec2I(winSize) - Vec2I(img.dims());
         if (delsz[0] < 0) {
@@ -59,7 +59,7 @@ GuiImage::disp(Vec2UI winSize)
         ret.offsety = offset[1];
     }
     else {
-        const ImgC4UC & img = imgN.cref();
+        ImgC4UC const & img = imgN.cref();
         Vec2I    pad = Vec2I(winSize) - Vec2I(img.dims());
         ret.width = img.width();
         ret.height = img.height();
@@ -88,7 +88,7 @@ GuiImage::zoom(int delta)
     zoom += delta;
     if (zoom > 30) {
         zoom = 0;
-        const ImgC4UCs &     pyr = pyramidN.cref();
+        ImgC4UCs const &     pyr = pyramidN.cref();
         uint    level = currLevelN.val();
         if (level < pyr.size()-1)
             currLevelN.set(level+1);
@@ -105,20 +105,21 @@ GuiImage::zoom(int delta)
 void
 GuiImage::click(Vec2I pos)
 {
-    if (allowMouseCtls) {
-        uint                lev = currLevelN.val();
-        const ImgC4UC & img = pyramidN.cref()[lev];
-        Vec2I            imgPos = pos - offsetN.val();
-        if ((imgPos[0] >= 0) && (imgPos[0] < int(img.width())) &&
-            (imgPos[1] >= 0) && (imgPos[1] < int(img.height()))) {
-            Vec2F    posr = Vec2F(imgPos) + Vec2F(0.5f),
-                        posIucs(posr[0]/float(img.width()),posr[1]/float(img.height()));
-            vector<Vec2F> &  points = pointsN.ref();
-            points.push_back(posIucs);
+    if (onClick) {
+        if (allowMouseCtls) {
+            uint                lev = currLevelN.val();
+            ImgC4UC const &     img = pyramidN.cref()[lev];
+            Vec2I               imgPos = pos - offsetN.val();
+            if (isInBounds(Mat22I(0,img.width(),0,img.height()),imgPos)) {
+                Vec2F           iucs = cIrcsToIucsXf(img.dims()) * Vec2F(imgPos);
+                onClick(iucs);
+            }
+        }
+        else {
+            Vec2F           iucs = cIrcsToIucsXf(imgN.cref().dims()) * Vec2F(pos);
+            onClick(iucs);
         }
     }
-    if (onClick != NULL)
-        onClick();
 }
 
 uint
@@ -138,7 +139,7 @@ GuiImage::update()
 
 static
 void
-linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
+linkPyramid2(ImgC4UC const & img,ImgC4UCs & pyr)
 {
     if (img.empty()) {
         pyr.clear();
@@ -156,7 +157,7 @@ linkPyramid2(const ImgC4UC & img,ImgC4UCs & pyr)
 
 static
 void
-linkDisp2(const ImgC4UCs & pyr,const uint & levIn,Vec2Fs const & pts,ImgC4UC & img)
+linkDisp2(ImgC4UCs const & pyr,const uint & levIn,Vec2Fs const & pts,ImgC4UC & img)
 {
     if (pyr.empty()) {
         img = ImgC4UC();
@@ -170,13 +171,7 @@ linkDisp2(const ImgC4UCs & pyr,const uint & levIn,Vec2Fs const & pts,ImgC4UC & i
     for (size_t ii=0; ii<pts.size(); ++ii){
         int     xx = int(pts[ii][0] * img.width()),
                 yy = int(pts[ii][1] * img.height());
-        RgbaUC    green(0,255,0,255);
-        for (int jj=-4; jj<5; ++jj) {
-            for (int kk=-1; kk<2; ++kk) {
-                img.paint(xx+jj,yy+kk,green);
-                img.paint(xx+kk,yy+jj,green);
-            }
-        }
+        paintCrosshair(img,Vec2I{xx,yy});
     }
 }
 
@@ -190,9 +185,9 @@ guiImage(NPT<ImgC4UC> imgN)
 }
 
 GuiPtr
-guiImage(NPT<ImgC4UC> imgN,Sfun<void()> const & onClick)
+guiImage(NPT<ImgC4UC> const & imgN,Sfun<void(Vec2F)> const & onClick)
 {
-    GuiImage       gai;
+    GuiImage                gai;
     gai.imgN = imgN;
     gai.updateFill = makeUpdateFlag(imgN);
     gai.onClick = onClick;
@@ -200,9 +195,12 @@ guiImage(NPT<ImgC4UC> imgN,Sfun<void()> const & onClick)
 }
 
 GuiPtr
-guiImage(NPT<ImgC4UC> imgN,IPT<Vec2Fs> ptsIucsN,std::function<void()> onClick)
+guiImage(
+    NPT<ImgC4UC> const &        imgN,
+    IPT<Vec2Fs> const &         ptsIucsN,
+    Sfun<void(Vec2F)> const &   onClick)
 {
-    GuiImage       gai;
+    GuiImage                gai;
     gai.imgN = imgN;
     gai.allowMouseCtls = true;
     gai.offsetN = makeIPT(Vec2I());
@@ -211,7 +209,8 @@ guiImage(NPT<ImgC4UC> imgN,IPT<Vec2Fs> ptsIucsN,std::function<void()> onClick)
     gai.pyramidN = link1_<ImgC4UC,ImgC4UCs>(gai.imgN,linkPyramid2);
     gai.pointsN = ptsIucsN;
     gai.dispN = link3_<ImgC4UC,ImgC4UCs,uint,Vec2Fs>(gai.pyramidN,gai.currLevelN,gai.pointsN,linkDisp2);
-    gai.onClick = onClick;
+    if (onClick)
+        gai.onClick = onClick;
     gai.updateFill = makeUpdateFlag(gai.imgN,gai.currLevelN);
     gai.updateNofill = makeUpdateFlag(gai.offsetN,gai.pointsN);
     return guiMakePtr(gai);

@@ -119,7 +119,7 @@ regressSave(Ustring const & fname,T const & val)
 
 template<>
 inline void
-regressSave(Ustring const & path,const ImgC4UC & img)
+regressSave(Ustring const & path,ImgC4UC const & img)
 {saveImage(path,img); }
 
 // Developers with source control create this (empty) flag file locally:

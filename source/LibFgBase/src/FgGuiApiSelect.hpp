@@ -18,9 +18,10 @@ GuiImplPtr guiGetOsImpl(GuiSelect const & guiApi);
 
 struct  GuiSelect : GuiBase
 {
-    Svec<GuiPtr>        wins;
-    IPT<size_t>      selection;
-    DfgFPtr             updateFlag;
+    GuiPtrs             wins;
+    NPTF<size_t>        selection;
+
+    GuiSelect(GuiPtrs const & w,NPT<size_t> const & s) : wins(w), selection(s) {}
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
@@ -28,13 +29,9 @@ struct  GuiSelect : GuiBase
 
 inline
 GuiPtr
-guiSelect(IPT<size_t> select,const Svec<GuiPtr> & wins)
+guiSelect(IPT<size_t> select,GuiPtrs const & wins)
 {
-    GuiSelect    ret;
-    ret.wins = wins;
-    ret.selection = select;
-    ret.updateFlag = makeUpdateFlag(ret.selection);
-    return std::make_shared<GuiSelect>(ret);
+    return std::make_shared<GuiSelect>(wins,select);
 }
 
 }

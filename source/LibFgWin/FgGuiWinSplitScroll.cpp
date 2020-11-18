@@ -143,7 +143,6 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
         if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitScroll::WM_CREATE" << fgpush;
             hwndThis = hwnd;
-            FGASSERT(m_panes.empty());
             GuiPtrs   panes = m_api.getPanes();
             m_panes.resize(panes.size());
             m_panesVisible.resize(panes.size());

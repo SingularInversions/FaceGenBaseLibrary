@@ -8,7 +8,19 @@
 #ifndef FGCMP_HPP
 #define FGCMP_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgTypes.hpp"
+
+namespace Fg {
+
+enum struct Cmp {lt,eq,gt};
+
+template<typename T,
+    FG_ENABLE_IF(T,is_arithmetic)
+>
+Cmp
+cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cmp::eq); }
+
+}
 
 #define FGORDERED1(T,A)                                                                                 \
     bool operator<(T const & r) const {return (A < r.A); }                                              \

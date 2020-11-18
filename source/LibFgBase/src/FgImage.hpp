@@ -17,43 +17,20 @@
 namespace Fg {
 
 std::ostream &
-operator<<(std::ostream &,const ImgC4UC &);
+operator<<(std::ostream &,ImgC4UC const &);
 
-inline
-AffineEw2F
-cOicsToIucs()
-{return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
+// Create image coordinate affine transforms (see FgCoordSystem.hpp)
+AffineEw2D          cIpcsToIucsXf(Vec2UI dims);
+AffineEw2F          cIrcsToIucsXf(Vec2UI imageDims);
+AffineEw2D          cIucsToIrcsXf(Vec2UI ircsDims);
+AffineEw2F          cIucsToIpcsXf(Vec2UI dims);
+AffineEw2F          cOicsToIucsXf();
 
-template<typename T>
-AffineEw<T,2>
-cIpcsToIucs(Vec2UI dims)
-{return AffineEw<T,2>{Mat<T,2,2>(0,dims[0],0,dims[1]),Mat<T,2,2>(0,1,0,1)}; }
-
-inline
-AffineEw2F
-cIucsToIpcs(Vec2UI dims)
-{return AffineEw2F(Mat22F(0,1,0,1),Mat22F(0,dims[0],0,dims[1])); }
-
-inline
-AffineEw2F
-cIrcsToIucs(Vec2UI imageDims)
-{return AffineEw2F(Mat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),Mat22F(0,1,0,1)); }
-
+// Transform image coordsinates:
 inline
 Vec2F
-cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord)
+cIucsToIrcsXf(Vec2UI ircsDims,Vec2F iucsCoord)
 {return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
-
-inline
-AffineEw2D
-cIucsToIrcs(Vec2UI ircsDims)
-{return AffineEw2D {Mat22D{0,1,0,1},Mat22D{-0.5,ircsDims[0]-0.5,-0.5,ircsDims[1]-0.5}}; }
-
-template<uint dim>
-inline
-AffineEw<float,dim>
-cIrcsToIpcs()
-{return AffineEw<float,dim>(Mat<float,dim,1>(1),Mat<float,dim,1>(0.5f)); }
 
 struct  CoordWgt
 {
@@ -89,7 +66,7 @@ sampleCull(I const & img,Vec2D ircs)
 // Bilinear interpolated alpha-weighted RGBA image sampling.
 // Source points outside image considered to have alpha zero:
 RgbaF
-sampleAlpha(const ImgC4UC & img,Vec2F coordIucs);
+sampleAlpha(ImgC4UC const & img,Vec2F coordIucs);
 
 // Sample an image with given matrix of coordinates (must be in image bounds) and weights:
 template<typename T>
@@ -164,11 +141,11 @@ interpolate(Img<T> const & i0,Img<T> const & i1,float val)
 
 // Shrink an image by 2x2 averaging blocks, rounding down the image size if odd:
 void
-imgShrink2(const ImgC4UC & src,ImgC4UC & dst);
+imgShrink2(ImgC4UC const & src,ImgC4UC & dst);
 
 inline
 ImgC4UC
-imgShrink2(const ImgC4UC & src)
+imgShrink2(ImgC4UC const & src)
 {
     ImgC4UC ret;
     imgShrink2(src,ret);
@@ -177,7 +154,7 @@ imgShrink2(const ImgC4UC & src)
 
 // Resampled 2x expansion. See 'magnify' for a unresampled.
 ImgC4UC
-fgExpand2(const ImgC4UC & src);
+fgExpand2(ImgC4UC const & src);
 
 // 2x image shrink using block average for types composed of floating point values.
 // Truncates last row/col if width/height not even.
@@ -214,11 +191,11 @@ ImgUC fgShrink2(const ImgUC & img);
 
 // Shrink an image by 1x2 averaging blocks, rounding down the image width if odd.
 ImgC4UC
-fgImgShrinkWid2(const ImgC4UC & src);
+fgImgShrinkWid2(ImgC4UC const & src);
 
 // Shrink an image by 2x1 averaging blocks, rounding down the image height if odd.
 ImgC4UC
-fgImgShrinkHgt2(const ImgC4UC & src);
+fgImgShrinkHgt2(ImgC4UC const & src);
 
 // Repeat each pixel value 'fac' times in both dimensions:
 template<class T>
@@ -232,7 +209,7 @@ fgImgMagnify(const Img<T> & img,size_t fac)
 }
 
 void
-imgConvert_(const ImgC4UC & src,ImgUC & dst);
+imgConvert_(ImgC4UC const & src,ImgUC & dst);
 
 void
 imgConvert_(const ImgUC & src,ImgC4UC & dst);
@@ -251,8 +228,8 @@ imgUcTo4Uc(ImgUC const & img)
 // pixel for shrinking dimensions, which effectively uses bilinear interpolation for dilating
 // dimensions:
 void
-fgImgResize(
-    const ImgC4UC & src,
+imgResize(
+    ImgC4UC const & src,
     ImgC4UC &       dst);   // MODIFIED
 
 void
@@ -266,8 +243,8 @@ fgImgGetIrcsToBounds(uint wid,uint hgt,const Mat22D & bounds);
 
 ImgC4UC
 fgImgApplyTransparencyPow2(
-    const ImgC4UC & colour,
-    const ImgC4UC & transparency);
+    ImgC4UC const & colour,
+    ImgC4UC const & transparency);
 
 Img<FgBool>
 mapAnd(const Img<FgBool> &,const Img<FgBool> &);
@@ -548,7 +525,7 @@ resampleToFit(const Img<T> & in,Vec2UI dims)
 {return resample(in,dims,imgScaleToFit(in.dims(),dims)); }
 
 bool
-fgImgApproxEqual(const ImgC4UC & img0,const ImgC4UC & img1,uint maxDelta=0);
+fgImgApproxEqual(ImgC4UC const & img0,ImgC4UC const & img1,uint maxDelta=0);
 
 template<class T>
 double
@@ -686,7 +663,7 @@ fgComposite(
 ImgC4UC
 fgResample(
     const Img2F &   map,    // Resample coordinates in OTCS, with (-1,-1) as invalid
-    const ImgC4UC &         src);
+    ImgC4UC const &         src);
 
 template<class T>
 void
@@ -718,7 +695,7 @@ fgAlphaWeight(ImgC4UC & img)
 
 // Does any pixel contain an alpha value less than 254 ? (returns false if empty)
 bool
-fgUsesAlpha(const ImgC4UC &,uchar minVal=254);
+fgUsesAlpha(ImgC4UC const &,uchar minVal=254);
 
 inline Vec4UC fgRed() {return Vec4UC(255,0,0,255); }
 inline Vec4UC fgGreen() {return Vec4UC(255,0,0,255); }
@@ -726,7 +703,7 @@ inline Vec4UC fgBlue() {return Vec4UC(255,0,0,255); }
 
 // Thickness must be an odd number:
 void
-paintCrosshair(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint thickness=1);
+paintCrosshair(ImgC4UC & img,Vec2I ircs);
 
 void
 paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
@@ -738,11 +715,11 @@ paintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
 // Smallest is when the largest dimension is of size 1 (smallest dim clamped to size 1).
 // Non power-of-2 dimensions are truncated when subsampled.
 Svec<ImgC4UC>
-fgMipMap(const ImgC4UC & img);
+cMipMap(ImgC4UC const & img);
 
 // Convert, no scaling:
 Img3F
-fgImgToF3(const ImgC4UC &);
+fgImgToF3(ImgC4UC const &);
 
 // Scale space image (3 channel float). Returns image pyramid from largest (same as source but smoothed)
 // to smallest dimension equal to 2. Non power of 2 dimensions are simply rounded down at each level:

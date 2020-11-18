@@ -118,12 +118,14 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
     create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
+        if (m_store.empty()) {      // First creation this session so check for saved state
+            double          rs;
+            if (loadBsaXml(store+".xml",rs,false))
+                if ((rs > 0.0) && (rs < 1.0))
+                    m_relSize = rs;
+        }
         m_store = store;
-        double      rs;
-        if (loadBsaXml(m_store+".xml",rs,false))
-            if ((rs > 0.0) && (rs < 1.0))
-                m_relSize = rs;
-        WinCreateChild   cc;
+        WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
         winCreateChild(parentHwnd,ident,this,cc);
@@ -190,7 +192,8 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
     virtual void
     saveState()
     {
-        saveBsaXml(m_store+".xml",m_relSize,false);
+        if (!m_store.empty())
+            saveBsaXml(m_store+".xml",m_relSize,false);
         m_pane0->saveState();
         m_pane1->saveState();
     }

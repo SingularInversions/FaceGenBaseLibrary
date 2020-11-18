@@ -69,7 +69,7 @@ getDateTimeFilename()
 }
 
 String
-getYearString()
+cYearString()
 {
     time_t          rawTime;
     time(&rawTime);
@@ -78,6 +78,26 @@ getYearString()
     oss << fmtTime->tm_year+1900;
     return oss.str();
 }
+
+String
+msToPrettyTime(uint64 durationInMilliseconds)
+{
+    double          d = durationInMilliseconds;
+    if (d < 1000.0)
+        return toStr(d) + " ms";
+    d /= 1000.0;
+    if (d < 60.0)
+        return toStrPrecision(d,4) + " s";
+    d /= 60.0;
+    if (d < 60.0)
+        return toStrPrecision(d,4) + " min";
+    d /= 60.0;
+    if (d < 24.0)
+        return toStrPrecision(d,4) + " hours";
+    d /= 24.0;
+    return toStrPrecision(d,4) + " days";
+}
+
 
 std::ostream &
 operator<<(std::ostream & os,const Timer & t)
@@ -89,7 +109,8 @@ operator<<(std::ostream & os,const Timer & t)
 void
 Timer::report(string const & label)
 {
-    fgout << fgnl << label << ": " << readMs() << "ms ";
+    uint64      duration = readMs();
+    fgout << fgnl << label << ": " << msToPrettyTime(duration);
     start();
 }
 

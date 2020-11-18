@@ -53,10 +53,10 @@ cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
 
 // Vertex normals are just approximated by a simple average of the facet normals of all
 // facets containing the vertex:
-Normals
+MeshNormals
 cNormals(Surfs const & surfs,Vec3Fs const & verts)
 {
-    Normals             norms;
+    MeshNormals             norms;
     norms.facet.resize(surfs.size());
     Vec3Ds              vertNorms(verts.size(),Vec3D(0));
     // Calculate facet normals and accumulate unnormalized vertex normals:

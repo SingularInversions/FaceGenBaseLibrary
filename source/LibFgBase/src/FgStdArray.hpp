@@ -16,18 +16,24 @@ template<typename T,size_t S>
 using Arr = std::array<T,S>;
 
 typedef Arr<uchar,2>        Arr2UC;
-typedef Arr<uchar,3>        Arr3UC;
-typedef Arr<uchar,4>        Arr4UC;
-
-typedef Arr<schar,3>        Arr3SC;
-
 typedef Arr<int,2>          Arr2I;
-typedef Arr<int,3>          Arr3I;
-typedef Arr<int,4>          Arr4I;
-
 typedef Arr<float,2>        Arr2F;
+typedef Arr<double,2>       Arr2D;
+
+typedef Arr<uchar,3>        Arr3UC;
+typedef Arr<schar,3>        Arr3SC;
+typedef Arr<int,3>          Arr3I;
 typedef Arr<float,3>        Arr3F;
+typedef Arr<double,3>       Arr3D;
+
+typedef Arr<uchar,4>        Arr4UC;
+typedef Arr<int,4>          Arr4I;
 typedef Arr<float,4>        Arr4F;
+typedef Arr<double,4>       Arr4D;
+
+inline Arr<bool,2>
+cTrueFalse()
+{return Arr<bool,2> {{true,false}}; }
 
 template<class T,size_t S>
 struct  Traits<Arr<T,S> >

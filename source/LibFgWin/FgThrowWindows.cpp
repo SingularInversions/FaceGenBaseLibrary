@@ -69,7 +69,7 @@ assertWindows(const char * fname,int line)
 void
 assertWinReturnZero(const char * fname,int line,long rval)
 {
-    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toStr(rval));
+    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toHexString(rval));
 }
 
 void

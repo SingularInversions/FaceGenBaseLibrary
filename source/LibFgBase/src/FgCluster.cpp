@@ -68,7 +68,7 @@ fgClusterDeploy(
         fileCopy(dd+files[ff],dest,true);
     }
     // Start workers:
-    string          args = fgMainArgs();
+    string          args = mainArgs();
     Strings          copyData;
     copyData.push_back("fgPush cc");
     copyData.push_back("fgPush " + name);

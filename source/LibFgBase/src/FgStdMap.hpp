@@ -69,7 +69,7 @@ template<class T,class W>
 void
 mapAccWeight_(std::map<T,W> & lhs,const std::map<T,W> & rhs)
 {
-    for (const auto & it : rhs)
+    for (auto const & it : rhs)
         mapAccWeight_(lhs,it.first,it.second);
 }
 

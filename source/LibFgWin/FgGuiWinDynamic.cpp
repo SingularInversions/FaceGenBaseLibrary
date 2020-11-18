@@ -19,12 +19,12 @@ namespace Fg {
 
 struct  GuiDynamicWin : public GuiBaseImpl
 {
-    GuiDynamic                  m_api;
-    GuiImplPtr                  m_win;
-    Ustring                    m_store;
-    HWND                        m_hwndParent;
-    Vec2I                    m_lastMoveLo;
-    Vec2I                    m_lastMoveSz;
+    GuiDynamic              m_api;
+    GuiImplPtr              m_win;
+    Ustring                 m_store;
+    HWND                    m_hwndParent;
+    Vec2I                   m_lastMoveLo;
+    Vec2I                   m_lastMoveSz;
 
     GuiDynamicWin(const GuiDynamic & api) :
         m_api(api)
@@ -47,7 +47,10 @@ struct  GuiDynamicWin : public GuiBaseImpl
 
     virtual void
     destroy()
-    {m_win->destroy(); }
+    {
+        if (m_win)
+            m_win->destroy();
+    }
 
     virtual Vec2UI
     getMinSize() const
@@ -70,6 +73,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
     virtual void
     updateIfChanged()
     {
+        FGASSERT(m_win);
         if (m_api.updateFlag->checkUpdate()) {
             // This function is only called by the parent if this window is visible:
             m_win->destroy();
@@ -85,6 +89,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
     moveWindow(Vec2I base,Vec2I size)
     {
 //fgout << fgnl << "GuiDynamicWin::moveWindow " << base << " , " << size << fgpush;
+        FGASSERT(m_win);
         m_lastMoveLo = base;
         m_lastMoveSz = size;
         m_win->moveWindow(base,size);
@@ -93,11 +98,17 @@ struct  GuiDynamicWin : public GuiBaseImpl
 
     virtual void
     showWindow(bool s)
-    {m_win->showWindow(s); }
+    {
+        FGASSERT(m_win);
+        m_win->showWindow(s);
+    }
 
     virtual void
     saveState()
-    {m_win->saveState(); }
+    {
+        if (m_win)
+            m_win->saveState();
+    }
 };
 
 GuiImplPtr

@@ -28,7 +28,7 @@ guiTickLabels(
     do {
         GuiTickLabel   t;
         t.pos = pos;
-        t.label = toStr(pos);
+        t.label = toStrPrecision(pos,3);
         ret.push_back(t);
         pos += spacing;
     }

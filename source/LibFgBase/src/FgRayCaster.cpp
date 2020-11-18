@@ -26,7 +26,7 @@ RayCaster::RayCaster(
     Meshes const &      meshes,
     SimilarityD         modelview,
     AffineEw2D          itcsToIucs_,
-    const Lighting &    lighting_,
+    Lighting const &    lighting_,
     RgbaF               background_,
     bool                useMaps_,
     bool                allShiny_)
@@ -57,7 +57,7 @@ RayCaster::RayCaster(
             materials.push_back(mesh.surfaces[ss].material);
         }
         Vec3Fs &           verts = vertss[mm];
-        verts = mapXft(mesh.verts,Affine3F(modelview.asAffine()));
+        verts = mapMul(Affine3F{modelview.asAffine()},mesh.verts);
         uvsPtrs[mm] = &mesh.uvs;
         normss[mm] = cNormals(mesh.surfaces,verts);
         Vec3Fs &           iucsVerts = iucsVertss[mm];
@@ -87,14 +87,14 @@ RayCaster::RayCaster(
 RgbaF
 RayCaster::cast(Vec2F posIucs) const
 {
-    FgBestN<float,Intersect,4>      best = closestIntersects(posIucs);
+    BestN<float,Intersect,4>      best = closestIntersects(posIucs);
     // Compute ray color:
     RgbaF               color = background;
     for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
         Intersect           isct = best[ii-1].second;
         Tris const &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
-        const Normals &     norms = normss[isct.triInd.meshIdx];
+        MeshNormals const &     norms = normss[isct.triInd.meshIdx];
         Vec3UI              vis = tris.posInds[isct.triInd.triIdx];
         // TODO: Use perspective-correct normal and UV interpolation (makes very little difference for small tris):
         Vec3F               n0 = norms.vert[vis[0]],
@@ -154,11 +154,11 @@ RayCaster::oecsToIucs(Vec3F posOecs) const
     return Vec3F(iucs[0],iucs[1],id);
 }
 
-FgBestN<float,RayCaster::Intersect,4>
+BestN<float,RayCaster::Intersect,4>
 RayCaster::closestIntersects(Vec2F posIucs) const
 {
     const TriInds &     triInds = grid[posIucs];
-    FgBestN<float,Intersect,4> best;
+    BestN<float,Intersect,4> best;
     for (TriInd ti : triInds) {
         Tris const &        tris = trisss[ti.meshIdx][ti.surfIdx];
         Vec3UI              vis = tris.posInds[ti.triIdx];

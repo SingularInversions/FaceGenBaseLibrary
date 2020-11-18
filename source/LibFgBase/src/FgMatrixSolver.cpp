@@ -19,6 +19,49 @@ using namespace std;
 
 namespace Fg {
 
+MatUT33D
+choleskyDecompose(MatS33D S)
+{
+    MatUT33D        U;
+    U.m[0] = sqrt(S.diag[0]);
+    U.m[1] = S.offd[0] / U.m[0];
+    U.m[2] = S.offd[1] / U.m[0];
+    double          tmp0 = S.diag[1] - sqr(S.offd[0])/S.diag[0];
+    U.m[3] = sqrt(tmp0);
+    double          tmp1 = S.offd[2] - S.offd[1]*S.offd[0]/S.diag[0];
+    U.m[4] = tmp1 / U.m[3];
+    U.m[5] = sqrt(S.diag[2] - sqr(S.offd[1])/S.diag[0] - sqr(tmp1)/tmp0);
+    return U;
+}
+
+void
+testCholesky(CLArgs const &)
+{
+    randSeedRepeatable();
+    double          resid1 = 0.0;
+    size_t          N = 1000;
+    for (size_t ii=0; ii<N; ++ii) {
+        MatS33D         spds = randMatSpd3D(3.0);
+        MatUT33D        ch = choleskyDecompose(spds);
+        MatS33D         lu = ch.luProduct();
+        Mat33D          out = lu.asMatrixC(),
+                        spd = spds.asMatrixC(),
+                        del = out - spd;
+        resid1 += cMag(del.m) / cMag(spd.m);
+        FGASSERT(isApproxEqualRelPrec(out,spd));
+    }
+    fgout << fgnl << "Cholesky unsafe RMS residual: " << sqrt(resid1/N);
+}
+
+Vec3D
+solve(MatS33D A,Vec3D b)
+{
+    MatUT33D            cd = choleskyDecompose(A);
+    MatUT33D            I = cd.inverse();
+    Vec3D               c = I.tranposeMul(b);
+    return I * c;
+}
+
 MatD
 EigsRsm::matrix() const
 {
@@ -99,7 +142,7 @@ testAsymEigs(CLArgs const &)
     EigsC<3>      eigs = cEigs(mat);
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
-    Mat33D        regress = cReal(eigs.vecs * fgDiagonal(eigs.vals) * fgHermitian(eigs.vecs));
+    Mat33D        regress = cReal(eigs.vecs * asDiagMat(eigs.vals) * fgHermitian(eigs.vecs));
     double          residual = cRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
@@ -166,9 +209,11 @@ testSymmEigen(CLArgs const & args)
 void
 fgMatrixSolverTest(CLArgs const & args)
 {
-    Cmds      cmds;
-    cmds.push_back(Cmd(testAsymEigs,"asym","Arbitrary real matrix eigensystem"));
-    cmds.push_back(Cmd(testSymmEigen,"symm","Real symmetric matrix eigensystem"));
+    Cmds        cmds {
+        {testCholesky,"chol","Cholesky 3x3 decomposition"},
+        {testAsymEigs,"asym","Arbitrary real matrix eigensystem"},
+        {testSymmEigen,"symm","Real symmetric matrix eigensystem"}
+    };
     doMenu(args,cmds,true);
 }
 

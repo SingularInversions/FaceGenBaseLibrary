@@ -4,6 +4,13 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Basic FBX export
+//
+// FBX CONVERTER 2013.3 Win64
+//  * Use this to convert between FBX ASCII and binary
+//  * Comes with several example files (click 'Add...')
+//  * GUI doesn't work so use CL in 'bin' subdir
+//
+
 
 #include "stdafx.h"
 #include "FgStdStream.hpp"
@@ -154,7 +161,7 @@ saveFbx(
             "            ReferenceInformationType: \"Direct\"\n"
             "            Normals: *" << mesh.verts.size()*3 << " {\n"
             "                a: ";
-        Normals     norms = cNormals(mesh);
+        MeshNormals     norms = cNormals(mesh);
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
             Vec3F    n = norms.vert[vv];
             if (vv > 0)

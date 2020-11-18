@@ -33,6 +33,11 @@ typedef std::uint16_t   uint16;
 typedef std::int32_t    int32;
 typedef std::uint32_t   uint32;
 
+// Shorter names for numeric_limits:
+uint constexpr          uintMax = std::numeric_limits<uint>::max();
+float constexpr         floatMax = std::numeric_limits<float>::max();
+double constexpr        doubleMax = std::numeric_limits<double>::max();
+
 // Useful if we need to initialize templated members only in the case of builtins:
 template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
 template<> inline void fgInitializeBuiltinsToZero(char & v) {v=0;}

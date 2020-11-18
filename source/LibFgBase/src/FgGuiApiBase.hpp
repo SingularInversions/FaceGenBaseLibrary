@@ -98,7 +98,7 @@ struct  GuiVal           // Combine a window and a related node
 // Defined in OS-specific code:
 void
 guiStartImpl(
-    Ustring const &             title,
+    NPT<Ustring>                titleN,
     GuiPtr                      gui,
     Ustring const &             store,          // Directory in which to store state
     GuiOptions const &          options=GuiOptions());

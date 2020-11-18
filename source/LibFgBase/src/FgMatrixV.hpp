@@ -72,7 +72,7 @@ struct  MatV
     resize(Vec2UI cols_rows)
     {resize(cols_rows[1],cols_rows[0]); }
 
-    Vec2UI       dims() const {return Vec2UI(ncols,nrows); }  // NB Order
+    Vec2UI          dims() const {return Vec2UI(nrows,ncols); }
     uint            numRows() const { return nrows; }
     uint            numCols() const { return ncols; }
     uint            numElems() const {return (nrows*ncols); }
@@ -176,56 +176,39 @@ struct  MatV
     MatV
     operator*(T v) const
     {
-        MatV<T> newMat(nrows,ncols);
-        for (uint ii=0; ii<m_data.size(); ii++)
-            newMat.m_data[ii] = m_data[ii] * v;
-        return newMat;
+        return MatV {nrows,ncols,m_data*v};
     }
 
     MatV
     operator+(const MatV & rhs) const
     {
-        MatV<T>    ret(nrows,ncols);
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
-        for (uint ii=0; ii<m_data.size(); ii++)
-            ret.m_data[ii] = m_data[ii] + rhs.m_data[ii];
-        return ret;
+        return MatV {nrows,ncols,m_data+rhs.m_data};
     }
 
     MatV
     operator-(const MatV & rhs) const
     {
-        MatV<T>    ret(nrows,ncols);
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
-        for (uint ii=0; ii<m_data.size(); ii++)
-            ret.m_data[ii] = m_data[ii] - rhs.m_data[ii];
-        return ret;
+        return MatV {nrows,ncols,m_data-rhs.m_data};
     }
 
-    const MatV &
+    void
     operator*=(T v)
-    {
-        for (uint ii=0; ii<m_data.size(); ii++)
-            m_data[ii] *= v;
-        return *this;
-    }
+    {m_data *= v; };
 
-    const MatV &
+    void
     operator+=(const MatV & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
-        for (uint ii=0; ii<m_data.size(); ii++)
-            m_data[ii] += rhs.m_data[ii];
-        return *this;
+        m_data += rhs.m_data;
     }
 
-    const MatV &
+    void
     operator-=(const MatV & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
-        for (uint ii=0; ii<m_data.size(); ii++)
-            m_data[ii] -= rhs.m_data[ii];
-        return *this;
+        m_data -= rhs.m_data;
     }
 
     void
@@ -726,7 +709,7 @@ fgModulateCols(
 
 template<class T>
 MatV<T>
-fgDiagonal(size_t dim,T const & val)
+asDiagMat(size_t dim,T const & val)
 {
     MatV<T>    ret(dim,dim,T(0));
     for (uint ii=0; ii<dim; ++ii)
@@ -736,7 +719,7 @@ fgDiagonal(size_t dim,T const & val)
 
 template<class T>
 MatV<T>
-fgDiagonal(Svec<T> const & vec)
+asDiagMat(Svec<T> const & vec)
 {
     uint            dim = uint(vec.size());
     MatV<T>    ret(dim,dim,T(0));
@@ -747,7 +730,7 @@ fgDiagonal(Svec<T> const & vec)
 
 template<class T>
 MatV<T>
-fgDiagonal(const MatV<T> & vec)
+asDiagMat(const MatV<T> & vec)
 {
     FGASSERT((vec.numRows() == 1) || (vec.numCols() == 1));
     uint            dim = vec.numRows() * vec.numCols();

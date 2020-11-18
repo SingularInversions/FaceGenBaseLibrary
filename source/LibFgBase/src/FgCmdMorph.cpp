@@ -47,7 +47,7 @@ anim(CLArgs const & args)
     }
     for (auto & mp : meshes) {
         Floats              coord(mp.second.numMorphs(),0);
-        for (const auto & rp : morphs) {
+        for (auto const & rp : morphs) {
             Valid<size_t>     idx = mp.second.findMorph(rp.first);
             if (idx.valid())
                 coord[idx.val()] = rp.second;
@@ -72,7 +72,7 @@ static
 void
 apply(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
         "    <ext>      - " + meshSaveFormatsCLDescription() + "\n"
         "    d          - Delta morph\n"
@@ -84,17 +84,17 @@ apply(CLArgs const & args)
         "      to the vertex list necessarily invalidates the morph data.\n"
         "    - Note that the index number of the same morph will be different for different meshes."
         );
-    string      inFile = syntax.next(),
-                outFile = syntax.next();
+    string      inFile = syn.next(),
+                outFile = syn.next();
     if (!checkExt(inFile,"tri"))
-        syntax.error("Not a TRI file",inFile);
+        syn.error("Not a TRI file",inFile);
     Mesh        mesh = loadTri(inFile);
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
                     targets(mesh.targetMorphs.size(),0.0f);
-    while (syntax.more()) {
-        Ustring    arg = syntax.nextLower();
-        uint        idx = syntax.nextAs<uint>();
-        float       val = syntax.nextAs<float>();
+    while (syn.more()) {
+        Ustring    arg = syn.nextLower();
+        uint        idx = syn.nextAs<uint>();
+        float       val = syn.nextAs<float>();
 
         //! Apply the morph:
         if (arg == "d") {
@@ -108,13 +108,13 @@ apply(CLArgs const & args)
             targets[idx] = val;
         }
         else
-            syntax.error("Invalid morph type",arg);
+            syn.error("Invalid morph type",arg);
     }
     mesh.verts = mesh.morph(deltas,targets);
     // The morphs are invalidated once the base verts are changed:
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
-    meshSaveAnyFormat(mesh,outFile);
+    saveMesh(mesh,outFile);
 }
 
 /**
@@ -148,7 +148,7 @@ clamp(CLArgs const & args)
                     closeSqr = sqr(scale / 10000.0f);
     set<uint>       clampVertInds;
     for (size_t ii=0; ii<mesh.verts.size(); ++ii)
-        if (kd.closest(mesh.verts[ii]).mag < closeSqr)
+        if (kd.findClosest(mesh.verts[ii]).distMag < closeSqr)
             clampVertInds.insert(uint(ii));
     for (Morph & morph : mesh.deltaMorphs)
         for (uint ii : clampVertInds)
@@ -164,8 +164,8 @@ static
 void
 clear(CLArgs const & args)
 {
-    Syntax    syntax(args,"<mesh>.tri");
-    string      name = syntax.next();
+    Syntax    syn(args,"<mesh>.tri");
+    string      name = syn.next();
     Mesh    mesh = loadTri(name);
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
@@ -180,7 +180,7 @@ static
 void
 copymorphs(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)*\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -191,33 +191,33 @@ copymorphs(CLArgs const & args)
         "    to the same semantic locations."
         );
 
-    string      nameIn = syntax.next(),
-                nameOut = syntax.next();
+    string      nameIn = syn.next(),
+                nameOut = syn.next();
     if (nameIn == nameOut)
-        syntax.error("Input and output meshes must be different");
+        syn.error("Input and output meshes must be different");
     Mesh    meshIn = loadTri(nameIn);
     Mesh    meshOut = loadTri(nameOut);
     if (meshIn.verts.size() != meshOut.verts.size())
-        syntax.error("Meshes have different vertex counts");
-    if (!syntax.more()) {           // All morphs
+        syn.error("Meshes have different vertex counts");
+    if (!syn.more()) {           // All morphs
         meshOut.deltaMorphs = meshIn.deltaMorphs;
         meshOut.targetMorphs = meshIn.targetMorphs;
     }
-    while (syntax.more()) {
+    while (syn.more()) {
         bool        delta = true;
-        if (syntax.next() == "t")
+        if (syn.next() == "t")
             delta = false;
-        else if (syntax.curr() != "d")
-            syntax.error("Invalid morph type flag",syntax.curr());
-        size_t      idx = syntax.nextAs<size_t>();
+        else if (syn.curr() != "d")
+            syn.error("Invalid morph type flag",syn.curr());
+        size_t      idx = syn.nextAs<size_t>();
         if (delta) {
             if (idx >= meshIn.deltaMorphs.size())
-                syntax.error("Invalid delta morph index",toStr(idx));
+                syn.error("Invalid delta morph index",toStr(idx));
             meshOut.addDeltaMorph(meshIn.deltaMorphs[idx]);
         }
         else {
             if (idx >= meshIn.targetMorphs.size())
-                syntax.error("Invalid target morph index",toStr(idx));
+                syn.error("Invalid target morph index",toStr(idx));
             meshOut.addTargMorph(meshIn.targetMorphs[idx]);
         }
     }
@@ -232,7 +232,7 @@ static
 void
 create(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
         "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
         "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
@@ -240,15 +240,15 @@ create(CLArgs const & args)
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         );
-    string      baseName = syntax.next();
+    string      baseName = syn.next();
     Mesh    base = loadTri(baseName);
-    Mesh    target = loadMesh(syntax.next());
+    Mesh    target = loadMesh(syn.next());
     if (base.verts.size() != target.verts.size())
         fgThrow("Different number of vertices between base and target");
     bool        ignoreSmall = false;
-    if (syntax.peekNext() == "-i") {
+    if (syn.peekNext() == "-i") {
         ignoreSmall = true;
-        syntax.next();
+        syn.next();
     }
     float       baseSz = cMaxElem(cDims(base.verts)),
                 delSz = cMaxElem(cDims(target.verts-base.verts));
@@ -260,17 +260,17 @@ create(CLArgs const & args)
         else
             fgout << "WARNING: Very small or zero morph";
     }
-    string      type = syntax.next();
+    string      type = syn.next();
     if (type == "d") {
         Morph    m;
-        m.name = syntax.next();
+        m.name = syn.next();
         m.verts = target.verts - base.verts;
         base.deltaMorphs.push_back(m);
     }
     else if (type == "t")
-        base.addTargMorph(syntax.next(),target.verts);
+        base.addTargMorph(syn.next(),target.verts);
     else
-        syntax.error("Unrecognized morph type",type);
+        syn.error("Unrecognized morph type",type);
     saveTri(baseName,base);
 }
 
@@ -282,7 +282,7 @@ static
 void
 extract(CLArgs const & args)
 {
-    Syntax    syntax(args,"<mesh>.tri <ext> [<base>]\n"
+    Syntax    syn(args,"<mesh>.tri <ext> [<base>]\n"
         "    <ext> - Output format " + meshSaveFormatsCLDescription() + "\n"
         "OUTPUTS:\n"
         "    <mesh>_<name>.<ext> for each morph target, or\n"
@@ -290,11 +290,11 @@ extract(CLArgs const & args)
         "NOTES:\n"
         "    ':', '(' and ')' characters are stripped from the morph names."
     );
-    string      meshName = syntax.next(),
-                ext = syntax.next();
+    string      meshName = syn.next(),
+                ext = syn.next();
     Ustring    baseName = pathToBase(meshName);
-    if (syntax.more())
-        baseName = syntax.next();
+    if (syn.more())
+        baseName = syn.next();
     Mesh    base = loadTri(meshName),
                 out = base;
     out.deltaMorphs.clear();
@@ -302,8 +302,31 @@ extract(CLArgs const & args)
     for (size_t ii=0; ii<base.numMorphs(); ++ii) {
         out.verts = base.morphSingle(ii);
         Ustring    morphName = removeChars(base.morphName(ii),":()");
-        meshSaveAnyFormat(out,baseName+"_"+morphName+"."+ext);
+        saveMesh(out,baseName+"_"+morphName+"."+ext);
     }
+}
+
+/**
+   \ingroup Base_Commands
+   Filter out morphs that do nothing
+ */
+static
+void
+filter(CLArgs const & args)
+{
+    Syntax    syn(args,"<in>.tri <out>.tri\n"
+        "NOTES:\n"
+        "    Removes all delta morphs that have little or no effect."
+    );
+    Mesh            in = loadTri(syn.next()),
+                    out = in;
+    out.deltaMorphs.clear();
+    float           dim = cMaxElem(cDims(in.verts)),
+                    minDelta = dim * 0.001;
+    for (Morph const & morph : in.deltaMorphs)
+        if (cMaxElem(cMax(morph.verts)) > minDelta)
+            out.deltaMorphs.push_back(morph);
+    saveTri(syn.next(),out);
 }
 
 /**
@@ -314,20 +337,18 @@ static
 void
 morphList(CLArgs const & args)
 {
-    Syntax    syntax(args,
-            "<mesh>.tri\n"
-            "    Show available delta and target morphs\n");
+    Syntax                  syn(args,
+        "<mesh>.(tri|fgmesh)\n"
+        "    Show available delta and target morphs\n");
     if (args.size() != 2)
-        syntax.incorrectNumArgs();
-    string      inFile = syntax.next();
-    if (!checkExt(inFile,"tri"))
-        syntax.error("Not a TRI file",inFile);
-    Mesh    mesh = loadTri(inFile);
-    const vector<Morph> & dmorphs = mesh.deltaMorphs;
+        syn.incorrectNumArgs();
+    string                  inFile = syn.next();
+    Mesh                    mesh = loadMesh(inFile);
+    Morphs const &          dmorphs = mesh.deltaMorphs;
     fgout << fgnl << dmorphs.size() << " delta morphs:" << fgpush;
     for (size_t ii=0; ii<dmorphs.size(); ++ii)
         fgout << fgnl << toStrDigits(ii,2) << " " << dmorphs[ii].name;
-    const vector<IndexedMorph> &   tmorphs = mesh.targetMorphs;
+    IndexedMorphs const &   tmorphs = mesh.targetMorphs;
     fgout << fgpop << fgnl << tmorphs.size() << " target morphs:" << fgpush;
     for (size_t ii=0; ii<tmorphs.size(); ++ii)
         fgout << fgnl << toStrDigits(ii,2) << " " << tmorphs[ii].name;
@@ -342,17 +363,17 @@ static
 void
 removebrackets(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<meshIn>.tri <meshOut>.tri\n"
         );
-    Mesh            mesh = loadTri(syntax.next());
-    vector<Morph> &   dms = mesh.deltaMorphs;
+    Mesh            mesh = loadTri(syn.next());
+    Morphs &   dms = mesh.deltaMorphs;
     for (size_t ii=0; ii<dms.size(); ++ii)
         dms[ii].name = removeChars(removeChars(dms[ii].name,'('),')');
-    vector<IndexedMorph> &    tms = mesh.targetMorphs;
+    IndexedMorphs &    tms = mesh.targetMorphs;
     for (size_t ii=0; ii<tms.size(); ++ii)
         tms[ii].name = removeChars(removeChars(tms[ii].name,'('),')');
-    meshSaveAnyFormat(mesh,syntax.next());
+    saveMesh(mesh,syn.next());
 }
 
 /**
@@ -363,25 +384,25 @@ static
 void
 removemorphs(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)+\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)"
         );
 
-    string      inFile = syntax.next(),
-                outFile = syntax.next();
+    string      inFile = syn.next(),
+                outFile = syn.next();
     if (!checkExt(inFile,"tri"))
-        syntax.error("Not a TRI file",inFile);
+        syn.error("Not a TRI file",inFile);
     if (!checkExt(outFile,"tri"))
-        syntax.error("Not a TRI file",outFile);
+        syn.error("Not a TRI file",outFile);
     Mesh    mesh = loadTri(inFile);
     vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
                     targets(mesh.targetMorphs.size(),true);
-    while (syntax.more()) {
-        Ustring    arg = syntax.nextLower();
-        uint        idx = syntax.nextAs<uint>();
+    while (syn.more()) {
+        Ustring    arg = syn.nextLower();
+        uint        idx = syn.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
                 fgThrow("Delta morph index out of bounds",toStr(idx));
@@ -393,7 +414,7 @@ removemorphs(CLArgs const & args)
             targets[idx] = false;
         }
         else
-            syntax.error("Invalid morph type",arg);
+            syn.error("Invalid morph type",arg);
     }
     Mesh                meshOut = mesh;
     meshOut.deltaMorphs.clear();
@@ -404,7 +425,7 @@ removemorphs(CLArgs const & args)
     for (size_t ii=0; ii<targets.size(); ++ii)
         if (targets[ii])
             meshOut.targetMorphs.push_back(mesh.targetMorphs[ii]);
-    meshSaveAnyFormat(meshOut,outFile);
+    saveMesh(meshOut,outFile);
 }
 
 /**
@@ -415,30 +436,30 @@ static
 void
 renameMorph(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax    syn(args,
         "<mesh>.tri (d | t) <index> <name>\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)"
         );
-    string      fname = syntax.next();
+    string      fname = syn.next();
     if (!checkExt(fname,"tri"))
-        syntax.error("Not a TRI file",fname);
+        syn.error("Not a TRI file",fname);
     Mesh    mesh = loadTri(fname);
-    Ustring    arg = syntax.nextLower();
-    uint        idx = syntax.nextAs<uint>();
+    Ustring    arg = syn.nextLower();
+    uint        idx = syn.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
             fgThrow("Delta morph index out of bounds",toStr(idx));
-        mesh.deltaMorphs[idx].name = syntax.next();
+        mesh.deltaMorphs[idx].name = syn.next();
     }
     else if (arg == "t") {
         if (idx >= mesh.targetMorphs.size())
             fgThrow("Target morph index out of bounds",toStr(idx));
-        mesh.targetMorphs[idx].name = syntax.next();
+        mesh.targetMorphs[idx].name = syn.next();
     }
     else
-        syntax.error("Invalid morph type",arg);
+        syn.error("Invalid morph type",arg);
     saveTri(fname,mesh);
 }
 
@@ -454,6 +475,7 @@ morph(CLArgs const & args)
         {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
         {create,"create","Create morphs for a mesh"},
         {extract,"extract","Extract all morphs to named files"},
+        {filter,"filter","Filter out delta morphs that do nothing"},
         {morphList,"list","List available morphs in a mesh"},
         {removemorphs,"remove","Remove morphs from a mesh"},
         {removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"},

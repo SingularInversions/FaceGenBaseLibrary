@@ -16,10 +16,19 @@
 
 namespace Fg {
 
+enum struct AlbedoMode {
+    map    = 0,
+    none   = 1,
+    byMesh = 2,
+    bySurf = 3,
+};
+
+Ustrings     cAlbedoModeLabels();
+
 struct  RendOptions
 {
     bool            facets;
-    bool            useTexture;
+    AlbedoMode      albedoMode = AlbedoMode::map;
     bool            shiny;
     bool            wireframe;
     bool            flatShaded;
@@ -28,8 +37,6 @@ struct  RendOptions
     bool            allVerts;
     bool            twoSided;
     Vec3F           backgroundColor;    // Elements in [0,1]
-    // Set by render impl not by client:
-    bool            colorBySurface=false;
     bool            showAxes=false;
 };
 
@@ -59,14 +66,15 @@ struct  BackgroundImage
 
 struct  RendSurf
 {
-    NPT<ImgC4UC>            albedoMap;                  // Image can be empty
-    DfgFPtr                 albedoMapFlag;
+    NPTF<ImgC4UC>           smoothMapN;                 // Albedo without texture. Image can be empty
     NPT<bool>               albedoHasTransparencyN;     // False if image is empty
-    NPT<ImgC4UC>            specularMap;                // Image can be empty
-    DfgFPtr                 specularMapFlag;
+    NPTF<ImgC4UC>           modulationMapN;             // Image can be empty
+    NPTF<ImgC4UC>           specularMapN;               // Image can be empty
     // Can't use std::any here since 'gpuData' uses unique_ptr which can't be copy-constructed.
     // The shared_ptr used for Any's reference semantics is overkill (we only ever want one copy)
-    // so one could create a no-copy-constructor version of std::any and use that instead:
+    // so one could create a no-copy-constructor version of std::any and use that instead.
+    // Also note that on 3D window shutdown this data is destructed only after the GPU context is destructed,
+    // so the GPU object must hand that (D3D is easy since you just call ClearState()).
     Sptr<Any>               gpuData = std::make_shared<Any>();
 };
 typedef Svec<RendSurf>  RendSurfs;
@@ -78,7 +86,7 @@ struct  RendMesh
     NPT<Vec3Fs>             posedVertsN;
     DfgFPtr                 surfVertsFlag;      // Must point to 'posedVertsN'
     DfgFPtr                 allVertsFlag;       // "
-    NPT<Normals>            normalsN;
+    NPT<MeshNormals>        normalsN;
     Sptr<Any>               gpuData = std::make_shared<Any>();
     RendSurfs               rendSurfs;
 };
@@ -114,16 +122,19 @@ struct  Gui3d : GuiBase
     RPT<Lighting>               light;
     NPT<Camera>                 xform;
     RPT<RendOptions>            renderOptions;
-    IPT<bool>                   colorBySurface {false}; // Render each surface within a mesh a different color
-    NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam
+    NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam, 3 - fill
     NPT<Ustring>                pointLabel;     // Label for surface point creation
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
-    struct  Capture {
-        Sfun<ImgC4UC(Vec2UI)>   getImg;
+    struct  Capture {           // Put in struct for easier syntax to call a std::function
+        // First argument is desired pixel size, second is background transparency option:
+        Sfun<ImgC4UC(Vec2UI,bool)>   func;
     };
     // Will contain the functions for capturing current render once the GPU is set up:
     Sptr<Capture> const         capture = std::make_shared<Capture>();
+    // If defined, will be called with the filename when the user drops it on the 3D window:
+    Sfun<void(Ustring const &)> fileDragDrop;
+
 
     // Modified (by mouse/keyboard commands processed by viewport):
     IPT<double>                 panDegrees;

@@ -153,21 +153,42 @@ struct  FgOutMute
     {release(); }
 };
 
-struct  OutPush
+struct  PushIndent
 {
-    explicit
-    OutPush(const std::string & label)
-    {fgout << fgnl << label << fgpush; }
+    size_t          depth = 1;
 
-    ~OutPush()
-    {fgout << fgpop; }
+    explicit
+    PushIndent(const std::string & label)
+    {fgout << fgnl << label << std::flush << fgpush; }
+
+    ~PushIndent()
+    {pop(); }
+
+    void
+    next(const std::string & nextLabel) const
+    {
+        if (depth > 0)
+            fgout << fgpop;
+        fgout << fgnl << nextLabel << std::flush;
+        if (depth > 0)
+            fgout << fgpush;
+    }
+
+    void
+    pop()
+    {
+        if (depth > 0) {
+            fgout << fgpop;
+            --depth;
+        }
+    }
 };
 
 struct  PushLogFile
 {
     explicit
-    PushLogFile(std::string const & fname)
-    {fgout.logFile(fname,false,false); }
+    PushLogFile(std::string const & fname,bool append=false)
+    {fgout.logFile(fname,append,false); }
 
     ~PushLogFile()
     {fgout.logFileClose(); }

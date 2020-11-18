@@ -149,13 +149,21 @@ struct  Dir
 };
 
 bool
-getCreationTime(Ustring const &,uint64 &)
+getCreationTimePrecise(Ustring const &,uint64 &)
 {
     throw FgExceptionNotImplemented();
     return false;
 }
 
-std::time_t
+uint64
+getCreationTime(Ustring const & path)
+{
+    uint64          tn;
+    FGASSERT(getCreationTimePrecise(path,tn));
+    return tn;
+}
+
+uint64
 getLastWriteTime(Ustring const & path)
 {return boost::filesystem::last_write_time(path.ns()); }
 

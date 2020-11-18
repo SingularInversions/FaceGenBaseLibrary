@@ -35,7 +35,7 @@ guiImageFormat(string const & label,bool warnTransparency,Ustring const & store)
     }
     if (warnTransparency)
         descs[1] += " (no transparency)";
-    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPT<size_t>(0,store);
+    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPTEub<size_t>(0,store,descs.size());
     ret.win = guiGroupbox(label,guiRadio(descs,idxN));
     ret.valN = link1<size_t,string>(idxN,[=](size_t const & idx){return exts.at(idx);});
     return ret;
@@ -96,7 +96,7 @@ fgTestmGui2(CLArgs const &)
                 tab1 = guiSplit(true,left,img),
                 tab2 = guiSplit(false,txt,sliders),
                 win = guiTabs(svec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));
-    guiStartImpl("GUI2 testm",win,getDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
+    guiStartImpl(makeIPT<Ustring>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
 }
 
 }

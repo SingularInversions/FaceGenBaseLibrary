@@ -70,10 +70,10 @@ Channel 8
 }
 
 Plugin DisplacementHandler 1 LW_MorphMixer
-69
+53
 1
 { Group
-  69
+  53
   "Miscellaneous"
 }
 { MorfForm
@@ -185,15 +185,6 @@ Plugin DisplacementHandler 1 LW_MorphMixer
   }
 }
 { MorfForm
-  "Expression.Jaw Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
   "Expression.Kiss"
   0
   { Envelope
@@ -204,15 +195,6 @@ Plugin DisplacementHandler 1 LW_MorphMixer
 }
 { MorfForm
   "Expression.Mouth Left"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Expression.Mouth Right"
   0
   { Envelope
     1
@@ -293,97 +275,7 @@ Plugin DisplacementHandler 1 LW_MorphMixer
   }
 }
 { MorfForm
-  "Expression.Sneer Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
   "Expression.Surprise"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Brow Lowerer (AU04)"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Brow Lowerer (AU04) Left"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Brow Lowerer (AU04) Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Brow Raiser Inner (AU01)"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Brow Raiser Outer (AU02)"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.BrowIn Left"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.BrowIn Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.BrowUp Left"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.BrowUp Right"
   0
   { Envelope
     1
@@ -420,24 +312,6 @@ Plugin DisplacementHandler 1 LW_MorphMixer
 }
 { MorfForm
   "Modifier.Dimpler (AU14) Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Ears Out"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Eyebrows Tented"
   0
   { Envelope
     1
@@ -519,24 +393,6 @@ Plugin DisplacementHandler 1 LW_MorphMixer
 }
 { MorfForm
   "Modifier.Smirk Left"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Smirk Right"
-  0
-  { Envelope
-    1
-    Key 0 0 0 0 0 0 0 0 0
-    Behaviors 1 1
-  }
-}
-{ MorfForm
-  "Modifier.Upper Lid Raiser (AU05)"
   0
   { Envelope
     1

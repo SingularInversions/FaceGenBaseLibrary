@@ -21,7 +21,6 @@ struct  GuiTabDef
     uint            padRight;
     uint            padTop;
     uint            padBottom;
-    std::function<void()>     onSelect;   // If non-null, called when this tab is selected
 
     GuiTabDef()
     : padLeft(1), padRight(1), padTop(1), padBottom(1)

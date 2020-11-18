@@ -52,7 +52,7 @@ savePly(
         "property list uchar float texcoord\n"
         "property int texnumber\n"
         "end_header\n";
-    Normals         norms = cNormals(mesh);
+    MeshNormals         norms = cNormals(mesh);
     for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
         Vec3F    pos = mesh.verts[vv],
                     nrm = norms.vert[vv];

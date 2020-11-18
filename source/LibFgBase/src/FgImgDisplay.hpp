@@ -15,7 +15,7 @@
 
 namespace Fg {
 
-void    imgDisplay(const ImgC4UC &,Svec<Vec2F> ptsIucs=Svec<Vec2F>());
+void    imgDisplay(ImgC4UC const &,Svec<Vec2F> ptsIucs=Svec<Vec2F>());
 void    imgDisplay(const ImgUC &);
 void    imgDisplay(const Img<ushort> &);
 void    imgDisplay(const ImgF &);

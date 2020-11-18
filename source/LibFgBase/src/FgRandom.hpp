@@ -61,8 +61,18 @@ randBool();
 double
 randNearUnit();
 
-Svec<double>
+Doubles
 randNearUnits(size_t num);
+
+template<size_t S>
+Arr<double,S>
+randNearUnitsArr()
+{
+    Arr<double,S>       ret;
+    for (size_t ss=0; ss<S; ++ss)
+        ret[ss] = randNearUnit();
+    return ret;
+}
 
 }
 

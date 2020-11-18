@@ -124,8 +124,9 @@ template <class T>
 std::ostream& operator<<(std::ostream& s,const Quaternion<T> & q)
 {return (s << q.asVec4()); }
 
-typedef Quaternion<float>    QuaternionF;
-typedef Quaternion<double>   QuaternionD;
+typedef Quaternion<float>       QuaternionF;
+typedef Quaternion<double>      QuaternionD;
+typedef Svec<QuaternionD>       QuaternionDs;
 
 inline
 QuaternionD
@@ -145,7 +146,7 @@ cRotateZ(double radians)
 // Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
 // Useful for rotation prior.
 double
-tanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
+tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
 
 template<typename T>
 Mat<T,4,4>

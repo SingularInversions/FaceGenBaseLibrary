@@ -23,6 +23,7 @@
 // C++ standard libraries:
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <codecvt>
 #include <complex>
@@ -30,6 +31,7 @@
 #include <exception>
 #include <fstream>
 #include <functional>
+#include <future>
 #include <iomanip>
 #include <iostream>
 #include <iterator>

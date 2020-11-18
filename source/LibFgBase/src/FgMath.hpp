@@ -124,12 +124,13 @@ cMod(T val,T divisor)
     return val - divisor * div;
 }
 
-inline double constexpr pi()        {return 3.141592653589793237462643; }
-inline double constexpr ln2Pi()     {return 1.837877066409345483560659; }
-inline double constexpr sqrt2Pi()   {return 2.506628274631000502415765; }
-inline double constexpr exp1()      {return 2.718281828459045235360287; }
-inline double   degToRad(double degrees) {return degrees * pi() / 180.0; }
-inline float    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
+// constexpr functions are always inline:
+double constexpr    pi()        {return 3.141592653589793237462643; }
+double constexpr    ln2Pi()     {return 1.837877066409345483560659; }
+double constexpr    sqrt2Pi()   {return 2.506628274631000502415765; }
+double constexpr    exp1()      {return 2.718281828459045235360287; }
+double constexpr    degToRad(double degrees) {return degrees * pi() / 180.0; }
+float  constexpr    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
 struct   Modulo
 {
@@ -236,8 +237,9 @@ inline uint64 cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
 inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
 // Avoid extra typing:
-inline double epsilonD() {return std::numeric_limits<double>::epsilon(); }
-inline float maxFloat() {return std::numeric_limits<float>::max(); }
+inline double constexpr epsilonD() {return std::numeric_limits<double>::epsilon(); }
+inline float constexpr maxDouble() {return std::numeric_limits<double>::max(); }
+inline float constexpr maxFloat() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
 Doubles

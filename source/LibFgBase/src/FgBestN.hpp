@@ -14,7 +14,7 @@
 namespace Fg {
 
 template<class Key,class Val,uint MaxNum>
-struct      FgBestN
+struct      BestN
 {
     uint                    m_num = 0;          // How many valid values do we have ?
     std::pair<Key,Val>      m_best[MaxNum];
@@ -63,10 +63,40 @@ struct      FgBestN
     }
 };
 
+template<class Key,class Val,class Cmp=std::less<Key> >
+struct      BestV
+{
+    size_t                      maxNum;
+    Svec<std::pair<Key,Val> >   best;
+
+    BestV(size_t maxNum_) : maxNum(maxNum_) {}
+
+    bool
+    update(Key key,Val const & val)
+    {
+        for (uint ii=0; ii<best.size(); ++ii) {
+            if (Cmp{}(key,best[ii].first)) {
+                best.insert(best.begin()+ii,std::make_pair(key,val));
+                if (best.size() > maxNum)
+                    best.resize(maxNum);
+                return true;
+            }
+        }
+        if (best.size() < maxNum) {
+            best.push_back(std::make_pair(key,val));
+            return true;
+        }
+        return false;
+    }
+
+    Svec<Val>
+    vals() const
+    {return sliceMember(best,&std::pair<Key,Val>::second); }
+};
 
 // Keep the value corresponding to the minimum key:
 template<class Key,class Val>
-class   FgMin
+class   Min
 {
     Key     m_key = std::numeric_limits<Key>::max();
     Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
@@ -85,6 +115,10 @@ public:
     valid() const
     {return (m_key != std::numeric_limits<Key>::max()); }
 
+    Key
+    key() const
+    {return m_key; }
+
     const Val &
     val()
     {
@@ -94,7 +128,7 @@ public:
 };
 
 template<class Key,class Val>
-class   FgMax
+class   Max
 {
     Key     m_key = std::numeric_limits<Key>::lowest();
     Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized

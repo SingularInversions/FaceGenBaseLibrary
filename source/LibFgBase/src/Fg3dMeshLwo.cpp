@@ -102,7 +102,7 @@ static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
 static bool swap2BytesWrite(FILE *fptr, const void *ptr);
 static int  writeVx(FILE *fptr, unsigned long idx);
-static bool writeVec12(FILE *fptr, const Vec3F &vect);
+static bool writeVec12(FILE *fptr, Vec3F const &vect);
 static bool writeVec8(FILE *fptr, const Vec2F &vect);
 static bool padByte(FILE *fptr)
             { char byte=0; return (fwrite(&byte,1,1,fptr) == 1); }
@@ -497,7 +497,7 @@ static int  writeVx(FILE *fptr, unsigned long idx)
 //****************************************************************************
 //                              writeVec12
 //****************************************************************************
-static bool writeVec12(FILE *fptr, const Vec3F &vect)
+static bool writeVec12(FILE *fptr, Vec3F const &vect)
 {
     if (!swap4BytesWrite(fptr,&vect[0]))
         return false;
@@ -846,9 +846,9 @@ static bool writeVmapTxuvChunks(
             // Build a temporary per-vertex mapping.  Incorrect ones
             // will be remapped by the VMAD chunk.
             const vector<Vec2F> &txt = model.getTextCoord(obj);
-            const vector<Vec3UI> &tris = model.getTriList(obj);
+            Vec3UIs const &tris = model.getTriList(obj);
             const vector<Vec4UI> &quads = model.getQuadList(obj);
-            const vector<Vec3UI> &txtTris = model.getTexTriList(obj);
+            Vec3UIs const &txtTris = model.getTexTriList(obj);
             const vector<Vec4UI> &txtQuads = model.getTexQuadList(obj);
             for (unsigned long tt=0; tt<tris.size(); ++tt)
             {
@@ -1099,7 +1099,7 @@ static bool writePolsChunks(
         // Note: Lightwave requires the poly to be posed clockwise.
 
         unsigned short polySize = 3;
-        const vector<Vec3UI> &triList = model.getTriList(obj);
+        Vec3UIs const &triList = model.getTriList(obj);
         for (unsigned long tri=0; tri<triList.size(); ++tri)
         {
             if (!swap2BytesWrite(fptr,&polySize))
@@ -1290,8 +1290,8 @@ static bool writeVmadChunks(
     vector<Vec2F>      texList;
     unsigned long obj = objIdx;
 
-    const vector<Vec3UI> &triList = model.getTriList(obj);
-    const vector<Vec3UI> &texTriList = model.getTexTriList(obj);
+    Vec3UIs const &triList = model.getTriList(obj);
+    Vec3UIs const &texTriList = model.getTexTriList(obj);
     const vector<Vec4UI> &quadList = model.getQuadList(obj);
     const vector<Vec4UI> &texQuadList = model.getTexQuadList(obj);
     const vector<Vec2F> &txList = model.getTextCoord(obj);

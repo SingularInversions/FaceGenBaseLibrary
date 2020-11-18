@@ -277,7 +277,7 @@ consMakefileOsArch(
         cflags.push_back("-fno-common");
         // clang defaults to 256 which can cause errors with boost::iarchive exceeding
         // template depth limit. gcc limit of 1024 too small due to large ACS thread sigs:
-        cxxflags.push_back("-ftemplate-depth=2048");
+        cxxflags.push_back("-ftemplate-depth=4096");
         if (!debug)
             cflags.push_back("-Ofast");         // O3 plus fast floating point opts.
         if (debug && (os == BuildOS::linux)) {
@@ -293,7 +293,7 @@ consMakefileOsArch(
         // It uses shared libaries by default and static linking appears quite difficult to get right:
         link = "g++";
         // gcc defaults to 1024. Too small due to large ACS thread sigs:
-        cxxflags.push_back("-ftemplate-depth=2048");
+        cxxflags.push_back("-ftemplate-depth=4096");
         if (!debug) {
             // -march=corei7 actually slowed down nrrjohnverts a smidgen.
             // -msse3 made no difference on some speed tests.

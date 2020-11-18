@@ -39,13 +39,13 @@ struct  ModelFiles
 
 struct  Pose
 {
-    QuaternionD       rotateToHcs;
+    QuaternionD         rotateToHcs;
     // Euler angles applied in FHCS in following order after 'rotateToHcs':
     double              rollRadians = 0.0;
     double              tiltRadians = 0.0;
     double              panRadians = 0.0;
     // Model translation parallel to image plane, relative to half max model bound:
-    Vec2D            relTrans;
+    Vec2D               relTrans;
     // Scale relative to automatically determined size of object in image:
     double              relScale = 0.9;
     // Field of view of larger image dimension (degrees). Must be > 0 but can set as low as 0.0001
@@ -59,8 +59,8 @@ struct  RenderArgs
 {
     vector<ModelFiles>      models;
     Pose                    pose;
-    Vec2UI               imagePixelSize = Vec2UI(512,512);
-    RenderOptions         options;
+    Vec2UI                  imagePixelSize = Vec2UI(512,512);
+    RenderOptions           options;
 
     FG_SERIALIZE4(models,pose,imagePixelSize,options);
 };
@@ -87,10 +87,10 @@ using namespace FgCmdRender;
 void
 fgCmdRender(CLArgs const & args)
 {
-    Syntax    syntax(args,
+    Syntax              syntax(args,
         "<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext1>])*\n"
-        "    - Render specified meshes [with texture images] using default render arguments.\n"
-        "    - Saves render arguments to <name>.xml and rendered image to <name>.png\n"
+        "    Render specified meshes [with texture images] using default render arguments.\n"
+        "    Saves render arguments to <name>.xml and rendered image to <name>.png\n"
         "    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml\n"
         "    -l     - Load the object pose and camera intrinsics from the above files, "
                      "do not calculate from <name>.xml\n"
@@ -122,10 +122,10 @@ fgCmdRender(CLArgs const & args)
         "        written as <label>,<position>,<visible>, where <position> is in image unit coordinates; [0,1]\n"
         "    <outputFile> - Name of image output file."
     );
-    string          renderName = syntax.next();
-    Options         opts;
-    string          viewSave,    // If empty, option not selected
-                    viewLoad;    // "
+    string              renderName = syntax.next();
+    Options             opts;
+    string              viewSave,    // If empty, option not selected
+                        viewLoad;    // "
     while (syntax.more() && (syntax.peekNext()[0] == '-')) {
         string      arg = syntax.next();
         if (arg == "-s")
@@ -157,21 +157,21 @@ fgCmdRender(CLArgs const & args)
     }
 
     //! Load data from files:
-    Meshes    meshes(opts.rend.models.size());
-    Mat33F            rotMatrix = Mat33F(opts.rend.pose.rotateToHcs.asMatrix());
+    Meshes              meshes(opts.rend.models.size());
+    Mat33F              rotMatrix = Mat33F(opts.rend.pose.rotateToHcs.asMatrix());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = opts.rend.models[ii];
-        Mesh &          mesh = meshes[ii];
+        Mesh &              mesh = meshes[ii];
         mesh = loadTri(mf.triFilename);
         if (!mf.imgFilename.empty())
-            loadImage(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
+            loadImage_(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
         mesh.transform(rotMatrix);
         mesh.surfaces[0].material.shiny = mf.shiny;
     }
 
     //! Calculate view transforms:
-    Mat32F            bounds = cBounds(meshes);
-    CameraParams    cps(fgF2D(bounds));
+    Mat32F              bounds = cBounds(meshes);
+    CameraParams        cps(fgF2D(bounds));
     cps.pose =
         cRotateY(opts.rend.pose.panRadians) *
         cRotateX(opts.rend.pose.tiltRadians) *
@@ -179,8 +179,8 @@ fgCmdRender(CLArgs const & args)
     cps.relTrans = opts.rend.pose.relTrans;
     cps.logRelScale = std::log(opts.rend.pose.relScale);
     cps.fovMaxDeg = opts.rend.pose.fovMaxDeg;
-    Camera          cam;
-    SimilarityD     mvm;
+    Camera              cam;
+    SimilarityD         mvm;
     if (!viewLoad.empty()) {
         loadBsaXml(viewLoad+"_cam.xml",cam);
         loadBsaXml(viewLoad+"_pose.xml",mvm);
@@ -196,14 +196,14 @@ fgCmdRender(CLArgs const & args)
 
     //! Render:
     opts.rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();    // Receive surf point projection data
-    Timer         timer;
-    ImgC4UC          image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
+    Timer               timer;
+    ImgC4UC             image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
     fgout << fgnl << "Render time: " << timer.read() << "s ";
 
     //! Save results:
     saveImage(Ustring(opts.outputFile),image);
     if (opts.saveSurfPointFile) {
-        Ofstream      ofs(renderName+".csv");
+        Ofstream            ofs(renderName+".csv");
         for (const ProjectedSurfPoint & psp : *opts.rend.options.projSurfPoints)
             ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
     }
@@ -217,7 +217,7 @@ static
 bool
 imgApproxEqual(Ustring const & file0,Ustring const & file1)
 {
-    ImgC4UC     img0 = loadImage(file0),
+    ImgC4UC         img0 = loadImage(file0),
                     img1 = loadImage(file1);
     return fgImgApproxEqual(img0,img1,2);
 }

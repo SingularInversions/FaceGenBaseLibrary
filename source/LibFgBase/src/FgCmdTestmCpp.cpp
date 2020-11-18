@@ -256,7 +256,7 @@ parr(CLArgs const &)
     // disassembler (on Goldbolt using just 4 vals and a single mult) and the multiply, add, store
     // operands were identical ...
     for (Doubles & pout : pouts)
-        cFill(pout,0.0);
+        mapAsgn_(pout,0.0);
     tm.start();
     for (size_t rr=0; rr<100; ++rr) {
         for (size_t ii=0; ii<N; ++ii) {

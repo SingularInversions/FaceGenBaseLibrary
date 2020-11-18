@@ -225,8 +225,7 @@ static bool saveXsiFile(
         if (txtFname != "" && txtFname.size() > 0)
         {
             // Get the image size by loading the image
-            ImgC4UC     tmpImg;
-            loadImage(path.dir()+txtFname,tmpImg);
+            ImgC4UC     tmpImg = loadImage(path.dir()+txtFname);
             {
                 imgWd = tmpImg.width();
                 imgHgt = tmpImg.height();
@@ -277,12 +276,12 @@ static bool saveXsiFile(
 
         // Get aliase names for all the lists.
         const vector<Vec3F>    &vtxList = model.getPtList(xx);
-        const vector<Vec3UI>    &triList = model.getTriList(xx);
+        Vec3UIs const    &triList = model.getTriList(xx);
         const vector<Vec4UI>    &quadList = model.getQuadList(xx);
         const vector<Vec2F>    &txtList = model.getTextCoord(xx);
-        const vector<Vec3UI>    &txtTriList = model.getTexTriList(xx);
+        Vec3UIs const    &txtTriList = model.getTexTriList(xx);
         const vector<Vec4UI>    &txtQuadList = model.getTexQuadList(xx);
-        Normals                 norms = cNormals({Surf{triList,quadList}},vtxList);
+        MeshNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
         bool perFacet = false;
         bool perVertex = false;
         if (vtxList.size() == txtList.size() &&
@@ -508,7 +507,7 @@ static bool saveXsiFile(
                     FffMultiObjectC const & mobj = (*morphTargets)[mm-1];
                     if (mm > 0)
                         mvtxList = &(mobj.getPtList(xx));
-                    Normals         mnorms = cNormals({Surf{triList,quadList}},*mvtxList);
+                    MeshNormals         mnorms = cNormals({Surf{triList,quadList}},*mvtxList);
 
                     ofs << "\n";
                     ofs << "         SI_Shape SHP-" << objName 

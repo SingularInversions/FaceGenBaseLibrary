@@ -88,7 +88,7 @@ constexpr bool      isDebug()
 constexpr bool      isRelease() {return !isDebug(); }
 
 // Returns "32" if the current executable is 32-bit, "64" if 64-bit:
-std::string         bitsString();
+std::string         cBitsString();
 
 }
 

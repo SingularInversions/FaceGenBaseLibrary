@@ -99,7 +99,7 @@ struct  Path
     {return dir() + base; }
 
     Path
-    operator+(const Path &  rhs) const;
+    operator+(Path const &  rhs) const;
 
     // Move up 'num' directories. Throws an error if not possible:
     void

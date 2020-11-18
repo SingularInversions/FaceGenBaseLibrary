@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 void
-guiStartImpl(Ustring const &,GuiPtr,Ustring const &,const GuiOptions &)
+guiStartImpl(NPT<Ustring>,GuiPtr,Ustring const &,const GuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \

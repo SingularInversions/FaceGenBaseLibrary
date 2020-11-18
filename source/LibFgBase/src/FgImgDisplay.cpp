@@ -18,11 +18,11 @@ using namespace std;
 namespace Fg {
 
 void
-imgDisplay(const ImgC4UC & img,vector<Vec2F> pts)
+imgDisplay(ImgC4UC const & img,vector<Vec2F> pts)
 {
     Ustring            store = getDirUserAppDataLocalFaceGen("SDK","DisplayImage");
     guiStartImpl(
-        Ustring("FaceGen SDK DisplayImage"),
+        makeIPT<Ustring>("FaceGen SDK DisplayImage"),
         guiImage(makeIPT(img),makeIPT(pts)),
         store);
 }
@@ -70,7 +70,7 @@ imgDisplay(const Img3F & img)
 {
     VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
     AffineEw3F          xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
-    Img3F               tmp = Img3F(img.dims(),mapXft(img.dataVec(),xform));
+    Img3F               tmp = Img3F(img.dims(),mapMul(xform,img.dataVec()));
     ImgC4UC             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
         Vec3UC          clr = round<uchar>(tmp[ii]);

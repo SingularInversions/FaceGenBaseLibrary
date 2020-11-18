@@ -17,48 +17,59 @@ using namespace std;
 
 namespace Fg {
 
+Ustrings
+cAlbedoModeLabels()
+{
+    return {
+        "albedo map",
+        "none",
+        "by mesh",
+        "by surf",
+    };
+}
+
 Opt<MeshesIntersect>
 intersectMeshes(
-    Vec2UI               winSize,
-    Vec2I                pos,
-    Mat44F                worldToD3ps,
-    RendMeshes const &      rendMeshes)
+    Vec2UI              winSize,
+    Vec2I               pos,
+    Mat44F              worldToD3ps,
+    RendMeshes const &  rendMeshes)
 {
-    MeshesIntersect   ret;
-    Valid<float>      minDepth;
-    Vec2D            pnt(pos);
-    Mat32F            d3ps(-1,1,1,-1,0,1);
-    Mat32F            rcs(-0.5f,winSize[0]-0.5f,-0.5f,winSize[1]-0.5f,0,1);
-    AffineEw3F        d3psToRcs(d3ps,rcs);
-    Mat44F            invXform = asHomogMat(d3psToRcs.asAffine()) * worldToD3ps;
+    MeshesIntersect     ret;
+    Valid<float>        minDepth;
+    Vec2D               pnt {pos};
+    Mat32F              d3ps {-1,1,1,-1,0,1};
+    Mat32F              rcs {-0.5f,winSize[0]-0.5f,-0.5f,winSize[1]-0.5f,0,1};
+    AffineEw3F          d3psToRcs {d3ps,rcs};
+    Mat44F              invXform = asHomogMat(d3psToRcs.asAffine()) * worldToD3ps;
     for (size_t mm=0; mm<rendMeshes.size(); ++mm) {
-        RendMesh const &       rendMesh = rendMeshes[mm];
+        RendMesh const &    rendMesh = rendMeshes[mm];
         Mesh const &        mesh = rendMesh.origMeshN.cref();
-        Vec3Fs const &         verts = rendMesh.posedVertsN.cref();
-        Vec3Fs                 pvs(verts.size());
+        Vec3Fs const &      verts = rendMesh.posedVertsN.cref();
+        Vec3Fs              pvs(verts.size());
         for (size_t ii=0; ii<pvs.size(); ++ii) {
-            Vec4F            v = invXform * asHomogVec(verts[ii]);
+            Vec4F               v = invXform * asHomogVec(verts[ii]);
             pvs[ii] = v.subMatrix<3,1>(0,0) / v[3];
         }
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             size_t              numTriEquivs = surf.numTriEquivs();
             for (size_t tt=0; tt<numTriEquivs; ++tt) {
-                Vec3UI       tri = surf.getTriEquivPosInds(tt);
-                Vec3F        t0 = pvs[tri[0]],
+                Vec3UI          tri = surf.getTriEquivPosInds(tt);
+                Vec3F           t0 = pvs[tri[0]],
                                 t1 = pvs[tri[1]],
                                 t2 = pvs[tri[2]];
-                Vec2D        v0 = Vec2D(t0.subMatrix<2,1>(0,0)),
+                Vec2D           v0 = Vec2D(t0.subMatrix<2,1>(0,0)),
                                 v1 = Vec2D(t1.subMatrix<2,1>(0,0)),
                                 v2 = Vec2D(t2.subMatrix<2,1>(0,0));
                 if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
-                    Opt<Vec3D>    vbc = barycentricCoord(pnt,v0,v1,v2);
+                    Opt<Vec3D>      vbc = barycentricCoord(pnt,v0,v1,v2);
                     if (vbc.valid()) {
-                        Vec3D    bc = vbc.val();
+                        Vec3D           bc = vbc.val();
                         // Depth value range for unclipped polys is [-1,1]. These correspond to the
                         // negative inverse depth values of the frustum.
                         // Only an approximation to the depth value but who cares:
-                        double  dep = cDot(bc,Vec3D(t0[2],t1[2],t2[2]));
+                        double          dep = cDot(bc,Vec3D(t0[2],t1[2],t2[2]));
                         if (!minDepth.valid() || (dep < minDepth.val())) {    // OGL prj inverts depth
                             minDepth = dep;
                             ret.meshIdx = mm;
@@ -150,18 +161,20 @@ Gui3d::translate(Vec2I delta)
 
 void
 Gui3d::markSurfPoint(
-    Vec2UI           winSize,
-    Vec2I            pos,
-    Mat44F            worldToD3ps)         // Transforms frustum to [-1,1] cube (depth & y inverted)
+    Vec2UI          winSize,
+    Vec2I           pos,
+    Mat44F          worldToD3ps)         // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
-    RendMeshes const &          rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
     if (vpt.valid() && pointLabel.ptr) {
-        MeshesIntersect           pt = vpt.val();
-        RendMesh const &           rm = rms[pt.meshIdx];
+        MeshesIntersect         pt = vpt.val();
+        RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
+        fgout << fgnl << "Surf point placed at mesh coord: "
+            << cSurfPointPos(pt.surfPnt,origMeshPtr->getTriEquivs(),Quads(),origMeshPtr->verts);
         if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
-            SurfPoints &              surfPoints =  origMeshPtr->surfaces[pt.surfIdx].surfPoints;
+            SurfPoints &            surfPoints =  origMeshPtr->surfaces[pt.surfIdx].surfPoints;
             pt.surfPnt.label = pointLabel.cref().as_ascii();
             if (!pt.surfPnt.label.empty()) {
                 for (size_t ii=0; ii<surfPoints.size(); ++ii) {
@@ -184,14 +197,14 @@ Gui3d::markVertex(
     Mat44F                worldToD3ps)     // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
     RendMeshes const &          rms = rendMeshesN.cref();
-    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
+    Opt<MeshesIntersect>        vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
     if (vpt.valid() && vertMarkModeN.ptr) {
-        MeshesIntersect       pt = vpt.val();
-        RendMesh const &       rm = rms[pt.meshIdx];
-        Mesh *              origMeshPtr = rm.origMeshN.valPtr();
+        MeshesIntersect         pt = vpt.val();
+        RendMesh const &        rm = rms[pt.meshIdx];
+        Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
         if (origMeshPtr) {
-            Mesh &              meshIn = *origMeshPtr;
-            Surf const &     surf = meshIn.surfaces[pt.surfIdx];
+            Mesh &                  meshIn = *origMeshPtr;
+            Surf const &            surf = meshIn.surfaces[pt.surfIdx];
             uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
             uint                    vertIdx = cTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
@@ -199,21 +212,23 @@ Gui3d::markVertex(
                 if (!contains(meshIn.markedVerts,vertIdx))
                     meshIn.markedVerts.push_back(MarkedVert(vertIdx));
             }
-            else if (vertMarkMode < 3) {
-                Vec3UIs          tris = surf.getTriEquivs().posInds;
-                Fg3dTopology        topo(meshIn.verts,tris);
+            else if (vertMarkMode < 4) {
+                Vec3UIs             tris = surf.getTriEquivs().posInds;
+                MeshTopology        topo(meshIn.verts.size(),tris);
                 set<uint>           seam;
                 if (vertMarkMode == 1)
                     seam = topo.seamContaining(vertIdx);
-                else {
-                    Surf         tmpSurf;
+                else if (vertMarkMode == 2) {
+                    Surf                tmpSurf;
                     tmpSurf.tris.posInds = tris;
                     vector<FgBool>      done(meshIn.verts.size(),false);
                     seam = topo.traceFold(cNormals(svec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
-                for (set<uint>::const_iterator it=seam.begin(); it != seam.end(); ++it)
-                    if (!contains(meshIn.markedVerts,*it))
-                        meshIn.markedVerts.push_back(MarkedVert(*it));
+                else if (vertMarkMode == 3)
+                    seam = cFillMarkedVertRegion(meshIn,topo,vertIdx);
+                for (uint idx : seam)
+                    if (!contains(meshIn.markedVerts,idx))
+                        meshIn.markedVerts.push_back(MarkedVert{idx});
             }
         }
     }
@@ -268,7 +283,7 @@ void
 Gui3d::ctrlShiftLeftDrag(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
-        const ImgC4UC & img = bgImg.imgN.cref();
+        ImgC4UC const & img = bgImg.imgN.cref();
         if (!img.empty()) {
             Vec2F        del = mapDiv(Vec2F(delta),Vec2F(winSize));
             Vec2F &      offset = bgImg.offset.ref();
@@ -281,7 +296,7 @@ void
 Gui3d::ctrlShiftRightDrag(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
-        const ImgC4UC & img = bgImg.imgN.cref();
+        ImgC4UC const & img = bgImg.imgN.cref();
         if (!img.empty()) {
             double      lnScale = bgImg.lnScale.val();
             lnScale += double(delta[1]) / double(winSize[1]);

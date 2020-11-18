@@ -39,16 +39,6 @@ GuiPtr
 guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2)
 {return guiSplit(horiz,svec(p0,p1,p2)); }
 
-inline
-GuiPtr
-guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3)
-{return guiSplit(horiz,svec(p0,p1,p2,p3)); }
-
-inline
-GuiPtr
-guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2,GuiPtr p3,GuiPtr p4)
-{return guiSplit(horiz,svec(p0,p1,p2,p3,p4)); }
-
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiSplitAdj;
 GuiImplPtr guiGetOsImpl(GuiSplitAdj const & guiApi);
@@ -56,9 +46,9 @@ GuiImplPtr guiGetOsImpl(GuiSplitAdj const & guiApi);
 // Adjustable split dual window with central divider:
 struct  GuiSplitAdj : GuiBase
 {
-    bool                    horiz;
-    GuiPtr                pane0;
-    GuiPtr                pane1;
+    bool                horiz;
+    GuiPtr              pane0;
+    GuiPtr              pane1;
 
     GuiSplitAdj(bool h,GuiPtr p0,GuiPtr p1)
         : horiz(h), pane0(p0), pane1(p1)

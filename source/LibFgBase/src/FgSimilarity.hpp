@@ -66,16 +66,13 @@ struct  Similarity
 
     Similarity inverse() const
     {
-        // Let R' = R.inverse() then:
-        // Transform:   v' = sRv+t
-        //             (v'-t)/s = Rv
-        //              v = R'(v'-t)/s
-        //              v = R'v'/s - R't/s
-        Similarity    ret;
-        ret.scale = 1 / scale;
-        ret.rot = rot.inverse();
-        ret.trans = - ret.scale * (ret.rot * trans);
-        return ret;
+        // v' = sRv+t
+        // sRv = v' - t
+        // v = s'R'v' - s'R't
+        double              s = 1.0 / scale;
+        QuaternionD         r = rot.inverse();
+        Vec3D               t = r * trans * s;
+        return Similarity {s,r,-t};
     }
 
     // Be more explicit than using default constructor:
@@ -84,16 +81,6 @@ struct  Similarity
 
 typedef Similarity<float>   SimilarityF;
 typedef Similarity<double>  SimilarityD;
-
-template<typename T>
-std::ostream &
-operator<<(std::ostream & os,const Similarity<T> & v)
-{
-    return
-        os << "Scale: " << v.scale << fgnl
-            << "Rotation: " << v.rot << fgnl
-            << "Translation: " << v.trans;
-}
 
 template<typename T>
 Mat<T,4,4>
@@ -127,7 +114,7 @@ struct  SimilarityRD
 
     SimilarityRD() {}
 
-    SimilarityRD(const Vec3D & t,const QuaternionD & r,double s)
+    SimilarityRD(Vec3D const & t,QuaternionD const & r,double s)
     : trans(t), rot(r), scale(s)
     {FGASSERT(s > 0.0); }
 
@@ -139,18 +126,31 @@ struct  SimilarityRD
     // More efficient if applying the transform to many vectors:
     Affine3D asAffine() const;
 
-    // Let R' = R.inverse() then:
-    // Transform:   v' = sR(v+t)
-    //              v' = sRv + sRt
-    //              sRv = v' - sRt
-    //              v = R'v'/s - t
-    SimilarityRD inverse() const
-    {return SimilarityRD(-trans,rot.inverse(),1.0/scale); }
+    // v' = sR(v+t)
+    // v' = sRv + sRt
+    // sRv = v' - sRt
+    // v = s'R'(v' - sRt)
+    SimilarityRD
+    inverse() const
+    {
+        Vec3D           t = rot * trans * scale;
+        return SimilarityRD {-t,rot.inverse(),1.0/scale};
+    }
 
-    static SimilarityRD identity() {return SimilarityRD(Vec3D(0),QuaternionD(),1.0); }
+    // Return inverse of only the linear component (no translation):
+    Mat33D
+    linearInverse() const
+    {return rot.inverse().asMatrix() / scale; }
+
+    static SimilarityRD
+    identity()
+    {return SimilarityRD {Vec3D(0),QuaternionD{},1}; }
 };
 
 typedef Svec<SimilarityRD>   SimilarityRDs;
+
+std::ostream &
+operator<<(std::ostream & os,SimilarityRD const & v);
 
 }
 

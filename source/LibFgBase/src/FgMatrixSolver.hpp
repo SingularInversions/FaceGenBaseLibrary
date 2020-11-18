@@ -13,6 +13,26 @@
 
 namespace Fg {
 
+// Returns the U of the U^T U Cholesky decomposition of a symmetric positive definite matrix,
+// along with the axial permutations used for maximum stability:
+MatUT33D
+choleskyDecompose(MatS33D SPD);     // SPD cannot be singular
+
+struct  UTUDecomp
+{
+    MatUT33D        U;      // Upper triangular part of the U^T * U decomposition
+    Vec3UI          p;      // Permutation map from input index to solution index
+};
+
+// Solve the Matrix equation Ax = b when A is symmetric positive definite (this is not checked):
+Vec3D
+solve(MatS33D SPD,Vec3D b);
+
+// Solve the matrix equation Ax = b.
+// If A is singular, this returns a solution vector with one or more components equal to zero:
+Vec3D
+solve(Mat33D A,Vec3D b);
+
 // Eigenvalues of a square real symmetric matrix.
 // Runs in O(dim^3) time, with residual error O(dim^2.?).
 void
@@ -57,8 +77,8 @@ operator<<(std::ostream & os,EigsRsmC<dim> const & e)
 }
 
 // Eigenvalues of a square real symmetric matrix, returned in order from smallest to largest eigval:
-EigsRsmC<3>   cEigsRsm(const Mat<double,3,3> & rsm);
-EigsRsmC<4>   cEigsRsm(const Mat<double,4,4> & rsm);
+EigsRsmC<3>   cEigsRsm(Mat<double,3,3> const & rsm);
+EigsRsmC<4>   cEigsRsm(Mat<double,4,4> const & rsm);
 
 template<uint dim>
 struct EigsC
@@ -79,8 +99,8 @@ operator<<(std::ostream & os,const EigsC<dim> & e)
 // Eigensolver for arbitrary matrix, returned in arbitrary order since eigenvalues
 // can be complex. The eigenvectors can always be made real when the associated eigevalue
 // is real but do not default to a real representation:
-EigsC<3>      cEigs(const Mat33D & mat);
-EigsC<4>      cEigs(const Mat44D & mat);
+EigsC<3>      cEigs(Mat33D const & mat);
+EigsC<4>      cEigs(Mat44D const & mat);
 
 }
 

@@ -56,7 +56,7 @@ namespace Fg {
 static
 bool
 loadJpeg(
-    const vector<uchar> &   jpgBuffer,
+    const Uchars &   jpgBuffer,
     ImgC4UC &           img)
 {
     jpeg_decompress_struct cinfo;
@@ -69,7 +69,7 @@ loadJpeg(
     bool                allocError = false;
     Vec2UI           allocErrorSz;
 
-    vector<uchar>       buff;
+    Uchars       buff;
 
     switch(setjmp(jerr.setjmp_buffer))
     {
@@ -174,7 +174,7 @@ saveJpeg(
 
     bool succeeded = false;
 
-    vector<uchar> img_buffer(wid*hgt*3);
+    Uchars img_buffer(wid*hgt*3);
 
     switch(setjmp(jerr.setjmp_buffer))
     {
@@ -235,19 +235,19 @@ cleanup:
     return succeeded;
 }
 
-std::vector<uchar>
+Uchars
 imgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 {
-    vector<uchar>       ret;
+    Uchars       ret;
     if(!saveJpeg(wid,hgt,data,ret,quality)) 
         fgThrow("Could not encode as JPEG/JFIF");
     return ret;
 }
 
-vector<uchar>
-imgEncodeJpeg(const ImgC4UC & img,int quality)
+Uchars
+imgEncodeJpeg(ImgC4UC const & img,int quality)
 {
-    vector<uchar>       ret;
+    Uchars       ret;
     if(!saveJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],ret,quality)) 
         fgThrow("Could not encode as JPEG/JFIF");
     return ret;

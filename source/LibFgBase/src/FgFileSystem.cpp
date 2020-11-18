@@ -82,6 +82,14 @@ setCurrentDirUp()
 }
 
 void
+deleteDirectoryFiles(Ustring const & dirname)
+{
+    DirectoryContents       dc = directoryContents(dirname);
+    for (size_t ii=0; ii<dc.filenames.size(); ii++)
+        deleteFile(dirname+"/"+dc.filenames[ii]);
+}
+
+void
 deleteDirectoryRecursive(Ustring const & dirname)
 {
 #ifdef _WIN32
@@ -249,7 +257,7 @@ fileNewer(Ustrings const & sources,Ustrings const & sinks)
 }
 
 Ustrings
-globFiles(const Path & path)
+globFiles(Path const & path)
 {
     Ustrings               ret;
     DirectoryContents     dc = directoryContents(path.dir());
@@ -271,7 +279,7 @@ globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & fileP
 }
 
 DirectoryContents
-globNodeStartsWith(const Path & path)
+globNodeStartsWith(Path const & path)
 {
     DirectoryContents ret;
     DirectoryContents dc = directoryContents(path.dir());
@@ -293,7 +301,7 @@ globBaseVariants(const Ustring & pathBaseExt)
     for (Ustring const & fname : fnames) {
         Path            fp {fname};
         if ((fp.base != path.base) && (fp.ext == path.ext))
-            ret.push_back(cutRest(fp.base,path.base.size()));
+            ret.push_back(cRest(fp.base,path.base.size()));
     }
     return ret;
 }
@@ -318,7 +326,7 @@ fgCopyAllFiles(Ustring const & fromDir_,Ustring const & toDir_,bool overwrite)
 }
 
 void
-fgCopyToCurrentDir(const Path & file)
+fgCopyToCurrentDir(Path const & file)
 {
     if (pathExists(file.baseExt()))
         fgThrow("Attempt to copy to current directory which already contains",file.baseExt());
@@ -347,7 +355,7 @@ copyRecursive(Ustring const & fromDir,Ustring const & toDir)
 }
 
 void
-mirrorFile(const Path & src,const Path & dst)
+mirrorFile(Path const & src,Path const & dst)
 {
     FGASSERT(!src.base.empty());
     FGASSERT(!dst.base.empty());

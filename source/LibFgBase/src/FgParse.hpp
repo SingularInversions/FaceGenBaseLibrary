@@ -16,8 +16,16 @@
 namespace Fg {
 
 inline bool
+isDigit(char c)
+{return ((c >= '0') && (c <= '9')); }
+
+inline bool
 isCrLf(uint ch)
 {return ((ch == '\r') || (ch == '\n')); }
+
+// Returns true if empty:
+bool
+containsOnlyDigits(String const &);
 
 // Returns a vector of tokens, treating all control codes and extended codes (high bit set) as whitespace,
 // grouping all connected digit-letter-dash-underscore characters and considering any others as single-character

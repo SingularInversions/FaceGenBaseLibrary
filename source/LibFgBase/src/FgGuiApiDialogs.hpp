@@ -23,9 +23,10 @@ guiDialogMessage(
 //   which dialog will then accept.
 Opt<Ustring>
 guiDialogFileLoad(
-    Ustring const &             description,
-    Strings const &             extensions,
-    String const &              storeID=String());  // Remember different directories for same 'description'
+    Ustring const &             description,        // eg. "Image" or "Comma separated values"
+    Strings const &             extensions,         // list of (usually lower-case) extensions
+    // Used in combination with 'description' to create a hash index for saving/loading last directory as default:
+    String const &              storeID=String());
 
 GuiPtr
 guiLoadButton(
@@ -50,7 +51,7 @@ guiDialogDirSelect();
 // Return: true - user cancel, false - continue work
 typedef Sfun<bool(bool)>            WorkerCallback;
 
-// The worker function must accept the callback function for it to invoke at regular intervals
+// The worker function is passed the callback function for it to invoke at regular intervals
 // to communicate progress and check for user cancel (see signature above):
 typedef Sfun<void(WorkerCallback)>  WorkerFunc;
 

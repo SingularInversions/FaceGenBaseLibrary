@@ -217,7 +217,7 @@ getCurrentBuildDescription()
     return 
         toStr(getCurrentBuildOS()) + " " +
         toStr(getCurrentCompiler()) + " " +
-        bitsString() + " " + getCurrentBuildConfig();
+        cBitsString() + " " + getCurrentBuildConfig();
 }
 
 bool

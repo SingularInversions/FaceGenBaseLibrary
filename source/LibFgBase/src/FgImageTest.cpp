@@ -26,24 +26,22 @@ namespace {
 void
 display(CLArgs const &)
 {
-    Ustring    dd = dataDir();
+    Ustring     dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
-    ImgC4UC img;
-    loadImage(dd+testorig_jpg,img);
+    ImgC4UC     img = loadImage(dd+testorig_jpg);
     imgDisplay(img);
     string      testorig_bmp("base/test/testorig.bmp");
-    loadImage(dd+testorig_bmp,img);
+    loadImage_(dd+testorig_bmp,img);
     imgDisplay(img);
 }
 
 void
 resize(CLArgs const &)
 {
-    string              fname("base/test/testorig.jpg");
-    ImgC4UC         img;
-    loadImage(dataDir()+fname,img);
+    string          fname("base/test/testorig.jpg");
+    ImgC4UC         img = loadImage(dataDir()+fname);
     ImgC4UC         out(img.width()/2+1,img.height()+1);
-    fgImgResize(img,out);
+    imgResize(img,out);
     imgDisplay(out);
 }
 

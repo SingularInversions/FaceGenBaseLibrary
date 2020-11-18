@@ -28,9 +28,9 @@ struct  GuiTabsWin : public GuiBaseImpl
     HWND                        hwndThis;
     GuiImplPtrs                 m_panes;
     uint                        m_currPane;
-    Vec2I                    m_client;
+    Vec2I                       m_client;
     RECT                        m_dispArea;
-    Ustring                    m_store;
+    Ustring                     m_store;
 
     GuiTabsWin(const GuiTabs & api)
         : m_api(api)
@@ -45,12 +45,14 @@ struct  GuiTabsWin : public GuiBaseImpl
     create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
+        if (m_store.empty()) {      // First creation this session so check for saved state
+            uint            cp;
+            if (loadBsaXml(store+".xml",cp,false))
+                if (cp < m_panes.size())
+                    m_currPane = cp;
+        }
         m_store = store;
-        uint        cp;
-        if (loadBsaXml(m_store+".xml",cp,false))
-            if (cp < m_panes.size())
-                m_currPane = cp;
-        WinCreateChild   cc;
+        WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
         winCreateChild(parentHwnd,ident,this,cc);
@@ -112,7 +114,8 @@ struct  GuiTabsWin : public GuiBaseImpl
     virtual void
     saveState()
     {
-        saveBsaXml(m_store+".xml",m_currPane,false);
+        if (!m_store.empty())   // Win32 instance was created
+            saveBsaXml(m_store+".xml",m_currPane,false);
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             m_panes[ii]->saveState();
     }
@@ -125,16 +128,16 @@ struct  GuiTabsWin : public GuiBaseImpl
             hwndThis = hwnd;
             // Creating the panes before the tabs fixes the problem of trackbars not being visible
             // on first paint (almost ... top/bottom arrows don't appear). No idea why.
-            for (size_t ii=0; ii<m_panes.size(); ++ii) {
-                // Set visibility here to avoid sending 'ShowWindow' messages, which also
-                // send WM_SIZE. The sizing will all be done after creation when ShowWindow
-                // is called from the client level.
-                m_panes[ii]->create(hwnd,
-                    int(ii+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
-                    m_store+"_"+toStr(ii),
-                    NULL,
-                    ii==m_currPane);
-            }
+            // Used to create all tab windows here and turn visibility on and off with selection but as of
+            // Windows 10 this approach causes huge latency when moving main window so now we create/destroy
+            // each time tab is changed. Used to be the case that WM_SIZE was not sent non-visible windows,
+            // but either that is not the case any more or MS has managed to do something even stupider ...
+            FGASSERT(m_currPane < m_panes.size());
+            m_panes[m_currPane]->create(hwnd,
+                int(m_currPane+1),  // Child identifiers start at 1 since 0 taken above. Not used anyway.
+                m_store+"_"+toStr(m_currPane),
+                NULL,
+                true);
             m_tabHwnd = 
                 CreateWindowEx(0,
                     WC_TABCONTROL,
@@ -154,8 +157,6 @@ struct  GuiTabsWin : public GuiBaseImpl
                 TabCtrl_InsertItem(m_tabHwnd,ii,&tc);
             }
             SendMessage(m_tabHwnd,TCM_SETCURSEL,m_currPane,0);
-            if (m_api.tabs[m_currPane].onSelect != NULL)
-                m_api.tabs[m_currPane].onSelect();
 //fgout << fgpop;
             return 0;
         }
@@ -176,16 +177,13 @@ struct  GuiTabsWin : public GuiBaseImpl
                 if ((idx >= 0) && (size_t(idx) < m_panes.size())) {
 //fgout << fgnl << "Tabs::WM_NOTIFY: " << idx << fgpush;
                     if (uint(idx) != m_currPane) {
-                        m_panes[m_currPane]->showWindow(false);
+                        m_panes[m_currPane]->destroy();
                         m_currPane = uint(idx);
-                        // Must do update check and resize since these are not done when the
-                        // tab is not visible:
-                        m_panes[m_currPane]->updateIfChanged();
-                        resizeCurrPane();
-                        m_panes[m_currPane]->showWindow(true);
-                        if (m_api.tabs[m_currPane].onSelect != NULL)
-                            m_api.tabs[m_currPane].onSelect();
-                        InvalidateRect(hwndThis,NULL,TRUE);
+                        Ustring             subStore = m_store + "_" + toStr(m_currPane);
+                        m_panes[m_currPane]->create(hwnd,int(m_currPane)+1,subStore,NULL,true);
+                        resizeCurrPane();                           // Always required after creation
+                        m_panes[m_currPane]->updateIfChanged();     // Required to update win32 state (eg. sliders)
+                        InvalidateRect(hwndThis,NULL,TRUE);         // Tested to be necessary
                     }
 //fgout << fgpop;
                 }
@@ -201,17 +199,19 @@ struct  GuiTabsWin : public GuiBaseImpl
     void
     resizeCurrPane()
     {
-        const GuiTabDef &    tab = m_api.tabs[m_currPane];
-        Vec2I    lo(m_dispArea.left + tab.padLeft, m_dispArea.top + tab.padTop),
-                    hi(m_dispArea.right - tab.padRight,m_dispArea.bottom - tab.padBottom),
-                    sz = hi - lo;
+        GuiTabDef const &   tab = m_api.tabs[m_currPane];
+        Vec2I               lo (m_dispArea.left + tab.padLeft, m_dispArea.top + tab.padTop),
+                            hi (m_dispArea.right - tab.padRight,m_dispArea.bottom - tab.padBottom),
+                            sz = hi - lo;
         m_panes[m_currPane]->moveWindow(lo,sz);
     }
 
     void
     resize(HWND)
     {
-        MoveWindow(m_tabHwnd,0,0,m_client[0],m_client[1],FALSE);
+        // The repaint TRUE argument is only necessary when going from maximized to normal window size,
+        // for some reason the tabs are repainted anyway in other situations:
+        MoveWindow(m_tabHwnd,0,0,m_client[0],m_client[1],TRUE);
         m_dispArea.left = 0;
         m_dispArea.top = 0;
         m_dispArea.right = m_client[0];

@@ -13,6 +13,7 @@
 #include "FgHex.hpp"
 
 using namespace std;
+using namespace std::placeholders;
 
 namespace Fg {
 
@@ -50,6 +51,9 @@ struct  Gui3dWin : public GuiBaseImpl
     DfgFPtr             m_updateBgImg;      // Update BG image ?
     Mat44F              m_worldToD3ps;      // Transform used for last render (for mouse-surface intersection)
     unique_ptr<D3d>     m_d3d;
+    // Need to track this to avoid random object motion when mouse is dragged into viewport, and also when
+    // file dialogs leak mouse moves into the viewport (MS bug):
+    bool                leftButtonDown = false;
 
     Gui3dWin(const Gui3d & api)
     : m_api(api)
@@ -122,8 +126,8 @@ struct  Gui3dWin : public GuiBaseImpl
             FGASSERTWIN(format != 0);
             FGASSERTWIN(SetPixelFormat(m_hdc,format,&pfd));
             FGASSERTWIN(DescribePixelFormat(m_hdc,format,pfd.nSize,&pfd));
-            m_d3d.reset(new D3d(hwnd));
-            m_api.capture->getImg = bind(&Gui3dWin::capture,this,placeholders::_1);
+            m_d3d.reset(new D3d(hwnd,m_api.rendMeshesN));
+            m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
             // The pinch-to-zoom gesture is enabled by default but not the rotate gesture, which we
             // must explicitly enable:
             GESTURECONFIG   config = {0};
@@ -133,6 +137,8 @@ struct  Gui3dWin : public GuiBaseImpl
             // This function returned a "not implemented" error on a German Windows 7 64bit SP1 system,
             // so don't throw on error, just continue and presumably no gesture messages will be received:
             SetGestureConfig(hwnd,0,1,&config,sizeof(GESTURECONFIG));
+            if (m_api.fileDragDrop)
+                DragAcceptFiles(hwnd,TRUE);
         }
         else if (msg == WM_SIZE) {
             uint        wid = LOWORD(lParam),
@@ -169,6 +175,8 @@ struct  Gui3dWin : public GuiBaseImpl
             }
         }
         else if ((msg == WM_LBUTTONDOWN) || (msg == WM_RBUTTONDOWN)) {
+            if (msg == WM_LBUTTONDOWN)
+                leftButtonDown = true;
             m_lastPos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             // This can only be the case for WM_LBUTTONDOWN:
             if (wParam == (MK_SHIFT | MK_CONTROL | MK_LBUTTON)) {
@@ -194,6 +202,8 @@ struct  Gui3dWin : public GuiBaseImpl
             FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
         }
         else if ((msg == WM_LBUTTONUP) || (msg == WM_RBUTTONUP)) {
+            if (msg == WM_LBUTTONUP)
+                leftButtonDown = false;
             // Only if both buttons are released:
             if ((wParam & (MK_LBUTTON | MK_RBUTTON)) == 0)
                 ClipCursor(NULL);
@@ -201,7 +211,7 @@ struct  Gui3dWin : public GuiBaseImpl
         else if (msg == WM_MOUSEMOVE) {
             Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             Vec2I    delta = pos-m_lastPos;
-            if (wParam == MK_LBUTTON) {
+            if ((wParam == MK_LBUTTON) && leftButtonDown) {
                 m_api.panTilt(delta);
                 winUpdateScreen();
             }
@@ -274,7 +284,7 @@ struct  Gui3dWin : public GuiBaseImpl
                 m_hdc = NULL;
             }
         }
-        else if (msg == WM_GESTURE){ 
+        else if (msg == WM_GESTURE) {
             GESTUREINFO     gi;
             ZeroMemory(&gi,sizeof(GESTUREINFO));
             gi.cbSize = sizeof(GESTUREINFO);
@@ -302,12 +312,28 @@ struct  Gui3dWin : public GuiBaseImpl
                 }
             }
         }
+        else if (msg == WM_DROPFILES) {
+            // We should never receive 'WM_DROPFILES' if this function isn't defined but may as well be safe:
+            if (m_api.fileDragDrop) {
+                HDROP           hDrop = HDROP(wParam);
+                WCHAR           buff[512] {};
+                // This function can also be used to get information about multiple files,
+                // but don't bother handling that, just take the first:
+                UINT            ret = DragQueryFile(hDrop,0,buff,511);
+                if (ret != 0) {
+                    Ustring         filePath {&buff[0]};    // UTF-16 to UTF-8
+                    m_api.fileDragDrop(filePath);
+                }
+                DragFinish(hDrop);      // Windows releases paths memory
+                winUpdateScreen();
+            }
+        }
         else
             return DefWindowProc(hwnd,msg,wParam,lParam);
         return 0;
     }
 
-    void renderBackBuffer()
+    void renderBackBuffer(bool backgroundTransparent)
     {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
@@ -323,29 +349,28 @@ struct  Gui3dWin : public GuiBaseImpl
                                     d3vsToD3ps = calcProjection(camera.frustum);
         m_worldToD3ps = d3vsToD3ps * worldToD3vs;
         RendOptions               options = m_api.renderOptions.cref();
-        options.colorBySurface = m_api.colorBySurface.val();
         m_d3d->renderBackBuffer(
             m_api.bgImg,
-            m_api.rendMeshesN.cref(),
             m_api.light.cref(),
             worldToD3vs,
             d3vsToD3ps,
             m_size,
-            options);
+            options,
+            backgroundTransparent);
     }
 
     void render()
     {
-        renderBackBuffer();
+        renderBackBuffer(false);
         m_d3d->showBackBuffer();
     }
 
     ImgC4UC
-    capture(Vec2UI dims)
+    capture(Vec2UI dims,bool backgroundTransparent)
     {
         m_d3d->resize(dims);
         m_api.viewportDims.set(dims);
-        renderBackBuffer();
+        renderBackBuffer(backgroundTransparent);
         ImgC4UC         ret = m_d3d->capture(dims);
         m_api.viewportDims.set(m_size);
         m_d3d->resize(m_size);

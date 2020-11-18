@@ -17,6 +17,65 @@ using namespace std;
 
 namespace Fg {
 
+String
+meshFormatExtension(MeshFormat mf)
+{
+    static map<MeshFormat,String>   mfs = {
+        {MeshFormat::tri,"tri"},
+        {MeshFormat::fgmesh,"fgmesh"},
+        {MeshFormat::obj,"obj"},
+        {MeshFormat::dae,"dae"},
+        {MeshFormat::fbx,"fbx"},
+        {MeshFormat::ma,"ma"},
+        {MeshFormat::lwo,"lwo"},
+        {MeshFormat::wrl,"wrl"},
+        {MeshFormat::stl,"stl"},
+        {MeshFormat::a3ds,"3ds"},
+        {MeshFormat::xsi,"xsi"},
+    };
+    auto            it = mfs.find(mf);
+    FGASSERT(it != mfs.end());
+    return it->second;
+}
+
+String
+meshFormatSpecifier(MeshFormat mf)
+{
+    static map<MeshFormat,String>   mfs = {
+        {MeshFormat::tri,"FaceGen TRI"},
+        {MeshFormat::fgmesh,"FaceGen mesh"},
+        {MeshFormat::obj,"Wavefront OBJ"},
+        {MeshFormat::dae,"Collada"},
+        {MeshFormat::fbx,"Filmbox ASCII"},
+        {MeshFormat::ma,"Maya ASCII"},
+        {MeshFormat::lwo,"Lightwave Object"},
+        {MeshFormat::wrl,"VRML 97"},
+        {MeshFormat::stl,"3D Systems STL Binary"},
+        {MeshFormat::a3ds,"Autodesk 3DS"},
+        {MeshFormat::xsi,"Softimage XSI"},
+    };
+    auto            it = mfs.find(mf);
+    FGASSERT(it != mfs.end());
+    return it->second;
+}
+
+MeshFormats
+meshExportFormats()
+{
+    return {
+        MeshFormat::dae,
+        MeshFormat::fbx,
+        MeshFormat::obj,
+        MeshFormat::wrl,
+        MeshFormat::stl,
+        MeshFormat::a3ds,
+        MeshFormat::ma,
+        MeshFormat::lwo,
+        MeshFormat::xsi,
+    };
+}
+
+
 bool
 loadMesh(
     Ustring const &     fname,
@@ -39,7 +98,7 @@ loadMesh(
     if(ext == "tri")
         mesh = loadTri(path.str());
     else if ((ext == "obj") || (ext == "wobj"))
-        mesh = loadWObj(path.str());
+        mesh = loadWObj(path.str(),"usemtl");       // Split by material to remain 1-1 with any color map arguments
     else if (ext == "fgmesh")
         mesh = loadFgmesh(path.str());
     else
@@ -81,14 +140,13 @@ meshLoadFormatsCLDescription()
 {return string("(fgmesh | [w]obj | tri)"); }
 
 void
-meshSaveAnyFormat(
-    Meshes const &    meshes,
-    Ustring const &            fname,
-    string const &              imgFormat)
+saveMesh(Meshes const & meshes,Ustring const & fname,string const & imgFormat)
 {
     Ustring    ext = pathToExt(fname).toLower();
     if(ext == "tri")
         saveTri(fname,meshes);
+    else if (ext == "dae")
+        saveDae(fname,meshes,imgFormat);
     else if ((ext == "obj") || (ext == "wobj"))
         saveWObj(fname,meshes,imgFormat);
     else if (ext == "wrl")
@@ -113,30 +171,74 @@ meshSaveAnyFormat(
         fgThrow("Not a writeable 3D mesh format",fname);
 }
 
+const Svec<pair<String,String> > &
+meshExportFormatExtDescs()
+{
+    static Svec<pair<String,String> > ret = {
+        {"dae","Collada"},
+        {"fbx","Filmbox ASCII"},
+        {"obj","Wavefront OBJ"},
+        {"wrl","VRML 97"},
+        {"stl","3DSystems STL"},
+        {"3ds","3D Studio"},
+        {"ma","Maya ASCII"},
+        {"lwo","Lightwave Object"},
+        {"xsi","Softimage"},
+    };
+    return ret;
+}
+
 Strings const &
 meshExportFormatExts()
 {
-    static Strings ret = svec<string>("obj","wrl","stl","3ds","fbx","ma","lwo","xsi");
+    static Strings ret = sliceMember(meshExportFormatExtDescs(),&pair<String,String>::first);
     return ret;
 }
 
 Strings const &
 meshExportFormatDescriptions()
 {
-    static Strings ret = svec<string>(
-        "Wavefront OBJ","VRML 97","STL","Autodesk 3DS","Filmbox ASCII","Maya ASCII","Lightwave Object","Softimage XSI");
+    static Strings ret = sliceMember(meshExportFormatExtDescs(),&pair<String,String>::second);
     return ret;
 }
 
 std::string
 meshSaveFormatsCLDescription()
-{return string("(tri | [w]obj | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
+{return string("(tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
 Strings const &
 meshExportFormatsWithMorphs()
 {
-    static Strings ret = svec<string>("fbx","ma","lwo","xsi");
+    static Strings ret = svec<string>("dae","fbx","ma","lwo","xsi");
     return ret;
+}
+
+string
+inMetresStr(SpatialUnit u)
+{
+    if (u == SpatialUnit::millimetre)
+        return "0.001";
+    else if (u == SpatialUnit::centimetre)
+        return "0.01";
+    else if (u == SpatialUnit::metre)
+        return "1.0";
+    else
+        FGASSERT_FALSE;
+    return "";
+}
+
+string
+toStr(SpatialUnit u)
+{
+    if (u == SpatialUnit::millimetre)
+        return "millimetre";
+    else if (u == SpatialUnit::centimetre)
+        return "centimetre";
+    else if (u == SpatialUnit::metre)
+        return "metre";
+    else
+        FGASSERT_FALSE;
+    return "";
 }
 
 /**
@@ -168,7 +270,7 @@ triexport(CLArgs const & args)
             if (it == exts.end())
                 syntax.error("Unknown image file type",imgFile);
             if (cnt < mesh.surfaces.size())
-                loadImage(imgFile,mesh.surfaces[cnt++].albedoMapRef());
+                loadImage_(imgFile,mesh.surfaces[cnt++].albedoMapRef());
             else
                 syntax.error("More albedo map images specified than surfaces in",mesh.name);
         }
@@ -176,7 +278,7 @@ triexport(CLArgs const & args)
     }
     if (meshes.empty())
         syntax.error("No meshes specified");
-    meshSaveAnyFormat(meshes,outFile);
+    saveMesh(meshes,outFile);
 }
 
 Cmd

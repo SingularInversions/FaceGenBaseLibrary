@@ -33,6 +33,22 @@ using namespace Eigen;
 
 namespace Fg {
 
+Vec3D
+solve(Mat33D A_,Vec3D b_)
+{
+    Matrix3d        A;
+    Vector3d        b;
+    for (uint rr=0; rr<3; ++rr) {
+        for (uint cc=0; cc<3; ++cc)
+            A(rr,cc) = A_.rc(rr,cc);
+        b[rr] = b_[rr];
+    }
+    // If the matrix is singular, this returns a solution vector with one or more components equal to zero:
+    ColPivHouseholderQR<Matrix3d>   alg(A);
+    Vector3d        r = alg.solve(b);
+    return Vec3D {r[0],r[1],r[2]};
+}
+
 void
 cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
 {
@@ -140,11 +156,11 @@ fgEigsT(const Mat<double,dim,dim> & in)
 // Eigen does not have specialized solutions of 'EigenSolve' for small values
 // so we just insantiate generic version above:
 EigsC<3>
-cEigs(const Mat33D & mat)
+cEigs(Mat33D const & mat)
 {return fgEigsT<3>(mat); }
 
 EigsC<4>
-cEigs(const Mat44D & mat)
+cEigs(Mat44D const & mat)
 {return fgEigsT<4>(mat); }
 
 }
