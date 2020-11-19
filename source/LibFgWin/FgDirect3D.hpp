@@ -69,7 +69,11 @@ struct  PipelineState
 
 struct      D3d
 {
-    D3d(HWND hwnd,NPT<RendMeshes> rms);
+    D3d(HWND                hwnd,
+        NPT<RendMeshes>     rms,
+        NPT<double>         logRelSizeN);       // For scaling the surface point markers
+
+    ~D3d();
 
     void
     renderBackBuffer(
@@ -85,7 +89,6 @@ struct      D3d
     void                            resize(Vec2UI windowSize);
     void                            showBackBuffer();
     ImgC4UC                         capture(Vec2UI viewportSize);
-    void                            reset();
 
 private:
     uint                            maxMapSize = 4096;  // Play it safe
@@ -93,6 +96,7 @@ private:
     bool                            supportsFlip;       // Supports DXGI_SWAP_EFFECT_FLIP_DISCARD ?
     // Created in constructor:
     NPT<RendMeshes>                 rendMeshesN;
+    NPTF<double>                    logRelSize;         // Camera control parameter for object relative size
     OPT<Vec3F>                      origMeshesDimsN;    // Bounding box size of original meshes
     DfgFPtr                         origMeshChangeFlag; // If any of the original meshes are changed
     ComPtr<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator

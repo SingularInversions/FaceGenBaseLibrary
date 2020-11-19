@@ -126,7 +126,7 @@ struct  Gui3dWin : public GuiBaseImpl
             FGASSERTWIN(format != 0);
             FGASSERTWIN(SetPixelFormat(m_hdc,format,&pfd));
             FGASSERTWIN(DescribePixelFormat(m_hdc,format,pfd.nSize,&pfd));
-            m_d3d.reset(new D3d(hwnd,m_api.rendMeshesN));
+            m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
             m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
             // The pinch-to-zoom gesture is enabled by default but not the rotate gesture, which we
             // must explicitly enable:
@@ -277,7 +277,6 @@ struct  Gui3dWin : public GuiBaseImpl
             // Release GPU resources for render objects. Not strictly necessary since API releases automatically
             // and will ignore later Release() calls but better to be explicit:
             m_api.rendMeshesN = makeIPT(RendMeshes());
-            m_d3d->reset();
             m_d3d.reset();
             if (m_hdc) {
                 ReleaseDC(hwnd,m_hdc);

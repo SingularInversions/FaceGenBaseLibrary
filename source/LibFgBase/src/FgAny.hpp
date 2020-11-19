@@ -183,6 +183,10 @@ public:
     empty() const
     {return !bool(objPtr); }
 
+    void
+    reset()
+    {objPtr.reset(); }
+
     template<class T>
     void
     reset(T const & val)

@@ -154,9 +154,10 @@ PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
     pContext->PSSetShader(m_pPixelShader.Get(),nullptr,0);
 }
 
-D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN) : rendMeshesN(rmsN)
+D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, logRelSize{lrsN}
 {
-    origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms){
+    origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
+    {
         Mat32F      bounds {floatMax,-floatMax, floatMax,-floatMax, floatMax,-floatMax};
         for (RendMesh const & rm : rms) {
             Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
@@ -299,6 +300,20 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN) : rendMeshesN(rmsN)
     icosahedron = reverseWinding(cIcosahedron());                               // CC to CW
 }
 
+D3d::~D3d()
+{
+    // Release any GPU data pointers held outside this object:
+    RendMeshes const &      rms = rendMeshesN.cref();
+    for (RendMesh const & rm : rms) {
+        rm.gpuData->reset();
+        for (RendSurf const & rs : rm.rendSurfs)
+            rs.gpuData->reset();
+    }
+    if (pContext != nullptr) {
+        pContext->ClearState();
+    }
+}
+
 void
 D3d::initializeRenderTexture(Vec2UI windowSize)
 {
@@ -431,7 +446,10 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 {
     // This isn't quite right since it will recalc when anything in rendMeshesN changes ...
     // but it's not clear what the perfect solution would look like:
-    float                   sz = cMaxElem(origMeshesDimsN.val()) * (1.0f / 256.0f);
+    float                   sz = cMaxElem(origMeshesDimsN.val()) * (1.0f / 256.0f),
+                            relSize = float(exp(logRelSize.node.val())),
+                            scale = cMax(1.0f,relSize);
+    sz /= scale;            // Shrink points as they are zoomed in for greater visual accuracy
     Verts                   verts;
     Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
     for (Surf const & origSurf : origMesh.surfaces) {
@@ -791,13 +809,15 @@ D3d::renderBackBuffer(
             if (valid)
                 d3dMesh.allVerts = makeAllVerts(rendMesh.posedVertsN.cref());
         }
-        if (vertsChanged) {
+        if (vertsChanged || logRelSize.checkUpdate()) {
             d3dMesh.surfPoints.reset();
-            d3dMesh.markedPoints.reset();
-            if (valid) {
+            if (valid)
                 d3dMesh.surfPoints = makeSurfPoints(rendMesh,origMesh);
+        }
+        if (vertsChanged) {
+            d3dMesh.markedPoints.reset();
+            if (valid)
                 d3dMesh.markedPoints = makeMarkedVerts(rendMesh,origMesh);
-            }
         }
         if (valid)
             FGASSERT(rendMesh.rendSurfs.size() == origMesh.surfaces.size());
@@ -892,7 +912,7 @@ D3d::renderBackBuffer(
     pContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(),0);
     opaquePassPSO.apply(pContext);
     if (rendOpts.surfPoints) {
-        sceneBuff = makeScene(Lighting{Vec3F{1,0,0}},worldToD3vs,d3vsToD3ps);
+        sceneBuff = makeScene(Lighting{Light{Vec3F{1,0,0}}},worldToD3vs,d3vsToD3ps);
         ID3D11ShaderResourceView*       mapViews[3];
         mapViews[0] = whiteMap.view.get();
         mapViews[1] = blackMap.view.get();              // No specular on point spheres
@@ -1089,13 +1109,6 @@ D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool 
         }
         ++mm;
     }
-}
-
-void
-D3d::reset()
-{
-    if (pContext != nullptr)
-        pContext->ClearState();
 }
 
 }
