@@ -22,6 +22,7 @@
     <ProjectGuid>{6904AE47-51E0-BEED-2B13-288A79237C3D}</ProjectGuid>
     <RootNamespace>LibFgWin</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -84,7 +85,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -107,7 +107,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -129,7 +128,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -154,7 +152,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -163,8 +160,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\FgClusterWin.cpp" />
-    <ClCompile Include="..\FgClWin.cpp" />
     <ClCompile Include="..\FgConioWin.cpp" />
+    <ClCompile Include="..\FgDirect3D.cpp" />
+    <ClInclude Include="..\FgDirect3D.hpp" />
     <ClCompile Include="..\FgFileSystemWin.cpp" />
     <ClCompile Include="..\FgGui3dWin.cpp" />
     <ClCompile Include="..\FgGuiWin.cpp" />
@@ -185,6 +183,8 @@
     <ClCompile Include="..\FgGuiWinTabs.cpp" />
     <ClCompile Include="..\FgGuiWinText.cpp" />
     <ClCompile Include="..\FgGuiWinTextEdit.cpp" />
+    <ClCompile Include="..\FgStdioWin.cpp" />
+    <ClCompile Include="..\FgStdStreamWin.cpp" />
     <ClCompile Include="..\FgSystemInfoWin.cpp" />
     <ClCompile Include="..\FgTcpWin.cpp" />
     <ClCompile Include="..\FgThrowWindows.cpp" />
@@ -199,7 +199,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClInclude Include="..\stdafx.h" />
-    <ClInclude Include="..\wglext.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

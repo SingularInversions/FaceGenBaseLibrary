@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -70,12 +70,12 @@ struct  FffMultiObjectC
                                 total += numQuads(ii);
                             return total;
                         }
-        const Vec3F *ptArray(int objId) const
+        Vec3F const *ptArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].ptList[0]);
                         }
-        const Vec3UI *triArray(int objId) const
+        Vec3UI const *triArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].triList[0]);

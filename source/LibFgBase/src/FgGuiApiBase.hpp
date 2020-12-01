@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -63,7 +63,7 @@ typedef Svec<GuiPtrs>               GuiPtrss;
 
 template<class T>
 std::shared_ptr<GuiBase>
-guiMakePtr(const T & stackVal)
+guiMakePtr(T const & stackVal)
 {return std::make_shared<T>(stackVal); }
 
 struct  GuiEvent
@@ -98,7 +98,7 @@ struct  GuiVal           // Combine a window and a related node
 // Defined in OS-specific code:
 void
 guiStartImpl(
-    Ustring const &             title,
+    NPT<Ustring>                titleN,
     GuiPtr                      gui,
     Ustring const &             store,          // Directory in which to store state
     GuiOptions const &          options=GuiOptions());

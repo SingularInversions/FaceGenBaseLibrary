@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -72,11 +72,11 @@ struct  Quaternion
     Mat<T,3,3>
     asMatrix() const
     {
-        Mat<T,3,3>    ret;
-        T                   rm = sqr(real),
-                            im = sqr(imag[0]), 
-                            jm = sqr(imag[1]),
-                            km = sqr(imag[2]);
+        Mat<T,3,3>      ret;
+        T               rm = sqr(real),
+                        im = sqr(imag[0]), 
+                        jm = sqr(imag[1]),
+                        km = sqr(imag[2]);
         ret[0] = rm + im - jm - km;
         ret[4] = rm - im + jm - km;
         ret[8] = rm - im - jm + km;
@@ -90,7 +90,7 @@ struct  Quaternion
     }
 
     Mat<T,4,1>
-    asVect4() const
+    asVec4() const
     {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
 
     bool            // false if zero magnitude
@@ -122,30 +122,43 @@ operator*(const Quaternion<T> & lhs,const Mat<T,3,ncols> & rhs)
 
 template <class T>
 std::ostream& operator<<(std::ostream& s,const Quaternion<T> & q)
-{return (s << q.asVect4()); }
+{return (s << q.asVec4()); }
 
-typedef Quaternion<float>    QuaternionF;
-typedef Quaternion<double>   QuaternionD;
+typedef Quaternion<float>       QuaternionF;
+typedef Quaternion<double>      QuaternionD;
+typedef Svec<QuaternionD>       QuaternionDs;
 
 inline
 QuaternionD
-fgRotateX(double radians)
+cRotateX(double radians)
 {return QuaternionD(radians,0); }
 
 inline
 QuaternionD
-fgRotateY(double radians)
+cRotateY(double radians)
 {return QuaternionD(radians,1); }
 
 inline
 QuaternionD
-fgRotateZ(double radians)
+cRotateZ(double radians)
 {return QuaternionD(radians,2); }
 
 // Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
 // Useful for rotation prior.
 double
-fgTanDeltaMag(const QuaternionD & lhs,const QuaternionD & rhs);
+tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
+
+template<typename T>
+Mat<T,4,4>
+asHomogMat(Quaternion<T> q)
+{return asHomogMat(q.asMatrix()); }
+
+// Approx exponential map interpolation. 'val' must be [0,1]:
+QuaternionD
+interpolate(
+    QuaternionD         q0,         // Must be normalized
+    QuaternionD         q1,         // Must be normalized
+    double              val);       // Must be [0,1]
 
 }
 

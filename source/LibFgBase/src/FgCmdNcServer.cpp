@@ -39,25 +39,25 @@ run(string const & logFile,string const & cmd)
 #endif
     // Log file must be closed for this command to write to it.
     int         ret = system(cmdLog.c_str());
-    fgSleep(1);   // VS17 returns before releasing log file
+    sleepSeconds(1);   // VS17 returns before releasing log file
     fgWriteFile(logFile,"</pre>\n");
     return (ret == 0);
 }
 
 static
 bool
-runScript(string const & logFile,const vector<string> & cmds)
+runScript(string const & logFile,Strings const & cmds)
 {
     string const    push = "fgPush ",
                     pop = "fgPop";
     PushDir       dirStack;
     for (string const & cmd : cmds) {
-        if (fgBeginsWith(cmd,push)) {
+        if (beginsWith(cmd,push)) {
             string      dir(cmd.begin()+push.size(),cmd.end());
             Ofstream  ofs(logFile,true);
             ofs << "<h3> pushd " << dir << "</h3>\n";
             if (!pathExists(dir))
-                fgCreateDirectory(dir);
+                createDirectory(dir);
             if (isDirectory(dir))
                 dirStack.push(dir);
             else {
@@ -65,7 +65,7 @@ runScript(string const & logFile,const vector<string> & cmds)
                 return false;
             }
         }
-        else if (fgBeginsWith(cmd,pop)) {
+        else if (beginsWith(cmd,pop)) {
             Ofstream  ofs(logFile,true);
             ofs << "<h3> popd </h3>\n";
             dirStack.pop();
@@ -83,16 +83,16 @@ handler(
     string const &  dataIn,
     string &)
 {
-    FgNcScript      script;
+    NcScript      script;
     script.dsrMsg(dataIn);
     Path          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
-        logPath = Path(fgGetCurrentDir()+script.logFile);     // Make absolute
-    fgCreatePath(logPath.dir());                                // Create path if necessary
+        logPath = Path(getCurrentDir()+script.logFile);     // Make absolute
+    createPath(logPath.dir());                                // Create path if necessary
     script.logFile = logPath.str().m_str;
     string          dirBase = logPath.dirBase().m_str;
     ImgC4UC     img(32,32,RgbaUC(255,255,0,255));
-    imgSaveAnyFormat(dirBase+".jpg",img);
+    saveImage(dirBase+".jpg",img);
     fgWriteFile(script.logFile,
             "<html>\n"
             "<head>\n"
@@ -100,7 +100,7 @@ handler(
             "</head>\n"
             "<body>\n"
             "<h1>" + script.title + "</h1>\n"
-            "<h3>" + fgDateTimeString() + " (client: " + addr + ")</h3>\n"
+            "<h3>" + getDateTimeString() + " (client: " + addr + ")</h3>\n"
             "<font size=\"2\">\n",false);
     bool            res = runScript(script.logFile,script.cmds);
     Ofstream      ofs(script.logFile,true);
@@ -110,7 +110,7 @@ handler(
         img = ImgC4UC(32,32,RgbaUC(0,255,0,255));
     else
         img = ImgC4UC(32,32,RgbaUC(255,0,0,255));
-    imgSaveAnyFormat(dirBase+".jpg",img);
+    saveImage(dirBase+".jpg",img);
     return true;
 }
 
@@ -123,7 +123,7 @@ fgCmdNcServer(CLArgs const & args)
     fgout.logFile("fgNcServerLog.txt");
     // Despite this running in a new process each time, TCP errors can render
     // the port unusable on Windows until an OS reboot.
-    fgTcpServer(fgNcServerPort(),false,handler,0x10000);
+    fgTcpServer(getNcServerPort(),false,handler,0x10000);
 }
 
 }

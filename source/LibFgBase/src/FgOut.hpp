@@ -1,10 +1,10 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
-// Output (not ordering) is threadsafe but modification of output selections is not.
+// Not threadsafe so use ostringstream output option for threads.
 // Default output is 'cout' for systems supporting CLI, 'stringstream' otherwise (Android).
 //
 // USE:
@@ -42,10 +42,10 @@ operator<<(std::ostream &,std::vector<T> const &);
 
 struct  FgOut
 {
-    // TODO: Use std::atomic instead of mutexes around this:
     bool                m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
 
     FgOut();
+    ~FgOut();
 
     // This is a unique global object:
     FgOut(const FgOut &) = delete;
@@ -63,23 +63,25 @@ struct  FgOut
     void
     push()
     {
-        m_mutex.lock();
-        ++m_indent;
-        m_mutex.unlock();
+        for (OStr & o : m_streams)
+            ++o.indent;
     }
 
     void
     pop()
     {
-        m_mutex.lock();
-        if (m_indent > 0)   // Can't throw inside mutex lock it appears ...
-            --m_indent;
-        m_mutex.unlock();
+        for (OStr & o : m_streams)
+            if (o.indent > 0)
+                --o.indent;
     }
 
     uint
     indentLevel() const
-    {return m_indent; }
+    {
+        if (m_streams.empty())
+            return 0;
+        return uint(m_streams[0].indent);
+    }
 
     void
     setIndentLevel(uint);
@@ -87,23 +89,22 @@ struct  FgOut
     void
     reset()
     {
-        m_mutex.lock();
-        m_indent = 0;
-        m_mutex.unlock();
+        for (OStr & o : m_streams)
+            o.indent = 0;
     }
 
     FgOut & flush();
 
     template<typename T>
     FgOut &
-    operator<<(const T & arg)
+    operator<<(T const & arg)
     {
         if (notMute())
-            for (std::ostream * os : m_streams)
-                (*os) << arg;
+            for (OStr & ostr : m_streams)
+                (*ostr.pOStr) << arg;
         return *this;
     }
-
+    
     FgOut &
     operator<<(std::ostream & (*manip)(std::ostream&));
 
@@ -112,10 +113,17 @@ struct  FgOut
     {return m_stringStream.str() + "\n"; }
 
 private:
-    std::vector<std::ostream *> m_streams;  // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
+    struct  OStr
+    {
+        std::ostream        *pOStr;
+        size_t              indent = 0;     // Note that atomic cannot be copy constructed
+
+        explicit OStr(std::ostream * p) : pOStr(p) {}
+
+        bool operator==(std::ostream const * r) const {return (pOStr == r); }
+    };
+    std::vector<OStr>   m_streams;          // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
     std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
-    std::mutex          m_mutex;            // Guard m_indent to keep it thread-safe:
-    uint                m_indent = 0;
 
     bool
     notMute()
@@ -145,21 +153,42 @@ struct  FgOutMute
     {release(); }
 };
 
-struct  OutPush
+struct  PushIndent
 {
-    explicit
-    OutPush(const std::string & label)
-    {fgout << fgnl << label << fgpush; }
+    size_t          depth = 1;
 
-    ~OutPush()
-    {fgout << fgpop; }
+    explicit
+    PushIndent(const std::string & label)
+    {fgout << fgnl << label << std::flush << fgpush; }
+
+    ~PushIndent()
+    {pop(); }
+
+    void
+    next(const std::string & nextLabel) const
+    {
+        if (depth > 0)
+            fgout << fgpop;
+        fgout << fgnl << nextLabel << std::flush;
+        if (depth > 0)
+            fgout << fgpush;
+    }
+
+    void
+    pop()
+    {
+        if (depth > 0) {
+            fgout << fgpop;
+            --depth;
+        }
+    }
 };
 
 struct  PushLogFile
 {
     explicit
-    PushLogFile(std::string const & fname)
-    {fgout.logFile(fname,false,false); }
+    PushLogFile(std::string const & fname,bool append=false)
+    {fgout.logFile(fname,append,false); }
 
     ~PushLogFile()
     {fgout.logFileClose(); }

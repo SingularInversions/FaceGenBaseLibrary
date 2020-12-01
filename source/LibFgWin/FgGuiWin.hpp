@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,9 +35,8 @@ struct  GuiBaseImpl
     ~GuiBaseImpl()
     {};
 
-    // Recursively create the win32 window objects using the idiomatic approach of
-    // recursing the creation call within the WM_CREATE handler. This function
-    // is only called once:
+    // Recursively create the win32 window objects using the idiomatic approach of recursing
+    // the creation call within the WM_CREATE handler.
     virtual void
     create(
         HWND            hwndParent,
@@ -92,10 +91,16 @@ struct  GuiBaseImpl
     {}
 };
 
+struct  GuiMainBase
+{
+    virtual void    updateGui() const = 0;
+};
+
 struct  GuiWinStatics
 {
-    HINSTANCE       hinst;
-    HWND            hwndMain;
+    HINSTANCE           hinst;
+    HWND                hwndMain;
+    GuiMainBase const * guiMainPtr;
 
     GuiWinStatics() : hinst(0), hwndMain(0) {}
 };
@@ -155,8 +160,8 @@ winCreateChild(
 {
     std::string     classNameA = typeid(ChildImpl).name();
     // Different class options mean different classes:
-    classNameA +=   toString(size_t(opt.cursor)) + "_" +
-                    toString(size_t(opt.useFillBrush));
+    classNameA +=   toStr(size_t(opt.cursor)) + "_" +
+                    toStr(size_t(opt.useFillBrush));
     std::wstring    className = Ustring(classNameA).as_wstring();
     FGASSERT(className.size() < 256);     // Windows limit
     WNDCLASSEX  wcl;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -29,15 +29,15 @@ testCurrentDirectory(CLArgs const & args)
     {
         char32_t        ch = 0x00004EE5;            // A Chinese character
         Ustring        chinese(ch);
-        Ustring        oldDir = fgGetCurrentDir();
+        Ustring        oldDir = getCurrentDir();
         Ustring        dirName = chinese + fgDirSep();
-        fgCreateDirectory(dirName);
-        fgSetCurrentDir(dirName);
-        Ustring        newDir = fgGetCurrentDir();
+        createDirectory(dirName);
+        setCurrentDir(dirName);
+        Ustring        newDir = getCurrentDir();
         Ustring        expected = oldDir + dirName;
-        fgSetCurrentDir(oldDir);
-        Ustring        restored = fgGetCurrentDir();
-        FGASSERT(fgRemoveDirectory(dirName));
+        setCurrentDir(oldDir);
+        Ustring        restored = getCurrentDir();
+        FGASSERT(removeDirectory(dirName));
         fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
         fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
         fgout << fgnl << "Expected directory:    " << expected.as_utf8_string();
@@ -84,12 +84,12 @@ testDeleteDirectory(CLArgs const & args)
     char32_t        ch = 0x000000A2;              // The cent sign
     Ustring        cent = Ustring(ch)+"/";
     Ustring        name = "testDeleteDirectory/";
-    fgCreateDirectory(name);
+    createDirectory(name);
     FGASSERT(pathExists(name));
-    fgCreateDirectory(name+cent);
-    fgSaveXml(name+cent+"a",42);
-    fgSaveXml(name+"b",21);
-    fgRemoveDirectoryRecursive(name);
+    createDirectory(name+cent);
+    saveBsaXml(name+cent+"a",42);
+    saveBsaXml(name+"b",21);
+    deleteDirectoryRecursive(name);
     FGASSERT(!pathExists(name));
 }
 
@@ -99,11 +99,11 @@ testRecursiveCopy(CLArgs const & args)
 {
     FGTESTDIR
     string          path = "silly-v3.4.7/subdir/";
-    fgCreatePath("tst1/"+path);
+    createPath("tst1/"+path);
     Ofstream      ofs("tst1/"+path+"file");
     ofs << "hello";
     ofs.close();
-    fgCopyRecursive("tst1","tst2");
+    copyRecursive("tst1","tst2");
     Ifstream      ifs("tst2/"+path+"file");
     string          hello;
     ifs >> hello;
@@ -120,7 +120,7 @@ testExists(CLArgs const &)
 void
 fgFileSystemTest(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(testCurrentDirectory,"curDir"));
     cmds.push_back(Cmd(testOfstreamUnicode,"ofsUni"));
     cmds.push_back(Cmd(testReadableFile,"readable"));

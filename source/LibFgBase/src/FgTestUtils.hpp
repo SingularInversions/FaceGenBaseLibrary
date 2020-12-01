@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,20 +12,11 @@
 #include "FgDiagnostics.hpp"
 #include "FgOut.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgImageBase.hpp"
 #include "FgCommand.hpp"
+#include "FgImageIo.hpp"
+#include "FgBuild.hpp"
 
 namespace Fg {
-
-struct FgMemoryLeakDetector
-{
-    FgMemoryLeakDetector();
-    ~FgMemoryLeakDetector();
-    void throw_if_leaked(const char * whichfn);
-private:
-    struct impl;
-    impl * m_p;
-};
 
 // Ensure that an expression throws a specific FgException by checking that the 
 // beginning of untranslated strings match. Don't use the full string as the state
@@ -41,7 +32,7 @@ private:
         {                                                               \
             fgout << fgnl << e.no_tr_message();                         \
             fgout << fgnl << e1;                                        \
-            FGASSERT(fgBeginsWith(e.no_tr_message(),e1));               \
+            FGASSERT(beginsWith(e.no_tr_message(),e1));               \
             fg_test_check_threw = true;                                 \
         }                                                               \
         catch(...){fg_test_check_threw = true;}                         \
@@ -62,22 +53,22 @@ private:
     }
 
 void
-fgRegressFail(
+regressFail(
     Ustring const & testName,
     Ustring const & refName);
 
 // Returns corresponding regression baseline value:
 template<class T>
 T
-fgRegressionBaseline(
-    const T &           val,
+getRegressionBaseline(
+    T const &           val,
     const std::string & path,
     const std::string & name)
 {
     if (fgKeepTempFiles())
-        fgSaveXml(name+"_baseline.xml",val);
+        saveBsaXml(name+"_baseline.xml",val);
     T       base;
-    fgLoadXml(dataDir()+path+name+"_baseline.xml",base);
+    loadBsaXml(dataDir()+path+name+"_baseline.xml",base);
     return base;
 }
 
@@ -104,78 +95,100 @@ regressFileRel(
 
 // As above but regression failure when max pixel diff greater than given:
 void
-fgRegressImage(
+regressImage(
     const std::string & name,
     const std::string & relDir,
     uint                maxDelta=2);
 
-// Default comparison is equality but this should be overidden when small differences between platforms are
-// acceptable:
-template<class T>
-bool
-fgRegressCompare(const T & lhs,const T & rhs)
-{return (lhs == rhs); }
-
 template<class T>
 T
-fgRegressLoad(Ustring const & fname)
+regressLoad(Ustring const & fname)
 {
     T       ret;
-    fgLoadXml(fname,ret);
+    loadBsaXml(fname,ret);
     return ret;
 }
+template<>
+ImgC4UC
+regressLoad(Ustring const &);
 
 template<class T>
 void
-fgRegressSave(Ustring const & fname,const T & val)
-{fgSaveXml(fname,val); }
+regressSave(Ustring const & fname,T const & val)
+{saveBsaXml(fname,val); }
 
 template<>
-ImgC4UC
-fgRegressLoad(Ustring const &);
-template<>
-void
-fgRegressSave(Ustring const &,const ImgC4UC &);
+inline void
+regressSave(Ustring const & path,ImgC4UC const & img)
+{saveImage(path,img); }
 
 // Developers with source control create this (empty) flag file locally:
 inline
 bool
-fgOverwriteBaselines()
+overwriteBaselines()
 {return pathExists(dataDir()+"_overwrite_baselines.flag"); }
 
+// Exact regression for all configurations:
 template<class T>
 void
-fgRegress(
-    const T &           query,
-    Ustring const &    baselinePath,
-    const std::function<bool(const T &,const T &)> & regressCompare=fgRegressCompare<T>)
+regressTest(
+    T const &           query,
+    Ustring const &     baselinePath)
 {
     // This flag should be set on a developer's machine (and ignored by source control) for
     // easy updates & change visualation. It should NOT be set of automated build machines:
-    bool                regressOverwrite = fgOverwriteBaselines();
+    bool                regressOverwrite = overwriteBaselines();
     if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
-            fgRegressSave(baselinePath,query);
+            regressSave(baselinePath,query);
             fgout << fgnl << "New regression baseline saved: " << baselinePath;
             // Don't return here, run the test to be sure it works:
         }
         else
             fgThrow("Regression baseline not found",baselinePath);
     }
+    T       baseline = regressLoad<T>(baselinePath);
+    if (!(query == baseline)) {
+        if (regressOverwrite)
+            regressSave(baselinePath,query);
+        fgThrow("Regression failure: ",baselinePath);
+    }
+}
 
-    // Regression file exists, do the test:
-    T       baseline = fgRegressLoad<T>(baselinePath);
-    if (regressCompare(query,baseline)) {   // Passed
-        // If this is the developer machine, further test for exact equality and update the
+// Floating point optimizations for different configurations yield different (by a small amount) results:
+template<class T>
+void
+regressTestApprox(
+    T const &                       query,
+    Ustring const &                 baselinePath,
+    Sfun<bool(T const &,T const &)> compare,
+    Sfun<T(Ustring const &)>        load=regressLoad<T>,
+    Sfun<void(Ustring const &,T const &)> save=regressSave<T>,
+    // Set equality if you want bitwise regression for primary configuration:
+    Sfun<bool(T const &,T const &)> equality=Sfun<bool(T const &,T const &)>())
+{
+    bool                regressOverwrite = overwriteBaselines();
+    if (!pathExists(baselinePath)) {
+        if (regressOverwrite) {
+            save(baselinePath,query);
+            fgout << fgnl << "New regression baseline saved: " << baselinePath;
+            // Don't return here, run the test to be sure it works:
+        }
+        else
+            fgThrow("Regression baseline not found",baselinePath);
+    }
+    T       baseline = load(baselinePath);
+    if (compare(query,baseline)) {  // Passed
+        // If this is a developer machine primary config, test for exact equality and update the
         // regression file if not the case:
-        if (regressOverwrite && (!(query == baseline))) {
-            fgRegressSave(baselinePath,query);
+        if (equality && regressOverwrite && isPrimaryConfig() && (!equality(query,baseline))) {
+            save(baselinePath,query);
             fgout << fgnl << "Regression baseline updated: " << baselinePath;
         }
     }
-    else {      // The test failed:
+    else {                          // Failed
         if (regressOverwrite)
-            fgRegressSave(baselinePath,query);
+            save(baselinePath,query);
         fgThrow("Regression failure: ",baselinePath);
     }
 }
@@ -183,7 +196,7 @@ fgRegress(
 // Regress a string against a data file. Throws if file is different.
 // For dev instances (_overwrite_baselines.flag), also overwrites file if different.
 void
-fgRegressString(String const & data,Ustring const & relPath);
+regressString(String const & data,Ustring const & relPath);
 
 }
 

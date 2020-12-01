@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,7 +15,7 @@ using namespace std;
 namespace Fg {
 
 ImgC4UC
-FgLighting::createSpecularMap() const
+Lighting::createSpecularMap() const
 {
     FGASSERT(lights.size() > 0);
 

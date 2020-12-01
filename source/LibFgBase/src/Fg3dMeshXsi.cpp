@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,14 +28,6 @@ static bool saveXsiFile(
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
         string const                    &appName);
-static Vec3F calTriNormals(
-        const vector<Vec3F>        &vtxList,
-        const vector<Vec3UI>        &triList,
-        unsigned long                   tri);
-static Vec3F calQuadNormals(
-        const vector<Vec3F>        &vtxList,
-        const vector<Vec4UI>        &quadList,
-        unsigned long                   quad);
 static string floatToString(float val);
 
 
@@ -233,8 +225,7 @@ static bool saveXsiFile(
         if (txtFname != "" && txtFname.size() > 0)
         {
             // Get the image size by loading the image
-            ImgC4UC     tmpImg;
-            imgLoadAnyFormat(path.dir()+txtFname,tmpImg);
+            ImgC4UC     tmpImg = loadImage(path.dir()+txtFname);
             {
                 imgWd = tmpImg.width();
                 imgHgt = tmpImg.height();
@@ -285,11 +276,12 @@ static bool saveXsiFile(
 
         // Get aliase names for all the lists.
         const vector<Vec3F>    &vtxList = model.getPtList(xx);
-        const vector<Vec3UI>    &triList = model.getTriList(xx);
+        Vec3UIs const    &triList = model.getTriList(xx);
         const vector<Vec4UI>    &quadList = model.getQuadList(xx);
         const vector<Vec2F>    &txtList = model.getTextCoord(xx);
-        const vector<Vec3UI>    &txtTriList = model.getTexTriList(xx);
+        Vec3UIs const    &txtTriList = model.getTexTriList(xx);
         const vector<Vec4UI>    &txtQuadList = model.getTexQuadList(xx);
+        MeshNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
         bool perFacet = false;
         bool perVertex = false;
         if (vtxList.size() == txtList.size() &&
@@ -300,10 +292,6 @@ static bool saveXsiFile(
                  txtTriList.size() == triList.size() &&
                  txtQuadList.size() == quadList.size())
             perFacet = true;
-
-        // Create a new list for vertex normals
-        vector<Vec3F> normList;
-        normList.resize(vtxList.size());
 
         // Output the current model
         ofs << "SI_Model MDL-" << objName << "\n"
@@ -347,37 +335,16 @@ static bool saveXsiFile(
                 << floatToString(vtxList[pt][0]) << ", "
                 << floatToString(vtxList[pt][1]) << ", "
                 << floatToString(vtxList[pt][2]) << ",\n";
-
-            // Initialize the normal list to zero.
-            normList[pt] = Vec3F(0);
         }
         ofs << "\n";
-        // Calculate the normal first
-        for (unsigned long tt=0; tt<triList.size(); ++tt)
-        {
-            Vec3F norm = calTriNormals(vtxList,triList,tt);
-            normList[ triList[tt][0] ] += norm;
-            normList[ triList[tt][1] ] += norm;
-            normList[ triList[tt][2] ] += norm;
-        }
-        for (unsigned long qq=0; qq<quadList.size(); ++qq)
-        {
-            Vec3F norm = calQuadNormals(vtxList,quadList,qq);
-            normList[ quadList[qq][0] ] += norm;
-            normList[ quadList[qq][1] ] += norm;
-            normList[ quadList[qq][2] ] += norm;
-            normList[ quadList[qq][3] ] += norm;
-        }
-        ofs << "         " << normList.size() << ",\n";
+        ofs << "         " << norms.vert.size() << ",\n";
         ofs << "         \"NORMAL\",\n";
-        for (pt=0; pt<normList.size(); ++pt)
+        for (pt=0; pt<norms.vert.size(); ++pt)
         {
-            float ln = normList[pt].len();
-            if (ln > 0.0f) normList[pt] /= ln;
             ofs << "         "
-                << floatToString(normList[pt][0]) << ", "
-                << floatToString(normList[pt][1]) << ", "
-                << floatToString(normList[pt][2]) << ",\n";
+                << floatToString(norms.vert[pt][0]) << ", "
+                << floatToString(norms.vert[pt][1]) << ", "
+                << floatToString(norms.vert[pt][2]) << ",\n";
         }
         if (perVertex || perFacet)
         {
@@ -537,10 +504,10 @@ static bool saveXsiFile(
                 for (unsigned long mm=0; mm<numMorphs+1; ++mm)
                 {
                     const vector<Vec3F> *mvtxList = &vtxList;
+                    FffMultiObjectC const & mobj = (*morphTargets)[mm-1];
                     if (mm > 0)
-                        mvtxList = &((*morphTargets)[mm-1].getPtList(xx));
-
-                    normList.resize( mvtxList->size() );
+                        mvtxList = &(mobj.getPtList(xx));
+                    MeshNormals         mnorms = cNormals({Surf{triList,quadList}},*mvtxList);
 
                     ofs << "\n";
                     ofs << "         SI_Shape SHP-" << objName 
@@ -562,40 +529,17 @@ static bool saveXsiFile(
                             << floatToString((*mvtxList)[pt][0]) << ", "
                             << floatToString((*mvtxList)[pt][1]) << ", "
                             << floatToString((*mvtxList)[pt][2]) << ",\n";
-
-                        // Initialize the normal list to zero.
-                        normList[pt] = Vec3F(0.0f);
                     }
 
-                    // New normal list.
-                    size_t  tt;
-                    for (tt=0; tt<triList.size(); ++tt)
-                    {
-                        Vec3F norm=calTriNormals(*mvtxList,triList,ulong(tt));
-                        normList[ triList[tt][0] ] += norm;
-                        normList[ triList[tt][1] ] += norm;
-                        normList[ triList[tt][2] ] += norm;
-                    }
-                    size_t  qq;
-                    for (qq=0; qq<quadList.size(); ++qq)
-                    {
-                        Vec3F norm=calQuadNormals(*mvtxList,quadList,ulong(qq));
-                        normList[ quadList[qq][0] ] += norm;
-                        normList[ quadList[qq][1] ] += norm;
-                        normList[ quadList[qq][2] ] += norm;
-                        normList[ quadList[qq][3] ] += norm;
-                    }
                     ofs << "\n";
-                    ofs << "            " << normList.size() << ",\n";
+                    ofs << "            " << mnorms.vert.size() << ",\n";
                     ofs << "            \"NORMAL\",\n";
-                    for (pt=0; pt<normList.size(); ++pt)
+                    for (pt=0; pt<mnorms.vert.size(); ++pt)
                     {
-                        float ln = normList[pt].len();
-                        if (ln > 0.0f) normList[pt] /= ln;
                         ofs << "            " << pt << ", "
-                            << floatToString(normList[pt][0]) << ", "
-                            << floatToString(normList[pt][1]) << ", "
-                            << floatToString(normList[pt][2]) << ",\n";
+                            << floatToString(mnorms.vert[pt][0]) << ", "
+                            << floatToString(mnorms.vert[pt][1]) << ", "
+                            << floatToString(mnorms.vert[pt][2]) << ",\n";
                     }
 
                     // Texture UV
@@ -657,75 +601,6 @@ static bool saveXsiFile(
     }
 }
 
-
-//****************************************************************************
-//                              calTriNormals
-//****************************************************************************
-static Vec3F calTriNormals(
-
-    const vector<Vec3F> &vtxList,
-    const vector<Vec3UI> &triList,
-    unsigned long            tri)
-{
-    Vec3F v0 = vtxList[ triList[tri][0] ];
-    Vec3F v1 = vtxList[ triList[tri][1] ];
-    Vec3F v2 = vtxList[ triList[tri][2] ];
-
-    // The least square fit normal for this triangle.
-    Vec3F norm( (v0[1]-v1[1]) * (v0[2]+v1[2]) +
-                     (v1[1]-v2[1]) * (v1[2]+v2[2]) +
-                     (v2[1]-v0[1]) * (v2[2]+v0[2]),
-                     (v0[2]-v1[2]) * (v0[0]+v1[0]) +
-                     (v1[2]-v2[2]) * (v1[0]+v2[0]) +
-                     (v2[2]-v0[2]) * (v2[0]+v0[0]),
-                     (v0[0]-v1[0]) * (v0[1]+v1[1]) +
-                     (v1[0]-v2[0]) * (v1[1]+v2[1]) +
-                     (v2[0]-v0[0]) * (v2[1]+v0[1]) );
-
-    float ln = norm.len();
-    if (ln > FLT_EPSILON)
-        norm /= ln;
-
-    return norm;
-}
-
-
-//****************************************************************************
-//                              calQuadNormals
-//****************************************************************************
-static Vec3F calQuadNormals(
-
-    const vector<Vec3F> &vtxList,
-    const vector<Vec4UI> &quadList,
-    unsigned long            quad)
-{
-    Vec3F v0 = vtxList[ quadList[quad][0] ];
-    Vec3F v1 = vtxList[ quadList[quad][1] ];
-    Vec3F v2 = vtxList[ quadList[quad][2] ];
-    Vec3F v3 = vtxList[ quadList[quad][3] ];
-
-    // The least square fit normal for this quad polygon.
-    Vec3F norm( (v0[1]-v1[1]) * (v0[2]+v1[2]) +
-                     (v1[1]-v2[1]) * (v1[2]+v2[2]) +
-                     (v2[1]-v3[1]) * (v2[2]+v3[2]) +
-                     (v3[1]-v0[1]) * (v3[2]+v0[2]),
-                     (v0[2]-v1[2]) * (v0[0]+v1[0]) +
-                     (v1[2]-v2[2]) * (v1[0]+v2[0]) +
-                     (v2[2]-v3[2]) * (v2[0]+v3[0]) +
-                     (v3[2]-v0[2]) * (v3[0]+v0[0]),
-                     (v0[0]-v1[0]) * (v0[1]+v1[1]) +
-                     (v1[0]-v2[0]) * (v1[1]+v2[1]) +
-                     (v2[0]-v3[0]) * (v2[1]+v3[1]) +
-                     (v3[0]-v0[0]) * (v3[1]+v0[1]) );
-
-    float ln = norm.len();
-    if (ln > FLT_EPSILON)
-        norm /= ln;
-
-    return norm;
-}
-
-
 //****************************************************************************
 //                              floatToString
 //****************************************************************************
@@ -743,7 +618,7 @@ static string floatToString(float val)
 void
 saveXsi(
     Ustring const &        fname,
-    const vector<Mesh> & meshes,
+    Meshes const & meshes,
     string                  imgFormat)
 {
     FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat);
@@ -760,10 +635,10 @@ fgSaveXsiTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveXsi("meshExportXsi",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveXsi("meshExportXsi",svec(mouth,glasses));
     regressFileRel("meshExportXsi.xsi","base/test/");
     regressFileRel("meshExportXsi0.png","base/test/");
     regressFileRel("meshExportXsi1.png","base/test/");

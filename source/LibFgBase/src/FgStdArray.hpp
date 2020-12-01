@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,18 +16,24 @@ template<typename T,size_t S>
 using Arr = std::array<T,S>;
 
 typedef Arr<uchar,2>        Arr2UC;
-typedef Arr<uchar,3>        Arr3UC;
-typedef Arr<uchar,4>        Arr4UC;
-
-typedef Arr<schar,3>        Arr3SC;
-
 typedef Arr<int,2>          Arr2I;
-typedef Arr<int,3>          Arr3I;
-typedef Arr<int,4>          Arr4I;
-
 typedef Arr<float,2>        Arr2F;
+typedef Arr<double,2>       Arr2D;
+
+typedef Arr<uchar,3>        Arr3UC;
+typedef Arr<schar,3>        Arr3SC;
+typedef Arr<int,3>          Arr3I;
 typedef Arr<float,3>        Arr3F;
+typedef Arr<double,3>       Arr3D;
+
+typedef Arr<uchar,4>        Arr4UC;
+typedef Arr<int,4>          Arr4I;
 typedef Arr<float,4>        Arr4F;
+typedef Arr<double,4>       Arr4D;
+
+inline Arr<bool,2>
+cTrueFalse()
+{return Arr<bool,2> {{true,false}}; }
 
 template<class T,size_t S>
 struct  Traits<Arr<T,S> >
@@ -54,12 +60,20 @@ scast(Arr<From,S> const & v)
     return ret;
 }
 
+template<class To,class From,size_t S>
+void
+round_(Arr<From,S> const & from,Arr<To,S> & to)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        round_(from[ii],to[ii]);
+}
+
 template<class T,size_t S>
 std::ostream &
 operator<<(std::ostream & os,const Arr<T,S> & arr)
 {
     os << "[";
-    for (const T & e : arr)
+    for (T const & e : arr)
         os << e << " ";
     return os << "]";
 }
@@ -152,6 +166,28 @@ template<class T,size_t S>
 T
 cProd(Arr<T,S> const & a)
 {return std::accumulate(cbegin(a)+1,cend(a),a[0],std::multiplies<T>{}); }
+
+template<class T,size_t S>
+size_t
+cMinIdx(const Arr<T,S> & v)
+{
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (v[ii] < v[ret])
+            ret = ii;
+    return ret;
+}
+
+template<class T,size_t S>
+size_t
+cMaxIdx(const Arr<T,S> & v)
+{
+    size_t      ret = 0;
+    for (size_t ii=1; ii<v.size(); ++ii)
+        if (v[ii] > v[ret])
+            ret = ii;
+    return ret;
+}
 
 }
 

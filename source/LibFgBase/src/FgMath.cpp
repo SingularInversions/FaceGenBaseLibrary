@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -64,7 +64,7 @@ log2Ceil(uint32 xx)
 // The cubic term co-efficient is assumed to be 1.0.
 // From Spiegel '99, Mathematical Handbook of Formulas and Tables.
 vector<double>
-fgSolveCubicReal(
+solveCubicReal(
     double      c0,         // constant term
     double      c1,         // first order coefficient
     double      c2)         // second order coefficient
@@ -101,7 +101,7 @@ fgSolveCubicReal(
 }
 
 vector<double>
-fgConvolve(
+convolve(
     const vector<double> &     data,
     const vector<double> &     kernel)
 {
@@ -120,7 +120,7 @@ fgConvolve(
 }
 
 vector<double>
-fgConvolveGauss(
+convolveGauss(
     const std::vector<double> &     in,
     double                          stdev)
 {
@@ -138,28 +138,52 @@ fgConvolveGauss(
     double fac = 1.0 / cSum(kernel);
     for (size_t ii=0; ii<kernel.size(); ++ii)
         kernel[ii] *= fac;
-    return fgConvolve(in,kernel);
+    return convolve(in,kernel);
 }
 
 vector<double>
-fgRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
+cRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
 {
     vector<double>      ret;
     FGASSERT(a.size() == b.size());
     ret.resize(a.size());
     for (size_t ii=0; ii<a.size(); ++ii)
-        ret[ii] = fgRelDiff(a[ii],b[ii],minAbs);
+        ret[ii] = cRelDiff(a[ii],b[ii],minAbs);
     return ret;
 }
 
+size_t
+zorder(size_t v0,size_t v1,size_t v2)
+{
+    size_t          ret = 0;
+    for (size_t ii=0; ii<10; ++ii) {
+        size_t      sel = size_t(1) << ii,
+                    shift = ii*2;           // src pos increments by 1, dest by 3, so difference by 2
+        ret |=  ((v0 & sel) << shift) |
+                ((v1 & sel) << (shift+1)) |
+                ((v2 & sel) << (shift+2));
+    }
+    return ret;
+}
+
+static void
+testZorder()
+{
+    size_t      v0 = 0x01,
+                v1 = 0x02,
+                v2 = 0x04,
+                r0 = zorder(v0,v1,v2),
+                r1 = v0 | (v1 << 3) | (v2 << 6);
+    FGASSERT(r0 == r1);
+}
+
 // Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).
-static
-void
+static void
 testFgRand()
 {
     randSeedRepeatable();
     const uint      numSamples = 1000000;
-    const double    num = double(numSamples);
+    double const    num = double(numSamples);
     vector<double>  vals(numSamples);
     double          mean = 0.0;
     for (uint ii=0; ii<numSamples; ii++)
@@ -179,10 +203,11 @@ testFgRand()
 }
 
 void
-fgMathTest(CLArgs const &)
+testMath(CLArgs const &)
 {
-    OutPush       op("Testing rand");
+    PushIndent       op("Testing rand");
     testFgRand();
+    testZorder();
 }
 
 // The following code is a modified part of the 'fastermath' library:

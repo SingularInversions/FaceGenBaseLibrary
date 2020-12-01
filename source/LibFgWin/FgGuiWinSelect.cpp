@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,8 +22,8 @@ struct  GuiSelectWin : public GuiBaseImpl
     GuiSelect               m_api;
     GuiImplPtrs             m_panes;
     size_t                  m_currPane;     // Which one is Windows currently displaying ?
-    Vec2I                m_lo,m_sz;
-    Ustring                m_store;
+    Vec2I                   m_lo,m_sz;
+    Ustring                 m_store;
 
     GuiSelectWin(const GuiSelect & api)
         : m_api(api)
@@ -39,8 +39,8 @@ struct  GuiSelectWin : public GuiBaseImpl
     {
         m_store = store;
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+toString(ii),extStyle,false);
-        m_currPane = m_api.selection.val();
+            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+toStr(ii),extStyle,false);
+        m_currPane = m_api.selection.cref();
         if (visible)
             m_panes[m_currPane]->showWindow(true);
     }
@@ -73,8 +73,8 @@ struct  GuiSelectWin : public GuiBaseImpl
     virtual void
     updateIfChanged()
     {
-        if (m_api.updateFlag->checkUpdate()) {
-            size_t      currPane = m_api.selection.val();
+        if (m_api.selection.checkUpdate()) {
+            size_t      currPane = m_api.selection.cref();
             if (currPane != m_currPane) {
                 m_panes[m_currPane]->showWindow(false);
                 m_currPane = currPane;

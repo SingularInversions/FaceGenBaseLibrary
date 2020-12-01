@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,15 +19,15 @@ namespace Fg {
 
 // Location of network computing share root location as specified on given *native* build OS:
 String
-fgNcShare(FgBuildOS nativeBuildOS);
+getNcShare(BuildOS nativeBuildOS);
 
 // As above for current host OS:
 String
-fgNcShare();
+getNcShare();
 
 // An HTML log of given commands and outputs will be appended to 'logFile' and a 32x32 image
 // will be written to <logFileBaseName>.jpg, green for success of all commands, red for a fail:
-struct  FgNcScript
+struct  NcScript
 {
     String              logFile;    // Directory path will be created if it doesn't exist
     String              title;      // Title line of log file
@@ -71,28 +71,28 @@ struct  FgNcScript
 
 inline
 uint16
-fgNcServerPort()
+getNcServerPort()
 {return 59405; }
 
 inline
 String
-fgCiShareBoot()
-{return fgNcShare() + fgNs("ci/boot/"); }
+getCiShareBoot()
+{return getNcShare() + toNativeSeparator("ci/boot/"); }
 
 inline
 String
-fgCiShareBoot(FgBuildOS os)
-{return fgNcShare(os) + fgNsOs("ci/boot/",os); }
+getCiShareBoot(BuildOS os)
+{return getNcShare(os) + cNsOs("ci/boot/",os); }
 
 inline
 String
-fgCiShareRepo()
-{return fgNcShare() + fgNs("ci/root/"); }
+getCiShareRepo()
+{return getNcShare() + toNativeSeparator("ci/root/"); }
 
 inline
 String
-fgCiShareRepo(FgBuildOS os)
-{return fgNcShare(os) + fgNsOs("ci/root/",os); }
+getCiShareRepo(BuildOS os)
+{return getNcShare(os) + cNsOs("ci/root/",os); }
 
 }
 

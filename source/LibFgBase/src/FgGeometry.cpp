@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,10 +14,27 @@ using namespace std;
 
 namespace Fg {
 
-VecMag
+Vec3D
+closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2)
+{
+    // Closest point (homogeneous coordinate) to origin derived using Lagrange's method:
+    double          m00 = cMag(p0),
+                    m11 = cMag(p1),
+                    m22 = cMag(p2),
+                    m01 = cDot(p0,p1),
+                    m02 = cDot(p0,p2),
+                    m12 = cDot(p1,p2);
+    MatS33D         M {{{m00,m11,m22}},{{m01,m02,m12}}};
+    Vec3D           h = solve(M,Vec3D{1,1,1});
+    double          sum = h[0] + h[1] + h[2];
+    FGASSERT(sum != 0.0);
+    return h/sum;
+}
+
+VecMagD
 closestPointInSegment(Vec3D p0,Vec3D p1)
 {
-    VecMag    ret;
+    VecMagD    ret;
     Vec3D    segment = p1-p0;
     double      lenSqr = segment.mag();
     if (lenSqr == 0.0) {
@@ -44,7 +61,7 @@ closestPointInSegment(Vec3D p0,Vec3D p1)
     return ret;
 }
 
-VecMag
+VecMagD
 closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2)
 {
     Vec3D       v0 = vert0 - point,
@@ -91,7 +108,7 @@ closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2)
         return closestPointInSegment(v2,v0);
     double      dot = cDot(norm,v0),
                 dmag = dot / normLensqr;
-    VecMag    ret;
+    VecMagD    ret;
     ret.vec = norm * dmag;
     ret.mag = dot * dmag;
     return ret;
@@ -119,7 +136,7 @@ barycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>      ret;
     // Transform into the coordinate system v0 = (0,0), v1 = (1,0), v2 = (0,1) by defining
-    // the inverse homogenous transform then inverting and taking only the top 2 rows to
+    // the inverse homogeneous transform then inverting and taking only the top 2 rows to
     // form 'xf' below. Converting to barycentric is then trivial, and barycentric coords
     // are preserved by linear xforms.
     Vec3D           e01 = v1-v0,
@@ -141,22 +158,21 @@ barycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
     return Vec3D(1-bc[0]-bc[1],bc[0],bc[1]);
 }
 
-Vec4D
-cPlaneH(Vec3D p0,Vec3D p1,Vec3D p2)
+Plane
+cPlane(Vec3D p0,Vec3D p1,Vec3D p2)
 {
-    Vec3D    nrm = crossProduct(p1-p0,p2-p0);
-    FGASSERT(nrm.mag() > 0.0);
-    double      w = -cDot(nrm,p0);
-    FGASSERT(w != 0.0);
-    Vec4D    ph(nrm[0],nrm[1],nrm[2],w);
-    return ph;
+    Plane           ret;
+    ret.norm = crossProduct(p1-p0,p2-p0);    // Surface normal, not normalized
+    FGASSERT(ret.norm.mag() > 0.0);
+    ret.scalar = -cDot(ret.norm,p0);
+    return ret;
 }
 
 Vec4D
-linePlaneIntersect(Vec3D r,Vec4D p)
+linePlaneIntersect(Vec3D r,Plane p)
 {
-    double  a = -p[3];
-    return Vec4D(a*r[0],a*r[1],a*r[2],r[0]*p[0]+r[1]*p[1]+r[2]*p[2]);
+    double  a = -p.scalar;
+    return Vec4D(a*r[0],a*r[1],a*r[2],cDot(r,p.norm));
 }
 
 int
@@ -187,11 +203,11 @@ lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>         ret;
     // First calculate intersection with plane (in CS with 'pnt' as origin):
-    Vec3D                p0 = v0-pnt;
-    Vec4D                planeH = cPlaneH(p0,v1-pnt,v2-pnt);
-    Vec4D                isectH = linePlaneIntersect(dir,planeH);
+    Vec3D               p0 = v0-pnt;
+    Plane               plane = cPlane(p0,v1-pnt,v2-pnt);
+    Vec4D               isectH = linePlaneIntersect(dir,plane);
     if (isectH[3] != 0.0) {     // line can't be parallel to facet plane
-        Vec3D                isect = fgFromHomogVec(isectH);
+        Vec3D                isect = fromHomogVec(isectH);
         // Now calculate barycentric coords s,t (with axes v1-v0,v2-v0) of intersection point:
         Vec3D                u(v1-v0),
                                 v(v2-v0),

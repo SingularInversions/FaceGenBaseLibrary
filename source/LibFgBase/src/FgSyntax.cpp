@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -41,7 +41,7 @@ Syntax::~Syntax()
     size_t      unused = m_args.size() - m_idx - 1;
     if ((unused > 0) && (!std::uncaught_exception()))
         fgout << fgnl << "WARNING: last " << unused
-            << " argument(s) not used : " << cat(fgTail(m_args,unused)," ");
+            << " argument(s) not used : " << cat(cTail(m_args,unused)," ");
 }
 
 void
@@ -69,20 +69,18 @@ Syntax::incorrectNumArgs()
 void
 Syntax::checkExtension(Ustring const & fname,string const & ext)
 {
-    if (!fgCheckExt(fname,ext))
+    if (!checkExt(fname,ext))
         error("File must have extension "+ext,fname);
 }
 
 void
-Syntax::checkExtension(
-    string const &                 fname,
-    const std::vector<string> &    exts)
+Syntax::checkExtension(string const & fname,Strings const & exts)
 {
-    string      fext = fgToLower(fgPathToExt(fname));
+    string      fext = toLower(pathToExt(fname));
     for (size_t ii=0; ii<exts.size(); ++ii)
-        if (fext == fgToLower(exts[ii]))
+        if (fext == toLower(exts[ii]))
             return;
-    error("Filename did not have on of the required extensions",fname + " : " + toString(exts));
+    error("Filename did not have on of the required extensions",fname + " : " + toStr(exts));
 }
 
 string const &
@@ -105,7 +103,7 @@ static
 void
 removeEndline(string & line)
 {
-    while (!line.empty() && fgIsCrLf(line.back()))
+    while (!line.empty() && isCrLf(line.back()))
         line.resize(line.size()-1);
 }
 static
@@ -213,10 +211,17 @@ Syntax::numArgsMustBe(uint num)
 uint
 Syntax::nextSelectionIndex(Strings const & validValues,string const & argDescription)
 {
-    size_t      idx = fgFindFirstIdx(validValues,next());
+    size_t      idx = findFirstIdx(validValues,next());
     if (idx == validValues.size())
         error("Invalid value for",argDescription);
     return uint(idx);
+}
+
+void
+Syntax::noMoreArgsExpected()
+{
+    if (more())
+        error("too many arguments supplied");
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 std::string
-fgDateTimeString(time_t rawTime)
+getDateTimeString(time_t rawTime)
 {
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
@@ -35,15 +35,15 @@ fgDateTimeString(time_t rawTime)
 }
 
 std::string
-fgDateTimeString()
+getDateTimeString()
 {
     time_t          rawTime;
     time(&rawTime);
-    return fgDateTimeString(rawTime);
+    return getDateTimeString(rawTime);
 }
 
 std::string
-fgDate(time_t rawTime)
+getDateString(time_t rawTime)
 {
     struct tm   *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
@@ -57,7 +57,7 @@ fgDate(time_t rawTime)
 }
 
 std::string
-fgDateTimePath()
+getDateTimeFilename()
 {
     time_t          rawtime;
     time(&rawtime);
@@ -68,24 +68,56 @@ fgDateTimePath()
     return string(buffer);
 }
 
+String
+cYearString()
+{
+    time_t          rawTime;
+    time(&rawTime);
+    struct tm *     fmtTime = gmtime(&rawTime);
+    ostringstream   oss;
+    oss << fmtTime->tm_year+1900;
+    return oss.str();
+}
+
+String
+msToPrettyTime(uint64 durationInMilliseconds)
+{
+    double          d = durationInMilliseconds;
+    if (d < 1000.0)
+        return toStr(d) + " ms";
+    d /= 1000.0;
+    if (d < 60.0)
+        return toStrPrecision(d,4) + " s";
+    d /= 60.0;
+    if (d < 60.0)
+        return toStrPrecision(d,4) + " min";
+    d /= 60.0;
+    if (d < 24.0)
+        return toStrPrecision(d,4) + " hours";
+    d /= 24.0;
+    return toStrPrecision(d,4) + " days";
+}
+
+
 std::ostream &
-operator<<(std::ostream & os,const FgTimer & t)
+operator<<(std::ostream & os,const Timer & t)
 {
     double      et = t.read();
-    return os << "Elapsed time: " << fgToStringPrecision(et,4) << " s";
+    return os << "Elapsed time: " << toStrPrecision(et,4) << " s";
 }
 
 void
-FgTimer::report(string const & label)
+Timer::report(string const & label)
 {
-    fgout << fgnl << label << ": " << readMs() << "ms ";
+    uint64      duration = readMs();
+    fgout << fgnl << label << ": " << msToPrettyTime(duration);
     start();
 }
 
 bool
-fgTick()
+secondPassedSinceLast()
 {
-    static FgTimer  timer;
+    static Timer  timer;
     if (timer.read() > 1.0) {
         timer.start();
         return true;

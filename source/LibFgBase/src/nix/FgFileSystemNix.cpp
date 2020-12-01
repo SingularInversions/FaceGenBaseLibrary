@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,7 +47,7 @@ directoryContents(Ustring const & dirName)
 }
 
 Ustring
-fgGetCurrentDir()
+getCurrentDir()
 {
     char    buff[512] = {0};
     if (!getcwd(buff,511))
@@ -59,7 +59,7 @@ fgGetCurrentDir()
 }
 
 bool
-fgSetCurrentDir(
+setCurrentDir(
     Ustring const &    dir,
     bool                throwOnFail)
 {
@@ -71,7 +71,7 @@ fgSetCurrentDir(
 }
 
 bool
-fgCreateDirectory(Ustring const & dir)
+createDirectory(Ustring const & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
@@ -82,7 +82,7 @@ deleteFile(Ustring const & fname)
 {pathRemove(fname); }
 
 bool
-fgRemoveDirectory(
+removeDirectory(
     Ustring const &    dir,
     bool                throwOnFail)
 {
@@ -96,42 +96,42 @@ fgRemoveDirectory(
 }
 
 Ustring
-fgDirSystemAppDataRoot()
+getDirSystemAppData()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirSystemAppData(Ustring const &,Ustring const &)
+getDirSystemAppData(Ustring const &,Ustring const &)
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirUserAppDataLocalRoot()
+getDirUserAppDataLocal()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgDirUserAppDataRoamingRoot()
+getDirUserAppDataRoaming()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgUserDocumentsDirectory(bool)
+getUserDocsDir(bool)
 {
     throw FgExceptionNotImplemented();
     return Ustring();
 }
 
 Ustring
-fgPublicDocumentsDirectory()
+getPublicDocsDir()
 {
     throw FgExceptionNotImplemented();
     return Ustring();
@@ -149,19 +149,23 @@ struct  Dir
 };
 
 bool
-getCreationTime(Ustring const &,uint64 &)
+getCreationTimePrecise(Ustring const &,uint64 &)
 {
     throw FgExceptionNotImplemented();
     return false;
 }
 
-std::time_t
+uint64
+getCreationTime(Ustring const & path)
+{
+    uint64          tn;
+    FGASSERT(getCreationTimePrecise(path,tn));
+    return tn;
+}
+
+uint64
 getLastWriteTime(Ustring const & path)
 {return boost::filesystem::last_write_time(path.ns()); }
-
-void
-fgMakeWritableByAll(Ustring const &)
-{throw FgExceptionNotImplemented(); }
 
 #if defined(__APPLE__)
 
@@ -169,7 +173,7 @@ fgMakeWritableByAll(Ustring const &)
 #include <CoreFoundation/CFURL.h>
 
 Ustring
-fgExecutablePath()
+getExecutablePath()
 {
     CFURLRef bundleUrlRef(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
     FGASSERT(bundleUrlRef);
@@ -190,7 +194,7 @@ fgExecutablePath()
 #else
 
 Ustring
-fgExecutablePath()
+getExecutablePath()
 {
     std::ostringstream os;
     os.imbue(std::locale::classic());

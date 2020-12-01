@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,46 +13,75 @@
 
 namespace Fg {
 
+// Returns the U of the U^T U Cholesky decomposition of a symmetric positive definite matrix,
+// along with the axial permutations used for maximum stability:
+MatUT33D
+choleskyDecompose(MatS33D SPD);     // SPD cannot be singular
+
+struct  UTUDecomp
+{
+    MatUT33D        U;      // Upper triangular part of the U^T * U decomposition
+    Vec3UI          p;      // Permutation map from input index to solution index
+};
+
+// Solve the Matrix equation Ax = b when A is symmetric positive definite (this is not checked):
+Vec3D
+solve(MatS33D SPD,Vec3D b);
+
+// Solve the matrix equation Ax = b.
+// If A is singular, this returns a solution vector with one or more components equal to zero:
+Vec3D
+solve(Mat33D A,Vec3D b);
+
 // Eigenvalues of a square real symmetric matrix.
 // Runs in O(dim^3) time, with residual error O(dim^2.?).
 void
-fgEigsRsm_(
-    const MatD &   rsm,    // Symmetric matrix
-    Doubles &            vals,   // RETURNED: Eigenvalues, smallest to largest
-    MatD &         vecs);  // RETURNED: Col vectors are respective eigenvectors
+cEigsRsm_(
+    MatD const &        rsm,    // Symmetric matrix
+    Doubles &           vals,   // RETURNED: Eigenvalues, smallest to largest
+    MatD &              vecs);  // RETURNED: Col vectors are respective eigenvectors
 
-struct  FgEigsRsm
+struct  EigsRsm
 {
-    Doubles              vals;   // Eigenvalues
-    MatD           vecs;   // Column vectors are the respective eigenvectors
+    Doubles             vals;   // Eigenvalues
+    MatD                vecs;   // Column vectors are the respective eigenvectors
 
     MatD
     matrix() const;             // Return the matrix formed from this eigen system
 };
 
-// As above:
 inline
-FgEigsRsm
-fgEigsRsm(const MatD & rsm)
+EigsRsm
+cEigsRsm(MatD const & rsm)
 {
-    FgEigsRsm      ret;
-    fgEigsRsm_(rsm,ret.vals,ret.vecs);
+    EigsRsm      ret;
+    cEigsRsm_(rsm,ret.vals,ret.vecs);
     return ret;
 }
 
 // Real eigenvalues and eigenvectors of a real symmetric square const-size matrix:
 template<uint dim>
-struct FgEigsRsmC
+struct EigsRsmC
 {
-    Mat<double,dim,1>         vals;   // Eigenvalues
-    Mat<double,dim,dim>       vecs;   // Column vectors are the respective eigenvectors.
+    Mat<double,dim,1>       vals;   // Eigenvalues
+    Mat<double,dim,dim>     vecs;   // Column vectors are the respective eigenvectors.
 };
 
-FgEigsRsmC<3>   fgEigsRsm(const Mat<double,3,3> & rsm);
-FgEigsRsmC<4>   fgEigsRsm(const Mat<double,4,4> & rsm);
+template<uint dim>
+std::ostream &
+operator<<(std::ostream & os,EigsRsmC<dim> const & e)
+{
+    return os
+        << fgnl << "Eigenvalues: " << e.vals.transpose()
+        << fgnl << "Eigvenvector columns: " << e.vecs;
+}
+
+// Eigenvalues of a square real symmetric matrix, returned in order from smallest to largest eigval:
+EigsRsmC<3>   cEigsRsm(Mat<double,3,3> const & rsm);
+EigsRsmC<4>   cEigsRsm(Mat<double,4,4> const & rsm);
 
 template<uint dim>
-struct FgEigsC
+struct EigsC
 {
     Mat<std::complex<double>,dim,1>   vals;
     Mat<std::complex<double>,dim,dim> vecs;   // Column vectors are the respective eigenvectors.
@@ -60,18 +89,18 @@ struct FgEigsC
 
 template<uint dim>
 std::ostream &
-operator<<(std::ostream & os,const FgEigsC<dim> & e)
+operator<<(std::ostream & os,const EigsC<dim> & e)
 {
     return os
         << fgnl << "Eigenvalues: " << e.vals.transpose()
-        << fgnl << "Eigenvectors as columns: " << e.vecs;
+        << fgnl << "Eigenvector columns: " << e.vecs;
 }
 
 // Eigensolver for arbitrary matrix, returned in arbitrary order since eigenvalues
 // can be complex. The eigenvectors can always be made real when the associated eigevalue
 // is real but do not default to a real representation:
-FgEigsC<3>      fgEigs(const Mat33D & mat);
-FgEigsC<4>      fgEigs(const Mat44D & mat);
+EigsC<3>      cEigs(Mat33D const & mat);
+EigsC<4>      cEigs(Mat44D const & mat);
 
 }
 

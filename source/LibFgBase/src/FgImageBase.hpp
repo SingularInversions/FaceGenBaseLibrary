@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -29,7 +29,7 @@
 // USAGE NOTES:
 //
 // * posIrcs = posIpcs - 0.5 (thus floor(posIpcs) rounds to nearest int posIpcs)
-// * posIpcs = fgMapMul(posIucs,image.dims())
+// * posIpcs = mapMul(posIucs,image.dims())
 
 #ifndef FGIMGBASE_HPP
 #define FGIMGBASE_HPP
@@ -70,11 +70,11 @@ struct  Img
     : m_dims(dims), m_data(dims[0]*dims[1],fillVal)
     {}
 
-    Img(Vec2UI dims,const Svec<T> & imgData)
+    Img(Vec2UI dims,Svec<T> const & imgData)
     : m_dims(dims), m_data(imgData)
     {FGASSERT(m_data.size() == m_dims[0]*m_dims[1]); }
 
-    Img(Vec2UI dims,const T * pixels)
+    Img(Vec2UI dims,T const * pixels)
     : m_dims(dims), m_data(pixels,pixels+dims[0]*dims[1])
     {}
 
@@ -128,7 +128,7 @@ struct  Img
         FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
         return m_data[ircs_y*m_dims[0]+ircs_x];
     }
-    const T &
+    T const &
     xy(size_t ircs_x,size_t ircs_y) const
     {
         FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
@@ -140,7 +140,7 @@ struct  Img
     operator[](size_t idx)
     {return m_data[idx]; }
 
-    const T &
+    T const &
     operator[](size_t idx) const
     {return m_data[idx]; }
 
@@ -148,7 +148,7 @@ struct  Img
     operator[](Vec2UI ircsPos)
     {return xy(ircsPos[0],ircsPos[1]); }
 
-    const T &
+    T const &
     operator[](Vec2UI ircsPos) const
     {return xy(ircsPos[0],ircsPos[1]); }
 
@@ -158,7 +158,7 @@ struct  Img
     {return xy(it()[0],it()[1]); }
 
     template<typename U>
-    const T &
+    T const &
     operator[](const Iter<U,2> & it) const
     {return xy(it()[0],it()[1]); }
 
@@ -166,7 +166,7 @@ struct  Img
     rowPtr(uint row)
     {return &m_data[row*m_dims[0]]; }
 
-    const T *
+    T const *
     rowPtr(uint row) const
     {return &m_data[row*m_dims[0]]; }
 
@@ -189,7 +189,7 @@ struct  Img
             paint(ircs[0],ircs[1],val);
     }
 
-    const T *
+    T const *
     data() const
     {return (!m_data.empty() ? &m_data[0] : NULL); }
 
@@ -197,13 +197,17 @@ struct  Img
     data()
     {return (!m_data.empty() ? &m_data[0] : NULL); }
 
-    const Svec<T> &
+    Svec<T> const &
     dataVec() const
     {return m_data; }
 
     bool
     operator==(const Img & rhs) const
     {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
+
+    void
+    operator*=(T const & rhs)
+    {m_data *= rhs; }
 };
 
 typedef Img<uchar>     ImgUC;
@@ -219,11 +223,12 @@ typedef Svec<Img3F>    Img3Fs;
 
 typedef Img<Arr4UC>    Img4UC;
 typedef Svec<Img4UC>   Img4UCs;
-typedef Img<Arr4F>     Img4F;
+typedef Img<Vec4F>     Img4F;
 
 // Deprecated:
 typedef Img<RgbaUC>    ImgC4UC;
 typedef Svec<ImgC4UC>  ImgC4UCs;
+typedef Svec<ImgC4UCs> ImgC4UCss;
 typedef Img<RgbaF>     ImgC4F;
 
 template<typename T,typename U>

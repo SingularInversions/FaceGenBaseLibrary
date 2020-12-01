@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,66 +27,66 @@ fgDirSep()
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
-Path::Path(Ustring const & path)
+Path::Path(Ustring const & pathUtf8)
 : root(false)
 {
-    if (path.empty())
+    if (pathUtf8.empty())
         return;
-    u32string       p = path.as_utf32();
-    p = fgReplace(p,char32_t('\\'),char32_t('/'));  // VS2013 doesn't support char32_t literal U
-    if (p.size() > 1) {
-        if ((p[0] == '/') && (p[1] == '/')) {
+    u32string       path = pathUtf8.as_utf32();
+    path = replaceAll(path,char32_t('\\'),char32_t('/'));  // VS2013 doesn't support char32_t literal U
+    if (path.size() > 1) {
+        if ((path[0] == '/') && (path[1] == '/')) {
             root = true;
-            auto        it = find(p.begin()+2,p.end(),uint('/'));
-            if (it == p.end()) {
-                drive = Ustring(p);
+            auto        it = find(path.begin()+2,path.end(),uint('/'));
+            if (it == path.end()) {
+                drive = Ustring(path);
                 return;
             }
-            size_t      slashPos = it-p.begin();
-            drive = Ustring(fgHead(p,slashPos));
-            p = fgRest(p,slashPos);
+            size_t      slashPos = it-path.begin();
+            drive = Ustring(cHead(path,slashPos));
+            path = cRest(path,slashPos);
         }
         // Strictly else since we don't combine UNC and LFS:
-        else if (p[1] == ':') {
-            drive = Ustring(fgHead(p,2));
-            p = fgRest(p,2);
+        else if (path[1] == ':') {
+            drive = Ustring(cHead(path,2));
+            path = cRest(path,2);
         }
     }
-    if (p.empty())
+    if (path.empty())
         return;
-    if (p[0] == '/') {
+    if (path[0] == '/') {
         root = true;
-        p = fgRest(p,1);
+        path = cRest(path,1);
     }
-    if (p.empty())
+    if (path.empty())
         return;
-    if (fgContains(p,char32_t('/'))) {
-        FgStr32s        s = fgSplit(p,char32_t('/'));
+    if (contains(path,char32_t('/'))) {
+        String32s        s = splitAtChar(path,char32_t('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
             Ustring    str(s[ii]);
             if ((str == "..") && (!dirs.empty())) {
                 if (Ustring(dirs.back()) == str)
                     dirs.push_back(str);            // '..' does not back up over '..' !
                 else
-                    dirs = fgHead(dirs,dirs.size()-1);
+                    dirs = cHead(dirs,dirs.size()-1);
             }
             else if (str != ".")
                 dirs.push_back(Ustring(s[ii]));
         }
         if (!s.back().empty())
-            p = s.back();
+            path = s.back();
         else
-            p.clear();
+            path.clear();
     }
-    if (p.empty())
+    if (path.empty())
         return;
-    if (fgContains(p,char32_t('.'))) {
-        size_t      idx = fgFindLastIdx(p,char32_t('.'));
-        base = Ustring(fgHead(p,idx));
-        ext = Ustring(fgRest(p,idx+1));    // Don't include the dot
+    size_t          dotIdx = path.find_last_of('.');
+    if (dotIdx == u32string::npos)
+        base = Ustring(path);
+    else {
+        base = Ustring(path.substr(0,dotIdx));
+        ext = Ustring(path.substr(dotIdx+1));      // Don't include the dot
     }
-    else
-        base = Ustring(p);
 }
 
 Ustring
@@ -121,7 +121,7 @@ Path::baseExt() const
 }
 
 Path
-Path::operator+(const Path &  rhs) const
+Path::operator+(Path const &  rhs) const
 {
     FGASSERT((base.empty()) && (ext.empty()));      // lhs is directory only
     FGASSERT((rhs.drive.empty()) && (!rhs.root));   // rhs is relative path
@@ -140,7 +140,7 @@ Path::popDirs(uint n)
 }
 
 Path
-fgPathFromDir(Ustring const & directory)
+pathFromDir(Ustring const & directory)
 {
     Path      ret(directory);
     if (!ret.base.empty()) {
@@ -152,34 +152,34 @@ fgPathFromDir(Ustring const & directory)
 }
 
 Ustring
-fgPathToBase(Ustring const & f)
+pathToBase(Ustring const & f)
 {return Path(f).base; }
 
 Ustring
-fgPathToDirBase(Ustring const & p)
+pathToDirBase(Ustring const & p)
 {return Path(p).dirBase(); }
 
 Ustring
-fgPathToExt(Ustring const & p)
+pathToExt(Ustring const & p)
 {return Path(p).ext; }
 
 std::string
-fgPathToExt(const std::string & p)
-{return fgPathToExt(Ustring(p)).m_str; }
+pathToExt(const std::string & p)
+{return pathToExt(Ustring(p)).m_str; }
 
 bool
-fgCheckExt(Ustring const & path,string const & ext)
+checkExt(Ustring const & path,string const & ext)
 {
     Path      p(path);
-    return (p.ext.toLower() == fgToLower(ext));
+    return (p.ext.toLower() == toLower(ext));
 }
 
 Ustring
-fgPathToName(Ustring const & f)
+pathToName(Ustring const & f)
 {return Path(f).baseExt(); }
 
 Ustring
-fgAsDirectory(Ustring const & path)
+asDirectory(Ustring const & path)
 {
     Ustring        ret = path;
     if (path.empty())
@@ -196,8 +196,8 @@ fgAsDirectory(Ustring const & path)
 }
 
 string
-fgAsDirectory(string const & path)
-{return fgAsDirectory(Ustring(path)).m_str; }
+asDirectory(string const & path)
+{return asDirectory(Ustring(path)).m_str; }
 
 void
 fgPathTest(CLArgs const &)

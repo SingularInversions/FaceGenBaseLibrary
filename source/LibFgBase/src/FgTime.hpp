@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,78 +16,85 @@ namespace Fg {
 
 // Cross-platform version always has units of seconds:
 void
-fgSleep(uint seconds);
+sleepSeconds(uint seconds);
 
 // Time in milliseconds since start of Jan 1 1970 GMT:
 uint64
-fgTimeMs();
+getTimeMs();
 
 // GMT date and time string in format: yyyy.mm.dd hh:mm:ss
 String
-fgDateTimeString();
+getDateTimeString();
 
 String
-fgDateTimeString(time_t rawTime);
+getDateTimeString(time_t rawTime);
 
 // GMT date string in format: yy.mm.dd
 String
-fgDate(time_t rawTime);
+getDateString(time_t rawTime);
 
 // Handy way of naming log files using current date and time (does not append a suffix):
 String
-fgDateTimePath();
+getDateTimeFilename();
 
-struct  FgTimer
+String
+cYearString();
+
+// Show the time in appropriate units (milliseconds, seconds, minutes, hours, days):
+String
+msToPrettyTime(uint64 durationInMilliseconds);
+
+struct  Timer
 {
     uint64      m_startTime;
 
-    FgTimer()
+    Timer()
     {start(); }
 
     void
     start()
-    {m_startTime = fgTimeMs(); }
+    {m_startTime = getTimeMs(); }
 
     // Returns the time since 'start()' (or object construction) in seconds.
     double
     read() const
     {
-        uint64  stopTime = fgTimeMs();
+        uint64  stopTime = getTimeMs();
         return (double(stopTime - m_startTime) / 1000.0);
     }
 
     uint64
     readMs() const
-    {return fgTimeMs()-m_startTime; }
+    {return getTimeMs()-m_startTime; }
 
-    // Outputs 'label' to 'fgout' newline along with the time taken in 'ms', then resets the timer:
+    // Outputs 'label' to 'fgout' newline along with pretty print of duration
     void
     report(String const & label);
 };
 
 std::ostream &
-operator<<(std::ostream &,const FgTimer &);
+operator<<(std::ostream &,const Timer &);
 
-struct FgTimeScope
+struct PushTimer
 {
     uint64          startTime;
 
-    FgTimeScope(String const & msg)
+    PushTimer(String const & msg)
     {
         fgout << fgnl << "Beginning " << msg << ":" << fgpush << fgnl;
-        startTime = fgTimeMs();
+        startTime = getTimeMs();
     }
 
-    ~FgTimeScope()
+    ~PushTimer()
     {
-        uint64      t = fgTimeMs() - startTime;
-        fgout << fgpop << fgnl << "Done. " << t << " ms ";
+        uint64      t = getTimeMs() - startTime;
+        fgout << fgpop << fgnl << "Completed in " << msToPrettyTime(t);
     }
 };
 
 // Returns true at most once per second:
 bool
-fgTick();
+secondPassedSinceLast();
 
 }
 

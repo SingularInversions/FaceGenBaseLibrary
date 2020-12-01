@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,43 +25,43 @@ namespace Fg {
 // Get root all-users application data directory (delimited):
 // WARNING: See warning below.
 Ustring
-fgDirSystemAppDataRoot();
+getDirSystemAppData();
 
 // Get (and create if necessary) the all-users application data directory for the specified application.
 // Note that for some users, access is not granted. I am unable to replicate this even if these
 // directories are created by an admin user and the file within them is modified by a non-admin user....
 Ustring
-fgDirSystemAppData(Ustring const & groupName,Ustring const & appName);
+getDirSystemAppData(Ustring const & groupName,Ustring const & appName);
 
 // Avoid using Windows 'roaming' directories as they only roam the WDS LAN, not personal cloud
 // (see user documents directory below):
 Ustring
-fgDirUserAppDataRoamingRoot();
+getDirUserAppDataRoaming();
 
 // Place to store local app data for this user:
 Ustring
-fgDirUserAppDataLocalRoot();
+getDirUserAppDataLocal();
 
 // As above but verifies/creates given subPath
 Ustring
-fgDirUserAppDataLocal(const Svec<String> & subDirs);
+getDirUserAppDataLocal(const Svec<String> & subDirs);
 
 // As above but verifies/creates subdirectory for "FaceGen" then for specified:
 inline
 Ustring
-fgDirUserAppDataLocalFaceGen(String const & subd0,String const & subd1)
-{return fgDirUserAppDataLocal(fgSvec<String>("FaceGen",subd0,subd1)); }
+getDirUserAppDataLocalFaceGen(String const & subd0,String const & subd1)
+{return getDirUserAppDataLocal(svec<String>("FaceGen",subd0,subd1)); }
 
 // Can and does sometimes fail on Windows, possibly when using roaming identities.
 // If it fails but 'throwOnFail' is false, it returns the empty string.
 // WINDOWS: If user has OneDrive installed, new directories created here will be created within
 //     the OneDrive/Documents/ directory instead of the local drive one.
 Ustring
-fgUserDocumentsDirectory(bool throwOnFail=true);
+getUserDocsDir(bool throwOnFail=true);
 
 // This has not been known to fail on Windows:
 Ustring
-fgPublicDocumentsDirectory();
+getPublicDocsDir();
 
 // Find FaceGen data directory from path of current executable, searching up one directory
 // at a time for a directory named 'data' containing the file '_facegen_data_dir.flag'.
@@ -71,7 +71,7 @@ Ustring const & dataDir(bool throwIfNotFound=true);
 // Manually set data directory. Useful for sandboxed platforms and debugging apps on native
 // platforms:
 void
-fgSetDataDir(Ustring const & dirEndingWithSlash);
+setDataDir(Ustring const & dirEndingWithSlash);
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
@@ -100,7 +100,7 @@ fileExists(Ustring const & fname)
 {return (!isDirectory(fname) && pathExists(fname)); }
 
 inline void
-fgRename(Ustring const & from,Ustring const & to)
+renameNode(Ustring const & from,Ustring const & to)
 {return boost::filesystem::rename(from.ns(),to.ns()); }
 
 // Update last written time on existing file (will not create). Avoid large files as it current re-writes:
@@ -121,15 +121,15 @@ directoryContents(Ustring const & dirName);
 
 // Directory names end with a delimiter:
 Ustring
-fgGetCurrentDir();
+getCurrentDir();
 
 bool                                // true if successful
-fgSetCurrentDir(
+setCurrentDir(
     Ustring const &    dir,        // Accepts full path or relative path
     bool throwOnFail=true);
 
 bool                                // true if successful
-fgSetCurrentDirUp();
+setCurrentDirUp();
 
 // Doesn't remove read-only files / dirs:
 inline void
@@ -142,28 +142,30 @@ deleteFile(Ustring const &);
 
 // Only works on empty dirs, return true if successful:
 bool
-fgRemoveDirectory(
+removeDirectory(
     Ustring const &    dirName,
     bool                throwOnFail=false);
 
+// Delete all files in a directory (does not delete subdirectories):
+void        deleteDirectoryFiles(Ustring const &);
+
 // Throws on failure:
-void
-fgRemoveDirectoryRecursive(Ustring const &);      // Full recursive delete
+void        deleteDirectoryRecursive(Ustring const &);      // Full recursive delete
 
 // Accepts full or relative path, but only creates last delimited directory:
 bool            // Returns false if the directory already exists, true otherwise
-fgCreateDirectory(Ustring const &);
+createDirectory(Ustring const &);
 
 // Create all non-existing directories in given path.
 // An undelimited name will be created as a directory:
 void
-fgCreatePath(Ustring const &);
+createPath(Ustring const &);
 
 Ustring                        // Return the full path of the executable
-fgExecutablePath();
+getExecutablePath();
 
 Ustring                        // Return the full directory of the current application binary
-fgExecutableDirectory();
+getExecutableDirectory();
 
 // Returns true if the supplied filename is a file which can be read
 // by the calling process:
@@ -171,13 +173,13 @@ bool
 fileReadable(Ustring const & filename);
 
 String
-fgSlurp(Ustring const & filename);
+loadRawString(Ustring const & filename);
 
 // Setting 'onlyIfChanged' to false will result in the file always being written,
 // regardless of whether the new data may be identical.
 // Leaving 'true' is useful to avoid triggering unwanted change detections.
 bool    // Returns true if the file was written
-fgDump(String const & data,Ustring const & filename,bool onlyIfChanged=true);
+saveRaw(String const & data,Ustring const & filename,bool onlyIfChanged=true);
 
 // Returns true if identical:
 bool
@@ -190,30 +192,44 @@ bool
 equateFilesText(Ustring const & fname0,Ustring const & fname1);
 
 // Returns false if the given file or directory cannot be read.
-// The returned time is NOT compatible with std raw time and will in fact crash fgDateTimeString().
-bool
-getCreationTime(Ustring const & path,uint64 & time);
+// On windows, sets time to 100 nanosecond intervals since 1601.01.01
+// On Unix, sets time in seconds since 1970.01.01
+// The returned time is NOT compatible with std raw time and will in fact crash getDateTimeString().
+// Some *nix systems don't support creation time.
+// WINE API bug returns last modification time.
+// Note that sub-second precision is basically random due to OS filesystem workings.
+bool        getCreationTimePrecise(Ustring const & path,uint64 & time);
 
-// Works for both files and directories:
+// Works for both files and directories.
+// Value in seconds since filesystem resolution only gives about that anyway.
+// On windows, returns time in seconds since 1601.01.01
+// On unix, returns time in seconds since 1970.01.01
+uint64      getCreationTime(Ustring const & path);
+
+
+// Works for both files and directories.
+// Value in seconds since filesystem resolution only gives about that anyway.
+// On windows, returns time in seconds since 1601.01.01
+// On unix, returns time in seconds since 1970.01.01
 // Don't use boost::filesystem::last_write_time(); it doesn't work; returns create time on Win.
-std::time_t
+uint64
 getLastWriteTime(Ustring const & node);
 
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
 // of if any of the sinks don't exist (an error results if any of the sources don't exist):
 bool
-fileNewer(const Ustrings & sources,const Ustrings & sinks);
+fileNewer(Ustrings const & sources,Ustrings const & sinks);
 
 inline
 bool
 fileNewer(Ustring const & src,Ustring const & dst)
-{return fileNewer(fgSvec(src),fgSvec(dst)); }
+{return fileNewer(svec(src),svec(dst)); }
 
 // Usually only need to include the one last output of a code chunk as 'dst':
 inline
 bool
-fileNewer(const Ustrings & sources,Ustring const & dst)
-{return fileNewer(sources,fgSvec(dst)); }
+fileNewer(Ustrings const & sources,Ustring const & dst)
+{return fileNewer(sources,svec(dst)); }
 
 struct  PushDir
 {
@@ -229,28 +245,24 @@ struct  PushDir
     ~PushDir()
     {
         if (!orig.empty())
-            fgSetCurrentDir(orig[0]);
+            setCurrentDir(orig[0]);
     }
 
     void push(Ustring const & dir)
     {
-        orig.push_back(fgGetCurrentDir());
-        fgSetCurrentDir(dir);
+        orig.push_back(getCurrentDir());
+        setCurrentDir(dir);
     }
 
     void pop()
     {
-        fgSetCurrentDir(orig.back());
+        setCurrentDir(orig.back());
         orig.resize(orig.size()-1);
     }
 
     void change(Ustring const & dir)
-    {fgSetCurrentDir(dir); }
+    {setCurrentDir(dir); }
 };
-
-// Returns name of each matching file & dir:
-DirectoryContents
-globDirStartsWith(const Path & path);
 
 // Very simple glob - only matches '*' at beginning or end of file base name (but not both
 // unless whole name is '*') and/or extension.
@@ -258,11 +270,20 @@ globDirStartsWith(const Path & path);
 // Does not glob on input directory name.
 // RETURNS: Matching filenames without directory:
 Ustrings
-globFiles(const Path & path);
+globFiles(Path const & path);
 
 // As above but the full path is given by 'basePath + keepPath' and the return paths include 'keepPath':
 Ustrings
 globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & filePattern);
+
+// Returns name of each matching file & dir:
+DirectoryContents
+globNodeStartsWith(Path const & path);
+
+// Returns the additional (delta) Ustring of every file that starts with the same base name and has
+// additional characters and the same extension:
+Ustrings
+globBaseVariants(const Ustring & pathBaseExt);
 
 // 'toDir' must exist.
 // Returns true if there were any files in 'toDir' with the same name as a 'fromDir' file:
@@ -271,23 +292,18 @@ fgCopyAllFiles(Ustring const & fromDir,Ustring const & toDir,bool overwrite=fals
 
 // Throws an exception if the filename already exists in the current directory:
 void
-fgCopyToCurrentDir(const Path & file);
+fgCopyToCurrentDir(Path const & file);
 
 // WARNING: Does not check if dirs are sym/hard links so be careful.
 // The tip of 'toDir' will be created.
 // Will throw on overwrite of any file or directory:
 void
-fgCopyRecursive(Ustring const & fromDir,Ustring const & toDir);
+copyRecursive(Ustring const & fromDir,Ustring const & toDir);
 
 // Copy 'src' to 'dst' if 'src' is newer or 'dst' (or its path) doesn't exist.
 // Doesn't work reliably across network shares due to time differences.
 void
-fgMirrorFile(const Path & src,const Path & dst);
-
-// Modify permissions to allow all users to write to given file (not directory).
-// Of course client must have right to do this:
-void
-fgMakeWritableByAll(Ustring const & name);
+mirrorFile(Path const & src,Path const & dst);
 
 }
 

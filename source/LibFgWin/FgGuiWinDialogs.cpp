@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,9 +16,6 @@ using namespace std;
 using namespace std::placeholders;
 
 namespace Fg {
-
-template<class T>
-using Unique = std::unique_ptr<T,Fg::Release<T> >;
 
 void
 guiDialogMessage(
@@ -41,12 +38,12 @@ guiDialogFileLoad(
     string const &          storeID)
 {
     FGASSERT(!extensions.empty());
-    Opt<Ustring>          ret;
+    Opt<Ustring>            ret;
     HRESULT                 hr;
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -82,7 +79,7 @@ guiDialogFileLoad(
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if ((hr == S_OK) && (pszFilePath != NULL)) {
@@ -105,7 +102,7 @@ guiDialogFileSave(
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Giving each dialog a GUID based on it's description will allow Windows to remember
     // previously chosen directories for each dialog (with a different description):
     GUID                    guid;
@@ -141,7 +138,7 @@ guiDialogFileSave(
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
@@ -161,7 +158,7 @@ guiDialogDirSelect()
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
     FGASSERTWINOK(hr);
-    Unique<IFileDialog>     pfd(pfdPtr);
+    WinPtr<IFileDialog>     pfd(pfdPtr);
     // Get existing (default) options to avoid overwrite:
     DWORD                   dwFlags;
     hr = pfd->GetOptions(&dwFlags);
@@ -174,18 +171,20 @@ guiDialogDirSelect()
         IShellItem *        psiResult;
         hr = pfd->GetResult(&psiResult);
         if (hr == S_OK) {
-            Unique<IShellItem>  psiResultRaii(psiResult);
+            WinPtr<IShellItem>  psiResultRaii(psiResult);
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
                 Ustring         str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
-                return fgAsDirectory(str);
+                return asDirectory(str);
             }
         }
     }
     return ret;
 }
+
+namespace {
 
 struct  GuiDialogProgressWin
 {
@@ -237,35 +236,32 @@ struct  GuiDialogProgressWin
     }
 };
 
-static
 void
 threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & cancelFlag,Ustring & errMsg)
 {
-    WorkerCallback          callback = [=](bool isMilestone)
-        {
-            if (cancelFlag) {
-                // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
-                // the message queue so the modal message loop below would have no way of knowing when it's
-                // being closed:
-                PostMessage(hwndMain,WM_CLOSE,0,0);
-                return true;
-            }
-            if (isMilestone)
-                SendMessage(hwndProgBar,PBM_STEPIT,0,0);
-            return false;
-        };
-
-        //fnUpdateDialog = bind(updateDialog,hwndMain,hwndProgBar,_1);
+    WorkerCallback      callback = [&worker,hwndMain,hwndProgBar,&cancelFlag,&errMsg](bool isMilestone)
+    {
+        if (cancelFlag) {
+            // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
+            // the message queue so the modal message loop below would have no way of knowing when it's
+            // being closed:
+            PostMessage(hwndMain,WM_CLOSE,0,0);
+            return true;
+        }
+        if (isMilestone)
+            SendMessage(hwndProgBar,PBM_STEPIT,0,0);
+        return false;
+    };
     try {
         worker(callback);
     }
     catch(FgException const & e)
     {
-        errMsg = "FG Exception: " + e.no_tr_message();
+        errMsg = "FG Exception\n" + e.no_tr_message();
     }
     catch(std::bad_alloc const &)
     {
-        errMsg = "OUT OF MEMORY ";
+        errMsg = "OUT OF MEMORY\n";
 #ifndef FG_64
         if (fg64bitOS())
             errMsg += "(install 64-bit version if possible) ";
@@ -273,16 +269,18 @@ threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & can
     }
     catch(std::exception const & e)
     {
-        errMsg = "std::exception: " + Ustring(e.what());
+        errMsg = "std::exception\n" + Ustring(e.what());
     }
     catch(...)
     {
-        errMsg = "Unknown type: ";
+        errMsg = "Unknown type\n";
     }
     // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
     // the message queue so the modal message loop below would have no way of knowing when it's
     // being closed:
     PostMessage(hwndMain,WM_CLOSE,0,0);
+}
+
 }
 
 bool
@@ -292,8 +290,10 @@ guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
     progBar.progressSteps = progressSteps;
     // Create the dialog window with the main window as its parent window:
     HWND                    hwndMain = winCreateDialog(title,s_guiWin.hwndMain,&progBar);
-    EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     ShowWindow(hwndMain,SW_SHOWNORMAL);
+    // Don't disable until dialog showing, then enable before dialog is destroyed, or else
+    // the main window focus can be lost:
+    EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     UpdateWindow(hwndMain);
     Ustring                 errMsg;
     thread                  compute(threadWorker,
@@ -308,8 +308,9 @@ guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
             break;
     }
     compute.join();
+    EnableWindow(s_guiWin.hwndMain,TRUE);       // Re-enable main window
     DestroyWindow(hwndMain);
-    EnableWindow(s_guiWin.hwndMain,TRUE);    // Re-enable main window
+    UpdateWindow(s_guiWin.hwndMain);            // Avoid losing focus ... doesn't always work.
     if (!errMsg.empty())
         fgThrow("Exception in guiDialogProgress",errMsg);
     return !progBar.cancelFlag;

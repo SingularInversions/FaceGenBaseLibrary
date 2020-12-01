@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,9 +14,9 @@ namespace Fg {
 
 inline
 std::string
-fgVersion(const std::string & sep)
+getSdkVersion(const std::string & sep)
 {
-    return "3" + sep + "Q" + sep + "0";
+    return "3" + sep + "Q" + sep + "1";
 }
 
 }

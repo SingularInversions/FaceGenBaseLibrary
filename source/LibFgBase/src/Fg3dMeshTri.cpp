@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,11 +42,12 @@ readString(istream & istr,bool wchar)
     return str;
 }
 
-void
-loadTri(istream & istr,Mesh & mesh)
+Mesh
+loadTri(istream & istr)
 {
+    Mesh            mesh;
     // Check for file type identifier
-    char                cdata[9];
+    char            cdata[9];
     istr.read(cdata,8);
     if (strncmp(cdata,"FRTRI103",8) == 0)
         fgThrow("File is encrypted, use 'fileconvert' utility to decrypt");
@@ -95,12 +96,12 @@ loadTri(istream & istr,Mesh & mesh)
         mesh.surfaces.resize(1);
     Surf            dummy;
     Surf &          surf = hasSurface ? mesh.surfaces[0] : dummy;
-    surf.tris.vertInds.resize(numTris);
+    surf.tris.posInds.resize(numTris);
     if (numTris > 0)
-        istr.read(reinterpret_cast<char*>(&surf.tris.vertInds[0]),int(12*numTris));
-    surf.quads.vertInds.resize(numQuads);
+        istr.read(reinterpret_cast<char*>(&surf.tris.posInds[0]),int(12*numTris));
+    surf.quads.posInds.resize(numQuads);
     if (numQuads > 0)
-        istr.read(reinterpret_cast<char*>(&surf.quads.vertInds[0]),int(16*numQuads));
+        istr.read(reinterpret_cast<char*>(&surf.quads.posInds[0]),int(16*numQuads));
     // Marked verts:
     mesh.markedVerts.resize(numLabVerts);
     for (uint jj=0; jj<numLabVerts; jj++) {
@@ -110,7 +111,7 @@ loadTri(istream & istr,Mesh & mesh)
     // Surface points:
     for (uint ii=0; ii<numSurfPts; ii++) {
         SurfPoint     sp;
-        readb(istr,sp.triEquivIdx);
+        sp.triEquivIdx = fgReadt<uint32>(istr);
         readb(istr,sp.weights);
         sp.label = readString(istr,wchar);
         surf.surfPoints.push_back(sp);
@@ -133,10 +134,10 @@ loadTri(istream & istr,Mesh & mesh)
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numVerts));
         for (uint ii=0; ii<surf.tris.size(); ii++)
             for (uint jj=0; jj<3; jj++)
-                surf.tris.uvInds[ii][jj] = surf.tris.vertInds[ii][jj];
+                surf.tris.uvInds[ii][jj] = surf.tris.posInds[ii][jj];
         for (uint ii=0; ii<surf.quads.size(); ii++)
             for (uint jj=0; jj<4; jj++)
-                surf.quads.uvInds[ii][jj] = surf.quads.vertInds[ii][jj];
+                surf.quads.uvInds[ii][jj] = surf.quads.posInds[ii][jj];
     }
     // Delta morphs:
     mesh.deltaMorphs.resize(numDiffMorph);
@@ -162,33 +163,12 @@ loadTri(istream & istr,Mesh & mesh)
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
             tm.baseInds.resize(numTargVerts);
             istr.read((char*)&tm.baseInds[0],4*numTargVerts);
-            tm.verts = fgSubvec(targVerts,targVertsStart,numTargVerts);
+            tm.verts = cSubvec(targVerts,targVertsStart,numTargVerts);
             targVertsStart += numTargVerts;
             mesh.targetMorphs.push_back(tm);
         }
     }
-}
-
-Mesh
-loadTri(std::istream & is)
-{
-    Mesh        ret;
-    loadTri(is,ret);
-    return ret;
-}
-
-void
-loadTri_(Ustring const & fname,Mesh & ret,bool throwOnFail)
-{
-    try {
-        Ifstream      ff(fname);
-        loadTri(ff,ret);
-    }
-    catch (...) {
-        if (throwOnFail)
-            throw;
-    }
-    ret.name = fgPathToBase(fname);
+    return mesh;
 }
 
 Mesh
@@ -203,17 +183,15 @@ loadTri(Ustring const & fname)
         e.m_ct.back().dataUtf8 = fname.m_str;
         throw;
     }
-    ret.name = fgPathToBase(fname);
+    ret.name = pathToBase(fname);
     return ret;
 }
 
 Mesh
-loadTri(
-    Ustring const &    meshFile,
-    Ustring const &    texImage)
+loadTri(Ustring const & meshFile,Ustring const & texImage)
 {
     Mesh        mesh = loadTri(meshFile);
-    imgLoadAnyFormat(texImage,mesh.surfaces[0].albedoMapRef());
+    loadImage_(texImage,mesh.surfaces[0].albedoMapRef());
     return mesh;
 }
 
@@ -233,7 +211,7 @@ saveTri(
 {
     Surf const          surf = mergeSurfaces(mesh.surfaces);
     SurfPoints const &  surfPoints = surf.surfPoints;
-    size_t              numTargetMorphVerts = fgSumVerts(mesh.targetMorphs),
+    size_t              numTargetMorphVerts = cNumVerts(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
     Ofstream            ff(fname);
     ff.write(triIdent.data(),8);
@@ -273,14 +251,14 @@ saveTri(
 
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
-        fgWriteb(ff,mesh.markedVerts[ii].idx);
+        fgWriteb(ff,uint32(mesh.markedVerts[ii].idx));
         writeLabel(ff,mesh.markedVerts[ii].label);
     }
 
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
-        const SurfPoint &   sp = surfPoints[ii];
-        fgWriteb(ff,sp.triEquivIdx);
+        SurfPoint const &   sp = surfPoints[ii];
+        fgWriteb(ff,uint32(sp.triEquivIdx));
         fgWriteb(ff,sp.weights);
         writeLabel(ff,sp.label);
     }
@@ -297,7 +275,7 @@ saveTri(
 
     // Delta morphs:
     for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {   
-        const Morph &   morph = mesh.deltaMorphs[ii];
+        Morph const &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
         float           scale = float(numeric_limits<short>::max()-1) / cMaxElem(mapAbs(cBounds(morph.verts)));

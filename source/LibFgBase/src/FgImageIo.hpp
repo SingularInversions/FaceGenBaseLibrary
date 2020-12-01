@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,20 +15,33 @@
 
 namespace Fg {
 
-void    imgLoadAnyFormat(Ustring const & fname,ImgC4UC & img);
-void    imgLoadAnyFormat(Ustring const & fname,ImgF & img);
-void    imgLoadAnyFormat(Ustring const & fname,ImgUC & img);
+// Load an image from any supported format:
+void    loadImage_(Ustring const & fname,ImgC4UC & img);
+void    loadImage_(Ustring const & fname,ImgF & img);
+void    loadImage_(Ustring const & fname,ImgUC & img);
 
 ImgC4UC
-imgLoadAnyFormat(Ustring const & fname);
+loadImage(Ustring const & fname);
+
+// Save an image to any supported format:
+void
+saveImage(Ustring const & fname,ImgC4UC const & img);
 
 void
-imgSaveAnyFormat(Ustring const & fname,const ImgC4UC & img);
+saveImage(Ustring const & fname,const ImgUC & img);
 
-void
-imgSaveAnyFormat(Ustring const & fname,const ImgUC & img);
+struct  ImgFileFormat
+{
+    String      description;
+    Strings     extensions;     // Usually 1 but can be 2 (eg. 'jpg', 'jpeg'). Preferred listed first.
+};
+typedef Svec<ImgFileFormat>     ImgFileFormats;
 
-// List of filename extensions of supported image file formats in LOWER CASE:
+// List of image file formats supported by above in order of common use in upper case:
+ImgFileFormats
+imgFileFormats();
+
+// List all supported image file format extensions in lower case, including synonyms:
 Strings
 imgFileExtensions();
 

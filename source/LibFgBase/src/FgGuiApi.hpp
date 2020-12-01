@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -26,9 +26,12 @@
 
 namespace Fg {
 
-// Gives choice of supported image load/save formats:
+// Gives radio button choice of supported image load/save formats:
 GuiVal<String>
-guiImageFormat(String const & label,bool warnTransparency);
+guiImageFormat(
+    String const &      label,
+    bool                warnTransparency,
+    Ustring const &     store);     // Don't store if empty
 
 }
 

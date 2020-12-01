@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,12 +33,12 @@ namespace Fg {
 
 // Native directory separator converter:
 inline String
-fgNs(String const & path)
+toNativeSeparator(String const & path)
 {
 #ifdef _WIN32
-    return fgReplace(path,'/','\\');
+    return replaceAll(path,'/','\\');
 #else
-    return fgReplace(path,'\\','/');
+    return replaceAll(path,'\\','/');
 #endif
 }
 
@@ -61,7 +61,7 @@ struct  Path
     // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
     // OR drive letter on Windows (eg C:), in which case 'root' can be either.
     Ustring            drive;
-    bool                root;   // Path starts at root ? (otherwise relative)
+    bool               root;   // Path starts at root ? (otherwise relative)
     Ustrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
     Ustring            base;   // Base filename
     Ustring            ext;    // Filename extension (no '.')
@@ -73,7 +73,7 @@ struct  Path
     Path(Ustring const & path);
 
     Path(
-        Ustring const & d,bool r,const Ustrings & ds,
+        Ustring const & d,bool r,Ustrings const & ds,
         Ustring const & b,Ustring const & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}
@@ -99,7 +99,7 @@ struct  Path
     {return dir() + base; }
 
     Path
-    operator+(const Path &  rhs) const;
+    operator+(Path const &  rhs) const;
 
     // Move up 'num' directories. Throws an error if not possible:
     void
@@ -112,33 +112,33 @@ struct  Path
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
 Path
-fgPathFromDir(Ustring const & directory);
+pathFromDir(Ustring const & directory);
 
 Ustring
-fgPathToBase(Ustring const & path);
+pathToBase(Ustring const & path);
 
 Ustring
-fgPathToDirBase(Ustring const & path);
+pathToDirBase(Ustring const & path);
 
 Ustring
-fgPathToExt(Ustring const & path);
+pathToExt(Ustring const & path);
 
 String
-fgPathToExt(String const & path);
+pathToExt(String const & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-fgCheckExt(Ustring const & path,String const & ext);
+checkExt(Ustring const & path,String const & ext);
 
 Ustring
-fgPathToName(Ustring const & path);
+pathToName(Ustring const & path);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
 Ustring
-fgAsDirectory(Ustring const & path);
+asDirectory(Ustring const & path);
 
 String
-fgAsDirectory(String const & path);
+asDirectory(String const & path);
 
 }
 

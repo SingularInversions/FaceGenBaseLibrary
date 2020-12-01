@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,11 +19,11 @@ namespace Fg {
 struct  GuiSliderWin : public GuiBaseImpl
 {
     GuiSlider           m_api;
-    Affine1D          m_apiToWin;
+    Affine1D            m_apiToWin;
     LRESULT             m_lastVal;      // Cache the last val returned by windows
     HWND                hwndSlider,
                         hwndThis;
-    Vec2UI           m_client;
+    Vec2UI              m_client;
 
     GuiSliderWin(const GuiSlider & apiSlider)
         : m_api(apiSlider)
@@ -59,6 +59,16 @@ struct  GuiSliderWin : public GuiBaseImpl
     wantStretch() const
     {return Vec2B(true,false); }
 
+    void
+    setPos(double newVal)
+    {
+        LPARAM          val = std::floor(m_apiToWin * newVal + 0.5);
+        SendMessage(hwndSlider,TBM_SETPOS,
+            TRUE,   // Must be true or slider graphics will not be updated.
+            val);
+        m_lastVal = val;
+    }
+
     virtual void
     updateIfChanged()
     {
@@ -69,13 +79,8 @@ struct  GuiSliderWin : public GuiBaseImpl
             // Windows has already updated it, along with its graphic. Also of course no update
             // necessary for sliders than haven't changed. This optimization did little but we leave
             // it in just in case:
-            if (newVal != oldVal) {
-                LPARAM  val = std::floor(m_apiToWin * newVal + 0.5);
-                SendMessage(hwndSlider,TBM_SETPOS,
-                    TRUE,   // Must be true or slider graphics will not be updated.
-                    val);
-                m_lastVal = val;
-            }
+            if (newVal != oldVal)
+                setPos(newVal);
         }
     }
 
@@ -114,6 +119,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             double      rts = m_api.tickSpacing / (rn[1]-rn[0]);
             uint        ts = round<uint>(rts * numTicks);
             SendMessage(hwndSlider,TBM_SETTICFREQ,ts,0);
+            setPos(m_api.getInput());
         }
         else if (msg == WM_SIZE) {          // Sends new size of client area.
             m_client = Vec2UI(LOWORD(lParam),HIWORD(lParam));

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -58,19 +58,37 @@
     #define FG_SANDBOX
 #endif
 
+#ifdef _MSC_VER
+// Too many false positives (avoid unnmaed objects with custom construction or destruction):
+#  pragma warning(disable:26444)
+#endif
+
 namespace Fg {
 
-// Is current binary 64 bit (avoid 'conditional expression is constant') ?
-bool
-fgIs64bit();
+constexpr bool      is64Bit()
+{
+#ifdef FG_64
+    return true;
+#else
+    return false;
+#endif
+}
 
-// As above
-bool
-fgIsDebug();
+constexpr bool      is32Bit() {return !is64Bit(); }
 
-// Returns "32 if the current executable is 32-bit, "64" if 64-bit.
-std::string
-fgBitsString();
+constexpr bool      isDebug()
+{
+#ifdef _DEBUG
+    return true;
+#else
+    return false;
+#endif
+}
+
+constexpr bool      isRelease() {return !isDebug(); }
+
+// Returns "32" if the current executable is 32-bit, "64" if 64-bit:
+std::string         cBitsString();
 
 }
 

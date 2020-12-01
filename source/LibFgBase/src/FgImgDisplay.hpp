@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,7 +15,7 @@
 
 namespace Fg {
 
-void    imgDisplay(const ImgC4UC &,Svec<Vec2F> ptsIucs=Svec<Vec2F>());
+void    imgDisplay(ImgC4UC const &,Svec<Vec2F> ptsIucs=Svec<Vec2F>());
 void    imgDisplay(const ImgUC &);
 void    imgDisplay(const Img<ushort> &);
 void    imgDisplay(const ImgF &);

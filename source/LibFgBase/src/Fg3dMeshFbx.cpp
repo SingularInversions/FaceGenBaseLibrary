@@ -1,9 +1,16 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Basic FBX export
+//
+// FBX CONVERTER 2013.3 Win64
+//  * Use this to convert between FBX ASCII and binary
+//  * Comes with several example files (click 'Add...')
+//  * GUI doesn't work so use CL in 'bin' subdir
+//
+
 
 #include "stdafx.h"
 #include "FgStdStream.hpp"
@@ -62,12 +69,12 @@ idVideo(size_t mm,size_t tt)
 static
 string
 nmVideo(size_t mm,size_t tt)
-{return "\"Video::Video"+toString(mm)+"_"+toString(tt)+"\""; }
+{return "\"Video::Video"+toStr(mm)+"_"+toStr(tt)+"\""; }
 
 void
 saveFbx(
     Ustring const &            filename,
-    const vector<Mesh> &    meshes,
+    Meshes const &    meshes,
     string                      imgFormat)
 {
     FGASSERT(!meshes.empty());
@@ -99,7 +106,7 @@ saveFbx(
         "}\n"
         "Objects:  {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs <<
             "    Model: " << idModel(mm) << ", \"Model::" << mesh.name << "\", \"Mesh\" {\n"
             "        Version: 232\n"
@@ -126,9 +133,9 @@ saveFbx(
             "            a: ";
         bool        start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-                Vec3UI   i = surf.tris.vertInds[tt];
+                Vec3UI   i = surf.tris.posInds[tt];
                 if (start)
                     start = false;
                 else
@@ -136,7 +143,7 @@ saveFbx(
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
             for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-                Vec4UI   i = surf.quads.vertInds[tt];
+                Vec4UI   i = surf.quads.posInds[tt];
                 if (start)
                     start = false;
                 else
@@ -154,7 +161,7 @@ saveFbx(
             "            ReferenceInformationType: \"Direct\"\n"
             "            Normals: *" << mesh.verts.size()*3 << " {\n"
             "                a: ";
-        Normals     norms = cNormals(mesh);
+        MeshNormals     norms = cNormals(mesh);
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
             Vec3F    n = norms.vert[vv];
             if (vv > 0)
@@ -183,7 +190,7 @@ saveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
                 Vec3UI   i = surf.tris.uvInds[tt];
                 if (start)
@@ -214,7 +221,7 @@ saveFbx(
             "                a: ";
         start = true;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf & surf = mesh.surfaces[ss];
+            Surf const & surf = mesh.surfaces[ss];
             size_t              num = surf.tris.uvInds.size() + surf.quads.uvInds.size();
             for (size_t ii=0; ii<num; ++ii) {
                 if (start)
@@ -282,7 +289,7 @@ saveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<
                 "    Material: " << idMaterial(mm,tt) << ", \"Material::Material" << mm << "_" << tt << "\", \"\" {\n"
@@ -298,9 +305,9 @@ saveFbx(
                 "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
                 "        }\n"
                 "    }\n";
-            Ustring    texBaseExt = path.base + toString(mm) + "_" + toString(tt) + "." + imgFormat;
+            Ustring    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
-                imgSaveAnyFormat(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
+                saveImage(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
                 "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
                 "        Type: \"TextureVideoClip\"\n"
@@ -335,7 +342,7 @@ saveFbx(
         "}\n"
         "Connections: {\n";
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idModel(mm) << ",0\n";
         for (size_t ee=0; ee<mesh.numMorphs(); ++ee) {
             ofs << "    C: \"OO\", " << idGeoExp(mm,ee) << "," << idSubdeformer(mm,ee) << "\n";
@@ -345,7 +352,7 @@ saveFbx(
         }
     }
     for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
+        Mesh const &    mesh = meshes[mm];
         ofs << "    C: \"OO\", " << idGeometry(mm) << "," << idModel(mm) << "\n";
         for (size_t tt=0; tt<mesh.surfaces.size(); ++tt) {
             ofs <<
@@ -367,10 +374,10 @@ fgSaveFbxTest(CLArgs const & args)
     Ustring            dd = dataDir();
     string              rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    saveFbx("meshExportFbx",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    saveFbx("meshExportFbx",svec(mouth,glasses));
     regressFileRel("meshExportFbx.fbx","base/test/");
     regressFileRel("meshExportFbx0_0.png","base/test/");
     regressFileRel("meshExportFbx1_0.png","base/test/");

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 // and 'std::uppercase' and uint-casting for uchar.
 //
 // Big-endian (ie highest order digits printed first)
-//
+// Signed and unsigned are treated identically (hex representation of bit pattern)
 
 #ifndef FGHEX_HPP
 #define FGHEX_HPP
@@ -17,26 +17,22 @@
 
 namespace Fg {
 
-String
-fgAsHex(uchar c);
+String  toHexString(uchar c);
 
 // Returns hex encoding in string of length 2:
-String
-fgAsHex(
-    const uchar *arr,
-    uint        numBytes);
+String  toHexString(const uchar *arr,uint numBytes);
 
 // Returns hex encoding in string of length 4:
-String
-fgAsHex(uint16 val);
+String  toHexString(uint16 val);
+inline String toHexString(int16 val) {return toHexString(scast<uint16>(val)); }
 
 // Returns hex encoding in string of length 8
-String
-fgAsHex(uint32 val);
+String  toHexString(uint32 val);
+inline String toHexString(int32 val) {return toHexString(scast<uint32>(val)); }
 
 // Returns hex encoding in string of length 16:
-String
-fgAsHex(uint64 val);
+String  toHexString(uint64 val);
+inline String toHexString(int64 val) {return toHexString(scast<uint64>(val)); }
 
 }
 

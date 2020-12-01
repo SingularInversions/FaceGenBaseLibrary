@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -71,7 +71,7 @@ public:
     }
 
     template<class T>
-    const T &
+    T const &
     as() const
     {
         const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(asShared().get());
@@ -103,9 +103,9 @@ public:
 
     // Implicit conversion is very useful here, for example 'Any x = 5;' or argument passing:
     template<class T>
-    Any(const T & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
+    Any(T const & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
 
-    Any(const Any & rhs) : objPtr(rhs.objPtr) {}
+    Any(Any const & rhs) : objPtr(rhs.objPtr) {}
 
     explicit operator bool() const
     {return bool(objPtr); }
@@ -120,11 +120,11 @@ public:
 
     template<class T>
     void
-    operator=(const T & val)
+    operator=(T const & val)
     {objPtr = std::make_shared<AnyPoly<T> >(val); }
 
     void
-    operator=(const Any & var)
+    operator=(Any const & var)
     {objPtr = var.objPtr; }
 
     template<class T>
@@ -138,7 +138,7 @@ public:
     }
 
     template<class T>
-    const T &
+    T const &
     as() const
     {
         if (!objPtr)
@@ -151,7 +151,7 @@ public:
 
     // Follows the idiom of returning a null pointer if the type differs:
     template<class T>
-    const T *
+    T const *
     asp() const
     {
         if (!objPtr)
@@ -182,6 +182,10 @@ public:
     bool
     empty() const
     {return !bool(objPtr); }
+
+    void
+    reset()
+    {objPtr.reset(); }
 
     template<class T>
     void

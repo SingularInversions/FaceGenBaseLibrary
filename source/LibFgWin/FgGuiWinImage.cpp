@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,9 +19,9 @@ struct  GuiImageWin : public GuiBaseImpl
 {
     HWND                m_hwnd;
     GuiImage            m_api;
-    Vec2UI           m_size;
-    Vec2I            m_posWhenLButtonClicked;
-    Vec2I            m_lastPos;                  // Last mouse position in CC
+    Vec2UI              m_size;
+    Vec2I               m_posWhenLButtonClicked;
+    Vec2I               m_lastPos;                  // Last mouse position in CC
     bool                dragging;
 
     GuiImageWin(const GuiImage & api)
@@ -49,7 +49,7 @@ struct  GuiImageWin : public GuiBaseImpl
     {
         if (m_api.allowMouseCtls)
             return Vec2UI(100,100);
-        const ImgC4UC & img = m_api.imgN.cref();
+        ImgC4UC const & img = m_api.imgN.cref();
         return img.dims();
     }
 
@@ -143,9 +143,9 @@ struct  GuiImageWin : public GuiBaseImpl
         }
         else if (msg == WM_LBUTTONUP) {
             ClipCursor(NULL);
-            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I           posIrcs = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             if (!dragging) {
-                m_api.click(pos);
+                m_api.click(posIrcs);
                 winUpdateScreen();
             }
             dragging = false;

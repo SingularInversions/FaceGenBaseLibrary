@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -10,7 +10,6 @@
 #include "FgGuiApiImage.hpp"
 #include "FgFileSystem.hpp"
 #include "FgAffine1.hpp"
-#include "FgAffineCwPreC.hpp"
 #include "FgBounds.hpp"
 #include "FgCommand.hpp"
 
@@ -19,11 +18,11 @@ using namespace std;
 namespace Fg {
 
 void
-imgDisplay(const ImgC4UC & img,vector<Vec2F> pts)
+imgDisplay(ImgC4UC const & img,vector<Vec2F> pts)
 {
-    Ustring            store = fgDirUserAppDataLocalFaceGen("SDK","DisplayImage");
+    Ustring            store = getDirUserAppDataLocalFaceGen("SDK","DisplayImage");
     guiStartImpl(
-        Ustring("FaceGen SDK DisplayImage"),
+        makeIPT<Ustring>("FaceGen SDK DisplayImage"),
         guiImage(makeIPT(img),makeIPT(pts)),
         store);
 }
@@ -70,8 +69,8 @@ void
 imgDisplay(const Img3F & img)
 {
     VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
-    AffineEwPre3F       xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
-    Img3F               tmp = Img3F(img.dims(),mapXft(img.dataVec(),xform));
+    AffineEw3F          xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
+    Img3F               tmp = Img3F(img.dims(),mapMul(xform,img.dataVec()));
     ImgC4UC             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
         Vec3UC          clr = round<uchar>(tmp[ii]);
@@ -126,7 +125,7 @@ imgDisplay(const ImgC4F & img)
 void
 fgImgGuiTestm(CLArgs const &)
 {
-    imgDisplay(imgLoadAnyFormat(dataDir()+"base/trees.jpg"));
+    imgDisplay(loadImage(dataDir()+"base/trees.jpg"));
 }
 
 }

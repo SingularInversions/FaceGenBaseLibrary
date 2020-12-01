@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -57,31 +57,38 @@ fgreset(ostream & ss)
 
 FgOut::FgOut()
 {
-    m_streams.push_back(defOut());
-    m_streams.back()->precision(9);
+    m_streams.push_back(OStr{defOut()});
+    m_streams.back().pOStr->precision(9);
+}
+
+FgOut::~FgOut()
+{
+    if (s_ofs.is_open())
+        s_ofs.close();
 }
 
 bool
 FgOut::setDefOut(bool b)
 {
-    auto        it = find(m_streams.begin(),m_streams.end(),defOut());
-    if (it == m_streams.end()) {
-        if (b)
-            m_streams.push_back(defOut());
-        return false;
+    for (auto it=m_streams.begin(); it!=m_streams.end(); ++it) {
+        if (it->pOStr == defOut()) {
+            if (!b)
+                m_streams.erase(it);
+            return true;
+        }
     }
-    else {
-        if (!b)
-            m_streams.erase(it);
-        return true;
-    }
+    if (b)
+        m_streams.push_back(OStr(defOut()));
+    return false;
 }
 
 bool
 FgOut::defOutEnabled()
 {
-    auto        it = find(m_streams.begin(),m_streams.end(),defOut());
-    return (it != m_streams.end());
+    for (auto it=m_streams.begin(); it!=m_streams.end(); ++it)
+        if (it->pOStr == defOut())
+            return true;
+    return false;
 }
 
 void
@@ -92,10 +99,10 @@ FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
     s_ofs.open(fnameUtf8,appendFile,true);
     s_ofs.precision(9);
     if (prependDate)
-        s_ofs << '\n' << fgDateTimeString() << '\n';
+        s_ofs << '\n' << getDateTimeString() << '\n';
     auto    it = find(m_streams.begin(),m_streams.end(),&s_ofs);
     if (it == m_streams.end())
-        m_streams.push_back(&s_ofs);
+        m_streams.push_back(OStr{&s_ofs});
 }
 
 void
@@ -111,17 +118,16 @@ FgOut::logFileClose()
 void
 FgOut::setIndentLevel(uint l)
 {
-    m_mutex.lock();
-    m_indent = l;
-    m_mutex.unlock();
+    for (OStr & o : m_streams)
+        o.indent = l;
 }
 
 FgOut &
 FgOut::flush()
 {
     if (!m_mute)
-        for (auto s : m_streams)
-            (*s) << std::flush;
+        for (auto & s : m_streams)
+            (*s.pOStr) << std::flush;
     return *this;
 }
 
@@ -134,24 +140,24 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
         // may be passed on to both streams and double called resulting in twice
         // the indenting:
         if (manip == fgpush) {
-            m_mutex.lock();
-            m_indent++;
-            m_mutex.unlock(); }
+            for (OStr & o : m_streams)
+                ++o.indent;
+        }
         else if (manip == fgpop) {
-            m_mutex.lock();
-            if (m_indent > 0)       // Don't throw or warn (output issues), just ignore
-                m_indent--;
-            m_mutex.unlock(); }
+            for (OStr & o : m_streams)
+                if (o.indent > 0)
+                    --o.indent;
+        }
         else if (manip == fgnl) {
-            for (auto s : m_streams) {
-                (*s) << '\n';
-                for (uint ii=0; ii<indentLevel(); ii++)
-                    (*s) << "|   ";
+            for (OStr & o : m_streams) {
+                (*o.pOStr) << '\n';
+                for (uint ii=0; ii<o.indent; ii++)
+                    (*o.pOStr) << "|   ";
             }
         }
         else {
-            for (auto s : m_streams)
-                (*s) << manip;
+            for (auto & s : m_streams)
+                (*s.pOStr) << manip;
         }
     }
     return *this;

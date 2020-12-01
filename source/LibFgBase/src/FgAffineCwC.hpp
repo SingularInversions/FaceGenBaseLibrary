@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,7 +31,6 @@ struct  AffineEw
 
     // Conversion constructor:
     template<class U>
-    explicit
     AffineEw(const AffineEw<U,dim> & rhs) :
         m_scales(Mat<T,dim,1>(rhs.m_scales)),
         m_trans(Mat<T,dim,1>(rhs.m_trans))
@@ -65,14 +64,17 @@ struct  AffineEw
         return ret;
     }
 
-    // Composition: y = Sx + t, z = S'y + t' = S'(Sx+t) + t'
+    // Composition:
+    // y = Sx + t
+    // z = S'y + t' = S'(Sx+t) + t' = (S'S)x + (S't + t')
+    // rhs below is 'y' above:
     AffineEw<T,dim>
     operator*(AffineEw<T,dim> rhs) const
     {
         AffineEw<T,dim>      ret;
         for (uint dd=0; dd<dim; ++dd) {
             ret.m_scales[dd] = m_scales[dd] * rhs.m_scales[dd];
-            ret.m_trans[dd] = m_trans[dd] + m_scales[dd] * rhs.m_trans[dd];
+            ret.m_trans[dd] = m_scales[dd] * rhs.m_trans[dd] + m_trans[dd];
         }
         return ret;
     }
@@ -116,6 +118,7 @@ typedef AffineEw<double,3>      AffineEw3D;
 
 typedef Svec<AffineEw2F>        AffineEw2Fs;
 typedef Svec<AffineEw3F>        AffineEw3Fs;
+typedef Svec<AffineEw3D>        AffineEw3Ds;
 
 template<class T,uint dim>
 inline std::ostream &
@@ -132,6 +135,29 @@ fgD2F(const AffineEw<double,dim> & v)
     return AffineEw<float,dim>(
         Mat<float,dim,1>(v.m_scales),
         Mat<float,dim,1>(v.m_trans));
+}
+
+template<typename T,uint dim>
+Mat<T,dim+1,dim+1>
+asHomogMat(AffineEw<T,dim> a)
+{
+    Mat<T,dim+1,dim+1>  ret(0);
+    for (uint ii=0; ii<dim; ++ii) {
+        ret.rc(ii,ii) = a.m_scales[ii];
+        ret.rc(ii,dim) = a.m_trans[ii];
+    }
+    ret.rc(dim,dim) = T(1);
+    return ret;
+}
+
+template<uint dim>
+AffineEw<double,dim>
+interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
+{
+    return AffineEw<double,dim> {
+        mapExp(interpolate(mapLog(a0.m_scales),mapLog(a1.m_scales),val)),
+        interpolate(a0.m_trans,a1.m_trans,val)
+    };
 }
 
 }

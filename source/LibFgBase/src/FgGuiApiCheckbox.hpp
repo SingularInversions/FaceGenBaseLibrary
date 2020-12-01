@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,7 +32,7 @@ GuiPtr
 guiCheckboxes(Ustrings const & labels,Svec<IPT<bool> > const & selNs);
 
 GuiVal<Svec<bool> >
-guiCheckboxes(const Ustrings & labels,const Svec<bool> & defaults);
+guiCheckboxes(Ustrings const & labels,const Svec<bool> & defaults);
 
 }
 

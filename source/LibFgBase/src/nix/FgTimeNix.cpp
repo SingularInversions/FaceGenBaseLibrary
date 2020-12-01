@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ using namespace std;
 namespace Fg {
 
 uint64
-fgTimeMs()
+getTimeMs()
 {
     timespec        spec;
     clock_gettime(CLOCK_REALTIME,&spec);
@@ -27,7 +27,7 @@ fgTimeMs()
 }
 
 void
-fgSleep(uint seconds)
+sleepSeconds(uint seconds)
 {
     sleep(seconds);
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,7 @@ static
 string
 fgConsVsPreprocessorDefs(
     bool                release,
-    const FgConsProj &  proj,
+    const ConsProj &  proj,
     Strings const &      defs)
 {
     string  ret = "WIN32";
@@ -54,17 +54,17 @@ fgConsVsPreprocessorDefs(
 static
 bool
 writeVcxproj(
-    const FgConsSolution &      sln,            // Transitive lookups
-    const FgConsProj &          proj,
+    ConsSolution const &      sln,            // Transitive lookups
+    const ConsProj &          proj,
     const map<string,string> &  nameToGuid,     // Must contain all project names
     uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017, 19 = VS2019
 {
     Strings          includes = sln.getIncludes(proj.name,false),
                     defines = sln.getDefs(proj.name),
                     lnkDeps = sln.getLnkDeps(proj.name);
-    string          verStr = toStringDigits(vsver,2),
+    string          verStr = toStrDigits(vsver,2),
                     projDir = proj.name + "/VisualStudio" + verStr + "/";
-    fgCreateDirectory(projDir);
+    createDirectory(projDir);
     string          projFile = projDir + proj.name + ".vcxproj";
     ostringstream   ofs;
     string          config[] = {"Debug","Release"};
@@ -90,16 +90,20 @@ writeVcxproj(
                 "      <Configuration>" << config[cc] << "</Configuration>\n"
                 "      <Platform>" << bits[bb] << "</Platform>\n"
                 "    </ProjectConfiguration>\n";
+    string          winSdkVer;
+    if (vsver < 19)
+        winSdkVer = "10.0.18362.0";     // TODO: keep updating. No way to specify most recent.
+    else if (vsver == 19)
+        winSdkVer = "10.0";             // Automically uses most recent
+    else
+        fgThrow("vsver unhandled value for winSdkVer");
     ofs <<
         "  </ItemGroup>\n"
         "  <PropertyGroup Label=\"Globals\">\n"
         "    <ProjectGuid>" << fgLookup(nameToGuid,proj.name) << "</ProjectGuid>\n"
         "    <RootNamespace>" << proj.name << "</RootNamespace>\n"
-        "    <Keyword>Win32Proj</Keyword>\n";
-    if (vsver == 19)
-        ofs << 
-            "    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>\n";
-    ofs <<
+        "    <Keyword>Win32Proj</Keyword>\n"
+        "    <WindowsTargetPlatformVersion>" + winSdkVer + "</WindowsTargetPlatformVersion>\n"
         "  </PropertyGroup>\n"
         "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\n";
     for (uint bb=0; bb<2; ++bb) {
@@ -198,7 +202,7 @@ writeVcxproj(
             ofs <<
                 "      <AdditionalIncludeDirectories>";
             for (string const & relPath : includes) {
-                string          dir = fgReplace(relPath,'/','\\');
+                string          dir = replaceAll(relPath,'/','\\');
                 ofs << "..\\" << dir << ";";    // .vcxproj file is in a subdir of project dir
             }
             ofs <<
@@ -214,7 +218,7 @@ writeVcxproj(
                 ofs <<
                     "      <FunctionLevelLinking>true</FunctionLevelLinking>\n";
             // Tried "EnableAllWarnings" but got tons of warning from boost include files:
-            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + toString(proj.warn);
+            string      warnStr = (proj.warn == 0) ? "TurnOffAllWarnings" : "Level" + toStr(proj.warn);
             ofs <<
                 "      <PrecompiledHeader>" << (pch ? "Use" : "\n      ") << "</PrecompiledHeader>\n"
                 "      <WarningLevel>" << warnStr << "</WarningLevel>\n"
@@ -222,9 +226,12 @@ writeVcxproj(
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
                 // Note that MSVC fast floating point model is an extension to the standard and thus cannot
                 // be used in combination with disabling MSVC language extensions:
-                "      <FloatingPointModel>Fast</FloatingPointModel>\n"
-                // No downside to supporting OpenMP in Visual Studio:
-                "      <OpenMPSupport>true</OpenMPSupport>\n";
+                "      <FloatingPointModel>Fast</FloatingPointModel>\n";
+                // Don't support OpenMP in Visual Studio since:
+                // * It's a pain to get working cross platform
+                // * If used it requires VCOMP140.DLL which is not always present with Win7
+                // * Threads aren't much more work
+                //"      <OpenMPSupport>true</OpenMPSupport>\n";
             if (vsver >= 17)    // Improved error position indicator:
                 ofs <<
                 "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n";
@@ -237,8 +244,10 @@ writeVcxproj(
                         << "</GenerateDebugInformation>\n"
                     "      <SubSystem>" << (proj.isGuiExecutable() ? "Windows" : "Console") << "</SubSystem>\n"
                     "      <TargetMachine>MachineX" << ((bb == 0) ? "86" : "64") << "</TargetMachine>\n"
+                    // As far as I can tell, the DLLs associated with these libs are always included with
+                    // windows so do not need redistribution:
                     "      <AdditionalDependencies>gdiplus.lib;comctl32.lib;user32.lib;gdi32.lib;"
-                        "opengl32.lib;advapi32.lib;comdlg32.lib;Shell32.lib;";
+                        "advapi32.lib;comdlg32.lib;Shell32.lib;";
                 for (string const & dll : lnkDeps)
                     if (!sln.contains(dll))         // Binary-only DLL
                         ofs << dll << ".lib;";
@@ -282,10 +291,10 @@ writeVcxproj(
     ofs << "  <ItemGroup>\n";
     for (const FgConsSrcDir & grp : proj.srcGroups) {
         for (size_t ff=0; ff<grp.files.size(); ++ff) {
-            string path = fgReplace(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
-            if (fgEndsWith(grp.files[ff],".cpp") || fgEndsWith(grp.files[ff],".c"))
+            string path = replaceAll(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
+            if (endsWith(grp.files[ff],".cpp") || endsWith(grp.files[ff],".c"))
                 ofs << "    <ClCompile Include=\"..\\" << path << "\"";
-            else if (fgEndsWith(grp.files[ff],".hpp") || fgEndsWith(grp.files[ff],".h"))
+            else if (endsWith(grp.files[ff],".hpp") || endsWith(grp.files[ff],".h"))
                 ofs << "    <ClInclude Include=\"..\\" << path << "\"";
             else
                 fgThrow("Unrecognized source file type",grp.files[ff]);
@@ -365,23 +374,23 @@ writeVcxproj(
         "  <ImportGroup Label=\"ExtensionTargets\">\n"
         "  </ImportGroup>\n"
         "</Project>\n";
-    return fgDump(ofs.str(),projFile.c_str());
+    return saveRaw(ofs.str(),projFile.c_str());
 }
 
 static
 bool
 writeSln(
-    const FgConsSolution &      sln,
+    ConsSolution const &      sln,
     string const &              merkle,         // Concatenation of project GUIDs
     const map<string,string> &  nameToGuid,     // Must contain all project names
     uint                        vsver)
 {
     // Create solution file:
     string          rootName("VisualStudio"),
-                    verStr = toStringDigits(vsver,2),
+                    verStr = toStrDigits(vsver,2),
     // Visual studio completely changes the SLN UUID if any project is added or removed.
     // It does not change either UUID if project properties are modified:
-                    slnGuid = fgCreateMicrosoftGuid(merkle+verStr);
+                    slnGuid = createMicrosoftGuid(merkle+verStr);
     ostringstream   ofs;
     ofs <<
         "\n"
@@ -394,7 +403,7 @@ writeSln(
             "MinimumVisualStudioVersion = 10.0.40219.1\n";
     else
         ofs << "20" << verStr << "\n";
-    for (const FgConsProj & proj : sln.projects) {
+    for (const ConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             ofs <<
                 "Project(\"" + slnGuid + "\") = \""
@@ -421,7 +430,7 @@ writeSln(
             for (Ustring const & dir : dc.dirnames) {
                 Ustring            cmf = dir + "\\CMakeLists.txt";
                 if (pathExists(cmf)) {
-                    string          uuid = fgCreateMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
+                    string          uuid = createMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
                     ofs <<
                         "Project(\"" + uuidFolder + "\") = \"" + dir + "\", \"" + dir + "\", \"" + uuid + "\"\n"
                         "	ProjectSection(SolutionItems) = preProject\n"
@@ -456,7 +465,7 @@ writeSln(
         "		Release|x64 = Release|x64\n"
         "	EndGlobalSection\n"
         "	GlobalSection(ProjectConfigurationPlatforms) = postSolution\n";
-    for (const FgConsProj & proj : sln.projects) {
+    for (const ConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             string          guid = fgLookup(nameToGuid,proj.name);
             ofs <<
@@ -482,19 +491,19 @@ writeSln(
         "		SolutionGuid = {39B2BC3E-9FF2-4906-92AE-80DBB3FF9746}\n"
         "	EndGlobalSection\n"
         "EndGlobal\n";
-    return fgDump(ofs.str(),rootName+verStr+".sln");
+    return saveRaw(ofs.str(),rootName+verStr+".sln");
 }
 
 bool
-fgConsVs201x(const FgConsSolution & sln)
+fgConsVs201x(ConsSolution const & sln)
 {
-    FGASSERT(sln.type == FgConsType::win);
+    FGASSERT(sln.type == ConsType::win);
     map<string,string>  nameToGuid;
     string              hashPrepend = "FaceGenVisualStudio:",    // Ensure descriptor string >= 16 chars
                         merkle;
-    for (const FgConsProj & proj : sln.projects) {
+    for (const ConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
-            string          projGuid = fgCreateMicrosoftGuid(hashPrepend+proj.descriptor());
+            string          projGuid = createMicrosoftGuid(hashPrepend+proj.descriptor());
             auto            it = nameToGuid.find(proj.name);
             if (it != nameToGuid.end())
                 fgThrow("fgConsVs201x duplicate project name",proj.name);
@@ -503,7 +512,7 @@ fgConsVs201x(const FgConsSolution & sln)
         }
     }
     bool                changed = false;
-    for (const FgConsProj & proj : sln.projects) {
+    for (const ConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             changed = writeVcxproj(sln,proj,nameToGuid,15) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;

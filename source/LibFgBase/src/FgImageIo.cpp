@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,42 +16,57 @@ using namespace std;
 namespace Fg {
 
 void
-imgLoadAnyFormat(Ustring const & fname,ImgUC & ret)
+loadImage_(Ustring const & fname,ImgUC & ret)
 {
-    ImgC4UC     img = imgLoadAnyFormat(fname);
+    ImgC4UC     img = loadImage(fname);
     ret.resize(img.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
         ret[ii] = img[ii].rec709();
 }
 
 void
-imgLoadAnyFormat(Ustring const & fname,ImgF & img)
+loadImage_(Ustring const & fname,ImgF & img)
 {
     ImgC4UC     tmp;
-    imgLoadAnyFormat(fname,tmp);
+    loadImage_(fname,tmp);
     img.resize(tmp.dims());
     for (size_t ii=0; ii<tmp.numPixels(); ++ii)
         img.m_data[ii] = tmp.m_data[ii].rec709();
 }
 
 void
-imgSaveAnyFormat(Ustring const & fname,const ImgUC & img)
+saveImage(Ustring const & fname,const ImgUC & img)
 {
     ImgC4UC         tmp;
     imgConvert_(img,tmp);
-    imgSaveAnyFormat(fname,tmp);
+    saveImage(fname,tmp);
 }
 
-vector<string>
+ImgFileFormats
+imgFileFormats()
+{
+    static ImgFileFormats   ret = {
+        {"PNG - RGBA, lossless compression low ratio",{"png"}},
+        {"JPEG - RGB, lossy compression high ratio",{"jpg","jpeg"}},
+        {"TARGA - RGBA, lossless compression very low ratio",{"tga"}},
+        {"BMP - RGB Lossless compression medium ratio",{"bmp"}}
+    };
+    return ret;
+}
+
+Strings
 imgFileExtensions()
 {
-    return fgSvec<string>("png","jpg","jpeg","bmp","tga");
+    Strings         ret;
+    for (ImgFileFormat const & iff : imgFileFormats())
+        cat_(ret,iff.extensions);
+    return ret;
 }
 
 string
 imgFileExtensionsDescription()
 {
-    vector<string>  cf = imgFileExtensions();
+    Strings  cf = imgFileExtensions();
     string  retval("(");
     retval += cf[0];
     for (size_t ii=1; ii<cf.size(); ++ii)
@@ -62,14 +77,14 @@ imgFileExtensionsDescription()
 bool
 hasImgExtension(Ustring const & fname)
 {
-    string          ext = fgToLower(fgPathToExt(fname).m_str);
-    return fgContains(imgFileExtensions(),ext);
+    string          ext = toLower(pathToExt(fname).m_str);
+    return contains(imgFileExtensions(),ext);
 }
 
 std::vector<std::string>
 imgFindFiles(Ustring const & baseName)
 {
-    vector<string>      ret,
+    Strings      ret,
                         cifs = imgFileExtensions();
     for (size_t ii=0; ii<cifs.size(); ++ii)
         if (fileReadable(baseName+"."+cifs[ii]))
@@ -80,13 +95,13 @@ imgFindFiles(Ustring const & baseName)
 bool
 imgFindLoadAnyFormat(Ustring const & baseName,ImgC4UC & img)
 {
-    vector<string>  exts = imgFindFiles(baseName);
+    Strings  exts = imgFindFiles(baseName);
     if (exts.empty())
         return false;
     Ustring        fname = baseName + "." + exts[0];
     if (exts.size() > 1)
         fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
-    imgLoadAnyFormat(fname,img);
+    loadImage_(fname,img);
     return true;
 }
 
@@ -97,8 +112,8 @@ fgImgTestWrite(CLArgs const & args)
     char32_t        ch = 0x00004EE5;            // A Chinese character
     Ustring        chinese(ch);
     ImgC4UC     redImg(16,16,RgbaUC(255,0,0,255));
-    imgSaveAnyFormat(chinese+"0.jpg",redImg);
-    imgSaveAnyFormat(chinese+"0.png",redImg);
+    saveImage(chinese+"0.jpg",redImg);
+    saveImage(chinese+"0.png",redImg);
 }
 
 }

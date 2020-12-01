@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -155,7 +155,7 @@ fgRandomTest(CLArgs const &)
         img.xy(xx,hgt) = RgbaUC(255,0,0,255); }
 
     // Display:
-    fgImgFlipVertical(img);
+    flipVertical_(img);
     imgDisplay(img);
 }
 
@@ -172,7 +172,7 @@ randNearUnit()
 
 std::vector<double>
 randNearUnits(size_t num)
-{return generate<double>(randNearUnit,num); }
+{return generate<double>(num,randNearUnit); }
 
 }
 

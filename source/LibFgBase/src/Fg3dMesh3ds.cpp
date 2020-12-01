@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -44,7 +44,7 @@ using namespace std;
 
 namespace Fg {
 
-static string fffMdlNameTo3dsName(string const & mdlName,vector<string> & nameList)
+static string fffMdlNameTo3dsName(string const & mdlName,Strings & nameList)
 {
     string name = mdlName;
     if (name.size() > 10) {
@@ -139,9 +139,9 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             if (model.numPoints(objId) == model.numTxtCoord(objId)) {
                 bool identical = true;
                 // Check if the facet lists are identical
-                const vector<Vec3UI> &triList = 
+                Vec3UIs const &triList = 
                         model.getTriList(objId);
-                const vector<Vec3UI> &txtTriList = 
+                Vec3UIs const &txtTriList = 
                         model.getTexTriList(objId);
                 for (unsigned int tri=0; identical && tri<model.numTxtTris(objId); ++tri) {
                     if (triList[tri] != txtTriList[tri])
@@ -194,7 +194,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<Vec3UI> &triList = model.getTriList(objId);
+        Vec3UIs const &triList = model.getTriList(objId);
         for (unsigned short ii=0; ii<numTris; ++ii) {
             unsigned short idx1 = (unsigned short) triList[ii][0];
             unsigned short idx2 = (unsigned short) triList[ii][1];
@@ -483,7 +483,7 @@ fffSave3dsFile(Ustring const &name, const FffMultiObjectC &model)
 void
 save3ds(
     Ustring const &        fname,
-    vector<Mesh>        meshes,
+    Meshes        meshes,
     string                  imgFormat)
 {
     for (size_t ii=0; ii<meshes.size(); ++ii) {
@@ -503,10 +503,10 @@ fgSave3dsTest(CLArgs const & args)
     Ustring    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
-    mouth.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"MouthSmall.png"));
+    mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
-    glasses.surfaces[0].setAlbedoMap(imgLoadAnyFormat(dd+rd+"Glasses.tga"));
-    save3ds("mshX3ds",fgSvec(mouth,glasses));
+    glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
+    save3ds("mshX3ds",svec(mouth,glasses));
     regressFileRel("mshX3ds.3ds","base/test/");
     regressFileRel("mshX3ds0.png","base/test/");
     regressFileRel("mshX3ds1.png","base/test/");

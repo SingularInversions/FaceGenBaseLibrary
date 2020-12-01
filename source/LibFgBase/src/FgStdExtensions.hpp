@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -23,6 +23,12 @@ typedef Svec<std::string>    strings;
 
 template<class T>
 using Sfun = std::function<T>;
+
+// Like C++17 std::data() but better named:
+template <class _Elem>
+static
+constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
+{return _Ilist.begin(); }
 
 }
 

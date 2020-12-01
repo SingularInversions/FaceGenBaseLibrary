@@ -1,8 +1,24 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// NOTES:
+//  * Target Collada 1.4 (1.5 has nothing we need and is not as well supported)
+//  * Used the 'skin_and_morph.dae' sample in github 'threejs' to get started
+//  * Blender is able to read in this file with bones & morph
+//  * Unity can read it with the bones but doesn't get the morph
+//  * Blender is able to DAE round-trip teeth w/ map after deselecting 'triangulate' on export.
+//  * Not a single example DAE in assimp tests contains the 'morph' keyword
+//  * MeshLab triangulates on DAE export but can read in Blender's DAE with quads & color map.
+//  * Only other morph DAE I could find is 'glTF-Sample-Models' 'AnimatedMorphCube' but neither app read this morph (and blender crashed)
+//  * It seems Unity will not read morphs from DAE
+//
+//  * TODO: preserve shiny & transparent texture material properties.
+//  * TODO: save only a single controller for shared morph names.
+//  * TODO: save only a single instance of the topology for all morph targets.
+//  * TODO: save only a single instance of shared albedo maps.
+// 
 
 #include "stdafx.h"
 #include "FgStdStream.hpp"
@@ -19,223 +35,327 @@ using namespace std;
 
 namespace Fg {
 
-void
-saveDae(
-    Ustring const &            filename,
-    const vector<Mesh> &    meshes,
-    string                      imgFormat)
+namespace {
+
+string
+cEffect(string const & id)
 {
-    Path          fpath(filename);
-    Ustring        dirBase = fpath.dirBase();
-    Ofstream      ofs(dirBase+".dae");
+    // <index_of_refraction> option is included to avoid Blender logging an invalid value for IOR
+    // sid references cannot include spaces (<source>Name</source> NOT <source> Name </source>
+    return R"(
+    <effect id="Effect)" + id + R"(">
+      <profile_COMMON>
+        <technique sid="Technique">
+          <newparam sid="Surface">
+            <surface type="2D">
+            <init_from>Image)" + id + R"(</init_from>
+            </surface>
+          </newparam>
+          <newparam sid="Sampler">
+            <sampler2D>
+            <source>Surface</source>
+            </sampler2D>
+          </newparam>
+          <phong>
+            <ambient>
+              <texture texture="Sampler" texcoord="CHANNEL0" />
+            </ambient>
+            <diffuse>
+              <texture texture="Sampler" texcoord="CHANNEL0" />
+            </diffuse>
+            <index_of_refraction>
+              <float> 1.0 </float>
+            </index_of_refraction>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>)";
+}
+
+string
+cGeometryVerts(string const & id,Vec3Fs const & verts,Vec3Fs const & norms,Vec2Fs const & uvs)
+{
+    ostringstream       ofs;
     ofs.precision(7);
-    ofs <<
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" version=\"1.4.1\">\n"
-        "  <asset>\n"
-        "    <contributor>\n"
-        "      <authoring_tool>FaceGen</authoring_tool>\n"
-        "    </contributor>\n"
-        "    <up_axis>Y_UP</up_axis>\n"
-        "  </asset>\n";
-    ostringstream       lib_img,
-                        lib_shd,
-                        lib_mat;
-    map<ImgC4UC*,Ustring>  imagesSaved;
-    for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &        mesh = meshes[mm];
-        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf &     surf = mesh.surfaces[ss];
-            if (surf.hasUvIndices() && surf.material.albedoMap) {
-                string              id = toString(mm) + "_" + toString(ss);
-                Ustring            imgFile = fpath.base + id + "." + imgFormat;
-                ImgC4UC         *imgPtr = surf.material.albedoMap.get();
-                if (fgContains(imagesSaved,imgPtr))
-                    imgFile = imagesSaved[imgPtr];
-                else {
-                    imgSaveAnyFormat(fpath.dir()+imgFile,*surf.material.albedoMap);
-                    imagesSaved[imgPtr] = imgFile;
-                }
-                lib_img <<
-                    "    <image id=\"image" << id << "\">\n"
-                    "      <init_from>" << imgFile << "</init_from>\n"
-                    "    </image>\n";
-                lib_shd <<
-                    "    <effect id=\"shader" << id << "\" name=\"shader" << id << "\">\n"
-                    "      <profile_COMMON>\n"
-                    "        <newparam sid=\"surface" << id << "\">\n"
-                    "          <surface type=\"2D\">\n"
-                    "            <init_from>image" << id << "</init_from>\n"
-                    "          </surface>\n"
-                    "        </newparam>\n"
-                    "        <newparam sid=\"sampler" << id << "\">\n"
-                    "          <sampler2D>\n"
-                    "            <source>surface" << id << "</source>\n"
-                    "          </sampler2D>\n"
-                    "        </newparam>\n"
-                    "        <technique sid=\"standard\">\n"
-                    "          <phong>\n"
-                    "            <ambient>\n"
-                    "              <texture texture=\"sampler" << id << "\" texcoord=\"CHANNEL0\" />\n"
-                    "            </ambient>\n"
-                    "            <diffuse>\n"
-                    "              <texture texture=\"sampler" << id << "\" texcoord=\"CHANNEL0\" />\n"
-                    "            </diffuse>\n"
-                    "          </phong>\n"
-                    "        </technique>\n"
-                    "      </profile_COMMON>\n"
-                    "    </effect>\n";
-                lib_mat <<
-                    "    <material id=\"material" << id << "\" name=\"material" << id << "\">\n"
-                    "      <instance_effect url=\"#shader" << id << "\" />\n"
-                    "    </material>\n";
-            }
-        }
-    }
-    ofs <<
-        "  <library_images>\n" << lib_img.str() << "  </library_images>\n"
-        "  <library_effects>\n" << lib_shd.str() << "  </library_effects>\n"
-        "  <library_materials>\n" << lib_mat.str() << "  </library_materials>\n";
-    ofs <<
-        "  <library_geometries>\n";
-    for (size_t mm=0; mm<meshes.size(); ++mm) {
-        const Mesh &    mesh = meshes[mm];
-        Normals         norms = cNormals(mesh);
-        string              id = "mesh" + toString(mm);
-        Ustring            name = mesh.name.empty() ? id : mesh.name;
+    ofs << "\n"
+        "        <source id=\"" << id << "Coords\">\n"
+        "          <float_array id=\"" << id << "CoordsArray\" count=\"" << verts.size()*3 << "\">";
+    for (Vec3F const & v : verts)
+        ofs << " " << v[0] << " " << v[1] << " " << v[2];
+    ofs << " </float_array>\n"
+        "          <technique_common>\n"
+        "            <accessor count=\"" << verts.size() << "\" source=\"#" << id << "CoordsArray\" stride=\"3\">\n"
+        "              <param name=\"X\" type=\"float\" />\n"
+        "              <param name=\"Y\" type=\"float\" />\n"
+        "              <param name=\"Z\" type=\"float\" />\n"
+        "            </accessor>\n"
+        "          </technique_common>\n"
+        "        </source>\n"
+        "        <source id=\"" << id << "Norms\">\n"
+        "          <float_array id=\"" << id << "NormsArray\" count=\"" << norms.size()*3 << "\">";
+    for (Vec3F const & v : norms)
+        ofs << " " << v[0] << " " << v[1] << " " << v[2];
+    ofs << " </float_array>\n"
+        "          <technique_common>\n"
+        "            <accessor count=\"" << norms.size() << "\" source=\"#" << id << "NormsArray\" stride=\"3\">\n"
+        "              <param name=\"X\" type=\"float\" />\n"
+        "              <param name=\"Y\" type=\"float\" />\n"
+        "              <param name=\"Z\" type=\"float\" />\n"
+        "            </accessor>\n"
+        "          </technique_common>\n"
+        "        </source>\n";
+    if (!uvs.empty()) {
         ofs <<
-            "    <geometry id=\"" << id << "\" name=\"" << name << "\">\n"
-            "      <mesh>\n"
-            "        <source id=\"" << id << "-positions\" name=\"positions\">\n"
-            "          <float_array id=\"" << id << "-positions-array\" count=\"" << mesh.verts.size()*3 << "\">";
-        for (const Vec3F & v : mesh.verts)
-            ofs << " " << v[0] << " " << v[1] << " " << v[2];
+            "        <source id=\"" << id << "Uvs\">\n"
+            "          <float_array id=\"" << id << "UvsArray\" count=\"" << uvs.size()*2 << "\">";
+        for (const Vec2F & v : uvs)
+            ofs << " " << v[0] << " " << v[1];
         ofs << " </float_array>\n"
             "          <technique_common>\n"
-            "            <accessor count=\"" << mesh.verts.size() << "\" source=\"#" << id << "-positions-array\" stride=\"3\">\n"
-            "              <param name=\"X\" type=\"float\" />\n"
-            "              <param name=\"Y\" type=\"float\" />\n"
-            "              <param name=\"Z\" type=\"float\" />\n"
-            "            </accessor>\n"
-            "          </technique_common>\n"
-            "        </source>\n"
-            "        <source id=\"" << id << "-normals\" name=\"normals\">\n"
-            "          <float_array id=\"" << id << "-normals-array\" count=\"" << norms.vert.size()*3 << "\">";
-        for (const Vec3F & v : norms.vert)
-            ofs << " " << v[0] << " " << v[1] << " " << v[2];
-        ofs << " </float_array>\n"
-            "          <technique_common>\n"
-            "            <accessor count=\"" << norms.vert.size() << "\" source=\"#" << id << "-normals-array\" stride=\"3\">\n"
-            "              <param name=\"X\" type=\"float\" />\n"
-            "              <param name=\"Y\" type=\"float\" />\n"
-            "              <param name=\"Z\" type=\"float\" />\n"
+            "            <accessor count=\"" << uvs.size() << "\" source=\"#" << id << "UvsArray\" stride=\"2\">\n"
+            "              <param name=\"S\" type=\"float\" />\n"
+            "              <param name=\"T\" type=\"float\" />\n"
             "            </accessor>\n"
             "          </technique_common>\n"
             "        </source>\n";
-        if (!mesh.uvs.empty()) {
-            ofs <<
-                "        <source id=\"" << id << "-uvs\" name=\"uvs\">\n"
-                "          <float_array id=\"" << id << "-uvs-array\" count=\"" << mesh.uvs.size()*2 << "\">";
-            for (const Vec2F & v : mesh.uvs)
-                ofs << " " << v[0] << " " << v[1];
-        ofs << " </float_array>\n"
-                "          <technique_common>\n"
-                "            <accessor count=\"" << mesh.uvs.size() << "\" source=\"#" << id << "-uvs-array\" stride=\"2\">\n"
-                "              <param name=\"S\" type=\"float\" />\n"
-                "              <param name=\"T\" type=\"float\" />\n"
-                "            </accessor>\n"
-                "          </technique_common>\n"
-                "        </source>\n";
-        }
-        ofs <<
-            "        <vertices id=\"" << id << "-vertices\">\n"
-            "          <input semantic=\"POSITION\" source=\"#" << id << "-positions\" />\n"
-            "        </vertices>\n";
-        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            const Surf &     surf = mesh.surfaces[ss];
-            bool        hasUVs = (surf.tris.hasUvs() && surf.quads.hasUvs());
-            ofs <<
-                "        <polylist count=\"" << surf.tris.size() + surf.quads.size() << "\" material=\"materialRef" << mm << "_" << ss << "\">\n"
-                "          <input offset=\"0\" semantic=\"VERTEX\" source=\"#" << id << "-vertices\" />\n"
-                "          <input offset=\"0\" semantic=\"NORMAL\" source=\"#" << id << "-normals\" />\n";
-            if (hasUVs)
-                ofs <<
-                "          <input offset=\"1\" semantic=\"TEXCOORD\" source=\"#" << id << "-uvs\" set=\"0\" />\n";
-            ofs <<
-                "          <vcount>";
-            for (size_t ii=0; ii<surf.tris.size(); ++ii)
-                ofs << " 3";
-            for (size_t ii=0; ii<surf.quads.size(); ++ii)
-                ofs << " 4";
-            ofs << " </vcount>\n"
-                "          <p>";
-            for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
-                Vec3UI       tri = surf.tris.vertInds[ii];
-                for (size_t jj=0; jj<3; ++jj) {
-                    ofs << " " << tri[jj];
-                    if (hasUVs)
-                        ofs << " " << surf.tris.uvInds[ii][jj];
-                }
-            }
-            for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
-                Vec4UI       quad = surf.quads.vertInds[ii];
-                for (size_t jj=0; jj<4; ++jj) {
-                    ofs << " " << quad[jj];
-                    if (hasUVs)
-                        ofs << " " << surf.quads.uvInds[ii][jj];
-                }
-            }
-            ofs << " </p>\n"
-                "        </polylist>\n";
-        }
-        ofs <<
-            "      </mesh>\n"
-            "    </geometry>\n";
     }
     ofs <<
-        "  </library_geometries>\n"
-        "  <library_visual_scenes>\n"
-        "    <visual_scene id=\"RootNode\" name=\"RootNode\">\n";
-    for (size_t mm=0; mm<meshes.size(); ++mm) {
-        ofs <<
-            "      <node id=\"node" << mm << "\" name=\"node" << mm << "\">\n"
-            "        <instance_geometry url=\"#mesh" << mm << "\">\n";
-        for (size_t ss=0; ss<meshes[mm].surfaces.size(); ++ss) {
+        "        <vertices id=\"" << id << "Verts\">\n"
+        "          <input semantic=\"POSITION\" source=\"#" << id << "Coords\" />\n"
+        "        </vertices>";
+    return ofs.str();
+}
+
+string
+cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
+{
+    ostringstream       ofs;
+    for (size_t ss=0; ss<surfs.size(); ++ss) {
+        Surf const &     surf = surfs[ss];
+        bool        hasUVs = (surf.tris.hasUvs() && surf.quads.hasUvs());
+        ofs << "\n"
+            "        <polylist count=\"" << surf.tris.size() + surf.quads.size() << "\" material=\"MaterialRef" << mm << "_" << ss << "\">\n"
+            "          <input offset=\"0\" semantic=\"VERTEX\" source=\"#" << id << "Verts\" />\n"
+            "          <input offset=\"1\" semantic=\"NORMAL\" source=\"#" << id << "Norms\" />\n";
+        if (hasUVs)
             ofs <<
-                "          <bind_material>\n"
-                "            <technique_common>\n"
-                "              <instance_material symbol=\"materialRef" << mm << "_" << ss << "\" target=\"#material" << mm << "_" << ss << "\">\n"
-                "                <bind_vertex_input semantic=\"CHANNEL0\" input_semantic=\"TEXCOORD\" input_set=\"0\" />\n"
-                "              </instance_material>\n"
-                "            </technique_common>\n"
-                "          </bind_material>\n";
-        }
+            "          <input offset=\"2\" semantic=\"TEXCOORD\" source=\"#" << id << "Uvs\" set=\"0\" />\n";
         ofs <<
-            "        </instance_geometry>\n"
-            "      </node>\n";
+            "          <vcount>";
+        for (size_t ii=0; ii<surf.tris.size(); ++ii)
+            ofs << " 3";
+        for (size_t ii=0; ii<surf.quads.size(); ++ii)
+            ofs << " 4";
+        ofs << " </vcount>\n"
+            "          <p>";
+        for (size_t ii=0; ii<surf.tris.posInds.size(); ++ii) {
+            Vec3UI       tri = surf.tris.posInds[ii];
+            for (size_t jj=0; jj<3; ++jj) {
+                ofs << " " << tri[jj];      // vertex index
+                ofs << " " << tri[jj];      // normal index
+                if (hasUVs)
+                    ofs << " " << surf.tris.uvInds[ii][jj];
+            }
+        }
+        for (size_t ii=0; ii<surf.quads.posInds.size(); ++ii) {
+            Vec4UI       quad = surf.quads.posInds[ii];
+            for (size_t jj=0; jj<4; ++jj) {
+                ofs << " " << quad[jj];     // vertex index
+                ofs << " " << quad[jj];     // normal index
+                if (hasUVs)
+                    ofs << " " << surf.quads.uvInds[ii][jj];
+            }
+        }
+        ofs << " </p>\n"
+            "        </polylist>";
+    }
+    return ofs.str();
+}
+
+string  cMeshId(size_t mm)  {return "Mesh" + toStr(mm); }
+string  cMorphId(size_t mm,size_t rr) {return "Mesh" + toStr(mm) + "Morph" + toStr(rr); }
+
+Ustring
+cGeometry(Mesh const & mesh,size_t mm)
+{
+    string              id = cMeshId(mm);
+    Ustring             name = mesh.name.empty() ? id : mesh.name;
+    Ustring             ret = R"(
+    <geometry id=")" + id + R"(" name=")" + name + R"(">
+      <mesh>)" +
+        cGeometryVerts(id,mesh.verts,cNormals(mesh).vert,mesh.uvs) +
+        cGeometrySurfs(mesh.surfaces,id,mm) + R"(
+      </mesh>
+    </geometry>)";
+    for (size_t rr=0; rr<mesh.numMorphs(); ++rr) {
+        string              morphId = cMorphId(mm,rr);
+        Ustring             morphName = mesh.morphName(rr);
+        Vec3Fs              morphVerts = mesh.morphSingle(rr);
+        ret += R"(
+    <geometry id=")" + morphId + R"(" name=")" + morphName + R"(">
+      <mesh>)" +
+            cGeometryVerts(morphId,morphVerts,cNormals(mesh.surfaces,morphVerts).vert,mesh.uvs) +
+            // Blender crashes without repeating surface definition for each morph.
+            // Maya supposedly has the same problem (Collada docs).
+            cGeometrySurfs(mesh.surfaces,morphId,mm) + R"(
+      </mesh>
+    </geometry>)";
+    }
+    return ret;
+}
+
+Ustring
+cController(Mesh const & mesh,size_t mm)
+{
+    size_t              num = mesh.numMorphs();
+    string              meshId = cMeshId(mm),
+                        numStr = toStr(num);
+    Ustring             ret = R"(
+    <controller id=")" + meshId + R"(Controller" name="Morph Controls">
+      <morph method="NORMALIZED" source="#)" + meshId + R"(">
+        <source id=")" + meshId + R"(Targs">
+          <IDREF_array id=")" + meshId + R"(TargsArray" count=")" + numStr + R"(">)";
+    for (size_t rr=0; rr<num; ++rr)
+        ret += cMorphId(mm,rr) + " ";
+    ret += R"(</IDREF_array>
+          <technique_common>
+            <accessor source="#)" + meshId + R"(TargsArray" count=")" + numStr + R"(" stride="1">
+              <param name="MORPH_TARGET" type="IDREF"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id=")" + meshId + R"(Weights">
+          <float_array id=")" + meshId + R"(WeightsArray" count=")" + numStr + R"(">)";
+    for (size_t rr=0; rr<num; ++rr)
+        ret += "0 ";
+    ret += R"(</float_array>
+          <technique_common>
+            <accessor source="#)" + meshId + R"(WeightsArray" count=")" + numStr + R"(" stride="1">
+              <param name="MORPH_WEIGHT" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <targets>
+          <input semantic="MORPH_TARGET" source="#)" + meshId + R"(Targs"/>
+          <input semantic="MORPH_WEIGHT" source="#)" + meshId + R"(Weights"/>
+        </targets>
+      </morph>
+    </controller>)";
+    return ret;
+}
+
+string
+cSceneNode(Mesh const & mesh,size_t mm)
+{
+    ostringstream       ofs;
+    string              id = "Node" + toStr(mm);
+    Ustring             name = mesh.name.empty() ? id : mesh.name;
+    ofs << "\n"
+        "      <node id=\"" << id << "\" name=\"" << name << "\">\n"
+        "        <instance_geometry url=\"#Mesh" << mm << "\">\n";
+    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+        ofs <<
+            "          <bind_material>\n"
+            "            <technique_common>\n"
+            "              <instance_material symbol=\"MaterialRef" << mm << "_" << ss << "\" target=\"#Material" << mm << "_" << ss << "\">\n"
+            "                <bind_vertex_input semantic=\"CHANNEL0\" input_semantic=\"TEXCOORD\" input_set=\"0\" />\n"
+            "              </instance_material>\n"
+            "            </technique_common>\n"
+            "          </bind_material>\n";
     }
     ofs <<
-        "    </visual_scene>\n"
-        "  </library_visual_scenes>\n"
-        "  <scene>\n"
-        "    <instance_visual_scene url=\"#RootNode\" />\n"
-        "  </scene>\n"
-        "</COLLADA>\n";
+        "        </instance_geometry>\n"
+        "      </node>";
+    return ofs.str();
+}
+
 }
 
 void
-fgSaveDaeTest(CLArgs const & args)
+saveDae(Ustring const & filename,Meshes const & meshes,string imgFormat,SpatialUnit unit)
+{
+    Path                fpath {filename};
+    Ustring             dirBase = fpath.dirBase();
+    Ustring             images,
+                        effects,
+                        materials,
+                        geometries,
+                        controllers,
+                        sceneNodes;
+    map<ImgC4UC*,Ustring>  imagesSaved;
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        Mesh const &        mesh = meshes[mm];
+        geometries += cGeometry(mesh,mm);
+        controllers += cController(mesh,mm);
+        sceneNodes += cSceneNode(mesh,mm);
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+            Surf const &        surf = mesh.surfaces[ss];
+            if (surf.hasUvIndices() && surf.material.albedoMap) {
+                string              id = toStr(mm) + "_" + toStr(ss);
+                Ustring             imgFile = fpath.base + id + "." + imgFormat;
+                ImgC4UC             *imgPtr = surf.material.albedoMap.get();
+                if (contains(imagesSaved,imgPtr))
+                    imgFile = imagesSaved[imgPtr];
+                else {
+                    saveImage(fpath.dir()+imgFile,*surf.material.albedoMap);
+                    imagesSaved[imgPtr] = imgFile;
+                }
+                images += R"(
+    <image id="Image)" + id + R"(">
+      <init_from>)" + imgFile + R"(</init_from>
+    </image>)";
+                effects += cEffect(id);
+                materials += R"(
+    <material id="Material)" + id + R"(" name="Material)" + id + R"(">
+      <instance_effect url="#Effect)" + id + R"(" />
+    </material>)";
+            }
+        }
+    }
+    Ofstream            ofs {dirBase+".dae"};
+    ofs << R"(<?xml version="1.0" encoding="UTF-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor>
+      <authoring_tool>FaceGen</authoring_tool>
+    </contributor>
+    <unit name=")" + toStr(unit) + R"(" meter=")" + inMetresStr(unit) + R"("/>
+    <up_axis>Y_UP</up_axis>
+  </asset>
+  <library_images>)" << images << R"(
+  </library_images>
+  <library_effects>)" << effects << R"(
+  </library_effects>
+  <library_materials>)" << materials << R"(
+  </library_materials>
+  <library_geometries>)" << geometries << R"(
+  </library_geometries>
+  <library_controllers>)" << controllers << R"(
+  </library_controllers>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">)" << sceneNodes << R"(
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene" />
+  </scene>
+</COLLADA>
+)";
+}
+
+void
+testSaveDae(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring        dd = dataDir() + "base/test/";
-    Mesh        teethU = loadTri(dd+"teethUpper.tri"),
-                    teethL = loadTri(dd+"teethLower.tri");
-    auto            teethImg = make_shared<ImgC4UC>(imgLoadAnyFormat(dd+"teeth.png"));
-    teethU.surfaces[0].material.albedoMap = teethImg;
-    teethL.surfaces[0].material.albedoMap = teethImg;
-    saveDae("teethExportDae",fgSvec(teethU,teethL));
-    regressFileRel("teethExportDae.dae","base/test/");
-    regressFileRel("teethExportDae0_0.png","base/test/");
+    Ustring         dd = dataDir() + "base/";
+    Mesh            face = loadTri(dd+"JaneLoresFace.tri"),
+                    mouth = loadTri(dd+"MouthSmall.tri");
+    face.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(dd+"JaneLoresFace.jpg"));
+    mouth.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(dd+"MouthSmall.png"));
+    saveDae("meshExportDae",{face,mouth});
+    regressFileRel("meshExportDae.dae","base/test/");
+    regressFileRel("meshExportDae0_0.png","base/test/");
+    regressFileRel("meshExportDae1_0.png","base/test/");
 }
 
 }

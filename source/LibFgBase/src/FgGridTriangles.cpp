@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,17 +16,17 @@ using namespace std;
 
 namespace Fg {
 
-Opt<FgTriPoint>
-FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,const Floats & invDepths,Vec2F pos) const
+Opt<TriPoint>
+GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,Floats const & invDepths,Vec2F pos) const
 {
-    Opt<FgTriPoint>   ret;
+    Opt<TriPoint>   ret;
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!fgBoundsIncludes(grid.dims(),gridCoord))
+    if (!isInUpperBounds(grid.dims(),gridCoord))
         return ret;
     Vec2UI           binIdx = Vec2UI(gridCoord);
-    const Uints &     bin = grid[binIdx];
+    Uints const &     bin = grid[binIdx];
     float               bestInvDepth = 0.0f;
-    FgTriPoint          bestTp;
+    TriPoint          bestTp;
     for (size_t ii=0; ii<bin.size(); ++ii) {
         Vec3UI           tri = tris[bin[ii]];
         Vec2F            v0 = verts[tri[0]],
@@ -51,16 +51,16 @@ FgGridTriangles::nearestIntersect(const Vec3UIs & tris,const Vec2Fs & verts,cons
 }
 
 void
-FgGridTriangles::intersects_(const Vec3UIs & tris,const Vec2Fs & verts,Vec2F pos,vector<FgTriPoint> & ret) const
+GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,vector<TriPoint> & ret) const
 {
     ret.clear();
     Vec2F            gridCoord = clientToGridIpcs * pos;
-    if (!fgBoundsIncludes(grid.dims(),gridCoord))
+    if (!isInUpperBounds(grid.dims(),gridCoord))
         return;
     Vec2UI           binIdx = Vec2UI(gridCoord);
-    const Uints &     bin = grid[binIdx];
+    Uints const &     bin = grid[binIdx];
     for (size_t ii=0; ii<bin.size(); ++ii) {
-        FgTriPoint      tp;
+        TriPoint      tp;
         tp.triInd = bin[ii];
         tp.pointInds = tris[bin[ii]];
         Opt<Vec3D>    vbc;
@@ -77,12 +77,12 @@ FgGridTriangles::intersects_(const Vec3UIs & tris,const Vec2Fs & verts,Vec2F pos
     }
 }
 
-FgGridTriangles
-fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
+GridTriangles
+gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 {
-    FgGridTriangles     ret;
+    GridTriangles     ret;
     FGASSERT(tris.size() > 0);
-    float               fmax = numeric_limits<float>::max();
+    float               fmax = maxFloat();
     Vec2F            domainLo(fmax),
                         domainHi(-fmax),
                         invalid(fmax);
@@ -107,7 +107,7 @@ fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
-    ret.clientToGridIpcs = AffineEw2F(fgJoinHoriz(domainLo,domainHi),range);
+    ret.clientToGridIpcs = AffineEw2F(catHoriz(domainLo,domainHi),range);
     ret.grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Vec3UI       tri = tris[ii];
@@ -119,7 +119,7 @@ fgGridTriangles(const Vec2Fs & verts,const Vec3UIs & tris,float binsPerTri)
                 ret.clientToGridIpcs * p0,
                 ret.clientToGridIpcs * p1,
                 ret.clientToGridIpcs * p2));
-            if (fgBoundsIntersect(projBounds,range,projBounds)) {
+            if (boundsIntersect(projBounds,range,projBounds)) {
                 Mat22UI       bnds = Mat22UI(projBounds);
                 for (Iter2UI it(bnds); it.valid(); it.next())
                     ret.grid[it()].push_back(uint(ii));
@@ -138,7 +138,7 @@ fgGridTrianglesTest(CLArgs const &)
     Img2F           vertImg(dimp,dimp);
     for (Iter2UI vit(dimp); vit.valid(); vit.next())
         vertImg[vit()] = Vec2F(vit());
-    vector<Vec3UI>           tris;
+    Vec3UIs           tris;
     for (uint row=0; row<dim; ++row) {
         uint    col=0;
         for (; col<row; ++col) {
@@ -149,26 +149,26 @@ fgGridTrianglesTest(CLArgs const &)
     }
     // Create the grid and query:
     const vector<Vec2F> &    verts = vertImg.dataVec();
-    FgGridTriangles             gts = fgGridTriangles(verts,tris);
+    GridTriangles             gts = gridTriangles(verts,tris);
     for (uint ii=0; ii<100; ++ii) {
         Vec2D        posd(randUniform(),randUniform());
         Vec2F        pos = Vec2F(posd) * 10.0f;
-        vector<FgTriPoint> res = gts.intersects(tris,verts,pos);
+        vector<TriPoint> res = gts.intersects(tris,verts,pos);
         if (pos[0] < pos[1]) {
             FGASSERT(res.size() == 1);
-            FgTriPoint &   isect(res[0]);
+            TriPoint &   isect(res[0]);
             Vec2F
                 rpos(
                     verts[isect.pointInds[0]] * isect.baryCoord[0] +
                     verts[isect.pointInds[1]] * isect.baryCoord[1] +
                     verts[isect.pointInds[2]] * isect.baryCoord[2]);
-            FGASSERT(approxEqualRelMag(pos,rpos,30));
+            FGASSERT(isApproxEqualRelMag(pos,rpos,30));
         }
         else
             FGASSERT(res.size() == 0);
     }
     // Query outside grid area:
-    vector<FgTriPoint> res = gts.intersects(tris,verts,Vec2F(-0.1f,0.0f));
+    vector<TriPoint> res = gts.intersects(tris,verts,Vec2F(-0.1f,0.0f));
     FGASSERT(res.size() == 0);
     res = gts.intersects(tris,verts,Vec2F(10.1f,0.0f));
     FGASSERT(res.size() == 0);

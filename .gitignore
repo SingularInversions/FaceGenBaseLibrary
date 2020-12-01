@@ -22,6 +22,7 @@ source/*/VisualStudio*/*/*/*.res
 source/*/VisualStudio*/*/*/*.tmp
 source/*/VisualStudio*/*/*/*.cache
 source/*/VisualStudio*/*/*/*.ib_tag
+source/*/VisualStudio*/*/*/*.recipe
 source/*/VisualStudio*/*/*/*pdb_index
 *.FileListAbsolute.txt
 # Android Studio:

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 Vec2UI
-Fg3dTopology::Tri::edge(uint relIdx) const
+MeshTopology::Tri::edge(uint relIdx) const
 {
     if (relIdx == 0)
         return Vec2UI(vertInds[0],vertInds[1]);
@@ -30,7 +30,7 @@ Fg3dTopology::Tri::edge(uint relIdx) const
 }
 
 uint
-Fg3dTopology::Edge::otherVertIdx(uint vertIdx) const
+MeshTopology::Edge::otherVertIdx(uint vertIdx) const
 {
     if (vertIdx == vertInds[0])
         return vertInds[1];
@@ -104,7 +104,7 @@ struct  TriVerts
     }
 };
 
-Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
+MeshTopology::MeshTopology(size_t numVerts,Vec3UIs const & tris)
 {
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
@@ -130,8 +130,8 @@ Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
         fgout << fgnl << "WARNING: Duplicate tris: " << duplicates;
     if (nulls > 0)
         fgout << fgnl << "WARNING: Null tris: " << nulls;
-    m_verts.resize(verts.size());
-    std::map<EdgeVerts,vector<uint> >    edgesToTris;
+    m_verts.resize(numVerts);
+    std::map<EdgeVerts,Uints >    edgesToTris;
     for (size_t ii=0; ii<m_tris.size(); ++ii) {
         Vec3UI       vertInds = m_tris[ii].vertInds;
         m_tris[ii].edgeInds = Vec3UI(std::numeric_limits<uint>::max());
@@ -141,7 +141,7 @@ Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
             edgesToTris[edge].push_back(uint(ii));
         }
     }
-    for (map<EdgeVerts,vector<uint> >::const_iterator it=edgesToTris.begin(); it!=edgesToTris.end(); ++it) {
+    for (map<EdgeVerts,Uints >::const_iterator it=edgesToTris.begin(); it!=edgesToTris.end(); ++it) {
         EdgeVerts       edgeVerts = it->first;
         Edge            edge;
         edge.vertInds = Vec2UI(edgeVerts.loIdx,edgeVerts.hiIdx);
@@ -153,7 +153,7 @@ Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
         m_verts[vts[0]].edgeInds.push_back(uint(ii));
         m_verts[vts[1]].edgeInds.push_back(uint(ii));
         EdgeVerts               edge(vts[0],vts[1]);
-        const vector<uint> &    triInds = edgesToTris.find(edge)->second;
+        Uints const &    triInds = edgesToTris.find(edge)->second;
         for (size_t jj=0; jj<triInds.size(); ++jj) {
             uint                triIdx = triInds[jj];
             Vec3UI           tri = m_tris[triIdx].vertInds;
@@ -164,7 +164,7 @@ Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
     }
     // validate:
     for (size_t ii=0; ii<m_verts.size(); ++ii) {
-        const vector<uint> &    edgeInds = m_verts[ii].edgeInds;
+        Uints const &    edgeInds = m_verts[ii].edgeInds;
         if (edgeInds.size() > 1)
             for (size_t jj=0; jj<edgeInds.size(); ++jj)
                 m_edges[edgeInds[jj]].otherVertIdx(uint(ii));   // throws if index ii not found in edge verts
@@ -177,9 +177,9 @@ Fg3dTopology::Fg3dTopology(const Vec3Fs & verts,const Vec3UIs & tris)
 }
 
 Vec2UI
-Fg3dTopology::edgeFacingVertInds(uint edgeIdx) const
+MeshTopology::edgeFacingVertInds(uint edgeIdx) const
 {
-    const vector<uint> &    triInds = m_edges[edgeIdx].triInds;
+    Uints const &    triInds = m_edges[edgeIdx].triInds;
     FGASSERT(triInds.size() == 2);
     uint        ov0 = oppositeVert(triInds[0],edgeIdx),
                 ov1 = oppositeVert(triInds[1],edgeIdx);
@@ -187,9 +187,9 @@ Fg3dTopology::edgeFacingVertInds(uint edgeIdx) const
 }
 
 bool
-Fg3dTopology::vertOnBoundary(uint vertIdx) const
+MeshTopology::vertOnBoundary(uint vertIdx) const
 {
-    const vector<uint> &    eis = m_verts[vertIdx].edgeInds;
+    Uints const &    eis = m_verts[vertIdx].edgeInds;
     // If this vert is unused it is not on a boundary:
     for (size_t ii=0; ii<eis.size(); ++ii)
         if (m_edges[eis[ii]].triInds.size() == 1)
@@ -197,11 +197,11 @@ Fg3dTopology::vertOnBoundary(uint vertIdx) const
     return false;
 }
 
-vector<uint>
-Fg3dTopology::vertBoundaryNeighbours(uint vertIdx) const
+Uints
+MeshTopology::vertBoundaryNeighbours(uint vertIdx) const
 {
-    vector<uint>            neighs;
-    const vector<uint> &    edgeInds = m_verts[vertIdx].edgeInds;
+    Uints            neighs;
+    Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
     for (size_t ee=0; ee<edgeInds.size(); ++ee) {
         Edge                edge = m_edges[edgeInds[ee]];
         if (edge.triInds.size() == 1)
@@ -210,11 +210,11 @@ Fg3dTopology::vertBoundaryNeighbours(uint vertIdx) const
     return neighs;
 }
 
-vector<uint>
-Fg3dTopology::vertNeighbours(uint vertIdx) const
+Uints
+MeshTopology::vertNeighbours(uint vertIdx) const
 {
-    vector<uint>            ret;
-    const vector<uint> &    edgeInds = m_verts[vertIdx].edgeInds;
+    Uints            ret;
+    Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
     for (size_t ee=0; ee<edgeInds.size(); ++ee)
         ret.push_back(m_edges[edgeInds[ee]].otherVertIdx(vertIdx));
     return ret;
@@ -223,10 +223,10 @@ Fg3dTopology::vertNeighbours(uint vertIdx) const
 // Had to re-write to avoid using inefficient recursive seam tracing as this actually managed to
 // give a malloc error (on scan data) running 64-bit with 16GB RAM:
 vector<set<uint> >
-Fg3dTopology::seams() const
+MeshTopology::seams() const
 {
     vector<set<uint> >  ret;
-    vector<uint>        vertLabels(m_verts.size(),0);   // 0 is the label for non-edge vertices
+    Uints               vertLabels(m_verts.size(),0);   // 0 is the label for non-edge vertices
     // Initialization sweep through edges:
     uint                currLabel = 1;
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
@@ -253,10 +253,10 @@ Fg3dTopology::seams() const
         done = true;
         for (size_t ii=0; ii<vertLabels.size(); ++ii) {
             if (vertLabels[ii] != 0) {
-                const vector<uint> &    edgeInds = m_verts[ii].edgeInds;
+                Uints const &       edgeInds = m_verts[ii].edgeInds;
                 for (size_t ee=0; ee<edgeInds.size(); ++ee) {
                     if (m_edges[edgeInds[ee]].triInds.size() == 1) {    // Boundary edge
-                        uint    v = m_edges[edgeInds[ee]].otherVertIdx(uint(ii));
+                        uint        v = m_edges[edgeInds[ee]].otherVertIdx(uint(ii));
                         FGASSERT(vertLabels[v] != 0);
                         if (vertLabels[ii] != vertLabels[v]) {
                             fgReplace_(vertLabels,vertLabels[v],vertLabels[ii]);
@@ -285,7 +285,7 @@ Fg3dTopology::seams() const
 }
 
 set<uint>
-Fg3dTopology::seamContaining(uint vertIdx) const
+MeshTopology::seamContaining(uint vertIdx) const
 {
     set<uint>           ret;
     vector<set<uint> >  sms = seams();
@@ -296,8 +296,8 @@ Fg3dTopology::seamContaining(uint vertIdx) const
 }
 
 set<uint>
-Fg3dTopology::traceFold(
-    const Normals & norms,
+MeshTopology::traceFold(
+    MeshNormals const & norms,
     vector<FgBool> &    done,
     uint                vertIdx)
     const
@@ -306,7 +306,7 @@ Fg3dTopology::traceFold(
     if (done[vertIdx])
         return ret;
     done[vertIdx] = true;
-    const vector<uint> &    edgeInds = m_verts[vertIdx].edgeInds;
+    Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
     for (size_t ii=0; ii<edgeInds.size(); ++ii) {
         const Edge &           edge = m_edges[edgeInds[ii]];
         if (edge.triInds.size() == 2) {         // Can not be part of a fold otherwise
@@ -314,7 +314,7 @@ Fg3dTopology::traceFold(
             float       dot = cDot(facetNorms.tri[edge.triInds[0]],facetNorms.tri[edge.triInds[1]]);
             if (dot < 0.5f) {                   // > 60 degrees
                 ret.insert(vertIdx);
-                fgUnion_(ret,traceFold(norms,done,edge.otherVertIdx(vertIdx)));
+                cUnion_(ret,traceFold(norms,done,edge.otherVertIdx(vertIdx)));
             }
         }
     }
@@ -322,7 +322,7 @@ Fg3dTopology::traceFold(
 }
 
 uint
-Fg3dTopology::oppositeVert(uint triIdx,uint edgeIdx) const
+MeshTopology::oppositeVert(uint triIdx,uint edgeIdx) const
 {
     Vec3UI       tri = m_tris[triIdx].vertInds;
     Vec2UI       vertInds = m_edges[edgeIdx].vertInds;
@@ -334,7 +334,7 @@ Fg3dTopology::oppositeVert(uint triIdx,uint edgeIdx) const
 }
 
 Vec3UI
-Fg3dTopology::isManifold() const
+MeshTopology::isManifold() const
 {
     Vec3UI   ret(0);
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
@@ -347,8 +347,8 @@ Fg3dTopology::isManifold() const
             // Check that winding directions of the two facets are opposite on this edge:
             Tri         tri0 = m_tris[edge.triInds[0]],
                         tri1 = m_tris[edge.triInds[1]];
-            uint        edgeIdx0 = fgFindFirstIdx(tri0.edgeInds,uint(ee)),
-                        edgeIdx1 = fgFindFirstIdx(tri1.edgeInds,uint(ee));
+            uint        edgeIdx0 = findFirstIdx(tri0.edgeInds,uint(ee)),
+                        edgeIdx1 = findFirstIdx(tri1.edgeInds,uint(ee));
             if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
                 ++ret[2];
             // Worked on all 3DP meshes but doesn't work for some screwy input (eg. frameforge base):
@@ -360,7 +360,7 @@ Fg3dTopology::isManifold() const
 }
 
 size_t
-Fg3dTopology::unusedVerts() const
+MeshTopology::unusedVerts() const
 {
     size_t      ret = 0;
     for (size_t ii=0; ii<m_verts.size(); ++ii)
@@ -369,10 +369,10 @@ Fg3dTopology::unusedVerts() const
     return ret;
 }
 
-vector<float>
-Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const
+Floats
+MeshTopology::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 {
-    vector<float>       ret(verts.size(),std::numeric_limits<float>::max());
+    Floats       ret(verts.size(),maxFloat());
     FGASSERT(vertIdx < verts.size());
     ret[vertIdx] = 0;
     edgeDistanceMap(verts,ret);
@@ -380,7 +380,7 @@ Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,size_t vertIdx) const
 }
 
 void
-Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,vector<float> & vertDists) const
+MeshTopology::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
 {
     FGASSERT(verts.size() == m_verts.size());
     FGASSERT(vertDists.size() == verts.size());
@@ -390,8 +390,8 @@ Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,vector<float> & vertDists) co
         for (size_t vv=0; vv<vertDists.size(); ++vv) {
             // Important: check each vertex each time since the topology will often result in 
             // the first such assignment not being the optimal:
-            if (vertDists[vv] < std::numeric_limits<float>::max()) {
-                const vector<uint> &    edges = m_verts[vv].edgeInds;
+            if (vertDists[vv] < maxFloat()) {
+                Uints const &    edges = m_verts[vv].edgeInds;
                 for (size_t ee=0; ee<edges.size(); ++ee) {
                     uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));
                     float               neighDist = vertDists[vv] + (verts[neighVertIdx]-verts[vv]).len();
@@ -403,6 +403,29 @@ Fg3dTopology::edgeDistanceMap(const Vec3Fs & verts,vector<float> & vertDists) co
             }
         }
     }
+}
+
+set<uint>
+cFillMarkedVertRegion(Mesh const & mesh,MeshTopology const & topo,uint seedIdx)
+{
+    FGASSERT(seedIdx < topo.m_verts.size());
+    set<uint>           ret;
+    for (MarkedVert const & mv : mesh.markedVerts)
+        ret.insert(uint(mv.idx));
+    set<uint>           todo;
+    todo.insert(seedIdx);
+    while (!todo.empty()) {
+        set<uint>           next;
+        for (uint idx : todo) {
+            if (!contains(ret,idx)) {
+                for (uint n : topo.vertNeighbours(idx))
+                    next.insert(n);
+                ret.insert(idx);
+            }
+        }
+        todo = next;
+    }
+    return ret;
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,7 +47,7 @@ struct Traits<Svec<T> >
 
 template<class T>
 std::ostream &
-operator<<(std::ostream & ss,const Svec<T> & vv)
+operator<<(std::ostream & ss,Svec<T> const & vv)
 {
     std::ios::fmtflags       oldFlag = ss.setf(
         std::ios::fixed |
@@ -79,8 +79,8 @@ scast(Svec<From> const & vec)
 template<class T>
 Svec<T>
 operator-(
-    const Svec<T> &  lhs,
-    const Svec<T> &  rhs)
+    Svec<T> const &  lhs,
+    Svec<T> const &  rhs)
 {
     Svec<T>   ret;
     ret.reserve(lhs.size());
@@ -93,8 +93,8 @@ operator-(
 template<class T>
 Svec<T>
 operator+(
-    const Svec<T> &  lhs,
-    const Svec<T> &  rhs)
+    Svec<T> const &  lhs,
+    Svec<T> const &  rhs)
 {
     Svec<T>       ret;
     FGASSERT(lhs.size() == rhs.size());
@@ -108,7 +108,7 @@ template<class T>
 void
 operator-=(
     Svec<T> &         lhs,
-    const Svec<T> &   rhs)
+    Svec<T> const &   rhs)
 {
     FGASSERT(lhs.size() == rhs.size());
     for (size_t ii=0; ii<lhs.size(); ++ii)
@@ -119,7 +119,7 @@ template<class T>
 void
 operator+=(
     Svec<T> &         lhs,
-    const Svec<T> &   rhs)
+    Svec<T> const &   rhs)
 {
     FGASSERT(lhs.size() == rhs.size());
     for (size_t ii=0; ii<lhs.size(); ++ii)
@@ -129,7 +129,7 @@ operator+=(
 template<class T,class U>
 Svec<T>
 operator*(
-    const Svec<T> &   lhs,
+    Svec<T> const &   lhs,
     U                   rhs)    // Different type useful for eg. Svec<FgVect> * float
 {
     Svec<T>   ret;
@@ -142,7 +142,7 @@ operator*(
 template<class T,class U>
 Svec<T>
 operator/(
-    const Svec<T> &   lhs,
+    Svec<T> const &   lhs,
     U                   rhs)
 {
     Svec<T>   ret;
@@ -187,12 +187,12 @@ typedef Svec<FgBool>  FgBools;
 
 template<class T>
 Svec<T>
-fgSvec(const T & v1)
+svec(T const & v1)
 {return Svec<T>(1,v1); }
 
 template<class T>
 Svec<T>
-fgSvec(const T & v1,const T & v2)
+svec(T const & v1,T const & v2)
 {
     Svec<T>   vec;
     vec.reserve(2);
@@ -201,7 +201,7 @@ fgSvec(const T & v1,const T & v2)
 }
 template<class T>
 Svec<T>
-fgSvec(const T & v1,const T & v2,const T & v3)
+svec(T const & v1,T const & v2,T const & v3)
 {
     Svec<T>   vec;
     vec.reserve(3);
@@ -210,7 +210,7 @@ fgSvec(const T & v1,const T & v2,const T & v3)
 }
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3)
+svec(T const & v0,T const & v1,T const & v2,T const & v3)
 {
     Svec<T>   vec;
     vec.reserve(4);
@@ -220,7 +220,7 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3)
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4)
 {
     Svec<T> vec;
     vec.reserve(5);
@@ -230,7 +230,7 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4)
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5)
 {
     Svec<T> vec;
     vec.reserve(6);
@@ -241,7 +241,7 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,const T & v6)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,T const & v6)
 {
     Svec<T> vec;
     vec.reserve(7);
@@ -252,8 +252,8 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
-         const T & v6,const T & v7)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
+         T const & v6,T const & v7)
 {
     Svec<T> vec;
     vec.reserve(8);
@@ -264,8 +264,8 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
-         const T & v6,const T & v7,const T & v8)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
+         T const & v6,T const & v7,T const & v8)
 {
     Svec<T> vec;
     vec.reserve(9);
@@ -276,8 +276,8 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
-       const T & v6,const T & v7,const T & v8,const T & v9)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
+       T const & v6,T const & v7,T const & v8,T const & v9)
 {
     Svec<T> vec;
     vec.reserve(10);
@@ -288,8 +288,8 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T>
 Svec<T>
-fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T & v5,
-       const T & v6,const T & v7,const T & v8,const T & v9,const T & vA)
+svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
+       T const & v6,T const & v7,T const & v8,T const & v9,T const & vA)
 {
     Svec<T> vec;
     vec.reserve(11);
@@ -301,13 +301,18 @@ fgSvec(const T & v0,const T & v1,const T & v2,const T & v3,const T & v4,const T 
 
 template<class T,size_t N>
 Svec<T>
-fgSvec(const std::array<T,N> & v)
+svec(const std::array<T,N> & v)
 {return Svec<T>(v.cbegin(),v.cend()); }
+
+template<class T>
+void
+mapAsgn_(Svec<T> & vec,T val)
+{std::fill(vec.begin(),vec.end(),val); }
 
 // Generate elements using a function (eg. random generator):
 template<class T>
 Svec<T>
-generate(std::function<T()> generator,size_t num)
+generate(size_t num,std::function<T()> const & generator)
 {
     Svec<T>       ret;
     ret.reserve(num);
@@ -316,9 +321,20 @@ generate(std::function<T()> generator,size_t num)
     return ret;
 }
 
+template<class T,class U>
+Svec<T>
+mapConstruct(Svec<U> const & us)
+{
+    Svec<T>         ret;
+    ret.reserve(us.size());
+    for (U const & u : us)
+        ret.emplace_back(u);
+    return ret;
+}
+
 template<class From,class To>
 Svec<To>
-fgMapConvert(const Svec<From> & in)
+mapConvert(const Svec<From> & in)
 {
     Svec<To>   ret;
     ret.reserve(in.size());
@@ -327,11 +343,24 @@ fgMapConvert(const Svec<From> & in)
     return ret;
 }
 
+// Linear interpolation between vectors of equal lengths:
+template<class T>
+void
+interpolate_(Svec<T> const & v0,Svec<T> const & v1,float val,Svec<T> & ret)
+{
+    size_t              sz = v0.size();
+    FGASSERT(v1.size() == sz);
+    ret.resize(sz);
+    float               omv = 1.0f - val;
+    for (size_t ii=0; ii<sz; ++ii)
+        ret[ii] = round<T>(scast<float>(v0[ii]) * omv + scast<float>(v1[ii]) * val);
+}
+
 // Returns a vector one larger in size than 'vec', where each element is the integral of all elements of 'vec'
 // up to but not including the current one:
 template<class T>
 Svec<T>
-fgIntegrate(const Svec<T> & vec)
+integrate(Svec<T> const & vec)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);
@@ -348,23 +377,24 @@ fgIntegrate(const Svec<T> & vec)
 
 template<class T>
 Svec<T>
-fgSubvec(const Svec<T> & vec,size_t start,size_t size)
+cSubvec(Svec<T> const & vec,size_t start,size_t size)
 {
     FGASSERT(start+size <= vec.size());
     return  Svec<T>(vec.begin()+start,vec.begin()+start+size);
 }
 
+// Return the first elements of 'vec' up to 'size', if present:
 template<class T>
 Svec<T>
-fgHead(const Svec<T> & vec,size_t size)
+cHead(Svec<T> const & vec,size_t size)
 {
-    FGASSERT(size <= vec.size());
-    return Svec<T>(vec.begin(),vec.begin()+size);
+    size_t      sz = std::min(vec.size(),size);
+    return Svec<T>(vec.begin(),vec.begin()+sz);
 }
 
 template<class T>
 Svec<T>
-fgRest(const Svec<T> & vec,size_t start=1)
+cRest(Svec<T> const & vec,size_t start=1)
 {
     FGASSERT(start <= vec.size());      // Can be size zero
     return Svec<T>(vec.begin()+start,vec.end());
@@ -372,7 +402,7 @@ fgRest(const Svec<T> & vec,size_t start=1)
 
 template<class T>
 Svec<T>
-fgTail(const Svec<T> & vec,size_t size)
+cTail(Svec<T> const & vec,size_t size)
 {
     FGASSERT(size <= vec.size());
     return Svec<T>(vec.end()-size,vec.end());
@@ -381,7 +411,7 @@ fgTail(const Svec<T> & vec,size_t size)
 // Append is the functional equivalent of push_back:
 template<class T>
 Svec<T>
-append(const Svec<T> & vec,const T & val)
+append(Svec<T> const & vec,T const & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);
@@ -393,7 +423,7 @@ append(const Svec<T> & vec,const T & val)
 // Functional equivalent of insert at front:
 template<class T>
 Svec<T>
-prepend(const T & val,const Svec<T> & vec)
+prepend(T const & val,Svec<T> const & vec)
 {
     Svec<T>       ret;
     ret.reserve(vec.size()+1);
@@ -405,12 +435,12 @@ prepend(const T & val,const Svec<T> & vec)
 // Concatenation in several forms:
 template<class T>
 inline void
-cat_(Svec<T> & base,const Svec<T> & app)
+cat_(Svec<T> & base,Svec<T> const & app)
 {base.insert(base.end(),app.begin(),app.end()); }
 
 template<class T>
 Svec<T>
-cat(const Svec<T> & v0,const Svec<T> & v1)
+cat(Svec<T> const & v0,Svec<T> const & v1)
 {
     Svec<T>   ret;
     ret.reserve(v0.size()+v1.size());
@@ -420,7 +450,7 @@ cat(const Svec<T> & v0,const Svec<T> & v1)
 }
 template<class T>
 Svec<T>
-cat(const Svec<T> & v0,const Svec<T> & v1,const Svec<T> & v2)
+cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2)
 {
     Svec<T>  ret;
     ret.reserve(v0.size()+v1.size()+v2.size());
@@ -431,7 +461,7 @@ cat(const Svec<T> & v0,const Svec<T> & v1,const Svec<T> & v2)
 }
 template<class T>
 Svec<T>
-cat(const Svec<T> & v0,const Svec<T> & v1,const Svec<T> & v2,const Svec<T> & v3)
+cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2,Svec<T> const & v3)
 {
     Svec<T>  ret;
     ret.reserve(v0.size()+v1.size()+v2.size()+v3.size());
@@ -442,10 +472,16 @@ cat(const Svec<T> & v0,const Svec<T> & v1,const Svec<T> & v2,const Svec<T> & v3)
     return ret;
 }
 
+// Avoid re-typeing argument for vector::erase of a single element:
+template<class T>
+void
+snip_(Svec<T> & v,size_t idx)
+{v.erase(v.begin()+idx); }
+
 // Functional version of vector::erase for single element:
 template<class T>
 Svec<T>
-fgSnip(const Svec<T> & v,size_t idx)
+snip(Svec<T> const & v,size_t idx)
 {
     FGASSERT(idx < v.size());
     Svec<T>       ret;
@@ -457,9 +493,10 @@ fgSnip(const Svec<T> & v,size_t idx)
     return ret;
 }
 
+// Not recursive; only flattens vector<vector> to vector<>:
 template<class T>
 Svec<T>
-flat(const Svec<Svec<T> > & v)
+flatten(Svec<Svec<T> > const & v)
 {
     Svec<T>       ret;
     size_t          sz = 0;
@@ -475,10 +512,10 @@ flat(const Svec<Svec<T> > & v)
 // If not found, returns v.size() or throws:
 template<class T,class U>
 size_t
-fgFindFirstIdx(
-    const Svec<T> &  vec,
-    const U &          val,     // Allow for T::operator==(U)
-    bool               throwOnFail=false)
+findFirstIdx(
+    Svec<T> const &     vec,
+    U const &           val,     // Allow for T::operator==(U)
+    bool                throwOnFail=false)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
@@ -488,38 +525,21 @@ fgFindFirstIdx(
     return vec.size();
 }
 
-// Search for first occurence of match with a member. Returns vec.size() if not found.
+// Throws if value not found:
 template<class T,class U>
-size_t
-fgFindFirstMemberIdx(const Svec<T> & vec,const U & val,U T::*member,bool throwOnFail=false)
+T const &
+findFirst(
+    Svec<T> const &     vec,
+    U const &           val)     // Allow for T::operator==(U)
 {
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (vec[ii].*member == val)
-            return ii;
-    FGASSERT(!throwOnFail);
-    return vec.size();
-}
-
-template<class T,class U>
-const T &
-fgFindFirst(
-    const Svec<T> &  vec,
-    const U &          val)     // Allow for T::operator==(U)
-{
-    size_t      retIdx = std::numeric_limits<size_t>::max();
-    for (size_t ii=0; ii<vec.size(); ++ii) {
-        if (vec[ii] == val) {
-            retIdx = ii;
-            break;
-        }
-    }
-    FGASSERT(retIdx < std::numeric_limits<size_t>::max());
-    return vec[retIdx];
+    auto const &    it = std::find(vec.begin(),vec.end(),val);
+    FGASSERT(it != vec.end());
+    return *it;
 }
 
 template<class T,class U>
 size_t
-fgFindLastIdx(const Svec<T> & vec,const U & val)
+findLastIdx(Svec<T> const & vec,const U & val)
 {
     for (size_t ii=vec.size(); ii!=0; --ii)
         if (vec[ii-1] == val)
@@ -527,21 +547,9 @@ fgFindLastIdx(const Svec<T> & vec,const U & val)
     return vec.size();
 }
 
-// Return first index of 'val' in 'vec' or if not found append and return index:
-template<class T>
-size_t
-fgFindOrAppend(Svec<T> & vec,const T & val)
-{
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (vec[ii] == val)
-            return ii;
-    vec.push_back(val);
-    return vec.size()-1;
-}
-
 template<class T,class U>
 bool
-fgContains(const Svec<T> & vec,const U & val)     // Allows for T::operator==(U)
+contains(Svec<T> const & vec,const U & val)     // Allows for T::operator==(U)
 {
     for (size_t ii=0; ii<vec.size(); ++ii)
         if (vec[ii] == val)
@@ -551,20 +559,20 @@ fgContains(const Svec<T> & vec,const U & val)     // Allows for T::operator==(U)
 
 template<class T,class U>
 bool
-containsAny(const Svec<T> & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
+containsAny(Svec<T> const & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
 {
     for (size_t ii=0; ii<vals.size(); ++ii)
-        if (fgContains(ctr,vals[ii]))
+        if (contains(ctr,vals[ii]))
             return true;
     return false;
 }
 
 template<class T,class U>
 bool
-containsAll(const Svec<T> & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
+containsAll(Svec<T> const & ctr,const Svec<U> & vals)     // Simple and slow: O(ctr * vals)
 {
     for (size_t ii=0; ii<vals.size(); ++ii)
-        if (!fgContains(ctr,vals[ii]))
+        if (!contains(ctr,vals[ii]))
             return false;
     return true;
 }
@@ -580,11 +588,11 @@ fgReplace_(Svec<T> & v,T a,T b)       // Replace each 'a' with 'b'
 
 template<class T>
 Svec<T>
-fgReplace(const Svec<T> & vec,const T & a,const T & b) // Replace each 'a' with 'b'
+replaceAll(Svec<T> const & vec,T const & a,T const & b) // Replace each 'a' with 'b'
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
-    for (const T & v : vec) {
+    for (T const & v : vec) {
         if (v == a)
             ret.push_back(b);
         else
@@ -596,7 +604,7 @@ fgReplace(const Svec<T> & vec,const T & a,const T & b) // Replace each 'a' with 
 // Returns at least size 1, with 1 additional for each split element:
 template<class T>
 Svec<Svec<T> >
-fgSplit(const Svec<T> & str,T ch)
+splitAtChar(Svec<T> const & str,T ch)
 {
     Svec<Svec<T> >    ret;
     Svec<T>                  ss;
@@ -614,7 +622,7 @@ fgSplit(const Svec<T> & str,T ch)
 
 template<class T>
 void
-fgSetSubVec(Svec<T> & mod,size_t pos,const Svec<T> & sub)
+fgSetSubVec(Svec<T> & mod,size_t pos,Svec<T> const & sub)
 {
     FGASSERT(sub.size() + pos <= mod.size());
     for (size_t ii=0; ii<sub.size(); ++ii)
@@ -623,7 +631,7 @@ fgSetSubVec(Svec<T> & mod,size_t pos,const Svec<T> & sub)
 
 template<class T>
 bool
-fgBeginsWith(const Svec<T> & base,const Svec<T> & pattern)
+beginsWith(Svec<T> const & base,Svec<T> const & pattern)
 {
     if (pattern.size() > base.size())
         return false;
@@ -635,7 +643,7 @@ fgBeginsWith(const Svec<T> & base,const Svec<T> & pattern)
 
 template<class T>
 bool
-fgEndsWith(const Svec<T> & base,const Svec<T> & pattern)
+endsWith(Svec<T> const & base,Svec<T> const & pattern)
 {
     if (pattern.size() > base.size())
         return false;
@@ -650,17 +658,17 @@ fgEndsWith(const Svec<T> & base,const Svec<T> & pattern)
 
 template<class T,class U>
 void
-scast_(const Svec<T> & lhs,Svec<U> & rhs)
+scast_(Svec<T> const & lhs,Svec<U> & rhs)
 {
     rhs.resize(lhs.size());
     for (size_t ii=0; ii<lhs.size(); ++ii)
         scast_(lhs[ii],rhs[ii]);
 }
 
-// Functional version of std::transform. Requires explicit template args even for 'Out' (don't know why):
+// Functional version of std::transform. Type converting form requires explicit template arg for 'Out'
 template<class Out,class In>
 Svec<Out>
-mapf(Svec<In> const & in,std::function<Out(In const &)> const & func)
+mapFuncT(Svec<In> const & in,std::function<Out(In const &)> const & func)
 {
     Svec<Out>    ret;
     ret.reserve(in.size());
@@ -672,7 +680,7 @@ mapf(Svec<In> const & in,std::function<Out(In const &)> const & func)
 // As above but output is same type as input, which allows template args to be skipped:
 template<class T>
 Svec<T>
-mapft(Svec<T> const & in,std::function<T(T const &)> const & func)
+mapFunc(Svec<T> const & in,std::function<T(T const &)> const & func)
 {
     Svec<T>    ret;
     ret.reserve(in.size());
@@ -681,10 +689,11 @@ mapft(Svec<T> const & in,std::function<T(T const &)> const & func)
     return ret;
 }
 
-// map transform = map using: Out Op::operator*(In). First template arg must be specified:
+// Map a left constant multiplication to new type:  Op * T -> U
+// Output type explicit template arg required.
 template<class Out,class In,class Op>
 Svec<Out>
-mapXf(Svec<In> const & in,Op const & op)
+mapMulT(Op const & op,Svec<In> const & in)
 {
     Svec<Out>       ret;
     ret.reserve(in.size());
@@ -693,10 +702,11 @@ mapXf(Svec<In> const & in,Op const & op)
     return ret;
 }
 
-// map transform to same type = map using: T Op::operator*(T). Template types deduced:
+// Map a left constant multiplication to same type:  Op * T -> T
+// Output type matches input so explicit template args not necessary.
 template<class T,class Op>
 Svec<T>
-mapXft(Svec<T> const & in,Op const & op)
+mapMul(Op const & op,Svec<T> const & in)
 {
     Svec<T>     ret;
     ret.reserve(in.size());
@@ -705,18 +715,20 @@ mapXft(Svec<T> const & in,Op const & op)
     return ret;
 }
 
+// Non-functional version:
 template<class T,class U,class Op>
 void
-mapXf_(Svec<T> const & in,Op const & op,Svec<U> & out)
+mapMul_(Op const & op,Svec<T> const & in,Svec<U> & out)
 {
     out.resize(in.size());
     for (size_t ii=0; ii<in.size(); ++ii)
         out[ii] = op * in[ii];
 }
 
+// Non-functional in-place version:
 template<class T,class Op>
 void
-mapXf_(Svec<T> & data,Op const & op)
+mapMul_(Op const & op,Svec<T> & data)
 {
     for (size_t ii=0; ii<data.size(); ++ii)
         data[ii] = op * data[ii];
@@ -733,7 +745,7 @@ mapAbs(Svec<T> const & vec)
     return ret;
 }
 
-inline void cSum_(const Svec<double> & in,double & out)
+inline void cSum_(const Doubles & in,double & out)
 {
     double      acc = out;
     for (double i : in)
@@ -744,9 +756,9 @@ inline void cSum_(const Svec<double> & in,double & out)
 // Sum into an existing accumulator:
 template<class T>
 void
-cSum_(const Svec<T> & in,T & out)
+cSum_(Svec<T> const & in,T & out)
 {
-    for (const T & i : in)
+    for (T const & i : in)
         out += i;
 }
 
@@ -754,7 +766,7 @@ cSum_(const Svec<T> & in,T & out)
 // if the accumulator type must be larger than the templated type:
 template<class T>
 T
-cSum(const Svec<T> & v)
+cSum(Svec<T> const & v)
 {
     // We don't use std::accumulate since we want to properly handle the case where T itself
     // is a container type that supports operator+=()
@@ -769,7 +781,7 @@ cSum(const Svec<T> & v)
 
 template<class T>
 T
-fgProduct(const Svec<T> & v)
+fgProduct(Svec<T> const & v)
 {
     typedef typename Traits<T>::Accumulator Acc;
     Acc         acc(1);
@@ -782,7 +794,7 @@ fgProduct(const Svec<T> & v)
 // if the accumulator type must be larger than the templated type:
 template<class T>
 T
-cMean(const Svec<T> & v)
+cMean(Svec<T> const & v)
 {
     typedef typename Traits<T>::Scalar    S;
     static_assert(std::is_floating_point<S>::value,"Multiplication by a reciprocal");
@@ -790,52 +802,47 @@ cMean(const Svec<T> & v)
 }
 
 template<class T>
-void
-fgSubtract(
-    const Svec<T> &  lhs,
-    const Svec<T> &  rhs,
-    Svec<T> &        res)
+double
+cMag(Svec<T> const & v)              // Sum of squared magnitude values:
 {
-    FGASSERT(lhs.size() == rhs.size());
-    res.resize(lhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        res[ii] = lhs[ii] - rhs[ii];
+    double      ret(0);
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret += cMag(v[ii]);
+    return ret;
 }
 
 template<class T>
-void
-fgMapAddConst_(Svec<T> & vec,const T & val)
-{
-    for (T & e : vec)
-        e += val;
-}
+double
+cLen(Svec<T> const & v)
+{return std::sqrt(cMag(v)); }
 
 template<class T>
-void
-fgMapSubConst_(Svec<T> & vec,const T & val)
+Svec<T>
+normalize(Svec<T> const & v)
 {
-    for (T & e : vec)
-        e -= val;
+    T           len = scast<T>(cLen(v));
+    FGASSERT(len > 0.0f);
+    return v * (1.0f/len);
 }
 
 template<class T>
 Svec<T>
-fgMapAddConst(const Svec<T> & vec,const T & val)
+mapAddConst(Svec<T> const & vec,T const & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
-    for (const T & v : vec)
+    for (T const & v : vec)
         ret.push_back(v + val);
     return ret;
 }
 
 template<class T>
 Svec<T>
-fgMapSubConst(const Svec<T> & vec,const T & val)
+mapSubConst(Svec<T> const & vec,T const & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
-    for (const T & v : vec)
+    for (T const & v : vec)
         ret.push_back(v - val);
     return ret;
 }
@@ -843,11 +850,9 @@ fgMapSubConst(const Svec<T> & vec,const T & val)
 // Element-wise division:
 template<class T>
 Svec<T>
-fgMapDiv(
-    const Svec<T> &   lhs,
-    const Svec<T> &   rhs)
+mapDiv(Svec<T> const & lhs,Svec<T> const & rhs)
 {
-    Svec<T>       ret;
+    Svec<T>         ret;
     FGASSERT(lhs.size() == rhs.size());
     ret.reserve(lhs.size());
     for (size_t ii=0; ii<lhs.size(); ++ii)
@@ -857,29 +862,28 @@ fgMapDiv(
 
 template<class T>
 Svec<T>
-fgMapAbs(const Svec<T> & v)
+mapSqr(Svec<T> const & v)
 {
-    Svec<T>  ret;
-    ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.push_back(std::abs(v[ii]));
-    return ret;
-}
-
-template<class T>
-Svec<T>
-fgMapSqr(const Svec<T> & v)
-{
-    Svec<T>  ret;
+    Svec<T>         ret;
     ret.reserve(v.size());
     for (size_t ii=0; ii<v.size(); ++ii)
         ret.push_back(v[ii]*v[ii]);
     return ret;
 }
 
+// Multiply-accumulate (MAC) an svec to another:
+template<class T,class U,class V>
+void
+mapMulAcc_(Svec<T> const & vec,U val,Svec<V> & acc)
+{
+    FGASSERT(vec.size() == acc.size());
+    for (size_t ii=0; ii<acc.size(); ++ii)
+        acc[ii] += vec[ii] * val;
+}
+
 template<class T>
 size_t
-minIdx(const Svec<T> & v)
+cMinIdx(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -891,7 +895,7 @@ minIdx(const Svec<T> & v)
 
 template<class T>
 size_t
-maxIdx(const Svec<T> & v)
+cMaxIdx(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -904,7 +908,7 @@ maxIdx(const Svec<T> & v)
 // To get a min version, just use greater than for 'lessThan':
 template<class T>
 size_t
-maxIdx(const Svec<T> & v,const std::function<bool(const T & lhs,const T & rhs)> & lessThan)
+cMaxIdx(Svec<T> const & v,const std::function<bool(T const & lhs,T const & rhs)> & lessThan)
 {
     FGASSERT(!v.empty());
     size_t      ret = 0;
@@ -917,46 +921,41 @@ maxIdx(const Svec<T> & v,const std::function<bool(const T & lhs,const T & rhs)> 
 // Common case where we want to sort the whole vector:
 template<class T>
 void
-fgSort_(Svec<T> & v)
+cSort_(Svec<T> & v)
 {std::sort(v.begin(),v.end()); }
 
 // Functional version of sorting whole vector:
 template<class T>
 Svec<T>
-fgSort(const Svec<T> & v)
+cSort(Svec<T> const & v)
 {
     Svec<T>  ret(v);
     std::sort(ret.begin(),ret.end());
     return ret;
 }
 
+// Return array of indices such that the input elements are sorted:
+// (ie. A mapping from the NEW order to the ORIGINAL order):
 template<class T>
-bool
-fgSortIndsLt(const T * v,size_t l,size_t r)
-{return (v[l] < v[r]); }
-
-// Return a list of the permuted indices instead of the sorted list itself:
-template<class T>
-Svec<size_t>
-fgSortInds(const Svec<T> & v)
+Sizes
+sortInds(Svec<T> const & v)
 {
-    Svec<size_t>  inds(v.size());
+    Sizes       inds(v.size());
     for (size_t ii=0; ii<inds.size(); ++ii)
         inds[ii] = ii;
-    if (!inds.empty())
-        std::sort(inds.begin(),inds.end(),std::bind(fgSortIndsLt<T>,&v[0],std::placeholders::_1,std::placeholders::_2));
+    std::sort(inds.begin(),inds.end(),[&](size_t l,size_t r){return (v[l]<v[r]); });
     return inds;
 }
 
-template<class T>
-bool
-fgSortIndsGt(const T * v,size_t l,size_t r)
-{return (v[l] > v[r]); }
-
-// Make use of a permuted indices list to re-order a list (or subset thereof):
-template<class T>
+// Make use of a permuted indices array to reorder / re-order a list (or subset thereof)
+// (ie. A mapping from the NEW order to the ORIGINAL order):
+template<class T,class U,
+    // Can be uint or uint64, and on some platforms size_t is different from these:
+    FG_ENABLE_IF(U,is_unsigned),
+    FG_ENABLE_IF(U,is_integral)
+>
 Svec<T>
-fgReorder(const Svec<T> & v,const Svec<uint> & inds)
+permute(Svec<T> const & v,const Svec<U> & inds)
 {
     Svec<T>       ret;
     ret.reserve(inds.size());
@@ -965,23 +964,9 @@ fgReorder(const Svec<T> & v,const Svec<uint> & inds)
     return ret;
 }
 
-#ifdef FG_64
-// Make use of a permuted indices list to re-order a list (or subset thereof):
-template<class T>
-Svec<T>
-fgReorder(const Svec<T> & v,const Svec<size_t> & inds)
-{
-    Svec<T>       ret;
-    ret.reserve(inds.size());
-    for (size_t ii=0; ii<inds.size(); ++ii)
-        ret.push_back(v[inds[ii]]);
-    return ret;
-}
-#endif
-
 template<class T>
 bool
-fgContainsDuplicates(const Svec<T> & mustBeSorted)
+containsDuplicates(Svec<T> const & mustBeSorted)
 {
     for (size_t ii=1; ii<mustBeSorted.size(); ++ii)
         if (mustBeSorted[ii] == mustBeSorted[ii-1])
@@ -992,34 +977,21 @@ fgContainsDuplicates(const Svec<T> & mustBeSorted)
 // Removes duplicates from a sorted vector (I don't get std::unique):
 template<class T>
 Svec<T>
-fgUnique(const Svec<T> & v)
+cUnique(Svec<T> const & sorted)
 {
     Svec<T>       ret;
-    if (!v.empty()) {
-        ret.push_back(v[0]);
-        for (size_t ii=1; ii<v.size(); ++ii)
-            if (!(v[ii] == ret.back()))     // In case type only defines operator==
-                ret.push_back(v[ii]);
+    if (!sorted.empty()) {
+        ret.push_back(sorted[0]);
+        for (size_t ii=1; ii<sorted.size(); ++ii)
+            if (!(sorted[ii] == ret.back()))     // In case type only defines operator==
+                ret.push_back(sorted[ii]);
     }
-    return ret;
-}
-
-// Take a slice of a multi-dimensional array in a vector:
-template<class T>
-Svec<T>
-fgSlice(const Svec<T> & v,size_t initial,size_t stride)
-{
-    Svec<T>       ret;
-    FGASSERT(initial < v.size());
-    ret.reserve((v.size()-initial+stride-1)/stride);
-    for (size_t ii=initial; ii<ret.size(); ii+=stride)
-        ret.push_back(v[ii]);
     return ret;
 }
 
 template<class T,class U>
 Svec<U>
-fgSliceMember(const Svec<T> & ts,U T::*m)
+sliceMember(Svec<T> const & ts,U T::*m)
 {
     Svec<U>       ret;
     ret.reserve(ts.size());
@@ -1028,37 +1000,11 @@ fgSliceMember(const Svec<T> & ts,U T::*m)
     return ret;
 }
 
-// Transpose a row-major contiguous array:
-template<class T>
-Svec<T>
-fgTranspose(const Svec<T> & v,size_t wid,size_t hgt)
-{
-    Svec<T>       ret;
-    FGASSERT(v.size() == wid*hgt);
-    ret.reserve(v.size());
-    for (size_t xx=0; xx<wid; ++xx) {
-        size_t      idx = xx;
-        for (size_t yy=0; yy<hgt; ++yy) {
-            ret.push_back(v[idx]);
-            idx += wid;
-        }
-    }
-    return ret;
-}
-
-template<class T>
-void
-fgFill(Svec<T> & vec,T val)
-{
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        vec[ii] = val;
-}
-
 // Transpose a vector of vectors just like Python 'zip' on lists.
 // All sub-vectors must have the same size():
 template<class T>
 Svec<Svec<T> >
-transpose(const Svec<Svec<T> > & v)
+transpose(Svec<Svec<T> > const & v)
 {
     Svec<Svec<T> >  ret;
     if (!v.empty()) {
@@ -1078,7 +1024,7 @@ transpose(const Svec<Svec<T> > & v)
 // For this to work with lambdas the template type must be explicitly given with the function call:
 template<class T>
 Svec<T>
-fgFilter(const Svec<T> & vals,const std::function<bool(const T & val)> & fnSelect)
+cFilter(Svec<T> const & vals,const std::function<bool(T const & val)> & fnSelect)
 {
     Svec<T>       ret;
     for (auto it=vals.begin(); it!=vals.end(); ++it)
@@ -1089,7 +1035,7 @@ fgFilter(const Svec<T> & vals,const std::function<bool(const T & val)> & fnSelec
 
 template<class T>
 Svec<T>
-fgFilter(const Svec<T> & in,const Svec<bool> & accept)
+cFilter(Svec<T> const & in,const Svec<bool> & accept)
 {
     Svec<T>       ret;
     FGASSERT(accept.size() == in.size());
@@ -1101,7 +1047,7 @@ fgFilter(const Svec<T> & in,const Svec<bool> & accept)
 
 template<class T>
 Svec<size_t>
-fgJaggedDims(const Svec<Svec<T> > & v)
+cJaggedDims(Svec<Svec<T> > const & v)
 {
     Svec<size_t>      ret(v.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
@@ -1111,32 +1057,7 @@ fgJaggedDims(const Svec<Svec<T> > & v)
 
 template<class T>
 Svec<Svec<T> >
-fgJaggedVec(const Svec<size_t> & dims,const T & initVal)
-{
-    Svec<Svec<T> >      ret(dims.size());
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii].resize(dims[ii],initVal);
-    return ret;
-}
-
-// Partition a vector into a jagged vector of the given jagged dimensions:
-template<class T>
-Svec<Svec<T> >
-fgJaggedVec(const Svec<size_t> & dims,const Svec<T> & data)
-{
-    Svec<Svec<T> >      ret(dims.size());
-    size_t                  idx = 0;
-    for (size_t ii=0; ii<ret.size(); ++ii) {
-        FGASSERT(data.size() >= idx + dims[ii]);
-        ret[ii] = Svec<T>(data.begin()+idx,data.begin()+idx+dims[ii]);
-        idx += dims[ii];
-    }
-    return ret;
-}
-
-template<class T>
-Svec<Svec<T> >
-fgVecOfVecs(size_t dim0,size_t dim1,const T & initVal)
+cVecOfVecs(size_t dim0,size_t dim1,T const & initVal)
 {
     Svec<Svec<T> >      ret(dim0);
     for (size_t ii=0; ii<ret.size(); ++ii)
@@ -1144,51 +1065,14 @@ fgVecOfVecs(size_t dim0,size_t dim1,const T & initVal)
     return ret;
 }
 
-template<class T>
-Svec<T>
-// Each vec in 'vs' must be the same size or one less, with the latter all at the end.
-// Ie. the result of interleaving in order:
-fgDeinterleave(const Svec<Svec<T> > & vs)
-{
-    Svec<T>           ret;
-    if (!vs.empty()) {
-        size_t          sz0 = vs[0].size();
-        ret.reserve(vs.size()*sz0);             // Largest possible size of return value
-        for (size_t ii=0; ii<sz0; ++ii) {
-            size_t jj=0;
-            for (; jj<vs.size(); ++jj) {
-                if (vs[jj].size() <= ii)
-                    break;                      // Don't return here for NRVO
-                ret.push_back(vs[jj][ii]);
-            }
-            if (jj < vs.size())
-                break;
-        }
-    }
-    return ret;
-}
-
-template<class T>
-Svec<const T *>
-fgMapToConstPtrs(const Svec<Svec<T> > & v)  // Cannot contain any empty vectors
-{
-    Svec<const T *>   ret;
-    ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii) {
-        FGASSERT(!v[ii].empty());
-        ret.push_back(&v[ii][0]);
-    }
-    return ret;
-}
-
 // Set intersection with vector containers; ignores duplicates returns intersection of uniques:
 template<class T>
 Svec<T>
-fgSetIntersection(const Svec<T> & v0,const Svec<T> & v1)
+setwiseIntersect(Svec<T> const & v0,Svec<T> const & v1)
 {
     Svec<T>       ret;
-    for (const T & v : v0) {
-        if (fgContains(v1,v) && !fgContains(ret,v))
+    for (T const & v : v0) {
+        if (contains(v1,v) && !contains(ret,v))
             ret.push_back(v);
     }
     return ret;
@@ -1196,13 +1080,13 @@ fgSetIntersection(const Svec<T> & v0,const Svec<T> & v1)
 
 template<class T>
 Svec<T>
-fgSetIntersection(const Svec<Svec<T> > & vs)
+setwiseIntersect(Svec<Svec<T> > const & vs)
 {
     Svec<T>       ret;
     if (!vs.empty()) {
         ret = vs[0];
         for (size_t ii=1; ii<vs.size(); ++ii)
-            ret = fgSetIntersection(ret,vs[ii]);
+            ret = setwiseIntersect(ret,vs[ii]);
     }
     return ret;
 }
@@ -1210,10 +1094,10 @@ fgSetIntersection(const Svec<Svec<T> > & vs)
 // Multiset intersection with vector containers:
 template<class T>
 Svec<T>
-fgIntersection(const Svec<T> & v0,Svec<T> v1)
+multisetIntersect(Svec<T> const & v0,Svec<T> v1)
 {
     Svec<T>       ret;
-    for (const T & v : v0) {
+    for (T const & v : v0) {
         auto        it = find(v1.begin(),v1.end(),v);
         if (it != v1.end()) {
             ret.push_back(v);
@@ -1223,67 +1107,33 @@ fgIntersection(const Svec<T> & v0,Svec<T> v1)
     return ret;
 }
 
-template<class T>
-Svec<T>
-fgIntersection(const Svec<Svec<T> > & vs)
-{
-    Svec<T>       ret;
-    if (!vs.empty()) {
-        ret = vs[0];
-        for (size_t ii=1; ii<vs.size(); ++ii)
-            ret = fgIntersection(vs[ii],ret);
-    }
-    return ret;
-}
-
 // Set union on vector containers, retaining lhs order then rhs order:
 template<class T>
 void
-fgSetwiseAdd_(Svec<T> & lhs,const Svec<T> & rhs)
+setwiseAdd_(Svec<T> & lhs,Svec<T> const & rhs)
 {
-    for (const T & r : rhs)
-        if (!fgContains(lhs,r))
+    for (T const & r : rhs)
+        if (!contains(lhs,r))
             lhs.push_back(r);
 }
 
 // Set union on vector containers, retaining lhs order then rhs order:
 template<class T>
 Svec<T>
-fgSetwiseAdd(Svec<T> lhs,const Svec<T> & rhs)
+setwiseAdd(Svec<T> lhs,Svec<T> const & rhs)
 {
-    fgSetwiseAdd_(lhs,rhs);
+    setwiseAdd_(lhs,rhs);
     return lhs;
 }
 
 // Set subtraction on vector containers (lhs retains ordering):
 template<class T>
 Svec<T>
-fgSetwiseSubtract(const Svec<T> & lhs,const Svec<T> & rhs)
+setwiseSubtract(Svec<T> const & lhs,Svec<T> const & rhs)
 {
     Svec<T>       ret;
-    for (const T & l : lhs) {
-        if (!fgContains(rhs,l))
-            ret.push_back(l);
-    }
-    return ret;
-}
-
-// Multiset subtraction on vector containers (lhs retains ordering):
-template<class T>
-Svec<T>
-fgMultisetWiseSubtract(const Svec<T> & lhs,Svec<T> rhs)
-{
-    Svec<T>       ret;
-    for (const T & l : lhs) {
-        bool        found = false;
-        for (auto it=rhs.begin(); it!=rhs.end(); ++it) {
-            if (l == *it) {
-                rhs.erase(it);
-                found = true;
-                break;
-            }
-        }
-        if (!found)
+    for (T const & l : lhs) {
+        if (!contains(rhs,l))
             ret.push_back(l);
     }
     return ret;
@@ -1291,7 +1141,7 @@ fgMultisetWiseSubtract(const Svec<T> & lhs,Svec<T> rhs)
 
 template<class T>
 Svec<T>
-fgReverse(Svec<T> v)
+cReverse(Svec<T> v)
 {
     std::reverse(v.begin(),v.end());
     return v;

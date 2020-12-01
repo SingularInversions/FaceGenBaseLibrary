@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 void
-guiStartImpl(Ustring const &,GuiPtr,Ustring const &,const GuiOptions &)
+guiStartImpl(NPT<Ustring>,GuiPtr,Ustring const &,const GuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \

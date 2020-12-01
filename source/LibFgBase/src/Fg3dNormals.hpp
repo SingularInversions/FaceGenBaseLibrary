@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,6 +15,13 @@
 #include "Fg3dMesh.hpp"
 
 namespace Fg {
+
+Vec3Ds      cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
+
+inline
+Vec3Ds
+cVertNorms(TriSurf const & ts)
+{return cVertNorms(scast<double>(ts.verts),ts.tris); }
 
 struct  FacetNormals
 {
@@ -32,29 +39,18 @@ struct  FacetNormals
 };
 typedef Svec<FacetNormals>      FacetNormalss;
 
-struct  Normals
+struct  MeshNormals
 {
     FacetNormalss       facet;       // Facet normals for each surface
     Vec3Fs              vert;        // Vertex normals.
 };
-typedef Svec<Normals>           Normalss;
+typedef Svec<MeshNormals>       MeshNormalss;
 
-void
-cNormals_(Surfs const & surfs,
-    Vec3Fs const &      verts,
-    Normals &           norms);     // RETURNED
+MeshNormals
+cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 inline
-Normals
-cNormals(Surfs const & surfs,Vec3Fs const & verts)
-{
-    Normals         norms;
-    cNormals_(surfs,verts,norms);
-    return norms;
-}
-
-inline
-Normals
+MeshNormals
 cNormals(Mesh const & mesh)
 {return cNormals(mesh.surfaces,mesh.verts); }
 

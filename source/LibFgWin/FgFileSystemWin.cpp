@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,7 +32,7 @@ isDirectory(Ustring const & name)
 DirectoryContents
 directoryContents(Ustring const & dirName)
 {
-    Path              dir(fgAsDirectory(dirName));
+    Path              dir(asDirectory(dirName));
     DirectoryContents ret;
     WIN32_FIND_DATAW	finddata;
     Ustring            spec = dir.str() + "*";
@@ -53,7 +53,7 @@ directoryContents(Ustring const & dirName)
 }
 
 Ustring
-fgGetCurrentDir()
+getCurrentDir()
 {
     wchar_t     buff[MAX_PATH]= {0};
     if (!GetCurrentDirectory(MAX_PATH,buff))
@@ -67,7 +67,7 @@ fgGetCurrentDir()
 // We use OS-specific APIs for this one since boost::filesystem::current_directory
 // doesn't return a success flag:
 bool
-fgSetCurrentDir(
+setCurrentDir(
     Ustring const &    dir,
     bool                throwOnFail)
 {
@@ -93,7 +93,7 @@ deleteFile(Ustring const & fname)
 }
 
 bool
-fgRemoveDirectory(
+removeDirectory(
     Ustring const &    dirname,
     bool                throwOnFail)
 {
@@ -107,11 +107,20 @@ fgRemoveDirectory(
 }
 
 bool
-fgCreateDirectory(Ustring const & dirname)
+createDirectory(Ustring const & dirname)
 {
-    wstring     curr = fgGetCurrentDir().as_wstring(),
+    Ustring     templateDir;
+    // Figure out the parent directory for the "template" (WTF):
+    Path        path(asDirectory(dirname));
+    if (path.dirs.size() > 1) {
+        path.dirs.pop_back();
+        templateDir = path.str();
+    }
+    else
+        templateDir = getCurrentDir();  // Whatever
+    wstring     td = templateDir.as_wstring(),
                 dirn = dirname.as_wstring();
-    if (CreateDirectoryExW(&curr[0],&dirn[0],NULL) == 0) {
+    if (CreateDirectoryExW(&td[0],&dirn[0],NULL) == 0) {
         if (GetLastError() == ERROR_ALREADY_EXISTS)
             return false;
         else
@@ -121,7 +130,7 @@ fgCreateDirectory(Ustring const & dirname)
 }
 
 Ustring
-fgExecutablePath()
+getExecutablePath()
 {
     wchar_t     module_name[MAX_PATH] = {0};
     GetModuleFileNameW(0,module_name,sizeof(module_name));
@@ -129,7 +138,7 @@ fgExecutablePath()
 }
 
 Ustring
-fgDirSystemAppDataRoot()
+getDirSystemAppData()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -144,20 +153,101 @@ fgDirSystemAppDataRoot()
     return Ustring(path) + "\\";
 }
 
-Ustring
-fgDirSystemAppData(
-    Ustring const & groupName,
-    Ustring const & appName)
+// Return true if succeeded:
+static bool
+setAllUsersFullControl(Ustring const path)  // Directory or file
 {
-    Ustring    appDir = fgDirSystemAppDataRoot() + groupName;
-    fgCreateDirectory(appDir);
+    FGASSERT(!path.empty());
+    wstring                 pathw = path.as_wstring();
+    LPCWSTR                 pszObjName = pathw.c_str();
+    bool                    ret = true;
+	DWORD                   dwRes = 0;
+	PACL                    pOldDACL = NULL,
+                            pNewDACL = NULL;
+	PSECURITY_DESCRIPTOR    pSD = NULL;
+	EXPLICIT_ACCESS         ea;
+	PSID                    pSIDUsers = NULL;
+	PACL                    pACL = NULL;
+	SE_OBJECT_TYPE          ObjectType = SE_FILE_OBJECT;
+	LPWSTR                  pszTrustee = NULL;
+	TRUSTEE_FORM            TrusteeForm = TRUSTEE_IS_SID;
+	DWORD                   dwAccessRights = FILE_ALL_ACCESS;
+	ACCESS_MODE             AccessMode = SET_ACCESS;
+	DWORD                   dwInheritance = OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE;
+	SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;	
+	WCHAR                   szInfo[300] = { 0 };
+	try
+	{
+		// allocate Sid for BUILTIN/Users group
+		if (!AllocateAndInitializeSid(
+            &SIDAuthNT, 2,SECURITY_BUILTIN_DOMAIN_RID,DOMAIN_ALIAS_RID_USERS,0, 0, 0, 0, 0, 0,&pSIDUsers))
+		{
+			swprintf_s(szInfo,sizeof(szInfo)/sizeof(WCHAR), L"AllocateAndInitializeSid (Everyone) error %u", GetLastError());
+			throw szInfo;
+		}
+		pszTrustee = (LPWSTR)pSIDUsers;
+		// Get a pointer to the existing DACL.
+		dwRes = GetNamedSecurityInfoW(
+            pszObjName, ObjectType,DACL_SECURITY_INFORMATION,NULL, NULL, &pOldDACL, NULL, &pSD);
+		if (ERROR_SUCCESS != dwRes) {
+			swprintf_s(szInfo, sizeof(szInfo) / sizeof(WCHAR), L"GetNamedSecurityInfo Error %u\n", dwRes);
+			throw szInfo;			
+		}
+		// Initialize an EXPLICIT_ACCESS structure for the new ACE. 
+		ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
+		ea.grfAccessPermissions = dwAccessRights;
+		ea.grfAccessMode = AccessMode;
+		ea.grfInheritance = dwInheritance;
+		ea.Trustee.TrusteeForm = TrusteeForm;
+		ea.Trustee.ptstrName = pszTrustee;
+		// Create a new ACL that merges the new ACE
+		// into the existing DACL.
+		dwRes = SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL);
+		if (ERROR_SUCCESS != dwRes) {
+			swprintf_s(szInfo, sizeof(szInfo) / sizeof(WCHAR), L"SetEntriesInAcl Error %u\n", dwRes);
+			throw szInfo;
+		}
+		// Attach the new ACL as the object's DACL.
+		dwRes = SetNamedSecurityInfoW(
+            (wchar_t*)pszObjName, ObjectType,DACL_SECURITY_INFORMATION,NULL, NULL, pNewDACL, NULL);
+		if (ERROR_SUCCESS != dwRes) {
+			swprintf_s(szInfo, sizeof(szInfo) / sizeof(WCHAR), L"SetNamedSecurityInfo Error %u\n", dwRes);
+			throw szInfo;			
+		}
+	}
+	catch (WCHAR*) {
+		ret = false;
+	}
+	if (pSIDUsers)
+		FreeSid(pSIDUsers);
+	if (pACL)
+		LocalFree(pACL);
+	if (pSD != NULL)
+		LocalFree((HLOCAL)pSD);
+	if (pNewDACL != NULL)
+		LocalFree((HLOCAL)pNewDACL);
+	return ret;
+}
+
+Ustring
+getDirSystemAppData(Ustring const & groupName,Ustring const & appName)
+{
+    Ustring    appDir = getDirSystemAppData() + groupName;
+    if (!pathExists(appDir)) {
+        createDirectory(appDir);
+        // AllUsers by default has limited access to directories created within '\ProgramData', so
+        // to ensure that license files can be deleted when necessary if the program is run by a 
+        // different user we must ensure AllUsers has FullControl access. This is then inherited
+        // by subdirectories and files within them (tested):
+        setAllUsersFullControl(appDir.as_wstring().c_str());
+    }
     appDir = appDir + fgDirSep() + appName;
-    fgCreateDirectory(appDir);
+    createDirectory(appDir);
     return appDir + fgDirSep();
 }
 
 Ustring
-fgDirUserAppDataRoamingRoot()
+getDirUserAppDataRoaming()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -173,7 +263,7 @@ fgDirUserAppDataRoamingRoot()
 }
 
 Ustring
-fgDirUserAppDataLocalRoot()
+getDirUserAppDataLocal()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -189,7 +279,7 @@ fgDirUserAppDataLocalRoot()
 }
 
 Ustring
-fgUserDocumentsDirectory(bool throwOnFail)
+getUserDocsDir(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -209,7 +299,7 @@ fgUserDocumentsDirectory(bool throwOnFail)
 }
 
 Ustring
-fgPublicDocumentsDirectory()
+getPublicDocsDir()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -225,7 +315,7 @@ fgPublicDocumentsDirectory()
 }
 
 bool
-getCreationTime(Ustring const & path,uint64 & time)
+getCreationTimePrecise(Ustring const & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -249,11 +339,19 @@ getCreationTime(Ustring const & path,uint64 & time)
     return true;
 }
 
-std::time_t
+uint64
+getCreationTime(Ustring const & path)
+{
+    uint64          tn;
+    FGASSERT(getCreationTimePrecise(path,tn));
+    return tn / 10000000;       // Convert to seconds
+}
+
+uint64
 getLastWriteTime(Ustring const & fname)
 {
     // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
-    HANDLE hndl =
+    HANDLE          hndl =
         CreateFile(
             fname.as_wstring().c_str(),
             NULL,                           // Leaving zero means we're only getting meta-data about the file/dir
@@ -264,24 +362,16 @@ getLastWriteTime(Ustring const & fname)
             NULL);                          // don't get template info
     if (hndl == INVALID_HANDLE_VALUE)
         return false;
-    FILETIME    creation,
-                lastAccess,
-                lastWrite;
-    BOOL    ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
+    FILETIME        creation,
+                    lastAccess,
+                    lastWrite;
+    BOOL            ret = GetFileTime(hndl,&creation,&lastAccess,&lastWrite);
     CloseHandle(hndl);
     FGASSERTWIN(ret);
-    return uint64(lastWrite.dwLowDateTime) +(uint64(lastWrite.dwHighDateTime) << 32);
-}
-
-void
-fgMakeWritableByAll(Ustring const & name)
-{
-    HANDLE          hFile =
-        CreateFile(name.ns().c_str(),READ_CONTROL|WRITE_DAC,0,NULL,OPEN_EXISTING,NULL,NULL);
-    if (hFile != INVALID_HANDLE_VALUE) {
-        SetSecurityInfo(hFile,SE_FILE_OBJECT,DACL_SECURITY_INFORMATION,NULL,NULL,NULL,NULL);
-        CloseHandle(hFile);
-    }
+    // Time in 100 nanosecond intervals since 1601.01.01:
+    uint64          time = uint64(lastWrite.dwLowDateTime) +(uint64(lastWrite.dwHighDateTime) << 32);
+    // Return in seconds:
+    return time / 10000000;
 }
 
 }

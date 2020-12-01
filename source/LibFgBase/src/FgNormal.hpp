@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,15 +14,15 @@
 namespace Fg {
 
 template<uint dim>
-struct   FgNormal
+struct   NormalDist
 {
     typedef Mat<double,dim,1>     Vec;
 
     Vec                 mean;
     Mat<double,dim,dim> root;       // Square root of the concentration matrix
 
-    FgNormal() {root.setIdentity(); }
-    FgNormal(const Vec & m,const Mat<double,dim,dim> & c) : mean(m), root(c) {}
+    NormalDist() {root.setIdentity(); }
+    NormalDist(const Vec & m,const Mat<double,dim,dim> & c) : mean(m), root(c) {}
 
     double
     operator() (const Vec & pos) const
@@ -47,11 +47,11 @@ struct   FgNormal
     }
 };
 
-typedef FgNormal<3> FgNormal3D;
+typedef NormalDist<3> NormalDist3D;
 
 template<uint dim>
 std::ostream &
-operator<<(std::ostream & ss,const FgNormal<dim> &  norm)
+operator<<(std::ostream & ss,const NormalDist<dim> &  norm)
 {
     return 
         ss  << fgnl << "Norm" << dim

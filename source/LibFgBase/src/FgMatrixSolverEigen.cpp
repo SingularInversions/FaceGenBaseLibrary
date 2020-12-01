@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,8 +33,24 @@ using namespace Eigen;
 
 namespace Fg {
 
+Vec3D
+solve(Mat33D A_,Vec3D b_)
+{
+    Matrix3d        A;
+    Vector3d        b;
+    for (uint rr=0; rr<3; ++rr) {
+        for (uint cc=0; cc<3; ++cc)
+            A(rr,cc) = A_.rc(rr,cc);
+        b[rr] = b_[rr];
+    }
+    // If the matrix is singular, this returns a solution vector with one or more components equal to zero:
+    ColPivHouseholderQR<Matrix3d>   alg(A);
+    Vector3d        r = alg.solve(b);
+    return Vec3D {r[0],r[1],r[2]};
+}
+
 void
-fgEigsRsm_(const MatD & rsm,Doubles & vals,MatD & vecs)
+cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
 {
     size_t              dim = rsm.ncols;
     FGASSERT(rsm.nrows == dim);
@@ -62,8 +78,8 @@ fgEigsRsm_(const MatD & rsm,Doubles & vals,MatD & vecs)
             vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
 }
 
-FgEigsRsmC<3>
-fgEigsRsm(const Mat<double,3,3> & rsm)
+EigsRsmC<3>
+cEigsRsm(const Mat<double,3,3> & rsm)
 {
     Matrix3d            mat;
     for (size_t rr=0; rr<3; ++rr) {
@@ -78,7 +94,7 @@ fgEigsRsm(const Mat<double,3,3> & rsm)
     SelfAdjointEigenSolver<Matrix3d>    es(mat);
     const Matrix3d &    eigVecs = es.eigenvectors();
     const Vector3d &    eigVals = es.eigenvalues();
-    FgEigsRsmC<3>       ret;
+    EigsRsmC<3>       ret;
     for (size_t rr=0; rr<3; ++rr)
         ret.vals[rr] = eigVals(rr);
     for (size_t rr=0; rr<3; ++rr)
@@ -87,8 +103,8 @@ fgEigsRsm(const Mat<double,3,3> & rsm)
     return ret;
 }
 
-FgEigsRsmC<4>
-fgEigsRsm(const Mat<double,4,4> & rsm)
+EigsRsmC<4>
+cEigsRsm(const Mat<double,4,4> & rsm)
 {
     Matrix4d            mat;
     for (size_t rr=0; rr<4; ++rr) {
@@ -102,7 +118,7 @@ fgEigsRsm(const Mat<double,4,4> & rsm)
     SelfAdjointEigenSolver<Matrix4d>    es(mat);
     const Matrix4d &    eigVecs = es.eigenvectors();
     const Vector4d &    eigVals = es.eigenvalues();
-    FgEigsRsmC<4>       ret;
+    EigsRsmC<4>       ret;
     for (size_t rr=0; rr<4; ++rr)
         ret.vals[rr] = eigVals(rr);
     for (size_t rr=0; rr<4; ++rr)
@@ -112,7 +128,7 @@ fgEigsRsm(const Mat<double,4,4> & rsm)
 }
 
 template<size_t dim>
-FgEigsC<dim>
+EigsC<dim>
 fgEigsT(const Mat<double,dim,dim> & in)
 {
     // Ensure valid value and copy into Eigen format:
@@ -126,7 +142,7 @@ fgEigsT(const Mat<double,dim,dim> & in)
     }
     EigenSolver<MatrixXd>   es;
     es.compute(mat);
-    FgEigsC<dim>            ret;
+    EigsC<dim>            ret;
     const VectorXcd &       eigVals = es.eigenvalues();
     const MatrixXcd &       eigVecs = es.eigenvectors();
     for (size_t rr=0; rr<dim; ++rr)
@@ -139,12 +155,12 @@ fgEigsT(const Mat<double,dim,dim> & in)
 
 // Eigen does not have specialized solutions of 'EigenSolve' for small values
 // so we just insantiate generic version above:
-FgEigsC<3>
-fgEigs(const Mat33D & mat)
+EigsC<3>
+cEigs(Mat33D const & mat)
 {return fgEigsT<3>(mat); }
 
-FgEigsC<4>
-fgEigs(const Mat44D & mat)
+EigsC<4>
+cEigs(Mat44D const & mat)
 {return fgEigsT<4>(mat); }
 
 }

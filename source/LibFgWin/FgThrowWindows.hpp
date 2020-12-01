@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,8 +24,8 @@ throwWindows(const std::string & msg,const std::string & data)
 
 template<class T>
 void
-throwWindows(const std::string & msg,const T & data)
-{return throwWindows(msg,Ustring(toString(data))); }
+throwWindows(const std::string & msg,T const & data)
+{return throwWindows(msg,Ustring(toStr(data))); }
 
 void
 assertWindows(const char * fname,int line);
@@ -35,13 +35,30 @@ assertWinReturnZero(const char * fname,int line,long rval);
 
 // Templated custom destructor superior to function object since it's compatible with containers:
 template<class T>
-struct      Release
+struct      WinRelease
 {
     // unique_ptr only calls this if ptr != nullptr:
     void operator()(T* ptr) const {ptr->Release(); }
 };
 
+template<class T>
+using WinPtr = std::unique_ptr<T,WinRelease<T> >;
+
+// Reference-counted pointer:
+template<class T>
+using ComPtr = Microsoft::WRL::ComPtr<T>;
+
+void
+assertHResult(char const * fpath,uint lineNum,HRESULT hr);
+
+void
+assertHResultD3d(char const * fpath,uint lineNum,HRESULT hr,bool supports11_1,bool supportsFlip);
+
 }
+
+#define FG_ASSERT_HR(hr) Fg::assertHResult(__FILE__,__LINE__,hr)
+
+#define FG_ASSERT_D3D(hr) Fg::assertHResultD3d(__FILE__,__LINE__,hr,supports11_1,supportsFlip)
 
 #define FGASSERTWIN(X)                                                  \
     if(X) (void) 0;                                                     \

@@ -86,7 +86,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -110,7 +109,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -133,7 +131,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>
@@ -159,7 +156,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Lib>

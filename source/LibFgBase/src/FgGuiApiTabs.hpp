@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,7 +21,6 @@ struct  GuiTabDef
     uint            padRight;
     uint            padTop;
     uint            padBottom;
-    std::function<void()>     onSelect;   // If non-null, called when this tab is selected
 
     GuiTabDef()
     : padLeft(1), padRight(1), padTop(1), padBottom(1)

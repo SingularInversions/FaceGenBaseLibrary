@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -44,7 +44,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         m_panes.resize(m_api.panes.size());
         for (size_t ii=0; ii<m_api.panes.size(); ++ii) {
             m_panes[ii] = m_api.panes[ii]->getInstance();
-            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+toString(ii),NULL,visible);
+            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
         }
 //fgout << fgpop;
     }
@@ -92,7 +92,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     }
         // Here's how it would look for a grid layout ... but resizing more complex:
         //Vec2UI           gd = m_api.grid;
-        //vector<uint>        maxMinWid(gd[1],0),
+        //Uints        maxMinWid(gd[1],0),
         //                    maxMinHgt(gd[0],0);
         //for (uint yy=0; yy<gd[1]; ++yy) {
         //    for (uint xx=0; xx<gd[0]; ++xx) {

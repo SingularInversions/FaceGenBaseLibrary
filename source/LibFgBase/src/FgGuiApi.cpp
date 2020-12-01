@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,28 +19,32 @@ fgGuiTestmDialogSplashScreen(CLArgs const &)
 {
     std::function<void(void)>     f = guiDialogSplashScreen();
     fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
-    fgSleep(3);
+    sleepSeconds(3);
     f();
 }
 
 GuiVal<string>
-guiImageFormat(string const & label,bool warnTransparency)
+guiImageFormat(string const & label,bool warnTransparency,Ustring const & store)
 {
-    GuiVal<string>     ret;
-    Strings              ids {"png","jpg","tga","tif"};
-    Ustrings           descs {"PNG","JPEG","TGA","TIFF"};
+    GuiVal<string>      ret;
+    Ustrings            descs;
+    Strings             exts;
+    for (ImgFileFormat const & iff : imgFileFormats()) {
+        descs.push_back(iff.description);
+        exts.push_back(iff.extensions.at(0));
+    }
     if (warnTransparency)
         descs[1] += " (no transparency)";
-    IPT<size_t>         idxN {0ULL};
+    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPTEub<size_t>(0,store,descs.size());
     ret.win = guiGroupbox(label,guiRadio(descs,idxN));
-    ret.valN = link1<size_t,string>(idxN,[ids](size_t const & idx){return ids.at(idx);});
+    ret.valN = link1<size_t,string>(idxN,[=](size_t const & idx){return exts.at(idx);});
     return ret;
 }
 
 void
 fgTestmGui2(CLArgs const &)
 {
-    Ustring        store = fgDirUserAppDataLocalFaceGen("base","testm gui2");
+    Ustring        store = getDirUserAppDataLocalFaceGen("base","testm gui2");
     GuiVal<vector<bool> >    checkboxes;
     {
         Ustrings                   labels;
@@ -53,8 +57,8 @@ fgTestmGui2(CLArgs const &)
     }
     GuiPtr    img;
     {
-        IPT<ImgC4UC>    imgN = makeIPT(imgLoadAnyFormat(dataDir()+"base/trees.jpg"));
-        IPT<Vec2Fs>      ptsN = makeIPT(fgSvec(Vec2F(0.5,0.5)));
+        IPT<ImgC4UC>    imgN = makeIPT(loadImage(dataDir()+"base/trees.jpg"));
+        IPT<Vec2Fs>      ptsN = makeIPT(svec(Vec2F(0.5,0.5)));
         img = guiImage(imgN,ptsN);
     }
     GuiPtr    radio;
@@ -65,11 +69,11 @@ fgTestmGui2(CLArgs const &)
     }
     GuiPtr    txt;
     {
-        GuiPtr    t1 = guiText("Hello world."),
+        GuiPtr      t1 = guiText("Hello world."),
                     t2 = guiTextEdit(makeIPT(Ustring("Edit me"))),
                     t3 = guiTextEditFixed(makeIPT(3.14),VecD2(-9.0,9.0)),
-                    t4 = guiTextEditFloat(makeIPT(2.73),VecD2(-9.0,9.0));
-        txt = guiSplit(false,fgSvec(t1,t2,t3,t4));
+                    t4 = guiTextEditFloat(makeIPT(2.73),VecD2(-9.0,9.0),6);
+        txt = guiSplit(false,svec(t1,t2,t3,t4));
     }
     GuiPtr    sliders;
     {
@@ -81,18 +85,18 @@ fgTestmGui2(CLArgs const &)
     {
         string          text1,text2;
         for (size_t ii=0; ii<100; ++ii)
-            text1 += "Tab 1 Line " + toStringDigits(ii,3) + "\n";
+            text1 += "Tab 1 Line " + toStrDigits(ii,3) + "\n";
         for (size_t ii=0; ii<10; ++ii)
-            text2 += "Tab 2 Line " + toStringDigits(ii,3) + "\n";
-        GuiTabDef        tab1 = guiTab("Tab 1",guiSplitScroll(fgSvec(guiText(text1)))),
-                        tab2 = guiTab("Tab 2",guiSplitScroll(fgSvec(guiText(text2))));
-        scroll = guiTabs(fgSvec(tab1,tab2));
+            text2 += "Tab 2 Line " + toStrDigits(ii,3) + "\n";
+        GuiTabDef        tab1 = guiTab("Tab 1",guiSplitScroll(svec(guiText(text1)))),
+                        tab2 = guiTab("Tab 2",guiSplitScroll(svec(guiText(text2))));
+        scroll = guiTabs(svec(tab1,tab2));
     }
     GuiPtr    left = guiSplit(false,checkboxes.win,radio),
                 tab1 = guiSplit(true,left,img),
                 tab2 = guiSplit(false,txt,sliders),
-                win = guiTabs(fgSvec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));
-    guiStartImpl("GUI2 testm",win,fgDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
+                win = guiTabs(svec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));
+    guiStartImpl(makeIPT<Ustring>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
 }
 
 }

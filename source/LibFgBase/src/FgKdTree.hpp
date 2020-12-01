@@ -1,7 +1,7 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc.
-//
-
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Use, modification and distribution is subject to the MIT License,
+// see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #ifndef FGKDTREE_HPP
@@ -10,41 +10,40 @@
 #include "FgMatrixC.hpp"
 #include "FgOpt.hpp"
 #include "FgMath.hpp"
+#include "FgGeometry.hpp"
 
 namespace Fg {
 
-struct  FgMagPnt
+struct  KdVal
 {
-    float       mag;        // Squared distance to closest point
-    Vec3F    pnt;        // Closest point
+    Vec3F       closest;    // Closest vertex to query (if valid)
+    double      distMag;    // if == ::max() this object is invalid
+
+    KdVal() : distMag(std::numeric_limits<double>::max()) {}
+
+    bool valid() const {return (distMag != std::numeric_limits<double>::max()); }
 };
 
-class   FgKdTree
+struct  KdTree
 {
-public:
-    FgKdTree(const Svec<Vec3F> & pnts);   // Must be non-empty
-
-    FgMagPnt
-    closest(Vec3F pos) const;
-
-private:
     struct  Node
     {
-        Node(Vec3F v) : vert(v) {}
+        Vec3F           vert;
+        Valid<uint>     idxLo;
+        Valid<uint>     idxHi;
+
+        explicit Node(Vec3F v) : vert(v) {}
         Node(Vec3F v,uint l) : vert(v), idxLo(l) {}
         Node(Vec3F v,uint l,uint h) : vert(v), idxLo(l), idxHi(h) {}
-
-        Vec3F        vert;
-        Valid<uint>   idxLo;
-        Valid<uint>   idxHi;
     };
-    Svec<Node>   m_tree;
+    Svec<Node>      m_tree;                     // Last node is root
 
-    uint
-    createNode(const Svec<Vec3F> & verts,uint dim);
+    explicit KdTree(Vec3Fs const & pnts);       // Can't be empty
 
-    FgMagPnt
-    findBest(const Vec3F & pos,FgMagPnt currBest,uint rootIdx,uint dim) const;
+    KdVal   findClosest(Vec3D query) const;     // If multiple points are equidistant 1 is arbirarily chosen
+
+    KdVal   findClosest(Vec3F query) const
+    {return findClosest(Vec3D(query)); }
 };
 
 }

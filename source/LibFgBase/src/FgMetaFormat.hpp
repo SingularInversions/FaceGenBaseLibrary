@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Handy way to serialize to/from files
+// Handy way to serialize to/from files using boost serialization / archive
 //
 // * Terminology: load/save is used for whole files, read/write is used for streams.
 // * All serialization formats can change between boost versions breaking application back-compatibility.
@@ -30,8 +30,8 @@ template<> inline           String fgArchiveString<portable_binary_iarchive>() {
 // Returns true unless throwOnFail==false and failure occured:
 template<class Archive,class T>
 bool
-fgLoadDeserial(
-    Ustring const &    filename,
+loadBsa(
+    Ustring const &     filename,
     T &                 val,
     bool                throwOnFail)
 {
@@ -41,7 +41,7 @@ fgLoadDeserial(
         return false;
     try
     {
-        Ifstream      ifs(filename);
+        Ifstream        ifs(filename);
         Archive         ia(ifs);
         ia >> BOOST_SERIALIZATION_NVP(val);
     }
@@ -64,52 +64,61 @@ fgLoadDeserial(
 
 template<class T>
 inline bool
-fgLoadText(Ustring const & filename,T & val,bool throwOnFail=true)
-{return fgLoadDeserial<boost::archive::text_iarchive>(filename,val,throwOnFail); }
+loadBsaText(Ustring const & filename,T & val,bool throwOnFail=true)
+{return loadBsa<boost::archive::text_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadXml(Ustring const & filename,T & val,bool throwOnFail=true)
-{return fgLoadDeserial<boost::archive::xml_iarchive>(filename,val,throwOnFail); }
+loadBsaXml(Ustring const & filename,T & val,bool throwOnFail=true)
+{return loadBsa<boost::archive::xml_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadBin(Ustring const & filename,T & val,bool throwOnFail=true)
-{return fgLoadDeserial<boost::archive::binary_iarchive>(filename,val,throwOnFail); }
+loadBsaBin(Ustring const & filename,T & val,bool throwOnFail=true)
+{return loadBsa<boost::archive::binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgLoadPBin(Ustring const & filename,T & val,bool throwOnFail=true)
-{return fgLoadDeserial<portable_binary_iarchive>(filename,val,throwOnFail); }
+loadBsaPBin(Ustring const & filename,T & val,bool throwOnFail=true)
+{return loadBsa<portable_binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 T
-fgLoadBinT(Ustring const & fname)
+loadBsaXml(Ustring const & filename)
 {
-    T       ret;
-    fgLoadBin(fname,ret,true);
+    T           ret;
+    loadBsaXml(filename,ret,true);
     return ret;
 }
 
 template<class T>
 T
-fgLoadPBinT(Ustring const & fname)
+loadBsaBin(Ustring const & fname)
 {
     T       ret;
-    fgLoadPBin(fname,ret,true);
+    loadBsaBin(fname,ret,true);
+    return ret;
+}
+
+template<class T>
+T
+loadBsaPBin(Ustring const & fname)
+{
+    T       ret;
+    loadBsaPBin(fname,ret,true);
     return ret;
 }
 
 template<class Archive,class T>
 bool
-fgSaveSerial(
-    Ustring const &    filename,
-    const T &           val,
+saveBsa(
+    Ustring const &     filename,
+    T const &           val,
     bool                throwOnFail)
 {
     try
     {
-        Ofstream      ofs(filename);
+        Ofstream        ofs(filename);
         Archive         oa(ofs);
         oa << BOOST_SERIALIZATION_NVP(val);
     }
@@ -139,23 +148,23 @@ fgSaveSerial(
 
 template<class T>
 inline bool
-fgSaveText(Ustring const & filename,const T & val,bool throwOnFail=true)
-{return fgSaveSerial<boost::archive::text_oarchive>(filename,val,throwOnFail); }
+saveBsaText(Ustring const & filename,T const & val,bool throwOnFail=true)
+{return saveBsa<boost::archive::text_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSaveXml(Ustring const & filename,const T & val,bool throwOnFail=true)
-{return fgSaveSerial<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
+saveBsaXml(Ustring const & filename,T const & val,bool throwOnFail=true)
+{return saveBsa<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSaveBin(Ustring const & filename,const T & val,bool throwOnFail=true)
-{return fgSaveSerial<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
+saveBsaBin(Ustring const & filename,T const & val,bool throwOnFail=true)
+{return saveBsa<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-fgSavePBin(Ustring const & filename,const T & val,bool throwOnFail=true)
-{return fgSaveSerial<portable_binary_oarchive>(filename,val,throwOnFail); }
+saveBsaPBin(Ustring const & filename,T const & val,bool throwOnFail=true)
+{return saveBsa<portable_binary_oarchive>(filename,val,throwOnFail); }
 
 }
 

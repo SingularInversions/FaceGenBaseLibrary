@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -103,7 +103,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toString(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toStr(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
             resize();   // New windows must be sent a size
@@ -143,13 +143,12 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
         if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitScroll::WM_CREATE" << fgpush;
             hwndThis = hwnd;
-            FGASSERT(m_panes.empty());
             GuiPtrs   panes = m_api.getPanes();
             m_panes.resize(panes.size());
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
                 m_panes[ii] = panes[ii]->getInstance();
-                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toString(ii),0UL,false);
+                m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toStr(ii),0UL,false);
                 m_panesVisible[ii] = false;
             }
             m_api.updateFlag->checkUpdate();

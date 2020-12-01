@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -81,7 +81,7 @@ namespace Fg {
 
 template<class T>
 void
-fgSerialize(const T & val,std::string & blob)
+fgSerialize(T const & val,std::string & blob)
 {
     std::ostringstream              os;
     boost::archive::binary_oarchive oa(os);
@@ -91,7 +91,7 @@ fgSerialize(const T & val,std::string & blob)
 
 template<class T>
 std::string
-fgSerialize(const T & val)
+fgSerialize(T const & val)
 {
     std::string blob;
     fgSerialize(val,blob);
@@ -109,7 +109,7 @@ fgDeserialize(const std::string & blob,T & val)
 
 template<class T>
 void
-fgSerializePort(const T & val,std::string & blob)
+fgSerializePort(T const & val,std::string & blob)
 {
     std::ostringstream          os;
     portable_binary_oarchive    oa(os);
@@ -120,7 +120,7 @@ fgSerializePort(const T & val,std::string & blob)
 template<class T>
 inline
 std::string
-fgSerializePort(const T & val)
+fgSerializePort(T const & val)
 {
     std::string blob;
     fgSerializePort(val,blob);

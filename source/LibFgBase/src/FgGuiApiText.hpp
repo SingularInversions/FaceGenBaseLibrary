@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -51,11 +51,11 @@ GuiImplPtr guiGetOsImpl(GuiTextEdit const & guiApi);
 
 struct  GuiTextEdit : GuiBase
 {
-    DfgFPtr                     updateFlag;
-    std::function<Ustring(void)>   getInput;
-    std::function<void(Ustring)>   setOutput;
-    uint                            minWidth;
-    bool                            wantStretch;    // Width only.
+    DfgFPtr                 updateFlag;
+    Sfun<Ustring(void)>     getInput;
+    Sfun<void(Ustring)>     setOutput;
+    uint                    minWidth;
+    bool                    wantStretch;    // Width only.
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
@@ -65,18 +65,31 @@ struct  GuiTextEdit : GuiBase
 GuiPtr
 guiTextEdit(IPT<Ustring> t,bool wantStretch=true);
 
+// Fixed-point numerical text edit box with given number of fractional digits and clamp values:
+GuiPtr
+guiTextEditFixed(
+    DfgFPtr                 updateFlag,     // Must be unique to each function call
+    Sfun<double(void)>      getVal,
+    Sfun<void(double)>      setVal,
+    VecD2                   bounds,
+    uint                    numFraction);
+
 // Fixed-point numerical text edit box with specified fractional digits, clips output values to bounds:
 GuiPtr
 guiTextEditFixed(IPT<double> valN,VecD2 bounds,uint numFraction=2);
 
-// Floating-point numerical text edit box clips output values to bounds:
+// Flaoting-point numerical text edit box with given number of digits and clamp values:
 GuiPtr
 guiTextEditFloat(
-    IPT<double> valN,
-    VecD2        bounds,                 // Bounds of the internal representation (see v2t and t2v below)
-    uint            numDigits=6,
-    FgFuncD2D       v2t=FgFuncD2D(),        // Convert the internal value for display
-    FgFuncD2D       t2v=FgFuncD2D());       // Invert the displayed value for internal (must be inverse of above)
+    DfgFPtr                 updateFlag,     // Must be unique to each function call
+    Sfun<double()>          getVal,
+    Sfun<void(double)>      setVal,
+    VecD2                   bounds,
+    uint                    numDigits);
+
+// Fixed-point numerical text edit box with specified fractional digits, clips output values to bounds:
+GuiPtr
+guiTextEditFloat(IPT<double> valN,VecD2 bounds,uint numDigits);
 
 }
 

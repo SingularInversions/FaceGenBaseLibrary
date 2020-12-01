@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,56 +21,48 @@
 
 namespace Fg {
 
-// Per-vertex morph (aka blendshape) represented by deltas from base shape:
+// Per-vertex morph, typically represented as deltas from base shape (aka blendshape):
 struct  Morph
 {
     Ustring             name;
     Vec3Fs              verts;      // 1-1 correspondence with base verts
 
     Morph() {}
-    Morph(Ustring const & n,const Vec3Fs & v)
+    explicit Morph(Ustring const & n) : name(n) {}
+    Morph(Ustring const & n,Vec3Fs const & v)
         : name(n), verts(v) {}
 
     void
-    applyAsDelta(Vec3Fs & accVerts,float val) const
+    accAsDelta_(float val,Vec3Fs & accVerts) const
     {
         FGASSERT(verts.size() == accVerts.size());
         for (size_t ii=0; ii<verts.size(); ++ii)
             accVerts[ii] += verts[ii] * val;
     }
 };
-
 typedef Svec<Morph>     Morphs;
 
-void fgReadp(std::istream &,Morph &);
-void fgWritep(std::ostream &,const Morph &);
+void
+macAsTargetMorph_(
+    Vec3Fs const &  baseVerts,
+    Uints const &   indices,        // Indices into 'baseVerts'
+    Vec3F const *   targVertsPtr,   // Must point to a continguous array of at least 'indices.size()' elements
+    float           val,
+    Vec3Fs &        accVerts);      // Must be same size as 'baseVerts'
 
-// Indexed vertices morph (aka blendshape) represented by absolute position:
+// Indexed vertices morph representation is useful when only a small fraction of the base vertices
+// are affected:
 struct  IndexedMorph
 {
-    Ustring            name;
-    Uints             baseInds;   // Indices of base vertices to be morphed.
+    Ustring             name;
+    Uints               baseInds;   // Indices of base vertices to be morphed.
     // Can represent target position or delta depending on type of morph.
-    // Must be same size() as baseInds.:
-    Vec3Fs             verts;
+    // Must be same size() as baseInds:
+    Vec3Fs              verts;
 
     void
-    applyAsTarget_(const Vec3Fs & baseVerts,const Vec3Fs & targVerts,size_t & idxTarg,float val,Vec3Fs & accVerts) const
-    {
-        for (size_t ii=0; ii<baseInds.size(); ++ii) {
-            uint        idx = baseInds[ii];
-            Vec3F    del = targVerts[idxTarg+ii] - baseVerts[idx];
-            accVerts[idx] += del * val;
-        }
-        idxTarg += baseInds.size();
-    }
-
-    void
-    applyAsTarget_(const Vec3Fs & baseVerts,float val,Vec3Fs & accVerts) const
-    {
-        size_t      idx = 0;
-        applyAsTarget_(baseVerts,verts,idx,val,accVerts);
-    }
+    accAsTarget_(Vec3Fs const & baseVerts,float val,Vec3Fs & accVerts) const
+    {macAsTargetMorph_(baseVerts,baseInds,verts.data(),val,accVerts); }
 
     // Name of morph does not affect equality:
     bool
@@ -78,35 +70,39 @@ struct  IndexedMorph
     {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
 };
 
-void    fgReadp(std::istream &,IndexedMorph &);
-void    fgWritep(std::ostream &,const IndexedMorph &);
-
 typedef Svec<IndexedMorph>  IndexedMorphs;
 
 inline
 size_t
-fgSumVerts(const IndexedMorphs & ims)
+cNumVerts(IndexedMorphs const & ims)
 {
     size_t      ret = 0;
-    for (size_t ii=0; ii<ims.size(); ++ii)
-        ret += ims[ii].verts.size();
+    for (IndexedMorph const & im : ims)
+        ret += im.verts.size();
     return ret;
 }
 
 void
-fgAccDeltaMorphs(
-    const Svec<Morph> &     deltaMorphs,
-    const Floats &              coord,
-    Vec3Fs &                   accVerts);  // MODIFIED: morphing delta accumualted here
+accDeltaMorphs(
+    Morphs const &              deltaMorphs,
+    Floats const &              coord,
+    Vec3Fs &                    accVerts);  // MODIFIED: morphing delta accumualted here
 
 // This version of target morph application is more suited to SSM dataflow, where the
 // target positions have been transformed as part of the 'allVerts' array:
 void
-fgAccTargetMorphs(
-    const Vec3Fs &             allVerts,   // Base verts plus all target morph verts
-    const Svec<IndexedMorph> & targMorphs,  // Only 'baseInds' is used.
-    const Floats &              coord,      // morph coefficient for each target morph
-    Vec3Fs &                   accVerts);  // MODIFIED: target morphing delta accumulated here
+accTargetMorphs(
+    Vec3Fs const &              allVerts,   // Base verts plus all target morph verts
+    IndexedMorphs const &       targMorphs,  // Only 'baseInds' is used.
+    Floats const &              coord,      // morph coefficient for each target morph
+    Vec3Fs &                    accVerts);  // MODIFIED: target morphing delta accumulated here
+
+struct  PanTilt
+{
+    uint                boneVertIdx;        // Vertex of rotation centre
+    Vec3F               tilt;               // Normalized. Applied first.
+    Vec3F               pan;                // Normalized. Applied second.
+};
 
 struct  PoseVal
 {
@@ -128,12 +124,11 @@ struct  PoseVal
     operator==(Ustring const & rhsName) const
     {return (name == rhsName); }
 };
-
 typedef Svec<PoseVal>          PoseVals;
 
 inline
 PoseVals
-fgPoses(const Morphs & morphs)
+cPoseVals(Morphs const & morphs)
 {
     PoseVals         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
@@ -143,7 +138,7 @@ fgPoses(const Morphs & morphs)
 
 inline
 PoseVals
-fgPoses(const IndexedMorphs & morphs)
+cPoseVals(IndexedMorphs const & morphs)
 {
     PoseVals         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
@@ -153,12 +148,21 @@ fgPoses(const IndexedMorphs & morphs)
 
 // Accumulate deltas for delta morphs stored as a vertex array:
 void
-fgPoseDeltas(const std::map<Ustring,float> & poseVals,const Morphs & deltaMorphs,Vec3Fs & acc);
+accPoseDeltas_(
+    const std::map<Ustring,float> & poseVals,
+    Morphs const &                  deltaMorphs,
+    Vec3Fs &                        acc);
 
 // Accumulate deltas for target morphs stored as indexed vertex array:
 void
-fgPoseDeltas(const std::map<Ustring,float> & poseVals,const IndexedMorphs & targMorphs,const Vec3Fs & indivShape,
-    const Vec3Fs & targShape,Vec3Fs & acc);
+accPoseDeltas_(
+    const std::map<Ustring,float> & poseVals,
+    IndexedMorphs const &           targMorphs,     // Only used for names and indices; targets positions ignored
+    Vec3Fs const &                  baseShape,
+    // Target morph data in continguous order of 'targMorphs'
+    // These are used instead of the ones stored in the 'targMorphs':
+    Vec3Fs const &                  targShapes,
+    Vec3Fs &                        acc);
 
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
 struct GuiRadio : GuiBase
 {
     bool                horiz;
-    Ustrings           labels;
+    Ustrings            labels;
     IPT<size_t>         selection;
 
     virtual

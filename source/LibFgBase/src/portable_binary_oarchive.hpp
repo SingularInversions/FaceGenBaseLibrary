@@ -93,7 +93,7 @@ protected:
 
     // default fall through for any types not specified here
     template<class T>
-    void save(const T & t){
+    void save(T const & t){
         save_impl(t, sizeof(T));
     }
     void save(const std::string & t){
@@ -109,7 +109,7 @@ protected:
         // floats not supported
         //BOOST_STATIC_ASSERT(false);
     }
-    void save(const double & t){
+    void save(double const & t){
         this->primitive_base_t::save(t);
         // doubles not supported
         //BOOST_STATIC_ASSERT(false);

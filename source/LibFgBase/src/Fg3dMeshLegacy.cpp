@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -39,7 +39,7 @@ convertUvs(const FffMultiObjectC::objData & obj)
                 vertMapped[vertIdx] = true;
                 toNew[idxUv] = vertIdx;
             }
-            else if (fgContains(toNew,idxUv)) {     // Re-use existing vert-uv pair
+            else if (contains(toNew,idxUv)) {     // Re-use existing vert-uv pair
                 ret.triList[tt][ii] = toNew[idxUv];
             }
             else {                                  // Duplicate as necessary
@@ -61,7 +61,7 @@ convertUvs(const FffMultiObjectC::objData & obj)
                 vertMapped[vertIdx] = true;
                 toNew[idxUv] = vertIdx;
             }
-            else if (fgContains(toNew,idxUv)) {     // Re-use existing vert-uv pair
+            else if (contains(toNew,idxUv)) {     // Re-use existing vert-uv pair
                 ret.quadList[tt][ii] = toNew[idxUv];
             }
             else {                                  // Duplicate as necessary

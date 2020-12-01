@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,7 +40,7 @@ struct  Syntax
     T
     nextAs()
     {
-        Opt<T>    ret = fgFromStr<T>(next());
+        Opt<T>    ret = fromStr<T>(next());
         if (!ret.valid())
             error("Unable to convert string to "+String(typeid(T).name()),curr());
         return ret.val();
@@ -48,7 +48,7 @@ struct  Syntax
 
     Ustring
     nextLower()             // As above but lower case
-    {return fgToLower(Ustring(next())); }
+    {return toLower(Ustring(next())); }
 
     String const &
     curr() const
@@ -64,12 +64,8 @@ struct  Syntax
     CLArgs
     rest();             // Starting with current
 
-    void
-    error()
-    {throwSyntax(); }
-
-    void
-    error(String const & errMsg);
+    void                error() {throwSyntax(); }
+    void                error(String const & errMsg);
 
     void
     error(String const & errMsg,Ustring const & data);
@@ -96,14 +92,14 @@ struct  Syntax
     uint
     nextSelectionIndex(Strings const & validValues,String const & argDescription);
 
+    void                noMoreArgsExpected();       // Throws is the user has supplied more arguments
 
 private:
     String              m_syntax;
     Strings             m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
     size_t              m_idx;
 
-    void
-    throwSyntax();
+    void                throwSyntax();
 };
 
 }

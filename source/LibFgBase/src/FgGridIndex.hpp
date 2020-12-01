@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,12 +14,11 @@
 namespace Fg {
 
 template<typename T>
-struct  FgGridIndex
+struct  GridIndex
 {
     AffineEw2F                clientToGridIpcs;
     Img<Svec<T> >    grid;       // Bins of client objects (bins not exactly square)
-    // Return when client request out of bounds. Should be 'const' but VS13 can't handle that:
-    Svec<T>              empty;
+    Svec<T> const   empty;
 
     // Typically use the number of lookup objects for 'numBins':
     void
@@ -38,7 +37,7 @@ struct  FgGridIndex
     }
 
     void
-    add(const T & val,Mat22F clientBounds)
+    add(T const & val,Mat22F clientBounds)
     {
         Mat22F        ipcsBounds = clientToGridIpcs * clientBounds;
         ipcsBounds[0] = cMax(ipcsBounds[0],0.0f);
@@ -54,7 +53,7 @@ struct  FgGridIndex
         }
     }
 
-    const Svec<T> &
+    Svec<T> const &
     operator[](const Vec2F & clientPos) const
     {
         Vec2F        posIpcs = clientToGridIpcs*clientPos;

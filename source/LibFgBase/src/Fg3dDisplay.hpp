@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,35 +38,29 @@ makeCameraCtrls(
 
 GuiPtr
 makeRendCtrls(
-    RPT<RendOptions>          rendOptionsR,
-    // 0 - all controls and default marked points & verts to visible.
-    // 1 - only color/shiny/flat
-    // 2 - only color/shiny
-    // 3 - only shiny/flat/wireframe
-    uint    simple,
-    Ustring const & storePath);
+    RPT<RendOptions>    rendOptionsR,
+    BackgroundImage     bgImg,
+    Ustring const &     store,
+    bool                structureOptions,       // color by mesh, wire, flat, allverts, facets
+    bool                twoSidedOption,
+    bool                pointOptions);          // surf points, marked verts
 
 GuiPtr
 makeLightingCtrls(
-    RPT<FgLighting>         lightingR,                              // Assigned
+    RPT<Lighting>         lightingR,                              // Assigned
     IPT<BothButtonsDragAction> bothButtonsDragActionI,    // "
     Ustring const &        storePath);
 
+// View controls with all option selectors enabled:
 GuiPtr
-makeViewCtrls(
-    Gui3d &                 gui3d,
-    NPT<Mat32D>    viewBoundsN,
-    Ustring const &        storePath,
-    // 0 - all render ctls, default marked points viewable, default unconstrained rotation
-    // 1 - only color/shiny/flat/wireframe,
-    // 2 - only color/shiny, and limit pan/tilt,
-    // 3 - only shiny/flat/wireframe:
-    uint                        simple=0,
-    bool                        textEditBoxes=false);       // Display for sliders
+makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,Ustring const & storePath);
 
 // Returns an image save dialog window to save from the given render capture function:
 GuiPtr
-guiCaptureSaveImage(Sptr<Gui3d::Capture> const & capture);
+guiCaptureSaveImage(
+    NPT<Vec2UI>                     viewportDims,
+    Sptr<Gui3d::Capture> const &    capture,
+    Ustring const &                 store);
 
 OPT<Vec3Fs>
 linkAllVerts(NPT<Mesh>);
@@ -82,7 +76,7 @@ linkPosedVerts(
 OPT<Mesh>
 linkLoadMesh(NPT<Ustring> pathBaseN);          // Empty filename -> empty mesh
 
-OPT<Normals>
+OPT<MeshNormals>
 linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
 
 OPT<ImgC4UC>
@@ -102,12 +96,16 @@ struct  GuiPosedMeshes
     addMesh(
         NPT<Mesh>       meshN,          // Name, verts, maps not used. Editing controls if IPT.
         NPT<Vec3Fs>     allVertsN,
-        ImgNs           albedoNs,       // Must be 1-1 with meshN surfaces but can be empty (and the same)
-        ImgNs           specularNs);    // "
+        // Albedo before any texture modulation. Must be 1-1 with meshN surfaces (num surfaces not yet dynamic:
+        ImgNs           smoothNs,
+        // Specular maps must be 1-1 if non-empty. Images can also be empty:
+        ImgNs           specularNs=ImgNs{},
+        // Optional texture modulation images must be 1-1 if non-empty. Images can also be empty:
+        ImgNs           modulationNs=ImgNs{});
 
-    // As above with no maps:
+    // Add mesh with no maps. Number of surfaces is not yet dynamic so must be specified for static construction:
     void
-    addMesh(NPT<Mesh>,NPT<Vec3Fs>);
+    addMesh(NPT<Mesh>,NPT<Vec3Fs>,size_t numSurfs);
 
     GuiPtr
     makePoseCtrls(bool editBoxes) const;
@@ -123,14 +121,26 @@ linkMeshStats(RendMeshes const &);
 // If only one mesh is provided then edit controls will also be available and the resulting mesh
 // will be returned. Otherwise an empty mesh is returned:
 Mesh
-meshView(
-    const Meshes &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
+viewMesh(
+    Meshes const &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
     bool                compare=false);     // Radio button selects between meshes (if more than one)
 
 inline
 Mesh
-meshView(const Mesh & mesh)
-{return meshView(fgSvec(mesh)); }
+viewMesh(Mesh const & mesh)
+{return viewMesh(Svec<Mesh>(1,mesh)); }
+
+// GUI queries user for any given fids not already labelled surface 0 points.
+// Returns true if user enters all fids, false if user closes before entering all fids:
+bool
+guiSelectFids(
+    Mesh &              mesh,
+    Strings const &     fidLabels,
+    // 0 - simple, 1 - expert, 2 - edit.
+    // Simple prompts for each fiducial separately and allows multiple tries per fiducial.
+    // Expert prompts only once and expects all fiducials to be placed without repeats.
+    // Edit allows changing existing fiducials.
+    uint                mode=0);
 
 }
 

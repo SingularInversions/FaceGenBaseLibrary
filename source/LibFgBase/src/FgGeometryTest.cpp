@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,7 +11,7 @@
 #include "FgSimilarity.hpp"
 #include "FgMath.hpp"
 #include "FgApproxEqual.hpp"
-#include "FgDraw.hpp"
+#include "FgImageDraw.hpp"
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
 #include "FgMain.hpp"
@@ -20,9 +20,30 @@ using namespace std;
 
 namespace Fg {
 
+namespace {
+
 static
 void
-testOriginToSegmentDistSqr()
+closestBarycentricPoint()
+{
+    for (size_t ii=0; ii<100; ++ii) {
+        Vec3D           p0 = Vec3D::randNormal(),
+                        p1 = Vec3D::randNormal(),
+                        p2 = Vec3D::randNormal();
+        Plane           plane = cPlane(p0,p1,p2);
+        // Closest point in plane to origin equation derived using Lagrange's method:
+        Vec3D           closest0 = -plane.scalar * plane.norm / cMag(plane.norm),
+                        bary = closestBarycentricPoint(p0,p1,p2),
+                        closest1 = bary[0]*p0 + bary[1]*p1 + bary[2]*p2;
+        FGASSERT(isApproxEqualRelPrec(closest0,closest1));
+        Opt<Vec3D>      bary1 = barycentricCoord(closest1,p0,p1,p2);
+        FGASSERT(isApproxEqualRelPrec(bary,bary1.val()));
+    }
+}
+
+static
+void
+originToSegmentDistSqr()
 {
     Vec3D    p0(1.0,0.0,0.0),
                 p1(0.0,1.0,0.0),
@@ -33,29 +54,29 @@ testOriginToSegmentDistSqr()
         Vec3D    r0 = rot * p0,
                     r1 = rot * p1,
                     r2 = rot * p2;
-        VecMag    delta;
+        VecMagD    delta;
         // Degenerate case:
         delta = closestPointInSegment(r0,r0);
-        FGASSERT(approxEqualRel(delta.mag,1.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         // edge closest point (both directions):
         delta = closestPointInSegment(r0,r1);
-        FGASSERT(approxEqualRel(delta.mag,0.5));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         delta = closestPointInSegment(r1,r2);
-        FGASSERT(approxEqualRel(delta.mag,0.5));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // vertex closest point:
         delta = closestPointInSegment(r0,r2);
-        FGASSERT(approxEqualRel(delta.mag,1.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
 
 static
 void
-testPointToFacetDistSqr()
+pointToFacetDistSqr()
 {
     Vec3D       origin {0},
                 p0(1.0,0.0,0.0),
@@ -71,39 +92,39 @@ testPointToFacetDistSqr()
                     r2 = rot * p2,
                     r3 = rot * p3,
                     r4 = rot * p4;
-        VecMag    delta;
+        VecMagD    delta;
         // surface closest point (both orientations):
         delta = closestPointInTri(origin,r0,r1,r2);
-        FGASSERT(approxEqualRel(delta.mag,1.0/3.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0/3.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
         delta = closestPointInTri(origin,r0,r2,r1);
-        FGASSERT(approxEqualRel(delta.mag,1.0/3.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0/3.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
         // degenerate facet edge closest point:
         delta = closestPointInTri(origin,r0,r1,r3);
-        FGASSERT(approxEqualRel(delta.mag,0.5));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // edge closest point (both orientations):
         delta = closestPointInTri(origin,r0,r2,r3);
-        FGASSERT(approxEqualRel(delta.mag,0.5));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
         delta = closestPointInTri(origin,r0,r3,r2);
-        FGASSERT(approxEqualRel(delta.mag,0.5));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
         // vertex closest point:
         delta = closestPointInTri(origin,r0,r3,r4);
-        FGASSERT(approxEqualRel(delta.mag,1.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         delta = closestPointInTri(origin,r0,r0*2.0,r3);
-        FGASSERT(approxEqualRel(delta.mag,1.0));
-        FGASSERT(approxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
 
 static
 void
-testBarycentricCoords()
+barycentricCoords()
 {
     // Test points inside triangle:
     for (uint ii=0; ii<100; ++ii) {
@@ -120,8 +141,8 @@ testBarycentricCoords()
             Vec3D    res = barycentricCoord(pnt,v0,v1,v2).val();
             FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(approxEqualRelMag(pnt,chk,30));
-            FGASSERT(approxEqualRel(res[0]+res[1]+res[2],1.0));
+            FGASSERT(isApproxEqualRelMag(pnt,chk,30));
+            FGASSERT(isApproxEqualRelPrec(res[0]+res[1]+res[2],1.0));
         }
     }
     // Test points outside triangle:
@@ -136,20 +157,20 @@ testBarycentricCoords()
                         c[0] = -float(randUniform()),
                         c[1] = float(randUniform()) * (1.0f - c[0]),
                         c[2] = 1.0f - c[1] - c[0];
-            c = fgPermuteAxes<double>(ii%3) * c;
+            c = permuteAxes<double>(ii%3) * c;
             Vec2D        pnt = v0*c[0] + v1*c[1] + v2*c[2];
             Vec3D        res = barycentricCoord(pnt,v0,v1,v2).val();
             FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
-            FGASSERT(approxEqualRelMag(pnt,chk,30));
-            FGASSERT(approxEqualRel(res[0]+res[1]+res[2],1.0));
+            FGASSERT(isApproxEqualRelMag(pnt,chk,30));
+            FGASSERT(isApproxEqualRelPrec(res[0]+res[1]+res[2],1.0));
         }
     }
 }
 
 static
 void
-testBarycentricCoords3D()
+barycentricCoords3D()
 {
     fgout << fgnl << "Barycentric 3d: " << fgpush;
     for (uint ii=0; ii<50; ++ii) {
@@ -172,47 +193,47 @@ testBarycentricCoords3D()
 
 static
 void
-testPlaneH()
+planeH()
 {
-    Vec3D    v0(0,0,0),
+    Vec3D       v0(0,0,0),
                 v1(1,0,0),
                 v2(0,1,0);
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
         Affine3D  s = similarityRand().asAffine();
-        Vec4D    pln = cPlaneH(s*v0,s*v1,s*v2);
+        Plane       pln = cPlane(s*v0,s*v1,s*v2);
         double      a = randUniform(),
                     b = randUniform(),
                     c = 1.0 - a - b;
-        Vec3D    pt = s * (v0*a + v1*b + v2*c);
-        double      r = cDot(pt,pln.subMatrix<3,1>(0,0)),
-                    mag = sqrt(pln.mag());
-        FGASSERT(approxEqualAbs(-r,pln[3],mag));
+        Vec3D       pt = s * (v0*a + v1*b + v2*c);
+        double      r = cDot(pt,pln.norm),
+                    mag = sqrt(pln.norm.mag()+sqr(pln.scalar));
+        FGASSERT(isApproxEqualAbsPrec(-r,pln.scalar,mag));
     }
 }
 
 static
 void
-testRayPlaneIntersect()
+rayPlaneIntersect()
 {
-    Vec2D    v0(0,0),
+    Vec2D       v0(0,0),
                 v1(1,0),
                 v2(0,1),
                 zero;
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
-        Mat22D     rot = matRotate(randUniform()*2.0*pi());
-        Vec2D        r0 = rot * v0,
+        Mat22D          rot = matRotate(randUniform()*2.0*pi());
+        Vec2D           r0 = rot * v0,
                         r1 = rot * v1,
                         r2 = rot * v2;
-        Mat33D     rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),Vec3D::randNormal());
-        Vec3D        p0 = rot3 * fgAsHomogVec(r0),
-                        p1 = rot3 * fgAsHomogVec(r1),
-                        p2 = rot3 * fgAsHomogVec(r2),
-                        pt = rot3 * fgAsHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
-        Vec4D        pln = cPlaneH(p0,p1,p2);
-        Vec4D        is = linePlaneIntersect(pt*exp(randNormal()),pln);
-        FGASSERT(approxEqualRelMag(pt,fgFromHomogVec(is),30));
+        Mat33D          rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),Vec3D::randNormal());
+        Vec3D           p0 = rot3 * asHomogVec(r0),
+                        p1 = rot3 * asHomogVec(r1),
+                        p2 = rot3 * asHomogVec(r2),
+                        pt = rot3 * asHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
+        Plane           pln = cPlane(p0,p1,p2);
+        Vec4D           is = linePlaneIntersect(pt*exp(randNormal()),pln);
+        FGASSERT(isApproxEqualRelMag(pt,fromHomogVec(is),30));
     }
 }
 
@@ -237,12 +258,12 @@ pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 
 static
 void
-testPointInTriangle()
+pointInTriangle()
 {
     Vec2D    v0(0.0,0.0),
                 v1(1.0,0.0),
                 v2(0.0,1.0);
-    double      d = numeric_limits<double>::epsilon() * 100,
+    double      d = epsilonD() * 100,
                 d1 = 1.0 - d * 2.0;
     randSeedRepeatable();
     // In middle:
@@ -266,13 +287,13 @@ testPointInTriangle()
 
 static
 void
-testLineFacetIntersect()
+lineFacetIntersect()
 {
-    double      s = 0.1;
-    Vec3D    v0(0,0,0),
-                v1(1,0,0),
-                v2(0,1,0);
-    Opt<Vec3D>    ret;
+    double          s = 0.1;
+    Vec3D           v0(0,0,0),
+                    v1(1,0,0),
+                    v2(0,1,0);
+    Opt<Vec3D>      ret;
     ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,-1),v0,v1,v2);
     FGASSERT(ret.val() == Vec3D(s,s,0));
     ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,1),v0,v1,v2);
@@ -285,27 +306,56 @@ testLineFacetIntersect()
     FGASSERT(ret.val() == Vec3D(s,s,0));
 }
 
-void
-fgGeometryTest(CLArgs const &)
+// Test tensor-based 3D triangle / parallelogram area formula:
+static void
+triTensorArea()
 {
     randSeedRepeatable();
-    testOriginToSegmentDistSqr();
-    testPointToFacetDistSqr();
-    testBarycentricCoords();
-    testBarycentricCoords3D();
-    testPlaneH();
-    testRayPlaneIntersect();
-    testPointInTriangle();
-    testLineFacetIntersect();
+    for (size_t tt=0; tt<10; ++tt) {
+        // tri verts in CC winding order:
+        Vec3D           pnts[3] {Vec3D::randNormal(),Vec3D::randNormal(),Vec3D::randNormal()},
+        // parallelogram area vectors:
+                        area0 = crossProduct(pnts[1]-pnts[0],pnts[2]-pnts[0]),  // traditional formula
+                        area1 {0};                                              // tensor formula
+        for (uint ii=0; ii<3; ++ii) {               // even permutation tensor
+            uint            jj = (ii+1)%3,
+                            kk = (ii+2)%3;
+            for (uint xx=0; xx<3; ++xx) {               // alternating tensor even permutes
+                uint            yy = (xx+1)%3,
+                                zz = (xx+2)%3;
+                area1[xx] += pnts[jj][yy] * pnts[kk][zz];   // even permutation of alternating tensor
+                area1[xx] -= pnts[jj][zz] * pnts[kk][yy];   // odd "
+            }
+        }
+        FGASSERT(isApproxEqualRelPrec(area0,area1,30U));
+    }
+}
+
+}   // namespace
+
+void
+testGeometry(CLArgs const &)
+{
+    randSeedRepeatable();
+    closestBarycentricPoint();
+    originToSegmentDistSqr();
+    pointToFacetDistSqr();
+    barycentricCoords();
+    barycentricCoords3D();
+    planeH();
+    rayPlaneIntersect();
+    pointInTriangle();
+    lineFacetIntersect();
+    triTensorArea();
 }
 
 void
-fgGeometryManTest(CLArgs const &)
+testmGeometry(CLArgs const &)
 {
     // Give visual feedback on continuity along a line passing through all 3 cases;
     // facet, edge and vertex closest point:
     const uint      ns = 800;
-    Vec3D        v0(0.0,0.0,1.0),
+    Vec3D           v0(0.0,0.0,1.0),
                     v1(1.0,1.0,1.0),
                     v2(2.0,-1.0,1.0),
                     pnt(-1.0,0.0,0.0);
@@ -316,8 +366,8 @@ fgGeometryManTest(CLArgs const &)
         func.push_back(closestPointInTri(pnt,v0,v1,v2).mag);
     }
     uint            sz = ns-2;
-    MatD       derivs(sz,3);
-    for (uint ii=0; ii<sz; ++ii) {
+    MatD            derivs(sz,3);
+    for (size_t ii=0; ii<sz; ++ii) {
         derivs.rc(ii,0) = func[ii+1];
         derivs.rc(ii,1) = func[ii+2]-func[ii];
         derivs.rc(ii,2) = func[ii+2] + func[ii] - 2.0 * func[ii+1];
@@ -325,4 +375,4 @@ fgGeometryManTest(CLArgs const &)
     fgDrawFunctions(derivs);
 }
 
-}
+}   // namespace Fg

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -26,37 +26,35 @@ namespace {
 void
 display(CLArgs const &)
 {
-    Ustring    dd = dataDir();
+    Ustring     dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
-    ImgC4UC img;
-    imgLoadAnyFormat(dd+testorig_jpg,img);
+    ImgC4UC     img = loadImage(dd+testorig_jpg);
     imgDisplay(img);
     string      testorig_bmp("base/test/testorig.bmp");
-    imgLoadAnyFormat(dd+testorig_bmp,img);
+    loadImage_(dd+testorig_bmp,img);
     imgDisplay(img);
 }
 
 void
 resize(CLArgs const &)
 {
-    string              fname("base/test/testorig.jpg");
-    ImgC4UC         img;
-    imgLoadAnyFormat(dataDir()+fname,img);
+    string          fname("base/test/testorig.jpg");
+    ImgC4UC         img = loadImage(dataDir()+fname);
     ImgC4UC         out(img.width()/2+1,img.height()+1);
-    fgImgResize(img,out);
+    imgResize(img,out);
     imgDisplay(out);
 }
 
 void
 sfs(CLArgs const &)
 {
-    ImgC4UC         orig = imgLoadAnyFormat(dataDir()+"base/Mandrill512.png");
+    ImgC4UC         orig = loadImage(dataDir()+"base/Mandrill512.png");
     Img<Vec3F>   img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii] = Vec3F(orig[ii].m_c.subMatrix<3,1>(0,0));
-    FgTimer             time;
+    Timer             time;
     for (uint ii=0; ii<100; ++ii)
-        fgSmoothFloat(img,img,1);
+        smoothFloat(img,img,1);
     double              ms = time.read();
     fgout << fgnl << "smoothFloat time: " << ms;
     imgDisplay(img);
@@ -68,9 +66,9 @@ void
 composite(CLArgs const &)
 {
     Ustring            dd = dataDir();
-    ImgC4UC         overlay = imgLoadAnyFormat(dd+"base/Teeth512.png"),
-                        base = imgLoadAnyFormat(dd+"base/Mandrill512.png");
-    fgRegress(fgComposite(overlay,base),dd+"base/test/imgops/composite.png");
+    ImgC4UC         overlay = loadImage(dd+"base/Teeth512.png"),
+                        base = loadImage(dd+"base/Mandrill512.png");
+    regressTest(fgComposite(overlay,base),dd+"base/test/imgops/composite.png");
 }
 
 void
@@ -81,10 +79,10 @@ testConvolve(CLArgs const &)
     for (size_t ii=0; ii<tst.numPixels(); ++ii)
         tst[ii] = float(randUniform());
     ImgF          i0,i1;
-    fgSmoothFloat(tst,i0,1);
+    smoothFloat(tst,i0,1);
     fgConvolveFloat(tst,Mat33F(1,2,1,2,4,2,1,2,1)/16.0f,i1,1);
     //fgout << fgnl << i0.m_data << fgnl << i1.m_data;
-    FGASSERT(approxEqualRelMag(i0.m_data,i1.m_data));
+    FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));
 }
 
 }
@@ -92,7 +90,7 @@ testConvolve(CLArgs const &)
 void
 fgImageTestm(CLArgs const & args)
 {
-    vector<Cmd>   cmds;
+    Cmds   cmds;
     cmds.push_back(Cmd(resize,"resize"));
     cmds.push_back(Cmd(display,"display"));
     cmds.push_back(Cmd(sfs,"sfs","smoothFloat speed"));
@@ -104,7 +102,7 @@ void    fgImgTestWrite(CLArgs const &);
 void
 fgImageTest(CLArgs const & args)
 {
-    vector<Cmd>       cmds;
+    Cmds       cmds;
     cmds.push_back(Cmd(composite,"composite"));
     cmds.push_back(Cmd(testConvolve,"conv"));
     cmds.push_back(Cmd(fgImgTestWrite,"write"));

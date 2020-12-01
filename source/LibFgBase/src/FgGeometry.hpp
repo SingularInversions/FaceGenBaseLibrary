@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,23 +12,32 @@
 
 namespace Fg {
 
+// Returns the barycentric coordinate (wrt the input points) of the closest point in the plane
+// spanned by the points to the origin.
+Vec3D
+closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2);
+
+template<typename T>
 struct  VecMag
 {
-    Vec3D       vec;
-    double      mag;    // Squared magnitude of vec. Initialized to invalid.
+    Mat<T,3,1>  vec;
+    T           mag;    // Squared magnitude of vec. Initialized to invalid.
 
-    VecMag() : mag(std::numeric_limits<double>::max()) {}
+    VecMag() : mag {std::numeric_limits<T>::max()} {}
+    VecMag(Mat<T,3,1> v,T m) : vec(v), mag(m) {}
 
     bool valid() const
-    {return (mag != std::numeric_limits<double>::max()); }
+    {return (mag != std::numeric_limits<T>::max()); }
 };
+typedef VecMag<float>   VecMagF;
+typedef VecMag<double>  VecMagD;
 
 // Returns closest point in given line segment from origin:
-VecMag
+VecMagD
 closestPointInSegment(Vec3D p0,Vec3D p1);
 
 // Returns delta from point to tri:
-VecMag
+VecMagD
 closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
 
 // Returns the barycentric coord of point relative to triangle.
@@ -48,17 +57,23 @@ Opt<Vec3D>
 barycentricCoord(Vec2F point,Vec2F v0,Vec2F v1,Vec2F v2)
 {return barycentricCoord(Vec2D(point),Vec2D(v0),Vec2D(v1),Vec2D(v2)); }
 
-// Homogenous plane representation from 3 points on plane:
-Vec4D
-cPlaneH(Vec3D p0,Vec3D p1,Vec3D p2);
+struct  Plane
+{
+    Vec3D           norm;       // Plane normal, NOT unit scaled
+    double          scalar;     // s such that: N * x + s = 0
+};
+
+// Plane from 3 points. Throws if points are colinear or coincident:
+Plane
+cPlane(Vec3D p0,Vec3D p1,Vec3D p2);
 
 // Returns the homogeneous coordinate of the intersection of a line through the origin with a plane.
 // The homogeneous component will be zero if there is no intersection. Otherwise, the dot product
 // of the intersection and the ray will determine the direction (along ray) to intersection.
 Vec4D
 linePlaneIntersect(
-    Vec3D        ray,        // Direction of ray emanating from origin. Does not need to be normalized
-    Vec4D        plane);     // Homogenous representation
+    Vec3D           ray,        // Direction of ray emanating from origin. Does not need to be normalized
+    Plane           plane);
 
 // Returns: 0: point not in triangle or degenerate triangle.
 //          1: point in triangle, CC winding

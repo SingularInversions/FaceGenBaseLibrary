@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,10 +16,19 @@
 
 namespace Fg {
 
+enum struct AlbedoMode {
+    map    = 0,
+    none   = 1,
+    byMesh = 2,
+    bySurf = 3,
+};
+
+Ustrings     cAlbedoModeLabels();
+
 struct  RendOptions
 {
     bool            facets;
-    bool            useTexture;
+    AlbedoMode      albedoMode = AlbedoMode::map;
     bool            shiny;
     bool            wireframe;
     bool            flatShaded;
@@ -27,9 +36,7 @@ struct  RendOptions
     bool            markedVerts;
     bool            allVerts;
     bool            twoSided;
-    Vec3F           backgroundColor;
-    // Set by render impl not by client:
-    bool            colorBySurface=false;
+    Vec3F           backgroundColor;    // Elements in [0,1]
     bool            showAxes=false;
 };
 
@@ -54,30 +61,32 @@ struct  BackgroundImage
 
     DfgNPtrs
     deps() const
-    {return fgSvec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr); }
+    {return svec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr); }
 };
 
 struct  RendSurf
 {
-    NPT<ImgC4UC>            albedoMap;                  // Image can be empty
-    DfgFPtr                 albedoMapFlag;
+    NPTF<ImgC4UC>           smoothMapN;                 // Albedo without texture. Image can be empty
     NPT<bool>               albedoHasTransparencyN;     // False if image is empty
-    NPT<ImgC4UC>            specularMap;                // Image can be empty
-    DfgFPtr                 specularMapFlag;
+    NPTF<ImgC4UC>           modulationMapN;             // Image can be empty
+    NPTF<ImgC4UC>           specularMapN;               // Image can be empty
     // Can't use std::any here since 'gpuData' uses unique_ptr which can't be copy-constructed.
     // The shared_ptr used for Any's reference semantics is overkill (we only ever want one copy)
-    // so one could create a no-copy-constructor version of std::any and use that instead:
+    // so one could create a no-copy-constructor version of std::any and use that instead.
+    // Also note that on 3D window shutdown this data is destructed only after the GPU context is destructed,
+    // so the GPU object must hand that (D3D is easy since you just call ClearState()).
     Sptr<Any>               gpuData = std::make_shared<Any>();
 };
 typedef Svec<RendSurf>  RendSurfs;
 
 struct  RendMesh
 {
+    // The original mesh will be empty if this mesh is not currently selected:
     NPT<Mesh>               origMeshN;          // Should point to an Input if client wants mesh editing
     NPT<Vec3Fs>             posedVertsN;
     DfgFPtr                 surfVertsFlag;      // Must point to 'posedVertsN'
     DfgFPtr                 allVertsFlag;       // "
-    NPT<Normals>            normalsN;
+    NPT<MeshNormals>        normalsN;
     Sptr<Any>               gpuData = std::make_shared<Any>();
     RendSurfs               rendSurfs;
 };
@@ -110,29 +119,31 @@ struct  Gui3d : GuiBase
     // Unmodified sources. Must be defined unless labelled [opt]:
     NPT<RendMeshes>             rendMeshesN;
     NPT<size_t>                 panTiltMode;    // 0 - pan/tilt, 1 - unconstrained
-    RPT<FgLighting>             light;
-    NPT<Camera>             xform;
+    RPT<Lighting>               light;
+    NPT<Camera>                 xform;
     RPT<RendOptions>            renderOptions;
-    IPT<bool>                   colorBySurface {false}; // Render each surface within a mesh a different color
-    NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam
-    NPT<Ustring>               pointLabel;     // Label for surface point creation
+    NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam, 3 - fill
+    NPT<Ustring>                pointLabel;     // Label for surface point creation
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
-    struct  Capture {
-        Sfun<Vec2UI()>          getDims;
-        Sfun<ImgC4UC(Vec2UI)>       getImg;
+    struct  Capture {           // Put in struct for easier syntax to call a std::function
+        // First argument is desired pixel size, second is background transparency option:
+        Sfun<ImgC4UC(Vec2UI,bool)>   func;
     };
     // Will contain the functions for capturing current render once the GPU is set up:
     Sptr<Capture> const         capture = std::make_shared<Capture>();
+    // If defined, will be called with the filename when the user drops it on the 3D window:
+    Sfun<void(Ustring const &)> fileDragDrop;
+
 
     // Modified (by mouse/keyboard commands processed by viewport):
     IPT<double>                 panDegrees;
     IPT<double>                 tiltDegrees;
-    IPT<QuaternionD>          pose;
-    IPT<Vec2D>               trans;
+    IPT<QuaternionD>            pose;
+    IPT<Vec2D>                  trans;
     IPT<double>                 logRelSize;
-    IPT<Vec2UI>              viewportDims;
-    IPT<Ustring>               systemInfo;     // OpenGL system info placed here
+    IPT<Vec2UI>                 viewportDims;
+    IPT<Ustring>                gpuInfo;
 
     // Actions:
     struct  VertIdx
@@ -144,12 +155,12 @@ struct  Gui3d : GuiBase
     // WARNING: drag actions are subject to click actions before the drag since click actions
     // currently take effect on button down, not up:
     // bool: is shift key down as well ?
-    std::function<void(bool,VertIdx,Vec3F)>      ctlDragAction;          // Can be empty
-    IPT<BothButtonsDragAction>                      bothButtonsDragActionI;
-    IPT<ShiftRightDragAction>                       shiftRightDragActionI;
-    IPT<CtrlShiftMiddleClickAction>                 ctrlShiftMiddleClickActionI;
+    Sfun<void(bool,VertIdx,Vec3F)>  ctlDragAction;          // Can be empty
+    IPT<BothButtonsDragAction>      bothButtonsDragActionI;
+    IPT<ShiftRightDragAction>       shiftRightDragActionI;
+    IPT<CtrlShiftMiddleClickAction> shiftMiddleClickActionI;
 
-    Gui3d() {systemInfo.init(Ustring()); }
+    Gui3d() {}
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
@@ -187,7 +198,7 @@ struct  Gui3d : GuiBase
     ctrlShiftRightDrag(Vec2UI winSize,Vec2I delta);
 
 private:
-    VertIdx         lastCtlClick;
+    VertIdx             lastCtlClick;
 };
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -146,15 +146,15 @@ struct  FgClustDispatcherImpl : FgClustDispatcher
         // Check for errors within the receive threads;
         static String       hdrSer = "\26\0\\0\0\0\0\0\0serialization::archive";    // Character literals in octal
         for (size_t mm=0; mm<msgsRecv.size(); ++mm)
-            if (!fgBeginsWith(msgsRecv[mm],hdrSer))
-                fgThrow("Cluster worker "+toString(mm),msgsRecv[mm]);
+            if (!beginsWith(msgsRecv[mm],hdrSer))
+                fgThrow("Cluster worker "+toStr(mm),msgsRecv[mm]);
     }
 };
 
 std::shared_ptr<FgClustDispatcher>
 fgClustDispatcher(Strings const & hostnames,uint16 port)
 {
-    return std::make_shared<FgClustDispatcherImpl>(hostnames,toString(port));
+    return std::make_shared<FgClustDispatcherImpl>(hostnames,toStr(port));
 }
 
 }

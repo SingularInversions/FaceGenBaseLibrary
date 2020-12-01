@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,31 +25,26 @@
 #define FG3DMESH_HPP
 
 #include "FgStdLibs.hpp"
+#include "Fg3dSurface.hpp"
 #include "Fg3dPose.hpp"
 
 namespace Fg {
 
 struct  MarkedVert
 {
-    uint        idx;
+    size_t      idx;
     String      label;
 
-    MarkedVert() {}
+    MarkedVert() : idx {0} {}
+    explicit MarkedVert(size_t i) : idx(i) {}
+    MarkedVert(size_t i,String const & l) : idx(i), label(l) {}
 
-    explicit
-    MarkedVert(uint i) : idx(i) {}
-
-    MarkedVert(uint i,String const & l) : idx(i), label(l) {}
-
-    bool operator==(uint rhs) const
+    bool operator==(size_t rhs) const
     {return (idx == rhs); }
 
     bool operator==(String const & rhs) const
     {return (label == rhs); }
 };
-
-void    fgReadp(std::istream &,MarkedVert &);
-void    fgWritep(std::ostream &,const MarkedVert &);
 
 typedef Svec<MarkedVert>    MarkedVerts;
 
@@ -66,16 +61,23 @@ struct  Mesh
     Mesh() {}
 
     explicit
-    Mesh(const Vec3Fs & vts) : verts(vts) {}
+    Mesh(Vec3Fs const & vts) : verts(vts) {}
 
     explicit
-    Mesh(const TriSurf & ts) : verts(ts.verts), surfaces(fgSvec(Surf(ts.tris))) {}
+    Mesh(TriSurf const & ts) : verts{ts.verts}, surfaces{{Surf{ts.tris}}} {}
 
-    Mesh(const Vec3Fs & vts,const Vec3UIs & ts) : verts(vts), surfaces(fgSvec(Surf(ts))) {}
+    explicit
+    Mesh(QuadSurf const & qs) : verts{qs.verts}, surfaces{{Surf{qs.quads}}} {}
 
-    Mesh(const Vec3Fs & vts,const Surf & surf) : verts(vts), surfaces(fgSvec(surf)) {}
+    Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(svec(Surf(ts))) {}
 
-    Mesh(const Vec3Fs & vts,const Surfs & surfs) : verts(vts), surfaces(surfs) {}
+    Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
+
+    Mesh(Vec3Fs const & vts,Surf const & surf) : verts(vts), surfaces(svec(surf)) {}
+
+    Mesh(Vec3Fs const & vts,const Surfs & surfs) : verts(vts), surfaces(surfs) {}
+
+    Mesh(TriSurfFids const & tsf);
 
     // Total number of verts including target morph verts:
     size_t
@@ -87,7 +89,7 @@ struct  Mesh
 
     // Update base verts and all target morph verts:
     void
-    updateAllVerts(const Vec3Fs &);
+    updateAllVerts(Vec3Fs const &);
 
     uint
     numFacets() const;                  // tris plus quads over all surfaces
@@ -107,15 +109,15 @@ struct  Mesh
     size_t
     numQuads() const;                   // Just the number of quads over all surfaces
 
-    const Surf &
+    Surf const &
     surface(Ustring const & surfName) const
-    {return fgFindFirst(surfaces,surfName); }
+    {return findFirst(surfaces,surfName); }
 
     size_t
     surfPointNum() const;              // Over all surfaces
 
     Vec3F
-    surfPointPos(const Vec3Fs & verts,size_t num) const;
+    surfPointPos(Vec3Fs const & verts,size_t num) const;
 
     Vec3F
     surfPointPos(size_t num) const
@@ -125,17 +127,23 @@ struct  Mesh
     surfPointPos(String const & label) const;
 
     LabelledVerts
-    surfPointsAsVertLabels() const;
+    surfPointsAsLabelledVerts() const;
 
     Vec3Fs
     surfPointPositions(Strings const & labels) const;
 
+    Vec3Fs
+    surfPointPositions() const;
+
     Vec3F
     markedVertPos(String const & name_) const
-    {return verts[fgFindFirst(markedVerts,name_).idx]; }
+    {return verts[findFirst(markedVerts,name_).idx]; }
 
     Vec3Fs
     markedVertPositions() const;        // Return positions of all marked verts
+
+    LabelledVerts
+    markedVertsAsLabelledVerts() const;
 
     void
     addMarkedVert(Vec3F pos,String const & label)
@@ -206,23 +214,23 @@ struct  Mesh
     // Morph using member base and target vertices:
     void
     morph(
-        const Floats &      coord,
+        Floats const &      coord,
         Vec3Fs &            outVerts)       // RETURNED
         const;
 
     // Morph using given base and target vertices:
     void
     morph(
-        const Vec3Fs &      allVerts,       // Must have same number of verts as base plus targets
-        const Floats &      coord,          // Combined morph coordinate over delta then targer morphs
+        Vec3Fs const &      allVerts,       // Must have same number of verts as base plus targets
+        Floats const &      coord,          // Combined morph coordinate over delta then targer morphs
         Vec3Fs &            outVerts)       // RETURNED. Same size as base verts
         const;
 
     // Morph using member base and target vertices:
     Vec3Fs
     morph(
-        const Floats &      deltaMorphCoord,
-        const Floats &      targMorphCoord)
+        Floats const &      deltaMorphCoord,
+        Floats const &      targMorphCoord)
         const;
 
     // Apply just a single morph by its universal index (ie over deltas & targets):
@@ -234,11 +242,11 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorph(const Morph & deltaMorph);
+    addDeltaMorph(Morph const & deltaMorph);
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorphFromTarget(Ustring const & name,const Vec3Fs & targetShape);
+    addDeltaMorphFromTarget(Ustring const & name,Vec3Fs const & targetShape);
 
     // Overwrites any existing morph of the same name:
     void
@@ -246,21 +254,19 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addTargMorph(Ustring const & name,const Vec3Fs & targetShape);
+    addTargMorph(Ustring const & name,Vec3Fs const & targetShape);
 
     Vec3Fs
-    poseShape(const Vec3Fs & allVerts,const std::map<Ustring,float> & poseVals) const;
+    poseShape(Vec3Fs const & allVerts,const std::map<Ustring,float> & poseVals) const;
 
     // EDITING:
 
     void
     addSurfaces(const Surfs & s);
 
-    void
-    transform(Mat33F xform);
-
-    void
-    transform(Affine3F xform);
+    void        scale(float fac);
+    void        transform(Mat33F xform);
+    void        transform(Affine3F xform);
 
     void
     convertToTris();
@@ -276,39 +282,36 @@ struct  Mesh
 typedef Svec<Mesh>   Meshes;
 
 std::ostream &
-operator<<(std::ostream &,const Mesh &);
-
-void    fgReadp(std::istream &,Mesh &);
-void    fgWritep(std::ostream &,const Mesh &);
+operator<<(std::ostream &,Mesh const &);
 
 std::ostream &
-operator<<(std::ostream &,const Meshes &);
+operator<<(std::ostream &,Meshes const &);
 
 Mat32F
-cBounds(const Meshes & meshes);
+cBounds(Meshes const & meshes);
 
 size_t
-fgNumTriEquivs(const Meshes & meshes);
+fgNumTriEquivs(Meshes const & meshes);
 
 std::set<Ustring>
-fgMorphs(const Meshes & meshes);
+getMorphNames(Meshes const & meshes);
 
 inline
 PoseVals
-fgPoses(const Mesh & mesh)
-{return cat(fgPoses(mesh.deltaMorphs),fgPoses(mesh.targetMorphs)); }
+cPoseVals(Mesh const & mesh)
+{return cat(cPoseVals(mesh.deltaMorphs),cPoseVals(mesh.targetMorphs)); }
 
 PoseVals
-fgPoses(const Svec<Mesh> & meshes);
+cPoseVals(const Svec<Mesh> & meshes);
 
-inline
-AffineEw2F
-fgOtcsToIpcs(Vec2UI imgDims)
-{return AffineEw2F(Mat22F(0,1,1,0),Mat22F(0,imgDims[0],0,imgDims[1])); }
+TriSurf
+subdivide(TriSurf const & surf,bool loop);  // Loop subdivision of true, flat subdivision otherwise
 
 // If 'loop' not selected then just do flat subdivision:
-Mesh
-fgSubdivide(const Mesh &,bool loop = true);
+Mesh        subdivide(Mesh const &,bool loop = true);
+
+// Remove all tris that lie entirely outside the given bounds then remove all unused vertices:
+TriSurf     cullVolume(TriSurf surf,Mat32F const & bounds);
 
 }
 

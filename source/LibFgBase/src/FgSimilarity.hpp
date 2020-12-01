@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,6 +42,10 @@ struct  Similarity
     : scale(s), rot(r), trans(t)
     {FGASSERT(scale > 0); }
 
+    Mat<T,3,1>
+    operator*(Mat<T,3,1> vec) const
+    {return rot*vec*scale + trans; }
+
     // More efficient if applying the transform to many vectors:
     Affine<T,3>
     asAffine() const
@@ -62,16 +66,13 @@ struct  Similarity
 
     Similarity inverse() const
     {
-        // Let R' = R.inverse() then:
-        // Transform:   v' = sRv+t
-        //             (v'-t)/s = Rv
-        //              v = R'(v'-t)/s
-        //              v = R'v'/s - R't/s
-        Similarity    ret;
-        ret.scale = 1 / scale;
-        ret.rot = rot.inverse();
-        ret.trans = - ret.scale * (ret.rot * trans);
-        return ret;
+        // v' = sRv+t
+        // sRv = v' - t
+        // v = s'R'v' - s'R't
+        double              s = 1.0 / scale;
+        QuaternionD         r = rot.inverse();
+        Vec3D               t = r * trans * s;
+        return Similarity {s,r,-t};
     }
 
     // Be more explicit than using default constructor:
@@ -82,14 +83,9 @@ typedef Similarity<float>   SimilarityF;
 typedef Similarity<double>  SimilarityD;
 
 template<typename T>
-std::ostream &
-operator<<(std::ostream & os,const Similarity<T> & v)
-{
-    return
-        os << "Scale: " << v.scale << fgnl
-            << "Rotation: " << v.rot << fgnl
-            << "Translation: " << v.trans;
-}
+Mat<T,4,4>
+asHomogMat(Similarity<T> const & s)
+{return asHomogMat(s.asAffine()); }
 
 SimilarityD
 similarityRand();
@@ -101,6 +97,9 @@ inline
 SimilarityD
 similarityApprox(Vec3Fs const & d,Vec3Fs const & r)
 {return similarityApprox(scast<double>(d),scast<double>(r)); }
+
+SimilarityD
+interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
 
 // Reverse-order similarity transform: v' = sR(v + t) = sRv + sRt
 // Useful when you want the translation relative to the input shape (v) not the output (v').
@@ -115,7 +114,7 @@ struct  SimilarityRD
 
     SimilarityRD() {}
 
-    SimilarityRD(const Vec3D & t,const QuaternionD & r,double s)
+    SimilarityRD(Vec3D const & t,QuaternionD const & r,double s)
     : trans(t), rot(r), scale(s)
     {FGASSERT(s > 0.0); }
 
@@ -127,18 +126,31 @@ struct  SimilarityRD
     // More efficient if applying the transform to many vectors:
     Affine3D asAffine() const;
 
-    // Let R' = R.inverse() then:
-    // Transform:   v' = sR(v+t)
-    //              v' = sRv + sRt
-    //              sRv = v' - sRt
-    //              v = R'v'/s - t
-    SimilarityRD inverse() const
-    {return SimilarityRD(-trans,rot.inverse(),1.0/scale); }
+    // v' = sR(v+t)
+    // v' = sRv + sRt
+    // sRv = v' - sRt
+    // v = s'R'(v' - sRt)
+    SimilarityRD
+    inverse() const
+    {
+        Vec3D           t = rot * trans * scale;
+        return SimilarityRD {-t,rot.inverse(),1.0/scale};
+    }
 
-    static SimilarityRD identity() {return SimilarityRD(Vec3D(0),QuaternionD(),1.0); }
+    // Return inverse of only the linear component (no translation):
+    Mat33D
+    linearInverse() const
+    {return rot.inverse().asMatrix() / scale; }
+
+    static SimilarityRD
+    identity()
+    {return SimilarityRD {Vec3D(0),QuaternionD{},1}; }
 };
 
 typedef Svec<SimilarityRD>   SimilarityRDs;
+
+std::ostream &
+operator<<(std::ostream & os,SimilarityRD const & v);
 
 }
 

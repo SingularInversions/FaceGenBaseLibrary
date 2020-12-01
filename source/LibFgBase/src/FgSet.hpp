@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2018 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,18 +27,18 @@ struct  FgSet
     {return set.size(); }
 
     bool
-    contains(const T & val) const
+    contains(T const & val) const
     {
-        for (const T & s : set)
+        for (T const & s : set)
             if (s == val)
                 return true;
         return false;
     }
 
     void
-    insert(const T & val)
+    insert(T const & val)
     {
-        for (const T & s : set)
+        for (T const & s : set)
             if (s == val)
                 return;
         set.push_back(val);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,6 +32,11 @@ typedef std::int16_t    int16;
 typedef std::uint16_t   uint16;
 typedef std::int32_t    int32;
 typedef std::uint32_t   uint32;
+
+// Shorter names for numeric_limits:
+uint constexpr          uintMax = std::numeric_limits<uint>::max();
+float constexpr         floatMax = std::numeric_limits<float>::max();
+double constexpr        doubleMax = std::numeric_limits<double>::max();
 
 // Useful if we need to initialize templated members only in the case of builtins:
 template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
@@ -76,7 +81,10 @@ template<> struct Traits<uint>
     typedef uint64  Accumulator;
     typedef float   Floating;
 };
-#ifndef _MSC_VER    // MSVC does not consider size_t to be its own type but nix does:
+// MSVC and Android do not consider size_t to be its own type but others do:
+#ifdef _MSC_VER
+#elif defined(__ANDROID__)
+#else
 template<> struct Traits<size_t>
 {
     typedef size_t  Scalar;
@@ -129,39 +137,71 @@ inline To
 scast(From val)
 {return static_cast<To>(val); }
 
+#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
+
+// 'round' for static cast which does proper rounding when necessary:
 // No bounds checking is done by these 'round' functions:
-template<
-    typename To,
-    typename From,
-    // Use this implementation if the output type is signed:
-    typename std::enable_if<std::is_signed<To>::value,To>::type* =nullptr
+
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_signed),
+    FG_ENABLE_IF(To,is_integral)
 >
 inline To
 round(From v)
 {
     static_assert(std::is_floating_point<From>::value,"round only from floating point");
-    static_assert(std::is_integral<To>::value,"round only to integral");
     return static_cast<To>(std::floor(v+From(0.5)));
 }
 
-template<
-    typename To,
-    typename From,
-    // Use this implementation if the output type is unsigned:
-    typename std::enable_if<std::is_unsigned<To>::value,To>::type* =nullptr
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_unsigned),
+    FG_ENABLE_IF(To,is_integral)
 >
 inline To
 round(From v)
 {
     static_assert(std::is_floating_point<From>::value,"round only from floating point");
-    static_assert(std::is_integral<To>::value,"round only to integral");
     return static_cast<To>(v+From(0.5));
+}
+
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_floating_point)
+>
+inline To
+round(From v)
+{
+    static_assert(std::is_floating_point<From>::value,"round only from floating point");
+    return static_cast<To>(v);
 }
 
 template<typename To,typename From>
 void
 round_(From from,To & to)
 {to = round<To,From>(from); }
+
+template<typename T,
+    FG_ENABLE_IF(T,is_arithmetic)
+>
+T
+interpolate(T v0,T v1,float val)   // returns v0 when val==0, v1 when val==1
+{
+    float       v = static_cast<float>(v0) * (1.0f-val) + static_cast<float>(v1) * val;
+    return round<T,float>(v);
+}
+
+// Squared magnitude function base cases:
+inline float cMag(float v) {return v*v; }
+inline double cMag(double v) {return v*v; }
+inline double cMag(std::complex<double> v) {return std::norm(v); }
+template<typename T,size_t S>
+double
+cMag(std::array<T,S> const a)
+{
+    T       acc(0);
+    for (T const & e : a)
+        acc += cMag(e);
+    return acc;
+}
 
 }
 

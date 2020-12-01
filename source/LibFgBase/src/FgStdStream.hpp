@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -43,7 +43,7 @@ struct  Ofstream : public std::ofstream
 
     template<class T>
     void
-    writeb(const T & val)
+    writeb(T const & val)
     {write(reinterpret_cast<const char*>(&val),sizeof(val)); }
 };
 
@@ -52,7 +52,7 @@ struct  Ofstream : public std::ofstream
 
 template<class T>
 void
-fgWriteb(std::ostream & os,const T & val)    // Only use for builtins !
+fgWriteb(std::ostream & os,T const & val)    // Only use for builtins !
 {os.write(reinterpret_cast<const char*>(&val),sizeof(val)); }
 
 // Handle builtins:
@@ -79,7 +79,7 @@ fgWritep(std::ostream & os,Ustring const & s)
 
 template<class T>
 void
-fgWritep(std::ostream & os,const Svec<T> & vec)
+fgWritep(std::ostream & os,Svec<T> const & vec)
 {
     fgWritep(os,uint32(vec.size()));        // Always store size_t as 32 bit for 32/64 portability
     if (!vec.empty())
@@ -142,6 +142,13 @@ inline void fgReadp(std::istream & is,uint64 & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,float & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,double & val) {readb(is,val); }
 inline void fgReadp(std::istream & is,bool & val) {val = bool(fgReadt<uchar>(is)); }
+// MSVC and Android do not consider size_t to be its own type but others do:
+#ifdef _MSC_VER
+#elif defined(__ANDROID__)
+#else
+inline void fgWritep(std::ostream & os,size_t val) {fgWriteb(os,uint64(val)); }
+inline void fgReadp(std::istream & is,size_t & val) {uint64 tmp; readb(is,tmp); val = size_t(tmp); }
+#endif
 
 inline void
 fgReadp(std::istream & is,String & str)

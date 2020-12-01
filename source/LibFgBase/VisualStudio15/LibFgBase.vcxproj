@@ -22,6 +22,7 @@
     <ProjectGuid>{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}</ProjectGuid>
     <RootNamespace>LibFgBase</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -84,7 +85,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -106,7 +106,6 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -127,7 +126,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -151,7 +149,6 @@
       </DebugInformationFormat>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -196,7 +193,6 @@
     <ClInclude Include="..\src\FgAffine1.hpp" />
     <ClInclude Include="..\src\FgAffineC.hpp" />
     <ClInclude Include="..\src\FgAffineCwC.hpp" />
-    <ClInclude Include="..\src\FgAffineCwPreC.hpp" />
     <ClInclude Include="..\src\FgAny.hpp" />
     <ClInclude Include="..\src\FgApproxEqual.hpp" />
     <ClCompile Include="..\src\FgApproxFunc.cpp" />
@@ -234,8 +230,6 @@
     <ClInclude Include="..\src\FgDataflow.hpp" />
     <ClCompile Include="..\src\FgDiagnostics.cpp" />
     <ClInclude Include="..\src\FgDiagnostics.hpp" />
-    <ClCompile Include="..\src\FgDraw.cpp" />
-    <ClInclude Include="..\src\FgDraw.hpp" />
     <ClInclude Include="..\src\FgDynLib.h" />
     <ClCompile Include="..\src\FgException.cpp" />
     <ClInclude Include="..\src\FgException.hpp" />
@@ -286,6 +280,8 @@
     <ClCompile Include="..\src\FgImage.cpp" />
     <ClInclude Include="..\src\FgImage.hpp" />
     <ClInclude Include="..\src\FgImageBase.hpp" />
+    <ClCompile Include="..\src\FgImageDraw.cpp" />
+    <ClInclude Include="..\src\FgImageDraw.hpp" />
     <ClCompile Include="..\src\FgImageIo.cpp" />
     <ClInclude Include="..\src\FgImageIo.hpp" />
     <ClCompile Include="..\src\FgImageIoStb.cpp" />
@@ -335,6 +331,7 @@
     <ClInclude Include="..\src\FgRgba.hpp" />
     <ClCompile Include="..\src\FgSampler.cpp" />
     <ClInclude Include="..\src\FgSampler.hpp" />
+    <ClInclude Include="..\src\FgScaleTrans.hpp" />
     <ClInclude Include="..\src\FgScopeGuard.hpp" />
     <ClCompile Include="..\src\FgSerial.cpp" />
     <ClInclude Include="..\src\FgSerial.hpp" />
@@ -368,8 +365,6 @@
     <ClInclude Include="..\src\FgSystemInfo.hpp" />
     <ClInclude Include="..\src\FgTcp.hpp" />
     <ClCompile Include="..\src\FgTcpTest.cpp" />
-    <ClCompile Include="..\src\FgTensorC.cpp" />
-    <ClInclude Include="..\src\FgTensorC.hpp" />
     <ClInclude Include="..\src\FgTensorV.hpp" />
     <ClCompile Include="..\src\FgTestUtils.cpp" />
     <ClInclude Include="..\src\FgTestUtils.hpp" />
@@ -377,8 +372,6 @@
     <ClInclude Include="..\src\FgTime.hpp" />
     <ClInclude Include="..\src\FgTypes.hpp" />
     <ClInclude Include="..\src\FgVersion.hpp" />
-    <ClCompile Include="..\src\FgViz.cpp" />
-    <ClInclude Include="..\src\FgViz.hpp" />
     <ClInclude Include="..\src\FgWinSpecific.hpp" />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp" />
     <ClCompile Include="..\src\jpeg_mem_src.cpp" />

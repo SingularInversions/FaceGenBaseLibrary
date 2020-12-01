@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -34,69 +34,69 @@ struct  FgConsSrcDir
 };
 typedef Svec<FgConsSrcDir>    FgConsSrcDirs;
 
-struct  FgIncDir
+struct  IncDir
 {
     String      relPath;        // Relative to 'name/baseDir/' below. Can be empty.
     // The path of the actual include files relative to the above. This is NOT used as an
     // include path, but to locate the header files for build dependencies. Can be empty:
     String      relFiles;
     bool        transitive;     // True if the include path is public, false if private
-    FgIncDir() {}
-    FgIncDir(String const & r,bool t) : relPath(r), transitive(t) {}
-    FgIncDir(String const & r,String const & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
+    IncDir() {}
+    IncDir(String const & r,bool t) : relPath(r), transitive(t) {}
+    IncDir(String const & r,String const & f,bool t) : relPath(r), relFiles(f), transitive(t) {}
 };
-typedef Svec<FgIncDir>        FgIncDirs;
+typedef Svec<IncDir>        IncDirs;
 
-inline FgIncDirs fgIncDirs(Strings const & dirs)
+inline IncDirs fgIncDirs(Strings const & dirs)
 {
-    FgIncDirs   ret;
+    IncDirs   ret;
     for (String const & d : dirs)
-        ret.push_back(FgIncDir(d,true));
+        ret.push_back(IncDir(d,true));
     return ret;
 }
 
-struct  FgConsDef
+struct  ConsDef
 {
     String      name;
     bool        transitive;
 
-    FgConsDef() {}
-    FgConsDef(String const & n,bool t) : name(n), transitive(t) {}
+    ConsDef() {}
+    ConsDef(String const & n,bool t) : name(n), transitive(t) {}
 };
-typedef Svec<FgConsDef>   FgConsDefs;
+typedef Svec<ConsDef>   ConsDefs;
 
-inline FgConsDefs fgConsDefs(Strings const & defs)
+inline ConsDefs fgConsDefs(Strings const & defs)
 {
-    FgConsDefs  ret;
+    ConsDefs  ret;
     for (String const & d : defs)
-        ret.push_back(FgConsDef(d,true));
+        ret.push_back(ConsDef(d,true));
     return ret;
 }
 
-struct  FgProjDep
+struct  ProjDep
 {
     String          name;
     // Are include directories and macro defs from this project and those it depends on passed on
     // to dependents ? (ie. are they used by this project's hpp files rather than just cpp files ?):
     bool            transitive;
 
-    FgProjDep() {}
-    FgProjDep(String const & n,bool t) : name(n), transitive(t) {}
+    ProjDep() {}
+    ProjDep(String const & n,bool t) : name(n), transitive(t) {}
 };
-typedef Svec<FgProjDep>   FgProjDeps;
+typedef Svec<ProjDep>   ProjDeps;
 
-struct  FgConsProj
+struct  ConsProj
 {
     String              name;
     String              baseDir;        // Relative to 'name' dir. Can be empty. Otherwise includes trailing '/'
     FgConsSrcDirs       srcGroups;      // Can be empty for header-only libs (no library will be created)
-    FgIncDirs           incDirs;        // Relative to 'name/baseDir/'
-    FgConsDefs          defs;
+    IncDirs           incDirs;        // Relative to 'name/baseDir/'
+    ConsDefs          defs;
     // Projects on which this project directly depends, ie. directly uses include files from.
     // When those projects have outputs, they will be linked to. Indirect dependencies (either
     // via link-from-link or include-from-include) should not be put here as they are
     // automatically transitively determined:
-    FgProjDeps          projDeps;
+    ProjDeps          projDeps;
     Strings              binDllDeps;     // Binary-only DLL dependencies (ie not in 'projDeps' above).
     uint                warn = 4;       // Warning level [0 - 4] (if project has compile targets)
     // 'lib' - static library
@@ -106,9 +106,9 @@ struct  FgConsProj
     enum class Type { lib, dll, clp, gui };
     Type                type = Type::lib;
 
-    FgConsProj() {}
+    ConsProj() {}
 
-    FgConsProj(String const & n,String const & sbd) : name(n), baseDir(sbd) {}
+    ConsProj(String const & n,String const & sbd) : name(n), baseDir(sbd) {}
 
     bool isStaticLib() const {return (type==Type::lib); }
     bool isClExecutable() const {return (type==Type::clp); }
@@ -123,39 +123,39 @@ struct  FgConsProj
 
     void
     addIncDir(String const & relDir,bool transitive)
-    {incDirs.push_back(FgIncDir(relDir,transitive)); }
+    {incDirs.push_back(IncDir(relDir,transitive)); }
 
     void
     addIncDir(String const & relDir,String const & relFiles,bool transitive)
-    {incDirs.push_back(FgIncDir(relDir,relFiles,transitive)); }
+    {incDirs.push_back(IncDir(relDir,relFiles,transitive)); }
 
     void
     addDep(String const & depName,bool transitiveIncludesAndDefs)
-    {projDeps.push_back(FgProjDep(depName,transitiveIncludesAndDefs)); }
+    {projDeps.push_back(ProjDep(depName,transitiveIncludesAndDefs)); }
 
     String
     descriptor() const;             // Used to generate repeatable GUID
 };
 
-inline std::ostream & operator<<(std::ostream & os,FgConsProj::Type t) {return os << int(t); }
+inline std::ostream & operator<<(std::ostream & os,ConsProj::Type t) {return os << int(t); }
 
-typedef Svec<FgConsProj>  FgConsProjs;
+typedef Svec<ConsProj>  FgConsProjs;
 
 // The build construction data is diferent for the three cases of:
 // win: Windows - extra Win-specific libraries
 // nix: Linux, MacOS - extra nix-specific source folder within LibFgBase
 // cross: Cross-compile platforms (iOS, Android, wasm) - no DLLs, treat as static lib
-enum struct FgConsType { win, nix, cross };
+enum struct ConsType { win, nix, cross };
 
-inline std::ostream & operator<<(std::ostream & os,FgConsType t)
+inline std::ostream & operator<<(std::ostream & os,ConsType t)
 {return os << size_t(t); }
 
-struct  FgConsSolution
+struct  ConsSolution
 {
-    FgConsType          type;
+    ConsType          type;
     FgConsProjs         projects;
 
-    explicit FgConsSolution(FgConsType t) : type(t) {}
+    explicit ConsSolution(ConsType t) : type(t) {}
 
     void
     addAppClp(String const &  name,String const & lnkDep);
@@ -166,7 +166,7 @@ struct  FgConsSolution
     bool
     contains(String const & projName) const;
 
-    const FgConsProj &
+    const ConsProj &
     at(String const & projName) const;
 
     // Return transitive include directories, reverse topologically sorted. The 'fileDir'
@@ -192,7 +192,7 @@ struct  FgConsSolution
     getAllDeps(Strings const & projNames,bool dllSource=true) const;
 
 private:
-    FgConsProj
+    ConsProj
     addApp(String const & name,String const & lnkDep);
 
     Strings
@@ -209,14 +209,14 @@ private:
 };
 
 // Current dir must be ~repo/source/
-FgConsSolution
-fgGetConsData(FgConsType type);
+ConsSolution
+fgGetConsData(ConsType type);
 
 // Construct build files for given solution data (specific to platform type).
 // Current dir must be ~repo/source/
 // Returns true if any were modified
 bool
-fgConsBuildFiles(const FgConsSolution & sln);
+fgConsBuildFiles(ConsSolution const & sln);
 
 // Construct build files for all platforms:
 void

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,23 +14,25 @@
 #include "FgBuild.hpp"
 #include "FgVersion.hpp"
 #include "FgSystemInfo.hpp"
+#include "FgCl.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-void fg3dTest(CLArgs const &);
+void test3d(CLArgs const &);
 void fgBoostSerializationTest(CLArgs const &);
 void fgCmdTestDfg(CLArgs const &);
 void fgExceptionTest(CLArgs const &);
 void fgFileSystemTest(CLArgs const &);
 void fgOpenTest(CLArgs const &);
-void fgGeometryTest(CLArgs const &);
+void testGeometry(CLArgs const &);
 void fgGridTrianglesTest(CLArgs const &);
 void fgImageTest(CLArgs const &);
+void testKdTree(CLArgs const &);
 void fgMatrixSolverTest(CLArgs const &);
-void fgMathTest(CLArgs const &);
-void fgMatrixCTest(CLArgs const &);
+void testMath(CLArgs const &);
+void testMatrixC(CLArgs const &);
 void fgMatrixVTest(CLArgs const &);
 void fgMetaFormatTest(CLArgs const &);
 void fgMorphTest(CLArgs const &);
@@ -42,26 +44,26 @@ void fgSimilarityTest(CLArgs const &);
 void fgSimilarityApproxTest(CLArgs const &);
 void fgStdVectorTest(CLArgs const &);
 void fgStringTest(CLArgs const &);
-void fgTensorTest(CLArgs const &);
 
-Cmd fgSoftRenderTestInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
+Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
-vector<Cmd>
+Cmds
 fgCmdBaseTests()
 {
     Cmds      cmds {
-        {fg3dTest,"3d"},
+        {test3d,"3d"},
         {fgBoostSerializationTest,"boostSerialization"},
         {fgCmdTestDfg,"dataflow"},
         {fgExceptionTest,"exception"},
         {fgFileSystemTest,"filesystem"},
         {fgOpenTest,"open"},
-        {fgGeometryTest,"geometry"},
+        {testGeometry,"geometry"},
         {fgGridTrianglesTest,"gridTriangles"},
         {fgImageTest,"image"},
+        {testKdTree,"kd"},
         {fgMatrixSolverTest,"matSol","Matrix Solver"},
-        {fgMathTest,"math"},
-        {fgMatrixCTest,"matC","MatrixC"},
+        {testMath,"math"},
+        {testMatrixC,"matC","MatrixC"},
         {fgMatrixVTest,"matV","MatrixV"},
         {fgMetaFormatTest,"metaFormat"},
         {fgMorphTest,"morph"},
@@ -73,9 +75,8 @@ fgCmdBaseTests()
         {fgSimilarityApproxTest,"similarityApprox"},
         {fgStdVectorTest,"vector"},
         {fgStringTest,"string"},
-        {fgTensorTest,"tensor"}
     };
-    cmds.push_back(fgSoftRenderTestInfo());
+    cmds.push_back(testSoftRenderInfo());
     return cmds;
 }
 
@@ -103,7 +104,7 @@ sysinfo(CLArgs const &)
 {
     fgout
         << fgnl << "Computer name: " << fgComputerName()
-        << fgnl << "OS: " << fgOsName() << (fg64bitOS() ? " (64 bit)" : " (32 bit)")
+        << fgnl << "OS: " << osDescription()
         << fgnl << "CPU hardware threads: " << std::thread::hardware_concurrency()
         << fgnl << "Executable:" << fgpush
 #ifdef __APPLE__
@@ -115,15 +116,14 @@ sysinfo(CLArgs const &)
         << fgpop;
 }
 
-void fg3dTestMan(CLArgs const &);
+void testm3d(CLArgs const &);
 void fgClusterTest(CLArgs const &);
 void fgClusterTestm(CLArgs const &);
 void fgClusterDeployTestm(CLArgs const &);
 void fgCmdTestmCpp(CLArgs const &);
 void fg3dReadWobjTest(CLArgs const &);
 void fgRandomTest(CLArgs const &);
-void fgGeometryManTest(CLArgs const &);
-void fgSubdivisionTest(CLArgs const &);
+void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
 void fgImageTestm(CLArgs const &);
 
@@ -132,15 +132,14 @@ fgCmdBaseTestms()
 {
     Cmds      cmds {
         {testmGui,"gui"},
-        {fg3dTestMan,"3d"},
+        {testm3d,"3d"},
         {fgClusterTest,"cluster"},
         {fgClusterTestm,"clusterm"},
         {fgClusterDeployTestm,"clusterDeploy"},
         {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
         {fg3dReadWobjTest,"readWobj"},
         {fgRandomTest,"random"},
-        {fgGeometryManTest,"geometry"},
-        {fgSubdivisionTest,"subdivision"},
+        {testmGeometry,"geometry"},
         {fgTextureImageMappingRenderTest,"texturemap"},
         {fgImageTestm,"image"}
     };
@@ -158,7 +157,7 @@ fgCmdBaseTest(CLArgs const & args)
 
 void
 view(CLArgs const & args)
-{doMenu(args,fgCmdViewInfos()); }
+{doMenu(args,getViewCmds()); }
 
 /**
    \defgroup Base_Commands Base Library Command Line
@@ -168,19 +167,51 @@ void
 fgCmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
-        fgout << fgnl << "FaceGen Base Library CLI " << fgVersion(".") << " (" << fgCurrentBuildDescription() << ")"; 
-    vector<Cmd>   cmds;
-    cmds.push_back(fgCmdImgopsInfo());
-    cmds.push_back(fgCmdMeshopsInfo());
-    cmds.push_back(fgCmdMorphInfo());
-    cmds.push_back(fgCmdRenderInfo());
-    cmds.push_back(fgCmdTriexportInfo());
-    cmds.push_back(Cmd(fgCmdCons,"cons","Construct makefiles / solution file / project files"));
-    cmds.push_back(Cmd(sysinfo,"sys","Show system info"));
-    cmds.push_back(Cmd(fgCmdBaseTest,"test","Automated tests"));
-    cmds.push_back(Cmd(testm,"testm","Manual tests"));
-    cmds.push_back(Cmd(view,"view","Interactively view various file types"));
+        fgout << fgnl << "FaceGen Base Library CLI " << getSdkVersion(".") << " (" << getCurrentBuildDescription() << ")"; 
+    Cmds        cmds {
+        {getImgopsCmd()},
+        {getMeshopsCmd()},
+        {getMorphCmd()},
+        {getRenderCmd()},
+        {getTriExportCmd()},
+        {cmdCons,"cons","Construct makefiles / solution file / project files"},
+        {sysinfo,"sys","Show system info"},
+        {fgCmdBaseTest,"test","Automated tests"},
+        {testm,"testm","Manual tests"},
+        {view,"view","Interactively view various file types"}
+    };
+#ifdef _WIN32
+    cmds.push_back(getCompileShadersCmd());
+#endif
     doMenu(args,cmds);
+}
+
+Cmd
+getCompileShadersCmd()
+{
+    Cmd         ret;
+#ifdef _WIN32
+    ret = Cmd {
+        [](CLArgs const &)
+        {
+            PushDir     pd(dataDir()+"base/shaders/");
+            // Seems from online chat that the default optimization /O1 is no different than /O2 or /O3 ...
+            // /WX - warnings as errors
+            // CSO - compiled shader object (.fxc is legacy; effects compiler)
+            clRun("fxc /T vs_5_0 /E VSTransform /WX /Fo dx11_shared_VS.cso dx11_shared.hlsl");
+            clRun("fxc /T ps_5_0 /E PSOpaque /WX /Fo dx11_opaque_PS.cso dx11_opaque.hlsl");
+            clRun("fxc /T ps_5_0 /E PSTransparent /WX /Fo dx11_transparent_PS.cso dx11_transparent.hlsl");
+        //    clRun("fxc /T vs_5_0 /E VSResolve /WX /Fo dx11_resolve_VS.cso dx11_resolve.hlsl");
+        //    clRun("fxc /T ps_5_0 /E PSResolve /WX /Fo dx11_resolve_PS.cso dx11_resolve.hlsl");
+            clRun("fxc /T cs_5_0 /E CSResolve /WX /Fo dx11_resolve_CS.cso dx11_resolve.hlsl");
+        },
+        "d3d",
+        "Compile Direct3D shaders"
+    };
+#else
+    fgThrow("Shader compilation not supported on this platform");
+#endif
+    return ret;
 }
 
 }

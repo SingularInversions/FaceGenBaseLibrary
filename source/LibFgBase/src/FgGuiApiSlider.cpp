@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,7 @@ guiTickLabels(
     do {
         GuiTickLabel   t;
         t.pos = pos;
-        t.label = toString(pos);
+        t.label = toStrPrecision(pos,3);
         ret.push_back(t);
         pos += spacing;
     }
@@ -46,7 +46,7 @@ numberedLabels(Ustring const & baseLabel,size_t num)
     while ((tmp/=10) > 9)
         ++numDigits;
     for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(baseLabel+toStringDigits(ii,numDigits));
+        ret.push_back(baseLabel+toStrDigits(ii,numDigits));
     return ret;
 }
 
@@ -100,7 +100,7 @@ guiSliders(
 
 GuiSliders
 guiSliders(
-    const Ustrings &       labels,
+    Ustrings const &       labels,
     VecD2                range,
     double                  initVal,
     double                  tickSpacing,

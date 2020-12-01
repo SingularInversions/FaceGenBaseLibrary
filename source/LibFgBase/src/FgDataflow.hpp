@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -36,9 +36,8 @@
 
 namespace Fg {
 
-inline String
-signature(const boost::any & data)
-{return boost::core::demangled_name(data.type()); }
+String
+cSignature(boost::any const &);
 
 struct  DfgDependent;
 typedef std::weak_ptr<DfgDependent> DfgDPtr;
@@ -48,11 +47,11 @@ struct  DfgNode
 {
     virtual ~DfgNode() {}
     virtual void update() const = 0;
-    virtual const boost::any & getDataCref() const = 0;
+    virtual boost::any const & getDataCref() const = 0;
     virtual void addSink(const DfgDPtr &) = 0;
 };
 typedef std::shared_ptr<DfgNode>    DfgNPtr;
-typedef Svec<DfgNPtr>        DfgNPtrs;
+typedef Svec<DfgNPtr>               DfgNPtrs;
 
 struct  DfgDependent
 {
@@ -66,28 +65,28 @@ struct  DfgInput : DfgNode
 private:
     mutable boost::any          data;
     boost::any                  dataDefault;        // Can be empty if no default
-    DfgDPtrs                       sinks;              // Can be empty
+    DfgDPtrs                    sinks;              // Can be empty
 public:
     // Called with 'data' on destruct only if non-empty and 'data' non-empty. Can be used to save state:
-    std::function<void(const boost::any&)> onDestruct;
+    std::function<void(boost::any const&)> onDestruct;
 
     DfgInput() {}
-    template<class T> explicit DfgInput(const T & v) : data(v) {}
+    template<class T> explicit DfgInput(T const & v) : data(v) {}
 
     virtual                 ~DfgInput();
     virtual void            update() const {}
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void            addSink(const DfgDPtr & snk);
 
     void                    makeDirty() const;
     boost::any &            getDataRef() const;
-    template<class T> void  init(const T & val,bool setDefault=false)
+    template<class T> void  init(T const & val,bool setDefault=false)
     {data = val; if (setDefault) dataDefault = val; makeDirty(); }
     void                    setToDefault() const;      // Reset value to default if exists
 };
 typedef std::shared_ptr<DfgInput>   DfgIPtr;
 
-typedef std::function<void(const DfgNPtrs &,boost::any &)> DfgFunc;
+typedef std::function<void(DfgNPtrs const &,boost::any &)> DfgFunc;
 
 struct  DfgOutput : DfgNode, DfgDependent
 {
@@ -97,21 +96,22 @@ struct  DfgOutput : DfgNode, DfgDependent
     mutable boost::any          data;
     // Has data we depend on anywhere above this node in the graph been modified since 'func' last run:
     mutable bool                dirty = true;
+    mutable uint64              time = 0;
 
-    virtual ~DfgOutput() {}
+    virtual ~DfgOutput();
     virtual void update() const;
     virtual void markDirty() const;
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void addSink(const DfgDPtr & snk);
 
     void addSource(const DfgNPtr & src);
 };
 typedef std::shared_ptr<DfgOutput>  DfgOPtr;
 
-// Receptors are handles for dynamic dataflows to be connected to previously created objects that
-// need to use them. As a side-effect it makes the dataflow creation code simpler since they can be
-// passed as arguments already allocated, or returned already allocated, without knowing what type
-// of node they will be connected to:
+// Receptors are handles that can point to different node types. They make dataflow creation code
+// simpler since they can be passed as arguments (already allocated) without knowing what type
+// of node they will be connected to. They can also be held by function objects for dynamic
+// updates of the source (but they are not useful for dynamic updates within a DFG).
 struct  DfgReceptor : DfgNode, DfgDependent
 {
 private:
@@ -123,7 +123,7 @@ public:
     virtual ~DfgReceptor() {}
     virtual void update() const;
     virtual void markDirty() const;
-    virtual const boost::any & getDataCref() const;
+    virtual boost::any const & getDataCref() const;
     virtual void addSink(const DfgDPtr & snk);
     void setSource(DfgNPtr const & nptr);
 };
@@ -135,7 +135,7 @@ struct  DirtyFlag : DfgDependent
     DfgNPtrs                    sources;        // Cannot be empty
     mutable bool                dirty = true;
 
-    explicit DirtyFlag(const DfgNPtrs & srcs) : sources(srcs) {}
+    explicit DirtyFlag(DfgNPtrs const & srcs) : sources(srcs) {}
 
     virtual ~DirtyFlag() {}
     virtual void markDirty() const;
@@ -151,7 +151,8 @@ void addLink(const DfgNPtr & src,const DfgOPtr & snk);
 // Typed versions for static type checking. Client should always use this form:
 
 // Type-safe inputs:
-// * Allocate DfgInput in default constructor but do not initialize data/default within DfgInput.
+// * All constructors allocate DfgInput and contained data so we can never dereference null
+//   (although we may of course need to check if the contained data is empty).
 //   This way we don't have to pass back loads of pointers from the functions creating the GUI parts
 //   and assign them all to the right places; but can just pass them forward instead.
 // * Use 'init' or 'initSaved' to initialize the DfgInput data & default later if default constructed.
@@ -160,53 +161,53 @@ void addLink(const DfgNPtr & src,const DfgOPtr & snk);
 template<class T>
 struct  IPT
 {
-    DfgIPtr            ptr;
-    IPT() : ptr(std::make_shared<DfgInput>()) {}
+    DfgIPtr            ptr;                         // Never null and contained data never null
+    IPT() : ptr(std::make_shared<DfgInput>(T{})) {}
     explicit IPT(const DfgIPtr & n) : ptr(n) {}
     explicit IPT(T const & val) : ptr(std::make_shared<DfgInput>(val)) {}
     explicit IPT(T const & val,T const & defaultVal) : ptr(std::make_shared<DfgInput>(val,defaultVal)) {}
     // Must use one of these two before attempting to access values as they will allocate the
     // 'any' with the value and also set the default value. If it's an input for a dynamic window
     // then it's possible it could be initialized more than once:
-    void init(const T & val,bool setDefault=false) const {ptr->init(val,setDefault); }
+    void init(T const & val,bool setDefault=false) const {ptr->init(val,setDefault); }
     void initSaved(
-        const T &           defaultVal,             // Will be the initial value if no valid one is stored
-        Ustring const &    storeFile,
+        T const &           defaultVal,             // Will be the initial value if no valid one is stored
+        Ustring const &     storeFile,
         bool                binary=false)           // Store to binary format rather than XML for efficiency
     {
         FGASSERT(!storeFile.empty());
         ptr->init(defaultVal,true);
         if (binary) {
             if (pathExists(storeFile))
-                fgLoadPBin(storeFile,ref(),false);
-            ptr->onDestruct = [storeFile](const boost::any & v)
+                loadBsaPBin(storeFile,ref(),false);
+            ptr->onDestruct = [storeFile](boost::any const & v)
             {
                 if (v.empty())
-                    fgWarn("IPT onDestruct save with empty data",signature(v));
+                    fgWarn("IPT onDestruct save with empty data",cSignature(v));
                 else
-                    fgSavePBin(storeFile,boost::any_cast<const T &>(v),false);
+                    saveBsaPBin(storeFile,boost::any_cast<T const &>(v),false);
             };
         }
         else {
             Ustring        fname = storeFile + ".xml";
             if (pathExists(fname))
-                fgLoadXml(fname,ref(),false);
-            ptr->onDestruct = [fname](const boost::any & v)
+                loadBsaXml(fname,ref(),false);
+            ptr->onDestruct = [fname](boost::any const & v)
             {
                 if (v.empty())
-                    fgWarn("IPT onDestruct binary save with empty data",signature(v));
+                    fgWarn("IPT onDestruct binary save with empty data",cSignature(v));
                 else
-                    fgSaveXml(fname,boost::any_cast<const T &>(v),false);
+                    saveBsaXml(fname,boost::any_cast<T const &>(v),false);
             };
         }
     }
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
     // Value modification is still const because it's the value pointed to not the smart
     // pointer that is being modified. This is useful because we sometimes need this
     // object to be const - for example in a lambda capture:
     T &             ref() const {return boost::any_cast<T&>(ptr->getDataRef()); }
-    void set(const T & val) const {ref() = val; }           // Prefer assignment below for visual clarity
+    void set(T const & val) const {ref() = val; }           // Prefer assignment below for visual clarity
 };
 
 template<class T>
@@ -215,7 +216,7 @@ struct  OPT
     DfgOPtr            ptr;
     OPT() {}
     explicit OPT(const DfgOPtr & o) : ptr(o) {}
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
 };
 
@@ -225,7 +226,7 @@ struct  RPT
 {
     DfgRPtr            ptr;                            // Never null but what the DfgReceptor points to may be null.
     RPT() {ptr = std::make_shared<DfgReceptor>(); }    // Always allocated
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
 };
 
@@ -238,7 +239,7 @@ struct  NPT
     NPT(const OPT<T> & opt) : ptr(opt.ptr) {}
     NPT(const RPT<T> & rpt) : ptr(rpt.ptr) {}
     explicit NPT(const DfgNPtr & n) : ptr(n) {}
-    const T &       cref() const {return boost::any_cast<const T&>(ptr->getDataCref()); }
+    T const &       cref() const {return boost::any_cast<T const&>(ptr->getDataCref()); }
     T               val() const {return boost::any_cast<T>(ptr->getDataCref()); }
     // This will only return a valid pointer if the Node happens to be an DfgInput, otherwise, nullptr:
     T*              valPtr() const
@@ -262,14 +263,14 @@ connect(RPT<T> const & rpt,NPT<T> const & npt)
 // Can use instead of constructor for type deduction from argument:
 template<class T>
 IPT<T>
-makeIPT(const T & val)
+makeIPT(T const & val)
 {return IPT<T>(std::make_shared<DfgInput>(val)); }
 
 template<class T>
 IPT<T>
 makeSavedIPT(
-    const T &           defaultVal,             // Will be the initial value if no valid one is stored
-    Ustring const &    storeFile,
+    T const &           defaultVal,             // Will be the initial value if no valid one is stored
+    Ustring const &     storeFile,
     bool                binary=false)           // Store to binary format rather than XML for efficiency
 {
     IPT<T>          ret;
@@ -277,26 +278,67 @@ makeSavedIPT(
     return ret;
 }
 
-DfgFPtr makeUpdateFlag(const DfgNPtrs & nptrs);
+template<class T>
+IPT<T>
+makeSavedIPTEub(
+    T const &           defaultVal,             // Will be the initial value if no valid one is stored
+    Ustring const &     storeFile,
+    T                   eub)
+{
+    IPT<T>          ret;
+    ret.initSaved(defaultVal,storeFile);
+    if (!(ret.cref() < eub))
+        ret.set(defaultVal);
+    return ret;
+}
+
+DfgFPtr makeUpdateFlag(DfgNPtrs const & nptrs);
 // Cannot make use of implicit conversion to NPT because of above overload:
-template<class T> DfgFPtr makeUpdateFlag(const IPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const OPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const NPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const RPT<T> & n) {return makeUpdateFlag(fgSvec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const IPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const OPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const NPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
+template<class T> DfgFPtr makeUpdateFlag(const RPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
 template<class T0,class T1> DfgFPtr makeUpdateFlag(const T0 & n0,const T1 & n1)
-{return makeUpdateFlag(fgSvec<DfgNPtr>(n0.ptr,n1.ptr)); }
+{return makeUpdateFlag(svec<DfgNPtr>(n0.ptr,n1.ptr)); }
+
+template<class T>
+struct      NPTF
+{
+    NPT<T>          node;
+    DfgFPtr         flag;
+
+    NPTF() {}
+    NPTF(NPT<T> const & n) : node{n}, flag{makeUpdateFlag(n)} {}
+
+    void
+    operator=(NPT<T> const & n)
+    {
+        node = n;
+        flag = makeUpdateFlag(n);
+    }
+
+    bool
+    checkUpdate() const
+    {return flag->checkUpdate(); }
+
+    T const &       cref() const
+    {
+        flag->checkUpdate();
+        return node.cref();
+    }
+};
 
 // Traverses up the tree to set all inputs to the default value:
-void setInputsToDefault(const DfgNPtrs &);
+void setInputsToDefault(DfgNPtrs const &);
 
 template<class T>
 void
-adapterCollate(const DfgNPtrs & srcs,boost::any & snk)
+adapterCollate(DfgNPtrs const & srcs,boost::any & snk)
 {
     Svec<T> &    out = boost::any_cast<Svec<T> &>(snk);
     out.resize(srcs.size());
     for (size_t ii=0; ii<out.size(); ++ii)
-        out[ii] = boost::any_cast<const T &>(srcs[ii]->getDataCref());
+        out[ii] = boost::any_cast<T const &>(srcs[ii]->getDataCref());
 }
 
 template<class T>
@@ -316,11 +358,11 @@ linkCollate(const Svec<NPT<T> > & ins = Svec<NPT<T> >())
 template<class T>
 OPT<Svec<T> >
 linkCollate(const Svec<IPT<T> > & ins)
-{return linkCollate(fgMapConvert<IPT<T>,NPT<T> >(ins)); }
+{return linkCollate(mapConvert<IPT<T>,NPT<T> >(ins)); }
 
 template<class In,class Out>
 void
-adapterN(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const Svec<In> &)> fn)
+adapterN(DfgNPtrs const & srcs,boost::any & snk,std::function<Out(const Svec<In> &)> fn)
 {
     Svec<In>     args;
     args.reserve(srcs.size());
@@ -345,36 +387,22 @@ linkN(const Svec<NPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn
 template<class In,class Out>
 OPT<Out>
 linkN(const Svec<IPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn)
-{return linkN(fgMapConvert<IPT<In>,NPT<In> >(ins),fn); }
-
-template<class In,class Out>
-void
-adapter1(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const In &)> fn)
-{
-    FGASSERT(srcs.size() == 1);
-    const In &      in = boost::any_cast<const In &>(srcs[0]->getDataCref());
-    snk = fn(in);
-}
+{return linkN(mapConvert<IPT<In>,NPT<In> >(ins),fn); }
 
 template<class In,class Out>
 OPT<Out>
 link1(const NPT<In> & in,const std::function<Out(const In &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapter1<In,Out>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 1);
+        In const &          in = boost::any_cast<const In &>(srcs[0]->getDataCref());
+        snk = fn(in);
+    };
     op->sources.push_back(in.ptr);
     in.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class In,class Out>
-void
-adapter1_(const DfgNPtrs & srcs,boost::any & snk,std::function<void(const In &,Out &)> fn)
-{
-    FGASSERT(srcs.size() == 1);
-    const In &      in = boost::any_cast<const In &>(srcs[0]->getDataCref());
-    Out &           out = boost::any_cast<Out &>(snk);
-    fn(in,out);
 }
 
 template<class In,class Out>
@@ -383,20 +411,16 @@ link1_(const NPT<In> & in,const std::function<void(const In &,Out &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
-    op->func = std::bind(adapter1_<In,Out>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 1);
+        const In &      in = boost::any_cast<const In &>(srcs[0]->getDataCref());
+        Out &           out = boost::any_cast<Out &>(snk);
+        fn(in,out);
+    };
     op->sources.push_back(in.ptr);
     in.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1>
-void
-adapter2(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const In0 &,const In1 &)> fn)
-{
-    FGASSERT(srcs.size() == 2);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    snk = fn(in0,in1);
 }
 
 template<class Out,class In0,class In1>
@@ -404,23 +428,18 @@ OPT<Out>
 link2(const NPT<In0> & in0,const NPT<In1> & in1,const std::function<Out(const In0 &,const In1 &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapter2<Out,In0,In1>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 2);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        snk = fn(in0,in1);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     in0.ptr->addSink(op);
     in1.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1>
-void
-adapter2_(const DfgNPtrs & srcs,boost::any & snk,std::function<void(const In0 &,const In1 &,Out &)> fn)
-{
-    FGASSERT(srcs.size() == 2);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    Out &           out = boost::any_cast<Out &>(snk);
-    fn(in0,in1,out);
 }
 
 template<class Out,class In0,class In1>
@@ -431,23 +450,19 @@ link2_(
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
-    op->func = std::bind(adapter2_<Out,In0,In1>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 2);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        Out &           out = boost::any_cast<Out &>(snk);
+        fn(in0,in1,out);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     in0.ptr->addSink(op);
     in1.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1,class In2>
-void
-adapter3(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const In0 &,const In1 &,const In2 &)> fn)
-{
-    FGASSERT(srcs.size() == 3);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
-    snk = fn(in0,in1,in2);
 }
 
 template<class Out,class In0,class In1,class In2>
@@ -457,7 +472,14 @@ link3(
     const std::function<Out(const In0 &,const In1 &,const In2 &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapter3<Out,In0,In1,In2>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 3);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
+        snk = fn(in0,in1,in2);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     op->sources.push_back(in2.ptr);
@@ -465,18 +487,6 @@ link3(
     in1.ptr->addSink(op);
     in2.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1,class In2>
-void
-adapter3_(const DfgNPtrs & srcs,boost::any & snk,std::function<void(const In0 &,const In1 &,const In2 &,Out &)> fn)
-{
-    FGASSERT(srcs.size() == 3);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
-    Out &           out = boost::any_cast<Out &>(snk);
-    fn(in0,in1,in2,out);
 }
 
 template<class Out,class In0,class In1,class In2>
@@ -487,7 +497,15 @@ link3_(
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
-    op->func = std::bind(adapter3_<Out,In0,In1,In2>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 3);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
+        Out &           out = boost::any_cast<Out &>(snk);
+        fn(in0,in1,in2,out);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     op->sources.push_back(in2.ptr);
@@ -495,18 +513,6 @@ link3_(
     in1.ptr->addSink(op);
     in2.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1,class In2,class In3>
-void
-adapter4(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &)> fn)
-{
-    FGASSERT(srcs.size() == 4);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
-    const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
-    snk = fn(in0,in1,in2,in3);
 }
 
 template<class Out,class In0,class In1,class In2,class In3>
@@ -516,7 +522,15 @@ link4(
     const std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapter4<Out,In0,In1,In2,In3>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 4);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
+        const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
+        snk = fn(in0,in1,in2,in3);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     op->sources.push_back(in2.ptr);
@@ -526,20 +540,6 @@ link4(
     in2.ptr->addSink(op);
     in3.ptr->addSink(op);
     return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1,class In2,class In3>
-void
-adapter4_(const DfgNPtrs & srcs,boost::any & snk,
-    std::function<void(const In0 &,const In1 &,const In2 &,const In3 &,Out &)> fn)
-{
-    FGASSERT(srcs.size() == 4);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
-    const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
-    Out &           out = boost::any_cast<Out &>(snk);
-    fn(in0,in1,in2,in3,out);
 }
 
 template<class Out,class In0,class In1,class In2,class In3>
@@ -550,7 +550,16 @@ link4_(
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
-    op->func = std::bind(adapter4_<Out,In0,In1,In2,In3>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 4);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
+        const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
+        Out &           out = boost::any_cast<Out &>(snk);
+        fn(in0,in1,in2,in3,out);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     op->sources.push_back(in2.ptr);
@@ -563,26 +572,22 @@ link4_(
 }
 
 template<class Out,class In0,class In1,class In2,class In3,class In4>
-void
-adapter5(const DfgNPtrs & srcs,boost::any & snk,std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &,const In4 &)> fn)
-{
-    FGASSERT(srcs.size() == 5);
-    const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
-    const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
-    const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
-    const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
-    const In4 &     in4 = boost::any_cast<const In4 &>(srcs[4]->getDataCref());
-    snk = fn(in0,in1,in2,in3,in4);
-}
-
-template<class Out,class In0,class In1,class In2,class In3,class In4>
 OPT<Out>
 link5(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,const NPT<In4> & in4,
     const std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &,const In4 &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapter5<Out,In0,In1,In2,In3,In4>,std::placeholders::_1,std::placeholders::_2,fn);
+    op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
+    {
+        FGASSERT(srcs.size() == 5);
+        const In0 &     in0 = boost::any_cast<const In0 &>(srcs[0]->getDataCref());
+        const In1 &     in1 = boost::any_cast<const In1 &>(srcs[1]->getDataCref());
+        const In2 &     in2 = boost::any_cast<const In2 &>(srcs[2]->getDataCref());
+        const In3 &     in3 = boost::any_cast<const In3 &>(srcs[3]->getDataCref());
+        const In4 &     in4 = boost::any_cast<const In4 &>(srcs[4]->getDataCref());
+        snk = fn(in0,in1,in2,in3,in4);
+    };
     op->sources.push_back(in0.ptr);
     op->sources.push_back(in1.ptr);
     op->sources.push_back(in2.ptr);

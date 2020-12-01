@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,23 +17,44 @@ using namespace std;
 
 namespace Fg {
 
+static bool
+isLetter(char c)
+{return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'))); }
+
+static bool
+isDigitLetterDashUnderscore(char c)
+{return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
+
+static bool
+isWhitespaceOrInvalid(char c)
+{return ((c < 0x21) || (c > 0x7E)); }
+
+bool
+containsOnlyDigits(String const & str)
+{
+    for (char c : str)
+        if (!isDigit(c))
+            return false;
+    return true;
+}
+
 Strings
-fgTokenize(string const & str)
+tokenize(string const & str)
 {
     Strings      ret;
     string      acc;
     for (char c : str) {
-        if (fgIsWhitespaceOrInvalid(c)) {
+        if (isWhitespaceOrInvalid(c)) {
             if (!acc.empty()) {
                 ret.push_back(acc);
                 acc.clear();
             }
         }
-        else if (fgIsDigitLetterDashUnderscore(c)) {
+        else if (isDigitLetterDashUnderscore(c)) {
             if (acc.empty())
                 acc.push_back(c);
             else {
-                if (fgIsDigitLetterDashUnderscore(acc.back()))
+                if (isDigitLetterDashUnderscore(acc.back()))
                     acc.push_back(c);
                 else {
                     ret.push_back(acc);
@@ -75,10 +96,10 @@ splitLines(string const & src)
     return ret;
 }
 
-FgStr32s
+String32s
 splitLines(const u32string & src,bool incEmpty)
 {
-    FgStr32s            ret;
+    String32s            ret;
     size_t              base = 0;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
@@ -91,10 +112,10 @@ splitLines(const u32string & src,bool incEmpty)
 }
 
 Ustrings
-fgSplitLinesUtf8(string const & utf8,bool includeEmptyLines)
+splitLinesUtf8(string const & utf8,bool includeEmptyLines)
 {
     Ustrings               ret;
-    FgStr32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
+    String32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
         ret[ii] = Ustring(res[ii]);
@@ -109,7 +130,7 @@ consumeCrLf(const u32string & in,size_t & idx)    // Current idx must point to C
     if (idx == in.size())
         return;
     char32_t        ch1 = in[idx];
-    if (fgIsCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
+    if (isCrLf(ch1) && (ch0 != ch1))            // Allow for both CR/LF (Windows) and LF/CR (RISC OS)
         ++idx;
     return;
 }
@@ -134,7 +155,7 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
                     return ret;         // End of quoted field
             }
             else
-                ret += fgToUtf8(ch);
+                ret += toUtf8(ch);
         }
     }
     else {                             // Unquoted field
@@ -142,9 +163,9 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
             if (idx == in.size())
                 return ret;
             char32_t    ch = in[idx];
-            if ((ch == ',') || (fgIsCrLf(ch)))
+            if ((ch == ',') || (isCrLf(ch)))
                 return ret;
-            ret += fgToUtf8(ch);
+            ret += toUtf8(ch);
             ++idx;
         }
     }
@@ -157,7 +178,7 @@ csvGetLine(
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     Strings      ret;
-    if (fgIsCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
+    if (isCrLf(in[idx])) {  // Handle special case of empty line to avoid interpreting it as single empty field
         consumeCrLf(in,idx);
         return ret;
     }
@@ -165,7 +186,7 @@ csvGetLine(
         ret.push_back(csvGetField(in,idx));
         if (idx == in.size())
             return ret;
-        if (fgIsCrLf(in[idx])) {
+        if (isCrLf(in[idx])) {
             consumeCrLf(in,idx);
             return ret;
         }
@@ -179,10 +200,10 @@ csvGetLine(
 }
 
 Stringss
-fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
+loadCsv(Ustring const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    u32string       data = fgToUtf32(fgSlurp(fname));
+    u32string       data = toUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -196,11 +217,11 @@ fgLoadCsv(Ustring const & fname,size_t fieldsPerLine)
 }
 
 map<string,Strings>
-fgLoadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
+loadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
-    u32string           data = fgToUtf32(fgSlurp(fname));
+    u32string           data = toUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings          line = csvGetLine(data,idx);
@@ -221,19 +242,19 @@ string
 csvField(string const & data)
 {
     string          ret = "\"";
-    u32string       utf32 = fgToUtf32(data);
+    u32string       utf32 = toUtf32(data);
     for (char32_t ch32 : utf32) {
         if (ch32 == char32_t('"'))      // VS2013 doesn't support char32_t literal U
             ret += "\"\"";
         else
-            ret += fgToUtf8(ch32);
+            ret += toUtf8(ch32);
     }
     ret += "\"";
     return ret;
 }
 
 void
-fgSaveCsv(Ustring const & fname,const Stringss & csvLines)
+saveCsv(Ustring const & fname,const Stringss & csvLines)
 {
     Ofstream      ofs(fname);
     for (Strings line : csvLines) {
@@ -268,7 +289,7 @@ splitChar(string const & str,char ch,bool ie)
 }
 
 Strings
-fgWhiteBreak(string const & str)
+splitWhitespace(string const & str)
 {
     Strings  retval;
     bool            symbolFlag = false,
@@ -320,7 +341,7 @@ void
 fgTestmLoadCsv(CLArgs const & args)
 {
     Syntax        syntax(args,"<file>.csv");
-    Stringss         data = fgLoadCsv(syntax.next());
+    Stringss         data = loadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
         Strings const &  fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
@@ -331,7 +352,7 @@ fgTestmLoadCsv(CLArgs const & args)
 }
 
 string
-fgAsciify(string const & in)
+asciify(string const & in)
 {
     string          ret;
     map<char32_t,char>  hg;     // homoglyph map
@@ -377,9 +398,9 @@ fgAsciify(string const & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    u32string       utf32 = fgToUtf32(in);
+    u32string       utf32 = toUtf32(in);
     for (char32_t ch32 : utf32) {
-        string  utf8 = fgToUtf8(ch32);
+        string  utf8 = toUtf8(ch32);
         if (utf8.size() == 1)
             ret.push_back(utf8[0]);
         else {
@@ -394,7 +415,7 @@ fgAsciify(string const & in)
 }
 
 u32string
-fgReplace(const u32string & str,char32_t a,char32_t b)
+replaceAll(const u32string & str,char32_t a,char32_t b)
 {
     u32string       ret;
     ret.reserve(str.size());

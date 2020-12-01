@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,7 +18,7 @@ namespace Fg {
 
 inline
 size_t
-fgTensorIdx(const Sizes & dims,const Sizes & coord)
+cTensorIdx(Sizes const & dims,Sizes const & coord)
 {
     FGASSERT(coord.size() == dims.size());
     size_t          idx = 0,
@@ -32,19 +32,19 @@ fgTensorIdx(const Sizes & dims,const Sizes & coord)
 }
 
 template <class T>
-struct  FgTensorV
+struct  Tensor
 {
     Sizes             dims;           // From minor to major (in terms of 'data' layout)
     Svec<T>           data;
 
-    FgTensorV() {}                                  // Uninitialized is not a valid tensor value
+    Tensor() {}                                  // Uninitialized is not a valid tensor value
 
-    explicit FgTensorV(const Sizes & d) : dims(d)
+    explicit Tensor(Sizes const & d) : dims(d)
     {data.resize(fgProduct(dims),0); }              // 'fgProduct' returns 1 for zero-size 'dims'
 
-    explicit FgTensorV(T v) : data(1,v) {}          // Scalar
+    explicit Tensor(T v) : data(1,v) {}          // Scalar
 
-    FgTensorV(const Sizes & dims_,const Svec<T> & data_) : dims(dims_), data(data_)
+    Tensor(Sizes const & dims_,Svec<T> const & data_) : dims(dims_), data(data_)
     {FGASSERT(data.size() == fgProduct(dims)); }
 
     T
@@ -52,38 +52,38 @@ struct  FgTensorV
     {FGASSERT(dims.empty() && !data.empty()); return data[0]; }
 
     T &
-    operator[](const Sizes & coord)       // Similar to matrix classes, coordinate elements from minor to major
+    operator[](Sizes const & coord)       // Similar to matrix classes, coordinate elements from minor to major
     {
-        size_t      idx = fgTensorIdx(dims,coord);
+        size_t      idx = cTensorIdx(dims,coord);
         FGASSERT(idx < data.size());
         return data[idx];
     }
 
-    const T &
-    operator[](const Sizes & coord) const
+    T const &
+    operator[](Sizes const & coord) const
     {
-        size_t      idx = fgTensorIdx(dims,coord);
+        size_t      idx = cTensorIdx(dims,coord);
         FGASSERT(idx < data.size());
         return data[idx];
     }
 };
 
-typedef FgTensorV<double>   FgTensorD;
-typedef FgTensorV<float>    FgTensorF;
+typedef Tensor<double>   TensorD;
+typedef Tensor<float>    TensorF;
 
 // Tensor iterator:
-struct  FgTitr
+struct  TsrIter
 {
-    Sizes             bounds;
-    Sizes             coord;
+    Sizes               bounds;
+    Sizes               coord;
     bool                valid = true;           // Not redundant due to wraparound
     bool                minorToMajor = true;    // 'bounds' and 'coord' are minor to major. Vice versa if false.
 
     explicit
-    FgTitr(const Sizes & b) : bounds(b), coord(b.size(),0)
+    TsrIter(Sizes const & b) : bounds(b), coord(b.size(),0)
     {FGASSERT(fgProduct(b) > 0); }
 
-    FgTitr(const Sizes & b,bool minorToMajor_)
+    TsrIter(Sizes const & b,bool minorToMajor_)
         : bounds(b), coord(b.size(),0), minorToMajor(minorToMajor_)
         {FGASSERT(fgProduct(b) > 0); }
 
@@ -103,7 +103,7 @@ struct  FgTitr
         return false;
     }
 
-    const Sizes &
+    Sizes const &
     operator()() const
     {return coord; }
 
