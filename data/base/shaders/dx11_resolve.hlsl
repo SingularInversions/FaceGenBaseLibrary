@@ -19,13 +19,15 @@ void CSResolve(uint3 id : SV_DispatchThreadID) {
     float4 backBuffer = BackBuffer[id.xy];
     float4 resolveBuffer = float4(0.0, 0.0, 0.0, 0.0f);
     
+    uint headOfList = HeadPointersSRV[id.xy];
+    if (headOfList == 0xFFFFFFFF)
+        return;
+     
     ListSubNode nodes[FRAGMENT_COUNT];   
     for (uint sampleIdx = 0; sampleIdx < MSAA_SAMPLE_COUNT; sampleIdx++) {
        
         uint count = 0;
-        uint nodeIdx = HeadPointersSRV[id.xy];
-        if (nodeIdx == 0xFFFFFFFF)
-            return;
+        uint nodeIdx = headOfList;
             
         while (nodeIdx != 0xFFFFFFFF && count < FRAGMENT_COUNT) {
             ListNode node = LinkedListSRV[nodeIdx];

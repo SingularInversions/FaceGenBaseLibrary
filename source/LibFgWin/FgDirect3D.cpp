@@ -180,6 +180,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
     pMSAAResolver = std::make_unique<MSAAResolver>();
     pPSOWireFrame = std::make_unique<GraphicsPSO>();
     pPSOPoints    = std::make_unique<GraphicsPSO>();
+    pPSOImage = std::make_unique<GraphicsPSO>();
     pPSOGeometryOpaqueCullNone = std::make_unique<GraphicsPSO>();
     pPSOGeometryOpaqueCullBack = std::make_unique<GraphicsPSO>();
     pPSOGeometryTransparent = std::make_unique<GraphicsPSO>();
@@ -383,6 +384,60 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
         pPSOWireFrame->pDepthStencilState = pDepthStencilState;
         pPSOWireFrame->pBlendState = pBlendState;
         pPSOWireFrame->PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_LINELIST;
+
+    }
+
+    //Create PSO Image
+    {
+        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryOpaqueCullBack->pInputLayout;
+        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryOpaqueCullBack->pVS;
+        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryOpaqueCullBack->pPS;
+        ComPtr<ID3D11RasterizerState>   pRasterState;
+        ComPtr<ID3D11DepthStencilState> pDepthStencilState;
+        ComPtr<ID3D11BlendState> pBlendState;
+
+        {
+            D3D11_RASTERIZER_DESC desc = {};
+            desc.FillMode = D3D11_FILL_WIREFRAME;
+            desc.CullMode = D3D11_CULL_NONE;
+            desc.FrontCounterClockwise = false;
+            desc.DepthClipEnable = true;
+            desc.AntialiasedLineEnable = true;
+            desc.MultisampleEnable = true;
+
+            FG_ASSERT_D3D(pDevice->CreateRasterizerState(&desc, pRasterState.GetAddressOf()));
+        }
+
+        {
+            D3D11_DEPTH_STENCIL_DESC desc = {};
+            desc.DepthEnable = false;
+            desc.StencilEnable = false;
+            desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
+            FG_ASSERT_D3D(pDevice->CreateDepthStencilState(&desc, pDepthStencilState.GetAddressOf()));
+        }
+
+        {
+            D3D11_BLEND_DESC desc = {};
+            desc.AlphaToCoverageEnable = false;
+            desc.IndependentBlendEnable = false;
+            desc.RenderTarget[0].BlendEnable = true;
+            desc.RenderTarget[0].SrcBlend = D3D11_BLEND_INV_SRC_ALPHA;
+            desc.RenderTarget[0].DestBlend = D3D11_BLEND_SRC_ALPHA;
+            desc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+            desc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+            desc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+            desc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+            desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+            FG_ASSERT_D3D(pDevice->CreateBlendState(&desc, pBlendState.GetAddressOf()));
+        }
+
+        pPSOImage->pInputLayout = pInputLayout;
+        pPSOImage->pVS = pVS;
+        pPSOImage->pPS = pPS;
+        pPSOImage->pRasterState = pRasterState;
+        pPSOImage->pDepthStencilState = pDepthStencilState;
+        pPSOImage->pBlendState = pBlendState;
+        pPSOImage->PrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
     }
 
@@ -1024,7 +1079,7 @@ D3d::renderBackBuffer(
 
     flatShaded = rendOpts.flatShaded;
 
-    auto const clearColor = { rendOpts.backgroundColor[0], rendOpts.backgroundColor[1], rendOpts.backgroundColor[2],backgroundTransparent ? 0.0f : 1.0f };
+    auto const clearColor = { rendOpts.backgroundColor[0], rendOpts.backgroundColor[1], rendOpts.backgroundColor[2], backgroundTransparent ? 0.0f : 1.0f };
     auto const viewport = CD3D11_VIEWPORT(0.0f, 0.0f, static_cast<float>(viewportSize[0]), static_cast<float>(viewportSize[1]));
     auto const scissor = CD3D11_RECT(0, 0, viewportSize[0], viewportSize[1]);
     auto const threadGroupsX = static_cast<uint32_t>(std::ceil(viewportSize[0] / 8.0f));
@@ -1043,14 +1098,13 @@ D3d::renderBackBuffer(
     pContext->PSSetSamplers(0, 1, pSamplerWrapLinear.GetAddressOf());
 
     if (bgImg.valid()) {
-        ID3D11RenderTargetView* ppRTVClear[] = { nullptr };
-        pPSOGeometryOpaqueCullNone->apply(pContext);
-        pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        pContext->OMSetDepthStencilState(pDepthStencilStateDisable.Get(), 0);
-      
+        ID3D11RenderTargetView*   ppRTVClear[] = { nullptr };
+        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
         pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), nullptr);
-        renderBgImg(bgi, viewportSize, false);
+        pPSOImage->apply(pContext);
+        renderBgImg(bgi, viewportSize, true);
         pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
+        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
     }
 
 

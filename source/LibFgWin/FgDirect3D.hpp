@@ -174,6 +174,7 @@ private:
     
     std::unique_ptr<MSAAResolver>   pMSAAResolver;
     std::unique_ptr<GraphicsPSO>    pPSOWireFrame;
+    std::unique_ptr<GraphicsPSO>    pPSOImage;
     std::unique_ptr<GraphicsPSO>    pPSOPoints;
     std::unique_ptr<GraphicsPSO>    pPSOGeometryOpaqueCullBack;
     std::unique_ptr<GraphicsPSO>    pPSOGeometryOpaqueCullNone;
