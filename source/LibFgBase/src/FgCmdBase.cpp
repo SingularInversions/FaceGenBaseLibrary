@@ -201,8 +201,6 @@ getCompileShadersCmd()
             clRun("fxc /T vs_5_0 /E VSTransform /WX /Fo dx11_shared_VS.cso dx11_shared.hlsl");
             clRun("fxc /T ps_5_0 /E PSOpaque /WX /Fo dx11_opaque_PS.cso dx11_opaque.hlsl");
             clRun("fxc /T ps_5_0 /E PSTransparent /WX /Fo dx11_transparent_PS.cso dx11_transparent.hlsl");
-        //    clRun("fxc /T vs_5_0 /E VSResolve /WX /Fo dx11_resolve_VS.cso dx11_resolve.hlsl");
-        //    clRun("fxc /T ps_5_0 /E PSResolve /WX /Fo dx11_resolve_PS.cso dx11_resolve.hlsl");
             clRun("fxc /T cs_5_0 /E CSResolve /WX /Fo dx11_resolve_CS.cso dx11_resolve.hlsl");
         },
         "d3d",

@@ -304,7 +304,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
             desc.CullMode = D3D11_CULL_NONE;
             desc.FrontCounterClockwise = false;
             desc.DepthClipEnable = true;
-            desc.DepthBias = -1000;
+            desc.DepthBias = 1000;
             desc.SlopeScaledDepthBias = 0.5f;
             desc.DepthBiasClamp = 0.001f;
             FG_ASSERT_D3D(pDevice->CreateRasterizerState(&desc, pRasterState.GetAddressOf()));
@@ -339,43 +339,12 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
     //Create PSO WireFrame
     {
 
-        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryOpaqueCullBack->pInputLayout;
-        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryOpaqueCullBack->pVS;
-        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryOpaqueCullBack->pPS;
-        ComPtr<ID3D11RasterizerState>   pRasterState;
-        ComPtr<ID3D11DepthStencilState> pDepthStencilState;
-        ComPtr<ID3D11BlendState> pBlendState;
-
-        {
-            D3D11_RASTERIZER_DESC desc = {};
-            desc.FillMode = D3D11_FILL_WIREFRAME;
-            desc.CullMode = D3D11_CULL_NONE;
-            desc.FrontCounterClockwise = false;
-            desc.DepthClipEnable = true;
-            desc.AntialiasedLineEnable = true;
-            desc.MultisampleEnable = true;         
-
-            FG_ASSERT_D3D(pDevice->CreateRasterizerState(&desc, pRasterState.GetAddressOf()));
-        }
-     
-        {
-            D3D11_DEPTH_STENCIL_DESC desc = {};
-            desc.DepthEnable = true;
-            desc.StencilEnable = false;
-            desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-            desc.DepthFunc = D3D11_COMPARISON_LESS;
-            FG_ASSERT_D3D(pDevice->CreateDepthStencilState(&desc, pDepthStencilState.GetAddressOf()));
-        }
-
-        {
-            D3D11_BLEND_DESC desc = {};
-            desc.AlphaToCoverageEnable = false;
-            desc.IndependentBlendEnable = false;
-            desc.RenderTarget[0].BlendEnable = false;
-            desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-            FG_ASSERT_D3D(pDevice->CreateBlendState(&desc, pBlendState.GetAddressOf()));
-        }
-
+        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryTransparent->pInputLayout; 
+        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryTransparent->pVS;
+        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryTransparent->pPS;
+        ComPtr<ID3D11RasterizerState>   pRasterState = pPSOGeometryTransparent->pRasterState;
+        ComPtr<ID3D11DepthStencilState> pDepthStencilState = pPSOGeometryTransparent->pDepthStencilState;
+        ComPtr<ID3D11BlendState> pBlendState = pPSOGeometryTransparent->pBlendState;
 
         pPSOWireFrame->pInputLayout = pInputLayout;
         pPSOWireFrame->pVS = pVS;
@@ -389,24 +358,13 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
 
     //Create PSO Image
     {
-        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryOpaqueCullBack->pInputLayout;
-        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryOpaqueCullBack->pVS;
-        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryOpaqueCullBack->pPS;
-        ComPtr<ID3D11RasterizerState>   pRasterState;
+        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryOpaqueCullNone->pInputLayout;
+        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryOpaqueCullNone->pVS;
+        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryOpaqueCullNone->pPS;
+        ComPtr<ID3D11RasterizerState>   pRasterState = pPSOGeometryOpaqueCullNone->pRasterState;
         ComPtr<ID3D11DepthStencilState> pDepthStencilState;
         ComPtr<ID3D11BlendState> pBlendState;
 
-        {
-            D3D11_RASTERIZER_DESC desc = {};
-            desc.FillMode = D3D11_FILL_WIREFRAME;
-            desc.CullMode = D3D11_CULL_NONE;
-            desc.FrontCounterClockwise = false;
-            desc.DepthClipEnable = true;
-            desc.AntialiasedLineEnable = true;
-            desc.MultisampleEnable = true;
-
-            FG_ASSERT_D3D(pDevice->CreateRasterizerState(&desc, pRasterState.GetAddressOf()));
-        }
 
         {
             D3D11_DEPTH_STENCIL_DESC desc = {};
@@ -443,40 +401,12 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
 
     //Create PSO Points
     {
-        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryOpaqueCullBack->pInputLayout;
-        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryOpaqueCullBack->pVS;
-        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryOpaqueCullBack->pPS;
-        ComPtr<ID3D11RasterizerState>   pRasterState;
-        ComPtr<ID3D11DepthStencilState> pDepthStencilState;
-        ComPtr<ID3D11BlendState> pBlendState;
-   
-        {
-            D3D11_RASTERIZER_DESC desc = {};
-            desc.FillMode = D3D11_FILL_SOLID;
-            desc.CullMode = D3D11_CULL_NONE;
-            desc.FrontCounterClockwise = false;
-            desc.DepthClipEnable = true;
-            FG_ASSERT_D3D(pDevice->CreateRasterizerState(&desc, pRasterState.GetAddressOf()));
-        }
-   
-        {
-            D3D11_DEPTH_STENCIL_DESC desc = {};
-            desc.DepthEnable = true;
-            desc.StencilEnable = false;
-            desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-            desc.DepthFunc = D3D11_COMPARISON_LESS;
-            FG_ASSERT_D3D(pDevice->CreateDepthStencilState(&desc, pDepthStencilState.GetAddressOf()));
-        }
-   
-        {
-            D3D11_BLEND_DESC desc = {};
-            desc.AlphaToCoverageEnable = false;
-            desc.IndependentBlendEnable = false;
-            desc.RenderTarget[0].BlendEnable = false;
-            desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-            FG_ASSERT_D3D(pDevice->CreateBlendState(&desc, pBlendState.GetAddressOf()));
-        }
-   
+        ComPtr<ID3D11InputLayout>  pInputLayout = pPSOGeometryTransparent->pInputLayout;
+        ComPtr<ID3D11VertexShader> pVS = pPSOGeometryTransparent->pVS;
+        ComPtr<ID3D11PixelShader>  pPS = pPSOGeometryTransparent->pPS;
+        ComPtr<ID3D11RasterizerState>   pRasterState = pPSOGeometryTransparent->pRasterState;
+        ComPtr<ID3D11DepthStencilState> pDepthStencilState = pPSOGeometryTransparent->pDepthStencilState;
+        ComPtr<ID3D11BlendState> pBlendState = pPSOGeometryTransparent->pBlendState;
    
         pPSOPoints->pInputLayout = pInputLayout;
         pPSOPoints->pVS = pVS;
@@ -926,16 +856,7 @@ D3d::setBgImage(BackgroundImage const & bgi)
 
 void
 D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass) {
-    WinPtr<ID3D11RasterizerState> rasterizer;
-    {
-        D3D11_RASTERIZER_DESC       rd = {};
-        rd.FillMode = D3D11_FILL_SOLID;
-        rd.CullMode = D3D11_CULL_NONE; // : D3D11_CULL_BACK;
-        ID3D11RasterizerState*      ptr;
-        pDevice->CreateRasterizerState(&rd,&ptr);
-        rasterizer.reset(ptr);
-    }
-    pContext->RSSetState(rasterizer.get());
+
     WinPtr<ID3D11Buffer>            bgImageVerts;
     {   // Background image polys:
         Vec2F        im = Vec2F(bgi.origDimsN.val()),
@@ -1079,7 +1000,7 @@ D3d::renderBackBuffer(
 
     flatShaded = rendOpts.flatShaded;
 
-    auto const clearColor = { rendOpts.backgroundColor[0], rendOpts.backgroundColor[1], rendOpts.backgroundColor[2], backgroundTransparent ? 0.0f : 1.0f };
+    auto const clearColor = { rendOpts.backgroundColor[0], rendOpts.backgroundColor[1], rendOpts.backgroundColor[2], 1.0f };
     auto const viewport = CD3D11_VIEWPORT(0.0f, 0.0f, static_cast<float>(viewportSize[0]), static_cast<float>(viewportSize[1]));
     auto const scissor = CD3D11_RECT(0, 0, viewportSize[0], viewportSize[1]);
     auto const threadGroupsX = static_cast<uint32_t>(std::ceil(viewportSize[0] / 8.0f));
@@ -1097,13 +1018,16 @@ D3d::renderBackBuffer(
     pContext->PSSetConstantBuffers(0, 1, pConstBuffer.GetAddressOf());
     pContext->PSSetSamplers(0, 1, pSamplerWrapLinear.GetAddressOf());
 
-    if (bgImg.valid()) {
-        ID3D11RenderTargetView*   ppRTVClear[] = { nullptr };
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
-        pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), nullptr);
+    ID3D11RenderTargetView* ppRTVClear[] = { nullptr };
+    ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
+    ID3D11UnorderedAccessView* ppUAVClear[] = { nullptr, nullptr };
+
+    //Opaque Render Pass
+    pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
+
+    if (bgImg.valid()) {   
         pPSOImage->apply(pContext);
         renderBgImg(bgi, viewportSize, true);
-        pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
         pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
     }
 
@@ -1111,40 +1035,19 @@ D3d::renderBackBuffer(
     if (rendOpts.facets) {
         this->updateScene(pConstBuffer, lighting, worldToD3vs, d3vsToD3ps);
 
-        {
-            ID3D11RenderTargetView*   ppRTVClear[] = { nullptr };
-            ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
-            rendOpts.twoSided ? pPSOGeometryOpaqueCullNone->apply(pContext) : pPSOGeometryOpaqueCullBack->apply(pContext);
-            pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
-            renderTris(rendMeshes, rendOpts, false);
-            pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
-            pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        }
+        rendOpts.twoSided ? pPSOGeometryOpaqueCullNone->apply(pContext) : pPSOGeometryOpaqueCullBack->apply(pContext);
+        renderTris(rendMeshes, rendOpts, false);
+        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
+       
+    }
 
-        {
-            ID3D11UnorderedAccessView* ppUAVClear[] = { nullptr, nullptr };
-            ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
-            pPSOGeometryTransparent->apply(pContext);
-            pContext->OMSetRenderTargetsAndUnorderedAccessViews(0, nullptr, pDSV_MSAA.Get(), 0, 2, std::data({ pUAVTextureHeadOIT.Get(), pUAVBufferLinkedListOIT.Get() }), std::data({ 0x0u, 0x0u }));
-            renderTris(rendMeshes, rendOpts, true);
-            pContext->OMSetRenderTargetsAndUnorderedAccessViews(0, nullptr, nullptr, 0, _countof(ppUAVClear), ppUAVClear, nullptr);
-            pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        }
-
-   }
-
-    if (rendOpts.surfPoints) {
-    
+    if (rendOpts.surfPoints) {   
         this->updateScene(pConstBuffer, Lighting{ Light{Vec3F{1,0,0}} }, worldToD3vs, d3vsToD3ps);
     
-        ID3D11RenderTargetView*   ppRTVClear[] = { nullptr };
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
-
         ID3D11ShaderResourceView* mapViews[] = { whiteMap.view.get(),  blackMap.view.get(), noModulationMap.view.get() }; 
         pPSOGeometryOpaqueCullBack->apply(pContext);    
         pContext->PSSetShaderResources(0, _countof(mapViews), mapViews);
-        pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
-   
+     
         for (RendMesh const& rendMesh : rendMeshes) {
             Mesh const& origMesh = rendMesh.origMeshN.cref();
             if (origMesh.surfPointNum() > 0) {
@@ -1155,22 +1058,17 @@ D3d::renderBackBuffer(
                 }
             }
         }
-  
-        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
+        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);    
     }
 
+    // Transparen Render Pass
+    pContext->OMSetRenderTargetsAndUnorderedAccessViews(0, nullptr, pDSV_MSAA.Get(), 0, 2, std::data({ pUAVTextureHeadOIT.Get(), pUAVBufferLinkedListOIT.Get() }), std::data({ 0x0u, 0x0u }));
 
     if (rendOpts.wireframe) {
    
         this->updateScene(pConstBuffer, rendOpts.facets ? Vec3F(0, 0, 1) : Vec3F(1, 1, 1), worldToD3vs, d3vsToD3ps);
     
-        ID3D11RenderTargetView* ppRTVClear[] = { nullptr };
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
-     
-        pPSOWireFrame->apply(pContext); 
-        pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
-     
+        pPSOWireFrame->apply(pContext);  
    
         for (auto const& rendMesh : rendMeshes) {
             auto const& origMesh = rendMesh.origMeshN.cref();
@@ -1197,22 +1095,15 @@ D3d::renderBackBuffer(
             }
         }
         pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
-   
     }
 
-
-   
     if (rendOpts.allVerts) {
         this->updateScene(pConstBuffer, Vec3F{ 0,1,0 }, worldToD3vs, d3vsToD3ps);
     
-        ID3D11RenderTargetView* ppRTVClear[] = { nullptr };
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
         ID3D11ShaderResourceView* mapViews[] = { whiteMap.view.get(),  blackMap.view.get(),  noModulationMap.view.get() };
         pPSOPoints->apply(pContext);
         pContext->PSSetShaderResources(0, _countof(mapViews), mapViews);
-        pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
-    
+ 
         for (RendMesh const& rendMesh : rendMeshes) {
             D3dMesh const& d3dMesh = getD3dMesh(rendMesh);
             if (d3dMesh.allVerts) {
@@ -1221,20 +1112,14 @@ D3d::renderBackBuffer(
                 pContext->Draw(uint(origMesh.verts.size()), 0);
             }
         }
-    
-        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
-    
+     
     }
     if (rendOpts.markedVerts) {
         this->updateScene(pConstBuffer, Vec3F{ 1,1,0 }, worldToD3vs, d3vsToD3ps);
     
-        ID3D11RenderTargetView* ppRTVClear[] = { nullptr };
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr, nullptr };
         ID3D11ShaderResourceView* mapViews[] = { whiteMap.view.get(),  blackMap.view.get(),  noModulationMap.view.get() };
         pPSOPoints->apply(pContext);
         pContext->PSSetShaderResources(0, _countof(mapViews), mapViews);
-        pContext->OMSetRenderTargets(1, pRTV_MSAA.GetAddressOf(), pDSV_MSAA.Get());
     
         for (RendMesh const& rendMesh : rendMeshes) {
             Mesh const& origMesh = rendMesh.origMeshN.cref();
@@ -1247,30 +1132,29 @@ D3d::renderBackBuffer(
             }
         }
     
-        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        pContext->OMSetRenderTargets(_countof(ppRTVClear), ppRTVClear, nullptr);
-    
+        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);      
     }
 
+    if (rendOpts.facets) {
+        this->updateScene(pConstBuffer, lighting, worldToD3vs, d3vsToD3ps);
+   
+        pPSOGeometryTransparent->apply(pContext);     
+        renderTris(rendMeshes, rendOpts, true);     
+        pContext->PSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);      
+    }
 
+    pContext->OMSetRenderTargetsAndUnorderedAccessViews(0, nullptr, nullptr, 0, _countof(ppUAVClear), ppUAVClear, nullptr);
     pMSAAResolver->apply(pContext, pRTV_MSAA, pRTVSwapChain, colorBufferFormat);
-    {
-    
-        ID3D11ShaderResourceView* ppSRVClear[] = { nullptr, nullptr };
-        ID3D11UnorderedAccessView* ppUAVClear[] = { nullptr };
-        
-        pPSOGeometryResolve->apply(pContext);
-        pContext->CSSetShaderResources(0, 2, std::data({ pSRVTextureHeadOIT.Get(), pSRVBufferLinkedListOIT.Get() }));
-        pContext->CSSetUnorderedAccessViews(0, 1, pUAVSwapChain.GetAddressOf(), nullptr);
-        pContext->Dispatch(threadGroupsX, threadGroupsY, 1);
-    
-    
-        pContext->CSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
-        pContext->CSSetUnorderedAccessViews(0, _countof(ppUAVClear), ppUAVClear, nullptr);
-    
-    }
- 
+  
 
+    pPSOGeometryResolve->apply(pContext);
+    pContext->CSSetShaderResources(0, 2, std::data({ pSRVTextureHeadOIT.Get(), pSRVBufferLinkedListOIT.Get() }));
+    pContext->CSSetUnorderedAccessViews(0, 1, pUAVSwapChain.GetAddressOf(), nullptr);
+    pContext->Dispatch(threadGroupsX, threadGroupsY, 1);
+
+    pContext->CSSetShaderResources(0, _countof(ppSRVClear), ppSRVClear);
+    pContext->CSSetUnorderedAccessViews(0, _countof(ppUAVClear), ppUAVClear, nullptr);
+        
 }
 
 void

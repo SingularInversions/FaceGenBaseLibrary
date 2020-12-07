@@ -4,7 +4,7 @@ RWTexture2D<unorm float4>  BackBuffer      : register(u0);
 Texture2D<uint>            HeadPointersSRV : register(t0);
 StructuredBuffer<ListNode> LinkedListSRV   : register(t1);
 
-static const uint FRAGMENT_COUNT    = 32;
+static const uint FRAGMENT_COUNT    = 48;
 static const uint MSAA_SAMPLE_COUNT = 4;
 
 struct ListSubNode {

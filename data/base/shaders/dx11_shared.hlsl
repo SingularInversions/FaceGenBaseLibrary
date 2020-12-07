@@ -62,12 +62,11 @@ float4 unpackColor(uint color) {
 }
 
 
-Frag VSTransform(Vert v)
-{
-    Frag    ret;
-    ret.pos = mul(Scene.modelview,float4(v.pos,1.0f));
-    ret.pos = mul(Scene.projection,ret.pos);
-    ret.norm = normalize(mul(Scene.modelview,float4(v.norm,0.0f)));
+Frag VSTransform(Vert v) {
+    Frag ret;
+    ret.pos = mul(Scene.modelview, float4(v.pos, 1.0f));
+    ret.pos = mul(Scene.projection, ret.pos);
+    ret.norm = normalize(mul(Scene.modelview, float4(v.norm, 0.0f)));
     ret.uv = v.uv;
     return ret;
 }
