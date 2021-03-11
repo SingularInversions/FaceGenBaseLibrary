@@ -1,8 +1,8 @@
 # FaceGen Base Library
 
-Copyright (c) 2020 Singular Inversions Inc.
+Copyright (c) 2021 Singular Inversions Inc.
 
-A simple cross-platform C++11 library for developing computational 3D graphics applications.
+A simple cross-platform C++14 library for developing computational 3D graphics applications.
 
 ## Features
 
@@ -13,7 +13,7 @@ A simple cross-platform C++11 library for developing computational 3D graphics a
 * Cross platform build file construction tool.
 * Command-line interface tools with pretty-print.
 * Unicode, filesystem, diagnostics, data packaging, etc.
-* Support for VS2015,2017,2019 on Win, gcc & clang on Ubuntu and macOS. Warning-free compiles on -Wall.
+* Support for VS2017,2019 on Win, gcc & clang on Ubuntu and macOS. Warning-free compiles on -Wall.
 
 ## Design
 
