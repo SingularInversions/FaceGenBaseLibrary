@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,21 +30,21 @@ struct  Ofstream : public std::ofstream
 
     explicit
     Ofstream(
-        Ustring const &         fname,
+        String8 const &         fname,
         bool                    appendFile = false,
         bool                    throwOnFail = true)
     {open(fname,appendFile,throwOnFail); }
 
     bool
     open(
-        Ustring const &         fname,
+        String8 const &         fname,
         bool                    appendFile = false,
         bool                    throwOnFail = true);
 
     template<class T>
     void
     writeb(T const & val)
-    {write(reinterpret_cast<const char*>(&val),sizeof(val)); }
+    {write(reinterpret_cast<char const*>(&val),sizeof(val)); }
 };
 
 // 32/64 portable file format interface (boost::serialization tends to be incompatible with past versions).
@@ -53,7 +53,7 @@ struct  Ofstream : public std::ofstream
 template<class T>
 void
 fgWriteb(std::ostream & os,T const & val)    // Only use for builtins !
-{os.write(reinterpret_cast<const char*>(&val),sizeof(val)); }
+{os.write(reinterpret_cast<char const*>(&val),sizeof(val)); }
 
 // Handle builtins:
 inline void fgWritep(std::ostream & os,int32 val) {fgWriteb(os,val); }
@@ -74,7 +74,7 @@ fgWritep(std::ostream & os,String const & str)
 
 // Has to be here since FgStdStream.hpp depends on FgString.hpp
 inline void
-fgWritep(std::ostream & os,Ustring const & s)
+fgWritep(std::ostream & os,String8 const & s)
 {fgWritep(os,s.m_str); }
 
 template<class T>
@@ -96,13 +96,13 @@ struct  Ifstream : public std::ifstream
 
     explicit
     Ifstream(
-        Ustring const &        fname,
+        String8 const &        fname,
         bool                    throwOnFail=true)
     {open(fname,throwOnFail); }
 
     bool
     open(
-        Ustring const &        fname,
+        String8 const &        fname,
         bool                    throwOnFail=true);
 
     template<typename T>
@@ -159,7 +159,7 @@ fgReadp(std::istream & is,String & str)
 }
 
 inline void
-fgReadp(std::istream & is,Ustring & str)
+fgReadp(std::istream & is,String8 & str)
 {fgReadp(is,str.m_str); }
 
 template<class T>
@@ -182,7 +182,7 @@ fgReadpT(std::istream & is)
 
 // Handy for open-write-close:
 void
-fgWriteFile(Ustring const & fname,String const & data,bool appendFile=true);
+fgWriteFile(String8 const & fname,String const & data,bool appendFile=true);
 
 }
 

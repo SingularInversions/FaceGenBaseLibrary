@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,7 +24,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     // Track when keyboard focus is on this edit box so we don't overwrite the user:
     bool                m_keyboardFocus;
     // We have to cache the current text contents to know when a user change has occurred:
-    Ustring             m_currText;
+    String8             m_currText;
 
     GuiTextEditWin(const GuiTextEdit & api)
         : m_api(api), m_fontDims(16,16), m_keyboardFocus(false)
@@ -35,7 +35,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     {return m_fontDims[1]+6; }
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
@@ -63,7 +63,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     {
         if (!m_keyboardFocus) {
             if (m_api.updateFlag->checkUpdate()) {
-                Ustring     txt = m_api.getInput();
+                String8     txt = m_api.getInput();
                 if (txt != m_currText) {
                     m_currText = txt;
                     // Sends WM_COMMAND to *this* window as well as child, then processes
@@ -134,7 +134,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
                 // Windows only retrieves argLen-1 chars then sends a NULL:
                 GetWindowText(hwndText,&str[0],len+1);
                 // Use c string cons to avoid including NULL in string itself:
-                Ustring    txt(&str[0]);
+                String8    txt(&str[0]);
                 // Ignore updates from redraw and from 'SetWindowText' (since m_currText is updated
                 // before calling those) so that we only call m_api.setOutput() when the user has
                 // made actual edits.
@@ -153,7 +153,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
             }
             else if (nc == EN_KILLFOCUS) {
                 m_keyboardFocus = false;
-                Ustring const &    txt = m_api.getInput();
+                String8 const &    txt = m_api.getInput();
                 SetWindowText(hwndText,txt.as_wstring().c_str());
             }
         }

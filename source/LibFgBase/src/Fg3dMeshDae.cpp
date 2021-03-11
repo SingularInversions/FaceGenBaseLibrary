@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -175,12 +175,12 @@ cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
 string  cMeshId(size_t mm)  {return "Mesh" + toStr(mm); }
 string  cMorphId(size_t mm,size_t rr) {return "Mesh" + toStr(mm) + "Morph" + toStr(rr); }
 
-Ustring
+String8
 cGeometry(Mesh const & mesh,size_t mm)
 {
     string              id = cMeshId(mm);
-    Ustring             name = mesh.name.empty() ? id : mesh.name;
-    Ustring             ret = R"(
+    String8             name = mesh.name.empty() ? id : mesh.name;
+    String8             ret = R"(
     <geometry id=")" + id + R"(" name=")" + name + R"(">
       <mesh>)" +
         cGeometryVerts(id,mesh.verts,cNormals(mesh).vert,mesh.uvs) +
@@ -189,7 +189,7 @@ cGeometry(Mesh const & mesh,size_t mm)
     </geometry>)";
     for (size_t rr=0; rr<mesh.numMorphs(); ++rr) {
         string              morphId = cMorphId(mm,rr);
-        Ustring             morphName = mesh.morphName(rr);
+        String8             morphName = mesh.morphName(rr);
         Vec3Fs              morphVerts = mesh.morphSingle(rr);
         ret += R"(
     <geometry id=")" + morphId + R"(" name=")" + morphName + R"(">
@@ -204,13 +204,13 @@ cGeometry(Mesh const & mesh,size_t mm)
     return ret;
 }
 
-Ustring
+String8
 cController(Mesh const & mesh,size_t mm)
 {
     size_t              num = mesh.numMorphs();
     string              meshId = cMeshId(mm),
                         numStr = toStr(num);
-    Ustring             ret = R"(
+    String8             ret = R"(
     <controller id=")" + meshId + R"(Controller" name="Morph Controls">
       <morph method="NORMALIZED" source="#)" + meshId + R"(">
         <source id=")" + meshId + R"(Targs">
@@ -249,7 +249,7 @@ cSceneNode(Mesh const & mesh,size_t mm)
 {
     ostringstream       ofs;
     string              id = "Node" + toStr(mm);
-    Ustring             name = mesh.name.empty() ? id : mesh.name;
+    String8             name = mesh.name.empty() ? id : mesh.name;
     ofs << "\n"
         "      <node id=\"" << id << "\" name=\"" << name << "\">\n"
         "        <instance_geometry url=\"#Mesh" << mm << "\">\n";
@@ -272,17 +272,17 @@ cSceneNode(Mesh const & mesh,size_t mm)
 }
 
 void
-saveDae(Ustring const & filename,Meshes const & meshes,string imgFormat,SpatialUnit unit)
+saveDae(String8 const & filename,Meshes const & meshes,string imgFormat,SpatialUnit unit)
 {
     Path                fpath {filename};
-    Ustring             dirBase = fpath.dirBase();
-    Ustring             images,
+    String8             dirBase = fpath.dirBase();
+    String8             images,
                         effects,
                         materials,
                         geometries,
                         controllers,
                         sceneNodes;
-    map<ImgC4UC*,Ustring>  imagesSaved;
+    map<ImgC4UC*,String8>  imagesSaved;
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
         geometries += cGeometry(mesh,mm);
@@ -292,7 +292,7 @@ saveDae(Ustring const & filename,Meshes const & meshes,string imgFormat,SpatialU
             Surf const &        surf = mesh.surfaces[ss];
             if (surf.hasUvIndices() && surf.material.albedoMap) {
                 string              id = toStr(mm) + "_" + toStr(ss);
-                Ustring             imgFile = fpath.base + id + "." + imgFormat;
+                String8             imgFile = fpath.base + id + "." + imgFormat;
                 ImgC4UC             *imgPtr = surf.material.albedoMap.get();
                 if (contains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
@@ -347,7 +347,7 @@ void
 testSaveDae(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring         dd = dataDir() + "base/";
+    String8         dd = dataDir() + "base/";
     Mesh            face = loadTri(dd+"JaneLoresFace.tri"),
                     mouth = loadTri(dd+"MouthSmall.tri");
     face.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(dd+"JaneLoresFace.jpg"));

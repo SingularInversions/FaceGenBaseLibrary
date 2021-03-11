@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,7 +13,7 @@ using namespace std;
 namespace Fg {
 
 bool
-updateFiles(uint num,Ustrings const & ins,Ustrings const & outs,FgUpdateFilesFunc func)
+updateFiles(uint num,String8s const & ins,String8s const & outs,FgUpdateFilesFunc func)
 {
     if (fileNewer(ins,outs)) {
         fgout.logFile(toStr(num)+"_log.txt",false,false);

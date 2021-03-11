@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -81,7 +81,7 @@ edgeDist(CLArgs const &)
     float               distMax = 0;
     for (size_t ii=0; ii<edgeDists.size(); ++ii)
         if (edgeDists[ii] < maxFloat())
-            setIfGreater(distMax,edgeDists[ii]);
+            updateMax_(distMax,edgeDists[ii]);
     float               distToCol = 255.99f / distMax;
     Uchars              colVal(edgeDists.size(),255);
     for (size_t ii=0; ii<colVal.size(); ++ii)
@@ -156,8 +156,8 @@ testmSubdShapes(CLArgs const &)
             meshes.push_back(mesh);
         }
     };
-    addSubdivisions(cTetrahedron(),"Tetrahedron");
-    addSubdivisions(cTetrahedron(true),"TetrahedronOpen");
+    addSubdivisions(Mesh{cTetrahedron()},"Tetrahedron");
+    addSubdivisions(Mesh{cTetrahedron(true)},"TetrahedronOpen");
     addSubdivisions(cPyramid(),"Pyramid");
     addSubdivisions(cPyramid(true),"PyramidOpen");
     addSubdivisions(c3dCube(),"Cube");
@@ -172,6 +172,24 @@ testmSubdShapes(CLArgs const &)
 }
 
 void
+testmSphere4(CLArgs const &)
+{
+    Meshes          meshes;
+    for (size_t ii=0; ii<5; ++ii)
+        meshes.emplace_back(cSphere4(ii));
+    viewMesh(meshes,true);
+}
+
+void
+testmSphere(CLArgs const &)
+{
+    Meshes          meshes;
+    for (size_t ii=0; ii<4; ++ii)
+        meshes.emplace_back(cSphere(ii));
+    viewMesh(meshes,true);
+}
+
+void
 testm3d(CLArgs const & args)
 {
     Cmds            cmds {
@@ -179,6 +197,8 @@ testm3d(CLArgs const & args)
         {fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export"},  // Uses GUI
         {testmSubdShapes,"subd0","Loop subdivsion of simple shapes"},
         {testmSubdFace,"subd1","Loop subdivision of textured face"},
+        {testmSphere4,"sphere4","Spheres created from tetrahedon"},
+        {testmSphere,"sphere","Spheres created from icosahedron"},
     };
     doMenu(args,cmds,true,false,true);
 }

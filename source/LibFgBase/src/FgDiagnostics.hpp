@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -26,18 +26,18 @@ namespace Fg {
 // This simple version does NOT handle base filenames after Windows drive specifiers (eg. C:filename)
 // as it only detects the '\' character:
 std::string
-pathToName(const char * asciiFilePath);
+pathToName(char const * asciiFilePath);
 
 std::string
-fgDiagString(const char *fname,int line);
+fgDiagString(char const *fname,int line);
 
 // If you're trying to pass a UTF-8 'msg' here, you should probably be using 'fgThrow' instead:
 void
-fgAssert(const char * fname,int line,const std::string & msg = "");
+fgAssert(char const * fname,int line,const std::string & msg = "");
 
 // Crude warning system outputs to cout. Use when we don't want to throw in release distros.
 // Currently just outputs to fgout but could add telemetry, special dev behaviour:
-void fgWarn(const char * fname,int line,const std::string & msg="");
+void fgWarn(char const * fname,int line,const std::string & msg="");
 void fgWarn(const std::string & msg,const std::string & dataUtf8="");
 
 }

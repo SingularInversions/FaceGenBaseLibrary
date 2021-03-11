@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     {m_apiToWin = Affine1D(m_api.range,VecD2(0.0,double(numTicks))); }
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Slider::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         WinCreateChild   cc;
@@ -169,7 +169,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             if (!m_api.tockLabels.empty()) {
                 rect.top = 0;
                 rect.bottom = topSpace();
-                const GuiTickLabels & ul = m_api.tockLabels;
+                GuiTickLabels const & ul = m_api.tockLabels;
                 for (size_t ii=0; ii<ul.size(); ++ii) {
                     rect.left = round<int>(apiToPix * ul[ii].pos - 0.5 * tockLabelWidth);
                     rect.right = rect.left + tockLabelWidth;
@@ -184,7 +184,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             if (!m_api.tickLabels.empty()) {
                 rect.top = topSpace() + sliderHeight;
                 rect.bottom = rect.top + botSpace();
-                const GuiTickLabels & tl = m_api.tickLabels;
+                GuiTickLabels const & tl = m_api.tickLabels;
                 for (size_t ii=0; ii<tl.size(); ++ii) {
                     rect.left = round<int>(apiToPix * tl[ii].pos - 0.5 * tickLabelWidth);
                     rect.right = rect.left + tickLabelWidth;

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ namespace Fg {
 
 namespace {
 
-const char lf = 0x0A;       // Unix line ending
+char const lf = 0x0A;       // Unix line ending
 
 void
 targets(
@@ -263,7 +263,7 @@ consMakefileOsArch(
     else {
         cflags.push_back("-DNDEBUG");
     }
-    cxxflags.push_back("-std=c++11");
+    cxxflags.push_back("-std=c++14");
     if (compiler == Compiler::clang) {
         // uses libc++. On Linux, g++ is the GNU linker and uses libstdc++.
         cc = "clang";                   // CLANG C compiler
@@ -454,7 +454,7 @@ consMakefileAndroidArch(
         targetStr = "aarch64-" + hostStr + "-android";
     cflags.push_back("--target="+targetStr+"${API_VERSION}");
     cflags.push_back("--sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/"+hostStr+"-x86_64/sysroot");
-    cxxflags.push_back("-std=c++11");
+    cxxflags.push_back("-std=c++14");
     cxxflags.push_back("-ftemplate-depth=1024");    // boost annoyance
     cxxflags.push_back("-stdlib=libc++");           // From android toolchain
     ostringstream   ofs;

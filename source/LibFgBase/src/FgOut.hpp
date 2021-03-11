@@ -1,11 +1,11 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
 // Not threadsafe so use ostringstream output option for threads.
-// Default output is 'cout' for systems supporting CLI, 'stringstream' otherwise (Android).
+// Default output is 'cout' for systems supporting CLI, 'ostringstream' otherwise (Android).
 //
 // USE:
 //
@@ -23,17 +23,11 @@
 
 namespace Fg {
 
-std::ostream &
-fgnl(std::ostream& ss);
-
-std::ostream &
-fgpush(std::ostream& ss);
-
-std::ostream &
-fgpop(std::ostream& ss);
-
-std::ostream &
-fgreset(std::ostream& ss);  // Reset indent to zero (useful for exception handling)
+// Pretty-print newline manipulators:
+std::ostream &          fgnl(std::ostream& ss);
+std::ostream &          fgpush(std::ostream& ss);
+std::ostream &          fgpop(std::ostream& ss);
+std::ostream &          fgreset(std::ostream& ss);  // Reset indent to zero (useful for exception handling)
 
 // ADL won't find this for FgOut::operator<< below so it must be visible up front for clang:
 template<class T>
@@ -42,18 +36,15 @@ operator<<(std::ostream &,std::vector<T> const &);
 
 struct  FgOut
 {
-    bool                m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
-
     FgOut();
     ~FgOut();
 
     // This is a unique global object:
-    FgOut(const FgOut &) = delete;
-    FgOut & operator=(const FgOut &) = delete;
+    FgOut(FgOut const &) = delete;
+    void operator=(FgOut const &) = delete;
 
-    bool    setDefOut(bool b);          // Returns true if default output was initially enabled
-
-    bool    defOutEnabled();            // As above. Non-const only for technical reasons.
+    bool            setDefOut(bool b);          // Returns true if default output was initially enabled
+    bool            defOutEnabled();            // As above. Non-const only for technical reasons.
 
     void
     logFile(const std::string & fnameUtf8,bool appendFile=true,bool prependDate=true);
@@ -86,6 +77,12 @@ struct  FgOut
     void
     setIndentLevel(uint);
 
+    bool            setMute(bool mute)          // Returns previous mute state
+    {
+        std::swap(mute,m_mute);
+        return mute;
+    }
+
     void
     reset()
     {
@@ -100,11 +97,14 @@ struct  FgOut
     operator<<(T const & arg)
     {
         if (notMute())
+            // In this approach we stringize each arg for each output stream, which is perhaps
+            // inefficent but also allows for ostreams with different settings:
             for (OStr & ostr : m_streams)
                 (*ostr.pOStr) << arg;
         return *this;
     }
-    
+
+    // Manipulators are just passed through to each ostream:
     FgOut &
     operator<<(std::ostream & (*manip)(std::ostream&));
 
@@ -113,6 +113,7 @@ struct  FgOut
     {return m_stringStream.str() + "\n"; }
 
 private:
+    bool                    m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
     struct  OStr
     {
         std::ostream        *pOStr;
@@ -135,22 +136,13 @@ private:
 
 extern FgOut      fgout;
 
-struct  FgOutMute
+struct  PushMute
 {
-    bool        m_mute;
+    bool        prevMute;
 
-    FgOutMute()
-    {m_mute = fgout.m_mute; fgout.m_mute = true; }
-
-    FgOutMute(bool m)
-    {m_mute = fgout.m_mute; fgout.m_mute = m; }
-
-    void
-    release() const
-    {fgout.m_mute = m_mute; }
-
-    ~FgOutMute()
-    {release(); }
+    PushMute() : prevMute{fgout.setMute(true)} {}
+    explicit PushMute(bool m) : prevMute{fgout.setMute(m)} {}
+    ~PushMute() {fgout.setMute(prevMute); }
 };
 
 struct  PushIndent
@@ -184,26 +176,13 @@ struct  PushIndent
     }
 };
 
-struct  PushLogFile
-{
-    explicit
-    PushLogFile(std::string const & fname,bool append=false)
-    {fgout.logFile(fname,append,false); }
+#define FGOUT1(X) fgout << fgnl << #X ": " << fgpush << (X) << fgpop;
 
-    ~PushLogFile()
-    {fgout.logFileClose(); }
-};
+#define FGOUT2(X,Y) FGOUT1(X) FGOUT1(Y)
 
-#define FGOUT1(X) fgout << fgnl << #X ": " << (X)
+#define FGOUT3(X,Y,Z) FGOUT2(X,Y) FGOUT1(Z)
 
-#define FGOUT2(X,Y) fgout << fgnl << #X ": " << (X) << "  " << #Y ": " << (Y)
-
-#define FGOUT3(X,Y,Z) fgout << fgnl                                 \
-        << #X ": " << (X) << "  " << #Y ": " << (Y) << " " << #Z ": " << (Z)
-
-#define FGOUT4(X,Y,Z,A) fgout << fgnl                               \
-        << #X ": " << (X) << "  " << #Y ": " << (Y) << "  "         \
-        << #Z ": " << (Z) << "  " << #A ": " << (A)
+#define FGOUT4(X,Y,Z,A) FGOUT2(X,Y) FGOUT2(Z,A)
 
 }
 

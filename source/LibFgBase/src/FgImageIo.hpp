@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,19 +16,14 @@
 namespace Fg {
 
 // Load an image from any supported format:
-void    loadImage_(Ustring const & fname,ImgC4UC & img);
-void    loadImage_(Ustring const & fname,ImgF & img);
-void    loadImage_(Ustring const & fname,ImgUC & img);
+void            loadImage_(String8 const & fname,ImgC4UC & img);
+void            loadImage_(String8 const & fname,ImgF & img);
+void            loadImage_(String8 const & fname,ImgUC & img);
+ImgC4UC         loadImage(String8 const & fname);
 
-ImgC4UC
-loadImage(Ustring const & fname);
-
-// Save an image to any supported format:
-void
-saveImage(Ustring const & fname,ImgC4UC const & img);
-
-void
-saveImage(Ustring const & fname,const ImgUC & img);
+// Save image to any supported format:
+void            saveImage(String8 const & fname,ImgC4UC const & img);
+void            saveImage(String8 const & fname,const ImgUC & img);
 
 struct  ImgFileFormat
 {
@@ -50,21 +45,21 @@ String
 imgFileExtensionsDescription();
 
 bool
-hasImgExtension(Ustring const & fname);
+hasImgExtension(String8 const & fname);
 
 // Returns a list of image extensions for which there are readable files 'baseName.ext':
 Strings
-imgFindFiles(Ustring const & baseName);
+imgFindFiles(String8 const & baseName);
 
 // Look for an image file in any common format starting with 'baseName' and load it if found.
 // Return true if found and false otherwise.
 bool
-imgFindLoadAnyFormat(Ustring const & baseName,ImgC4UC & img);
+imgFindLoadAnyFormat(String8 const & baseName,ImgC4UC & img);
 
 void
 saveJfif(
     ImgC4UC const &  img,        // Alpha channel will be ignored
-    Ustring const & fname,
+    String8 const & fname,
     uint            quality);   // [1,100]
 
 // data must be 4 channel RGBA of size wid*hgt*4:

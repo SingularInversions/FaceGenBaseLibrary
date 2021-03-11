@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ struct  GuiTabsWin : public GuiBaseImpl
     uint                        m_currPane;
     Vec2I                       m_client;
     RECT                        m_dispArea;
-    Ustring                     m_store;
+    String8                     m_store;
 
     GuiTabsWin(const GuiTabs & api)
         : m_api(api)
@@ -41,8 +41,14 @@ struct  GuiTabsWin : public GuiBaseImpl
         m_currPane = 0;
     }
 
+    ~GuiTabsWin()
+    {
+        if (!m_store.empty())   // Win32 instance was created
+            saveBsaXml(m_store+".xml",m_currPane,false);
+    }
+
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
         if (m_store.empty()) {      // First creation this session so check for saved state
@@ -55,6 +61,8 @@ struct  GuiTabsWin : public GuiBaseImpl
         WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
+        // Without this, tab outline shadowing can disappear:
+        cc.useFillBrush = true;
         winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
@@ -109,15 +117,6 @@ struct  GuiTabsWin : public GuiBaseImpl
 //fgout << fgnl << "Tabs::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
-    }
-
-    virtual void
-    saveState()
-    {
-        if (!m_store.empty())   // Win32 instance was created
-            saveBsaXml(m_store+".xml",m_currPane,false);
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->saveState();
     }
 
     LRESULT
@@ -179,7 +178,7 @@ struct  GuiTabsWin : public GuiBaseImpl
                     if (uint(idx) != m_currPane) {
                         m_panes[m_currPane]->destroy();
                         m_currPane = uint(idx);
-                        Ustring             subStore = m_store + "_" + toStr(m_currPane);
+                        String8             subStore = m_store + "_" + toStr(m_currPane);
                         m_panes[m_currPane]->create(hwnd,int(m_currPane)+1,subStore,NULL,true);
                         resizeCurrPane();                           // Always required after creation
                         m_panes[m_currPane]->updateIfChanged();     // Required to update win32 state (eg. sliders)

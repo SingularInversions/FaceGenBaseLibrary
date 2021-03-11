@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,15 +28,15 @@ testCurrentDirectory(CLArgs const & args)
     try
     {
         char32_t        ch = 0x00004EE5;            // A Chinese character
-        Ustring        chinese(ch);
-        Ustring        oldDir = getCurrentDir();
-        Ustring        dirName = chinese + fgDirSep();
+        String8        chinese(ch);
+        String8        oldDir = getCurrentDir();
+        String8        dirName = chinese + fgDirSep();
         createDirectory(dirName);
         setCurrentDir(dirName);
-        Ustring        newDir = getCurrentDir();
-        Ustring        expected = oldDir + dirName;
+        String8        newDir = getCurrentDir();
+        String8        expected = oldDir + dirName;
         setCurrentDir(oldDir);
-        Ustring        restored = getCurrentDir();
+        String8        restored = getCurrentDir();
         FGASSERT(removeDirectory(dirName));
         fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
         fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
@@ -56,7 +56,7 @@ testOfstreamUnicode(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        cent = 0x000000A2;              // The cent sign
-    Ustring        test = Ustring(cent);
+    String8        test = String8(cent);
     Ofstream      ofs(test);
     FGASSERT(ofs);
     ofs.close();
@@ -82,8 +82,8 @@ testDeleteDirectory(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        ch = 0x000000A2;              // The cent sign
-    Ustring        cent = Ustring(ch)+"/";
-    Ustring        name = "testDeleteDirectory/";
+    String8        cent = String8(ch)+"/";
+    String8        name = "testDeleteDirectory/";
     createDirectory(name);
     FGASSERT(pathExists(name));
     createDirectory(name+cent);
@@ -118,7 +118,7 @@ testExists(CLArgs const &)
 }
 
 void
-fgFileSystemTest(CLArgs const & args)
+testFilesystem(CLArgs const & args)
 {
     Cmds   cmds;
     cmds.push_back(Cmd(testCurrentDirectory,"curDir"));

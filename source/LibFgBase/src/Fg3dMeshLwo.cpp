@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -89,7 +89,7 @@ struct LwoTextureInfoS
 //****************************************************************************
 // Local functions
 //****************************************************************************
-static bool saveLwoLwsFile(Ustring const &fname,
+static bool saveLwoLwsFile(String8 const &fname,
                 const FffMultiObjectC &model,
                 const vector<FffMultiObjectC> *targets,
                 Strings const          *names);
@@ -97,7 +97,7 @@ static bool saveLwoLwsFile(Ustring const &fname,
 static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
                 const vector<Vec2F> &texCoord);
-static bool errorFcloseExit(FILE *fptr, Ustring const &fname);
+static bool errorFcloseExit(FILE *fptr, String8 const &fname);
 static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
 static bool swap2BytesWrite(FILE *fptr, const void *ptr);
@@ -170,7 +170,7 @@ static bool writeSurfBlokVmapSubChunk(FILE *fptr, unsigned short &chunkSize,
 static bool writeSurfBlokAastSubChunk(FILE *fptr, unsigned short &chunkSize);
 static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize);
 
-static bool writeLwsFile(Ustring const &lwsName, Ustring const &lwoName,
+static bool writeLwsFile(String8 const &lwsName, String8 const &lwoName,
                 Vec3F minVect, Vec3F maxVect,
                 unsigned long numLayers, unsigned long numMorphs, 
                 Strings const *morphNames);
@@ -180,7 +180,7 @@ static bool writeLwsFile(Ustring const &lwsName, Ustring const &lwoName,
 //                              fffSaveLwoLwsFile
 //****************************************************************************
 static bool    fffSaveLwoLwsFile(
-    Ustring const            &fname,
+    String8 const            &fname,
     const FffMultiObjectC   &model)
 {
     return saveLwoLwsFile(fname,model,0,0);
@@ -198,7 +198,7 @@ static string translateName(string input)
 
 static bool    fffSaveLwoLwsFile(
 
-    Ustring const                    &fname,
+    String8 const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,  // Only use the vertices.
     Strings const            &morphNames)
@@ -216,15 +216,15 @@ static bool    fffSaveLwoLwsFile(
 //                              saveLwoLwsFile
 //****************************************************************************
 static bool saveLwoLwsFile(
-    Ustring const                  &fname,
+    String8 const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *targets,       // Only use the vertices.
     Strings const            *names)
 {
     Path          path(fname);
-    Ustring        lwsName = path.dirBase() + ".lws";
-    Ustring        lwoName = path.base + ".lwo";
-    Ustring        fullLwoName = path.dirBase() + ".lwo";
+    String8        lwsName = path.dirBase() + ".lws";
+    String8        lwoName = path.base + ".lwo";
+    String8        fullLwoName = path.dirBase() + ".lwo";
 #ifdef _WIN32
     FILE *fptr = _wfopen(fullLwoName.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
@@ -427,7 +427,7 @@ static bool searchVtxTexMap(
 //****************************************************************************
 //                              errorFcloseExit
 //****************************************************************************
-static bool errorFcloseExit(FILE *fptr, Ustring const &)
+static bool errorFcloseExit(FILE *fptr, String8 const &)
 {
     fclose(fptr);
     return false;
@@ -2264,8 +2264,8 @@ static bool writeSurfBlokPixbSubChunk(FILE *fptr, unsigned short &chunkSize)
 // programs using LWO2 format (ie replacing the ": " with ".").
 //
 static bool writeLwsFile(
-    Ustring const            &lwsName, 
-    Ustring const            &lwoName,
+    String8 const            &lwsName, 
+    String8 const            &lwoName,
     Vec3F              minVect,
     Vec3F              maxVect,
     unsigned long           numLayers,
@@ -2368,7 +2368,7 @@ static bool writeLwsFile(
 
 void
 saveLwo(
-    Ustring const &        fname,
+    String8 const &        fname,
     Meshes const & meshes,
     string                  imgFormat)
 {
@@ -2384,7 +2384,7 @@ void
 fgSaveLwoTest(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring    dd = dataDir();
+    String8    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -23,13 +23,24 @@ typedef Arr<double,2>       Arr2D;
 typedef Arr<uchar,3>        Arr3UC;
 typedef Arr<schar,3>        Arr3SC;
 typedef Arr<int,3>          Arr3I;
+typedef Arr<uint,3>         Arr3UI;
 typedef Arr<float,3>        Arr3F;
 typedef Arr<double,3>       Arr3D;
 
 typedef Arr<uchar,4>        Arr4UC;
 typedef Arr<int,4>          Arr4I;
+typedef Arr<uint,4>         Arr4UI;
 typedef Arr<float,4>        Arr4F;
 typedef Arr<double,4>       Arr4D;
+
+template<typename T,size_t S>
+Arr<T,S>
+cArr(T fillVal)
+{
+    Arr<T,S>        ret;
+    ret.fill(fillVal);
+    return ret;
+}
 
 inline Arr<bool,2>
 cTrueFalse()
@@ -43,21 +54,22 @@ struct  Traits<Arr<T,S> >
     typedef Arr<typename Traits<T>::Floating,S>         Floating;
 };
 
-template<typename T,typename U,size_t S>
-void scast_(Arr<T,S> const & from,Arr<U,S> & to)
-{
-    for (size_t ii=0; ii<S; ++ii)
-        scast_(from[ii],to[ii]);
-}
-
 template<typename To,typename From,size_t S>
 Arr<To,S>
-scast(Arr<From,S> const & v)
+mapCast(Arr<From,S> const & v)
 {
     Arr<To,S>    ret;
     for (size_t ii=0; ii<S; ++ii)
         ret[ii] = scast<To>(v[ii]);
     return ret;
+}
+
+template<typename To,typename From,size_t S>
+void
+deepCast_(Arr<From,S> const & from,Arr<To,S> & to)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        deepCast_(from[ii],to[ii]);
 }
 
 template<class To,class From,size_t S>
@@ -143,6 +155,24 @@ operator*=(Arr<T,S> & l,T r)
 }
 
 template<class T,size_t S>
+void
+operator/=(Arr<T,S> & l,T r)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        l[ii] /= r;
+}
+
+template<class T,size_t S>
+Arr<T,S>
+mapSqr(Arr<T,S> const & a)
+{
+    Arr<T,S>        ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = a[ii] * a[ii];
+    return ret;
+}
+
+template<class T,size_t S>
 Arr<T,S>
 cFloor(Arr<T,S> const & arr)
 {
@@ -168,6 +198,16 @@ cProd(Arr<T,S> const & a)
 {return std::accumulate(cbegin(a)+1,cend(a),a[0],std::multiplies<T>{}); }
 
 template<class T,size_t S>
+T
+cDot(Arr<T,S> const & lhs,Arr<T,S> const & rhs)
+{
+    T               ret {0};
+    for (size_t ii=0; ii<S; ++ii)
+        ret += lhs[ii] * rhs[ii];
+    return ret;
+}
+
+template<class T,size_t S>
 size_t
 cMinIdx(const Arr<T,S> & v)
 {
@@ -186,6 +226,17 @@ cMaxIdx(const Arr<T,S> & v)
     for (size_t ii=1; ii<v.size(); ++ii)
         if (v[ii] > v[ret])
             ret = ii;
+    return ret;
+}
+
+template<size_t N,class T,size_t M>
+Arr<T,N>
+cHead(Arr<T,M> const & v)
+{
+    static_assert(N<M,"Not a proper subset");
+    Arr<T,N>        ret;
+    for (size_t ii=0; ii<N; ++ii)
+        ret[ii] = v[ii];
     return ret;
 }
 

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,7 +27,7 @@ struct  StbiFree
 };
 
 void
-loadImage_(Ustring const & fname,ImgC4UC & img)
+loadImage_(String8 const & fname,ImgC4UC & img)
 {
     int                 width,height,channels;
     uchar *             data = nullptr;
@@ -46,7 +46,7 @@ loadImage_(Ustring const & fname,ImgC4UC & img)
 }
 
 ImgC4UC
-loadImage(Ustring const & fname)
+loadImage(String8 const & fname)
 {
     ImgC4UC         ret;
     loadImage_(fname,ret);
@@ -62,23 +62,25 @@ writeToFile(void *context,void * data,int size)
 }
 
 void
-saveImage(Ustring const & fname,ImgC4UC const & img)
+saveImage(String8 const & fname,ImgC4UC const & img)
 {
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);
     Path                path {fname};
-    Ustring             ext = toLower(path.ext);
+    String8             ext = toLower(path.ext);
     if (ext.empty())
         fgThrow("No image file extension specified",fname);
     if (!contains(imgFileExtensions(),ext.m_str))
         fgThrow("File extension is not a supported image output format",fname);
     uint                wid = img.width(),
                         hgt = img.height();
-    uchar const *       data = &img.m_data[0].m_c[0];
+    uchar const *       data = &img.m_data[0][0];
     Ofstream            ofs {fname};
     int                 ret = 1;
     if ((ext == "jpg" || ext == "jpeg"))
-        ret = stbi_write_jpg_to_func(writeToFile,&ofs,wid,hgt,4,data,75);
+        // Quality level 90 is high quality and visually comparable to the ImageMagick defaults previously used,
+        // however STB encoding is about 25% larger:
+        ret = stbi_write_jpg_to_func(writeToFile,&ofs,wid,hgt,4,data,90);
     else if (ext == "png")
         ret = stbi_write_png_to_func(writeToFile,&ofs,wid,hgt,4,data,wid*4);
     else if (ext == "bmp")
@@ -92,7 +94,7 @@ saveImage(Ustring const & fname,ImgC4UC const & img)
 }
 
 void
-saveJfif(ImgC4UC const & img,Ustring const & fname,uint quality)
+saveJfif(ImgC4UC const & img,String8 const & fname,uint quality)
 {
     if (fname.empty())
         fgThrow("Cannot save image to empty filename");
@@ -102,7 +104,7 @@ saveJfif(ImgC4UC const & img,Ustring const & fname,uint quality)
         fgThrow("Invalid JPEG quality value",quality);
     uint                wid = img.width(),
                         hgt = img.height();
-    uchar const *       data = &img.m_data[0].m_c[0];
+    uchar const *       data = &img.m_data[0][0];
     Ofstream            ofs {fname};
     int                 ret;
     ret = stbi_write_jpg_to_func(writeToFile,&ofs,wid,hgt,4,data,int(quality));

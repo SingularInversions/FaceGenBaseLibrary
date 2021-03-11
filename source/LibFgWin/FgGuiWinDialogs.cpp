@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,8 +19,8 @@ namespace Fg {
 
 void
 guiDialogMessage(
-    Ustring const & cap,
-    Ustring const & msg)
+    String8 const & cap,
+    String8 const & msg)
 {
     MessageBox(
         // Sending the main window handle makes it the OWNER of this window (not parent since
@@ -31,14 +31,14 @@ guiDialogMessage(
         MB_OK);
 }
 
-Opt<Ustring>
+Opt<String8>
 guiDialogFileLoad(
-    Ustring const &         description,
+    String8 const &         description,
     Strings const &         extensions,
     string const &          storeID)
 {
     FGASSERT(!extensions.empty());
-    Opt<Ustring>            ret;
+    Opt<String8>            ret;
     HRESULT                 hr;
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
@@ -63,9 +63,9 @@ guiDialogFileLoad(
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
     FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
-                            exts = L"*." + Ustring(extensions[0]).as_wstring();
+                            exts = L"*." + String8(extensions[0]).as_wstring();
     for (size_t ii=1; ii<extensions.size(); ++ii)
-        exts += L";*." + Ustring(extensions[ii]).as_wstring();
+        exts += L";*." + String8(extensions[ii]).as_wstring();
     COMDLG_FILTERSPEC       fs;
     fs.pszName = desc.c_str();
     fs.pszSpec = exts.c_str();
@@ -83,7 +83,7 @@ guiDialogFileLoad(
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if ((hr == S_OK) && (pszFilePath != NULL)) {
-                ret = Ustring(pszFilePath);
+                ret = String8(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
         }
@@ -91,13 +91,13 @@ guiDialogFileLoad(
     return ret;
 }
 
-Opt<Ustring>
+Opt<String8>
 guiDialogFileSave(
-    Ustring const &    description,
+    String8 const &    description,
     string const &      extension)
 {
     FGASSERT(!extension.empty());
-    Opt<Ustring>          ret;
+    Opt<String8>          ret;
     HRESULT                 hr;
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileSaveDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
@@ -122,7 +122,7 @@ guiDialogFileSave(
     hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM);
     FGASSERTWINOK(hr);
     wstring                 desc = description.as_wstring(),
-                            exts = L"*." + Ustring(extension).as_wstring();
+                            exts = L"*." + String8(extension).as_wstring();
     COMDLG_FILTERSPEC       fs;
     fs.pszName = desc.data();
     fs.pszSpec = exts.data();
@@ -131,7 +131,7 @@ guiDialogFileSave(
     // Set the selected file type index (starts at 1):
     hr = pfd->SetFileTypeIndex(1);
     FGASSERTWINOK(hr);
-    wstring                 ext = Ustring(extension).as_wstring();
+    wstring                 ext = String8(extension).as_wstring();
     hr = pfd->SetDefaultExtension(ext.c_str());
     hr = pfd->Show(s_guiWin.hwndMain);    // Blocking call to display dialog
     if (hr == S_OK) {                       // A filename was selected
@@ -142,7 +142,7 @@ guiDialogFileSave(
             PWSTR           pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
-                ret = Ustring(pszFilePath);
+                ret = String8(pszFilePath);
                 CoTaskMemFree(pszFilePath);
             }
         }
@@ -150,10 +150,10 @@ guiDialogFileSave(
     return ret;
 }
 
-Opt<Ustring>
+Opt<String8>
 guiDialogDirSelect()
 {
-    Opt<Ustring>            ret;
+    Opt<String8>            ret;
     HRESULT                 hr;
     IFileDialog *           pfdPtr = NULL;
     hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
@@ -175,7 +175,7 @@ guiDialogDirSelect()
             PWSTR               pszFilePath = NULL;
             hr = psiResult->GetDisplayName(SIGDN_FILESYSPATH,&pszFilePath);
             if (hr == S_OK) {
-                Ustring         str(pszFilePath);
+                String8         str(pszFilePath);
                 CoTaskMemFree(pszFilePath);
                 return asDirectory(str);
             }
@@ -237,23 +237,30 @@ struct  GuiDialogProgressWin
 };
 
 void
-threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & cancelFlag,Ustring & errMsg)
+threadWorker(
+    WorkerFunc const &  workerFn,
+    HWND                hwndMain,
+    HWND                hwndDialog,
+    HWND                hwndProgBar,
+    bool &              cancelFlag,
+    String8 &           errMsg)
 {
-    WorkerCallback      callback = [&worker,hwndMain,hwndProgBar,&cancelFlag,&errMsg](bool isMilestone)
+    WorkerCallback      callback = [hwndMain,hwndDialog,hwndProgBar,&cancelFlag,&errMsg](bool isMilestone)
     {
         if (cancelFlag) {
-            // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
-            // the message queue so the modal message loop below would have no way of knowing when it's
-            // being closed:
-            PostMessage(hwndMain,WM_CLOSE,0,0);
+            // Main window must be enabled before the WM_CLOSE PostMessage below, or focus will be lost
+            // and Windows may bring a different program to foreground:
+            EnableWindow(hwndMain,TRUE);
+            // PostMessage places the message on the queue for the correct thread (message loop) to retrieve it:
+            PostMessage(hwndDialog,WM_CLOSE,0,0);
             return true;
         }
         if (isMilestone)
-            SendMessage(hwndProgBar,PBM_STEPIT,0,0);
+            PostMessage(hwndProgBar,PBM_STEPIT,0,0);
         return false;
     };
     try {
-        worker(callback);
+        workerFn(callback);
     }
     catch(FgException const & e)
     {
@@ -269,35 +276,33 @@ threadWorker(WorkerFunc const & worker,HWND hwndMain,HWND hwndProgBar,bool & can
     }
     catch(std::exception const & e)
     {
-        errMsg = "std::exception\n" + Ustring(e.what());
+        errMsg = "std::exception\n" + String8(e.what());
     }
     catch(...)
     {
         errMsg = "Unknown type\n";
     }
-    // It's critical to use 'PostMessage' here instead of 'SendMessage' since the latter bypasses
-    // the message queue so the modal message loop below would have no way of knowing when it's
-    // being closed:
-    PostMessage(hwndMain,WM_CLOSE,0,0);
+    EnableWindow(hwndMain,TRUE);
+    PostMessage(hwndDialog,WM_CLOSE,0,0);
 }
 
 }
 
 bool
-guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
+guiDialogProgress(String8 const & title,uint progressSteps,WorkerFunc worker)
 {
     GuiDialogProgressWin    progBar;
     progBar.progressSteps = progressSteps;
     // Create the dialog window with the main window as its parent window:
-    HWND                    hwndMain = winCreateDialog(title,s_guiWin.hwndMain,&progBar);
-    ShowWindow(hwndMain,SW_SHOWNORMAL);
+    HWND                    hwndDialog = winCreateDialog(title,s_guiWin.hwndMain,&progBar);
+    ShowWindow(hwndDialog,SW_SHOWNORMAL);
     // Don't disable until dialog showing, then enable before dialog is destroyed, or else
     // the main window focus can be lost:
     EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
-    UpdateWindow(hwndMain);
-    Ustring                 errMsg;
+    UpdateWindow(hwndDialog);
+    String8                 errMsg;
     thread                  compute(threadWorker,
-        cref(worker),hwndMain,progBar.hwndProgBar,ref(progBar.cancelFlag),ref(errMsg));
+        cref(worker),s_guiWin.hwndMain,hwndDialog,progBar.hwndProgBar,ref(progBar.cancelFlag),ref(errMsg));
     MSG                     msg;
     while (GetMessage(&msg,NULL,0,0)) {
         TranslateMessage(&msg);
@@ -308,9 +313,8 @@ guiDialogProgress(Ustring const & title,uint progressSteps,WorkerFunc worker)
             break;
     }
     compute.join();
-    EnableWindow(s_guiWin.hwndMain,TRUE);       // Re-enable main window
-    DestroyWindow(hwndMain);
-    UpdateWindow(s_guiWin.hwndMain);            // Avoid losing focus ... doesn't always work.
+    DestroyWindow(hwndDialog);
+    UpdateWindow(s_guiWin.hwndMain);
     if (!errMsg.empty())
         fgThrow("Exception in guiDialogProgress",errMsg);
     return !progBar.cancelFlag;

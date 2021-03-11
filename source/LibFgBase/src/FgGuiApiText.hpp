@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ GuiImplPtr guiGetOsImpl(GuiText const & guiApi);
 
 struct GuiText : GuiBase
 {
-    NPT<Ustring>        content;
+    NPT<String8>        content;
     // Usually set to true for dynamic text:
     Vec2B               wantStretch = Vec2B(false);
     // Used to specify a fixed min width for 2D layouts (eg. label - slider lists). Zero ignores.
@@ -37,13 +37,13 @@ struct GuiText : GuiBase
 
 // Assumes dynamic text and sets 'wantStretch' to true:
 GuiPtr
-guiText(NPT<Ustring> node,uint minWidth=0,bool rich=true);
+guiText(NPT<String8> node,uint minWidth=0,bool rich=true);
 
 GuiPtr
-guiTextLines(NPT<Ustring> node,uint minHeight,bool wantStretchVert=false);
+guiTextLines(NPT<String8> node,uint minHeight,bool wantStretchVert=false);
 
 GuiPtr
-guiText(Ustring text,uint minWidth=0);
+guiText(String8 text,uint minWidth=0);
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiTextEdit;
@@ -52,8 +52,8 @@ GuiImplPtr guiGetOsImpl(GuiTextEdit const & guiApi);
 struct  GuiTextEdit : GuiBase
 {
     DfgFPtr                 updateFlag;
-    Sfun<Ustring(void)>     getInput;
-    Sfun<void(Ustring)>     setOutput;
+    Sfun<String8(void)>     getInput;
+    Sfun<void(String8)>     setOutput;
     uint                    minWidth;
     bool                    wantStretch;    // Width only.
 
@@ -63,7 +63,7 @@ struct  GuiTextEdit : GuiBase
 
 // String text edit box:
 GuiPtr
-guiTextEdit(IPT<Ustring> t,bool wantStretch=true);
+guiTextEdit(IPT<String8> t,bool wantStretch=true);
 
 // Fixed-point numerical text edit box with given number of fractional digits and clamp values:
 GuiPtr

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,16 +17,16 @@ namespace Fg {
 
 static void Construct()
 {
-    {   Ustring s;
+    {   String8 s;
         FGASSERT(s.size() == 0); }
-    {   Ustring s("12345");
+    {   String8 s("12345");
         FGASSERT(s.size() == 5);}
 #ifdef _WIN32
-    {   Ustring s(L"12345");
+    {   String8 s(L"12345");
         FGASSERT(s.size() == 5); }
 #endif
-    {   Ustring s1("12345");
-        Ustring s2(s1);
+    {   String8 s1("12345");
+        String8 s2(s1);
         FGASSERT(s1.size() == s2.size() && s1.size() == 5); }
 }
 
@@ -34,8 +34,8 @@ static void Copy()
 {
     {
         // Ensure that we are copying on copy
-        Ustring original("abcd");
-        Ustring copy(original);
+        String8 original("abcd");
+        String8 copy(original);
         FGASSERT(copy == original);
         copy += "efghi";
         FGASSERT(copy != original);
@@ -44,16 +44,16 @@ static void Copy()
 
 static void Assign()
 {
-    {   Ustring s;
+    {   String8 s;
         s = "12345";
         FGASSERT(s.size() == 5); }
 #ifdef _WIN32
-    {   Ustring s;
+    {   String8 s;
         s = L"12345";
         FGASSERT(s.size() == 5); }
-    {   Ustring s;
+    {   String8 s;
         s = L"12345";
-        Ustring s1;
+        String8 s1;
         s1 = s;
         FGASSERT(s1.size() == 5); }
 #endif
@@ -61,18 +61,18 @@ static void Assign()
 
 static void Append()
 {
-    {   Ustring s("12345");
+    {   String8 s("12345");
         s += "12345";
         FGASSERT(s.size() == 10); }
 #ifdef _WIN32
-    {   Ustring s("12345");
+    {   String8 s("12345");
         s += L"12345";
         FGASSERT(s.size() == 10); }
 #endif
-    {   Ustring s("12345");
+    {   String8 s("12345");
         s += s;
         FGASSERT(s.size() == 10); }
-    {   Ustring s("abcd");
+    {   String8 s("abcd");
         FGASSERT(s=="abcd");
         s+="efg";
         FGASSERT(s!="abcd");
@@ -82,18 +82,18 @@ static void Append()
 static void Comparisons()
 {
 #ifdef _WIN32
-    {   Ustring s("12345");
+    {   String8 s("12345");
         FGASSERT(s == "12345");
         FGASSERT(s == L"12345");
-        FGASSERT(s == Ustring("12345"));
-        FGASSERT(Ustring("12345") == s); }
-    {   Ustring s("12345");
+        FGASSERT(s == String8("12345"));
+        FGASSERT(String8("12345") == s); }
+    {   String8 s("12345");
         FGASSERT(s != "abcdefg");
         FGASSERT(s != L"Hi");
-        FGASSERT(s != Ustring("Bye"));
+        FGASSERT(s != String8("Bye"));
         FGASSERT(s == "12345"); }
 #endif
-    {   Ustring s("abcdefg");
+    {   String8 s("abcdefg");
         FGASSERT(s == "abcdefg");
         FGASSERT(s != "abc"); }
 }
@@ -102,14 +102,23 @@ static void Encoding()
 {
     {
         // Character as Unicode code point
-        uint32  character = 0x0161;
+        uint32          ch32 = 0x0161;
         // Same character as UTF-8 encoded string
-        Ustring fg_character("\xC5\xA1");
-        FGASSERT(character == fg_character[0]);
+        char            ch8[] = "\xC5\xA1";
+        String8         str {ch8};
+        FGASSERT(ch32 == str[0]);
+        String32        s32 = toUtf32(ch8);
+        FGASSERT(str == toUtf8(s32));
+    }
+    {
+        String          s8 {"hello"};
+        String32        s32 = toUtf32("hello");
+        FGASSERT(toUtf8(s32) == s8);
+        FGASSERT(s32 == toUtf32(s8));
     }
     {
         TestDir   td("string_encoding");
-        Ustring    source("UTF-8:\xC5\xA1\xC4\x8E");
+        String8    source("UTF-8:\xC5\xA1\xC4\x8E");
         {
             std::ofstream ofs("testString_utf8.txt");
             FGASSERT(ofs);
@@ -118,7 +127,7 @@ static void Encoding()
         {
             std::ifstream ifs("testString_utf8.txt");
             FGASSERT(ifs);
-            Ustring target;
+            String8 target;
             ifs >> target;
             FGASSERT(source == target); }
     }
@@ -126,32 +135,32 @@ static void Encoding()
 
 static void Replace()
 {
-    {   Ustring original("ab");
-        FGASSERT(Ustring("aa") == original.replace('b','a'));
-        FGASSERT(Ustring("bb") == original.replace('a','b')); }
-    {   Ustring original("abcd");
-        FGASSERT(Ustring("aacd") == original.replace('b','a'));
-        FGASSERT(Ustring("abbd") == original.replace('c','b')); }
+    {   String8 original("ab");
+        FGASSERT(String8("aa") == original.replace('b','a'));
+        FGASSERT(String8("bb") == original.replace('a','b')); }
+    {   String8 original("abcd");
+        FGASSERT(String8("aacd") == original.replace('b','a'));
+        FGASSERT(String8("abbd") == original.replace('c','b')); }
 }
 
 static void Compare()
 {
-    Ustring a("a");
-    Ustring b("b");
+    String8 a("a");
+    String8 b("b");
     FGASSERT(a < b);
     FGASSERT(!(b < a));
 }
 
 static void Split()
 {
-    {   Ustring a("a/b/c");
-        Ustrings comps = a.split('/');
+    {   String8 a("a/b/c");
+        String8s comps = a.split('/');
         FGASSERT(comps.size() == 3);
-        FGASSERT(comps[0] == Ustring("a"));
-        FGASSERT(comps[1] == Ustring("b"));
-        FGASSERT(comps[2] == Ustring("c")); }
-    {   Ustring a("noseparator");
-        Ustrings comps = a.split(' ');
+        FGASSERT(comps[0] == String8("a"));
+        FGASSERT(comps[1] == String8("b"));
+        FGASSERT(comps[2] == String8("c")); }
+    {   String8 a("noseparator");
+        String8s comps = a.split(' ');
         FGASSERT(comps.size() == 1);
         FGASSERT(comps[0] == a); }
 }
@@ -159,20 +168,20 @@ static void Split()
 static void StartsWith()
 {
     {
-        Ustring a("abcd");
-        FGASSERT(a.beginsWith(Ustring("a")));
-        FGASSERT(a.beginsWith(Ustring("ab")));
-        FGASSERT(a.beginsWith(Ustring("abc")));
-        FGASSERT(a.beginsWith(Ustring("abcd")));
-        FGASSERT(!a.beginsWith(Ustring("d")));
-        FGASSERT(!a.beginsWith(Ustring("db")));
-        FGASSERT(!a.beginsWith(Ustring("dbc")));
-        FGASSERT(!a.beginsWith(Ustring("dbcd")));
-        FGASSERT(!a.beginsWith(Ustring("abcde")));        
+        String8 a("abcd");
+        FGASSERT(a.beginsWith(String8("a")));
+        FGASSERT(a.beginsWith(String8("ab")));
+        FGASSERT(a.beginsWith(String8("abc")));
+        FGASSERT(a.beginsWith(String8("abcd")));
+        FGASSERT(!a.beginsWith(String8("d")));
+        FGASSERT(!a.beginsWith(String8("db")));
+        FGASSERT(!a.beginsWith(String8("dbc")));
+        FGASSERT(!a.beginsWith(String8("dbcd")));
+        FGASSERT(!a.beginsWith(String8("abcde")));        
     }
     {
-        Ustring a("a kind of longish string to test with since small strings may hide some bugs");
-        FGASSERT(a.beginsWith(Ustring("a kind of longish string to test with")));
+        String8 a("a kind of longish string to test with since small strings may hide some bugs");
+        FGASSERT(a.beginsWith(String8("a kind of longish string to test with")));
     }
 }
 

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 static string const   state1 = "State1";
-static Ustring const state2("State2");
+static String8 const state2("State2");
 // TODO: Check for a specific language translation here once implemented:
 static string const   tr_correct = 
     "While executing func1 with state : State1\n"
@@ -50,7 +50,7 @@ struct FgMyException : public FgException
 };
 
 void
-fgExceptionTest(CLArgs const &)
+testExceptions(CLArgs const &)
 {
     try
     {

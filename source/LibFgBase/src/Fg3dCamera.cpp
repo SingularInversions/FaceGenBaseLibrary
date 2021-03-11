@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,6 +17,16 @@
 using namespace std;
 
 namespace Fg {
+
+ostream &
+operator<<(ostream & os,Frustum const & f)
+{
+    return os << fgnl
+        << "nearHalfWidth: " << f.nearHalfWidth
+        << "nearHalfHeight: " << f.nearHalfHeight
+        << "nearDist: " << f.nearDist
+        << "farDist: " << f.farDist;
+}
 
 Mat44F
 Camera::projectIpcs(Vec2UI dims) const
@@ -49,8 +59,8 @@ CameraParams::camera(Vec2UI imgDims) const
         dims = Vec3D(1);
     else if (dims.cmpntsProduct() == 0)
         dims = Vec3D(cMaxElem(dims));
-    // Hack orthographic by relying on precision:
-    double          fovDegClamp = clampBounds(fovMaxDeg,0.0001,120.0),
+    // Hack orthographic by relying on precision (below 0.01 degrees we get visible Z-fighting)
+    double          fovDegClamp = clamp(fovMaxDeg,0.01,120.0),
                     modelHalfDimMax = cMaxElem(dims) * 0.5,
                     imgDimMax = cMaxElem(imgDims),
                     relScale = exp(logRelScale),

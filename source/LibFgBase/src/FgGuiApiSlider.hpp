@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,12 +15,12 @@ namespace Fg {
 struct  GuiTickLabel
 {
     double              pos;
-    Ustring             label;
+    String8             label;
 
     GuiTickLabel()
     {}
 
-    GuiTickLabel(double p,Ustring l)
+    GuiTickLabel(double p,String8 l)
     : pos(p), label(l)
     {}
 };
@@ -39,7 +39,7 @@ struct GuiSlider : GuiBase
     // initialization value:
     Sfun<double(void)>  getInput;
     Sfun<void(double)>  setOutput;
-    Ustring             label;          // Can be empty
+    String8             label;          // Can be empty
     VecD2               range;
     double              tickSpacing;
     GuiTickLabels       tickLabels;     // Can be empty
@@ -50,47 +50,31 @@ struct GuiSlider : GuiBase
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
+typedef Svec<GuiSlider> GuiSliders;
 
 GuiPtr
 guiSlider(
     IPT<double>         valN,
-    Ustring             label,               // Can be empty
+    String8             label,               // Can be empty
     VecD2               range,
     double              tickSpacing,
-    const GuiTickLabels & tl = GuiTickLabels(),
-    const GuiTickLabels & ul = GuiTickLabels(),
+    GuiTickLabels const & tl = GuiTickLabels(),
+    GuiTickLabels const & ul = GuiTickLabels(),
     uint                edgePadding=5,
     bool                editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
 
-// Create a panel of similar sliders with numbered names:
-
-// Keeping tuple of values as input instead of collating allows for simpler state checks
-// (eg. normalization) but then doesn't play well with edit boxes so not such a great idea:
-Arr<GuiPtr,3>
-guiSliders(
-    IPT<Vec3F>          valN,
-    const Arr<Ustring,3> & labels,
-    VecD2               range,
-    double              tickSpacing);
-
-struct  GuiSliders
-{
-    GuiPtrs             sliders;
-    Svec<IPT<double> >  valNs;
-    NPT<Doubles>        valsN;          // Collated vals if needed
-};
-
-GuiSliders
-guiSliders(
-    Ustrings const &    labels,
-    VecD2               range,
-    double              initVal,
-    double              tickSpacing,
-    Ustring const &     relStore="");   // Relative store name for saving state (null if no save)
+// Array of panes with labels on left, sliders on right:
+GuiPtr
+guiSliderBank(
+    Svec<IPT<double> > const & valNs,
+    String8s const &        labels,     // Must be same size as valNs
+    VecD2                   range,
+    double                  tickSpacing,
+    GuiTickLabels const &   tickLabels=GuiTickLabels{});
 
 // Use to auto create labels for above. Labels will have numbers appended:
-Ustrings
-numberedLabels(Ustring const & baseLabel,size_t num);
+String8s
+numberedLabels(String8 const & baseLabel,size_t num);
 
 // Generate equispaced tick labels:
 GuiTickLabels

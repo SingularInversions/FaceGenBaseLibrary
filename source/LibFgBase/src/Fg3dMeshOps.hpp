@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -34,16 +34,21 @@ Mesh
 meshFromImage(const ImgD & img);
 
 // Create a grid of SxS squares filling XY in [-1,1] at Z=0:
-QuadSurf        cGrid(uint squaresPerSide);
-// Creates a sphere centred at the origin by subdividing a tetrahedron and renormalizing the 
-// vertex distances from the origin 'subdivision' times:
-Mesh            cSphere(float radius,uint subdivisions);
+QuadSurf        cGrid(size_t squaresPerSide);
 Mesh            c3dCube(bool open=false);
 Mesh            cPyramid(bool open=false);
-Mesh            cTetrahedron(bool open=false);
-TriSurf         cOctahedron();                          // Size (max width) 2 centred around origin. CC winding.
-TriSurf         cIcosahedron();                         // Centred around origin, all vertices distance 1 from origin. CC winding.
+// Regular tetrahedron, centre at origin, edges length 2*sqrt(2), CC winding.
+TriSurf         cTetrahedron(bool open=false);
+TriSurf         cOctahedron();                      // Size (max width) 2 centred around origin. CC winding.
+// Regular icosahedron, centre at origin, all vertices distance 1 from origin, CC winding:
+TriSurf         cIcosahedron();
 Mesh            cNTent(uint nn);
+// Create unit radius sphere centred at origin by subdividing a tetrahedron and renormalizing the 
+// vertex positions 'subdivision' times. Poor isotropy.
+TriSurf         cSphere4(size_t subdivisions);
+// Create unit radius sphere centred at origin by subdividing an icosahedron and renormalizing the
+// vertex positions 'subdivision' times:
+TriSurf         cSphere(size_t subdivisions);
 
 //Mesh
 //fgFddCage(float size,float thick);
@@ -85,7 +90,7 @@ mergeMeshes(const Svec<Mesh> & meshes);
 
 // Doesn't preserve uvs, surface points or marked verts:
 Mesh
-fg3dMaskFromUvs(Mesh const & mesh,const Img<FgBool> & mask);
+fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask);
 
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
 ImgUC
@@ -103,11 +108,11 @@ embossMesh(Mesh const & mesh,const ImgUC & pattern,double ratio=0.05);
 
 struct  MorphVal
 {
-    Ustring         name;
+    String8         name;
     float           val;            // 0 - no change, 1 - full application
 
     MorphVal() {}
-    MorphVal(Ustring const & name_,float val_) : name(name_), val(val_) {}
+    MorphVal(String8 const & name_,float val_) : name(name_), val(val_) {}
 };
 typedef Svec<MorphVal>  MorphVals;
 

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,6 +16,7 @@
 #include "FgImageDraw.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgBuild.hpp"
+#include "FgImagePoint.hpp"
 
 using namespace std;
 
@@ -97,75 +98,86 @@ cmdViewMesh(CLArgs const & args)
 }
 
 void
-fgViewImage(CLArgs const & args)
+cmdViewImage(CLArgs const & args)
 {
-    Syntax    syntax(args,"<imageFileName>");
-    if (args.size() > 2)
-        syntax.incorrectNumArgs();
-    ImgC4UC     img = loadImage(syntax.next());
-    fgout << fgnl << img;
-    imgDisplay(img);
+    Syntax          syn {args,"<image>.<ext> [<points>.txt]\n"
+        "    <ext>      - (" + cat(imgFileExtensions(),",") + ")\n"
+        "    <points>   - optional points annotation file in simple YOLO format"
+    };
+    ImgC4UC         img = loadImage(syn.next());
+    fgout << img;
+    ImagePoints     ips;
+    if (syn.more()) {
+        ips = loadImagePoints(syn.next());
+        fgout << ips;
+    }
+    AffineEw2F      xf = cIrcsToIucsXf(img.dims());
+    Mat22F          bnds {0,1,0,1};
+    Vec2Fs          pts;
+    for (ImagePoint const & ip : ips) {
+        Vec2F           iucs = xf * ip.posIrcs;
+        if (!isInBounds(bnds,iucs))
+            fgout << fgnl << "WARNING point is not on image: " << ip.label;
+        pts.push_back(iucs);
+    }
+    viewImage(img,pts);
 }
 
 void
 fgViewImagef(CLArgs const & args)
 {
-    Syntax    syntax(args,"<imageFileName> [<saveName>]");
+    Syntax    syn(args,"<imageFileName> [<saveName>]");
     ImgF      img;
-    if (toLower(pathToExt(syntax.next())) == "fgpbn")
-        loadBsaPBin(syntax.curr(),img);
+    if (toLower(pathToExt(syn.next())) == "fgpbn")
+        loadBsaPBin(syn.curr(),img);
     else {
         if (getCurrentBuildOS() != BuildOS::win)
             fgout << "WARNING: This functionality currently only works properly under windows";
-        loadImage_(syntax.curr(),img);
+        loadImage_(syn.curr(),img);
     }
-    if (syntax.more())
-        saveBsaPBin(syntax.next(),img);
+    if (syn.more())
+        saveBsaPBin(syn.next(),img);
     fgout << fgnl << img;
-    imgDisplay(img);
+    viewImage(img);
 }
 
 void
 cmdViewUvs(CLArgs const & args)
 {
-    Syntax            syntax(args,
+    Syntax              syn(args,
         "(<mesh>.<ext>)+ [<texImage>]\n"
         "     <ext> = " + meshLoadFormatsCLDescription());
-    Mesh            mesh;
-    ImgC4UC         img;
-    while (syntax.more()) {
-        string          fname = syntax.next(),
-                        ext = toLower(pathToExt(fname));
-        if (contains(meshLoadFormats(),ext)) {
-            Mesh    tmp = loadMesh(fname);
-            if (tmp.uvs.empty())
-                syntax.error("Mesh has no UVs",fname);
-            mesh = mergeMeshes(mesh,tmp);
-        }
-        else if (hasImgExtension(fname)) {
-            if (!img.empty())
-                syntax.error("Only one image allowed");
-            img = loadImage(fname);
-        }
-        else
-            syntax.error("Unknown file type",fname);
-    }
-    Mat22F            uvb = cBounds(mesh.uvs);
+    Mesh                mesh;
+    ImgC4UC             img;
+    do {
+        string              fname = syn.next(),
+                            ext = pathToExt(fname);
+        if (!contains(meshLoadFormats(),toLower(ext)))
+            syn.error("Invalid filename extension for a mesh",ext);
+        Mesh                tmp = loadMesh(fname);
+        if (tmp.uvs.empty())
+            syn.error("Mesh has no UVs",fname);
+        mesh = mergeMeshes(mesh,tmp);
+    } while (syn.more() && hasMeshExtension(syn.peekNext()));
+    if (syn.more())
+        img = loadImage(syn.next());
+    Mat22F              uvb = cBounds(mesh.uvs);
     fgout << fgnl << "UV Bounds: " << uvb;
-    VecF2            uvbb = cBounds(uvb.m);
+    VecF2               uvbb = cBounds(uvb.m);
     if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
         fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
-    imgDisplay(cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
+    viewImage(cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
 }
 
 Cmds
 getViewCmds()
 {
-    Cmds   cmds;
-    cmds.push_back(Cmd(cmdViewMesh,"mesh","Interactively view 3D meshes"));
-    cmds.push_back(Cmd(fgViewImage,"image","Basic image viewer"));
-    cmds.push_back(Cmd(fgViewImagef,"imagef","Floating point image viewer"));
-    cmds.push_back(Cmd(cmdViewUvs,"uvs","View the UV layout of a 3D mesh"));
+    Cmds            cmds {
+        {cmdViewMesh,"mesh","Interactively view 3D meshes"},
+        {cmdViewImage,"image","Basic image viewer"},
+        {fgViewImagef,"imagef","Floating point image viewer"},
+        {cmdViewUvs,"uvs","View the UV layout of a 3D mesh"},
+    };
     return cmds;
 }
 

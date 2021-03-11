@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,14 +20,14 @@ using namespace std;
 
 namespace Fg {
 
-void test3d(CLArgs const &);
-void fgBoostSerializationTest(CLArgs const &);
-void fgCmdTestDfg(CLArgs const &);
-void fgExceptionTest(CLArgs const &);
-void fgFileSystemTest(CLArgs const &);
-void fgOpenTest(CLArgs const &);
-void testGeometry(CLArgs const &);
-void fgGridTrianglesTest(CLArgs const &);
+void    test3d(CLArgs const &);
+void    testBoostSer(CLArgs const &);
+void    testDataflow(CLArgs const &);
+void    testExceptions(CLArgs const &);
+void    testFilesystem(CLArgs const &);
+void    testFopen(CLArgs const &);
+void    testGeometry(CLArgs const &);
+void    testGridTriangles(CLArgs const &);
 void fgImageTest(CLArgs const &);
 void testKdTree(CLArgs const &);
 void fgMatrixSolverTest(CLArgs const &);
@@ -39,26 +39,27 @@ void fgMorphTest(CLArgs const &);
 void fgPathTest(CLArgs const &);
 void fgQuaternionTest(CLArgs const &);
 void fgCmdRenderTest(CLArgs const &);
+void testSerial(CLArgs const &);
 void fgSerializeTest(CLArgs const &);
-void fgSimilarityTest(CLArgs const &);
-void fgSimilarityApproxTest(CLArgs const &);
+void testSimilarity(CLArgs const &);
+void testSimilaritySolve(CLArgs const &);
 void fgStdVectorTest(CLArgs const &);
 void fgStringTest(CLArgs const &);
 
 Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
 Cmds
-fgCmdBaseTests()
+getBaseTests()
 {
-    Cmds      cmds {
+    Cmds            cmds {
         {test3d,"3d"},
-        {fgBoostSerializationTest,"boostSerialization"},
-        {fgCmdTestDfg,"dataflow"},
-        {fgExceptionTest,"exception"},
-        {fgFileSystemTest,"filesystem"},
-        {fgOpenTest,"open"},
+        {testBoostSer,"boostSerialization"},
+        {testDataflow,"dataflow"},
+        {testExceptions,"exception"},
+        {testFilesystem,"filesystem"},
+        {testFopen,"fopen"},
         {testGeometry,"geometry"},
-        {fgGridTrianglesTest,"gridTriangles"},
+        {testGridTriangles,"gridTriangles"},
         {fgImageTest,"image"},
         {testKdTree,"kd"},
         {fgMatrixSolverTest,"matSol","Matrix Solver"},
@@ -70,9 +71,10 @@ fgCmdBaseTests()
         {fgPathTest,"path"},
         {fgQuaternionTest,"quaternion"},
         {fgCmdRenderTest,"rendc","render command"},
+        {testSerial,"serial"},
         {fgSerializeTest,"serialize"},
-        {fgSimilarityTest,"similarity"},
-        {fgSimilarityApproxTest,"similarityApprox"},
+        {testSimilarity,"similarity"},
+        {testSimilaritySolve,"solveSimilarity"},
         {fgStdVectorTest,"vector"},
         {fgStringTest,"string"},
     };
@@ -89,7 +91,7 @@ static
 void
 testmGui(CLArgs const & args)
 {
-    Cmds      cmds {
+    Cmds            cmds {
         {fgImgGuiTestm,"image"},
         {fgTestmGui2,"gui2"},
         {fgTestmGuiMesh,"mesh"},
@@ -122,13 +124,13 @@ void fgClusterTestm(CLArgs const &);
 void fgClusterDeployTestm(CLArgs const &);
 void fgCmdTestmCpp(CLArgs const &);
 void fg3dReadWobjTest(CLArgs const &);
-void fgRandomTest(CLArgs const &);
+void testmRandom(CLArgs const &);
 void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
 void fgImageTestm(CLArgs const &);
 
 Cmds
-fgCmdBaseTestms()
+getBaseTestms()
 {
     Cmds      cmds {
         {testmGui,"gui"},
@@ -138,7 +140,7 @@ fgCmdBaseTestms()
         {fgClusterDeployTestm,"clusterDeploy"},
         {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
         {fg3dReadWobjTest,"readWobj"},
-        {fgRandomTest,"random"},
+        {testmRandom,"random"},
         {testmGeometry,"geometry"},
         {fgTextureImageMappingRenderTest,"texturemap"},
         {fgImageTestm,"image"}
@@ -149,11 +151,11 @@ fgCmdBaseTestms()
 static
 void
 testm(CLArgs const & args)
-{doMenu(args,fgCmdBaseTestms()); }
+{doMenu(args,getBaseTestms()); }
 
 void
 fgCmdBaseTest(CLArgs const & args)
-{doMenu(args,fgCmdBaseTests(),true); }
+{doMenu(args,getBaseTests(),true); }
 
 void
 view(CLArgs const & args)

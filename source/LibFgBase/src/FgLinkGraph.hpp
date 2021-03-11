@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -176,8 +176,8 @@ void
 fgTraverseDown(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    Svec<bool> &      nodesTouched,       // MODIFIED
-    Svec<bool> &      linksTouched)       // MODIFIED
+    Bools &      nodesTouched,       // MODIFIED
+    Bools &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
     Uints const &    outLinks = lg.outgoingLinks(nodeIdx);
@@ -198,8 +198,8 @@ void
 fgTraverseUp(
     const FgLinkGraph<NodeData,LinkData> & lg,
     uint                nodeIdx,
-    Svec<bool> &      nodesTouched,       // MODIFIED
-    Svec<bool> &      linksTouched)       // MODIFIED
+    Bools &      nodesTouched,       // MODIFIED
+    Bools &      linksTouched)       // MODIFIED
 {
     nodesTouched[nodeIdx] = true;
     if (!lg.hasIncomingLink(nodeIdx))

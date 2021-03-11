@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -39,9 +39,9 @@ Strings
 splitLines(String const & src);
 
 String32s
-splitLines(const std::u32string & src,bool includeEmptyLines=false);
+splitLines(String32 const & src,bool includeEmptyLines=false);
 
-Ustrings
+String8s
 splitLinesUtf8(String const & utf8,bool includeEmptyLines=false);
 
 // The exact UTF-8 string between commas will be taken as the value except for:
@@ -50,20 +50,20 @@ splitLinesUtf8(String const & utf8,bool includeEmptyLines=false);
 //   up until the next single-quote is taken as the value, and double-quotes are taken as single-quotes.
 Stringss
 loadCsv(
-    Ustring const &    fname,
+    String8 const &    fname,
     size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
 
 // Each non-empty line in the CSV must have at least keyIdx+1 fields or an error will occur.
 // The map value will contain all fields in original order (including key):
 std::map<std::string,Strings>
 loadCsvToMap(
-    Ustring const &    fname,
+    String8 const &    fname,
     size_t              keyIdx,
     size_t              fieldsPerLine=0);   // If non-zero, non-empty lines must have this many fields.
 
 // Quotes all fields and uses double-quotes to escape quote literals.
 void
-saveCsv(Ustring const & fname,const Stringss & csvLines);
+saveCsv(String8 const & fname,const Stringss & csvLines);
 
 // Split up a string based on a seperator.
 // Output does not include separators or (by default) empty strings.
@@ -81,8 +81,8 @@ splitWhitespace(String const &);
 String
 asciify(String const &);
 
-std::u32string
-replaceAll(const std::u32string & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
+String32
+replaceAll(String32 const & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
 
 }
 

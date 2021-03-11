@@ -15,11 +15,11 @@ namespace Fg {
 
 // Returns no value if given dir/name not found:
 Opt<ulong>
-winRegistryLookupUlong(Ustring const & dir,Ustring const & name);
+winRegistryLookupUlong(String8 const & dir,String8 const & name);
 
 // Returns no value if given dir/name not found:
-Opt<Ustring>
-fgWinRegistryLookupString(Ustring const & dir,Ustring const & name);
+Opt<String8>
+fgWinRegistryLookupString(String8 const & dir,String8 const & name);
 
 }
 

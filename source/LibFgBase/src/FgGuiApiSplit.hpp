@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 #define FGGUIAPISPLIT_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgStdVector.hpp"
+#include "FgImageBase.hpp"
 
 namespace Fg {
 
@@ -19,25 +19,28 @@ GuiImplPtr guiGetOsImpl(GuiSplit const & guiApi);
 // Algorithmically proportioned split window with all contents viewable:
 struct  GuiSplit : GuiBase
 {
-    bool                    horiz;
-    Svec<GuiPtr>        panes;
+    Img<GuiPtr>         panes;
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 GuiPtr
-guiSplit(bool horiz,const Svec<GuiPtr> & panes);
+guiSplit(bool horiz,GuiPtrs const & panes);
 
-inline
+// Checks for case of 1x1 image and just returns the single GuiPtr in that case:
 GuiPtr
-guiSplit(bool horiz,GuiPtr p0,GuiPtr p1)
-{return guiSplit(horiz,svec(p0,p1)); }
+guiSplit(Img<GuiPtr> const & panes);
 
-inline
-GuiPtr
-guiSplit(bool horiz,GuiPtr p0,GuiPtr p1,GuiPtr p2)
-{return guiSplit(horiz,svec(p0,p1,p2)); }
+// Horizontal array of panes:
+inline GuiPtr
+guiSplitH(GuiPtrs const & panes)
+{return guiSplit(Img<GuiPtr>{panes.size(),1,panes}); }
+
+// Vertical array of panes:
+inline GuiPtr
+guiSplitV(GuiPtrs const & panes)
+{return guiSplit(Img<GuiPtr>{1,panes.size(),panes}); }
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiSplitAdj;
@@ -84,7 +87,7 @@ struct  GuiSplitScroll : GuiBase
 };
 
 GuiPtr
-guiSplitScroll(const GuiPtrs & panes,uint spacing=0);
+guiSplitScroll(GuiPtrs const & panes,uint spacing=0);
 
 GuiPtr
 guiSplitScroll(std::function<GuiPtrs(void)> getPanes);

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,8 +42,8 @@ toNativeSeparator(String const & path)
 #endif
 }
 
-inline Ustring
-fgNfs(Ustring const & path)
+inline String8
+fgNfs(String8 const & path)
 {
 #ifdef _WIN32
     return path.replace('/','\\');
@@ -60,41 +60,41 @@ struct  Path
 {
     // UNC root including initial delimiters (eg //server), in which case 'root' is always true,
     // OR drive letter on Windows (eg C:), in which case 'root' can be either.
-    Ustring            drive;
+    String8            drive;
     bool               root;   // Path starts at root ? (otherwise relative)
-    Ustrings           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
-    Ustring            base;   // Base filename
-    Ustring            ext;    // Filename extension (no '.')
+    String8s           dirs;   // No delimiters in in dir names. Can begin with '..' entries.
+    String8            base;   // Base filename
+    String8            ext;    // Filename extension (no '.')
 
     Path() : root(false) {}
 
-    // Leaving this implicit allows Ustring to be used as an arg for functions taking Path.
+    // Leaving this implicit allows String8 to be used as an arg for functions taking Path.
     // Anything in 'path' not suffixed by a directory delimiter is assumed to be a file.
-    Path(Ustring const & path);
+    Path(String8 const & path);
 
     Path(
-        Ustring const & d,bool r,Ustrings const & ds,
-        Ustring const & b,Ustring const & e)
+        String8 const & d,bool r,String8s const & ds,
+        String8 const & b,String8 const & e)
         : drive(d), root(r), dirs(ds), base(b), ext(e)
     {}
 
     // All delimiters in native form. All directory names end with delimiter:
-    Ustring
+    String8
     str() const;
 
     // Only the first N directories with no filename, terminated with a delimiter:
-    Ustring
+    String8
     dir(size_t n) const;
 
     // Directory terminated with a delimiter:
-    Ustring
+    String8
     dir() const
     {return dir(dirs.size()); }
 
-    Ustring
+    String8
     baseExt() const;
 
-    Ustring
+    String8
     dirBase() const
     {return dir() + base; }
 
@@ -112,30 +112,30 @@ struct  Path
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
 Path
-pathFromDir(Ustring const & directory);
+pathFromDir(String8 const & directory);
 
-Ustring
-pathToBase(Ustring const & path);
+String8
+pathToBase(String8 const & path);
 
-Ustring
-pathToDirBase(Ustring const & path);
+String8
+pathToDirBase(String8 const & path);
 
-Ustring
-pathToExt(Ustring const & path);
+String8
+pathToExt(String8 const & path);
 
 String
 pathToExt(String const & path);
 
 // Returns true if 'path' specifies a name with extension 'ext':
 bool
-checkExt(Ustring const & path,String const & ext);
+checkExt(String8 const & path,String const & ext);
 
-Ustring
-pathToName(Ustring const & path);
+String8
+pathToName(String8 const & path);
 
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
-Ustring
-asDirectory(Ustring const & path);
+String8
+asDirectory(String8 const & path);
 
 String
 asDirectory(String const & path);

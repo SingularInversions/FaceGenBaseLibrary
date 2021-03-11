@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,6 +33,27 @@ using namespace Eigen;
 
 namespace Fg {
 
+namespace {
+
+// Ensure exact symmetry and valid finite floating point values while converting to Eigen format
+// (any asymmetry will cause totally incorrect results from RSM solver):
+void
+convertRsm_(MatD const & rsm,MatrixXd & ret)
+{
+    size_t          dim = rsm.ncols;
+    FGASSERT(rsm.nrows == dim);
+    for (size_t rr=0; rr<dim; ++rr) {
+        for (size_t cc=rr; cc<dim; ++cc) {
+            double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
+            FGASSERT(boost::math::isfinite(v));
+            ret(rr,cc) = v;
+            ret(cc,rr) = v;
+        }
+    }
+}
+
+}
+
 Vec3D
 solve(Mat33D A_,Vec3D b_)
 {
@@ -49,21 +70,26 @@ solve(Mat33D A_,Vec3D b_)
     return Vec3D {r[0],r[1],r[2]};
 }
 
+Doubles
+cEigvalsRsm(MatD const & rsm)
+{
+    size_t              dim = rsm.ncols;
+    MatrixXd            mat(dim,dim);
+    convertRsm_(rsm,mat);
+    SelfAdjointEigenSolver<MatrixXd>    es(mat,EigenvaluesOnly);
+    VectorXd const &                    eigVals = es.eigenvalues();
+    Doubles                             ret(dim);
+    for (size_t rr=0; rr<dim; ++rr)
+        ret[rr] = eigVals(rr);
+    return ret;
+}
+
 void
 cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
 {
     size_t              dim = rsm.ncols;
-    FGASSERT(rsm.nrows == dim);
-    // Ensure exact symmetry (results will be wrong otherwise) and valid values and copy into Eigen format:
     MatrixXd            mat(dim,dim);
-    for (size_t rr=0; rr<dim; ++rr) {
-        for (size_t cc=rr; cc<dim; ++cc) {
-            double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(boost::math::isfinite(v));
-            mat(rr,cc) = v;
-            mat(cc,rr) = v;
-        }
-    }
+    convertRsm_(rsm,mat);
     // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
     // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
     SelfAdjointEigenSolver<MatrixXd>    es(mat);

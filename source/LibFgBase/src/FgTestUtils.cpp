@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,19 +22,19 @@ namespace Fg {
 
 void
 regressFail(
-    Ustring const & testName,
-    Ustring const & refName)
+    String8 const & testName,
+    String8 const & refName)
 {
     fgThrow("Regression failure",testName + " != " + refName);
 }
 
 void
-regressFile(Ustring const & baselineRelPath,Ustring const & queryPath,const EquateFiles & fnEqual)
+regressFile(String8 const & baselineRelPath,String8 const & queryPath,const EquateFiles & fnEqual)
 {
     if (!pathExists(queryPath))
         fgThrow("Regression query file not found",queryPath);
     bool                    regressOverwrite = overwriteBaselines();
-    Ustring                baselinePath = dataDir() + baselineRelPath;
+    String8                baselinePath = dataDir() + baselineRelPath;
     if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
             fileCopy(queryPath,baselinePath);
@@ -58,8 +58,8 @@ regressFile(Ustring const & baselineRelPath,Ustring const & queryPath,const Equa
 static
 bool
 compareImages(
-    Ustring const &    f1,
-    Ustring const &    f2,
+    String8 const &    f1,
+    String8 const &    f2,
     uint                maxDelta)
 {
     ImgC4UC         i1 = loadImage(f1),
@@ -79,13 +79,13 @@ regressImage(
 
 template<>
 ImgC4UC
-regressLoad(Ustring const & path)
+regressLoad(String8 const & path)
 {return loadImage(path); }
 
 void
-regressString(string const & data,Ustring const & relPath)
+regressString(string const & data,String8 const & relPath)
 {
-    Ustring        dd = dataDir();
+    String8        dd = dataDir();
     if (data == loadRawString(dd+relPath))
         return;
     if (pathExists(dd+"_overwrite_baselines.flag"))

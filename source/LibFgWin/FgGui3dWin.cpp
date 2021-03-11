@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -46,14 +46,15 @@ struct  Gui3dWin : public GuiBaseImpl
     Gui3d               m_api;
     Vec2UI              m_size;             // Value also stored in m_api.viewportDims but local copy handy
     HDC                 m_hdc;
-    Vec2I               m_lastPos;          // Last mouse position in CC (only valid if drag!=None)
+    Vec2I               m_lastPos;              // Last mouse position in win32 client coords
+    Arr<Vec2I,3>        lastButtonDownPosLMR;   // Left/Middle/Right buttons in win32 client coords
     ULONGLONG           m_lastGestureVal;   // Need to keep last gesture val to calc differences.
     DfgFPtr             m_updateBgImg;      // Update BG image ?
     Mat44F              m_worldToD3ps;      // Transform used for last render (for mouse-surface intersection)
     unique_ptr<D3d>     m_d3d;
     // Need to track this to avoid random object motion when mouse is dragged into viewport, and also when
     // file dialogs leak mouse moves into the viewport (MS bug):
-    bool                leftButtonDown = false;
+    Arr<bool,3>         buttonIsDownLMR = {{false,false,false}};
 
     Gui3dWin(const Gui3d & api)
     : m_api(api)
@@ -65,12 +66,12 @@ struct  Gui3dWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
-        cc.useFillBrush = false;
+        cc.useFillBrush = false;    // Rendering does it's own background fill
         winCreateChild(parentHwnd,ident,this,cc);
         // Don't create D3D here this is parent context.
     }
@@ -145,10 +146,16 @@ struct  Gui3dWin : public GuiBaseImpl
                         hgt = HIWORD(lParam);
             // In case 0 size sent at creation or minimize:
             if (wid*hgt > 0) {
-                m_size = Vec2UI(wid,hgt);
-                m_api.viewportDims.set(m_size);
-                m_d3d->resize(m_size);
-                winUpdateScreen();      // Consumers of m_api.viewportSize need this
+                Vec2UI          newSize{wid,hgt};
+                if (newSize != m_size) {
+                    m_size = newSize;
+                    m_api.viewportDims.set(m_size);
+                    if (m_d3d->resize(m_size)) {        // This WM_SIZE was caused by device being invalidated, re-create:
+                        m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
+                        m_d3d->resize(m_size);          // Assume it works this time
+                    }
+                    winUpdateScreen();      // Consumers of m_api.viewportSize need this
+                }
             }
         }
         else if (msg == WM_PAINT) {
@@ -158,60 +165,28 @@ struct  Gui3dWin : public GuiBaseImpl
             // Validates the invalid region. Doesn't erase background in this case since brush is NULL.
             BeginPaint(hwnd,&ps);
             render();
-            // One customer had a Windows termination ('the program has stopped working and will now close' -
-            // Win 10 Pro, NVIDIA GeForce GTX 760)
-            // here, even though 'm_hdc' was valid and a face was already displayed on the screen (just once,
-            // when the program first started). Buggy video driver (perhaps OpenGL specific).
+            // One user had a Windows termination ('the program has stopped working and will now close' -
+            // Win 10 Pro, NVIDIA GeForce GTX 760) here, even though 'm_hdc' was valid and a face was already
+            // displayed on the screen (just once, when the program first started). Turned out to be a buggy
+            // video driver (perhaps OpenGL specific).
             EndPaint(hwnd,&ps);
         }
-        else if (msg == WM_MBUTTONDOWN) {
-            if (wParam == (MK_SHIFT | MK_MBUTTON)) {
-                Vec2I    pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-                const CtrlShiftMiddleClickAction & fn = m_api.shiftMiddleClickActionI.cref();
-                if (fn) {
-                    fn(m_size,pos,m_worldToD3ps);
-                    winUpdateScreen();
-                }
-            }
-        }
-        else if ((msg == WM_LBUTTONDOWN) || (msg == WM_RBUTTONDOWN)) {
-            if (msg == WM_LBUTTONDOWN)
-                leftButtonDown = true;
-            m_lastPos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            // This can only be the case for WM_LBUTTONDOWN:
-            if (wParam == (MK_SHIFT | MK_CONTROL | MK_LBUTTON)) {
-                m_api.markSurfPoint(m_size,m_lastPos,m_worldToD3ps);
-                winUpdateScreen();
-            }
-            if (wParam == (MK_SHIFT | MK_CONTROL | MK_RBUTTON)) {
-                m_api.markVertex(m_size,m_lastPos,m_worldToD3ps);
-                winUpdateScreen();
-            }
-            else if ((wParam == (MK_CONTROL | MK_LBUTTON)) || (wParam == (MK_CONTROL | MK_RBUTTON))) {
-                m_api.ctlClick(m_size,m_lastPos,m_worldToD3ps);
-            }
-            POINT   point;
-            point.x = 0;
-            point.y = 0;
-            FGASSERTWIN(ClientToScreen(hwnd,&point));
-            RECT    rect;
-            rect.left = point.x;
-            rect.top = point.y;
-            rect.right = point.x + m_size[0];
-            rect.bottom = point.y + m_size[1];
-            FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
-        }
-        else if ((msg == WM_LBUTTONUP) || (msg == WM_RBUTTONUP)) {
-            if (msg == WM_LBUTTONUP)
-                leftButtonDown = false;
-            // Only if both buttons are released:
-            if ((wParam & (MK_LBUTTON | MK_RBUTTON)) == 0)
-                ClipCursor(NULL);
-        }
+        else if (msg == WM_LBUTTONDOWN)
+            handleButtonPress(hwnd,wParam,lParam,0);
+        else if (msg == WM_MBUTTONDOWN)
+            handleButtonPress(hwnd,wParam,lParam,1);
+        else if (msg == WM_RBUTTONDOWN)
+            handleButtonPress(hwnd,wParam,lParam,2);
+        else if (msg == WM_LBUTTONUP)
+            handleButtonRelease(wParam,lParam,0);
+        else if (msg == WM_MBUTTONUP)
+            handleButtonRelease(wParam,lParam,1);
+        else if (msg == WM_RBUTTONUP)
+            handleButtonRelease(wParam,lParam,2);
         else if (msg == WM_MOUSEMOVE) {
             Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             Vec2I    delta = pos-m_lastPos;
-            if ((wParam == MK_LBUTTON) && leftButtonDown) {
+            if ((wParam == MK_LBUTTON) && buttonIsDownLMR[0]) {
                 m_api.panTilt(delta);
                 winUpdateScreen();
             }
@@ -228,9 +203,8 @@ struct  Gui3dWin : public GuiBaseImpl
                 winUpdateScreen();
             }
             else if (wParam == (MK_RBUTTON | MK_SHIFT)) {
-                const ShiftRightDragAction & fn = m_api.shiftRightDragActionI.cref();
-                if (fn) {
-                    fn(m_size,pos,m_worldToD3ps);
+                if (m_api.shiftRightDragAction) {
+                    m_api.shiftRightDragAction(m_size,pos,m_worldToD3ps);
                     winUpdateScreen();
                 }
             }
@@ -247,25 +221,23 @@ struct  Gui3dWin : public GuiBaseImpl
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_RBUTTON)) {
-                const BothButtonsDragAction & fn = m_api.bothButtonsDragActionI.cref();
-                if (fn) {
-                    fn(false,delta);
+                if (m_api.bothButtonsDragAction) {
+                    m_api.bothButtonsDragAction(false,delta);
                     winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_RBUTTON | MK_SHIFT)) {
-                const BothButtonsDragAction & fn = m_api.bothButtonsDragActionI.cref();
-                if (fn) {
-                    fn(true,delta);
+                if (m_api.bothButtonsDragAction) {
+                    m_api.bothButtonsDragAction(true,delta);
                     winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_SHIFT | MK_CONTROL)) {
-                m_api.ctrlShiftLeftDrag(m_size,delta);
+                m_api.translateBgImage(m_size,delta);
                 winUpdateScreen();
             }
             else if (wParam == (MK_RBUTTON | MK_SHIFT | MK_CONTROL)) {
-                m_api.ctrlShiftRightDrag(m_size,delta);
+                m_api.scaleBgImage(m_size,delta);
                 winUpdateScreen();
             }
             m_lastPos = pos;
@@ -320,7 +292,7 @@ struct  Gui3dWin : public GuiBaseImpl
                 // but don't bother handling that, just take the first:
                 UINT            ret = DragQueryFile(hDrop,0,buff,511);
                 if (ret != 0) {
-                    Ustring         filePath {&buff[0]};    // UTF-16 to UTF-8
+                    String8         filePath {&buff[0]};    // UTF-16 to UTF-8
                     m_api.fileDragDrop(filePath);
                 }
                 DragFinish(hDrop);      // Windows releases paths memory
@@ -332,11 +304,61 @@ struct  Gui3dWin : public GuiBaseImpl
         return 0;
     }
 
+    void
+    handleButtonPress(HWND hwnd,WPARAM wParam,LPARAM lParam,size_t button)  // 0 - Left, 1 - Middle, 2 - Right
+    {
+        // Position below is always the same as m_lastPos (tested) since the mouse had to WM_MOUSEMOVE here first.
+        // But get 'pos' from params for clarity:
+        Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+        buttonIsDownLMR[button] = true;
+        lastButtonDownPosLMR[button] = pos;
+        if ((wParam & MK_CONTROL) != 0)
+            m_api.ctlClick(m_size,pos,m_worldToD3ps);
+        captureCursor(hwnd);
+    }
+
+    void
+    handleButtonRelease(WPARAM wParam,LPARAM lParam,size_t button)  // 0 - Left, 1 - Middle, 2 - Right
+    {
+        if (buttonIsDownLMR[button]) {
+            buttonIsDownLMR[button] = false;    // Before any possible throw
+            Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
+                                delta = pos - lastButtonDownPosLMR[button];
+            if (cDot(delta,delta) == 0) {       // This was a click not a drag
+                size_t              ctrl = ((wParam & MK_CONTROL) == 0) ? 0 : 1,
+                                    shift = ((wParam & MK_SHIFT) == 0) ? 0 : 1;
+                ClickAction const & action = m_api.clickActions.at(button,shift,ctrl);
+                if (action) {                   // If an action is defined for this combo
+                    action(m_size,pos,m_worldToD3ps);
+                    winUpdateScreen();
+                }
+            }
+        }
+        // Release cursor if all buttons are up:
+        if ((wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) == 0)
+            ClipCursor(NULL);
+    }
+
+    void
+    captureCursor(HWND hwnd)
+    {
+        POINT   point;
+        point.x = 0;
+        point.y = 0;
+        FGASSERTWIN(ClientToScreen(hwnd,&point));
+        RECT    rect;
+        rect.left = point.x;
+        rect.top = point.y;
+        rect.right = point.x + m_size[0];
+        rect.bottom = point.y + m_size[1];
+        FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
+    }
+
     void renderBackBuffer(bool backgroundTransparent)
     {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
-        const Camera &   camera = m_api.xform.cref();
+        Camera const &   camera = m_api.xform.cref();
         // A negative determinant matrix as D3D is a LEFT handed coordinate system:
         Mat33D                      oecsToD3vs = 
             {

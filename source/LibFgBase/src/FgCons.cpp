@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,7 +24,7 @@ Strings
 glob(string const & dir)
 {
     Strings      ret;
-    DirectoryContents dc = directoryContents(dir);
+    DirContents dc = getDirContents(dir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         string      fn = dc.filenames[ii].as_utf8_string();
         Path      p(fn);

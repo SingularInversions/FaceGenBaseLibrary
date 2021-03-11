@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -80,18 +80,19 @@ meshExportFormats();
 // Returns true otherwise. Throws an exception if the specified extension cannot be read as a mesh.
 bool
 loadMesh(
-    Ustring const &     fname,  // If no extension specified will search readable mesh types.
+    String8 const &     fname,  // If no extension specified will search readable mesh types.
     Mesh &              mesh);  // RETURNED
 
 // As above but throws if no mesh found:
-Mesh    loadMesh(Ustring const & fname);
+Mesh    loadMesh(String8 const & fname);
 
 // Loads both mesh and albedo map (if present) and specular map (if present):
-Mesh    loadMeshMaps(Ustring const & baseName);
+Mesh    loadMeshMaps(String8 const & baseName);
 
 // Returns lower case list of supported extensions:
-Strings
-meshLoadFormats();
+Strings             meshLoadFormats();
+// True if this file extension is a 3D mesh readable by FG:
+bool                hasMeshExtension(String8 const & filename);
 
 String
 meshLoadFormatsCLDescription();
@@ -99,11 +100,11 @@ meshLoadFormatsCLDescription();
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
 void
-saveMesh(Meshes const & meshes,Ustring const & fname,String const & imgFormat="png");
+saveMesh(Meshes const & meshes,String8 const & fname,String const & imgFormat="png");
 
 inline
 void
-saveMesh(Mesh const & mesh,Ustring const & fname)
+saveMesh(Mesh const & mesh,String8 const & fname)
 {saveMesh(svec(mesh),fname); }
 
 // Does not include FaceGen formats:
@@ -124,25 +125,25 @@ meshSaveFormatsCLDescription();
 // FaceGen mesh format load / save:
 
 Mesh
-loadFgmesh(Ustring const & fname);
+loadFgmesh(String8 const & fname);
 void
-saveFgmesh(Ustring const & fname,Mesh const & mesh);
+saveFgmesh(String8 const & fname,Mesh const & mesh);
 void
-saveFgmesh(Ustring const & fname,Meshes const & meshes);
+saveFgmesh(String8 const & fname,Meshes const & meshes);
 
 // FaceGen legacy mesh format load / save:
 
 Mesh        loadTri(std::istream & is);
-Mesh        loadTri(Ustring const & fname);
-Mesh        loadTri(Ustring const & meshFile,Ustring const & texFile);
+Mesh        loadTri(String8 const & fname);
+Mesh        loadTri(String8 const & meshFile,String8 const & texFile);
 
 // Merges all surfaces:
 void
-saveTri(Ustring const & fname,Mesh const & mesh);
+saveTri(String8 const & fname,Mesh const & mesh);
 // Merges all meshes and surfaces. Texture images not saved.
 inline
 void
-saveTri(Ustring const & fname,Meshes const & meshes)
+saveTri(String8 const & fname,Meshes const & meshes)
 {return saveTri(fname,mergeMeshes(meshes)); }
 
 
@@ -155,39 +156,39 @@ String          toStr(SpatialUnit);
 // Load from Wavefront OBJ file
 Mesh
 loadWObj(
-    Ustring const &     filename,
+    String8 const &     filename,
     // Break up the surfaces by the given WOBJ separator. Valid values are 'usemtl', 'o' and 'g':
     String              surfSeparator=String());
 
 // Save to Wavefront OBJ file. OBJ does not support morphs or units.
 void
-saveWObj(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
+saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // Ignores morphs:
 void
-saveVrml(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
+saveVrml(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // Meshes with shared morphs must be merged as different surfaces into a single Mesh for the
 // morphs to be unified in FBX (as imported into Unity). Unity will ignore albedo map file 
 // references so they must be manually added:
 void
-saveFbx(Ustring const & filename,Meshes const & meshes,String imgFormat = "png");
+saveFbx(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 
 // All meshes merged, ignores UVs, textures, morphs, etc:
 void
-saveStl(Ustring const & fname,Meshes const & meshes);
+saveStl(String8 const & fname,Meshes const & meshes);
 
 // Morph targets are also saved:
 void
-saveLwo(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
+saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-saveMa(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
+saveMa(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Morph targets are also saved:
 void
-saveXsi(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
+saveXsi(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // 3DS:
 // * No morph targets
@@ -196,16 +197,16 @@ saveXsi(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
 // * 8.3 tex names only
 // * 2^16 max verts & tris
 void
-save3ds(Ustring const & fname,Meshes meshes,String imgFormat = "png");
+save3ds(String8 const & fname,Meshes meshes,String imgFormat = "png");
 
 // Vertices & surfaces must be merged to a single list but tex images are specified per facet.
 // Currently saves all facets as tris but can easily be changed to preverve quads:
 void
-savePly(Ustring const & fname,Meshes const & meshes,String imgFormat = "png");
+savePly(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 
 // Collada. Does not yet support morphs.
 void
-saveDae(Ustring const & fname,Meshes const & meshes,String imgFormat = "png",SpatialUnit unit=SpatialUnit::millimetre);
+saveDae(String8 const & fname,Meshes const & meshes,String imgFormat = "png",SpatialUnit unit=SpatialUnit::millimetre);
 
 }
 

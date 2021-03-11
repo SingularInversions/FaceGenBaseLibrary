@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,11 +18,11 @@ GuiImplPtr guiGetOsImpl(GuiGroupbox const & guiApi);
 struct
 GuiGroupbox : GuiBase
 {
-    GuiGroupbox(Ustring const & l,GuiPtr c)
+    GuiGroupbox(String8 const & l,GuiPtr c)
     : label(l), contents(c)
     {}
 
-    Ustring        label;
+    String8        label;
     GuiPtr     contents;
 
     virtual
@@ -36,7 +36,7 @@ guiGroupboxTr(const std::string & label,GuiPtr p)
 
 inline
 GuiPtr
-guiGroupbox(Ustring const & label,GuiPtr p)
+guiGroupbox(String8 const & label,GuiPtr p)
 {return std::make_shared<GuiGroupbox>(label,p); }
 
 }

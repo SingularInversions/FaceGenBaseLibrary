@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,28 +27,28 @@ fgDirSep()
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
-Path::Path(Ustring const & pathUtf8)
+Path::Path(String8 const & pathUtf8)
 : root(false)
 {
     if (pathUtf8.empty())
         return;
-    u32string       path = pathUtf8.as_utf32();
+    String32       path = pathUtf8.as_utf32();
     path = replaceAll(path,char32_t('\\'),char32_t('/'));  // VS2013 doesn't support char32_t literal U
     if (path.size() > 1) {
         if ((path[0] == '/') && (path[1] == '/')) {
             root = true;
             auto        it = find(path.begin()+2,path.end(),uint('/'));
             if (it == path.end()) {
-                drive = Ustring(path);
+                drive = String8(path);
                 return;
             }
             size_t      slashPos = it-path.begin();
-            drive = Ustring(cHead(path,slashPos));
+            drive = String8(cHead(path,slashPos));
             path = cRest(path,slashPos);
         }
         // Strictly else since we don't combine UNC and LFS:
         else if (path[1] == ':') {
-            drive = Ustring(cHead(path,2));
+            drive = String8(cHead(path,2));
             path = cRest(path,2);
         }
     }
@@ -63,15 +63,15 @@ Path::Path(Ustring const & pathUtf8)
     if (contains(path,char32_t('/'))) {
         String32s        s = splitAtChar(path,char32_t('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
-            Ustring    str(s[ii]);
+            String8    str(s[ii]);
             if ((str == "..") && (!dirs.empty())) {
-                if (Ustring(dirs.back()) == str)
+                if (String8(dirs.back()) == str)
                     dirs.push_back(str);            // '..' does not back up over '..' !
                 else
                     dirs = cHead(dirs,dirs.size()-1);
             }
             else if (str != ".")
-                dirs.push_back(Ustring(s[ii]));
+                dirs.push_back(String8(s[ii]));
         }
         if (!s.back().empty())
             path = s.back();
@@ -81,29 +81,29 @@ Path::Path(Ustring const & pathUtf8)
     if (path.empty())
         return;
     size_t          dotIdx = path.find_last_of('.');
-    if (dotIdx == u32string::npos)
-        base = Ustring(path);
+    if (dotIdx == String32::npos)
+        base = String8(path);
     else {
-        base = Ustring(path.substr(0,dotIdx));
-        ext = Ustring(path.substr(dotIdx+1));      // Don't include the dot
+        base = String8(path.substr(0,dotIdx));
+        ext = String8(path.substr(dotIdx+1));      // Don't include the dot
     }
 }
 
-Ustring
+String8
 Path::str() const
 {
-    Ustring    ret = dir();
+    String8    ret = dir();
     ret += base;
     if (!ext.empty())
-        ret += Ustring(".") + ext;
+        ret += String8(".") + ext;
     return ret;
 }
 
-Ustring
+String8
 Path::dir(size_t n) const
 {
     FGASSERT(n <= dirs.size());
-    Ustring    ret(drive);
+    String8    ret(drive);
     if (root)
         ret += fgDirSep();
     for (size_t ii=0; ii<n; ++ii)
@@ -111,12 +111,12 @@ Path::dir(size_t n) const
     return ret;
 }
 
-Ustring
+String8
 Path::baseExt() const
 {
-    Ustring        ret(base);
+    String8        ret(base);
     if (!ext.empty())
-        ret += Ustring(".") + ext;
+        ret += String8(".") + ext;
     return ret;
 }
 
@@ -140,7 +140,7 @@ Path::popDirs(uint n)
 }
 
 Path
-pathFromDir(Ustring const & directory)
+pathFromDir(String8 const & directory)
 {
     Path      ret(directory);
     if (!ret.base.empty()) {
@@ -151,40 +151,40 @@ pathFromDir(Ustring const & directory)
     return ret;
 }
 
-Ustring
-pathToBase(Ustring const & f)
+String8
+pathToBase(String8 const & f)
 {return Path(f).base; }
 
-Ustring
-pathToDirBase(Ustring const & p)
+String8
+pathToDirBase(String8 const & p)
 {return Path(p).dirBase(); }
 
-Ustring
-pathToExt(Ustring const & p)
+String8
+pathToExt(String8 const & p)
 {return Path(p).ext; }
 
 std::string
 pathToExt(const std::string & p)
-{return pathToExt(Ustring(p)).m_str; }
+{return pathToExt(String8(p)).m_str; }
 
 bool
-checkExt(Ustring const & path,string const & ext)
+checkExt(String8 const & path,string const & ext)
 {
     Path      p(path);
     return (p.ext.toLower() == toLower(ext));
 }
 
-Ustring
-pathToName(Ustring const & f)
+String8
+pathToName(String8 const & f)
 {return Path(f).baseExt(); }
 
-Ustring
-asDirectory(Ustring const & path)
+String8
+asDirectory(String8 const & path)
 {
-    Ustring        ret = path;
+    String8        ret = path;
     if (path.empty())
         return ret;
-    u32string       str = path.as_utf32();
+    String32       str = path.as_utf32();
     if (str.back() == '/')
         return ret;
     if (str.back() == '\\')
@@ -197,7 +197,7 @@ asDirectory(Ustring const & path)
 
 string
 asDirectory(string const & path)
-{return asDirectory(Ustring(path)).m_str; }
+{return asDirectory(String8(path)).m_str; }
 
 void
 fgPathTest(CLArgs const &)

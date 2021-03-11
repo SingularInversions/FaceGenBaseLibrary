@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -78,8 +78,8 @@ DfgInput::setToDefault() const
 
 DfgOutput::~DfgOutput()
 {
-    // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions:
-    if ((time > 0) && (isConsoleProgram())) {   // Cannot throw
+    // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions
+    if ((time > 1) && (isConsoleProgram())) {   // Cannot throw
         string      sig;
         for (DfgNPtr const & source : sources)
             sig += cSignature(source->getDataCref()) + " ";
@@ -144,6 +144,12 @@ DfgOutput::getDataCref() const
 {
     update();
     return data;
+}
+void
+DfgOutput::clearSources()
+{
+    sources.clear();
+    markDirty();
 }
 void
 DfgOutput::addSource(const DfgNPtr & src)
@@ -249,7 +255,7 @@ void setInputsToDefault(DfgNPtrs const & nptrs)
 }
 
 void
-fgCmdTestDfg(CLArgs const &)
+testDataflow(CLArgs const &)
 {
     IPT<int>        n0 = makeIPT(5),
                     n1 = makeIPT(6);

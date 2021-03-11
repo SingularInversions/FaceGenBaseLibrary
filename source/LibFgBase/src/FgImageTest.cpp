@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -26,13 +26,13 @@ namespace {
 void
 display(CLArgs const &)
 {
-    Ustring     dd = dataDir();
+    String8     dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
     ImgC4UC     img = loadImage(dd+testorig_jpg);
-    imgDisplay(img);
+    viewImage(img);
     string      testorig_bmp("base/test/testorig.bmp");
     loadImage_(dd+testorig_bmp,img);
-    imgDisplay(img);
+    viewImage(img);
 }
 
 void
@@ -42,33 +42,33 @@ resize(CLArgs const &)
     ImgC4UC         img = loadImage(dataDir()+fname);
     ImgC4UC         out(img.width()/2+1,img.height()+1);
     imgResize(img,out);
-    imgDisplay(out);
+    viewImage(out);
 }
 
 void
 sfs(CLArgs const &)
 {
     ImgC4UC         orig = loadImage(dataDir()+"base/Mandrill512.png");
-    Img<Vec3F>   img(orig.dims());
+    Img<Vec3F>      img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
-        img[ii] = Vec3F(orig[ii].m_c.subMatrix<3,1>(0,0));
+        img[ii] = Vec3F(mapCast<float>(cHead<3>(orig[ii].m_c)));
     Timer             time;
     for (uint ii=0; ii<100; ++ii)
         smoothFloat(img,img,1);
     double              ms = time.read();
     fgout << fgnl << "smoothFloat time: " << ms;
-    imgDisplay(img);
+    viewImage(img);
 }
 
 // AUTOMATIC:
 
 void
-composite(CLArgs const &)
+testComposite(CLArgs const &)
 {
-    Ustring            dd = dataDir();
-    ImgC4UC         overlay = loadImage(dd+"base/Teeth512.png"),
+    String8             dd = dataDir();
+    ImgC4UC             overlay = loadImage(dd+"base/Teeth512.png"),
                         base = loadImage(dd+"base/Mandrill512.png");
-    regressTest(fgComposite(overlay,base),dd+"base/test/imgops/composite.png");
+    regressTest(composite(overlay,base),dd+"base/test/imgops/composite.png");
 }
 
 void
@@ -103,7 +103,7 @@ void
 fgImageTest(CLArgs const & args)
 {
     Cmds       cmds;
-    cmds.push_back(Cmd(composite,"composite"));
+    cmds.push_back(Cmd(testComposite,"composite"));
     cmds.push_back(Cmd(testConvolve,"conv"));
     cmds.push_back(Cmd(fgImgTestWrite,"write"));
     doMenu(args,cmds,true,false,true);

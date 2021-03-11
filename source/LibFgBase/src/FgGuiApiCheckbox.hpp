@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ GuiImplPtr guiGetOsImpl(GuiCheckbox const & guiApi);
 
 struct GuiCheckbox : GuiBase
 {
-    Ustring            label;
+    String8            label;
     IPT<bool>    val;
     DfgFPtr         updateFlag;
 
@@ -26,13 +26,13 @@ struct GuiCheckbox : GuiBase
 };
 
 GuiPtr
-guiCheckbox(Ustring const & label,const IPT<bool> & valInp);
+guiCheckbox(String8 const & label,const IPT<bool> & valInp);
 
 GuiPtr
-guiCheckboxes(Ustrings const & labels,Svec<IPT<bool> > const & selNs);
+guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs);
 
-GuiVal<Svec<bool> >
-guiCheckboxes(Ustrings const & labels,const Svec<bool> & defaults);
+GuiVal<Bools >
+guiCheckboxes(String8s const & labels,Bools const & defaults);
 
 }
 

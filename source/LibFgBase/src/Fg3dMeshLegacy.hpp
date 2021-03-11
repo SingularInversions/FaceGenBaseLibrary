@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -221,7 +221,7 @@ struct  FgMeshLegacy
 FgMeshLegacy
 fgMeshLegacy(
     const Svec<Mesh> &   meshes,
-    Ustring const &                fname,
+    String8 const &                fname,
     const std::string &             imgFormat,
     uint                            maxLen=0);      // If non-zero, maxmum base filename length allowed (eg. 3DS)
 

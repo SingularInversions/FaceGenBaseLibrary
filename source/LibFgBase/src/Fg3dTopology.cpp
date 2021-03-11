@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -108,10 +108,13 @@ MeshTopology::MeshTopology(size_t numVerts,Vec3UIs const & tris)
 {
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
-                            nulls = 0;
+                            nulls = 0,
+                            outOfRanges = 0;
     set<TriVerts>           vset;
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Vec3UI           vis = tris[ii];
+        if (cMaxElem(vis) >= numVerts)
+            ++outOfRanges;
         if ((vis[0] == vis[1]) || (vis[1] == vis[2]) || (vis[2] == vis[0]))
             ++nulls;
         else {
@@ -126,10 +129,12 @@ MeshTopology::MeshTopology(size_t numVerts,Vec3UIs const & tris)
                 ++duplicates;
         }
     }
+    if (outOfRanges > 0)
+        fgout << fgnl << "WARNING " << outOfRanges << " tris have out-of-range vertex references";
     if (duplicates > 0)
-        fgout << fgnl << "WARNING: Duplicate tris: " << duplicates;
+        fgout << fgnl << "WARNING Ignored " << duplicates << " duplicate tris";
     if (nulls > 0)
-        fgout << fgnl << "WARNING: Null tris: " << nulls;
+        fgout << fgnl << "WARNING Ignored " << nulls << " null tris.";
     m_verts.resize(numVerts);
     std::map<EdgeVerts,Uints >    edgesToTris;
     for (size_t ii=0; ii<m_tris.size(); ++ii) {
@@ -298,7 +303,7 @@ MeshTopology::seamContaining(uint vertIdx) const
 set<uint>
 MeshTopology::traceFold(
     MeshNormals const & norms,
-    vector<FgBool> &    done,
+    vector<FatBool> &    done,
     uint                vertIdx)
     const
 {

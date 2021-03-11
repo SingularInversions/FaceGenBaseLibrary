@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,7 +20,7 @@ using namespace boost::filesystem;
 namespace Fg {
 
 void
-fileCopy(Ustring const & src,Ustring const & dst,bool overwrite)
+fileCopy(String8 const & src,String8 const & dst,bool overwrite)
 {
     if (pathExists(dst)) {
         if (overwrite) {
@@ -39,7 +39,7 @@ fileCopy(Ustring const & src,Ustring const & dst,bool overwrite)
 }
 
 void
-fileMove(Ustring const & src,Ustring const & dst,bool overwrite)
+fileMove(String8 const & src,String8 const & dst,bool overwrite)
 {
     // We use copy and delete since boost::filesystem::rename will fail if the target
     // is on a different volume:
@@ -48,7 +48,7 @@ fileMove(Ustring const & src,Ustring const & dst,bool overwrite)
 }
 
 bool
-pathExists(Ustring const & fname)
+pathExists(String8 const & fname)
 {
     // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
     // We don't want that - consider it just not there:
@@ -64,7 +64,7 @@ pathExists(Ustring const & fname)
 
 // TODO: re-write more efficient OS-specific code (utime on Linus, god knows what on Win):
 void
-fileTouch(Ustring const & fname)
+fileTouch(String8 const & fname)
 {
     // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
     String      tmp = loadRawString(fname);
@@ -82,19 +82,19 @@ setCurrentDirUp()
 }
 
 void
-deleteDirectoryFiles(Ustring const & dirname)
+deleteDirectoryFiles(String8 const & dirname)
 {
-    DirectoryContents       dc = directoryContents(dirname);
+    DirContents       dc = getDirContents(dirname);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
         deleteFile(dirname+"/"+dc.filenames[ii]);
 }
 
 void
-deleteDirectoryRecursive(Ustring const & dirname)
+deleteDirectoryRecursive(String8 const & dirname)
 {
 #ifdef _WIN32
     // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
-    DirectoryContents     dc = directoryContents(dirname);
+    DirContents     dc = getDirContents(dirname);
     for (size_t ii=0; ii<dc.dirnames.size(); ii++)
         deleteDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
@@ -111,11 +111,11 @@ deleteDirectoryRecursive(Ustring const & dirname)
 }
 
 void
-createPath(Ustring const & path)
+createPath(String8 const & path)
 {
     Path          p(asDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
-        Ustring    dir = p.dir(ii+1);
+        String8    dir = p.dir(ii+1);
         if (pathExists(dir)) {
             if (!isDirectory(dir))
                 fgThrow("Not a directory (unable to create)",dir);
@@ -125,7 +125,7 @@ createPath(Ustring const & path)
     }
 }
 
-Ustring
+String8
 getExecutableDirectory()
 {
     //return getCurrentDir();         // For debugging installed versions
@@ -134,17 +134,17 @@ getExecutableDirectory()
 }
 
 bool
-fileReadable(Ustring const & filename)
+fileReadable(String8 const & filename)
 {
     Ifstream ifs(filename,false);
     if (!ifs.is_open()) return false;
     return true;
 }
 
-Ustring
+String8
 getDirUserAppDataLocal(Strings const & subPath)
 {
-    Ustring    ret = getDirUserAppDataLocal();
+    String8    ret = getDirUserAppDataLocal();
     for (size_t ii=0; ii<subPath.size(); ++ii) {
         ret += subPath[ii] + fgDirSep();
         createDirectory(ret);
@@ -153,7 +153,7 @@ getDirUserAppDataLocal(Strings const & subPath)
 }
 
 string
-loadRawString(Ustring const & filename)
+loadRawString(String8 const & filename)
 {
     Ifstream          ifs(filename);
     ostringstream       ss;
@@ -162,7 +162,7 @@ loadRawString(Ustring const & filename)
 }
 
 bool
-saveRaw(string const & data,Ustring const & filename,bool onlyIfChanged)
+saveRaw(string const & data,String8 const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
         string      fileData = loadRawString(filename);
@@ -176,8 +176,8 @@ saveRaw(string const & data,Ustring const & filename,bool onlyIfChanged)
 
 bool
 equateFilesBinary(
-    Ustring const & file1,
-    Ustring const & file2)
+    String8 const & file1,
+    String8 const & file2)
 {
     string contents1(loadRawString(file1));
     string contents2(loadRawString(file2));
@@ -185,14 +185,14 @@ equateFilesBinary(
 }
 
 bool
-equateFilesText(Ustring const & fname0,Ustring const & fname1)
+equateFilesText(String8 const & fname0,String8 const & fname1)
 {
     return (splitLinesUtf8(loadRawString(fname0)) == splitLinesUtf8(loadRawString(fname1)));
 }
 
-static Ustring s_fgDataDir;
+static String8 s_fgDataDir;
 
-Ustring const &
+String8 const &
 dataDir(bool throwIfNotFound)
 {
     // Typical locations relative to executable:
@@ -201,13 +201,13 @@ dataDir(bool throwIfNotFound)
     //  ../../../../../data     (dev & sdk binaries)
     if (!s_fgDataDir.empty())
         return s_fgDataDir;
-    Ustring         pathStr = getExecutableDirectory();
+    String8         pathStr = getExecutableDirectory();
     Path            path(pathStr);
     string          data("data/"),
                     flag("_facegen_data_dir.flag");
     bool            keepSearching = true;
     while (keepSearching) {
-        Ustring        dd = path.str()+data;
+        String8        dd = path.str()+data;
         if (isDirectory(dd)) {
             if (pathExists(dd+flag)) {
                 s_fgDataDir = dd;
@@ -229,7 +229,7 @@ dataDir(bool throwIfNotFound)
 }
 
 void
-setDataDir(Ustring const & dir)
+setDataDir(String8 const & dir)
 {
     if (!pathExists(dir+"_facegen_data_dir.flag"))
         fgThrow("setDataDir FaceGen data flag not found",dir);
@@ -237,7 +237,7 @@ setDataDir(Ustring const & dir)
 }
 
 bool
-fileNewer(Ustrings const & sources,Ustrings const & sinks)
+fileNewer(String8s const & sources,String8s const & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
     time_t      srcTime = getLastWriteTime(sources[0]);
@@ -256,11 +256,11 @@ fileNewer(Ustrings const & sources,Ustrings const & sinks)
     return false;
 }
 
-Ustrings
+String8s
 globFiles(Path const & path)
 {
-    Ustrings               ret;
-    DirectoryContents     dc = directoryContents(path.dir());
+    String8s               ret;
+    DirContents     dc = getDirContents(path.dir());
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         Path              fn = dc.filenames[ii];
         if (isGlobMatch(path.base,fn.base) && (isGlobMatch(path.ext,fn.ext)))
@@ -269,36 +269,36 @@ globFiles(Path const & path)
     return ret;
 }
 
-Ustrings
-globFiles(Ustring const & basePath,Ustring const & relPath,Ustring const & filePattern)
+String8s
+globFiles(String8 const & basePath,String8 const & relPath,String8 const & filePattern)
 {
-    Ustrings       ret = globFiles(basePath+relPath+filePattern);
-    for (Ustring & r : ret)
+    String8s       ret = globFiles(basePath+relPath+filePattern);
+    for (String8 & r : ret)
         r = relPath + r;
     return ret;
 }
 
-DirectoryContents
+DirContents
 globNodeStartsWith(Path const & path)
 {
-    DirectoryContents ret;
-    DirectoryContents dc = directoryContents(path.dir());
-    for (Ustring const & fname : dc.filenames)
+    DirContents ret;
+    DirContents dc = getDirContents(path.dir());
+    for (String8 const & fname : dc.filenames)
         if (fname.beginsWith(path.baseExt()))
             ret.filenames.push_back(fname);
-    for (Ustring const & dname : dc.dirnames)
+    for (String8 const & dname : dc.dirnames)
         if (dname.beginsWith(path.baseExt()))
             ret.dirnames.push_back(dname);
     return ret;
 }
 
-Ustrings
-globBaseVariants(const Ustring & pathBaseExt)
+String8s
+globBaseVariants(const String8 & pathBaseExt)
 {
     Path            path {pathBaseExt};
-    Ustrings        fnames = globNodeStartsWith(path.dirBase()).filenames;
-    Ustrings        ret;
-    for (Ustring const & fname : fnames) {
+    String8s        fnames = globNodeStartsWith(path.dirBase()).filenames;
+    String8s        ret;
+    for (String8 const & fname : fnames) {
         Path            fp {fname};
         if ((fp.base != path.base) && (fp.ext == path.ext))
             ret.push_back(cRest(fp.base,path.base.size()));
@@ -307,14 +307,14 @@ globBaseVariants(const Ustring & pathBaseExt)
 }
 
 bool
-fgCopyAllFiles(Ustring const & fromDir_,Ustring const & toDir_,bool overwrite)
+fgCopyAllFiles(String8 const & fromDir_,String8 const & toDir_,bool overwrite)
 {
     bool                    ret = false;
-    Ustring                fromDir = asDirectory(fromDir_),  // Ensure ends with delim
+    String8                fromDir = asDirectory(fromDir_),  // Ensure ends with delim
                             toDir = asDirectory(toDir_);
-    DirectoryContents     dc = directoryContents(fromDir);
+    DirContents     dc = getDirContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        Ustring            fn = dc.filenames[ii];
+        String8            fn = dc.filenames[ii];
         if (pathExists(toDir+fn)) {
             ret = true;
             if (!overwrite)
@@ -334,22 +334,22 @@ fgCopyToCurrentDir(Path const & file)
 }
 
 void
-copyRecursive(Ustring const & fromDir,Ustring const & toDir)
+copyRecursive(String8 const & fromDir,String8 const & toDir)
 {
     if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
     createDirectory(toDir);
     Path                  fromP(asDirectory(fromDir)),
                             toP(asDirectory(toDir));
-    Ustring                from = fromP.str(),     // Ensures delimiter at end when appropriate
+    String8                from = fromP.str(),     // Ensures delimiter at end when appropriate
                             to = toP.str();
-    DirectoryContents     dc = directoryContents(fromDir);
+    DirContents     dc = getDirContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        Ustring &          fn = dc.filenames[ii];
+        String8 &          fn = dc.filenames[ii];
         fileCopy(from+fn,to+fn);
     }
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
-        Ustring const &    dn = dc.dirnames[ii];
+        String8 const &    dn = dc.dirnames[ii];
         copyRecursive(from+dn,to+dn);
     }
 }
@@ -360,7 +360,7 @@ mirrorFile(Path const & src,Path const & dst)
     FGASSERT(!src.base.empty());
     FGASSERT(!dst.base.empty());
     for (size_t ii=0; ii<dst.dirs.size(); ++ii) {
-        Ustring    dir = dst.dir(ii+1);
+        String8    dir = dst.dir(ii+1);
         if (pathExists(dir)) {
             if (!isDirectory(dir))
                 fgThrow("Not a directory (unable to mirror)",dir);

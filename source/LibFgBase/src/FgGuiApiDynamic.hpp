@@ -1,11 +1,15 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
+//
+// WARNING: Any state that you want remembered in sub-windows must be saved
+// (eg. makeSavedIPT) since the object may be destroyed and re-created between views.
 //
 // This approach didn't work so well since the dynamically created window often has
 // to modify depgraph state during creation, but any dependent nodes may already
 // have been updated.
+//
 
 #ifndef FGGUIAPIDYNAMIC_HPP
 #define FGGUIAPIDYNAMIC_HPP

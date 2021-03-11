@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -97,34 +97,34 @@ splitLines(string const & src)
 }
 
 String32s
-splitLines(const u32string & src,bool incEmpty)
+splitLines(String32 const & src,bool incEmpty)
 {
     String32s            ret;
     size_t              base = 0;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
             if ((ii > base) || incEmpty)
-                ret.push_back(u32string(src.begin()+base,src.begin()+ii));
+                ret.push_back(String32(src.begin()+base,src.begin()+ii));
             base = ii+1; } }
     if (base < src.size())
-        ret.push_back(u32string(src.begin()+base,src.end()));
+        ret.push_back(String32(src.begin()+base,src.end()));
     return ret;
 }
 
-Ustrings
+String8s
 splitLinesUtf8(string const & utf8,bool includeEmptyLines)
 {
-    Ustrings               ret;
-    String32s       res = splitLines(Ustring(utf8).as_utf32(),includeEmptyLines);
+    String8s               ret;
+    String32s       res = splitLines(String8(utf8).as_utf32(),includeEmptyLines);
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
-        ret[ii] = Ustring(res[ii]);
+        ret[ii] = String8(res[ii]);
     return ret;
 }
 
 static
 void
-consumeCrLf(const u32string & in,size_t & idx)    // Current idx must point to CR or LF
+consumeCrLf(String32 const & in,size_t & idx)    // Current idx must point to CR or LF
 {
     char32_t        ch0 = in[idx++];
     if (idx == in.size())
@@ -137,7 +137,7 @@ consumeCrLf(const u32string & in,size_t & idx)    // Current idx must point to C
 
 static
 string
-csvGetField(const u32string & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
+csvGetField(String32 const & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
 {
     string      ret;
     if (in[idx] == '"') {               // Quoted field
@@ -174,7 +174,7 @@ csvGetField(const u32string & in,size_t & idx)    // idx must initially point to
 static
 Strings
 csvGetLine(
-    const u32string & in,
+    String32 const & in,
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     Strings      ret;
@@ -200,10 +200,10 @@ csvGetLine(
 }
 
 Stringss
-loadCsv(Ustring const & fname,size_t fieldsPerLine)
+loadCsv(String8 const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    u32string       data = toUtf32(loadRawString(fname));
+    String32       data = toUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -217,11 +217,11 @@ loadCsv(Ustring const & fname,size_t fieldsPerLine)
 }
 
 map<string,Strings>
-loadCsvToMap(Ustring const & fname,size_t keyIdx,size_t fieldsPerLine)
+loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
-    u32string           data = toUtf32(loadRawString(fname));
+    String32           data = toUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings          line = csvGetLine(data,idx);
@@ -242,7 +242,7 @@ string
 csvField(string const & data)
 {
     string          ret = "\"";
-    u32string       utf32 = toUtf32(data);
+    String32       utf32 = toUtf32(data);
     for (char32_t ch32 : utf32) {
         if (ch32 == char32_t('"'))      // VS2013 doesn't support char32_t literal U
             ret += "\"\"";
@@ -254,7 +254,7 @@ csvField(string const & data)
 }
 
 void
-saveCsv(Ustring const & fname,const Stringss & csvLines)
+saveCsv(String8 const & fname,const Stringss & csvLines)
 {
     Ofstream      ofs(fname);
     for (Strings line : csvLines) {
@@ -398,7 +398,7 @@ asciify(string const & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    u32string       utf32 = toUtf32(in);
+    String32       utf32 = toUtf32(in);
     for (char32_t ch32 : utf32) {
         string  utf8 = toUtf8(ch32);
         if (utf8.size() == 1)
@@ -414,10 +414,10 @@ asciify(string const & in)
     return ret;
 }
 
-u32string
-replaceAll(const u32string & str,char32_t a,char32_t b)
+String32
+replaceAll(String32 const & str,char32_t a,char32_t b)
 {
-    u32string       ret;
+    String32       ret;
     ret.reserve(str.size());
     for (const char32_t & c : str)
         if (c == a)

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -111,13 +111,13 @@ GuiImage::click(Vec2I pos)
             ImgC4UC const &     img = pyramidN.cref()[lev];
             Vec2I               imgPos = pos - offsetN.val();
             if (isInBounds(Mat22I(0,img.width(),0,img.height()),imgPos)) {
-                Vec2F           iucs = cIrcsToIucsXf(img.dims()) * Vec2F(imgPos);
-                onClick(iucs);
+                Vec2D           iucs = cIrcsToIucsXf(img.dims()) * Vec2D(imgPos);
+                onClick(Vec2F(iucs));
             }
         }
         else {
-            Vec2F           iucs = cIrcsToIucsXf(imgN.cref().dims()) * Vec2F(pos);
-            onClick(iucs);
+            Vec2D           iucs = cIrcsToIucsXf(imgN.cref().dims()) * Vec2D(pos);
+            onClick(Vec2F(iucs));
         }
     }
 }
@@ -152,7 +152,7 @@ linkPyramid2(ImgC4UC const & img,ImgC4UCs & pyr)
     // Add up to 4x expansion for small images:
     for (size_t ii=0; ii<2; ++ii)
         if (cMaxElem(pyr.back().dims()) <= 1024)    // Create up to 2048
-            pyr.push_back(fgExpand2(pyr.back()));
+            pyr.push_back(expand2(pyr.back()));
 }
 
 static

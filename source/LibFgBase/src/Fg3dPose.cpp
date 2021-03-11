@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -72,11 +72,11 @@ accTargetMorphs(
 }
 
 void
-accPoseDeltas_(const std::map<Ustring,float> & poseVals,Morphs const & deltaMorphs,Vec3Fs & acc)
+accPoseDeltas_(const std::map<String8,float> & poseVals,Morphs const & deltaMorphs,Vec3Fs & acc)
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
         Morph const &     morph = deltaMorphs[ii];
-        std::map<Ustring,float>::const_iterator it = poseVals.find(morph.name);
+        std::map<String8,float>::const_iterator it = poseVals.find(morph.name);
         if (it != poseVals.end())
             morph.accAsDelta_(it->second,acc);
     }
@@ -84,7 +84,7 @@ accPoseDeltas_(const std::map<Ustring,float> & poseVals,Morphs const & deltaMorp
 
 void
 accPoseDeltas_(
-    map<Ustring,float> const &      poseVals,
+    map<String8,float> const &      poseVals,
     IndexedMorphs const &           targMorphs,
     Vec3Fs const &                  baseShape,
     Vec3Fs const &                  targShapes,

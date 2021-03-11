@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,13 +20,13 @@ operator<<(std::ostream & os,ImgC4UC const & img)
 {
     if (img.empty())
         return os << "Empty image";
-    Mat<uchar,4,1>    init = img[0].m_c;
+    Mat<uchar,4,1>    init {img[0].m_c};
     Mat<uchar,4,2>    bounds = catHoriz(init,init);
     for (Iter2UI it(img.dims()); it.next(); it.valid()) {
         RgbaUC    pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {
-            setIfLess(bounds.rc(cc,0),pix.m_c[cc]);
-            setIfGreater(bounds.rc(cc,1),pix.m_c[cc]);
+            updateMin_(bounds.rc(cc,0),pix[cc]);
+            updateMax_(bounds.rc(cc,1),pix[cc]);
         }
     }
     return os <<
@@ -34,13 +34,32 @@ operator<<(std::ostream & os,ImgC4UC const & img)
         fgnl << "Channel bounds: " << Mat<uint,4,2>(bounds);
 }
 
+std::ostream &
+operator<<(std::ostream & os,ImgC4F const & img)
+{
+    if (img.empty())
+        return os << "Empty image";
+    Mat<float,4,1>    init {img[0].m_c};
+    Mat<float,4,2>    bounds = catHoriz(init,init);
+    for (Iter2UI it(img.dims()); it.next(); it.valid()) {
+        RgbaF         pix = img[it()];
+        for (uint cc=0; cc<4; ++cc) {
+            updateMin_(bounds.rc(cc,0),pix[cc]);
+            updateMax_(bounds.rc(cc,1),pix[cc]);
+        }
+    }
+    return os <<
+        fgnl << "Dimensions: " << img.dims() <<
+        fgnl << "Channel bounds: " << bounds;
+}
+
 AffineEw2D
 cIpcsToIucsXf(Vec2UI dims)
-{return AffineEw2D{Mat22D(0,dims[0],0,dims[1]),Mat22D(0,1,0,1)}; }
+{return {Mat22D(0,dims[0],0,dims[1]),Mat22D(0,1,0,1)}; }
 
-AffineEw2F
+AffineEw2D
 cIrcsToIucsXf(Vec2UI imageDims)
-{return AffineEw2F(Mat22F(-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5),Mat22F(0,1,0,1)); }
+{return {Mat22D{-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5},Mat22D{0,1,0,1}}; }
 
 AffineEw2F
 cIucsToIpcsXf(Vec2UI dims)
@@ -48,17 +67,17 @@ cIucsToIpcsXf(Vec2UI dims)
 
 AffineEw2D
 cIucsToIrcsXf(Vec2UI ircsDims)
-{return AffineEw2D {Mat22D{0,1,0,1},Mat22D{-0.5,ircsDims[0]-0.5,-0.5,ircsDims[1]-0.5}}; }
+{return {Mat22D{0,1,0,1},Mat22D{-0.5,ircsDims[0]-0.5,-0.5,ircsDims[1]-0.5}}; }
 
 AffineEw2F
 cOicsToIucsXf()
 {return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
 
-Img<FgBool>
-mapAnd(const Img<FgBool> & lhs,const Img<FgBool> & rhs)
+Img<FatBool>
+mapAnd(const Img<FatBool> & lhs,const Img<FatBool> & rhs)
 {
     FGASSERT(lhs.dims() == rhs.dims());
-    Img<FgBool>     ret(lhs.dims());
+    Img<FatBool>     ret(lhs.dims());
     for (Iter2UI it(ret.dims()); it.valid(); it.next())
         ret[it()] = lhs[it()] && rhs[it()];
     return ret;
@@ -142,8 +161,8 @@ blerpCoordsClipIrcs(Vec2UI dims,Vec2D ircs)
     ret[3].wgt = wgtHiXY[0] * wgtHiXY[1];
     Vec2I const         zero(0);
     Vec2I               max = Vec2I(dims) - Vec2I(1);
-    loXY = clampBounds(loXY,zero,max);
-    hiXY = clampBounds(hiXY,zero,max);
+    loXY = mapClamp(loXY,zero,max);
+    hiXY = mapClamp(hiXY,zero,max);
     ret[0].coordIrcs = Vec2UI(loXY);
     ret[1].coordIrcs = Vec2UI(hiXY[0],loXY[1]);
     ret[2].coordIrcs = Vec2UI(loXY[0],hiXY[1]);
@@ -192,7 +211,7 @@ fgImgApproxEqual(ImgC4UC const & img0,ImgC4UC const & img1,uint maxDelta)
         return false;
     int             lim = int(maxDelta * maxDelta);
     for (Iter2UI it(img0.dims()); it.valid(); it.next()) {
-        Vec4I    delta = Vec4I(img0[it()].m_c) - Vec4I(img1[it()].m_c);
+        Arr4I       delta = mapCast<int>(img0[it()].m_c) - mapCast<int>(img1[it()].m_c);
         if ((sqr(delta[0]) > lim) ||
             (sqr(delta[1]) > lim) ||
             (sqr(delta[2]) > lim) ||
@@ -228,7 +247,7 @@ imgShrink2(ImgC4UC const & src,ImgC4UC & dst)
 }
 
 ImgC4UC
-fgExpand2(ImgC4UC const & src)
+expand2(ImgC4UC const & src)
 {
     ImgC4UC     dst(src.dims()*2);
     Vec2F        off(-0.5f,-0.5f);
@@ -261,7 +280,7 @@ fgExpand2(ImgC4UC const & src)
 }
 
 ImgUC
-fgShrink2(const ImgUC & img)
+shrink2Fixed(const ImgUC & img)
 {
     ImgUC     dst(img.dims()/2);
     for (uint yy=0; yy<dst.height(); ++yy)
@@ -275,47 +294,27 @@ fgShrink2(const ImgUC & img)
 }
 
 ImgC4UC
-fgImgShrinkWid2(ImgC4UC const & src)
+toImgC4UC(ImgC4F const & img)
 {
-    ImgC4UC     dst;
-    FGASSERT((src.width() > 0) && (src.height() > 0));
-    dst.resize(src.width()/2, src.height());
-    RgbaUC const     *srcPtr = src.data();
-    RgbaUC           *dstPtr = dst.data();
-    for (uint yd=0; yd<dst.height(); yd++) {
-        for (uint xd=0; xd<dst.width(); xd++) {
-            uint        xs1 = xd * 2,
-                        xs2 = xs1 + 1;
-            RgbaUS    acc = RgbaUS(srcPtr[xs1]) +
-                              RgbaUS(srcPtr[xs2]);
-            dstPtr[xd] = RgbaUC(acc/2);
-        }
-        dstPtr += dst.width();
-        srcPtr += src.width();
-    }
-    return dst;
+    ImgC4UC         ret(img.dims());
+    for (size_t ii=0; ii<img.m_data.size(); ++ii)
+        ret.m_data[ii] = mapCast<uchar>(img.m_data[ii]*255.999f);
+    return ret;
 }
 
 ImgC4UC
-fgImgShrinkHgt2(ImgC4UC const & src)
+toImgC4UC(Img3F const & img,float offset,float scale)
 {
-    ImgC4UC     dst;
-    FGASSERT((src.width() > 0) && (src.height() > 0));
-    dst.resize(src.width(), src.height()/2);
-    RgbaUC const      *srcPtr1 = src.data(),
-                        *srcPtr2 = srcPtr1 + src.width();
-    RgbaUC            *dstPtr = dst.data();
-    for (uint yd=0; yd<dst.height(); yd++) {
-        for (uint xd=0; xd<dst.width(); xd++) {
-            RgbaUS    acc = RgbaUS(srcPtr1[xd]) +
-                              RgbaUS(srcPtr2[xd]);
-            dstPtr[xd] = RgbaUC(acc/2);
-        }
-        dstPtr += dst.width();
-        srcPtr1 += 2 * src.width();
-        srcPtr2 += 2 * src.width();
+    ImgC4UC         ret(img.dims());
+    for (size_t ii=0; ii<img.m_data.size(); ++ii) {
+        Arr3F           in = img.m_data[ii];
+        RgbaUC          out;
+        for (size_t jj=0; jj<3; ++jj)
+            out[jj] = scast<uchar>((in[jj]+offset)*scale);
+        out[3] = 255;
+        ret.m_data[ii] = out;
     }
-    return dst;
+    return ret;
 }
 
 // RGBA -> mono uses rec709
@@ -337,40 +336,26 @@ void    imgConvert_(const ImgUC &src,ImgC4UC &dst)
 }
 
 void
-fgImgPntRescaleConvert(
+rescaleValsToFit_(
     const ImgD    &src,
     ImgUC         &dst)
 {
-    VecD2        bounds = cBounds(src.dataVec());
+    VecD2           bounds = cBounds(src.dataVec());
     double          scale = bounds[1] - bounds[0];
     scale = (scale > 0) ? scale : 1.0;
-    ImgD          adjusted;
-    fgImgPntAffine(src,adjusted,-bounds[0],255.0/scale);
-    scast_(adjusted,dst);
+    dst.resize(src.width(),src.height());
+    for (size_t ii=0; ii<dst.numPixels(); ++ii)
+        dst[ii] = uchar((src[ii] - bounds[0]) * 255.0/scale);
 }
 
 void
-fgImgPntRescaleConvert(
+rescaleValsToFit_(
     const ImgD    &src,
     ImgC4UC     &dst)
 {
     ImgUC         tmp;
-    fgImgPntRescaleConvert(src,tmp);
+    rescaleValsToFit_(src,tmp);
     imgConvert_(tmp,dst);
-}
-
-Affine2D
-fgImgGetIrcsToBounds(
-    uint                wid,
-    uint                hgt,
-    const Mat22D   &bounds)
-{
-    FGASSERT(wid*hgt>0);
-    double          scaleX = (bounds.rc(0,1)-bounds.rc(0,0)) / double(wid),
-                    scaleY = (bounds.rc(1,1)-bounds.rc(1,0)) / double(hgt);
-    Mat22D     linear(scaleX,0.0,0.0,scaleY);
-    Vec2D        centre = Vec2D(wid-1,hgt-1) * -0.5;
-    return Affine2D(centre,linear);
 }
 
 void
@@ -423,7 +408,8 @@ imgResize(
                 --xbhib;
             // Now sum up the contributions of the source pixels
             // that fall within this back-projected window.
-			Rgba<float> acc, fpix;
+			Rgba<float>     acc(0),
+                            fpix;
 			for (uint yy=yblob; yy<=ybhib; yy++) {
 				float	yfac = 1.0f;
 				if (yy == yblob)
@@ -436,7 +422,7 @@ imgResize(
 						xfac -= xblo - (float)xblob;
 					if (xx == xbhib)
 						xfac -= (float)(xbhib+1) - xbhi;
-					scast_(srcPtr[yy*srcStep + xx],fpix);
+					deepCast_(srcPtr[yy*srcStep + xx],fpix);
 					acc += fpix * xfac * yfac;
 				}
 			}
@@ -483,7 +469,7 @@ fgResample(
 }
 
 bool
-fgUsesAlpha(ImgC4UC const & img,uchar minVal)
+usesAlpha(ImgC4UC const & img,uchar minVal)
 {
     for (size_t ii=0; ii<img.numPixels(); ++ii) {
         if (img.m_data[ii].alpha() < minVal)
@@ -541,26 +527,26 @@ cMipMap(ImgC4UC const & img)
     return ret;
 }
 
-Img3F
+ImgV3F
 fgImgToF3(ImgC4UC const & img)
 {
-    Img3F     ret(img.dims());
+    ImgV3F     ret(img.dims());
     for (size_t pp=0; pp<ret.numPixels(); ++pp) {
-        Arr4UC       p = img[pp].m_c.m;
+        Arr4UC       p = img[pp].m_c;
         ret[pp] = {static_cast<float>(p[0]),static_cast<float>(p[1]),static_cast<float>(p[2])};
     }
     return ret;
 }
 
-Img3Fs
-fgSsi(const Img3F & img,uchar borderPolicy)
+ImgV3Fs
+fgSsi(const ImgV3F & img,uchar borderPolicy)
 {
-    Img3Fs        ret(log2Floor(cMinElem(img.dims()))+1);
+    ImgV3Fs        ret(log2Floor(cMinElem(img.dims()))+1);
     ret[0] = img;
     for (size_t ii=0; ii<ret.size()-1; ++ii) {
         smoothFloat(ret[ii],ret[ii],borderPolicy);
         smoothFloat(ret[ii],ret[ii],borderPolicy);
-        shrink2Float(ret[ii],ret[ii+1]);
+        shrink2Float_(ret[ii],ret[ii+1]);
     }
     return ret;
 }
@@ -599,14 +585,24 @@ imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition)
         RgbaF           a = sampleClipIucs(img0,iucs);
         RgbaF           b = sampleClipIucs(img1,iucs);
         float           w = sampleClipIucs(transition,iucs) / 255.0f;
-        Vec4UC &        r = ret[it()].m_c;
+        Arr4UC &        r = ret[it()].m_c;
         for (uint cc=0; cc<4; ++cc) {
-            float           ac = a.m_c[cc],
-                            bc = b.m_c[cc],
+            float           ac = a[cc],
+                            bc = b[cc],
                             rc = (1-w) * ac + w * bc;
             r[cc] = rc;
         }
     }
+    return ret;
+}
+
+ImgC4UC
+composite(ImgC4UC const & foreground,ImgC4UC const & background)
+{
+    FGASSERT(foreground.dims() == background.dims());
+    ImgC4UC                 ret(foreground.dims());
+    for (size_t ii=0; ii<ret.numPixels(); ++ii)
+        ret[ii] = compositeFragmentUnweighted(foreground[ii],background[ii]);
     return ret;
 }
 
@@ -620,12 +616,12 @@ mod1(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,Aff
                             out(0,0,0,255);
             RgbaF           pd = sampleClipIucs(imgIn,ircsToIucs*Vec2F(xx,yy));
             for (uint cc=0; cc<3; ++cc) {
-                int             gamMod = (((int(td.m_c[cc]) - 64) * mod) / 256) + 64;
+                int             gamMod = (((int(td[cc]) - 64) * mod) / 256) + 64;
                 gamMod = (gamMod < 0) ? 0 : gamMod;
-                uint            vv = uint(pd.m_c[cc]) * uint(gamMod);
+                uint            vv = uint(pd[cc]) * uint(gamMod);
                 vv = vv >> 6;
                 vv = (vv > 255) ? 255 : vv;
-                out.m_c[cc] = (unsigned char)vv;
+                out[cc] = (unsigned char)vv;
             }
             ret.xy(xx,yy) = out;
         }
@@ -642,12 +638,12 @@ mod2(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,Aff
             RgbaUC          out(0,0,0,255),
                             pd = imgIn.xy(xx,yy);
             for (uint cc=0; cc<3; ++cc) {
-                int             gamMod = (((int(td.m_c[cc]) - 64) * mod) / 256) + 64;
+                int             gamMod = (((int(td[cc]) - 64) * mod) / 256) + 64;
                 gamMod = (gamMod < 0) ? 0 : gamMod;
-                uint            vv = uint(pd.m_c[cc]) * uint(gamMod);
+                uint            vv = uint(pd[cc]) * uint(gamMod);
                 vv = vv >> 6;
                 vv = (vv > 255) ? 255 : vv;
-                out.m_c[cc] = (unsigned char)vv;
+                out[cc] = (unsigned char)vv;
             }
             ret.xy(xx,yy) = out;
         }
@@ -660,7 +656,7 @@ imgModulate(ImgC4UC const & imgIn,ImgC4UC const & imgMod,float modulationFactor)
     if (imgMod.empty())
         return imgIn;
     ImgC4UC          ret;
-    if (determinant(imgIn.dims(),imgMod.dims()) != 0) {
+    if (cDeterminant(imgIn.dims(),imgMod.dims()) != 0) {
         string      info = toStr(imgIn.dims())+" !~ "+toStr(imgMod.dims());
         fgThrow("Aspect ratio mismatch between imgIn and modulation maps",info);
     }
@@ -675,7 +671,7 @@ imgModulate(ImgC4UC const & imgIn,ImgC4UC const & imgMod,float modulationFactor)
         vector<thread>  threads;
         threads.reserve(nt);
         for (uint tt=0; tt<nt; ++tt)
-            threads.push_back(thread{mod1,tt,nt,cref(imgIn),cref(imgMod),mod,ircsToIucs,ref(ret)});
+            threads.emplace_back(mod1,tt,nt,cref(imgIn),cref(imgMod),mod,ircsToIucs,ref(ret));
         for (thread & thread : threads)
             thread.join();
     }
@@ -686,10 +682,117 @@ imgModulate(ImgC4UC const & imgIn,ImgC4UC const & imgMod,float modulationFactor)
         vector<thread>  threads;
         threads.reserve(nt);
         for (uint tt=0; tt<nt; ++tt)
-            threads.push_back(thread{mod2,tt,nt,cref(imgIn),cref(imgMod),mod,ircsToIucs,ref(ret)});
+            threads.emplace_back(mod2,tt,nt,cref(imgIn),cref(imgMod),mod,ircsToIucs,ref(ret));
         for (thread & thread : threads)
             thread.join();
     }
+    return ret;
+}
+
+void
+smoothUint1D(
+    uchar const         *srcPtr,
+    uint                *dstPtr,
+    uint                num,
+    uchar               borderPolicy)               // See below
+{
+    dstPtr[0] = uint(srcPtr[0])*(2+borderPolicy) + uint(srcPtr[1]);
+    for (uint ii=1; ii<num-1; ++ii)
+        dstPtr[ii] = uint(srcPtr[ii-1]) + uint(srcPtr[ii])*2 + uint(srcPtr[ii+1]);
+    dstPtr[num-1] = uint(srcPtr[num-2]) + uint(srcPtr[num-1])*(2+borderPolicy);
+}
+void
+smoothUint_(ImgUC const & src,ImgUC & dst,uchar borderPolicy)
+{
+    FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
+    FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
+    dst.resize(src.width(),src.height());
+    Img<uint>   acc(src.width(),3);
+    uchar       *dstPtr = dst.rowPtr(0);
+    uint        *accPtr0,
+                *accPtr1 = acc.rowPtr(0),
+                *accPtr2 = acc.rowPtr(1);
+    smoothUint1D(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
+    smoothUint1D(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
+    for (uint xx=0; xx<src.width(); xx++) {
+        // Add 7 to minimize rounding bias. Adding 8 would bias the other way so we have to
+        // settle for a small amount of downward rounding bias unless we want to pseudo-randomize:
+        uint        tmp = accPtr1[xx]*(2+borderPolicy) + accPtr2[xx] + 7U;
+        dstPtr[xx] = uchar(tmp / 16);
+    }
+    for (uint yy=1; yy<src.height()-1; ++yy) {
+        dstPtr = dst.rowPtr(yy),
+        accPtr0 = acc.rowPtr((yy-1)%3),
+        accPtr1 = acc.rowPtr(yy%3),
+        accPtr2 = acc.rowPtr((yy+1)%3);
+        smoothUint1D(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
+        for (uint xx=0; xx<src.width(); ++xx)
+            dstPtr[xx] = uchar((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + 7U) / 16);
+    }
+    dstPtr = dst.rowPtr(dst.height()-1);
+    for (uint xx=0; xx<dst.width(); ++xx)
+        dstPtr[xx] = uchar((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + 7U) / 16);
+}
+ImgUC
+smoothUint(ImgUC const & src,uchar borderPolicy)
+{
+    ImgUC               ret;
+    smoothUint_(src,ret,borderPolicy);
+    return ret;
+}
+
+void
+smoothUint1D(
+    RgbaUC const        *srcPtr,
+    RgbaUS              *dstPtr,
+    uint                num,
+    uchar               borderPolicy)               // See below
+{
+    dstPtr[0] = RgbaUS(srcPtr[0])*(2+borderPolicy) + RgbaUS(srcPtr[1]);
+    for (uint ii=1; ii<num-1; ++ii)
+        dstPtr[ii] = RgbaUS(srcPtr[ii-1]) + RgbaUS(srcPtr[ii])*2 + RgbaUS(srcPtr[ii+1]);
+    dstPtr[num-1] = RgbaUS(srcPtr[num-2]) + RgbaUS(srcPtr[num-1])*(2+borderPolicy);
+}
+void
+smoothUint_(
+    ImgC4UC const &     src,
+    ImgC4UC &           dst,
+    uchar               borderPolicy)
+{
+    FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
+    FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
+    dst.resize(src.width(),src.height());
+    Img<RgbaUS> acc(src.width(),3);                  // Accumulator image
+    RgbaUC           *dstPtr = dst.rowPtr(0);
+    RgbaUS         *accPtr0,
+                *accPtr1 = acc.rowPtr(0),
+                *accPtr2 = acc.rowPtr(1);
+    smoothUint1D(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
+    smoothUint1D(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
+    for (uint xx=0; xx<src.width(); xx++) {
+        // Add 7 to minimize rounding bias. Adding 8 would bias the other way so we have to
+        // settle for a small amount of downward rounding bias unless we want to pseudo-randomize:
+        RgbaUS        tmp = accPtr1[xx]*(2+borderPolicy) + accPtr2[xx] + RgbaUS(7);
+        dstPtr[xx] = RgbaUC(tmp / 16);
+    }
+    for (uint yy=1; yy<src.height()-1; ++yy) {
+        dstPtr = dst.rowPtr(yy),
+        accPtr0 = acc.rowPtr((yy-1)%3),
+        accPtr1 = acc.rowPtr(yy%3),
+        accPtr2 = acc.rowPtr((yy+1)%3);
+        smoothUint1D(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
+        for (uint xx=0; xx<src.width(); ++xx)
+            dstPtr[xx] = RgbaUC((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + RgbaUS(7)) / 16);
+    }
+    dstPtr = dst.rowPtr(dst.height()-1);
+    for (uint xx=0; xx<dst.width(); ++xx)
+        dstPtr[xx] = RgbaUC((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + RgbaUS(7)) / 16);
+}
+ImgC4UC
+smoothUint(ImgC4UC const & src,uchar borderPolicy)
+{
+    ImgC4UC             ret;
+    smoothUint_(src,ret,borderPolicy);
     return ret;
 }
 

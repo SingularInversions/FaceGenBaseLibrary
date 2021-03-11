@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,7 @@ guiTickLabels(
     do {
         GuiTickLabel   t;
         t.pos = pos;
-        t.label = toStrPrecision(pos,3);
+        t.label = toStrPrec(pos,3);
         ret.push_back(t);
         pos += spacing;
     }
@@ -36,10 +36,10 @@ guiTickLabels(
     return ret;
 }
 
-Ustrings
-numberedLabels(Ustring const & baseLabel,size_t num)
+String8s
+numberedLabels(String8 const & baseLabel,size_t num)
 {
-    Ustrings       ret;
+    String8s       ret;
     ret.reserve(num);
     uint            numDigits = 1;
     size_t          tmp = num;
@@ -53,11 +53,11 @@ numberedLabels(Ustring const & baseLabel,size_t num)
 GuiPtr
 guiSlider(
     IPT<double>     valN,
-    Ustring        label,
+    String8        label,
     VecD2        range,
     double          tickSpacing,
-    const GuiTickLabels & tl,
-    const GuiTickLabels & ul,
+    GuiTickLabels const & tl,
+    GuiTickLabels const & ul,
     uint            edgePadding,
     bool            editBox)
 {
@@ -73,53 +73,29 @@ guiSlider(
     sldr.edgePadding = edgePadding;
     GuiPtr        ret = guiMakePtr(sldr);
     if (editBox)
-        ret = guiSplit(true,ret,guiTextEditFixed(valN,range));
+        ret = guiSplitH({ret,guiTextEditFixed(valN,range)});
     return ret;
 }
 
-Arr<GuiPtr,3>
-guiSliders(
-    IPT<Vec3F>    valN,
-    const array<Ustring,3> & labels,
-    VecD2                range,
-    double                  tickSpacing)
-{
-    Arr<GuiPtr,3>  ret;
-    for (size_t ss=0; ss<3; ++ss) {
-        GuiSlider        s;
-        s.updateFlag = makeUpdateFlag(valN);
-        s.getInput = [valN,ss](){return valN.cref()[ss]; };
-        s.setOutput = [valN,ss](double v){valN.ref()[ss] = v; };
-        s.label = labels[ss];
-        s.range = range;
-        s.tickSpacing = tickSpacing;
-        ret[ss] = guiMakePtr(s);
-    }
-    return ret;
-}
-
-GuiSliders
-guiSliders(
-    Ustrings const &       labels,
-    VecD2                range,
-    double                  initVal,
+GuiPtr
+guiSliderBank(
+    Svec<IPT<double> > const & valNs,
+    String8s const &        labels,
+    VecD2                   range,
     double                  tickSpacing,
-    Ustring const &        relStore)
+    GuiTickLabels const &   tickLabels)
 {
-    GuiSliders           ret;
-    vector<IPT<double> >    slidersN;
-    for (size_t ii=0; ii<labels.size(); ++ii) {
-        IPT<double>       val;
-        if (relStore.empty())
-            val = makeIPT(initVal);
+    size_t                  sz = valNs.size();
+    FGASSERT(labels.size() == sz);
+    Img<GuiPtr>             grid {2,sz};
+    for (size_t ii=0; ii<sz; ++ii) {
+        grid.xy(0,ii) = guiText(labels[ii]);
+        if (ii+1==sz)
+            grid.xy(1,ii) = guiSlider(valNs[ii],"",range,tickSpacing,tickLabels);
         else
-            val = makeSavedIPT(initVal,relStore+labels[ii]);
-        ret.valNs.push_back(val);
-        ret.sliders.push_back(guiSlider(val,labels[ii],range,tickSpacing));
-        slidersN.push_back(val);
+            grid.xy(1,ii) = guiSlider(valNs[ii],"",range,tickSpacing);
     }
-    ret.valsN = linkCollate(slidersN);
-    return ret;
+    return guiSplit(grid);
 }
 
 }

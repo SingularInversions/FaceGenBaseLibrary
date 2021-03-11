@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,7 +14,7 @@ using namespace std;
 namespace Fg {
 
 GuiPtr
-guiCheckbox(Ustring const & label,const IPT<bool> & node)
+guiCheckbox(String8 const & label,const IPT<bool> & node)
 {
     GuiCheckbox      cb;
     cb.label = label;
@@ -24,7 +24,7 @@ guiCheckbox(Ustring const & label,const IPT<bool> & node)
 }
 
 GuiPtr
-guiCheckboxes(Ustrings const & labels,vector<IPT<bool> > const & selNs)
+guiCheckboxes(String8s const & labels,vector<IPT<bool> > const & selNs)
 {
     FGASSERT(!labels.empty());
     FGASSERT(selNs.size() == labels.size());
@@ -35,7 +35,7 @@ guiCheckboxes(Ustrings const & labels,vector<IPT<bool> > const & selNs)
 }
 
 GuiVal<Bools>
-guiCheckboxes(Ustrings const & labels,const Bools & defaults)
+guiCheckboxes(String8s const & labels,Bools const & defaults)
 {
     FGASSERT(labels.size() == defaults.size());
     vector<IPT<bool> >          selNs;

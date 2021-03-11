@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -39,8 +39,7 @@ ImgC4UC
 fgGraph(Svec<T> const & data)
 {
     ImgC4UC         img;
-    Doubles dt;
-    scast_(data,dt);
+    Doubles         dt = mapCast<double>(data);
     fgDrawBarGraph(img,dt);
     return img;
 }

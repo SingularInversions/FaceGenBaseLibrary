@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,6 +13,7 @@
 #include "FgLighting.hpp"
 #include "Fg3dNormals.hpp"
 #include "FgAny.hpp"
+#include "FgMarr.hpp"
 
 namespace Fg {
 
@@ -23,7 +24,7 @@ enum struct AlbedoMode {
     bySurf = 3,
 };
 
-Ustrings     cAlbedoModeLabels();
+String8s     cAlbedoModeLabels();
 
 struct  RendOptions
 {
@@ -66,15 +67,12 @@ struct  BackgroundImage
 
 struct  RendSurf
 {
-    NPTF<ImgC4UC>           smoothMapN;                 // Albedo without texture. Image can be empty
+    NPT<ImgC4UC>            smoothMapN;                 // Albedo without texture. Image can be empty
     NPT<bool>               albedoHasTransparencyN;     // False if image is empty
-    NPTF<ImgC4UC>           modulationMapN;             // Image can be empty
-    NPTF<ImgC4UC>           specularMapN;               // Image can be empty
-    // Can't use std::any here since 'gpuData' uses unique_ptr which can't be copy-constructed.
-    // The shared_ptr used for Any's reference semantics is overkill (we only ever want one copy)
-    // so one could create a no-copy-constructor version of std::any and use that instead.
-    // Also note that on 3D window shutdown this data is destructed only after the GPU context is destructed,
-    // so the GPU object must hand that (D3D is easy since you just call ClearState()).
+    NPT<ImgC4UC>            modulationMapN;             // Image can be empty
+    NPT<ImgC4UC>            specularMapN;               // Image can be empty
+    // Note that on 3D window shutdown this data is destructed only after the GPU context is destructed,
+    // so the GPU object must handle doing this in advance if desired (D3D is easy since you just call ClearState()).
     Sptr<Any>               gpuData = std::make_shared<Any>();
 };
 typedef Svec<RendSurf>  RendSurfs;
@@ -84,8 +82,6 @@ struct  RendMesh
     // The original mesh will be empty if this mesh is not currently selected:
     NPT<Mesh>               origMeshN;          // Should point to an Input if client wants mesh editing
     NPT<Vec3Fs>             posedVertsN;
-    DfgFPtr                 surfVertsFlag;      // Must point to 'posedVertsN'
-    DfgFPtr                 allVertsFlag;       // "
     NPT<MeshNormals>        normalsN;
     Sptr<Any>               gpuData = std::make_shared<Any>();
     RendSurfs               rendSurfs;
@@ -100,15 +96,15 @@ intersectMeshes(
     RendMeshes const &      meshes);
 
 // bool: is shift key down as well ? Vec2I: drag delta in pixels
-typedef std::function<void(bool,Vec2I)>                  BothButtonsDragAction;
+typedef Sfun<void(bool,Vec2I)>              BothButtonsDragAction;
 // Vec2UI: viewport size
 // Vec2I: final position
 // Mat44F: transform verts to OICS
-typedef std::function<void(Vec2UI,Vec2I,Mat44F)>    ShiftRightDragAction;
+typedef Sfun<void(Vec2UI,Vec2I,Mat44F)>     DragAction;
 // Vec2UI: viewport size
 // Vec2I: click position
 // Mat44F: transform verts to OICS
-typedef std::function<void(Vec2UI,Vec2I,Mat44F)>    CtrlShiftMiddleClickAction;
+typedef Sfun<void(Vec2UI,Vec2I,Mat44F)>     ClickAction;
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  Gui3d;
@@ -122,8 +118,6 @@ struct  Gui3d : GuiBase
     RPT<Lighting>               light;
     NPT<Camera>                 xform;
     RPT<RendOptions>            renderOptions;
-    NPT<size_t>                 vertMarkModeN;  // 0 - single, 1 - edge seam, 2 - fold seam, 3 - fill
-    NPT<Ustring>                pointLabel;     // Label for surface point creation
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
     struct  Capture {           // Put in struct for easier syntax to call a std::function
@@ -133,7 +127,7 @@ struct  Gui3d : GuiBase
     // Will contain the functions for capturing current render once the GPU is set up:
     Sptr<Capture> const         capture = std::make_shared<Capture>();
     // If defined, will be called with the filename when the user drops it on the 3D window:
-    Sfun<void(Ustring const &)> fileDragDrop;
+    Sfun<void(String8 const &)> fileDragDrop;
 
 
     // Modified (by mouse/keyboard commands processed by viewport):
@@ -143,24 +137,22 @@ struct  Gui3d : GuiBase
     IPT<Vec2D>                  trans;
     IPT<double>                 logRelSize;
     IPT<Vec2UI>                 viewportDims;
-    IPT<Ustring>                gpuInfo;
+    IPT<String8>                gpuInfo;
 
-    // Actions:
+    // Mouse-Keyboard Actions:
     struct  VertIdx
     {
         bool        valid=false;
         size_t      meshIdx;
         size_t      vertIdx;
     };
-    // WARNING: drag actions are subject to click actions before the drag since click actions
-    // currently take effect on button down, not up:
     // bool: is shift key down as well ?
     Sfun<void(bool,VertIdx,Vec3F)>  ctlDragAction;          // Can be empty
-    IPT<BothButtonsDragAction>      bothButtonsDragActionI;
-    IPT<ShiftRightDragAction>       shiftRightDragActionI;
-    IPT<CtrlShiftMiddleClickAction> shiftMiddleClickActionI;
+    BothButtonsDragAction           bothButtonsDragAction;
+    DragAction                      shiftRightDragAction;
+    Marr3<ClickAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
 
-    Gui3d() {}
+    Gui3d(NPT<RendMeshes> const & rmN) : rendMeshesN{rmN} {}
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
@@ -180,26 +172,36 @@ struct  Gui3d : GuiBase
     translate(Vec2I delta);
 
     void
-    markSurfPoint(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps);
-
-    void
-    markVertex(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps);
-
-    void
     ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps);
 
     void
     ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps);
 
     void
-    ctrlShiftLeftDrag(Vec2UI winSize,Vec2I delta);
+    translateBgImage(Vec2UI winSize,Vec2I delta);
 
     void
-    ctrlShiftRightDrag(Vec2UI winSize,Vec2I delta);
+    scaleBgImage(Vec2UI winSize,Vec2I delta);
 
 private:
     VertIdx             lastCtlClick;
 };
+
+void
+markSurfacePoint(
+    NPT<RendMeshes> const & rendMeshesN,
+    NPT<String8> const &    pointLabelN,
+    Vec2UI          winSize,
+    Vec2I           pos,
+    Mat44F          worldToD3ps);
+
+void
+markMeshVertex(
+    NPT<RendMeshes> const & rendMeshesN,
+    NPT<size_t> const &     vertMarkModeN,
+    Vec2UI                  winSize,
+    Vec2I                   pos,
+    Mat44F                  worldToD3ps);
 
 }
 

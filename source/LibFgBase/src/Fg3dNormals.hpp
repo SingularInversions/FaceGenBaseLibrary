@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,7 +21,7 @@ Vec3Ds      cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
 inline
 Vec3Ds
 cVertNorms(TriSurf const & ts)
-{return cVertNorms(scast<double>(ts.verts),ts.tris); }
+{return cVertNorms(deepCast<double>(ts.verts),ts.tris); }
 
 struct  FacetNormals
 {

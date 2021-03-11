@@ -18,7 +18,7 @@ namespace Fg {
 
 // Returns no value if given dir/name not found:
 Opt<ulong>
-winRegistryLookupUlong(Ustring const & dir,Ustring const & name)
+winRegistryLookupUlong(String8 const & dir,String8 const & name)
 {
     Opt<ulong>        ret;
     HKEY                hKey;
@@ -42,10 +42,10 @@ winRegistryLookupUlong(Ustring const & dir,Ustring const & name)
 }
 
 // Returns no value if given dir/name not found:
-Opt<Ustring>
-fgWinRegistryLookupString(Ustring const & dir,Ustring const & name)
+Opt<String8>
+fgWinRegistryLookupString(String8 const & dir,String8 const & name)
 {
-    Opt<Ustring>     ret;
+    Opt<String8>     ret;
     HKEY                hKey;
     wstring             pathW = dir.as_wstring();
     LONG                result = RegOpenKeyExW(HKEY_CURRENT_USER,pathW.c_str(),0,KEY_READ,&hKey);
@@ -63,7 +63,7 @@ fgWinRegistryLookupString(Ustring const & dir,Ustring const & name)
         return ret;
     if (result != ERROR_SUCCESS)
         throwWindows("Error reading registry value",name);
-    ret = Ustring(szBuffer);
+    ret = String8(szBuffer);
     return ret;
 }
 

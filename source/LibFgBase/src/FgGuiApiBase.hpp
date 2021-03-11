@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,16 +24,19 @@
 
 namespace Fg {
 
+// Returns true if GUI is supported on this platform (GUI calls do nothing otherwise):
+bool
+isGuiSupported();
+
 // Set up this data structure for application error handling (eg. report to server):
 struct  GuiExceptHandler
 {
-    Ustring                        appNameVer;     // Full name of application plus version
+    String8                        appNameVer;     // Full name of application plus version
     // Client-defined error reporting. Can be null.
     // Accepts error message, returns true if reported, false otherwise (so default dialog can be shown):
-    std::function<bool(Ustring)> reportError;
-    Ustring                        reportSuccMsg;  // Displayed if 'reportError' returns true.
+    std::function<bool(String8)> reportError;
     // Prepended to error message and displayed if 'reportError' == NULL or 'reportError' returns false:
-    Ustring                        reportFailMsg;
+    String8                        reportFailMsg;
 };
 
 extern GuiExceptHandler         g_guiDiagHandler;
@@ -98,9 +101,9 @@ struct  GuiVal           // Combine a window and a related node
 // Defined in OS-specific code:
 void
 guiStartImpl(
-    NPT<Ustring>                titleN,
+    NPT<String8>                titleN,
     GuiPtr                      gui,
-    Ustring const &             store,          // Directory in which to store state
+    String8 const &             store,          // Directory in which to store state
     GuiOptions const &          options=GuiOptions());
 
 // Send message to terminate GUI. Defined in OS-specific code. TODO: make it not global:

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -73,7 +73,7 @@ nmVideo(size_t mm,size_t tt)
 
 void
 saveFbx(
-    Ustring const &            filename,
+    String8 const &            filename,
     Meshes const &    meshes,
     string                      imgFormat)
 {
@@ -305,7 +305,7 @@ saveFbx(
                 "            P: \"Opacity\", \"double\", \"Number\", \"\",1\n"
                 "        }\n"
                 "    }\n";
-            Ustring    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
+            String8    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
                 saveImage(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
             ofs <<
@@ -359,7 +359,7 @@ saveFbx(
                 "    C: \"OO\", " << idMaterial(mm,tt) << "," << idModel(mm) << "\n"
                 "    C: \"OP\", " << idTexture(mm,tt) << "," << idMaterial(mm,tt) << ", \"DiffuseColor\"\n"
                 "    C: \"OO\", " << idVideo(mm,tt) << "," << idTexture(mm,tt) << "\n";
-            if (mesh.surfaces[tt].material.albedoMap && fgUsesAlpha(*mesh.surfaces[tt].material.albedoMap))
+            if (mesh.surfaces[tt].material.albedoMap && usesAlpha(*mesh.surfaces[tt].material.albedoMap))
                 ofs <<
                 "    C: \"OP\", " << idTexture(mm,tt) << "," << idMaterial(mm,tt) << ", \"TransparentColor\"\n";
         }
@@ -371,7 +371,7 @@ void
 fgSaveFbxTest(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring            dd = dataDir();
+    String8            dd = dataDir();
     string              rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

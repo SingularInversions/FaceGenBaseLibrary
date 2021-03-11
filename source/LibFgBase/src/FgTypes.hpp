@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,7 +25,7 @@ typedef unsigned long   ulong;      // long is >= 4 bytes >= int by the C++ stan
 typedef long long       int64;      // C99 / C++0x but widely supported.
 typedef unsigned long long uint64;  // "
 
-// Shorter names for C++11 fixed size integers:
+// Shorter names for fixed size integers:
 typedef std::uint8_t    uint8;
 typedef std::int8_t     int8;
 typedef std::int16_t    int16;
@@ -81,17 +81,12 @@ template<> struct Traits<uint>
     typedef uint64  Accumulator;
     typedef float   Floating;
 };
-// MSVC and Android do not consider size_t to be its own type but others do:
-#ifdef _MSC_VER
-#elif defined(__ANDROID__)
-#else
-template<> struct Traits<size_t>
+template<> struct Traits<ulong>
 {
-    typedef size_t  Scalar;
+    typedef ulong   Scalar;
     typedef size_t  Accumulator;
     typedef double  Floating;
 };
-#endif
 template<> struct Traits<int64>
 {
     typedef int64   Scalar;
@@ -123,21 +118,20 @@ inline T
 sfloor(T v)
 {return std::floor(v); }
 
-// Template resolution base base:
-template<typename To,typename From>
+#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
+
+// Template resolution base case:
+template<typename To,typename From,
+    FG_ENABLE_IF(To,is_fundamental),
+    FG_ENABLE_IF(From,is_fundamental)
+>
 inline void
-scast_(From from,To & to)
+deepCast_(From from,To & to)
 {to = static_cast<To>(from); }
 
-// Abbreviation for static_cast. Was unable to make recursive template resolution due
-// to difficulty of specifying return type. Instead, each combination of containers to be used
-// with it needs to be its own template function:
+// Abbreviation:
 template<typename To,typename From>
-inline To
-scast(From val)
-{return static_cast<To>(val); }
-
-#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
+inline To scast(From val) {return static_cast<To>(val); }
 
 // 'round' for static cast which does proper rounding when necessary:
 // No bounds checking is done by these 'round' functions:
@@ -189,16 +183,15 @@ interpolate(T v0,T v1,float val)   // returns v0 when val==0, v1 when val==1
     return round<T,float>(v);
 }
 
-// Squared magnitude function base cases:
-inline float cMag(float v) {return v*v; }
+// Squared magnitude function base cases (function always returns double):
 inline double cMag(double v) {return v*v; }
 inline double cMag(std::complex<double> v) {return std::norm(v); }
 template<typename T,size_t S>
 double
-cMag(std::array<T,S> const a)
+cMag(std::array<T,S> const arr)
 {
-    T       acc(0);
-    for (T const & e : a)
+    double          acc {0};
+    for (T const & e : arr)
         acc += cMag(e);
     return acc;
 }

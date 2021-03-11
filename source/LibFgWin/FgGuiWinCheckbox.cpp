@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,7 +27,7 @@ struct  GuiCheckboxWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiCheckboxWin::create " << m_api.label << fgpush;
         WinCreateChild   cc;

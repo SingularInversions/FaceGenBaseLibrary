@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,85 +18,53 @@
 
 namespace Fg {
 
-template<typename T>
-struct  Similarity
+struct  SimilarityD
 {
-    T               scale = 1;      // Scale and rotation applied first
-    Quaternion<T>   rot;
-    Mat<T,3,1>      trans;          // Translation applied last
+    double              scale {1};      // Scale and rotation applied first
+    QuaternionD         rot;
+    Vec3D               trans {0};      // Translation applied last
 
     FG_SERIALIZE3(scale,rot,trans);
 
-    Similarity() {}
+    SimilarityD() {}
+    explicit SimilarityD(double s) : scale(s) {}
+    explicit SimilarityD(Vec3D const & t) : trans(t) {}
+    explicit SimilarityD(QuaternionD const & r) : rot(r) {}
+    SimilarityD(double s,QuaternionD const & r,const Vec3D & t) : scale(s), rot(r), trans(t) {FGASSERT(scale > 0.0); }
 
-    explicit
-    Similarity(T s) : scale(s) {}
-
-    explicit
-    Similarity(Mat<T,3,1> const & t) : trans(t) {}
-
-    explicit
-    Similarity(Quaternion<T> const & r) : rot(r) {}
-
-    Similarity(T s,Quaternion<T> const & r,const Mat<T,3,1> & t)
-    : scale(s), rot(r), trans(t)
-    {FGASSERT(scale > 0); }
-
-    Mat<T,3,1>
-    operator*(Mat<T,3,1> vec) const
-    {return rot*vec*scale + trans; }
+    Vec3D           operator*(Vec3D const & v) const {return rot * v * scale + trans; }
+    Vec3F           operator*(Vec3F const & v) const {return Vec3F(operator*(Vec3D(v))); }
 
     // More efficient if applying the transform to many vectors:
-    Affine<T,3>
-    asAffine() const
-    {return Affine<T,3>(rot.asMatrix() * scale,trans); }
+    Affine3D        asAffine() const {return Affine3D {rot.asMatrix() * scale,trans}; }
+
+    Mat33D          linearComponent() const {return rot.asMatrix() * scale; }
 
     // operator* in this context means composition:
-    Similarity operator*(const Similarity & rhs) const
-    {
-        // Transform:   sRv+t
-        // Composition: s'R'(sRv+t)+t'
-        //            = s'R'sR(v) + (s'R't+t')
-        Similarity    ret;
-        ret.scale = scale * rhs.scale;
-        ret.rot = rot * rhs.rot;
-        ret.trans = scale * (rot * rhs.trans) + trans;
-        return ret;
-    }
+    SimilarityD     operator*(SimilarityD const & rhs) const;
 
-    Similarity inverse() const
-    {
-        // v' = sRv+t
-        // sRv = v' - t
-        // v = s'R'v' - s'R't
-        double              s = 1.0 / scale;
-        QuaternionD         r = rot.inverse();
-        Vec3D               t = r * trans * s;
-        return Similarity {s,r,-t};
-    }
+    SimilarityD     inverse() const;
 
     // Be more explicit than using default constructor:
-    static Similarity identity() {return Similarity(1,Quaternion<T>(),Mat<T,3,1>(0)); }
+    static SimilarityD identity() {return SimilarityD(1.0,QuaternionD{},Vec3D{0}); }
 };
 
-typedef Similarity<float>   SimilarityF;
-typedef Similarity<double>  SimilarityD;
-
-template<typename T>
-Mat<T,4,4>
-asHomogMat(Similarity<T> const & s)
+inline Mat44D
+asHomogMat(SimilarityD const & s)
 {return asHomogMat(s.asAffine()); }
 
 SimilarityD
 similarityRand();
 
+// Uses Horn '87 "Closed-Form Solution of Absolute Orientation..." to find the similarity
+// transform FROM the domain points TO the range points very quickly with high accuracy:
 SimilarityD
-similarityApprox(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
+solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
 
 inline
 SimilarityD
-similarityApprox(Vec3Fs const & d,Vec3Fs const & r)
-{return similarityApprox(scast<double>(d),scast<double>(r)); }
+solveSimilarity(Vec3Fs const & d,Vec3Fs const & r)
+{return solveSimilarity(deepCast<double>(d),deepCast<double>(r)); }
 
 SimilarityD
 interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
@@ -113,38 +81,18 @@ struct  SimilarityRD
     FG_SERIALIZE3(trans,rot,scale);
 
     SimilarityRD() {}
-
-    SimilarityRD(Vec3D const & t,QuaternionD const & r,double s)
-    : trans(t), rot(r), scale(s)
-    {FGASSERT(s > 0.0); }
+    SimilarityRD(Vec3D const & t,QuaternionD const & r,double s) : trans {t}, rot {r}, scale {s} {FGASSERT(s > 0.0); }
 
     // SimilarityD: v' = sRv + t = sR(v + s^-1 R^-1 t)
-    SimilarityRD(const SimilarityD & s)
-        : trans(s.rot.inverse() * s.trans / s.scale), rot(s.rot), scale(s.scale)
-    {}
+    SimilarityRD(SimilarityD const & s) : trans {s.rot.inverse()*s.trans/s.scale}, rot{s.rot}, scale {s.scale} {}
 
     // More efficient if applying the transform to many vectors:
-    Affine3D asAffine() const;
-
-    // v' = sR(v+t)
-    // v' = sRv + sRt
-    // sRv = v' - sRt
-    // v = s'R'(v' - sRt)
-    SimilarityRD
-    inverse() const
-    {
-        Vec3D           t = rot * trans * scale;
-        return SimilarityRD {-t,rot.inverse(),1.0/scale};
-    }
-
+    Affine3D            asAffine() const;
+    SimilarityRD        inverse() const;
     // Return inverse of only the linear component (no translation):
-    Mat33D
-    linearInverse() const
-    {return rot.inverse().asMatrix() / scale; }
+    Mat33D              linearInverse() const {return rot.inverse().asMatrix() / scale; }
 
-    static SimilarityRD
-    identity()
-    {return SimilarityRD {Vec3D(0),QuaternionD{},1}; }
+    static SimilarityRD identity() {return SimilarityRD {Vec3D(0),QuaternionD{},1}; }
 };
 
 typedef Svec<SimilarityRD>   SimilarityRDs;

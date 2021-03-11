@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -36,7 +36,7 @@ addalpha(CLArgs const & args)
 }
 
 void
-composite(CLArgs const & args)
+cmdComposite(CLArgs const & args)
 {
     Syntax          syn(args,
         "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
@@ -47,7 +47,7 @@ composite(CLArgs const & args)
                     overlay = loadImage(syn.next());
     if (base.dims() != overlay.dims())
         syn.error("The images must have identical pixel dimensions");
-    saveImage(syn.next(),fgComposite(overlay,base));
+    saveImage(syn.next(),composite(overlay,base));
 }
 
 void
@@ -97,7 +97,7 @@ imgops(CLArgs const & args)
 {
     Cmds   ops;
     ops.push_back(Cmd(addalpha,"addalpha","Add/replace an alpha channel from an another image"));
-    ops.push_back(Cmd(composite,"composite","Composite an image with transparency over another"));
+    ops.push_back(Cmd(cmdComposite,"cmdComposite","Composite an image with transparency over another"));
     ops.push_back(Cmd(convert,"convert","Convert images between different formats"));
     ops.push_back(Cmd(formats,"formats","List all supported formats by file extension"));
     ops.push_back(Cmd(shrink2,"shrink2","Shrink images by a factor of 2"));

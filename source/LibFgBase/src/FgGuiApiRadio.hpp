@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
 struct GuiRadio : GuiBase
 {
     bool                horiz;
-    Ustrings            labels;
+    String8s            labels;
     IPT<size_t>         selection;
 
     virtual
@@ -39,11 +39,11 @@ struct GuiRadio : GuiBase
 
 // If desired output is the index:
 GuiPtr
-guiRadio(Ustrings const & labels,IPT<size_t> idxN);
+guiRadio(String8s const & labels,IPT<size_t> idxN);
 
 // If desired output is the label:
-GuiVal<Ustring>
-guiRadioLabel(Ustrings const & labels,IPT<size_t> idxN);
+GuiVal<String8>
+guiRadioLabel(String8s const & labels,IPT<size_t> idxN);
 
 }
 

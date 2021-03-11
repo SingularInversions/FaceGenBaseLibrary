@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -57,10 +57,10 @@ using namespace std;
 
 namespace Fg {
 
-Ustrings
+String8s
 getGpusDescription()
 {
-    Ustrings                ret;
+    String8s                ret;
     IDXGIAdapter1 *         pAdapter; 
     IDXGIFactory1*          pFactory = nullptr; 
     if(FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory) ,(void**)&pFactory)))
@@ -68,17 +68,17 @@ getGpusDescription()
     for (uint ii=0;pFactory->EnumAdapters1(ii,&pAdapter) != DXGI_ERROR_NOT_FOUND;++ii) {
         DXGI_ADAPTER_DESC1      desc;
         pAdapter->GetDesc1(&desc);
-        ret.push_back("Adapter"+toStr(ii)+": "+Ustring(wstring(desc.Description)));
+        ret.push_back("Adapter"+toStr(ii)+": "+String8(wstring(desc.Description)));
     }
     if(pFactory)
         pFactory->Release();
     return ret;
 }
 
-Ustring
+String8
 getDefaultGpuDescription()
 {
-    Ustrings        gpus = getGpusDescription();
+    String8s        gpus = getGpusDescription();
     if (gpus.empty())
         return "No GPUs detected";
     else
@@ -208,7 +208,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
             // If a system doesn't support 11.0 this returns DXGI_ERROR_UNSUPPORTED (0x887A0004)
             // E_FAIL (0x80004005) "debug layer enabled but not installed" happens quite a bit ...
             // DXGI_ERROR_SDK_COMPONENT_MISSING (0x887A002D) SDK needed for debug layer ? only seen once
-            hr = D3D11CreateDeviceAndSwapChain(
+            hr = D3D11CreateDeviceAndSwapChain(     // Creates an immediate mode rendering context
                 nullptr,                // Use first video adapter (card/driver) if more than one of this type
                 get<1>(config),         // Driver type
                 nullptr,                // No software rasterizer DLL handle
@@ -392,19 +392,22 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
     }
 }
 
-void
+bool
 D3d::resize(Vec2UI windowSize)
 {
     if (pContext == nullptr)
-        return;
+        return false;
     pContext->OMSetRenderTargets(0,nullptr,nullptr);
     pRTV.Reset();
-    HRESULT             hr =
-        pSwapChain->ResizeBuffers(2,windowSize[0],windowSize[1],DXGI_FORMAT_UNKNOWN,0);
+    HRESULT             hr = pSwapChain->ResizeBuffers(2,windowSize[0],windowSize[1],DXGI_FORMAT_UNKNOWN,0);
+    // This error was returned after WM_SIZE triggered by an nvidia GPU driver update:
+    if (hr == DXGI_ERROR_DEVICE_REMOVED)
+        return true;
     FG_ASSERT_D3D(hr);
     this->initializeRenderTexture(windowSize);
     CD3D11_VIEWPORT     viewport {0.0f,0.0f,scast<float>(windowSize[0]),scast<float>(windowSize[1])};
     pContext->RSSetViewports(1,&viewport);
+    return false;
 }
 
 WinPtr<ID3D11Buffer>
@@ -445,8 +448,10 @@ WinPtr<ID3D11Buffer>
 D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 {
     // This isn't quite right since it will recalc when anything in rendMeshesN changes ...
-    // but it's not clear what the perfect solution would look like:
-    float                   sz = cMaxElem(origMeshesDimsN.val()) * (1.0f / 256.0f),
+    // but it's not clear what the perfect solution would look like.
+    // Use the median dimension because we don't want use of a full body mesh to make the
+    // markers too small to see, and use of a very flat face cutout to make them too big.
+    float                   sz = cMedian(origMeshesDimsN.val().m) * (1.0f / 160.0f),
                             relSize = float(exp(logRelSize.node.val())),
                             scale = cMax(1.0f,relSize);
     sz /= scale;            // Shrink points as they are zoomed in for greater visual accuracy
@@ -682,7 +687,7 @@ D3d::setBgImage(BackgroundImage const & bgi)
     ImgC4UC const &     img = bgi.imgN.cref();
     if (img.empty())
         return;
-    Vec2UI              p2dims = clampHi(pow2Ceil(img.dims()),maxMapSize);
+    Vec2UI              p2dims = mapMin(pow2Ceil(img.dims()),maxMapSize);
     ImgC4UC             map(p2dims);
     imgResize(img,map);
     bgImg = makeMap(map);
@@ -747,7 +752,7 @@ D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transpa
     scene.projection = Mat44F::identity();
     scene.ambient = Vec4F(1);
     if (transparentPass) {
-        double                      ft = clampBounds(bgi.foregroundTransparency.val(),0.0,1.0);
+        double                      ft = clamp(bgi.foregroundTransparency.val(),0.0,1.0);
         scene.ambient[3] = static_cast<float>(ft);
     }
     WinPtr<ID3D11Buffer>        sceneBuff = setScene(scene);
@@ -759,7 +764,7 @@ D3d::getD3dMesh(RendMesh const & rm) const
 {
     Any &  gpuMesh = *rm.gpuData;
     if (gpuMesh.empty())
-        gpuMesh.reset(D3dMesh());
+        gpuMesh.reset(D3dMesh{makeUpdateFlag(rm.posedVertsN)});
     return gpuMesh.ref<D3dMesh>();
 }
 
@@ -767,15 +772,20 @@ D3dSurf &
 D3d::getD3dSurf(RendSurf const & rs) const
 {
     Any &  gpuSurf = *rs.gpuData;
-    if (gpuSurf.empty())
-        gpuSurf.reset(D3dSurf());
+    if (gpuSurf.empty()) {
+        gpuSurf.reset(D3dSurf{
+            rs.smoothMapN,
+            rs.modulationMapN,
+            rs.specularMapN,
+        });
+    }
     return gpuSurf.ref<D3dSurf>();
 }
 
 void
-D3d::updateMap_(NPTF<ImgC4UC> const & in,D3dMap & out)
+D3d::updateMap_(DfgFPtr const & flag,NPT<ImgC4UC> const & in,D3dMap & out)
 {
-    if (in.checkUpdate()) {
+    if (flag->checkUpdate()) {
         out.reset();
         ImgC4UC const &     img = in.cref();
         if (!img.empty())
@@ -801,32 +811,31 @@ D3d::renderBackBuffer(
     for (RendMesh const & rendMesh : rendMeshes) {
         Mesh const &        origMesh = rendMesh.origMeshN.cref();
         D3dMesh &           d3dMesh = getD3dMesh(rendMesh);
-        bool                vertsChanged = rendMesh.surfVertsFlag->checkUpdate();
+        bool                vertsChanged = d3dMesh.vertsFlag->checkUpdate();
         bool                trisChanged = vertsChanged || (flatShaded != rendOpts.flatShaded);                          
         bool                valid = !origMesh.verts.empty();
-        if (rendOpts.allVerts && rendMesh.allVertsFlag->checkUpdate()) {
+        // Easier to always update these than have a flag for each and only update when resp. option selected:
+        if (vertsChanged) {
             d3dMesh.allVerts.reset();
-            if (valid)
+            d3dMesh.markedPoints.reset();
+            if (valid) {
                 d3dMesh.allVerts = makeAllVerts(rendMesh.posedVertsN.cref());
+                d3dMesh.markedPoints = makeMarkedVerts(rendMesh,origMesh);
+            }
         }
         if (vertsChanged || logRelSize.checkUpdate()) {
             d3dMesh.surfPoints.reset();
             if (valid)
                 d3dMesh.surfPoints = makeSurfPoints(rendMesh,origMesh);
         }
-        if (vertsChanged) {
-            d3dMesh.markedPoints.reset();
-            if (valid)
-                d3dMesh.markedPoints = makeMarkedVerts(rendMesh,origMesh);
-        }
         if (valid)
             FGASSERT(rendMesh.rendSurfs.size() == origMesh.surfaces.size());
         for (size_t ss=0; ss<rendMesh.rendSurfs.size(); ++ss) {     // TODO: don't duplicate shared maps ! (eg. multisurface mesh)
             RendSurf const &        rs = rendMesh.rendSurfs[ss];
             D3dSurf &               d3dSurf = getD3dSurf(rs);
-            updateMap_(rs.smoothMapN,d3dSurf.albedoMap);
-            updateMap_(rs.modulationMapN,d3dSurf.modulationMap);
-            updateMap_(rs.specularMapN,d3dSurf.specularMap);
+            updateMap_(d3dSurf.albedoMapFlag,rs.smoothMapN,d3dSurf.albedoMap);
+            updateMap_(d3dSurf.modulationMapFlag,rs.modulationMapN,d3dSurf.modulationMap);
+            updateMap_(d3dSurf.specularMapFlag,rs.specularMapN,d3dSurf.specularMap);
             if (trisChanged) {
                 d3dSurf.lineVerts.reset();  // Release but delay computation in case not needed
                 d3dSurf.triVerts.reset();

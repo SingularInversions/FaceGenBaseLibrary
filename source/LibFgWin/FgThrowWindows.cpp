@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,7 +40,7 @@ winLastErrUtf8(bool forceEnglish)
         return string{};
     wstring         msgRaw {static_cast<wchar_t*>(lpMsgBuf)};
     LocalFree(lpMsgBuf);
-    u32string       msg32 = toUtf32(toUtf8(msgRaw));
+    String32       msg32 = toUtf32(toUtf8(msgRaw));
     // Windows often adds a trailing CR/LF which is not helpful to us:
     while ((msg32.back() == '\r') || (msg32.back() == '\n'))
         msg32.pop_back();
@@ -48,7 +48,7 @@ winLastErrUtf8(bool forceEnglish)
 } 
 
 void
-throwWindows(string const & msg,Ustring const & data)
+throwWindows(string const & msg,String8 const & data)
 {
     FgException     exc(msg,data.m_str);
     string          winMsgLocal = winLastErrUtf8(false);
@@ -61,13 +61,13 @@ throwWindows(string const & msg,Ustring const & data)
 }
 
 void
-assertWindows(const char * fname,int line)
+assertWindows(char const * fname,int line)
 {
     throwWindows("Internal program error",fgDiagString(fname,line));
 }
 
 void
-assertWinReturnZero(const char * fname,int line,long rval)
+assertWinReturnZero(char const * fname,int line,long rval)
 {
     throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toHexString(rval));
 }

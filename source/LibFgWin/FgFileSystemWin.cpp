@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ using namespace std;
 namespace Fg {
 
 bool
-isDirectory(Ustring const & name)
+isDirectory(String8 const & name)
 {
     wstring         nameW = name.as_wstring();
     DWORD           attr = GetFileAttributesW(nameW.c_str());
@@ -29,36 +29,36 @@ isDirectory(Ustring const & name)
 }
 
 // Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
-DirectoryContents
-directoryContents(Ustring const & dirName)
+DirContents
+getDirContents(String8 const & dirName,bool includeDot)
 {
-    Path              dir(asDirectory(dirName));
-    DirectoryContents ret;
+    Path                dir(asDirectory(dirName));
+    DirContents   ret;
     WIN32_FIND_DATAW	finddata;
-    Ustring            spec = dir.str() + "*";
+    String8             spec = dir.str() + "*";
     HANDLE hFind = FindFirstFileW(spec.as_wstring().c_str(),&finddata);
     if (hFind == INVALID_HANDLE_VALUE)
         return ret;
     do {
-        if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            wstring     name(finddata.cFileName);
-            if ((name != L".") && (name != L".."))
-                ret.dirnames.push_back(Ustring(finddata.cFileName));
+        wstring         name(finddata.cFileName);
+        if ((name[0] != '.') || includeDot) {
+            if (finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+                ret.dirnames.push_back(String8(finddata.cFileName));
+            else
+                ret.filenames.push_back(String8(finddata.cFileName));
         }
-        else
-            ret.filenames.push_back(Ustring(finddata.cFileName));
     } while	(FindNextFileW(hFind,&finddata) != 0);
     FindClose(hFind);
     return ret;
 }
 
-Ustring
+String8
 getCurrentDir()
 {
     wchar_t     buff[MAX_PATH]= {0};
     if (!GetCurrentDirectory(MAX_PATH,buff))
         throwWindows("Unable to get current directory");
-    Ustring    ps(buff);
+    String8    ps(buff);
     if (!ps.empty() && !ps.endsWith("\\"))
         ps += "\\";
     return ps;
@@ -68,7 +68,7 @@ getCurrentDir()
 // doesn't return a success flag:
 bool
 setCurrentDir(
-    Ustring const &    dir,
+    String8 const &    dir,
     bool                throwOnFail)
 {
     wstring wdir = dir.as_wstring();
@@ -80,7 +80,7 @@ setCurrentDir(
 
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
 void
-deleteFile(Ustring const & fname)
+deleteFile(String8 const & fname)
 {
     wstring wfname = fname.as_wstring();
     DWORD   attributes = GetFileAttributes(wfname.c_str());
@@ -94,7 +94,7 @@ deleteFile(Ustring const & fname)
 
 bool
 removeDirectory(
-    Ustring const &    dirname,
+    String8 const &    dirname,
     bool                throwOnFail)
 {
     wstring wdirname = dirname.as_wstring();
@@ -107,9 +107,9 @@ removeDirectory(
 }
 
 bool
-createDirectory(Ustring const & dirname)
+createDirectory(String8 const & dirname)
 {
-    Ustring     templateDir;
+    String8     templateDir;
     // Figure out the parent directory for the "template" (WTF):
     Path        path(asDirectory(dirname));
     if (path.dirs.size() > 1) {
@@ -129,15 +129,15 @@ createDirectory(Ustring const & dirname)
     return true;
 }
 
-Ustring
+String8
 getExecutablePath()
 {
     wchar_t     module_name[MAX_PATH] = {0};
     GetModuleFileNameW(0,module_name,sizeof(module_name));
-    return Ustring(module_name);
+    return String8(module_name);
 }
 
-Ustring
+String8
 getDirSystemAppData()
 {
     wchar_t     path[MAX_PATH];
@@ -150,12 +150,12 @@ getDirSystemAppData()
             path);
     if (retval != S_OK)
         throwWindows("Unable to retrieve an all-users application data directory");
-    return Ustring(path) + "\\";
+    return String8(path) + "\\";
 }
 
 // Return true if succeeded:
 static bool
-setAllUsersFullControl(Ustring const path)  // Directory or file
+setAllUsersFullControl(String8 const path)  // Directory or file
 {
     FGASSERT(!path.empty());
     wstring                 pathw = path.as_wstring();
@@ -229,10 +229,10 @@ setAllUsersFullControl(Ustring const path)  // Directory or file
 	return ret;
 }
 
-Ustring
-getDirSystemAppData(Ustring const & groupName,Ustring const & appName)
+String8
+getDirSystemAppData(String8 const & groupName,String8 const & appName)
 {
-    Ustring    appDir = getDirSystemAppData() + groupName;
+    String8    appDir = getDirSystemAppData() + groupName;
     if (!pathExists(appDir)) {
         createDirectory(appDir);
         // AllUsers by default has limited access to directories created within '\ProgramData', so
@@ -246,7 +246,7 @@ getDirSystemAppData(Ustring const & groupName,Ustring const & appName)
     return appDir + fgDirSep();
 }
 
-Ustring
+String8
 getDirUserAppDataRoaming()
 {
     wchar_t     path[MAX_PATH];
@@ -259,10 +259,10 @@ getDirUserAppDataRoaming()
             path);
     if (retval != S_OK)
         throwWindows("Unable to retrieve user's roaming application data directory");
-    return Ustring(path) + "\\";
+    return String8(path) + "\\";
 }
 
-Ustring
+String8
 getDirUserAppDataLocal()
 {
     wchar_t     path[MAX_PATH];
@@ -275,10 +275,10 @@ getDirUserAppDataLocal()
             path);
     if (retval != S_OK)
         throwWindows("Unable to retrieve user's local application data directory");
-    return Ustring(path) + "\\";
+    return String8(path) + "\\";
 }
 
-Ustring
+String8
 getUserDocsDir(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
@@ -293,12 +293,12 @@ getUserDocsDir(bool throwOnFail)
         if (throwOnFail)
             throwWindows("Unable to retrieve user documents directory");
         else
-            return Ustring();
+            return String8();
     }
-    return Ustring(path) + "\\";
+    return String8(path) + "\\";
 }
 
-Ustring
+String8
 getPublicDocsDir()
 {
     wchar_t     path[MAX_PATH];
@@ -311,11 +311,11 @@ getPublicDocsDir()
             path);
     if (retval != S_OK)
         throwWindows("Unable to retrieve public documents directory");
-    return Ustring(path) + "\\";
+    return String8(path) + "\\";
 }
 
 bool
-getCreationTimePrecise(Ustring const & path,uint64 & time)
+getCreationTimePrecise(String8 const & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -340,7 +340,7 @@ getCreationTimePrecise(Ustring const & path,uint64 & time)
 }
 
 uint64
-getCreationTime(Ustring const & path)
+getCreationTime(String8 const & path)
 {
     uint64          tn;
     FGASSERT(getCreationTimePrecise(path,tn));
@@ -348,7 +348,7 @@ getCreationTime(Ustring const & path)
 }
 
 uint64
-getLastWriteTime(Ustring const & fname)
+getLastWriteTime(String8 const & fname)
 {
     // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
     HANDLE          hndl =

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,7 +27,7 @@ struct  GuiSpacerWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND,int,Ustring const &,DWORD,bool)
+    create(HWND,int,String8 const &,DWORD,bool)
     {}
 
     virtual void
@@ -52,10 +52,6 @@ struct  GuiSpacerWin : public GuiBaseImpl
 
     virtual void
     showWindow(bool)
-    {}
-
-    virtual void
-    saveState()
     {}
 };
 

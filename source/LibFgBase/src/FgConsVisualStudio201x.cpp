@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,9 +24,10 @@ using namespace std;
 
 namespace Fg {
 
-static
+namespace {
+
 string
-fgConsVsPreprocessorDefs(
+getVsPreprocessorDefs(
     bool                release,
     const ConsProj &  proj,
     Strings const &      defs)
@@ -45,13 +46,12 @@ fgConsVsPreprocessorDefs(
     else if (proj.isStaticLib())
         ret += ";_LIB";
     else
-        fgThrow("fgConsVsPreprocessorDefs unhandled type",proj.type);
+        fgThrow("getVsPreprocessorDefs unhandled type",proj.type);
     for (string const & def : defs)
         ret += ";" + def;
     return ret;
 }
 
-static
 bool
 writeVcxproj(
     ConsSolution const &      sln,            // Transitive lookups
@@ -207,7 +207,7 @@ writeVcxproj(
             }
             ofs <<
                 "%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>\n"
-                "      <PreprocessorDefinitions>" << fgConsVsPreprocessorDefs((cc == 1),proj,defines)
+                "      <PreprocessorDefinitions>" << getVsPreprocessorDefs((cc == 1),proj,defines)
                     << ";%(PreprocessorDefinitions)</PreprocessorDefinitions>\n";
             if (cc == 0)
                 ofs <<
@@ -377,7 +377,6 @@ writeVcxproj(
     return saveRaw(ofs.str(),projFile.c_str());
 }
 
-static
 bool
 writeSln(
     ConsSolution const &      sln,
@@ -419,7 +418,7 @@ writeSln(
         string                  uuidFolder = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
         if (pathExists("CMakeLists.txt")) {   // Add CMake files for easy viewing / searching
             string                  uuidCmakeFolder = "{06685DCC-912A-409E-BAF1-580272DB71CD}";
-            DirectoryContents     dc = directoryContents("");
+            DirContents     dc = getDirContents("");
             ofs <<
                 "Project(\"" + uuidFolder + "\") = \"cmake\", \"cmake\", \"" + uuidCmakeFolder + "\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n"
@@ -427,8 +426,8 @@ writeSln(
             ofs <<
                 "	EndProjectSection\n"
                 "EndProject\n";
-            for (Ustring const & dir : dc.dirnames) {
-                Ustring            cmf = dir + "\\CMakeLists.txt";
+            for (String8 const & dir : dc.dirnames) {
+                String8            cmf = dir + "\\CMakeLists.txt";
                 if (pathExists(cmf)) {
                     string          uuid = createMicrosoftGuid("FaceGenCmakeFolder"+dir.m_str);
                     ofs <<
@@ -444,12 +443,12 @@ writeSln(
         if (pathExists("LibFgBase/src/nix")) {    // Add unix files for easy viewing / searching
             string                  nixPath = "LibFgBase\\src\\nix\\";
             string                  uuidNixFolder = "{AE0BD3A3-EF58-4762-9266-81AF0C5A05A8}";
-            DirectoryContents     dc = directoryContents(nixPath);
+            DirContents     dc = getDirContents(nixPath);
             ofs <<
                 // These GUIDs are specific to generic folders with text files in them:
                 "Project(\"" + uuidFolder + "\") = \"unix\", \"unix\", \"" + uuidNixFolder + "\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n";
-            for (Ustring const & fname : dc.filenames)
+            for (String8 const & fname : dc.filenames)
                 ofs << "		" + nixPath+fname + " = " + nixPath+fname + "\n";
             ofs <<
                 "	EndProjectSection\n"
@@ -494,6 +493,8 @@ writeSln(
     return saveRaw(ofs.str(),rootName+verStr+".sln");
 }
 
+}
+
 bool
 fgConsVs201x(ConsSolution const & sln)
 {
@@ -514,13 +515,11 @@ fgConsVs201x(ConsSolution const & sln)
     bool                changed = false;
     for (const ConsProj & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
-            changed = writeVcxproj(sln,proj,nameToGuid,15) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,19) || changed;
         }
     }
-    // This codebase uses C++11 which is only supported by VS 2013 and later:
-    changed = writeSln(sln,merkle,nameToGuid,15) || changed;
+    // This codebase uses C++14 which is only fully supported by VS 2017 and later:
     changed = writeSln(sln,merkle,nameToGuid,17) || changed;
     changed = writeSln(sln,merkle,nameToGuid,19) || changed;
     return changed;

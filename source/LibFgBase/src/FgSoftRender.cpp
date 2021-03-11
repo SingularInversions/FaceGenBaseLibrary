@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,7 +35,7 @@ renderSoft(
     RenderOptions const &   options)
 {
     ImgC4UC             img;
-    VecF2               colorBounds = cBounds(options.backgroundColor.m_c.m);
+    VecF2               colorBounds = cBounds(options.backgroundColor.m_c);
     FGASSERT((colorBounds[0] >= 0.0f) && (colorBounds[1] <= 255.0f));
     RayCaster           rc(meshes,modelview,itcsToIucs,
         options.lighting,options.backgroundColor,options.useMaps,options.allShiny);
@@ -80,16 +80,17 @@ renderSoft(
     }
     if (options.projSurfPoints)
         *options.projSurfPoints = spps;
-    
-    // Paint surface points on image:
+    // Composite surface points:
     if (options.renderSurfPoints != RenderSurfPoints::never) {
         for (const ProjectedSurfPoint & spp : spps) {
             if (spp.visible || (options.renderSurfPoints == RenderSurfPoints::always)) {
                 Vec2F        p = spp.posIucs;
                 p[0] *= img.width();
                 p[1] *= img.height();
-                Vec2I        posIrcs = Vec2I(p);
-                img.paint(posIrcs,RgbaUC(0,255,0,255));     // Ingores out-of-bounds points
+                Vec2I           posIrcs = Vec2I(p);
+                Vec4UC          color {mapCast<uchar>(options.surfPointColor.m_c * 255.f)};
+                paintDot(img,posIrcs,color,2);
+                img.paint(posIrcs,RgbaUC(color.m));       // Ignores out-of-bounds points
             }
         }
     }

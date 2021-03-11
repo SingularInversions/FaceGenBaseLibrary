@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -58,7 +58,7 @@ saveStl(Ofstream & ff,Mesh const & mesh)
 }
 
 void
-saveStl(Ustring const & fname,Meshes const & meshes)
+saveStl(String8 const & fname,Meshes const & meshes)
 {
     FGASSERT(!meshes.empty());
     Ofstream      ff(fname);

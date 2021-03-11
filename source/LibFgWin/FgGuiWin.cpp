@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -43,8 +43,8 @@ GuiWinStatics s_guiWin;
 
 struct  GuiWinMain : GuiMainBase
 {
-    NPTF<Ustring>           titleNF;
-    Ustring                 m_store;            // Base filename for state storage
+    NPTF<String8>           titleNF;
+    String8                 m_store;            // Base filename for state storage
     GuiImplPtr              m_win;
     Vec2UI                  m_size;             // Current size of client area (including maximization)
     Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
@@ -52,7 +52,7 @@ struct  GuiWinMain : GuiMainBase
     Svec<GuiKeyHandle>      keyHandlers;
     function<void()>        onUpdate;           // Run on each screen update
 
-    GuiWinMain(NPT<Ustring> const & t,Ustring const & s,GuiImplPtr const & w) :
+    GuiWinMain(NPT<String8> const & t,String8 const & s,GuiImplPtr const & w) :
         titleNF{t}, m_store{s}, m_win{w}
     {}
 /*
@@ -83,7 +83,7 @@ struct  GuiWinMain : GuiMainBase
     {
     //fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
         if (titleNF.checkUpdate()) {
-            Ustring const &     title = titleNF.node.cref();
+            String8 const &     title = titleNF.node.cref();
             SetWindowTextW(s_guiWin.hwndMain,title.as_wstring().c_str());
         }
         SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
@@ -105,7 +105,7 @@ struct  GuiWinMain : GuiMainBase
         // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
         // col vec 1 is size. Windows screen coordinates:
         // x - right, y - down, origin - upper left corner of MAIN screen.
-        Mat22I          posDims(CW_USEDEFAULT,1400,CW_USEDEFAULT,900),
+        Mat22I          posDims {CW_USEDEFAULT,1400,CW_USEDEFAULT,900},
                         pdTmp;
         if (loadBsaXml(m_store+"Dims.xml",pdTmp,false)) {
             Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
@@ -135,6 +135,8 @@ struct  GuiWinMain : GuiMainBase
             HICON   icon = LoadIcon(s_guiWin.hinst,MAKEINTRESOURCE(101));
             if (icon == NULL)
                 icon = LoadIcon(NULL,IDI_APPLICATION);
+            // Redraw entire window if width or height is changed. This forces a background paint even when
+            // hbrBackground is NULL, using the default brush:
             wcl.style = CS_HREDRAW | CS_VREDRAW;
             wcl.lpfnWndProc = &statWndProc<GuiWinMain>;
             wcl.cbClsExtra = 0;
@@ -154,7 +156,7 @@ struct  GuiWinMain : GuiMainBase
         // This is done so that the caller can send messages to the child window immediately
         // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
         // after creation, so that dynamic windows can be created and setting can be udpated:
-        Ustring const &     title = titleNF.cref();
+        String8 const &     title = titleNF.cref();
         s_guiWin.hwndMain =
             CreateWindowEx(0,
                 className,
@@ -288,7 +290,6 @@ struct  GuiWinMain : GuiMainBase
             saveBsaXml(m_store+"Dims.xml",dimsNorm,false);
             bool                maximized = dimsCurr != dimsNorm;
             saveBsaXml(m_store+"Maximized.xml",maximized,false);
-            m_win->saveState();
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
         }
         //else if (msg == WM_MOUSEWHEEL) {
@@ -312,9 +313,9 @@ struct  GuiWinMain : GuiMainBase
 
 void
 guiStartImpl(
-    NPT<Ustring>                titleN,
+    NPT<String8>                titleN,
     GuiPtr                      gui,
-    Ustring const &             store,
+    String8 const &             store,
     GuiOptions const &          options)
 {
     s_guiWin.hinst = GetModuleHandle(NULL);
@@ -369,57 +370,45 @@ winNcSize(HWND hwnd)
 LRESULT
 winCallCatch(std::function<LRESULT(void)> func,string const & className)
 {
-    Ustring    msg;
+    String8         msg;
     try
     {
         return func();
     }
     catch(FgException const & e)
     {
-        msg = "FG Exception\n" + e.no_tr_message();
+        msg = e.no_tr_message() + "\nFgException";
     }
     catch(std::bad_alloc const &)
     {
-        msg = "OUT OF MEMORY\n";
+        msg = "OUT OF MEMORY";
 #ifndef FG_64
         if (fg64bitOS())
-            msg += "(install 64-bit version if possible) ";
+            msg += " (install 64-bit version if possible)";
 #endif
     }
     catch(std::exception const & e)
     {
-        msg = "std::exception\n" + Ustring(e.what());
+        msg = String8(e.what()) + "\nstd::exception";
     }
     catch(...)
     {
-        msg = "Unknown type\n";
+        msg = "Unknown exception";
     }
-    msg = "winCallCatch: " + msg;
-    Ustring         caption = "ERROR",
-                    sysInfo;
-    try
-    {
-        sysInfo = "\n" + g_guiDiagHandler.appNameVer + " " + cBitsString() + "bit\n"
-            + osDescription() + "\n" + className + "\n" + getDefaultGpuDescription() + "\n";
-        if ((g_guiDiagHandler.reportError) && g_guiDiagHandler.reportError(msg+sysInfo))
-            guiDialogMessage(caption,g_guiDiagHandler.reportSuccMsg+"\n"+msg);
-        else
-            guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
-        return LRESULT(0);
+    msg += " (winCallCatch) " + className;
+    String8         caption = "ERROR";
+    bool            errorSent = false;
+    if (g_guiDiagHandler.reportError) {
+        try {
+            errorSent = g_guiDiagHandler.reportError(msg);
+        }
+        catch(...)
+        {}
     }
-    catch(FgException const & e)
-    {
-        msg += "FG Exception\n" + e.no_tr_message();
-    }
-    catch(std::exception const & e)
-    {
-        msg += "std::exception\n" + Ustring(e.what());
-    }
-    catch(...)
-    {
-        msg += "Unknown type\n";
-    }
-    guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg+sysInfo);
+    if (errorSent)
+        guiDialogMessage(caption,msg);
+    else
+        guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg);
     return LRESULT(0);
 }
 
@@ -434,6 +423,12 @@ guiQuit()
     // When a WM_CLOSE message is generated by the user clicking the close 'X' button,
     // the default (DefWindowProc) is to do this, which generates a WM_DESTROY:
     DestroyWindow(s_guiWin.hwndMain);
+}
+
+void
+guiBusyCursor()
+{
+    SetCursor(LoadCursorW(NULL,IDC_WAIT));
 }
 
 }

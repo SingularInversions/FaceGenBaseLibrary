@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -53,7 +53,7 @@ Syntax::error(string const & errMsg)
 }
 
 void
-Syntax::error(string const & errMsg,Ustring const & data)
+Syntax::error(string const & errMsg,String8 const & data)
 {
     fgout.setDefOut(true);
     fgout << "\nERROR: " << errMsg << ": " << data << '\n';
@@ -67,7 +67,7 @@ Syntax::incorrectNumArgs()
 }
 
 void
-Syntax::checkExtension(Ustring const & fname,string const & ext)
+Syntax::checkExtension(String8 const & fname,string const & ext)
 {
     if (!checkExt(fname,ext))
         error("File must have extension "+ext,fname);

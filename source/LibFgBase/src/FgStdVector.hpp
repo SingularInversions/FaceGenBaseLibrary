@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -67,13 +67,22 @@ operator<<(std::ostream & ss,Svec<T> const & vv)
 
 template<typename To,typename From>
 Svec<To>
-scast(Svec<From> const & vec)
+mapCast(Svec<From> const & vec)
 {
     Svec<To>        ret;
     ret.reserve(vec.size());
-    for (auto it=vec.cbegin(); it != vec.cend(); ++it)
-        ret.push_back(scast<To,From>(*it));
+    for (From const & v : vec)
+        ret.push_back(scast<To,From>(v));
     return ret;
+}
+
+template<typename To,typename From>
+void
+deepCast_(Svec<To> const & from,Svec<From> & to)
+{
+    to.resize(from.size());
+    for (size_t ii=0; ii<to.size(); ++ii)
+        deepCast_(from[ii],to[ii]);
 }
 
 template<class T>
@@ -172,16 +181,16 @@ operator/=(
         lhs[ii] /= rhs;
 }
 
-// Acts just like bool for use with vector but avoids use of broken
-// Svec<bool> specialization:
-struct FgBool
+// Acts just like bool for use with vector but retains a memory address for use with references
+// and pointers (unlike std::vector<bool> specialization which is a bit field):
+struct FatBool
 {
-    uchar   m;
-    FgBool() : m(0) {}
-    FgBool(bool v) : m(v ? 1 : 0) {}
-    operator bool () const {return (m > 0); }
+    bool            m;
+    FatBool() {}
+    FatBool(bool v) : m{v} {}
+    operator bool () const {return m; }
 };
-typedef Svec<FgBool>  FgBools;
+typedef Svec<FatBool>   FatBools;
 
 // Construction:
 
@@ -263,48 +272,6 @@ svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & 
 }
 
 template<class T>
-Svec<T>
-svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
-         T const & v6,T const & v7,T const & v8)
-{
-    Svec<T> vec;
-    vec.reserve(9);
-    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
-    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8);
-    return vec;
-}
-
-template<class T>
-Svec<T>
-svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
-       T const & v6,T const & v7,T const & v8,T const & v9)
-{
-    Svec<T> vec;
-    vec.reserve(10);
-    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
-    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8); vec.push_back(v9);
-    return vec;
-}
-
-template<class T>
-Svec<T>
-svec(T const & v0,T const & v1,T const & v2,T const & v3,T const & v4,T const & v5,
-       T const & v6,T const & v7,T const & v8,T const & v9,T const & vA)
-{
-    Svec<T> vec;
-    vec.reserve(11);
-    vec.push_back(v0); vec.push_back(v1); vec.push_back(v2); vec.push_back(v3); vec.push_back(v4);
-    vec.push_back(v5); vec.push_back(v6); vec.push_back(v7); vec.push_back(v8); vec.push_back(v9);
-    vec.push_back(vA);
-    return vec;
-}
-
-template<class T,size_t N>
-Svec<T>
-svec(const std::array<T,N> & v)
-{return Svec<T>(v.cbegin(),v.cend()); }
-
-template<class T>
 void
 mapAsgn_(Svec<T> & vec,T val)
 {std::fill(vec.begin(),vec.end(),val); }
@@ -318,6 +285,18 @@ generate(size_t num,std::function<T()> const & generator)
     ret.reserve(num);
     for (size_t ii=0; ii<num; ++ii)
         ret.push_back(generator());
+    return ret;
+}
+
+// Generate elements using a function that takes the index as an argument:
+template<class T>
+Svec<T>
+generateIdx(size_t num,std::function<T(size_t)> const & generator)
+{
+    Svec<T>       ret;
+    ret.reserve(num);
+    for (size_t ii=0; ii<num; ++ii)
+        ret.push_back(generator(ii));
     return ret;
 }
 
@@ -547,6 +526,18 @@ findLastIdx(Svec<T> const & vec,const U & val)
     return vec.size();
 }
 
+// Returns first instance whose given member matches 'val'. Throws if none.
+template<class T,class U>
+T
+findByMember(Svec<T> const & vec,U T::*mbr,U const & val)
+{
+    for (T const & elm : vec)
+        if (elm.*mbr == val)
+            return elm;
+    FGASSERT_FALSE;
+    return T{};
+}
+
 template<class T,class U>
 bool
 contains(Svec<T> const & vec,const U & val)     // Allows for T::operator==(U)
@@ -620,13 +611,24 @@ splitAtChar(Svec<T> const & str,T ch)
     return ret;
 }
 
+// Overwrite the subset of 'target' starting at 'startPos' with the values from 'data':
 template<class T>
 void
-fgSetSubVec(Svec<T> & mod,size_t pos,Svec<T> const & sub)
+inject_(Svec<T> const & data,size_t startPos,Svec<T> & target)
 {
-    FGASSERT(sub.size() + pos <= mod.size());
-    for (size_t ii=0; ii<sub.size(); ++ii)
-        mod[pos+ii] = sub[ii];
+    FGASSERT(data.size() + startPos <= target.size());
+    copy(data.begin(),data.end(),target.begin()+startPos);
+}
+
+// Returns the result of overwriting the subset of 'target' starting at 'startPos' with the values from 'data':
+template<class T>
+Svec<T>
+inject(Svec<T> const & data,size_t startPos,Svec<T> const & target)
+{
+    FGASSERT(data.size() + startPos <= target.size());
+    Svec<T>                 ret = target;
+    copy(data.begin(),data.end(),ret.begin()+startPos);
+    return ret;
 }
 
 template<class T>
@@ -656,103 +658,6 @@ endsWith(Svec<T> const & base,Svec<T> const & pattern)
 
 // Numerical:
 
-template<class T,class U>
-void
-scast_(Svec<T> const & lhs,Svec<U> & rhs)
-{
-    rhs.resize(lhs.size());
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        scast_(lhs[ii],rhs[ii]);
-}
-
-// Functional version of std::transform. Type converting form requires explicit template arg for 'Out'
-template<class Out,class In>
-Svec<Out>
-mapFuncT(Svec<In> const & in,std::function<Out(In const &)> const & func)
-{
-    Svec<Out>    ret;
-    ret.reserve(in.size());
-    for (size_t ii=0; ii<in.size(); ++ii)
-        ret.push_back(func(in[ii]));
-    return ret;
-}
-
-// As above but output is same type as input, which allows template args to be skipped:
-template<class T>
-Svec<T>
-mapFunc(Svec<T> const & in,std::function<T(T const &)> const & func)
-{
-    Svec<T>    ret;
-    ret.reserve(in.size());
-    for (size_t ii=0; ii<in.size(); ++ii)
-        ret.push_back(func(in[ii]));
-    return ret;
-}
-
-// Map a left constant multiplication to new type:  Op * T -> U
-// Output type explicit template arg required.
-template<class Out,class In,class Op>
-Svec<Out>
-mapMulT(Op const & op,Svec<In> const & in)
-{
-    Svec<Out>       ret;
-    ret.reserve(in.size());
-    for (size_t ii=0; ii<in.size(); ++ii)
-        ret.push_back(op * in[ii]);
-    return ret;
-}
-
-// Map a left constant multiplication to same type:  Op * T -> T
-// Output type matches input so explicit template args not necessary.
-template<class T,class Op>
-Svec<T>
-mapMul(Op const & op,Svec<T> const & in)
-{
-    Svec<T>     ret;
-    ret.reserve(in.size());
-    for (size_t ii=0; ii<in.size(); ++ii)
-        ret.push_back(op * in[ii]);
-    return ret;
-}
-
-// Non-functional version:
-template<class T,class U,class Op>
-void
-mapMul_(Op const & op,Svec<T> const & in,Svec<U> & out)
-{
-    out.resize(in.size());
-    for (size_t ii=0; ii<in.size(); ++ii)
-        out[ii] = op * in[ii];
-}
-
-// Non-functional in-place version:
-template<class T,class Op>
-void
-mapMul_(Op const & op,Svec<T> & data)
-{
-    for (size_t ii=0; ii<data.size(); ++ii)
-        data[ii] = op * data[ii];
-}
-
-template<class T>
-Svec<T>
-mapAbs(Svec<T> const & vec)
-{
-    Svec<T>     ret;
-    ret.reserve(vec.size());
-    for (T const & v : vec)
-        ret.push_back(std::abs(v));
-    return ret;
-}
-
-inline void cSum_(const Doubles & in,double & out)
-{
-    double      acc = out;
-    for (double i : in)
-        acc += i;
-    out = acc;
-}
-
 // Sum into an existing accumulator:
 template<class T>
 void
@@ -781,7 +686,7 @@ cSum(Svec<T> const & v)
 
 template<class T>
 T
-fgProduct(Svec<T> const & v)
+cProduct(Svec<T> const & v)
 {
     typedef typename Traits<T>::Accumulator Acc;
     Acc         acc(1);
@@ -825,9 +730,89 @@ normalize(Svec<T> const & v)
     return v * (1.0f/len);
 }
 
+// Functional version of std::transform. Type converting form requires explicit template arg for 'Out'
+template<class Out,class In>
+Svec<Out>
+mapFuncT(Svec<In> const & in,std::function<Out(In const &)> const & func)
+{
+    Svec<Out>    ret;
+    ret.reserve(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        ret.push_back(func(in[ii]));
+    return ret;
+}
+
+// As above but output is same type as input, which allows template args to be skipped:
 template<class T>
 Svec<T>
-mapAddConst(Svec<T> const & vec,T const & val)
+mapFunc(Svec<T> const & in,std::function<T(T const &)> const & func)
+{
+    Svec<T>    ret;
+    ret.reserve(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        ret.push_back(func(in[ii]));
+    return ret;
+}
+
+// Map a LHS constant multiplication to new type:  Op * T -> U
+// Output type explicit template arg required.
+template<class Out,class In,class Op>
+Svec<Out>
+mapMulT(Op const & op,Svec<In> const & in)
+{
+    Svec<Out>       ret;
+    ret.reserve(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        ret.push_back(op * in[ii]);
+    return ret;
+}
+
+// Map a LHS constant multiplication to same type as RHS:  L * R -> R
+// Output type matches input so explicit template args not necessary.
+template<class L,class R>
+Svec<R>
+mapMul(L const & lhs,Svec<R> const & rhs)
+{
+    Svec<R>     ret;
+    ret.reserve(rhs.size());
+    for (size_t ii=0; ii<rhs.size(); ++ii)
+        ret.push_back(lhs * rhs[ii]);
+    return ret;
+}
+
+// Non-functional version:
+template<class T,class U,class Op>
+void
+mapMul_(Op const & op,Svec<T> const & in,Svec<U> & out)
+{
+    out.resize(in.size());
+    for (size_t ii=0; ii<in.size(); ++ii)
+        out[ii] = op * in[ii];
+}
+
+// Non-functional in-place version:
+template<class T,class Op>
+void
+mapMul_(Op const & op,Svec<T> & data)
+{
+    for (size_t ii=0; ii<data.size(); ++ii)
+        data[ii] = op * data[ii];
+}
+
+template<class T>
+Svec<T>
+mapAbs(Svec<T> const & vec)
+{
+    Svec<T>     ret;
+    ret.reserve(vec.size());
+    for (T const & v : vec)
+        ret.push_back(std::abs(v));
+    return ret;
+}
+
+template<class T>
+Svec<T>
+mapAdd(Svec<T> const & vec,T const & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
@@ -838,7 +823,18 @@ mapAddConst(Svec<T> const & vec,T const & val)
 
 template<class T>
 Svec<T>
-mapSubConst(Svec<T> const & vec,T const & val)
+mapSub(T const & val,Svec<T> const & vec)
+{
+    Svec<T>       ret;
+    ret.reserve(vec.size());
+    for (T const & v : vec)
+        ret.push_back(val - v);
+    return ret;
+}
+
+template<class T>
+Svec<T>
+mapSub(Svec<T> const & vec,T const & val)
 {
     Svec<T>       ret;
     ret.reserve(vec.size());
@@ -1035,7 +1031,7 @@ cFilter(Svec<T> const & vals,const std::function<bool(T const & val)> & fnSelect
 
 template<class T>
 Svec<T>
-cFilter(Svec<T> const & in,const Svec<bool> & accept)
+cFilter(Svec<T> const & in,Bools const & accept)
 {
     Svec<T>       ret;
     FGASSERT(accept.size() == in.size());
@@ -1045,23 +1041,36 @@ cFilter(Svec<T> const & in,const Svec<bool> & accept)
     return ret;
 }
 
+// Inject all elements of domain 'src' into codomain 'dst' in order at true values of 'where'.
+// REQUIRED: where.size() == dst.size()
+// REQUIRED: number of 'true' values in where == src.size()
 template<class T>
-Svec<size_t>
-cJaggedDims(Svec<Svec<T> > const & v)
+Svec<T>
+inject(Svec<T> const & src,Svec<T> const & dst,Bools const & where)
 {
-    Svec<size_t>      ret(v.size());
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii] = v[ii].size();
+    FGASSERT(dst.size() == where.size());
+    Svec<T>             ret;
+    ret.reserve(dst.size());
+    size_t              cnt {0};
+    for (size_t ii=0; ii<dst.size(); ++ii) {
+        if (where[ii]) {
+            FGASSERT(cnt < src.size());
+            ret.push_back(src[cnt++]);
+        }
+        else
+            ret.push_back(dst[ii]);
+    }
+    FGASSERT(cnt == src.size());
     return ret;
 }
 
 template<class T>
-Svec<Svec<T> >
-cVecOfVecs(size_t dim0,size_t dim1,T const & initVal)
+Sizes
+cSizes(Svec<Svec<T> > const & v)
 {
-    Svec<Svec<T> >      ret(dim0);
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        ret[ii].resize(dim1,initVal);
+    Sizes               ret; ret.reserve(v.size());
+    for (Svec<T> const & s : v)
+        ret.push_back(s.size());
     return ret;
 }
 

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,73 +7,125 @@
 #include "stdafx.h"
 
 #include "FgSerial.hpp"
-#include "MurmurHash2.h"
 #include "FgCommand.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-uint64
-fgHash(uint64 k0,uint64 k1)
+void
+dsrlz_(String const & s,size_t & p,long & v)
 {
-    uint64  h[2];
-    h[0] = k0;
-    h[1] = k1;
-    // MurmurHas64A yields the same result on 32/64 bit compiles (with same seed):
-    return MurmurHash64A(h,16,0x18D75B7621B4434DULL);
+    int64           t;
+    dsrlzBytes_(s,p,t);
+    FGASSERT(t >= std::numeric_limits<long>::lowest());
+    FGASSERT(t <= std::numeric_limits<long>::max());
+    v = static_cast<long>(t);
 }
-
-uint64
-fgHash(uint64 k0,uint64 k1,uint64 k2)
+void
+dsrlz_(String const & s,size_t & p,unsigned long & v)
 {
-    uint64  h[3];
-    h[0] = k0;
-    h[1] = k1;
-    h[2] = k2;
-    return MurmurHash64A(h,24,0x18D75B7621B4434DULL);
+    uint64          t;
+    dsrlzBytes_(s,p,t);
+    FGASSERT(t <= std::numeric_limits<unsigned long>::max());
+    v = static_cast<unsigned long>(t);
 }
 
 void
-fgDsr(const char * & ptr,const char * end,long & val)
+srlz_(String const & v,String & s)
 {
-    FGASSERT(end-ptr >= int64(sizeof(int64)));
-    int64           tmp;
-    fgDsrBuiltin(ptr,end,tmp);
-    FGASSERT((tmp <= std::numeric_limits<long>::max()) && (tmp >= std::numeric_limits<long>::min()));
-    val = long(tmp);
+    srlz_(v.size(),s);
+    s.append(v);
+}
+void
+dsrlz_(String const & s,size_t & p,String & v)
+{
+    size_t          l;
+    dsrlz_(s,p,l);
+    FGASSERT(p+l <= s.size());
+    v.assign(s,p,l);
+    p += l;
+}
+
+namespace {
+
+void
+test0()
+{
+    int                 i = 42;
+    FGASSERT(i == dsrlz<int>(srlz(i)));
+    uint                u = 42U;
+    FGASSERT(u == dsrlz<uint>(srlz(u)));
+    long                l = 42L;
+    FGASSERT(l == dsrlz<long>(srlz(l)));
+    long long           ll = 42LL;
+    FGASSERT(ll == dsrlz<long long>(srlz(ll)));
+    unsigned long long  ull = 42ULL;
+    FGASSERT(ull == dsrlz<unsigned long long>(srlz(ull)));
+    String              s = "Test String";
+    FGASSERT(s == dsrlz<String>(srlz(s)));
 }
 
 void
-fgDsr(const char * & ptr,const char * end,unsigned long & val)
+test1()
 {
-    FGASSERT(end-ptr >= int64(sizeof(uint64)));
-    uint64          tmp;
-    fgDsrBuiltin(ptr,end,tmp);
-    FGASSERT(tmp <= std::numeric_limits<unsigned long>::max());
-    val = long(tmp);
+    Strings         tns;
+    int             a = 5;
+    double          b = 3.14;
+    typeNames_(tns,a,b);
+    fgout << fgnl << tns;
 }
 
-// TEST
+}
 
-struct  FgSerTest
+struct  A
 {
-    char        c;
     int         i;
+    float       f;
 };
 
-template<>
-uint64
-fgSerSig<FgSerTest>()
+FG_SERIAL_2(A,i,f)
+
+struct B
 {
-    return fgHash(fgSerSig<decltype(FgSerTest::c)>(),fgSerSig<decltype(FgSerTest::i)>());
+    A           a;
+    double      d;
+};
+
+FG_SERIAL_2(B,a,d)
+
+struct  Op
+{
+    double          acc {0};
+
+    template<typename T>
+    void operator()(T r) {acc += double(r); }
+};
+
+void traverseMembers_(Op & op,int s) {op(s); }
+void traverseMembers_(Op & op,float s) {op(s); }
+void traverseMembers_(Op & op,double s) {op(s); }
+
+void
+test2()
+{
+    Strings         names;
+    reflectNames_<B>(names);
+    fgout << fgnl << names;
+    
+    A               a {3,0.1f};
+    B               b {a,2.7};
+    Op              op;
+    traverseMembers_(op,b);
+    fgout << fgnl << "Acc: " << op.acc;
 }
 
 void
-fgSerTest(CLArgs const &)
+testSerial(CLArgs const &)
 {
-    uint64  sig = fgSerSig<FgSerTest>();
-    fgout << fgnl << sig;
+    test0();
+    test1();
+    test2();
 }
 
 }

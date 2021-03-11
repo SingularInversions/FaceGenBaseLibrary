@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc.
+// Coypright (c) 2021 Singular Inversions Inc.
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -60,7 +60,7 @@ fgClusterDeploy(
     const FgFnStr2Str &     worker,     // Cluster worker function
     String const &          coordIP,    // IP address (or domain name) of coordinator
     Strings const &          workIPs,    // IP addresses (or domain names) of workers
-    Ustrings const &       files);     // Data files to sync before deployment (relative to data directory)
+    String8s const &       files);     // Data files to sync before deployment (relative to data directory)
 
 // Handy for passing the current role through functions (none means no clustering)
 enum class FgClusterRole { none, deploy, crdntor, worker };

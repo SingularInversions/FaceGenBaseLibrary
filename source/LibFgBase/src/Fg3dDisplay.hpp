@@ -1,20 +1,24 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Typical assignment of mouse controls in FaceGen:
 //
-//                  Lbutton     Rbutton     Mbutton     LRbuttons
-// --------------------------------------------------------------
+//                      Lbutton         Rbutton         Mbutton         LRButtons
+// --------------------------------------------------------------------------------
 // click
-// drag             rotate      scale       translate   rot_light
-// Shift-click
-// Shift-drag       translate   sel_tri
-// Ctl-click
-// Ctl-drag         deformS     deformA
-// Shift-Ctl-click  surf_pnt    sel_vert
-// Shift-Ctl-drag   bg_trans    bg_scale
+// drag                 rotate          scale           translate       rot_light
+//
+// shift-click                                          asgnPaintTris
+// shift-drag           translate       asgnTri
+//
+// ctrl-click
+// ctrl-drag            deformS         deformA
+//
+// ctrl-shift-click     surf_pnt        sel_vert
+// ctrl-shift-drag      bg_trans        bg_scale
+//
 
 #ifndef FG3DDISPLAY_HPP
 #define FG3DDISPLAY_HPP
@@ -28,7 +32,7 @@ GuiPtr
 makeCameraCtrls(
     Gui3d &                 gui3d,
     NPT<Mat32D>    viewBoundsN,
-    Ustring const &        storePath,
+    String8 const &        storePath,
     // 0 - all render ctls, default marked points viewable, default unconstrained rotation
     // 1 - only color/shiny/flat/wireframe,
     // 2 - only color/shiny, and limit pan/tilt,
@@ -40,27 +44,27 @@ GuiPtr
 makeRendCtrls(
     RPT<RendOptions>    rendOptionsR,
     BackgroundImage     bgImg,
-    Ustring const &     store,
+    String8 const &     store,
     bool                structureOptions,       // color by mesh, wire, flat, allverts, facets
     bool                twoSidedOption,
     bool                pointOptions);          // surf points, marked verts
 
 GuiPtr
 makeLightingCtrls(
-    RPT<Lighting>         lightingR,                              // Assigned
-    IPT<BothButtonsDragAction> bothButtonsDragActionI,    // "
-    Ustring const &        storePath);
+    RPT<Lighting>         lightingR,                    // Assigned
+    BothButtonsDragAction & bothButtonsDragAction,      // Assigned
+    String8 const &        storePath);
 
 // View controls with all option selectors enabled:
 GuiPtr
-makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,Ustring const & storePath);
+makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 const & storePath);
 
 // Returns an image save dialog window to save from the given render capture function:
 GuiPtr
 guiCaptureSaveImage(
     NPT<Vec2UI>                     viewportDims,
     Sptr<Gui3d::Capture> const &    capture,
-    Ustring const &                 store);
+    String8 const &                 store);
 
 OPT<Vec3Fs>
 linkAllVerts(NPT<Mesh>);
@@ -69,26 +73,34 @@ OPT<Vec3Fs>
 linkPosedVerts(
     NPT<Mesh>           meshN,          // input
     NPT<Vec3Fs>         allVertsN,      // input
-    OPT<PoseVals>       posesN,         // output as an additional source
+    OPT<PoseDefs>       posesN,         // output as an additional source
     NPT<Doubles>        morphValsN);    // input as an additional sink
 
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
 OPT<Mesh>
-linkLoadMesh(NPT<Ustring> pathBaseN);          // Empty filename -> empty mesh
+linkLoadMesh(NPT<String8> pathBaseN);          // Empty filename -> empty mesh
 
 OPT<MeshNormals>
 linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
 
 OPT<ImgC4UC>
-linkLoadImage(NPT<Ustring> filenameN);         // Empty filename -> empty image
+linkLoadImage(NPT<String8> filenameN);         // Empty filename -> empty image
 
 typedef Svec<NPT<ImgC4UC> >   ImgNs;
+
+struct  PoseVal
+{
+    String8             name;
+    float               val;
+};
+
+typedef std::map<String8,float>     PoseVals;
 
 struct  GuiPosedMeshes
 {
     RendMeshes          rendMeshes;
-    OPT<PoseVals>       poseLabelsN;        // Aggregates all unique pose labels
-    IPT<Doubles>        poseValsN;          // Use to set pose coefficients
+    OPT<PoseDefs>       poseDefsN;          // Aggregates all unique pose labels
+    IPT<PoseVals>       poseValsN;          // Only contains entries for currently instantiated pose sliders; others are forgotten.
 
     GuiPosedMeshes();
 
@@ -115,7 +127,7 @@ OPT<Mat32D>
 linkBounds(RendMeshes const &);
 
 // Text of the (non-empty) mesh statstics:
-OPT<Ustring>
+OPT<String8>
 linkMeshStats(RendMeshes const &);
 
 // If only one mesh is provided then edit controls will also be available and the resulting mesh

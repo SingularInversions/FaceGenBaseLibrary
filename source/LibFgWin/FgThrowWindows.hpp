@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,23 +15,23 @@ namespace Fg {
 
 // Appends the information from Windows' "GetLastError" into the exception message:
 void
-throwWindows(const std::string & msg,Ustring const & data=Ustring());
+throwWindows(const std::string & msg,String8 const & data=String8());
 
 inline
 void
 throwWindows(const std::string & msg,const std::string & data)
-{throwWindows(msg,Ustring(data)); }
+{throwWindows(msg,String8(data)); }
 
 template<class T>
 void
 throwWindows(const std::string & msg,T const & data)
-{return throwWindows(msg,Ustring(toStr(data))); }
+{return throwWindows(msg,String8(toStr(data))); }
 
 void
-assertWindows(const char * fname,int line);
+assertWindows(char const * fname,int line);
 
 void
-assertWinReturnZero(const char * fname,int line,long rval);
+assertWinReturnZero(char const * fname,int line,long rval);
 
 // Templated custom destructor superior to function object since it's compatible with containers:
 template<class T>

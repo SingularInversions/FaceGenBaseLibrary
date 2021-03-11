@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,7 +20,7 @@ namespace Fg {
 
 bool
 Ofstream::open(
-    Ustring const &         fname,
+    String8 const &         fname,
     bool                    appendFile,
     bool                    throwOnFail)
 {
@@ -43,7 +43,7 @@ Ofstream::open(
 
 bool
 Ifstream::open(
-    Ustring const &         fname,
+    String8 const &         fname,
     bool                    throwOnFail)
 {
     // Use try-catch in case client has enabled ios::exceptions (not enabled by default):
@@ -62,7 +62,7 @@ Ifstream::open(
 #endif
 
 void
-fgWriteFile(Ustring const & fname,const std::string & data,bool appendFile)
+fgWriteFile(String8 const & fname,const std::string & data,bool appendFile)
 {
     Ofstream  ofs(fname,appendFile);
     ofs << data;

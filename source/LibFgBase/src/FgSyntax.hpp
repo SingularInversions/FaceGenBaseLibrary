@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -46,9 +46,9 @@ struct  Syntax
         return ret.val();
     }
 
-    Ustring
+    String8
     nextLower()             // As above but lower case
-    {return toLower(Ustring(next())); }
+    {return toLower(String8(next())); }
 
     String const &
     curr() const
@@ -68,7 +68,7 @@ struct  Syntax
     void                error(String const & errMsg);
 
     void
-    error(String const & errMsg,Ustring const & data);
+    error(String const & errMsg,String8 const & data);
 
     void
     incorrectNumArgs();
@@ -76,7 +76,7 @@ struct  Syntax
     // Throws appropriate syntax error:
     void
     checkExtension(
-        Ustring const & fname,
+        String8 const & fname,
         String const & ext);
     void
     checkExtension(

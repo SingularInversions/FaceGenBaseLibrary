@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,7 +24,7 @@ closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2)
                     m01 = cDot(p0,p1),
                     m02 = cDot(p0,p2),
                     m12 = cDot(p1,p2);
-    MatS33D         M {{{m00,m11,m22}},{{m01,m02,m12}}};
+    MatS3D         M {{{m00,m11,m22}},{{m01,m02,m12}}};
     Vec3D           h = solve(M,Vec3D{1,1,1});
     double          sum = h[0] + h[1] + h[2];
     FGASSERT(sum != 0.0);
@@ -62,7 +62,7 @@ closestPointInSegment(Vec3D p0,Vec3D p1)
 }
 
 VecMagD
-closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2)
+closestPointInTri(Vec3D const & point,Vec3D const & vert0,Vec3D const & vert1,Vec3D const & vert2)
 {
     Vec3D       v0 = vert0 - point,
                 v1 = vert1 - point,

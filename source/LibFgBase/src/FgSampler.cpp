@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,129 +18,124 @@ using namespace std;
 
 namespace Fg {
 
-static
-inline bool
+namespace {
+
+bool
 valsDiffer(
-    const RgbaF &                 centre,
-    const Mat<RgbaF,2,2> &  corners,
-    float                           maxDiff)
+    RgbaF const &               centre,
+    const Mat<RgbaF,2,2> &      corners,
+    float                       maxDiff)
 {
+    // Tried cMag(corner-centre) > sqr(maxDiff)*4 but it was actually SLOWER !
     return (
-        (cMaxElem(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
-        (cMaxElem(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
-        (cMaxElem(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
-        (cMaxElem(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
+        (cMax(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
+        (cMax(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
+        (cMax(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
+        (cMax(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
 }
 
-static uint64 rayCount;
-
-static
 RgbaF
 sampleRecurse(
-    SampleFunc            sample,
-    Mat22F                bounds,
-    Mat<RgbaF,2,2>  cornerVals,
-    float                   maxDiff)
+    SampleFunc const &      sampleFn,
+    Vec2F                   lc,             // Lower corner sample point
+    Vec2F                   uc,             // Upper corner sample point (IUCS so not square)
+    Mat<RgbaF,2,2>          bs,             // Bounds samples. No speedup at all from making this const ref
+    float                   maxDiff,
+    // Invalid if first channel is floatMax, othwerise gives sl/st from previous call.
+    // Returned values must be sr/sb resp. for use in raster order next calls.
+    // This optimization only saved 5% on time (granted for very simple raycaster)
+    // so likely not worth saving values across deeper recursion boundaries.
+    RgbaF &                 slo,
+    RgbaF &                 sto)
 {
-    Vec2F        lc = bounds.colVec(0),
-                    uc = bounds.colVec(1),
-                    del = (uc-lc)*0.5f,
-                    delx,dely;
-    delx[0] = del[0];
-    dely[1] = del[1];
-    RgbaF         ret,
-                    centre(sample(lc+delx+dely));
-    if (valsDiffer(centre,cornerVals,maxDiff)) {
-        rayCount+=4;
-        Mat<RgbaF,3,3>  vals(
-                cornerVals[0],
-                sample(lc+delx),
-                cornerVals[1],
-                sample(lc+dely),
-                centre,
-                sample(uc-dely),
-                cornerVals[2],
-                sample(uc-delx),
-                cornerVals[3]);
-        RgbaF     acc;
-        for (Iter2UI it(2); it.valid(); it.next()) {
-            Vec2UI   coord = it();
-            Vec2F    lc2 = lc + Vec2F(coord) * del[0];
-            acc += 
-                sampleRecurse(
-                    sample,
-                    catHoriz(lc2,lc2+del),
-                    vals.subMatrix<2,2>(coord[1],coord[0]), // Matrices are (row,col) not (x,y)
-                    maxDiff*2.0f);
-        }
-        ret = acc * 0.25f;
+    Vec2F           del = uc-lc,
+                    hdel = del*0.5f,
+                    centre = lc + hdel,
+                    hdelx {hdel[0],0.0f},
+                    hdely {0.0f,hdel[1]};
+    RgbaF           sc {sampleFn(centre)},
+                    sst {maxFloat()},
+                    ssl {maxFloat()},
+                    ssr {maxFloat()},
+                    ssb {maxFloat()};
+    if (valsDiffer(sc,bs,maxDiff)) {
+        float           md2 = maxDiff * 2.0f;
+        RgbaF           sl = (slo[0] == maxFloat()) ? sampleFn(centre-hdelx) : slo,
+                        sr = sampleFn(centre+hdelx),
+                        st = (sto[0] == maxFloat()) ? sampleFn(centre-hdely) : sto,
+                        sb = sampleFn(centre+hdely),
+                        stl = sampleRecurse(sampleFn,lc,centre,{bs[0],st,sl,sc},md2,sst,ssl),
+                        str = sampleRecurse(sampleFn,lc+hdelx,centre+hdelx,{st,bs[1],sc,sr},md2,sst,ssr),
+                        sbl = sampleRecurse(sampleFn,lc+hdely,centre+hdely,{sl,sc,bs[2],sb},md2,ssb,ssl),
+                        sbr = sampleRecurse(sampleFn,centre,uc,{sc,sr,sb,bs[3]},md2,ssb,ssr);
+        slo = sr;
+        sto = sb;
+        return (stl+str+sbl+sbr) * 0.25f;
     }
-    else
-        ret = (cornerVals[0]+cornerVals[1]+cornerVals[2]+cornerVals[3]) * 0.125f + centre * 0.5f;
-    return ret;
+    else {
+        slo[0] = maxFloat();    // These invalidations are only needed at the top level, not in recursed calls
+        sto[0] = maxFloat();
+        return (bs[0]+bs[1]+bs[2]+bs[3]) * 0.125f + sc * 0.5f;
+    }
+}
+
 }
 
 ImgC4F
 sampleAdaptiveF(
-    Vec2UI           dims,
-    SampleFunc        sample,
+    Vec2UI              dims,
+    SampleFunc const &  sampleFn,
+    float               channelBound,
     uint                antiAliasBitDepth)
 {
-    ImgC4F          img(dims);
     FGASSERT(dims.cmpntsProduct() > 0);
+    FGASSERT(sampleFn);
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 16));
-    rayCount = (img.width()+1) * (img.height()+1);
-    float               widf = float(img.width()),
-                        hgtf = float(img.height());
-    ImgC4F          sampleLines(img.width()+1,2);
-    for (uint col=0; col<sampleLines.width(); ++col)
-        sampleLines.xy(col,0) = 
-            sample(Vec2F(float(col)/widf,0.0f));
-    for (uint row=0; row<img.height(); ++row) {
-        uint            fbit = row%2,
+    ImgC4F          img {dims};
+    float           maxDiff = channelBound / float(1 << antiAliasBitDepth);
+    float           widf = float(img.width()),
+                    hgtf = float(img.height());
+    ImgC4F          sampleLines {img.width()+1,2};
+    for (uint xx=0; xx<sampleLines.width(); ++xx)
+        sampleLines.xy(xx,0) = sampleFn(Vec2F(xx/widf,0));
+    RgbaFs          ssts(img.width(),RgbaF{maxFloat()});
+    for (uint yy=0; yy<img.height(); ++yy) {
+        float           yyf0 = yy/hgtf,
+                        yyf1 = (yy+1)/hgtf;
+        uint            fbit = yy%2,
                         sbit = 1-fbit;
-        for (uint col=0; col<sampleLines.width(); ++col)
-            sampleLines.xy(col,sbit) = 
-                sample(Vec2F(float(col)/widf,float(row+1)/hgtf));
-        for (uint col=0; col<img.width(); ++col) {
-            img.xy(col,row) =
-                sampleRecurse(
-                    sample,
-                    Mat22F(
-                        float(col)/widf,
-                        float(col+1)/widf,
-                        float(row)/hgtf,
-                        float(row+1)/hgtf),
-                    Mat<RgbaF,2,2>(
-                        sampleLines.xy(col,fbit),
-                        sampleLines.xy(col+1,fbit),
-                        sampleLines.xy(col,sbit),
-                        sampleLines.xy(col+1,sbit)),
-                    float(1 << (9-antiAliasBitDepth)));
+        for (uint xx=0; xx<sampleLines.width(); ++xx)
+            sampleLines.xy(xx,sbit) = sampleFn(Vec2F{xx/widf,yyf1});
+        RgbaF           ssl {maxFloat()};
+        for (uint xx=0; xx<img.width(); ++xx) {
+            Vec2F           lc {xx/widf,yyf0},
+                            uc {(xx+1)/widf,yyf1};
+            Mat<RgbaF,2,2>  bs {
+                sampleLines.xy(xx,fbit),
+                sampleLines.xy(xx+1,fbit),
+                sampleLines.xy(xx,sbit),
+                sampleLines.xy(xx+1,sbit)
+            };
+            img.xy(xx,yy) = sampleRecurse(sampleFn,lc,uc,bs,maxDiff,ssl,ssts[xx]);
         }
     }
-    //fgout << "Raycast count: " << rayCount;
     return img;
 }
 
 ImgC4UC
 sampleAdaptive(
-    Vec2UI           dims,
-    SampleFunc        sample,
+    Vec2UI              dims,
+    SampleFunc const &  sample,
     uint                antiAliasBitDepth)
 {
-    ImgC4UC         img(dims);
+    ImgC4UC         img {dims};
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 8));
-    ImgC4F          fimg = sampleAdaptiveF(img.dims(),sample,antiAliasBitDepth);
-    for (Iter2UI it(img.dims()); it.valid(); it.next())
-    {
-        const RgbaF & fpix = fimg[it()];
-        img[it()] = 
-            RgbaUC(
-                uchar(clampBounds(fpix.red(),0.0f,255.0f)),
-                uchar(clampBounds(fpix.green(),0.0f,255.0f)),
-                uchar(clampBounds(fpix.blue(),0.0f,255.0f)),
-                uchar(clampBounds(fpix.alpha(),0.0f,255.0f)));
+    ImgC4F          fimg = sampleAdaptiveF(img.dims(),sample,256.0f,antiAliasBitDepth);
+    for (size_t ii=0; ii<fimg.numPixels(); ++ii) {
+        RgbaF const &   in = fimg[ii];
+        RgbaUC &        out = img[ii];
+        for (uint jj=0; jj<4; ++jj)
+            out[jj] = uchar(clamp(in[jj],0.0f,255.0f));
     }
     return img;
 }
@@ -156,9 +151,9 @@ halfMoon(Vec2F ics)
 }
 
 void
-fgSamplerTest(CLArgs const &)
+testSampler(CLArgs const &)
 {
-    imgDisplay(sampleAdaptive(Vec2UI(128),halfMoon,4));
+    viewImage(sampleAdaptive(Vec2UI(128),halfMoon,4));
 }
 
 static
@@ -187,7 +182,7 @@ fgSamplerMLTest(CLArgs const &)
     Timer         time;
     ImgC4UC     img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
     fgout << "Time: " << time.read() << "s";
-    imgDisplay(img);
+    viewImage(img);
 }
 
 }

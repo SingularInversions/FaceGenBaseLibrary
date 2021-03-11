@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -92,7 +92,7 @@ fgTcpClient(
         }
         // Set the timeout so the user isn't waiting for ages if the connection fails:
         DWORD           timeout = 5000;     // 5 seconds
-        setsockopt(socketHandle,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
+        setsockopt(socketHandle,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
         // Try to connect to the server
         itmp = connect(socketHandle,ptr->ai_addr,(int)ptr->ai_addrlen);
         if (itmp == 0)
@@ -140,10 +140,10 @@ fgTcpClient(
 }
 
 void
-fgTcpServer(
+runTcpServer(
     uint16              port,
     bool                respond,
-    FgFuncTcpHandler    handler,
+    TcpHandlerFunc    handler,
     size_t              maxRecvBytes)
 {
     initWinsock();
@@ -194,7 +194,7 @@ fgTcpServer(
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
         DWORD           timeout = 5000;     // 5 seconds
-        setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(const char*)&timeout,sizeof(timeout));
+        setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
 		char * clientStringPtr = inet_ntoa(sa.sin_addr);
             FGASSERT(clientStringPtr != NULL);
         String     ipAddr = String(clientStringPtr);

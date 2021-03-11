@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,7 @@ static bool         s_keepTempFiles = false;
 
 static
 string
-cmdStr(const Cmd & cmd)
+cmdStr(Cmd const & cmd)
 {
     string          si = "\n        " + cmd.name;
     if (!cmd.description.empty()) {
@@ -108,7 +108,7 @@ doMenu(
     syntax.error("Invalid command",cmd);
 }
 
-static Ustring s_rootTestDir;
+static String8 s_rootTestDir;
 
 TestDir::TestDir(string const & name)
 {
@@ -145,16 +145,16 @@ TestDir::~TestDir()
 }
 
 void
-fgSetRootTestDir(Ustring const & dir)
+fgSetRootTestDir(String8 const & dir)
 { s_rootTestDir = dir; }
 
 void
 fgTestCopy(string const & relPath)
 {
-    Ustring        name = pathToName(relPath);
+    String8        name = pathToName(relPath);
     if (pathExists(name))
         fgThrow("Test copy filename collision",name);
-    Ustring        source = dataDir() + relPath;
+    String8        source = dataDir() + relPath;
     fileCopy(source,name);
 }
 
@@ -171,7 +171,7 @@ fgKeepTempFiles()
 {return s_keepTempFiles; }
 
 bool
-fgAutomatedTest(CLArgs const & args)
+isAutomatedTest(CLArgs const & args)
 {
     return ((args.size() == 2) && (args[1] == "all"));
 }

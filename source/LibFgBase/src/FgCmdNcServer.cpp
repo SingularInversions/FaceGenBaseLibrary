@@ -83,8 +83,7 @@ handler(
     string const &  dataIn,
     string &)
 {
-    NcScript      script;
-    script.dsrMsg(dataIn);
+    NcScript      script = fromSerialMessage<NcScript>(dataIn);
     Path          logPath(script.logFile);
     if (!logPath.root)                                          // If path is relative
         logPath = Path(getCurrentDir()+script.logFile);     // Make absolute
@@ -123,7 +122,7 @@ fgCmdNcServer(CLArgs const & args)
     fgout.logFile("fgNcServerLog.txt");
     // Despite this running in a new process each time, TCP errors can render
     // the port unusable on Windows until an OS reboot.
-    fgTcpServer(getNcServerPort(),false,handler,0x10000);
+    runTcpServer(getNcServerPort(),false,handler,0x10000);
 }
 
 }

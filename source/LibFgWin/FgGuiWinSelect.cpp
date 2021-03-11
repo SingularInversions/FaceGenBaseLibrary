@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -23,7 +23,9 @@ struct  GuiSelectWin : public GuiBaseImpl
     GuiImplPtrs             m_panes;
     size_t                  m_currPane;     // Which one is Windows currently displaying ?
     Vec2I                   m_lo,m_sz;
-    Ustring                 m_store;
+    String8                 m_store;
+    HWND                    parentHwnd;
+    DWORD                   extStyle;
 
     GuiSelectWin(const GuiSelect & api)
         : m_api(api)
@@ -35,21 +37,20 @@ struct  GuiSelectWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int,Ustring const & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd_,int,String8 const & store,DWORD extStyle_,bool visible)
     {
         m_store = store;
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->create(parentHwnd,int(ii),m_store+"_"+toStr(ii),extStyle,false);
+        parentHwnd = parentHwnd_;
+        extStyle = extStyle_;
+        FGASSERT(m_api.selection.cref() < m_panes.size());
         m_currPane = m_api.selection.cref();
-        if (visible)
-            m_panes[m_currPane]->showWindow(true);
+        m_panes[m_currPane]->create(parentHwnd,int(m_currPane),m_store+"_"+toStr(m_currPane),extStyle,visible);
     }
 
     virtual void
     destroy()
     {
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->destroy();
+        m_panes[m_currPane]->destroy();
     }
 
     virtual Vec2UI
@@ -66,7 +67,7 @@ struct  GuiSelectWin : public GuiBaseImpl
     {
         Vec2B    ret(false,false);
         for (size_t ii=0; ii<m_panes.size(); ++ii)
-            ret = fgOr(ret,m_panes[ii]->wantStretch());
+            ret = mapOr(ret,m_panes[ii]->wantStretch());
         return ret;
     }
 
@@ -76,9 +77,10 @@ struct  GuiSelectWin : public GuiBaseImpl
         if (m_api.selection.checkUpdate()) {
             size_t      currPane = m_api.selection.cref();
             if (currPane != m_currPane) {
-                m_panes[m_currPane]->showWindow(false);
+                FGASSERT1(currPane < m_panes.size(),toStr(currPane));
+                m_panes[m_currPane]->destroy();
                 m_currPane = currPane;
-                m_panes[m_currPane]->showWindow(true);
+                m_panes[m_currPane]->create(parentHwnd,int(m_currPane),m_store+"_"+toStr(m_currPane),extStyle,true);
                 // Only previously current pane was last updated for size, plus the
                 // MoveWindow call will refresh the screen (ShowWindow doesn't):
                 m_panes[m_currPane]->moveWindow(m_lo,m_sz);
@@ -100,13 +102,6 @@ struct  GuiSelectWin : public GuiBaseImpl
     virtual void
     showWindow(bool s)
     {m_panes[m_currPane]->showWindow(s); }
-
-    virtual void
-    saveState()
-    {
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->saveState();
-    }
 };
 
 GuiImplPtr

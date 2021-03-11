@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,12 +40,12 @@ struct  Tensor
     Tensor() {}                                  // Uninitialized is not a valid tensor value
 
     explicit Tensor(Sizes const & d) : dims(d)
-    {data.resize(fgProduct(dims),0); }              // 'fgProduct' returns 1 for zero-size 'dims'
+    {data.resize(cProduct(dims),0); }              // 'cProduct' returns 1 for zero-size 'dims'
 
     explicit Tensor(T v) : data(1,v) {}          // Scalar
 
     Tensor(Sizes const & dims_,Svec<T> const & data_) : dims(dims_), data(data_)
-    {FGASSERT(data.size() == fgProduct(dims)); }
+    {FGASSERT(data.size() == cProduct(dims)); }
 
     T
     scalar() const                          // simpler access to 0-dimensional case
@@ -81,11 +81,11 @@ struct  TsrIter
 
     explicit
     TsrIter(Sizes const & b) : bounds(b), coord(b.size(),0)
-    {FGASSERT(fgProduct(b) > 0); }
+    {FGASSERT(cProduct(b) > 0); }
 
     TsrIter(Sizes const & b,bool minorToMajor_)
         : bounds(b), coord(b.size(),0), minorToMajor(minorToMajor_)
-        {FGASSERT(fgProduct(b) > 0); }
+        {FGASSERT(cProduct(b) > 0); }
 
     bool
     next()

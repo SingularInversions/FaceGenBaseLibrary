@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,18 +19,22 @@ using namespace std;
 
 namespace Fg {
 
-MatUT33D
-choleskyDecompose(MatS33D S)
+MatUT3D
+cCholesky(MatS3D S)
 {
-    MatUT33D        U;
+    MatUT3D        U;
+    FGASSERT(S.diag[0] > 0.0);
     U.m[0] = sqrt(S.diag[0]);
     U.m[1] = S.offd[0] / U.m[0];
     U.m[2] = S.offd[1] / U.m[0];
     double          tmp0 = S.diag[1] - sqr(S.offd[0])/S.diag[0];
+    FGASSERT(tmp0 > 0.0);
     U.m[3] = sqrt(tmp0);
     double          tmp1 = S.offd[2] - S.offd[1]*S.offd[0]/S.diag[0];
     U.m[4] = tmp1 / U.m[3];
-    U.m[5] = sqrt(S.diag[2] - sqr(S.offd[1])/S.diag[0] - sqr(tmp1)/tmp0);
+    double          tmp2 = S.diag[2] - sqr(S.offd[1])/S.diag[0] - sqr(tmp1)/tmp0;
+    FGASSERT(tmp2 > 0.0);
+    U.m[5] = sqrt(tmp2);
     return U;
 }
 
@@ -41,23 +45,23 @@ testCholesky(CLArgs const &)
     double          resid1 = 0.0;
     size_t          N = 1000;
     for (size_t ii=0; ii<N; ++ii) {
-        MatS33D         spds = randMatSpd3D(3.0);
-        MatUT33D        ch = choleskyDecompose(spds);
-        MatS33D         lu = ch.luProduct();
-        Mat33D          out = lu.asMatrixC(),
-                        spd = spds.asMatrixC(),
+        MatS3D          spds = randMatSpd3D(3.0);
+        MatUT3D         ch = cCholesky(spds);
+        MatS3D          lu = ch.luProduct();
+        Mat33D          out = lu.asMatC(),
+                        spd = spds.asMatC(),
                         del = out - spd;
         resid1 += cMag(del.m) / cMag(spd.m);
-        FGASSERT(isApproxEqualRelPrec(out,spd));
+        FGASSERT(isApproxEqualPrec(out,spd));
     }
     fgout << fgnl << "Cholesky unsafe RMS residual: " << sqrt(resid1/N);
 }
 
 Vec3D
-solve(MatS33D A,Vec3D b)
+solve(MatS3D A,Vec3D b)
 {
-    MatUT33D            cd = choleskyDecompose(A);
-    MatUT33D            I = cd.inverse();
+    MatUT3D            cd = cCholesky(A);
+    MatUT3D            I = cd.inverse();
     Vec3D               c = I.tranposeMul(b);
     return I * c;
 }
@@ -142,7 +146,7 @@ testAsymEigs(CLArgs const &)
     EigsC<3>      eigs = cEigs(mat);
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
-    Mat33D        regress = cReal(eigs.vecs * asDiagMat(eigs.vals) * fgHermitian(eigs.vecs));
+    Mat33D        regress = cReal(eigs.vecs * cDiagMat(eigs.vals) * cHermitian(eigs.vecs));
     double          residual = cRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
@@ -162,37 +166,45 @@ testSymmEigenAuto(CLArgs const &)
 }
 
 void
-testSymmEigenTime(CLArgs const & args)
+testEigsRsmTime(CLArgs const & args)
 {
-    if (fgAutomatedTest(args))
+    if (isAutomatedTest(args))
         return;
-    Syntax            syn(args,"<size>");
+    Syntax              syn(args,"<size>");
     // Random symmetric matrix, uniform distribution:
     size_t              dim = syn.nextAs<size_t>();
     randSeedRepeatable();
-    MatD           mat = randSymmMatrix(uint(dim));
-    Doubles              eigVals;
-    MatD           eigVecs;
-    Timer             timer;
+    MatD                mat = randSymmMatrix(uint(dim));
+    Doubles             eigVals;
+    MatD                eigVecs;
+    Timer               timer;
     cEigsRsm_(mat,eigVals,eigVecs);
     size_t              time = timer.readMs();
-    MatD           eigValMat(dim,dim);
+    MatD                eigValMat(dim,dim);
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
         eigValMat.rc(ii,ii) = eigVals[ii];
-    MatD       recon = eigVecs * eigValMat * eigVecs.transpose();
-    double          residual = 0.0;
+    MatD                recon = eigVecs * eigValMat * eigVecs.transpose();
+    double              residual = 0.0;
     for (uint ii=0; ii<dim; ii++)
         for (uint jj=ii; jj<dim; jj++)
             residual += sqr(recon.rc(ii,jj) - mat.rc(ii,jj));
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
-    double          tol = epsilonD() * sqrt(dim) * 2.0;
+    double              tol = epsilonD() * sqrt(dim) * 2.0;
     fgout << fgnl << "Dim: " << dim << fgpush
         << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol
         << fgnl << "Time: " << time;
     fgout << fgpop;
     FGASSERT(residual < tol);
+    Doubles             valsOnly;
+    timer.start();
+    valsOnly = cEigvalsRsm(mat);
+    size_t              time2 = timer.readMs();
+    fgout
+        << fgnl << "Eigvals-only time: " << time2
+        << " or " << toStrPercent(double(time2)/time);
+    FGASSERT(valsOnly == eigVals);
 }
 
 void
@@ -200,7 +212,7 @@ testSymmEigen(CLArgs const & args)
 {
     Cmds      cmds;
     cmds.push_back(Cmd(testSymmEigenAuto,"auto","Automated tests"));
-    cmds.push_back(Cmd(testSymmEigenTime,"time","Timing test"));
+    cmds.push_back(Cmd(testEigsRsmTime,"time","Eigenvector timing test"));
     doMenu(args,cmds,true);
 }
 

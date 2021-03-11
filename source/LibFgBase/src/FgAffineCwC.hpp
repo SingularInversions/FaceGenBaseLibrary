@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,8 +25,8 @@ struct  AffineEw
     AffineEw() : m_scales(T(1)), m_trans(0) {}
 
     AffineEw(
-        const Mat<T,dim,1> &  scales,
-        const Mat<T,dim,1> &  trans)
+        Mat<T,dim,1> const &  scales,
+        Mat<T,dim,1> const &  trans)
         : m_scales(scales), m_trans(trans) {}
 
     // Conversion constructor:
@@ -38,8 +38,8 @@ struct  AffineEw
 
     // Construct from bounding box mapping:
     AffineEw(
-        const Mat<T,dim,2> & domainBounds,    // Column vectors are lo and hi bounds resp.
-        const Mat<T,dim,2> & rangeBounds)     // "
+        Mat<T,dim,2> const & domainBounds,    // Column vectors are lo and hi bounds resp.
+        Mat<T,dim,2> const & rangeBounds)     // "
     {
         Mat<T,dim,1>
             domainDelta = domainBounds.colVec(1) - domainBounds.colVec(0),

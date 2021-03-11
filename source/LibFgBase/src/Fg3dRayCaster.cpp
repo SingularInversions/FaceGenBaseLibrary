@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -83,7 +83,7 @@ Fg3dRayCastMesh::shade(const TriPoint & intersect,Lighting const & lighting) con
         RgbaF(sampleClipIucs(*img,uv)) :
         RgbaF(230.0f,230.0f,230.0f,255.0f);
 	float	        aw = texSample.alpha() / 255.0f;
-    Vec3F        surfColour = texSample.m_c.subMatrix<3,1>(0,0) * aw;
+    Vec3F           surfColour(cHead<3>(texSample.m_c) * aw);
     for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
         Light     lgt = lighting.lights[ll];
         float       fac = cDot(norm,lgt.direction);

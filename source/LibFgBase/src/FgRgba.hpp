@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,38 +30,29 @@ namespace Fg {
 template<typename T>
 struct      Rgba
 {
-    Mat<T,4,1>        m_c;           // Keep as array so densely packed.
+    Arr<T,4>            m_c;
     FG_SERIALIZE1(m_c)
 
     typedef T ValueType;
 
-    Rgba()
-    {};
-
-    explicit
-    Rgba(T val)
-    : m_c(val)
-    {}
-
-    explicit
-    Rgba(const Mat<T,4,1> & mat)
-    : m_c(mat)
-    {}
+    Rgba() {};
+    explicit Rgba(T val) : m_c(cArr<T,4>(val)) {}
+    explicit Rgba(Arr<T,4> const & arr) : m_c(arr) {}
 
     // Conversion constructor
     template<class U>
     explicit
-    Rgba(const Rgba<U> & val)
-    : m_c(Mat<T,4,1>(val.m_c)) 
+    Rgba(Rgba<U> const & val)
+    : m_c(mapCast<T,U,4>(val.m_c)) 
     {}
 
     // Provide explicit CC when using templated conversion constructor to avoid compiler issues.
-    Rgba(const Rgba & rhs)
-    : m_c(rhs.m_c)
-    {}
+    Rgba(Rgba const & rhs) : m_c(rhs.m_c) {}
 
-    Rgba(T r,T g,T b,T a)
-    {red()=r; green()=g; blue()=b; alpha()=a; }
+    Rgba(T r,T g,T b,T a) : m_c {{r,g,b,a}} {}
+
+    T const &   operator[](size_t idx) const {return m_c[idx]; }
+    T &         operator[](size_t idx) {return m_c[idx]; }
 
     T & red() {return m_c[0]; }
     T & green() {return m_c[1]; }
@@ -73,20 +64,20 @@ struct      Rgba
     T const & blue() const {return m_c[2]; }
     T const & alpha() const {return m_c[3]; }
 
-    Mat<T,3,1>
+    Arr<T,3>
     rgb() const
-    {return Mat<T,3,1>(m_c[0],m_c[1],m_c[2]); }
+    {return {{m_c[0],m_c[1],m_c[2]}}; }
 
     Rgba
-    operator+(const Rgba & rhs) const
+    operator+(Rgba const & rhs) const
     {return Rgba(m_c+rhs.m_c); }
 
     Rgba
-    operator-(const Rgba & rhs) const
+    operator-(Rgba const & rhs) const
     {return Rgba(m_c-rhs.m_c); }
 
     Rgba
-    operator*(const Rgba &rhs) const
+    operator*(Rgba const &rhs) const
     {return Rgba(mapMul(m_c,rhs.m_c)); }
 
     Rgba
@@ -97,15 +88,15 @@ struct      Rgba
     operator/(T val) const
     {return Rgba(m_c/val); }
 
-    const Rgba &
+    Rgba const &
     operator*=(T v)
     {m_c*=v; return *this; }
 
-    const Rgba &
+    Rgba const &
     operator/=(T v)
     {m_c/=v; return *this; }
 
-    const Rgba &
+    Rgba const &
     operator+=(Rgba rhs)
     {
         m_c += rhs.m_c;
@@ -139,10 +130,13 @@ struct      Rgba
     }
 };
 
-typedef Rgba<uchar>           RgbaUC;
-typedef Rgba<ushort>          RgbaUS;
-typedef Rgba<float>           RgbaF;
-typedef Rgba<double>          RgbaD;
+typedef Rgba<uchar>             RgbaUC;
+typedef Rgba<ushort>            RgbaUS;
+typedef Rgba<float>             RgbaF;
+typedef Rgba<double>            RgbaD;
+
+typedef Svec<RgbaUC>            RgbaUCs;
+typedef Svec<RgbaF>             RgbaFs;
 
 template<typename T>
 struct  Traits<Rgba<T> >
@@ -165,39 +159,40 @@ round_(Rgba<From> const & in,Rgba<To> & out)
 {round_(in.m_c,out.m_c); }
 
 template<typename T>
-FgOut & operator<<(FgOut & out, const Rgba<T> & pixel)
+std::ostream &
+operator<<(std::ostream & out,Rgba<T> p)
 {
-    return out << "{" 
-               << int(pixel.red())   << "," 
-               << int(pixel.green()) << ","
-               << int(pixel.blue())  << ","
-               << int(pixel.alpha()) << "}";
+    return out << p.m_c;
 }
 
-// NB: This function assumes pre-weighted colour values !!!
+// Normal unweighted encoding:
+// r_c = f_c * f_a + b_c * b_a * (1-f_a)
+// r_a = f_a + b_a * (1-f_a)
 inline
 RgbaUC
 compositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
 {
-	uint		fga = foreground.alpha(),
-				bga = background.alpha(),
-				tra = 255 - fga,
-				aca = (tra * bga + 127) / 255;
-	Vec3UI	fgc(foreground.m_c.subMatrix<3,1>(0,0)),
-				bgc(background.m_c.subMatrix<3,1>(0,0)),
-				acc = fgc + (bgc * aca + Vec3UI(127)) / 255;
-	return
-		RgbaUC(acc[0],acc[1],acc[2],fga+aca);
+    uint        f_a = foreground.alpha(),
+                b_a = background.alpha(),
+                omfa = 255 - f_a,
+                tmp = (b_a * omfa + 127U) / 255U;
+    Arr3UI      f_c = mapCast<uint>(cHead<3>(foreground.m_c)),
+                b_c = mapCast<uint>(cHead<3>(background.m_c)),
+                acc = f_c * f_a + b_c * tmp,
+                r_c = (acc + cArr<uint,3>(127)) / 255U;
+    return      RgbaUC(r_c[0],r_c[1],r_c[2],f_a+tmp);
 }
 
-// NB: This function assumes pre-weighted colour values !!!
+// Assumes alpha-weighted colour values:
+// r_c = f_c + b_c * (1-f_a)
+// r_a = f_a + b_a * (1-f_a)
 inline
 RgbaUC
-compositeFragment(RgbaUC foreground,RgbaUC background)
+compositeFragmentPreWeighted(RgbaUC foreground,RgbaUC background)
 {
-    uint        fac = 255 - foreground.alpha();
-    Vec4UI   acc = Vec4UI(background.m_c) * fac + Vec4UI(127);
-    return (foreground + RgbaUC(Mat<uchar,4,1>(acc/255)));
+    uint            omfa = 255 - foreground.alpha();
+    Arr4UI          acc = mapCast<uint>(background.m_c) * omfa + cArr<uint,4>(127);
+    return (foreground + RgbaUC(mapCast<uchar>(acc/255U)));
 }
 inline
 RgbaF
@@ -212,15 +207,29 @@ Rgba<To>
 round(Rgba<From> const & v)
 {return Rgba<To>(round<To>(v.m_c)); }
 
-template<class From,class To>
-void
-scast_(const Rgba<From> & from,Rgba<To> & to)
-{scast_(from.m_c,to.m_c); }
-
 template<class To,class From>
 Rgba<To>
-scast(Rgba<From> const & from)
-{return Rgba<To>{scast<To,From>(from.m_c)}; }
+mapCast(Rgba<From> const & from)
+{return Rgba<To>{mapCast<To,From>(from.m_c)}; }
+
+template<typename To,typename From>
+inline void
+deepCast_(Rgba<From> const & from,Rgba<To> & to)
+{deepCast_(from.m_c,to.m_c); }
+
+template<typename T>
+double
+cDot(Rgba<T> const & l,Rgba<T> const & r)
+{
+    return cDot(l.m_c,r.m_c);
+}
+
+template<typename T>
+double
+cSsd(Rgba<T> const & l,Rgba<T> const & r)
+{
+    return cSsd(l.m_c,r.m_c);
+}
 
 }
 

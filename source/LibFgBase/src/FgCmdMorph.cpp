@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,11 +17,12 @@ using namespace std;
 
 namespace Fg {
 
+namespace {
+
 /**
    \ingroup Base_Commands
    Apply morphs by name to meshes.
  */
-static
 void
 anim(CLArgs const & args)
 {
@@ -68,7 +69,6 @@ anim(CLArgs const & args)
    \ingroup Base_Commands
    Apply morphs by index number to a mesh.
  */
-static
 void
 apply(CLArgs const & args)
 {
@@ -92,7 +92,7 @@ apply(CLArgs const & args)
     vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
                     targets(mesh.targetMorphs.size(),0.0f);
     while (syn.more()) {
-        Ustring    arg = syn.nextLower();
+        String8    arg = syn.nextLower();
         uint        idx = syn.nextAs<uint>();
         float       val = syn.nextAs<float>();
 
@@ -121,9 +121,8 @@ apply(CLArgs const & args)
    \ingroup Base_Commands
    Clamp delta morph vertex deltas to zero for seam vertices
  */
-static
 void
-clamp(CLArgs const & args)
+clampMorphDeltas(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
         "    v - All vertices in <seam>.tri will be used to define the seam.\n"
@@ -160,7 +159,6 @@ clamp(CLArgs const & args)
    \ingroup Base_Commands
    Remove all animation morphs in a mesh
  */
-static
 void
 clear(CLArgs const & args)
 {
@@ -176,7 +174,6 @@ clear(CLArgs const & args)
    \ingroup Base_Commands
    Copy animation morphs between meshes with corresponding vertex lists
  */
-static
 void
 copymorphs(CLArgs const & args)
 {
@@ -228,7 +225,6 @@ copymorphs(CLArgs const & args)
    \ingroup Base_Commands
    Create animation morphs for a mesh.
  */
-static
 void
 create(CLArgs const & args)
 {
@@ -278,7 +274,6 @@ create(CLArgs const & args)
    \ingroup Base_Commands
    Extract all morphs to named OBJ files
  */
-static
 void
 extract(CLArgs const & args)
 {
@@ -292,7 +287,7 @@ extract(CLArgs const & args)
     );
     string      meshName = syn.next(),
                 ext = syn.next();
-    Ustring    baseName = pathToBase(meshName);
+    String8    baseName = pathToBase(meshName);
     if (syn.more())
         baseName = syn.next();
     Mesh    base = loadTri(meshName),
@@ -301,7 +296,7 @@ extract(CLArgs const & args)
     out.targetMorphs.clear();
     for (size_t ii=0; ii<base.numMorphs(); ++ii) {
         out.verts = base.morphSingle(ii);
-        Ustring    morphName = removeChars(base.morphName(ii),":()");
+        String8    morphName = removeChars(base.morphName(ii),":()");
         saveMesh(out,baseName+"_"+morphName+"."+ext);
     }
 }
@@ -310,7 +305,6 @@ extract(CLArgs const & args)
    \ingroup Base_Commands
    Filter out morphs that do nothing
  */
-static
 void
 filter(CLArgs const & args)
 {
@@ -333,7 +327,6 @@ filter(CLArgs const & args)
    \ingroup Base_Commands
    List animation morphs in a mesh.
  */
-static
 void
 morphList(CLArgs const & args)
 {
@@ -359,7 +352,6 @@ morphList(CLArgs const & args)
    \ingroup Base_Commands
    Remove brackets from animation morph names (some mesh formats do not support them).
  */
-static
 void
 removebrackets(CLArgs const & args)
 {
@@ -380,7 +372,6 @@ removebrackets(CLArgs const & args)
    \ingroup Base_Commands
    Remove animation morphs from a mesh.
  */
-static
 void
 removemorphs(CLArgs const & args)
 {
@@ -398,10 +389,10 @@ removemorphs(CLArgs const & args)
     if (!checkExt(outFile,"tri"))
         syn.error("Not a TRI file",outFile);
     Mesh    mesh = loadTri(inFile);
-    vector<FgBool>  deltas(mesh.deltaMorphs.size(),true),
+    vector<FatBool>  deltas(mesh.deltaMorphs.size(),true),
                     targets(mesh.targetMorphs.size(),true);
     while (syn.more()) {
-        Ustring    arg = syn.nextLower();
+        String8    arg = syn.nextLower();
         uint        idx = syn.nextAs<uint>();
         if (arg == "d") {
             if (idx >= deltas.size())
@@ -432,7 +423,6 @@ removemorphs(CLArgs const & args)
    \ingroup Base_Commands
    Rename an animation morph in a mesh.
  */
-static
 void
 renameMorph(CLArgs const & args)
 {
@@ -446,7 +436,7 @@ renameMorph(CLArgs const & args)
     if (!checkExt(fname,"tri"))
         syn.error("Not a TRI file",fname);
     Mesh    mesh = loadTri(fname);
-    Ustring    arg = syn.nextLower();
+    String8    arg = syn.nextLower();
     uint        idx = syn.nextAs<uint>();
     if (arg == "d") {
         if (idx >= mesh.deltaMorphs.size())
@@ -463,14 +453,13 @@ renameMorph(CLArgs const & args)
     saveTri(fname,mesh);
 }
 
-static
 void
 morph(CLArgs const & args)
 {
     Cmds   cmds {
         {anim,"anim","Apply morphs by name to multiple meshes"},
         {apply,"apply","Apply morphs by index number in a single mesh"},
-        {clamp,"clamp","Clamp delta morphs to zero on seam vertices"},
+        {clampMorphDeltas,"clampMorphDeltas","Clamp delta morphs to zero on seam vertices"},
         {clear,"clear","Clear all morphs from a mesh"},
         {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
         {create,"create","Create morphs for a mesh"},
@@ -482,6 +471,8 @@ morph(CLArgs const & args)
         {renameMorph,"rename","Rename a morph in a mesh"}
     };
     doMenu(args,cmds);
+}
+
 }
 
 Cmd

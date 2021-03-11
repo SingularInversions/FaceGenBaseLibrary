@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -26,17 +26,11 @@ struct Cmd
 
     Cmd() {}
 
-    Cmd(CmdFunc func_,const char * name_)
-        : func(func_), name(name_) {}
+    Cmd(CmdFunc f,char const * n) : func(f), name(n) {}
+    Cmd(CmdFunc f,char const * n,char const * d) : func(f), name(n), description(d) {}
 
-    Cmd(CmdFunc func_,const char * name_,const char * description_)
-        : func(func_), name(name_), description(description_) {}
-
-    bool
-    operator<(const Cmd & rhs) const
-    {return (name < rhs.name); }
+    bool            operator<(Cmd const & rhs) const {return (name < rhs.name); }
 };
-
 typedef Svec<Cmd> Cmds;
 
 void
@@ -67,7 +61,7 @@ struct TestDir
 
 // Set the root test directory. Useful for sandboxed platforms:
 void
-fgSetRootTestDir(Ustring const & dir);
+fgSetRootTestDir(String8 const & dir);
 
 // Make a copy of a data file in current directory:
 void
@@ -86,7 +80,7 @@ bool fgKeepTempFiles();
 
 // Returns true if the user is doing a 'test all', so we can choose to skip non-automatable tests:
 bool
-fgAutomatedTest(CLArgs const &);
+isAutomatedTest(CLArgs const &);
 
 }
 

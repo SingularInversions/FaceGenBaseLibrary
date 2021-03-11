@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -166,11 +166,11 @@ struct  MatV
     // Operators
 
     bool
-    operator==(const MatV & rhs) const
+    operator==(MatV const & rhs) const
     {return ((nrows==rhs.nrows) && (ncols==rhs.ncols) && (m_data==rhs.m_data)); }
 
     bool
-    operator!=(const MatV & rhs) const
+    operator!=(MatV const & rhs) const
     {return !(operator==(rhs)); }
 
     MatV
@@ -180,14 +180,14 @@ struct  MatV
     }
 
     MatV
-    operator+(const MatV & rhs) const
+    operator+(MatV const & rhs) const
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         return MatV {nrows,ncols,m_data+rhs.m_data};
     }
 
     MatV
-    operator-(const MatV & rhs) const
+    operator-(MatV const & rhs) const
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         return MatV {nrows,ncols,m_data-rhs.m_data};
@@ -198,21 +198,21 @@ struct  MatV
     {m_data *= v; };
 
     void
-    operator+=(const MatV & rhs)
+    operator+=(MatV const & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         m_data += rhs.m_data;
     }
 
     void
-    operator-=(const MatV & rhs)
+    operator-=(MatV const & rhs)
     {
         FGASSERT((nrows == rhs.nrows) && (ncols == rhs.ncols));
         m_data -= rhs.m_data;
     }
 
     void
-    setSubMat(size_t row,size_t col,const MatV & m)
+    setSubMat(size_t row,size_t col,MatV const & m)
     {
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
@@ -222,7 +222,7 @@ struct  MatV
 
     // Set submatrix from the transpose of the given matrix (saves an allocation and a copy):
     void
-    setSubMatTr(size_t row,size_t col,const MatV & m)
+    setSubMatTr(size_t row,size_t col,MatV const & m)
     {
         FGASSERT((m.ncols+row <= nrows) && (m.nrows+col <= ncols));
         for (uint rr=0; rr<m.ncols; ++rr)
@@ -232,7 +232,7 @@ struct  MatV
 
     // Accumulate in sub-matrix:
     void
-    accSubMat(size_t row,size_t col,const MatV & m)
+    accSubMat(size_t row,size_t col,MatV const & m)
     {
         FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
         for (uint rr=0; rr<m.nrows; ++rr)
@@ -314,32 +314,21 @@ struct  MatV
     rowVec(uint n) const
     {return subMatrix(n,0,1,ncols); }
 
-    // Static creation functions:
-
-    static MatV identity(size_t dim)
+    static
+    MatV
+    identity(size_t dim)
     {
-        MatV       ret(dim,dim,T(0));
+        MatV                ret {dim,dim,T(0)};
         for (size_t ii=0; ii<dim; ++ii)
             ret.rc(ii,ii) = T(1);
         return ret;
     }
 
-    static MatV randNormal(size_t nrows,size_t ncols,T mean=T(0),T stdev=T(1))
-    {return MatV<T>(nrows,ncols,randNormals(nrows*ncols,mean,stdev)); }
-
-    static MatV randOrthogonal(size_t dim)
+    static
+    MatV
+    randNormal(size_t nrows,size_t ncols,T mean=T(0),T stdev=T(1))
     {
-        FGASSERT(dim > 1);
-        MatV        ret(dim,dim);
-        for (uint row=0; row<dim; ++row) {
-            MatV    vec = MatV::randNormal(1,dim);
-            for (uint rr=0; rr<row; ++rr) {
-                MatV    axis = ret.rowVec(rr);
-                vec -=  axis * cDot(vec,axis);
-            }
-            ret.setSubMat(row,0,normalize(vec));
-        }
-        return ret;
+        return MatV<T>(nrows,ncols,cRandNormals(nrows*ncols,mean,stdev));
     }
 };
 
@@ -349,7 +338,7 @@ typedef Svec<MatD>          MatDs;
 
 template <class T>
 std::ostream &
-operator<<(std::ostream & ss,const MatV<T> & mm)
+operator<<(std::ostream & ss,MatV<T> const & mm)
 {
     FGASSERT(mm.numRows()*mm.numCols()>0);
     bool        isVec((mm.numRows() == 1) || mm.numCols() == 1);
@@ -385,10 +374,10 @@ operator<<(std::ostream & ss,const MatV<T> & mm)
 // The element type must be static_cast-able from from 0:
 template<class T>
 MatV<T>
-matMul(const MatV<T> & lhs,const MatV<T> & rhs)
+matMul(MatV<T> const & lhs,MatV<T> const & rhs)
 {
     FGASSERT(lhs.ncols == rhs.nrows);
-    // Block sub-loop cache optimization - no multithreading or explicit SIMD.
+    // Simple block sub-loop cache optimization, no multithreading or explicit SIMD.
     // Use eigen instead if speed is important:
     size_t constexpr    CN = 64 / sizeof(T);    // Number of elements that fit in L1 Cache (est)
     MatV<T>             ret(lhs.nrows,rhs.ncols,static_cast<T>(0));
@@ -431,7 +420,7 @@ matMul(const MatV<T> & lhs,const MatV<T> & rhs)
 
 template<class T>
 inline MatV<T>
-operator*(const MatV<T> & lhs,const MatV<T> & rhs)
+operator*(MatV<T> const & lhs,MatV<T> const & rhs)
 {return matMul(lhs,rhs); }
 
 // Specializations for float and double use Eigen library when matrix is large enough to be worth
@@ -446,7 +435,7 @@ operator*(MatD const & lhs,MatD const & rhs);
 
 template<class T>
 MatV<T>
-operator*(T const & lhs,const MatV<T> & rhs)
+operator*(T const & lhs,MatV<T> const & rhs)
 {return (rhs*lhs); }
 
 template<typename T>
@@ -471,7 +460,7 @@ operator/=(MatD & mat,double div);
 // MatV<> * Svec<> treats rhs side as a column vector and returns same:
 template<class T>
 Svec<T>
-operator*(const MatV<T> & lhs,Svec<T> const & rhs)
+operator*(MatV<T> const & lhs,Svec<T> const & rhs)
 {
     Svec<T>       ret(lhs.nrows,T(0));
     FGASSERT(lhs.ncols == rhs.size());
@@ -484,7 +473,7 @@ operator*(const MatV<T> & lhs,Svec<T> const & rhs)
 // Svec<> * MatV<> treats lhs side as a row vector and returns same:
 template<class T>
 Svec<T>
-operator*(Svec<T> const & lhs,const MatV<T> & rhs)
+operator*(Svec<T> const & lhs,MatV<T> const & rhs)
 {
     Svec<T>       ret(rhs.ncols,T(0));
     FGASSERT(lhs.size() == rhs.nrows);
@@ -494,13 +483,54 @@ operator*(Svec<T> const & lhs,const MatV<T> & rhs)
     return ret;
 }
 
-double
-fgMatSumElems(MatD const & mat);
+template<class T>
+T
+cDot(MatV<T> const & lhs,MatV<T> const & rhs)
+{return cDot(lhs.m_data,rhs.m_data); }
+
+template<class T>
+MatV<T>
+cDiagMat(size_t dim,T const & val)
+{
+    MatV<T>    ret(dim,dim,T(0));
+    for (uint ii=0; ii<dim; ++ii)
+        ret.rc(ii,ii) = val;
+    return ret;
+}
+
+template<class T>
+MatV<T>
+cDiagMat(Svec<T> const & diagVals)
+{
+    size_t              D = diagVals.size();
+    MatV<T>             ret {D,D,T(0)};
+    for (size_t ii=0; ii<D; ++ii)
+        ret.rc(ii,ii) = diagVals[ii];
+    return ret;
+}
+
+template<class T>
+MatV<T>
+cDiagMat(MatV<T> const & vec)
+{
+    FGASSERT((vec.numRows() == 1) || (vec.numCols() == 1));
+    uint            dim = vec.numRows() * vec.numCols();
+    MatV<T>         ret(dim,dim,T(0));
+    for (uint ii=0; ii<dim; ++ii)
+        ret.rc(ii,ii) = vec[ii];
+    return ret;
+}
 
 template<class T>
 T
-cDot(const MatV<T> & lhs,const MatV<T> & rhs)
-{return cDot(lhs.m_data,rhs.m_data); }
+cTrace(MatV<T> const & m)
+{
+    T                   ret(0);
+    size_t              dim = cMinElem(m.dims());
+    for (size_t ii=0; ii<dim; ++ii)
+        ret += m.rc(ii,ii);
+    return ret;
+}
 
 // Linear interpolation between matrices of equal dimensions:
 template<class T>
@@ -516,14 +546,14 @@ interpolate_(MatV<T> const & v0,MatV<T> const & v1,T val,MatV<T> & ret)
 // Map 'abs':
 template<class T>
 MatV<T>
-mapAbs(const MatV<T> & mat)
+mapAbs(MatV<T> const & mat)
 {return MatV<T>(mat.nrows,mat.ncols,mapAbs(mat.m_data)); }
 
 // Matrix join is the inverse of partition:
 // 2x2 block matrix join:
 template<class T>
 MatV<T>
-fgJoin(const MatV<T> & ul,const MatV<T> & ur,const MatV<T> & ll,const MatV<T> & lr)
+fgJoin(MatV<T> const & ul,MatV<T> const & ur,MatV<T> const & ll,MatV<T> const & lr)
 {
     MatV<T>        ret(ul.nrows+ll.nrows,ul.ncols+ur.ncols);
     FGASSERT((ul.ncols == ll.ncols) && (ur.ncols == lr.ncols));
@@ -556,7 +586,7 @@ catHoriz(const Svec<MatV<T> > & ms)
 }
 template <class T>
 MatV<T>
-catHoriz(const MatV<T> & left,const MatV<T> & right)
+catHoriz(MatV<T> const & left,MatV<T> const & right)
 {
     MatV<T>        retval;
     if (left.empty())
@@ -600,7 +630,7 @@ catVertical(const Svec<MatV<T> > & ms)
 }
 template <class T>
 MatV<T>
-catVertical(const MatV<T> & upper,const MatV<T> & lower)
+catVertical(MatV<T> const & upper,MatV<T> const & lower)
 {
     MatV<T>      ret;
     if (upper.empty())
@@ -620,7 +650,7 @@ catVertical(const MatV<T> & upper,const MatV<T> & lower)
 }
 template <class T>
 MatV<T>
-catVertical(const MatV<T> & upper,const MatV<T> & middle,const MatV<T> & lower)
+catVertical(MatV<T> const & upper,MatV<T> const & middle,MatV<T> const & lower)
 {
     FGASSERT(upper.numCols() == middle.numCols());
     FGASSERT(middle.numCols() == lower.numCols());
@@ -665,7 +695,7 @@ catDiagonal(const Svec<MatV<T> > & blocks)
 }
 template<class T>
 MatV<T>
-catDiagonal(const MatV<T> & b0,const MatV<T> & b1)
+catDiagonal(MatV<T> const & b0,MatV<T> const & b1)
 {
     MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows,
@@ -677,7 +707,7 @@ catDiagonal(const MatV<T> & b0,const MatV<T> & b1)
 }
 template<class T>
 MatV<T>
-catDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
+catDiagonal(MatV<T> const & b0,MatV<T> const & b1,MatV<T> const & b2)
 {
     MatV<T>        ret;
     size_t              nrows = b0.nrows + b1.nrows + b2.nrows,
@@ -691,92 +721,31 @@ catDiagonal(const MatV<T> & b0,const MatV<T> & b1,const MatV<T> & b2)
 
 // Partition a square matrix into 4 matrices symmetrically:
 Mat<MatD,2,2>
-fgPartition(MatD const & m,size_t loSize);
+cPartition(MatD const & m,size_t loSize);
 
 template<class T>
 MatV<T>
-fgModulateCols(
-    const MatV<T> &    matrix,
-    const MatV<T> &    modVector)
-{
-    FGASSERT(matrix.numCols() == modVector.numElems());
-    MatD       ret = matrix;
-    for (uint rr=0; rr<matrix.numRows(); ++rr)
-        for (uint cc=0; cc<matrix.numCols(); ++cc)
-            ret.rc(rr,cc) *= modVector[cc];
-    return ret;
-}
-
-template<class T>
-MatV<T>
-asDiagMat(size_t dim,T const & val)
-{
-    MatV<T>    ret(dim,dim,T(0));
-    for (uint ii=0; ii<dim; ++ii)
-        ret.rc(ii,ii) = val;
-    return ret;
-}
-
-template<class T>
-MatV<T>
-asDiagMat(Svec<T> const & vec)
-{
-    uint            dim = uint(vec.size());
-    MatV<T>    ret(dim,dim,T(0));
-    for (uint ii=0; ii<dim; ++ii)
-        ret.rc(ii,ii) = vec[ii];
-    return ret;
-}
-
-template<class T>
-MatV<T>
-asDiagMat(const MatV<T> & vec)
-{
-    FGASSERT((vec.numRows() == 1) || (vec.numCols() == 1));
-    uint            dim = vec.numRows() * vec.numCols();
-    MatV<T>    ret(dim,dim,T(0));
-    for (uint ii=0; ii<dim; ++ii)
-        ret.rc(ii,ii) = vec[ii];
-    return ret;
-}
-
-template<class T>
-MatV<T>
-normalize(const MatV<T> & m)
+normalize(MatV<T> const & m)
 {return m * (1/std::sqrt(m.mag())); }
 
 template<class T>
 MatV<T>
-fgOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFacs)
+cOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFacs)
 {
-    MatV<T>        ret(rowFacs.size(),colFacs.size());
-    size_t              cnt = 0;
+    MatV<T>             ret(rowFacs.size(),colFacs.size());
     for (size_t rr=0; rr<rowFacs.size(); ++rr)
         for (size_t cc=0; cc<colFacs.size(); ++cc)
-            ret[cnt++] = rowFacs[rr] * colFacs[cc];
+            ret.rc(rr,cc) = rowFacs[rr] * colFacs[cc];
     return ret;
 }
 
 MatD
 cRelDiff(MatD const & a,MatD const & b,double minAbs=0.0);
 
-// Form a matrix from a vector of vectors representing each row:
-template<class T>
-MatV<T>
-fgVecVecToMatrix(Svec<Svec<T> > const & vss)    // vss must be non-empty with all sub-vects of same size
-{
-    FGASSERT(!vss.empty());
-    size_t          numRows = vss.size(),
-                    numCols = vss[0].size();
-    Svec<T>       data = flatten(vss);
-    FGASSERT(data.size() == numRows*numCols);
-    return MatV<T>(numRows,numCols,data);
-}
-
-// Return a vector of vectors for each row in a matrix:
+// Return a std::vector of std::vectors for each row in a matrix:
 template<class T>
 Svec<Svec<T> >
-fgMatrixToVecVec(const MatV<T> & v)
+toSvecOfSvec(MatV<T> const & v)
 {
     Svec<Svec<T> >      ret(v.numRows());
     for (size_t rr=0; rr<ret.size(); ++rr)
@@ -786,24 +755,70 @@ fgMatrixToVecVec(const MatV<T> & v)
 
 template<class T>
 T
-cMag(const MatV<T> & mat)
+cMag(MatV<T> const & mat)
 {return mat.mag(); }
 
+// Return sum of squared values of diagonal elements:
 template<class T>
 T
-fgOffDiagonalRelMag(const MatV<T> & mat)
+cDiagMag(MatV<T> const & mat)
 {
-    FGASSERT(mat.ncols == mat.nrows);
-    T       sz = T(mat.ncols),
-            diag = T(0),
-            offd = T(0);
-    for (size_t rr=0; rr<sz; ++rr) {
-        diag += cMag(mat.rc(rr,rr));
-        for (size_t cc=rr+1; cc<sz; ++cc)
-            offd += cMag(mat.rc(rr,cc)) + cMag(mat.rc(cc,rr));
-    }
-    return offd * sz / (diag * sz * (sz-1));
+    size_t          sz = cMin(mat.numRows(),mat.numCols());
+    T               acc {0};
+    for (size_t ii=0; ii<sz; ++ii)
+        acc += sqr(mat.rc(ii,ii));
+    return acc;
 }
+
+// Return sum of squared values of off-diagonal elements:
+template<class T>
+T
+cOffDiagMag(MatV<T> const & mat)
+{
+    size_t          nrows = mat.numRows(),
+                    ncols = mat.numCols();
+    T               acc {0};
+    for (size_t rr=0; rr<nrows; ++rr)
+        for (size_t cc=0; cc<ncols; ++cc)
+            if (cc != rr)
+                acc += sqr(mat.rc(rr,cc));
+    return acc;
+}
+
+// row covariance of M == M * M^T
+template<class T>
+MatV<T>
+cRowCovariance(MatV<T> const & m)
+{
+    size_t                  R = m.numRows(),
+                            C = m.numCols();
+    MatV<T>                 ret {R,R,T(0)};
+    for (size_t r0=0; r0<R; ++r0) {
+        {   // Optimize the self-covariance computation:
+            T                   acc {0};
+            for (size_t cc=0; cc<C; ++cc)
+                acc += sqr(m.rc(r0,cc));
+            ret.rc(r0,r0) = acc;
+        }
+        for (size_t r1=r0+1; r1<R; ++r1) {
+            T                   acc {0};
+            for (size_t cc=0; cc<C; ++cc)
+                acc += m.rc(r0,cc) * m.rc(r1,cc);
+            ret.rc(r0,r1) = acc;
+            ret.rc(r1,r0) = acc;
+        }
+    }
+    return ret;
+}
+
+// Random orthogonal matrix of given dimension
+MatD        cRandOrthogonal(size_t dim);
+// Mahalanobis transform formed by D*R where R is random orthogonal, and
+// D is a diagonal matrix of scales whose logarithms are distributed as N(0,logScaleStdev):
+MatD        cRandMahalanobis(size_t dims,double logScaleStdev);
+// Random symmetric positive definite matrix with eigenvalue square roots (scales) whose
+// logarithms are distributed as N(0,logScaleStdev):
+MatD        cRandSPD(size_t dims,double logScaleStdev);
 
 }
 

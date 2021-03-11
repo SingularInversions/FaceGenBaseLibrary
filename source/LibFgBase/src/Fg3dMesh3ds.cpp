@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -429,11 +429,11 @@ static bool fffWriteMdataChunk_local(FILE *fptr,int &chunkSize,const FffMultiObj
 
 static
 bool
-fffSave3dsFile(Ustring const &name, const FffMultiObjectC &model)
+fffSave3dsFile(String8 const &name, const FffMultiObjectC &model)
 {
     Path      path(name);
     path.ext = "3ds";
-    Ustring    fname = path.str();
+    String8    fname = path.str();
 #ifdef _WIN32
     FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
 #else
@@ -482,7 +482,7 @@ fffSave3dsFile(Ustring const &name, const FffMultiObjectC &model)
 
 void
 save3ds(
-    Ustring const &        fname,
+    String8 const &        fname,
     Meshes        meshes,
     string                  imgFormat)
 {
@@ -500,7 +500,7 @@ void
 fgSave3dsTest(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring    dd = dataDir();
+    String8    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth"+".tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

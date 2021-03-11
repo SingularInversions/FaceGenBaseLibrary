@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ using namespace std;
 namespace Fg {
 
 void
-guiStartImpl(NPT<Ustring>,GuiPtr,Ustring const &,const GuiOptions &)
+guiStartImpl(NPT<String8>,GuiPtr,String8 const &,const GuiOptions &)
 {fgout << fgnl << "GUI not implemented for unix." << std::flush; }
 
 #define STUB(X)                                             \
@@ -43,32 +43,32 @@ STUB(GuiText)
 STUB(GuiTextEdit)
 
 void
-guiDialogMessage(Ustring const &,Ustring const &)
+guiDialogMessage(String8 const &,String8 const &)
 {throw FgExceptionNotImplemented(); }
 
-Opt<Ustring>
-guiDialogFileLoad(Ustring const &,const vector<std::string> &,string const &)
+Opt<String8>
+guiDialogFileLoad(String8 const &,const vector<std::string> &,string const &)
 {
     throw FgExceptionNotImplemented();
-    return Opt<Ustring>();
+    return Opt<String8>();
 }
 
-Opt<Ustring>
-guiDialogFileSave(Ustring const &,const std::string &)
+Opt<String8>
+guiDialogFileSave(String8 const &,const std::string &)
 {
     throw FgExceptionNotImplemented();
-    return Opt<Ustring>();
+    return Opt<String8>();
 }
 
-Opt<Ustring>
+Opt<String8>
 guiDialogDirSelect()
 {
     throw FgExceptionNotImplemented();
-    return Opt<Ustring>();
+    return Opt<String8>();
 }
 
 bool
-guiDialogProgress(Ustring const &,uint,WorkerFunc)
+guiDialogProgress(String8 const &,uint,WorkerFunc)
 {throw FgExceptionNotImplemented(); return false; }
 
 std::function<void(void)>
@@ -80,6 +80,9 @@ guiQuit() {}
 
 void
 winUpdateScreen() {}
+
+void
+guiBusyCursor() {}
 
 }
 

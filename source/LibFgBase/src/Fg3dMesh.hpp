@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -50,7 +50,7 @@ typedef Svec<MarkedVert>    MarkedVerts;
 
 struct  Mesh
 {
-    Ustring                 name;           // Optional. Not loaded/saved to file. Useful when passing mesh as arg
+    String8                 name;           // Optional. Not loaded/saved to file. Useful when passing mesh as arg
     Vec3Fs                  verts;          // Base shape
     Vec2Fs                  uvs;            // Texture coordinates in OTCS
     Surfs                   surfaces;
@@ -110,7 +110,7 @@ struct  Mesh
     numQuads() const;                   // Just the number of quads over all surfaces
 
     Surf const &
-    surface(Ustring const & surfName) const
+    surface(String8 const & surfName) const
     {return findFirst(surfaces,surfName); }
 
     size_t
@@ -195,21 +195,21 @@ struct  Mesh
     numMorphs() const
     {return deltaMorphs.size() + targetMorphs.size(); }
 
-    Ustring
+    String8
     morphName(size_t idx) const;
 
-    Ustrings
+    String8s
     morphNames() const;
 
     Valid<size_t>
-    findDeltaMorph(Ustring const & name) const;
+    findDeltaMorph(String8 const & name) const;
 
     Valid<size_t>
-    findTargMorph(Ustring const & name) const;
+    findTargMorph(String8 const & name) const;
 
     // Return the combined morph index:
     Valid<size_t>
-    findMorph(Ustring const & name) const;
+    findMorph(String8 const & name) const;
 
     // Morph using member base and target vertices:
     void
@@ -246,7 +246,7 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addDeltaMorphFromTarget(Ustring const & name,Vec3Fs const & targetShape);
+    addDeltaMorphFromTarget(String8 const & name,Vec3Fs const & targetShape);
 
     // Overwrites any existing morph of the same name:
     void
@@ -254,10 +254,10 @@ struct  Mesh
 
     // Overwrites any existing morph of the same name:
     void
-    addTargMorph(Ustring const & name,Vec3Fs const & targetShape);
+    addTargMorph(String8 const & name,Vec3Fs const & targetShape);
 
     Vec3Fs
-    poseShape(Vec3Fs const & allVerts,const std::map<Ustring,float> & poseVals) const;
+    poseShape(Vec3Fs const & allVerts,const std::map<String8,float> & poseVals) const;
 
     // EDITING:
 
@@ -265,8 +265,17 @@ struct  Mesh
     addSurfaces(const Surfs & s);
 
     void        scale(float fac);
-    void        transform(Mat33F xform);
-    void        transform(Affine3F xform);
+
+    template<class Op>
+    void
+    transform(Op xf)
+    {
+        mapMul_(xf,verts);
+        for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
+            mapMul_(xf,deltaMorphs[ii].verts);
+        for (size_t ii=0; ii<targetMorphs.size(); ++ii)
+            mapMul_(xf,targetMorphs[ii].verts);
+    }
 
     void
     convertToTris();
@@ -275,8 +284,7 @@ struct  Mesh
     removeUVs();
 
     // Throws if the mesh is not valid:
-    void
-    checkValidity();
+    void        checkValidity() const;
 };
 
 typedef Svec<Mesh>   Meshes;
@@ -293,16 +301,16 @@ cBounds(Meshes const & meshes);
 size_t
 fgNumTriEquivs(Meshes const & meshes);
 
-std::set<Ustring>
+std::set<String8>
 getMorphNames(Meshes const & meshes);
 
 inline
-PoseVals
-cPoseVals(Mesh const & mesh)
-{return cat(cPoseVals(mesh.deltaMorphs),cPoseVals(mesh.targetMorphs)); }
+PoseDefs
+cPoseDefs(Mesh const & mesh)
+{return cat(cPoseDefs(mesh.deltaMorphs),cPoseDefs(mesh.targetMorphs)); }
 
-PoseVals
-cPoseVals(const Svec<Mesh> & meshes);
+PoseDefs
+cPoseDefs(const Svec<Mesh> & meshes);
 
 TriSurf
 subdivide(TriSurf const & surf,bool loop);  // Loop subdivision of true, flat subdivision otherwise

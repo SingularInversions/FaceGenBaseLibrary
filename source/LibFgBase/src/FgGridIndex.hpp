@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ struct  GridIndex
         double          scaleToBins = std::sqrt(double(approxNumBins)/double(clientSz.cmpntsProduct()));
         Vec2F        gridSizef = clientSz * float(scaleToBins);
         Vec2UI       gridSize = Vec2UI(gridSizef + Vec2F(0.5f));
-        gridSize = clampLo(gridSize,1U);
+        gridSize = mapMax(gridSize,1U);
         Mat22F        ipcsBounds(0,gridSize[0],0,gridSize[1]);
         clientToGridIpcs = AffineEw2F(clientBounds,ipcsBounds);
         grid.resize(gridSize);

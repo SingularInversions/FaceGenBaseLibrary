@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -101,10 +101,10 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         HWND                    hwnd;
     };
     Div                         m_div;
-    Vec2I                    m_client;
-    Ustring                    m_store;
+    Vec2I                       m_client;
+    String8                     m_store;
     // Cache border-padded pane min sizes to avoid exponentially repeated calls:
-    mutable Vec2UI           m_minSizes[2];  
+    mutable Vec2UI              m_minSizes[2];  
 
     GuiSplitAdjWin(const GuiSplitAdj & api) :
         m_api(api),
@@ -114,8 +114,14 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         m_pane1 = api.pane1->getInstance();
     }
 
+    ~GuiSplitAdjWin()
+    {
+        if (!m_store.empty())
+            saveBsaXml(m_store+".xml",m_relSize,false);
+    }
+
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
         if (m_store.empty()) {      // First creation this session so check for saved state
@@ -128,6 +134,9 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
+        // This window type must paint the background (tested) as moving the divider requires a full repaint
+        // of each sub-window and the parent window hasn't moved so it does not refresh the background.
+        cc.useFillBrush = true;
         winCreateChild(parentHwnd,ident,this,cc);
 //fgout << fgpop;
     }
@@ -162,7 +171,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 
     virtual Vec2B
     wantStretch() const
-    {return fgOr(m_pane0->wantStretch(),m_pane1->wantStretch()); }
+    {return mapOr(m_pane0->wantStretch(),m_pane1->wantStretch()); }
 
     virtual void
     updateIfChanged()
@@ -187,15 +196,6 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 //fgout << fgnl << "SplitAdj::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
-    }
-
-    virtual void
-    saveState()
-    {
-        if (!m_store.empty())
-            saveBsaXml(m_store+".xml",m_relSize,false);
-        m_pane0->saveState();
-        m_pane1->saveState();
     }
 
     LRESULT

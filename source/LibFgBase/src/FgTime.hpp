@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -95,6 +95,11 @@ struct PushTimer
 // Returns true at most once per second:
 bool
 secondPassedSinceLast();
+
+inline
+double
+toSeconds(std::chrono::nanoseconds nano)
+{return nano/std::chrono::nanoseconds(1) / 1000000000.0;}
 
 }
 

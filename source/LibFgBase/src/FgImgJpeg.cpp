@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -248,7 +248,7 @@ Uchars
 imgEncodeJpeg(ImgC4UC const & img,int quality)
 {
     Uchars       ret;
-    if(!saveJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],ret,quality)) 
+    if(!saveJpeg(img.width(),img.height(),&img.m_data[0][0],ret,quality)) 
         fgThrow("Could not encode as JPEG/JFIF");
     return ret;
 }

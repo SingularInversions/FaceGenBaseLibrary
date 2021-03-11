@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,6 +8,7 @@
 
 #include "FgStdString.hpp"
 #include "FgTypes.hpp"
+#include "FgString.hpp"
 
 using namespace std;
 
@@ -158,6 +159,21 @@ fromStr<uint>(string const & str)
     ret = uint(acc);
     return ret;
 }
+
+String
+cRest(String const & str,size_t start)
+{
+    FGASSERT1(start <= str.size(),str+"@"+toStr(start));      // Can be size zero
+    return String{str.begin()+start,str.end()};
+}
+
+String32
+cRest(String32 const & str,size_t start)
+{
+    FGASSERT1(start <= str.size(),toUtf8(str)+"@"+toStr(start));
+    return String32{str.begin()+start,str.end()};
+}
+
 
 }
 

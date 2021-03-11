@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -78,15 +78,6 @@ operator*(MatD const & lhs,MatD const & rhs)
     return ret;
 }
 
-double
-fgMatSumElems(MatD const & mat)
-{
-    double      acc = 0.0;
-    for (uint ii=0; ii<mat.numElems(); ii++)
-        acc += mat[ii];
-    return acc;
-}
-
 struct    StackElem
 {
     StackElem() : acc(0.0), overflow(false) {}
@@ -105,7 +96,7 @@ cRelDiff(MatD const & a,MatD const & b,double minAbs)
 }
 
 Mat<MatD,2,2>
-fgPartition(MatD const & m,size_t loSize)
+cPartition(MatD const & m,size_t loSize)
 {
     Mat<MatD,2,2>    ret;
     FGASSERT(m.nrows == m.ncols);
@@ -115,6 +106,40 @@ fgPartition(MatD const & m,size_t loSize)
     ret.rc(1,0) = m.subMatrix(loSize,0,hiSize,loSize);
     ret.rc(1,1) = m.subMatrix(loSize,loSize,hiSize,hiSize);
     return ret;
+}
+
+// Uses simple Gram-Schmidt; probably not very accurate for large 'dim':
+MatD
+cRandOrthogonal(size_t dim)
+{
+    FGASSERT(dim > 1);
+    MatD            ret(dim,dim);
+    for (uint row=0; row<dim; ++row) {
+        MatD            vec = MatD::randNormal(1,dim);
+        for (uint rr=0; rr<row; ++rr) {
+            MatD            axis = ret.rowVec(rr);
+            vec -=  axis * cDot(vec,axis);
+        }
+        ret.setSubMat(row,0,normalize(vec));
+    }
+    return ret;
+}
+
+MatD
+cRandMahalanobis(size_t dim,double logScaleStdev)
+{
+    Doubles             scales;
+    for (size_t ii=0; ii<dim; ++ii)
+        scales.push_back(exp(randNormal()*logScaleStdev));
+    MatD                R = cRandOrthogonal(dim);
+    return cDiagMat(scales) * R;
+}
+
+MatD
+cRandSPD(size_t dim,double logScaleStdev)
+{
+    MatD                M = cRandMahalanobis(dim,logScaleStdev);
+    return M.transpose() * M;
 }
 
 namespace {
@@ -254,7 +279,7 @@ showMul(function<MatD(MatD const &,MatD const &)> fn,MatD const & l,MatD const &
 void
 testMul(CLArgs const & args)
 {
-    if (fgAutomatedTest(args))
+    if (isAutomatedTest(args))
         return;
     Syntax        syn(args,"<size>");
     size_t          sz = fromStr<size_t>(syn.next()).val();
@@ -269,7 +294,7 @@ testMul(CLArgs const & args)
 void
 loopStructTime(CLArgs const & args)
 {
-    if (fgAutomatedTest(args))
+    if (isAutomatedTest(args))
         return;
     uint            dim = 1024;     // Must divide 8 for non-generalized tests
     MatD       m1 = MatD::randNormal(dim,dim),
@@ -283,7 +308,7 @@ loopStructTime(CLArgs const & args)
 void
 eigenTest(CLArgs const & args)
 {
-    if (fgAutomatedTest(args))
+    if (isAutomatedTest(args))
         return;
     Syntax            syn(args,"<size>");
     size_t              sz = fromStr<size_t>(syn.next()).val();

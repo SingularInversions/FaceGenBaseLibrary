@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -140,10 +140,10 @@ Surf::vertIdxMax() const
     uint        ret = 0;
     for(size_t qq=0; qq<quads.size(); ++qq)
         for(uint ii=0; ii<4; ++ii)
-            setIfGreater(ret,quads.posInds[qq][ii]);
+            updateMax_(ret,quads.posInds[qq][ii]);
     for(size_t tt=0; tt<tris.size(); ++tt)
         for(uint ii=0; ii<3; ++ii)
-            setIfGreater(ret,tris.posInds[tt][ii]);
+            updateMax_(ret,tris.posInds[tt][ii]);
     return ret;
 }
 
@@ -223,6 +223,7 @@ void
 Surf::checkMeshConsistency(
     uint    coordsSize,
     uint    uvsSize)
+    const
 {
     if (tris.size() > 0)
         {FGASSERT(cMaxElem(cBounds(tris.posInds)) < coordsSize); }
@@ -443,7 +444,7 @@ splitByContiguous(Surf const & surf)
 }
 
 Surfs
-fgEnsureNamed(const Surfs & surfs,Ustring const & baseName)
+fgEnsureNamed(const Surfs & surfs,String8 const & baseName)
 {
     Surfs     ret = surfs;
     if ((ret.size() == 1) && (ret[0].name.empty()))

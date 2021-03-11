@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,7 +21,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
 {
     GuiDynamic              m_api;
     GuiImplPtr              m_win;
-    Ustring                 m_store;
+    String8                 m_store;
     HWND                    m_hwndParent;
     Vec2I                   m_lastMoveLo;
     Vec2I                   m_lastMoveSz;
@@ -31,7 +31,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int,Ustring const & store,DWORD /*extStyle*/,bool visible)
+    create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
     {
 //fgout << fgnl << "GuiDynamicWin::create" << fgpush;
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.
@@ -101,13 +101,6 @@ struct  GuiDynamicWin : public GuiBaseImpl
     {
         FGASSERT(m_win);
         m_win->showWindow(s);
-    }
-
-    virtual void
-    saveState()
-    {
-        if (m_win)
-            m_win->saveState();
     }
 };
 

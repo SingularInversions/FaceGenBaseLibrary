@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -222,7 +222,7 @@ Mesh::asTriSurf() const
     return ret;
 }
 
-Ustring
+String8
 Mesh::morphName(size_t idx) const
 {
     if (idx < deltaMorphs.size())
@@ -231,10 +231,10 @@ Mesh::morphName(size_t idx) const
     return targetMorphs[idx].name;
 }
 
-Ustrings
+String8s
 Mesh::morphNames() const
 {
-    Ustrings    ret;
+    String8s    ret;
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
         ret.push_back(deltaMorphs[ii].name);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
@@ -243,16 +243,16 @@ Mesh::morphNames() const
 }
 
 Valid<size_t>
-Mesh::findDeltaMorph(Ustring const & name_) const
+Mesh::findDeltaMorph(String8 const & name_) const
 {
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        if (Ustring(deltaMorphs[ii].name) == name_)
+        if (String8(deltaMorphs[ii].name) == name_)
             return Valid<size_t>(ii);
     return Valid<size_t>();
 }
 
 Valid<size_t>
-Mesh::findTargMorph(Ustring const & name_) const
+Mesh::findTargMorph(String8 const & name_) const
 {
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
         if (targetMorphs[ii].name == name_)
@@ -261,7 +261,7 @@ Mesh::findTargMorph(Ustring const & name_) const
 }
 
 Valid<size_t>
-Mesh::findMorph(Ustring const & name_) const
+Mesh::findMorph(String8 const & name_) const
 {
     for (size_t ii=0; ii<numMorphs(); ++ii)
         if (morphName(ii) == name_)
@@ -367,7 +367,7 @@ Mesh::addDeltaMorph(Morph const & morph)
 }
 
 void
-Mesh::addDeltaMorphFromTarget(Ustring const & name_,Vec3Fs const & targetShape)
+Mesh::addDeltaMorphFromTarget(String8 const & name_,Vec3Fs const & targetShape)
 {
     Morph                 dm;
     dm.name = name_;
@@ -389,7 +389,7 @@ Mesh::addTargMorph(const IndexedMorph & morph)
 }
 
 void
-Mesh::addTargMorph(Ustring const & name_,Vec3Fs const & targetShape)
+Mesh::addTargMorph(String8 const & name_,Vec3Fs const & targetShape)
 {
     FGASSERT(targetShape.size() == verts.size());
     IndexedMorph       tm;
@@ -397,7 +397,7 @@ Mesh::addTargMorph(Ustring const & name_,Vec3Fs const & targetShape)
     Vec3Fs             deltas = targetShape - verts;
     double              maxMag = 0.0;
     for (size_t ii=0; ii<deltas.size(); ++ii)
-        setIfGreater(maxMag,deltas[ii].mag());
+        updateMax_(maxMag,deltas[ii].mag());
     if (maxMag == 0.0f) {
         fgout << fgnl << "WARNING: skipping empty morph " << name_;
         return;
@@ -413,7 +413,7 @@ Mesh::addTargMorph(Ustring const & name_,Vec3Fs const & targetShape)
 }
 
 Vec3Fs
-Mesh::poseShape(Vec3Fs const & allVerts,const std::map<Ustring,float> & poseVals) const
+Mesh::poseShape(Vec3Fs const & allVerts,const std::map<String8,float> & poseVals) const
 {
     Vec3Fs      ret = cHead(allVerts,verts.size()),
                 base = ret;
@@ -441,26 +441,6 @@ Mesh::scale(float val)
 }
 
 void
-Mesh::transform(Mat33F xform)
-{
-    mapMul_(xform,verts);
-    for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        mapMul_(xform,deltaMorphs[ii].verts);
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        mapMul_(xform,targetMorphs[ii].verts);
-}
-
-void
-Mesh::transform(Affine3F xform)
-{
-    mapMul_(xform,verts);
-    for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        mapMul_(xform.linear,deltaMorphs[ii].verts);
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        mapMul_(xform,targetMorphs[ii].verts);
-}
-
-void
 Mesh::convertToTris()
 {
     for (size_t ii=0; ii<surfaces.size(); ++ii)
@@ -479,7 +459,7 @@ Mesh::removeUVs()
 
 
 void
-Mesh::checkValidity()
+Mesh::checkValidity() const
 {
     uint    numVerts = uint(verts.size());
     for (size_t ss=0; ss<surfaces.size(); ++ss)
@@ -507,22 +487,22 @@ fgNumTriEquivs(Meshes const & meshes)
     return ret;
 }
 
-std::set<Ustring>
+std::set<String8>
 getMorphNames(Meshes const & meshes)
 {
-    std::set<Ustring>  ret;
+    std::set<String8>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
         cUnion_(ret,meshes[ii].morphNames());
     return ret;
 }
 
-PoseVals
-cPoseVals(Meshes const & meshes)
+PoseDefs
+cPoseDefs(Meshes const & meshes)
 {
-    std::set<PoseVal>    ps;
+    std::set<PoseDef>    ps;
     for (size_t ii=0; ii<meshes.size(); ++ii)
-        cUnion_(ps,cPoseVals(meshes[ii]));
-    return vector<PoseVal>(ps.begin(),ps.end());
+        cUnion_(ps,cPoseDefs(meshes[ii]));
+    return vector<PoseDef>(ps.begin(),ps.end());
 }
 
 static

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,7 @@
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
 #include "FgGuiApiDialogs.hpp"
+#include "FgGuiApiBase.hpp"
 
 using namespace std;
 
@@ -47,15 +48,19 @@ mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
     {
         CLArgs          args;
         if (argc > 0) {     // The first arg is the command path but we only want the command name:
-            Ustring         tmp(argv[0]);
+            String8         tmp(argv[0]);
             Path            path(tmp);
-            Ustring         cmdName = path.baseExt();
+            String8         cmdName = path.baseExt();
             args.push_back(cmdName.m_str);
         }
         for (int ii=1; ii<argc; ++ii) {
-            Ustring         tmp(argv[ii]);
-            if ((ii == 1) && (tmp == "-guiErr"))
-                guiErr = true;
+            String8         tmp(argv[ii]);
+            if ((ii == 1) && (tmp == "-guiErr")) {
+                if (isGuiSupported())
+                    guiErr = true;
+                else
+                    fgout << "WARNING: 'guiErr' selected but GUI not supported on this platform";
+            }
             else
                 args.push_back(tmp.m_str);
         }
@@ -99,12 +104,8 @@ mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
         // Don't use std::cout directly since errors need to be logged if logging is on:
         fgout.setDefOut(true);
         fgout << errStr;
-#ifdef _WIN32
         if (guiErr)
             guiDialogMessage(s_mainArgs[0]+" return error code "+toStr(retval),errStr);
-#else
-        guiErr;     // Avoid unused variable warning
-#endif
     }
     NEWLINE;
     return retval;

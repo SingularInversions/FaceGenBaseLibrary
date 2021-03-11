@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -82,7 +82,6 @@ fgTestmNrvoMr(bool sel)
     }
 }
 
-static
 void
 rvo(CLArgs const &)
 {
@@ -104,7 +103,6 @@ rvo(CLArgs const &)
     fgout << fgnl << "NRVO with multiple returns (both paths) copies: " << rvoCount;
 }
 
-static
 void
 speedExp(CLArgs const &)
 {
@@ -123,7 +121,6 @@ speedExp(CLArgs const &)
     fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
 }
 
-static
 void
 fgexp(CLArgs const &)
 {
@@ -155,7 +152,6 @@ fgexp(CLArgs const &)
     fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
 }
 
-static
 void
 any(CLArgs const &)
 {
@@ -172,7 +168,6 @@ any(CLArgs const &)
     fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<Mat44D>(v1)[0];
 }
 
-static
 void
 thash(CLArgs const &)
 {
@@ -191,7 +186,6 @@ thash(CLArgs const &)
     }
 }
 
-static
 void
 parr(CLArgs const &)
 {
@@ -280,6 +274,27 @@ parr(CLArgs const &)
     fgout << fgnl << "Packed array in, paral arrays out: " << time << "ms. (" << val << ")";
 }
 
+template<int(*F)(int)>
+Ints
+mapFunInt(Ints const & ints)
+{
+    Ints        ret;
+    ret.reserve(ints.size());
+    for (int i : ints)
+        ret.push_back(F(i));
+    return ret;
+}
+
+int addOne(int i) {return i+1; }
+
+void
+testFuncTemplate(CLArgs const &)
+{
+    Ints        ints {1,2,3,4},
+                tst = mapFunInt<addOne>(ints);
+    fgout << fgnl << tst;
+}
+
 }
 
 void
@@ -287,7 +302,8 @@ fgCmdTestmCpp(CLArgs const & args)
 {
     Cmds        cmds {
         {any,"any","Test boost any copy semantics"},
-        {fgexp,"fgexp","Test and mesaure speed of interal optimized exp"},
+        {fgexp,"fgexp","Test and mesaure speed of internal optimized exp"},
+        {testFuncTemplate,"funcTemplate","function as template value argument"},
         {thash,"hash","Test std::hash behaviour"},
         {parr,"parr","Test speedup of switching from parallel to packed arrays"},
         {rvo,"rvo","Return value optimization / copy elision"},

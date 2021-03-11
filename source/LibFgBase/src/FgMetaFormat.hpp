@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,7 +31,7 @@ template<> inline           String fgArchiveString<portable_binary_iarchive>() {
 template<class Archive,class T>
 bool
 loadBsa(
-    Ustring const &     filename,
+    String8 const &     filename,
     T &                 val,
     bool                throwOnFail)
 {
@@ -64,27 +64,27 @@ loadBsa(
 
 template<class T>
 inline bool
-loadBsaText(Ustring const & filename,T & val,bool throwOnFail=true)
+loadBsaText(String8 const & filename,T & val,bool throwOnFail=true)
 {return loadBsa<boost::archive::text_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-loadBsaXml(Ustring const & filename,T & val,bool throwOnFail=true)
+loadBsaXml(String8 const & filename,T & val,bool throwOnFail=true)
 {return loadBsa<boost::archive::xml_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-loadBsaBin(Ustring const & filename,T & val,bool throwOnFail=true)
+loadBsaBin(String8 const & filename,T & val,bool throwOnFail=true)
 {return loadBsa<boost::archive::binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-loadBsaPBin(Ustring const & filename,T & val,bool throwOnFail=true)
+loadBsaPBin(String8 const & filename,T & val,bool throwOnFail=true)
 {return loadBsa<portable_binary_iarchive>(filename,val,throwOnFail); }
 
 template<class T>
 T
-loadBsaXml(Ustring const & filename)
+loadBsaXml(String8 const & filename)
 {
     T           ret;
     loadBsaXml(filename,ret,true);
@@ -93,7 +93,7 @@ loadBsaXml(Ustring const & filename)
 
 template<class T>
 T
-loadBsaBin(Ustring const & fname)
+loadBsaBin(String8 const & fname)
 {
     T       ret;
     loadBsaBin(fname,ret,true);
@@ -102,7 +102,7 @@ loadBsaBin(Ustring const & fname)
 
 template<class T>
 T
-loadBsaPBin(Ustring const & fname)
+loadBsaPBin(String8 const & fname)
 {
     T       ret;
     loadBsaPBin(fname,ret,true);
@@ -112,7 +112,7 @@ loadBsaPBin(Ustring const & fname)
 template<class Archive,class T>
 bool
 saveBsa(
-    Ustring const &     filename,
+    String8 const &     filename,
     T const &           val,
     bool                throwOnFail)
 {
@@ -148,22 +148,22 @@ saveBsa(
 
 template<class T>
 inline bool
-saveBsaText(Ustring const & filename,T const & val,bool throwOnFail=true)
+saveBsaText(String8 const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::text_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaXml(Ustring const & filename,T const & val,bool throwOnFail=true)
+saveBsaXml(String8 const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaBin(Ustring const & filename,T const & val,bool throwOnFail=true)
+saveBsaBin(String8 const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
 
 template<class T>
 inline bool
-saveBsaPBin(Ustring const & filename,T const & val,bool throwOnFail=true)
+saveBsaPBin(String8 const & filename,T const & val,bool throwOnFail=true)
 {return saveBsa<portable_binary_oarchive>(filename,val,throwOnFail); }
 
 }

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,7 +38,7 @@ closestPointInSegment(Vec3D p0,Vec3D p1);
 
 // Returns delta from point to tri:
 VecMagD
-closestPointInTri(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
+closestPointInTri(Vec3D const & point,Vec3D const & vert0,Vec3D const & vert1,Vec3D const & vert2);
 
 // Returns the barycentric coord of point relative to triangle.
 // If no valid value, triangle is degenerate.

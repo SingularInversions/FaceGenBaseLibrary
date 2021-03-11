@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,35 +24,41 @@ using boost::filesystem::directory_iterator;
 namespace Fg {
 
 bool
-isDirectory(Ustring const & name)
+isDirectory(String8 const & name)
 {return is_directory(name.ns()); }
 
-DirectoryContents
-directoryContents(Ustring const & dirName)
+DirContents
+getDirContents(String8 const & dirName,bool includeDot)
 {
-    Ustring        dn = dirName;
+    String8             dn = dirName;
     if (dn.empty())     // Interpret this as current directory, which boost filesystem does not
-        dn = Ustring(".");
+        dn = String8(".");
     if (!is_directory(dn.ns()))
         fgThrow("Not a directory",dirName);
-    DirectoryContents     ret;
-    directory_iterator      it_end;
+    DirContents   ret;
+    directory_iterator  it_end;
     for (directory_iterator it(dn.ns()); it != it_end; ++it) {
-        if (is_directory(it->status()))
-            ret.dirnames.push_back(it->path().filename().string());
-        else if (is_regular_file(it->status()))
-            ret.filenames.push_back(it->path().filename().string());
+        if (is_directory(it->status())) {
+            String              pathName = it->path().filename().string();
+            if ((pathName[0] != '.') || includeDot)
+                ret.dirnames.push_back(pathName);
+        }
+        else if (is_regular_file(it->status())) {
+            String              pathName = it->path().filename().string();
+            if ((pathName[0] != '.') || includeDot)
+                ret.filenames.push_back(pathName);
+        }
     }
     return ret;
 }
 
-Ustring
+String8
 getCurrentDir()
 {
     char    buff[512] = {0};
     if (!getcwd(buff,511))
         fgThrow("Unable to get current working directory");
-    Ustring    ps(buff);
+    String8    ps(buff);
     if (!ps.empty() && !ps.endsWith("/"))
         ps += "/";
     return ps;
@@ -60,7 +66,7 @@ getCurrentDir()
 
 bool
 setCurrentDir(
-    Ustring const &    dir,
+    String8 const &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -71,19 +77,19 @@ setCurrentDir(
 }
 
 bool
-createDirectory(Ustring const & dir)
+createDirectory(String8 const & dir)
 {
     string      sdir = dir.as_utf8_string();
     return (mkdir(sdir.c_str(),0777) == 0);
 }
 
 void
-deleteFile(Ustring const & fname)
+deleteFile(String8 const & fname)
 {pathRemove(fname); }
 
 bool
 removeDirectory(
-    Ustring const &    dir,
+    String8 const &    dir,
     bool                throwOnFail)
 {
     string      sdir = dir.as_utf8_string();
@@ -95,51 +101,51 @@ removeDirectory(
     return false;
 }
 
-Ustring
+String8
 getDirSystemAppData()
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
-Ustring
-getDirSystemAppData(Ustring const &,Ustring const &)
+String8
+getDirSystemAppData(String8 const &,String8 const &)
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
-Ustring
+String8
 getDirUserAppDataLocal()
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
-Ustring
+String8
 getDirUserAppDataRoaming()
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
-Ustring
+String8
 getUserDocsDir(bool)
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
-Ustring
+String8
 getPublicDocsDir()
 {
     throw FgExceptionNotImplemented();
-    return Ustring();
+    return String8();
 }
 
 struct  Dir
 {
-    Dir(Ustring const & dirName)
+    Dir(String8 const & dirName)
     {handle = opendir(dirName.as_utf8_string().c_str()); }
 
     ~Dir()
@@ -149,14 +155,14 @@ struct  Dir
 };
 
 bool
-getCreationTimePrecise(Ustring const &,uint64 &)
+getCreationTimePrecise(String8 const &,uint64 &)
 {
     throw FgExceptionNotImplemented();
     return false;
 }
 
 uint64
-getCreationTime(Ustring const & path)
+getCreationTime(String8 const & path)
 {
     uint64          tn;
     FGASSERT(getCreationTimePrecise(path,tn));
@@ -164,7 +170,7 @@ getCreationTime(Ustring const & path)
 }
 
 uint64
-getLastWriteTime(Ustring const & path)
+getLastWriteTime(String8 const & path)
 {return boost::filesystem::last_write_time(path.ns()); }
 
 #if defined(__APPLE__)
@@ -172,7 +178,7 @@ getLastWriteTime(Ustring const & path)
 #include <CoreFoundation/CFBundle.h>
 #include <CoreFoundation/CFURL.h>
 
-Ustring
+String8
 getExecutablePath()
 {
     CFURLRef bundleUrlRef(CFBundleCopyExecutableURL(CFBundleGetMainBundle()));
@@ -188,12 +194,12 @@ getExecutablePath()
 
     FGASSERT(CFStringGetCString(pathRef,buffer.get(),size,kCFStringEncodingUTF8));
 
-    return Ustring(buffer.get()); // Conversion from utf8
+    return String8(buffer.get()); // Conversion from utf8
 }
 
 #else
 
-Ustring
+String8
 getExecutablePath()
 {
     std::ostringstream os;
@@ -201,10 +207,10 @@ getExecutablePath()
     os << getpid();
 
     std::string proclink("/proc/" + os.str() + "/exe");
-    FGASSERT(fileReadable(Ustring(proclink)));
+    FGASSERT(fileReadable(String8(proclink)));
     char resolved_name[PATH_MAX] = {0};
     FGASSERT(realpath(proclink.c_str(),resolved_name));
-    return Ustring(resolved_name);
+    return String8(resolved_name);
 }
 
 #endif

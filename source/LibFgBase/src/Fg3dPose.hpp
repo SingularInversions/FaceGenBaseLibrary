@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,12 +24,12 @@ namespace Fg {
 // Per-vertex morph, typically represented as deltas from base shape (aka blendshape):
 struct  Morph
 {
-    Ustring             name;
+    String8             name;
     Vec3Fs              verts;      // 1-1 correspondence with base verts
 
     Morph() {}
-    explicit Morph(Ustring const & n) : name(n) {}
-    Morph(Ustring const & n,Vec3Fs const & v)
+    explicit Morph(String8 const & n) : name(n) {}
+    Morph(String8 const & n,Vec3Fs const & v)
         : name(n), verts(v) {}
 
     void
@@ -54,7 +54,7 @@ macAsTargetMorph_(
 // are affected:
 struct  IndexedMorph
 {
-    Ustring             name;
+    String8             name;
     Uints               baseInds;   // Indices of base vertices to be morphed.
     // Can represent target position or delta depending on type of morph.
     // Must be same size() as baseInds:
@@ -104,43 +104,43 @@ struct  PanTilt
     Vec3F               pan;                // Normalized. Applied second.
 };
 
-struct  PoseVal
+struct  PoseDef
 {
-    Ustring             name;
+    String8             name;
     Vec2F               bounds;
     float               neutral;
 
-    PoseVal() : bounds(Vec2F(0,1)), neutral(0) {}
+    PoseDef() : bounds(Vec2F(0,1)), neutral(0) {}
 
     // Provide an ordering so we can make a set. We do not differentiate based on bounds and neutral
     // value since this is too complicated in the rest of the code; client must beware not to
     // overload pose names:
     bool
-    operator<(const PoseVal & rhs) const
+    operator<(const PoseDef & rhs) const
     {return (name < rhs.name); }
 
     // Allow for finding by name:
     bool
-    operator==(Ustring const & rhsName) const
+    operator==(String8 const & rhsName) const
     {return (name == rhsName); }
 };
-typedef Svec<PoseVal>          PoseVals;
+typedef Svec<PoseDef>          PoseDefs;
 
 inline
-PoseVals
-cPoseVals(Morphs const & morphs)
+PoseDefs
+cPoseDefs(Morphs const & morphs)
 {
-    PoseVals         ret(morphs.size());
+    PoseDefs         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].name = morphs[ii].name;
     return ret;
 }
 
 inline
-PoseVals
-cPoseVals(IndexedMorphs const & morphs)
+PoseDefs
+cPoseDefs(IndexedMorphs const & morphs)
 {
-    PoseVals         ret(morphs.size());
+    PoseDefs         ret(morphs.size());
     for (size_t ii=0; ii<ret.size(); ++ii)
         ret[ii].name = morphs[ii].name;
     return ret;
@@ -149,14 +149,14 @@ cPoseVals(IndexedMorphs const & morphs)
 // Accumulate deltas for delta morphs stored as a vertex array:
 void
 accPoseDeltas_(
-    const std::map<Ustring,float> & poseVals,
+    const std::map<String8,float> & poseVals,
     Morphs const &                  deltaMorphs,
     Vec3Fs &                        acc);
 
 // Accumulate deltas for target morphs stored as indexed vertex array:
 void
 accPoseDeltas_(
-    const std::map<Ustring,float> & poseVals,
+    const std::map<String8,float> & poseVals,
     IndexedMorphs const &           targMorphs,     // Only used for names and indices; targets positions ignored
     Vec3Fs const &                  baseShape,
     // Target morph data in continguous order of 'targMorphs'

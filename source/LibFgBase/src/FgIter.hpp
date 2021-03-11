@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -95,7 +95,7 @@ struct  Iter
     valid() const
     {return m_inBounds; }
 
-    const Mat<T,dim,1> &
+    Mat<T,dim,1> const &
     operator()() const
     {return m_idx; }
 
@@ -133,7 +133,7 @@ struct  Iter
     {
         return 
             Mat<T,dim,2>(
-                cBoundsIntersection(
+                intersectBounds(
                     Mat<int,dim,1>(m_idx) * Mat<int,1,2>(1) +
                         Mat<int,dim,2>(-1,1,-1,1,-1,1),
                     Mat<int,dim,2>(inclusiveRange())));
@@ -212,7 +212,7 @@ struct  IterIub
     valid() const
     {return (idx[dim-1] <= bndHi[dim-1]); }
 
-    const Mat<T,dim,1> &
+    Mat<T,dim,1> const &
     operator()() const
     {return idx; }
 

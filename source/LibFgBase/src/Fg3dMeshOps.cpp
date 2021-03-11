@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -54,9 +54,10 @@ meshFromImage(const ImgD & img)
 }
 
 QuadSurf
-cGrid(uint sz)
+cGrid(size_t szll)
 {
-    FGASSERT(sz > 0);
+    FGASSERT(szll > 0);
+    uint                sz = scast<uint>(szll);
     QuadSurf            ret;
     AffineEw2D          itToCoord {Mat22D(0,sz,0,sz),Mat22D{-1,1,-1,1}};
     for (Iter2UI it(sz+1); it.valid(); it.next()) {
@@ -75,48 +76,30 @@ cGrid(uint sz)
     return ret;
 }
 
-Mesh
-cSphere(float radius,uint subdivisions)
+TriSurf
+cSphere4(size_t subdivisions)
 {
-    FGASSERT(subdivisions < 10);    // 1M faces is probably overkill.
-    // Tetrahedron centred on the origin:
-    Vec3Fs          verts {
-        {1,1,1},
-        {1,-1,-1},
-        {-1,1,-1},
-        {-1,-1,1},
-    };
-    Vec3UIs         tris {      // CC winding is the default.
-        {0,1,2},
-        {0,3,1},
-        {0,2,3},
-        {1,3,2},
-    };
-    // Equilateral triangle with radius 2 around origin (CC):
-    double              root3 = sqrt(3.0);
-    Vec2Ds              equi {
-        {-root3,   -1},
-        { root3,   -1},
-        {     0,root3}
-    };
-    // Put 4 of these in OpenGL texture coordinates:
-    AffineEw2D          xform {Vec2D{root3,1},Vec2D{0.5/(1.0+root3)}};
-    equi = mapMul(xform,equi);
-    Vec2Ds              uvd = equi;
-    cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.0)));
-    cat_(uvd,mapAddConst(equi,Vec2D(0.5,0.5)));
-    cat_(uvd,mapAddConst(equi,Vec2D(0.0,0.5)));
-    Vec2Fs              uvs = scast<float>(uvd);
-    Surf                surf(tris);
-    Mesh                mesh(verts,surf);
+    FGASSERT(subdivisions < 10);    // sanity check
+    TriSurf             tet = cTetrahedron();
     for (uint ss=0; ss<subdivisions; ss++) {
-        for (uint ii=0; ii<mesh.verts.size(); ii++)
-            mesh.verts[ii] *= radius / mesh.verts[ii].len();
-        mesh = subdivide(mesh,false);
+        tet = subdivide(tet,true);
+        for (Vec3F & v : tet.verts)
+            normalize_(v);
     }
-    for (uint ii=0; ii<mesh.verts.size(); ii++)
-        mesh.verts[ii] *= radius / mesh.verts[ii].len();
-    return mesh;
+    return tet;
+}
+
+TriSurf
+cSphere(size_t subdivisions)
+{
+    FGASSERT(subdivisions < 8);    // sanity check
+    TriSurf             ico = cIcosahedron();
+    for (size_t ii=0; ii<subdivisions; ++ii) {
+        ico = subdivide(ico,true);
+        for (Vec3F & v : ico.verts)
+            normalize_(v);
+    }
+    return ico;
 }
 
 Mesh
@@ -235,24 +218,24 @@ meshRemoveUnusedVerts(Mesh const & mesh)
     return  ret;
 }
 
-Mesh
+TriSurf
 cTetrahedron(bool open)
 {
     // Coordinates of a regular tetrahedron with edges of length 2*sqrt(2):
-    Vec3Fs             verts;
-    verts.push_back(Vec3F( 1.0f, 1.0f, 1.0f));
-    verts.push_back(Vec3F(-1.0f,-1.0f, 1.0f));
-    verts.push_back(Vec3F(-1.0f, 1.0f,-1.0f));
-    verts.push_back(Vec3F( 1.0f,-1.0f,-1.0f));
-
-    Vec3UIs   tris;
-    tris.push_back(Vec3UI(0,1,3));
-    tris.push_back(Vec3UI(0,2,1));
-    tris.push_back(Vec3UI(2,0,3));
+    Vec3Fs             verts {
+        { 1.0f, 1.0f, 1.0f},
+        {-1.0f,-1.0f, 1.0f},
+        {-1.0f, 1.0f,-1.0f},
+        { 1.0f,-1.0f,-1.0f},
+    };
+    Vec3UIs             tris {
+        {0,1,3},
+        {0,2,1},
+        {2,0,3},
+    };
     if (!open)
-        tris.push_back(Vec3UI(1,2,3));
-
-    return Mesh(verts,Surf(tris));
+        tris.emplace_back(1,2,3);
+    return TriSurf {verts,tris};
 }
 
 Mesh
@@ -669,10 +652,10 @@ mergeMeshes(Meshes const & meshes)
 }
 
 Mesh
-fg3dMaskFromUvs(Mesh const & mesh,const Img<FgBool> & mask)
+fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
 {
     // Make a list of which vertices have UVs that only fall in the excluded regions:
-    vector<FgBool>      keep(mesh.verts.size(),false);
+    vector<FatBool>      keep(mesh.verts.size(),false);
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(mask.dims());
     Mat22UI             clampVal(0,mask.width()-1,0,mask.height()-1);
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
@@ -685,7 +668,7 @@ fg3dMaskFromUvs(Mesh const & mesh,const Img<FgBool> & mask)
             Vec3UI   uvInd = surf.tris.uvInds[jj];
             Vec3UI   vtInd = surf.tris.posInds[jj];
             for (uint kk=0; kk<3; ++kk) {
-                bool    valid = mask[clampBounds(Vec2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
+                bool    valid = mask[mapClamp(Vec2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
             }
         }
@@ -730,7 +713,7 @@ cUvWireframeImage(Mesh const & mesh,RgbaUC wireColor,ImgC4UC const & in)
     Mat22F          uvb = cBounds(mesh.uvs);
     ImgC4UC         img(2048,2048,RgbaUC(128,128,128,255));
     if (!in.empty())
-        img = fgImgMagnify(in,2);
+        img = magnify(in,2);
     // Bounds are normally (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
     Mat22F          domain(floor(uvb[0]),ceil(uvb[1]),ceil(uvb[3]),floor(uvb[2])),
                     range(0,img.width()+1,0,img.height()+1);

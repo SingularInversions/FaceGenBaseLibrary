@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ struct  GuiRadioWin : public GuiBaseImpl
     {}
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiRadioWin::create " << m_api.labels[0];
         WinCreateChild   cc;
@@ -53,7 +53,7 @@ struct  GuiRadioWin : public GuiBaseImpl
         uint        dimAcc = (m_api.horiz ? 0 : 1),
                     dimMax = 1 - dimAcc;
         for (size_t ii=0; ii<m_sizes.size(); ++ii) {
-            setIfGreater(sz[dimMax],m_sizes[ii][dimMax]);
+            updateMax_(sz[dimMax],m_sizes[ii][dimMax]);
             sz[dimAcc] += m_sizes[ii][dimAcc] + s_pad[dimAcc];
         }
         sz[dimMax] += s_pad[dimMax];

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-Ustrings
+String8s
 cAlbedoModeLabels()
 {
     return {
@@ -98,7 +98,7 @@ Gui3d::panTilt(Vec2I delta)
         panTilt += Vec2D(delta) / 3.0;
         if (panTiltLimits) {
             for (uint dd=0; dd<2; ++dd)
-                panTilt[dd] = clampBounds(panTilt[dd],-90.0,90.0);
+                panTilt[dd] = clamp(panTilt[dd],-90.0,90.0);
         }
         else {
             for (uint dd=0; dd<2; ++dd) {
@@ -160,14 +160,16 @@ Gui3d::translate(Vec2I delta)
 }
 
 void
-Gui3d::markSurfPoint(
+markSurfacePoint(
+    NPT<RendMeshes> const & rendMeshesN,
+    NPT<String8> const &    pointLabelN,
     Vec2UI          winSize,
     Vec2I           pos,
     Mat44F          worldToD3ps)         // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
     RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
-    if (vpt.valid() && pointLabel.ptr) {
+    if (vpt.valid() && pointLabelN.ptr) {
         MeshesIntersect         pt = vpt.val();
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
@@ -175,7 +177,7 @@ Gui3d::markSurfPoint(
             << cSurfPointPos(pt.surfPnt,origMeshPtr->getTriEquivs(),Quads(),origMeshPtr->verts);
         if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
             SurfPoints &            surfPoints =  origMeshPtr->surfaces[pt.surfIdx].surfPoints;
-            pt.surfPnt.label = pointLabel.cref().as_ascii();
+            pt.surfPnt.label = pointLabelN.cref().as_ascii();
             if (!pt.surfPnt.label.empty()) {
                 for (size_t ii=0; ii<surfPoints.size(); ++ii) {
                     if (surfPoints[ii].label == pt.surfPnt.label) {     // Replace SPs of same name:
@@ -191,10 +193,12 @@ Gui3d::markSurfPoint(
 }
 
 void
-Gui3d::markVertex(
-    Vec2UI               winSize,
-    Vec2I                pos,
-    Mat44F                worldToD3ps)     // Transforms frustum to [-1,1] cube (depth & y inverted)
+markMeshVertex(
+    NPT<RendMeshes> const & rendMeshesN,
+    NPT<size_t> const &     vertMarkModeN,
+    Vec2UI                  winSize,
+    Vec2I                   pos,
+    Mat44F                  worldToD3ps)     // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
     RendMeshes const &          rms = rendMeshesN.cref();
     Opt<MeshesIntersect>        vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
@@ -221,7 +225,7 @@ Gui3d::markVertex(
                 else if (vertMarkMode == 2) {
                     Surf                tmpSurf;
                     tmpSurf.tris.posInds = tris;
-                    vector<FgBool>      done(meshIn.verts.size(),false);
+                    vector<FatBool>      done(meshIn.verts.size(),false);
                     seam = topo.traceFold(cNormals(svec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
                 else if (vertMarkMode == 3)
@@ -259,8 +263,8 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
     if (lastCtlClick.valid) {
         // Interestingly, the concept of a delta vector doesn't work in projective space;
         // a homogeneous component equal to zero is a direction. Conceptually, we can't
-        // transform a delta in D3PS to FHCS without knowing it's absolute position since. Hence
-        // we transform the end point back into FHCS and take the difference:
+        // transform a delta in D3PS to FHCS without knowing it's absolute position.
+        // Hence we transform the end point back into FHCS and take the difference:
         RendMeshes const &          rms = rendMeshesN.cref();
         Vec3Fs const &             verts = rms[lastCtlClick.meshIdx].posedVertsN.cref();
         Vec3F                    vertPos0Hcs = verts[lastCtlClick.vertIdx];
@@ -280,7 +284,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
 }
 
 void
-Gui3d::ctrlShiftLeftDrag(Vec2UI winSize,Vec2I delta)
+Gui3d::translateBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
         ImgC4UC const & img = bgImg.imgN.cref();
@@ -293,7 +297,7 @@ Gui3d::ctrlShiftLeftDrag(Vec2UI winSize,Vec2I delta)
 }
 
 void
-Gui3d::ctrlShiftRightDrag(Vec2UI winSize,Vec2I delta)
+Gui3d::scaleBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
         ImgC4UC const & img = bgImg.imgN.cref();

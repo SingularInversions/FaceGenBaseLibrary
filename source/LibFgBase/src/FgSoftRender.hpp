@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,8 +35,10 @@ struct  RenderOptions
     RgbaF               backgroundColor=RgbaF(0);
     // Values in range [1,8]. Higher is slower:
     uint                antiAliasBitDepth=3;
-    // Render marked surface points in meshes as green dots:
+    // Composite marked surface points  as small circles on image:
     RenderSurfPoints    renderSurfPoints=RenderSurfPoints::never;
+    RgbaF               surfPointColor {0,1,0,1};           // Values in [0,1], default green
+    float               surfPointRadius {1.f};
     // If defined, place the projected surface point data here:
     Sptr<ProjectedSurfPoints> projSurfPoints;
     bool                useMaps = true;     // Turn off to see raw geometry
@@ -76,18 +78,18 @@ renderSoft(
 inline
 ImgC4UC
 renderSoft(
-    Vec2UI                  pixelSize,
-    Meshes const &          meshes,
-    RenderXform const &     transform,
-    RenderOptions const &   options=RenderOptions())
+    Vec2UI pixelSize,Meshes const & meshes,RenderXform const & transform,RenderOptions const & options=RenderOptions())
 {return renderSoft(pixelSize,meshes,transform.modelview,transform.itcsToIucs,options); }
+
+inline
+ImgC4UC
+renderSoft(
+    Vec2UI pixelSize,Meshes const & meshes,Camera const & camera,RenderOptions const & options=RenderOptions())
+{return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,options); }
 
 // Render with default camera:
 ImgC4UC
-renderSoft(
-    Vec2UI                  pixelSize,
-    Meshes const &          meshes,
-    RgbaF                   bgColor);
+renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor);
 
 #endif
 

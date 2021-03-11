@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,7 +15,7 @@
 
 namespace Fg {
 
-Ustrings        // Empty if fails
+String8s        // Empty if fails
 getGpusDescription();
 
 struct  D3dMap
@@ -37,13 +37,24 @@ struct  D3dSurf
 {
     WinPtr<ID3D11Buffer>        triVerts;       // 3 Verts for each tri. Null if no facets for this surf.
     WinPtr<ID3D11Buffer>        lineVerts;      // 2 Verts for each edge. Null if no facets or computation delayed.
-    D3dMap                      albedoMap;      // Can be empty
-    D3dMap                      modulationMap;  // Can be empty
-    D3dMap                      specularMap;    // "
+    D3dMap                      albedoMap,          // Can be empty
+                                modulationMap,      // Can be empty
+                                specularMap;        // "
+    DfgFPtr                     albedoMapFlag,      // Can be null. Same lifetime as above
+                                modulationMapFlag,  // "
+                                specularMapFlag;    // "
+    D3dSurf(NPT<ImgC4UC> const & a,NPT<ImgC4UC> const & m,NPT<ImgC4UC> const & s) :
+        albedoMapFlag {makeUpdateFlag(a)},
+        modulationMapFlag {makeUpdateFlag(m)},
+        specularMapFlag {makeUpdateFlag(s)}
+    {}
 };
 
 struct D3dMesh
 {
+    // Currently also flags changes in original mesh (ie. surf points & marked verts) since it's in the
+    // same mesh node as base verts:
+    DfgFPtr                     vertsFlag;      // Verts changed ? Has same lifetime as objects below
     WinPtr<ID3D11Buffer>        surfPoints;     // 3 verts/tri x 20 tris/icosahedron x numSurfPoints. Null if none.
     WinPtr<ID3D11Buffer>        markedPoints;
     WinPtr<ID3D11Buffer>        allVerts;
@@ -86,7 +97,9 @@ struct      D3d
         bool                        backgroundTransparent=false);   // For screen grab option
 
     void                            setBgImage(BackgroundImage const & bgi);
-    void                            resize(Vec2UI windowSize);
+    // Returns true if resize was triggered by a device driver update which invalidated the device.
+    // In this case the device must be re-created:
+    bool                            resize(Vec2UI windowSize);
     void                            showBackBuffer();
     ImgC4UC                         capture(Vec2UI viewportSize);
 
@@ -210,7 +223,7 @@ private:
     getD3dSurf(RendSurf const & rs) const;
 
     void
-    updateMap_(NPTF<ImgC4UC> const & in,D3dMap & out);
+    updateMap_(DfgFPtr const & flag,NPT<ImgC4UC> const & in,D3dMap & out);
 
     void
     setVertexBuffer(ID3D11Buffer * vertBuff);

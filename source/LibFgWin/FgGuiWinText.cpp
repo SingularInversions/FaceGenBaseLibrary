@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,13 +38,13 @@ struct  GuiTextWin : public GuiBaseImpl
         m_minSize(m_maxMinWid,m_minHgt)
     {
         static HMODULE hmRichEdit = LoadLibrary(L"RichEd20.dll");
-        Ustring const &        text = m_api.content.cref();
+        String8 const &        text = m_api.content.cref();
         m_content = text.as_wstring();
         m_updateFlag = makeUpdateFlag(m_api.content);
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const &,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiTextWin::create" << fgpush;
         WinCreateChild   cc;
@@ -115,7 +115,7 @@ struct  GuiTextWin : public GuiBaseImpl
     updateIfChanged()
     {
         if (m_updateFlag->checkUpdate()) {
-            Ustring const &        text = m_api.content.cref();
+            String8 const &        text = m_api.content.cref();
             m_content = text.as_wstring(); 
             updateText();
             // TODO: if updateText() changes m_minSize we need to return a value (recursively)

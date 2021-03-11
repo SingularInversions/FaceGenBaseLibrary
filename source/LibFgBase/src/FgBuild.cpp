@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -162,7 +162,7 @@ getBuildCompilers(BuildOS os)
     if (os == BuildOS::win)
         return {Compiler::vs19,Compiler::vs17,Compiler::vs15};
     else if (os == BuildOS::linux)
-        return {Compiler::clang,Compiler::gcc,Compiler::icpc};
+        return {Compiler::gcc,Compiler::clang,Compiler::icpc};
     else if (os == BuildOS::macos)
         return {Compiler::clang};
     else if (os == BuildOS::ios)

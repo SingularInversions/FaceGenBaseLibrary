@@ -1,9 +1,8 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
 // A UTF-8 string, typed in order to make explicit this is not ASCII.
 
 #ifndef INCLUDED_FGSTRING_HPP
@@ -17,53 +16,45 @@
 
 namespace Fg {
 
-std::u32string
-toUtf32(const std::string & utf8);
+String32        toUtf32(const String & utf8);
+String32        toUtf32(char const * utf8);
 
-std::string
-toUtf8(const char32_t & utf32_char);
-
-std::string
-toUtf8(const std::u32string & utf32);
+String          toUtf8(const char32_t & utf32_char);
+String          toUtf8(String32 const & utf32);
 
 // The following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
 #ifdef _WIN32
-
-std::wstring
-toUtf16(const std::string & utf8);
-
-std::string
-toUtf8(const std::wstring & utf16);
-
+std::wstring    toUtf16(const String & utf8);
+String          toUtf8(const std::wstring & utf16);
 #endif
 
-struct  Ustring
+struct  String8
 {
-    std::string     m_str;      // UTF-8 unicode
+    String     m_str;      // UTF-8 unicode
 
-    Ustring() {};
+    String8() {};
 
-    Ustring(const char * utf8_c_string) : m_str(utf8_c_string) {};
+    String8(char const * utf8_c_string) : m_str(utf8_c_string) {};
 
-    Ustring(const std::string & utf8_string) : m_str(utf8_string) {};
+    String8(const String & utf8_string) : m_str(utf8_string) {};
 
-    explicit Ustring(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
+    explicit String8(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
 
     explicit
-    Ustring(const std::u32string & utf32) : m_str(toUtf8(utf32)) {}
+    String8(String32 const & utf32) : m_str(toUtf8(utf32)) {}
 
-    Ustring &
-    operator+=(Ustring const&);
+    String8 &
+    operator+=(String8 const&);
 
-    Ustring
-    operator+(Ustring const&) const;
+    String8
+    operator+(String8 const&) const;
 
-    Ustring
+    String8
     operator+(char const * utf8_c_str)
-    {return Ustring(m_str + utf8_c_str); }
+    {return String8(m_str + utf8_c_str); }
 
-    Ustring
+    String8
     operator+(char c) const;
 
     // Use sparingly as this function is very inefficient in UTF-8 encoding:
@@ -82,31 +73,31 @@ struct  Ustring
     clear()
     {m_str.clear(); }
 
-    bool operator==(Ustring const & rhs) const
+    bool operator==(String8 const & rhs) const
     {return m_str == rhs.m_str; }
 
-    bool operator!=(Ustring const & other) const
+    bool operator!=(String8 const & other) const
     {return !(*this == other); }
 
-    bool operator<(Ustring const & other) const
+    bool operator<(String8 const & other) const
     {return m_str < other.m_str; }
 
-    int compare(Ustring const & rhs) const
+    int compare(String8 const & rhs) const
     {return m_str.compare(rhs.m_str); }
 
     // The narrow-character stream operators do *not* do any
     // character set conversion:
     friend 
-    std::ostream& operator<<(std::ostream&, Ustring const &);
+    std::ostream& operator<<(std::ostream&, String8 const &);
 
     friend
-    std::istream& operator>>(std::istream&, Ustring &);
+    std::istream& operator>>(std::istream&, String8 &);
 
-    std::string const &
+    String const &
     as_utf8_string() const
     {return m_str; }
 
-    std::u32string
+    String32
     as_utf32() const
     {return toUtf32(m_str); }
 
@@ -114,8 +105,8 @@ struct  Ustring
 #ifdef _WIN32
     // Construct from a wstring. Since sizeof(wchar_t) is compiler/platform dependent,
     // encoding is utf16 for Windows, utf32 for gcc & XCode:
-    Ustring(const wchar_t *);
-    Ustring(const std::wstring &);
+    String8(const wchar_t *);
+    String8(const std::wstring &);
 
     // Encoded as UTF16 if wchar_t is 16-bit, UTF32 if wchar_t is 32-bit:
     std::wstring
@@ -125,7 +116,7 @@ struct  Ustring
     ns() const
     {return as_wstring(); }
 #else
-    std::string
+    String
     ns() const
     {return as_utf8_string(); }
 #endif
@@ -134,105 +125,105 @@ struct  Ustring
     is_ascii() const;
 
     // Throw if there are any non-ascii characters:
-    const std::string &
+    const String &
     ascii() const;
 
     // Mutilate any non-ASCII characters into ASCII:
-    std::string
+    String
     as_ascii() const;
 
     // Replace all occurrences of 'a' with 'b'. Slow due to utf32<->utf8 conversions.
     // 'a' and 'b' are considered as unsigned values when comparing with UTF code points:
-    Ustring
+    String8
     replace(char a, char b) const;
 
     // Split into multiple strings based on split character which is not included in
     // results. At least one string is created and every split character creates an
     // additional string (empty or otherwise):
-    Svec<Ustring>
+    Svec<String8>
     split(char ch) const;
 
     bool
-    beginsWith(Ustring const & s) const;
+    beginsWith(String8 const & s) const;
 
     bool
-    endsWith(Ustring const & str) const;
+    endsWith(String8 const & str) const;
 
     uint
     maxWidth(char ch) const;
 
-    Ustring
+    String8
     toLower() const;        // Member func avoids ambiguity with toLower on string literals
 
     FG_SERIALIZE1(m_str)
 };
 
-typedef Svec<Ustring>   Ustrings;
+typedef Svec<String8>   String8s;
 
-Ustrings
+String8s
 toUstrings(Strings const & strs);
 
 template<>
-inline std::string
-toStr(Ustring const & str)
+inline String
+toStr(String8 const & str)
 {return str.m_str; }
 
 template<class T>
-void fgThrow(const std::string & msg,T const & data) 
+void fgThrow(const String & msg,T const & data) 
 {throw FgException(msg,toStr(data));  }
 
 template<class T,class U>
-void fgThrow(const std::string & msg,T const data0,const U & data1) 
+void fgThrow(const String & msg,T const data0,const U & data1) 
 {throw FgException(msg,toStr(data0)+","+toStr(data1)); }
 
 inline
-Ustring
-toLower(Ustring const & str)
+String8
+toLower(String8 const & str)
 {return str.toLower(); }
 
 inline
-Ustring
-operator+(const std::string & lhs,Ustring const & rhs)
-{return Ustring(lhs) + rhs; }
+String8
+operator+(const String & lhs,String8 const & rhs)
+{return String8(lhs) + rhs; }
 
 // Translate an English message into a UTF-8 string. If the message is
 // not found, the untranslated message is returned.
 // TODO: This should return const references eventually as they will
 // be referenecs to something in a map:
-Ustring
-fgTr(const std::string & message);
+String8
+fgTr(const String & message);
 
 // Remove all instances of a given character:
-Ustring
-removeChars(Ustring const & str,uchar chr);
+String8
+removeChars(String8 const & str,uchar chr);
 
 // Remove all instances of any of the given characters:
-Ustring
-removeChars(Ustring const & str,Ustring chrs);
+String8
+removeChars(String8 const & str,String8 chrs);
 
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
 bool
-isGlobMatch(Ustring const & globStr,Ustring const & str);
+isGlobMatch(String8 const & globStr,String8 const & str);
 
-Ustring
-cSubstr(Ustring const & str,size_t start,size_t size);
+String8
+cSubstr(String8 const & str,size_t start,size_t size);
 
-Ustring
-cRest(Ustring const & s,size_t start);
+String8
+cRest(String8 const & s,size_t start);
 
 // Inspired by Python join():
-Ustring
-cat(Ustrings const & strings,Ustring const & separator);
+String8
+cat(String8s const & strings,String8 const & separator);
 
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:
-std::string
-fgToVariableName(Ustring const & str);
+String
+fgToVariableName(String8 const & str);
 
 // Replace all instances of 'from' with 'to' in 'in':
-Ustring
-replaceCharWithString(Ustring const & in,char32_t from,Ustring const to);
+String8
+replaceCharWithString(String8 const & in,char32_t from,String8 const to);
 
 }
 

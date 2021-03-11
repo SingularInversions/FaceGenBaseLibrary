@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,6 +12,7 @@
 #include "FgRandom.hpp"
 #include "FgQuaternion.hpp"
 #include "FgCommand.hpp"
+#include "FgApproxEqual.hpp"
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings
@@ -109,70 +110,6 @@ solveLinear(Mat44D A,Vec4D b)
     return ret;
 }
 
-template<uint size>
-static void
-testInverse()
-{
-    Mat<double,size,size> a,b;
-    do
-        a = Mat<double,size,size>::randNormal();
-    while
-        (determinant(a) < 0.01);
-    b = cInverse(a);
-    a = (a * b + b * a) * 0.5;  // cancel errors from near-singularities in matrix
-    b.setIdentity();
-    double          res = (a-b).len();
-    FGASSERT(res < (10.0 * size * size * epsilonD()));
-}
-
-static void
-testFgMatRotateAxis(CLArgs const &)
-{
-    randSeedRepeatable();
-    for (uint ii=0; ii<100; ii++)
-    {
-        double          angle = randUniform(-pi(),pi());
-        Vec3D        axis = Vec3D::randNormal();
-        axis /= axis.len();
-        Mat33D     mat = matRotateAxis(angle,axis);
-        double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
-                        err2 = (mat * axis - axis).len();
-
-        FGASSERT(err < (epsilonD() * 10.0));
-        FGASSERT(err2 < (epsilonD() * 10.0));
-        FGASSERT(determinant(mat) > 0.0);      // Ensure SO(3) not just O(3)
-    }
-}
-
-static void
-testMatrixCInverse(CLArgs const &)
-{
-    randSeedRepeatable();
-    for (size_t ii=0; ii<10; ++ii) {
-        testInverse<2>();
-        testInverse<3>();
-    }
-}
-
-static void
-testMatrixUT(CLArgs const &)
-{
-    for (size_t ii=0; ii<100; ++ii) {
-        MatUT33D        m;
-    }
-}
-
-void
-testMatrixC(CLArgs const & args)
-{
-    Cmds            cmds {
-        {testMatrixCInverse,"inv"},
-        {testFgMatRotateAxis,"rot"},
-        {testMatrixUT,"ut"},
-    };
-    doMenu(args,cmds,true);
-}
-
 Mat32D
 fgTanSphere(Vec3D v)
 {
@@ -195,10 +132,55 @@ fgTanSphere(Vec3D v)
     return catHoriz(r0,r1);
 }
 
-MatUT33D
-MatUT33D::inverse() const
+MatS3D
+MatS3D::inverse() const
 {
-    MatUT33D    ret;
+    double          fac = cProd(diag) + 2.0*offd[0]*offd[1]*offd[2]
+        - diag[0]*sqr(offd[2])
+        - diag[1]*sqr(offd[1])
+        - diag[2]*sqr(offd[0]);
+    FGASSERT(fac != 0.0);
+    MatS3D          ret;
+    ret.diag[0] = diag[1] * diag[2] - sqr(offd[2]);
+    ret.diag[1] = diag[0] * diag[2] - sqr(offd[1]);
+    ret.diag[2] = diag[0] * diag[1] - sqr(offd[0]);
+    ret.offd[0] = offd[1] * offd[2] - diag[2] * offd[0];
+    ret.offd[1] = offd[0] * offd[2] - diag[1] * offd[1];
+    ret.offd[2] = offd[0] * offd[1] - diag[0] * offd[2];
+    return ret * (1.0/fac);
+}
+
+ostream &
+operator<<(ostream & os,MatS3D const & m)
+{
+    return os << m.asMatC();
+}
+
+MatUT3D
+MatUT3D::operator*(MatUT3D r) const
+{
+    return          MatUT3D {
+        m[0]*r.m[0],    m[0]*r.m[1]+m[1]*r.m[3],    m[0]*r.m[2]+m[1]*r.m[4]+m[2]*r.m[5],
+                        m[3]*r.m[3],                m[3]*r.m[4]+m[4]*r.m[5],
+                                                    m[5]*r.m[5]
+    };
+}
+MatS3D
+MatUT3D::luProduct() const
+{
+    double      m00 = sqr(m[0]),
+                m01 = m[0]*m[1],
+                m02 = m[0]*m[2],
+                m11 = sqr(m[1]) + sqr(m[3]),
+                m12 = m[1]*m[2] + m[3]*m[4],
+                m22 = sqr(m[2]) + sqr(m[4]) + sqr(m[5]);
+    return MatS3D {{{m00,m11,m22}},{{m01,m02,m12}}};
+}
+
+MatUT3D
+MatUT3D::inverse() const
+{
+    MatUT3D    ret;
     ret.m[0] = 1.0/m[0];
     ret.m[1] = -m[1]/(m[0]*m[3]);
     ret.m[2] = (m[1]*m[4]/m[3] - m[2])/(m[0]*m[5]);
@@ -209,32 +191,116 @@ MatUT33D::inverse() const
 }
 
 std::ostream &
-operator<<(std::ostream & os,MatUT33D const & ut)
+operator<<(std::ostream & os,MatUT3D const & ut)
 {
     Vec3D       diag {ut.m[0],ut.m[3],ut.m[5]},
                 upper {ut.m[1],ut.m[2],ut.m[4]};
     return os << "Diag: " << diag << " UT: " << upper;
 }
 
-MatS33D
+MatS3D
 randMatSpd3D(double lnEigStdev)
 {
     // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
-    Mat33D          D = asDiagMat(mapFunc(Vec3D::randNormal(lnEigStdev),exp)),
+    Mat33D          D = cDiagMat(mapFunc(Vec3D::randNormal(lnEigStdev),exp)),
                     R = QuaternionD::rand().asMatrix(),
                     M = R.transpose() * D * R;
     // M will have precision-level asymmetry so manually construct return value from upper triangular values
     // (Eigen's QR decomp fails badly if symmetry is not precise):
-    return MatS33D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
+    return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
 }
 
-MatS33D::MatS33D(Mat33D const & m) :
+MatS3D::MatS3D(Mat33D const & m) :
     diag {{m[0],m[4],m[8]}},
     offd {{m[1],m[2],m[5]}}
 {
     for (uint rr=0; rr<3; ++rr)
         for (uint cc=rr+1; cc<3; ++cc)
             FGASSERT(m.rc(rr,cc) == m.rc(cc,rr));
+}
+
+namespace {
+
+template<uint S>
+void
+testInverseT()
+{
+    Mat<double,S,S>     mat;
+    do
+        mat = Mat<double,S,S>::randNormal();
+    while
+        (cDeterminant(mat) < 0.01);
+    Mat<double,S,S>     inv = cInverse(mat),
+                        ident = Mat<double,S,S>::identity();
+    FGASSERT(isApproxEqualPrec(inv*mat,ident,40));
+}
+
+void
+testRotate(CLArgs const &)
+{
+    randSeedRepeatable();
+    for (uint ii=0; ii<100; ii++)
+    {
+        double          angle = randUniform(-pi(),pi());
+        Vec3D           axis = Vec3D::randNormal();
+        axis /= axis.len();
+        Mat33D          mat = matRotateAxis(angle,axis);
+        double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
+                        err2 = (mat * axis - axis).len();
+        FGASSERT(err < (epsilonD() * 10.0));
+        FGASSERT(err2 < (epsilonD() * 10.0));
+        FGASSERT(cDeterminant(mat) > 0.0);      // Ensure SO(3) not just O(3)
+    }
+}
+
+void
+testInverse(CLArgs const &)
+{
+    randSeedRepeatable();
+    for (size_t ii=0; ii<10; ++ii) {
+        testInverseT<2>();
+        testInverseT<3>();
+    }
+}
+
+void
+testMat(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testInverse,"inv"},
+        {testRotate,"rot"},
+    };
+    doMenu(args,cmds,true);
+}
+
+void
+testMatS(CLArgs const &)
+{
+    randSeedRepeatable();
+    for (size_t ii=0; ii<10; ++ii) {
+        MatS3D              m = randMatSpd3D(1.0);
+        double              d0 = cDeterminant(m.asMatC()),
+                            d1 = cDeterminant(m);
+        FGASSERT(isApproxEqualRel(d0,d1,epsPrec(40)));
+    }
+    for (size_t ii=0; ii<10; ++ii) {
+        MatS3D              m = randMatSpd3D(1.0);
+        Mat33D              val = cInverse(m).asMatC(),
+                            ref = cInverse(m.asMatC());
+        FGASSERT(isApproxEqualPrec(val,ref,40));
+    }
+}
+
+}
+
+void
+testMatrixC(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testMat,"mat","general matrix"},
+        {testMatS,"matS","symmetric matrix"},
+    };
+    doMenu(args,cmds,true);
 }
 
 }

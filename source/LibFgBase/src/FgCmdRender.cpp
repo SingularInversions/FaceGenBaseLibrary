@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -164,7 +164,7 @@ fgCmdRender(CLArgs const & args)
         Mesh &              mesh = meshes[ii];
         mesh = loadTri(mf.triFilename);
         if (!mf.imgFilename.empty())
-            loadImage_(Ustring(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
+            loadImage_(String8(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
         mesh.transform(rotMatrix);
         mesh.surfaces[0].material.shiny = mf.shiny;
     }
@@ -201,7 +201,7 @@ fgCmdRender(CLArgs const & args)
     fgout << fgnl << "Render time: " << timer.read() << "s ";
 
     //! Save results:
-    saveImage(Ustring(opts.outputFile),image);
+    saveImage(String8(opts.outputFile),image);
     if (opts.saveSurfPointFile) {
         Ofstream            ofs(renderName+".csv");
         for (const ProjectedSurfPoint & psp : *opts.rend.options.projSurfPoints)
@@ -215,7 +215,7 @@ getRenderCmd()
 
 static
 bool
-imgApproxEqual(Ustring const & file0,Ustring const & file1)
+imgApproxEqual(String8 const & file0,String8 const & file1)
 {
     ImgC4UC         img0 = loadImage(file0),
                     img1 = loadImage(file1);

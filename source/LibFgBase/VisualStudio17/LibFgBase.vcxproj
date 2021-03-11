@@ -289,6 +289,8 @@
     <ClCompile Include="..\src\FgImageIo.cpp" />
     <ClInclude Include="..\src\FgImageIo.hpp" />
     <ClCompile Include="..\src\FgImageIoStb.cpp" />
+    <ClCompile Include="..\src\FgImagePoint.cpp" />
+    <ClInclude Include="..\src\FgImagePoint.hpp" />
     <ClCompile Include="..\src\FgImageTest.cpp" />
     <ClCompile Include="..\src\FgImgDisplay.cpp" />
     <ClInclude Include="..\src\FgImgDisplay.hpp" />
@@ -302,6 +304,7 @@
     <ClCompile Include="..\src\FgMain.cpp" />
     <ClInclude Include="..\src\FgMain.hpp" />
     <ClInclude Include="..\src\FgMap.hpp" />
+    <ClInclude Include="..\src\FgMarr.hpp" />
     <ClCompile Include="..\src\FgMath.cpp" />
     <ClInclude Include="..\src\FgMath.hpp" />
     <ClCompile Include="..\src\FgMatrixC.cpp" />
@@ -346,6 +349,7 @@
     <ClCompile Include="..\src\FgSoftRender.cpp" />
     <ClInclude Include="..\src\FgSoftRender.hpp" />
     <ClInclude Include="..\src\FgStdArray.hpp" />
+    <ClCompile Include="..\src\FgStdExtensions.cpp" />
     <ClInclude Include="..\src\FgStdExtensions.hpp" />
     <ClInclude Include="..\src\FgStdFunction.hpp" />
     <ClCompile Include="..\src\FgStdio.cpp" />

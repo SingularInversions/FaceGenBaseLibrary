@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,7 +20,7 @@ namespace Fg {
 
 void
 savePly(
-    Ustring const &        fname,
+    String8 const &        fname,
     Meshes const & meshes,
     string                  imgFormat)
 {
@@ -35,7 +35,7 @@ savePly(
     size_t      imgCnt = 0;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         if (mesh.surfaces[ii].material.albedoMap) {
-            Ustring    texFile = path.base + toStr(ii) + "." + imgFormat;
+            String8    texFile = path.base + toStr(ii) + "." + imgFormat;
             saveImage(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
             ofs << "comment TextureFile " << texFile << "\n";
         }
@@ -85,7 +85,7 @@ void
 fgSavePlyTest(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring            dd = dataDir();
+    String8            dd = dataDir();
     string              rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

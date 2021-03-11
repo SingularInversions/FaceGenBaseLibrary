@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -80,47 +80,47 @@ GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,v
 GridTriangles
 gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 {
-    GridTriangles     ret;
+    GridTriangles       ret;
     FGASSERT(tris.size() > 0);
-    float               fmax = maxFloat();
-    Vec2F            domainLo(fmax),
-                        domainHi(-fmax),
-                        invalid(fmax);
+    Vec2F               domainLo(maxFloat()),
+                        domainHi(-maxFloat()),
+                        invalid(maxFloat());
     size_t              numValid = 0;
     for (size_t ii=0; ii<verts.size(); ++ii) {
-        Vec2F        v = verts[ii];
+        Vec2F           v = verts[ii];
         if (v != invalid) {
             for (uint dd=0; dd<2; ++dd) {
-                setIfLess(domainLo[dd],v[dd]);
-                setIfGreater(domainHi[dd],v[dd]);
+                updateMin_(domainLo[dd],v[dd]);
+                updateMax_(domainHi[dd],v[dd]);
             }
             ++numValid;
         }
     }
-    Vec2F    domainSz = domainHi - domainLo;
+    Vec2F               domainSz = domainHi - domainLo;
     FGASSERT((domainSz[0] > 0) && (domainSz[1] > 0));
-    float       numBins = numValid * binsPerTri;
-    Vec2F    rangeSizef = domainSz * sqrt(numBins/domainSz.cmpntsProduct());
-    Vec2UI   rangeSize = Vec2UI(rangeSizef + Vec2F(0.5f));
-    rangeSize = clampLo(rangeSize,1U);
-    Mat22F    range(0,rangeSize[0],0,rangeSize[1]);
+    float               numBins = numValid * binsPerTri;
+    Vec2F               rangeSizef = domainSz * sqrt(numBins/domainSz.cmpntsProduct());
+    Vec2UI              rangeSize = Vec2UI(rangeSizef + Vec2F(0.5f));
+    rangeSize = mapMax(rangeSize,1U);
+    Mat22F              range(0,rangeSize[0],0,rangeSize[1]);
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
     ret.clientToGridIpcs = AffineEw2F(catHoriz(domainLo,domainHi),range);
     ret.grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
-        Vec3UI       tri = tris[ii];
-        Vec2F        p0 = verts[tri[0]],
+        Vec3UI          tri = tris[ii];
+        Vec2F           p0 = verts[tri[0]],
                         p1 = verts[tri[1]],
                         p2 = verts[tri[2]];
         if ((p0 != invalid) && (p1 != invalid) && (p2 != invalid)) {
-            Mat22F    projBounds = fgInclToExcl(cBounds(
+            Mat22F          projBounds = iubToEub(cBounds(
                 ret.clientToGridIpcs * p0,
                 ret.clientToGridIpcs * p1,
                 ret.clientToGridIpcs * p2));
-            if (boundsIntersect(projBounds,range,projBounds)) {
-                Mat22UI       bnds = Mat22UI(projBounds);
+            projBounds = intersectBounds(projBounds,range);
+            if (!isBoundEubEmpty(projBounds)) {
+                Mat22UI         bnds = Mat22UI(projBounds);
                 for (Iter2UI it(bnds); it.valid(); it.next())
                     ret.grid[it()].push_back(uint(ii));
             }
@@ -130,7 +130,7 @@ gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 }
 
 void
-fgGridTrianglesTest(CLArgs const &)
+testGridTriangles(CLArgs const &)
 {
     // Create a triangular patch of tris:
     const uint                  dim = 10,

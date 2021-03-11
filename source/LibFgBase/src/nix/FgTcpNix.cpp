@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -115,10 +115,10 @@ void *get_in_addr(struct sockaddr *sa)
 }
 
 void
-fgTcpServer(
+runTcpServer(
     uint16              port,
     bool                respond,
-    FgFuncTcpHandler    handler,
+    TcpHandlerFunc    handler,
     size_t              maxRecvBytes)
 {
     struct sockaddr_storage clientAddress;

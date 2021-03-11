@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,14 +24,14 @@ struct MeshTopology
     struct      Tri
     {
         Vec3UI          vertInds;
-        Vec3UI          edgeInds;   // In same order as verts (0-1,1-2,3-0)
+        Vec3UI          edgeInds;       // In same order as verts (0-1,1-2,3-0)
 
         Vec2UI
         edge(uint relIdx) const;        // Return ordered vert inds of 0,1,2 edge of tri
     };
     struct      Edge
     {
-        Vec2UI          vertInds;   // Lower index first
+        Vec2UI          vertInds;       // Lower index first
         Uints           triInds;
 
         uint
@@ -76,7 +76,7 @@ struct MeshTopology
     std::set<uint>
     traceFold(
         MeshNormals const & norms,  // Must be created from a single (unified) tri-only surface
-        Svec<FgBool> &    done,
+        FatBools &      done,
         uint                vertIdx) const;
     
     // Returns number of boundary edges, intersection edges and reversed edges respectively.
@@ -99,7 +99,7 @@ struct MeshTopology
 private:
 
     Uints
-    findSeam(Svec<FgBool> & done) const;
+    findSeam(FatBools & done) const;
 
     uint
     oppositeVert(uint triIdx,uint edgeIdx) const;

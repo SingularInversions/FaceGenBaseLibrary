@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -78,7 +78,7 @@ meshExportFormats()
 
 bool
 loadMesh(
-    Ustring const &     fname,
+    String8 const &     fname,
     Mesh &              mesh)
 {
     Path      path(fname);
@@ -94,7 +94,7 @@ loadMesh(
         else
             return false;
     }
-    Ustring    ext = path.ext.toLower();
+    String8    ext = path.ext.toLower();
     if(ext == "tri")
         mesh = loadTri(path.str());
     else if ((ext == "obj") || (ext == "wobj"))
@@ -107,7 +107,7 @@ loadMesh(
 }
 
 Mesh
-loadMesh(Ustring const & fname)
+loadMesh(String8 const & fname)
 {
     Mesh    ret;
     if (!loadMesh(fname,ret))
@@ -116,14 +116,14 @@ loadMesh(Ustring const & fname)
 }
 
 Mesh
-loadMeshMaps(Ustring const & baseName)
+loadMeshMaps(String8 const & baseName)
 {
     Mesh            ret = loadMesh(baseName);
     if (!ret.surfaces.empty()) {
         Strings         albExts = imgFindFiles(baseName);
         if (!albExts.empty())
             ret.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(baseName+"."+albExts[0]));
-        Ustring         specBase = baseName+"_Specular";
+        String8         specBase = baseName+"_Specular";
         Strings         specExts = imgFindFiles(specBase);
         if (!specExts.empty())
             ret.surfaces[0].material.specularMap = make_shared<ImgC4UC>(loadImage(specBase+"."+specExts[0]));
@@ -135,14 +135,20 @@ Strings
 meshLoadFormats()
 {return svec<string>("fgmesh","obj","wobj","tri"); }
 
+bool
+hasMeshExtension(String8 const & filename)
+{
+    return contains(meshLoadFormats(),toLower(pathToExt(filename).m_str));
+}
+
 string
 meshLoadFormatsCLDescription()
 {return string("(fgmesh | [w]obj | tri)"); }
 
 void
-saveMesh(Meshes const & meshes,Ustring const & fname,string const & imgFormat)
+saveMesh(Meshes const & meshes,String8 const & fname,string const & imgFormat)
 {
-    Ustring    ext = pathToExt(fname).toLower();
+    String8    ext = pathToExt(fname).toLower();
     if(ext == "tri")
         saveTri(fname,meshes);
     else if (ext == "dae")

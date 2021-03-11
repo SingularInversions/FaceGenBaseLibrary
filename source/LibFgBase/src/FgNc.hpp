@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -36,38 +36,9 @@ struct  NcScript
     // fgPop            - pop back to previous dir for this process
     Strings             cmds;
 
-    String ser() const
-    {
-        String ret;
-        ret.append(fgSer(logFile));
-        ret.append(fgSer(title));
-        ret.append(fgSer(cmds));
-        return ret;
-    }
-
-    void dsr(const char * & ptr,const char * end)
-    {
-        fgDsr(ptr,end,logFile);
-        fgDsr(ptr,end,title);
-        fgDsr(ptr,end,cmds);
-    }
-
-    String serMsg() const
-    {
-        String ret = fgSer(0xFE785A765844B8D1ULL);
-        ret.append(ser());
-        return ret;
-    }
-
-    void dsrMsg(String const & msg)
-    {
-        const char *ptr = &msg[0],*end = ptr+msg.size();
-        uint64 ver;
-        fgDsr(ptr,end,ver);
-        FGASSERT(ver == 0xFE785A765844B8D1ULL);
-        dsr(ptr,end);
-    }
+    static uint64 constexpr typeID() {return 0xFE785A765844B8D1ULL; }
 };
+FG_SER_STRUCT3(NcScript,logFile,title,cmds)
 
 inline
 uint16

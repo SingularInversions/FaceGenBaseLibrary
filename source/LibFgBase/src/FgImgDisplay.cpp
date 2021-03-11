@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,66 +18,67 @@ using namespace std;
 namespace Fg {
 
 void
-imgDisplay(ImgC4UC const & img,vector<Vec2F> pts)
+viewImage(ImgC4UC const & img,Vec2Fs const & pts,String const & name)
 {
-    Ustring            store = getDirUserAppDataLocalFaceGen("SDK","DisplayImage");
+    if (!name.empty())
+        fgout << name << ": " << fgpush << img << fgpop;
     guiStartImpl(
-        makeIPT<Ustring>("FaceGen SDK DisplayImage"),
+        makeIPT<String8>("FaceGen SDK DisplayImage"),
         guiImage(makeIPT(img),makeIPT(pts)),
-        store);
+        getDirUserAppDataLocalFaceGen("SDK","DisplayImage"));
 }
 
 void
-imgDisplay(const ImgUC &img)
+viewImage(const ImgUC &img)
 {
     ImgC4UC        dispImg;
     imgConvert_(img,dispImg);
-    imgDisplay(dispImg);
+    viewImage(dispImg);
 }
 
 void
-imgDisplay(const Img<ushort> & img)
+viewImage(const Img<ushort> & img)
 {
     Affine1F      aff(VecF2(cBounds(img.dataVec())),VecF2(0,255));
     ImgC4UC     di(img.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         di[ii] = RgbaUC(aff * img[ii]);
-    imgDisplay(di);
+    viewImage(di);
 }
 
 void
-imgDisplay(const ImgF & img)
+viewImage(const ImgF & img)
 {
     Affine1F          aff(cBounds(img.m_data),VecF2(0,255));
     ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
         dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
-    imgDisplay(dispImg);
+    viewImage(dispImg);
 }
 
 void
-imgDisplay(const ImgD & img)
+viewImage(const ImgD & img)
 {
     Affine1D          aff(cBounds(img.m_data),VecD2(0,255));
     ImgC4UC         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
         dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
-    imgDisplay(dispImg);
+    viewImage(dispImg);
 }
 
 void
-imgDisplay(const Img3F & img)
+viewImage(const ImgV3F & img)
 {
     VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
     AffineEw3F          xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
-    Img3F               tmp = Img3F(img.dims(),mapMul(xform,img.dataVec()));
+    ImgV3F               tmp = ImgV3F(img.dims(),mapMul(xform,img.dataVec()));
     ImgC4UC             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
         Vec3UC          clr = round<uchar>(tmp[ii]);
         disp[ii] = RgbaUC(clr[0],clr[1],clr[2],uchar(255));
     }
     fgout << fgnl << disp;
-    imgDisplay(disp);
+    viewImage(disp);
 }
 
 void
@@ -110,22 +111,13 @@ fgImgDisplayColorize(const ImgD & img)
     fgout << fgnl
         << "Colour scheme blue-green-red-purple-white over bounds: ["
         << ib[0] << "," << ib[1] << "]";
-    imgDisplay(di);
-}
-
-void
-imgDisplay(const ImgC4F & img)
-{
-    ImgC4UC     di(img.dims());
-    for (size_t ii=0; ii<di.numPixels(); ++ii)
-        di[ii] = RgbaUC(img[ii]*255.0f + RgbaF(0.5f));
-    imgDisplay(di);
+    viewImage(di);
 }
 
 void
 fgImgGuiTestm(CLArgs const &)
 {
-    imgDisplay(loadImage(dataDir()+"base/trees.jpg"));
+    viewImage(loadImage(dataDir()+"base/trees.jpg"));
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,7 +14,7 @@ using namespace std;
 namespace Fg {
 
 string
-pathToName(const char * fname)
+pathToName(char const * fname)
 {
     string      fs(fname);
     size_t      pos = fs.rfind('\\');
@@ -26,11 +26,11 @@ pathToName(const char * fname)
 }
 
 string
-fgDiagString(const char * fname,int line)
+fgDiagString(char const * fname,int line)
 {return pathToName(fname) + ":" + toStr(line); }
 
 void
-fgAssert(const char * fname,int line,string const &  msg)
+fgAssert(char const * fname,int line,string const &  msg)
 {
     fgThrow("Internal program error",msg+"\n"+fgDiagString(fname,line));
 }
@@ -42,7 +42,7 @@ fgWarn(const std::string & msg,const std::string & dataUtf8)
 }
 
 void
-fgWarn(const char * fname,int line,string const & msg)
+fgWarn(char const * fname,int line,string const & msg)
 {
     fgout << "\nWARNING: " <<  msg << " (" << fgDiagString(fname,line) << ")";
 }

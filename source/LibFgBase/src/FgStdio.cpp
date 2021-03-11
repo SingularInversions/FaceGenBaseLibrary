@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,10 +19,10 @@ namespace Fg {
 #else
 
 FILE *
-openFile(Ustring const & fname,bool write)
+openFile(String8 const & fname,bool write)
 {
     FILE *          fPtr;
-    const char *    mode = write ? "wb" : "rb";
+    char const *    mode = write ? "wb" : "rb";
     fPtr = fopen(fname.m_str.c_str(),mode);
     if (fPtr == nullptr) {
         string          msg = "Unable to open file for " + string(write ? "writing" : "reading");
@@ -34,11 +34,11 @@ openFile(Ustring const & fname,bool write)
 #endif
 
 void
-fgOpenTest(CLArgs const & args)
+testFopen(CLArgs const & args)
 {
     FGTESTDIR;
     char32_t        ch = 0x00004EE5;            // A Chinese character
-    Ustring        chinese(ch);
+    String8        chinese(ch);
     string          data = "test data";
     FILE *          fPtr = openFile(chinese,true);
     fwrite(data.data(),1,data.size(),fPtr);

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,6 +13,7 @@
 #include "FgMath.hpp"
 #include "FgAffine1.hpp"
 #include "FgMain.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 
@@ -52,11 +53,21 @@ randUint64()
 
 double
 randUniform()
-{return double(randUint64()) / double(numeric_limits<uint64>::max()); }
+{
+    return double(randUint64()) / double(numeric_limits<uint64>::max());
+}
 
 void
 randSeedRepeatable(uint64 seed)
-{rng.gen.seed(seed); }
+{
+    rng.gen.seed(seed);
+}
+
+void
+randSeedTime()
+{
+    rng.gen.seed(getTimeMs());
+}
 
 double
 randUniform(double lo,double hi) 
@@ -79,7 +90,7 @@ randNormal()
 }
 
 Doubles
-randNormals(size_t num,double mean,double stdev)
+cRandNormals(size_t num,double mean,double stdev)
 {
     Doubles      ret(num);
     for (size_t ii=0; ii<num; ++ii)
@@ -121,7 +132,7 @@ randString(uint numChars)
 }
 
 void
-fgRandomTest(CLArgs const &)
+testmRandom(CLArgs const &)
 {
     fgout << fgnl << "sizeof(RNG) = " << sizeof(RNG);
     // Create a histogram of normal samples:
@@ -135,8 +146,8 @@ fgRandomTest(CLArgs const &)
     for (size_t ii=0; ii<numSamples; ++ii) {
         int         rnd = round<int>(randToHist * randNormal());
         if ((rnd >= 0) && (rnd < int(sz)))
-            ++histogram[rnd]; }
-
+            ++histogram[rnd];
+    }
     // Make a bar graph of it:
     // numSamples = binScale * stdNormIntegral * binsPerStdev
     double          binScale = double(numSamples) / (sqrt2Pi() * binsPerStdev),
@@ -145,23 +156,23 @@ fgRandomTest(CLArgs const &)
     for (size_t xx=0; xx<sz; ++xx) {
         size_t      hgt = round<int>(histogram[xx] * sz * hgtRatio / binScale);
         for (size_t yy=0; yy<hgt; ++yy)
-            img.xy(xx,yy) = RgbaUC(255); }
-
+            img.xy(xx,yy) = RgbaUC(255);
+    }
     // Superimpose a similarly scaled Gaussian:
     Affine1D      histToRand = randToHist.inverse();
     for (size_t xx=0; xx<sz; ++xx) {
         double      val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
         size_t      hgt = round<int>(val * sz * hgtRatio);
-        img.xy(xx,hgt) = RgbaUC(255,0,0,255); }
-
+        img.xy(xx,hgt) = RgbaUC(255,0,0,255);
+    }
     // Display:
     flipVertical_(img);
-    imgDisplay(img);
+    viewImage(img);
 }
 
 bool
 randBool()
-{return (rng.gen() > numeric_limits<uint32>::max()/2); }
+{return (rng.gen() & 0x01ULL); }
 
 double
 randNearUnit()

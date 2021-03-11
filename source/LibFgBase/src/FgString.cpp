@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,16 +16,32 @@ using namespace std;
 
 namespace Fg {
 
-u32string
+String32
 toUtf32(string const & str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
     if (str.empty())
-        return u32string();
+        return String32();
     wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
     auto            asInt = convert.from_bytes(str);
-    return u32string(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
+    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
+#else
+    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
+    return convert.from_bytes(str);
+#endif
+}
+
+String32
+toUtf32(char const * str)
+{
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (str[0] == 0)
+        return String32{};
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
+    auto            asInt = convert.from_bytes(str);
+    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
 #else
     wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
     return convert.from_bytes(str);
@@ -33,7 +49,7 @@ toUtf32(string const & str)
 }
 
 string
-toUtf8(const u32string & in)
+toUtf8(String32 const & in)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -50,7 +66,7 @@ toUtf8(const u32string & in)
 
 string
 toUtf8(const char32_t & utf32_char)
-{return toUtf8(u32string(1,utf32_char)); }
+{return toUtf8(String32(1,utf32_char)); }
 
 // Following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
@@ -71,35 +87,35 @@ toUtf8(const std::wstring & utf16)
     return converter.to_bytes(utf16);
 }
 
-Ustring::Ustring(const wchar_t * s) : m_str(toUtf8(wstring(s)))
+String8::String8(const wchar_t * s) : m_str(toUtf8(wstring(s)))
 {}
 
-Ustring::Ustring(const wstring & s) : m_str(toUtf8(s))
+String8::String8(const wstring & s) : m_str(toUtf8(s))
 {}
 
 wstring
-Ustring::as_wstring() const
+String8::as_wstring() const
 {
     return toUtf16(m_str);
 }
 
 #endif
 
-Ustring&
-Ustring::operator+=(Ustring const & s)
+String8&
+String8::operator+=(String8 const & s)
 {
     m_str += s.m_str;
     return *this;
 }
 
-Ustring
-Ustring::operator+(Ustring const& s) const
+String8
+String8::operator+(String8 const& s) const
 {
-    return Ustring(m_str+s.m_str);
+    return String8(m_str+s.m_str);
 }
 
-Ustring
-Ustring::operator+(char c) const
+String8
+String8::operator+(char c) const
 {
     string      ret = m_str;
     FGASSERT(uchar(c) < 128);
@@ -108,19 +124,19 @@ Ustring::operator+(char c) const
 }
 
 uint32
-Ustring::operator[](size_t idx) const
+String8::operator[](size_t idx) const
 {
     return uint32(toUtf32(m_str).at(idx));
 }
 
 size_t
-Ustring::size() const
+String8::size() const
 {
     return toUtf32(m_str).size();
 }
 
 bool
-Ustring::is_ascii() const
+String8::is_ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
@@ -129,7 +145,7 @@ Ustring::is_ascii() const
 }
 
 string const &
-Ustring::ascii() const
+String8::ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
@@ -138,41 +154,41 @@ Ustring::ascii() const
 }
 
 string
-Ustring::as_ascii() const
+String8::as_ascii() const
 {
-    u32string       str(as_utf32());
+    String32       str(as_utf32());
     string          ret;
     for (size_t ii=0; ii<str.size(); ++ii)
         ret += char(str[ii] & 0x7F);
     return ret;
 }
 
-Ustring
-Ustring::replace(char a, char b) const
+String8
+String8::replace(char a, char b) const
 {
     FGASSERT((uchar(a) < 128) && (uchar(b) < 128));
-    u32string           str = toUtf32(m_str);
+    String32           str = toUtf32(m_str);
     char32_t            a32 = a,
                         b32 = b;
     for (char32_t & c : str)
         if (c == a32)
             c = b32;
-    return Ustring(str);
+    return String8(str);
 }
 
-Ustrings
-Ustring::split(char ch) const
+String8s
+String8::split(char ch) const
 {
     String32s            strs = splitAtChar(toUtf32(m_str),char32_t(ch));
-    Ustrings           ret;
+    String8s           ret;
     ret.reserve(strs.size());
-    for (const u32string & str : strs)
-        ret.push_back(Ustring(str));
+    for (String32 const & str : strs)
+        ret.push_back(String8(str));
     return ret;
 }
 
 bool
-Ustring::beginsWith(Ustring const & s) const
+String8::beginsWith(String8 const & s) const
 {
     if(s.m_str.size() > m_str.size())
         return false;
@@ -181,82 +197,82 @@ Ustring::beginsWith(Ustring const & s) const
 
 // Can't put this inline without include file recursive dependency:
 bool
-Ustring::endsWith(Ustring const & str) const
+String8::endsWith(String8 const & str) const
 {return Fg::endsWith(as_utf32(),str.as_utf32()); }
 
-Ustring
-Ustring::toLower() const
+String8
+String8::toLower() const
 {
-    u32string       tmp = as_utf32();
+    String32       tmp = as_utf32();
     for (size_t ii=0; ii<tmp.size(); ++ii) {
         char32_t    ch = tmp[ii];
         if ((ch > 64) && (ch < 91))
             tmp[ii] = ch + 32;
     }
-    return Ustring(tmp);
+    return String8(tmp);
 }
 
 std::ostream& 
-operator<<(std::ostream & os, Ustring const & s)
+operator<<(std::ostream & os, String8 const & s)
 {
     return os << s.m_str;
 }
 
 std::istream&
-operator>>(std::istream & is, Ustring & s)
+operator>>(std::istream & is, String8 & s)
 {
     return is >> s.m_str;
 }
 
-Ustrings
+String8s
 toUstrings(Strings const & strs)
 {
-    Ustrings        ret;
+    String8s        ret;
     ret.reserve(strs.size());
     for (String const & s : strs)
-        ret.push_back(Ustring(s));
+        ret.push_back(String8(s));
     return ret;
 }
 
-Ustring
+String8
 fgTr(string const & msg)
 {
     // Just a stub for now:
     return msg;
 }
 
-Ustring
-removeChars(Ustring const & str,uchar chr)
+String8
+removeChars(String8 const & str,uchar chr)
 {
     FGASSERT(chr < 128);
-    u32string       s32 = str.as_utf32(),
+    String32       s32 = str.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (s32[ii] != chr)
             r32.push_back(s32[ii]);
-    return Ustring(r32);
+    return String8(r32);
 }
 
-Ustring
-removeChars(Ustring const & str,Ustring chrs)
+String8
+removeChars(String8 const & str,String8 chrs)
 {
-    u32string       s32 = str.as_utf32(),
+    String32       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (!contains(c32,s32[ii]))
             r32.push_back(s32[ii]);
-    return Ustring(r32);
+    return String8(r32);
 }
 
 bool
-isGlobMatch(Ustring const & globStr,Ustring const & str)
+isGlobMatch(String8 const & globStr,String8 const & str)
 {
     if (globStr.empty())
         return str.empty();
     if (globStr == "*")
         return true;
-    u32string           gs = globStr.as_utf32(),
+    String32           gs = globStr.as_utf32(),
                         ts = str.as_utf32();
     if (gs[0] == '*')
         return endsWith(ts,cRest(gs,1));
@@ -265,30 +281,30 @@ isGlobMatch(Ustring const & globStr,Ustring const & str)
     return (str == globStr);
 }
 
-Ustring
-cSubstr(Ustring const & str,size_t start,size_t size)
+String8
+cSubstr(String8 const & str,size_t start,size_t size)
 {
-    Ustring        ret;
-    u32string       s = str.as_utf32();
+    String8        ret;
+    String32       s = str.as_utf32();
     s = cutSubstr(s,start,size);
-    ret = Ustring(s);
+    ret = String8(s);
     return ret;
 }
 
-Ustring
-cRest(Ustring const & str,size_t start)
+String8
+cRest(String8 const & str,size_t start)
 {
-    Ustring        ret;
-    u32string       s = str.as_utf32();
+    String8        ret;
+    String32       s = str.as_utf32();
     s = cRest(s,start);
-    ret = Ustring(s);
+    ret = String8(s);
     return ret;
 }
 
-Ustring
-cat(Ustrings const & strings,Ustring const & separator)
+String8
+cat(String8s const & strings,String8 const & separator)
 {
-    Ustring        ret;
+    String8        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
         ret += strings[ii];
         if (ii < strings.size()-1)
@@ -298,10 +314,10 @@ cat(Ustrings const & strings,Ustring const & separator)
 }
 
 string
-fgToVariableName(Ustring const & str)
+fgToVariableName(String8 const & str)
 {
     string          ret;
-    u32string    str32 = str.as_utf32();
+    String32    str32 = str.as_utf32();
     // First character must be alphabetical or underscore:
     if (isalpha(char(str32[0])))
         ret += char(str32[0]);
@@ -316,10 +332,10 @@ fgToVariableName(Ustring const & str)
     return ret;
 }
 
-Ustring
-replaceCharWithString(Ustring const & in,char32_t from,Ustring const to)
+String8
+replaceCharWithString(String8 const & in,char32_t from,String8 const to)
 {
-    u32string       in32 = in.as_utf32(),
+    String32       in32 = in.as_utf32(),
                     to32 = to.as_utf32(),
                     out;
     for (char32_t ch : in32) {
@@ -328,7 +344,7 @@ replaceCharWithString(Ustring const & in,char32_t from,Ustring const to)
         else
             out += ch;
     }
-    return Ustring(out);
+    return String8(out);
 }
 
 }

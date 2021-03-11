@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,10 +40,10 @@ struct  GuiBaseImpl
     virtual void
     create(
         HWND            hwndParent,
-        int             ident,          // WinImpl window index
-        Ustring const & store,         // Root filename for storing state.
+        int             ident,              // WinImpl window index
+        String8 const & store,              // Root filename for storing state.
         DWORD           extStyle=NULL,
-        bool            visible=true)   // Visible on creation ?
+        bool            visible=true)       // Visible on creation ? See comments for 'showWindow' below.
         = 0;
 
     // Calls DestroyWindow. Used for dynamic windows - don't want this in destructor.
@@ -71,9 +71,9 @@ struct  GuiBaseImpl
     virtual void
     moveWindow(Vec2I lo,Vec2I sz) = 0;
 
-    // Since Windows automatically makes all sub-windows of a hidden window hidden, we keep
-    // sub-windows in a visible or hidden state as if the parent window was visible, to
-    // minimize state changes and tracking:
+    // Visibility is used by GuiSplitScrollWin to avoid drawing fully off-screen sub-windows.
+    // The idea is that destroy/create of these windows would be slower and increase flicker,
+    // although this has not been tested:
     virtual void
     showWindow(bool) = 0;
 
@@ -85,10 +85,6 @@ struct  GuiBaseImpl
     Opt<HWND>
     getHwnd()
     {return Opt<HWND>(); }
-
-    virtual void
-    saveState()
-    {}
 };
 
 struct  GuiMainBase
@@ -162,7 +158,7 @@ winCreateChild(
     // Different class options mean different classes:
     classNameA +=   toStr(size_t(opt.cursor)) + "_" +
                     toStr(size_t(opt.useFillBrush));
-    std::wstring    className = Ustring(classNameA).as_wstring();
+    std::wstring    className = String8(classNameA).as_wstring();
     FGASSERT(className.size() < 256);     // Windows limit
     WNDCLASSEX  wcl;
     wcl.cbSize = sizeof(wcl);
@@ -212,11 +208,11 @@ winCreateChild(
 template<class WinImpl>
 HWND
 winCreateDialog(
-    Ustring const &    title,
+    String8 const &    title,
     HWND                ownerHwnd,
     WinImpl *           thisPtr)
 {
-    std::wstring    className = Ustring("FgDialogClass").as_wstring();
+    std::wstring    className = String8("FgDialogClass").as_wstring();
     WNDCLASSEX      wcl;
     wcl.cbSize = sizeof(wcl);
     if (GetClassInfoEx(s_guiWin.hinst,className.c_str(),&wcl) == 0) {
@@ -247,8 +243,9 @@ winCreateDialog(
             NULL,
             className.c_str(), 
             title.as_wstring().c_str(),
-            // The window has a border and title bar but no min/max or resizing:
-            WS_OVERLAPPED | WS_VISIBLE,
+                WS_CAPTION                  // The window has a border and title bar
+                | WS_VISIBLE
+                | WS_POPUP,                 // Necessary for the main window to regain focus after dialog closed
             rect.left + (widOwner-widDlg)/2,
             rect.top + (hgtOwner-hgtDlg)/2,
             widDlg,hgtDlg,

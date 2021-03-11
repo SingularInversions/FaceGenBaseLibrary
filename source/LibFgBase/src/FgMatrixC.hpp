@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,6 +15,11 @@
 #include "FgRandom.hpp"
 
 namespace Fg {
+
+template<class T,uint nrows,uint ncols>
+T
+cSsd(Mat<T,nrows,ncols> const & l,Mat<T,nrows,ncols> const & r)
+{return cSsd(l.m,r.m); }
 
 template<class T,uint nrows,uint ncols>
 T
@@ -131,18 +136,18 @@ matRotateAxis(                   // RHR rotation around an arbitrary axis
 
 template<class T>
 T
-determinant(const Mat<T,2,2> & mat)
+cDeterminant(const Mat<T,2,2> & mat)
 {return (mat[0]*mat[3] - mat[1]*mat[2]); }
 
-// Useful for finding the discriminant, for instance of aspect ratios:
+// Useful for finding if aspect ratios match, or sine of angle between normalized vectors:
 template<class T>
 T
-determinant(const Mat<T,2,1> & col0,const Mat<T,2,1> & col1)
+cDeterminant(const Mat<T,2,1> & col0,const Mat<T,2,1> & col1)
 {return col0[0]*col1[1] - col0[1]*col1[0]; }
 
 template<class T>
 T
-determinant(const Mat<T,3,3> & mat)
+cDeterminant(const Mat<T,3,3> & mat)
 {
     return (
         mat[0]*mat[4]*mat[8] +
@@ -156,7 +161,7 @@ determinant(const Mat<T,3,3> & mat)
 // Concatenate an element onto a column Svec:
 template<class T,uint dim>
 Mat<T,dim+1,1>
-cat(const Mat<T,dim,1> & vec,T val)
+cat(Mat<T,dim,1> const & vec,T val)
 {
     Mat<T,dim+1,1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -347,16 +352,11 @@ cInverse(Mat<T,3,3> const & m)
     return r;
 }
 
-template <class T,uint nrows,uint ncols>
+template <class T,uint R,uint C>
 T
-cDot(
-    Mat<T,nrows,ncols> const & lhs,
-    Mat<T,nrows,ncols> const & rhs)
+cDot(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
 {
-    T           acc(0);
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        acc += lhs[ii] * rhs[ii];
-    return acc;
+    return cDot(lhs.m,rhs.m);
 }
 
 template <class T,uint nrows,uint ncols>
@@ -678,7 +678,7 @@ fgDotWgt(
 
 template<uint nrows,uint ncols>
 Mat<bool,nrows,ncols>
-fgOr(Mat<bool,nrows,ncols> v0,Mat<bool,nrows,ncols> v1)
+mapOr(Mat<bool,nrows,ncols> v0,Mat<bool,nrows,ncols> v1)
 {
     Mat<bool,nrows,ncols> ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -688,10 +688,11 @@ fgOr(Mat<bool,nrows,ncols> v0,Mat<bool,nrows,ncols> v1)
 
 template<typename T,uint dim>
 T
-fgTrace(const Mat<T,dim,dim> & m)
+cTrace(const Mat<T,dim,dim> & m)
 {
-    T   ret(0);
-    for (uint ii=0; ii<m.numElems(); ii+=dim+1)
+    T                   ret(0);
+    uint constexpr      inc = dim+1;    // Increment by a row's worth plus 1
+    for (uint ii=0; ii<m.numElems(); ii+=inc)
         ret += m[ii];
     return ret;
 }
@@ -741,7 +742,7 @@ fgSumElems(Mat<T,nrows,ncols> const & m)
 
 template<class T,uint sz>
 Mat<T,sz,sz>
-asDiagMat(Mat<T,sz,1> vec)
+cDiagMat(Mat<T,sz,1> vec)
 {
     Mat<T,sz,sz>      ret(static_cast<T>(0));
     for (uint ii=0; ii<sz; ++ii)
@@ -751,7 +752,7 @@ asDiagMat(Mat<T,sz,1> vec)
 
 template<class T>
 Mat<T,2,2>
-asDiagMat(T v0,T v1)
+cDiagMat(T v0,T v1)
 {
     Mat<T,2,2>    ret(static_cast<T>(0));
     ret[0] = v0;
@@ -761,13 +762,22 @@ asDiagMat(T v0,T v1)
 
 template<class T>
 Mat<T,3,3>
-asDiagMat(T v0,T v1,T v2)
+cDiagMat(T v0,T v1,T v2)
 {
     Mat<T,3,3>    ret(static_cast<T>(0));
     ret[0] = v0;
     ret[4] = v1;
     ret[8] = v2;
     return ret;
+}
+
+template<typename T,uint nrows,uint ncols>
+void
+normalize_(Mat<T,nrows,ncols> & m)
+{
+    T       len = m.len();
+    FGASSERT(len > 0);
+    m.m /= len;
 }
 
 template<typename T,uint nrows,uint ncols>
@@ -904,10 +914,10 @@ fgTanSphere(Vec3D p);
 
 template<class T,class U,uint nrows,uint ncols>
 void
-scast_(Mat<T,nrows,ncols> const & i,Mat<U,nrows,ncols> & o)
+deepCast_(Mat<T,nrows,ncols> const & i,Mat<U,nrows,ncols> & o)
 {
     for (size_t ii=0; ii<i.numElems(); ++ii)
-        scast_(i[ii],o[ii]);
+        deepCast_(i[ii],o[ii]);
 }
 
 // Transpose a matrix stored as an array of arrays. All sub-arrays must have same size:
@@ -949,7 +959,7 @@ fgIsValidPermutation(Mat<uint,dim,1> perm)
 
 template<class T,uint dim>
 Mat<T,dim,1>
-fgPermute(const Mat<T,dim,1> & v,Mat<uint,dim,1> perm)  // Assumes a valid permutation, use above to check
+fgPermute(Mat<T,dim,1> const & v,Mat<uint,dim,1> perm)  // Assumes a valid permutation, use above to check
 {
     Mat<T,dim,1>      ret;
     for (uint dd=0; dd<dim; ++dd)
@@ -973,7 +983,7 @@ permuteAxes(
 
 template<class T,uint nrows,uint ncols>
 Mat<T,ncols,nrows>
-fgHermitian(Mat<T,nrows,ncols> const & mat)
+cHermitian(Mat<T,nrows,ncols> const & mat)
 {
     Mat<T,ncols,nrows>        ret;
     for (uint rr=0; rr<nrows; ++rr)
@@ -982,76 +992,123 @@ fgHermitian(Mat<T,nrows,ncols> const & mat)
     return ret;
 }
 
-// Symmetric matrix:
-struct  MatS33D
+// Symmetric 3x3 matrix:
+struct  MatS3D
 {
     Arr<double,3>       diag;
     Arr<double,3>       offd;       // In order 01, 02, 12
 
     FG_SERIALIZE2(diag,offd);
 
-    MatS33D() {}
-    explicit MatS33D(Mat33D const &);   // Checks for symmetry
-    MatS33D(Arr<double,3> const & d,Arr<double,3> const & o) : diag(d), offd(o)  {}
+    MatS3D() {}
+    explicit MatS3D(double fillVal) {diag.fill(fillVal); offd.fill(fillVal); }
+    explicit MatS3D(Mat33D const &);   // Checks for symmetry
+    MatS3D(Arr<double,3> const & d,Arr<double,3> const & o) : diag(d), offd(o)  {}
 
-    Mat33D
-    asMatrixC() const
-    {return Mat33D {diag[0],offd[0],offd[1], offd[0],diag[1],offd[2], offd[1],offd[2],diag[2]}; }
+    static MatS3D identity() {return { {{1,1,1}} , {{0,0,0}} }; }
+
+    double
+    rc(size_t row,size_t col) const
+    {
+        FGASSERT((row<3)&&(col<3));
+        if (row==col)
+            return diag[row];
+        else
+            return offd[row+col-1];
+    }
+    Mat33D          asMatC() const
+    {
+        return Mat33D {diag[0],offd[0],offd[1], offd[0],diag[1],offd[2], offd[1],offd[2],diag[2]};
+    }
+    void            operator+=(MatS3D const & rhs) {diag += rhs.diag; offd += rhs.offd; }
+    MatS3D          operator+(MatS3D const & rhs) const {return {diag+rhs.diag,offd+rhs.offd}; }
+    MatS3D          operator-(MatS3D const & rhs) const {return {diag-rhs.diag,offd-rhs.offd}; }
+    MatS3D          operator*(double rhs) const {return {diag*rhs,offd*rhs}; }
+    Vec3D
+    operator*(Vec3D rhs) const
+    {
+        return {
+            diag[0]*rhs[0] + offd[0]*rhs[1] + offd[1]*rhs[2],
+            offd[0]*rhs[0] + diag[1]*rhs[1] + offd[2]*rhs[2],
+            offd[1]*rhs[0] + offd[2]*rhs[1] + diag[2]*rhs[2],
+        };
+    }
+    Vec3D           diagonal() const {return Vec3D{diag}; }
+    double          sumElems() const {return cSum(diag) + 2.0 * cSum(offd); }
+    // Sum of squares of elements (== square of frobenius norm):
+    double          mag() const {return cMag(diag) + 2.0 * cMag(offd); }
+    double          dot(MatS3D const & rhs) const {return cDot(diag,rhs.diag) + 2.0 * cDot(offd,rhs.offd); }
+    double
+    determinant() const
+    {
+        return
+            diag[0]*diag[1]*diag[2] +
+            offd[0]*offd[1]*offd[2] * 2 -
+            diag[0]*offd[2]*offd[2] -
+            diag[1]*offd[1]*offd[1] -
+            diag[2]*offd[0]*offd[0];
+    }
+    MatS3D          inverse() const;
 };
 
-// Upper triangular matrix non-zero entries in row-major order
-struct  MatUT33D
+std::ostream &      operator<<(std::ostream & os,MatS3D const & m);
+inline double       cMag(MatS3D const & m) {return m.mag(); }
+inline double       cSum(MatS3D const & m) {return m.sumElems(); }
+inline double       cDot(MatS3D const & l,MatS3D const & r) {return l.dot(r); }
+inline double       cDeterminant(MatS3D const & m) {return m.determinant(); }
+inline MatS3D       cInverse(MatS3D const & m) {return m.inverse(); }
+
+inline
+MatS3D
+mapSqr(MatS3D const & m)
+{
+    return MatS3D {mapSqr(m.diag),mapSqr(m.offd)};
+}
+
+inline
+MatS3D
+outerProductSelf(Vec3D v)
+{
+    return          MatS3D {
+        {{sqr(v[0]),sqr(v[1]),sqr(v[2])}},
+        {{v[0]*v[1],v[0]*v[2],v[1]*v[2]}},
+    };
+}
+
+// Isotropic random symmetric positive definite matrix with given standard deviation of log eigenvalues:
+MatS3D
+randMatSpd3D(double lnEigStdev);
+
+// Upper triangular 3x3 matrix non-zero entries in row-major order
+struct  MatUT3D
 {
     Arr<double,6>     m;
 
     FG_SERIALIZE1(m);
 
-    MatUT33D() {}
-
-    explicit MatUT33D(Arr<double,6> const & data) : m(data) {}
-
-    MatUT33D(double m0,double m1,double m2,double m3,double m4,double m5)
+    MatUT3D() {}
+    explicit MatUT3D(Arr<double,6> const & data) : m(data) {}
+    MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5)
     {m[0]=m0; m[1]=m1; m[2]=m2; m[3]=m3; m[4]=m4; m[5]=m5; }
-
-    explicit MatUT33D(Vec3D scales)             // Diagonal version
+    explicit MatUT3D(Vec3D scales)             // Diagonal version
     {
         m[0]=scales[0]; m[1]=0.0;       m[2]=0.0;
                         m[3]=scales[1]; m[4]=0.0;
                                         m[5]=scales[2];
     }
-
-    MatUT33D(Vec3D scales,Vec3D shears)         // Scales are the diag elems, shears are off-diag UT
+    MatUT3D(Vec3D scales,Vec3D shears)         // Scales are the diag elems, shears are off-diag UT
     {
         m[0]=scales[0]; m[1]=shears[0]; m[2]=shears[1];
                         m[3]=scales[1]; m[4]=shears[2];
                                         m[5]=scales[2];
     }
 
-    MatUT33D
-    operator-(MatUT33D const & rhs) const
-    {return MatUT33D(m-rhs.m); }
+    static MatUT3D  identity()  {return MatUT3D(1,0,0,1,0,1); }
 
-    MatUT33D
-    operator*(double s) const
-    {return MatUT33D {m*s}; }
-
-    MatUT33D
-    operator/(double s) const
-    {return  MatUT33D {m/s}; }
-
-    Vec3D
-    operator*(Vec3D v) const
-    {return Vec3D(m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[1]+m[4]*v[2],m[5]*v[2]); }
-
-    MatUT33D
-    operator*(MatUT33D r) const
-    {
-        return MatUT33D(
-            m[0]*r.m[0],    m[0]*r.m[1]+m[1]*r.m[3],    m[0]*r.m[2]+m[1]*r.m[4]+m[2]*r.m[5],
-                            m[3]*r.m[3],                m[3]*r.m[4]+m[4]*r.m[5],
-                                                        m[5]*r.m[5]);
-    }
-
+    MatUT3D         operator-(MatUT3D const & rhs) const {return MatUT3D(m-rhs.m); }
+    MatUT3D         operator*(double s) const {return MatUT3D {m*s}; }
+    MatUT3D         operator/(double s) const {return  MatUT3D {m/s}; }
+    Vec3D           operator*(Vec3D v) const {return Vec3D(m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[1]+m[4]*v[2],m[5]*v[2]); }
     // U^T * v
     Vec3D
     tranposeMul(Vec3D r)
@@ -1061,48 +1118,17 @@ struct  MatUT33D
             m[1]*r[0] + m[3]*r[1],
             m[2]*r[0] + m[4]*r[1] + m[5]*r[2] };
     }
-
-    double
-    determinant() const
-    {return m[0]*m[3]*m[5]; }
-
-    Mat33D
-    asMatrix() const
-    {return Mat33D(m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]); }
-
-    // Frobenius norm
-    double
-    frobenius() const
-    {return cMag(m); }
-
-    MatS33D
-    luProduct() const
-    {
-        double      m00 = sqr(m[0]),
-                    m01 = m[0]*m[1],
-                    m02 = m[0]*m[2],
-                    m11 = sqr(m[1]) + sqr(m[3]),
-                    m12 = m[1]*m[2] + m[3]*m[4],
-                    m22 = sqr(m[2]) + sqr(m[4]) + sqr(m[5]);
-        return MatS33D {{{m00,m11,m22}},{{m01,m02,m12}}};
-    }
-
-    MatUT33D
-    inverse() const;
-
-    static MatUT33D
-    identity()
-    {return MatUT33D(1,0,0,1,0,1); }
+    MatUT3D         operator*(MatUT3D r) const;
+    double          determinant() const {return m[0]*m[3]*m[5]; }
+    Mat33D          asMatrix() const {return Mat33D(m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]); }
+    // Sum of squares of elements (== square of frobenius norm):
+    double          mag() const {return cMag(m); }
+    MatS3D          luProduct() const;
+    MatUT3D         inverse() const;
 };
-std::ostream &
-operator<<(std::ostream &,MatUT33D const &);
-
-inline double
-cRms(MatUT33D const & m)
-{return cRms(m.m); }
-
-MatS33D
-randMatSpd3D(double lnEigStdev);
+std::ostream &  operator<<(std::ostream &,MatUT3D const &);
+inline double   cDeterminant(MatUT3D const & m) {return m.determinant(); }
+inline double   cMag(MatUT3D const & m) {return m.mag(); }
 
 }
 

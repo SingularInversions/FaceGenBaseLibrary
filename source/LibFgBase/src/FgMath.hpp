@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -91,12 +91,12 @@ cube(T a)
 // Safe version of 'exp' that throws when values fall outside type bounds:
 template<typename T>
 T
-expSafe(T val,bool clamp=false)
+expSafe(T val,bool clampVal=false)
 {
     static T    maxIn = std::log(std::numeric_limits<T>::max());
     if (std::abs(val) < maxIn)
         return std::exp(val);
-    FGASSERT(clamp);
+    FGASSERT(clampVal);
     if (val < maxIn)
         return -std::numeric_limits<T>::max();
     return std::numeric_limits<T>::max();
@@ -161,24 +161,34 @@ struct   Modulo
 
 typedef Svec<Modulo> Modulos;
 
+inline double cSsd(double l,double r) {return sqr(l-r); }
 template<class T>
 double
 cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
-    double      acc = 0;
+    double          acc = 0.0;
     for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += cMag(v1[ii]-v0[ii]);
+        acc += cSsd(v1[ii],v0[ii]);
     return acc;
 }
-
 template<class T>
 double
 cSsd(Svec<T> const & vec,T const & val)          // Sum of square differences with a constant val
 {
-    double      acc = 0;
+    double          acc = 0.0;
     for (size_t ii=0; ii<vec.size(); ++ii)
-        acc += cMag(vec[ii]-val);
+        acc += cSsd(vec[ii],val);
+    return acc;
+}
+template<class T,size_t S>
+double
+cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
+{
+    FGASSERT(l.size() == r.size());
+    double          acc = 0.0;
+    for (size_t ii=0; ii<l.size(); ++ii)
+        acc += cSsd(l[ii],r[ii]);
     return acc;
 }
 

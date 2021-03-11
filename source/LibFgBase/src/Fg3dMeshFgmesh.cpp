@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -138,7 +138,7 @@ fgWritep(std::ostream & os,Mesh const & mesh)
 }
 
 Mesh
-loadFgmesh(Ustring const & fname)
+loadFgmesh(String8 const & fname)
 {
     Mesh        ret;
     Ifstream      ifs(fname);
@@ -149,7 +149,7 @@ loadFgmesh(Ustring const & fname)
 }
 
 void
-saveFgmesh(Ustring const & fname,Mesh const & mesh)
+saveFgmesh(String8 const & fname,Mesh const & mesh)
 {
     Ofstream          ofs(fname);
     fgWritep(ofs,string("FgMesh01"));
@@ -157,7 +157,7 @@ saveFgmesh(Ustring const & fname,Mesh const & mesh)
 }
 
 void
-saveFgmesh(Ustring const & fname,Meshes const & meshes)
+saveFgmesh(String8 const & fname,Meshes const & meshes)
 {saveFgmesh(fname,mergeMeshes(meshes)); }
 
 void

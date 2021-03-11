@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -87,15 +87,15 @@ msToPrettyTime(uint64 durationInMilliseconds)
         return toStr(d) + " ms";
     d /= 1000.0;
     if (d < 60.0)
-        return toStrPrecision(d,4) + " s";
+        return toStrPrec(d,4) + " s";
     d /= 60.0;
     if (d < 60.0)
-        return toStrPrecision(d,4) + " min";
+        return toStrPrec(d,4) + " min";
     d /= 60.0;
     if (d < 24.0)
-        return toStrPrecision(d,4) + " hours";
+        return toStrPrec(d,4) + " hours";
     d /= 24.0;
-    return toStrPrecision(d,4) + " days";
+    return toStrPrec(d,4) + " days";
 }
 
 
@@ -103,7 +103,7 @@ std::ostream &
 operator<<(std::ostream & os,const Timer & t)
 {
     double      et = t.read();
-    return os << "Elapsed time: " << toStrPrecision(et,4) << " s";
+    return os << "Elapsed time: " << toStrPrec(et,4) << " s";
 }
 
 void

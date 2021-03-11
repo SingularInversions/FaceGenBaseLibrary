@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,15 +15,20 @@
 
 namespace Fg {
 
-void    imgDisplay(ImgC4UC const &,Svec<Vec2F> ptsIucs=Svec<Vec2F>());
-void    imgDisplay(const ImgUC &);
-void    imgDisplay(const Img<ushort> &);
-void    imgDisplay(const ImgF &);
-void    imgDisplay(const ImgD &);
-void    imgDisplay(const Img3F &);
+void
+viewImage(
+    ImgC4UC const &     img,
+    Vec2Fs const &      ptsIucs=Vec2Fs{},           // Points to be displayed as red dots
+    String const &      printHeader=String{});      // If non-empty, stream info to fgout with this header name
+
+void    viewImage(const ImgUC &);
+void    viewImage(const Img<ushort> &);
+void    viewImage(const ImgF &);
+void    viewImage(const ImgD &);
+void    viewImage(const ImgV3F &);
 
 // Components must be in range [0,1]:
-void    imgDisplay(const ImgC4F &);
+inline void viewImage(ImgC4F const & img) {viewImage(toImgC4UC(img)); }
 
 void
 fgImgDisplayColorize(const ImgD &);

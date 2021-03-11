@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,7 +19,7 @@ GuiImplPtr guiGetOsImpl(GuiButton const & guiApi);
 
 struct GuiButton : GuiBase
 {
-    Ustring                label;
+    String8                label;
     FgFnVoid2Void           action;
 
     virtual
@@ -27,7 +27,7 @@ struct GuiButton : GuiBase
 };
 
 GuiPtr
-guiButton(Ustring const & label,FgFnVoid2Void action);
+guiButton(String8 const & label,FgFnVoid2Void action);
 
 GuiPtr
 guiButtonTr(const std::string & label,FgFnVoid2Void action);

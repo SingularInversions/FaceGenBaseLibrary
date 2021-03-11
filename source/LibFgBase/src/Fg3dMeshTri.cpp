@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -172,7 +172,7 @@ loadTri(istream & istr)
 }
 
 Mesh
-loadTri(Ustring const & fname)
+loadTri(String8 const & fname)
 {
     Mesh        ret;
     try {
@@ -188,7 +188,7 @@ loadTri(Ustring const & fname)
 }
 
 Mesh
-loadTri(Ustring const & meshFile,Ustring const & texImage)
+loadTri(String8 const & meshFile,String8 const & texImage)
 {
     Mesh        mesh = loadTri(meshFile);
     loadImage_(texImage,mesh.surfaces[0].albedoMapRef());
@@ -206,7 +206,7 @@ writeLabel(ostream & ostr,string const & str)
 
 void
 saveTri(
-    Ustring const &     fname,
+    String8 const &     fname,
     Mesh const &        mesh)
 {
     Surf const          surf = mergeSurfaces(mesh.surfaces);

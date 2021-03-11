@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,27 +13,29 @@
 
 namespace Fg {
 
-// Returns the U of the U^T U Cholesky decomposition of a symmetric positive definite matrix,
-// along with the axial permutations used for maximum stability:
-MatUT33D
-choleskyDecompose(MatS33D SPD);     // SPD cannot be singular
+// Returns the U of the U^T * U Cholesky decomposition of a symmetric positive definite matrix,
+MatUT3D
+cCholesky(MatS3D spd);      // spd cannot be singular
 
 struct  UTUDecomp
 {
-    MatUT33D        U;      // Upper triangular part of the U^T * U decomposition
+    MatUT3D        U;      // Upper triangular part of the U^T * U decomposition
     Vec3UI          p;      // Permutation map from input index to solution index
 };
 
 // Solve the Matrix equation Ax = b when A is symmetric positive definite (this is not checked):
 Vec3D
-solve(MatS33D SPD,Vec3D b);
+solve(MatS3D SPD,Vec3D b);
 
 // Solve the matrix equation Ax = b.
 // If A is singular, this returns a solution vector with one or more components equal to zero:
 Vec3D
 solve(Mat33D A,Vec3D b);
 
-// Eigenvalues of a square real symmetric matrix.
+// Compute only the eigenvalues (smallest to largest) of a real symmetrix matrix:
+Doubles     cEigvalsRsm(MatD const & rsm);
+
+// Compute eigenvalues and eigenvectors of a real symmetric matrix:
 // Runs in O(dim^3) time, with residual error O(dim^2.?).
 void
 cEigsRsm_(

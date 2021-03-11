@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,14 +25,14 @@ struct  GuiGroupboxWin : public GuiBaseImpl
     GuiGroupbox             m_api;
     GuiImplPtr              m_contents;
     HWND                    m_hwndGb;
-    Ustring                m_store;
+    String8                m_store;
 
     GuiGroupboxWin(const GuiGroupbox & api)
     : m_api(api)
     {m_contents = m_api.contents->getInstance(); }
 
     virtual void
-    create(HWND parentHwnd,int,Ustring const & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiGroupboxWin::create " << m_api.label << fgpush;
         m_store = store;

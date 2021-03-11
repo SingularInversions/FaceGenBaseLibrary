@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -60,6 +60,10 @@ struct  Img
     Img(size_t wid,size_t hgt,T fill)
     : m_dims(uint(wid),uint(hgt)), m_data(wid*hgt,fill)
     {}
+
+    Img(size_t wid,size_t hgt,Svec<T> const & data)
+    : m_dims(uint(wid),uint(hgt)), m_data(data)
+    {FGASSERT(data.size() == wid*hgt); }
 
     explicit
     Img(Vec2UI dims)
@@ -210,43 +214,40 @@ struct  Img
     {m_data *= rhs; }
 };
 
-typedef Img<uchar>     ImgUC;
-typedef Img<float>     ImgF;
-typedef Img<double>    ImgD;
+typedef Img<uchar>      ImgUC;
+typedef Img<float>      ImgF;
+typedef Img<double>     ImgD;
 
-typedef Img<Vec2F>     Img2F;
+typedef Img<Vec2F>      Img2F;
 
-typedef Img<Arr3SC>    Img3SC;
-typedef Img<Arr3I>     Img3I;
-typedef Img<Vec3F>     Img3F;      // RGB [0,1] unless otherwise noted
-typedef Svec<Img3F>    Img3Fs;
+typedef Img<Arr3SC>     Img3SC;
+typedef Img<Arr3I>      Img3I;
+typedef Img<Arr3F>      Img3F;
+typedef Img<Vec3F>      ImgV3F;      // RGB [0,1] unless otherwise noted
+typedef Svec<ImgV3F>    ImgV3Fs;
 
-typedef Img<Arr4UC>    Img4UC;
-typedef Svec<Img4UC>   Img4UCs;
-typedef Img<Vec4F>     Img4F;
+typedef Img<Arr4UC>     Img4UC;
+typedef Svec<Img4UC>    Img4UCs;
+typedef Img<Vec4F>      ImgV4F;
 
-// Deprecated:
-typedef Img<RgbaUC>    ImgC4UC;
-typedef Svec<ImgC4UC>  ImgC4UCs;
-typedef Svec<ImgC4UCs> ImgC4UCss;
-typedef Img<RgbaF>     ImgC4F;
+typedef Img<RgbaUC>     ImgC4UC;
+typedef Svec<ImgC4UC>   ImgC4UCs;
+typedef Svec<ImgC4UCs>  ImgC4UCss;
+typedef Img<RgbaF>      ImgC4F;
 
-template<typename T,typename U>
-void
-scast_(Img<T> const & from,Img<U> & to)
+template<typename To,typename From>
+Img<To>
+mapCast(Img<From> const & img)
 {
-    to.resize(from.dims());
-    for (size_t ii=0; ii<to.numPixels(); ++ii)
-        scast_(from[ii],to[ii]);
+    return Img<To>(img.dims(),mapCast<To>(img.m_data));
 }
 
-template<class T>
-std::ostream &
-operator<<(std::ostream & os,const Img<T> & img)
+template<typename To,typename From>
+void
+deepCast_(Img<To> const & from,Img<From> & to)
 {
-    return
-        os << "dimensions: " << img.dims()
-            << " bounds: " << cBounds(img.m_data);
+    to.resize(from.dims());
+    deepCast_(from.m_data,to.m_data);
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,9 +16,9 @@ namespace Fg {
 namespace {
 
 void
-fileLoad2(Ustring fileTypesDescription,Strings extensions,string storeID,IPT<Ustring> output)
+fileLoad2(String8 fileTypesDescription,Strings extensions,string storeID,IPT<String8> output)
 {
-    Opt<Ustring>     fname = guiDialogFileLoad(fileTypesDescription,extensions,storeID);
+    Opt<String8>     fname = guiDialogFileLoad(fileTypesDescription,extensions,storeID);
     if (fname.valid())
         output.set(fname.val());
 }
@@ -27,11 +27,11 @@ fileLoad2(Ustring fileTypesDescription,Strings extensions,string storeID,IPT<Ust
 
 GuiPtr
 guiLoadButton(
-    Ustring const &            buttonText,
-    Ustring const &            fileTypesDescription,
+    String8 const &            buttonText,
+    String8 const &            fileTypesDescription,
     Strings const &              extensions,
     string const &              storeID,
-    const IPT<Ustring> &       selection)
+    const IPT<String8> &       selection)
 {
     GuiButton          b;
     b.label = buttonText;

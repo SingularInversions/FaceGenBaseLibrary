@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -180,7 +180,7 @@ typedef Svec<Materials>         Materialss;
 // A grouping of facets (tri and quad) sharing material properties:
 struct  Surf
 {
-    Ustring                     name;
+    String8                     name;
     Tris                        tris;
     Quads                       quads;
     SurfPoints                  surfPoints;
@@ -191,7 +191,7 @@ struct  Surf
     explicit Surf(const Vec4UIs & ts) : quads(ts) {}
     Surf(Vec3UIs const & triPosInds,Vec4UIs const & quadPosInds) : tris(triPosInds), quads(quadPosInds) {}
     Surf(const Svec<Vec4UI> & verts,const Svec<Vec4UI> & uvs) : quads(verts,uvs) {}
-    Surf(Ustring const & n,Tris const & ts,SurfPoints const & sps,Material const & m) :
+    Surf(String8 const & n,Tris const & ts,SurfPoints const & sps,Material const & m) :
         name(n), tris(ts), surfPoints(sps), material(m) {}
 
     bool
@@ -252,7 +252,7 @@ struct  Surf
     FacetInds<3>    asTris() const;
     Surf            convertToTris() const {return Surf {name,asTris(),surfPoints,material}; }
     void            merge(Surf const & surf);
-    void            checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx);
+    void            checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx) const;
 
     // Return a surface with all indices offset by the given amounts:
     Surf
@@ -266,7 +266,7 @@ struct  Surf
 
     // Useful for searching by name:
     bool
-    operator==(Ustring const & str) const
+    operator==(String8 const & str) const
     {return (name == str); }
 
     void
@@ -312,7 +312,7 @@ splitByContiguous(Surf const & surf);
 // Name any unnamed surfaces as numbered extensions of the given base name,
 // or just the base name if there is only a single (unnamed) surface:
 Surfs
-fgEnsureNamed(const Surfs & surfs,Ustring const & baseName);
+fgEnsureNamed(const Surfs & surfs,String8 const & baseName);
 
 Vec3Fs
 cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
@@ -350,7 +350,7 @@ meshRemoveUnusedVerts(TriSurf const & ts)
 struct      TriSurfFids
 {
     TriSurf         surf;
-    Vec3Fs          fids;   // When it's handy to have fiducial points explicitly separate from surface
+    Vec3Fs          fids;   // When it's handy to have fiducial / landmark points explicitly separate from surface
 };
 
 typedef Svec<TriSurfFids>   TriSurfFidss;

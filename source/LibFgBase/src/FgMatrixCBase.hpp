@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -99,7 +99,7 @@ struct  Mat
     }
 
     explicit
-    Mat(const MatV<T>& mm) {
+    Mat(MatV<T> const& mm) {
         FGASSERT((nrows == mm.numRows()) && (ncols == mm.numCols()));
         for (uint ii=0; ii<nrows*ncols; ++ii)
             m[ii] = mm[ii];
@@ -517,30 +517,34 @@ typedef Mat<double,3,4>         Mat34D;
 template<typename To,typename From,uint nrows,uint ncols>
 inline
 Mat<To,nrows,ncols>
-scast(Mat<From,nrows,ncols> const & mat)
-{return Mat<To,nrows,ncols>(scast<To,From,nrows*ncols>(mat.m)); }
+mapCast(Mat<From,nrows,ncols> const & mat)
+{return Mat<To,nrows,ncols>(mapCast<To,From,nrows*ncols>(mat.m)); }
 
-template<typename To,typename From,uint nrows,uint ncols>
-inline
+template<typename To,typename From,uint nrows,uint ncols,
+    FG_ENABLE_IF(To,is_fundamental),
+    FG_ENABLE_IF(From,is_fundamental)
+>
 Svec<Mat<To,nrows,ncols> >
-scast(Svec<Mat<From,nrows,ncols> > const & vm)
+deepCast(Svec<Mat<From,nrows,ncols> > const & vm)
 {
     Svec<Mat<To,nrows,ncols> >      ret;
     ret.reserve(vm.size());
     for (auto const & m : vm)
-        ret.push_back(scast<To,From,nrows,ncols>(m));
+        ret.push_back(mapCast<To,From,nrows,ncols>(m));
     return ret;
 }
 
-template<typename To,typename From,uint nrows,uint ncols>
-inline
+template<typename To,typename From,uint nrows,uint ncols,
+    FG_ENABLE_IF(To,is_fundamental),
+    FG_ENABLE_IF(From,is_fundamental)
+>
 Svec<Svec<Mat<To,nrows,ncols> > >
-scast(Svec<Svec<Mat<From,nrows,ncols> > > const & vvm)
+deepCast(Svec<Svec<Mat<From,nrows,ncols> > > const & vvm)
 {
     Svec<Svec<Mat<To,nrows,ncols> > >   ret;
     ret.reserve(vvm.size());
     for (auto const & vm : vvm)
-        ret.push_back(scast<To,From,nrows,ncols>(vm));
+        ret.push_back(deepCast<To,From,nrows,ncols>(vm));
     return ret;
 }
 

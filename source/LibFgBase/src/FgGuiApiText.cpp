@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,7 +14,7 @@ using namespace std::placeholders;
 namespace Fg {
 
 GuiPtr
-guiText(NPT<Ustring> node,uint minWidth,bool rich)
+guiText(NPT<String8> node,uint minWidth,bool rich)
 {
     GuiText    gt;
     gt.content = node;
@@ -25,7 +25,7 @@ guiText(NPT<Ustring> node,uint minWidth,bool rich)
 }
 
 GuiPtr
-guiTextLines(NPT<Ustring> node,uint minHeight,bool wantStretchVert)
+guiTextLines(NPT<String8> node,uint minHeight,bool wantStretchVert)
 {
     GuiText    gt;
     gt.content = node;
@@ -36,7 +36,7 @@ guiTextLines(NPT<Ustring> node,uint minHeight,bool wantStretchVert)
 }
 
 GuiPtr
-guiText(Ustring txt,uint minWidth)
+guiText(String8 txt,uint minWidth)
 {
     GuiText    gt;
     gt.content = makeIPT(txt);
@@ -45,12 +45,12 @@ guiText(Ustring txt,uint minWidth)
 }
 
 GuiPtr
-guiTextEdit(IPT<Ustring> node,bool wantStretch)
+guiTextEdit(IPT<String8> node,bool wantStretch)
 {
     GuiTextEdit    gtr;
     gtr.updateFlag = makeUpdateFlag(node);
     gtr.getInput = [node](){return node.val(); };
-    gtr.setOutput = [node](Ustring s){node.set(s); };
+    gtr.setOutput = [node](String8 s){node.set(s); };
     gtr.minWidth = 100;
     gtr.wantStretch = wantStretch;
     return std::make_shared<GuiTextEdit>(gtr);
@@ -58,12 +58,12 @@ guiTextEdit(IPT<Ustring> node,bool wantStretch)
 
 static
 void
-strToSetVal(Ustring str,VecD2 bounds,Sfun<void(double)> setVal)
+strToSetVal(String8 str,VecD2 bounds,Sfun<void(double)> setVal)
 {
     if (str.is_ascii()) {
         Opt<double>     vo = fromStr<double>(str.m_str);
         if (vo.valid()) {
-            double      val = clampBounds(vo.val(),bounds);
+            double      val = clamp(vo.val(),bounds);
             setVal(val);
         }
     }
@@ -111,7 +111,7 @@ guiTextEditFloat(
     te.wantStretch = false;
     te.getInput = [=]()
         {
-            return toStrPrecision(getVal(),numDigits);
+            return toStrPrec(getVal(),numDigits);
         };
     te.setOutput = bind(strToSetVal,_1,bounds,setVal);
     return guiMakePtr(te);

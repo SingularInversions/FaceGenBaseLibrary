@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,7 +22,6 @@ namespace Fg {
 
 namespace {
 
-static
 void
 closestBarycentricPoint()
 {
@@ -35,13 +34,12 @@ closestBarycentricPoint()
         Vec3D           closest0 = -plane.scalar * plane.norm / cMag(plane.norm),
                         bary = closestBarycentricPoint(p0,p1,p2),
                         closest1 = bary[0]*p0 + bary[1]*p1 + bary[2]*p2;
-        FGASSERT(isApproxEqualRelPrec(closest0,closest1));
+        FGASSERT(isApproxEqualPrec(closest0,closest1));
         Opt<Vec3D>      bary1 = barycentricCoord(closest1,p0,p1,p2);
-        FGASSERT(isApproxEqualRelPrec(bary,bary1.val()));
+        FGASSERT(isApproxEqualPrec(bary,bary1.val()));
     }
 }
 
-static
 void
 originToSegmentDistSqr()
 {
@@ -57,24 +55,23 @@ originToSegmentDistSqr()
         VecMagD    delta;
         // Degenerate case:
         delta = closestPointInSegment(r0,r0);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         // edge closest point (both directions):
         delta = closestPointInSegment(r0,r1);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         delta = closestPointInSegment(r1,r2);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // vertex closest point:
         delta = closestPointInSegment(r0,r2);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
 
-static
 void
 pointToFacetDistSqr()
 {
@@ -95,34 +92,33 @@ pointToFacetDistSqr()
         VecMagD    delta;
         // surface closest point (both orientations):
         delta = closestPointInTri(origin,r0,r1,r2);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0/3.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0/3.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
         delta = closestPointInTri(origin,r0,r2,r1);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0/3.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0/3.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0/3.0),30));
         // degenerate facet edge closest point:
         delta = closestPointInTri(origin,r0,r1,r3);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
         // edge closest point (both orientations):
         delta = closestPointInTri(origin,r0,r2,r3);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
         delta = closestPointInTri(origin,r0,r3,r2);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,0.5));
+        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.0,0.5),30));
         // vertex closest point:
         delta = closestPointInTri(origin,r0,r3,r4);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         delta = closestPointInTri(origin,r0,r0*2.0,r3);
-        FGASSERT(isApproxEqualRelPrec(delta.mag,1.0));
+        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
         FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
 
-static
 void
 barycentricCoords()
 {
@@ -142,7 +138,7 @@ barycentricCoords()
             FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
-            FGASSERT(isApproxEqualRelPrec(res[0]+res[1]+res[2],1.0));
+            FGASSERT(isApproxEqualPrec(res[0]+res[1]+res[2],1.0));
         }
     }
     // Test points outside triangle:
@@ -163,12 +159,11 @@ barycentricCoords()
             FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
-            FGASSERT(isApproxEqualRelPrec(res[0]+res[1]+res[2],1.0));
+            FGASSERT(isApproxEqualPrec(res[0]+res[1]+res[2],1.0));
         }
     }
 }
 
-static
 void
 barycentricCoords3D()
 {
@@ -191,7 +186,6 @@ barycentricCoords3D()
     fgout << fgpop;
 }
 
-static
 void
 planeH()
 {
@@ -212,7 +206,6 @@ planeH()
     }
 }
 
-static
 void
 rayPlaneIntersect()
 {
@@ -237,7 +230,6 @@ rayPlaneIntersect()
     }
 }
 
-static
 void
 pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
@@ -245,7 +237,6 @@ pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
     FGASSERT(pointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
 }
 
-static
 void
 pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
@@ -256,7 +247,6 @@ pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
         pit0(s*pt,s*v0,s*v1,s*v2,res); }
 }
 
-static
 void
 pointInTriangle()
 {
@@ -285,7 +275,6 @@ pointInTriangle()
     pit1(Vec2D(-d,-d),v0,v1,v2,0);
 }
 
-static
 void
 lineFacetIntersect()
 {
@@ -307,7 +296,7 @@ lineFacetIntersect()
 }
 
 // Test tensor-based 3D triangle / parallelogram area formula:
-static void
+void
 triTensorArea()
 {
     randSeedRepeatable();
@@ -327,7 +316,7 @@ triTensorArea()
                 area1[xx] -= pnts[jj][zz] * pnts[kk][yy];   // odd "
             }
         }
-        FGASSERT(isApproxEqualRelPrec(area0,area1,30U));
+        FGASSERT(isApproxEqualPrec(area0,area1,30U));
     }
 }
 

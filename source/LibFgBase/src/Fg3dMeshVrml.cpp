@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -69,7 +69,7 @@ writeIndices(Ofstream & ofs,vector<Mat<uint,dim,1> > const &  inds)
 
 void
 saveVrml(
-    Ustring const &         filename,
+    String8 const &         filename,
     Meshes const &          meshes,
     string                  imgFormat)
 {
@@ -83,7 +83,7 @@ saveVrml(
     Path                fpath(filename);
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         Mesh const &        mesh = meshes[ii];
-        Ustring             nameUtf;
+        String8             nameUtf;
         if (mesh.name.empty())
             nameUtf = fpath.base + toStr(ii);
         else
@@ -106,7 +106,7 @@ saveVrml(
             if (mesh.numValidAlbedoMaps() > 1)
                 fgThrow("VRML export with multiple texture images not yet implemented");
             // Some software (Meshlab:) can't deal with spaces in the image filename:
-            Ustring         imgFile = fpath.base.replace(' ','_') + toStr(ii);
+            String8         imgFile = fpath.base.replace(' ','_') + toStr(ii);
             imgFile += "." + imgFormat;
             saveImage(fpath.dir()+imgFile,*mesh.surfaces[0].material.albedoMap);
             ofs <<
@@ -180,7 +180,7 @@ void
 testVrmlSave(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring         dd = dataDir();
+    String8         dd = dataDir();
     string          rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -37,7 +37,7 @@ struct  Affine
 
     // Construct from form f(x) = x + b
     explicit
-    Affine(const Mat<T,dim,1> & trans)
+    Affine(Mat<T,dim,1> const & trans)
     : translation(trans)
     {linear.setIdentity(); }
 
@@ -50,7 +50,7 @@ struct  Affine
     // Construct from form f(x) = Mx + b
     Affine(
         const Mat<T,dim,dim> &    xform,
-        const Mat<T,dim,1> &      trans)
+        Mat<T,dim,1> const &      trans)
         :
         linear(xform),
         translation(trans)
@@ -58,7 +58,7 @@ struct  Affine
 
     // Construct from form f(x) = M(x+b):
     Affine(
-        const Mat<T,dim,1> &      trans,
+        Mat<T,dim,1> const &      trans,
         const Mat<T,dim,dim> &    xform)
         :
         linear(xform),
@@ -76,7 +76,7 @@ struct  Affine
     : linear(v.linear), translation(v.translation)
     {}
 
-    const Mat<T,dim,1> &
+    Mat<T,dim,1> const &
     postTranslation() const
     {return translation; }
 

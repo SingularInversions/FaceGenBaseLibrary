@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,9 +31,9 @@ fgClusterDeploy(
     const FgFnStr2Str &     worker,
     string const &          coordIP,
     Strings const &          workIPs,
-    Ustrings const &       files)
+    String8s const &       files)
 {
-    Ustring        exeDir = getExecutableDirectory();
+    String8        exeDir = getExecutableDirectory();
     if (pathExists(exeDir+"cluster_worker.flag"))         // Client could be in an arbitrary data subdirectory at this point
         return fgClustWorker(worker,fgClusterPortDefault());
     if (pathExists(exeDir+"cluster_coordinator.flag")) {
@@ -53,17 +53,17 @@ fgClusterDeploy(
     NcScript      scriptCrdntor;
     scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
-    Ustring        binBase = Path(getExecutablePath()).base;
+    String8        binBase = Path(getExecutablePath()).base;
     scriptCrdntor.cmds.push_back("cp " + getCiShareBoot(BuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
-    if (!fgTcpClient(coordIP,getNcServerPort(),scriptCrdntor.serMsg()))
+    if (!fgTcpClient(coordIP,getNcServerPort(),toSerialMessage(scriptCrdntor)))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):
     sleepSeconds(1);
     // Deploy data files from current repo:
-    Ustring        dd = dataDir(),
+    String8        dd = dataDir(),
                     td = filesDirLocal+"data/";
     for (size_t ff=0; ff<files.size(); ++ff) {
-        Ustring    dest = td + files[ff];
+        String8    dest = td + files[ff];
         createPath(Path(dest).dir());
         fileCopy(dd+files[ff],dest,true);
     }
@@ -81,7 +81,7 @@ fgClusterDeploy(
         script.cmds = copyData;
         script.cmds.push_back("> cluster_worker.flag");
         script.cmds.push_back("./" + args);
-        if (!fgTcpClient(workIPs[ww],getNcServerPort(),script.serMsg()))
+        if (!fgTcpClient(workIPs[ww],getNcServerPort(),toSerialMessage(script)))
             fgThrow("Cluster deploy unable to start worker",workIPs[ww]);
     }
     // Wait to ensure workers ready to receive (asynchronous operation):
@@ -91,7 +91,7 @@ fgClusterDeploy(
     scriptCrdntor.cmds = copyData;
     scriptCrdntor.cmds.push_back("> cluster_coordinator.flag");
     scriptCrdntor.cmds.push_back("./" + args);
-    if (!fgTcpClient(coordIP,getNcServerPort(),scriptCrdntor.serMsg()))
+    if (!fgTcpClient(coordIP,getNcServerPort(),toSerialMessage(scriptCrdntor)))
         fgThrow("Cluster deploy unable to start coordinator",coordIP);
 }
 
@@ -172,7 +172,7 @@ fgClusterDeployTestm(CLArgs const & args)
         workerIPs.push_back(wip);
     }
     while (syntax.more());
-    fgClusterDeploy("test0",testCoordinator,testWorkerFunc,crdntorIP,workerIPs,Ustrings());
+    fgClusterDeploy("test0",testCoordinator,testWorkerFunc,crdntorIP,workerIPs,String8s());
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -250,7 +250,7 @@ rdf(CLArgs const & args)
         "    Duplicates are determined by vertex index. To remove duplicates by vertex\n"
         "    value, first remove duplicate vertices."
         );
-    Ustring        fni(syn.next()),
+    String8        fni(syn.next()),
                     fno = fni;
     if (syn.more())
         fno = syn.next();
@@ -267,7 +267,7 @@ rt(CLArgs const & args)
         "    <triEquivIndex> - Tri-equivalent index of triangle or half-quad to remove."
         );
     Mesh        mesh = loadMesh(syn.next());
-    Ustring        outName = syn.next();
+    String8        outName = syn.next();
     while (syn.more()) {
         size_t          si = syn.nextAs<size_t>(),
                         ti = syn.nextAs<size_t>();
@@ -329,7 +329,7 @@ sortFacets(CLArgs const & args)
         "converted to tris and all surfaces are merged into one.");
     Mesh        mesh = loadMesh(syn.next());
     ImgC4UC     albedo = loadImage(syn.next());
-    Ustring        outName = syn.next();
+    String8        outName = syn.next();
     Mesh        opaque;
     while (syn.more())
         opaque = mergeMeshes(opaque,loadMesh(syn.next()));
@@ -434,7 +434,7 @@ seams(CLArgs const & args)
     Mesh                mesh = loadMesh(fname);
     MeshTopology        topo(mesh.verts.size(),mesh.asTriSurf().tris);
     Svec<set<uint> >    seams = topo.seams();
-    Ustring             fbase = pathToBase(fname) + "_";
+    String8             fbase = pathToBase(fname) + "_";
     size_t              cnt = 0;
     for (set<uint> const & seam : seams) {
         Mesh            mm = mesh;
@@ -483,7 +483,7 @@ splitCont(CLArgs const & args)
         "    * Stores results to separate meshes with suffix '_<num>.tri'"
         );
     Mesh            mesh = loadMesh(syn.next());
-    Ustring         base = pathToBase(syn.curr());
+    String8         base = pathToBase(syn.curr());
     uint            idx = 0;
     Mesh            out = mesh;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
@@ -561,7 +561,7 @@ surfRen(CLArgs const & args)
         "   <idx>  - Which surface\n"
         "   <name> - Surface name"
         );
-    Ustring        meshFname = syn.next();
+    String8        meshFname = syn.next();
     Mesh        mesh = loadFgmesh(meshFname);
     size_t          idx = syn.nextAs<size_t>();
     if (idx >= mesh.surfaces.size())
@@ -593,7 +593,7 @@ spDel(CLArgs const & args)
         "<in>.tri <ptIdx>\n"
         "   <spIdx>   - Which point on that surface to delete"
         );
-    Ustring        meshFname = syn.next();
+    String8        meshFname = syn.next();
     Mesh        mesh = loadTri(meshFname);
     size_t          ii = syn.nextAs<size_t>();
     Surf &   surf = mesh.surfaces[0];
@@ -626,7 +626,7 @@ spRen(CLArgs const & args)
         "   <spIdx>   - Which point on that surface\n"
         "   <name>    - Name"
         );
-    Ustring        meshFname = syn.next();
+    String8        meshFname = syn.next();
     Mesh        mesh = loadFgmesh(meshFname);
     size_t          ss = syn.nextAs<size_t>(),
                     ii = syn.nextAs<size_t>();
@@ -721,7 +721,7 @@ uvclamp(CLArgs const & args)
     Mesh        in = loadMesh(syn.next());
     Mat22F        cb(0,1,0,1);
     for (size_t ii=0; ii<in.uvs.size(); ++ii)
-        in.uvs[ii] = clampBounds(in.uvs[ii],cb);
+        in.uvs[ii] = mapClamp(in.uvs[ii],cb);
     if (syn.more())
         saveMesh(in,syn.next());
     else
@@ -745,8 +745,8 @@ uvSolidImage(CLArgs const & args)
     if (sz > (1 << 12))
         syn.error("<size> is too large",syn.curr());
     ImgUC         img = getUvCover(mesh,Vec2UI(sz*4));
-    img = fgShrink2(img);
-    img = fgShrink2(img);
+    img = shrink2Fixed(img);
+    img = shrink2Fixed(img);
     saveImage(syn.next(),img);
 }
 
@@ -778,9 +778,9 @@ uvmask(CLArgs const & args)
         );
     Mesh        mesh = loadMesh(syn.next());
     ImgC4UC     img = loadImage(syn.next());
-    Img<FgBool> mask = Img<FgBool>(img.dims());
+    Img<FatBool> mask = Img<FatBool>(img.dims());
     for (Iter2UI it(img.dims()); it.valid(); it.next()) {
-        Vec4UC   px = img[it()].m_c;
+        Arr4UC      px = img[it()].m_c;
         mask[it()] = (px[0] > 0) || (px[1] > 0) || (px[2] > 0); }
     mask = mapAnd(mask,flipHoriz(mask));
     mesh = fg3dMaskFromUvs(mesh,mask);
@@ -847,9 +847,9 @@ xformCreateMeshes(CLArgs const & args)
     Mesh    targ = loadMesh(syn.next());
     if (base.verts.size() != targ.verts.size())
         fgThrow("Base and target mesh vertex counts are different");
-    Vec3Ds    bv = scast<double>(base.verts),
-                        tv = scast<double>(targ.verts);
-    SimilarityD         sim = similarityApprox(bv,tv);
+    Vec3Ds              bv = deepCast<double>(base.verts),
+                        tv = deepCast<double>(targ.verts);
+    SimilarityD         sim = solveSimilarity(bv,tv);
     double              ssd = cSsd(mapMul(sim.asAffine(),bv),tv),
                         sz = cMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
@@ -954,7 +954,7 @@ xformMirror(CLArgs const & args)
     Mat33F        xf = Mat33F::identity();
     xf.rc(axis,axis) = -1.0f;
     mesh.transform(xf);
-    Ustring        fname = (syn.more() ? syn.next() : syn.curr());
+    String8        fname = (syn.more() ? syn.next() : syn.curr());
     saveMesh(mesh,fname);
 }
 

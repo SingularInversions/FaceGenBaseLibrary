@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -104,7 +104,9 @@ struct  DfgOutput : DfgNode, DfgDependent
     virtual boost::any const & getDataCref() const;
     virtual void addSink(const DfgDPtr & snk);
 
-    void addSource(const DfgNPtr & src);
+    DfgNPtrs const &    getSources() const {return sources; }
+    void                clearSources();
+    void                addSource(const DfgNPtr & src);
 };
 typedef std::shared_ptr<DfgOutput>  DfgOPtr;
 
@@ -172,7 +174,7 @@ struct  IPT
     void init(T const & val,bool setDefault=false) const {ptr->init(val,setDefault); }
     void initSaved(
         T const &           defaultVal,             // Will be the initial value if no valid one is stored
-        Ustring const &     storeFile,
+        String8 const &     storeFile,
         bool                binary=false)           // Store to binary format rather than XML for efficiency
     {
         FGASSERT(!storeFile.empty());
@@ -189,7 +191,7 @@ struct  IPT
             };
         }
         else {
-            Ustring        fname = storeFile + ".xml";
+            String8        fname = storeFile + ".xml";
             if (pathExists(fname))
                 loadBsaXml(fname,ref(),false);
             ptr->onDestruct = [fname](boost::any const & v)
@@ -270,7 +272,7 @@ template<class T>
 IPT<T>
 makeSavedIPT(
     T const &           defaultVal,             // Will be the initial value if no valid one is stored
-    Ustring const &     storeFile,
+    String8 const &     storeFile,
     bool                binary=false)           // Store to binary format rather than XML for efficiency
 {
     IPT<T>          ret;
@@ -282,7 +284,7 @@ template<class T>
 IPT<T>
 makeSavedIPTEub(
     T const &           defaultVal,             // Will be the initial value if no valid one is stored
-    Ustring const &     storeFile,
+    String8 const &     storeFile,
     T                   eub)
 {
     IPT<T>          ret;

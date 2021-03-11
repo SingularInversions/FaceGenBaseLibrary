@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,6 +17,31 @@ using namespace std;
 namespace Fg {
 
 SimilarityD
+SimilarityD::operator*(SimilarityD const & rhs) const
+{
+    // Transform:   sRv+t
+    // Composition: s'R'(sRv+t)+t'
+    //            = s'R'sR(v) + (s'R't+t')
+    SimilarityD    ret;
+    ret.scale = scale * rhs.scale;
+    ret.rot = rot * rhs.rot;
+    ret.trans = scale * (rot * rhs.trans) + trans;
+    return ret;
+}
+
+SimilarityD
+SimilarityD::inverse() const
+{
+    // v' = sRv+t
+    // sRv = v' - t
+    // v = s'R'v' - s'R't
+    double              s = 1.0 / scale;
+    QuaternionD         r = rot.inverse();
+    Vec3D               t = r * trans * s;
+    return SimilarityD {s,r,-t};
+}
+
+SimilarityD
 similarityRand()
 {
     return
@@ -26,11 +51,8 @@ similarityRand()
             Vec3D::randNormal());
 }
 
-// Uses approach originally from [Horn '87 "Closed-Form Solution of Absolute Orientation..."
-// (taken from [Jain '95 "machine vision" 12.3]) to find an approximate similarity transform
-// between two sets of corresponding points, FROM the domain points TO the range points:
 SimilarityD
-similarityApprox(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
+solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
 {
     SimilarityD     ret;
     FGASSERT(domainPts.size() > 2);     // Not solvable with only 2 points.
@@ -107,8 +129,28 @@ SimilarityRD::asAffine() const
     return ret;
 }
 
+SimilarityRD
+SimilarityRD::inverse() const
+{
+    // v' = sR(v+t)
+    // v' = sRv + sRt
+    // sRv = v' - sRt
+    // v = s'R'(v' - sRt)
+    Vec3D           t = rot * trans * scale;
+    return SimilarityRD {-t,rot.inverse(),1.0/scale};
+}
+
+std::ostream &
+operator<<(std::ostream & os,SimilarityRD const & v)
+{
+    return os
+        << "Translation: " << v.trans
+        << " Scale: " << v.scale
+        << " Rotation: " << v.rot;
+}
+
 void
-fgSimilarityTest(CLArgs const &)
+testSimilarity(CLArgs const &)
 {
     SimilarityD     sim(expSafe(randNormal()),QuaternionD(Vec4D::randNormal()),Vec3D::randNormal());
     SimilarityD     id = sim * sim.inverse();
@@ -117,7 +159,7 @@ fgSimilarityTest(CLArgs const &)
 }
 
 void
-fgSimilarityApproxTest(CLArgs const &)
+testSimilaritySolve(CLArgs const &)
 {
     randSeedRepeatable();
     for (uint nn=0; nn<10; nn++) {
@@ -129,21 +171,12 @@ fgSimilarityApproxTest(CLArgs const &)
         for (uint mm=0; mm<10; mm++) {
             SimilarityD     simRef(expSafe(3.0 * randNormal()),QuaternionD::rand(),Vec3D::randNormal());
             mapMul_(simRef.asAffine(),domain,range);
-            SimilarityD     sim = similarityApprox(domain,range);
+            SimilarityD     sim = solveSimilarity(domain,range);
             mapMul_(sim.asAffine(),domain);
             FGASSERT(isApproxEqualRelMag(domain,range));
         }
         numPts *= 2;
     }
-}
-
-std::ostream &
-operator<<(std::ostream & os,SimilarityRD const & v)
-{
-    return os
-        << "Translation: " << v.trans
-        << " Scale: " << v.scale
-        << " Rotation: " << v.rot;
 }
 
 }

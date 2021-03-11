@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -42,7 +42,7 @@ mainArgs();
 #ifdef _WIN32
 #define FGMAIN(F) int wmain(int argc,const wchar_t *argv[]) {return mainConsole(F,argc,argv); }
 #else
-#define FGMAIN(F) int main(int argc,const char *argv[]) {return mainConsole(F,argc,argv); }
+#define FGMAIN(F) int main(int argc,char const *argv[]) {return mainConsole(F,argc,argv); }
 #endif
 
 }

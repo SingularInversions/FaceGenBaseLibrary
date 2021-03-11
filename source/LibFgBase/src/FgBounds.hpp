@@ -1,13 +1,17 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// min/max bounds of n-D data structures, and operations on bounds.
+// min/max bounds of n-D data structures, and operations on bounds,
+// for both fixed and floating point values.
 //
-// * bounds matrices (or vectors) always have 2 columns: [min,max]
+// * Bounds matrices always have 2 columns: [min,max]
 // * min values are always treated as inclusive
-// * max values are documented as either inclusive or exclusive
+// * max values are documented as either inclusive upper bounds (IUB) or exclusive upper bounds (EUB)
+//   where EUB means 1 greater than the highest value instance.
+// * Floating point values should use IUB
+// * Integer values should use EUB
 //
 
 #ifndef FGBOUNDS_HPP
@@ -21,14 +25,26 @@ namespace Fg {
 
 template<typename T>
 inline void
-setIfGreater(T & max,T val)
-{max = (val > max) ? val : max; }
+updateMax_(T & maxVal,T nextVal)
+{maxVal = (nextVal > maxVal) ? nextVal : maxVal; }
 
 template<typename T>
 inline void
-setIfLess(T & min,T val)
-{min = (val < min) ? val : min; }
+updateMin_(T & minVal,T nextVal)
+{minVal = (nextVal < minVal) ? nextVal : minVal; }
 
+// Update IUB bounds of a column vector list:
+template<typename T,uint Dim>
+inline void
+updateBounds_(Mat<T,Dim,2> & bounds,Mat<T,Dim,1> const & vec)
+{
+    for (uint ii=0; ii<Dim; ++ii) {
+        updateMin_(bounds.rc(ii,0),vec[ii]);
+        updateMax_(bounds.rc(ii,1),vec[ii]);
+    }
+}
+
+// Returns IUB bounds of scalar list:
 template<typename T>
 Mat<T,1,2>
 cBounds(Svec<T> const & data)
@@ -36,72 +52,58 @@ cBounds(Svec<T> const & data)
     FGASSERT(data.size() > 0);
     Mat<T,1,2>    ret(data[0]);
     for (size_t ii=1; ii<data.size(); ++ii) {
-        setIfLess   (ret[0],data[ii]);
-        setIfGreater(ret[1],data[ii]);
+        updateMin_(ret[0],data[ii]);
+        updateMax_(ret[1],data[ii]);
     }
     return ret;
 }
-
+// Returns IUB bounds of scalar array:
 template<typename T,size_t S>
 Mat<T,1,2>
 cBounds(Arr<T,S> const & arr)
 {
     Mat<T,1,2>          ret(arr[0]);
     for (size_t ii=1; ii<S; ++ii) {
-        setIfLess   (ret[0],arr[ii]);
-        setIfGreater(ret[0],arr[ii]);
+        updateMin_(ret[0],arr[ii]);
+        updateMax_(ret[1],arr[ii]);
     }
     return ret;
 }
-
-// Returns inclusive bounds of vectors
+// Returns IUB bounds of vector elements over list:
 template<typename T,uint dim>
 Mat<T,dim,2>
-cBounds(const Svec<Mat<T,dim,1> > & vecs) // If empty, return [max,lowest]
+cBounds(Svec<Mat<T,dim,1> > const & vecs) // If empty, return [max,lowest]
 {
-    Mat<T,dim,2>      ret;
-    for (uint dd=0; dd<dim; ++dd) {
-        ret.rc(dd,0) = std::numeric_limits<T>::max();
-        ret.rc(dd,1) = std::numeric_limits<T>::lowest();
-    }
-    for (Mat<T,dim,1> v : vecs) {
-        for (uint dd=0; dd<dim; ++dd) {
-            T           val = v[dd];
-            setIfLess     (ret.rc(dd,0),val);
-            setIfGreater  (ret.rc(dd,1),val);
-        }
-    }
+    Mat<T,dim,2>      ret = catHoriz(
+        Mat<T,dim,1>(std::numeric_limits<T>::max()),
+        Mat<T,dim,1>(std::numeric_limits<T>::lowest()));
+    for (Mat<T,dim,1> const & v : vecs)
+        updateBounds_(ret,v);
+    return ret;
+}
+// Returns IUB bounds of vector elements over list of 3:
+template<typename T,uint dim>
+Mat<T,dim,2>
+cBounds(
+    Mat<T,dim,1> const & v0,
+    Mat<T,dim,1> const & v1,
+    Mat<T,dim,1> const & v2)
+{
+    Mat<T,dim,2>        ret = catHoriz(v0,v0);
+    updateBounds_(ret,v1);
+    updateBounds_(ret,v2);
     return ret;
 }
 
 // Returns combined bounds of two bounds (inclusive or exclusive):
 template<typename T,uint dim>
 Mat<T,dim,2>
-cBoundsUnion(const Mat<T,dim,2> & b1,const Mat<T,dim,2> & b2)
+cBoundsUnion(Mat<T,dim,2> const & b1,Mat<T,dim,2> const & b2)
 {
     Mat<T,dim,2>     ret(b1);
     for (uint dd=0; dd<dim; ++dd) {
-        setIfLess     (ret.cr(0,dd),b2.cr(0,dd));
-        setIfGreater  (ret.cr(1,dd),b2.cr(1,dd));
-    }
-    return ret;
-}
-
-// Returns inclusive bounds of 3 column vectors:
-template<typename T,uint dim>
-Mat<T,dim,2>
-cBounds(
-    const Mat<T,dim,1> & v0,
-    const Mat<T,dim,1> & v1,
-    const Mat<T,dim,1> & v2)
-{
-    Mat<T,dim,2>  ret;
-    for (uint dd=0; dd<dim; ++dd) {
-        ret.cr(0,dd) = ret.cr(1,dd) = v0[dd];
-        setIfLess(ret.cr(0,dd),v1[dd]);
-        setIfLess(ret.cr(0,dd),v2[dd]);
-        setIfGreater(ret.cr(1,dd),v1[dd]);
-        setIfGreater(ret.cr(1,dd),v2[dd]);
+        updateMin_(ret.cr(0,dd),b2.cr(0,dd));
+        updateMax_(ret.cr(1,dd),b2.cr(1,dd));
     }
     return ret;
 }
@@ -111,31 +113,24 @@ template<class T,uint dim>
 Mat<T,dim,2>
 cBoundsUnion(Svec<Mat<T,dim,2> > const & bounds)
 {
-    T                       max = std::numeric_limits<T>::max(),
-                            min = std::numeric_limits<T>::lowest();
-    Mat<T,dim,2>      ret;
-    for (uint dd=0; dd<dim; ++dd) {
-        ret.rc(dd,0) = max;
-        ret.rc(dd,1) = min;
-    }
+    Mat<T,dim,2>      ret = catHoriz(
+        Mat<T,dim,1>(std::numeric_limits<T>::max()),
+        Mat<T,dim,1>(std::numeric_limits<T>::lowest()));
     for (Mat<T,dim,2> bound : bounds) {
         for (uint dd=0; dd<dim; ++dd) {
-            setIfLess(ret.rc(dd,0),bound.rc(dd,0));
-            setIfGreater(ret.rc(dd,1),bound.rc(dd,1));
+            updateMin_(ret.rc(dd,0),bound.rc(dd,0));
+            updateMax_(ret.rc(dd,1),bound.rc(dd,1));
         }
     }
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,1>
-cMaxColumnwise(Mat<T,nrows,ncols> const & mat)
+template<typename T,size_t S>
+T
+cMedian(Arr<T,S> arr)       // Rounds up for even numbers of elements
 {
-    Mat<T,nrows,1>    ret(mat.colVec(0));
-    for (uint row=0; row<nrows; ++row)
-        for (uint col=1; col<ncols; ++col)
-            setIfGreater(ret[row],mat.cr(col,row));
-    return ret;
+    std::sort(arr.begin(),arr.end());
+    return arr[S/2];
 }
 
 template<typename T,uint nrows,uint ncols>
@@ -145,7 +140,7 @@ cMaxElem(Mat<T,nrows,ncols> const & mat)
     T           ret(mat[0]);
     size_t      sz = mat.size();
     for (size_t ii=1; ii<sz; ++ii)
-        setIfGreater(ret,mat[ii]);
+        updateMax_(ret,mat[ii]);
     return ret;
 }
 
@@ -156,7 +151,7 @@ cMinElem(Mat<T,nrows,ncols> const & mat)
     T           ret(mat[0]);
     size_t      sz = mat.size();
     for (size_t ii=1; ii<sz; ++ii)
-        setIfLess(ret,mat[ii]);
+        updateMin_(ret,mat[ii]);
     return ret;
 }
 
@@ -197,7 +192,7 @@ cMax(
 
 template<typename T>
 inline T
-cMaxElem(const MatV<T> & mat)
+cMaxElem(MatV<T> const & mat)
 {return cMax(mat.dataVec()); }
 
 template<typename T,uint nrows>
@@ -208,47 +203,13 @@ cDims(const Svec<Mat<T,nrows,1> > & vec)
     return (bounds.colVec(1)-bounds.colVec(0));
 }
 
-template<typename T,uint dim>
-bool
-boundsIntersect(
-    const Mat<T,dim,2> &  bnds1,
-    const Mat<T,dim,2> &  bnds2)
-{
-    Mat<T,dim,2>      tmp;
-    for (uint dd=0; dd<dim; ++dd) {
-        tmp.cr(0,dd) = std::max(bnds1.cr(0,dd),bnds2.cr(0,dd));
-        tmp.cr(1,dd) = std::min(bnds1.cr(1,dd),bnds2.cr(1,dd));
-        if (tmp.cr(0,dd) > tmp.cr(1,dd))
-            return false;
-    }
-    return true;
-}
-
-template<typename T,uint dim>
-bool
-boundsIntersect(
-    const Mat<T,dim,2> &  bnds1,
-    const Mat<T,dim,2> &  bnds2,
-    Mat<T,dim,2> &        retval)     // Not assigned if bounds do not intersect
-{
-    Mat<T,dim,2>      tmp;
-    for (uint dd=0; dd<dim; ++dd) {
-        tmp.cr(0,dd) = std::max(bnds1.cr(0,dd),bnds2.cr(0,dd));
-        tmp.cr(1,dd) = std::min(bnds1.cr(1,dd),bnds2.cr(1,dd));
-        if (tmp.cr(0,dd) > tmp.cr(1,dd))
-            return false;
-    }
-    retval = tmp;
-    return true;
-}
-
 // The returned bounds will have negative volume if the bounds do not intersect.
 // Bounds must both be EUB or both be IUB:
 template<typename T,uint dim>
 Mat<T,dim,2>
-cBoundsIntersection(
-    const Mat<T,dim,2> &  b1,
-    const Mat<T,dim,2> &  b2)
+intersectBounds(
+    Mat<T,dim,2> const &  b1,
+    Mat<T,dim,2> const &  b2)
 {
     Mat<T,dim,2>      ret;
     for (uint dd=0; dd<dim; ++dd) {
@@ -285,24 +246,41 @@ isInUpperBounds(Mat<uint,dim,1> exclusiveUpperBounds,Mat<T,dim,1> pnt)
     return true;
 }
 
-// Returns inclusive bounds for the given [0,eub]^dim range:
+// Returns EUB bounds for the given dimensions with implicit lower bound of 0:
+template<typename T,uint dim>
+Mat<T,dim,2>
+dimsToBoundsEub(Mat<T,dim,1> rangeEub)
+{
+    return catHoriz(Mat<T,dim,1>{0},rangeEub);
+}
+
+// Returns IUB bounds for the given [0,eub]^dim range:
 template<uint dim>
 Mat<uint,dim,2>
-rangeToBounds(Mat<uint,dim,1> rangeEub)
+dimsToBoundsIub(Mat<uint,dim,1> rangeEub)
 {
     FGASSERT(cMinElem(rangeEub) > 0);
     return catHoriz(Mat<uint,dim,1>(0),rangeEub-Mat<uint,dim,1>(1));
 }
 
-// Returns true if (upper >= lower) for all dims:
 template<typename T,uint dim>
 bool
-boundsValid(Mat<T,dim,2> bounds)
+isBoundIubEmpty(Mat<T,dim,2> bounds)
 {
-    bool        ret = true;
     for (uint dd=0; dd<dim; ++dd)
-        ret = ret && (bounds.rc(dd,1)>=bounds.rc(dd,0));
-    return ret;
+        if (bounds.rc(dd,1) < bounds.rc(dd,0))
+            return true;
+    return false;
+}
+
+template<typename T,uint dim>
+bool
+isBoundEubEmpty(Mat<T,dim,2> bounds)
+{
+    for (uint dd=0; dd<dim; ++dd)
+        if (!(bounds.rc(dd,0) < bounds.rc(dd,1)))
+            return true;
+    return false;
 }
 
 // Return a cube bounding box around the given verts whose centre is the centre of the
@@ -324,7 +302,7 @@ cCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
 // Convert bounds from inclusive upper to exclusive upper:
 template<class T,uint nrows>
 Mat<T,nrows,2>
-fgInclToExcl(Mat<T,nrows,2> boundsInclusiveUpper)
+iubToEub(Mat<T,nrows,2> boundsInclusiveUpper)
 {
     Mat<T,nrows,2>    ret;
     for (uint rr=0; rr<nrows; ++rr) {
@@ -339,72 +317,61 @@ fgInclToExcl(Mat<T,nrows,2> boundsInclusiveUpper)
 
 template<typename T>
 inline T
-clampBounds(T val,T lo,T hi)
+clamp(T val,T lo,T hi)
 {return val < lo ? lo : (val > hi ? hi : val); }
 
 template<typename T>
 inline T
-clampBounds(T val,Mat<T,1,2> bounds)
+clamp(T val,Mat<T,1,2> bounds)
 {return val < bounds[0] ? bounds[0] : (val > bounds[1] ? bounds[1] : val); }
 
-// Base case for template specialization same as std::max:
-template<typename T>
-inline T
-clampLo(T val,T lo)
-{return (val < lo) ? lo : val; }
-
-template<typename T>
-inline T
-clampHi(T val,T hi)
-{return (val > hi) ? hi : val; }
-
 template<class T,uint nrows,uint ncols>
 Mat<T,nrows,ncols>
-clampBounds(Mat<T,nrows,ncols> const & mat,T lo,T hi)
+mapClamp(Mat<T,nrows,ncols> const & mat,T lo,T hi)
 {
     Mat<T,nrows,ncols>      ret;
     for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = clampBounds(mat[ii],lo,hi);
-    return ret;
-}
-
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-clampBounds(Mat<T,nrows,ncols> const & mat,Mat<T,nrows,ncols> lo,Mat<T,nrows,ncols> hi)
-{
-    Mat<T,nrows,ncols>      ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = clampBounds(mat[ii],lo[ii],hi[ii]);
-    return ret;
-}
-
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-clampLo(Mat<T,nrows,ncols> m,T lo)
-{
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = clampLo(m[ii],lo);
-    return ret;
-}
-
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-clampHi(Mat<T,nrows,ncols> m,T hi)
-{
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = clampHi(m[ii],hi);
+        ret[ii] = clamp(mat[ii],lo,hi);
     return ret;
 }
 
 template<class T,uint dim>
 Mat<T,dim,1>
-clampBounds(const Mat<T,dim,1> & pos,const Mat<T,dim,2> & boundsInclusive)
+mapClamp(Mat<T,dim,1> const & pos,Mat<T,dim,2> const & boundsInclusive)
 {
     Mat<T,dim,1>  ret;
     for (uint ii=0; ii<dim; ++ii)
-        ret[ii] = clampBounds(pos[ii],boundsInclusive.rc(ii,0),boundsInclusive.rc(ii,1));
+        ret[ii] = clamp(pos[ii],boundsInclusive.rc(ii,0),boundsInclusive.rc(ii,1));
+    return ret;
+}
+
+template<class T,uint nrows,uint ncols>
+Mat<T,nrows,ncols>
+mapClamp(Mat<T,nrows,ncols> const & mat,Mat<T,nrows,ncols> lo,Mat<T,nrows,ncols> hi)
+{
+    Mat<T,nrows,ncols>      ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = clamp(mat[ii],lo[ii],hi[ii]);
+    return ret;
+}
+
+template<typename T,uint nrows,uint ncols>
+Mat<T,nrows,ncols>
+mapMax(Mat<T,nrows,ncols> m,T lo)
+{
+    Mat<T,nrows,ncols>    ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = cMax(m[ii],lo);
+    return ret;
+}
+
+template<typename T,uint nrows,uint ncols>
+Mat<T,nrows,ncols>
+mapMin(Mat<T,nrows,ncols> m,T hi)
+{
+    Mat<T,nrows,ncols>    ret;
+    for (uint ii=0; ii<nrows*ncols; ++ii)
+        ret[ii] = cMin(m[ii],hi);
     return ret;
 }
 

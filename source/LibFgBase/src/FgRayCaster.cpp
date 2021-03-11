@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -114,7 +114,7 @@ RayCaster::cast(Vec2F posIucs) const
         }
         Vec3F               acc(0.0f);
 	    float	            aw = albedo.alpha() / 255.0f;
-        Vec3F               surfColour = albedo.m_c.subMatrix<3,1>(0,0) * aw;
+        Vec3F               surfColour = Vec3F(cHead<3>(albedo.m_c)) * aw;
         for (size_t ll=0; ll<lighting.lights.size(); ++ll) {
             Light               lgt = lighting.lights[ll];
             float               fac = cDot(norm,lgt.direction);

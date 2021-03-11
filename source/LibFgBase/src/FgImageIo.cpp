@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 void
-loadImage_(Ustring const & fname,ImgUC & ret)
+loadImage_(String8 const & fname,ImgUC & ret)
 {
     ImgC4UC     img = loadImage(fname);
     ret.resize(img.dims());
@@ -25,7 +25,7 @@ loadImage_(Ustring const & fname,ImgUC & ret)
 }
 
 void
-loadImage_(Ustring const & fname,ImgF & img)
+loadImage_(String8 const & fname,ImgF & img)
 {
     ImgC4UC     tmp;
     loadImage_(fname,tmp);
@@ -35,7 +35,7 @@ loadImage_(Ustring const & fname,ImgF & img)
 }
 
 void
-saveImage(Ustring const & fname,const ImgUC & img)
+saveImage(String8 const & fname,const ImgUC & img)
 {
     ImgC4UC         tmp;
     imgConvert_(img,tmp);
@@ -75,14 +75,14 @@ imgFileExtensionsDescription()
 }
 
 bool
-hasImgExtension(Ustring const & fname)
+hasImgExtension(String8 const & fname)
 {
     string          ext = toLower(pathToExt(fname).m_str);
     return contains(imgFileExtensions(),ext);
 }
 
 std::vector<std::string>
-imgFindFiles(Ustring const & baseName)
+imgFindFiles(String8 const & baseName)
 {
     Strings      ret,
                         cifs = imgFileExtensions();
@@ -93,12 +93,12 @@ imgFindFiles(Ustring const & baseName)
 }
 
 bool
-imgFindLoadAnyFormat(Ustring const & baseName,ImgC4UC & img)
+imgFindLoadAnyFormat(String8 const & baseName,ImgC4UC & img)
 {
     Strings  exts = imgFindFiles(baseName);
     if (exts.empty())
         return false;
-    Ustring        fname = baseName + "." + exts[0];
+    String8        fname = baseName + "." + exts[0];
     if (exts.size() > 1)
         fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
     loadImage_(fname,img);
@@ -110,7 +110,7 @@ fgImgTestWrite(CLArgs const & args)
 {
     FGTESTDIR
     char32_t        ch = 0x00004EE5;            // A Chinese character
-    Ustring        chinese(ch);
+    String8        chinese(ch);
     ImgC4UC     redImg(16,16,RgbaUC(255,0,0,255));
     saveImage(chinese+"0.jpg",redImg);
     saveImage(chinese+"0.png",redImg);

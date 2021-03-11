@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,7 +38,7 @@ typedef EdgeMapT::const_iterator EdgeMapCItr;
 // Local function prototypes
 //****************************************************************************
 static bool saveMayaAsciiFile(
-        Ustring const                    &fname,
+        String8 const                    &fname,
         const FffMultiObjectC           &model,
         const vector<FffMultiObjectC>   *morphTargets,
         Strings const            *morphNames,
@@ -167,7 +167,7 @@ static void connectAttributes(
 //****************************************************************************
 static bool    fffSaveMayaAsciiFile(
 
-    Ustring const            &fname,
+    String8 const            &fname,
     const FffMultiObjectC   &model,
     Strings const    *cmts)
 {
@@ -176,7 +176,7 @@ static bool    fffSaveMayaAsciiFile(
 
 static bool    fffSaveMayaAsciiFile(
 
-    Ustring const                    &fname,
+    String8 const                    &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   &morphTargets,
     Strings const            &morphNames,
@@ -191,7 +191,7 @@ static bool    fffSaveMayaAsciiFile(
 //****************************************************************************
 static bool saveMayaAsciiFile(
 
-    Ustring const                  &fname,
+    String8 const                  &fname,
     const FffMultiObjectC           &model,
     const vector<FffMultiObjectC>   *morphTargets,
     Strings const            *morphNames,
@@ -1971,7 +1971,7 @@ static void connectAttributes(
 }
 
 FgMeshLegacy
-fgMeshLegacy(Meshes const & meshes,Ustring const & fname,string const & imgFormat,uint maxLen)
+fgMeshLegacy(Meshes const & meshes,String8 const & fname,string const & imgFormat,uint maxLen)
 {
     FgMeshLegacy                    ret;
     Path                          path(fname);
@@ -2010,8 +2010,8 @@ fgMeshLegacy(Meshes const & meshes,Ustring const & fname,string const & imgForma
             }
         }
     }
-    set<Ustring>           morphSet = getMorphNames(meshes);
-    Ustrings        morphs(morphSet.begin(),morphSet.end());
+    set<String8>           morphSet = getMorphNames(meshes);
+    String8s        morphs(morphSet.begin(),morphSet.end());
     ret.morphs.resize(morphs.size(),ret.base);
     for (size_t mm=0; mm<morphs.size(); ++mm) {
         vector<FffMultiObjectC::objData> &  ods = ret.morphs[mm].m_objs;
@@ -2028,7 +2028,7 @@ fgMeshLegacy(Meshes const & meshes,Ustring const & fname,string const & imgForma
 
 void
 saveMa(
-    Ustring const &        fname,
+    String8 const &        fname,
     Meshes const & meshes,
     string                  imgFormat)
 {
@@ -2044,7 +2044,7 @@ void
 fgSaveMaTest(CLArgs const & args)
 {
     FGTESTDIR
-    Ustring    dd = dataDir();
+    String8    dd = dataDir();
     string      rd = "base/";
     Mesh    mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,9 +35,9 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
     HWND                        hwndThis;
     GuiImplPtrs                 m_panes;
     // Cache current visibility of panes to avoid excessive update calls:
-    vector<FgBool>              m_panesVisible;
+    vector<FatBool>              m_panesVisible;
     Vec2I                    m_client;   // doesn't include slider
-    Ustring                    m_store;
+    String8                    m_store;
     SCROLLINFO                  m_si;
 
     GuiSplitScrollWin(const GuiSplitScroll & api) :
@@ -50,7 +50,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
     }
 
     virtual void
-    create(HWND parentHwnd,int ident,Ustring const & store,DWORD extStyle,bool visible)
+    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitScroll::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         m_store = store;
@@ -128,13 +128,6 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
 //fgout << fgnl << "SplitScroll::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
-    }
-
-    virtual void
-    saveState()
-    {
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
-            m_panes[ii]->saveState();
     }
 
     LRESULT

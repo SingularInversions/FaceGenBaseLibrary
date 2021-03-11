@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2020 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -54,8 +54,8 @@ namespace Fg {
 
 void
 regressFail(
-    Ustring const & testName,
-    Ustring const & refName);
+    String8 const & testName,
+    String8 const & refName);
 
 // Returns corresponding regression baseline value:
 template<class T>
@@ -73,23 +73,23 @@ getRegressionBaseline(
 }
 
 // Takes two filenames as input and returns true for regression passed and false for failure:
-typedef std::function<bool(Ustring const &,Ustring const &)> EquateFiles;
+typedef std::function<bool(String8 const &,String8 const &)> EquateFiles;
 
 // Calls the given regression check and deletes the query file if successful. If unsuccessful then:
 // '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
 // leave the query file in place.
 void
 regressFile(
-    Ustring const &         baselineRelPath,    // Relative (to data dir) path to regression baseline file
-    Ustring const &         queryPath,          // Path to query file to be tested
+    String8 const &         baselineRelPath,    // Relative (to data dir) path to regression baseline file
+    String8 const &         queryPath,          // Path to query file to be tested
     EquateFiles const &     equateFiles = equateFilesBinary); // Defaults to binary equality test
 
 // As above when query and baseline have same name:
 inline
 void
 regressFileRel(
-    Ustring const &         fname,      // Must exist relative to current dir (query) AND dataDir() + 'relDir' (base).
-    Ustring const &         relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    String8 const &         fname,      // Must exist relative to current dir (query) AND dataDir() + 'relDir' (base).
+    String8 const &         relDir,     // Relative path (within data dir) of the baseline file of the same name.
     EquateFiles const &     equateFiles = equateFilesBinary)     // Defaults to binary equality test
 {regressFile(relDir+fname,fname,equateFiles); }
 
@@ -102,7 +102,7 @@ regressImage(
 
 template<class T>
 T
-regressLoad(Ustring const & fname)
+regressLoad(String8 const & fname)
 {
     T       ret;
     loadBsaXml(fname,ret);
@@ -110,16 +110,16 @@ regressLoad(Ustring const & fname)
 }
 template<>
 ImgC4UC
-regressLoad(Ustring const &);
+regressLoad(String8 const &);
 
 template<class T>
 void
-regressSave(Ustring const & fname,T const & val)
+regressSave(String8 const & fname,T const & val)
 {saveBsaXml(fname,val); }
 
 template<>
 inline void
-regressSave(Ustring const & path,ImgC4UC const & img)
+regressSave(String8 const & path,ImgC4UC const & img)
 {saveImage(path,img); }
 
 // Developers with source control create this (empty) flag file locally:
@@ -133,7 +133,7 @@ template<class T>
 void
 regressTest(
     T const &           query,
-    Ustring const &     baselinePath)
+    String8 const &     baselinePath)
 {
     // This flag should be set on a developer's machine (and ignored by source control) for
     // easy updates & change visualation. It should NOT be set of automated build machines:
@@ -160,10 +160,10 @@ template<class T>
 void
 regressTestApprox(
     T const &                       query,
-    Ustring const &                 baselinePath,
+    String8 const &                 baselinePath,
     Sfun<bool(T const &,T const &)> compare,
-    Sfun<T(Ustring const &)>        load=regressLoad<T>,
-    Sfun<void(Ustring const &,T const &)> save=regressSave<T>,
+    Sfun<T(String8 const &)>        load=regressLoad<T>,
+    Sfun<void(String8 const &,T const &)> save=regressSave<T>,
     // Set equality if you want bitwise regression for primary configuration:
     Sfun<bool(T const &,T const &)> equality=Sfun<bool(T const &,T const &)>())
 {
@@ -196,7 +196,7 @@ regressTestApprox(
 // Regress a string against a data file. Throws if file is different.
 // For dev instances (_overwrite_baselines.flag), also overwrites file if different.
 void
-regressString(String const & data,Ustring const & relPath);
+regressString(String const & data,String8 const & relPath);
 
 }
 
