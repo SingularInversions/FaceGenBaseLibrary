@@ -17,22 +17,20 @@ GuiImplPtr guiGetOsImpl(GuiCheckbox const & guiApi);
 
 struct GuiCheckbox : GuiBase
 {
-    String8            label;
-    IPT<bool>    val;
-    DfgFPtr         updateFlag;
+    String8             label;
+    // Will be called to get current status for display updates (must return true if box selected):
+    Sfun<bool()>        getFn;
+    // Will be called when user clicks on checkbox:
+    Sfun<void()>        clickFn;
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    virtual GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
 GuiPtr
-guiCheckbox(String8 const & label,const IPT<bool> & valInp);
+guiCheckbox(String8 const & label,IPT<bool> const & valInp);
 
 GuiPtr
-guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs);
-
-GuiVal<Bools >
-guiCheckboxes(String8s const & labels,Bools const & defaults);
+guiCheckboxes(String8s const & labels,Svec<IPT<bool>> const & selNs);
 
 }
 

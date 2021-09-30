@@ -147,7 +147,7 @@ namespace {
 void
 testCorrect(CLArgs const &)
 {
-    MatD       M = {2,2,{1,2,3,5}},
+    MatD            M = {2,2,{1,2,3,5}},
                     N = M * M,
                     R = {2,2,{7,12,18,31}};
     FGASSERT(N == R);
@@ -156,9 +156,9 @@ testCorrect(CLArgs const &)
 MatD
 tt0(MatD const & lhs,MatD const & rhs)
 {
-    MatD           mat(lhs.nrows,rhs.ncols,0.0);
+    MatD                mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
-    const size_t          CN = 8;
+    size_t const        CN = 8;
     for (size_t rr=0; rr<mat.nrows; rr++) {
         for (size_t cc=0; cc<mat.ncols; cc+=CN) {
             for (size_t kk=0; kk<lhs.ncols; kk++) {
@@ -176,7 +176,7 @@ tt1(MatD const & lhs,MatD const & rhs)
 {
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
-    const size_t          CN = 8;
+    size_t const          CN = 8;
     for (size_t rr=0; rr<mat.nrows; rr+=CN) {
         for (size_t cc=0; cc<mat.ncols; cc+=CN) {
             for (size_t kk=0; kk<lhs.ncols; kk+=CN) {
@@ -196,7 +196,7 @@ tt1(MatD const & lhs,MatD const & rhs)
 MatD
 tt2(MatD const & lhs,MatD const & rhs)
 {
-    const size_t        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
+    size_t const        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     for (size_t rr=0; rr<mat.nrows; rr++) {
@@ -226,7 +226,7 @@ tt2(MatD const & lhs,MatD const & rhs)
 MatD
 tt3(MatD const & lhs,MatD const & rhs)
 {
-    const size_t        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
+    size_t const        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
     for (size_t rr=0; rr<mat.nrows; rr+=CN) {
@@ -272,7 +272,7 @@ showMul(function<MatD(MatD const &,MatD const &)> fn,MatD const & l,MatD const &
     fgout << fgnl << desc << " : ";
     Timer         timer;
     MatD       m3 = fn(l,r);
-    size_t          elapsed = timer.readMs();
+    size_t          elapsed = timer.elapsedMilliseconds();
     fgout << elapsed << " ms";
 }
 
@@ -287,7 +287,7 @@ testMul(CLArgs const & args)
                     m1 = MatD::randNormal(sz,sz);
     Timer         timer;
     MatD       m2 = m0 * m1;
-    size_t          time = timer.readMs();
+    size_t          time = timer.elapsedMilliseconds();
     fgout << sz << ": " << time << "ms";
 }
 
@@ -329,7 +329,7 @@ eigenTest(CLArgs const & args)
 }
 
 void
-fgMatrixVTest(CLArgs const & args)
+testMatrixV(CLArgs const & args)
 {
     Cmds   cmds;
     cmds.push_back(Cmd(testCorrect,"correct"));

@@ -26,6 +26,10 @@ isDigitLetterDashUnderscore(char c)
 {return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
 
 static bool
+isWhitespace(char c)
+{return (c < 0x21); }
+
+static bool
 isWhitespaceOrInvalid(char c)
 {return ((c < 0x21) || (c > 0x7E)); }
 
@@ -77,14 +81,15 @@ isCrOrLf(char c)
 }
 
 Strings
-splitLines(string const & src)
+splitLines(string const & src,char commentFlag)
 {
     Strings         ret;
     string          acc;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if (isCrOrLf(src[ii])) {
             if (!acc.empty()) {
-                ret.push_back(acc);
+                if (acc[0] != commentFlag)
+                    ret.push_back(acc);
                 acc.clear();
             }
         }
@@ -97,13 +102,13 @@ splitLines(string const & src)
 }
 
 String32s
-splitLines(String32 const & src,bool incEmpty)
+splitLines(String32 const & src)
 {
     String32s            ret;
     size_t              base = 0;
     for (size_t ii=0; ii<src.size(); ++ii) {
         if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
-            if ((ii > base) || incEmpty)
+            if (ii > base)
                 ret.push_back(String32(src.begin()+base,src.begin()+ii));
             base = ii+1; } }
     if (base < src.size())
@@ -112,10 +117,10 @@ splitLines(String32 const & src,bool incEmpty)
 }
 
 String8s
-splitLinesUtf8(string const & utf8,bool includeEmptyLines)
+splitLinesUtf8(string const & utf8)
 {
     String8s               ret;
-    String32s       res = splitLines(String8(utf8).as_utf32(),includeEmptyLines);
+    String32s       res = splitLines(String8(utf8).as_utf32());
     ret.resize(res.size());
     for (size_t ii=0; ii<res.size(); ++ii)
         ret[ii] = String8(res[ii]);
@@ -203,7 +208,7 @@ Stringss
 loadCsv(String8 const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    String32       data = toUtf32(loadRawString(fname));
+    String32       data = toUtf32(loadRaw(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -221,7 +226,7 @@ loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT(keyIdx < fieldsPerLine);
     map<string,Strings>  ret;
-    String32           data = toUtf32(loadRawString(fname));
+    String32           data = toUtf32(loadRaw(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings          line = csvGetLine(data,idx);
@@ -425,6 +430,15 @@ replaceAll(String32 const & str,char32_t a,char32_t b)
         else
             ret.push_back(c);
     return ret;
+}
+
+String
+noLeadingWhitespace(String const & str)
+{
+    size_t              idx = 0;
+    while (isWhitespace(str[idx]))
+        ++idx;
+    return str.substr(idx);
 }
 
 }

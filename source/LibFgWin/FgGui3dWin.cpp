@@ -9,7 +9,6 @@
 #include "FgGuiApi3d.hpp"
 #include "FgDirect3D.hpp"
 #include "FgGuiWin.hpp"
-#include "FgCoordSystem.hpp"
 #include "FgHex.hpp"
 
 using namespace std;
@@ -150,7 +149,11 @@ struct  Gui3dWin : public GuiBaseImpl
                 if (newSize != m_size) {
                     m_size = newSize;
                     m_api.viewportDims.set(m_size);
-                    if (m_d3d->resize(m_size)) {        // This WM_SIZE was caused by device being invalidated, re-create:
+                    try {
+                        m_d3d->resize(m_size);
+                    }
+                    // This has happened to customers (ie. D3D ResizeBuffers can and does return it):
+                    catch (ExceptD3dDeviceRemoved const &) {
                         m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
                         m_d3d->resize(m_size);          // Assume it works this time
                     }
@@ -164,12 +167,23 @@ struct  Gui3dWin : public GuiBaseImpl
             // but swapBuffers not required.
             // Validates the invalid region. Doesn't erase background in this case since brush is NULL.
             BeginPaint(hwnd,&ps);
-            render();
+            bool                restartGpu = false;
+            try {
+                render();
+            }
+            catch (ExceptD3dDeviceRemoved const &) {
+                restartGpu = true;
+            }
             // One user had a Windows termination ('the program has stopped working and will now close' -
             // Win 10 Pro, NVIDIA GeForce GTX 760) here, even though 'm_hdc' was valid and a face was already
             // displayed on the screen (just once, when the program first started). Turned out to be a buggy
             // video driver (perhaps OpenGL specific).
             EndPaint(hwnd,&ps);
+            if (restartGpu) {
+                m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
+                m_d3d->resize(m_size);          // Assume it works this time
+                winUpdateScreen();
+            }
         }
         else if (msg == WM_LBUTTONDOWN)
             handleButtonPress(hwnd,wParam,lParam,0);
@@ -386,15 +400,22 @@ struct  Gui3dWin : public GuiBaseImpl
         m_d3d->showBackBuffer();
     }
 
-    ImgC4UC
+    // This function is called by client so don't attempt to re-start GPU instance here, just return black image:
+    ImgRgba8
     capture(Vec2UI dims,bool backgroundTransparent)
     {
-        m_d3d->resize(dims);
-        m_api.viewportDims.set(dims);
-        renderBackBuffer(backgroundTransparent);
-        ImgC4UC         ret = m_d3d->capture(dims);
-        m_api.viewportDims.set(m_size);
-        m_d3d->resize(m_size);
+        ImgRgba8             ret;
+        try {
+            m_d3d->resize(dims);
+            m_api.viewportDims.set(dims);
+            renderBackBuffer(backgroundTransparent);
+            ret = m_d3d->capture(dims);
+            m_api.viewportDims.set(m_size);
+            m_d3d->resize(m_size);
+        }
+        catch (ExceptD3dDeviceRemoved const &) {
+            ret.resize(dims,RgbaUC{0});
+        }
         return ret;
     }
 };

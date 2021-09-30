@@ -328,7 +328,7 @@ const int s_splashSize = 256;
 struct  GuiDialogSplashScreenWin
 {
     HWND            hwndThis;
-    ImgC4UC     img;
+    ImgRgba8     img;
 
     GuiDialogSplashScreenWin() : hwndThis(0), img(s_splashSize,s_splashSize,RgbaUC(0,255,0,255)) {}
 
@@ -378,7 +378,7 @@ struct  GuiDialogSplashScreenWin
                     img.width(),img.height(),
                     0,0,
                     0,img.height(),
-                    img.data(),      // This pointer is kept after function return
+                    img.dataPtr(),      // This pointer is kept after function return
                     (BITMAPINFO*)&bmi,
                     DIB_RGB_COLORS);
             }

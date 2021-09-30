@@ -61,13 +61,6 @@ Ifstream::open(
 
 #endif
 
-void
-fgWriteFile(String8 const & fname,const std::string & data,bool appendFile)
-{
-    Ofstream  ofs(fname,appendFile);
-    ofs << data;
-}
-
 }
 
 // */

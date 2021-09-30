@@ -1,0 +1,15 @@
+ifndef NDK_ROOT
+$(error NDK_ROOT is not set)
+endif
+API_VERSION ?= 23
+NDK_BIN = ${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/bin
+CC = ${NDK_BIN}/clang
+CXX = ${NDK_BIN}/clang++
+LINK = ${NDK_BIN}/clang++
+AR = ${NDK_BIN}/aarch64-linux-android-ar
+RANLIB = ${NDK_BIN}/aarch64-linux-android-ranlib
+CFLAGS = -DNDEBUG -Ofast -fno-addrsig -fPIC --target=aarch64-linux-android${API_VERSION} --sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/linux-x86_64/sysroot
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++14 -ftemplate-depth=1024 -stdlib=libc++
+BUILDIR = ../build_android/arm64-v8a/clang/release/
+include make_libs.mk

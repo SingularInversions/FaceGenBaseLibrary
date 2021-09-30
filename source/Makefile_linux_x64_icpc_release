@@ -9,7 +9,7 @@ CXXFLAGS = $(CFLAGS) -std=c++14
 LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
 DLLEXT = .so
 DLLARG = -shared -Wl,-soname,
-BINDIR = ../bin/ubuntu/x64/icpc/release/
-BBINDIR = ../bin/ubuntu/x64/
-BUILDIR = ../build_ubuntu/x64/icpc/release/
+BINDIR = ../bin/linux/x64/icpc/release/
+BBINDIR = ../bin/linux/x64/
+BUILDIR = ../build_linux/x64/icpc/release/
 include make_all.mk

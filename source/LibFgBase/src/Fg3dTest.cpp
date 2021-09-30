@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgTestUtils.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgApproxEqual.hpp"
 #include "Fg3dDisplay.hpp"
@@ -16,7 +16,6 @@
 #include "Fg3dTopology.hpp"
 #include "FgAffine1.hpp"
 #include "FgBuild.hpp"
-#include "FgCoordSystem.hpp"
 
 using namespace std;
 
@@ -75,19 +74,19 @@ edgeDist(CLArgs const &)
 {
     Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
     Surf                surf = mergeSurfaces(mesh.surfaces).convertToTris();
-    MeshTopology        topo(mesh.verts.size(),surf.tris.posInds);
+    SurfTopo        topo(mesh.verts.size(),surf.tris.posInds);
     size_t              vertIdx = 0;    // Randomly choose the first
-    vector<float>       edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
+    Floats       edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
     float               distMax = 0;
     for (size_t ii=0; ii<edgeDists.size(); ++ii)
-        if (edgeDists[ii] < maxFloat())
+        if (edgeDists[ii] < floatMax())
             updateMax_(distMax,edgeDists[ii]);
     float               distToCol = 255.99f / distMax;
     Uchars              colVal(edgeDists.size(),255);
     for (size_t ii=0; ii<colVal.size(); ++ii)
-        if (edgeDists[ii] < maxFloat())
+        if (edgeDists[ii] < floatMax())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
-    mesh.surfaces[0].setAlbedoMap(ImgC4UC(128,128,RgbaUC(255)));
+    mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,RgbaUC(255)));
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
         Vec3UI              vertInds = surf.tris.posInds[tt];
@@ -117,14 +116,14 @@ test3d(CLArgs const & args)
 {
     Cmds            cmds {
         {fgSave3dsTest,"3ds",".3DS file format export"},
+#ifdef _MSC_VER     // Precision differences with gcc/clang:
         {fgSaveLwoTest,"lwo","Lightwve object file format export"},
         {fgSaveMaTest,"ma","Maya ASCII file format export"},
-        {testSaveDae, "dae", "Collada DAE format export"},
         {fgSaveFbxTest, "fbx", ".FBX file format export"},
         {fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"},
         {fgSavePlyTest, "ply", ".PLY file format export"},
         {testVrmlSave,  "vrml", ".WRL file format export"},
-#ifdef _MSC_VER     // Precision differences with gcc/clang:
+        {testSaveDae, "dae", "Collada DAE format export"},
         {fgSaveXsiTest, "xsi", ".XSI file format export"},
 #endif
     };
@@ -190,6 +189,27 @@ testmSphere(CLArgs const &)
 }
 
 void
+testmSurfTopo(CLArgs const &)
+{
+    // Test boundary vert normals by adding marked verts along normals and viewing:
+    Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
+    TriSurf             triSurf = mesh.asTriSurf();
+    Vec3Ds              verts = mapCast<Vec3D>(triSurf.verts);
+    double              scale = cMax(cDims(verts).m) * 0.01;        // Extend norms 1% of max dim
+    SurfTopo            topo {triSurf.verts.size(),triSurf.tris};
+    Svec<SurfTopo::BoundEdges> boundaries = topo.boundaries();
+    for (auto const & boundary : boundaries) {
+        Vec3Ds              vertNorms = topo.boundaryVertNormals(boundary,verts);
+        for (size_t bb=0; bb<boundary.size(); ++bb) {
+            auto const &        be = boundary[bb];
+            Vec3D               vert = verts[be.vertIdx] + vertNorms[bb] * scale;
+            mesh.addMarkedVert(Vec3F(vert),"");
+        }
+    }
+    viewMesh(mesh);
+}
+
+void
 testm3d(CLArgs const & args)
 {
     Cmds            cmds {
@@ -199,6 +219,7 @@ testm3d(CLArgs const & args)
         {testmSubdFace,"subd1","Loop subdivision of textured face"},
         {testmSphere4,"sphere4","Spheres created from tetrahedon"},
         {testmSphere,"sphere","Spheres created from icosahedron"},
+        {testmSurfTopo,"topo","Surface topology functions"},
     };
     doMenu(args,cmds,true,false,true);
 }

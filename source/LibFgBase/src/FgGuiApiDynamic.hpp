@@ -36,7 +36,7 @@ inline
 GuiPtr
 guiDynamic(
     const std::function<GuiPtr(void)> &   makePane,
-    const DfgFPtr &                     updateFlag)
+    DfgFPtr const &                     updateFlag)
 {
     GuiDynamic     d;
     d.makePane = makePane;

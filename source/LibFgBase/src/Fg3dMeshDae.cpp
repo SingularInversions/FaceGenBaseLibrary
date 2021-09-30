@@ -26,9 +26,8 @@
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgParse.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgTestUtils.hpp"
 
 using namespace std;
@@ -282,7 +281,7 @@ saveDae(String8 const & filename,Meshes const & meshes,string imgFormat,SpatialU
                         geometries,
                         controllers,
                         sceneNodes;
-    map<ImgC4UC*,String8>  imagesSaved;
+    map<ImgRgba8*,String8>  imagesSaved;
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
         geometries += cGeometry(mesh,mm);
@@ -293,7 +292,7 @@ saveDae(String8 const & filename,Meshes const & meshes,string imgFormat,SpatialU
             if (surf.hasUvIndices() && surf.material.albedoMap) {
                 string              id = toStr(mm) + "_" + toStr(ss);
                 String8             imgFile = fpath.base + id + "." + imgFormat;
-                ImgC4UC             *imgPtr = surf.material.albedoMap.get();
+                ImgRgba8             *imgPtr = surf.material.albedoMap.get();
                 if (contains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
                 else {
@@ -350,8 +349,8 @@ testSaveDae(CLArgs const & args)
     String8         dd = dataDir() + "base/";
     Mesh            face = loadTri(dd+"JaneLoresFace.tri"),
                     mouth = loadTri(dd+"MouthSmall.tri");
-    face.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(dd+"JaneLoresFace.jpg"));
-    mouth.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(dd+"MouthSmall.png"));
+    face.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(dd+"JaneLoresFace.jpg"));
+    mouth.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(dd+"MouthSmall.png"));
     saveDae("meshExportDae",{face,mouth});
     regressFileRel("meshExportDae.dae","base/test/");
     regressFileRel("meshExportDae0_0.png","base/test/");

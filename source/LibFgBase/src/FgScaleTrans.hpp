@@ -24,6 +24,10 @@ struct  ScaleTrans
     explicit ScaleTrans(Mat<T,dim,1> t) : trans(t) {}
     ScaleTrans(double s,Mat<T,dim,1> t) : scale(s), trans(t) {}
 
+        // Conversion constructor
+    template<typename U>
+    explicit ScaleTrans(ScaleTrans<U,dim> const & v) : scale(v.scale), trans(v.trans) {}
+
     // Operator application:
     Mat<T,dim,1>
     operator*(Mat<T,dim,1> rhs) const

@@ -41,14 +41,14 @@ cmdStr(Cmd const & cmd)
 
 void
 doMenu(
-    Strings          args,
-    const Cmds &   cmdsUnsorted,
-    bool                    optionAll,
-    bool                    optionQuiet,
-    bool                    optionKeep)
+    Strings             args,
+    Cmds const &        cmdsUnsorted,
+    bool                optionAll,
+    bool                optionQuiet,
+    bool                optionKeep)
 {
     s_breadcrumb += toLower(pathToBase(args[0]).m_str) + "_";
-    string      cl,desc;
+    string              cl,desc;
     if (optionQuiet) {
         cl +=   "[-s] ";
         desc += "    -s              - Suppress standard output except for errors.\n";
@@ -64,13 +64,13 @@ doMenu(
     else
         cl += "<command>\n";
     desc += "    <command>:";
-    Cmds       cmds = cmdsUnsorted;
-    std::sort(cmds.begin(),cmds.end());
+    Cmds                cmds = cmdsUnsorted;
+    sort(cmds.begin(),cmds.end());
     for (size_t ii=0; ii<cmds.size(); ++ii)
         desc += cmdStr(cmds[ii]);
-    Syntax    syntax(args,cl+desc);
-    while (syntax.peekNext()[0] == '-') {
-        string  opt = syntax.next();
+    Syntax              syn {args,cl+desc};
+    while (syn.peekNext()[0] == '-') {
+        string              opt = syn.next();
         if ((opt == "-s") && optionQuiet)
             fgout.setDefOut(false);
         else if ((opt.substr(0,2) == "-k") && optionKeep) {
@@ -79,10 +79,10 @@ doMenu(
                 s_annotateTestDir = opt.substr(2);
         }
         else
-            syntax.error("Invalid option");
+            syn.error("Invalid option");
     }
-    string      cmd = syntax.next(),
-                cmdl = toLower(cmd);
+    string              cmd = syn.next(),
+                        cmdl = toLower(cmd);
     if (optionAll) {
         if (cmdl == "all") {
             fgout << fgnl << "Testing: " << fgpush;
@@ -97,7 +97,7 @@ doMenu(
     }
     for (size_t ii=0; ii<cmds.size(); ++ii) {
         if (cmdl == toLower(cmds[ii].name)) {
-            cmds[ii].func(syntax.rest());
+            cmds[ii].func(syn.rest());
             if (optionAll && (cmdl == "all"))
                 fgout << fgpop << fgnl << "Passed.";
             return;
@@ -105,7 +105,7 @@ doMenu(
     }
     if (optionAll && (cmdl == "all"))
         fgout << fgpop;
-    syntax.error("Invalid command",cmd);
+    syn.error("Invalid command",cmd);
 }
 
 static String8 s_rootTestDir;
@@ -149,7 +149,7 @@ fgSetRootTestDir(String8 const & dir)
 { s_rootTestDir = dir; }
 
 void
-fgTestCopy(string const & relPath)
+copyFileToCurrentDir(string const & relPath)
 {
     String8        name = pathToName(relPath);
     if (pathExists(name))

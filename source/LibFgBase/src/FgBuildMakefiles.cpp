@@ -5,8 +5,8 @@
 //
 
 #include "stdafx.h"
+
 #include "FgBuild.hpp"
-#include "FgCons.hpp"
 #include "FgOut.hpp"
 #include "FgException.hpp"
 #include "FgFileSystem.hpp"
@@ -25,7 +25,7 @@ void
 targets(
     ostream &               ofs,
     string const &          prjName,
-    const FgConsSrcDir &    grp)
+    const ConsSrcDir &    grp)
 {
     vector<pair<string,string> >    srcNames;
     for (size_t ii=0; ii<grp.files.size(); ++ii) {
@@ -43,7 +43,7 @@ void
 group(
     ostream &               ofs,
     string const &          prjName,
-    const FgConsSrcDir &  grp)
+    const ConsSrcDir &  grp)
 {
     string  odir = "$(ODIR" + prjName + ")" + replaceAll(grp.dir,'/','_'),
             sdir = "$(SDIR" + prjName + ")" + grp.dir;
@@ -63,7 +63,7 @@ group(
 }
 
 string
-targetPath(const ConsProj & prj)
+targetPath(ConsProj const & prj)
 {
     if (prj.isDynamicLib())
         return "$(BINDIR)" + prj.name + "$(DLLEXT)";
@@ -76,7 +76,7 @@ targetPath(const ConsProj & prj)
 void
 linkLibs(
     ostream &               ofs,
-    const ConsProj &      prj,
+    ConsProj const &      prj,
     ConsSolution const &  sln,
     bool                    binaryOnly)     // Include binary-only deps
 {
@@ -84,7 +84,7 @@ linkLibs(
     Strings      libDeps = sln.getLnkDeps(prj.name);
     for (string const & name : libDeps) {
         if (sln.contains(name)) {
-            const ConsProj &  p = sln.at(name);
+            ConsProj const &  p = sln.projByName(name);
             if (p.isDynamicLib())
                 ofs << "$(BINDIR)" << name << "$(DLLEXT) ";
             else
@@ -109,13 +109,13 @@ collapse(
 
 void
 consProj(
-    ostream &           ofs,
-    const ConsProj &  prj,
-    ConsSolution const & sln)
+    ostream &               ofs,
+    ConsProj const &        prj,
+    ConsSolution const &    sln)
 {
-    Strings          incDirs = sln.getIncludes(prj.name,false),
-                    headerDirs = sln.getIncludes(prj.name,true),
-                    defs = sln.getDefs(prj.name);
+    Strings                 incDirs = sln.getIncludes(prj.name,false),
+                            headerDirs = sln.getIncludes(prj.name,true),
+                            defs = sln.getDefs(prj.name);
     ofs << "FLAGS" << prj.name << " = ";
     if (prj.warn < 3)
         ofs << " -w";                   // disables warnings (for all compilers)
@@ -169,8 +169,8 @@ bool
 constIncludeFileNative(ConsSolution const & sln,string const & fname)
 {
     set<string>         prereqs;        // All project names which are depended on
-    for (const ConsProj & p : sln.projects)
-        for (const ProjDep & pd : p.projDeps)
+    for (ConsProj const & p : sln.projects)
+        for (ProjDep const & pd : p.projDeps)
             prereqs.insert(pd.name);
     ostringstream       ofs;
     ofs
@@ -178,11 +178,11 @@ constIncludeFileNative(ConsSolution const & sln,string const & fname)
         // .PHONY ensures 'make' won't check for a file named 'all' so will always update:
         << ".PHONY: all" << lf
         << "all: ";
-    for (const ConsProj & p : sln.projects)
+    for (ConsProj const & p : sln.projects)
         if (!contains(prereqs,p.name) && !p.srcGroups.empty())
             ofs << targetPath(p) << " ";
     ofs << lf;
-    for (const ConsProj & proj : sln.projects)
+    for (ConsProj const & proj : sln.projects)
         if (!proj.srcGroups.empty())
             consProj(ofs,proj,sln);
     ofs << ".PHONY: clean cleanObjs cleanTargs" << lf
@@ -202,11 +202,11 @@ constIncludeFileBox(ConsSolution const & sln,string const & fname)
         // .PHONY ensures 'make' won't check for a file named 'all' so will always update:
         << ".PHONY: all" << lf
         << "all: ";
-    for (const ConsProj & p : sln.projects)
+    for (ConsProj const & p : sln.projects)
         if (!p.srcGroups.empty())
             ofs << targetPath(p) << " ";
     ofs << lf;
-    for (const ConsProj & proj : sln.projects)
+    for (ConsProj const & proj : sln.projects)
         if (!proj.srcGroups.empty())
             consProj(ofs,proj,sln);
     ofs << ".PHONY: clean cleanObjs cleanTargs" << lf
@@ -217,31 +217,30 @@ constIncludeFileBox(ConsSolution const & sln,string const & fname)
 
 bool
 consMakefileOsArch(
-    BuildOS               os,
-    Compiler              compiler,
-    Arch                  arch,
-    bool                    debug,      // release if false
-    string const &          fnameBuild) // includes this makefile
+    BuildOS             os,
+    Compiler            compiler,
+    Arch                arch,
+    Debrel              debrel,
+    string const &      fnameBuild)         // includes this makefile
 {
-    string          debrel = debug ? "debug" : "release",
-                    osStr = (os == BuildOS::linux) ? "linux" : toStr(os),
-                    makefile = cat(svec<string>("Makefile",osStr,toStr(arch),toStr(compiler),debrel),"_"),
-                    cc,
-                    cxx,
-                    link,
-                    dllext,             // DLL file extension (including dot)
-                    dllarg;             // DLL link args up to and adjacent to target name
-    Strings          cflags,
-                    cxxflags,           // cpp flags in *addition* to 'cflags'
-                    lflags;
+    string              osStr = (os == BuildOS::linux) ? "linux" : toStr(os),
+                        makefile = cat(svec<string>("Makefile",osStr,toStr(arch),toStr(compiler),toStr(debrel)),"_"),
+                        cc,
+                        cxx,
+                        link,
+                        dllext,             // DLL file extension (including dot)
+                        dllarg;             // DLL link args up to and adjacent to target name
+    Strings             cflags,
+                        cxxflags,           // cpp flags in *addition* to 'cflags'
+                        lflags;
     // NOTE that warning and include flags are added per-project, not here.
     if (os == BuildOS::ios) {
         if (arch == Arch::x64)
             cflags.push_back("-arch x86_64");
-        else if (arch == Arch::arm64)
+        else if (arch == Arch::arm8_0)
             cflags.push_back("-arch arm64");
-        else if (arch == Arch::arm64e)
-            cflags.push_back("-arch arm64e");
+        else if (arch == Arch::arm8_3)
+            cflags.push_back("-arch arm64e");       // Apple's A12
         else if (arch == Arch::armv7)
             cflags.push_back("-arch armv7");
         else
@@ -252,10 +251,12 @@ consMakefileOsArch(
             cflags.push_back("-m32");
         else if (arch == Arch::x64)
             cflags.push_back("-m64");
+        else if (arch == Arch::arm8_2)
+            cflags.push_back("-march=armv8.2-a");
         else
             fgThrow("architecture not supported on native *nix",arch);
     }
-    if (debug) {
+    if (debrel == Debrel::debug) {
         cflags.push_back("-g");             // generate debug info
         cflags.push_back("-O1");            // minimal optimization
         cflags.push_back("-D_DEBUG");
@@ -268,7 +269,7 @@ consMakefileOsArch(
         // uses libc++. On Linux, g++ is the GNU linker and uses libstdc++.
         cc = "clang";                   // CLANG C compiler
         cxx = "clang++";                // CLANG C++ compiler
-        // On Ubuntu, clang++ will dispatch to g++ (GNU linker) which uses libstdc++ (GNU std libs),
+        // On Linux, clang++ will dispatch to g++ (GNU linker) which uses libstdc++ (GNU std libs),
         // after ensuring appropriate linkage clang libs (eg. AddressSanitizer).
         // On MacOS, clang++ will link with clang/Apple's non-GPL 'libc++'.
         link = "clang++";
@@ -278,9 +279,9 @@ consMakefileOsArch(
         // clang defaults to 256 which can cause errors with boost::iarchive exceeding
         // template depth limit. gcc limit of 1024 too small due to large ACS thread sigs:
         cxxflags.push_back("-ftemplate-depth=4096");
-        if (!debug)
+        if (debrel == Debrel::release)
             cflags.push_back("-Ofast");         // O3 plus fast floating point opts.
-        if (debug && (os == BuildOS::linux)) {
+        if ((debrel == Debrel::debug) && (os == BuildOS::linux)) {
             cflags.push_back("-fsanitize=address");
             lflags.push_back("-fsanitize=address");
         }
@@ -294,7 +295,7 @@ consMakefileOsArch(
         link = "g++";
         // gcc defaults to 1024. Too small due to large ACS thread sigs:
         cxxflags.push_back("-ftemplate-depth=4096");
-        if (!debug) {
+        if (debrel == Debrel::release) {
             // -march=corei7 actually slowed down nrrjohnverts a smidgen.
             // -msse3 made no difference on some speed tests.
             cflags.push_back("-O3");
@@ -308,7 +309,7 @@ consMakefileOsArch(
         // Disable remark: Inlining inhibited by limit max-size / max-total-size
         // Disable remark: To get full report use -qopt-report=4 -qopt-report-phase ipo
         cflags.push_back("-diag-disable=11074,11076");
-        if (!debug)
+        if (debrel == Debrel::release)
             cflags.push_back("-Ofast");     // -fast-transcendentals made no diff on model corr speed test
         if (arch == Arch::x64)
             cflags.push_back("-xavx");      // Use AVX (and SSE).
@@ -324,9 +325,10 @@ consMakefileOsArch(
         dllarg = "-dynamiclib -Wl,-install_name,@executable_path/";
     }
     else if (os == BuildOS::ios) {
-        bool        isSim = (arch == Arch::x64);
-        string      osSim = isSim ? "Simulator" : "OS",
-                    sys = "/Applications/Xcode.app/Contents/Developer/Platforms/iPhone"+osSim+".platform/Developer/SDKs/iPhone"+osSim+".sdk";
+        bool                isSim = (arch == Arch::x64);
+        string              osSim = isSim ? "Simulator" : "OS",
+                            sys =
+            "/Applications/Xcode.app/Contents/Developer/Platforms/iPhone"+osSim+".platform/Developer/SDKs/iPhone"+osSim+".sdk";
         if (isSim)
             cflags.push_back("-mios-simulator-version-min=7.1");
         else
@@ -356,7 +358,7 @@ consMakefileOsArch(
         //    this dll to search for at run-time. The $ORIGIN method below requires it.
         dllarg = "-shared -Wl,-soname,";
     }
-    bool    native = contains(getNativeBuildOSs(),os);
+    bool                    native = contains(getNativeBuildOSs(),os);
     ostringstream   ofs;
     ofs << "CC = " << cc << lf
         << "CXX = " << cxx << lf
@@ -371,19 +373,19 @@ consMakefileOsArch(
             << "LFLAGS = " << cat(lflags," ") << lf
             << "DLLEXT = " << dllext << lf
             << "DLLARG = " << dllarg << lf
-            << "BINDIR = ../" << getRelBin(os,arch,compiler,!debug) << lf
+            << "BINDIR = ../" << getRelBin(os,arch,compiler,debrel) << lf
             << "BBINDIR = ../" << "bin/" << os << "/" << arch << "/" << lf;
     ofs
-        << "BUILDIR = ../build_" << os << "/" << arch << "/" << compiler << "/" << debrel << "/" << lf
+        << "BUILDIR = ../build_" << os << "/" << arch << "/" << compiler << "/" << toStr(debrel) << "/" << lf
         << "include " << fnameBuild << lf;
     return saveRaw(ofs.str(),makefile);
 }
 
 bool
 consMakefileAndroidArch(
-    BuildOS               host,       // Host OS for cross-compilation
-    Arch                  arch,
-    bool                    debug=false)
+    BuildOS             host,       // Host OS for cross-compilation
+    Arch                arch,
+    bool                debug=false)
 {
     // https://developer.android.com/ndk/guides/other_build_systems
     string          hostStr;
@@ -400,7 +402,7 @@ consMakefileAndroidArch(
         archCMakeStr = "x86_64";
     else if (arch == Arch::armv7)
         archCMakeStr = "armeabi-v7a";
-    else if (arch == Arch::arm64)
+    else if (arch == Arch::arm8_0)
         archCMakeStr = "arm64-v8a";
     else
         fgThrow("consMakefileAndroidArch unhandled arch",arch);
@@ -421,7 +423,7 @@ consMakefileAndroidArch(
         ar = base + "ar";
         ranlib = base + "ranlib";
     }
-    else if (arch == Arch::arm64) {
+    else if (arch == Arch::arm8_0) {
         string      base = "${NDK_BIN}/aarch64-" + hostStr + "-android-";
         ar = base + "ar";
         ranlib = base + "ranlib";
@@ -450,7 +452,7 @@ consMakefileAndroidArch(
         targetStr = "x86_64-" + hostStr + "-android";
     else if (arch == Arch::armv7)
         targetStr = "armv7a-" + hostStr + "-androideabi";
-    else if (arch == Arch::arm64)
+    else if (arch == Arch::arm8_0)
         targetStr = "aarch64-" + hostStr + "-android";
     cflags.push_back("--target="+targetStr+"${API_VERSION}");
     cflags.push_back("--sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/"+hostStr+"-x86_64/sysroot");
@@ -487,11 +489,11 @@ consMakefileIos(ConsSolution const & sln)
         // Could perhaps have thin libs depend on phony architecture targets ("%.a : arch")
         // to trigger recursive makes:
         << "all: ";
-    for (const ConsProj & p : sln.projects)
+    for (ConsProj const & p : sln.projects)
         if (!p.srcGroups.empty())
             oss << "$(OUTDIR)"+p.name+".a" << " ";
     oss << lf;
-    for (const ConsProj & p : sln.projects) {
+    for (ConsProj const & p : sln.projects) {
         if (!p.srcGroups.empty()) {
             string          fatLib = "$(OUTDIR)"+p.name+".a";
             string          srcLibs;
@@ -538,14 +540,13 @@ fgConsNativeMakefiles(ConsSolution const & sln)
     bool            changed = false;
     string          fnameAll = "make_all.mk";
     changed = constIncludeFileNative(sln,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::clang,Arch::x64,true,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::clang,Arch::x64,false,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::x64,true,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::x64,false,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::icpc,Arch::x64,true,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::linux,Compiler::icpc,Arch::x64,false,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::macos,Compiler::clang,Arch::x64,true,fnameAll) || changed;
-    changed = consMakefileOsArch(BuildOS::macos,Compiler::clang,Arch::x64,false,fnameAll) || changed;
+    for (Debrel debrel : getAllDebrels()) {
+        changed = consMakefileOsArch(BuildOS::linux,Compiler::clang,Arch::x64,debrel,fnameAll) || changed;
+        changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::x64,debrel,fnameAll) || changed;
+        changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::arm8_2,debrel,fnameAll) || changed;
+        changed = consMakefileOsArch(BuildOS::linux,Compiler::icpc,Arch::x64,debrel,fnameAll) || changed;
+        changed = consMakefileOsArch(BuildOS::macos,Compiler::clang,Arch::x64,debrel,fnameAll) || changed;
+    }
     return changed;
 }
 
@@ -555,7 +556,7 @@ fgConsCrossMakefiles(ConsSolution const & sln)
     FGASSERT(sln.type == ConsType::cross);
     // Only build static SDK libraries for cross-compile targets:
     ConsSolution      slnXC(ConsType::cross);
-    for (const ConsProj & p : sln.projects)
+    for (ConsProj const & p : sln.projects)
         if (p.isStaticLib())
             slnXC.projects.push_back(p);
     // We build separate thin libs then combine with lipo. It appears possible to build
@@ -567,7 +568,7 @@ fgConsCrossMakefiles(ConsSolution const & sln)
 
     // IOS on MacOS:
     for (Arch arch : getBuildArchs(BuildOS::ios))
-        changed = consMakefileOsArch(BuildOS::ios,getBuildCompilers(BuildOS::ios)[0],arch,false,fnameLibs) || changed;
+        changed = consMakefileOsArch(BuildOS::ios,getBuildCompilers(BuildOS::ios)[0],arch,Debrel::release,fnameLibs) || changed;
     changed = consMakefileIos(slnXC) || changed;
 
     // Android on Linux:

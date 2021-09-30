@@ -30,6 +30,19 @@ using namespace std;
 
 namespace Fg {
 
+Mat33D
+matRotateAxis(double radians,Vec3D const & ax)
+{
+    double              c = cos(radians),
+                        s = sin(radians),
+                        v = 1.0 - c;
+    return {
+        ax[0]*ax[0]*v + c,          ax[0]*ax[1]*v - ax[2]*s,        ax[0]*ax[2]*v + ax[1]*s,
+        ax[0]*ax[1]*v + ax[2]*s,    ax[1]*ax[1]*v + c,              ax[1]*ax[2]*v - ax[0]*s,
+        ax[0]*ax[2]*v - ax[1]*s,    ax[1]*ax[2]*v + ax[0]*s,        ax[2]*ax[2]*v + c,
+    };
+}
+
 Doubles
 toDoubles(Floatss const & v)
 {
@@ -156,6 +169,18 @@ operator<<(ostream & os,MatS3D const & m)
     return os << m.asMatC();
 }
 
+MatS3D
+randMatSpd3D(double lnEigStdev)
+{
+    // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
+    Mat33D          D = cDiagMat(mapCall(Vec3D::randNormal(lnEigStdev),exp)),
+                    R = QuaternionD::rand().asMatrix(),
+                    M = R.transpose() * D * R;
+    // M will have precision-level asymmetry so manually construct return value from upper triangular values
+    // (Eigen's QR decomp fails badly if symmetry is not precise):
+    return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
+}
+
 MatUT3D
 MatUT3D::operator*(MatUT3D r) const
 {
@@ -190,24 +215,18 @@ MatUT3D::inverse() const
     return ret;
 }
 
+MatUT3D
+MatUT3D::randNormal(double lnScaleStdev,double shearStdev)
+{
+    return MatUT3D {mapExp(randNormalArr<3>(0.0,lnScaleStdev)),randNormalArr<3>(0.0,shearStdev)};
+}
+
 std::ostream &
 operator<<(std::ostream & os,MatUT3D const & ut)
 {
     Vec3D       diag {ut.m[0],ut.m[3],ut.m[5]},
                 upper {ut.m[1],ut.m[2],ut.m[4]};
     return os << "Diag: " << diag << " UT: " << upper;
-}
-
-MatS3D
-randMatSpd3D(double lnEigStdev)
-{
-    // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
-    Mat33D          D = cDiagMat(mapFunc(Vec3D::randNormal(lnEigStdev),exp)),
-                    R = QuaternionD::rand().asMatrix(),
-                    M = R.transpose() * D * R;
-    // M will have precision-level asymmetry so manually construct return value from upper triangular values
-    // (Eigen's QR decomp fails badly if symmetry is not precise):
-    return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
 }
 
 MatS3D::MatS3D(Mat33D const & m) :
@@ -242,8 +261,7 @@ testRotate(CLArgs const &)
     for (uint ii=0; ii<100; ii++)
     {
         double          angle = randUniform(-pi(),pi());
-        Vec3D           axis = Vec3D::randNormal();
-        axis /= axis.len();
+        Vec3D           axis = normalize(Vec3D::randNormal());
         Mat33D          mat = matRotateAxis(angle,axis);
         double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
                         err2 = (mat * axis - axis).len();
@@ -281,13 +299,26 @@ testMatS(CLArgs const &)
         MatS3D              m = randMatSpd3D(1.0);
         double              d0 = cDeterminant(m.asMatC()),
                             d1 = cDeterminant(m);
-        FGASSERT(isApproxEqualRel(d0,d1,epsPrec(40)));
+        FGASSERT(isApproxEqualRel(d0,d1,epsBits(40)));
     }
     for (size_t ii=0; ii<10; ++ii) {
         MatS3D              m = randMatSpd3D(1.0);
         Mat33D              val = cInverse(m).asMatC(),
                             ref = cInverse(m.asMatC());
         FGASSERT(isApproxEqualPrec(val,ref,40));
+    }
+}
+
+void
+testSolveLinear(CLArgs const &)
+{
+    randSeedRepeatable();
+    for (size_t ii=0; ii<10; ++ii) {
+        Mat44D              M = Mat44D::randNormal();
+        Vec4D               b = Vec4D::randNormal();
+        Opt<Vec4D>          x = solveLinear(M,b);
+        // Chance of values so ill-conditioned we can't get 20 bits accuracy is negligable:
+        FGASSERT(isApproxEqualPrec(M*x.val(),b,20));
     }
 }
 
@@ -299,6 +330,7 @@ testMatrixC(CLArgs const & args)
     Cmds            cmds {
         {testMat,"mat","general matrix"},
         {testMatS,"matS","symmetric matrix"},
+        {testSolveLinear,"solve","solve linear Mx=b"},
     };
     doMenu(args,cmds,true);
 }

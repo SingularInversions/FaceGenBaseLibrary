@@ -10,26 +10,7 @@
 
 using namespace std;
 
-
 namespace Fg {
-
-static
-GuiPtrs
-getPanes(GuiPtrs ps)
-{return ps; }
-
-GuiPtr
-guiSplit(bool horiz,GuiPtrs const & panes)
-{
-    FGASSERT(!panes.empty());
-    GuiSplit        ret;
-    uint            sz = int(panes.size());
-    if (horiz)
-        ret.panes = Img<GuiPtr>(Vec2UI{sz,1U},panes);
-    else
-        ret.panes = Img<GuiPtr>(Vec2UI{1U,sz},panes);
-    return make_shared<GuiSplit>(ret);
-}
 
 GuiPtr
 guiSplit(Img<GuiPtr> const & panes)
@@ -46,26 +27,26 @@ GuiPtr
 guiSplitScroll(GuiPtrs const & panes,uint spacing)
 {
     GuiSplitScroll     ret;
-    ret.updateFlag = makeUpdateFlag(makeIPT(0));  // dummy node ensures initial one-time setup
-    ret.getPanes = std::bind(getPanes,panes);
+    ret.updateFlag = makeUpdateFlag(makeIPT(0));        // dummy node ensures initial one-time setup
+    ret.getPanes = [panes](){return panes; };
     ret.spacing = spacing;
     return make_shared<GuiSplitScroll>(ret);
 }
 
 GuiPtr
-guiSplitScroll(std::function<GuiPtrs(void)> getPanes)
+guiSplitScroll(Sfun<GuiPtrs(void)> const & getPanes)
 {
     GuiSplitScroll     ret;
-    ret.updateFlag = makeUpdateFlag(makeIPT(0));  // dummy node ensures initial one-time setup
+    ret.updateFlag = makeUpdateFlag(makeIPT(0));        // dummy node ensures initial one-time setup
     ret.getPanes = getPanes;
     return make_shared<GuiSplitScroll>(ret);
 }
 
 GuiPtr
 guiSplitScroll(
-    const DfgFPtr &                     updateNodeIdx,  // Must be unique to this object
-    std::function<GuiPtrs(void)>        getPanes,       // Dynamic window recreation on updateFlag
-    uint                                spacing)
+    DfgFPtr const &                 updateNodeIdx,      // Must be unique to this object
+    Sfun<GuiPtrs(void)> const &     getPanes,           // Dynamic window recreation on updateFlag
+    uint                            spacing)
 {
     GuiSplitScroll     ret;
     ret.updateFlag = updateNodeIdx;

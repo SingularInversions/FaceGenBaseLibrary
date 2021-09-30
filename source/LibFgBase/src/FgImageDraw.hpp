@@ -15,46 +15,24 @@
 namespace Fg {
 
 // Simple (aliased) filled circle. Radius 0 yields a single pixel (ie. actual radius is 0.5 larger):
-void    drawDotIrcs(ImgC4UC & img,Vec2I posIrcs,uint radius,RgbaUC color);
-void    drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color);
+void        drawDotIrcs(ImgRgba8 & img,Vec2I posIrcs,uint radius,RgbaUC color);
+void        drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,RgbaUC color);
+void        drawLineIrcs(ImgRgba8 & img,Vec2I begin,Vec2I end,RgbaUC color);
+void        drawSolidRectangle_(ImgRgba8 & img,Vec2UI posIrcs,Vec2UI szPixels,RgbaUC clr);
 
-void    drawLineIrcs(ImgC4UC & img,Vec2I begin,Vec2I end,RgbaUC color);
-
-void
-fgPaintRectangle(
-    ImgC4UC &       img,
-    RgbaUC            clr,
-    size_t xIrcs,   size_t yIrcs,
-    size_t wid,     size_t hgt);
-
-// Very simple single-pixel-wide-bars bar graph:
-double
-fgDrawBarGraph(
-    ImgC4UC &               img,
-    const Doubles & data,
-    RgbaUC                    colour=RgbaUC(255,255,255,255));
-
-template<typename T>
-ImgC4UC
-fgGraph(Svec<T> const & data)
-{
-    ImgC4UC         img;
-    Doubles         dt = mapCast<double>(data);
-    fgDrawBarGraph(img,dt);
-    return img;
-}
+// Square bar graph of one or more data series:
+ImgRgba8     cBarGraph(Doubless const & data,uint pixPerBar,uint pixSpacing=0);
+ImgRgba8     cBarGraph(Sizes const & data);
 
 void
-fgDrawFunction(
-    ImgC4UC &       img,            // OUTPUT
-    std::function<double(double)> func,
-    VecD2            bounds,         // abscissa value at image x bounds
-    double              vscale,         // y pixels per unit
-    RgbaUC            colour);
+drawFunction(
+    ImgRgba8 &               img,            // OUTPUT
+    Sfun<double(double)>    func,
+    VecD2                   bounds,         // abscissa value at image x bounds
+    double                  vscale,         // y pixels per unit
+    RgbaUC                  colour);
 
-void
-fgDrawFunctions(
-    MatD const &   funcs);     // Columns are function values
+void        drawFunctions(MatD const & funcs);  // Columns are function values
 
 }
 

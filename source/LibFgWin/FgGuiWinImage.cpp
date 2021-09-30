@@ -10,6 +10,7 @@
 #include "FgGuiApiImage.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
@@ -44,32 +45,20 @@ struct  GuiImageWin : public GuiBaseImpl
         DestroyWindow(m_hwnd);
     }
 
-    virtual Vec2UI
-    getMinSize() const
-    {
-        if (m_api.allowMouseCtls)
-            return Vec2UI(100,100);
-        ImgC4UC const & img = m_api.imgN.cref();
-        return img.dims();
-    }
+    virtual Vec2UI getMinSize() const {return m_api.minSizeN.val(); }
 
-    virtual Vec2B
-    wantStretch() const
-    {
-        if (m_api.allowMouseCtls)
-            return Vec2B(true,true);
-        return Vec2B(false,false);
-    }
+    virtual Vec2B wantStretch() const {return m_api.wantStretch; }
 
     virtual void
     updateIfChanged()
     {
         // Avoid flickering due to background repaint if image size hasn't changed:
-        uint    change = m_api.update();
-        if (change == 2)
-            InvalidateRect(m_hwnd,NULL,TRUE);
-        else if (change == 1)
-            InvalidateRect(m_hwnd,NULL,FALSE);
+        if (m_api.updateFlag->checkUpdate()) {
+            InvalidateRect(m_hwnd,NULL,TRUE);       // repaint BG
+            m_api.updateNofill->checkUpdate();      // clear
+        }
+        else if (m_api.updateNofill->checkUpdate())
+            InvalidateRect(m_hwnd,NULL,FALSE);      // only repaint image
     }
 
     virtual void
@@ -102,13 +91,14 @@ struct  GuiImageWin : public GuiBaseImpl
                 DWORD               greenMask;
                 DWORD               blueMask;
             };
-            GuiImageDisp            imgd = m_api.disp(m_size);
+            GuiImage::Disp          imgd = m_api.getImgFn(m_size);
+            ImgRgba8 const &         img = *imgd.imgPtr;
             FGBMI                   bmi;
             memset(&bmi,0,sizeof(bmi));
             BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
             bmih.biSize = sizeof(BITMAPINFOHEADER);
-            bmih.biWidth = imgd.width;
-            bmih.biHeight = -int(imgd.height);
+            bmih.biWidth = img.dims()[0];
+            bmih.biHeight = -int(img.dims()[1]);
             bmih.biPlanes = 1;                  // Must always be 1
             bmih.biBitCount = 32;
             bmih.biCompression = BI_BITFIELDS;  // Uncompressed
@@ -118,11 +108,11 @@ struct  GuiImageWin : public GuiBaseImpl
             // Windows automatically handles clipping of the image for the bitblt:
             SetDIBitsToDevice(
                 hdc,
-                imgd.offsetx,imgd.offsety,
-                imgd.width,imgd.height,
+                imgd.offset[0],imgd.offset[1],
+                img.dims()[0],img.dims()[1],
                 0,0,
-                0,imgd.height,
-                imgd.dataPtr,
+                0,img.dims()[1],
+                img.dataPtr(),
                 (BITMAPINFO*)&bmi,
                 DIB_RGB_COLORS);
             EndPaint(hwnd,&ps);
@@ -145,8 +135,10 @@ struct  GuiImageWin : public GuiBaseImpl
             ClipCursor(NULL);
             Vec2I           posIrcs = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             if (!dragging) {
-                m_api.click(posIrcs);
-                winUpdateScreen();
+                if (m_api.clickLeft) {
+                    m_api.clickLeft(posIrcs);
+                    winUpdateScreen();
+                }
             }
             dragging = false;
         }
@@ -155,19 +147,23 @@ struct  GuiImageWin : public GuiBaseImpl
             Vec2I    delta = pos-m_lastPos;
             m_lastPos = pos;
             if (wParam == MK_LBUTTON) {
-                if (dragging == false) {
+                if (!dragging) {
                     // Add hysteresis to avoid annoying missed clicks due to very slight movement:
                     if (cMaxElem(mapAbs(pos-m_posWhenLButtonClicked)) > 1)
                         dragging = true;
                 }
                 if (dragging) {
-                    m_api.move(delta);
-                    winUpdateScreen();
+                    if (m_api.dragLeft) {
+                        m_api.dragLeft(delta);
+                        winUpdateScreen();
+                    }
                 }
             }
             else if (wParam == MK_RBUTTON) {
-                m_api.zoom(delta[1]);
-                winUpdateScreen();
+                if (m_api.dragRight) {
+                    m_api.dragRight(delta);
+                    winUpdateScreen();
+                }
             }
         }
         else

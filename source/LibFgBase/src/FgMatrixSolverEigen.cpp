@@ -3,6 +3,13 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// Make use of the Eigen library. To avoid absurd compile times with MSVC the library
+// must be modified by changing ~Eigen/src/ore/util/Macros.h    from:
+// #define EIGEN_STRONG_INLINE __forceinline                    to:
+// #define EIGEN_STRONG_INLINE inline
+// (this cannot be overridden in this source code as it occurs within the Eigen headers)
+// Real symmetric matrix solver at 1000x1000 and 2000x2000 was timed before and after the change
+// with little difference (in fact slightly faster when keeping eigenvectors).
 
 #include "stdafx.h"
 

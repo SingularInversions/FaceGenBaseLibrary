@@ -42,10 +42,10 @@ fgTcpClientTest(CLArgs const &)
     fgout.setDefOut(true);
     string          message = "Please respond",
                     response;
-    fgTcpClient("peano",getNcServerPort(),message,response);
+    runTcpClient("peano",getNcServerPort(),message,response);
     fgout << fgnl << "Response received: " << response;
     message = "My god, it's full of stars";
-    fgTcpClient("peano",getNcServerPort(),message);
+    runTcpClient("peano",getNcServerPort(),message);
 }
 
 }

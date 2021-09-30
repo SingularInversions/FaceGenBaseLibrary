@@ -67,13 +67,38 @@ solve(MatS3D A,Vec3D b)
 }
 
 MatD
-EigsRsm::matrix() const
+RsmEigs::rsm() const
 {
-    MatD       rhs = vecs.transpose();
-    for (size_t rr=0; rr<rhs.nrows; ++rr)
-        for (size_t cc=0; cc<rhs.ncols; ++cc)
-            rhs.rc(rr,cc) *= vals[cc];
-    return vecs * rhs;
+    return mulTr(scaleColumns(vecs,vals),vecs);
+}
+
+MatD
+RsmEigs::mhlbsToWorld() const
+{
+    Doubles                 stdevs; stdevs.reserve(vals.size());
+    for (double variance : vals) {
+        FGASSERT(variance > 0.0);
+        stdevs.push_back(sqrt(variance));
+    }
+    return scaleColumns(vecs,stdevs);      // vecs * D(stdevs)
+}
+
+MatD
+RsmEigs::inverse() const
+{
+    auto                invert = [](double v)
+    {
+        FGASSERT(v != 0.0);
+        return 1.0/v;
+    };
+    Doubles             invVals = mapCall(vals,invert);
+    return mulTr(scaleColumns(vecs,invVals),vecs);
+}
+
+ostream &
+operator<<(ostream & os,RsmEigs const & rsm)
+{
+    return os << rsm.vals << rsm.vecs;
 }
 
 namespace {
@@ -102,14 +127,14 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
     MatD           eigVecs;
     Timer             timer;
     solve(mat,eigVals,eigVecs);
-    size_t              time = timer.readMs();
+    size_t              time = timer.elapsedMilliseconds();
     // What is the pre-diagonalization speedup:
     MatD           innerHess = eigVecs.transpose() * mat * eigVecs,
                         innerEigvecs;
     Doubles              innerEigVals;
     timer.start();
     solve(innerHess,innerEigVals,innerEigvecs);
-    size_t              timeInner = timer.readMs();
+    size_t              timeInner = timer.elapsedMilliseconds();
     MatD           eigValMat(dim,dim);
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
@@ -142,11 +167,11 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 void
 testAsymEigs(CLArgs const &)
 {
-    Mat33D        mat = matRotateAxis(1.0,Vec3D(1,1,1));
-    EigsC<3>      eigs = cEigs(mat);
+    Mat33D          mat = matRotateAxis(1.0,normalize(Vec3D{1,1,1}));
+    EigsC<3>        eigs = cEigs(mat);
     // We have to test against the reconstructed matrix as the order of eigvals/vecs will
     // differ on different platforms (eg. gcc):
-    Mat33D        regress = cReal(eigs.vecs * cDiagMat(eigs.vals) * cHermitian(eigs.vecs));
+    Mat33D          regress = cReal(eigs.vecs * cDiagMat(eigs.vals) * cHermitian(eigs.vecs));
     double          residual = cRms(mat - regress);
     FGASSERT(residual < 0.0000001);
     fgout << eigs
@@ -165,6 +190,16 @@ testSymmEigenAuto(CLArgs const &)
 #endif
 }
 
+// Random RSM timing tests (21.04, i9-9900K 3.6GHz)
+// Dim/1000     eigvecs    eigval-only     mul
+//      1       1.3s            14%
+//      2       9.3s            13%         0.8s
+//      3
+//      4      80.3s            15%         6.7s
+//      5       2.6m            15%        13.1s
+//      6       4.5m                       22.5s
+//      7       7.1m                       36s
+//
 void
 testEigsRsmTime(CLArgs const & args)
 {
@@ -179,7 +214,8 @@ testEigsRsmTime(CLArgs const & args)
     MatD                eigVecs;
     Timer               timer;
     cEigsRsm_(mat,eigVals,eigVecs);
-    size_t              time = timer.readMs();
+    double              time0 = timer.elapsedSeconds();
+    fgout << fgnl << "With eigenvectors: " << toPrettyTime(time0);
     MatD                eigValMat(dim,dim);
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
@@ -192,18 +228,14 @@ testEigsRsmTime(CLArgs const & args)
     residual = sqrt(residual/double(dim*dim));      // root of mean value
     // RMS residual appears to go with the square root of the matrix dimension:
     double              tol = epsilonD() * sqrt(dim) * 2.0;
-    fgout << fgnl << "Dim: " << dim << fgpush
-        << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol
-        << fgnl << "Time: " << time;
-    fgout << fgpop;
     FGASSERT(residual < tol);
     Doubles             valsOnly;
     timer.start();
     valsOnly = cEigvalsRsm(mat);
-    size_t              time2 = timer.readMs();
+    double              time1 = timer.elapsedSeconds();
     fgout
-        << fgnl << "Eigvals-only time: " << time2
-        << " or " << toStrPercent(double(time2)/time);
+        << fgnl << "No eigenvectors: " << toPrettyTime(time1) << " " << toStrPercent(time1/time0)
+        << fgnl << "RMS Residual: " << residual << " RR/tol " << residual/tol;
     FGASSERT(valsOnly == eigVals);
 }
 
@@ -219,7 +251,7 @@ testSymmEigen(CLArgs const & args)
 }
 
 void
-fgMatrixSolverTest(CLArgs const & args)
+testMatrixSolver(CLArgs const & args)
 {
     Cmds        cmds {
         {testCholesky,"chol","Cholesky 3x3 decomposition"},

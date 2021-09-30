@@ -10,7 +10,6 @@
 #define FG_SOFTRENDER_HPP
 
 #include "Fg3dMesh.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgLighting.hpp"
 #include "FgImage.hpp"
 #include "FgSimilarity.hpp"
@@ -65,7 +64,7 @@ interpolate(RenderXform const & rx0,RenderXform const & rx1,double val)
     };
 }
 
-ImgC4UC
+ImgRgba8
 renderSoft(
     Vec2UI                  pixelSize,
     Meshes const &          meshes,
@@ -76,19 +75,19 @@ renderSoft(
     RenderOptions const &   options=RenderOptions());
 
 inline
-ImgC4UC
+ImgRgba8
 renderSoft(
     Vec2UI pixelSize,Meshes const & meshes,RenderXform const & transform,RenderOptions const & options=RenderOptions())
 {return renderSoft(pixelSize,meshes,transform.modelview,transform.itcsToIucs,options); }
 
 inline
-ImgC4UC
+ImgRgba8
 renderSoft(
     Vec2UI pixelSize,Meshes const & meshes,Camera const & camera,RenderOptions const & options=RenderOptions())
 {return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,options); }
 
 // Render with default camera:
-ImgC4UC
+ImgRgba8
 renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor);
 
 #endif

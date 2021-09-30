@@ -56,13 +56,10 @@ struct  GuiWinMain : GuiMainBase
         titleNF{t}, m_store{s}, m_win{w}
     {}
 /*
-    uint64                      startTime;      // Set when start() called
     map<UINT,uint64>            profile;        // Track time used processing each message
 
     ~GuiWinMain()
     {
-        uint64                  totalTime = getTimeMs() - startTime;
-        fgout << fgnl << "Total time in GuiWinMain: " << msToPrettyTime(totalTime);
         Svec<UINT>              msgs;
         Svec<uint64>            times;
         for (auto const & p : profile) {
@@ -300,7 +297,7 @@ struct  GuiWinMain : GuiMainBase
         else
             ret = DefWindowProc(hwnd,msg,wParam,lParam);
 /*
-        uint64          elapsed = timer.readMs();
+        uint64          elapsed = timer.elapsedMilliseconds();
         auto            it = profile.find(msg);
         if (it == profile.end())
             profile[msg] = elapsed;

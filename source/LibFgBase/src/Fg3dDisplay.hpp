@@ -7,7 +7,7 @@
 //
 //                      Lbutton         Rbutton         Mbutton         LRButtons
 // --------------------------------------------------------------------------------
-// click
+// click                showSrfPnt
 // drag                 rotate          scale           translate       rot_light
 //
 // shift-click                                          asgnPaintTris
@@ -31,14 +31,14 @@ namespace Fg {
 GuiPtr
 makeCameraCtrls(
     Gui3d &                 gui3d,
-    NPT<Mat32D>    viewBoundsN,
-    String8 const &        storePath,
+    NPT<Mat32D>             viewBoundsN,
+    String8 const &         storePath,
     // 0 - all render ctls, default marked points viewable, default unconstrained rotation
     // 1 - only color/shiny/flat/wireframe,
     // 2 - only color/shiny, and limit pan/tilt,
     // 3 - only shiny/flat/wireframe:
-    uint                        simple=0,
-    bool                        textEditBoxes=false);       // Display for sliders
+    uint                    simple=0,
+    bool                    textEditBoxes=false);       // Display for sliders
 
 GuiPtr
 makeRendCtrls(
@@ -51,9 +51,9 @@ makeRendCtrls(
 
 GuiPtr
 makeLightingCtrls(
-    RPT<Lighting>         lightingR,                    // Assigned
+    RPT<Lighting>           lightingR,                  // Assigned
     BothButtonsDragAction & bothButtonsDragAction,      // Assigned
-    String8 const &        storePath);
+    String8 const &         storePath);
 
 // View controls with all option selectors enabled:
 GuiPtr
@@ -62,31 +62,17 @@ makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 const & storePath);
 // Returns an image save dialog window to save from the given render capture function:
 GuiPtr
 guiCaptureSaveImage(
-    NPT<Vec2UI>                     viewportDims,
-    Sptr<Gui3d::Capture> const &    capture,
-    String8 const &                 store);
+    NPT<Vec2UI>                 viewportDims,
+    Sptr<Gui3d::Capture> const & capture,
+    String8 const &             store);
 
-OPT<Vec3Fs>
-linkAllVerts(NPT<Mesh>);
-
-OPT<Vec3Fs>
-linkPosedVerts(
-    NPT<Mesh>           meshN,          // input
-    NPT<Vec3Fs>         allVertsN,      // input
-    OPT<PoseDefs>       posesN,         // output as an additional source
-    NPT<Doubles>        morphValsN);    // input as an additional sink
-
+OPT<Vec3Fs>             linkAllVerts(NPT<Mesh>);
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
-OPT<Mesh>
-linkLoadMesh(NPT<String8> pathBaseN);          // Empty filename -> empty mesh
+OPT<Mesh>               linkLoadMesh(NPT<String8> pathBaseN);   // Empty filename -> empty mesh
+OPT<MeshNormals>        linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
+OPT<ImgRgba8>            linkLoadImage(NPT<String8> filenameN);  // Empty filename -> empty image
 
-OPT<MeshNormals>
-linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
-
-OPT<ImgC4UC>
-linkLoadImage(NPT<String8> filenameN);         // Empty filename -> empty image
-
-typedef Svec<NPT<ImgC4UC> >   ImgNs;
+typedef Svec<NPT<ImgRgba8>>      ImgNs;
 
 struct  PoseVal
 {
@@ -99,8 +85,10 @@ typedef std::map<String8,float>     PoseVals;
 struct  GuiPosedMeshes
 {
     RendMeshes          rendMeshes;
-    OPT<PoseDefs>       poseDefsN;          // Aggregates all unique pose labels
-    IPT<PoseVals>       poseValsN;          // Only contains entries for currently instantiated pose sliders; others are forgotten.
+    // Aggregates all unique pose labels. Changes in this node trigger re-creation of the expression tab:
+    OPT<PoseDefs>       poseDefsN;
+    // Only contains entries for currently instantiated pose sliders; others are forgotten.
+    IPT<PoseVals>       poseValsN;
 
     GuiPosedMeshes();
 
@@ -115,9 +103,12 @@ struct  GuiPosedMeshes
         // Optional texture modulation images must be 1-1 if non-empty. Images can also be empty:
         ImgNs           modulationNs=ImgNs{});
 
-    // Add mesh with no maps. Number of surfaces is not yet dynamic so must be specified for static construction:
+    // Convenience to add mesh with no maps:
     void
-    addMesh(NPT<Mesh>,NPT<Vec3Fs>,size_t numSurfs);
+    addMesh(
+        NPT<Mesh>           meshN,          // As above
+        NPT<Vec3Fs>         allVertsN,
+        size_t              numSurfs);      // Not yet dynamic so must be specified for static construction
 
     GuiPtr
     makePoseCtrls(bool editBoxes) const;
@@ -137,10 +128,7 @@ viewMesh(
     Meshes const &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
     bool                compare=false);     // Radio button selects between meshes (if more than one)
 
-inline
-Mesh
-viewMesh(Mesh const & mesh)
-{return viewMesh(Svec<Mesh>(1,mesh)); }
+inline Mesh viewMesh(Mesh const & mesh) {return viewMesh({mesh},false); }
 
 // GUI queries user for any given fids not already labelled surface 0 points.
 // Returns true if user enters all fids, false if user closes before entering all fids:
@@ -149,9 +137,9 @@ guiSelectFids(
     Mesh &              mesh,
     Strings const &     fidLabels,
     // 0 - simple, 1 - expert, 2 - edit.
-    // Simple prompts for each fiducial separately and allows multiple tries per fiducial.
-    // Expert prompts only once and expects all fiducials to be placed without repeats.
-    // Edit allows changing existing fiducials.
+    // Simple prompts for each landmark separately and allows multiple tries per landmark.
+    // Expert prompts only once and expects all landmarks to be placed without repeats.
+    // Edit allows changing existing landmarks.
     uint                mode=0);
 
 }

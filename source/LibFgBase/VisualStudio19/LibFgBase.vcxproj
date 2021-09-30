@@ -177,18 +177,11 @@
     <ClCompile Include="..\src\Fg3dMeshMa.cpp" />
     <ClCompile Include="..\src\Fg3dMeshObj.cpp" />
     <ClCompile Include="..\src\Fg3dMeshOps.cpp" />
-    <ClInclude Include="..\src\Fg3dMeshOps.hpp" />
     <ClCompile Include="..\src\Fg3dMeshPly.cpp" />
     <ClCompile Include="..\src\Fg3dMeshStl.cpp" />
     <ClCompile Include="..\src\Fg3dMeshTri.cpp" />
     <ClCompile Include="..\src\Fg3dMeshVrml.cpp" />
     <ClCompile Include="..\src\Fg3dMeshXsi.cpp" />
-    <ClCompile Include="..\src\Fg3dNormals.cpp" />
-    <ClInclude Include="..\src\Fg3dNormals.hpp" />
-    <ClCompile Include="..\src\Fg3dPose.cpp" />
-    <ClInclude Include="..\src\Fg3dPose.hpp" />
-    <ClCompile Include="..\src\Fg3dRayCaster.cpp" />
-    <ClInclude Include="..\src\Fg3dRayCaster.hpp" />
     <ClCompile Include="..\src\Fg3dSurface.cpp" />
     <ClInclude Include="..\src\Fg3dSurface.hpp" />
     <ClCompile Include="..\src\Fg3dTest.cpp" />
@@ -207,6 +200,8 @@
     <ClInclude Include="..\src\FgBounds.hpp" />
     <ClCompile Include="..\src\FgBuild.cpp" />
     <ClInclude Include="..\src\FgBuild.hpp" />
+    <ClCompile Include="..\src\FgBuildMakefiles.cpp" />
+    <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp" />
     <ClCompile Include="..\src\FgCl.cpp" />
     <ClInclude Include="..\src\FgCl.hpp" />
     <ClCompile Include="..\src\FgCluster.cpp" />
@@ -215,9 +210,8 @@
     <ClInclude Include="..\src\FgCmd.hpp" />
     <ClCompile Include="..\src\FgCmdBase.cpp" />
     <ClCompile Include="..\src\FgCmdImgops.cpp" />
-    <ClCompile Include="..\src\FgCmdMeshops.cpp" />
+    <ClCompile Include="..\src\FgCmdMesh.cpp" />
     <ClCompile Include="..\src\FgCmdMorph.cpp" />
-    <ClCompile Include="..\src\FgCmdNcServer.cpp" />
     <ClCompile Include="..\src\FgCmdRender.cpp" />
     <ClCompile Include="..\src\FgCmdTestmCpp.cpp" />
     <ClCompile Include="..\src\FgCmdView.cpp" />
@@ -225,11 +219,6 @@
     <ClCompile Include="..\src\FgCommand.cpp" />
     <ClInclude Include="..\src\FgCommand.hpp" />
     <ClInclude Include="..\src\FgConio.hpp" />
-    <ClCompile Include="..\src\FgCons.cpp" />
-    <ClInclude Include="..\src\FgCons.hpp" />
-    <ClCompile Include="..\src\FgConsMakefiles.cpp" />
-    <ClCompile Include="..\src\FgConsVisualStudio201x.cpp" />
-    <ClInclude Include="..\src\FgCoordSystem.hpp" />
     <ClCompile Include="..\src\FgDataflow.cpp" />
     <ClInclude Include="..\src\FgDataflow.hpp" />
     <ClCompile Include="..\src\FgDiagnostics.cpp" />
@@ -246,6 +235,7 @@
     <ClCompile Include="..\src\FgGeometry.cpp" />
     <ClInclude Include="..\src\FgGeometry.hpp" />
     <ClCompile Include="..\src\FgGeometryTest.cpp" />
+    <ClCompile Include="..\src\FgGridIndex.cpp" />
     <ClInclude Include="..\src\FgGridIndex.hpp" />
     <ClCompile Include="..\src\FgGridTriangles.cpp" />
     <ClInclude Include="..\src\FgGridTriangles.hpp" />
@@ -277,6 +267,8 @@
     <ClInclude Include="..\src\FgGuiApiTabs.hpp" />
     <ClCompile Include="..\src\FgGuiApiText.cpp" />
     <ClInclude Include="..\src\FgGuiApiText.hpp" />
+    <ClCompile Include="..\src\FgHash.cpp" />
+    <ClInclude Include="..\src\FgHash.hpp" />
     <ClCompile Include="..\src\FgHex.cpp" />
     <ClInclude Include="..\src\FgHex.hpp" />
     <ClCompile Include="..\src\FgHistogram.cpp" />
@@ -364,7 +356,6 @@
     <ClCompile Include="..\src\FgStdString.cpp" />
     <ClInclude Include="..\src\FgStdString.hpp" />
     <ClInclude Include="..\src\FgStdVector.hpp" />
-    <ClCompile Include="..\src\FgStdVectorTest.cpp" />
     <ClCompile Include="..\src\FgString.cpp" />
     <ClInclude Include="..\src\FgString.hpp" />
     <ClCompile Include="..\src\FgStringTest.cpp" />
@@ -383,10 +374,9 @@
     <ClInclude Include="..\src\FgWinSpecific.hpp" />
     <ClCompile Include="..\src\jpeg_mem_dest.cpp" />
     <ClCompile Include="..\src\jpeg_mem_src.cpp" />
+    <ClInclude Include="..\src\json.hpp" />
     <ClCompile Include="..\src\MurmurHash2.cpp" />
     <ClInclude Include="..\src\MurmurHash2.h" />
-    <ClCompile Include="..\src\MurmurHash3.cpp" />
-    <ClInclude Include="..\src\MurmurHash3.h" />
     <ClInclude Include="..\src\portable_binary_archive.hpp" />
     <ClCompile Include="..\src\portable_binary_iarchive.cpp" />
     <ClInclude Include="..\src\portable_binary_iarchive.hpp" />

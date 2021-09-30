@@ -15,6 +15,9 @@
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
 #include "FgMain.hpp"
+#include "Fg3dMeshIo.hpp"
+#include "Fg3dDisplay.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -35,7 +38,7 @@ closestBarycentricPoint()
                         bary = closestBarycentricPoint(p0,p1,p2),
                         closest1 = bary[0]*p0 + bary[1]*p1 + bary[2]*p2;
         FGASSERT(isApproxEqualPrec(closest0,closest1));
-        Opt<Vec3D>      bary1 = barycentricCoord(closest1,p0,p1,p2);
+        Opt<Vec3D>      bary1 = cBarycentricCoord(closest1,p0,p1,p2);
         FGASSERT(isApproxEqualPrec(bary,bary1.val()));
     }
 }
@@ -134,7 +137,7 @@ barycentricCoords()
                         c1 = randUniform() * (1.0 - c0),
                         c2 = 1.0 - c1 - c0;
             Vec2D    pnt = v0*c0 + v1*c1 + v2*c2;
-            Vec3D    res = barycentricCoord(pnt,v0,v1,v2).val();
+            Vec3D    res = cBarycentricCoord(pnt,v0,v1,v2).val();
             FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
@@ -155,7 +158,7 @@ barycentricCoords()
                         c[2] = 1.0f - c[1] - c[0];
             c = permuteAxes<double>(ii%3) * c;
             Vec2D        pnt = v0*c[0] + v1*c[1] + v2*c[2];
-            Vec3D        res = barycentricCoord(pnt,v0,v1,v2).val();
+            Vec3D        res = cBarycentricCoord(pnt,v0,v1,v2).val();
             FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
@@ -175,7 +178,7 @@ barycentricCoords3D()
                     bc = Vec3D::randNormal();
         bc /= bc[0] + bc[1] + bc[2];
         Vec3D    pt = bc[0]*v0 + bc[1]*v1 + bc[2]*v2;
-        Opt<Vec3D>    ret = barycentricCoord(pt,v0,v1,v2);
+        Opt<Vec3D>    ret = cBarycentricCoord(pt,v0,v1,v2);
         if (ret.valid()) {
             Vec3D        res = ret.val(),
                             delta = res-bc;
@@ -219,7 +222,7 @@ rayPlaneIntersect()
         Vec2D           r0 = rot * v0,
                         r1 = rot * v1,
                         r2 = rot * v2;
-        Mat33D          rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),Vec3D::randNormal());
+        Mat33D          rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),normalize(Vec3D::randNormal()));
         Vec3D           p0 = rot3 * asHomogVec(r0),
                         p1 = rot3 * asHomogVec(r1),
                         p2 = rot3 * asHomogVec(r2),
@@ -320,26 +323,8 @@ triTensorArea()
     }
 }
 
-}   // namespace
-
 void
-testGeometry(CLArgs const &)
-{
-    randSeedRepeatable();
-    closestBarycentricPoint();
-    originToSegmentDistSqr();
-    pointToFacetDistSqr();
-    barycentricCoords();
-    barycentricCoords3D();
-    planeH();
-    rayPlaneIntersect();
-    pointInTriangle();
-    lineFacetIntersect();
-    triTensorArea();
-}
-
-void
-testmGeometry(CLArgs const &)
+testmClosest(CLArgs const &)
 {
     // Give visual feedback on continuity along a line passing through all 3 cases;
     // facet, edge and vertex closest point:
@@ -361,7 +346,47 @@ testmGeometry(CLArgs const &)
         derivs.rc(ii,1) = func[ii+2]-func[ii];
         derivs.rc(ii,2) = func[ii+2] + func[ii] - 2.0 * func[ii+1];
     }
-    fgDrawFunctions(derivs);
+    drawFunctions(derivs);
+}
+
+void
+testmFindSaggitalSymmetry(CLArgs const &)
+{
+    Mesh                baseMesh = loadTri(dataDir() + "tools/internal/InternalBaseFace.tri");
+    Affine3F            mirror;
+    findSaggitalSymmetry(baseMesh.verts,mirror);
+    Mesh                tmpMesh = baseMesh;
+    mapMul_(mirror,tmpMesh.verts);
+    viewMesh({baseMesh,tmpMesh},true);
+}
+
+
+}   // namespace
+
+void
+testGeometry(CLArgs const &)
+{
+    randSeedRepeatable();
+    closestBarycentricPoint();
+    originToSegmentDistSqr();
+    pointToFacetDistSqr();
+    barycentricCoords();
+    barycentricCoords3D();
+    planeH();
+    rayPlaneIntersect();
+    pointInTriangle();
+    lineFacetIntersect();
+    triTensorArea();
+}
+
+void
+testmGeometry(CLArgs const & args)
+{
+    Cmds            cmds = {
+        {testmClosest,"close","closest point in triangle"},
+        {testmFindSaggitalSymmetry,"sagg","find saggital symmetry"},
+    };
+    doMenu(args,cmds);
 }
 
 }   // namespace Fg

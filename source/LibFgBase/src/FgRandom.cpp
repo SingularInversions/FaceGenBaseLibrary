@@ -14,6 +14,7 @@
 #include "FgAffine1.hpp"
 #include "FgMain.hpp"
 #include "FgTime.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -131,38 +132,59 @@ randString(uint numChars)
     return ret;
 }
 
+bool
+randBool()
+{
+    return (rng.gen() & 0x01ULL);
+}
+
+double
+randNearUnit()
+{
+    double              unit = randBool() ? 1.0 : -1.0;
+    return unit + randNormal()*0.125;
+}
+
+Doubles
+randNearUnits(size_t num)
+{
+    return generateT<double>(num,[](size_t){return randNearUnit(); });
+}
+
+namespace {
+
 void
-testmRandom(CLArgs const &)
+normGraph(CLArgs const &)
 {
     fgout << fgnl << "sizeof(RNG) = " << sizeof(RNG);
     // Create a histogram of normal samples:
     randSeedRepeatable();
-    size_t          numStdevs = 6,
-                    binsPerStdev = 50,
-                    numSamples = 1000000,
-                    sz = numStdevs * 2 * binsPerStdev;
-    vector<size_t>  histogram(sz,0);
-    Affine1D      randToHist(VecD2(-double(numStdevs),numStdevs),VecD2(0,sz));
-    for (size_t ii=0; ii<numSamples; ++ii) {
-        int         rnd = round<int>(randToHist * randNormal());
+    size_t              numStdevs = 6,
+                        binsPerStdev = 50,
+                        S = 1000000,
+                        sz = numStdevs * 2 * binsPerStdev;
+    Sizes               histogram(sz,0);
+    Affine1D            randToHist(VecD2(-double(numStdevs),numStdevs),VecD2(0,sz));
+    for (size_t ii=0; ii<S; ++ii) {
+        int                 rnd = round<int>(randToHist * randNormal());
         if ((rnd >= 0) && (rnd < int(sz)))
             ++histogram[rnd];
     }
     // Make a bar graph of it:
-    // numSamples = binScale * stdNormIntegral * binsPerStdev
-    double          binScale = double(numSamples) / (sqrt2Pi() * binsPerStdev),
-                    hgtRatio = 0.9;
-    ImgC4UC     img(sz,sz,RgbaUC(0));
+    // S = binScale * stdNormIntegral * binsPerStdev
+    double              binScale = double(S) / (sqrt2Pi() * binsPerStdev),
+                        hgtRatio = 0.9;
+    ImgRgba8             img {sz,sz,RgbaUC{0}};
     for (size_t xx=0; xx<sz; ++xx) {
-        size_t      hgt = round<int>(histogram[xx] * sz * hgtRatio / binScale);
+        size_t              hgt = round<int>(histogram[xx] * sz * hgtRatio / binScale);
         for (size_t yy=0; yy<hgt; ++yy)
-            img.xy(xx,yy) = RgbaUC(255);
+            img.xy(xx,yy) = RgbaUC{255};
     }
     // Superimpose a similarly scaled Gaussian:
-    Affine1D      histToRand = randToHist.inverse();
+    Affine1D            histToRand = randToHist.inverse();
     for (size_t xx=0; xx<sz; ++xx) {
-        double      val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
-        size_t      hgt = round<int>(val * sz * hgtRatio);
+        double              val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
+        size_t              hgt = round<int>(val * sz * hgtRatio);
         img.xy(xx,hgt) = RgbaUC(255,0,0,255);
     }
     // Display:
@@ -170,20 +192,31 @@ testmRandom(CLArgs const &)
     viewImage(img);
 }
 
-bool
-randBool()
-{return (rng.gen() & 0x01ULL); }
-
-double
-randNearUnit()
+void
+normMoments(CLArgs const &)
 {
-    double      unit = randBool() ? 1.0 : -1.0;
-    return unit + randNormal()*0.125;
+    for (size_t vv=0; vv<3; ++vv) {
+        double                  stdev = pow(2.0,vv);
+        PushIndent              pi {"Stdev "+toStr(stdev)};
+        size_t                  S = 1024;
+        Doubles                 vals = cRandNormals(S,0.0,stdev);
+        double                  sampleMean = cMean(vals),
+                                sampleStdev = sqrt(cMag(mapSub(vals,sampleMean)) / (S-2));
+        fgout << fgnl << S << " std norms gives sample mean: " << sampleMean << " and sample stdev: " << sampleStdev;
+    }
 }
 
-std::vector<double>
-randNearUnits(size_t num)
-{return generate<double>(num,randNearUnit); }
+}
+
+void
+testmRandom(CLArgs const & args)
+{
+    Cmds                cmds {
+        {normGraph,"graph","graph generated normals against gaussian"},
+        {normMoments,"mom","moments of generated normals"},
+    };
+    doMenu(args,cmds);
+}
 
 }
 

@@ -19,8 +19,6 @@
 
 namespace Fg {
 
-typedef Svec<std::string>    strings;
-
 template<class T>
 using Sfun = std::function<T>;
 
@@ -30,10 +28,51 @@ static
 constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
 {return _Ilist.begin(); }
 
+template<class T,class U>
+Svec<U>
+lookupLs(Svec<std::pair<T,U>> const & table,T const & val)
+{
+    Svec<U>                 ret;
+    for (auto const & row : table)
+        if (row.first == val)
+            ret.push_back(row.second);
+    return ret;
+}
+template<class T,class U>
+Svec<T>
+lookupRs(Svec<std::pair<T,U>> const & table,U const & val)
+{
+    Svec<T>                 ret;
+    for (auto const & row : table)
+        if (row.second == val)
+            ret.push_back(row.first);
+    return ret;
+}
+template<class T,class U>
+Sizes
+lookupIndsL(Svec<std::pair<T,U>> const & table,T const & val)
+{
+    Sizes               ret;
+    for (size_t ii=0; ii<table.size(); ++ii)
+        if (table[ii].first == val)
+            ret.push_back(ii);
+    return ret;
+}
+template<class T,class U>
+Sizes
+lookupIndsR(Svec<std::pair<T,U>> const & table,U const & val)
+{
+    Sizes               ret;
+    for (size_t ii=0; ii<table.size(); ++ii)
+        if (table[ii].second == val)
+            ret.push_back(ii);
+    return ret;
+}
+
 // Throws if not found:
 template<class T,class U>
 U const &
-findFirstPairL(Svec<std::pair<T,U> > const & table,T const & val)
+lookupFirstL(Svec<std::pair<T,U>> const & table,T const & val)
 {
     auto        it=table.begin();
     for (; it!=table.end(); ++it)
@@ -44,7 +83,7 @@ findFirstPairL(Svec<std::pair<T,U> > const & table,T const & val)
 }
 template<class T,class U>
 T const &
-findFirstPairR(Svec<std::pair<T,U> > const & table,U const & val)
+lookupFirstR(Svec<std::pair<T,U>> const & table,U const & val)
 {
     auto        it=table.begin();
     for (; it!=table.end(); ++it)
@@ -74,7 +113,7 @@ private:
     Svec<std::thread>               threads;
     // thread provides no non-blocking way if testing if it's done so use flags.
     // vector requires copyable which atomic is not so use shared pointer to flags.
-    Svec<Sptr<std::atomic<bool> > > dones;      // 1-1 with above
+    Svec<Sptr<std::atomic<bool>>>   dones;      // 1-1 with above
 
     void
     worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done)

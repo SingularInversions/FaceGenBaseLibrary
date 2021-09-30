@@ -16,19 +16,6 @@
 
 namespace Fg {
 
-String32        toUtf32(const String & utf8);
-String32        toUtf32(char const * utf8);
-
-String          toUtf8(const char32_t & utf32_char);
-String          toUtf8(String32 const & utf32);
-
-// The following 2 functions are only needed by Windows and don't work on *nix due to
-// different sizeof(wchar_t):
-#ifdef _WIN32
-std::wstring    toUtf16(const String & utf8);
-String          toUtf8(const std::wstring & utf16);
-#endif
-
 struct  String8
 {
     String     m_str;      // UTF-8 unicode
@@ -157,11 +144,10 @@ struct  String8
 
     FG_SERIALIZE1(m_str)
 };
-
 typedef Svec<String8>   String8s;
+typedef Svec<String8s>  String8ss;
 
-String8s
-toUstrings(Strings const & strs);
+String8s        toUstrings(Strings const & strs);
 
 template<>
 inline String
@@ -190,40 +176,25 @@ operator+(const String & lhs,String8 const & rhs)
 // not found, the untranslated message is returned.
 // TODO: This should return const references eventually as they will
 // be referenecs to something in a map:
-String8
-fgTr(const String & message);
-
+String8         fgTr(const String & message);
 // Remove all instances of a given character:
-String8
-removeChars(String8 const & str,uchar chr);
-
+String8         removeChars(String8 const & str,uchar chr);
 // Remove all instances of any of the given characters:
-String8
-removeChars(String8 const & str,String8 chrs);
-
+String8         removeChars(String8 const & str,String8 chrs);
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
-bool
-isGlobMatch(String8 const & globStr,String8 const & str);
-
-String8
-cSubstr(String8 const & str,size_t start,size_t size);
-
-String8
-cRest(String8 const & s,size_t start);
-
+bool            isGlobMatch(String8 const & globStr,String8 const & str);
+String8         cSubstr8(String8 const & str,size_t start,size_t size);
+String8         cRest(String8 const & s,size_t start);
 // Inspired by Python join():
-String8
-cat(String8s const & strings,String8 const & separator);
-
+String8         cat(String8s const & strings,String8 const & separator);
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:
-String
-fgToVariableName(String8 const & str);
-
+String          fgToVariableName(String8 const & str);
 // Replace all instances of 'from' with 'to' in 'in':
-String8
-replaceCharWithString(String8 const & in,char32_t from,String8 const to);
+String8         replaceCharWithString(String8 const & in,char32_t from,String8 const to);
+// Print a title and indented list of items one per line:
+void            printList(String const & title,Strings const & items,bool numbered);
 
 }
 

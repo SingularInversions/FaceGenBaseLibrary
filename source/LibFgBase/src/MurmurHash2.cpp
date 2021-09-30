@@ -31,6 +31,7 @@
 #else	// defined(_MSC_VER)
 
 #define BIG_CONSTANT(x) (x##LLU)
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 
 #endif // !defined(_MSC_VER)
 

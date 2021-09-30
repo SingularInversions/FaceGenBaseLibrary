@@ -57,6 +57,16 @@ cRandNormals(size_t num,double mean=0.0,double stdev=1.0);
 Floats
 randNormalFs(size_t num,float mean=0.0f,float stdev=1.0f);
 
+template<size_t S>
+Arr<double,S>
+randNormalArr(double mean=0.0,double stdev=1.0)
+{
+    Arr<double,S>       ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = randNormal() * stdev + mean;
+    return ret;
+}
+
 // Alphanumerics only (including capitals):
 std::string
 randString(uint numChars);

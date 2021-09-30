@@ -44,7 +44,7 @@ struct VArray
     erase(uint idx)
     {
         FGASSERT(idx < sz);
-        for (uint ii=idx; ii<sz-1; ++ii)
+        for (uint ii=idx; ii+1<sz; ++ii)
             m[ii] = m[ii+1];
         --sz;
     }

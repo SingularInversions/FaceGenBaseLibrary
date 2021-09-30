@@ -9,9 +9,8 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 
@@ -125,16 +124,16 @@ static string getObjectTexFileName(
 static string getObjectTexPlaceName(
         const FffMultiObjectC &model, unsigned long mm);
 
-static void writeTexCoord(ofstream &ofs, const vector<Vec2F> &texCoord);
-static void writeVertices(ofstream &ofs, const vector<Vec3F> &vtxList);
+static void writeTexCoord(ofstream &ofs, const Vec2Fs &texCoord);
+static void writeVertices(ofstream &ofs, const Vec3Fs &vtxList);
 static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList);
 static void writeFacets(
         ofstream                    &ofs,
-        const vector<Vec3F>    &vtxList,
+        const Vec3Fs    &vtxList,
         Vec3UIs const    &triList,
         const vector<Vec4UI>    &quadList,
         const EdgeMapT              &edgeMap,
-        const vector<Vec2F>    &texCoord,
+        const Vec2Fs    &texCoord,
         Vec3UIs const    &texTriList,
         const vector<Vec4UI>    &texQuadList);
 static void writeObjects(
@@ -837,7 +836,7 @@ static string getObjectTexPlaceName(
 //****************************************************************************
 //                              writeTexCoord
 //****************************************************************************
-static void writeTexCoord(ofstream &ofs, const vector<Vec2F> &texCoord)
+static void writeTexCoord(ofstream &ofs, const Vec2Fs &texCoord)
 {
     if (texCoord.size())
     {
@@ -865,7 +864,7 @@ static void writeTexCoord(ofstream &ofs, const vector<Vec2F> &texCoord)
 //****************************************************************************
 //                              writeVertices
 //****************************************************************************
-static void writeVertices(ofstream &ofs, const vector<Vec3F> &vtxList)
+static void writeVertices(ofstream &ofs, const Vec3Fs &vtxList)
 {
     ofs << "\tsetAttr -s " << vtxList.size() 
                 << " \".vt[0:" << vtxList.size()-1 << "]\"\n";
@@ -917,11 +916,11 @@ static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList)
 static void writeFacets(
 
     ofstream                    &ofs,
-    const vector<Vec3F>    &vtxList,
+    const Vec3Fs    &vtxList,
     Vec3UIs const    &triList,
     const vector<Vec4UI>    &quadList,
     const EdgeMapT              &edgeMap,
-    const vector<Vec2F>    &texCoord,
+    const Vec2Fs    &texCoord,
     Vec3UIs const    &texTriList,
     const vector<Vec4UI>    &texQuadList)
 {
@@ -1041,10 +1040,10 @@ static void writeObjects(
     for (unsigned long objId=0; objId<model.numObjs(); ++objId)
     {
         // Get an alias to the list data
-        const vector<Vec3F> &vtxList = model.getPtList(objId);
+        const Vec3Fs &vtxList = model.getPtList(objId);
         Vec3UIs const &triList = model.getTriList(objId);
         const vector<Vec4UI> &quadList = model.getQuadList(objId);
-        const vector<Vec2F> &texCoord = model.getTextCoord(objId);
+        const Vec2Fs &texCoord = model.getTextCoord(objId);
         Vec3UIs const &texTriList = model.getTexTriList(objId);
         const vector<Vec4UI> &texQuadList = model.getTexQuadList(objId);
 
@@ -1139,12 +1138,12 @@ static void writeObjects(
             if (texFname.size() == 0)
                 texFname = "";
 
-            const vector<Vec3F> &mVtxList = 
+            const Vec3Fs &mVtxList = 
                 (*morphTargets)[mm].getPtList(objId);
-            const vector<Vec3F> &vtxList = model.getPtList(objId);
+            const Vec3Fs &vtxList = model.getPtList(objId);
             Vec3UIs const &triList = model.getTriList(objId);
             const vector<Vec4UI> &quadList = model.getQuadList(objId);
-            const vector<Vec2F> &texCoord = model.getTextCoord(objId);
+            const Vec2Fs &texCoord = model.getTextCoord(objId);
             Vec3UIs const &texTriList = model.getTexTriList(objId);
             const vector<Vec4UI> &texQuadList=model.getTexQuadList(objId);
 

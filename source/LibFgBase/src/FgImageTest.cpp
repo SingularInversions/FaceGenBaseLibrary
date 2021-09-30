@@ -21,14 +21,21 @@ namespace Fg {
 
 namespace {
 
-// MANUAL:
+void
+testmCompare(CLArgs const &)
+{
+    String8             dd = dataDir();
+    Img3F               img0 = toUnit3F(loadImage(dd+"base/Mandrill512.png")),
+                        img1 = toUnit3F(loadImage(dd+"base/test/imgops/composite.png"));
+    compareImages(img0,img1);
+}
 
 void
-display(CLArgs const &)
+testmDisplay(CLArgs const &)
 {
     String8     dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
-    ImgC4UC     img = loadImage(dd+testorig_jpg);
+    ImgRgba8     img = loadImage(dd+testorig_jpg);
     viewImage(img);
     string      testorig_bmp("base/test/testorig.bmp");
     loadImage_(dd+testorig_bmp,img);
@@ -36,37 +43,47 @@ display(CLArgs const &)
 }
 
 void
-resize(CLArgs const &)
+testmResize(CLArgs const &)
 {
     string          fname("base/test/testorig.jpg");
-    ImgC4UC         img = loadImage(dataDir()+fname);
-    ImgC4UC         out(img.width()/2+1,img.height()+1);
+    ImgRgba8         img = loadImage(dataDir()+fname);
+    ImgRgba8         out(img.width()/2+1,img.height()+1);
     imgResize(img,out);
     viewImage(out);
 }
 
 void
-sfs(CLArgs const &)
+resamp(CLArgs const &)
 {
-    ImgC4UC         orig = loadImage(dataDir()+"base/Mandrill512.png");
+    Img3F                   in = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
+    Vec2D                   lo {94.3,37.8};
+    for (uint lnSz = 5; lnSz < 10; ++lnSz) {
+        uint                    sz = 2 << lnSz;
+        Img3F                   out = resampleAdaptive(in,lo,309.7,sz);
+        viewImageFixed(toRgba8(out));
+    }
+}
+
+void
+testmSfs(CLArgs const &)
+{
+    ImgRgba8         orig = loadImage(dataDir()+"base/Mandrill512.png");
     Img<Vec3F>      img(orig.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
         img[ii] = Vec3F(mapCast<float>(cHead<3>(orig[ii].m_c)));
     Timer             time;
     for (uint ii=0; ii<100; ++ii)
         smoothFloat(img,img,1);
-    double              ms = time.read();
+    double              ms = time.elapsedSeconds();
     fgout << fgnl << "smoothFloat time: " << ms;
     viewImage(img);
 }
-
-// AUTOMATIC:
 
 void
 testComposite(CLArgs const &)
 {
     String8             dd = dataDir();
-    ImgC4UC             overlay = loadImage(dd+"base/Teeth512.png"),
+    ImgRgba8             overlay = loadImage(dd+"base/Teeth512.png"),
                         base = loadImage(dd+"base/Mandrill512.png");
     regressTest(composite(overlay,base),dd+"base/test/imgops/composite.png");
 }
@@ -85,27 +102,49 @@ testConvolve(CLArgs const &)
     FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));
 }
 
+void
+testTransform(CLArgs const &)
+{
+    AffineEw2F          identity;
+    Vec2UIs             dimss {{16,32},{19,47}};
+    float               maxDiff = scast<float>(epsBits(20));
+    for (Vec2UI dims : dimss) {
+        AffineEw2F          xf0 = cIucsToIrcsXf(dims),
+                            xf0i = xf0.inverse(),
+                            xf1 = cIrcsToIucsXf(dims),
+                            xf1i = xf1.inverse();
+        FGASSERT(isApproxEqual(xf0*xf0i,identity,maxDiff));
+        FGASSERT(isApproxEqual(xf0*xf1,identity,maxDiff));
+        FGASSERT(isApproxEqual(xf1*xf1i,identity,maxDiff));
+    }
+}
+
 }
 
 void
-fgImageTestm(CLArgs const & args)
+testmImage(CLArgs const & args)
 {
-    Cmds   cmds;
-    cmds.push_back(Cmd(resize,"resize"));
-    cmds.push_back(Cmd(display,"display"));
-    cmds.push_back(Cmd(sfs,"sfs","smoothFloat speed"));
+    Cmds                cmds {
+        {testmCompare,"comp","view to compare images"},
+        {testmDisplay,"disp","display a single image"},
+        {resamp,"resamp","resample adaptive"},
+        {testmResize,"resize","change image pixel size by resampling"},
+        {testmSfs,"sfs","smoothFloat speed"},
+    };
     doMenu(args,cmds);
 }
 
 void    fgImgTestWrite(CLArgs const &);
 
 void
-fgImageTest(CLArgs const & args)
+testImage(CLArgs const & args)
 {
-    Cmds       cmds;
-    cmds.push_back(Cmd(testComposite,"composite"));
-    cmds.push_back(Cmd(testConvolve,"conv"));
-    cmds.push_back(Cmd(fgImgTestWrite,"write"));
+    Cmds                cmds {
+        {testComposite,"composite"},
+        {testConvolve,"conv"},
+        {testTransform,"xf"},
+        {fgImgTestWrite,"write"},
+    };
     doMenu(args,cmds,true,false,true);
 }
 

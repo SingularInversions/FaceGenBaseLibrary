@@ -15,64 +15,47 @@
 
 namespace Fg {
 
-// Load an image from any supported format:
-void            loadImage_(String8 const & fname,ImgC4UC & img);
-void            loadImage_(String8 const & fname,ImgF & img);
-void            loadImage_(String8 const & fname,ImgUC & img);
-ImgC4UC         loadImage(String8 const & fname);
-
+// Load an image from any supported format based on filename extension:
+void            loadImage_(String8 const & fname,ImgRgba8 & img);
+ImgRgba8        loadImage(String8 const & fname);
 // Save image to any supported format:
-void            saveImage(String8 const & fname,ImgC4UC const & img);
-void            saveImage(String8 const & fname,const ImgUC & img);
+void            saveImage(String8 const & fname,ImgRgba8 const & img);
 
-struct  ImgFileFormat
+struct  FileFormat
 {
     String      description;
     Strings     extensions;     // Usually 1 but can be 2 (eg. 'jpg', 'jpeg'). Preferred listed first.
 };
-typedef Svec<ImgFileFormat>     ImgFileFormats;
+typedef Svec<FileFormat>     FileFormats;
 
-// List of image file formats supported by above in order of common use in upper case:
-ImgFileFormats
-imgFileFormats();
-
-// List all supported image file format extensions in lower case, including synonyms:
-Strings
-imgFileExtensions();
-
+// List of supported image file formats in order of desired use in upper case:
+FileFormats     getImageFileFormats();
+// List of supported image file format extensions in lower case, including synonyms:
+Strings         getImageFileExts();
 // Command-line options string of the formats above:
-String
-imgFileExtensionsDescription();
-
-bool
-hasImgExtension(String8 const & fname);
-
+String          getImageFileExtCLDescriptions();
+bool            hasImageFileExt(String8 const & fname);
 // Returns a list of image extensions for which there are readable files 'baseName.ext':
-Strings
-imgFindFiles(String8 const & baseName);
-
+Strings         getImageFiles(String8 const & baseName);
 // Look for an image file in any common format starting with 'baseName' and load it if found.
 // Return true if found and false otherwise.
-bool
-imgFindLoadAnyFormat(String8 const & baseName,ImgC4UC & img);
+bool            loadImageAnyFormat_(String8 const & baseName,ImgRgba8 & img);
+ImgRgba8        loadImageAnyFormat(String8 const & baseName);           // Throws if not found
 
 void
 saveJfif(
-    ImgC4UC const &  img,        // Alpha channel will be ignored
+    ImgRgba8 const &  img,           // Alpha channel will be ignored
     String8 const & fname,
-    uint            quality);   // [1,100]
-
-// data must be 4 channel RGBA of size wid*hgt*4:
-Uchars
-imgEncodeJpeg(uint wid,uint hgt,uchar const * data,int quality);
+    // Quality level 90 is high quality and visually comparable to the ImageMagick defaults previously used,
+    // however STB encoding is about 25% larger:
+    uint            quality=90);    // [1,100] where 100 saves with lossless compression
 
 // Encode to JFIF format blob (can be dumped to .jpg file):
-Uchars
-imgEncodeJpeg(ImgC4UC const & img,int quality=100);
-
+Uchars          encodeJpeg(ImgRgba8 const & img,int quality=100);
+// As above. Data must be 4 channel RGBA of size wid*hgt*4:
+Uchars          encodeJpeg(uint wid,uint hgt,uchar const * data,int quality);
 // Decode from JFIF format blob (can be read from JFIF format .jpg file):
-ImgC4UC
-imgDecodeJpeg(Uchars const & jfifBlob);
+ImgRgba8        decodeJpeg(Uchars const & jfifBlob);
 
 }
 

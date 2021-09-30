@@ -21,10 +21,22 @@
 namespace Fg {
 
 typedef std::string             String;
+typedef std::u16string          String16;
 typedef std::u32string          String32;       // Always assume UTF-32
 typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
 typedef Svec<String32>          String32s;
+
+String32        toUtf32(const String & utf8);
+String32        toUtf32(char const * utf8);
+String          toUtf8(const char32_t & utf32_char);
+String          toUtf8(String32 const & utf32);
+// The following 2 functions are only needed by Windows and don't work on *nix due to
+// different sizeof(wchar_t):
+#ifdef _WIN32
+std::wstring    toUtf16(String const & utf8);
+String          toUtf8(std::wstring const & utf16);
+#endif
 
 // std::to_string can cause ambiguous call errors and doesn't let you adjust precision:
 template<class T>
@@ -121,34 +133,21 @@ toStrPrec(T val,uint numDigits)
 }
 
 // Set the number of digits beyond fixed point:
-String
-toStrFixed(double val,uint fractionalDigits=0);
-
+String          toStrFixed(double val,uint fractionalDigits=0);
 // Multiply by 100 and put a percent sign after:
-String
-toStrPercent(double val,uint fractionalDigits=0);
-
-String
-toLower(String const & s);
-
-String
-toUpper(String const & s);
-
+String          toStrPercent(double val,uint fractionalDigits=0);
+String          toLower(String const & s);
+String          toUpper(String const & s);
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
-Svec<String>
-splitAtSeparators(String const & str,char sep);
-
-String
-replaceAll(String const & str,char orig,char repl);
-
+Strings         splitAtSeparators(String const & str,char sep);
+String          replaceAll(String const & str,char orig,char repl);
 // Pad a String to desired len (does not truncate of longer):
-String
-padToLen(String const & str,size_t len,char ch=' ');
-
+String          padToLen(String const & str,size_t len,char ch=' ');
+// Concatenate strings with a separator between them (but not at beginning or end).
 // Inspired by Python join():
-String
-cat(const Svec<String> & strings,String const & separator);
+String          cat(Strings const & strings,String const & separator);
+String          cat(std::set<String> const & strings,String const & separator);
 
 inline
 String
@@ -195,9 +194,17 @@ cHead(std::basic_string<T> const & str,size_t size)
 String      cRest(String const & str,size_t start);         // start must be <= str.length()
 String32    cRest(String32 const & str,size_t start);       // "
 
+template<typename T>
+std::basic_string<T>
+cTail(std::basic_string<T> const & str,size_t size)
+{
+    FGASSERT(size <= str.size());
+    return std::basic_string<T>(str.end()-size,str.end());
+}
+
 template<class T>
 std::basic_string<T>
-cutSubstr(std::basic_string<T> const & str,size_t start,size_t size)
+cSubstr(std::basic_string<T> const & str,size_t start,size_t size)
 {
     FGASSERT(start+size <= str.size());
     return  std::basic_string<T>(str.begin()+start,str.begin()+start+size);

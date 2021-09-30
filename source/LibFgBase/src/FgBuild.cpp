@@ -5,9 +5,9 @@
 //
 
 #include "stdafx.h"
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
+
 #include "FgBuild.hpp"
+#include "FgFileSystem.hpp"
 #include "FgRandom.hpp"
 #include "FgHex.hpp"
 #include "FgSyntax.hpp"
@@ -22,7 +22,7 @@ fgBuildOSStrs()
     static vector<pair<BuildOS,string> >  ret =
     {
         {BuildOS::win,"win"},
-        {BuildOS::linux,"ubuntu"},
+        {BuildOS::linux,"linux"},
         {BuildOS::macos,"macos"},
         {BuildOS::ios,"ios"},
         {BuildOS::android,"android"}
@@ -52,6 +52,24 @@ strToBuildOS(string const & str)
     FG_UNREACHABLE_RETURN(BuildOS::win);
 }
 
+BuildOSs
+getAllBuildOss()
+{
+    return sliceMember(fgBuildOSStrs(),&pair<BuildOS,string>::first);
+}
+
+BuildOSs
+getNativeBuildOSs()
+{
+    return {BuildOS::win,BuildOS::linux,BuildOS::macos};
+}
+
+BuildOSs
+getCrossBuildOSs()
+{
+    return {BuildOS::ios,BuildOS::android};
+}
+
 BuildOS
 getCurrentBuildOS()
 {
@@ -68,24 +86,23 @@ getCurrentBuildOS()
 #endif
 }
 
-const vector<pair<Arch,string> > &
-fgArchStrs()
+Svec<pair<Arch,string> >
+getArchStrs()
 {
-    static vector<pair<Arch,string> >  ret =
-    {
+    return {
         {Arch::x86,"x86"},
         {Arch::x64,"x64"},
         {Arch::armv7,"armv7"},
-        {Arch::arm64,"arm64"},
-        {Arch::arm64e,"arm64e"}
+        {Arch::arm8_0,"arm8_0"},
+        {Arch::arm8_2,"arm8_2"},
+        {Arch::arm8_3,"arm8_3"}
     };
-    return ret;
 }
 
 std::ostream &
 operator<<(std::ostream & os,Arch arch)
 {
-    const vector<pair<Arch,string> > &    lst = fgArchStrs();
+    const vector<pair<Arch,string> > &    lst = getArchStrs();
     for (const pair<Arch,string> & l : lst)
         if (l.first == arch)
             return os << l.second;
@@ -96,7 +113,7 @@ operator<<(std::ostream & os,Arch arch)
 Arch
 strToArch(string const & str)
 {
-    const vector<pair<Arch,string> > &    lst = fgArchStrs();
+    const vector<pair<Arch,string> > &    lst = getArchStrs();
     for (const pair<Arch,string> & l : lst)
         if (l.second == str)
             return l.first;
@@ -107,19 +124,27 @@ strToArch(string const & str)
 Archs
 getBuildArchs(BuildOS os)
 {
-    if ((os == BuildOS::win) || (os == BuildOS::linux))
-        return svec(Arch::x86,Arch::x64);
+    if (os == BuildOS::win)
+        return { Arch::x86, Arch::x64 };
+    else if (os == BuildOS::linux)
+        return { Arch::x64, Arch::arm8_2 };
     else if (os == BuildOS::macos)
-        return svec(Arch::x64);
+        return { Arch::x64 };
     else if (os == BuildOS::ios)
-        // These are the iOS standard architectures (plus simulator) as of 2019.
-        // They support iPhone 5s (not 5,5c) and later.
-        return svec(Arch::x64,Arch::armv7,Arch::arm64,Arch::arm64e);
+        // iOS required architectures (plus x64 for simulator):
+        return { Arch::x64, Arch::armv7, Arch::arm8_0, Arch::arm8_3};
     else if (os == BuildOS::android)
-        return svec(Arch::x86,Arch::x64,Arch::armv7,Arch::arm64);
+        // Android runs all all kids of devices:
+        return { Arch::x86, Arch::x64, Arch::armv7, Arch::arm8_0 };
     else
-        fgThrow("fgBuildArchitecture unhandled OS",int(os));
+        fgThrow("getBuildArchs unhandled OS",toStr(os));
     FG_UNREACHABLE_RETURN(Archs());
+}
+
+Archs
+getAllArchs()
+{
+    return { Arch::x86, Arch::x64, Arch::armv7, Arch::arm8_0, Arch::arm8_2, Arch::arm8_3 };
 }
 
 const vector<pair<Compiler,string> > &
@@ -127,7 +152,6 @@ compilerStrs()
 {
     static vector<pair<Compiler,string> >  ret =
     {
-        {Compiler::vs15,"vs15"},
         {Compiler::vs17,"vs17"},
         {Compiler::vs19,"vs19"},
         {Compiler::gcc,"gcc"},
@@ -147,20 +171,26 @@ operator<<(std::ostream & os,Compiler comp)
     FG_UNREACHABLE_RETURN(os);
 }
 
+Compilers
+getAllCompilers()
+{
+    return sliceMember(compilerStrs(),&pair<Compiler,string>::first);
+}
+
 Compiler strToCompiler(string const & str)
 {
     for (auto const & l : compilerStrs())
         if (l.second == str)
             return l.first;
     fgThrow("strToCompiler unhandled string",str);
-    FG_UNREACHABLE_RETURN(Compiler::vs15);
+    FG_UNREACHABLE_RETURN(Compiler::vs17);
 }
 
 Compilers
 getBuildCompilers(BuildOS os)
 {
     if (os == BuildOS::win)
-        return {Compiler::vs19,Compiler::vs17,Compiler::vs15};
+        return {Compiler::vs19,Compiler::vs17};
     else if (os == BuildOS::linux)
         return {Compiler::gcc,Compiler::clang,Compiler::icpc};
     else if (os == BuildOS::macos)
@@ -181,9 +211,7 @@ Compiler
 getCurrentCompiler()
 {
 #if defined _MSC_VER
-    #if(_MSC_VER == 1900)
-        return Compiler::vs15;
-    #elif((_MSC_VER >= 1910) && (_MSC_VER < 1920))
+    #if((_MSC_VER >= 1910) && (_MSC_VER < 1920))
         return Compiler::vs17;
     #elif((_MSC_VER >= 1920) && (_MSC_VER < 1930))
         return Compiler::vs19;
@@ -220,16 +248,24 @@ getCurrentBuildDescription()
         cBitsString() + " " + getCurrentBuildConfig();
 }
 
+ostream &
+operator<<(ostream & os,Debrel d)
+{
+    if (d == Debrel::debug)
+        return os << "debug";
+    else
+        return os << "release";
+}
+
 bool
 isPrimaryConfig()
 {return (is64Bit() && isRelease() && (getCurrentCompiler() == getBuildCompilers()[0])); }
 
 string
-getRelBin(BuildOS os,Arch arch,Compiler comp,bool release,bool backslash)
+getRelBin(BuildOS os,Arch arch,Compiler comp,Debrel debrel,bool backslash)
 {
-    string          ds = backslash ? "\\" : "/",
-                    debrel = release ? "release" : "debug";
-    return "bin" + ds + toStr(os) + ds + toStr(arch) + ds + toStr(comp) + ds + debrel + ds;
+    string          ds = backslash ? "\\" : "/";
+    return "bin" + ds + toStr(os) + ds + toStr(arch) + ds + toStr(comp) + ds + toStr(debrel) + ds;
 }
 
 uint64
@@ -246,10 +282,10 @@ cUuidHash64(string const & str)
 #endif
 }
 
-FgUint128
+uint128
 cUuidHash128(string const & str)
 {
-    FgUint128       ret;
+    uint128       ret;
     FGASSERT(str.size() >= 16);
     uint64          *pLo = reinterpret_cast<uint64*>(&ret.m[0]),
                     *pHi = reinterpret_cast<uint64*>(&ret.m[8]);
@@ -264,7 +300,7 @@ cUuidHash128(string const & str)
 string
 createMicrosoftGuid(string const & name,bool wsb)
 {
-    FgUint128       val = cUuidHash128(name);
+    uint128       val = cUuidHash128(name);
     uchar           *valPtr = &val.m[0];
     string          ret;
     if (wsb) ret += '{';
@@ -282,6 +318,364 @@ void
 fgTestmCreateMicrosoftGuid(CLArgs const &)
 {
     fgout << fgnl << createMicrosoftGuid("This string should hash to a consistent value");
+}
+
+
+static
+Strings
+glob(string const & dir)
+{
+    Strings      ret;
+    DirContents dc = getDirContents(dir);
+    for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
+        string      fn = dc.filenames[ii].as_utf8_string();
+        Path      p(fn);
+        string      ext = p.ext.ascii(),
+                    base = p.base.ascii();
+        if (((ext == "cpp") || (ext == "c") || (ext == "hpp") || (ext == "h")) &&
+            (base[0] != '_'))
+            ret.push_back(fn);
+    }
+    return ret;
+}
+
+ConsSrcDir::ConsSrcDir(string const & baseDir,string const & relDir)
+    : dir(relDir), files(glob(baseDir+relDir))
+    {}
+
+string
+ConsProj::descriptor() const
+{
+    string          ret = name + ":" + baseDir + ":";
+    for (const ConsSrcDir & csg : srcGroups)
+        ret += csg.dir + ";";
+    return ret;
+}
+
+ConsType
+buildOSToConsType(BuildOS os)
+{
+    ConsType            type {ConsType::nix};
+    if (os == BuildOS::win)
+        type = ConsType::win;
+    else if (contains(getCrossBuildOSs(),os))
+        type = ConsType::cross;
+    return type;
+}
+
+ConsProj
+ConsSolution::addApp(string const & name,string const & lnkDep)
+{
+    if (!pathExists(name))
+        fgThrow("Unable to find directory",name);
+    ConsProj const &  dp = projByName(lnkDep);
+    if (!dp.isStaticLib())
+        fgThrow("App must depend on static lib",name,lnkDep);
+    ConsProj          proj(name,"");
+    proj.addSrcDir("");
+    proj.addDep(lnkDep,false);
+    return proj;
+}
+
+void
+ConsSolution::addAppClp(string const & name,string const & lnkDep)
+{
+    ConsProj          proj = addApp(name,lnkDep);
+    proj.type = ConsProj::Type::clp;
+    projects.push_back(proj);
+}
+
+void
+ConsSolution::addAppGui(string const & name,string const & lnkDep)
+{
+    ConsProj          proj = addApp(name,lnkDep);
+    proj.type = ConsProj::Type::gui;
+    projects.push_back(proj);
+}
+
+bool
+ConsSolution::contains(string const & projName) const
+{
+    for (ConsProj const & p : projects)
+        if (p.name == projName)
+            return true;
+    return false;
+}
+
+ConsProj const &
+ConsSolution::projByName(string const & projName) const
+{
+    for (ConsProj const & p : projects)
+        if (p.name == projName)
+            return p;
+    fgThrow("projByName() project not found",projName);
+    FG_UNREACHABLE_RETURN(projects[0]);
+}
+
+// Topological sort of transitive includes:
+Strings
+ConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<string> & done) const
+{
+    ConsProj const &  p = projByName(projName);
+    Strings              ret;
+    // DLLs are not transitive - related include file must be a separate explicit lnkDep:
+    if (p.isDynamicLib())
+        return ret;
+    for (ProjDep const & pd : p.projDeps) {
+        if (!Fg::contains(done,pd.name) && pd.transitive) {
+            cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+            done.insert(pd.name);
+        }
+    }
+    for (const IncDir & id : p.incDirs) {
+        if (id.transitive) {
+            if (fileDir)
+                ret.push_back("../"+p.name+"/"+p.baseDir+id.relPath+id.relFiles);
+            else
+                ret.push_back("../"+p.name+"/"+p.baseDir+id.relPath);
+        }
+    }
+    return ret;
+}
+
+Strings
+ConsSolution::getIncludes(string const & projName,bool fileDir) const
+{
+    ConsProj const &        p = projByName(projName);
+    Strings                 ret;
+    set<string>             done;
+    for (ProjDep const & pd : p.projDeps)
+        cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
+    for (const IncDir & id : p.incDirs) {
+        if (fileDir)
+            ret.push_back(p.baseDir+id.relPath+id.relFiles);
+        else
+            ret.push_back(p.baseDir+id.relPath);
+    }
+    return cReverse(ret);      // Includes need to be search from most proximal to least
+}
+
+// Topological sort of transitive defines:
+Strings
+ConsSolution::getTransitiveDefs(string const & projName,set<string> & done) const
+{
+    ConsProj const &  p = projByName(projName);
+    Strings              ret;
+    // DLLs are not transitive - related include file must be a separate explicit lnkDep:
+    if (p.isDynamicLib())
+        return ret;
+    for (ProjDep const & pd : p.projDeps) {
+        if (!Fg::contains(done,pd.name) && pd.transitive) {
+            setwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+            done.insert(pd.name);
+        }
+    }
+    for (const ConsDef & d : p.defs)
+        if (d.transitive)
+            ret.push_back(d.name);
+    return ret;
+}
+
+Strings
+ConsSolution::getDefs(string const & projName) const
+{
+    ConsProj const &  p = projByName(projName);
+    Strings              ret;
+    set<string>         done;
+    for (ProjDep const & pd : p.projDeps)
+        setwiseAdd_(ret,getTransitiveDefs(pd.name,done));
+    for (const ConsDef & d : p.defs)
+        ret.push_back(d.name);
+    return ret;
+}
+
+Strings
+ConsSolution::getTransitiveLnkDeps(string const & projName,set<string> & done) const
+{
+    Strings              ret;
+    if (Fg::contains(done,projName))
+        return ret;
+    ConsProj const &  p = projByName(projName);
+    if (p.isStaticLib())                // Only static libs link transitively, not DLLs:
+        for (ProjDep const & pd : p.projDeps)
+            cat_(ret,getTransitiveLnkDeps(pd.name,done));
+    cat_(ret,p.binDllDeps);           // Assume binary link deps are most derived (hack)
+    if (!p.srcGroups.empty())           // Header-only libs don't link:
+        ret.push_back(projName);
+    done.insert(projName);
+    return ret;
+}
+
+Strings
+ConsSolution::getLnkDeps(string const & projName) const
+{
+    ConsProj const &  p = projByName(projName);
+    Strings              ret;
+    set<string>         done;
+    for (ProjDep const & pd : p.projDeps)
+        cat_(ret,getTransitiveLnkDeps(pd.name,done));
+    return cReverse(ret);
+}
+
+Strings
+ConsSolution::getAllDeps(string const & projName,set<string> & done,bool dllSource) const
+{
+    Strings      ret;
+    if (Fg::contains(done,projName))
+        return ret;
+    ConsProj const &  p = projByName(projName);
+    if (!dllSource && p.isDynamicLib())
+        return ret;
+    for (ProjDep const & pd : p.projDeps)
+        cat_(ret,getAllDeps(pd.name,done,dllSource));
+    ret.push_back(projName);
+    done.insert(projName);
+    return ret;
+}
+
+Strings
+ConsSolution::getAllDeps(string const & projName,bool dllSource) const
+{
+    set<string>     done;
+    return getAllDeps(projName,done,dllSource);
+}
+
+Strings
+ConsSolution::getAllDeps(Strings const & projNames,bool dllSource) const
+{
+    set<string>     done;
+    Strings          ret;
+    for (string const & projName : projNames)
+        cat_(ret,getAllDeps(projName,done,dllSource));
+    return ret;
+}
+
+ConsSolution
+getConsData(ConsType type)
+{
+    ConsSolution  ret(type);
+
+    ConsProj      boost("LibTpBoost","boost_1_67_0/");
+    boost.addSrcDir("libs/filesystem/src/");
+    boost.addSrcDir("libs/serialization/src/");
+    boost.addSrcDir("libs/system/src/");
+    boost.addIncDir("","boost/",true);
+    // This stops boost from automatically flagging the compiler to link to it's default library names.
+    // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
+    boost.defs.push_back(ConsDef("BOOST_ALL_NO_LIB",true));
+    // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
+    boost.defs.push_back(ConsDef("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE",true));
+    boost.warn = 2;
+    ret.projects.push_back(boost);
+
+    // This library is set up such that you run a config script to adapt the source code to
+    // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
+    // is required to make it properly source-compatible cross-platform:
+    ConsProj      jpeg("LibJpegIjg6b","");
+    jpeg.addSrcDir("");
+    jpeg.addIncDir("",true);
+    jpeg.warn = 2;
+    ret.projects.push_back(jpeg);
+
+    ConsProj      eigen("LibTpEigen","");
+    eigen.addIncDir("","Eigen/",true);
+    ret.projects.push_back(eigen);
+
+    ConsProj      stb("LibTpStb","stb/");
+    stb.addIncDir("",true);
+    ret.projects.push_back(stb);
+
+    ConsProj      base("LibFgBase","src/");
+    base.addSrcDir("");
+    base.addIncDir("",true);
+    if (type != ConsType::win)
+        base.addSrcDir("nix/");
+    base.addDep(boost.name,true);
+    base.addDep(stb.name,false);
+    base.addDep(jpeg.name,false);
+    base.addDep(eigen.name,false);
+    ret.projects.push_back(base);
+
+    string          depName = base.name;
+
+    if (type == ConsType::win) {
+        ConsProj      basewin("LibFgWin","");
+        basewin.addSrcDir("");
+        basewin.addIncDir("",true);
+        basewin.addDep(base.name,true);
+        ret.projects.push_back(basewin);
+        depName = basewin.name;
+    }
+
+    if (pathExists("fgbl"))
+        ret.addAppClp("fgbl",depName);
+
+    return ret;
+}
+
+// Create Visual Studio 2015/17/19 solution & project files for given solution in current directory tree:
+bool
+fgConsVs201x(ConsSolution const & sln);
+
+// Create native-build OS makefiles for given solution in current directory
+// Returns true if different from existing (useful for source control & CI):
+bool
+fgConsNativeMakefiles(ConsSolution const & sln);
+
+// Create cross-compile-build OS makefiles for given solution in current directory
+// Returns true if different from existing (useful for source control & CI):
+bool
+fgConsCrossMakefiles(ConsSolution const & sln);
+
+bool
+constructBuildFiles(ConsSolution const & sln)
+{
+    PushDir       pd;
+    if (pathExists("source"))
+        pd.push("source");
+    bool        changed = false;
+    if (sln.type == ConsType::win)
+        changed = fgConsVs201x(sln);
+    else if (sln.type == ConsType::nix)
+        changed = fgConsNativeMakefiles(sln);
+    else if (sln.type == ConsType::cross)
+        changed = fgConsCrossMakefiles(sln);
+    else
+        fgThrow("constructBuildFiles unhandled OS build family",sln.type);
+    return changed;
+}
+
+void
+constructBuildFiles()
+{
+    PushDir       pd;
+    if (pathExists("source"))
+        pd.push("source");
+    constructBuildFiles(getConsData(ConsType::win));
+    constructBuildFiles(getConsData(ConsType::nix));
+    constructBuildFiles(getConsData(ConsType::cross));
+}
+
+void
+cmdCons(CLArgs const & args)
+{
+    Syntax        syntax(args,
+        "(sln | make) <option>*\n"
+        "    sln  - Visual Studio SLN and VCXPROJ files.\n"
+        "    make - Makefiles (all non-windows platforms).\n"
+    );
+    string          type = syntax.next();
+    set<string>     options;
+    while (syntax.more())
+        options.insert(syntax.next());
+    if (type == "sln")
+        constructBuildFiles(getConsData(ConsType::win));
+    else if (type == "make") {
+        constructBuildFiles(getConsData(ConsType::nix));
+        constructBuildFiles(getConsData(ConsType::cross));
+    }
+    else
+        syntax.error("Invalid option",type);
 }
 
 }

@@ -125,42 +125,60 @@ FgOut::setIndentLevel(uint l)
 FgOut &
 FgOut::flush()
 {
-    if (!m_mute)
-        for (auto & s : m_streams)
-            (*s.pOStr) << std::flush;
+    for (auto & s : m_streams)
+        (*s.pOStr) << std::flush;
     return *this;
 }
 
 FgOut &
 FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
 {
-    if (notMute())
-    {
-        // Handle the case of fgpush and fgpop explicitly since otherwise they
-        // may be passed on to both streams and double called resulting in twice
-        // the indenting:
-        if (manip == fgpush) {
-            for (OStr & o : m_streams)
-                ++o.indent;
-        }
-        else if (manip == fgpop) {
-            for (OStr & o : m_streams)
-                if (o.indent > 0)
-                    --o.indent;
-        }
-        else if (manip == fgnl) {
-            for (OStr & o : m_streams) {
-                (*o.pOStr) << '\n';
-                for (uint ii=0; ii<o.indent; ii++)
-                    (*o.pOStr) << "|   ";
-            }
-        }
-        else {
-            for (auto & s : m_streams)
-                (*s.pOStr) << manip;
+    // Handle the case of fgpush and fgpop explicitly since otherwise they
+    // may be passed on to both streams and double called resulting in twice
+    // the indenting:
+    if (manip == fgpush) {
+        for (OStr & o : m_streams)
+            ++o.indent;
+    }
+    else if (manip == fgpop) {
+        for (OStr & o : m_streams)
+            if (o.indent > 0)
+                --o.indent;
+    }
+    else if (manip == fgnl) {
+        for (OStr & o : m_streams) {
+            (*o.pOStr) << '\n';
+            for (uint ii=0; ii<o.indent; ii++)
+                (*o.pOStr) << "|   ";
         }
     }
+    else {
+        for (auto & s : m_streams)
+            (*s.pOStr) << manip;
+    }
     return *this;
+}
+
+void
+FgOut::addStream(ostream * os,size_t indentLevel)
+{
+    for (OStr ostr : m_streams)
+        if (ostr.pOStr == os)
+            return;
+    m_streams.emplace_back(os,indentLevel);
+}
+size_t
+
+FgOut::delStream(ostream * os)
+{
+    for (auto it=m_streams.begin(); it!=m_streams.end(); ++it) {
+        if (it->pOStr == os) {
+            size_t          indentLevel = it->indent;
+            m_streams.erase(it);
+            return indentLevel;
+        }
+    }
+    return 0;
 }
 
 std::ostream *

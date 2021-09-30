@@ -36,7 +36,7 @@ typedef Svec<Cmd> Cmds;
 void
 doMenu(
     CLArgs              args,
-    const Cmds &        cmds,
+    Cmds const &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
     bool                optionQuiet=false,  // Give option to silence console output
     bool                optionKeep=false);  // Give option to keep test files
@@ -60,20 +60,11 @@ struct TestDir
 #define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(toLower(args[0]));
 
 // Set the root test directory. Useful for sandboxed platforms:
-void
-fgSetRootTestDir(String8 const & dir);
-
-// Make a copy of a data file in current directory:
-void
-fgTestCopy(String const & nameRelativeToDataDir);
-
+void            fgSetRootTestDir(String8 const & dir);
+// Make a copy of a data file in current directory. Throws if file already exists.
+void            copyFileToCurrentDir(String const & nameRelativeToDataDir);
 // fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
-void
-runCmd(const CmdFunc & func,String const & argStr);
-
-// Useful for writing command dispatch commands - as long as Svec<Cmd> is named 'cmds':
-#define FGADDCMD1(fn,name) void fn(CLArgs const &); cmds.push_back(Cmd(fn,name))
-#define FGADDCMD(fn,name,desc) void fn(CLArgs const &); cmds.push_back(Cmd(fn,name,desc))
+void            runCmd(const CmdFunc & func,String const & argStr);
 
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();

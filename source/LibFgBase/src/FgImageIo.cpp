@@ -15,37 +15,10 @@ using namespace std;
 
 namespace Fg {
 
-void
-loadImage_(String8 const & fname,ImgUC & ret)
+FileFormats
+getImageFileFormats()
 {
-    ImgC4UC     img = loadImage(fname);
-    ret.resize(img.dims());
-    for (size_t ii=0; ii<ret.numPixels(); ++ii)
-        ret[ii] = img[ii].rec709();
-}
-
-void
-loadImage_(String8 const & fname,ImgF & img)
-{
-    ImgC4UC     tmp;
-    loadImage_(fname,tmp);
-    img.resize(tmp.dims());
-    for (size_t ii=0; ii<tmp.numPixels(); ++ii)
-        img.m_data[ii] = tmp.m_data[ii].rec709();
-}
-
-void
-saveImage(String8 const & fname,const ImgUC & img)
-{
-    ImgC4UC         tmp;
-    imgConvert_(img,tmp);
-    saveImage(fname,tmp);
-}
-
-ImgFileFormats
-imgFileFormats()
-{
-    static ImgFileFormats   ret = {
+    static FileFormats   ret = {
         {"PNG - RGBA, lossless compression low ratio",{"png"}},
         {"JPEG - RGB, lossy compression high ratio",{"jpg","jpeg"}},
         {"TARGA - RGBA, lossless compression very low ratio",{"tga"}},
@@ -55,18 +28,18 @@ imgFileFormats()
 }
 
 Strings
-imgFileExtensions()
+getImageFileExts()
 {
     Strings         ret;
-    for (ImgFileFormat const & iff : imgFileFormats())
+    for (FileFormat const & iff : getImageFileFormats())
         cat_(ret,iff.extensions);
     return ret;
 }
 
 string
-imgFileExtensionsDescription()
+getImageFileExtCLDescriptions()
 {
-    Strings  cf = imgFileExtensions();
+    Strings  cf = getImageFileExts();
     string  retval("(");
     retval += cf[0];
     for (size_t ii=1; ii<cf.size(); ++ii)
@@ -75,34 +48,41 @@ imgFileExtensionsDescription()
 }
 
 bool
-hasImgExtension(String8 const & fname)
+hasImageFileExt(String8 const & fname)
 {
-    string          ext = toLower(pathToExt(fname).m_str);
-    return contains(imgFileExtensions(),ext);
+    string              ext = toLower(pathToExt(fname).m_str);
+    return contains(getImageFileExts(),ext);
 }
 
-std::vector<std::string>
-imgFindFiles(String8 const & baseName)
+Strings
+getImageFiles(String8 const & baseName)
 {
-    Strings      ret,
-                        cifs = imgFileExtensions();
-    for (size_t ii=0; ii<cifs.size(); ++ii)
-        if (fileReadable(baseName+"."+cifs[ii]))
-            ret.push_back(cifs[ii]);
+    Strings             ret,
+                        exts = getImageFileExts();
+    for (size_t ii=0; ii<exts.size(); ++ii)
+        if (fileReadable(baseName+"."+exts[ii]))
+            ret.push_back(exts[ii]);
     return ret;
 }
 
 bool
-imgFindLoadAnyFormat(String8 const & baseName,ImgC4UC & img)
+loadImageAnyFormat_(String8 const & baseName,ImgRgba8 & img)
 {
-    Strings  exts = imgFindFiles(baseName);
+    Strings             exts = getImageFiles(baseName);
     if (exts.empty())
         return false;
-    String8        fname = baseName + "." + exts[0];
-    if (exts.size() > 1)
-        fgout << fgnl << "WARNING: Selecting first of possible image files: " << fname;
+    String8             fname = baseName + "." + exts[0];
     loadImage_(fname,img);
     return true;
+}
+
+ImgRgba8
+loadImageAnyFormat(String8 const & baseName)
+{
+    ImgRgba8            ret;
+    if (!loadImageAnyFormat_(baseName,ret))
+        fgThrow("Unable to find image file with base name",baseName);
+    return ret;
 }
 
 void
@@ -111,7 +91,7 @@ fgImgTestWrite(CLArgs const & args)
     FGTESTDIR
     char32_t        ch = 0x00004EE5;            // A Chinese character
     String8        chinese(ch);
-    ImgC4UC     redImg(16,16,RgbaUC(255,0,0,255));
+    ImgRgba8     redImg(16,16,RgbaUC(255,0,0,255));
     saveImage(chinese+"0.jpg",redImg);
     saveImage(chinese+"0.png",redImg);
 }

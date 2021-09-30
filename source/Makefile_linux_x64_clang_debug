@@ -9,7 +9,7 @@ CXXFLAGS = $(CFLAGS) -std=c++14 -ftemplate-depth=4096
 LFLAGS = -fsanitize=address -pthread -z origin -Wl,-rpath='$$ORIGIN'
 DLLEXT = .so
 DLLARG = -shared -Wl,-soname,
-BINDIR = ../bin/ubuntu/x64/clang/debug/
-BBINDIR = ../bin/ubuntu/x64/
-BUILDIR = ../build_ubuntu/x64/clang/debug/
+BINDIR = ../bin/linux/x64/clang/debug/
+BBINDIR = ../bin/linux/x64/
+BUILDIR = ../build_linux/x64/clang/debug/
 include make_all.mk

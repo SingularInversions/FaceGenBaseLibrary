@@ -16,6 +16,12 @@ using namespace std;
 
 namespace Fg {
 
+ostream &
+operator<<(ostream & os,Rigid3D const & r)
+{
+    return os << "rot: " << r.rot << " trans: " << r.trans;
+}
+
 SimilarityD
 SimilarityD::operator*(SimilarityD const & rhs) const
 {
@@ -54,7 +60,6 @@ similarityRand()
 SimilarityD
 solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
 {
-    SimilarityD     ret;
     FGASSERT(domainPts.size() > 2);     // Not solvable with only 2 points.
     uint            numPts = uint(domainPts.size());
     FGASSERT(numPts == rangePts.size());
@@ -92,10 +97,10 @@ solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts)
     // Calculate the 'trans' term: The transform is given by:
     // X = SR(d-dm)+rm = SR(d)-SR(dm)+rm
     Vec3D               trans = -scale * (pose.asMatrix() * domMean) + ranMean;
-    ret = SimilarityD(scale,pose,trans);
+    SimilarityD         ret {scale,pose,trans};
     // Measure residual:
-    double  resid = cRms(rangePts-mapMul(ret.asAffine(),domainPts)) / cMaxElem(cDims(rangePts));
-    fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
+    //double  resid = cRms(rangePts-mapMul(ret.asAffine(),domainPts)) / cMaxElem(cDims(rangePts));
+    //fgout << fgnl << "SimilarityApprox() relative RMS residual: " << resid;
     return ret;
 }
 

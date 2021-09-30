@@ -16,7 +16,7 @@ namespace Fg {
 struct  ImagePoint
 {
     String          label;
-    Vec2F           posIrcs;        // Image raster coordinate system
+    Vec2F           posIrcs;        // Image raster coordinate system; friendly for manual viewing.
 
     ImagePoint() {}
     ImagePoint(String const & l,Vec2F p) : label{l}, posIrcs{p} {}
@@ -34,9 +34,6 @@ operator<<(std::ostream &,ImagePoints const &);
 
 ImagePoints loadImagePoints(String8 const & fname);
 void        saveImagePoints(ImagePoints const & ips,String8 const & fname);
-
-void
-merge_(ImagePoints & lhs,ImagePoints const & rhs);
 
 }
 

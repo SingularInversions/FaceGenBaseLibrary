@@ -95,8 +95,8 @@ struct  DfgOutput : DfgNode, DfgDependent
     DfgFunc                     func;           // Must be defined. Calculate sinks from sources
     mutable boost::any          data;
     // Has data we depend on anywhere above this node in the graph been modified since 'func' last run:
-    mutable bool                dirty = true;
-    mutable uint64              time = 0;
+    mutable bool                dirty {true};
+    mutable uint64              timeUsedMs {0};
 
     virtual ~DfgOutput();
     virtual void update() const;
@@ -344,8 +344,8 @@ adapterCollate(DfgNPtrs const & srcs,boost::any & snk)
 }
 
 template<class T>
-OPT<Svec<T> >
-linkCollate(const Svec<NPT<T> > & ins = Svec<NPT<T> >())
+OPT<Svec<T>>
+linkCollate(const Svec<NPT<T>> & ins = Svec<NPT<T>>())
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->data = Svec<T>();
@@ -355,12 +355,12 @@ linkCollate(const Svec<NPT<T> > & ins = Svec<NPT<T> >())
         op->sources.push_back(in.ptr);
         in.ptr->addSink(op);
     }
-    return OPT<Svec<T> >(op);
+    return OPT<Svec<T>>(op);
 }
 template<class T>
-OPT<Svec<T> >
-linkCollate(const Svec<IPT<T> > & ins)
-{return linkCollate(mapConvert<IPT<T>,NPT<T> >(ins)); }
+OPT<Svec<T>>
+linkCollate(const Svec<IPT<T>> & ins)
+{return linkCollate(mapConvert<IPT<T>,NPT<T>>(ins)); }
 
 template<class In,class Out>
 void
@@ -375,7 +375,7 @@ adapterN(DfgNPtrs const & srcs,boost::any & snk,std::function<Out(const Svec<In>
 
 template<class In,class Out>
 OPT<Out>
-linkN(const Svec<NPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn)
+linkN(const Svec<NPT<In>> & ins,const std::function<Out(const Svec<In> &)> & fn)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->func = std::bind(adapterN<In,Out>,std::placeholders::_1,std::placeholders::_2,fn);
@@ -388,8 +388,8 @@ linkN(const Svec<NPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn
 }
 template<class In,class Out>
 OPT<Out>
-linkN(const Svec<IPT<In> > & ins,const std::function<Out(const Svec<In> &)> & fn)
-{return linkN(mapConvert<IPT<In>,NPT<In> >(ins),fn); }
+linkN(const Svec<IPT<In>> & ins,const std::function<Out(const Svec<In> &)> & fn)
+{return linkN(mapConvert<IPT<In>,NPT<In>>(ins),fn); }
 
 template<class In,class Out>
 OPT<Out>
@@ -605,7 +605,7 @@ link5(
 
 template<class T>
 OPT<T>
-linkSelect(Svec<NPT<T> > const & inNs,NPT<size_t> selN)
+linkSelect(Svec<NPT<T>> const & inNs,NPT<size_t> selN)
 {
     std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
     op->func = [](DfgNPtrs const & srcs,boost::any & snk)

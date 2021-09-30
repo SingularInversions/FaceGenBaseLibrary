@@ -52,7 +52,7 @@ fgClustDispatcher(
 
 typedef std::function<void(const FgClustDispatcher *)>    FgFuncCrdntor;
 
-// Deploys Ubuntu version to LAN:
+// Deploys linux version to LAN:
 void
 fgClusterDeploy(
     String const &          name,       // Name of this run (for file logging)

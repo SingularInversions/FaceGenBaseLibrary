@@ -6,17 +6,97 @@
 
 #include "stdafx.h"
 
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgException.hpp"
 #include "FgStdStream.hpp"
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
 #include "Fg3dTopology.hpp"
 #include "FgStdSet.hpp"
+#include "FgQuaternion.hpp"
 
 using namespace std;
 
 namespace Fg {
+
+void
+macAsTargetMorph_(
+    Vec3Fs const &  baseVerts,
+    Uints const &   indices,
+    Vec3F const *   targVertsPtr,
+    float           val,
+    Vec3Fs &        accVerts)
+{
+    FGASSERT(baseVerts.size() == accVerts.size());
+    for (size_t ii=0; ii<indices.size(); ++ii) {
+        size_t      idx = indices[ii];
+        Vec3F       del = targVertsPtr[ii] - baseVerts.at(idx);
+        accVerts[idx] += del * val;
+    }
+}
+
+size_t
+cNumVerts(IndexedMorphs const & ims)
+{
+    size_t      ret = 0;
+    for (IndexedMorph const & im : ims)
+        ret += im.verts.size();
+    return ret;
+}
+
+IndexedMorph
+deltaToTargetIndexedMorph(Vec3Fs const & base,Morph const & morph,float magElb)
+{
+    size_t                  V = base.size();
+    FGASSERT(morph.verts.size() == V);
+    IndexedMorph            ret {morph.name,{},{}};
+    for (size_t vv=0; vv<V; ++vv) {
+        Vec3F const &           del = morph.verts[vv];
+        if (cMag(del) > magElb) {
+            ret.baseInds.push_back(uint(vv));
+            ret.verts.push_back(base[vv]+del);
+        }
+    }
+    return ret;
+}
+
+void
+accDeltaMorphs(
+    Morphs const &     deltaMorphs,
+    Floats const &              coord,
+    Vec3Fs &                   accVerts)
+{
+    FGASSERT(deltaMorphs.size() == coord.size());
+    for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
+        Morph const &     morph = deltaMorphs[ii];
+        FGASSERT(morph.verts.size() == accVerts.size());
+        for (size_t jj=0; jj<accVerts.size(); ++jj)
+            accVerts[jj] += morph.verts[jj] * coord[ii];
+    }
+}
+
+void
+accTargetMorphs(
+    Vec3Fs const &             allVerts,
+    IndexedMorphs const & targMorphs,
+    Floats const &              coord,
+    Vec3Fs &                   accVerts)
+{
+    FGASSERT(targMorphs.size() == coord.size());
+    size_t          numTargVerts = 0;
+    for (size_t ii=0; ii<targMorphs.size(); ++ii)
+        numTargVerts += targMorphs[ii].baseInds.size();
+    FGASSERT(accVerts.size() + numTargVerts == allVerts.size());
+    size_t          idx = accVerts.size();
+    for (size_t ii=0; ii<targMorphs.size(); ++ii) {
+        Uints const &     inds = targMorphs[ii].baseInds;
+        for (size_t jj=0; jj<inds.size(); ++jj) {
+            size_t          baseIdx = inds[jj];
+            Vec3F        del = allVerts[idx++] - allVerts[baseIdx];
+            accVerts[baseIdx] += del * coord[ii];
+        }
+    }
+}
 
 Mesh::Mesh(TriSurfFids const & tsf) :
     verts {cat(tsf.surf.verts,tsf.fids)},
@@ -25,39 +105,43 @@ Mesh::Mesh(TriSurfFids const & tsf) :
     size_t          V = tsf.surf.verts.size(),
                     F = tsf.fids.size();
     for (size_t ii=V; ii<V+F; ++ii)
-        markedVerts.push_back(MarkedVert{ii});
+        markedVerts.push_back(MarkedVert{uint(ii)});
 }
 
 size_t
-Mesh::totNumVerts() const
+Mesh::allVertsSize() const
 {
-    size_t  ret = verts.size();
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        ret += targetMorphs[ii].verts.size();
-    return ret;
+    size_t              sz = verts.size();
+    for (IndexedMorph const & morph : targetMorphs)
+        sz += morph.verts.size();
+    sz += joints.size();
+    return sz;
 }
 
 Vec3Fs
 Mesh::allVerts() const
 {
-    Vec3Fs     ret = verts;
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        cat_(ret,targetMorphs[ii].verts);
+    Vec3Fs              ret; ret.reserve(allVertsSize());
+    cat_(ret,verts);
+    for (IndexedMorph const & morph : targetMorphs)
+        cat_(ret,morph.verts);
+    for (Joint const & joint : joints)
+        ret.push_back(joint.pos);
     return ret;
 }
 
 void
-Mesh::updateAllVerts(Vec3Fs const & avs)
+Mesh::updateAllVerts(Vec3Fs const & allVerts)
 {
-    FGASSERT(avs.size() == totNumVerts());
+    FGASSERT(allVerts.size() == allVertsSize());
     size_t          idx = 0;
-    for (; idx<verts.size(); ++idx)
-        verts[idx] = avs[idx];
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii) {
-        IndexedMorph & tm = targetMorphs[ii];
-        for (size_t jj=0; jj<tm.verts.size(); ++jj)
-            tm.verts[jj] = avs[idx++];
-    }
+    for (Vec3F & v : verts)
+        v =  allVerts[idx++];
+    for (IndexedMorph & morph : targetMorphs)
+        for (Vec3F & v : morph.verts)
+            v = allVerts[idx++];
+    for (Joint & joint : joints)
+        joint.pos = allVerts[idx++];
 }
 
 uint
@@ -196,6 +280,19 @@ Mesh::markedVertPositions() const
     ret.reserve(markedVerts.size());
     for (const MarkedVert & m : markedVerts)
         ret.push_back(verts[m.idx]);
+    return ret;
+}
+
+Vec3Fs
+Mesh::markedVertPositions(Strings const & labels) const
+{
+    Vec3Fs              ret;
+    ret.reserve(labels.size());
+    for (String const & label : labels) {
+        MarkedVerts         mvs = findAllByMember(markedVerts,&MarkedVert::label,label);
+        for (MarkedVert const & mv : mvs)
+            ret.push_back(verts[mv.idx]);
+    }
     return ret;
 }
 
@@ -413,17 +510,56 @@ Mesh::addTargMorph(String8 const & name_,Vec3Fs const & targetShape)
 }
 
 Vec3Fs
-Mesh::poseShape(Vec3Fs const & allVerts,const std::map<String8,float> & poseVals) const
+Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> const & poseVals) const
 {
-    Vec3Fs      ret = cHead(allVerts,verts.size()),
-                base = ret;
-    accPoseDeltas_(poseVals,deltaMorphs,ret);
-    accPoseDeltas_(poseVals,targetMorphs,base,cRest(allVerts,verts.size()),ret);
+    Vec3Fs                  ret = cHead(allVerts,verts.size());
+    for (Morph const & morph : deltaMorphs) {
+        auto                    it = poseVals.find(morph.name);
+        if (it != poseVals.end())
+            mapMulAdd_(morph.verts,it->second,ret);
+    }
+    size_t                  targIdx = verts.size();
+    for (IndexedMorph const & morph : targetMorphs) {
+        auto                    it = poseVals.find(morph.name);
+        if (it != poseVals.end()) {
+            FGASSERT(targIdx + morph.baseInds.size() < allVerts.size()+1);
+            size_t                  ti = targIdx;
+            for (uint baseIdx : morph.baseInds) {
+                Vec3F           del = allVerts[ti++] - allVerts[baseIdx];
+                ret[baseIdx] += del * it->second;
+            }
+        }
+        targIdx += morph.baseInds.size();
+    }
+    // Accumulate the quaternion component contributions from each joint DOF:
+    Vec4Fs                  jointAccs (joints.size(),Vec4F{0});
+    for (JointDof const & dof : jointDofs) {
+        auto                    it = poseVals.find(dof.name);
+        if (it != poseVals.end()) {
+            FGASSERT(dof.jointIdx < jointAccs.size());
+            float                   val = it->second / 2.0f;
+            Vec3F                   a = dof.rotAxis * sin(val);
+            jointAccs[dof.jointIdx] += Vec4F {cos(val),a[0],a[1],a[2]};
+        }
+    }
+    // For the non-zero accumulants, interpolate and rotate:
+    for (size_t pp=0; pp<joints.size(); ++pp) {
+        Vec4F const &           acc = jointAccs[pp];
+        if (cMag(acc) > 0) {
+            Joint const &           joint = joints[pp];
+            QuaternionF             q {acc};        // normalizes
+            Mat33F                  rot = q.asMatrix();
+            // TODO: Ignore skinning and apply to all for now:
+            // TODO: we'll need deformed bone & axis values:
+            for (Vec3F & v : ret)
+                v = rot * (v - joint.pos) + joint.pos;
+        }
+    }
     return ret;
 }
 
 void
-Mesh::addSurfaces(const Surfs & surfs)
+Mesh::addSurfaces(Surfs const & surfs)
 {
     for (size_t ss=0; ss<surfs.size(); ++ss)
         surfaces.push_back(surfs[ss]);
@@ -438,6 +574,23 @@ Mesh::scale(float val)
         mapMul_(val,deltaMorphs[ii].verts);
     for (size_t ii=0; ii<targetMorphs.size(); ++ii)
         mapMul_(val,targetMorphs[ii].verts);
+}
+
+void
+Mesh::xform(SimilarityD const & sim)
+{
+    Affine3F            aff (sim.asAffine());
+    Mat33F              lin = aff.linear;
+    Mat33F              rot (sim.rot.asMatrix());
+    mapMul_(aff,verts);
+    for (Morph & morph : deltaMorphs)
+        mapMul_(lin,morph.verts);
+    for (IndexedMorph & morph : targetMorphs)
+        mapMul_(aff,morph.verts);
+    for (Joint & joint : joints)
+        joint.pos = aff * joint.pos;
+    for (JointDof & dof : jointDofs)
+        dof.rotAxis = rot * dof.rotAxis;
 }
 
 void
@@ -479,7 +632,7 @@ fg3dMesh(Vec3UIs const & tris,Vec3Fs const & verts)
 }
 
 size_t
-fgNumTriEquivs(Meshes const & meshes)
+cNumTriEquivs(Meshes const & meshes)
 {
     size_t      ret = 0;
     for (Mesh const & m : meshes)
@@ -497,12 +650,38 @@ getMorphNames(Meshes const & meshes)
 }
 
 PoseDefs
+cPoseDefs(Mesh const & mesh)
+{
+    PoseDefs         ret;
+    for (Morph const & morph : mesh.deltaMorphs)
+        ret.emplace_back(morph.name,Vec2F{0,1},0);
+    for (IndexedMorph const & morph : mesh.targetMorphs)
+        ret.emplace_back(morph.name,Vec2F{0,1},0);
+    for (JointDof const & dof : mesh.jointDofs)
+        ret.emplace_back(dof.name,dof.angleBounds,0);
+    return ret;
+}
+
+PoseDefs
 cPoseDefs(Meshes const & meshes)
 {
-    std::set<PoseDef>    ps;
-    for (size_t ii=0; ii<meshes.size(); ++ii)
-        cUnion_(ps,cPoseDefs(meshes[ii]));
-    return vector<PoseDef>(ps.begin(),ps.end());
+    unordered_set<String>   names;
+    PoseDefs                ret;
+    for (Mesh const & mesh : meshes) {
+        PoseDefs            poseDefs = cPoseDefs(mesh);
+        for (PoseDef const & pd : poseDefs)
+            if (!contains(names,pd.name.m_str))
+                ret.push_back(pd);
+    }
+    return ret;
+}
+
+Mesh
+transform(Mesh const & mesh,SimilarityD const & sim)
+{
+    Mesh                ret = mesh;
+    ret.xform(sim);
+    return ret;
 }
 
 static
@@ -552,7 +731,7 @@ operator<<(std::ostream & os,Mesh const & m)
         if (sortVerts[ii] == sortVerts[ii-1])
             ++numDups;
     os << fgnl << "Duplicate vertices: " << numDups;
-    MeshTopology        topo(m.verts.size(),m.getTriEquivs().posInds);
+    SurfTopo        topo(m.verts.size(),m.getTriEquivs().posInds);
     Vec3UI              te = topo.isManifold();
     os << fgnl << "Watertight: ";
     if (te == Vec3UI(0))
@@ -564,7 +743,7 @@ operator<<(std::ostream & os,Mesh const & m)
         os << "YES";
     else
         os << "NO (" << te[1] << " intersection edges, " << te[2] << " reversed edges)";
-    os << fgnl << "Seams: " << topo.seams().size()
+    os << fgnl << "Boundaries: " << topo.boundaries().size()
         << fgnl << "Unused verts: " << topo.unusedVerts();
     return os;
 }
@@ -580,7 +759,7 @@ operator<<(std::ostream & os,Meshes const & ms)
 Vec3UIs
 subdivideTris(
     Vec3UIs const &             tris,
-    Svec<MeshTopology::Tri> const &   topoTris,
+    Svec<SurfTopo::Tri> const &   topoTris,
     uint                        newVertsBaseIdx)
 {
     Vec3UIs             ret;
@@ -601,7 +780,7 @@ subdivideTris(
 Surf
 subdivideTris(
     Vec3UIs const &             tris,
-    Svec<MeshTopology::Tri> const &   topoTris,
+    Svec<SurfTopo::Tri> const &   topoTris,
     uint                        newVertsBaseIdx,
     SurfPoints const &          sps)
 {
@@ -672,7 +851,7 @@ subdivide(Mesh const & in,bool loop)
     Mesh                ret;
     ret.verts = in.verts;   // Modified later in case of Loop:
     ret.markedVerts = in.markedVerts;
-    MeshTopology            topo {in.verts.size(),allTris.posInds};
+    SurfTopo            topo {in.verts.size(),allTris.posInds};
     uint                    newVertsBaseIdx = uint(in.verts.size());
     if (loop) {
         // Add the edge-split "odd" verts:
@@ -728,9 +907,9 @@ subdivide(Mesh const & in,bool loop)
     // Can only carry over UVs if they exist and are defined for all tris (ie on all surfaces):
     if (!in.uvs.empty() && (allTris.uvInds.size() == allTris.posInds.size())) {
         ret.uvs = in.uvs;
-        MeshTopology        topoUvs {in.uvs.size(),allTris.uvInds};
+        SurfTopo        topoUvs {in.uvs.size(),allTris.uvInds};
         uint                newUvsBaseIdx = uint(in.uvs.size());
-        for (MeshTopology::Edge const & edge : topoUvs.m_edges) {
+        for (SurfTopo::Edge const & edge : topoUvs.m_edges) {
             Vec2UI              vi = edge.vertInds;
             ret.uvs.push_back((in.uvs[vi[0]]+in.uvs[vi[1]])*0.5);
         }
@@ -776,8 +955,8 @@ cullVolume(TriSurf triSurf,Mat32F const & bounds)
         vertInBounds.push_back(isInBounds(bounds,v));
     Bools               triInBounds;
     triInBounds.reserve(triSurf.tris.size());
-    MeshTopology        topo {triSurf.verts.size(),triSurf.tris};
-    for (MeshTopology::Tri const & t : topo.m_tris) {
+    SurfTopo        topo {triSurf.verts.size(),triSurf.tris};
+    for (SurfTopo::Tri const & t : topo.m_tris) {
         bool            inBounds = true;
         for (uint vertIdx : t.vertInds.m) {
             if (!vertInBounds[vertIdx])
@@ -789,7 +968,7 @@ cullVolume(TriSurf triSurf,Mat32F const & bounds)
     for (size_t tt=0; tt<triSurf.tris.size(); ++tt)
         if (triInBounds[tt])
             nTris.push_back(triSurf.tris[tt]);
-    return meshRemoveUnusedVerts(triSurf.verts,nTris);
+    return removeUnusedVerts(triSurf.verts,nTris);
 }
 
 }

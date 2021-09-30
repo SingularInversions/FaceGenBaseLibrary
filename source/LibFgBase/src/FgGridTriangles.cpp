@@ -32,7 +32,7 @@ GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,Floats
         Vec2F            v0 = verts[tri[0]],
                             v1 = verts[tri[1]],
                             v2 = verts[tri[2]];
-        Opt<Vec3D>     vbc = barycentricCoord(pos,v0,v1,v2);
+        Opt<Vec3D>     vbc = cBarycentricCoord(pos,v0,v1,v2);
         if (vbc.valid() && (cMinElem(vbc.val()) >= 0)) {       // We intersect:
             Vec3F        ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
                             bc = Vec3F(vbc.val());
@@ -68,7 +68,7 @@ GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,v
         Vec2F            p0 = verts[tp.pointInds[0]],
                             p1 = verts[tp.pointInds[1]],
                             p2 = verts[tp.pointInds[2]];
-        vbc = barycentricCoord(pos,p0,p1,p2);
+        vbc = cBarycentricCoord(pos,p0,p1,p2);
         if (vbc.valid()) {
             tp.baryCoord = Vec3F(vbc.val());
             if (cMinElem(tp.baryCoord) >= 0.0f)
@@ -82,9 +82,9 @@ gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 {
     GridTriangles       ret;
     FGASSERT(tris.size() > 0);
-    Vec2F               domainLo(maxFloat()),
-                        domainHi(-maxFloat()),
-                        invalid(maxFloat());
+    Vec2F               domainLo(floatMax()),
+                        domainHi(-floatMax()),
+                        invalid(floatMax());
     size_t              numValid = 0;
     for (size_t ii=0; ii<verts.size(); ++ii) {
         Vec2F           v = verts[ii];
@@ -148,7 +148,7 @@ testGridTriangles(CLArgs const &)
         tris.push_back(Vec3UI((row+1)*dimp+col+1,(row+1)*dimp+col,row*dimp+col));
     }
     // Create the grid and query:
-    const vector<Vec2F> &    verts = vertImg.dataVec();
+    const Vec2Fs &    verts = vertImg.dataVec();
     GridTriangles             gts = gridTriangles(verts,tris);
     for (uint ii=0; ii<100; ++ii) {
         Vec2D        posd(randUniform(),randUniform());

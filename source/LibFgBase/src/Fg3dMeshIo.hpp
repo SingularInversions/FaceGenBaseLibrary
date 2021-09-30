@@ -47,7 +47,7 @@
 #define FG3DMESHIO_HPP
 
 #include "FgString.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 
 namespace Fg {
 
@@ -67,35 +67,22 @@ enum struct     MeshFormat
 };
 typedef Svec<MeshFormat>    MeshFormats;
 
-String
-meshFormatExtension(MeshFormat);
+String          meshFormatExtension(MeshFormat);
+String          meshFormatSpecifier(MeshFormat);
+MeshFormats     meshExportFormats();
 
-String
-meshFormatSpecifier(MeshFormat);
-
-MeshFormats
-meshExportFormats();
-
-// Returns false if 'fname' has no extension and no mesh file was found with a valid extension.
-// Returns true otherwise. Throws an exception if the specified extension cannot be read as a mesh.
-bool
-loadMesh(
-    String8 const &     fname,  // If no extension specified will search readable mesh types.
-    Mesh &              mesh);  // RETURNED
-
-// As above but throws if no mesh found:
-Mesh    loadMesh(String8 const & fname);
-
+Mesh            loadMesh(String8 const & fname);
+// If a loadable mesh extension for the given base name can be found the mesh will be loaded and
+// the function will return true. False otherwise:
+bool            loadMeshAnyFormat_(String8 const & baseName,Mesh & returned);
+Mesh            loadMeshAnyFormat(String8 const & fname);       // As above but throws if no mesh found
 // Loads both mesh and albedo map (if present) and specular map (if present):
-Mesh    loadMeshMaps(String8 const & baseName);
-
+Mesh            loadMeshMaps(String8 const & baseName);
 // Returns lower case list of supported extensions:
-Strings             meshLoadFormats();
+Strings         meshLoadFormats();
 // True if this file extension is a 3D mesh readable by FG:
-bool                hasMeshExtension(String8 const & filename);
-
-String
-meshLoadFormatsCLDescription();
+bool            hasMeshExtension(String8 const & filename);
+String          meshLoadFormatsCLDescription();
 
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
@@ -108,44 +95,26 @@ saveMesh(Mesh const & mesh,String8 const & fname)
 {saveMesh(svec(mesh),fname); }
 
 // Does not include FaceGen formats:
-Strings const &
-meshExportFormatExts();
-
+Strings const & meshExportFormatExts();
 // 1-1 with above
-Strings const &
-meshExportFormatDescriptions();
-
-Strings const &
-meshExportFormatsWithMorphs();
-
+Strings const & meshExportFormatDescriptions();
+Strings const & meshExportFormatsWithMorphs();
 // Includes 'tri':
-std::string
-meshSaveFormatsCLDescription();
+std::string     meshSaveFormatsCLDescription();
 
 // FaceGen mesh format load / save:
-
-Mesh
-loadFgmesh(String8 const & fname);
-void
-saveFgmesh(String8 const & fname,Mesh const & mesh);
-void
-saveFgmesh(String8 const & fname,Meshes const & meshes);
+Mesh            loadFgmesh(String8 const & fname);
+void            saveFgmesh(String8 const & fname,Mesh const & mesh);
+void            saveFgmesh(String8 const & fname,Meshes const & meshes);
 
 // FaceGen legacy mesh format load / save:
-
-Mesh        loadTri(std::istream & is);
-Mesh        loadTri(String8 const & fname);
-Mesh        loadTri(String8 const & meshFile,String8 const & texFile);
-
+Mesh            loadTri(std::istream & is);
+Mesh            loadTri(String8 const & fname);
+Mesh            loadTri(String8 const & meshFile,String8 const & texFile);
 // Merges all surfaces:
-void
-saveTri(String8 const & fname,Mesh const & mesh);
-// Merges all meshes and surfaces. Texture images not saved.
-inline
-void
-saveTri(String8 const & fname,Meshes const & meshes)
-{return saveTri(fname,mergeMeshes(meshes)); }
-
+void            saveTri(String8 const & fname,Mesh const & mesh);
+// Merges all meshes and surfaces. Texture images not saved:
+inline void saveTri(String8 const & fname,Meshes const & meshes) {return saveTri(fname,mergeMeshes(meshes)); }
 
 enum struct     SpatialUnit { millimetre, centimetre, metre };
 String          inMetresStr(SpatialUnit);
@@ -153,57 +122,34 @@ String          toStr(SpatialUnit);
 
 // Third party mesh formats:
 
-// Load from Wavefront OBJ file
-Mesh
-loadWObj(
-    String8 const &     filename,
-    // Break up the surfaces by the given WOBJ separator. Valid values are 'usemtl', 'o' and 'g':
-    String              surfSeparator=String());
-
+// Load from Wavefront OBJ file. Only supports polygonal meshes (no smooth curves):
+Mesh            loadWObj(String8 const & filename);
 // Save to Wavefront OBJ file. OBJ does not support morphs or units.
-void
-saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
-
+void            saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 // Ignores morphs:
-void
-saveVrml(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
-
+void            saveVrml(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 // Meshes with shared morphs must be merged as different surfaces into a single Mesh for the
 // morphs to be unified in FBX (as imported into Unity). Unity will ignore albedo map file 
 // references so they must be manually added:
-void
-saveFbx(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
-
+void            saveFbx(String8 const & filename,Meshes const & meshes,String imgFormat = "png");
 // All meshes merged, ignores UVs, textures, morphs, etc:
-void
-saveStl(String8 const & fname,Meshes const & meshes);
-
+void            saveStl(String8 const & fname,Meshes const & meshes);
 // Morph targets are also saved:
-void
-saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-
+void            saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 // Morph targets are also saved:
-void
-saveMa(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-
+void            saveMa(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 // Morph targets are also saved:
-void
-saveXsi(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-
+void            saveXsi(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 // 3DS:
 // * No morph targets
 // * No quads
 // * Splits UV seams
 // * 8.3 tex names only
 // * 2^16 max verts & tris
-void
-save3ds(String8 const & fname,Meshes meshes,String imgFormat = "png");
-
+void            save3ds(String8 const & fname,Meshes meshes,String imgFormat = "png");
 // Vertices & surfaces must be merged to a single list but tex images are specified per facet.
 // Currently saves all facets as tris but can easily be changed to preverve quads:
-void
-savePly(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-
+void            savePly(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 // Collada. Does not yet support morphs.
 void
 saveDae(String8 const & fname,Meshes const & meshes,String imgFormat = "png",SpatialUnit unit=SpatialUnit::millimetre);

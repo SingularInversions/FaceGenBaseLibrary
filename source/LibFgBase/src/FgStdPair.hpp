@@ -12,8 +12,11 @@
 namespace Fg {
 
 template<class T,class U>
+using Pair = std::pair<T,U>;
+
+template<class T,class U>
 std::ostream &
-operator<<(std::ostream & ss,std::pair<T,U> const & pp)
+operator<<(std::ostream & ss,Pair<T,U> const & pp)
 {
     return ss << "(" << pp.first << "," << pp.second << ")";
 }

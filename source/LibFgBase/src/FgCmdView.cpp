@@ -10,7 +10,7 @@
 #include "FgFileSystem.hpp"
 #include "Fg3dDisplay.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgSyntax.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgImageDraw.hpp"
@@ -22,7 +22,6 @@ using namespace std;
 
 namespace Fg {
 
-static
 void
 cmdViewMesh(CLArgs const & args)
 {
@@ -35,7 +34,7 @@ cmdViewMesh(CLArgs const & args)
         "    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.\n"
         "    <transparency> - Transparency map\n"
         "    <specular> - Specularity map\n"
-        "    <img>      - " + imgFileExtensionsDescription()
+        "    <img>      - " + getImageFileExtCLDescriptions()
     );
     bool            compare = false,
                     removeUnused = false;
@@ -54,22 +53,22 @@ cmdViewMesh(CLArgs const & args)
         mesh.name = path.base;
         if (removeUnused) {
             size_t          origVerts = mesh.verts.size();
-            mesh = meshRemoveUnusedVerts(mesh);
+            mesh = removeUnusedVerts(mesh);
             if (mesh.verts.size() < origVerts)
                 fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
         }
         fgout << fgnl << path.baseExt() << fgpush << mesh << fgpop;
-        if (syn.more() && hasImgExtension(syn.peekNext())) {
+        if (syn.more() && hasImageFileExt(syn.peekNext())) {
             if (mesh.uvs.empty())
                 fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
             size_t              mapIdx = 0;
-            while (syn.more() && hasImgExtension(syn.peekNext())) {
-                ImgC4UC         albedo = loadImage(syn.next()),
+            while (syn.more() && hasImageFileExt(syn.peekNext())) {
+                ImgRgba8         albedo = loadImage(syn.next()),
                                 specular;
                 fgout << fgnl << syn.curr() << fgpush << albedo << fgpop;
                 if (syn.more() && (syn.peekNext()[0] == '-')) {
                     if(syn.next() == "-t") {
-                        ImgC4UC         trans = loadImage(syn.next());
+                        ImgRgba8         trans = loadImage(syn.next());
                         fgout << fgnl << syn.curr() << fgpush << trans << fgpop;
                         albedo = fgImgApplyTransparencyPow2(albedo,trans);
                     }
@@ -84,7 +83,7 @@ cmdViewMesh(CLArgs const & args)
                     Surf &              surf = mesh.surfaces[mapIdx++];
                     surf.setAlbedoMap(albedo);
                     if (!specular.empty())
-                        surf.material.specularMap = make_shared<ImgC4UC>(specular);
+                        surf.material.specularMap = make_shared<ImgRgba8>(specular);
                 }
                 else
                     fgout << fgnl << "WARNING: " << path.baseExt() << " does not have enough surfaces for the given number of maps.";
@@ -101,10 +100,10 @@ void
 cmdViewImage(CLArgs const & args)
 {
     Syntax          syn {args,"<image>.<ext> [<points>.txt]\n"
-        "    <ext>      - (" + cat(imgFileExtensions(),",") + ")\n"
+        "    <ext>      - (" + cat(getImageFileExts(),",") + ")\n"
         "    <points>   - optional points annotation file in simple YOLO format"
     };
-    ImgC4UC         img = loadImage(syn.next());
+    ImgRgba8         img = loadImage(syn.next());
     fgout << img;
     ImagePoints     ips;
     if (syn.more()) {
@@ -124,17 +123,12 @@ cmdViewImage(CLArgs const & args)
 }
 
 void
-fgViewImagef(CLArgs const & args)
+cmdViewImageF(CLArgs const & args)
 {
     Syntax    syn(args,"<imageFileName> [<saveName>]");
     ImgF      img;
     if (toLower(pathToExt(syn.next())) == "fgpbn")
         loadBsaPBin(syn.curr(),img);
-    else {
-        if (getCurrentBuildOS() != BuildOS::win)
-            fgout << "WARNING: This functionality currently only works properly under windows";
-        loadImage_(syn.curr(),img);
-    }
     if (syn.more())
         saveBsaPBin(syn.next(),img);
     fgout << fgnl << img;
@@ -145,28 +139,28 @@ void
 cmdViewUvs(CLArgs const & args)
 {
     Syntax              syn(args,
-        "(<mesh>.<ext>)+ [<texImage>]\n"
+        "<mesh>.<ext> [<texImage>]+\n"
         "     <ext> = " + meshLoadFormatsCLDescription());
-    Mesh                mesh;
-    ImgC4UC             img;
-    do {
-        string              fname = syn.next(),
-                            ext = pathToExt(fname);
-        if (!contains(meshLoadFormats(),toLower(ext)))
-            syn.error("Invalid filename extension for a mesh",ext);
-        Mesh                tmp = loadMesh(fname);
-        if (tmp.uvs.empty())
-            syn.error("Mesh has no UVs",fname);
-        mesh = mergeMeshes(mesh,tmp);
-    } while (syn.more() && hasMeshExtension(syn.peekNext()));
-    if (syn.more())
-        img = loadImage(syn.next());
-    Mat22F              uvb = cBounds(mesh.uvs);
-    fgout << fgnl << "UV Bounds: " << uvb;
-    VecF2               uvbb = cBounds(uvb.m);
-    if ((uvbb[0] < 0.0f) || (uvbb[1] > 1.0f))
-        fgout << fgnl << "WARNING: wraparound UV bounds, mapping domain expanded";
-    viewImage(cUvWireframeImage(mesh,RgbaUC{0,255,0,255},img));
+    Mesh                mesh = loadMesh(syn.next());
+    if (mesh.uvs.empty())
+        syn.error("Mesh has no UVs",syn.curr());
+    fgout << fgnl << syn.curr() << " UV Bounds: " << cBounds(mesh.uvs);
+    String8s            names;
+    ImgRgba8s           images;
+    RgbaUC              color {0,255,0,255};
+    size_t              cnt {0};
+    for (Surf const & surf : mesh.surfaces) {
+        if (surf.name.empty())
+            names.emplace_back("Unnamed-" + toStr(cnt++));
+        else
+            names.push_back(surf.name);
+        ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,color);
+        if (syn.more())
+            images.push_back(composite(wi,loadImage(syn.next())));
+        else
+            images.push_back(wi);
+    }
+    viewImages(images,names);
 }
 
 Cmds
@@ -175,7 +169,7 @@ getViewCmds()
     Cmds            cmds {
         {cmdViewMesh,"mesh","Interactively view 3D meshes"},
         {cmdViewImage,"image","Basic image viewer"},
-        {fgViewImagef,"imagef","Floating point image viewer"},
+        {cmdViewImageF,"imagef","Floating point image viewer"},
         {cmdViewUvs,"uvs","View the UV layout of a 3D mesh"},
     };
     return cmds;

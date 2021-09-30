@@ -14,10 +14,25 @@ using namespace std;
 namespace Fg {
 
 void
+srlz_(bool v,String & s)
+{
+    uchar           b = v ? 1 : 0;
+    srlz_(b,s);
+}
+
+void
+dsrlz_(String const & s,size_t & p,bool & v)
+{
+    uchar           b;
+    dsrlz_(s,p,b);
+    v = (b == 1);
+}
+
+void
 dsrlz_(String const & s,size_t & p,long & v)
 {
     int64           t;
-    dsrlzBytes_(s,p,t);
+    dsrlzDirect_(s,p,t);
     FGASSERT(t >= std::numeric_limits<long>::lowest());
     FGASSERT(t <= std::numeric_limits<long>::max());
     v = static_cast<long>(t);
@@ -26,7 +41,7 @@ void
 dsrlz_(String const & s,size_t & p,unsigned long & v)
 {
     uint64          t;
-    dsrlzBytes_(s,p,t);
+    dsrlzDirect_(s,p,t);
     FGASSERT(t <= std::numeric_limits<unsigned long>::max());
     v = static_cast<unsigned long>(t);
 }
@@ -34,17 +49,17 @@ dsrlz_(String const & s,size_t & p,unsigned long & v)
 void
 srlz_(String const & v,String & s)
 {
-    srlz_(v.size(),s);
+    srlz_(uint64(v.size()),s);
     s.append(v);
 }
 void
 dsrlz_(String const & s,size_t & p,String & v)
 {
-    size_t          l;
-    dsrlz_(s,p,l);
-    FGASSERT(p+l <= s.size());
-    v.assign(s,p,l);
-    p += l;
+    uint64              sz;
+    dsrlz_(s,p,sz);
+    FGASSERT(p+sz <= s.size());
+    v.assign(s,p,size_t(sz));
+    p += sz;
 }
 
 namespace {
@@ -126,6 +141,22 @@ testSerial(CLArgs const &)
     test0();
     test1();
     test2();
+    {
+        Svec<string>        in {"first","second"},
+                            out = dsrlz<Strings>(srlz(in));
+        FGASSERT(in == out);
+    }
+    {
+        String8                 dd = dataDir() + "base/test/";
+        String                  msg = "This is a test",
+                                ser = srlz(msg);
+        //saveRaw(ser,dd+"serial32");
+        //saveRaw(ser,dd+"serial64");
+        String                  msg32 = dsrlz<String>(loadRaw(dd+"serial32")),
+                                msg64 = dsrlz<String>(loadRaw(dd+"serial64"));
+        FGASSERT(msg32 == msg);
+        FGASSERT(msg64 == msg);
+    }
 }
 
 }

@@ -79,11 +79,11 @@ DfgInput::setToDefault() const
 DfgOutput::~DfgOutput()
 {
     // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions
-    if ((time > 1) && (isConsoleProgram())) {   // Cannot throw
+    if ((timeUsedMs > 1) && (isConsoleProgram())) {   // Cannot throw
         string      sig;
         for (DfgNPtr const & source : sources)
             sig += cSignature(source->getDataCref()) + " ";
-        fgout << fgnl << time << " : " << sig ;
+        fgout << fgnl << timeUsedMs << " : " << sig ;
     }
 }
 
@@ -102,10 +102,9 @@ DfgOutput::update() const
         src->update();      // Ensure sources updated
 //fgout << fgpop;
     try {
-        uint64      t0 = getTimeMs();
+        Timer               timer;
         func(sources,data);
-        uint64      t1 = getTimeMs();
-        time += t1-t0;
+        timeUsedMs += timer.elapsedMilliseconds();
     }
     catch(FgException & e)
     {

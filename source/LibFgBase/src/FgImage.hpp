@@ -3,6 +3,11 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// NOTES:
+// 
+// * All pixel averaging / resampling operations on images with an alpha-channel require the color
+//   channels to be alpha-weighted for correct results. Alpha weighting does not commute with linear
+//   composition, and only the pre-weighted order corresponds to meaningful results.
 
 #ifndef FGIMAGE_HPP
 #define FGIMAGE_HPP
@@ -16,7 +21,8 @@
 
 namespace Fg {
 
-// Single channel version
+// OSTREAM OUTPUT:
+
 template<class T>
 std::ostream &
 operator<<(std::ostream & os,Img<T> const & img)
@@ -25,51 +31,17 @@ operator<<(std::ostream & os,Img<T> const & img)
         os << "dimensions: " << img.dims()
             << " bounds: " << cBounds(img.m_data);
 }
+std::ostream &      operator<<(std::ostream &,ImgRgba8 const &);
+std::ostream &      operator<<(std::ostream &,ImgC4F const &);
 
-// RGBA versions:
-std::ostream &
-operator<<(std::ostream &,ImgC4UC const &);
-std::ostream &
-operator<<(std::ostream &,ImgC4F const &);
+// COORDINATES, SAMPLING, INTERPOLATION:
 
-template<typename T>
-Img<T>
-operator+(Img<T> const & lhs,Img<T> const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return Img<T>(lhs.dims(),lhs.m_data+rhs.m_data);
-}
-
-template<typename T>
-Img<T>
-operator-(Img<T> const & lhs,Img<T> const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return Img<T>(lhs.dims(),lhs.m_data-rhs.m_data);
-}
-
-template<typename T>
-Img<T>
-mapFunc(Img<T> const & in,Sfun<T(T)> const & fn)
-{return Img<T>{in.dims(),mapFunc(in.m_data,fn)}; }
-
-template<typename Out,typename In>
-Img<Out>
-mapFuncT(Img<In> const & in,Sfun<Out(In)> const & fn)
-{return Img<Out>{in.dims(),mapFuncT<Out,In>(in.m_data,fn)}; }
-
-// Create image coordinate affine transforms (see FgCoordSystem.hpp)
 AffineEw2D          cIpcsToIucsXf(Vec2UI dims);
 AffineEw2D          cIrcsToIucsXf(Vec2UI imageDims);
-AffineEw2D          cIucsToIrcsXf(Vec2UI ircsDims);
+AffineEw2F          cIucsToIrcsXf(Vec2UI ircsDims);
 AffineEw2F          cIucsToIpcsXf(Vec2UI dims);
 AffineEw2F          cOicsToIucsXf();
-
-// Transform image coordinates:
-inline
-Vec2F
-cIucsToIrcsXf(Vec2UI ircsDims,Vec2F iucsCoord)
-{return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
+inline Vec2F        cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord) {return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
 
 struct  CoordWgt
 {
@@ -79,17 +51,13 @@ struct  CoordWgt
 
 // Bilinear interpolation co-efficients culling samples outside bounds.
 // Return value can contain between 0 and 4 samples depending on how many are culled:
-VArray<CoordWgt,4>
-cLerpCullIrcs(Vec2UI dims,Vec2F coordIrcs);
-VArray<CoordWgt,4>
-cLerpCullIucs(Vec2UI dims,Vec2F coordIucs);
+VArray<CoordWgt,4>  cLerpCullIrcs(Vec2UI dims,Vec2F coordIrcs);
+VArray<CoordWgt,4>  cLerpCullIucs(Vec2UI dims,Vec2F coordIucs);
 
 // Bilinear interpolation coordinates and co-efficients with coordinates clamped to image.
 // Returned matrix weights sum to 1. Cols are X Lo,Hi and rows are Y Lo,Hi.
-Mat<CoordWgt,2,2>
-blerpCoordsClipIrcs(Vec2UI dims,Vec2D coordIrcs);
-Mat<CoordWgt,2,2>
-blerpCoordsClipIucs(Vec2UI dims,Vec2F coordIucs);
+Mat<CoordWgt,2,2>   blerpCoordsClipIrcs(Vec2UI dims,Vec2D coordIrcs);
+Mat<CoordWgt,2,2>   blerpCoordsClipIucs(Vec2UI dims,Vec2F coordIucs);
 
 template<class I>
 typename I::PixelType
@@ -104,8 +72,7 @@ sampleCull(I const & img,Vec2D ircs)
 
 // Bilinear interpolated alpha-weighted RGBA image sampling.
 // Source points outside image considered to have alpha zero:
-RgbaF
-sampleAlpha(ImgC4UC const & img,Vec2F coordIucs);
+RgbaF               sampleAlpha(ImgRgba8 const & img,Vec2F coordIucs);
 
 // Sample an image with given matrix of coordinates (must be in image bounds) and weights:
 template<typename T>
@@ -133,7 +100,7 @@ sampleClipIrcs(Img<T> const & img,Vec2D coordIrcs)
 
 template<class T>
 Mat<T,2,2>
-fgSampleFdd1Clamp(Img<T> const & img,Vec2UI coord)
+sampleFdd1Clamp(Img<T> const & img,Vec2UI coord)
 {
     Mat<T,2,2>      ret;
     Vec2UI          dims = img.dims();
@@ -153,48 +120,129 @@ fgSampleFdd1Clamp(Img<T> const & img,Vec2UI coord)
     return ret;
 }
 
+// ELEMENT-WISE OPERATIONS:
+
+// Conversions. Note that the value 255U is only used for 1.0f so the effective 8-bit range is only 255 values.
+// This is done to allow preservation of max value in round-trip conversions:
+Img3F               toUnit3F(ImgRgba8 const &);         // [0,255] -> [0,1], ignores input alpha channel
+Img4F               toUnit4F(ImgRgba8 const &);         // [0,255] -> [0,1]
+ImgRgba8            toRgba8(Img3F const &);             // [0,1] -> [0,255], alpha set to 255
+ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255]
+ImgUC               toUC(ImgRgba8 const &);             // rec. 709 RGB -> greyscale
+ImgF                toFloat(ImgRgba8 const &);          // rec. 709 RGB -> greyscale [0,255]
+ImgRgba8            toRgba8(ImgUC const &);             // replicate to RGB, set alpha to 255
+
+template<typename T>
+Img<T>
+operator+(Img<T> const & lhs,Img<T> const & rhs)
+{
+    FGASSERT(lhs.dims() == rhs.dims());
+    return Img<T>(lhs.dims(),lhs.m_data+rhs.m_data);
+}
+
+template<typename T>
+Img<T>
+operator-(Img<T> const & lhs,Img<T> const & rhs)
+{
+    FGASSERT(lhs.dims() == rhs.dims());
+    return Img<T>(lhs.dims(),lhs.m_data-rhs.m_data);
+}
+
+template<class T,class U>
+void
+operator*=(Img<T> & img,U rhs)
+{img.m_data *= rhs; }
+
+template<class T>
+double
+cDot(Img<T> const & lhs,Img<T> const & rhs)
+{
+    FGASSERT(lhs.dims() == rhs.dims());
+    return cDot(lhs.m_data,rhs.m_data);
+}
+
+template<class T>
+double
+cSsd(Img<T> const & lhs,Img<T> const & rhs)
+{
+    FGASSERT(lhs.dims() == rhs.dims());
+    return cSsd(lhs.m_data,rhs.m_data);
+}
+
+template<typename T,typename Fn>
+Img<T>
+mapCall(Img<T> const & in,Fn const & fn)
+{return Img<T>{in.dims(),mapCall(in.m_data,fn)}; }
+
+template<typename T,typename Fn>
+Img<T>
+mapCall(Img<T> const & l,Img<T> const & r,Fn const & fn)
+{
+    FGASSERT(l.dims() == r.dims());
+    return Img<T>{l.dims(),mapCall(l.m_data,r.m_data,fn)};
+}
+
+template<class Out,class In,class Fn>
+Img<Out>
+mapCallT(Img<In> const & in,Fn const & fn)
+{return Img<Out>{in.dims(),mapCallT<Out,In,Fn>(in.m_data,fn)}; }
+
+template<class Out,class In0,class In1,class Fn>
+Img<Out>
+mapCallT(Img<In0> const & in0,Img<In1> const & in1,Fn const & fn)
+{
+    FGASSERT(in0.dims() == in1.dims());
+    return Img<Out>{in0.dims(),mapCallT<Out,In0,In1,Fn>(in0.m_data,in1.m_data,fn)};
+}
+
+template<class Out,class In0,class In1,class In2,class Fn>
+Img<Out>
+mapCallT(Img<In0> const & in0,Img<In1> const & in1,Img<In2> const & in2,Fn const & fn)
+{
+    FGASSERT(in0.dims() == in1.dims() && in1.dims() == in2.dims());
+    return Img<Out>{in0.dims(),mapCallT<Out,In0,In1,In2,Fn>(in0.m_data,in1.m_data,in2.m_data,fn)};
+}
+
+// Interpolate between 2 images:
 template<class T>
 Img<T>
-interpolate(Img<T> const & i0,Img<T> const & i1,float val)
+interpolate(Img<T> const & i0,Img<T> const & i1,float ratio)
 {
     Vec2UI          dims = i0.dims();
     FGASSERT(i1.dims() == dims);
     Img<T>          ret(dims);
-    float           omv = 1.0f - val;
+    float           omv = 1.0f - ratio;
     for (size_t ii=0; ii<ret.numPixels(); ++ii) {
-        auto        v = mapCast<float>(i0.m_data[ii]) * omv + mapCast<float>(i1.m_data[ii]) * val;
+        auto        v = mapCast<float>(i0.m_data[ii]) * omv + mapCast<float>(i1.m_data[ii]) * ratio;
         round_(v,ret.m_data[ii]);
     }
     return ret;
 }
 
-// Shrink an image by 2x2 averaging blocks, rounding down the image size if odd:
-void
-imgShrink2(ImgC4UC const & src,ImgC4UC & dst);
+// RESIZE / TRANSFORM / CONVOLVE:
 
-inline
-ImgC4UC
-imgShrink2(ImgC4UC const & src)
+// Subsample image 2x with 2x2 box filter, rounding down the image size when odd.
+// Channels must be linear (eg. alpha-weighted if alpha exists):
+
+// RGBA version:
+void            shrink2_(ImgRgba8 const & src,ImgRgba8 & dst);
+inline ImgRgba8  shrink2(ImgRgba8 const & src)
 {
-    ImgC4UC ret;
-    imgShrink2(src,ret);
+    ImgRgba8             ret;
+    shrink2_(src,ret);
     return ret;
 }
-
-// Resampled 2x expansion. See 'magnify' for a unresampled.
-ImgC4UC
-expand2(ImgC4UC const & src);
-
-// 2x image shrink using block average for types composed of floating point values.
-// Truncates last row/col if width/height not even.
-template<typename T>
+// floating point versions:
+template<typename T,
+    // Floating point specialization doesn't use a different accumulator type:
+    FG_ENABLE_IF(typename Traits<T>::Scalar,is_floating_point)>
 void
-shrink2Float_(
-    Img<T> const &  src,
-    Img<T> &        dst,    // Must be a different instance
-    typename Traits<T>::Scalar denom=typename Traits<T>::Scalar(4))
+shrink2_(
+    Img<T> const &              src,
+    Img<T> &                    dst,    // Must be a different instance
+    typename Traits<T>::Scalar  denom=typename Traits<T>::Scalar(4))
 {
-    FGASSERT(src.data() != dst.data());
+    FGASSERT(src.dataPtr() != dst.dataPtr());
     dst.resize(src.dims()/2);
     for (uint yy=0; yy<dst.height(); ++yy)
         for (uint xx=0; xx<dst.width(); ++xx)
@@ -204,53 +252,30 @@ shrink2Float_(
                 src.xy(2*xx+1,2*yy+1) +
                 src.xy(2*xx,2*yy+1)) / denom;
 }
-
-template<class T>
+template<class T,
+    FG_ENABLE_IF(typename Traits<T>::Scalar,is_floating_point)>
 Img<T>
-shrink2Float(Img<T> const & img)
+shrink2(Img<T> const & img)
 {
-    Img<T>      ret;
-    shrink2Float_(img,ret);
+    Img<T>                  ret;
+    shrink2_(img,ret);
     return ret;
 }
-
-// Fixed-point 2x2 averaging image shrink
-// A row/col of pixels will be truncated if the dimensions are not even.
-// Not optimized.
+// uchar version:
 ImgUC shrink2Fixed(const ImgUC & img);
+
+// Resampled 2x expansion. See 'magnify' for a unresampled.
+ImgRgba8
+expand2(ImgRgba8 const & src);
 
 // Repeat each pixel value 'fac' times in both dimensions:
 template<class T>
 Img<T>
 magnify(Img<T> const & img,size_t fac)
 {
-    Img<T>      ret(img.dims()*uint(fac));
+    Img<T>              ret(img.dims()*uint(fac));
     for (Iter2UI  it(ret.dims()); it.next(); it.valid())
         ret[it()] = img[it()/uint(fac)];
-    return ret;
-}
-
-// Image channels must be in range [0,1]
-ImgC4UC     toImgC4UC(ImgC4F const & img);
-
-ImgC4UC
-toImgC4UC(
-    Img3F const &       img,
-    float               offset=0.0f,        // Applied first
-    float               scale=255.999f);
-
-void
-imgConvert_(ImgC4UC const & src,ImgUC & dst);
-
-void
-imgConvert_(const ImgUC & src,ImgC4UC & dst);
-
-inline
-ImgC4UC
-imgUcTo4Uc(ImgUC const & img)
-{
-    ImgC4UC      ret;
-    imgConvert_(img,ret);
     return ret;
 }
 
@@ -260,16 +285,13 @@ imgUcTo4Uc(ImgUC const & img)
 // dimensions:
 void
 imgResize(
-    ImgC4UC const & src,
-    ImgC4UC &       dst);   // MODIFIED
+    ImgRgba8 const & src,
+    ImgRgba8 &       dst);   // MODIFIED
 
-void        rescaleValsToFit_(const ImgD & src,ImgUC & dst);
-void        rescaleValsToFit_(const ImgD & src,ImgC4UC & dst);
-
-ImgC4UC
+ImgRgba8
 fgImgApplyTransparencyPow2(
-    ImgC4UC const & colour,
-    ImgC4UC const & transparency);
+    ImgRgba8 const & colour,
+    ImgRgba8 const & transparency);
 
 Img<FatBool>
 mapAnd(const Img<FatBool> &,const Img<FatBool> &);
@@ -305,8 +327,8 @@ flipHoriz(Img<T> const & img)
 // The Source and desination images can be the same, for in-place convolution:
 void    smoothUint_(ImgUC const & src,ImgUC & dst,uchar borderPolicy=1);
 ImgUC   smoothUint(ImgUC const & src,uchar borderPolicy=1);
-void    smoothUint_(ImgC4UC const & src,ImgC4UC & dst,uchar borderPolicy=1);
-ImgC4UC smoothUint(ImgC4UC const & src,uchar borderPolicy=1);
+void    smoothUint_(ImgRgba8 const & src,ImgRgba8 & dst,uchar borderPolicy=1);
+ImgRgba8 smoothUint(ImgRgba8 const & src,uchar borderPolicy=1);
 
 // Use of the __restrict keyword for the pointer args below made no speed difference here (msvc2012).
 // Perhaps the compiler is smart enough to look at the calling context:
@@ -370,7 +392,7 @@ smoothFloat(
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
-    smoothFloat2D(src.data(),dst.data(),src.width(),src.height(),borderPolicy);
+    smoothFloat2D(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
 }
 
 // Only defined for binarized images, output is binarized:
@@ -423,7 +445,7 @@ fgConvolveFloat(
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
-    FGASSERT(src.data() != dst.data());
+    FGASSERT(src.dataPtr() != dst.dataPtr());
     uint                    wid = src.width();
     Svec<Pixel>           boundaryRow(wid,Pixel(0));
     const Pixel *           srcPtrs[3];
@@ -479,24 +501,18 @@ Img<T>
 resampleToFit(Img<T> const & in,Vec2UI dims)
 {return resample(in,dims,imgScaleToFit(in.dims(),dims)); }
 
+// Resamples a square area of an input image into the given pixel size.
+// Uses simple resampling but shrinks input image first if necessary to avoid undersampling.
+// Out of bounds samples clamped to boundary values:
+Img3F
+resampleAdaptive(
+    Img3F                   in,
+    Vec2D                   posIpcs,        // top left corner of output image area
+    float                   inSize,         // pixel size of square input domain
+    uint                    outSize);       // pixel size of square output image
+
 bool
-fgImgApproxEqual(ImgC4UC const & img0,ImgC4UC const & img1,uint maxDelta=0);
-
-template<class T>
-double
-cDot(Img<Rgba<T> > const & lhs,Img<Rgba<T> > const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return cDot(lhs.m_data,rhs.m_data);
-}
-
-template<class T>
-double
-cSsd(Img<Rgba<T> > const & lhs,Img<Rgba<T> > const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return cSsd(lhs.m_data,rhs.m_data);
-}
+fgImgApproxEqual(ImgRgba8 const & img0,ImgRgba8 const & img1,uint maxDelta=0);
 
 template<class T>
 Img<T>
@@ -611,23 +627,19 @@ cropPad(
 }
 
 // RGB values should not be weighted by alpha and image dimensions must be equal:
-ImgC4UC
-composite(ImgC4UC const & foreground,ImgC4UC const & background);
+ImgRgba8         composite(ImgRgba8 const & foreground,ImgRgba8 const & background);
 
 // Simple resampling (no filtering) based on a transform map:
-ImgC4UC
+ImgRgba8
 fgResample(
     const Img2F &   map,    // Resample coordinates in OTCS, with (-1,-1) as invalid
-    ImgC4UC const &         src);
+    ImgRgba8 const &         src);
 
 template<class T>
 void
-fgRotate90(
-    bool                clockwise,
-    Img<T> const &  in,
-    Img<T> &        out)
+rotate90(bool clockwise,Img<T> const & in,Img<T> & out)
 {
-    Vec2UI       dims(in.dims());
+    Vec2UI          dims(in.dims());
     std::swap(dims[0],dims[1]);
     out.resize(dims);
     int             xh = (clockwise ? dims[0]-1 : 0),
@@ -641,7 +653,7 @@ fgRotate90(
 
 // Does any pixel contain an alpha value less than 254 ? (returns false if empty)
 bool
-usesAlpha(ImgC4UC const &,uchar minVal=254);
+usesAlpha(ImgRgba8 const &,uchar minVal=254);
 
 inline Vec4UC fgRed() {return Vec4UC(255,0,0,255); }
 inline Vec4UC fgGreen() {return Vec4UC(255,0,0,255); }
@@ -649,23 +661,44 @@ inline Vec4UC fgBlue() {return Vec4UC(255,0,0,255); }
 
 // Thickness must be an odd number:
 void
-paintCrosshair(ImgC4UC & img,Vec2I ircs);
+paintCrosshair(ImgRgba8 & img,Vec2I ircs);
 
 void
-paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
+paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
 
 void
-paintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
+paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
 
-// Returns only 2-block-filtered 2-subsampled images of the original.
-// Smallest is when the largest dimension is of size 1 (smallest dim clamped to size 1).
-// Non power-of-2 dimensions are truncated when subsampled.
-Svec<ImgC4UC>
-cMipMap(ImgC4UC const & img);
+// Create a mipmap (2x2 box filtered image pyrmamid), in which:
+// * The first element is the original image
+// * Each subsequent element is half the dimensions (rounded down for odd parent dimensions)
+// * The last element is when the smaller dimension size has reached 1
+// * If the input image is empty, an empty pyramid will be returned
+template<class T>
+Svec<Img<T>>
+cMipMapTruncate(Img<T> const & img)
+{
+    Svec<Img<T>>            ret;
+    uint                    minDim = cMinElem(img.dims());
+    if (minDim == 0)
+        return ret;
+    uint                    sz = log2Floor(minDim) + 1;
+    ret.reserve(sz);
+    ret.push_back(img);
+    while (cMinElem(ret.back().dims()) > 1)
+        ret.push_back(shrink2(ret.back()));
+    return ret;
+}
+
+// Returns 2-box-filtered 2-subsampled images of the original, which must have pow2 dimensions.
+// Smallest is when the smallest dimension is of size 1.
+Svec<ImgRgba8>       cMipMapPow2(ImgRgba8 const & img);
+// As above but resamples non-pow-2 images to the pow2 ceiling size, and empty image returns empty mipmp.
+Svec<ImgRgba8>       cMipMap(ImgRgba8 const & img);
 
 // Convert, no scaling:
 ImgV3F
-fgImgToF3(ImgC4UC const &);
+fgImgToF3(ImgRgba8 const &);
 
 // Scale space image (3 channel float). Returns image pyramid from largest (same as source but smoothed)
 // to smallest dimension equal to 2. Non power of 2 dimensions are simply rounded down at each level:
@@ -682,16 +715,16 @@ fgSsiItcsToIpcs(Vec2UI dims,Vec2F principalPointIpcs,Vec2F fovItcs);
 // Blend images given a greyscale transition map [0,255] : 0 -> 'img0', 255 -> 'img1'
 // The returned image is the size of 'img0' and 'img1' and 'transition' are bilinearly sampled.
 // Any of the images can be empty:
-ImgC4UC
-imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition);
+ImgRgba8
+imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC const & transition);
 
 // Modulate the color channels of an image with a modulation map scaled such that identity (1.0) = 64.
 // Only the color channels of modulationMap are used. The input images may be different sizes but must
 // have identical aspect ratios. Either image may be empty.
-ImgC4UC
+ImgRgba8
 imgModulate(
-    ImgC4UC const &     colorImage,             // Alpha left unchanged
-    ImgC4UC const &     modulationMap,          // RGB channels modulate respective channels in 'colorImage'. Alpha ignored.
+    ImgRgba8 const &     colorImage,             // Alpha left unchanged
+    ImgRgba8 const &     modulationMap,          // RGB channels modulate respective channels in 'colorImage'. Alpha ignored.
     float               modulationFactor=1.0f); // [0.5,1.5] modulate the modulation values.
 
 template<class T>

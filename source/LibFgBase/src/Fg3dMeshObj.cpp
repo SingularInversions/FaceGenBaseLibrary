@@ -3,9 +3,10 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Wavefront OBJ import / export.
-//
-// * OBJ does not support morphs, hierarchies, animation or units.
+// Wavefront OBJ import / export
+// 
+// * This impl only supports polygonal geometry, no smooth surfaces or lines.
+// * WOBJ does not support morphs, hierarchies, animation or units.
 //
 
 #include "stdafx.h"
@@ -13,9 +14,8 @@
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgParse.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgTestUtils.hpp"
 
 using namespace std;
@@ -149,55 +149,121 @@ parseFacet(
     return ret;
 }
 
+Surfs
+splitByUvDomain(Surf const & surf,Vec2Fs const & uvs,String8 const & baseName)
+{
+    set<Vec2I>              domains;
+    map<Vec2I,Uints>        domainToQuadInds,
+                            domainToTriInds;
+    bool                    mixed = false;
+    for (uint tt=0; tt<surf.tris.uvInds.size(); ++tt) {
+        Vec3UI                  uvInds = surf.tris.uvInds[tt];
+        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
+        domains.insert(domain);
+        for (uint ii=1; ii<3; ++ii)
+            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
+                mixed = true;
+        domainToTriInds[domain].push_back(tt);
+    }
+    for (uint qq=0; qq<surf.quads.uvInds.size(); ++qq) {
+        Vec4UI                  uvInds = surf.quads.uvInds[qq];
+        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
+        domains.insert(domain);
+        for (uint ii=1; ii<4; ++ii)
+            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
+                mixed = true;
+        domainToQuadInds[domain].push_back(qq);
+    }
+    if (domains.size() > 1)
+        fgout << "WARNING: OBJ UV domains detected and converted to " << domains.size() << " surfaces: ";
+    if (mixed)
+        fgout << "WARNING: some facet(s) span multiple UV domains";
+    Surfs                   ret; ret.reserve(domains.size());
+    for (Vec2I domain : domains) {
+        fgout << domain << " ";
+        Uints const &           triSels = domainToTriInds[domain];
+        Tris                    tris {
+            permute(surf.tris.posInds,triSels),
+            permute(surf.tris.uvInds,triSels),
+        };
+        Uints const &           quadSels = domainToQuadInds[domain];
+        Quads                   quads {
+            permute(surf.quads.posInds,quadSels),
+            permute(surf.quads.uvInds,quadSels),
+        };
+        String8                 name = baseName;
+        if (domains.size() > 1)
+            name += "-" + toStr(ret.size());
+        ret.emplace_back(name,tris,quads);
+    }
+    return ret;
+}
+
 Mesh
-loadWObj(
-    String8 const &     fname,
-    string              surfSeparator)
+loadWObj(String8 const & fname)
 {
     Mesh                mesh;
+    map<string,Surf>    surfMap;
+    Strings             lines = splitLines(loadRaw(fname));   // Removes empty lines
+    Surf                currSurf;
     string              currName;
-    map<string,Surf>    surfs;
-    Strings             lines = splitLines(loadRawString(fname));   // Removes empty lines
-    Surf                surf;
     size_t              numNgons = 0;
     bool                vertexColors = false,
-                        vertexHomog = false;
+                        vertexHomog = false,
+                        hasLines = false;
+    size_t              unnamedSurfCnt {0};
+    auto                pushSurfFn = [&]()
+    {
+        if (!currSurf.empty()) {
+            // If no name we must assume not part of any existing surface:
+            if (currName.empty())
+                currName = "Unnamed" + toStr(unnamedSurfCnt++);
+            auto            it = surfMap.find(currName);
+            if (it == surfMap.end())
+                surfMap[currName] = currSurf;
+            else
+                surfMap[currName].merge(currSurf);
+            currSurf = Surf{};
+        }
+    };
     for (size_t ii=0; ii<lines.size(); ++ii) {
         try {
             string const &  line = lines[ii];
-            if (line[0] == 'v') {
-                if (line.at(1) == ' ')
-                    mesh.verts.push_back(parseVert(line.substr(2),vertexHomog,vertexColors));
-                if (line.at(1) == 't')
-                    if (line.at(2) == ' ')
-                        mesh.uvs.push_back(parseUv(line.substr(3)));
-            }
-            if (line[0] == 'f') {
-                if (line.at(1) == ' ') {
-                    if (parseFacet(line.substr(2),mesh.verts.size(),mesh.uvs.size(),surf.tris,surf.quads))
-                        ++numNgons;
-                }
-            }
-            if (!surfSeparator.empty() && beginsWith(line,surfSeparator)) {
-                Strings  words = splitAtSeparators(line,' ');
-                if (words.size() != 2) {
-                    fgout << "WARNING: Invalid " << surfSeparator << " name on line " << ii << " of " << fname;
-                    break;
-                }
-                string          name = words[1];
-                if (currName != name) {
-                    if (!surf.empty()) {
-                        if (surfs.find(currName) == surfs.end())
-                            surfs[currName] = surf;
-                        else
-                            surfs[currName].merge(surf);
-                    }
-                    currName = name;
-                    surf = Surf();
-                }
-            }
             if (line[0] == '#')
                 continue;
+            else if (beginsWith(line,"l ")) {
+                hasLines = true;
+                continue;
+            }
+            else if (beginsWith(line,"v "))
+                mesh.verts.push_back(parseVert(line.substr(2),vertexHomog,vertexColors));
+            else if (beginsWith(line,"vt "))
+                mesh.uvs.push_back(parseUv(line.substr(3)));
+            else if (beginsWith(line,"f ")) {
+                if (parseFacet(line.substr(2),mesh.verts.size(),mesh.uvs.size(),currSurf.tris,currSurf.quads))
+                    ++numNgons;
+            }
+            else if (beginsWith(line,"g ")) {
+                pushSurfFn();
+                String              groupName = noLeadingWhitespace(cRest(line,2));
+                if (!groupName.empty())
+                    currName = noLeadingWhitespace(cRest(line,2));      // Group name takes precedence over others
+            }
+            else if (beginsWith(line,"usemtl ")) {
+                pushSurfFn();
+                if (currName.empty())                                   // Only use 'usemtl' name if no group name
+                    currName = noLeadingWhitespace(cRest(line,7));
+            }
+            else if (beginsWith(line,"s ")) {
+                pushSurfFn();
+                if (currName.empty())                                   // Only use 's' name if no group name
+                    currName = noLeadingWhitespace(cRest(line,2));
+            }
+            else if (beginsWith(line,"o ")) {
+                pushSurfFn();
+                if (currName.empty())                                   // Only use 'o' name if no group name
+                    currName = noLeadingWhitespace(cRest(line,2));
+            }
         }
         catch(const FgException & e) {
             fgout << fgnl << "WARNING: Error in line " << ii+1 << " of " << fname << ": " << e.tr_message() << fgpush
@@ -205,19 +271,22 @@ loadWObj(
         }
     }
     if (numNgons > 0)
-        fgout << fgnl << "WARNING: " << numNgons << " N-gons broken into tris in " << fname;
+        fgout << fgnl << "WARNING: OBJ " << numNgons << " N-gons broken into tris in " << fname;
     if (vertexHomog)
-        fgout << fgnl << "WARNING: Vertex homogeneous coordinates ignored.";
+        fgout << fgnl << "WARNING: OBJ vertex homogeneous coordinates ignored.";
     if (vertexColors)
-        fgout << fgnl << "WARNING: Vertex color values ignored.";
-    if (!surf.empty()) {
-        if (surfs.find(currName) == surfs.end())
-            surfs[currName] = surf;
+        fgout << fgnl << "WARNING: OBJ vertex color values ignored.";
+    if (hasLines)
+        fgout << fgnl << "WARNING: OBJ line elements ignored.";
+    if (!currSurf.empty()) {
+        if (surfMap.find(currName) == surfMap.end())
+            surfMap[currName] = currSurf;
         else
-            surfs[currName].merge(surf);
+            surfMap[currName].merge(currSurf);
     }
     mesh.name = pathToBase(fname);
-    for (map<string,Surf>::iterator it = surfs.begin(); it != surfs.end(); ++it) {
+    Surfs               labelledSurfs;
+    for (map<string,Surf>::iterator it = surfMap.begin(); it != surfMap.end(); ++it) {
         Surf &   srf = it->second;
         if (!srf.tris.valid() || !srf.quads.valid()) {
             srf.tris.uvInds.clear();
@@ -225,21 +294,21 @@ loadWObj(
             fgout << fgnl << "WARNING: Partial UV indices ignored in " << fname << " surface " << it->first;
         }
         srf.name = it->first;
-        mesh.surfaces.push_back(srf);
+        labelledSurfs.push_back(srf);
     }
-    // Some OBJ meshes make use of wrap aliasing in their UVs (eg. Daz Gen 3):
-    bool        uvsWrapped = false;
-    for (size_t ii=0; ii<mesh.uvs.size(); ++ii) {
-        Vec2F &  uv = mesh.uvs[ii];
-        for (uint xx=0; xx<2; ++xx) {
-            if ((uv[xx] < 0.0f) || (uv[xx] > 1.0f)) {
-                uvsWrapped = true;
-                uv[xx] = uv[xx] - floor(uv[xx]);
-            }
-        }
+    // Important to remove domain info if present since this is WOBJ-specific:
+    Mat22F          uvBounds = cBounds(mesh.uvs);
+    Vec2F           uvBnds = {cMin(uvBounds.m),cMax(uvBounds.m)};
+    if ((uvBnds[0] < 0.0f) || (uvBnds[1] > 1.0f)) {
+        // WOBJs can actually use UV domains in combination with 'o', 'g', 's' or 'usemtl' elements (eg. Reallusion):
+        for (Surf const & surf : labelledSurfs)
+            cat_(mesh.surfaces,splitByUvDomain(surf,mesh.uvs,surf.name));
+        fgout << fgnl << "WARNING: OBJ UVs folded into [0,1) from " << uvBnds;
+        for (Vec2F & uv : mesh.uvs)
+            uv -= mapFloor(uv);
     }
-    if (uvsWrapped)
-        fgout << fgnl << "WARNING: UV indices unwrapped.";
+    else
+        mesh.surfaces = labelledSurfs;
     return mesh;
 }
 

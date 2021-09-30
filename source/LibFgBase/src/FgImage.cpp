@@ -16,7 +16,7 @@ using namespace std;
 namespace Fg {
 
 std::ostream &
-operator<<(std::ostream & os,ImgC4UC const & img)
+operator<<(std::ostream & os,ImgRgba8 const & img)
 {
     if (img.empty())
         return os << "Empty image";
@@ -65,9 +65,9 @@ AffineEw2F
 cIucsToIpcsXf(Vec2UI dims)
 {return AffineEw2F(Mat22F(0,1,0,1),Mat22F(0,dims[0],0,dims[1])); }
 
-AffineEw2D
+AffineEw2F
 cIucsToIrcsXf(Vec2UI ircsDims)
-{return {Mat22D{0,1,0,1},Mat22D{-0.5,ircsDims[0]-0.5,-0.5,ircsDims[1]-0.5}}; }
+{return {Mat22F{0,1,0,1},Mat22F{-0.5f,ircsDims[0]-0.5f,-0.5f,ircsDims[1]-0.5f}}; }
 
 AffineEw2F
 cOicsToIucsXf()
@@ -138,7 +138,7 @@ cLerpCullIucs(Vec2UI dims,Vec2F coordIucs)
 }
 
 RgbaF
-sampleAlpha(ImgC4UC const & img,Vec2F coordIucs)
+sampleAlpha(ImgRgba8 const & img,Vec2F coordIucs)
 {
     RgbaF                 ret(0);
     VArray<CoordWgt,4>   ics = cLerpCullIucs(img.dims(),coordIucs);
@@ -151,7 +151,7 @@ Mat<CoordWgt,2,2>
 blerpCoordsClipIrcs(Vec2UI dims,Vec2D ircs)
 {
     Mat<CoordWgt,2,2>   ret;
-    Vec2I               loXY = Vec2I(cFloor(ircs)),
+    Vec2I               loXY = Vec2I(mapFloor(ircs)),
                         hiXY = loXY + Vec2I(1);
     Vec2D               wgtHiXY = ircs - Vec2D(loXY),
                         wgtLoXY = Vec2D(1) - wgtHiXY;
@@ -204,8 +204,45 @@ imgScaleToFit(Vec2UI inDims,Vec2UI outDims)
     return AffineEw2D{outBoundsIrcs,inBoundsIrcs};
 }
 
+Img3F
+resampleSimple(Img3F const & in,Vec2UI dims,AffineEw2D const & outToInIrcs)
+{
+    Img3F               ret {dims};
+    for (Iter2UI it {dims}; it.valid(); it.next()) {
+        Vec2D               inIrcs = outToInIrcs * Vec2D(it());
+        auto                lerp = blerpCoordsClipIrcs(in.dims(),inIrcs);
+        Arr3F               p {0,0,0};
+        for (uint ii=0; ii<4; ++ii) {
+            CoordWgt const &    cw = lerp[ii];
+            p += in[cw.coordIrcs] * cw.wgt;
+        }
+        ret[it()] = p;
+    }
+    return ret;
+}
+
+Img3F
+resampleAdaptive(Img3F in,Vec2D posIpcs,float inSize,uint outSize)
+{
+    FGASSERT(!in.empty());
+    FGASSERT(inSize > 0);
+    FGASSERT(outSize > 0);
+    // Reduce the input image to avoid undersampling. 1 1/3 undersampling gives minimum contribution of 2/3
+    // pixel value (max always 1). 1 1/2 undersampling gives minimum representation of 1/2:
+    while (inSize / outSize > 1.3333f) {
+        in = shrink2(in);
+        posIpcs *= 0.5f;
+        inSize *= 0.5f;
+    }
+    for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
+        FGASSERT(posIpcs[dd] < in.dims()[dd]);
+        FGASSERT(posIpcs[dd]+inSize > 0.0f);
+    }
+    return resampleSimple(in,Vec2UI{outSize},AffineEw2D{Vec2D{inSize/outSize},posIpcs});
+}
+
 bool
-fgImgApproxEqual(ImgC4UC const & img0,ImgC4UC const & img1,uint maxDelta)
+fgImgApproxEqual(ImgRgba8 const & img0,ImgRgba8 const & img1,uint maxDelta)
 {
     if (img0.dims() != img1.dims())
         return false;
@@ -222,13 +259,13 @@ fgImgApproxEqual(ImgC4UC const & img0,ImgC4UC const & img1,uint maxDelta)
 }
 
 void
-imgShrink2(ImgC4UC const & src,ImgC4UC & dst)
+shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
 {
     FGASSERT(!src.empty());
     dst.resize(src.dims()/2);
-    RgbaUC const    *srcPtr1 = src.data(),
+    RgbaUC const    *srcPtr1 = src.dataPtr(),
                     *srcPtr2 = srcPtr1 + src.width();
-    RgbaUC          *dstPtr =  dst.data();
+    RgbaUC          *dstPtr =  dst.dataPtr();
     for (uint yd=0; yd<dst.height(); yd++) {
         for (uint xd=0; xd<dst.width(); xd++) {
             uint        xs1 = xd * 2,
@@ -246,10 +283,10 @@ imgShrink2(ImgC4UC const & src,ImgC4UC & dst)
     }
 }
 
-ImgC4UC
-expand2(ImgC4UC const & src)
+ImgRgba8
+expand2(ImgRgba8 const & src)
 {
-    ImgC4UC     dst(src.dims()*2);
+    ImgRgba8     dst(src.dims()*2);
     Vec2F        off(-0.5f,-0.5f);
     Vec2I        srcMax(src.dims()-Vec2UI(1));
     for (uint yy=0; yy<dst.height(); ++yy) {
@@ -293,79 +330,103 @@ shrink2Fixed(const ImgUC & img)
     return dst;
 }
 
-ImgC4UC
-toImgC4UC(ImgC4F const & img)
+// To ensure that floating point value 1 can round-trip to 255 and back we need to sacrifice that value
+// from the 8-bit range. Any other method will not round-trip between 1 and 255 which is often important
+// for background processing etc:
+
+Svec<Arr<float,3>>
+toUnit3F(Svec<RgbaUC> const & data)
 {
-    ImgC4UC         ret(img.dims());
-    for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        ret.m_data[ii] = mapCast<uchar>(img.m_data[ii]*255.999f);
+    float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
+    Svec<Arr<float,3>>          ret; ret.reserve(data.size());
+    for (RgbaUC d : data)
+        ret.push_back(Arr<float,3>{d[0]/f,d[1]/f,d[2]/f});          // emplace doesn't work for some reason
     return ret;
 }
 
-ImgC4UC
-toImgC4UC(Img3F const & img,float offset,float scale)
+Img3F
+toUnit3F(ImgRgba8 const & in)
 {
-    ImgC4UC         ret(img.dims());
-    for (size_t ii=0; ii<img.m_data.size(); ++ii) {
-        Arr3F           in = img.m_data[ii];
-        RgbaUC          out;
-        for (size_t jj=0; jj<3; ++jj)
-            out[jj] = scast<uchar>((in[jj]+offset)*scale);
-        out[3] = 255;
-        ret.m_data[ii] = out;
-    }
+    return Img3F {in.dims(),toUnit3F(in.m_data)};
+}
+
+Svec<Arr<float,4>>
+toUnit4F(Svec<RgbaUC> const & data)
+{
+    float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
+    Svec<Arr<float,4>>          ret; ret.reserve(data.size());
+    for (RgbaUC d : data)
+        ret.push_back(Arr<float,4>{d[0]/f,d[1]/f,d[2]/f,d[3]/f});   // emplace doesn't work for some reason
     return ret;
 }
 
-// RGBA -> mono uses rec709
-void
-imgConvert_(ImgC4UC const &src,ImgUC &dst)
+Img4F
+toUnit4F(ImgRgba8 const & in)
+{return Img4F {in.dims(),toUnit4F(in.m_data)}; }
+
+Svec<RgbaUC>
+toRgba8(Svec<Arr<float,3>> const & data)
 {
-    dst.resize(src.width(),src.height());
-    for (size_t ii=0; ii<dst.numPixels(); ++ii)
-        dst[ii] = src[ii].rec709();
+    float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
+    Svec<RgbaUC>                ret; ret.reserve(data.size());
+    for (Arr<float,3> const & d : data)
+        ret.emplace_back(uchar(d[0]*f),uchar(d[1]*f),uchar(d[2]*f),255);
+    return ret;
 }
 
-void    imgConvert_(const ImgUC &src,ImgC4UC &dst)
+ImgRgba8
+toRgba8(Img3F const & in)
+{return ImgRgba8 {in.dims(),toRgba8(in.m_data)}; }
+
+Svec<RgbaUC>
+toRgba8(Svec<RgbaF> const & data)
 {
-    dst.resize(src.width(),src.height());
-    for (size_t ii=0; ii<dst.numPixels(); ++ii) {
-        uchar       val = src[ii];
-        dst[ii] = RgbaUC(val,val,val,255);
-    }
+    float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
+    Svec<RgbaUC>                ret; ret.reserve(data.size());
+    for (RgbaF const & p : data)
+        ret.emplace_back(uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),uchar(p[3]*f));
+    return ret;
 }
 
-void
-rescaleValsToFit_(
-    const ImgD    &src,
-    ImgUC         &dst)
+ImgRgba8
+toRgba8(ImgC4F const & img)
+{return ImgRgba8 {img.dims(),toRgba8(img.m_data)}; }
+
+ImgUC
+toUC(ImgRgba8 const & in)
 {
-    VecD2           bounds = cBounds(src.dataVec());
-    double          scale = bounds[1] - bounds[0];
-    scale = (scale > 0) ? scale : 1.0;
-    dst.resize(src.width(),src.height());
-    for (size_t ii=0; ii<dst.numPixels(); ++ii)
-        dst[ii] = uchar((src[ii] - bounds[0]) * 255.0/scale);
+    struct C {
+        uchar operator()(RgbaUC rgba) const {return rgba.rec709(); }
+    };
+    return mapCallT<uchar,RgbaUC,C>(in,C{});
 }
 
-void
-rescaleValsToFit_(
-    const ImgD    &src,
-    ImgC4UC     &dst)
+ImgF
+toFloat(ImgRgba8 const & in)
 {
-    ImgUC         tmp;
-    rescaleValsToFit_(src,tmp);
-    imgConvert_(tmp,dst);
+    struct C {
+        float operator()(RgbaUC rgba) const {return RgbaF(rgba).rec709(); }
+    };
+    return mapCallT<float,RgbaUC,C>(in,C{});
+}
+
+ImgRgba8
+toRgba8(ImgUC const & in)
+{
+    struct C {
+        RgbaUC operator()(uchar v) const {return {v,v,v,255}; }
+    };
+    return mapCallT<RgbaUC,uchar,C>(in,C{});
 }
 
 void
 imgResize(
-	ImgC4UC const & src,
-	ImgC4UC       & dst)
+	ImgRgba8 const & src,
+	ImgRgba8       & dst)
 {
     FGASSERT(!src.empty());
     FGASSERT(!dst.empty());
-    typedef ImgC4UC          ImageType;
+    typedef ImgRgba8          ImageType;
     typedef ImageType::PixelType PixelType;
 	uint        swid = src.width(),
                 shgt = src.height(),
@@ -377,8 +438,8 @@ imgResize(
 	}
 	float   sx = (float)wid / (float)swid,
             sy   = (float)hgt / (float)shgt;
-	const PixelType *srcPtr = src.data();
-	PixelType       *dstPtr	= dst.data();
+	const PixelType *srcPtr = src.dataPtr();
+	PixelType       *dstPtr	= dst.dataPtr();
 	uint        srcStep = src.width(),
                 dstStep  = dst.width();
 	float       ex    = 1.0f / sx,
@@ -434,42 +495,42 @@ imgResize(
 	}
 }
 
-ImgC4UC
+ImgRgba8
 fgImgApplyTransparencyPow2(
-    ImgC4UC const & colour,
-    ImgC4UC const & transparency)
+    ImgRgba8 const & colour,
+    ImgRgba8 const & transparency)
 {
     FGASSERT(!colour.empty() && !transparency.empty());
-    Vec2UI       dims = pow2Ceil(cMax(colour.dims(),transparency.dims()));
-    ImgC4UC     ctmp(dims),
+    Vec2UI       dims = mapPow2Ceil(cMax(colour.dims(),transparency.dims()));
+    ImgRgba8     ctmp(dims),
                     ttmp(dims);
     imgResize(colour,ctmp);
     imgResize(transparency,ttmp);
 
     for (Iter2UI it(dims); it.valid(); it.next())
-        ctmp[it].alpha() = ttmp[it()].rec709();
+        ctmp[it()].alpha() = ttmp[it()].rec709();
     return ctmp;
 }
 
-ImgC4UC
+ImgRgba8
 fgResample(
     const Img2F &       map,
-    ImgC4UC const &     src)
+    ImgRgba8 const &     src)
 {
-    ImgC4UC         ret(map.dims());
-    Vec2F           noVal(-1,-1);
+    ImgRgba8             ret {map.dims(),RgbaUC{0}};
+    Vec2F               noVal {-1,-1};
     for (Iter2UI it(ret.dims()); it.valid(); it.next()) {
         if (map[it()] != noVal) {
-            Vec2F       pos = map[it()];
+            Vec2F           pos = map[it()];
             pos[1] = 1.0f - pos[1];         // OTCS to UICS
-            ret[it()] = RgbaUC(sampleClipIucs(src,pos) + RgbaF(0.5));
+            ret[it()] = RgbaUC(sampleClipIucs(src,pos) + RgbaF{0.5});
         }
     }
     return ret;
 }
 
 bool
-usesAlpha(ImgC4UC const & img,uchar minVal)
+usesAlpha(ImgRgba8 const & img,uchar minVal)
 {
     for (size_t ii=0; ii<img.numPixels(); ++ii) {
         if (img.m_data[ii].alpha() < minVal)
@@ -479,7 +540,7 @@ usesAlpha(ImgC4UC const & img,uchar minVal)
 }
 
 void
-paintCrosshair(ImgC4UC & img,Vec2I ircs)
+paintCrosshair(ImgRgba8 & img,Vec2I ircs)
 {
     RgbaUC              centre {0,150,200,255},
                         thick {0,255,0,255};
@@ -498,7 +559,7 @@ paintCrosshair(ImgC4UC & img,Vec2I ircs)
 }
 
 void
-paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint radius)
+paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC c,uint radius)
 {
     RgbaUC    clr(c[0],c[1],c[2],c[3]);
     int         rad = int(radius);
@@ -508,27 +569,36 @@ paintDot(ImgC4UC & img,Vec2I ircs,Vec4UC c,uint radius)
 }
 
 void
-paintDot(ImgC4UC & img,Vec2F ipcs,Vec4UC c,uint radius)
+paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC c,uint radius)
 {
-    paintDot(img,Vec2I(cFloor(ipcs)),c,radius);
+    paintDot(img,Vec2I(mapFloor(ipcs)),c,radius);
 }
 
-// Creates a mipmap from the given image; the original will be downsampled
-// to a power of 2 if necessary:
-ImgC4UCs
-cMipMap(ImgC4UC const & img)
+ImgRgba8s
+cMipMapPow2(ImgRgba8 const & img)
 {
-    ImgC4UCs        ret(log2Ceil(cMinElem(img.dims())));    // To min elem size 2
-    ret[0] = isPow2(img.dims()) ? img : resampleToFit(img,pow2Ceil(img.dims()));
-    for (size_t sl=1; sl<ret.size(); ++sl) {
-        ImgC4UC const & src = ret[sl-1];
-        ret[sl] = imgShrink2(src);
-    }
+    FGASSERT(isPow2(img.dims()));
+    size_t                  sls = log2Floor(cMinElem(img.dims())) + 1;      // min dim 1 -> size 1
+    ImgRgba8s                ret; ret.reserve(sls);
+    ret.push_back(img);
+    while (cMinElem(ret.back().dims()) > 1)
+        ret.push_back(shrink2(ret.back()));
     return ret;
 }
 
+ImgRgba8s
+cMipMap(ImgRgba8 const & img)
+{
+    if (cMinElem(img.dims()) == 0)
+        return ImgRgba8s{};
+    if (isPow2(img.dims()))
+        return cMipMapPow2(img);
+    ImgRgba8             imgP2 = resampleToFit(img,mapPow2Ceil(img.dims()));
+    return cMipMapPow2(imgP2);
+}
+
 ImgV3F
-fgImgToF3(ImgC4UC const & img)
+fgImgToF3(ImgRgba8 const & img)
 {
     ImgV3F     ret(img.dims());
     for (size_t pp=0; pp<ret.numPixels(); ++pp) {
@@ -546,7 +616,7 @@ fgSsi(const ImgV3F & img,uchar borderPolicy)
     for (size_t ii=0; ii<ret.size()-1; ++ii) {
         smoothFloat(ret[ii],ret[ii],borderPolicy);
         smoothFloat(ret[ii],ret[ii],borderPolicy);
-        shrink2Float_(ret[ii],ret[ii+1]);
+        shrink2_(ret[ii],ret[ii+1]);
     }
     return ret;
 }
@@ -567,8 +637,8 @@ fgSsiItcsToIpcs(Vec2UI dims,Vec2F principalPointIpcs,Vec2F fovItcs)
     return ret;
 }
 
-ImgC4UC
-imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition)
+ImgRgba8
+imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC const & transition)
 {
     if (img0.empty())
         return img1;
@@ -578,7 +648,7 @@ imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition)
                         np1 = img1.numPixels();
     // Choose the larger image for output dimensions:
     Vec2UI              dims = (np0 > np1) ? img0.dims() : img1.dims();
-    ImgC4UC             ret(dims);
+    ImgRgba8             ret(dims);
     AffineEw2F          ircsToIucs = cIrcsToIucsXf(dims);
     for (Iter2UI it(dims); it.valid(); it.next()) {
         Vec2F           iucs = ircsToIucs * Vec2F(it());
@@ -596,11 +666,11 @@ imgBlend(ImgC4UC const & img0,ImgC4UC const & img1,ImgUC const & transition)
     return ret;
 }
 
-ImgC4UC
-composite(ImgC4UC const & foreground,ImgC4UC const & background)
+ImgRgba8
+composite(ImgRgba8 const & foreground,ImgRgba8 const & background)
 {
     FGASSERT(foreground.dims() == background.dims());
-    ImgC4UC                 ret(foreground.dims());
+    ImgRgba8                 ret(foreground.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
         ret[ii] = compositeFragmentUnweighted(foreground[ii],background[ii]);
     return ret;
@@ -608,7 +678,7 @@ composite(ImgC4UC const & foreground,ImgC4UC const & background)
 
 static
 void
-mod1(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,AffineEw2F ircsToIucs,ImgC4UC & ret)
+mod1(uint off,uint step,ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,int mod,AffineEw2F ircsToIucs,ImgRgba8 & ret)
 {
     for (uint yy=off; yy<ret.m_dims[1]; yy+=step) {
         for (uint xx=0; xx<ret.m_dims[0]; ++xx) {
@@ -630,7 +700,7 @@ mod1(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,Aff
 
 static
 void
-mod2(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,AffineEw2F ircsToIucs,ImgC4UC & ret)
+mod2(uint off,uint step,ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,int mod,AffineEw2F ircsToIucs,ImgRgba8 & ret)
 {
     for (uint yy=off; yy<ret.m_dims[1]; yy+=step) {
         for (uint xx=0; xx<ret.m_dims[0]; ++xx) {
@@ -650,12 +720,12 @@ mod2(uint off,uint step,ImgC4UC const & imgIn,ImgC4UC const & imgMod,int mod,Aff
     }
 }
 
-ImgC4UC
-imgModulate(ImgC4UC const & imgIn,ImgC4UC const & imgMod,float modulationFactor)
+ImgRgba8
+imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,float modulationFactor)
 {
     if (imgMod.empty())
         return imgIn;
-    ImgC4UC          ret;
+    ImgRgba8          ret;
     if (cDeterminant(imgIn.dims(),imgMod.dims()) != 0) {
         string      info = toStr(imgIn.dims())+" !~ "+toStr(imgMod.dims());
         fgThrow("Aspect ratio mismatch between imgIn and modulation maps",info);
@@ -755,8 +825,8 @@ smoothUint1D(
 }
 void
 smoothUint_(
-    ImgC4UC const &     src,
-    ImgC4UC &           dst,
+    ImgRgba8 const &     src,
+    ImgRgba8 &           dst,
     uchar               borderPolicy)
 {
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
@@ -788,10 +858,10 @@ smoothUint_(
     for (uint xx=0; xx<dst.width(); ++xx)
         dstPtr[xx] = RgbaUC((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + RgbaUS(7)) / 16);
 }
-ImgC4UC
-smoothUint(ImgC4UC const & src,uchar borderPolicy)
+ImgRgba8
+smoothUint(ImgRgba8 const & src,uchar borderPolicy)
 {
-    ImgC4UC             ret;
+    ImgRgba8             ret;
     smoothUint_(src,ret,borderPolicy);
     return ret;
 }

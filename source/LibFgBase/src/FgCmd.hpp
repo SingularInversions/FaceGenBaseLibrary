@@ -12,10 +12,10 @@
 namespace Fg {
 
 Cmd     getImgopsCmd();
-Cmd     getMeshopsCmd();
+Cmd     getCmdMesh();
 Cmd     getMorphCmd();
-Cmd     getRenderCmd();
-Cmd     getTriExportCmd();
+Cmd     getCmdRender();
+Cmd     cmdExportInfo();
 void    cmdCons(CLArgs const &);
 Cmds    getViewCmds();
 Cmd     getCompileShadersCmd();

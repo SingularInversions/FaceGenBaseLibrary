@@ -9,9 +9,8 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 #include "FgImageIo.hpp"
@@ -118,7 +117,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<Vec3F> &ptList = model.getPtList(objId);
+        const Vec3Fs &ptList = model.getPtList(objId);
         for (unsigned short ii=0; ii<numVtx; ++ii) {
             if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
                 return false;
@@ -168,7 +167,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&numVtx,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        const vector<Vec2F> &ptList = model.getTextCoord(objId);
+        const Vec2Fs &ptList = model.getTextCoord(objId);
         for (unsigned short ii=0; ii<numVtx; ++ii) {
             if (fwrite(&ptList[ii][0],sizeof(float),1,fptr) != 1)
                 return false;

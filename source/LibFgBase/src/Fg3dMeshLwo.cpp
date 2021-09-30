@@ -10,9 +10,8 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 
@@ -82,7 +81,7 @@ struct LwoTextureInfoS
 {
     string                  uvTexName;
     vector<unsigned long>   texVtxList;
-    vector<Vec2F>      texTxtCoord;
+    Vec2Fs      texTxtCoord;
 };
 
 
@@ -96,7 +95,7 @@ static bool saveLwoLwsFile(String8 const &fname,
 
 static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
-                const vector<Vec2F> &texCoord);
+                const Vec2Fs &texCoord);
 static bool errorFcloseExit(FILE *fptr, String8 const &fname);
 static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
@@ -126,7 +125,7 @@ static bool writeBboxChunks(FILE *fptr, unsigned long &chunkSize,
                 Vec3F &minVec, Vec3F &maxVec, int objIdx);
 static bool writeVmapTxuvChunks(FILE *fptr, unsigned long &chunkSize,
                 vector<unsigned long> &tmpVtxList,
-                vector<Vec2F> &tmpTexCoord,
+                Vec2Fs &tmpTexCoord,
                 string const &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeVmapMorfChunks(FILE *fptr, unsigned long &chunkSize,
@@ -138,7 +137,7 @@ static bool writePtagChunks(FILE *fptr, unsigned long &chunkSize,
                 const FffMultiObjectC &model, int objIndex);
 static bool writeVmadChunks(FILE *fptr, unsigned long &chunkSize,
                 const vector<unsigned long> &tmpVtxList,
-                const vector<Vec2F> &tmpTexCoord,
+                const Vec2Fs &tmpTexCoord,
                 string const &uvTexName,
                 const FffMultiObjectC &model, int objIdx, bool singleLayer);
 static bool writeClipChunks(FILE *fptr, unsigned long &chunkSize,
@@ -403,7 +402,7 @@ static bool searchVtxTexMap(
     unsigned long               vtxId,
     Vec2F                  tex,
     const vector<unsigned long> &vtxList,
-    const vector<Vec2F>    &texCoord)
+    const Vec2Fs    &texCoord)
 {
     bool found = false;
 
@@ -712,7 +711,7 @@ static bool writePntsChunks(
     // Now write the points
     for (obj=startObj; obj<endObj; ++obj)
     {
-        const vector<Vec3F> &pts = model.getPtList(obj);
+        const Vec3Fs &pts = model.getPtList(obj);
         for (unsigned long ii=0; ii<pts.size(); ++ii)
         {
             // Lightwave uses left-handed coordinate system!
@@ -752,7 +751,7 @@ static bool writeBboxChunks(
     bool maxMinInitialized = false;
     for (unsigned long obj=startObj; obj<endObj; ++obj)
     {
-        const vector<Vec3F> &pts = model.getPtList(obj);
+        const Vec3Fs &pts = model.getPtList(obj);
         if (!maxMinInitialized && pts.size() > 0)
         {
             minPnt = maxPnt = pts[0];
@@ -799,7 +798,7 @@ static bool writeVmapTxuvChunks(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     vector<unsigned long>   &tmpVtxList,
-    vector<Vec2F>      &tmpTxtCoord,
+    Vec2Fs      &tmpTxtCoord,
     string const            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
@@ -821,7 +820,7 @@ static bool writeVmapTxuvChunks(
     tmpTxtCoord.clear();
     unsigned long obj = objIdx;
 
-    vector<Vec2F> txtCoord;
+    Vec2Fs txtCoord;
     vector<bool>       touched;
     txtCoord.resize(model.numPoints(obj),Vec2F(0.0f,0.0f));
     touched.resize(model.numPoints(obj),false);
@@ -833,7 +832,7 @@ static bool writeVmapTxuvChunks(
             model.numTxtQuads(obj) == 0)
         {
             // Per-vertex texture
-            const vector<Vec2F> &txt = model.getTextCoord(obj);
+            const Vec2Fs &txt = model.getTextCoord(obj);
             txtCoord = txt;
             touched.clear();
             touched.resize(txt.size(),true);
@@ -845,7 +844,7 @@ static bool writeVmapTxuvChunks(
 
             // Build a temporary per-vertex mapping.  Incorrect ones
             // will be remapped by the VMAD chunk.
-            const vector<Vec2F> &txt = model.getTextCoord(obj);
+            const Vec2Fs &txt = model.getTextCoord(obj);
             Vec3UIs const &tris = model.getTriList(obj);
             const vector<Vec4UI> &quads = model.getQuadList(obj);
             Vec3UIs const &txtTris = model.getTexTriList(obj);
@@ -970,7 +969,7 @@ static bool writeVmapMorfChunks(
     }
 
     vector<unsigned long> tmpVtxList;
-    vector<Vec3F> tmpMorfDelta;
+    Vec3Fs tmpMorfDelta;
     tmpVtxList.clear();
     tmpMorfDelta.clear();
 
@@ -979,8 +978,8 @@ static bool writeVmapMorfChunks(
     {
         if (model.numPoints(obj) == target.numPoints(obj))
         {
-            const vector<Vec3F> &vtxList = model.getPtList(obj);
-            const vector<Vec3F> &tvtxList = target.getPtList(obj);
+            const Vec3Fs &vtxList = model.getPtList(obj);
+            const Vec3Fs &tvtxList = target.getPtList(obj);
             for (unsigned long vtx=0; vtx<vtxList.size(); ++vtx)
             {
                 tmpVtxList.push_back(vtx+vtxOffset);
@@ -1262,7 +1261,7 @@ static bool writeVmadChunks(
     FILE                    *fptr,
     unsigned long           &chunkSize,
     const vector<unsigned long> &tmpVtxList,
-    const vector<Vec2F> &tmpTexCoord,
+    const Vec2Fs &tmpTexCoord,
     string const            &uvTexName,
     const FffMultiObjectC   &model,
     int                     objIdx,
@@ -1287,14 +1286,14 @@ static bool writeVmadChunks(
     // Build the per-facet info
     vector<unsigned long>   vtxList;
     vector<unsigned long>   polyList;
-    vector<Vec2F>      texList;
+    Vec2Fs      texList;
     unsigned long obj = objIdx;
 
     Vec3UIs const &triList = model.getTriList(obj);
     Vec3UIs const &texTriList = model.getTexTriList(obj);
     const vector<Vec4UI> &quadList = model.getQuadList(obj);
     const vector<Vec4UI> &texQuadList = model.getTexQuadList(obj);
-    const vector<Vec2F> &txList = model.getTextCoord(obj);
+    const Vec2Fs &txList = model.getTextCoord(obj);
 
     // Only needs to do this for per-facet texture data.
     if (txList.size() != 0 &&

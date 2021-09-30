@@ -13,6 +13,7 @@
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
 #include "FgMetaFormat.hpp"
+#include "FgIter.hpp"
 
 using namespace std;
 
@@ -77,7 +78,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     {
         Vec2UI              dims = m_panes.dims();
         Img<Vec2UI>         pixLlims {dims,
-            mapFuncT<Vec2UI,GuiImplPtr>(m_panes.m_data,[](GuiImplPtr const & p){return p->getMinSize();})
+            mapCallT<Vec2UI,GuiImplPtr>(m_panes.m_data,[](GuiImplPtr const & p){return p->getMinSize();})
         };
         Uints               colMaxWids(pixLlims.width(),0),
                             rowMaxHgts(pixLlims.height(),0);
@@ -143,7 +144,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     {
         Vec2UI              dims = m_panes.dims();
         Img<Vec2B>          wants {dims,
-            mapFuncT<Vec2B,GuiImplPtr>(m_panes.m_data,[](GuiImplPtr const & p){return p->wantStretch();})
+            mapCallT<Vec2B,GuiImplPtr>(m_panes.m_data,[](GuiImplPtr const & p){return p->wantStretch();})
         };
         Bools               colWants(dims[0],false),
                             rowWants(dims[1],false);

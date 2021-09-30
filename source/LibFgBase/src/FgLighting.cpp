@@ -14,7 +14,7 @@ using namespace std;
 
 namespace Fg {
 
-ImgC4UC
+ImgRgba8
 Lighting::createSpecularMap() const
 {
     FGASSERT(lights.size() > 0);
@@ -24,7 +24,7 @@ Lighting::createSpecularMap() const
             falloffStd = 0.1f;      // Must be greater than 0 and less than 1/sqrt(2).
 
     float                    invVar = 1.0f / (2.0f * sqr(falloffStd));
-    ImgC4UC              img(128,128);
+    ImgRgba8              img(128,128);
     for (uint py=0; py<128; py++) {
         float    yy = ((float)py - 63.5f) / 64.0f;
         for (uint px=0; px<128; px++) {

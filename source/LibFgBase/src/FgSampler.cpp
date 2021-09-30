@@ -13,6 +13,7 @@
 #include "FgSyntax.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgTime.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ namespace {
 bool
 valsDiffer(
     RgbaF const &               centre,
-    const Mat<RgbaF,2,2> &      corners,
+    Mat<RgbaF,2,2> const &      corners,
     float                       maxDiff)
 {
     // Tried cMag(corner-centre) > sqr(maxDiff)*4 but it was actually SLOWER !
@@ -36,12 +37,12 @@ valsDiffer(
 
 RgbaF
 sampleRecurse(
-    SampleFunc const &      sampleFn,
+    SampleFn const &        sampleFn,
     Vec2F                   lc,             // Lower corner sample point
     Vec2F                   uc,             // Upper corner sample point (IUCS so not square)
     Mat<RgbaF,2,2>          bs,             // Bounds samples. No speedup at all from making this const ref
     float                   maxDiff,
-    // Invalid if first channel is floatMax, othwerise gives sl/st from previous call.
+    // Invalid if first channel is floatMax(), othwerise gives sl/st from previous call.
     // Returned values must be sr/sb resp. for use in raster order next calls.
     // This optimization only saved 5% on time (granted for very simple raycaster)
     // so likely not worth saving values across deeper recursion boundaries.
@@ -54,15 +55,15 @@ sampleRecurse(
                     hdelx {hdel[0],0.0f},
                     hdely {0.0f,hdel[1]};
     RgbaF           sc {sampleFn(centre)},
-                    sst {maxFloat()},
-                    ssl {maxFloat()},
-                    ssr {maxFloat()},
-                    ssb {maxFloat()};
+                    sst {floatMax()},
+                    ssl {floatMax()},
+                    ssr {floatMax()},
+                    ssb {floatMax()};
     if (valsDiffer(sc,bs,maxDiff)) {
         float           md2 = maxDiff * 2.0f;
-        RgbaF           sl = (slo[0] == maxFloat()) ? sampleFn(centre-hdelx) : slo,
+        RgbaF           sl = (slo[0] == floatMax()) ? sampleFn(centre-hdelx) : slo,
                         sr = sampleFn(centre+hdelx),
-                        st = (sto[0] == maxFloat()) ? sampleFn(centre-hdely) : sto,
+                        st = (sto[0] == floatMax()) ? sampleFn(centre-hdely) : sto,
                         sb = sampleFn(centre+hdely),
                         stl = sampleRecurse(sampleFn,lc,centre,{bs[0],st,sl,sc},md2,sst,ssl),
                         str = sampleRecurse(sampleFn,lc+hdelx,centre+hdelx,{st,bs[1],sc,sr},md2,sst,ssr),
@@ -73,8 +74,8 @@ sampleRecurse(
         return (stl+str+sbl+sbr) * 0.25f;
     }
     else {
-        slo[0] = maxFloat();    // These invalidations are only needed at the top level, not in recursed calls
-        sto[0] = maxFloat();
+        slo[0] = floatMax();    // These invalidations are only needed at the top level, not in recursed calls
+        sto[0] = floatMax();
         return (bs[0]+bs[1]+bs[2]+bs[3]) * 0.125f + sc * 0.5f;
     }
 }
@@ -84,7 +85,7 @@ sampleRecurse(
 ImgC4F
 sampleAdaptiveF(
     Vec2UI              dims,
-    SampleFunc const &  sampleFn,
+    SampleFn const &    sampleFn,
     float               channelBound,
     uint                antiAliasBitDepth)
 {
@@ -98,7 +99,7 @@ sampleAdaptiveF(
     ImgC4F          sampleLines {img.width()+1,2};
     for (uint xx=0; xx<sampleLines.width(); ++xx)
         sampleLines.xy(xx,0) = sampleFn(Vec2F(xx/widf,0));
-    RgbaFs          ssts(img.width(),RgbaF{maxFloat()});
+    RgbaFs          ssts(img.width(),RgbaF{floatMax()});
     for (uint yy=0; yy<img.height(); ++yy) {
         float           yyf0 = yy/hgtf,
                         yyf1 = (yy+1)/hgtf;
@@ -106,7 +107,7 @@ sampleAdaptiveF(
                         sbit = 1-fbit;
         for (uint xx=0; xx<sampleLines.width(); ++xx)
             sampleLines.xy(xx,sbit) = sampleFn(Vec2F{xx/widf,yyf1});
-        RgbaF           ssl {maxFloat()};
+        RgbaF           ssl {floatMax()};
         for (uint xx=0; xx<img.width(); ++xx) {
             Vec2F           lc {xx/widf,yyf0},
                             uc {(xx+1)/widf,yyf1};
@@ -122,25 +123,26 @@ sampleAdaptiveF(
     return img;
 }
 
-ImgC4UC
+ImgRgba8
 sampleAdaptive(
     Vec2UI              dims,
-    SampleFunc const &  sample,
+    SampleFn const &    sampleFn,
     uint                antiAliasBitDepth)
 {
-    ImgC4UC         img {dims};
+    ImgRgba8             img {dims};
     FGASSERT((antiAliasBitDepth > 0) && (antiAliasBitDepth <= 8));
-    ImgC4F          fimg = sampleAdaptiveF(img.dims(),sample,256.0f,antiAliasBitDepth);
+    ImgC4F              fimg = sampleAdaptiveF(img.dims(),sampleFn,256.0f,antiAliasBitDepth);
     for (size_t ii=0; ii<fimg.numPixels(); ++ii) {
-        RgbaF const &   in = fimg[ii];
-        RgbaUC &        out = img[ii];
+        RgbaF const &       in = fimg[ii];
+        RgbaUC &            out = img[ii];
         for (uint jj=0; jj<4; ++jj)
             out[jj] = uchar(clamp(in[jj],0.0f,255.0f));
     }
     return img;
 }
 
-static
+namespace {
+
 RgbaF
 halfMoon(Vec2F ics)
 {
@@ -151,25 +153,24 @@ halfMoon(Vec2F ics)
 }
 
 void
-testSampler(CLArgs const &)
+testmHalfMoon(CLArgs const &)
 {
     viewImage(sampleAdaptive(Vec2UI(128),halfMoon,4));
 }
 
-static
 RgbaF
 mandelbrot(Vec2F ics)
 {
-    double      zr = 0.0,
-                zc = 0.0,
-                cr = ics[0]*2.5 - 1.6,
-                cc = ics[1]*2.5 - 1.25;
-    uint        ii=0;
+    double              zr = 0.0,
+                        zc = 0.0,
+                        cr = ics[0]*2.5 - 1.6,
+                        cc = ics[1]*2.5 - 1.25;
+    uint                ii=0;
     for (; ii<255; ++ii) {
-        double  tmp1 = zr*zr - zc*zc;
+        double              tmp1 = zr*zr - zc*zc;
         if (tmp1 > 4)
             break;
-        double  tmp2 = tmp1 + cr;
+        double              tmp2 = tmp1 + cr;
         zc = 2.0*zr*zc + cc;
         zr = tmp2;
     }
@@ -177,12 +178,24 @@ mandelbrot(Vec2F ics)
 }
 
 void
-fgSamplerMLTest(CLArgs const &)
+testmMandelbrot(CLArgs const &)
 {
-    Timer         time;
-    ImgC4UC     img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
-    fgout << "Time: " << time.read() << "s";
+    Timer               time;
+    ImgRgba8             img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
+    fgout << "Time: " << time.elapsedSeconds() << "s";
     viewImage(img);
+}
+
+}
+
+void
+testmSampler(CLArgs const & args)
+{
+    Cmds                cmds {
+        {testmHalfMoon,"hm","half moon"},
+        {testmMandelbrot,"mandel","Mandelbrot set"},
+    };
+    doMenu(args,cmds);
 }
 
 }

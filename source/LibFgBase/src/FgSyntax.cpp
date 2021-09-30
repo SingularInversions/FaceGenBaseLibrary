@@ -197,7 +197,7 @@ void
 Syntax::throwSyntax()
 {
     m_idx = m_args.size()-1;    // Don't print warning for unused args in this case
-    std::cout << "\n" << formatLines(m_syntax);
+    fgout << fgnl << formatLines(m_syntax);
     throw FgExceptionCommandSyntax();
 }
 

@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "FgGuiApiText.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 using namespace std::placeholders;

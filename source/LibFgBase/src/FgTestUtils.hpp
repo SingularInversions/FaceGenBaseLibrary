@@ -109,7 +109,7 @@ regressLoad(String8 const & fname)
     return ret;
 }
 template<>
-ImgC4UC
+ImgRgba8
 regressLoad(String8 const &);
 
 template<class T>
@@ -119,7 +119,7 @@ regressSave(String8 const & fname,T const & val)
 
 template<>
 inline void
-regressSave(String8 const & path,ImgC4UC const & img)
+regressSave(String8 const & path,ImgRgba8 const & img)
 {saveImage(path,img); }
 
 // Developers with source control create this (empty) flag file locally:

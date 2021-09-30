@@ -11,7 +11,7 @@
 #include "FgStdExtensions.hpp"
 #include "Fg3dCamera.hpp"
 #include "FgLighting.hpp"
-#include "Fg3dNormals.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgAny.hpp"
 #include "FgMarr.hpp"
 
@@ -51,7 +51,7 @@ struct  MeshesIntersect
 struct  BackgroundImage
 {
     // User-selected background image. Empty means none selected and ignore all values below. Should have alpha=1:
-    IPT<ImgC4UC>            imgN;
+    IPT<ImgRgba8>            imgN;
     // Original image dimensions must be known to get correct aspect ratio for display:
     IPT<Vec2UI>             origDimsN;
     // These inputs are needed for mouse+keyboard controls.
@@ -67,10 +67,10 @@ struct  BackgroundImage
 
 struct  RendSurf
 {
-    NPT<ImgC4UC>            smoothMapN;                 // Albedo without texture. Image can be empty
-    NPT<bool>               albedoHasTransparencyN;     // False if image is empty
-    NPT<ImgC4UC>            modulationMapN;             // Image can be empty
-    NPT<ImgC4UC>            specularMapN;               // Image can be empty
+    NPT<ImgRgba8>           smoothMapN;                 // albedo without detail texture. Image can be empty
+    NPT<bool>               albedoHasTransparencyN;     // true only if smoothMap exists and has transparency
+    NPT<ImgRgba8>           modulationMapN;             // modulates smoothMap. Image can be empty
+    NPT<ImgRgba8>           specularMapN;               // Image can be empty
     // Note that on 3D window shutdown this data is destructed only after the GPU context is destructed,
     // so the GPU object must handle doing this in advance if desired (D3D is easy since you just call ClearState()).
     Sptr<Any>               gpuData = std::make_shared<Any>();
@@ -122,7 +122,7 @@ struct  Gui3d : GuiBase
     BackgroundImage             bgImg;
     struct  Capture {           // Put in struct for easier syntax to call a std::function
         // First argument is desired pixel size, second is background transparency option:
-        Sfun<ImgC4UC(Vec2UI,bool)>   func;
+        Sfun<ImgRgba8(Vec2UI,bool)>   func;
     };
     // Will contain the functions for capturing current render once the GPU is set up:
     Sptr<Capture> const         capture = std::make_shared<Capture>();

@@ -67,7 +67,7 @@ void
 fileTouch(String8 const & fname)
 {
     // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
-    String      tmp = loadRawString(fname);
+    String      tmp = loadRaw(fname);
     saveRaw(tmp,fname,false);
 }
 
@@ -79,6 +79,15 @@ setCurrentDirUp()
         return false;
     setCurrentDir(cd.dir(cd.dirs.size()-1));
     return true;
+}
+
+String8
+toAbsolutePath(String8 const & anyPath)
+{
+    Path            path {anyPath};
+    if (!path.root)
+        path = Path {getCurrentDir() + anyPath};
+    return path.str();
 }
 
 void
@@ -153,7 +162,7 @@ getDirUserAppDataLocal(Strings const & subPath)
 }
 
 string
-loadRawString(String8 const & filename)
+loadRaw(String8 const & filename)
 {
     Ifstream          ifs(filename);
     ostringstream       ss;
@@ -165,7 +174,7 @@ bool
 saveRaw(string const & data,String8 const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
-        string      fileData = loadRawString(filename);
+        string      fileData = loadRaw(filename);
         if (data == fileData)
             return false;
     }
@@ -174,20 +183,27 @@ saveRaw(string const & data,String8 const & filename,bool onlyIfChanged)
     return true;
 }
 
+void
+appendRaw(String8 const & filename,String const & data)
+{
+    Ofstream            ofs {filename,true};
+    ofs << data;
+}
+
 bool
 equateFilesBinary(
     String8 const & file1,
     String8 const & file2)
 {
-    string contents1(loadRawString(file1));
-    string contents2(loadRawString(file2));
+    string contents1(loadRaw(file1));
+    string contents2(loadRaw(file2));
     return contents1 == contents2;
 }
 
 bool
 equateFilesText(String8 const & fname0,String8 const & fname1)
 {
-    return (splitLinesUtf8(loadRawString(fname0)) == splitLinesUtf8(loadRawString(fname1)));
+    return (splitLinesUtf8(loadRaw(fname0)) == splitLinesUtf8(loadRaw(fname1)));
 }
 
 static String8 s_fgDataDir;

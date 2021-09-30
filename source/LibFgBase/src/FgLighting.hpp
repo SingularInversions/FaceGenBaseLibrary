@@ -41,7 +41,7 @@ struct  Lighting
     Lighting(Vec3F a,Lights const & l) : ambient{a}, lights{l} {}
     Lighting(Light const & l) : ambient{0}, lights{l} {}
 
-    ImgC4UC
+    ImgRgba8
     createSpecularMap() const;
 };
 

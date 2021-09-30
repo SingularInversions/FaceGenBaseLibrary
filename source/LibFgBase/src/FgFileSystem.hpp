@@ -132,6 +132,10 @@ setCurrentDir(
 bool                                // true if successful
 setCurrentDirUp();
 
+// If 'anyPath' is relative, use the current directory to make it absolute:
+String8
+toAbsolutePath(String8 const & anyPath);
+
 // Doesn't remove read-only files / dirs:
 inline void
 pathRemove(String8 const & fname)
@@ -174,13 +178,17 @@ bool
 fileReadable(String8 const & filename);
 
 String
-loadRawString(String8 const & filename);
+loadRaw(String8 const & filename);
 
 // Setting 'onlyIfChanged' to false will result in the file always being written,
 // regardless of whether the new data may be identical.
 // Leaving 'true' is useful to avoid triggering unwanted change detections.
 bool    // Returns true if the file was written
 saveRaw(String const & data,String8 const & filename,bool onlyIfChanged=true);
+
+// Creates the file if it doesn't already exist:
+void
+appendRaw(String8 const & filename,String const & data);
 
 // Returns true if identical:
 bool
@@ -257,6 +265,8 @@ struct  PushDir
 
     void pop()
     {
+        if (orig.empty())
+            return;
         setCurrentDir(orig.back());
         orig.resize(orig.size()-1);
     }

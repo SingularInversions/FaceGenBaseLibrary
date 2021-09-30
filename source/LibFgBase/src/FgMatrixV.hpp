@@ -20,13 +20,14 @@ namespace Fg {
 template <class T>
 struct  MatV
 {
-    uint            nrows;
-    uint            ncols;
+    uint            nrows = 0;
+    uint            ncols = 0;
     Svec<T>         m_data;
 
+    FG_SER3(nrows,ncols,m_data)
     FG_SERIALIZE3(nrows,ncols,m_data)
 
-    MatV() : nrows(0),ncols(0) {}
+    MatV() {}
 
     MatV(size_t numRows,size_t numCols)
     : nrows(uint(numRows)), ncols(uint(numCols)), m_data(numRows*numCols)
@@ -46,6 +47,20 @@ struct  MatV
     explicit
     MatV(Vec2UI cols_rows) : nrows(cols_rows[1]), ncols(cols_rows[0])
     {m_data.resize(ncols*nrows); }
+
+    explicit
+    MatV(Svec<Svec<T>> const & vecOfVecs)
+    {
+        if (!vecOfVecs.empty()) {
+            nrows = uint(vecOfVecs.size());
+            ncols = uint(vecOfVecs[0].size());
+            m_data.reserve(nrows*ncols);
+            for (Svec<T> const & vec : vecOfVecs) {
+                FGASSERT(vec.size() == ncols);
+                cat_(m_data,vec);
+            }
+        }
+    }
 
     template<uint nr,uint nc>
     explicit
@@ -172,12 +187,6 @@ struct  MatV
     bool
     operator!=(MatV const & rhs) const
     {return !(operator==(rhs)); }
-
-    MatV
-    operator*(T v) const
-    {
-        return MatV {nrows,ncols,m_data*v};
-    }
 
     MatV
     operator+(MatV const & rhs) const
@@ -332,15 +341,30 @@ struct  MatV
     }
 };
 
+template<class T,class U>
+MatV<T>
+mapCast(MatV<U> const & m)
+{
+    return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)};
+}
+
 typedef MatV<float>         MatF;
 typedef MatV<double>        MatD;
 typedef Svec<MatD>          MatDs;
+
+template<typename T,typename U>
+MatV<T>
+operator*(MatV<T> const & m,U v)
+{
+    return MatV<T> {m.nrows,m.ncols,m.m_data*v};
+}
 
 template <class T>
 std::ostream &
 operator<<(std::ostream & ss,MatV<T> const & mm)
 {
-    FGASSERT(mm.numRows()*mm.numCols()>0);
+    if (mm.numRows()*mm.numCols() == 0)
+        return ss << "[]";
     bool        isVec((mm.numRows() == 1) || mm.numCols() == 1);
     std::ios::fmtflags
         oldFlag = ss.setf(
@@ -432,6 +456,24 @@ operator*(const MatF & lhs,const MatF & rhs);
 template<>
 MatD
 operator*(MatD const & lhs,MatD const & rhs);
+
+// L * R^T much faster as a single operation:
+template<class T>
+MatV<T>
+mulTr(MatV<T> const & l,MatV<T> const & r)
+{
+    FGASSERT(l.ncols == r.ncols);
+    MatV<T>                 ret {l.nrows,r.nrows,T(0)};
+    for (size_t rr=0; rr<l.nrows; ++rr) {
+        for (size_t cc=0; cc<r.nrows; ++cc) {
+            T                   acc {0};
+            for (size_t ii=0; ii<l.ncols; ++ii)
+                acc += l.rc(rr,ii) * r.rc(cc,ii);
+            ret.rc(rr,cc) = acc;
+        }
+    }
+    return ret;
+}
 
 template<class T>
 MatV<T>
@@ -772,42 +814,126 @@ cDiagMag(MatV<T> const & mat)
 
 // Return sum of squared values of off-diagonal elements:
 template<class T>
-T
+double
 cOffDiagMag(MatV<T> const & mat)
 {
     size_t          nrows = mat.numRows(),
                     ncols = mat.numCols();
-    T               acc {0};
+    double          acc {0};
     for (size_t rr=0; rr<nrows; ++rr)
         for (size_t cc=0; cc<ncols; ++cc)
-            if (cc != rr)
-                acc += sqr(mat.rc(rr,cc));
+            acc += (cc == rr) ? 0.0 : sqr(mat.rc(rr,cc));
     return acc;
 }
 
-// row covariance of M == M * M^T
+// row sums of M == M * 1 (unit vector in all dims)
 template<class T>
-MatV<T>
-cRowCovariance(MatV<T> const & m)
+Doubles
+cRowSums(MatV<T> const & m)
 {
     size_t                  R = m.numRows(),
                             C = m.numCols();
-    MatV<T>                 ret {R,R,T(0)};
+    Doubles                 ret; ret.reserve(R);
+    for (size_t rr=0; rr<R; ++rr) {
+        T                       acc {0};
+        for (size_t cc=0; cc<C; ++cc)
+            acc += m.rc(rr,cc);
+        ret.push_back(acc);
+    }
+    return ret;
+}
+
+// Cannot be a member function as it would require all types used with MatV to have Traits<T>::Scalar defined:
+template<class T>
+double
+cRowMag(MatV<T> const & mat,size_t row)
+{
+    double              ret {0};
+    T const             *ptr = mat.rowPtr(row);
+    for (size_t cc=0; cc<mat.ncols; ++cc)
+        ret += cMag(ptr[cc]);
+    return ret;
+}
+
+// Cannot be a member function as it would require all types used with MatV to have Traits<T>::Scalar defined:
+template<class T>
+double
+cRowDotProd(MatV<T> const & mat,size_t row0,size_t row1)
+{
+    double              ret {0};
+    T const             *ptr0 = mat.rowPtr(row0),
+                        *ptr1 = mat.rowPtr(row1);
+    for (size_t cc=0; cc<mat.ncols; ++cc)
+        ret += cDot(ptr0[cc],ptr1[cc]);
+    return ret;
+}
+
+// row covariance of M == M * M^T using ignorance prior on mean and stdev:
+template<class T>
+MatD
+cRowCovariance(MatV<T> const & mat)
+{
+    FGASSERT(mat.numCols() > 2);
+    size_t                  R = mat.numRows();
+    MatD                    ret {R,R};
+    double                  fac = 1.0 / (mat.numCols()-2);
     for (size_t r0=0; r0<R; ++r0) {
-        {   // Optimize the self-covariance computation:
-            T                   acc {0};
-            for (size_t cc=0; cc<C; ++cc)
-                acc += sqr(m.rc(r0,cc));
-            ret.rc(r0,r0) = acc;
-        }
-        for (size_t r1=r0+1; r1<R; ++r1) {
-            T                   acc {0};
-            for (size_t cc=0; cc<C; ++cc)
-                acc += m.rc(r0,cc) * m.rc(r1,cc);
-            ret.rc(r0,r1) = acc;
-            ret.rc(r1,r0) = acc;
+        ret.rc(r0,r0) = cRowMag(mat,r0) * fac;
+        for (size_t r1=0; r1<r0; ++r1) {
+            double              dot = cRowDotProd(mat,r0,r1) * fac;
+            ret.rc(r0,r1) = dot;
+            ret.rc(r1,r0) = dot;
         }
     }
+    return ret;
+}
+
+// Pearson (normalized) correlation:
+// UT option only fills non-diagonal upper triangular values, leaving the rest at zero.
+template<class T>
+MatD
+cRowCorrelation(MatV<T> const & mat,bool utOnly=false)
+{
+    size_t              R = mat.numRows();
+    Doubles             lens; lens.reserve(R);
+    MatD                ret {R,R,0.0};
+    for (size_t r0=0; r0<R; ++r0) {
+        double          len = sqrt(cRowMag(mat,r0)),
+                        lenNz = (len == 0.0) ? 1.0 : len;
+        lens.push_back(lenNz);
+        if (!utOnly)
+            ret.rc(r0,r0) = (len == 0.0) ? 0.0 : 1.0;
+        for (size_t r1=0; r1<r0; ++r1) {
+            double              corr = cRowDotProd(mat,r0,r1) / (lens[r0]*lens[r1]);
+            ret.rc(r1,r0) = corr;
+            if (!utOnly)
+                ret.rc(r0,r1) = corr;
+        }
+    }
+    return ret;
+}
+
+template<class T>
+MatV<T>
+scaleRows(MatV<T> const & mat,Svec<T> const & vals)
+{
+    FGASSERT(mat.numRows() == vals.size());
+    MatV<T>                 ret {mat.dims()};
+    for (size_t rr=0; rr<mat.numRows(); ++rr)
+        for (size_t cc=0; cc<mat.numCols(); ++cc)
+            ret.rc(rr,cc) = mat.rc(rr,cc) * vals[rr];
+    return ret;
+}
+
+template<class T>
+MatV<T>
+scaleColumns(MatV<T> const & mat,Svec<T> const & vals)
+{
+    FGASSERT(mat.numCols() == vals.size());
+    MatV<T>                 ret {mat.dims()};
+    for (size_t rr=0; rr<mat.numRows(); ++rr)
+        for (size_t cc=0; cc<mat.numCols(); ++cc)
+            ret.rc(rr,cc) = mat.rc(rr,cc) * vals[cc];
     return ret;
 }
 

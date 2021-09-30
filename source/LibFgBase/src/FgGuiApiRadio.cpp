@@ -19,10 +19,10 @@ GuiPtr
 guiRadio(String8s const & labels,IPT<size_t> idxN)
 {
     FGASSERT(!labels.empty());
-    GuiRadio         api;
-    api.horiz = false;
+    GuiRadio            api;
     api.labels = labels;
-    api.selection = idxN;
+    api.getFn = [idxN]() {return scast<uint>(idxN.val()); };
+    api.setFn = [idxN](uint sel) {idxN.set(sel); };
     return make_shared<GuiRadio>(api);
 }
 

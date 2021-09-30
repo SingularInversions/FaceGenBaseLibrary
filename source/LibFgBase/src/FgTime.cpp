@@ -80,45 +80,83 @@ cYearString()
 }
 
 String
-msToPrettyTime(uint64 durationInMilliseconds)
+toPrettyTime(double durationSeconds)
 {
-    double          d = durationInMilliseconds;
-    if (d < 1000.0)
-        return toStr(d) + " ms";
-    d /= 1000.0;
-    if (d < 60.0)
-        return toStrPrec(d,4) + " s";
-    d /= 60.0;
-    if (d < 60.0)
-        return toStrPrec(d,4) + " min";
-    d /= 60.0;
-    if (d < 24.0)
-        return toStrPrec(d,4) + " hours";
-    d /= 24.0;
-    return toStrPrec(d,4) + " days";
+    double                      d = abs(durationSeconds);   // In case of negative duration
+    Svec<pair<double,String> > const units {
+        {3600.0,"hours"},
+        {60.0,"minutes"},
+        {1.0,"seconds"},
+        {0.001,"milliseconds"},
+        {0.000001,"microseconds"},
+    };
+    size_t                      choice = 0;
+    while ((d < units[choice].first) && (choice+1 < units.size()))
+        ++choice;
+    pair<double,String> const & unit = units[choice];
+    return toStrPrec(durationSeconds/unit.first,4) + " " + unit.second;
 }
-
 
 std::ostream &
 operator<<(std::ostream & os,const Timer & t)
 {
-    double      et = t.read();
+    double      et = t.elapsedSeconds();
     return os << "Elapsed time: " << toStrPrec(et,4) << " s";
 }
 
 void
-Timer::report(string const & label)
+Timer::start()
 {
-    uint64      duration = readMs();
-    fgout << fgnl << label << ": " << msToPrettyTime(duration);
+    startTime = std::chrono::steady_clock::now();
+}
+
+double
+Timer::elapsedSeconds() const
+{
+    TimerPoint          stopTime = std::chrono::steady_clock::now();
+    // The subtraction below returns a duration which with MSVC is duration<long long,std::nano>
+    // The cast to duration<double> converts to seconds
+    // Then count() returns a plain double
+    return std::chrono::duration<double>{stopTime - startTime}.count();
+}
+
+uint64
+Timer::elapsedMilliseconds() const
+{
+    TimerPoint              stopTime = std::chrono::steady_clock::now();
+    auto                    delta = stopTime - startTime;   // duration<long long,std::nano> w/ MSVC
+    // Converting between integer time gauges requires this explicit cast,
+    // Then count() returns a plan long long
+    long long               deltaMs = std::chrono::duration_cast<std::chrono::milliseconds>(delta).count();
+    return uint64(deltaMs);     // Can't be negative
+}
+
+void
+Timer::report(String const & label)
+{
+    fgout << fgnl << label << ": " << toPrettyTime(elapsedSeconds());
     start();
+}
+
+
+PushTimer::PushTimer(String const & msg)
+{
+    fgout << fgnl << "Beginning " << msg << ": " << fgpush;
+    startTime = std::chrono::steady_clock::now();
+}
+
+PushTimer::~PushTimer()
+{
+    TimerPoint              stopTime = std::chrono::steady_clock::now();
+    double                  deltaSeconds =  std::chrono::duration<double>{stopTime - startTime}.count();
+    fgout << fgpop << fgnl << "Completed in " << toPrettyTime(deltaSeconds);
 }
 
 bool
 secondPassedSinceLast()
 {
     static Timer  timer;
-    if (timer.read() > 1.0) {
+    if (timer.elapsedSeconds() > 1.0) {
         timer.start();
         return true;
     }

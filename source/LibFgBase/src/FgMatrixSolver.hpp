@@ -19,7 +19,7 @@ cCholesky(MatS3D spd);      // spd cannot be singular
 
 struct  UTUDecomp
 {
-    MatUT3D        U;      // Upper triangular part of the U^T * U decomposition
+    MatUT3D         U;      // Upper triangular part of the U^T * U decomposition
     Vec3UI          p;      // Permutation map from input index to solution index
 };
 
@@ -39,24 +39,28 @@ Doubles     cEigvalsRsm(MatD const & rsm);
 // Runs in O(dim^3) time, with residual error O(dim^2.?).
 void
 cEigsRsm_(
-    MatD const &        rsm,    // Symmetric matrix
-    Doubles &           vals,   // RETURNED: Eigenvalues, smallest to largest
-    MatD &              vecs);  // RETURNED: Col vectors are respective eigenvectors
+    MatD const &        rsm,                    // Real symmetric matrix
+    Doubles &           vals,                   // RETURNED: Eigenvalues, smallest to largest
+    MatD &              vecs);                  // RETURNED: Col vectors are respective eigenvectors
 
-struct  EigsRsm
+// Real symmetric matrix represented by its eigen decomposition: H = vecs * Diag(vals) * vecs^T
+struct  RsmEigs
 {
-    Doubles             vals;   // Eigenvalues
-    MatD                vecs;   // Column vectors are the respective eigenvectors
+    Doubles             vals;                   // Eigenvalues from largest to smallest
+    MatD                vecs;                   // Column vectors are the respective eigenvectors
 
-    MatD
-    matrix() const;             // Return the matrix formed from this eigen system
+    MatD                rsm() const;            // Compute represented real symmetric matrix
+    MatD                mhlbsToWorld() const;   // Return vecs * D(vals^-0.5). Throws if there are eigenvals <= 0
+    // Return inverse of hessian defined by this eigenspectrum. Throws if any 0 eigenvalues:
+    MatD                inverse() const;
 };
+std::ostream & operator<<(std::ostream &,RsmEigs const &);
 
 inline
-EigsRsm
+RsmEigs
 cEigsRsm(MatD const & rsm)
 {
-    EigsRsm      ret;
+    RsmEigs      ret;
     cEigsRsm_(rsm,ret.vals,ret.vecs);
     return ret;
 }

@@ -29,6 +29,7 @@ struct  Quaternion
     // is twice the rotation in radians for small values (tangent rotations):
     Mat<T,3,1>      imag;
     FG_SERIALIZE2(real,imag);
+    FG_SER2(real,imag)
 
     // Default constructor is identity:
     Quaternion() : real(1), imag(Mat<T,3,1>(0)) {}

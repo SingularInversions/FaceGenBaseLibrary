@@ -14,92 +14,53 @@
 
 namespace Fg {
 
-// Cross-platform version always has units of seconds:
-void
-sleepSeconds(uint seconds);
+// Absolute date / time:
 
-// Time in milliseconds since start of Jan 1 1970 GMT:
-uint64
-getTimeMs();
-
-// GMT date and time string in format: yyyy.mm.dd hh:mm:ss
-String
-getDateTimeString();
-
-String
-getDateTimeString(time_t rawTime);
-
-// GMT date string in format: yy.mm.dd
-String
-getDateString(time_t rawTime);
-
+uint64          getTimeMs();                        // Time in milliseconds since start of Jan 1 1970 GMT
+String          getDateTimeString();                // GMT date and time string in format: yyyy.mm.dd hh:mm:ss
+String          getDateTimeString(time_t rawTime);
+String          getDateString(time_t rawTime);      // GMT date string in format: yy.mm.dd
 // Handy way of naming log files using current date and time (does not append a suffix):
-String
-getDateTimeFilename();
+String          getDateTimeFilename();
+String          cYearString();
 
-String
-cYearString();
+// Relative time:
 
-// Show the time in appropriate units (milliseconds, seconds, minutes, hours, days):
-String
-msToPrettyTime(uint64 durationInMilliseconds);
+void            sleepSeconds(uint seconds);         // Cross-platform version always has units of seconds
+// Show the time in appropriate units (microseconds, milliseconds, seconds, minutes, hours):
+String          toPrettyTime(double durationSeconds);
+
+typedef std::chrono::time_point<std::chrono::steady_clock>  TimerPoint;
 
 struct  Timer
 {
-    uint64      m_startTime;
+    TimerPoint              startTime;
 
-    Timer()
-    {start(); }
+    Timer() {start(); }
 
-    void
-    start()
-    {m_startTime = getTimeMs(); }
-
+    void                start();
     // Returns the time since 'start()' (or object construction) in seconds.
-    double
-    read() const
-    {
-        uint64  stopTime = getTimeMs();
-        return (double(stopTime - m_startTime) / 1000.0);
-    }
-
-    uint64
-    readMs() const
-    {return getTimeMs()-m_startTime; }
-
-    // Outputs 'label' to 'fgout' newline along with pretty print of duration
-    void
-    report(String const & label);
+    double              elapsedSeconds() const;
+    // Watch out for truncation on short functions; milliseconds is a long time:
+    uint64              elapsedMilliseconds() const;
+    // Outputs 'label' to 'fgout' newline along with pretty print of duration and restarts the timer:
+    void                report(String const & label);
 };
 
 std::ostream &
 operator<<(std::ostream &,const Timer &);
 
+// Output 'msg' on construction, indent for duration of object scope, then print time elapsed on destruction:
 struct PushTimer
 {
-    uint64          startTime;
-
-    PushTimer(String const & msg)
-    {
-        fgout << fgnl << "Beginning " << msg << ":" << fgpush << fgnl;
-        startTime = getTimeMs();
-    }
-
-    ~PushTimer()
-    {
-        uint64      t = getTimeMs() - startTime;
-        fgout << fgpop << fgnl << "Completed in " << msToPrettyTime(t);
-    }
+    TimerPoint              startTime;
+    PushTimer(String const & msg);
+    ~PushTimer();
 };
 
 // Returns true at most once per second:
 bool
 secondPassedSinceLast();
-
-inline
-double
-toSeconds(std::chrono::nanoseconds nano)
-{return nano/std::chrono::nanoseconds(1) / 1000000000.0;}
 
 }
 

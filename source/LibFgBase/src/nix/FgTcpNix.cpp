@@ -30,42 +30,44 @@
 #include "FgStdString.hpp"
 #include "FgScopeGuard.hpp"
 #include "FgOut.hpp"
+#include "FgFileSystem.hpp"
 
 // Do NOT use std namespace to avoid collision with posix 'bind'
 
 namespace Fg {
 
 bool
-fgTcpClient(
-    const std::string & hostname,
-    uint16              port,
-    const std::string & data,
-    bool                getResponse,
-    std::string &       response)
+runTcpClient(
+    std::string const &     hostname,
+    uint16                  port,
+    std::string const &     data,
+    bool                    getResponse,
+    std::string &           response)
 {
-    int     clientSock = socket(
-                AF_INET,            // IPv4 protocol family
-                SOCK_STREAM,        // "stream socket"
-                IPPROTO_TCP);       // TCP transport protocol
+    int                     clientSock = socket(
+                            AF_INET,            // IPv4 protocol family
+                            SOCK_STREAM,        // "stream socket"
+                            IPPROTO_TCP         // TCP transport protocol
+    );
     FGASSERT(clientSock >= 0);
-    ScopeGuard        closeSocket(std::bind(close,clientSock));
+    ScopeGuard              closeSocket(std::bind(close,clientSock));
     // Set the timeout so the user doesn't have to wait forever if the connection fails:
-    timeval         timeout;
+    timeval                 timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
     if (setsockopt(clientSock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
         FGASSERT_FALSE;
-    struct hostent *    remoteHost = gethostbyname(hostname.c_str());
+    struct hostent *        remoteHost = gethostbyname(hostname.c_str());
     if (remoteHost == NULL) {
         //fgout << fgnl << "Unable to resolve " << hostname;
         return false;
     }
-    sockaddr_in  		client;
+    sockaddr_in  		    client;
     std::memset(&client,0,sizeof(client));
     client.sin_family = AF_INET;
     memmove(&client.sin_addr,remoteHost->h_addr_list[0],remoteHost->h_length);
     client.sin_port = htons(port);  // "host to network short" converts byte order
-    int                 status = connect(clientSock,(struct sockaddr*)&client,sizeof(client));
+    int                     status = connect(clientSock,(struct sockaddr*)&client,sizeof(client));
     if (status != 0) {
         //fgout << fgnl << "Unable to connect to " << hostname;
         return false;
@@ -84,7 +86,7 @@ fgTcpClient(
     shutdown(clientSock,1);
     if (getResponse) {
         response.clear();
-        char    buff[1024];
+        char                    buff[1024];
         do {
             // read() same as recv() with flag=0:
             nBytes = read(clientSock,buff,sizeof(buff));
@@ -116,26 +118,25 @@ void *get_in_addr(struct sockaddr *sa)
 
 void
 runTcpServer(
-    uint16              port,
-    bool                respond,
-    TcpHandlerFunc    handler,
-    size_t              maxRecvBytes)
+    uint16                  port,
+    bool                    respond,
+    TcpHandlerFunc          handler,
+    size_t                  maxRecvBytes)
 {
     struct sockaddr_storage clientAddress;
-    int                 listenSockFd = -1;  // Avoid uninitialized warning
-    struct addrinfo     hints,
-                        *servinfo,
-                        *p;
-    struct sigaction    sa;
-    int                 yes=1;
-    std::memset(&hints, 0, sizeof hints);
+    int                     listenSockFd = -1;  // Avoid uninitialized warning
+    struct addrinfo         hints,
+                            *servinfo,
+                            *p;
+    struct sigaction        sa;
+    int                     yes=1;
+    std::memset(&hints,0,sizeof hints);
     // On most unix systems, AF_UNSPEC choice will listen for either IPv4 or IPv6 incoming connections:
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
     int rv = getaddrinfo(NULL,toStr(port).c_str(),&hints,&servinfo);
     FGASSERT1(rv == 0,std::string(gai_strerror(rv)));
-
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((listenSockFd = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1) {
@@ -153,7 +154,6 @@ runTcpServer(
     }
     FGASSERT(p != NULL);
     freeaddrinfo(servinfo);
-
     // Set the socket to listen and queue up to 10 incoming connections:
     if (listen(listenSockFd,10) == -1)
         FGASSERT_FALSE;
@@ -162,62 +162,61 @@ runTcpServer(
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
         FGASSERT_FALSE;
-
     // Listen for client:
-    int         dataSockFd;
-    bool        handlerRetval;
+    int                         dataSockFd;
+    bool                        handlerRetval;
     do {
-        socklen_t   sz = sizeof(clientAddress);
+        fgout << fgnl << "TCP server waiting ..." << std::flush;
+        socklen_t                   sz = sizeof(clientAddress);
         // Get incoming message socketFd. Will block until a message arrives since the
         // listen socket does not have the O_NONBLOCK option set.
         // The data socket is unique to the client IP:PORT, so multiple TCP connections can
         // take place simultaneously (not made use of here):
         dataSockFd = accept(listenSockFd,(struct sockaddr *)&clientAddress,&sz);
         FGASSERT(dataSockFd >= 0);
+        fgout << " receiving " << std::flush;
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
-        timeval         timeout;
+        timeval                     timeout;
         timeout.tv_sec = 5;
         timeout.tv_usec = 0;
         if (setsockopt(dataSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
             FGASSERT_FALSE;
         // Convert IP address to string:
-        char                sbuf[INET6_ADDRSTRLEN];
+        char                        sbuf[INET6_ADDRSTRLEN];
         inet_ntop(
             clientAddress.ss_family,
             get_in_addr((struct sockaddr *)&clientAddress),
             sbuf,
             sizeof sbuf);
-        std::string  ipAddr = std::string(sbuf);
+        std::string                 ipAddr = std::string(sbuf);
         // Read incoming message:
-        std::string 	dataBuff;
-        int         	bytesRecvd;
-        fgout << fgnl << "> " << std::flush;
+        std::string 	            dataBuff;
+        int         	            bytesRecvd;
         do {
-            char        buffer[1024];
+            char                        buffer[1024];
             // read() will return when either it has filled the buffer, copied over everything
             // from the socket input buffer (only if non-empty), or when the the connection
             // is closed by the client. Otherwise it will block (ie if input buffer empty).
             bytesRecvd = read(dataSockFd,buffer,sizeof(buffer));
-            fgout << "." << std::flush;
+            fgout << ".";
             if (bytesRecvd > 0)
                 dataBuff += std::string(buffer,bytesRecvd);
         }
         while ((bytesRecvd > 0) && (dataBuff.size() <= maxRecvBytes));
+        fgout << " " << dataBuff.size() << "B";
         if (bytesRecvd != 0) {
-            fgout << "RECEIVE ERROR: ";
+            fgout << " RECEIVE ERROR: " << bytesRecvd;
             close(dataSockFd);
             if (bytesRecvd > 0)
-                fgout << "OVERSIZE MESSAGE IGNORED.";
-            if (bytesRecvd < 0)
-                fgout << "TCP READ ERROR: " << bytesRecvd;
-            fgout << std::flush;
+                fgout << " OVERSIZE MESSAGE IGNORED";
             continue;
         }
-        fgout << ": " << std::flush;
         if (!respond)   // Handler can take arbitrarily long in this case so must close immediately:
             close(dataSockFd);
-        std::string         response;
+        String8                     currDir = getCurrentDir();
+        std::string                 response;
+        fgout << " executing ..." << fgpush;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
@@ -230,15 +229,17 @@ runTcpServer(
         catch(...) {
             fgout << "Handler exception (unknown type)";
         }
+        fgout << fgpop;
         if (respond) {
             if (!response.empty()) {
-                int     bytesSent = write(dataSockFd,response.data(),response.size());
+                fgout << fgnl << "Responding ..." << std::flush;
+                int                     bytesSent = write(dataSockFd,response.data(),response.size());
                 if (bytesSent != int(response.size()))
-                    fgout << "TCP WRITE ERROR: " << bytesSent << " (of " << response.size() << "). ";
+                    fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << "). ";
             }
             close(dataSockFd);
         }
-        fgout << std::flush;
+        setCurrentDir(currDir);             // In case handler changed it
     } while (handlerRetval == true);
     if (listenSockFd >= 0)
         close(listenSockFd);

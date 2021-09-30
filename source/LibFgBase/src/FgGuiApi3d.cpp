@@ -63,7 +63,7 @@ intersectMeshes(
                                 v1 = Vec2D(t1.subMatrix<2,1>(0,0)),
                                 v2 = Vec2D(t2.subMatrix<2,1>(0,0));
                 if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
-                    Opt<Vec3D>      vbc = barycentricCoord(pnt,v0,v1,v2);
+                    Opt<Vec3D>      vbc = cBarycentricCoord(pnt,v0,v1,v2);
                     if (vbc.valid()) {
                         Vec3D           bc = vbc.val();
                         // Depth value range for unclipped polys is [-1,1]. These correspond to the
@@ -164,19 +164,23 @@ markSurfacePoint(
     NPT<RendMeshes> const & rendMeshesN,
     NPT<String8> const &    pointLabelN,
     Vec2UI          winSize,
-    Vec2I           pos,
+    Vec2I           viewportPos,
     Mat44F          worldToD3ps)         // Transforms frustum to [-1,1] cube (depth & y inverted)
 {
     RendMeshes const &      rms = rendMeshesN.cref();
-    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
+    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,viewportPos,worldToD3ps,rms);
     if (vpt.valid() && pointLabelN.ptr) {
         MeshesIntersect         pt = vpt.val();
+        SurfPoint const &       sp = pt.surfPnt;
+        FGASSERT(pt.meshIdx < rms.size());
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
-        fgout << fgnl << "Surf point placed at mesh coord: "
-            << cSurfPointPos(pt.surfPnt,origMeshPtr->getTriEquivs(),Quads(),origMeshPtr->verts);
+        FGASSERT(pt.surfIdx < origMeshPtr->surfaces.size());
+        Surf &                  surf = origMeshPtr->surfaces[pt.surfIdx];
+        Vec3F                   pos = cSurfPointPos(sp.triEquivIdx,sp.weights,surf.tris,surf.quads,origMeshPtr->verts);
+        fgout << fgnl << "Surf point placed on surf " << pt.surfIdx << " at coord: " << pos;
         if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
-            SurfPoints &            surfPoints =  origMeshPtr->surfaces[pt.surfIdx].surfPoints;
+            SurfPoints &            surfPoints =  surf.surfPoints;
             pt.surfPnt.label = pointLabelN.cref().as_ascii();
             if (!pt.surfPnt.label.empty()) {
                 for (size_t ii=0; ii<surfPoints.size(); ++ii) {
@@ -218,10 +222,13 @@ markMeshVertex(
             }
             else if (vertMarkMode < 4) {
                 Vec3UIs             tris = surf.getTriEquivs().posInds;
-                MeshTopology        topo(meshIn.verts.size(),tris);
+                SurfTopo        topo(meshIn.verts.size(),tris);
                 set<uint>           seam;
-                if (vertMarkMode == 1)
-                    seam = topo.seamContaining(vertIdx);
+                if (vertMarkMode == 1) {
+                    auto                boundary = topo.boundaryContainingVert(vertIdx);
+                    for (auto const & be : boundary)
+                        seam.insert(be.vertIdx);
+                }
                 else if (vertMarkMode == 2) {
                     Surf                tmpSurf;
                     tmpSurf.tris.posInds = tris;
@@ -287,7 +294,7 @@ void
 Gui3d::translateBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
-        ImgC4UC const & img = bgImg.imgN.cref();
+        ImgRgba8 const & img = bgImg.imgN.cref();
         if (!img.empty()) {
             Vec2F        del = mapDiv(Vec2F(delta),Vec2F(winSize));
             Vec2F &      offset = bgImg.offset.ref();
@@ -300,7 +307,7 @@ void
 Gui3d::scaleBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
-        ImgC4UC const & img = bgImg.imgN.cref();
+        ImgRgba8 const & img = bgImg.imgN.cref();
         if (!img.empty()) {
             double      lnScale = bgImg.lnScale.val();
             lnScale += double(delta[1]) / double(winSize[1]);

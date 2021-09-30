@@ -180,10 +180,6 @@ fgReadpT(std::istream & is)
     return ret;
 }
 
-// Handy for open-write-close:
-void
-fgWriteFile(String8 const & fname,String const & data,bool appendFile=true);
-
 }
 
 #endif

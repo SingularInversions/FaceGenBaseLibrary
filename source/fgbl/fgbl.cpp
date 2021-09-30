@@ -10,8 +10,8 @@
 #include "FgMain.hpp"
 
 namespace Fg {
-void    fgCmdFgbl(CLArgs const &);
+void    cmdFgbl(CLArgs const &);
 }
 
 using namespace Fg;
-FGMAIN(fgCmdFgbl)
+FGMAIN(cmdFgbl)

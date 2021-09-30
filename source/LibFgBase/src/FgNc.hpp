@@ -18,52 +18,31 @@
 namespace Fg {
 
 // Location of network computing share root location as specified on given *native* build OS:
-String
-getNcShare(BuildOS nativeBuildOS);
-
+String                  getNcShare(BuildOS nativeBuildOS);
 // As above for current host OS:
-String
-getNcShare();
+String                  getNcShare();
 
 // An HTML log of given commands and outputs will be appended to 'logFile' and a 32x32 image
 // will be written to <logFileBaseName>.jpg, green for success of all commands, red for a fail:
 struct  NcScript
 {
-    String              logFile;    // Directory path will be created if it doesn't exist
-    String              title;      // Title line of log file
+    String              outputBase;         // Output file base name (HTML & JPG will be created)
+    String              title;              // Title line of ouput HTML file
     // Each such command will be shell executed in order. In addition some builtin commands are supported:
     // fgPush <dir>     - push <dir> to current for this process
     // fgPop            - pop back to previous dir for this process
     Strings             cmds;
 
+    FG_SER3(outputBase,title,cmds)
+
     static uint64 constexpr typeID() {return 0xFE785A765844B8D1ULL; }
 };
-FG_SER_STRUCT3(NcScript,logFile,title,cmds)
 
-inline
-uint16
-getNcServerPort()
-{return 59405; }
-
-inline
-String
-getCiShareBoot()
-{return getNcShare() + toNativeSeparator("ci/boot/"); }
-
-inline
-String
-getCiShareBoot(BuildOS os)
-{return getNcShare(os) + cNsOs("ci/boot/",os); }
-
-inline
-String
-getCiShareRepo()
-{return getNcShare() + toNativeSeparator("ci/root/"); }
-
-inline
-String
-getCiShareRepo(BuildOS os)
-{return getNcShare(os) + cNsOs("ci/root/",os); }
+inline uint16           getNcServerPort() {return 59405; }
+inline String           getCiShareBoot() {return getNcShare() + toNativeSeparator("ci/boot/"); }
+inline String           getCiShareBoot(BuildOS os) {return getNcShare(os) + cNsOs("ci/boot/",os); }
+inline String           getCiShareRepo() {return getNcShare() + toNativeSeparator("ci/root/"); }
+inline String           getCiShareRepo(BuildOS os) {return getNcShare(os) + cNsOs("ci/root/",os); }
 
 }
 

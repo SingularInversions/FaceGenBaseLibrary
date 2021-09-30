@@ -29,9 +29,9 @@ GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
 
 struct GuiRadio : GuiBase
 {
-    bool                horiz;
     String8s            labels;
-    IPT<size_t>         selection;
+    Sfun<uint()>        getFn;      // Will be called for display updates. Must return current selection.
+    Sfun<void(uint)>    setFn;      // Will be called when user makes a selection.
 
     virtual
     GuiImplPtr getInstance() {return guiGetOsImpl(*this); }

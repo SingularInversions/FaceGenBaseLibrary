@@ -15,8 +15,23 @@
 
 namespace Fg {
 
-String8s        // Empty if fails
-getGpusDescription();
+// Empty if fails:
+String8s            getGpusDescription();
+
+// The error DXGI_ERROR_DEVICE_REMOVED (0x887A0005) can be returned from at least 5 different D3D calls and
+// has happened to many customers. Docs say:
+// "The GPU device instance has been suspended. Use GetDeviceRemovedReason to determine the appropriate action."
+// Possible reasons include: GPU driver hangs, GPU changes power-saving states, GPU driver updated or changed (eg. when switching monitors)
+// Presumably most cases are due to the first two reasons. We need to catch this and re-create the D3D instance.
+// MS Example code also handles DXGI_ERROR_DEVICE_RESET (0x887A0007) in same way, but this error does not occur anywhere
+// in our error logs so we don't.
+// The result of catching and re-creating the device and swap chain on one customer test computer
+// (MacBook Pro 2019 w/ Bootcamp, Win10, AMD Radeon Pro 5500M, Intel UHD Graphics 630) was 3-5 seconds lag
+// in updates ... presumably due to repeatedly recreating the device and swap chain :(
+struct      ExceptD3dDeviceRemoved : public FgException
+{
+    ExceptD3dDeviceRemoved() : FgException {"D3D Device Removed",""} {}
+};
 
 struct  D3dMap
 {
@@ -43,7 +58,7 @@ struct  D3dSurf
     DfgFPtr                     albedoMapFlag,      // Can be null. Same lifetime as above
                                 modulationMapFlag,  // "
                                 specularMapFlag;    // "
-    D3dSurf(NPT<ImgC4UC> const & a,NPT<ImgC4UC> const & m,NPT<ImgC4UC> const & s) :
+    D3dSurf(NPT<ImgRgba8> const & a,NPT<ImgRgba8> const & m,NPT<ImgRgba8> const & s) :
         albedoMapFlag {makeUpdateFlag(a)},
         modulationMapFlag {makeUpdateFlag(m)},
         specularMapFlag {makeUpdateFlag(s)}
@@ -66,16 +81,10 @@ struct  PipelineState
     ComPtr<ID3D11PixelShader>       m_pPixelShader;
     ComPtr<ID3D11InputLayout>       m_pInputLayout;
 
-    void
-    attachVertexShader(ComPtr<ID3D11Device> pDevice);
-    void
-    attachVertexShader2(ComPtr<ID3D11Device> pDevice);
-
-    void
-    attachPixelShader(ComPtr<ID3D11Device> pDevice,std::string const & fname);
-
-    void
-    apply(ComPtr<ID3D11DeviceContext> pContext);
+    void        attachVertexShader(ComPtr<ID3D11Device> pDevice);
+    void        attachVertexShader2(ComPtr<ID3D11Device> pDevice);
+    void        attachPixelShader(ComPtr<ID3D11Device> pDevice,std::string const & fname);
+    void        apply(ComPtr<ID3D11DeviceContext> pContext);
 };
 
 struct      D3d
@@ -97,11 +106,9 @@ struct      D3d
         bool                        backgroundTransparent=false);   // For screen grab option
 
     void                            setBgImage(BackgroundImage const & bgi);
-    // Returns true if resize was triggered by a device driver update which invalidated the device.
-    // In this case the device must be re-created:
-    bool                            resize(Vec2UI windowSize);
+    void                            resize(Vec2UI windowSize);
     void                            showBackBuffer();
-    ImgC4UC                         capture(Vec2UI viewportSize);
+    ImgRgba8                        capture(Vec2UI viewportSize);
 
 private:
     uint                            maxMapSize = 4096;  // Play it safe
@@ -120,8 +127,8 @@ private:
     D3dMap                          greyMap;            // For surfaces without an albedo map
     D3dMap                          blackMap;           // For surfaces without a specular map
     D3dMap                          whiteMap;           // 'shiny' rendering option specular map
-    Arr<D3dMap,4>                   tintMaps;           // For surface coloring display option
-    Arr<D3dMap,4>                   tintTransMaps;      // With transparency for mesh coloring display option
+    Svec<D3dMap>                    tintMaps;           // For surface coloring display option
+    Svec<D3dMap>                    tintTransMaps;      // With transparency for mesh coloring display option
     D3dMap                          noModulationMap;    // Modulate all with value 1
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDefault;
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDisable;
@@ -167,69 +174,36 @@ private:
 
     typedef Svec<Vert>    Verts;
 
-    WinPtr<ID3D11Buffer>
-    makeConstBuff(const Scene & scene);
-
-    WinPtr<ID3D11Buffer>
-    makeVertBuff(const Verts & verts);
-
-    // Returns null pointer if no surf points:
-    WinPtr<ID3D11Buffer>
-    makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh);
-
-    // Returns null pointer if no marked verts:
-    WinPtr<ID3D11Buffer>
-    makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh);
-
-    WinPtr<ID3D11Buffer>
-    makeAllVerts(Vec3Fs const & verts);
-
-    Verts makeVertList(
+    Verts
+    makeVertList(
         RendMesh const &        rendMesh,
         Mesh const &            origMesh,
         size_t                  surfNum,
         bool                    shadeFlat);
 
-    Verts makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum);
-
-    WinPtr<ID3D11Texture2D>
-    loadMap(ImgC4UC const & map);
-
-    WinPtr<ID3D11ShaderResourceView>
-    makeMapView(ID3D11Texture2D* mapPtr);
-
-    D3dMap
-    makeMap(ImgC4UC const & map);
-
-    WinPtr<ID3D11SamplerState>
-    makeSamplerState();
-
-    WinPtr<ID3D11Buffer>
-    setScene(Scene const & scene);
-
-    WinPtr<ID3D11Buffer>
-    makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
-
+    WinPtr<ID3D11Buffer>        makeConstBuff(const Scene & scene);
+    WinPtr<ID3D11Buffer>        makeVertBuff(const Verts & verts);
+    // Returns null pointer if no surf points:
+    WinPtr<ID3D11Buffer>        makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh);
+    // Returns null pointer if no marked verts:
+    WinPtr<ID3D11Buffer>        makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh);
+    WinPtr<ID3D11Buffer>        makeAllVerts(Vec3Fs const & verts);
+    Verts                       makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum);
+    WinPtr<ID3D11Texture2D>     loadMap(ImgRgba8 const & map);
+    WinPtr<ID3D11ShaderResourceView> makeMapView(ID3D11Texture2D* mapPtr);
+    D3dMap                      makeMap(ImgRgba8 const & map);
+    WinPtr<ID3D11SamplerState>  makeSamplerState();
+    WinPtr<ID3D11Buffer>        setScene(Scene const & scene);
+    WinPtr<ID3D11Buffer>        makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
     // Ambient-only version:
-    WinPtr<ID3D11Buffer>
-    makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
-
-    void renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass);
-
-    D3dMesh &
-    getD3dMesh(RendMesh const & rm) const;
-
-    D3dSurf &
-    getD3dSurf(RendSurf const & rs) const;
-
-    void
-    updateMap_(DfgFPtr const & flag,NPT<ImgC4UC> const & in,D3dMap & out);
-
-    void
-    setVertexBuffer(ID3D11Buffer * vertBuff);
-
-    void
-    renderTris(RendMeshes const & rendMeshes, RendOptions const & rendOpts, bool transparentPass);
+    WinPtr<ID3D11Buffer>        makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
+    void                        renderBgImg(BackgroundImage const & bgi,Vec2UI viewportSize,bool transparentPass);
+    D3dMesh &                   getD3dMesh(RendMesh const & rm) const;
+    D3dSurf &                   getD3dSurf(RendSurf const & rs) const;
+    void                        updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out);
+    void                        setVertexBuffer(ID3D11Buffer * vertBuff);
+    void                        renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass);
+    void                        handleHResult(char const * fpath,uint lineNum,HRESULT hr);
 };
 
 }

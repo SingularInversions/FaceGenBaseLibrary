@@ -187,7 +187,7 @@ static void StartsWith()
 
 static void Convert()
 {
-    string      utf8 = loadRawString(dataDir()+"base/test/utf8_language_samples.txt"),
+    string      utf8 = loadRaw(dataDir()+"base/test/utf8_language_samples.txt"),
                 reg32 = toUtf8(toUtf32(utf8));
     FGASSERT(utf8 == reg32);
 #ifdef _WIN32
@@ -197,7 +197,7 @@ static void Convert()
 }
 
 void
-fgStringTest(CLArgs const &)
+testString(CLArgs const &)
 {
     Construct();
     Copy();

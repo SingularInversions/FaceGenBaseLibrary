@@ -89,7 +89,7 @@ apply(CLArgs const & args)
     if (!checkExt(inFile,"tri"))
         syn.error("Not a TRI file",inFile);
     Mesh        mesh = loadTri(inFile);
-    vector<float>   deltas(mesh.deltaMorphs.size(),0.0f),
+    Floats   deltas(mesh.deltaMorphs.size(),0.0f),
                     targets(mesh.targetMorphs.size(),0.0f);
     while (syn.more()) {
         String8    arg = syn.nextLower();
@@ -480,10 +480,10 @@ getMorphCmd()
 {return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void
-fgMorphTest(CLArgs const & args)
+testMorph(CLArgs const & args)
 {
     FGTESTDIR
-    fgTestCopy("base/Jane.tri");
+    copyFileToCurrentDir("base/Jane.tri");
     runCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
     regressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
 }

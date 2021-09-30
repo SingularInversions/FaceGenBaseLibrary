@@ -9,7 +9,7 @@
 #ifndef FGRAYCASTER_HPP
 #define FGRAYCASTER_HPP
 
-#include "Fg3dNormals.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgLighting.hpp"
 #include "FgGridIndex.hpp"
 #include "FgBestN.hpp"
@@ -25,7 +25,7 @@ struct  TriInd
     uint16      meshIdx = 0;
 
     TriInd() {}
-    TriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_);
+    TriInd(size_t t,size_t s,size_t m) : triIdx(uint32(t)), surfIdx(uint16(s)), meshIdx(uint16(m)) {}
 };
 typedef Svec<TriInd>    TriInds;
 
@@ -36,7 +36,7 @@ struct  RayCaster
     Materialss              materialss;     // By mesh, by surface
     Vec3Fss                 vertss;         // By mesh, in OECS
     Svec<Vec2Fs const *>    uvsPtrs;        // By mesh, in OTCS
-    MeshNormalss                normss;         // By mesh, in OECS
+    MeshNormalss            normss;         // By mesh, in OECS
     AffineEw2D              itcsToIucs;
     Vec3Fss                 iucsVertss;     // By mesh, X,Y in IUCS, Z component is inverse FCCS depth
     GridIndex<TriInd>       grid;           // Index from IUCS to bin of TriInds
@@ -54,6 +54,7 @@ struct  RayCaster
         bool                useMaps = true,
         bool                allShiny = false);
 
+    // Values targeted to [0,255] range but can exceed due to saturation:
     RgbaF
     cast(Vec2F posIucs) const;
 

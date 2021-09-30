@@ -56,7 +56,7 @@ testBoostSer(CLArgs const &)
 }
 
 void
-fgMetaFormatTest(CLArgs const &)
+testMetaFormat(CLArgs const &)
 {
     TestDir   td("MetaFormat");
     int     a = 42;
@@ -89,7 +89,7 @@ struct C
 };
 
 void
-fgSerializeTest(CLArgs const &)
+testSerialize(CLArgs const &)
 {
     TestDir   td("Serialize");
     size_t                                  sz = 5;

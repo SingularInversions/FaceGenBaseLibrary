@@ -20,7 +20,7 @@ updateFiles(uint num,String8s const & ins,String8s const & outs,FgUpdateFilesFun
         fgout << fgnl << "(" << cat(ins,",") << ") -> (" << cat(outs,",") << ")" << fgpush;
         Timer     time;
         func(ins,outs);
-        double      elapsed = time.read();
+        double      elapsed = time.elapsedSeconds();
         fgout << fgpop;
         if (elapsed > 3)    // Don't report time if less than 3s
             fgout << fgnl << time;

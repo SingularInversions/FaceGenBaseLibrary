@@ -10,13 +10,29 @@
 #include "Fg3dTopology.hpp"
 #include "FgOpt.hpp"
 #include "FgStdVector.hpp"
+#include "FgCommand.hpp"
+#include "Fg3dMeshIo.hpp"
 
 using namespace std;
 
 namespace Fg {
 
+
 Vec2UI
-MeshTopology::Tri::edge(uint relIdx) const
+directEdgeVertInds(Vec2UI vertInds,Vec3UI tri)
+{
+    uint            idx0 = findFirstIdx(tri,vertInds[0]),
+                    idx1 = findFirstIdx(tri,vertInds[1]),
+                    del = (idx1+3-idx0) % 3;
+    if (del == 2)
+        swap(vertInds[0],vertInds[1]);
+    else if (del != 1)
+        FGASSERT_FALSE;
+    return vertInds;
+}
+
+Vec2UI
+SurfTopo::Tri::edge(uint relIdx) const
 {
     if (relIdx == 0)
         return Vec2UI(vertInds[0],vertInds[1]);
@@ -30,7 +46,7 @@ MeshTopology::Tri::edge(uint relIdx) const
 }
 
 uint
-MeshTopology::Edge::otherVertIdx(uint vertIdx) const
+SurfTopo::Edge::otherVertIdx(uint vertIdx) const
 {
     if (vertIdx == vertInds[0])
         return vertInds[1];
@@ -104,7 +120,7 @@ struct  TriVerts
     }
 };
 
-MeshTopology::MeshTopology(size_t numVerts,Vec3UIs const & tris)
+SurfTopo::SurfTopo(size_t numVerts,Vec3UIs const & tris)
 {
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
@@ -182,7 +198,7 @@ MeshTopology::MeshTopology(size_t numVerts,Vec3UIs const & tris)
 }
 
 Vec2UI
-MeshTopology::edgeFacingVertInds(uint edgeIdx) const
+SurfTopo::edgeFacingVertInds(uint edgeIdx) const
 {
     Uints const &    triInds = m_edges[edgeIdx].triInds;
     FGASSERT(triInds.size() == 2);
@@ -192,7 +208,7 @@ MeshTopology::edgeFacingVertInds(uint edgeIdx) const
 }
 
 bool
-MeshTopology::vertOnBoundary(uint vertIdx) const
+SurfTopo::vertOnBoundary(uint vertIdx) const
 {
     Uints const &    eis = m_verts[vertIdx].edgeInds;
     // If this vert is unused it is not on a boundary:
@@ -203,7 +219,7 @@ MeshTopology::vertOnBoundary(uint vertIdx) const
 }
 
 Uints
-MeshTopology::vertBoundaryNeighbours(uint vertIdx) const
+SurfTopo::vertBoundaryNeighbours(uint vertIdx) const
 {
     Uints            neighs;
     Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
@@ -216,7 +232,7 @@ MeshTopology::vertBoundaryNeighbours(uint vertIdx) const
 }
 
 Uints
-MeshTopology::vertNeighbours(uint vertIdx) const
+SurfTopo::vertNeighbours(uint vertIdx) const
 {
     Uints            ret;
     Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
@@ -225,83 +241,67 @@ MeshTopology::vertNeighbours(uint vertIdx) const
     return ret;
 }
 
-// Had to re-write to avoid using inefficient recursive seam tracing as this actually managed to
-// give a malloc error (on scan data) running 64-bit with 16GB RAM:
-vector<set<uint> >
-MeshTopology::seams() const
+SurfTopo::BoundEdges
+SurfTopo::boundaryContainingEdgeP(uint boundEdgeIdx) const
 {
-    vector<set<uint> >  ret;
-    Uints               vertLabels(m_verts.size(),0);   // 0 is the label for non-edge vertices
-    // Initialization sweep through edges:
-    uint                currLabel = 1;
-    for (size_t ee=0; ee<m_edges.size(); ++ee) {
-        const Edge &    edge = m_edges[ee];
-        if (edge.triInds.size() == 1) {                 // Boundary edge
-            uint        v0 = edge.vertInds[0],
-                        v1 = edge.vertInds[1];
-            if (vertLabels[v0] == 0) {
-                if (vertLabels[v1] == 0) {
-                    vertLabels[v0] = currLabel;
-                    vertLabels[v1] = currLabel;
-                    ++currLabel;
-                }
-                else
-                    vertLabels[v0] = vertLabels[v1];
-            }
-            else if (vertLabels[v1] == 0)
-                vertLabels[v1] = vertLabels[v0];
-        }
-    }
-    // Iterative merge sweeps through vertices:
-    bool            done = false;
-    while (!done) {
-        done = true;
-        for (size_t ii=0; ii<vertLabels.size(); ++ii) {
-            if (vertLabels[ii] != 0) {
-                Uints const &       edgeInds = m_verts[ii].edgeInds;
-                for (size_t ee=0; ee<edgeInds.size(); ++ee) {
-                    if (m_edges[edgeInds[ee]].triInds.size() == 1) {    // Boundary edge
-                        uint        v = m_edges[edgeInds[ee]].otherVertIdx(uint(ii));
-                        FGASSERT(vertLabels[v] != 0);
-                        if (vertLabels[ii] != vertLabels[v]) {
-                            fgReplace_(vertLabels,vertLabels[v],vertLabels[ii]);
-                            done = false;
-                        }
+    BoundEdges      boundEdges;
+    bool            moreEdges = false;
+    do {
+        Edge const &    boundEdge = m_edges[boundEdgeIdx];
+        Tri const &     tri = m_tris[boundEdge.triInds[0]];     // Every boundary edge has exactly 1
+        Vec2UI          vertInds = directEdgeVertInds(boundEdge.vertInds,tri.vertInds);
+        boundEdges.push_back({boundEdgeIdx,vertInds[1]});
+        Vert const &    vert = m_verts[vertInds[1]];            // Follow edge direction to vert
+        moreEdges = false;
+        for (uint edgeIdx : vert.edgeInds) {
+            if (edgeIdx != boundEdgeIdx) {
+                if (m_edges[edgeIdx].triInds.size() == 1) {     // Another boundary edge
+                    if (!containsMember(boundEdges,&BoundEdge::edgeIdx,edgeIdx)) {
+                        boundEdgeIdx = edgeIdx;
+                        moreEdges = true;
+                        continue;
                     }
                 }
             }
         }
-    }
-    // Collate labelled sets:
-    map<uint,uint>      labToIdx;
-    for (size_t ii=0; ii<vertLabels.size(); ++ii) {
-        if (vertLabels[ii] != 0) {
-            if (labToIdx.find(vertLabels[ii]) == labToIdx.end()) {
-                labToIdx[vertLabels[ii]] = uint(ret.size());
-                ret.push_back(set<uint>());
-                ret.back().insert(uint(ii));
-            }
-            else {
-                ret[labToIdx[vertLabels[ii]]].insert(uint(ii));
-            }
-        }
-    }
-    return ret;
+    } while (moreEdges);
+    return boundEdges;
 }
 
-set<uint>
-MeshTopology::seamContaining(uint vertIdx) const
+SurfTopo::BoundEdges
+SurfTopo::boundaryContainingVert(uint vertIdx) const
 {
-    set<uint>           ret;
-    vector<set<uint> >  sms = seams();
-    for (size_t ii=0; ii<sms.size(); ++ii)
-        if (sms[ii].find(vertIdx) != sms[ii].end())
-            ret = sms[ii];
+    FGASSERT(vertIdx < m_verts.size());
+    Vert const &                vert = m_verts[vertIdx];
+    for (uint edgeIdx : vert.edgeInds) {
+        Edge const &                edge = m_edges[edgeIdx];
+        if (edge.triInds.size() == 1)                           // boundary
+            return boundaryContainingEdgeP(edgeIdx);
+    }
+    return SurfTopo::BoundEdges{};
+}
+
+Svec<SurfTopo::BoundEdges>
+SurfTopo::boundaries() const
+{
+    Svec<BoundEdges>    ret;
+    auto                alreadyAdded = [&ret](uint edgeIdx)
+    {
+        for (BoundEdges const & bes : ret)
+            if (containsMember(bes,&BoundEdge::edgeIdx,edgeIdx))
+                return true;
+        return false;
+    };
+    for (uint ee=0; ee<m_edges.size(); ++ee) {
+        if (m_edges[ee].triInds.size() == 1)            // Boundary edge
+            if (!alreadyAdded(ee))
+                ret.push_back(boundaryContainingEdgeP(ee));
+    }
     return ret;
 }
 
 set<uint>
-MeshTopology::traceFold(
+SurfTopo::traceFold(
     MeshNormals const & norms,
     vector<FatBool> &    done,
     uint                vertIdx)
@@ -327,7 +327,7 @@ MeshTopology::traceFold(
 }
 
 uint
-MeshTopology::oppositeVert(uint triIdx,uint edgeIdx) const
+SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
 {
     Vec3UI       tri = m_tris[triIdx].vertInds;
     Vec2UI       vertInds = m_edges[edgeIdx].vertInds;
@@ -339,7 +339,7 @@ MeshTopology::oppositeVert(uint triIdx,uint edgeIdx) const
 }
 
 Vec3UI
-MeshTopology::isManifold() const
+SurfTopo::isManifold() const
 {
     Vec3UI   ret(0);
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
@@ -365,7 +365,7 @@ MeshTopology::isManifold() const
 }
 
 size_t
-MeshTopology::unusedVerts() const
+SurfTopo::unusedVerts() const
 {
     size_t      ret = 0;
     for (size_t ii=0; ii<m_verts.size(); ++ii)
@@ -375,9 +375,9 @@ MeshTopology::unusedVerts() const
 }
 
 Floats
-MeshTopology::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
+SurfTopo::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 {
-    Floats       ret(verts.size(),maxFloat());
+    Floats       ret(verts.size(),floatMax());
     FGASSERT(vertIdx < verts.size());
     ret[vertIdx] = 0;
     edgeDistanceMap(verts,ret);
@@ -385,7 +385,7 @@ MeshTopology::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 }
 
 void
-MeshTopology::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
+SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
 {
     FGASSERT(verts.size() == m_verts.size());
     FGASSERT(vertDists.size() == verts.size());
@@ -395,7 +395,7 @@ MeshTopology::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
         for (size_t vv=0; vv<vertDists.size(); ++vv) {
             // Important: check each vertex each time since the topology will often result in 
             // the first such assignment not being the optimal:
-            if (vertDists[vv] < maxFloat()) {
+            if (vertDists[vv] < floatMax()) {
                 Uints const &    edges = m_verts[vv].edgeInds;
                 for (size_t ee=0; ee<edges.size(); ++ee) {
                     uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));
@@ -410,8 +410,31 @@ MeshTopology::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
     }
 }
 
+Vec3Ds
+SurfTopo::boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) const
+{
+    Vec3Ds              edgeNorms; edgeNorms.reserve(boundary.size());
+    Vec3D               v0 = verts[boundary.back().vertIdx];
+    for (BoundEdge const & be : boundary) {
+        Vec3D               v1 = verts[be.vertIdx];
+        Edge const &        edge = m_edges[be.edgeIdx];
+        Tri const &         tri = m_tris[edge.triInds[0]];  // must be exactly 1 tri
+        Vec3D               triNorm = cTriNorm(tri.vertInds,verts),
+                            xp = crossProduct(v1-v0,triNorm);
+        edgeNorms.push_back(normalize(xp));
+        v0 = v1;
+    }
+    Vec3Ds              vertNorms; vertNorms.reserve(boundary.size());
+    for (size_t e0=0; e0<boundary.size(); ++e0) {
+        size_t              e1 = (e0 + 1) % boundary.size();
+        Vec3D               dir = edgeNorms[e0] + edgeNorms[e1];
+        vertNorms.push_back(normalize(dir));
+    }
+    return vertNorms;
+}
+
 set<uint>
-cFillMarkedVertRegion(Mesh const & mesh,MeshTopology const & topo,uint seedIdx)
+cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & topo,uint seedIdx)
 {
     FGASSERT(seedIdx < topo.m_verts.size());
     set<uint>           ret;

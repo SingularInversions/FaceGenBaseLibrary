@@ -75,43 +75,44 @@ meshExportFormats()
     };
 }
 
+Mesh
+loadMesh(String8 const & fname)
+{
+    String8         ext = pathToExt(fname).toLower();
+    if (ext == "fgmesh")
+        return loadFgmesh(fname);
+    else if ((ext == "obj") || (ext == "wobj"))
+        return loadWObj(fname);
+    if(ext != "tri")                // this structure avoids no-return warnings after 'fgThrow'
+        fgThrow("Not a loadable 3D mesh format",fname);
+    return loadTri(fname);
+}
 
 bool
-loadMesh(
-    String8 const &     fname,
-    Mesh &              mesh)
+loadMeshAnyFormat_(String8 const & fname,Mesh & mesh)
 {
-    Path      path(fname);
+    Path            path(fname);
     if (path.ext.empty()) {
-        if (pathExists(fname+".tri"))
-            path.ext = "tri";
-        else if (pathExists(fname + ".wobj"))
-            path.ext = "wobj";
-        else if (pathExists(fname + ".obj"))
-            path.ext = "obj";
-        else if (pathExists(fname + ".fgmesh"))
-            path.ext = "fgmesh";
+        if (pathExists(fname+".fgmesh"))
+            mesh = loadFgmesh(fname+".fgmesh");
+        else if (pathExists(fname+".tri"))
+            mesh = loadTri(fname+".tri");
+        else if (pathExists(fname+".wobj"))
+            mesh = loadWObj(fname+".wobj");
+        else if (pathExists(fname+".obj"))
+            mesh = loadWObj(fname+".obj");
         else
             return false;
     }
-    String8    ext = path.ext.toLower();
-    if(ext == "tri")
-        mesh = loadTri(path.str());
-    else if ((ext == "obj") || (ext == "wobj"))
-        mesh = loadWObj(path.str(),"usemtl");       // Split by material to remain 1-1 with any color map arguments
-    else if (ext == "fgmesh")
-        mesh = loadFgmesh(path.str());
-    else
-        fgThrow("Not a readable 3D mesh format",fname);
     return true;
 }
 
 Mesh
-loadMesh(String8 const & fname)
+loadMeshAnyFormat(String8 const & fname)
 {
-    Mesh    ret;
-    if (!loadMesh(fname,ret))
-        fgThrow("No mesh format found for:",fname);
+    Mesh                ret;
+    if (!loadMeshAnyFormat_(fname,ret))
+        fgThrow("No mesh format found for base name",fname);
     return ret;
 }
 
@@ -120,20 +121,20 @@ loadMeshMaps(String8 const & baseName)
 {
     Mesh            ret = loadMesh(baseName);
     if (!ret.surfaces.empty()) {
-        Strings         albExts = imgFindFiles(baseName);
+        Strings         albExts = getImageFiles(baseName);
         if (!albExts.empty())
-            ret.surfaces[0].material.albedoMap = make_shared<ImgC4UC>(loadImage(baseName+"."+albExts[0]));
+            ret.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(baseName+"."+albExts[0]));
         String8         specBase = baseName+"_Specular";
-        Strings         specExts = imgFindFiles(specBase);
+        Strings         specExts = getImageFiles(specBase);
         if (!specExts.empty())
-            ret.surfaces[0].material.specularMap = make_shared<ImgC4UC>(loadImage(specBase+"."+specExts[0]));
+            ret.surfaces[0].material.specularMap = make_shared<ImgRgba8>(loadImage(specBase+"."+specExts[0]));
     }
     return ret;
 }
 
 Strings
 meshLoadFormats()
-{return svec<string>("fgmesh","obj","wobj","tri"); }
+{return svec<string>("fgmesh","tri","obj","wobj"); }
 
 bool
 hasMeshExtension(String8 const & filename)
@@ -210,7 +211,7 @@ meshExportFormatDescriptions()
 
 std::string
 meshSaveFormatsCLDescription()
-{return string("(tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
+{return string("(fgmesh | tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
 Strings const &
 meshExportFormatsWithMorphs()
@@ -253,12 +254,12 @@ toStr(SpatialUnit u)
  */
 static
 void
-triexport(CLArgs const & args)
+cmdExport(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"
         "    <meshExt>      - " + meshSaveFormatsCLDescription() + "\n"
-        "    <imgExt>       - " + imgFileExtensionsDescription()
+        "    <imgExt>       - " + getImageFileExtCLDescriptions()
         );
     string              outFile(syntax.next());
     Meshes    meshes;
@@ -271,7 +272,7 @@ triexport(CLArgs const & args)
         while (syntax.more() && toLower(pathToExt(syntax.peekNext())) != "tri") {
             string              imgFile(syntax.next()),
                                 ext = pathToExt(imgFile);
-            Strings             exts = imgFileExtensions();
+            Strings             exts = getImageFileExts();
             auto                it = find(exts.begin(),exts.end(),ext);
             if (it == exts.end())
                 syntax.error("Unknown image file type",imgFile);
@@ -288,7 +289,7 @@ triexport(CLArgs const & args)
 }
 
 Cmd
-getTriExportCmd()
-{return Cmd(triexport,"triexport","Export meshes from FaceGen TRI format to other formats"); }
+cmdExportInfo()
+{return Cmd(cmdExport,"export","Export FaceGen meshes and related color maps to other formats"); }
 
 }

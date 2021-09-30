@@ -12,11 +12,24 @@
 #include "FgBounds.hpp"
 #include "FgAffineC.hpp"
 #include "FgAffineCwC.hpp"
-#include "FgCoordSystem.hpp"
 
 using namespace std;
 
 namespace Fg {
+
+AffineEw2D
+cItcsToIucs(Vec2D const & hfi)
+{
+    Mat22D          domain {
+        -hfi[0],    hfi[0],
+        -hfi[1],    hfi[1],
+    },
+                    range {
+        0,          1,
+        0,          1,
+    };
+    return AffineEw2D {domain,range};
+}
 
 ostream &
 operator<<(ostream & os,Frustum const & f)
@@ -31,7 +44,7 @@ operator<<(ostream & os,Frustum const & f)
 Mat44F
 Camera::projectIpcs(Vec2UI dims) const
 {
-    Mat44D        projection = fgProjectOecsToItcs<double>();
+    Mat44D        projection = projectOecsToItcs<double>();
     AffineEw2D    iucsToIpcs(Mat22D(0,1,0,1),Mat22D(0,dims[0],0,dims[1])),
                     itcsToIpcs = iucsToIpcs * itcsToIucs;
     Mat44D        itcsToIpcs4H(0);

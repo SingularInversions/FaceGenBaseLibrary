@@ -29,7 +29,7 @@ guiImageFormat(string const & label,bool warnTransparency,String8 const & store)
     GuiVal<string>      ret;
     String8s            descs;
     Strings             exts;
-    for (ImgFileFormat const & iff : imgFileFormats()) {
+    for (FileFormat const & iff : getImageFileFormats()) {
         descs.push_back(iff.description);
         exts.push_back(iff.extensions.at(0));
     }
@@ -44,22 +44,18 @@ guiImageFormat(string const & label,bool warnTransparency,String8 const & store)
 void
 fgTestmGui2(CLArgs const &)
 {
-    String8        store = getDirUserAppDataLocalFaceGen("base","testm gui2");
-    GuiVal<vector<bool> >    checkboxes;
+    String8                 store = getDirUserAppDataLocalFaceGen("base","testm gui2");
+    GuiPtr                  checkboxes;
     {
-        String8s                   labels;
-        labels.push_back("Box 1");
-        labels.push_back("Box 2");
-        vector<bool>                defaults;
-        defaults.push_back(false);
-        defaults.push_back(true);
-        checkboxes = guiCheckboxes(labels,defaults);
+        String8s                labels {"Box 1","Box 2",};
+        Svec<IPT<bool>>         states = {makeIPT(false),makeIPT(true)};
+        checkboxes = guiCheckboxes(labels,states);
     }
     GuiPtr    img;
     {
-        IPT<ImgC4UC>    imgN = makeIPT(loadImage(dataDir()+"base/trees.jpg"));
+        IPT<ImgRgba8>    imgN = makeIPT(loadImage(dataDir()+"base/trees.jpg"));
         IPT<Vec2Fs>      ptsN = makeIPT(svec(Vec2F(0.5,0.5)));
-        img = guiImage(imgN,ptsN);
+        img = guiImageCtrls(imgN,ptsN).win;
     }
     GuiPtr    radio;
     {
@@ -73,12 +69,12 @@ fgTestmGui2(CLArgs const &)
                     t2 = guiTextEdit(makeIPT(String8("Edit me"))),
                     t3 = guiTextEditFixed(makeIPT(3.14),VecD2(-9.0,9.0)),
                     t4 = guiTextEditFloat(makeIPT(2.73),VecD2(-9.0,9.0),6);
-        txt = guiSplit(false,svec(t1,t2,t3,t4));
+        txt = guiSplitV(svec(t1,t2,t3,t4));
     }
     GuiPtr    sliders;
     {
         String8s            labs = {"Slider 1","Slider 2"};
-        Svec<IPT<double> >  valNs = generate<IPT<double> >(labs.size(),[](){return makeIPT<double>(0.0); });
+        Svec<IPT<double> >  valNs = generateT<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
         sliders = guiSliderBank(valNs,labs,VecD2(-1,1),0.1);
     }
     GuiPtr        scroll;
@@ -92,7 +88,7 @@ fgTestmGui2(CLArgs const &)
                         tab2 = guiTab("Tab 2",guiSplitScroll(svec(guiText(text2))));
         scroll = guiTabs(svec(tab1,tab2));
     }
-    GuiPtr      left = guiSplitV({checkboxes.win,radio}),
+    GuiPtr      left = guiSplitV({checkboxes,radio}),
                 tab1 = guiSplitH({left,img}),
                 tab2 = guiSplitV({txt,sliders}),
                 win = guiTabs(svec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));

@@ -31,12 +31,6 @@
 // * Quad rendering is not built-in (to any modern GPU) and complicated to do manually, so create
 //   the edges in CPU and use line rendering on GPU.
 //
-// TODO:
-//
-// * Handle DXGI_ERROR_DEVICE_REMOVED (0x887A0005). This has happened many users (at CreateBuffer & other calls)
-//      The GPU device instance has been suspended. Use GetDeviceRemovedReason to determine the appropriate action.
-//      MS lists 4 possible reasons: GPU stops responding. GPU changes power-saving states. GPU driver updated. GPU literally removed.
-//
 
 #include "stdafx.h"
 
@@ -48,10 +42,11 @@
 
 #include "FgDirect3D.hpp"
 #include "FgGuiWin.hpp"
-#include "FgCoordSystem.hpp"
 #include "FgFileSystem.hpp"
 #include "FgHex.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
+
+#define FG_ASSERT_D3D(hr) handleHResult(__FILE__,__LINE__,hr)
 
 using namespace std;
 
@@ -88,7 +83,7 @@ getDefaultGpuDescription()
 void
 PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
 {
-    string              shaderIR = loadRawString(dataDir()+"base/shaders/dx11_shared_VS.cso");
+    string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_shared_VS.cso");
     HRESULT             hr;
     hr = pDevice->CreateVertexShader(shaderIR.data(),shaderIR.size(),nullptr,m_pVertexShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -117,7 +112,7 @@ PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
 void
 PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
 {
-    string              shaderIR = loadRawString(dataDir()+"base/shaders/dx11_transparent_VS.cso");
+    string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_transparent_VS.cso");
     HRESULT             hr;
     hr = pDevice->CreateVertexShader(shaderIR.data(),shaderIR.size(),nullptr,m_pVertexShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -139,7 +134,7 @@ PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
 void
 PipelineState::attachPixelShader(ComPtr<ID3D11Device> pDevice,string const & fname)
 {
-    string              shaderIR = loadRawString(dataDir()+"base/shaders/"+fname);
+    string              shaderIR = loadRaw(dataDir()+"base/shaders/"+fname);
     HRESULT             hr = pDevice->CreatePixelShader(shaderIR.data(),shaderIR.size(),
         nullptr, m_pPixelShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -158,7 +153,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
 {
     origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
     {
-        Mat32F      bounds {floatMax,-floatMax, floatMax,-floatMax, floatMax,-floatMax};
+        Mat32F      bounds {floatMax(),-floatMax(), floatMax(),-floatMax(), floatMax(),-floatMax()};
         for (RendMesh const & rm : rms) {
             Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
             bounds = cBoundsUnion(bounds,bnds);
@@ -285,18 +280,24 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
         FG_ASSERT_D3D(hr);
     }
     // Just in case 1x1 image has memory alignment and two-sided interpolation edge-case issues:
-    greyMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(200,200,200,255)));
-    blackMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(0,0,0,255)));
-    whiteMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(255,255,255,255)));
+    greyMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(200,200,200,255)));
+    blackMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(0,0,0,255)));
+    whiteMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(255,255,255,255)));
     {
-        Arr<Vec3UC,4>           colors {{{200,200,200},{255,200,200},{200,255,200},{200,200,255}}};
-        for (size_t ii=0; ii<colors.size(); ++ii) {
-            Vec3UC              c = colors[ii];
-            tintMaps[ii] = makeMap(ImgC4UC(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],255}));
-            tintTransMaps[ii] = makeMap(ImgC4UC(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],150}));
+        // Need accumulator type (eg. float) for subdivision to work:
+        Svec<Vec3F>             colorsF {{
+            {255,200,200},{255,255,200},{200,255,200},{200,255,255},{200,200,255},{255,200,255},
+        }};
+        // 6 * 2 * 2 = 24 colors:
+        Svec<Vec3UC>            colors = mapCast<Vec3UC>(subdivide(subdivide(colorsF)));
+        tintMaps.reserve(colors.size());
+        tintTransMaps.reserve(colors.size());
+        for (Vec3UC c : colors) {
+            tintMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],255})));
+            tintTransMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],150})));
         }
     }
-    noModulationMap = makeMap(ImgC4UC(Vec2UI(2,2),RgbaUC(64,64,64,255)));
+    noModulationMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(64,64,64,255)));
     icosahedron = reverseWinding(cIcosahedron());                               // CC to CW
 }
 
@@ -392,22 +393,18 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
     }
 }
 
-bool
+void
 D3d::resize(Vec2UI windowSize)
 {
     if (pContext == nullptr)
-        return false;
+        return;
     pContext->OMSetRenderTargets(0,nullptr,nullptr);
     pRTV.Reset();
     HRESULT             hr = pSwapChain->ResizeBuffers(2,windowSize[0],windowSize[1],DXGI_FORMAT_UNKNOWN,0);
-    // This error was returned after WM_SIZE triggered by an nvidia GPU driver update:
-    if (hr == DXGI_ERROR_DEVICE_REMOVED)
-        return true;
     FG_ASSERT_D3D(hr);
     this->initializeRenderTexture(windowSize);
     CD3D11_VIEWPORT     viewport {0.0f,0.0f,scast<float>(windowSize[0]),scast<float>(windowSize[1])};
     pContext->RSSetViewports(1,&viewport);
-    return false;
 }
 
 WinPtr<ID3D11Buffer>
@@ -459,7 +456,7 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
     Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
     for (Surf const & origSurf : origMesh.surfaces) {
         for (SurfPoint const & sp : origSurf.surfPoints) {
-            Vec3F               pos = cSurfPointPos(sp,origSurf.tris,origSurf.quads,rendVerts);
+            Vec3F               pos = cSurfPointPos(sp.triEquivIdx,sp.weights,origSurf.tris,origSurf.quads,rendVerts);
             for (Vec3UI tri : icosahedron.tris) {
                 for (uint idx : tri.m) {
                     Vert            v;
@@ -569,12 +566,12 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
 }
 
 WinPtr<ID3D11Texture2D>
-D3d::loadMap(ImgC4UC const & map) {
-    ImgC4UCs                mip = cMipMap(map); // TODO need to speed up the remapping to pow2 in here for big images
+D3d::loadMap(ImgRgba8 const & map) {
+    ImgRgba8s                mip = cMipMap(map); // TODO need to speed up the remapping to pow2 in here for big images
     uint                    numMips = cMin(uint(mip.size()),8);
     D3D11_SUBRESOURCE_DATA  initData[8] = {};
     for (size_t mm=0; mm<numMips; ++mm) {
-        initData[mm].pSysMem = mip[mm].data();
+        initData[mm].pSysMem = mip[mm].dataPtr();
         initData[mm].SysMemPitch = mip[mm].width()*4;
     }
     D3D11_TEXTURE2D_DESC desc = {};
@@ -618,7 +615,7 @@ D3d::makeMapView(ID3D11Texture2D* mapPtr)
 }
 
 D3dMap
-D3d::makeMap(ImgC4UC const & map)
+D3d::makeMap(ImgRgba8 const & map)
 {
     D3dMap             ret;
     ret.map = loadMap(map);
@@ -684,11 +681,11 @@ void
 D3d::setBgImage(BackgroundImage const & bgi)
 {
     bgImg.reset();
-    ImgC4UC const &     img = bgi.imgN.cref();
+    ImgRgba8 const &     img = bgi.imgN.cref();
     if (img.empty())
         return;
-    Vec2UI              p2dims = mapMin(pow2Ceil(img.dims()),maxMapSize);
-    ImgC4UC             map(p2dims);
+    Vec2UI              p2dims = mapMin(mapPow2Ceil(img.dims()),maxMapSize);
+    ImgRgba8             map(p2dims);
     imgResize(img,map);
     bgImg = makeMap(map);
 }
@@ -783,13 +780,15 @@ D3d::getD3dSurf(RendSurf const & rs) const
 }
 
 void
-D3d::updateMap_(DfgFPtr const & flag,NPT<ImgC4UC> const & in,D3dMap & out)
+D3d::updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
 {
     if (flag->checkUpdate()) {
         out.reset();
-        ImgC4UC const &     img = in.cref();
-        if (!img.empty())
-            out = makeMap(img);
+        if (in.ptr) {
+            ImgRgba8 const &     img = in.cref();
+            if (!img.empty())
+                out = makeMap(img);
+        }
     }
 }
 
@@ -828,9 +827,11 @@ D3d::renderBackBuffer(
             if (valid)
                 d3dMesh.surfPoints = makeSurfPoints(rendMesh,origMesh);
         }
-        if (valid)
-            FGASSERT(rendMesh.rendSurfs.size() == origMesh.surfaces.size());
-        for (size_t ss=0; ss<rendMesh.rendSurfs.size(); ++ss) {     // TODO: don't duplicate shared maps ! (eg. multisurface mesh)
+        // TODO: don't duplicate shared maps ! (eg. multisurface mesh)
+        // Be forgiving to client; for instance model set may define different number of maps
+        // than .fgmesh defines surfaces. If fewer defined then render without maps:
+        size_t              S = cMin(rendMesh.rendSurfs.size(),origMesh.surfaces.size());
+        for (size_t ss=0; ss<S; ++ss) {
             RendSurf const &        rs = rendMesh.rendSurfs[ss];
             D3dSurf &               d3dSurf = getD3dSurf(rs);
             updateMap_(d3dSurf.albedoMapFlag,rs.smoothMapN,d3dSurf.albedoMap);
@@ -954,12 +955,14 @@ D3d::renderBackBuffer(
             rasterizer.reset(ptr);
         }
         pContext->RSSetState(rasterizer.get());
-        for (auto const& rendMesh : rendMeshes) {
-            auto const& origMesh = rendMesh.origMeshN.cref();
+        for (RendMesh const & rendMesh : rendMeshes) {
+            Mesh const &        origMesh = rendMesh.origMeshN.cref();
+            size_t              S = origMesh.surfaces.size();
+            FGASSERT(rendMesh.rendSurfs.size() == S);
             // Must loop through origMesh surfaces in case the mesh has been emptied (and the redsurfs remain):
-            for (size_t ss = 0; ss < origMesh.surfaces.size(); ++ss) {
-                D3dSurf& d3dSurf = getD3dSurf(rendMesh.rendSurfs[ss]);
-                Surf const& origSurf = origMesh.surfaces[ss];
+            for (size_t ss=0; ss<S; ++ss) {
+                D3dSurf &           d3dSurf = getD3dSurf(rendMesh.rendSurfs[ss]);
+                Surf const &        origSurf = origMesh.surfaces[ss];
                 if (origSurf.empty())
                     continue;
                 if (!d3dSurf.lineVerts)     // GPU needs updating
@@ -1020,11 +1023,13 @@ D3d::showBackBuffer()
     // No render view during create - created by first resize:
     if (pRTV == nullptr)
         return;
+    // TODO: arguments below can be used for frame sync.
+    // TODO: switch to Present1()
     HRESULT  hr = pSwapChain->Present(0,0);      // Swap back buffer to display
     FG_ASSERT_D3D(hr);
 }
 
-ImgC4UC
+ImgRgba8
 D3d::capture(Vec2UI viewportSize)
 {
     HRESULT                     hr;
@@ -1052,7 +1057,7 @@ D3d::capture(Vec2UI viewportSize)
     unsigned int                subresource = D3D11CalcSubresource(0,0,0);
     hr = pContext->Map(pTexture.get(),subresource,D3D11_MAP_READ_WRITE,0,&resource);
     FG_ASSERT_D3D(hr);
-    ImgC4UC                     ret(viewportSize);
+    ImgRgba8                     ret(viewportSize);
     uchar*                      dst = (uchar*)resource.pData;
     for (size_t rr=0; rr<viewportSize[1]; ++rr) {
         memcpy(&ret.xy(0,rr),dst,4ULL*viewportSize[0]);
@@ -1074,12 +1079,18 @@ D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
 void
 D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass)
 {
-    size_t              mm {0};
-    for (RendMesh const & rendMesh : rendMeshes) {
+    size_t              M = rendMeshes.size(),
+                        // maximize color diffs, handle M=0 and M>tintTransMaps.size()
+                        clrFacMesh = cMax(tintTransMaps.size()/cMax(M,size_t(1)),size_t(1));
+    for (size_t mm=0; mm<M; ++mm) {
+        RendMesh const & rendMesh = rendMeshes[mm];
         if (rendMesh.posedVertsN.cref().empty())    // Not selected
             continue;
         Mesh const &        origMesh = rendMesh.origMeshN.cref();
-        for (size_t ss=0; ss<origMesh.surfaces.size(); ++ss) {
+        size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size()),
+                            // maximize color diffs, handle S=0 and S>tintMaps.size()
+                            clrFacSurf = cMax(tintMaps.size()/cMax(S,size_t(1)),size_t(1));
+        for (size_t ss=0; ss<S; ++ss) {
             Surf const &        origSurf = origMesh.surfaces[ss];
             if (origSurf.empty())
                 continue;
@@ -1101,9 +1112,9 @@ D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool 
                         mapViews[2] = d3dSurf.modulationMap.view.get();
                 }
                 else if (rendOpts.albedoMode==AlbedoMode::bySurf)
-                    mapViews[0] = tintMaps[ss%tintMaps.size()].view.get();
+                    mapViews[0] = tintMaps[(ss*clrFacSurf)%tintMaps.size()].view.get();
                 else if (rendOpts.albedoMode==AlbedoMode::byMesh)
-                    mapViews[0] = tintTransMaps[mm%tintTransMaps.size()].view.get();
+                    mapViews[0] = tintTransMaps[(mm*clrFacMesh)%tintTransMaps.size()].view.get();
                 else
                     mapViews[0] = greyMap.view.get();
                 if (rendOpts.shiny)
@@ -1116,7 +1127,25 @@ D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool 
                 pContext->Draw(uint(origSurf.numTriEquivs())*3,0);
             }
         }
-        ++mm;
+    }
+}
+
+void
+D3d::handleHResult(char const * fpath,uint lineNum,HRESULT hr)
+{
+    if (hr == DXGI_ERROR_DEVICE_REMOVED) {
+        HRESULT             hr2 = pDevice->GetDeviceRemovedReason();
+        if (hr2 == S_OK)
+            return;                         // Not actually an error after all ... WTF
+        if (hr2 == DXGI_ERROR_INVALID_CALL)
+            hr = hr2;                       // Report this error instead
+        else
+            throw ExceptD3dDeviceRemoved {};
+    }
+    if (hr < 0) {
+        string          v11_1 = supports11_1 ? " D3D11.1" : " D3D11.0",     // wrong way around throug Mod v3.22
+                        flip = supportsFlip ? " flip" : " noflip";
+        throwWindows("D3D HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr)+v11_1+flip);
     }
 }
 

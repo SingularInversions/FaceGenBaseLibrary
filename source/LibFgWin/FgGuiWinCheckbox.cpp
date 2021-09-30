@@ -18,12 +18,13 @@ namespace Fg {
 
 struct  GuiCheckboxWin : public GuiBaseImpl
 {
-    GuiCheckbox      m_api;
+    GuiCheckbox         m_api;
+    bool                currVal;
     HWND                hwndCheckbox,
                         hwndThis;
 
-    GuiCheckboxWin(const GuiCheckbox & api)
-    : m_api(api)
+    GuiCheckboxWin(GuiCheckbox const & api)
+    : m_api(api), currVal(api.getFn())
     {}
 
     virtual void
@@ -50,12 +51,12 @@ struct  GuiCheckboxWin : public GuiBaseImpl
 
     virtual Vec2B
     wantStretch() const
-    {return Vec2B(false,false); }
+    {return Vec2B(true,false); }        // Need X stretch for checkboxes with longer text descriptions
 
     virtual void
     updateIfChanged()
     {
-        if (m_api.updateFlag->checkUpdate())
+        if (m_api.getFn() != currVal)
             updateCheckbox();
     }
 
@@ -102,8 +103,7 @@ struct  GuiCheckboxWin : public GuiBaseImpl
             WORD    code = HIWORD(wParam);
             if (code == 0) {            // checkbox clicked
                 FGASSERT(ident == 0);
-                bool &      val = m_api.val.ref();
-                val = !val;
+                m_api.clickFn();
                 winUpdateScreen();
             }
         }
@@ -115,8 +115,8 @@ struct  GuiCheckboxWin : public GuiBaseImpl
     void
     updateCheckbox()
     {
-        bool    val = m_api.val.val();
-        SendMessage(hwndCheckbox,BM_SETCHECK,val ? 1 : 0,0);
+        currVal = m_api.getFn();
+        SendMessage(hwndCheckbox,BM_SETCHECK,currVal ? 1 : 0,0);
     }
 };
 

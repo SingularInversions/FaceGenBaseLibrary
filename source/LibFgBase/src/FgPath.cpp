@@ -175,6 +175,14 @@ checkExt(String8 const & path,string const & ext)
 }
 
 String8
+setExt(String8 const & path,String const & ext)
+{
+    Path            p {path};
+    p.ext = ext;
+    return p.str();
+}
+
+String8
 pathToName(String8 const & f)
 {return Path(f).baseExt(); }
 
@@ -200,7 +208,7 @@ asDirectory(string const & path)
 {return asDirectory(String8(path)).m_str; }
 
 void
-fgPathTest(CLArgs const &)
+testPath(CLArgs const &)
 {
     Path  p;
 

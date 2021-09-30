@@ -16,46 +16,36 @@
 
 namespace Fg {
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 T
-cSsd(Mat<T,nrows,ncols> const & l,Mat<T,nrows,ncols> const & r)
+cSsd(Mat<T,R,C> const & l,Mat<T,R,C> const & r)
 {return cSsd(l.m,r.m); }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 T
-cLen(Mat<T,nrows,ncols> const & m)
+cLen(Mat<T,R,C> const & m)
 {return cLen(m.m); }
 
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-operator*(T val,Mat<T,nrows,ncols> const & mat)
+template<class T,uint R,uint C>
+Mat<T,R,C>
+operator*(T val,Mat<T,R,C> const & mat)
 {return (mat * val); }
 
-template <class T,uint nrows,uint ncols,uint ncols2>
-Mat<T,nrows,ncols2>
+template <class T,uint R,uint C,uint C2>
+Mat<T,R,C2>
 operator*(
-    Mat<T,nrows,ncols> const &    v1,
-    const Mat<T,ncols,ncols2> &   v2)
+    Mat<T,R,C> const &    v1,
+    const Mat<T,C,C2> &   v2)
 {
-    Mat<T,nrows,ncols2>      newMat;
-    for (uint ii=0; ii<nrows; ii++) {
-        for (uint jj=0; jj<ncols2; jj++) {
-            newMat[ii*ncols2+jj] = T(0);
-            for (uint kk=0; kk<ncols; kk++)
-                newMat[ii*ncols2+jj] += v1[ii*ncols+kk] * v2[kk*ncols2+jj];
+    Mat<T,R,C2>      newMat;
+    for (uint ii=0; ii<R; ii++) {
+        for (uint jj=0; jj<C2; jj++) {
+            newMat[ii*C2+jj] = T(0);
+            for (uint kk=0; kk<C; kk++)
+                newMat[ii*C2+jj] += v1[ii*C+kk] * v2[kk*C2+jj];
         }
     }
     return newMat;
-}
-
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-expFast(Mat<T,nrows,ncols> const & m)
-{
-    Mat<T,nrows,ncols>  ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret.m[ii] = expFast(m.m[ii]);
-    return ret;
 }
 
 template <class T>
@@ -109,30 +99,8 @@ matRotateZ(T radians)        // RHR rotation around Z axis
     return mat;
 }
 
-template <class T>
-Mat<T,3,3>
-matRotateAxis(                   // RHR rotation around an arbitrary axis
-    T           radians, 
-    const       Mat<T,3,1> &axis)             // vector describing that axis
-{
-    Mat<T,3,3> mat;
-    T           len = axis.len();
-    FGASSERT(len > T(0));
-    Mat<T,3,1>    ax = axis * (T(1) / len);   // Ensure the rotation axis is normalized
-    T           ct = (T)cos(radians);
-    T           st = (T)sin(radians);
-    T           vt = T(1)-ct;
-    mat.rc(0,0) = ax[0]*ax[0]*vt + ct;
-    mat.rc(0,1) = ax[0]*ax[1]*vt - ax[2]*st;
-    mat.rc(0,2) = ax[0]*ax[2]*vt + ax[1]*st;
-    mat.rc(1,0) = ax[0]*ax[1]*vt + ax[2]*st;
-    mat.rc(1,1) = ax[1]*ax[1]*vt + ct;
-    mat.rc(1,2) = ax[1]*ax[2]*vt - ax[0]*st;
-    mat.rc(2,0) = ax[0]*ax[2]*vt - ax[1]*st;
-    mat.rc(2,1) = ax[1]*ax[2]*vt + ax[0]*st;
-    mat.rc(2,2) = ax[2]*ax[2]*vt + ct;
-    return mat;
-}
+// Create matrix for RHR around an arbitrary axis:
+Mat33D          matRotateAxis(double radians,Vec3D const & normalizedZxis);
 
 template<class T>
 T
@@ -181,23 +149,23 @@ cat(const Mat<T,1,dim> & vec,T val)
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 void
-cat_(Svec<T> & l,Mat<T,nrows,ncols> const & r)
+cat_(Svec<T> & l,Mat<T,R,C> const & r)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         l.push_back(r[ii]);
 }
 
 // Flatten a Svec of matrices into a Svec of scalars:
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 Svec<T>
-flatten(Svec<Mat<T,nrows,ncols> > const & ms)
+flatten(Svec<Mat<T,R,C>> const & ms)
 {
     Svec<T>       ret;
-    ret.reserve(ms.size()*nrows*ncols);
+    ret.reserve(ms.size()*R*C);
     for (size_t ii=0; ii<ms.size(); ++ii)
-        for (uint jj=0; jj<nrows*ncols; ++jj)
+        for (uint jj=0; jj<R*C; ++jj)
             ret.push_back(ms[ii].m[jj]);
     return ret;
 }
@@ -209,9 +177,9 @@ toDoubles(Doubless const & v)
 Doubles
 toDoubles(Floatss const & v);
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 Doubles
-toDoubles(Mat<T,nrows,ncols> const & mat)
+toDoubles(Mat<T,R,C> const & mat)
 {
     Doubles         ret;
     ret.reserve(mat.numElems());
@@ -220,29 +188,29 @@ toDoubles(Mat<T,nrows,ncols> const & mat)
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 Doubles
-toDoubles(Svec<Mat<T,nrows,ncols> > const & ms)
+toDoubles(Svec<Mat<T,R,C>> const & ms)
 {
     Doubles         ret;
-    ret.reserve(ms.size()*nrows*ncols);
-    for (Mat<T,nrows,ncols> const & m : ms)
+    ret.reserve(ms.size()*R*C);
+    for (Mat<T,R,C> const & m : ms)
         for (T e : m.m)
             ret.push_back(scast<double>(e));
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 Doubles
-toDoubles(const Svec<Svec<Mat<T,nrows,ncols> > > & mss)
+toDoubles(const Svec<Svec<Mat<T,R,C>>> & mss)
 {
     size_t          sz = 0;
-    for (Svec<Mat<T,nrows,ncols> > const & ms : mss)
-        sz += ms.size() * nrows * ncols;
+    for (Svec<Mat<T,R,C>> const & ms : mss)
+        sz += ms.size() * R * C;
     Doubles         ret;
     ret.reserve(sz);
-    for (Svec<Mat<T,nrows,ncols> > const & ms : mss)
-        for (Mat<T,nrows,ncols> const & m : ms)
+    for (Svec<Mat<T,R,C>> const & ms : mss)
+        for (Mat<T,R,C> const & m : ms)
             for (T e : m.m)
                 ret.push_back(scast<double>(e));
     return ret;
@@ -359,9 +327,9 @@ cDot(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
     return cDot(lhs.m,rhs.m);
 }
 
-template <class T,uint nrows,uint ncols>
+template <class T,uint R,uint C>
 double
-cCos(Mat<T,nrows,ncols> const & lhs,Mat<T,nrows,ncols> const & rhs)
+cCos(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
 {
     double      mag = cMag(lhs) * cMag(rhs);
     FGASSERT(mag > 0.0);
@@ -382,36 +350,171 @@ crossProduct(
 }
 
 // Equivalent to V * Y.transpose() (but more efficient and succinct):
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-outerProduct(Mat<T,nrows,1> const & lhs,Mat<T,ncols,1> const & rhs)
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+outerProduct(Mat<T,R,1> const & lhs,Mat<T,C,1> const & rhs)
 {
-    Mat<T,nrows,ncols>      ret;
-    for (uint rr=0; rr<nrows; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+    Mat<T,R,C>      ret;
+    for (uint rr=0; rr<R; ++rr)
+        for (uint cc=0; cc<C; ++cc)
             ret.rc(rr,cc) = lhs[rr] * rhs[cc];
     return ret;
 }
 
-// Element-wise multiplication (aka Hadamard product):
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-mapMul(
-    Mat<T,nrows,ncols> const &    lhs,
-    Mat<T,nrows,ncols> const &    rhs)
+// UNARY & BINARY MAP OPERATIONS:
+
+// Type-preserving binary callable:
+template<class T,uint R,uint C,class F>
+Mat<T,R,C>
+mapCall(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs,F func)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>          ret;
+    for (size_t ii=0; ii<R*C; ++ii)
+        ret[ii] = func(lhs,rhs);
+    return ret;
+}
+
+// Subtract same value from each element:
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapSub(Mat<T,R,C> const & lhs,T const & rhs)
+{return Mat<T,R,C>{mapSub(lhs.m,rhs)}; }
+
+// Element-wise multiplication (aka Hadamard product):
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapMul(
+    Mat<T,R,C> const &    lhs,
+    Mat<T,R,C> const &    rhs)
+{
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = lhs[ii] * rhs[ii];
     return ret;
 }
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-mapMul(Mat<T,nrows,ncols> const & m0,Mat<T,nrows,ncols> const & m1,Mat<T,nrows,ncols> const & m2)
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapMul(Mat<T,R,C> const & m0,Mat<T,R,C> const & m1,Mat<T,R,C> const & m2)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = m0[ii] * m1[ii] * m2[ii];
+    return ret;
+}
+
+// Element-wise division:
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapDiv(
+    Mat<T,R,C> const &    lhs,
+    Mat<T,R,C> const &    rhs)
+{
+    Mat<T,R,C>            ret;
+    for (uint ii=0; ii<R*C; ++ii)
+        ret[ii] = lhs[ii] / rhs[ii];
+    return ret;
+}
+
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapCall(Mat<T,R,C> m,T(*func)(T))
+{
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
+        ret[ii] = func(m[ii]);
+    return ret;
+}
+
+template<class T,uint R,uint C>
+Svec<T>
+mapMag(Svec<Mat<T,R,C>> const & v)
+{
+    Svec<T>   ret(v.size());
+    for (size_t ii=0; ii<v.size(); ++ii)
+        ret[ii] = cMag(v[ii]);
+    return ret;
+}
+
+template<class T,uint R,uint C>
+Mat<T,R,C>
+mapSqr(Mat<T,R,C> m)
+{
+    Mat<T,R,C>    r;
+    for (uint ii=0; ii<R*C; ++ii)
+        r[ii] = sqr(m[ii]);
+    return r;
+}
+
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+mapFloor(Mat<T,R,C> const & mat)
+{
+    Mat<T,R,C> ret;
+    for (uint ii=0; ii<mat.numElems(); ++ii)
+        ret[ii] = std::floor(mat[ii]);
+    return ret;
+}
+
+template<typename Flt,typename Int,uint R,uint C>
+void
+round_(
+    Mat<Flt,R,C> const &    lhs,
+    Mat<Int,R,C> &          rhs)
+{
+    for (uint ii=0; ii<rhs.numElems(); ++ii)
+        round_(lhs[ii],rhs[ii]);
+}
+
+template<typename To,typename From,uint R,uint C>
+Mat<To,R,C>
+mapRound(Mat<From,R,C> const & m)
+{
+    Mat<To,R,C>     ret;
+    for (uint ii=0; ii<m.numElems(); ++ii)
+        ret[ii] = round<To>(m[ii]);
+    return ret;
+}
+
+template<uint R,uint C>
+Mat<uint,R,C>
+mapPow2Ceil(Mat<uint,R,C> const & mat)
+{
+    Mat<uint,R,C>       ret;
+    for (uint ii=0; ii<mat.numElems(); ++ii)
+        ret[ii] = pow2Ceil(mat[ii]);
+    return ret;
+}
+
+template<class T,uint R,uint C>
+Mat<T,R,C>
+mapMax(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
+{
+    struct Max { T operator()(T l,T r) {return std::max(l,r); } };
+    return Mat<T,R,C>{mapCall(lhs.m,rhs.m,Max{})};
+}
+
+#define FG_MATRIXC_ELEMWISE(matFunc,elemFunc)               \
+    template<class T,uint R,uint C>                 \
+    Mat<T,R,C>                                \
+    matFunc (Mat<T,R,C> const & mat)          \
+    {                                                       \
+        Mat<T,R,C>    ret;                    \
+        for (uint ii=0; ii<R*C; ++ii)               \
+            ret[ii] = elemFunc (mat[ii]);                   \
+        return ret;                                         \
+    }
+
+FG_MATRIXC_ELEMWISE(mapAbs,std::abs)
+FG_MATRIXC_ELEMWISE(mapLog,std::log)
+FG_MATRIXC_ELEMWISE(mapExp,std::exp)
+
+template<uint R,uint C>
+Mat<bool,R,C>
+mapOr(Mat<bool,R,C> v0,Mat<bool,R,C> v1)
+{
+    Mat<bool,R,C> ret;
+    for (uint ii=0; ii<R*C; ++ii)
+        ret[ii] = v0[ii] || v1[ii];
     return ret;
 }
 
@@ -430,35 +533,22 @@ transposeMul(
     return ret;
 }
 
-// Element-wise division:
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-mapDiv(
-    Mat<T,nrows,ncols> const &    lhs,
-    Mat<T,nrows,ncols> const &    rhs)
+template<typename T,uint R,uint C>
+Mat<T,R,C> 
+Mat<T,R,C>::randNormal(T stdev)
 {
-    Mat<T,nrows,ncols>            ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = lhs[ii] / rhs[ii];
-    return ret;
-}
-
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols> 
-Mat<T,nrows,ncols>::randNormal(T stdev)
-{
-    Mat<T,nrows,ncols>        ret;
-    for (size_t ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>        ret;
+    for (size_t ii=0; ii<R*C; ++ii)
         ret[ii] = static_cast<T>(Fg::randNormal())*stdev;
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-Mat<T,nrows,ncols>::randUniform(T lo,T hi)
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+Mat<T,R,C>::randUniform(T lo,T hi)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (size_t ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (size_t ii=0; ii<R*C; ++ii)
         ret[ii] = static_cast<T>(Fg::randUniform(double(lo),double(hi)));
     return ret;
 }
@@ -476,90 +566,50 @@ randVecNormal()
 
 template<typename T,uint dim,
     FG_ENABLE_IF(T,is_floating_point)>
-Svec<Mat<T,dim,1> >
+Svec<Mat<T,dim,1>>
 randVecNormals(size_t sz,double stdev)
 {
-    Svec<Mat<T,dim,1> >     ret;
+    Svec<Mat<T,dim,1>>     ret;
     ret.reserve(sz);
     for (size_t ii=0; ii<sz; ++ii)
         ret.push_back(randVecNormal<T,dim>()*stdev);
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-cFloor(Mat<T,nrows,ncols> const & mat)
-{
-    Mat<T,nrows,ncols> ret;
-    for (uint ii=0; ii<mat.numElems(); ++ii)
-        ret[ii] = std::floor(mat[ii]);
-    return ret;
-}
-
-template<typename Flt,typename Int,uint nrows,uint ncols>
-void
-round_(
-    Mat<Flt,nrows,ncols> const &    lhs,
-    Mat<Int,nrows,ncols> &          rhs)
-{
-    for (uint ii=0; ii<rhs.numElems(); ++ii)
-        round_(lhs[ii],rhs[ii]);
-}
-
-template<typename To,typename From,uint nrows,uint ncols>
-Mat<To,nrows,ncols>
-round(Mat<From,nrows,ncols> const & m)
-{
-    Mat<To,nrows,ncols>     ret;
-    for (uint ii=0; ii<m.numElems(); ++ii)
-        ret[ii] = round<To>(m[ii]);
-    return ret;
-}
-
-template<uint nrows,uint ncols>
-Mat<uint,nrows,ncols>
-pow2Ceil(Mat<uint,nrows,ncols> m)
-{
-    Mat<uint,nrows,ncols> ret;
-    for (uint ii=0; ii<m.numElems(); ++ii)
-        ret[ii] = pow2Ceil(m[ii]);
-    return ret;
-}
-
 // Create a wider matrix by concatenating rows from 2 matrices:
-template<class T,uint nrows,uint ncols1,uint ncols2>
-Mat<T,nrows,ncols1+ncols2>
+template<class T,uint R,uint ncols1,uint C2>
+Mat<T,R,ncols1+C2>
 catHoriz(
-    const Mat<T,nrows,ncols1> & lhs,
-    const Mat<T,nrows,ncols2> & rhs)
+    const Mat<T,R,ncols1> & lhs,
+    const Mat<T,R,C2> & rhs)
 {
-    Mat<T,nrows,ncols1+ncols2>    ret;
-    for (uint row=0; row<nrows; ++row)
+    Mat<T,R,ncols1+C2>    ret;
+    for (uint row=0; row<R; ++row)
     {
         uint    col=0;
         for (uint cc=0; cc<ncols1; ++cc)
             ret.rc(row,col++) = lhs.rc(row,cc);
-        for (uint cc=0; cc<ncols2; ++cc)
+        for (uint cc=0; cc<C2; ++cc)
             ret.rc(row,col++) = rhs.rc(row,cc);
     }
     return ret;
 }
 
 // Create a wider matrix by concatenating rows from 3 matrices:
-template<class T,uint nrows,uint ncols1,uint ncols2,uint ncols3>
-Mat<T,nrows,ncols1+ncols2+ncols3>
+template<class T,uint R,uint ncols1,uint C2,uint ncols3>
+Mat<T,R,ncols1+C2+ncols3>
 catHoriz(
-    const Mat<T,nrows,ncols1> & m1,
-    const Mat<T,nrows,ncols2> & m2,
-    const Mat<T,nrows,ncols3> & m3)
+    const Mat<T,R,ncols1> & m1,
+    const Mat<T,R,C2> & m2,
+    const Mat<T,R,ncols3> & m3)
 {
-    Mat<T,nrows,ncols1+ncols2+ncols3> ret;
-    for (uint row=0; row<nrows; ++row)
+    Mat<T,R,ncols1+C2+ncols3> ret;
+    for (uint row=0; row<R; ++row)
     {
         uint    col=0;
         for (uint cc=0; cc<ncols1; ++cc)
             ret.rc(row,col++) = m1.rc(row,cc);
-        for (uint cc=0; cc<ncols2; ++cc)
+        for (uint cc=0; cc<C2; ++cc)
             ret.rc(row,col++) = m2.rc(row,cc);
         for (uint cc=0; cc<ncols3; ++cc)
             ret.rc(row,col++) = m3.rc(row,cc);
@@ -568,30 +618,30 @@ catHoriz(
 }
 
 // Create a taller matrix by concatenating cols from 2 matrices:
-template<class T,uint nrows1,uint nrows2,uint ncols>
-Mat<T,nrows1+nrows2,ncols>
+template<class T,uint nrows1,uint nrows2,uint C>
+Mat<T,nrows1+nrows2,C>
 catVertical(
-    const Mat<T,nrows1,ncols> & upper,
-    const Mat<T,nrows2,ncols> & lower)
+    const Mat<T,nrows1,C> & upper,
+    const Mat<T,nrows2,C> & lower)
 {
-    Mat<T,nrows1+nrows2,ncols>    ret;
+    Mat<T,nrows1+nrows2,C>    ret;
     for (uint rr=0; rr<nrows1; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+        for (uint cc=0; cc<C; ++cc)
             ret.rc(rr,cc) = upper.rc(rr,cc);
     for (uint rr=0; rr<nrows2; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+        for (uint cc=0; cc<C; ++cc)
             ret.rc(nrows1+rr,cc) = lower.rc(rr,cc);
     return ret;
 }
 
 // Create a taller matrix by concatenating a given value to all columns:
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows+1,ncols>
-catVertical(Mat<T,nrows,ncols> const & mat,T val)
+template<class T,uint R,uint C>
+Mat<T,R+1,C>
+catVertical(Mat<T,R,C> const & mat,T val)
 {
-    Mat<T,nrows+1,ncols>  ret;
+    Mat<T,R+1,C>  ret;
     uint    ii=0;
-    for (; ii<nrows*ncols; ++ii)
+    for (; ii<R*C; ++ii)
         ret[ii] = mat[ii];
     ret[ii] = val;
     return ret;
@@ -608,50 +658,33 @@ permuteAxes(uint axisToBecomeX)
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 bool
-isPow2(Mat<T,nrows,ncols> const & mat)
+isPow2(Mat<T,R,C> const & mat)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         if (!isPow2(mat[ii]))
             return false;
     return true;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 T
-cMean(Mat<T,nrows,ncols> const & mat)
+cMean(Mat<T,R,C> const & mat)
 {
     typedef typename Traits<T>::Accumulator Acc;
     typedef typename Traits<T>::Scalar      Scal;
     Acc     acc = Acc(mat[0]);
-    for (uint ii=1; ii<nrows*ncols; ++ii)
+    for (uint ii=1; ii<R*C; ++ii)
         acc += Acc(mat[ii]);
-    return T(acc / Scal(nrows*ncols));
+    return T(acc / Scal(R*C));
 }
 
-#define FG_MATRIXC_ELEMWISE(matFunc,elemFunc)               \
-    template<class T,uint nrows,uint ncols>                 \
-    Mat<T,nrows,ncols>                                \
-    matFunc (Mat<T,nrows,ncols> const & mat)          \
-    {                                                       \
-        Mat<T,nrows,ncols>    ret;                    \
-        for (uint ii=0; ii<nrows*ncols; ++ii)               \
-            ret[ii] = elemFunc (mat[ii]);                   \
-        return ret;                                         \
-    }
-
-FG_MATRIXC_ELEMWISE(pos2Floor,pos2Floor)
-FG_MATRIXC_ELEMWISE(pow2Ceil,pow2Ceil)
-FG_MATRIXC_ELEMWISE(mapAbs,std::abs)
-FG_MATRIXC_ELEMWISE(mapLog,std::log)
-FG_MATRIXC_ELEMWISE(mapExp,std::exp)
-
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 double
 cDot(
-    Svec<Mat<T,nrows,ncols> > const & v0,
-    Svec<Mat<T,nrows,ncols> > const & v1)
+    Svec<Mat<T,R,C>> const & v0,
+    Svec<Mat<T,R,C>> const & v1)
 {
     FGASSERT(v0.size() == v1.size());
     double  acc(0);
@@ -661,11 +694,11 @@ cDot(
 }
 
 // Weighted dot product:
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 double
 fgDotWgt(
-    Svec<Mat<T,nrows,ncols> > const & v0,
-    Svec<Mat<T,nrows,ncols> > const & v1,
+    Svec<Mat<T,R,C>> const & v0,
+    Svec<Mat<T,R,C>> const & v1,
     Svec<T> const &                         w)    // Weight to apply to each dot product
 {
     FGASSERT(v0.size() == v1.size());
@@ -674,16 +707,6 @@ fgDotWgt(
     for (size_t ii=0; ii<v0.size(); ++ii)
         acc += cDot(v0[ii],v1[ii]) * w[ii];
     return acc;
-}
-
-template<uint nrows,uint ncols>
-Mat<bool,nrows,ncols>
-mapOr(Mat<bool,nrows,ncols> v0,Mat<bool,nrows,ncols> v1)
-{
-    Mat<bool,nrows,ncols> ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = v0[ii] || v1[ii];
-    return ret;
 }
 
 template<typename T,uint dim>
@@ -698,9 +721,9 @@ cTrace(const Mat<T,dim,dim> & m)
 }
 
 // For Mat/Vec use linear interpolation
-template<uint nrows,uint ncols>
-Mat<double,nrows,ncols>
-interpolate(Mat<double,nrows,ncols> m0,Mat<double,nrows,ncols> m1,double val)   // val [0,1]
+template<uint R,uint C>
+Mat<double,R,C>
+interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val [0,1]
 {return m0*(1.0-val) + m1*(val); }
 
 template<typename Flt,typename Int,uint dim>
@@ -718,24 +741,24 @@ fgUninterpolate(
 
 // Provide an ordering by axis order
 // (without making it the default operator as this may not be desired):
-template<typename T,uint nrows,uint ncols>
+template<typename T,uint R,uint C>
 bool
 fgLt(
-    Mat<T,nrows,ncols> const & m0,
-    Mat<T,nrows,ncols> const & m1)
+    Mat<T,R,C> const & m0,
+    Mat<T,R,C> const & m1)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         if (!(m0[ii] < m1[ii]))
             return false;
     return true;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 T
-fgSumElems(Mat<T,nrows,ncols> const & m)
+fgSumElems(Mat<T,R,C> const & m)
 {
     T   ret(m[0]);
-    for (uint ii=1; ii<nrows*ncols; ++ii)
+    for (uint ii=1; ii<R*C; ++ii)
         ret += m[ii];
     return ret;
 }
@@ -771,53 +794,33 @@ cDiagMat(T v0,T v1,T v2)
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T,uint R,uint C>
 void
-normalize_(Mat<T,nrows,ncols> & m)
+normalize_(Mat<T,R,C> & m)
 {
     T       len = m.len();
     FGASSERT(len > 0);
     m.m /= len;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-normalize(Mat<T,nrows,ncols> m)
+template<typename T,uint R,uint C>
+Mat<T,R,C>
+normalize(Mat<T,R,C> m)
 {
     T       len = m.len();
     FGASSERT(len > 0);
     return m / len;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-mapFunc(Mat<T,nrows,ncols> m,T(*func)(T))
-{
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        ret[ii] = func(m[ii]);
-    return ret;
-}
-
-template<class T,uint nrows,uint ncols>
-Svec<T>
-mapMag(Svec<Mat<T,nrows,ncols> > const & v)
-{
-    Svec<T>   ret(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret[ii] = cMag(v[ii]);
-    return ret;
-}
-
 // Find first index of an element in a Svec. Return 'size' if not found:
-template<typename T,uint nrows>
+template<typename T,uint R>
 uint
-findFirstIdx(Mat<T,nrows,1> m,T v)
+findFirstIdx(Mat<T,R,1> m,T v)
 {
-    for (uint ii=0; ii<nrows; ++ii)
+    for (uint ii=0; ii<R; ++ii)
         if (m[ii] == v)
             return ii;
-    return nrows;
+    return R;
 }
 
 // Solve linear system of equations of the form Ax = b. Returns x if solvable, invalid if degenerate:
@@ -829,81 +832,71 @@ Opt<Vec4D> solveLinear(Mat44D A,Vec4D b);
 inline
 Opt<Vec4F> solveLinear(Mat44F A,Vec4F b) {return solveLinear(Mat44D(A),Vec4D(b)).cast<Vec4F>(); }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T,uint R,uint C>
 bool
-fgNoZeros(Mat<T,nrows,ncols> m)
+noZeroElems(Mat<T,R,C> m)
 {
-    T   acc = T(1);
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        acc *= m.m[ii];
+    T                   acc = T(1);
+    for (T v : m.m)
+        acc *= v;
     return (acc != T(0));
 }
 
-template<uint nrows,uint ncols>
-Mat<double,nrows,ncols>
-fgF2D(const Mat<float,nrows,ncols> & m)
-{return Mat<double,nrows,ncols>(m); }
+template<uint R,uint C>
+Mat<double,R,C>
+fgF2D(const Mat<float,R,C> & m)
+{return Mat<double,R,C>(m); }
 
-template<uint nrows,uint ncols>
-Mat<float,nrows,ncols>
-fgD2F(const Mat<double,nrows,ncols> & m)
-{return Mat<float,nrows,ncols>(m); }
+template<uint R,uint C>
+Mat<float,R,C>
+fgD2F(const Mat<double,R,C> & m)
+{return Mat<float,R,C>(m); }
 
 // Contract columns to row Svec:
-template<class T,uint nrows,uint ncols>
-Mat<T,1,ncols>
-fgSumCols(Mat<T,nrows,ncols> const & m)
+template<class T,uint R,uint C>
+Mat<T,1,C>
+fgSumCols(Mat<T,R,C> const & m)
 {
-    Mat<T,1,ncols>    r(0);
-    for (uint rr=0; rr<nrows; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+    Mat<T,1,C>    r(0);
+    for (uint rr=0; rr<R; ++rr)
+        for (uint cc=0; cc<C; ++cc)
             r[cc] += m.rc(rr,cc);
     return r;
 }
 
 // Contract rows to column Svec:
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,1>
-fgSumRows(Mat<T,nrows,ncols> const & m)
+template<class T,uint R,uint C>
+Mat<T,R,1>
+fgSumRows(Mat<T,R,C> const & m)
 {
-    Mat<T,nrows,1>    r(0);
-    for (uint rr=0; rr<nrows; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+    Mat<T,R,1>    r(0);
+    for (uint rr=0; rr<R; ++rr)
+        for (uint cc=0; cc<C; ++cc)
             r[rr] += m.rc(rr,cc);
     return r;
 }
 
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
-mapSqr(Mat<T,nrows,ncols> m)
-{
-    Mat<T,nrows,ncols>    r;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
-        r[ii] = sqr(m[ii]);
-    return r;
-}
-
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 double
-cMag(Mat<T,nrows,ncols> m)
+cMag(Mat<T,R,C> m)
 {return m.mag(); }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 double
-cRms(Mat<T,nrows,ncols> m)
-{return std::sqrt(m.mag()/static_cast<double>(nrows*ncols)); }
+cRms(Mat<T,R,C> m)
+{return std::sqrt(m.mag()/static_cast<double>(R*C)); }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T,uint R,uint C>
 inline T
-cLen(Svec<Mat<T,nrows,ncols> > const & v)
+cLen(Svec<Mat<T,R,C>> const & v)
 {return std::sqrt(cMag(v)); }
 
-template<uint nrows,uint ncols>
-Mat<double,nrows,ncols>
-cReal(const Mat<std::complex<double>,nrows,ncols> & m)   // Return real compoments
+template<uint R,uint C>
+Mat<double,R,C>
+cReal(const Mat<std::complex<double>,R,C> & m)   // Return real compoments
 {
-    Mat<double,nrows,ncols>   ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<double,R,C>   ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = m[ii].real();
     return ret;
 }
@@ -912,24 +905,24 @@ cReal(const Mat<std::complex<double>,nrows,ncols> & m)   // Return real compomen
 Mat32D
 fgTanSphere(Vec3D p);
 
-template<class T,class U,uint nrows,uint ncols>
+template<class T,class U,uint R,uint C>
 void
-deepCast_(Mat<T,nrows,ncols> const & i,Mat<U,nrows,ncols> & o)
+deepCast_(Mat<T,R,C> const & i,Mat<U,R,C> & o)
 {
     for (size_t ii=0; ii<i.numElems(); ++ii)
         deepCast_(i[ii],o[ii]);
 }
 
 // Transpose a matrix stored as an array of arrays. All sub-arrays must have same size:
-template<class T,uint nrows,uint ncols>
-Mat<Svec<T>,nrows,ncols>
-transpose(Svec<Mat<T,nrows,ncols> > const & v)
+template<class T,uint R,uint C>
+Mat<Svec<T>,R,C>
+transpose(Svec<Mat<T,R,C>> const & v)
 {
-    Mat<Svec<T>,nrows,ncols>   ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<Svec<T>,R,C>   ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii].resize(v.size());
     for (size_t jj=0; jj<v.size(); ++jj) {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             ret[ii][jj] = v[jj][ii];
     }
     return ret;
@@ -974,20 +967,20 @@ permuteAxes(
     Mat<T,dim,dim> const &      M,
     Mat<uint,dim,1>             p)  // Permuation map from input index to output index. NOT checked for validity.
 {
-    Mat<T,dim,dim>      R;
+    Mat<T,dim,dim>      ret;
     for (uint rr=0; rr<dim; ++rr)
         for (uint cc=0; cc<dim; ++cc)
-            R.rc(p[rr],p[cc]) = M.rc(rr,cc);
-    return R;
+            ret.rc(p[rr],p[cc]) = M.rc(rr,cc);
+    return ret;
 }
 
-template<class T,uint nrows,uint ncols>
-Mat<T,ncols,nrows>
-cHermitian(Mat<T,nrows,ncols> const & mat)
+template<class T,uint R,uint C>
+Mat<T,C,R>
+cHermitian(Mat<T,R,C> const & mat)
 {
-    Mat<T,ncols,nrows>        ret;
-    for (uint rr=0; rr<nrows; ++rr)
-        for (uint cc=0; cc<ncols; ++cc)
+    Mat<T,C,R>        ret;
+    for (uint rr=0; rr<R; ++rr)
+        for (uint cc=0; cc<C; ++cc)
             ret.rc(cc,rr) = std::conj(mat.rc(rr,cc));
     return ret;
 }
@@ -997,8 +990,7 @@ struct  MatS3D
 {
     Arr<double,3>       diag;
     Arr<double,3>       offd;       // In order 01, 02, 12
-
-    FG_SERIALIZE2(diag,offd);
+    FG_SER2(diag,offd);
 
     MatS3D() {}
     explicit MatS3D(double fillVal) {diag.fill(fillVal); offd.fill(fillVal); }
@@ -1057,6 +1049,7 @@ inline double       cSum(MatS3D const & m) {return m.sumElems(); }
 inline double       cDot(MatS3D const & l,MatS3D const & r) {return l.dot(r); }
 inline double       cDeterminant(MatS3D const & m) {return m.determinant(); }
 inline MatS3D       cInverse(MatS3D const & m) {return m.inverse(); }
+inline double       cQuadForm(MatS3D const & Q,Vec3D const & x_m) {return cDot(x_m,Q*x_m); }
 
 inline
 MatS3D
@@ -1076,27 +1069,25 @@ outerProductSelf(Vec3D v)
 }
 
 // Isotropic random symmetric positive definite matrix with given standard deviation of log eigenvalues:
-MatS3D
-randMatSpd3D(double lnEigStdev);
+MatS3D          randMatSpd3D(double lnEigStdev);
 
 // Upper triangular 3x3 matrix non-zero entries in row-major order
 struct  MatUT3D
 {
     Arr<double,6>     m;
-
-    FG_SERIALIZE1(m);
+    FG_SER1(m)
 
     MatUT3D() {}
     explicit MatUT3D(Arr<double,6> const & data) : m(data) {}
     MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5)
     {m[0]=m0; m[1]=m1; m[2]=m2; m[3]=m3; m[4]=m4; m[5]=m5; }
-    explicit MatUT3D(Vec3D scales)             // Diagonal version
+    explicit MatUT3D(Arr3D const & scales)          // Diagonal version
     {
         m[0]=scales[0]; m[1]=0.0;       m[2]=0.0;
                         m[3]=scales[1]; m[4]=0.0;
                                         m[5]=scales[2];
     }
-    MatUT3D(Vec3D scales,Vec3D shears)         // Scales are the diag elems, shears are off-diag UT
+    MatUT3D(Arr3D scales,Arr3D shears)              // Scales are the diag elems, shears are off-diag UT
     {
         m[0]=scales[0]; m[1]=shears[0]; m[2]=shears[1];
                         m[3]=scales[1]; m[4]=shears[2];
@@ -1104,11 +1095,15 @@ struct  MatUT3D
     }
 
     static MatUT3D  identity()  {return MatUT3D(1,0,0,1,0,1); }
+    static MatUT3D  randNormal(double lnEigsStdev,double shearsStdev);          // Isotropic positive definite
 
     MatUT3D         operator-(MatUT3D const & rhs) const {return MatUT3D(m-rhs.m); }
     MatUT3D         operator*(double s) const {return MatUT3D {m*s}; }
     MatUT3D         operator/(double s) const {return  MatUT3D {m/s}; }
-    Vec3D           operator*(Vec3D v) const {return Vec3D(m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[1]+m[4]*v[2],m[5]*v[2]); }
+    Vec3D           operator*(Vec3D v) const
+    {
+        return Vec3D {m[0]*v[0]+m[1]*v[1]+m[2]*v[2], m[3]*v[1]+m[4]*v[2], m[5]*v[2]};
+    }
     // U^T * v
     Vec3D
     tranposeMul(Vec3D r)
@@ -1120,7 +1115,7 @@ struct  MatUT3D
     }
     MatUT3D         operator*(MatUT3D r) const;
     double          determinant() const {return m[0]*m[3]*m[5]; }
-    Mat33D          asMatrix() const {return Mat33D(m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]); }
+    Mat33D          asMatrix() const {return Mat33D {m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]}; }
     // Sum of squares of elements (== square of frobenius norm):
     double          mag() const {return cMag(m); }
     MatS3D          luProduct() const;

@@ -9,10 +9,19 @@
 #include "FgGeometry.hpp"
 #include "FgStdVector.hpp"
 #include "FgMatrixSolver.hpp"
+#include "FgCommand.hpp"
+#include "FgKdTree.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
 namespace Fg {
+
+double
+cArea(Vec2D p0,Vec2D p1,Vec2D p2)
+{
+    return (p1[0]-p0[0]) * (p2[1]-p0[1]) - (p1[1]-p0[1]) * (p2[0]-p0[0]);
+}
 
 Vec3D
 closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2)
@@ -115,7 +124,7 @@ closestPointInTri(Vec3D const & point,Vec3D const & vert0,Vec3D const & vert1,Ve
 }
     
 Opt<Vec3D>
-barycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
+cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
 {
     Opt<Vec3D>      ret;
     Vec2D           u0 = v0-point,
@@ -132,7 +141,7 @@ barycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
 }
 
 Opt<Vec3D>
-barycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
+cBarycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>      ret;
     // Transform into the coordinate system v0 = (0,0), v1 = (1,0), v2 = (0,1) by defining
@@ -223,6 +232,39 @@ lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
             ret = pnt+isect;
     }
     return ret;
+}
+
+static double
+xformErr(Vec3Fs const & verts,Affine3F const & mirror)
+{
+    KdTree              kdt(verts);
+    double              err = 0.0;
+    for (Vec3F vert : verts)
+        err += kdt.findClosest(mirror * vert).distMag;
+    return err;
+}
+
+double
+findSaggitalSymmetry(Vec3Fs const & verts,Affine3F & mirror)
+{
+    Vec3F           centre = cMean(verts);
+    Mat33F          mirrorX {-1,0,0, 0,1,0, 0,0,1};
+    double          bestErr = numeric_limits<double>::max();
+    Affine3F        bestXform;
+    for (uint dim=0; dim<3; ++dim) {
+        Affine3F        symmToXNull(-centre,permuteAxes<float>(dim)),
+                        guess(symmToXNull.inverse() * (mirrorX * symmToXNull));
+        double          err = xformErr(verts,guess);
+        if (err < bestErr) {
+            bestErr = err;
+            bestXform = guess;
+        }
+    }
+    mirror = bestXform;
+    Mat32F          bounds = cBounds(verts);
+    Vec3F           dims = bounds.colVec(1) - bounds.colVec(0);
+    double          rmsErr = sqrt(bestErr / double(verts.size()));
+    return (rmsErr / dims.len());
 }
 
 }

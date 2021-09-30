@@ -43,7 +43,7 @@ interpolate(QuaternionD q0, QuaternionD q1,double val)
 }
 
 void
-fgQuaternionTest(CLArgs const &)
+testQuaternion(CLArgs const &)
 {
     QuaternionD           id;
     // Axis rotations:

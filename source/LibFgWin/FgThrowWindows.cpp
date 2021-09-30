@@ -79,16 +79,6 @@ assertHResult(char const * fpath,uint lineNum,HRESULT hr)
         throwWindows("Windows HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr));
 }
 
-void
-assertHResultD3d(char const * fpath,uint lineNum,HRESULT hr,bool supports11_1,bool supportsFlip)
-{
-    if (hr < 0) {
-        string          v11_1 = supports11_1 ? " D3D11.1" : " D3D11.0",     // wrong way around throug Mod v3.22
-                        flip = supportsFlip ? " flip" : " noflip";
-        throwWindows("Windows HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr)+v11_1+flip);
-    }
-}
-
 }
 
 // */

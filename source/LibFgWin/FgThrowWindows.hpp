@@ -51,14 +51,9 @@ using ComPtr = Microsoft::WRL::ComPtr<T>;
 void
 assertHResult(char const * fpath,uint lineNum,HRESULT hr);
 
-void
-assertHResultD3d(char const * fpath,uint lineNum,HRESULT hr,bool supports11_1,bool supportsFlip);
-
 }
 
 #define FG_ASSERT_HR(hr) Fg::assertHResult(__FILE__,__LINE__,hr)
-
-#define FG_ASSERT_D3D(hr) Fg::assertHResultD3d(__FILE__,__LINE__,hr,supports11_1,supportsFlip)
 
 #define FGASSERTWIN(X)                                                  \
     if(X) (void) 0;                                                     \

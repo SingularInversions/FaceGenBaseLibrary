@@ -118,7 +118,7 @@ speedExp(CLArgs const &)
         if (val > mod)
             val -= mod;
     }
-    fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
+    fgout << fgnl << "exp() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
 }
 
 void
@@ -149,7 +149,7 @@ fgexp(CLArgs const &)
         if (val > mod)
             val -= mod;
     }
-    fgout << fgnl << "exp() time: " << 1000000.0 * tm.readMs() / reps << " ns  (dummy val: " << acc << ")";
+    fgout << fgnl << "exp() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
 }
 
 void
@@ -195,7 +195,7 @@ parr(CLArgs const &)
     Doubless         pins(A),
                     pouts(A);
     for (Doubles & pin : pins)
-        pin = generate<double>(N,randNormal);
+        pin = cRandNormals(N);
     for (Doubles & pout : pouts)
         pout.resize(N,0);
     Doubles          sins,
@@ -218,7 +218,7 @@ parr(CLArgs const &)
             pouts[7][ii] += pins[7][ii]*pins[0][ii] + pins[1][ii]*pins[2][ii];
         }
     }
-    size_t          time = tm.readMs();
+    size_t          time = tm.elapsedMilliseconds();
     double          val = 0;
     for (Doubles const & outs : pouts)
         val += cSum(outs);
@@ -241,7 +241,7 @@ parr(CLArgs const &)
             souts[idx+7] += sins[idx+7]*sins[idx+0] + sins[idx+1]*sins[idx+2];
         }
     }
-    time = tm.readMs();
+    time = tm.elapsedMilliseconds();
     val = cSum(souts);
     fgout << fgnl << "Packed array in, packed array out: " << time << "ms. (" << val << ")";
 
@@ -267,7 +267,7 @@ parr(CLArgs const &)
             pouts[7][ii] += sins[idx+7]*sins[idx+0] + sins[idx+1]*sins[idx+2];
         }
     }
-    time = tm.readMs();
+    time = tm.elapsedMilliseconds();
     val = 0;
     for (Doubles const & outs : pouts)
         val += cSum(outs);

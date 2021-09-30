@@ -1,0 +1,15 @@
+CC = gcc
+CXX = gcc
+LINK = g++
+AR = ar
+RANLIB = ranlib
+CFLAGS = -march=armv8.2-a -DNDEBUG -O3 -ffast-math -fPIC
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++14 -ftemplate-depth=4096
+LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
+DLLEXT = .so
+DLLARG = -shared -Wl,-soname,
+BINDIR = ../bin/linux/arm8_2/gcc/release/
+BBINDIR = ../bin/linux/arm8_2/
+BUILDIR = ../build_linux/arm8_2/gcc/release/
+include make_all.mk

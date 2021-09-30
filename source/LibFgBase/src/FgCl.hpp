@@ -8,22 +8,26 @@
 #ifndef FGCL_HPP
 #define FGCL_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgPlatform.hpp"
+#include "FgStdExtensions.hpp"
+#include "FgOpt.hpp"
 
 #ifndef FG_SANDBOX
 
 namespace Fg {
 
-// Returns true if success, false if failed and throwIfError=false
+// Call system(). Returns true if success, false if failed and throwIfError=false
 bool
-clRun(const std::string & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
+clRun(const String & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
+
+// Call popen(). Returns output string if success, invalid value otherwise:
+Opt<String>
+clPopen(const String & cmd);
 
 void
-clUnzip(const std::string & fname);
+clUnzip(const String & fname);
 
 void
-clZip(const std::string & dir,bool oldFormat=false);
+clZip(const String & dir,bool oldFormat=false);
 
 }
 

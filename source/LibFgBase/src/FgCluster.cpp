@@ -42,7 +42,7 @@ fgClusterDeploy(
     }
     // This instance must be deployment:
     fgout << fgnl <<
-        "Have you built the updated Ubuntu binaries and started the coordinator and worker machines ?\n"
+        "Have you built the updated linux binaries and started the coordinator and worker machines ?\n"
         "<enter> to confirm, 'q' to quit:";
     if (uint(fgGetch()) != 13)
         return;
@@ -51,11 +51,11 @@ fgClusterDeploy(
                     filesDirUbu = getNcShare(BuildOS::linux) + "cc/" + name + '/';
     createPath(filesDirLocal+"data/");
     NcScript      scriptCrdntor;
-    scriptCrdntor.logFile = "cc/" + name + "/_log_setup.html";
+    scriptCrdntor.outputBase = "cc/" + name + "/_log_setup";
     scriptCrdntor.title = name + " coordinator (" + coordIP + ")";
     String8        binBase = Path(getExecutablePath()).base;
-    scriptCrdntor.cmds.push_back("cp " + getCiShareBoot(BuildOS::linux) + "bin/ubuntu/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
-    if (!fgTcpClient(coordIP,getNcServerPort(),toSerialMessage(scriptCrdntor)))
+    scriptCrdntor.cmds.push_back("cp " + getCiShareBoot(BuildOS::linux) + "bin/linux/clang/64/release/" + binBase.m_str + " " + filesDirUbu + binBase.m_str);
+    if (!runTcpClient(coordIP,getNcServerPort(),toMessageExplicit(scriptCrdntor)))
         fgThrow("Cluster deploy unable to access coordinator",coordIP);
     // Wait for file to be copied (asynchronous operation):
     sleepSeconds(1);
@@ -76,22 +76,22 @@ fgClusterDeploy(
     for (size_t ww=0; ww<workIPs.size(); ++ww) {
         NcScript      script;
         string          idxStr = toStrDigits(ww,3);
-        script.logFile = "cc/" + name + "/_log.html";
+        script.outputBase = "cc/" + name + "/_log";
         script.title = name + " worker " + idxStr + " (" + workIPs[ww] + ")";
         script.cmds = copyData;
         script.cmds.push_back("> cluster_worker.flag");
         script.cmds.push_back("./" + args);
-        if (!fgTcpClient(workIPs[ww],getNcServerPort(),toSerialMessage(script)))
+        if (!runTcpClient(workIPs[ww],getNcServerPort(),toMessageExplicit(script)))
             fgThrow("Cluster deploy unable to start worker",workIPs[ww]);
     }
     // Wait to ensure workers ready to receive (asynchronous operation):
     sleepSeconds(1);
     // Start Coordinator:
-    scriptCrdntor.logFile = "cc/" + name + "/_log.html";
+    scriptCrdntor.outputBase = "cc/" + name + "/_log";
     scriptCrdntor.cmds = copyData;
     scriptCrdntor.cmds.push_back("> cluster_coordinator.flag");
     scriptCrdntor.cmds.push_back("./" + args);
-    if (!fgTcpClient(coordIP,getNcServerPort(),toSerialMessage(scriptCrdntor)))
+    if (!runTcpClient(coordIP,getNcServerPort(),toMessageExplicit(scriptCrdntor)))
         fgThrow("Cluster deploy unable to start coordinator",coordIP);
 }
 
@@ -159,7 +159,7 @@ fgClusterDeployTestm(CLArgs const & args)
     Syntax        syntax(args,"<crdntorIP> <workerIP>+\n"
         "    <IP> - If no periods are entered then '192.168.0' is automatically prepended.\n"
         "NOTES\n"
-        "    * All <IP> machines must be running fgNcServer under Ubuntu"
+        "    * All <IP> machines must be running fgNcServer under linux"
     );
     string      crdntorIP = syntax.next();
     if (!contains(crdntorIP,'.'))

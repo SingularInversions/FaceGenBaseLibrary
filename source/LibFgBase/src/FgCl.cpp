@@ -11,6 +11,7 @@
 #include "FgException.hpp"
 #include "FgString.hpp"
 #include "FgOut.hpp"
+#include "FgScopeGuard.hpp"
 
 using namespace std;
 
@@ -42,6 +43,32 @@ clRun(string const & cmd,bool throwIfError,int rvalMask)
         return false;
     }
     return true;
+}
+
+Opt<String>
+clPopen(const String & cmd)
+{
+    size_t constexpr    sz = 1024;
+    char                buff[sz] {};
+    char const *        cp = cmd.c_str();
+    char const *        mp = "rb";
+    FILE *              fp {};
+#ifdef _WIN32
+    fp = _popen(cp,mp);
+#else
+    fp = popen(cp,mp);
+#endif
+    if (fp == nullptr)
+        return Opt<String>{};
+#ifdef _WIN32
+    ScopeGuard          sg {[fp](){_pclose(fp);} };
+#else
+    ScopeGuard          sg {[fp](){pclose(fp);} };
+#endif
+    String              ret;
+    while (fgets(buff,sz,fp) != nullptr)        // fgets always adds a NULL to the end of the copied data
+        ret += String(buff);
+    return Opt<String>{ret};
 }
 
 #ifdef _WIN32

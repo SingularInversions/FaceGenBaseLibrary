@@ -15,34 +15,20 @@
 
 namespace Fg {
 
-inline bool
-isDigit(char c)
-{return ((c >= '0') && (c <= '9')); }
-
-inline bool
-isCrLf(uint ch)
-{return ((ch == '\r') || (ch == '\n')); }
-
+inline bool     isDigit(char c) {return ((c >= '0') && (c <= '9')); }
+inline bool     isCrLf(uint ch) {return ((ch == '\r') || (ch == '\n')); }
 // Returns true if empty:
-bool
-containsOnlyDigits(String const &);
-
+bool            containsOnlyDigits(String const &);
 // Returns a vector of tokens, treating all control codes and extended codes (high bit set) as whitespace,
 // grouping all connected digit-letter-dash-underscore characters and considering any others as single-character
 // tokens:
-Strings
-tokenize(String const &);
-
+Strings         tokenize(String const &);
 // Split a string into non-empty lines at CR/LF and remove all CR/LF characters.
 // Use this instead of useless std::getline which leaves in CR characters on Windows.
-Strings
-splitLines(String const & src);
-
-String32s
-splitLines(String32 const & src,bool includeEmptyLines=false);
-
-String8s
-splitLinesUtf8(String const & utf8,bool includeEmptyLines=false);
+// If 'commentFlag' is non-null, then any line starting with that character will be discarded.
+Strings         splitLines(String const & src,char commentFlag='\0');
+String32s       splitLines(String32 const & src);
+String8s        splitLinesUtf8(String const & utf8);
 
 // The exact UTF-8 string between commas will be taken as the value except for:
 // * Newlines, which are interpreted as the start of a new record.
@@ -83,6 +69,8 @@ asciify(String const &);
 
 String32
 replaceAll(String32 const & str,char32_t a,char32_t b);     // Replace each 'a' with 'b'
+
+String                  noLeadingWhitespace(String const &);
 
 }
 

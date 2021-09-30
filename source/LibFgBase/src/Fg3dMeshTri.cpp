@@ -49,8 +49,6 @@ loadTri(istream & istr)
     // Check for file type identifier
     char            cdata[9];
     istr.read(cdata,8);
-    if (strncmp(cdata,"FRTRI103",8) == 0)
-        fgThrow("File is encrypted, use 'fileconvert' utility to decrypt");
     if (strncmp(cdata,triIdent.data(),8) != 0)           // 0 indicates no difference
         fgThrow("File not in TRI format");
         // Read in the header
@@ -85,7 +83,7 @@ loadTri(istream & istr)
     if (numVerts==0)
         fgThrow("TRI file has no vertices");
     mesh.verts.resize(numVerts);
-    vector<Vec3F>    targVerts(numStatMorphVerts);
+    Vec3Fs    targVerts(numStatMorphVerts);
     istr.read(reinterpret_cast<char*>(&mesh.verts[0]),int(12*numVerts));
     if (numStatMorphVerts > 0)
         istr.read(reinterpret_cast<char*>(&targVerts[0]),int(12*numStatMorphVerts));
@@ -210,6 +208,8 @@ saveTri(
     Mesh const &        mesh)
 {
     Surf const          surf = mergeSurfaces(mesh.surfaces);
+    // Mesh must have both of these for valid UVs:
+    bool                hasUvs = (surf.hasUvIndices() && !mesh.uvs.empty());
     SurfPoints const &  surfPoints = surf.surfPoints;
     size_t              numTargetMorphVerts = cNumVerts(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
@@ -220,9 +220,9 @@ saveTri(
     fgWriteb(ff,int32(surf.numQuads()));            // Q
     fgWriteb(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
     fgWriteb(ff,int32(surfPoints.size()));          // numSurfPts (LS)
-    int32               numUvs = int32(mesh.uvs.size());
+    int32               numUvs = hasUvs ? int32(mesh.uvs.size()) : 0;   // In case mesh is inconsistent
     fgWriteb(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
-    if (surf.hasUvIndices())
+    if (hasUvs)
         fgWriteb(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
     else
         fgWriteb(ff,int32(0));
@@ -233,7 +233,6 @@ saveTri(
     fgWriteb(ff,int32(0));
     fgWriteb(ff,int32(0));
     fgWriteb(ff,int32(0));
-
     // Verts:
     for (uint ii=0; ii<mesh.verts.size(); ++ii)
         fgWriteb(ff,mesh.verts[ii]);
@@ -242,19 +241,16 @@ saveTri(
         for (size_t jj=0; jj<tm.verts.size(); ++jj)
             fgWriteb(ff,tm.verts[jj]);
     }
-
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
         fgWriteb(ff,surf.getTriPosInds(ii));
     for (uint ii=0; ii<surf.numQuads(); ++ii)
         fgWriteb(ff,surf.getQuadPosInds(ii));
-
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
         fgWriteb(ff,uint32(mesh.markedVerts[ii].idx));
         writeLabel(ff,mesh.markedVerts[ii].label);
     }
-
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
         SurfPoint const &   sp = surfPoints[ii];
@@ -272,7 +268,6 @@ saveTri(
         for(uint ii=0; ii < surf.quads.uvInds.size(); ++ii)
             fgWriteb(ff,surf.quads.uvInds[ii]);
     }
-
     // Delta morphs:
     for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {   
         Morph const &   morph = mesh.deltaMorphs[ii];
@@ -284,7 +279,6 @@ saveTri(
             for (size_t kk=0; kk<3; ++kk)
                 fgWriteb(ff,short(std::floor(morph.verts[jj][kk]*scale)+0.5f));
     }
-
     // Target morphs:
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const IndexedMorph &   morph = mesh.targetMorphs[ii];

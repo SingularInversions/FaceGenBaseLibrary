@@ -14,6 +14,73 @@ using namespace std;
 
 namespace Fg {
 
+String32
+toUtf32(string const & str)
+{
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (str.empty())
+        return String32();
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
+    auto            asInt = convert.from_bytes(str);
+    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
+#else
+    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
+    return convert.from_bytes(str);
+#endif
+}
+
+String32
+toUtf32(char const * str)
+{
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (str[0] == 0)
+        return String32{};
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
+    auto            asInt = convert.from_bytes(str);
+    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
+#else
+    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
+    return convert.from_bytes(str);
+#endif
+}
+
+string
+toUtf8(String32 const & in)
+{
+    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
+#ifdef _MSC_VER
+    if (in.empty())
+        return string();
+    wstring_convert<codecvt_utf8<int32_t>,int32_t>    convert;
+    auto            ptr = reinterpret_cast<const int32_t *>(in.data());
+    return convert.to_bytes(ptr,ptr+in.size());
+#else
+    wstring_convert<codecvt_utf8<char32_t>,char32_t>    convert;
+    return convert.to_bytes(in);
+#endif
+}
+
+string
+toUtf8(const char32_t & utf32_char)
+{return toUtf8(String32(1,utf32_char)); }
+
+std::wstring
+toUtf16(const std::string & utf8)
+{
+    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
+    return converter.from_bytes(utf8);
+}
+
+std::string
+toUtf8(const std::wstring & utf16)
+{
+    // codecvt_utf8_utf16 inherits from codecvt
+    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
+    return converter.to_bytes(utf16);
+}
+
 string
 toStrFixed(double val,uint fractionalDigits)
 {
@@ -97,7 +164,7 @@ padToLen(string const & str,size_t len,char ch)
 }
 
 string
-cat(const vector<string> & strings,string const & separator)
+cat(Strings const & strings,string const & separator)
 {
     string      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -105,6 +172,18 @@ cat(const vector<string> & strings,string const & separator)
         if (ii < strings.size()-1)
             ret += separator;
     }
+    return ret;
+}
+
+string
+cat(set<string> const & strings,string const & separator)
+{
+    auto                it = strings.begin();
+    if (it == strings.end())
+        return string{};
+    string              ret {*it};
+    while (++it != strings.end())
+        ret += separator + *it;
     return ret;
 }
 

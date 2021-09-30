@@ -34,6 +34,7 @@
 #include "FgMath.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgSerialize.hpp"
+#include "FgSerial.hpp"
 #include "FgOut.hpp"
 
 namespace Fg {
@@ -48,6 +49,7 @@ struct  Mat
 {
     Arr<T,nrows*ncols>    m;
     FG_SERIALIZE1(m)
+    FG_SER1(m)
 
     // Auto-initialization of builtins to zero is deprecated, avoid depending on it by using
     // constant-value initialization constructor below:
@@ -175,26 +177,7 @@ struct  Mat
     data() const
     {return m.data(); }
 
-    Mat
-    operator+(const Mat & rhs) const
-    {
-        Mat           ret;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
-            ret.m[ii] = m[ii] + rhs.m[ii];
-        return ret;
-    }
-
-    Mat
-    operator-(const Mat & rhs) const
-    {
-        Mat           ret;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
-            ret.m[ii] = m[ii] - rhs.m[ii];
-        return ret;
-    }
-
-    Mat
-    operator-() const
+    Mat         operator-() const
     {
         Mat           ret;
         for (uint ii=0; ii<nrows*ncols; ++ii)
@@ -202,23 +185,10 @@ struct  Mat
         return ret;
     }
 
-    Mat
-    operator*(T val) const
-    {
-        Mat           ret;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
-            ret.m[ii] = m[ii] * val;
-        return ret;
-    }
-
-    Mat
-    operator/(T val) const
-    {
-        Mat           ret;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
-            ret.m[ii] = m[ii] / val;
-        return ret;
-    }
+    Mat         operator+(const Mat & rhs) const {return Mat{m + rhs.m}; }
+    Mat         operator-(const Mat & rhs) const {return Mat{m - rhs.m}; }
+    Mat         operator*(T val) const {return Mat{m * val}; }
+    Mat         operator/(T val) const {return Mat{m / val}; }
 
     void
     operator*=(T val)
@@ -436,9 +406,12 @@ struct  Mat
     static Mat randUniform(T lo,T hi);
     static Mat randNormal(T stdev=T(1));
 };
+// Specialize text tree serialization to avoid a separate node for member 'm':
+template<class T,size_t R,size_t C>
+inline SerPtr tsrlz(Mat<T,R,C> const & m) {return tsrlz(m.m); }
 
 template<class T,uint nrows,uint ncols>
-struct  Traits<Mat<T,nrows,ncols> >
+struct  Traits<Mat<T,nrows,ncols>>
 {
     typedef typename Traits<T>::Scalar                                Scalar;
     typedef Mat<typename Traits<T>::Accumulator,nrows,ncols>    Accumulator;
@@ -475,6 +448,7 @@ typedef Mat<float,1,2>          VecF2;
 typedef Mat<float,1,3>          VecF3;
 typedef Mat<double,1,2>         VecD2;
 
+typedef Svec<Vec2I>             Vec2Is;
 typedef Svec<Vec2UI>            Vec2UIs;
 typedef Svec<Vec2F>             Vec2Fs;
 typedef Svec<Vec2D>             Vec2Ds;
@@ -483,7 +457,9 @@ typedef Svec<Vec3F>             Vec3Fs;
 typedef Svec<Vec3UI>            Vec3UIs;
 typedef Svec<Vec3D>             Vec3Ds;
 typedef Svec<Vec4UI>            Vec4UIs;
+typedef Svec<Vec4F>             Vec4Fs;
 
+typedef Svec<Vec2Ds>            Vec2Dss;
 typedef Svec<Vec3Fs>            Vec3Fss;
 typedef Svec<Vec3Ds>            Vec3Dss;
 typedef Svec<Vec4UIs>           Vec4UIss;
@@ -524,10 +500,10 @@ template<typename To,typename From,uint nrows,uint ncols,
     FG_ENABLE_IF(To,is_fundamental),
     FG_ENABLE_IF(From,is_fundamental)
 >
-Svec<Mat<To,nrows,ncols> >
-deepCast(Svec<Mat<From,nrows,ncols> > const & vm)
+Svec<Mat<To,nrows,ncols>>
+deepCast(Svec<Mat<From,nrows,ncols>> const & vm)
 {
-    Svec<Mat<To,nrows,ncols> >      ret;
+    Svec<Mat<To,nrows,ncols>>      ret;
     ret.reserve(vm.size());
     for (auto const & m : vm)
         ret.push_back(mapCast<To,From,nrows,ncols>(m));
@@ -538,10 +514,10 @@ template<typename To,typename From,uint nrows,uint ncols,
     FG_ENABLE_IF(To,is_fundamental),
     FG_ENABLE_IF(From,is_fundamental)
 >
-Svec<Svec<Mat<To,nrows,ncols> > >
-deepCast(Svec<Svec<Mat<From,nrows,ncols> > > const & vvm)
+Svec<Svec<Mat<To,nrows,ncols>>>
+deepCast(Svec<Svec<Mat<From,nrows,ncols>>> const & vvm)
 {
-    Svec<Svec<Mat<To,nrows,ncols> > >   ret;
+    Svec<Svec<Mat<To,nrows,ncols>>>   ret;
     ret.reserve(vvm.size());
     for (auto const & vm : vvm)
         ret.push_back(deepCast<To,From,nrows,ncols>(vm));
@@ -552,19 +528,17 @@ template <class T,uint nrows,uint ncols>
 std::ostream &
 operator<<(std::ostream& ss,Mat<T,nrows,ncols> const & mm)
 {
-    bool        isVec = ((mm.numRows() == 1) || mm.numCols() == 1);
     std::ios::fmtflags
         oldFlag = ss.setf(
             std::ios::fixed |
             std::ios::showpos |
             std::ios::right);
     std::streamsize oldPrec = ss.precision(6);
-    if (isVec) {
+    if (mm.numRows() == 1 || mm.numCols() == 1) {   // Vector prints in single line
         ss << "[" << mm[0];
         for (uint ii=1; ii<mm.numElems(); ii++)
             ss << "," << mm[ii];
         ss << "]";
-        if (mm.numRows() > 1) ss << "^T";       // Indicate transpose of column vector
     }
     else {
         ss << fgpush;

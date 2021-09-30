@@ -8,7 +8,6 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgFileSystem.hpp"
 #include "FgException.hpp"
-#include "Fg3dNormals.hpp"
 
 using namespace std;
 

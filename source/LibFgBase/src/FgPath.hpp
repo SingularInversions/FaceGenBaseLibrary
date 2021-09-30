@@ -111,34 +111,19 @@ struct  Path
 };
 
 // Ensure last name in path is interpreted as a directory even if it doesn't end with deliminter:
-Path
-pathFromDir(String8 const & directory);
-
-String8
-pathToBase(String8 const & path);
-
-String8
-pathToDirBase(String8 const & path);
-
-String8
-pathToExt(String8 const & path);
-
-String
-pathToExt(String const & path);
-
+Path            pathFromDir(String8 const & directory);
+String8         pathToBase(String8 const & path);
+String8         pathToDirBase(String8 const & path);
+String8         pathToExt(String8 const & path);
+String          pathToExt(String const & path);
 // Returns true if 'path' specifies a name with extension 'ext':
-bool
-checkExt(String8 const & path,String const & ext);
-
-String8
-pathToName(String8 const & path);
-
+bool            checkExt(String8 const & path,String const & ext);
+// Ensure the filename extension is set to 'ext':
+String8         setExt(String8 const & path,String const & ext);
+String8         pathToName(String8 const & path);
 // Ensure the path ends with a delimiter if it ends with a (directory) name:
-String8
-asDirectory(String8 const & path);
-
-String
-asDirectory(String const & path);
+String8         asDirectory(String8 const & path);
+String          asDirectory(String const & path);
 
 }
 

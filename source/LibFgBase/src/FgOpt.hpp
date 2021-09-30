@@ -29,29 +29,13 @@ class   Opt
 
 public:
     Opt() : m_valid(false) {}
-
     Opt(T const & v) : m_valid(true), m_val(v) {}
 
-    Opt &
-    operator=(T const & v)
-    {m_val=v; m_valid=true; return *this; }
-
-    bool
-    valid() const
-    {return m_valid; }
-
-    void
-    invalidate()
-    {m_valid = false; }
-
-    T &
-    ref()
-    {FGASSERT(m_valid); return m_val; }
-
-    T const &
-    val() const
-    {FGASSERT(m_valid); return m_val; }
-
+    Opt &           operator=(T const & v) {m_val=v; m_valid=true; return *this; }
+    bool            valid() const {return m_valid; }
+    void            invalidate() {m_valid = false; }
+    T &             ref() {FGASSERT(m_valid); return m_val; }
+    T const &       val() const {FGASSERT(m_valid); return m_val; }
     template<typename U>
     Opt<U>
     cast()
@@ -60,7 +44,6 @@ public:
             return Opt<U>(U(m_val));
         return Opt<U>();
     }
-
     bool
     operator==(const Opt<T> & rhs) const
     {
@@ -68,7 +51,6 @@ public:
             return (m_val == rhs.m_val);
         return (!m_valid && !rhs.m_valid);
     }
-
     bool
     operator!=(const Opt<T> & rhs) const
     {
@@ -94,44 +76,21 @@ struct Valid
 {
     T       m_val;      // = numeric_limits<T>::max() if not valid
 
-    Valid()
-    : m_val(std::numeric_limits<T>::max())
-    {}
+    Valid() : m_val(std::numeric_limits<T>::max()) {}
+    explicit Valid(T const & v) : m_val(v) {}
 
-    explicit
-    Valid(T const & v)
-    : m_val(v)
-    {}
-
-    Valid &
-    operator=(T const & v)
-    {m_val = v; return *this; }
-
-    bool
-    valid() const
-    {return (m_val != std::numeric_limits<T>::max()); }
-
-    void
-    invalidate()
-    {m_val = std::numeric_limits<T>::max(); }
-
+    Valid &         operator=(T const & v) {m_val = v; return *this; }
+    bool            valid() const {return (m_val != std::numeric_limits<T>::max()); }
+    void            invalidate() {m_val = std::numeric_limits<T>::max(); }
     // Implicit conversion caused inexplicable errors with gcc and explicit conversion
     // is required in many cases anyway:
-    T
-    val() const
-    {FGASSERT(valid()); return m_val; }
-
+    T               val() const {FGASSERT(valid()); return m_val; }
     // The constPtr() and ptr() functions below couldn't be overloads of operator&() since
     // this doesn't play nice with standard library containers:
-    T const *
-    constPtr() const
-    {FGASSERT(valid()); return &m_val; }
-
+    T const *       constPtr() const {FGASSERT(valid()); return &m_val; }
     // You're on your own if you use this one, NO CHECKING, since it may be used to set the val,
     // so do a manual check using valid() if you need one along with non-const pointer access:
-    T *
-    ptr()
-    {return &m_val; }
+    T *             ptr() {return &m_val; }
 
     FG_SERIALIZE1(m_val)
 };

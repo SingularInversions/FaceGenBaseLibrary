@@ -33,17 +33,38 @@ inline void
 updateMin_(T & minVal,T nextVal)
 {minVal = (nextVal < minVal) ? nextVal : minVal; }
 
-// Update IUB bounds of a column vector list:
+template<typename T,uint Dim,size_t D>      // type must match declaration ...
+inline void
+updateBounds_(Mat<T,Dim,2> & boundsIub,Arr<T,D> const & arr)
+{
+    static_assert(Dim==D,"template args don't match");
+    for (uint ii=0; ii<Dim; ++ii) {
+        updateMin_(boundsIub.rc(ii,0),arr[ii]);
+        updateMax_(boundsIub.rc(ii,1),arr[ii]);
+    }
+}
 template<typename T,uint Dim>
 inline void
-updateBounds_(Mat<T,Dim,2> & bounds,Mat<T,Dim,1> const & vec)
+updateBounds_(Mat<T,Dim,2> & boundsIub,Mat<T,Dim,1> const & vec)
 {
     for (uint ii=0; ii<Dim; ++ii) {
-        updateMin_(bounds.rc(ii,0),vec[ii]);
-        updateMax_(bounds.rc(ii,1),vec[ii]);
+        updateMin_(boundsIub.rc(ii,0),vec[ii]);
+        updateMax_(boundsIub.rc(ii,1),vec[ii]);
     }
 }
 
+// Returns IUB bounds of scalar array:
+template<typename T,size_t S>
+Mat<T,1,2>
+cBounds(Arr<T,S> const & arr)
+{
+    Mat<T,1,2>          ret(arr[0]);
+    for (size_t ii=1; ii<S; ++ii) {
+        updateMin_(ret[0],arr[ii]);
+        updateMax_(ret[1],arr[ii]);
+    }
+    return ret;
+}
 // Returns IUB bounds of scalar list:
 template<typename T>
 Mat<T,1,2>
@@ -57,16 +78,15 @@ cBounds(Svec<T> const & data)
     }
     return ret;
 }
-// Returns IUB bounds of scalar array:
-template<typename T,size_t S>
-Mat<T,1,2>
-cBounds(Arr<T,S> const & arr)
+template<class T,size_t S>
+Mat<T,S,2>
+cBounds(Svec<Arr<T,S> > const & arrs) // If empty, returns [max,lowest]
 {
-    Mat<T,1,2>          ret(arr[0]);
-    for (size_t ii=1; ii<S; ++ii) {
-        updateMin_(ret[0],arr[ii]);
-        updateMax_(ret[1],arr[ii]);
-    }
+    Mat<T,S,2>          ret = catHoriz(
+        Mat<T,S,1>(std::numeric_limits<T>::max()),
+        Mat<T,S,1>(std::numeric_limits<T>::lowest()));
+    for (Arr<T,S> const & a : arrs)
+        updateBounds_(ret,a);
     return ret;
 }
 // Returns IUB bounds of vector elements over list:

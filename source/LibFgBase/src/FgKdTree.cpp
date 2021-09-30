@@ -93,7 +93,7 @@ static
 double
 testClosest(Svec<KdTree::Node> const & tree,Vec3D query)
 {
-    double          ret = doubleMax;
+    double          ret = doubleMax();
     for (KdTree::Node const & node : tree) {
         double          mag = cMag(query - Vec3D(node.vert));
         if (mag < ret)

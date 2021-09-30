@@ -10,6 +10,7 @@
 #include "FgBounds.hpp"
 #include "FgOpt.hpp"
 #include "FgStdString.hpp"
+#include "FgImageDraw.hpp"
 
 using namespace std;
 
@@ -18,10 +19,9 @@ namespace Fg {
 Vec3Fs
 selectVerts(const LabelledVerts & labVerts,Strings const & labels)
 {
-    Vec3Fs         ret;
-    ret.reserve(labels.size());
-    for (std::string str : labels)
-        ret.push_back(findFirst(labVerts,str).pos);
+    Vec3Fs          ret; ret.reserve(labels.size());
+    for (String const & lab : labels)
+        ret.push_back(findFirstByMember(labVerts,&LabelledVert::label,lab).pos);
     return ret;
 }
 
@@ -122,16 +122,16 @@ cTriEquivs(Tris const & tris,Quads const & quads)
 
 Vec3F
 cSurfPointPos(
-    SurfPoint const &         sp,
-    Tris const &              tris,
-    Quads const &             quads,
-    Vec3Fs const &             verts)
+    uint                    triEquivIdx,
+    Vec3F const &           barycentricCoord,
+    Tris const &            tris,
+    Quads const &           quads,
+    Vec3Fs const &          verts)
 {
-    Vec3UI           vertInds = cTriEquivPosInds(tris,quads,sp.triEquivIdx);
-    Vec3F            vertWeights = sp.weights;
-    return (verts[vertInds[0]] * vertWeights[0] +
-            verts[vertInds[1]] * vertWeights[1] +
-            verts[vertInds[2]] * vertWeights[2]);
+    Vec3UI           vertInds = cTriEquivPosInds(tris,quads,triEquivIdx);
+    return (verts[vertInds[0]] * barycentricCoord[0] +
+            verts[vertInds[1]] * barycentricCoord[1] +
+            verts[vertInds[2]] * barycentricCoord[2]);
 }
 
 uint
@@ -158,6 +158,14 @@ Surf::vertsUsed() const
         for(uint ii = 0; ii < 3; ++ii)
             ret.insert(tris.posInds[tt][ii]);
     return ret;
+}
+
+Vec3F
+Surf::surfPointPos(Vec3Fs const & verts,size_t surfPointIdx) const
+{
+    FGASSERT(surfPointIdx < surfPoints.size());
+    SurfPoint const &       sp = surfPoints[surfPointIdx];
+    return cSurfPointPos(sp.triEquivIdx,sp.weights,tris,quads,verts);
 }
 
 Vec3F
@@ -203,20 +211,17 @@ Surf::asTris() const
 }
 
 void
-Surf::merge(Surf const & surf)
+Surf::merge(Tris const & ts,Quads const & qs,SurfPoints const & sps)
 {
-    for (size_t pp=0; pp<surf.surfPoints.size(); ++pp) {
-        SurfPoint     sp = surf.surfPoints[pp];
-        if (sp.triEquivIdx < surf.tris.size())
+    for (SurfPoint sp : sps) {
+        if (sp.triEquivIdx < ts.size())
             sp.triEquivIdx += uint(tris.size());
         else
             sp.triEquivIdx += uint(tris.size() + 2*quads.size());
         surfPoints.push_back(sp);
     }
-    cat_(tris.posInds,surf.tris.posInds);
-    cat_(tris.uvInds,surf.tris.uvInds);
-    cat_(quads.posInds,surf.quads.posInds);
-    cat_(quads.uvInds,surf.quads.uvInds);
+    tris.merge(ts);
+    quads.merge(qs);
 }
 
 void
@@ -366,10 +371,13 @@ removeDuplicateFacets(Surf const & s)
 }
 
 Surf
-mergeSurfaces(const Surfs & surfs)
+mergeSurfaces(Surfs const & surfs)
 {
-    Surf     ret;
-    for (size_t ii=0; ii<surfs.size(); ++ii)
+    Surf                ret;
+    if (surfs.empty())
+        return ret;
+    ret = surfs[0];                 // Retain name & material of first surface
+    for (size_t ii=1; ii<surfs.size(); ++ii)
         ret.merge(surfs[ii]);
     return ret;
 }
@@ -379,7 +387,7 @@ splitByContiguous(Surf const & surf)
 {
     Surfs           ret;
     FGASSERT(!surf.empty());
-    // Construct a lookup from vert inds back to triEquivs (MeshTopology is overkill for this):
+    // Construct a lookup from vert inds back to triEquivs (SurfTopo is overkill for this):
     uint            idxBnd = surf.vertIdxMax() + 1;
     Uintss          vertIdxToTriIdx(idxBnd);
     for (uint tt=0; tt<surf.numTriEquivs(); ++tt) {
@@ -444,7 +452,7 @@ splitByContiguous(Surf const & surf)
 }
 
 Surfs
-fgEnsureNamed(const Surfs & surfs,String8 const & baseName)
+fgEnsureNamed(Surfs const & surfs,String8 const & baseName)
 {
     Surfs     ret = surfs;
     if ((ret.size() == 1) && (ret[0].name.empty()))
@@ -524,25 +532,72 @@ hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts)
 Uints
 removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts)
 {
-    Uints         remap(verts.size(),numeric_limits<uint>::max());
-    for (size_t ii=0; ii<tris.size(); ++ii)
+    Uints               remap (verts.size(),numeric_limits<uint>::max());
+    for (Vec3UI const & tri : tris)
         for (uint xx=0; xx<3; ++xx)
-            remap.at(tris[ii][xx]) = 0;
-    uint            cnt = 0;
-    for (size_t ii=0; ii<remap.size(); ++ii)
-        if (remap[ii] == 0)
-            remap[ii] = cnt++;
+            remap.at(tri[xx]) = 0;
+    uint                cnt = 0;
+    for (uint & idx : remap)
+        if (idx == 0)
+            idx = cnt++;
     return remap;
 }
 
 Vec3UIs
 reverseWinding(Vec3UIs const & tris)
 {
-    Vec3UIs             ret;
-    ret.reserve(tris.size());
+    Vec3UIs             ret; ret.reserve(tris.size());
     for (Vec3UI const & t : tris)
-        ret.push_back(Vec3UI{t[1],t[0],t[2]});
+        ret.emplace_back(t[0],t[2],t[1]);
     return ret;
+}
+
+Vec4UIs
+reverseWinding(Vec4UIs const & quads)
+{
+    Vec4UIs             ret; ret.reserve(quads.size());
+    for (Vec4UI const & q : quads)
+        ret.emplace_back(q[0],q[3],q[2],q[1]);
+    return ret;
+}
+
+SurfPoints
+reverseWinding(SurfPoints const & sps,size_t numTris)
+{
+    SurfPoints          ret; ret.reserve(sps.size());
+    for (SurfPoint const & sp : sps) {
+        Vec3F const &       w = sp.weights;
+        if (sp.triEquivIdx < numTris) {
+            Vec3F               wr {w[0],w[2],w[1]};
+            ret.emplace_back(sp.triEquivIdx,wr,sp.label);
+        }
+        else {
+            Vec3F           wr {w[2],w[1],w[0]};
+            if ((sp.triEquivIdx-numTris) & 0x01)        // On second tri of quad
+                ret.emplace_back(sp.triEquivIdx-1,wr,sp.label);
+            else                                        // On first tri of quad
+                ret.emplace_back(sp.triEquivIdx+1,wr,sp.label);
+        }
+    }
+    return ret;
+}
+
+Surf
+reverseWinding(Surf const & in)
+{
+    return              Surf {
+        in.name,
+        {
+            reverseWinding(in.tris.posInds),
+            reverseWinding(in.tris.uvInds),
+        },
+        {
+            reverseWinding(in.quads.posInds),
+            reverseWinding(in.quads.uvInds),
+        },
+        reverseWinding(in.surfPoints,in.tris.posInds.size()),
+        in.material,
+    };
 }
 
 TriSurf
@@ -552,10 +607,10 @@ reverseWinding(TriSurf const & ts)
 }
 
 TriSurf
-meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
+removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
 {
-    TriSurf       ret;
-    Uints         remap = removeUnusedVertsRemap(tris,verts);
+    TriSurf             ret;
+    Uints               remap = removeUnusedVertsRemap(tris,verts);
     for (size_t ii=0; ii<verts.size(); ++ii)
         if (remap[ii] != numeric_limits<uint>::max())
             ret.verts.push_back(verts[ii]);
@@ -564,6 +619,139 @@ meshRemoveUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
         for (uint xx=0; xx<3; ++xx)
             ret.tris[ii][xx] = remap[tris[ii][xx]];
     return ret;
+}
+
+Vec3D
+cTriNorm(Vec3UI const & tri,Vec3Ds const & verts)
+{
+    Vec3D               v0 = verts[tri[0]],
+                        v1 = verts[tri[1]],
+                        v2 = verts[tri[2]],
+                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
+    double              mag = cMag(cross);
+    return (mag == 0.0) ? Vec3D{0} : cross * (1.0 / sqrt(mag));
+}
+
+Vec3F
+cTriNorm(Vec3UI const & tri,Vec3Fs const & verts)
+{
+    Vec3F               v0 = verts[tri[0]],
+                        v1 = verts[tri[1]],
+                        v2 = verts[tri[2]],
+                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
+    float               mag = cMag(cross);
+    return (mag == 0.0f) ? Vec3F{0} : cross * (1.0f / sqrt(mag));
+}
+
+Vec3Ds
+cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
+{
+    Vec3Ds          vertNorms(verts.size(),Vec3D(0));
+    for (Vec3UI tri : tris) {
+        Vec3D       norm = cTriNorm(tri,verts);
+        vertNorms[tri[0]] += norm;
+        vertNorms[tri[1]] += norm;
+        vertNorms[tri[2]] += norm;
+    }
+    Vec3Ds          ret;
+    ret.reserve(verts.size());
+    for (Vec3D norm : vertNorms) {
+        double          len = cLen(norm);
+        if(len > 0.0)
+            ret.push_back(norm/len);
+        else
+            ret.push_back(Vec3D(0,0,1));     // Arbitrary
+    }
+    return ret;
+}
+
+// Vertex normals are just approximated by a simple average of the facet normals of all
+// facets containing the vertex:
+MeshNormals
+cNormals(Surfs const & surfs,Vec3Fs const & verts)
+{
+    MeshNormals         norms;
+    norms.facet.resize(surfs.size());
+    Vec3Fs              vertNorms(verts.size(),Vec3F{0});
+    // Calculate facet normals and accumulate unnormalized vertex normals:
+    for (size_t ss=0; ss<surfs.size(); ss++) {
+        Surf const &        surf = surfs[ss];
+        FacetNormals &      fnorms = norms.facet[ss];
+        fnorms.tri.reserve(surf.numTris());
+        fnorms.quad.reserve(surf.numQuads());
+        // TRIs
+        for (Vec3UI tri : surf.tris.posInds) {
+            Vec3F       norm = cTriNorm(tri,verts);
+            vertNorms[tri[0]] += norm;
+            vertNorms[tri[1]] += norm;
+            vertNorms[tri[2]] += norm;
+            Vec3F       normf(norm);
+            fnorms.tri.push_back(normf);
+        }
+        // QUADs
+        // This least squares surface normal is taken from [Mantyla 87]:
+        for (Vec4UI quad : surf.quads.posInds) {
+            Vec3F       v0(verts[quad[0]]),
+                        v1(verts[quad[1]]),
+                        v2(verts[quad[2]]),
+                        v3(verts[quad[3]]);
+            Vec3F       cross,norm;
+            cross[0] =  (v0[1]-v1[1]) * (v0[2]+v1[2]) +
+                        (v1[1]-v2[1]) * (v1[2]+v2[2]) +
+                        (v2[1]-v3[1]) * (v2[2]+v3[2]) +
+                        (v3[1]-v0[1]) * (v3[2]+v0[2]);
+            cross[1] =  (v0[2]-v1[2]) * (v0[0]+v1[0]) +
+                        (v1[2]-v2[2]) * (v1[0]+v2[0]) +
+                        (v2[2]-v3[2]) * (v2[0]+v3[0]) +
+                        (v3[2]-v0[2]) * (v3[0]+v0[0]);
+            cross[2] =  (v0[0]-v1[0]) * (v0[1]+v1[1]) +
+                        (v1[0]-v2[0]) * (v1[1]+v2[1]) +
+                        (v2[0]-v3[0]) * (v2[1]+v3[1]) +
+                        (v3[0]-v0[0]) * (v3[1]+v0[1]);
+            double      crossMag = cross.len();
+            if (crossMag == 0.0)
+                norm = Vec3F(0);
+            else
+                norm = cross * (1.0 / crossMag);
+            vertNorms[quad[0]] += norm;
+            vertNorms[quad[1]] += norm;
+            vertNorms[quad[2]] += norm;
+            vertNorms[quad[3]] += norm;
+            Vec3F       normf(norm);
+            fnorms.quad.push_back(normf);
+        }
+    }
+    // Normalize vertex normals:
+    norms.vert.reserve(verts.size());
+    for (Vec3F const & norm : vertNorms) {
+        float           len = cLen(norm);
+        if(len > 0.0f)
+            norms.vert.push_back(Vec3F(norm/len));
+        else
+            norms.vert.push_back(Vec3F(0,0,1));     // Arbitrary
+    }
+    return norms;
+}
+
+ImgRgba8
+cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,RgbaUC color)
+{
+    uint constexpr      dim {2048};
+    // Domain is (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
+    Mat22F              domain {0,1,1,0},
+                        range (0,dim,0,dim);
+    AffineEw2F          xf {domain,range};
+    Vec2Is              uvsIrcs; uvsIrcs.reserve(uvs.size());
+    for (Vec2F const & uv : uvs)
+        uvsIrcs.push_back(Vec2I{mapFloor(xf*uv)});      // floor(IPCS) == IRCS
+    ImgRgba8            img {dim,dim,RgbaUC{0,0,0,0}};
+    for (Vec3UI tri : tris)
+        for (uint vv=0; vv<3; ++vv)
+            drawLineIrcs(img,uvsIrcs[tri[vv]],uvsIrcs[tri[(vv+1)%3]],color);
+    for (Vec4UI quad : quads)
+        for (size_t vv=0; vv<4; ++vv)
+            drawLineIrcs(img,uvsIrcs[quad[vv]],uvsIrcs[quad[(vv+1)%4]],color);
+    return shrink2(img);
 }
 
 }

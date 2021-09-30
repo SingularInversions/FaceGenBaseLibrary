@@ -10,6 +10,7 @@
 #include "FgGuiApiRadio.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
@@ -20,13 +21,13 @@ static Vec2UI    s_pad(40,12);
 struct  GuiRadioWin : public GuiBaseImpl
 {
     GuiRadio            m_api;
-    DfgFPtr             updateFlag;
+    uint                currVal;
     HWND                hwndThis;
     vector<HWND>        m_hwnds;
-    vector<Vec2UI>   m_sizes;
+    vector<Vec2UI>      m_sizes;
 
     GuiRadioWin(const GuiRadio & api)
-    : m_api(api), updateFlag(makeUpdateFlag(m_api.selection))
+        : m_api{api}, currVal{m_api.getFn()}
     {}
 
     virtual void
@@ -50,13 +51,11 @@ struct  GuiRadioWin : public GuiBaseImpl
     getMinSize() const
     {
         Vec2UI   sz;
-        uint        dimAcc = (m_api.horiz ? 0 : 1),
-                    dimMax = 1 - dimAcc;
         for (size_t ii=0; ii<m_sizes.size(); ++ii) {
-            updateMax_(sz[dimMax],m_sizes[ii][dimMax]);
-            sz[dimAcc] += m_sizes[ii][dimAcc] + s_pad[dimAcc];
+            updateMax_(sz[0],m_sizes[ii][0]);
+            sz[1] += m_sizes[ii][1] + s_pad[1];
         }
-        sz[dimMax] += s_pad[dimMax];
+        sz[0] += s_pad[0];
         return sz;
     }
 
@@ -67,7 +66,7 @@ struct  GuiRadioWin : public GuiBaseImpl
     virtual void
     updateIfChanged()
     {
-        if (updateFlag->checkUpdate())
+        if (currVal != m_api.getFn())
             updateRadio();
     }
 
@@ -126,27 +125,25 @@ struct  GuiRadioWin : public GuiBaseImpl
                         return 0;
                     Vec2UI       szTot = getMinSize(),
                                     pos,sz;
-                    uint            dimAcc = (m_api.horiz ? 0 : 1),
-                                    dimMax = 1 - dimAcc;
-                    sz[dimMax] = szTot[dimMax];
+                    sz[0] = szTot[0];
                     for (uint ii=0; ii<m_hwnds.size(); ++ii) {
-                        sz[dimAcc] = m_sizes[ii][dimAcc] + s_pad[dimAcc];
+                        sz[1] = m_sizes[ii][1] + s_pad[1];
                         MoveWindow(m_hwnds[ii],pos[0],pos[1],sz[0],sz[1],TRUE);
-                        pos[dimAcc] += sz[dimAcc];
+                        pos[1] += sz[1];
                     }
                     return 0;
                 }
             case WM_COMMAND:
                 {
-                    WORD    ident = LOWORD(wParam);
-                    WORD    code = HIWORD(wParam);
+                    WORD            ident = LOWORD(wParam);
+                    WORD            code = HIWORD(wParam);
                     if (code == 0) {    // radio box clicked
 //fgout << fgnl << "GuiRadioWin::WM_COMMAND clicked " << m_api.labels[0];
-                        size_t      sel = ident;
+                        uint            sel = ident;
                         if (sel >= m_api.labels.size())
                             sel = 0;
 //fgout << " val: " << sel << " m_api.selection " << m_api.selection;
-                        m_api.selection.set(sel);
+                        m_api.setFn(sel);
 //fgout << fgnl << "Update screen: " << flush << fgpush;
                         winUpdateScreen();
 //fgout << fgpop << fgnl << "Updated " << flush;
@@ -160,11 +157,9 @@ struct  GuiRadioWin : public GuiBaseImpl
     void
     updateRadio()
     {
-        size_t              val = m_api.selection.val();
-        if (val >= m_api.labels.size())
-            val = 0;
+        currVal = m_api.getFn();
         for (size_t ii=0; ii<m_hwnds.size(); ++ii) {
-            if (ii == val)
+            if (ii == currVal)
                 SendMessage(m_hwnds[ii],BM_SETCHECK,BST_CHECKED,0);
             else
                 SendMessage(m_hwnds[ii],BM_SETCHECK,BST_UNCHECKED,0);

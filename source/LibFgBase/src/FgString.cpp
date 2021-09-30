@@ -16,76 +16,9 @@ using namespace std;
 
 namespace Fg {
 
-String32
-toUtf32(string const & str)
-{
-    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
-#ifdef _MSC_VER
-    if (str.empty())
-        return String32();
-    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
-    auto            asInt = convert.from_bytes(str);
-    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
-#else
-    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
-    return convert.from_bytes(str);
-#endif
-}
-
-String32
-toUtf32(char const * str)
-{
-    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
-#ifdef _MSC_VER
-    if (str[0] == 0)
-        return String32{};
-    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
-    auto            asInt = convert.from_bytes(str);
-    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
-#else
-    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
-    return convert.from_bytes(str);
-#endif
-}
-
-string
-toUtf8(String32 const & in)
-{
-    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
-#ifdef _MSC_VER
-    if (in.empty())
-        return string();
-    wstring_convert<codecvt_utf8<int32_t>,int32_t>    convert;
-    auto            ptr = reinterpret_cast<const int32_t *>(in.data());
-    return convert.to_bytes(ptr,ptr+in.size());
-#else
-    wstring_convert<codecvt_utf8<char32_t>,char32_t>    convert;
-    return convert.to_bytes(in);
-#endif
-}
-
-string
-toUtf8(const char32_t & utf32_char)
-{return toUtf8(String32(1,utf32_char)); }
-
 // Following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
 #ifdef _WIN32
-
-std::wstring
-toUtf16(const std::string & utf8)
-{
-    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
-    return converter.from_bytes(utf8);
-}
-
-std::string
-toUtf8(const std::wstring & utf16)
-{
-    // codecvt_utf8_utf16 inherits from codecvt
-    wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
-    return converter.to_bytes(utf16);
-}
 
 String8::String8(const wchar_t * s) : m_str(toUtf8(wstring(s)))
 {}
@@ -282,11 +215,11 @@ isGlobMatch(String8 const & globStr,String8 const & str)
 }
 
 String8
-cSubstr(String8 const & str,size_t start,size_t size)
+cSubstr8(String8 const & str,size_t start,size_t size)
 {
     String8        ret;
     String32       s = str.as_utf32();
-    s = cutSubstr(s,start,size);
+    s = cSubstr(s,start,size);
     ret = String8(s);
     return ret;
 }
@@ -345,6 +278,18 @@ replaceCharWithString(String8 const & in,char32_t from,String8 const to)
             out += ch;
     }
     return String8(out);
+}
+
+void
+printList(String const & title,Strings const & items,bool numbered)
+{
+    PushIndent      pi {title};
+    for (size_t ii=0; ii<items.size(); ++ii) {
+        fgout << fgnl;
+        if (numbered)
+            fgout << toStrDigits(ii,2);
+        fgout << " " << items[ii];
+    }
 }
 
 }

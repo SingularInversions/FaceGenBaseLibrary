@@ -10,13 +10,17 @@
 #include "FgMath.hpp"
 #include "FgBounds.hpp"
 #include "FgImgDisplay.hpp"
+#include "FgMain.hpp"
+#include "FgSyntax.hpp"
+#include "FgCommand.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 
 namespace Fg {
 
 void
-drawDotIrcs(ImgC4UC & img,Vec2I pos,uint radius,RgbaUC color)
+drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,RgbaUC color)
 {
     FGASSERT(!img.empty());
     int         rad = scast<int>(radius),
@@ -33,10 +37,10 @@ drawDotIrcs(ImgC4UC & img,Vec2I pos,uint radius,RgbaUC color)
     }
 }
 void
-drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color)
+drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,RgbaUC color)
 {
-    Vec2F               ircs = cIucsToIrcsXf(img.dims(),Vec2F(posIucs));
-    drawDotIrcs(img,round<int,float,2,1>(ircs),radius,color);
+    Vec2F               ircs = cIucsToIrcs(img.dims(),Vec2F(posIucs));
+    drawDotIrcs(img,mapRound<int,float,2,1>(ircs),radius,color);
 }
 
 // Simple (aliased) Bresenham line draw, single-pixel thickness. Efficiency could be greatly
@@ -44,7 +48,7 @@ drawDotIucs(ImgC4UC & img,Vec2D posIucs,uint radius,RgbaUC color)
 // and then calling 'xy' instead of 'paint':
 void
 drawLineIrcs(
-    ImgC4UC &       img,
+    ImgRgba8 &       img,
     Vec2I            beg,
     Vec2I            end,
     RgbaUC            val)
@@ -74,42 +78,58 @@ drawLineIrcs(
 }
 
 void
-fgPaintRectangle(
-    ImgC4UC &       img,
-    RgbaUC            clr,
-    size_t xIrcs,   size_t yIrcs,
-    size_t wid,     size_t hgt)
+drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,RgbaUC clr)
 {
-    for (size_t yy=yIrcs; yy<yIrcs+hgt; ++yy)
-        for (size_t xx=xIrcs; xx<xIrcs+wid; ++xx)
-            img.xy(xx,yy) = clr;
+    Vec2UI              dims = img.dims();
+    for (uint dd=0; dd<2; ++dd) {
+        if (pos[dd] >= dims[dd])
+            return;
+        sz[dd] = cMin(sz[dd],dims[dd]-pos[dd]);
+    }
+    for (Iter2UI it{sz}; it.valid(); it.next())
+        img[pos+it()] = clr;
 }
 
-double
-fgDrawBarGraph(
-    ImgC4UC &           img,
-    const vector<double> &  data,
-    RgbaUC                colour)
+ImgRgba8
+cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpacing)
 {
-    FGASSERT(data.size() > 1);
-    size_t          numBins = data.size();
-    if (img.width() != numBins) {                                   // Start clean if wrong size
-        img.resize(uint(numBins),uint(numBins));
-        mapAsgn_(img.m_data,RgbaUC(0,0,0,255));
+    FGASSERT(!datas.empty());
+    size_t              D = datas.size(),                   // data per sample (not all may be valid)
+                        S = cMax(cSizes(datas)),            // samples
+                        P = D*S*pixPerBar + S*pixSpacing,   // pixel size of image
+                        xx {0};                             // image x coord counter (pixels)
+    ImgRgba8             img {P,P,RgbaUC{0,0,0,255}};
+    double              maxVal = cMax(flatten(datas));
+    for (size_t ss=0; ss<S; ++ss) {
+        size_t              cIdx {0};
+        for (Doubles const & data : datas) {
+            if (ss < data.size()) {
+                RgbaUC              clr {0,0,0,255};
+                clr[cIdx] = 255;
+                double              v = data[ss];
+                uint                hgt = round<uint>((P-1) * v / maxVal);
+                Vec2UI              posIrcs {uint(xx),img.height()-hgt-1},
+                                    sz {pixPerBar,hgt};
+                drawSolidRectangle_(img,posIrcs,sz,clr);
+            }
+            xx += pixPerBar;
+            cIdx = (cIdx+1)%3;
+        }
+        xx += pixSpacing;
     }
-    double          maxVal = cMax(data),
-                    vscale = 0.9 * double(img.height()) / maxVal;
-    for (uint xx=0; xx<img.width(); xx++) {
-        uint    hgt = round<uint>(data[xx] * vscale);
-        for (uint yy=0; yy<hgt; yy++)
-            img.xy(xx,img.height()-1-yy) = colour;
-    }
-    return vscale;
+    return img;
+}
+
+ImgRgba8
+cBarGraph(Sizes const & data)
+{
+    Doubles         dt = mapCast<double>(data);
+    return cBarGraph({dt},1);
 }
 
 void
-fgDrawFunction(
-    ImgC4UC &       img,            // OUTPUT
+drawFunction(
+    ImgRgba8 &       img,            // OUTPUT
     std::function<double(double)> func,
     VecD2            bounds,         // abscissa value at image x bounds
     double              vscale,         // y pixels per unit
@@ -132,7 +152,7 @@ fgDrawFunction(
 }
 
 void
-fgDrawFunctions(
+drawFunctions(
     MatD const &   funcs)      // Columns are function values
 {
     uint            dim = funcs.numRows(),
@@ -170,7 +190,7 @@ fgDrawFunctions(
         fbounds[jj] = cBounds(funcs.colVec(jj).m_data);
         fscale[jj] = double(dim) * 0.96 / (fbounds[jj][1] - fbounds[jj][0]);
     }
-    ImgC4UC             img(dim,dim,RgbaUC(0,0,0,255));
+    ImgRgba8             img(dim,dim,RgbaUC(0,0,0,255));
     uint                margin = round<uint>(double(dim)*0.02)+1;
     for (uint ii=0; ii<dim; ++ii) {
         for (uint jj=0; jj<num; ++jj) {
@@ -179,6 +199,53 @@ fgDrawFunctions(
         }
     }
     viewImage(img);
+}
+
+void
+cmdGraph(CLArgs const & args)
+{
+    Syntax                  syn{args,"[-b <num>] [-g <num>] (<data>.txt)+ [<image>.jpg]\n"
+        "   Creates bar graph of given data sequence(s), display, and optionally save.\n"
+        "   -b      Pixel thickness of bars (default 6)\n"
+        "   -g      Pixel thickness of gap between bars (default 6)\n"
+    };
+    Doubless                datas;
+    uint                    barThick = 8,
+                            gapThick = 8;
+    while(true) {
+        if (!syn.more())
+            break;
+        if (syn.peekNext()[0] == '-') {
+            if (syn.next() == "-b")
+                barThick = syn.nextAs<uint>();
+            else if (syn.curr() == "-g")
+                gapThick = syn.nextAs<uint>();
+            else
+                syn.error("Unrecognized option",syn.curr());
+            continue;
+        }
+        if (pathToExt(syn.peekNext()) != "txt")
+            break;
+        Strings             lines = splitLines(loadRaw(syn.next()));
+        Doubles             data;
+        for (string const & line : lines) {
+            Opt<double>         opt = fromStr<double>(line);
+            FGASSERT1(opt.valid(),"Invalid line in text file "+syn.curr()+" : "+line);
+            data.push_back(opt.val());
+        }
+        if (data.empty())
+            syn.error("Data file is empty",syn.curr());
+        datas.push_back(data);
+    };
+    if (datas.empty())
+        syn.error("No data files given");
+    viewImage(cBarGraph(datas,barThick,gapThick));
+}
+
+Cmd
+getCmdGraph()
+{
+    return Cmd{cmdGraph,"graph","Create simple bar graphs from text data"};
 }
 
 }

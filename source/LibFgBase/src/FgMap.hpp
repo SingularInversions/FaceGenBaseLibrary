@@ -3,11 +3,13 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// An associative container for small collections based on std::vector and without the implicit insertion
-// semantics of std::map. The collections are assumed small enough that no sorting is done and lookup is O(n).
-// Key type must support operator==
-//
-// * Looked at loki::AssocVector but didn't like the implicit insertion and OOPy, template-complex design.
+// An associative container alternative to std::Map for small collections:
+//  * based on std::vector
+//  * higher-level interface than iterators
+//  * without the implicit insertion semantics of std::map
+//  * the collections are assumed small enough that no sorting is done and lookup is O(n).
+//  * key type must support operator==
+//  * Looked at loki::AssocVector but didn't like the implicit insertion and OOPy, template-complex design.
 //
 
 #ifndef FGMAP_HPP
@@ -20,7 +22,7 @@
 namespace Fg {
 
 template<typename K,typename V>
-struct  FgMap
+struct  Map
 {
     Svec<std::pair<K,V> >    map;
 
@@ -54,7 +56,7 @@ struct  FgMap
 
 template<typename K,typename V>
 bool
-contains(const FgMap<K,V> & map,const K & key)
+contains(const Map<K,V> & map,const K & key)
 {
     for (const std::pair<K,V> & p : map.map)
         if (p.first == key)

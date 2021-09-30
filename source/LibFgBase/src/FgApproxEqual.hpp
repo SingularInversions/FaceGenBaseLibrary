@@ -15,8 +15,8 @@
 
 namespace Fg {
 
-// Return a value with given bits of precision relative to epsilon:
-inline double epsPrec(size_t bits) {return 1.0 / double(1ULL << bits); }
+// Return the epsilon (relative to one) for the given number of bits of precision:
+inline double epsBits(size_t bits) {return 1.0 / double(1ULL << bits); }
 
 // Are two numbers approximately equal relative to an absolute scale ?
 inline bool isApproxEqual(double v0,double v1,double maxDiff) {return (std::abs(v1-v0) <= maxDiff); }
@@ -144,7 +144,7 @@ isApproxEqualPrec(
     T           scale = (cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs))) * T(0.5);
     if (scale == 0)
         return true;
-    T           maxDiff = scale * epsPrec(precisionBits);
+    T           maxDiff = scale * epsBits(precisionBits);
     return isApproxEqual(lhs,rhs,maxDiff);
 }
 
@@ -157,7 +157,7 @@ isApproxEqualPrec(
 {
     FGASSERT(lhs.size() == rhs.size());
     T           scale = cMaxElem((mapAbs(cDims(lhs)) + mapAbs(cDims(rhs))) * T(0.5)),
-                precision = epsPrec(precisionBits),
+                precision = epsBits(precisionBits),
                 maxDiff = scale * precision;
     for (size_t ii=0; ii<lhs.size(); ++ii)
         if (!isApproxEqual(lhs[ii],rhs[ii],maxDiff))

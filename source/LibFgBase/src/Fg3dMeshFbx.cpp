@@ -3,7 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Basic FBX export
+// Basic FBX ASCII export
 //
 // FBX CONVERTER 2013.3 Win64
 //  * Use this to convert between FBX ASCII and binary
@@ -16,9 +16,8 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 

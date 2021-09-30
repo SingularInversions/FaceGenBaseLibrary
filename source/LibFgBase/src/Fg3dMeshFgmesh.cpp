@@ -140,10 +140,13 @@ fgWritep(std::ostream & os,Mesh const & mesh)
 Mesh
 loadFgmesh(String8 const & fname)
 {
-    Mesh        ret;
-    Ifstream      ifs(fname);
-    if (fgReadpT<string>(ifs) != "FgMesh01")
-        fgThrow("Not a valid FGMESH file",fname);
+    Mesh                ret;
+    Ifstream            ifs {fname};
+    String              head = fgReadpT<string>(ifs);
+    if (cHead(head,6) != "FgMesh")
+        fgThrow("Not a valid .FgMesh file",fname);
+    if (cSubstr(head,6,2) != "01")
+        fgThrow("This is a newer version of .FgMesh file, please update this software",fname);
     fgReadp(ifs,ret);
     return ret;
 }

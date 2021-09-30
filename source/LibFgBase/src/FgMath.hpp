@@ -13,19 +13,16 @@
 namespace Fg {
 
 template <typename T>
-inline T
-sqr(T a)
-{return (a*a); }
+inline T sqr(T a) {return (a*a); }
+
+template <typename T>
+inline T cube(T a) {return (a*a*a); }
 
 // Euclidean length (L2 norm):
 template<typename T,size_t S>
-double
-cLen(std::array<T,S> const a)
-{return std::sqrt(cMag(a)); }
-
+double cLen(std::array<T,S> const a) {return std::sqrt(cMag(a)); }
 // Dot product function base case:
-inline double
-cDot(double a,double b) {return a*b; }
+inline double cDot(double a,double b) {return a*b; }
 
 template<class T>
 double
@@ -47,46 +44,16 @@ cCos(Svec<T> const & v0,Svec<T> const & v1)
     return cDot(v0,v1) / sqrt(mag);
 }
 
-template<typename T,
-    FG_ENABLE_IF(T,is_unsigned),
-    FG_ENABLE_IF(T,is_integral)
->
-bool
-isPow2(T val)
-{return ((val != 0) && ((val & (val-1)) == 0)); }
+template<typename T,FG_ENABLE_IF(T,is_integral)>
+bool            isPow2(T val) {return ((val > 0) && ((val & (val-1)) == 0)); }
 
-uint
-numLeadingZeros(uint32 xx);                   // 0 returns 32.
-
-uint8
-numNonzeroBits8(uint8 xx);
-uint16
-numNonzeroBits16(uint16 xx);
-uint
-numNonzeroBits32(uint32 xx);
-
-inline
-uint
-log2Floor(uint32 xx)                          // Not valid for 0.
-{return (31-numLeadingZeros(xx)); }
-
-uint
-log2Ceil(uint32 xx);                          // Not valid for 0.
-
-inline
-uint
-pos2Floor(uint32 xx)                        // Not valid for 0.
-{return (1 << log2Floor(xx)); }
-
-inline
-uint
-pow2Ceil(uint32 xx)
-{return (1 << log2Ceil(xx)); }                // Not valid for 0.
-
-template <typename T>
-inline T
-cube(T a)
-{return (a*a*a); }
+uint            numLeadingZeros(uint32 xx);         // 0 returns 32.
+uint8           numNonzeroBits8(uint8 xx);
+uint16          numNonzeroBits16(uint16 xx);
+uint            numNonzeroBits32(uint32 xx);
+inline uint     log2Floor(uint32 xx) {return (31-numLeadingZeros(xx)); }    // Not valid for 0.
+uint            log2Ceil(uint32 xx);                                        // "
+inline uint     pow2Ceil(uint32 xx){return (1 << log2Ceil(xx)); }           // "
 
 // Safe version of 'exp' that throws when values fall outside type bounds:
 template<typename T>
@@ -111,9 +78,7 @@ double          expFast(double x);
 // Not compatible with FP positive/negative for 0/Inf/Nan.
 // Use the slower std::sgnbit and std::copysign for that.
 template<typename T>
-int
-cmpTernary(T val)
-{return (T(0) < val) - (val < T(0)); }
+int cmpTernary(T val) {return (T(0) < val) - (val < T(0)); }
 
 // std::fmod gives a remainder not a modulus (ie it can be negative):
 template<typename T>
@@ -161,26 +126,10 @@ struct   Modulo
 
 typedef Svec<Modulo> Modulos;
 
+inline double cSsd(uchar l,uchar r) {return sqr(double(l)-double(r)); }
+inline double cSsd(float l,float r) {return sqr(l-r); }
 inline double cSsd(double l,double r) {return sqr(l-r); }
-template<class T>
-double
-cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
-{
-    FGASSERT(v0.size() == v1.size());
-    double          acc = 0.0;
-    for (size_t ii=0; ii<v0.size(); ++ii)
-        acc += cSsd(v1[ii],v0[ii]);
-    return acc;
-}
-template<class T>
-double
-cSsd(Svec<T> const & vec,T const & val)          // Sum of square differences with a constant val
-{
-    double          acc = 0.0;
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        acc += cSsd(vec[ii],val);
-    return acc;
-}
+
 template<class T,size_t S>
 double
 cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
@@ -189,6 +138,16 @@ cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
     double          acc = 0.0;
     for (size_t ii=0; ii<l.size(); ++ii)
         acc += cSsd(l[ii],r[ii]);
+    return acc;
+}
+template<class T>
+double
+cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
+{
+    FGASSERT(v0.size() == v1.size());
+    double          acc = 0.0;
+    for (size_t ii=0; ii<v0.size(); ++ii)
+        acc += cSsd(v0[ii],v1[ii]);
     return acc;
 }
 
@@ -246,10 +205,11 @@ Arr<T,S> mapAbs(const Arr<T,S> & a)
 inline uint64 cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
 inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
-// Avoid extra typing:
+// Shorthand for limit values:
+inline uint constexpr   uintMax() {return std::numeric_limits<uint>::max(); };
 inline double constexpr epsilonD() {return std::numeric_limits<double>::epsilon(); }
-inline float constexpr maxDouble() {return std::numeric_limits<double>::max(); }
-inline float constexpr maxFloat() {return std::numeric_limits<float>::max(); }
+inline float constexpr  doubleMax() {return std::numeric_limits<double>::max(); }
+inline float constexpr  floatMax() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
 Doubles
@@ -314,7 +274,7 @@ solveCubicReal(double c0,double c1,double c2);
 
 // Z-order curve aka Lebesgue curve aka Morton number
 // interleave bits of v0,v1,v2 respectively right to left. Values must all be < 2^10.
-size_t  zorder(size_t v0,size_t v1,size_t v2);
+size_t      zorder(size_t v0,size_t v1,size_t v2);
 
 }
 

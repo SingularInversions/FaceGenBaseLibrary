@@ -14,14 +14,6 @@ using namespace std;
 
 namespace Fg {
 
-TriInd::TriInd(size_t triIdx_,size_t surfIdx_,size_t meshIdx_)
-    : triIdx(uint32(triIdx_)), surfIdx(uint16(surfIdx_)), meshIdx(uint16(meshIdx_))
-{
-    FGASSERT(triIdx < numeric_limits<uint32>::max());
-    FGASSERT(surfIdx < numeric_limits<uint16>::max());
-    FGASSERT(meshIdx < numeric_limits<uint16>::max());
-}
-
 RayCaster::RayCaster(
     Meshes const &      meshes,
     SimilarityD         modelview,
@@ -32,6 +24,9 @@ RayCaster::RayCaster(
     bool                allShiny_)
     :
     itcsToIucs(itcsToIucs_),
+    // TODO: set up grid only after seeing how many verts fall in frustum, possibly use smaller grid size,
+    // and what their bounding box is for setting client to grid transform:
+    grid {Mat22F{0,1,0,1},cNumTriEquivs(meshes)},
     lighting(lighting_),
     background(background_),
     useMaps(useMaps_),
@@ -43,9 +38,6 @@ RayCaster::RayCaster(
     uvsPtrs.resize(meshes.size());
     normss.resize(meshes.size());
     iucsVertss.resize(meshes.size());
-    // TODO: set up grid only after seeing how many verts fall in frustum, possibly use smaller grid size,
-    // and what their bounding box is for setting client to grid transform:
-    grid.setup(Mat22F(0,1,0,1),uint(fgNumTriEquivs(meshes)));
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &    mesh = meshes[mm];
         Triss &           triss = trisss[mm];
@@ -104,7 +96,7 @@ RayCaster::cast(Vec2F posIucs) const
                             norm = normalize(bc[0]*n0 + bc[1]*n1 + bc[2]*n2);
         RgbaF               albedo(230,230,230,255);
         Vec2Fs const &      uvs = *uvsPtrs[isct.triInd.meshIdx];
-        Vec2F               uv {maxFloat()};
+        Vec2F               uv {floatMax()};
         if ((!tris.uvInds.empty()) && (!uvs.empty()) && (material.albedoMap) &&
             (!material.albedoMap->empty()) && useMaps) {
             Vec3UI              uvInds = tris.uvInds[isct.triInd.triIdx];
@@ -121,7 +113,7 @@ RayCaster::cast(Vec2F posIucs) const
             if (fac > 0.0f) {
                 acc += mapMul(surfColour,lgt.colour) * fac;
                 float           shininess = material.shiny ? 1.0f : 0.0f;
-                if ((uv[0] != maxFloat()) && material.specularMap && !material.specularMap->empty()) {
+                if ((uv[0] != floatMax()) && material.specularMap && !material.specularMap->empty()) {
                     RgbaF           s = sampleClipIucs(*material.specularMap,uv);
                     shininess = scast<float>(s.red()) / 255.0f;
                 }
@@ -157,7 +149,7 @@ RayCaster::oecsToIucs(Vec3F posOecs) const
 BestN<float,RayCaster::Intersect,4>
 RayCaster::closestIntersects(Vec2F posIucs) const
 {
-    const TriInds &     triInds = grid[posIucs];
+    TriInds const &     triInds = grid[posIucs];
     BestN<float,Intersect,4> best;
     for (TriInd ti : triInds) {
         Tris const &        tris = trisss[ti.meshIdx][ti.surfIdx];
@@ -170,7 +162,7 @@ RayCaster::closestIntersects(Vec2F posIucs) const
                             u1(v1[0],v1[1]),
                             u2(v2[0],v2[1]);
         // TODO: make a float version of fgBarycentriCoords:
-        Opt<Vec3D>          bco = barycentricCoord(Vec2D(posIucs),u0,u1,u2);
+        Opt<Vec3D>          bco = cBarycentricCoord(Vec2D(posIucs),u0,u1,u2);
         if (bco.valid()) {       // TODO: filter out degenerate projected tris during cache setup
             Vec3D               bc = bco.val();
             // TODO: Use a consistent intersection policy to ensure only 1 tri of an edge-connected pair

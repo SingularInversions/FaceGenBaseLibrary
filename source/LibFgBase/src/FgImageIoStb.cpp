@@ -27,7 +27,7 @@ struct  StbiFree
 };
 
 void
-loadImage_(String8 const & fname,ImgC4UC & img)
+loadImage_(String8 const & fname,ImgRgba8 & img)
 {
     int                 width,height,channels;
     uchar *             data = nullptr;
@@ -42,13 +42,13 @@ loadImage_(String8 const & fname,ImgC4UC & img)
     StbiFree            sf(data);           // Can't use ScopeGuard since 'stbi_image_free' is extern C
     if (width*height <= 0)
         fgThrow("Invalid image dimensions",Vec2I(width,height));
-    img = ImgC4UC{Vec2UI(width,height),reinterpret_cast<RgbaUC*>(data)};
+    img = ImgRgba8{Vec2UI(width,height),reinterpret_cast<RgbaUC*>(data)};
 }
 
-ImgC4UC
+ImgRgba8
 loadImage(String8 const & fname)
 {
-    ImgC4UC         ret;
+    ImgRgba8         ret;
     loadImage_(fname,ret);
     return ret;
 }
@@ -62,7 +62,7 @@ writeToFile(void *context,void * data,int size)
 }
 
 void
-saveImage(String8 const & fname,ImgC4UC const & img)
+saveImage(String8 const & fname,ImgRgba8 const & img)
 {
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);
@@ -70,7 +70,7 @@ saveImage(String8 const & fname,ImgC4UC const & img)
     String8             ext = toLower(path.ext);
     if (ext.empty())
         fgThrow("No image file extension specified",fname);
-    if (!contains(imgFileExtensions(),ext.m_str))
+    if (!contains(getImageFileExts(),ext.m_str))
         fgThrow("File extension is not a supported image output format",fname);
     uint                wid = img.width(),
                         hgt = img.height();
@@ -94,7 +94,7 @@ saveImage(String8 const & fname,ImgC4UC const & img)
 }
 
 void
-saveJfif(ImgC4UC const & img,String8 const & fname,uint quality)
+saveJfif(ImgRgba8 const & img,String8 const & fname,uint quality)
 {
     if (fname.empty())
         fgThrow("Cannot save image to empty filename");

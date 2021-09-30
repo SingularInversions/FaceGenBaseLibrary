@@ -10,9 +10,7 @@
 
 #include "stdafx.h"
 
-#include "FgStdStream.hpp"
-#include "FgStdMap.hpp"
-#include "FgCons.hpp"
+#include "FgBuild.hpp"
 #include "FgOut.hpp"
 #include "FgException.hpp"
 #include "FgFileSystem.hpp"
@@ -29,7 +27,7 @@ namespace {
 string
 getVsPreprocessorDefs(
     bool                release,
-    const ConsProj &  proj,
+    ConsProj const &  proj,
     Strings const &      defs)
 {
     string  ret = "WIN32";
@@ -55,7 +53,7 @@ getVsPreprocessorDefs(
 bool
 writeVcxproj(
     ConsSolution const &      sln,            // Transitive lookups
-    const ConsProj &          proj,
+    ConsProj const &          proj,
     const map<string,string> &  nameToGuid,     // Must contain all project names
     uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017, 19 = VS2019
 {
@@ -289,7 +287,7 @@ writeVcxproj(
         ofs << "  </ItemGroup>\n";
     }
     ofs << "  <ItemGroup>\n";
-    for (const FgConsSrcDir & grp : proj.srcGroups) {
+    for (const ConsSrcDir & grp : proj.srcGroups) {
         for (size_t ff=0; ff<grp.files.size(); ++ff) {
             string path = replaceAll(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
             if (endsWith(grp.files[ff],".cpp") || endsWith(grp.files[ff],".c"))
@@ -402,7 +400,7 @@ writeSln(
             "MinimumVisualStudioVersion = 10.0.40219.1\n";
     else
         ofs << "20" << verStr << "\n";
-    for (const ConsProj & proj : sln.projects) {
+    for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             ofs <<
                 "Project(\"" + slnGuid + "\") = \""
@@ -454,6 +452,19 @@ writeSln(
                 "	EndProjectSection\n"
                 "EndProject\n";
         }
+        if (pathExists("../data/base/shaders")) {
+            string                  shaderPath = "..\\data\\base\\shaders\\";
+            ofs <<
+                // These GUIDs are specific to generic folders with text files in them:
+                "Project(\"" + uuidFolder + "\") = \"shaders\", \"shaders\", \"{6A42D238-C546-44D6-B1DB-25366960F044}\"\n"
+                "	ProjectSection(SolutionItems) = preProject\n";
+            for (String8 const & fname : getDirContents(shaderPath).filenames)
+                if (pathToExt(fname) == "hlsl")
+                    ofs << "		" + shaderPath+fname + " = " + shaderPath+fname + "\n";
+            ofs <<
+                "	EndProjectSection\n"
+                "EndProject\n";
+        }
     }
     ofs <<
         "Global\n"
@@ -464,7 +475,7 @@ writeSln(
         "		Release|x64 = Release|x64\n"
         "	EndGlobalSection\n"
         "	GlobalSection(ProjectConfigurationPlatforms) = postSolution\n";
-    for (const ConsProj & proj : sln.projects) {
+    for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             string          guid = fgLookup(nameToGuid,proj.name);
             ofs <<
@@ -502,7 +513,7 @@ fgConsVs201x(ConsSolution const & sln)
     map<string,string>  nameToGuid;
     string              hashPrepend = "FaceGenVisualStudio:",    // Ensure descriptor string >= 16 chars
                         merkle;
-    for (const ConsProj & proj : sln.projects) {
+    for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             string          projGuid = createMicrosoftGuid(hashPrepend+proj.descriptor());
             auto            it = nameToGuid.find(proj.name);
@@ -513,7 +524,7 @@ fgConsVs201x(ConsSolution const & sln)
         }
     }
     bool                changed = false;
-    for (const ConsProj & proj : sln.projects) {
+    for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
             changed = writeVcxproj(sln,proj,nameToGuid,19) || changed;

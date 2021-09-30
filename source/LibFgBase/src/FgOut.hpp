@@ -4,15 +4,16 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Global multi-redirectable pretty-print output stream for diagnostic feedback.
-// Not threadsafe so use ostringstream output option for threads.
-// Default output is 'cout' for systems supporting CLI, 'ostringstream' otherwise (Android).
-//
-// USE:
-//
-// Use 'fgout' instead of 'cout' everywhere.
-// Use 'fgnl' instead of 'endl' or "\n" everywhere you use 'fgout', and use at the BEGINNING
+// 
+// NOTES:
+// 
+// * Use 'fgout' instead of 'cout' everywhere.
+// * Use 'fgnl' instead of 'endl' or "\n" everywhere you use 'fgout', and use at the BEGINNING
 //   of each output line rather than the end.
-// Use 'fgpop' and 'fgpush' to adjust the pretty-print indent level.
+// * Not threadsafe so use ostringstream output option for threads.
+// * Default output is 'cout' for systems supporting CLI, 'ostringstream' otherwise (Android).
+// * Use 'fgpop' and 'fgpush' to adjust the pretty-print indent level.
+// * Will not work across DLL boundaries
 //
 
 #ifndef FGOUT_HPP
@@ -77,12 +78,6 @@ struct  FgOut
     void
     setIndentLevel(uint);
 
-    bool            setMute(bool mute)          // Returns previous mute state
-    {
-        std::swap(mute,m_mute);
-        return mute;
-    }
-
     void
     reset()
     {
@@ -96,11 +91,10 @@ struct  FgOut
     FgOut &
     operator<<(T const & arg)
     {
-        if (notMute())
-            // In this approach we stringize each arg for each output stream, which is perhaps
-            // inefficent but also allows for ostreams with different settings:
-            for (OStr & ostr : m_streams)
-                (*ostr.pOStr) << arg;
+        // In this approach we stringize each arg for each output stream, which is perhaps
+        // inefficent but also allows for ostreams with different settings:
+        for (OStr & ostr : m_streams)
+            (*ostr.pOStr) << arg;
         return *this;
     }
 
@@ -108,27 +102,25 @@ struct  FgOut
     FgOut &
     operator<<(std::ostream & (*manip)(std::ostream&));
 
-    std::string
-    getStringStream() const
-    {return m_stringStream.str() + "\n"; }
+    // add this ostream to the output list. Ignored if already in the list:
+    void            addStream(std::ostream *,size_t indentLevel=0);
+    // remove this ostream from the output list. Ignored if not in the list. Returns its current indent level,
+    // or 0 if not in list:
+    size_t          delStream(std::ostream *);
 
 private:
-    bool                    m_mute = false;     // Mute all output temporarily. This flag is not thread-safe.
     struct  OStr
     {
         std::ostream        *pOStr;
         size_t              indent = 0;     // Note that atomic cannot be copy constructed
 
         explicit OStr(std::ostream * p) : pOStr(p) {}
+        OStr(std::ostream * os,size_t i) : pOStr{os}, indent{i} {}
 
         bool operator==(std::ostream const * r) const {return (pOStr == r); }
     };
     std::vector<OStr>   m_streams;          // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
     std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
-
-    bool
-    notMute()
-    {return (!m_mute && !m_streams.empty()); }
 
     std::ostream *
     defOut();
@@ -136,22 +128,18 @@ private:
 
 extern FgOut      fgout;
 
-struct  PushMute
-{
-    bool        prevMute;
-
-    PushMute() : prevMute{fgout.setMute(true)} {}
-    explicit PushMute(bool m) : prevMute{fgout.setMute(m)} {}
-    ~PushMute() {fgout.setMute(prevMute); }
-};
-
 struct  PushIndent
 {
     size_t          depth = 1;
 
     explicit
-    PushIndent(const std::string & label)
-    {fgout << fgnl << label << std::flush << fgpush; }
+    PushIndent(std::string const & label = std::string{})
+    {
+        if (label.empty())
+            fgout << fgnl;
+        else
+            fgout << fgnl << label << std::flush << fgpush;
+    }
 
     ~PushIndent()
     {pop(); }
@@ -177,11 +165,8 @@ struct  PushIndent
 };
 
 #define FGOUT1(X) fgout << fgnl << #X ": " << fgpush << (X) << fgpop;
-
 #define FGOUT2(X,Y) FGOUT1(X) FGOUT1(Y)
-
 #define FGOUT3(X,Y,Z) FGOUT2(X,Y) FGOUT1(Z)
-
 #define FGOUT4(X,Y,Z,A) FGOUT2(X,Y) FGOUT2(Z,A)
 
 }

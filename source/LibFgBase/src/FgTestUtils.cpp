@@ -62,7 +62,7 @@ compareImages(
     String8 const &    f2,
     uint                maxDelta)
 {
-    ImgC4UC         i1 = loadImage(f1),
+    ImgRgba8         i1 = loadImage(f1),
                     i2 = loadImage(f2);
     return fgImgApproxEqual(i1,i2,maxDelta);
 }
@@ -78,7 +78,7 @@ regressImage(
 }
 
 template<>
-ImgC4UC
+ImgRgba8
 regressLoad(String8 const & path)
 {return loadImage(path); }
 
@@ -86,7 +86,7 @@ void
 regressString(string const & data,String8 const & relPath)
 {
     String8        dd = dataDir();
-    if (data == loadRawString(dd+relPath))
+    if (data == loadRaw(dd+relPath))
         return;
     if (pathExists(dd+"_overwrite_baselines.flag"))
         saveRaw(data,dd+relPath);

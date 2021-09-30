@@ -16,10 +16,38 @@
 #include "FgStdLibs.hpp"
 #include "FgFileSystem.hpp"
 #include "FgString.hpp"
+#include "FgSerial.hpp"
 #include "FgSerialize.hpp"
 #include "FgStdStream.hpp"
 
 namespace Fg {
+
+template<class T>
+void
+saveMessage(T const & val,String8 const & filename)
+{
+    saveRaw(toMessage(val),filename);
+}
+template<class T>
+T
+loadMessage(String8 const & filename)
+{
+    return fromMessage<T>(loadRaw(filename));
+}
+template<class T>
+void
+saveMessageExplicit(T const & val,String8 const & filename)
+{
+    saveRaw(toMessageExplicit(val),filename);
+}
+template<class T>
+T
+loadMessageExplicit(String8 const & filename)
+{
+    return fromMessageExplicit<T>(loadRaw(filename));
+}
+
+// DEPRECATED:
 
 template<class Archive>     String fgArchiveString();
 template<> inline           String fgArchiveString<boost::archive::text_iarchive>() {return "Text"; }

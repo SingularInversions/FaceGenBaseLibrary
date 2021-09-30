@@ -12,72 +12,60 @@
 
 namespace Fg {
 
-struct  GuiImageDisp
-{
-    uint                width;
-    uint                height;
-    RgbaUC const *      dataPtr;
-    int                 offsetx;
-    int                 offsety;
-};
-
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiImage;
-GuiImplPtr guiGetOsImpl(GuiImage const & guiApi);
+GuiImplPtr              guiGetOsImpl(GuiImage const & guiApi);
 
 struct  GuiImage : GuiBase
 {
-    DfgFPtr             updateFill;
-    NPT<ImgC4UC>        imgN;
-    // If defined, this is called when the user clicks on the image.
-    // The argument is the coordinate in IUCS (cannot be in pixels because view scale varies):
-    Sfun<void(Vec2F)>   onClick;
-    // If mouse controls are disabled the image is treated as a thumbnail; it's minimum
-    // window size is given by the image and is non-adjustable:
-    bool                allowMouseCtls = false; // The below are only used when true:
-    DfgFPtr             updateNofill;
-    NPT<ImgC4UCs>       pyramidN;           // Powers of 2 views from smallest to 2048 max dim
-    IPT<Vec2I>          offsetN;            // In pixels (regardless of pyramid level)
-    IPT<int>            zoomN;
-    IPT<uint>           currLevelN;         // Which level of pyramid are we looking at ? 0 - uninitialized
-    // User-selected points in IUCS. NB These are NOT corrected for non-power-of-2 pixel truncation:
-    IPT<Vec2Fs>         pointsN;           
-    NPT<ImgC4UC>        dispN;              // Final display image including marked points
+    struct  Disp
+    {
+        ImgRgba8 const *     imgPtr;
+        Vec2I               offset;
+    };
+    // Callback when image is needed for bitblt to screen.
+    // Output node with image data is not sufficient since user controls input state (eg. zoom & offset)
+    // need be modified when the window size changes:
+    Sfun<Disp(Vec2UI)>  getImgFn;           // Input argument is display win dims in pixels
+    Vec2B               wantStretch;
+    NPT<Vec2UI>         minSizeN;           // Minimum display window size (in pixels)
+    DfgFPtr             updateFlag;         // Display update flag when background should be filled
+    DfgFPtr             updateNofill;       // Display update flag when only image pixels need to be updated
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    // USER ACTION CALLBACKS:
+    Sfun<void(Vec2I)>   dragLeft;           // Argument is delta in pixels
+    Sfun<void(Vec2I)>   dragRight;          // "
+    Sfun<void(Vec2I)>   clickLeft;          // Argument is display position in pixels
 
-    GuiImageDisp
-    disp(Vec2UI winSize);
-
-    void
-    move(Vec2I delta);          // in pixels
-
-    void
-    zoom(int delta);            // in pixels
-
-    void
-    click(Vec2I posIrcs);       // Position in display window
-
-    // Sets the update flag to false and returns the currently required update state:
-    // 0 - unchanged, 1 - changed but same area, 2 - size may have changed
-    uint
-    update();
+    virtual             GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-// Thumbnail image of fixed size with no controls:
-GuiPtr
-guiImage(NPT<ImgC4UC> imgN);
+// Fixed size image with no controls:
+GuiPtr          guiImage(NPT<ImgRgba8> imageN);
 
-// Thumbnail image that can be clicked on for custom action:
-GuiPtr
-guiImage(NPT<ImgC4UC> const & imgN,Sfun<void(Vec2F)> const & onClick);
-
-// Zoomable, scrollable, clickable image of variable size:
+// Fixed size image that can be clicked on for custom action:
 GuiPtr
 guiImage(
-    NPT<ImgC4UC> const &        imgN,           // input
-    IPT<Vec2Fs> const &         ptsIucsN,       // output: user-selected points
+    NPT<ImgRgba8> const &        imageN,
+    Sfun<void(Vec2F)> const &   onClick);   // Arg is IUCS image coordinate of click
+
+struct  GuiImg
+{
+    GuiPtr              win;
+    Sfun<void(void)>    zoomIn;
+    Sfun<void(void)>    zoomOut;
+};
+// Zoom-able, shift-able, click-able image of variable size:
+GuiImg
+guiImageCtrls(
+    NPT<ImgRgba8> const &        imageN,             // Image for display
+    // User-selected points in IUCS will be overlaid on image.
+    // NB These are NOT corrected for non-power-of-2 pixel truncation:
+    IPT<Vec2Fs> const &         ptsIucsN,
+    // If defined, this is called when the user clicks on the image.
+    // The argument is the coordinate in IUCS since this is easier when image scale varies.
+    // Note however that unless the image is a power of 2 in size, small discrepencies
+    // exist between the different SLs, but they are sub-pixel so don't really matter:
     Sfun<void(Vec2F)> const &   onClick=nullptr);
 
 }

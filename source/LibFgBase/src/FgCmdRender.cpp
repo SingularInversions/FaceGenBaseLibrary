@@ -26,7 +26,7 @@ using namespace std;
 
 namespace Fg {
 
-namespace FgCmdRender {     // Avoid global namespace visibility of local types below
+namespace {
 
 struct  ModelFiles
 {
@@ -76,72 +76,73 @@ struct  Options
     FG_SERIALIZE3(rend,saveSurfPointFile,outputFile);
 };
 
-}   // namespace FgCmdRender
-
-using namespace FgCmdRender;
+}   // namespace
 
 /**
    \ingroup Base_Commands
    Command to render a mesh and colour map to an image.
  */
 void
-fgCmdRender(CLArgs const & args)
+cmdRender(CLArgs const & args)
 {
-    Syntax              syntax(args,
-        "<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext1>])*\n"
-        "    Render specified meshes [with texture images] using default render arguments.\n"
-        "    Saves render arguments to <name>.xml and rendered image to <name>.png\n"
-        "    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml\n"
-        "    -l     - Load the object pose and camera intrinsics from the above files, "
-                     "do not calculate from <name>.xml\n"
-        "    <ext1> - " + imgFileExtensionsDescription() + "\n"
-        "NOTES:\n"
-        "    - If no mesh arguments are given, <name>.xml will be used for the arguments.\n"
-        "ARGUMENTS XML:\n"
-        "<name>.xml :\n"
-        "    <models> - The list of mesh filenames to be rendered.\n"
-        "    <pose>\n"
-        "        <rotateToHcs> - Quaternion specifying rotation from mesh original coordinates to\n"
-        "            head coordinate system (FHCS) with head facing in Z direction, X to face's left.\n"
-        "        <rollRadians>,<tiltRadians>,<panRadians> - Euler angles applied from FHCS\n"
-        "        <relTrans> - Translation in FHCS relative with unit scale equal to half max bound.\n"
-        "        <relScale> - Scale from original mesh scale.\n"
-        "        <fovMaxDeg> - Maximum field of view angle of camera in degrees (applied to larger image dimension).\n"
-        "    <imagePixelSize>\n"
-        "    <options>\n"
-        "        <lighting> - All color component values below are in the range [0,1]:\n"
-        "            <ambient> - Light coming from all directions.\n"
-        "            <lights>\n"
-        "                <colour> - In order of Red, Greeen, Blue.\n"
-        "                <direction> - In order of X,Y,Z in OpenGL Eye Coordinates.\n"
-        "        <backgroundColor> - In order of R,G,B,A where all values in range [0,1].\n"
-        "        <antiAliasBitDepth> - Defaults to 3, use 4 or 5 for higher quality (slower).\n"
-        "        <renderSurfPoints> - 0 means don't, 1 means when visible and 2 means always.\n"
-        "            They are rendered as single-pixel green dots over the image.\n"
-        "    <saveSurfPointFile> - 0 means don't, 1 means save <name>.csv with a list of surface points\n"
-        "        written as <label>,<position>,<visible>, where <position> is in image unit coordinates; [0,1]\n"
-        "    <outputFile> - Name of image output file."
-    );
-    string              renderName = syntax.next();
+    Syntax              syn {args,
+        R"(<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext>])*
+    Render specified meshes [with texture images] using default render arguments.
+    Saves render arguments to <name>.xml and rendered image to <name>.png
+    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml
+    -l     - Load the object pose and camera intrinsics from the above files, do not calculate from <name>.xml
+    <ext> - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    <image>.<ext>       Rendered image
+    [<name>.xml]        A configuation file for rendering with this command
+NOTES:
+    * If no mesh arguments are given, <name>.xml will be used for the arguments. Otherwise,
+      <name>.xml will be created and can be modified for re-use.
+    * Fields in <name>.xml can be modified as long as the XML structure is not changed.
+      This can be automated with the 'substitute' command.
+    * <name>.xml fields:
+        <models>        the list of mesh and related color map files to be rendered.
+        <pose>
+            <rotateToHcs> quaternion specifying rotation from mesh original coordinates to
+                head coordinate system (HCS): X - face's left, Y - face's up, Z - facing direction
+            <rollRadians>,<tiltRadians>,<panRadians> euler angles applied from HCS
+            <relTrans>  translation in HCS relative with unit scale equal to half max bound.
+            <relScale>  scale from original mesh scale.
+            <fovMaxDeg> field of view angle of camera in degrees (applied to larger image dimension).
+        <imagePixelSize> width, height
+        <options>
+            <lighting>  all color component values below are in the range [0,1]:
+                <ambient> light coming from all directions.
+                <lights>
+                    <colour> RGB order
+                    <direction> in order of X,Y,Z in OpenGL Eye Coordinates.
+            <backgroundColor> RGBA order, values in [0,1].
+            <antiAliasBitDepth> 3 is high quality (equivalent to 8x FSAA) without running too slowly
+            <renderSurfPoints> 0 - don't, 1 - when visible, 2 - always. They are rendered as single-pixel green dots over the image.
+        <saveSurfPointFile> 0 - don't, 1 - save in <name>.csv written as <label>,<position>,<visible>
+            where <position> is in image unit coordinates; [0,1]
+        <outputFile> rendered image saved here.)"
+    };
+    string              renderName = syn.next();
     Options             opts;
     string              viewSave,    // If empty, option not selected
                         viewLoad;    // "
-    while (syntax.more() && (syntax.peekNext()[0] == '-')) {
-        string      arg = syntax.next();
+    while (syn.more() && (syn.peekNext()[0] == '-')) {
+        string      arg = syn.next();
         if (arg == "-s")
-            viewSave = syntax.next();
+            viewSave = syn.next();
         else if (arg == "-l")
-            viewLoad = syntax.next();
+            viewLoad = syn.next();
         else
-            syntax.error("Unrecognized option",arg);
+            syn.error("Unrecognized option",arg);
     }
-    if (syntax.more()) {
-        while (syntax.more()) {
+    if (syn.more()) {
+        while (syn.more()) {
             //! Set up the default render options from the arguments:
             ModelFiles  mf;
-            mf.triFilename = syntax.next();
-            if (syntax.more() && hasImgExtension(syntax.peekNext()))
-                mf.imgFilename = syntax.next();
+            mf.triFilename = syn.next();
+            if (syn.more() && hasImageFileExt(syn.peekNext()))
+                mf.imgFilename = syn.next();
             opts.rend.models.push_back(mf);
         }
         opts.outputFile = renderName + ".png";
@@ -158,14 +159,13 @@ fgCmdRender(CLArgs const & args)
 
     //! Load data from files:
     Meshes              meshes(opts.rend.models.size());
-    Mat33F              rotMatrix = Mat33F(opts.rend.pose.rotateToHcs.asMatrix());
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         const ModelFiles &  mf = opts.rend.models[ii];
         Mesh &              mesh = meshes[ii];
         mesh = loadTri(mf.triFilename);
         if (!mf.imgFilename.empty())
             loadImage_(String8(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
-        mesh.transform(rotMatrix);
+        mesh.xform(SimilarityD{opts.rend.pose.rotateToHcs});
         mesh.surfaces[0].material.shiny = mf.shiny;
     }
 
@@ -197,8 +197,8 @@ fgCmdRender(CLArgs const & args)
     //! Render:
     opts.rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();    // Receive surf point projection data
     Timer               timer;
-    ImgC4UC             image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
-    fgout << fgnl << "Render time: " << timer.read() << "s ";
+    ImgRgba8             image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
+    fgout << fgnl << "Render time: " << timer.elapsedSeconds() << "s ";
 
     //! Save results:
     saveImage(String8(opts.outputFile),image);
@@ -210,24 +210,24 @@ fgCmdRender(CLArgs const & args)
 }
 
 Cmd
-getRenderCmd()
-{return Cmd(fgCmdRender,"render","Render TRI files with optional texture images to an image file"); }
+getCmdRender()
+{return Cmd(cmdRender,"render","Render meshes with color & specular maps to an image file"); }
 
 static
 bool
 imgApproxEqual(String8 const & file0,String8 const & file1)
 {
-    ImgC4UC         img0 = loadImage(file0),
+    ImgRgba8         img0 = loadImage(file0),
                     img1 = loadImage(file1);
     return fgImgApproxEqual(img0,img1,2);
 }
 
 void
-fgCmdRenderTest(CLArgs const & args)
+testRenderCmd(CLArgs const & args)
 {
     FGTESTDIR
-    fgTestCopy("base/Jane.tri");
-    fgTestCopy("base/Jane.jpg");
+    copyFileToCurrentDir("base/Jane.tri");
+    copyFileToCurrentDir("base/Jane.jpg");
     Options             opts;
     opts.rend.imagePixelSize = Vec2UI(120,160);
     opts.rend.pose.panRadians = degToRad(55.0f);
@@ -239,10 +239,10 @@ fgCmdRenderTest(CLArgs const & args)
     mf.imgFilename = "Jane.jpg";
     opts.rend.models.push_back(mf);
     saveBsaXml("render_test.xml",opts);
-    fgCmdRender(splitChar("render render_test"));
+    cmdRender(splitChar("render render_test"));
     regressFileRel("render_test.png","base/test/",imgApproxEqual);
     // TODO: make a struct and serialize to XML so an approx comparison can be done (debug has precision diffs):
-    if ((getCurrentCompiler() == Compiler::vs15) && (getCurrentBuildConfig() == "release")) {
+    if ((getCurrentBuildOS() == BuildOS::win) && (getCurrentBuildConfig() == "release")) {
         regressFileRel("render_test.csv","base/test/");
     }
 }

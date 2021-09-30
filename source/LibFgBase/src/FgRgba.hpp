@@ -7,12 +7,6 @@
 //
 // All operators assume color channels are pre-weighted by alpha.
 //
-// INVARIANTS:
-//
-// The 4 channels are densely packed in memory.
-//
-// The 3 colour channels are guaranteed contiguous.
-//
 
 #ifndef FGRGBA_HPP
 #define FGRGBA_HPP

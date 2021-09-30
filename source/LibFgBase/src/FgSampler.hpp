@@ -12,23 +12,27 @@
 
 namespace Fg {
 
-// Accepts a sample coordinate in IUCS and computes the image color at that point.
-// Note that sharp discontinuities will cause sampling to subdivide to the given
-// bit depth so using alpha channel to separate background (versus background color)
-// may slow down rendering:
-typedef Sfun<RgbaF(Vec2F)>      SampleFunc;
+// Accepts a coordinate in IUCS and returns the RGBA for that position, which must have
+// alpha-weighted RGB values for correct averaging:
+typedef Sfun<RgbaF(Vec2F)>  SampleFn;
 
+// Samples RGBA values for each pixel, adaptively sub-sampling based on the difference between
+// neighouring values, recursing until the given bit depth is ensured.
+// If pixel density <= nyquist frequency implicit in 'sampleFn', artifacts may result.
+// Alpha channel has precision errors so will not be exactly 1 even where fully sampled.
+// Resulting image RGB values will be alpha-weighted (as 'sampleFn' must provide):
 ImgC4F
 sampleAdaptiveF(
     Vec2UI              dims,               // Must be non-zero
-    SampleFunc const &  sampleFn,
+    SampleFn const &    sampleFn,
     float               channelBound,       // Sampler must return channel values in [0,channelBound)
     uint                antiAliasBitDepth); // Must be in [1,16]
 
-ImgC4UC
+// As above
+ImgRgba8
 sampleAdaptive(
     Vec2UI              dims,               // Must be non-zero
-    SampleFunc const &  sampleFn,           // Sampler must return channel values in [0,256)
+    SampleFn const &    sampleFn,           // Sampler must return channel values in [0,256)
     uint                antiAliasBitDepth); // Must be in [1,8]
 
 }

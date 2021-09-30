@@ -57,7 +57,7 @@ static
 bool
 loadJpeg(
     const Uchars &   jpgBuffer,
-    ImgC4UC &           img)
+    ImgRgba8 &           img)
 {
     jpeg_decompress_struct cinfo;
     IJGErrorManager jerr;
@@ -236,7 +236,7 @@ cleanup:
 }
 
 Uchars
-imgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
+encodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 {
     Uchars       ret;
     if(!saveJpeg(wid,hgt,data,ret,quality)) 
@@ -245,7 +245,7 @@ imgEncodeJpeg(uint wid,uint hgt,const uchar * data,int quality)
 }
 
 Uchars
-imgEncodeJpeg(ImgC4UC const & img,int quality)
+encodeJpeg(ImgRgba8 const & img,int quality)
 {
     Uchars       ret;
     if(!saveJpeg(img.width(),img.height(),&img.m_data[0][0],ret,quality)) 
@@ -253,10 +253,10 @@ imgEncodeJpeg(ImgC4UC const & img,int quality)
     return ret;
 }
 
-ImgC4UC
-imgDecodeJpeg(Uchars const & data)
+ImgRgba8
+decodeJpeg(Uchars const & data)
 {
-    ImgC4UC         ret;
+    ImgRgba8         ret;
     if(!loadJpeg(data,ret))
         fgThrow("Could not decode as JPEG/JFIF");
     return ret;

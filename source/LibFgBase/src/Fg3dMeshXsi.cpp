@@ -9,9 +9,8 @@
 #include "FgStdStream.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 #include "FgImageIo.hpp"
@@ -88,7 +87,7 @@ static bool saveXsiFile(
     for (unsigned long yy=0; yy<model.numObjs(); ++yy)
     {
         // Get aliase names for all the lists.
-        const vector<Vec3F>    &vtxList = model.getPtList(yy);
+        const Vec3Fs    &vtxList = model.getPtList(yy);
 
         // Calculate the info
         for (unsigned long pt=0; pt<vtxList.size(); ++pt)
@@ -225,7 +224,7 @@ static bool saveXsiFile(
         if (txtFname != "" && txtFname.size() > 0)
         {
             // Get the image size by loading the image
-            ImgC4UC     tmpImg = loadImage(path.dir()+txtFname);
+            ImgRgba8     tmpImg = loadImage(path.dir()+txtFname);
             {
                 imgWd = tmpImg.width();
                 imgHgt = tmpImg.height();
@@ -275,10 +274,10 @@ static bool saveXsiFile(
         string objName = model.getModelName(xx);
 
         // Get aliase names for all the lists.
-        const vector<Vec3F>    &vtxList = model.getPtList(xx);
+        const Vec3Fs    &vtxList = model.getPtList(xx);
         Vec3UIs const    &triList = model.getTriList(xx);
         const vector<Vec4UI>    &quadList = model.getQuadList(xx);
-        const vector<Vec2F>    &txtList = model.getTextCoord(xx);
+        const Vec2Fs    &txtList = model.getTextCoord(xx);
         Vec3UIs const    &txtTriList = model.getTexTriList(xx);
         const vector<Vec4UI>    &txtQuadList = model.getTexQuadList(xx);
         MeshNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
@@ -503,7 +502,7 @@ static bool saveXsiFile(
                 ofs << "         " << numMorphs+1 << ",\n";
                 for (unsigned long mm=0; mm<numMorphs+1; ++mm)
                 {
-                    const vector<Vec3F> *mvtxList = &vtxList;
+                    const Vec3Fs *mvtxList = &vtxList;
                     FffMultiObjectC const & mobj = (*morphTargets)[mm-1];
                     if (mm > 0)
                         mvtxList = &(mobj.getPtList(xx));

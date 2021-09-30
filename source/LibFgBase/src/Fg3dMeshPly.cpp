@@ -6,9 +6,8 @@
 
 #include "stdafx.h"
 
-#include "Fg3dMeshOps.hpp"
+#include "Fg3dMesh.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dNormals.hpp"
 #include "FgStdStream.hpp"
 #include "FgFileSystem.hpp"
 #include "FgCommand.hpp"

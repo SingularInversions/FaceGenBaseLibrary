@@ -6,8 +6,7 @@
 
 #include "stdafx.h"
 
-#include "Fg3dMeshOps.hpp"
-#include "Fg3dNormals.hpp"
+#include "Fg3dMesh.hpp"
 #include "FgMath.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgAffine1.hpp"
@@ -16,7 +15,7 @@
 #include "FgBestN.hpp"
 #include "FgGridTriangles.hpp"
 #include "FgGeometry.hpp"
-#include "FgCoordSystem.hpp"
+#include "Fg3dCamera.hpp"
 
 using namespace std;
 
@@ -113,7 +112,7 @@ removeDuplicateFacets(Mesh const & mesh)
 }
 
 Mesh
-meshRemoveUnusedVerts(Mesh const & mesh)
+removeUnusedVerts(Mesh const & mesh)
 {
     Mesh            ret;
     ret.name = mesh.name;
@@ -241,22 +240,24 @@ cTetrahedron(bool open)
 Mesh
 cPyramid(bool open)
 {
-    Vec3Fs         verts;
-    verts.push_back(Vec3F(-1.0f,0.0f,-1.0f));
-    verts.push_back(Vec3F(1.0f,0.0f,-1.0f));
-    verts.push_back(Vec3F(-1.0f,0.0f,1.0f));
-    verts.push_back(Vec3F(1.0f,0.0f,1.0f));
-    verts.push_back(Vec3F(0.0f,1.0f,0.0f));
-    Vec3UIs   tris;
-    tris.push_back(Vec3UI(0,4,1));
-    tris.push_back(Vec3UI(0,2,4));
-    tris.push_back(Vec3UI(2,3,4));
-    tris.push_back(Vec3UI(1,4,3));
+    Vec3Fs         verts {
+        {-1, 0,-1},
+        { 1, 0,-1},
+        {-1, 0, 1},
+        { 1, 0, 1},
+        { 0, 1, 0},
+    };
+    Vec3UIs         tris {
+        {0, 4, 1},
+        {0, 2, 4},
+        {2, 3, 4},
+        {1, 4, 3},
+    };
     if (!open) {
-        tris.push_back(Vec3UI(0,1,3));
-        tris.push_back(Vec3UI(3,2,0));
+        tris.emplace_back(0,1,3);
+        tris.emplace_back(3,2,0);
     }
-    return Mesh(verts,Surf(tris));
+    return Mesh{verts,{Surf{tris}}};
 }
 
 Mesh
@@ -288,7 +289,7 @@ c3dCube(bool open)
         tris.push_back(Vec3UI(3,2,6));
         tris.push_back(Vec3UI(6,7,3));
     }
-    return Mesh(verts,Surf(tris));
+    return Mesh{verts,{Surf{tris}}};
 }
 
 TriSurf
@@ -380,20 +381,20 @@ cNTent(uint nn)
     Vec3UIs   tris;
     for (uint ii=0; ii<nn; ++ii)
         tris.push_back(Vec3UI(0,ii+1,((ii+1)%nn)+1));
-    return Mesh(verts,Surf(tris));
+    return Mesh{verts,{Surf{tris}}};
 }
 
 //Mesh
 //fgFddCage(float size,float thick)
 //{
 //    Mesh            ret;
-//    vector<Vec3F>    sqrVerts;
+//    Vec3Fs    sqrVerts;
 //    sqrVerts.push_back(Vec3F(-thick,-thick,0));
 //    sqrVerts.push_back(Vec3F(-thick,thick,0));
 //    sqrVerts.push_back(Vec3F(thick,thick,0));
 //    sqrVerts.push_back(Vec3F(thick,-thick,0));
 //    Vec4UI           sqrInds(0,1,2,3);
-//    //cat_(ret.verts,mapFunc(sqrVerts
+//    //cat_(ret.verts,mapCall(sqrVerts
 //    for (uint axis=0; axis<3; ++axis) {
 //        Vec3F    l(0);
 //        for (int aa=-1; aa<2; aa+=2)
@@ -480,7 +481,7 @@ Mesh
 unifyIdenticalUvs(Mesh const & in)
 {
     Mesh                    ret(in);
-    const vector<Vec2F> &    uvs = ret.uvs;
+    const Vec2Fs &    uvs = ret.uvs;
     vector<Valid<uint> >      merge(uvs.size());
     size_t                      cnt0 = 0,
                                 cnt1 = 0;
@@ -536,7 +537,7 @@ traverse(
 }
 
 Mesh
-splitSurfsByUvs(Mesh const & in)
+splitSurfsByUvContiguous(Mesh const & in)
 {
     Mesh                ret,
                         mesh = in;
@@ -689,7 +690,7 @@ fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
         nsurfs.push_back(nsurf);
     }
     // Remove unused vertices:
-    return meshRemoveUnusedVerts(Mesh(mesh.verts,nsurfs));
+    return removeUnusedVerts(Mesh(mesh.verts,nsurfs));
 }
 
 ImgUC
@@ -707,34 +708,13 @@ getUvCover(Mesh const & mesh,Vec2UI dims)
     return ret;
 }
 
-ImgC4UC
-cUvWireframeImage(Mesh const & mesh,RgbaUC wireColor,ImgC4UC const & in)
+ImgRgba8s
+cUvWireframeImages(Mesh const & mesh,RgbaUC wireColor)
 {
-    Mat22F          uvb = cBounds(mesh.uvs);
-    ImgC4UC         img(2048,2048,RgbaUC(128,128,128,255));
-    if (!in.empty())
-        img = magnify(in,2);
-    // Bounds are normally (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
-    Mat22F          domain(floor(uvb[0]),ceil(uvb[1]),ceil(uvb[3]),floor(uvb[2])),
-                    range(0,img.width()+1,0,img.height()+1);
-    AffineEw2F      xf(domain,range);
-    const vector<Vec2F> &    uvs = mesh.uvs;
-    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        Surf const &     surf = mesh.surfaces[ss];
-        for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
-            Vec3UI           tri = surf.tris.uvInds[tt];
-            for (size_t vv=0; vv<3; ++vv)
-                drawLineIrcs(img,Vec2I(xf*uvs[tri[vv]]),Vec2I(xf*uvs[tri[(vv+1)%3]]),wireColor);
-        }
-        for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
-            Vec4UI           quad = surf.quads.uvInds[tt];
-            for (size_t vv=0; vv<4; ++vv)
-                drawLineIrcs(img,Vec2I(xf*uvs[quad[vv]]),Vec2I(xf*uvs[quad[(vv+1)%4]]),wireColor);
-        }
-    }
-    ImgC4UC         final;
-    imgShrink2(img,final);
-    return final;
+    ImgRgba8s           ret; ret.reserve(mesh.surfaces.size());
+    for (Surf const & surf : mesh.surfaces)
+        ret.push_back(cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,wireColor));
+    return ret;
 }
 
 Vec3Fs
@@ -893,11 +873,11 @@ cTriSurface(Mesh const & src,size_t surfIdx)
     FGASSERT(src.surfaces.size() > surfIdx);
     ts.tris = src.surfaces[surfIdx].tris.posInds;
     ts.verts = src.verts;
-    return meshRemoveUnusedVerts(ts);
+    return removeUnusedVerts(ts);
 }
 
 Mesh
-sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque)
+sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaque)
 {
     FGASSERT(!albedo.empty());
     Tris                    tris = mergeSurfaces(src.surfaces).asTris();
@@ -946,7 +926,7 @@ sortTransparentFaces(Mesh const & src,ImgC4UC const & albedo,Mesh const & opaque
     Uints                 order;
     set<uint>               done;
     while (done.size() < numTransparent) {
-        float               minObs = maxFloat();
+        float               minObs = floatMax();
         uint                mini = 0;
         for (uint ii=0; ii<numTransparent; ++ii) {
             if (done.find(ii) == done.end()) {

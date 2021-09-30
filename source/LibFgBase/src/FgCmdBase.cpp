@@ -21,6 +21,7 @@ using namespace std;
 namespace Fg {
 
 void    test3d(CLArgs const &);
+void    testBaseJson(CLArgs const &);
 void    testBoostSer(CLArgs const &);
 void    testDataflow(CLArgs const &);
 void    testExceptions(CLArgs const &);
@@ -28,23 +29,24 @@ void    testFilesystem(CLArgs const &);
 void    testFopen(CLArgs const &);
 void    testGeometry(CLArgs const &);
 void    testGridTriangles(CLArgs const &);
-void fgImageTest(CLArgs const &);
-void testKdTree(CLArgs const &);
-void fgMatrixSolverTest(CLArgs const &);
-void testMath(CLArgs const &);
-void testMatrixC(CLArgs const &);
-void fgMatrixVTest(CLArgs const &);
-void fgMetaFormatTest(CLArgs const &);
-void fgMorphTest(CLArgs const &);
-void fgPathTest(CLArgs const &);
-void fgQuaternionTest(CLArgs const &);
-void fgCmdRenderTest(CLArgs const &);
-void testSerial(CLArgs const &);
-void fgSerializeTest(CLArgs const &);
-void testSimilarity(CLArgs const &);
-void testSimilaritySolve(CLArgs const &);
-void fgStdVectorTest(CLArgs const &);
-void fgStringTest(CLArgs const &);
+void    testHash(CLArgs const &);
+void    testImage(CLArgs const &);
+void    testKdTree(CLArgs const &);
+void    testMatrixSolver(CLArgs const &);
+void    testMath(CLArgs const &);
+void    testMatrixC(CLArgs const &);
+void    testMatrixV(CLArgs const &);
+void    testMetaFormat(CLArgs const &);
+void    testMorph(CLArgs const &);
+void    testPath(CLArgs const &);
+void    testQuaternion(CLArgs const &);
+void    testRenderCmd(CLArgs const &);
+void    testSerial(CLArgs const &);
+void    testSerialize(CLArgs const &);
+void    testSimilarity(CLArgs const &);
+void    testSimilaritySolve(CLArgs const &);
+void    testStdVector(CLArgs const &);
+void    testString(CLArgs const &);
 
 Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
@@ -60,29 +62,31 @@ getBaseTests()
         {testFopen,"fopen"},
         {testGeometry,"geometry"},
         {testGridTriangles,"gridTriangles"},
-        {fgImageTest,"image"},
+        {testHash,"hash"},
+        {testImage,"image"},
+        {testBaseJson,"json"},
         {testKdTree,"kd"},
-        {fgMatrixSolverTest,"matSol","Matrix Solver"},
+        {testMatrixSolver,"matSol","Matrix Solver"},
         {testMath,"math"},
         {testMatrixC,"matC","MatrixC"},
-        {fgMatrixVTest,"matV","MatrixV"},
-        {fgMetaFormatTest,"metaFormat"},
-        {fgMorphTest,"morph"},
-        {fgPathTest,"path"},
-        {fgQuaternionTest,"quaternion"},
-        {fgCmdRenderTest,"rendc","render command"},
+        {testMatrixV,"matV","MatrixV"},
+        {testMetaFormat,"metaFormat"},
+        {testMorph,"morph"},
+        {testPath,"path"},
+        {testQuaternion,"quaternion"},
+        {testRenderCmd,"rendc","render command"},
         {testSerial,"serial"},
-        {fgSerializeTest,"serialize"},
+        {testSerialize,"serialize"},
         {testSimilarity,"similarity"},
         {testSimilaritySolve,"solveSimilarity"},
-        {fgStdVectorTest,"vector"},
-        {fgStringTest,"string"},
+        {testStdVector,"vector"},
+        {testString,"string"},
     };
     cmds.push_back(testSoftRenderInfo());
     return cmds;
 }
 
-void fgImgGuiTestm(CLArgs const &);
+void testmGuiImage(CLArgs const &);
 void fgTestmGuiMesh(CLArgs const &);
 void fgTestmGui2(CLArgs const &);
 void fgGuiTestmDialogSplashScreen(CLArgs const &);
@@ -92,7 +96,7 @@ void
 testmGui(CLArgs const & args)
 {
     Cmds            cmds {
-        {fgImgGuiTestm,"image"},
+        {testmGuiImage,"image"},
         {fgTestmGui2,"gui2"},
         {fgTestmGuiMesh,"mesh"},
         {fgGuiTestmDialogSplashScreen,"splash"}
@@ -118,6 +122,15 @@ sysinfo(CLArgs const &)
         << fgpop;
 }
 
+static void testPopen(CLArgs const &)
+{
+    Opt<String>     out = clPopen("dir");
+    if (out.valid())
+        fgout << fgnl << "Command 'dir' output " << out.val().size() << " characters:\n" << out.val();
+    else
+        fgout << fgnl << "Command 'dir' failed";
+}
+
 void testm3d(CLArgs const &);
 void fgClusterTest(CLArgs const &);
 void fgClusterTestm(CLArgs const &);
@@ -127,7 +140,7 @@ void fg3dReadWobjTest(CLArgs const &);
 void testmRandom(CLArgs const &);
 void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
-void fgImageTestm(CLArgs const &);
+void testmImage(CLArgs const &);
 
 Cmds
 getBaseTestms()
@@ -139,11 +152,12 @@ getBaseTestms()
         {fgClusterTestm,"clusterm"},
         {fgClusterDeployTestm,"clusterDeploy"},
         {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
+        {testPopen,"popen"},
         {fg3dReadWobjTest,"readWobj"},
         {testmRandom,"random"},
         {testmGeometry,"geometry"},
         {fgTextureImageMappingRenderTest,"texturemap"},
-        {fgImageTestm,"image"}
+        {testmImage,"image"}
     };
     return cmds;
 }
@@ -154,38 +168,73 @@ testm(CLArgs const & args)
 {doMenu(args,getBaseTestms()); }
 
 void
-fgCmdBaseTest(CLArgs const & args)
+testBase(CLArgs const & args)
 {doMenu(args,getBaseTests(),true); }
 
 void
 view(CLArgs const & args)
 {doMenu(args,getViewCmds()); }
 
+Cmd         getCmdGraph();
+
+/**
+   \ingroup Main_Commands
+   Command to substitute strings for automated paramter setting in .xml parameter files.
+ */
+void
+cmdSubstitute(CLArgs const & args)
+{
+    Syntax        syntax(args,
+        "<inFile> <outFile> (<stringIn> <stringOut>)+\n"
+        "    Substitute first occurence of each <stringIn> with respective <stringOut>");
+    Ifstream      ifs(syntax.next());
+    Ofstream      ofs(syntax.next());
+    string          body(
+        (istreambuf_iterator<char>(ifs)),   // Construct from beginning, brackets for parser
+        istreambuf_iterator<char>());       // Default constructor is end of stream
+    while (syntax.more()) {
+        string      findStr(syntax.next()),
+                    replStr(syntax.next());
+        FGASSERT(!findStr.empty());
+        size_t      pos;
+        if ((pos = body.find(findStr)) != string::npos)
+            body.replace(pos,findStr.size(),replStr);
+    }
+    ofs << body;
+}
+
+Cmds
+getFgblCmds()
+{
+    Cmds        cmds {
+        {getCmdGraph()},
+        {getImgopsCmd()},
+        {getCmdMesh()},
+        {getMorphCmd()},
+        {getCmdRender()},
+        {cmdCons,"cons","Construct makefiles / solution file / project files"},
+        {cmdSubstitute,"substitute","Substitute first instance of exact strings in a text file"},
+        {sysinfo,"sys","Show system info"},
+        {testBase,"test","Automated tests"},
+        {testm,"testm","Manual tests"},
+        {view,"view","Interactive GUI view of images and meshes (Windows only)"}
+    };
+#ifdef _WIN32
+    cmds.push_back(getCompileShadersCmd());
+#endif
+    return cmds;
+}
+
 /**
    \defgroup Base_Commands Base Library Command Line
    Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
  */
 void
-fgCmdFgbl(CLArgs const & args)
+cmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << getSdkVersion(".") << " (" << getCurrentBuildDescription() << ")"; 
-    Cmds        cmds {
-        {getImgopsCmd()},
-        {getMeshopsCmd()},
-        {getMorphCmd()},
-        {getRenderCmd()},
-        {getTriExportCmd()},
-        {cmdCons,"cons","Construct makefiles / solution file / project files"},
-        {sysinfo,"sys","Show system info"},
-        {fgCmdBaseTest,"test","Automated tests"},
-        {testm,"testm","Manual tests"},
-        {view,"view","Interactively view various file types"}
-    };
-#ifdef _WIN32
-    cmds.push_back(getCompileShadersCmd());
-#endif
-    doMenu(args,cmds);
+    doMenu(args,getFgblCmds());
 }
 
 Cmd
@@ -207,7 +256,7 @@ getCompileShadersCmd()
             clRun("fxc /T ps_5_0 /E PSTransparentPass2 /WX /Fo dx11_transparent_PS2.cso dx11_transparent.hlsl");
         },
         "d3d",
-        "Compile Direct3D shaders"
+        "Compile Direct3D shaders (Windows only)"
     };
 #else
     fgThrow("Shader compilation not supported on this platform");
@@ -216,5 +265,87 @@ getCompileShadersCmd()
 }
 
 }
+
+// This include file causes link problem with gcc debug so quarantine to Windows:
+
+#ifdef _WIN32
+
+#include "json.hpp"
+
+namespace Fg {
+
+void
+testBaseJson(CLArgs const &)
+{
+    String          str {
+R"(
+{
+    "InstanceStatuses": [
+        {
+            "AvailabilityZone": "us-east",
+            "InstanceId": "i-12345",
+            "InstanceState": {
+                "Code": 16,
+                "Name": "running"
+            },
+            "InstanceStatus": {
+                "Details": [
+                    {
+                        "Name": "reachability",
+                        "Status": "passed"
+                    }
+                ],
+                "Status": "ok"
+            }
+        },
+        {
+            "AvailabilityZone": "us-west",
+            "InstanceId": "i-67890",
+            "InstanceState": {
+                "Code": 16,
+                "Name": "running"
+            },
+            "InstanceStatus": {
+                "Details": [
+                    {
+                        "Name": "reachability",
+                        "Status": "passed"
+                    }
+                ],
+                "Status": "ok"
+            }
+        }
+    ]
+})"
+    };
+    // The call to 'parse' is required:
+    nlohmann::json          j0 {nlohmann::json::parse(str)},
+                            j1 = j0.find("InstanceStatuses").value();
+    // The .key() and .get<String>() calls below fail with gcc:
+    size_t                  idx {0};
+    // Lists iterate in given order:
+    for (auto it1=j1.begin(); it1!=j1.end(); ++it1) {
+        PushIndent              pi {toStr(idx++)};
+        nlohmann::json          j2 = it1.value();
+        // Containers iterate in key-alphabetical order.
+        for (auto it2=j2.begin(); it2!=j2.end(); ++it2)
+            fgout << fgnl << it2.key() << " : " << it2.value();
+        // But we don't need to iterate we can just find:
+        auto                    itf = j2.find("InstanceId");
+        nlohmann::json          id = itf.value();
+        String                  idStr = id.get<String>();
+        fgout << fgnl << "InstanceId: " << idStr;
+    }
+}
+
+}
+
+#else
+
+namespace Fg {
+void testBaseJson(CLArgs const &) {}
+}
+
+#endif
 
 // */

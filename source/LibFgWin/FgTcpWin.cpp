@@ -11,6 +11,7 @@
 #include "FgStdString.hpp"
 #include "FgDiagnostics.hpp"
 #include "FgOut.hpp"
+#include "FgFileSystem.hpp"
 
 // Tell compiler to link to these libs:
 #pragma comment (lib, "Ws2_32.lib")
@@ -48,7 +49,7 @@ initWinsock()
 }
 
 bool
-fgTcpClient(
+runTcpClient(
     String const &      hostname,
     uint16              port,
     String const &      data,
@@ -143,11 +144,11 @@ void
 runTcpServer(
     uint16              port,
     bool                respond,
-    TcpHandlerFunc    handler,
+    TcpHandlerFunc      handler,
     size_t              maxRecvBytes)
 {
     initWinsock();
-    SOCKET      sockListen = INVALID_SOCKET;
+    SOCKET              sockListen = INVALID_SOCKET;
 
     // Set up the listening socket:
     struct addrinfo     hints;
@@ -179,52 +180,53 @@ runTcpServer(
     freeaddrinfo(addrInfoPtr);
 
     // Receive messages and respond until finished:
-    SOCKET      sockClient;
-    bool        handlerRetval = true;
+    SOCKET              sockClient;
+    bool                handlerRetval = true;
     do {
-        fgout << fgnl << "> " << std::flush;
-        sockaddr_in     sa;
+        fgout << fgnl << "TCP server waiting ..." << std::flush;
+        sockaddr_in         sa;
         sa.sin_family = AF_INET;
-        socklen_t       sz = sizeof(sa);
+        socklen_t           sz = sizeof(sa);
         sockClient = accept(sockListen,(sockaddr*)(&sa),&sz);
         if (sockClient == INVALID_SOCKET) {
             closesocket(sockListen);
             FGASSERT_FALSE1(toStr(WSAGetLastError()));
         }
+        fgout << fgnl << " receiving " << std::flush;
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
-        DWORD           timeout = 5000;     // 5 seconds
+        DWORD               timeout = 5000;     // 5 seconds
         setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
-		char * clientStringPtr = inet_ntoa(sa.sin_addr);
-            FGASSERT(clientStringPtr != NULL);
-        String     ipAddr = String(clientStringPtr);
-        //fgout << "receiving from " << ipAddr << " ... " << std::flush;
-        String     dataBuff;
-        int retVal = 0;
+		char *              clientStringPtr = inet_ntoa(sa.sin_addr);
+        FGASSERT(clientStringPtr != nullptr);
+        String              ipAddr {clientStringPtr};
+        String              dataBuff;
+        int                 retVal = 0;
         do {
-            char    recvbuf[1024];
+            char                recvbuf[1024];
             // recv() will return when either it has filled the buffer, copied over everthing
             // from the socket input buffer (only if non-empty), or when the the read connection
             // is closed by the client. Otherwise it will block (ie if input buffer empty):
             retVal = recv(sockClient,recvbuf,sizeof(recvbuf),0);
-            fgout << "." << std::flush;
+            fgout << ".";
             if (retVal > 0)
                 dataBuff += String(recvbuf,retVal);
         }
         while ((retVal > 0) && (dataBuff.size() <= maxRecvBytes));
+        fgout << " " << dataBuff.size() << "B";
         if (retVal != 0) {
             closesocket(sockClient);
             if (retVal < 0)
-                fgout << "TCP RECV ERROR: " << retVal;
+                fgout << " RECEIVE ERROR: " << retVal;
             else if (retVal > 0)
-                fgout << " OVERSIZE MESSAGE IGNORED.";
-            fgout << std::flush;
+                fgout << " OVERSIZE MESSAGE IGNORED";
             continue;
         }
-        fgout << ": " << std::flush;
         if (!respond)   // Avoid timeout errors on the data socket for long handlers that don't respond:
             closesocket(sockClient);
-        String     response;
+        String8             currDir = getCurrentDir();  // In case 'handler' changes it
+        String              response;
+        fgout << " executing ..." << fgpush;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
@@ -237,16 +239,18 @@ runTcpServer(
         catch(...) {
             fgout << "Handler exception (unknown type)";
         }
+        fgout << fgpop;
         if (respond) {
             if (!response.empty()) {
-                int     bytesSent = send(sockClient,response.data(),int(response.size()),0);
+                fgout << fgnl << "Responding ..." << std::flush;
+                int             bytesSent = send(sockClient,response.data(),int(response.size()),0);
                 shutdown(sockClient,SD_SEND);
                 if (bytesSent != int(response.size()))
-                    fgout << "TCP SEND ERROR: " << bytesSent << " (of " << response.size() << ").";
+                    fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << ").";
             }
             closesocket(sockClient);
         }
-        fgout << std::flush;
+        setCurrentDir(currDir);                         // In case 'handler' changed it
     } while (handlerRetval == true);
     closesocket(sockListen);
 }

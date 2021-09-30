@@ -14,39 +14,28 @@ using namespace std;
 namespace Fg {
 
 GuiPtr
-guiCheckbox(String8 const & label,const IPT<bool> & node)
+guiCheckbox(String8 const & label,IPT<bool> const & node)
 {
-    GuiCheckbox      cb;
+    GuiCheckbox         cb;
     cb.label = label;
-    cb.val = node;
-    cb.updateFlag = makeUpdateFlag(node);
+    cb.getFn = [node]() {return node.val(); };
+    cb.clickFn = [node]()
+    {
+        bool & sel = node.ref();
+        sel = !sel;
+    };
     return make_shared<GuiCheckbox>(cb);
 }
 
 GuiPtr
-guiCheckboxes(String8s const & labels,vector<IPT<bool> > const & selNs)
+guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs)
 {
     FGASSERT(!labels.empty());
     FGASSERT(selNs.size() == labels.size());
     GuiPtrs                   wins;
     for (size_t ii=0; ii<labels.size(); ++ii)
         wins.push_back(guiCheckbox(labels[ii],selNs[ii]));
-    return guiSplit(false,wins);
-}
-
-GuiVal<Bools>
-guiCheckboxes(String8s const & labels,Bools const & defaults)
-{
-    FGASSERT(labels.size() == defaults.size());
-    vector<IPT<bool> >          selNs;
-    for (size_t ii=0; ii<labels.size(); ++ii) {
-        IPT<bool>               selN = makeIPT<bool>(defaults[ii]);
-        selNs.push_back(selN);
-    }
-    GuiVal<Bools>      ret;
-    ret.valN = linkCollate(selNs);
-    ret.win = guiCheckboxes(labels,selNs);
-    return ret;
+    return guiSplitV(wins);
 }
 
 }

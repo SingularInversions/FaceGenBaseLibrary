@@ -12,6 +12,7 @@
 
 #include "FgStdLibs.hpp"
 #include "FgAffineC.hpp"
+#include "FgApproxEqual.hpp"
 
 namespace Fg {
 
@@ -45,7 +46,7 @@ struct  AffineEw
             domainDelta = domainBounds.colVec(1) - domainBounds.colVec(0),
             rangeDelta = rangeBounds.colVec(1) - rangeBounds.colVec(0);
         // Note that the deltas can be negative if the transform inverts an axis:
-        FGASSERT(fgNoZeros(domainDelta) && fgNoZeros(rangeDelta));
+        FGASSERT(noZeroElems(domainDelta) && noZeroElems(rangeDelta));
         for (uint dd=0; dd<dim; ++dd) {
             m_scales[dd] = rangeDelta[dd] / domainDelta[dd];
             m_trans[dd] = rangeBounds.cr(0,dd) - domainBounds.cr(0,dd) * m_scales[dd];
@@ -158,6 +159,14 @@ interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
         mapExp(interpolate(mapLog(a0.m_scales),mapLog(a1.m_scales),val)),
         interpolate(a0.m_trans,a1.m_trans,val)
     };
+}
+
+template <class T,uint dim>
+bool
+isApproxEqual(AffineEw<T,dim> const & l,AffineEw<T,dim> const & r,T maxDiff)
+{
+    return  isApproxEqual(l.m_scales,r.m_scales,maxDiff) &&
+            isApproxEqual(l.m_trans,r.m_trans,maxDiff);
 }
 
 }

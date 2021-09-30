@@ -15,27 +15,29 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 #include "FgOpt.hpp"
-#include "Fg3dNormals.hpp"
+#include "Fg3dMesh.hpp"
 
 namespace Fg {
 
-struct MeshTopology
+// Set the ordering of 'vertInds' so that the edge is in the winding direction of 'tri':
+// Both values in 'vertInds' must exist in 'tri' and 'tri' must not contain duplicates:
+Vec2UI              directEdgeVertInds(Vec2UI vertInds,Vec3UI tri);
+
+struct SurfTopo
 {
     struct      Tri
     {
         Vec3UI          vertInds;
         Vec3UI          edgeInds;       // In same order as verts (0-1,1-2,3-0)
 
-        Vec2UI
-        edge(uint relIdx) const;        // Return ordered vert inds of 0,1,2 edge of tri
+        Vec2UI          edge(uint relIdx) const;        // Return ordered vert inds of 0,1,2 edge of tri
     };
-    struct      Edge
+    struct      Edge                    // [Shared] undirected edge
     {
         Vec2UI          vertInds;       // Lower index first
         Uints           triInds;
 
-        uint
-        otherVertIdx(uint vertIdx) const;
+        uint            otherVertIdx(uint vertIdx) const;       // Of the 2 in 'vertIndx'
     };
     struct      Vert
     {
@@ -46,69 +48,61 @@ struct MeshTopology
     Svec<Edge>          m_edges;
     Svec<Vert>          m_verts;
 
-    MeshTopology(size_t numVerts,Vec3UIs const & tris);
+    SurfTopo(size_t numVerts,Vec3UIs const & tris);
 
-    Vec2UI
-    edgeFacingVertInds(uint edgeIdx) const;
-
-    bool
-    vertOnBoundary(uint vertIdx) const;
-
+    Vec2UI                  edgeFacingVertInds(uint edgeIdx) const;
+    bool                    vertOnBoundary(uint vertIdx) const;
     // Returns a list of vertex indices which are separated by a boundary edge. This list
     // is always non-empty, and will always be of size 2 for a manifold surface:
-    Uints
-    vertBoundaryNeighbours(uint vertIdx) const;
+    Uints                   vertBoundaryNeighbours(uint vertIdx) const;
+    Uints                   vertNeighbours(uint vertIdx) const;
 
-    Uints
-    vertNeighbours(uint vertIdx) const;
-
-    // Sets of vertex indices corresponding to each connected seam.
-    // A seam vertex has > 0 (always an even number for valid topologies) single-valence edges connected.
-    Svec<std::set<uint> >
-    seams() const;
-
-    // Returns the connected seam containing vertIdx, unless vertIdx is not on a seam in which
-    // case the empty set is returned:
-    std::set<uint>
-    seamContaining(uint vertIdx) const;
-
+    struct      BoundEdge
+    {
+        uint        edgeIdx;        // A boundary edge; part of only 1 tri which determines its winding direction.
+        uint        vertIdx;        // The vertex at the end of the directed edge above.
+    };
+    typedef Svec<BoundEdge> BoundEdges;
+    // If the given vertex is part of a boundary, returns that boundary, otherwise empty:
+    BoundEdges              boundaryContainingVert(uint vertIdx) const;
+    // Returns boundaries on the surface in winding order (arbitrary starting point).
+    // Mesh must be manifold, and thus boundaries form closed loops:
+    Svec<BoundEdges>        boundaries() const;
+    // Returns the outward-facing normals for each vertex in the given boundary from the given tri norms:
+    Vec3Ds                  boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) const;
     // Trace a fold consisting only of edges whose facet normals differ by at least 60 degrees.
     std::set<uint>
     traceFold(
         MeshNormals const & norms,  // Must be created from a single (unified) tri-only surface
         FatBools &      done,
         uint                vertIdx) const;
-    
     // Returns number of boundary edges, intersection edges and reversed edges respectively.
     // If all are zero the mesh is watertight. If the last 2 are zero the mesh is manifold.
-    Vec3UI
-    isManifold() const;
-
-    size_t
-    unusedVerts() const;
-
+    Vec3UI                  isManifold() const;
+    size_t                  unusedVerts() const;
     // Returns the minimum edge distance to the given vertex for each vertex.
     // Unconnected verts will have value float_max.
-    Floats
-    edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const;
-
+    Floats                  edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const;
     // As above where 'init' has at least 1 distance defined, the rest set to float_max:
-    void
-    edgeDistanceMap(Vec3Fs const & verts,Floats & init) const;
+    void                    edgeDistanceMap(Vec3Fs const & verts,Floats & init) const;
 
 private:
-
-    Uints
-    findSeam(FatBools & done) const;
-
-    uint
-    oppositeVert(uint triIdx,uint edgeIdx) const;
+    BoundEdges              boundaryContainingEdgeP(uint edgeIdx) const; // edgeIdx must be a boundary edge
+    Uints                   findSeam(FatBools & done) const;
+    uint                    oppositeVert(uint triIdx,uint edgeIdx) const;
 };
+
+struct  IdxNorm
+{
+    uint            vertIdx;
+    Vec3D           norm;       // Normalized direction
+};
+typedef Svec<IdxNorm>   IdxNorms;
 
 // Return inds of all connected verts starting at 'seedIdx' in a region bounded by marked verts,
 // including the boundary marked verts:
 std::set<uint>
-cFillMarkedVertRegion(Mesh const &,MeshTopology const &,uint seedIdx);
+cFillMarkedVertRegion(Mesh const &,SurfTopo const &,uint seedIdx);
 
 }
 
