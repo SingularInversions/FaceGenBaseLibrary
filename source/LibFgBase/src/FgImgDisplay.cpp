@@ -44,7 +44,7 @@ viewImage(const Img<ushort> & img)
     Affine1F      aff(VecF2(cBounds(img.dataVec())),VecF2(0,255));
     ImgRgba8     di(img.dims());
     for (size_t ii=0; ii<img.numPixels(); ++ii)
-        di[ii] = RgbaUC(aff * img[ii]);
+        di[ii] = Rgba8(aff * img[ii]);
     viewImage(di);
 }
 
@@ -54,7 +54,7 @@ viewImage(const ImgF & img)
     Affine1F          aff(cBounds(img.m_data),VecF2(0,255));
     ImgRgba8         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
+        dispImg.m_data[ii] = Rgba8(uchar(aff * img.m_data[ii]));
     viewImage(dispImg);
 }
 
@@ -64,7 +64,7 @@ viewImage(const ImgD & img)
     Affine1D          aff(cBounds(img.m_data),VecD2(0,255));
     ImgRgba8         dispImg(img.dims());
     for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = RgbaUC(uchar(aff * img.m_data[ii]));
+        dispImg.m_data[ii] = Rgba8(uchar(aff * img.m_data[ii]));
     viewImage(dispImg);
 }
 
@@ -77,7 +77,7 @@ viewImage(const ImgV3F & img)
     ImgRgba8             disp(tmp.dims());
     for (size_t ii=0; ii<disp.numPixels(); ++ii) {
         Vec3UC          clr = mapRound<uchar>(tmp[ii]);
-        disp[ii] = RgbaUC(clr[0],clr[1],clr[2],uchar(255));
+        disp[ii] = Rgba8(clr[0],clr[1],clr[2],uchar(255));
     }
     fgout << fgnl << disp;
     viewImage(disp);

@@ -330,7 +330,7 @@ struct  GuiDialogSplashScreenWin
     HWND            hwndThis;
     ImgRgba8     img;
 
-    GuiDialogSplashScreenWin() : hwndThis(0), img(s_splashSize,s_splashSize,RgbaUC(0,255,0,255)) {}
+    GuiDialogSplashScreenWin() : hwndThis(0), img(s_splashSize,s_splashSize,Rgba8(0,255,0,255)) {}
 
     LRESULT
     wndProc(HWND hwnd,UINT msg,WPARAM,LPARAM)

@@ -1126,7 +1126,7 @@ guiSelectFids(Mesh & mesh,Strings const & fidLabels,uint mode)
         // Reduce contrast so underlying surface shape is easily visible in combination:
         //ImgRgba8 &   img = *surf.material.albedoMap;
         //for (size_t pp=0; pp<img.numPixels(); ++pp)
-        //    img[pp] = img[pp] / 2 + RgbaUC(127,127,127,127);
+        //    img[pp] = img[pp] / 2 + Rgba8(127,127,127,127);
     }
     SurfPoints &        sps = surf.surfPoints;
     if (mode == 1) {

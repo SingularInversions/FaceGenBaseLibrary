@@ -147,7 +147,7 @@ cmdViewUvs(CLArgs const & args)
     fgout << fgnl << syn.curr() << " UV Bounds: " << cBounds(mesh.uvs);
     String8s            names;
     ImgRgba8s           images;
-    RgbaUC              color {0,255,0,255};
+    Rgba8              color {0,255,0,255};
     size_t              cnt {0};
     for (Surf const & surf : mesh.surfaces) {
         if (surf.name.empty())

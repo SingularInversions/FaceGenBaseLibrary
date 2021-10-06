@@ -31,7 +31,7 @@ Lighting::createSpecularMap() const
             float   xx = ((float)px - 63.5f) / 64.0f,
                     sq = xx*xx + yy*yy;
             if (sq > 1.0f)                    // Outside valid spherical region.
-                img.xy(px,py) = RgbaUC(0,0,0,1);
+                img.xy(px,py) = Rgba8(0,0,0,1);
             else {
                 float   aa = 2.0f * sqrt(1.0f - sq),
                         sr = sqrt(sq),

@@ -23,7 +23,7 @@ operator<<(std::ostream & os,ImgRgba8 const & img)
     Mat<uchar,4,1>    init {img[0].m_c};
     Mat<uchar,4,2>    bounds = catHoriz(init,init);
     for (Iter2UI it(img.dims()); it.next(); it.valid()) {
-        RgbaUC    pix = img[it()];
+        Rgba8    pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {
             updateMin_(bounds.rc(cc,0),pix[cc]);
             updateMax_(bounds.rc(cc,1),pix[cc]);
@@ -263,9 +263,9 @@ shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
 {
     FGASSERT(!src.empty());
     dst.resize(src.dims()/2);
-    RgbaUC const    *srcPtr1 = src.dataPtr(),
+    Rgba8 const    *srcPtr1 = src.dataPtr(),
                     *srcPtr2 = srcPtr1 + src.width();
-    RgbaUC          *dstPtr =  dst.dataPtr();
+    Rgba8          *dstPtr =  dst.dataPtr();
     for (uint yd=0; yd<dst.height(); yd++) {
         for (uint xd=0; xd<dst.width(); xd++) {
             uint        xs1 = xd * 2,
@@ -275,7 +275,7 @@ shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
                               RgbaUS(srcPtr2[xs1]) +
                               RgbaUS(srcPtr2[xs2]) +
                               RgbaUS(1,1,1,1);        // Account for rounding bias
-            dstPtr[xd] = RgbaUC(acc/4);
+            dstPtr[xd] = Rgba8(acc/4);
         }
         dstPtr += dst.width();
         srcPtr1 += 2 * src.width();
@@ -310,7 +310,7 @@ expand2(ImgRgba8 const & src)
                 RgbaUS(src.xy(sxl,syh)) * wxl * wyh +
                 RgbaUS(src.xy(sxh,syh)) * wxh * wyh +
                 RgbaUS(7,7,7,7);      // Account for rounding bias
-            dst.xy(xx,yy) = RgbaUC(acc / 16);
+            dst.xy(xx,yy) = Rgba8(acc / 16);
         }
     }
     return dst;
@@ -335,11 +335,11 @@ shrink2Fixed(const ImgUC & img)
 // for background processing etc:
 
 Svec<Arr<float,3>>
-toUnit3F(Svec<RgbaUC> const & data)
+toUnit3F(Svec<Rgba8> const & data)
 {
     float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
     Svec<Arr<float,3>>          ret; ret.reserve(data.size());
-    for (RgbaUC d : data)
+    for (Rgba8 d : data)
         ret.push_back(Arr<float,3>{d[0]/f,d[1]/f,d[2]/f});          // emplace doesn't work for some reason
     return ret;
 }
@@ -351,11 +351,11 @@ toUnit3F(ImgRgba8 const & in)
 }
 
 Svec<Arr<float,4>>
-toUnit4F(Svec<RgbaUC> const & data)
+toUnit4F(Svec<Rgba8> const & data)
 {
     float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
     Svec<Arr<float,4>>          ret; ret.reserve(data.size());
-    for (RgbaUC d : data)
+    for (Rgba8 d : data)
         ret.push_back(Arr<float,4>{d[0]/f,d[1]/f,d[2]/f,d[3]/f});   // emplace doesn't work for some reason
     return ret;
 }
@@ -364,11 +364,11 @@ Img4F
 toUnit4F(ImgRgba8 const & in)
 {return Img4F {in.dims(),toUnit4F(in.m_data)}; }
 
-Svec<RgbaUC>
+Svec<Rgba8>
 toRgba8(Svec<Arr<float,3>> const & data)
 {
     float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
-    Svec<RgbaUC>                ret; ret.reserve(data.size());
+    Svec<Rgba8>                ret; ret.reserve(data.size());
     for (Arr<float,3> const & d : data)
         ret.emplace_back(uchar(d[0]*f),uchar(d[1]*f),uchar(d[2]*f),255);
     return ret;
@@ -378,11 +378,11 @@ ImgRgba8
 toRgba8(Img3F const & in)
 {return ImgRgba8 {in.dims(),toRgba8(in.m_data)}; }
 
-Svec<RgbaUC>
+Svec<Rgba8>
 toRgba8(Svec<RgbaF> const & data)
 {
     float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
-    Svec<RgbaUC>                ret; ret.reserve(data.size());
+    Svec<Rgba8>                ret; ret.reserve(data.size());
     for (RgbaF const & p : data)
         ret.emplace_back(uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),uchar(p[3]*f));
     return ret;
@@ -396,27 +396,27 @@ ImgUC
 toUC(ImgRgba8 const & in)
 {
     struct C {
-        uchar operator()(RgbaUC rgba) const {return rgba.rec709(); }
+        uchar operator()(Rgba8 rgba) const {return rgba.rec709(); }
     };
-    return mapCallT<uchar,RgbaUC,C>(in,C{});
+    return mapCallT<uchar,Rgba8,C>(in,C{});
 }
 
 ImgF
 toFloat(ImgRgba8 const & in)
 {
     struct C {
-        float operator()(RgbaUC rgba) const {return RgbaF(rgba).rec709(); }
+        float operator()(Rgba8 rgba) const {return RgbaF(rgba).rec709(); }
     };
-    return mapCallT<float,RgbaUC,C>(in,C{});
+    return mapCallT<float,Rgba8,C>(in,C{});
 }
 
 ImgRgba8
 toRgba8(ImgUC const & in)
 {
     struct C {
-        RgbaUC operator()(uchar v) const {return {v,v,v,255}; }
+        Rgba8 operator()(uchar v) const {return {v,v,v,255}; }
     };
-    return mapCallT<RgbaUC,uchar,C>(in,C{});
+    return mapCallT<Rgba8,uchar,C>(in,C{});
 }
 
 void
@@ -517,13 +517,13 @@ fgResample(
     const Img2F &       map,
     ImgRgba8 const &     src)
 {
-    ImgRgba8             ret {map.dims(),RgbaUC{0}};
+    ImgRgba8             ret {map.dims(),Rgba8{0}};
     Vec2F               noVal {-1,-1};
     for (Iter2UI it(ret.dims()); it.valid(); it.next()) {
         if (map[it()] != noVal) {
             Vec2F           pos = map[it()];
             pos[1] = 1.0f - pos[1];         // OTCS to UICS
-            ret[it()] = RgbaUC(sampleClipIucs(src,pos) + RgbaF{0.5});
+            ret[it()] = Rgba8(sampleClipIucs(src,pos) + RgbaF{0.5});
         }
     }
     return ret;
@@ -542,7 +542,7 @@ usesAlpha(ImgRgba8 const & img,uchar minVal)
 void
 paintCrosshair(ImgRgba8 & img,Vec2I ircs)
 {
-    RgbaUC              centre {0,150,200,255},
+    Rgba8              centre {0,150,200,255},
                         thick {0,255,0,255};
     for (int yy=-4; yy<=4; ++yy) {
         for (int xx=-1; xx<=1; ++xx) {
@@ -561,7 +561,7 @@ paintCrosshair(ImgRgba8 & img,Vec2I ircs)
 void
 paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC c,uint radius)
 {
-    RgbaUC    clr(c[0],c[1],c[2],c[3]);
+    Rgba8    clr(c[0],c[1],c[2],c[3]);
     int         rad = int(radius);
     for (int yy=-rad; yy<=rad; ++yy)
         for (int xx=-rad; xx<=rad; ++xx)
@@ -682,7 +682,7 @@ mod1(uint off,uint step,ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,int mod,A
 {
     for (uint yy=off; yy<ret.m_dims[1]; yy+=step) {
         for (uint xx=0; xx<ret.m_dims[0]; ++xx) {
-            RgbaUC          td = imgMod.xy(xx,yy),
+            Rgba8          td = imgMod.xy(xx,yy),
                             out(0,0,0,255);
             RgbaF           pd = sampleClipIucs(imgIn,ircsToIucs*Vec2F(xx,yy));
             for (uint cc=0; cc<3; ++cc) {
@@ -705,7 +705,7 @@ mod2(uint off,uint step,ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,int mod,A
     for (uint yy=off; yy<ret.m_dims[1]; yy+=step) {
         for (uint xx=0; xx<ret.m_dims[0]; ++xx) {
             RgbaF           td = sampleClipIucs(imgMod,ircsToIucs*Vec2F(xx,yy));
-            RgbaUC          out(0,0,0,255),
+            Rgba8          out(0,0,0,255),
                             pd = imgIn.xy(xx,yy);
             for (uint cc=0; cc<3; ++cc) {
                 int             gamMod = (((int(td[cc]) - 64) * mod) / 256) + 64;
@@ -813,7 +813,7 @@ smoothUint(ImgUC const & src,uchar borderPolicy)
 
 void
 smoothUint1D(
-    RgbaUC const        *srcPtr,
+    Rgba8 const        *srcPtr,
     RgbaUS              *dstPtr,
     uint                num,
     uchar               borderPolicy)               // See below
@@ -833,7 +833,7 @@ smoothUint_(
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.width(),src.height());
     Img<RgbaUS> acc(src.width(),3);                  // Accumulator image
-    RgbaUC           *dstPtr = dst.rowPtr(0);
+    Rgba8           *dstPtr = dst.rowPtr(0);
     RgbaUS         *accPtr0,
                 *accPtr1 = acc.rowPtr(0),
                 *accPtr2 = acc.rowPtr(1);
@@ -843,7 +843,7 @@ smoothUint_(
         // Add 7 to minimize rounding bias. Adding 8 would bias the other way so we have to
         // settle for a small amount of downward rounding bias unless we want to pseudo-randomize:
         RgbaUS        tmp = accPtr1[xx]*(2+borderPolicy) + accPtr2[xx] + RgbaUS(7);
-        dstPtr[xx] = RgbaUC(tmp / 16);
+        dstPtr[xx] = Rgba8(tmp / 16);
     }
     for (uint yy=1; yy<src.height()-1; ++yy) {
         dstPtr = dst.rowPtr(yy),
@@ -852,11 +852,11 @@ smoothUint_(
         accPtr2 = acc.rowPtr((yy+1)%3);
         smoothUint1D(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
         for (uint xx=0; xx<src.width(); ++xx)
-            dstPtr[xx] = RgbaUC((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + RgbaUS(7)) / 16);
+            dstPtr[xx] = Rgba8((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + RgbaUS(7)) / 16);
     }
     dstPtr = dst.rowPtr(dst.height()-1);
     for (uint xx=0; xx<dst.width(); ++xx)
-        dstPtr[xx] = RgbaUC((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + RgbaUS(7)) / 16);
+        dstPtr[xx] = Rgba8((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + RgbaUS(7)) / 16);
 }
 ImgRgba8
 smoothUint(ImgRgba8 const & src,uchar borderPolicy)

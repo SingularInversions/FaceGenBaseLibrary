@@ -20,7 +20,7 @@ using namespace std;
 namespace Fg {
 
 void
-drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,RgbaUC color)
+drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,Rgba8 color)
 {
     FGASSERT(!img.empty());
     int         rad = scast<int>(radius),
@@ -37,7 +37,7 @@ drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,RgbaUC color)
     }
 }
 void
-drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,RgbaUC color)
+drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,Rgba8 color)
 {
     Vec2F               ircs = cIucsToIrcs(img.dims(),Vec2F(posIucs));
     drawDotIrcs(img,mapRound<int,float,2,1>(ircs),radius,color);
@@ -51,7 +51,7 @@ drawLineIrcs(
     ImgRgba8 &       img,
     Vec2I            beg,
     Vec2I            end,
-    RgbaUC            val)
+    Rgba8            val)
 {
     Vec2I    delta = end-beg;
     Vec2I    mag;
@@ -78,7 +78,7 @@ drawLineIrcs(
 }
 
 void
-drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,RgbaUC clr)
+drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,Rgba8 clr)
 {
     Vec2UI              dims = img.dims();
     for (uint dd=0; dd<2; ++dd) {
@@ -98,13 +98,13 @@ cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpacing)
                         S = cMax(cSizes(datas)),            // samples
                         P = D*S*pixPerBar + S*pixSpacing,   // pixel size of image
                         xx {0};                             // image x coord counter (pixels)
-    ImgRgba8             img {P,P,RgbaUC{0,0,0,255}};
+    ImgRgba8             img {P,P,Rgba8{0,0,0,255}};
     double              maxVal = cMax(flatten(datas));
     for (size_t ss=0; ss<S; ++ss) {
         size_t              cIdx {0};
         for (Doubles const & data : datas) {
             if (ss < data.size()) {
-                RgbaUC              clr {0,0,0,255};
+                Rgba8              clr {0,0,0,255};
                 clr[cIdx] = 255;
                 double              v = data[ss];
                 uint                hgt = round<uint>((P-1) * v / maxVal);
@@ -133,7 +133,7 @@ drawFunction(
     std::function<double(double)> func,
     VecD2            bounds,         // abscissa value at image x bounds
     double              vscale,         // y pixels per unit
-    RgbaUC            colour)
+    Rgba8            colour)
 {
     FGASSERT(!img.empty());
     int             wid = img.width(),
@@ -162,7 +162,7 @@ drawFunctions(
     // Calculate colours:
     double          clrCode = 0.0,
                     clrStep = 3.0 / num;
-    vector<RgbaUC> colour(num);
+    vector<Rgba8> colour(num);
     for (uint jj=0; jj<num; ++jj) {
         double      dtmp = clrCode;
         if (dtmp < 1.0) {
@@ -190,7 +190,7 @@ drawFunctions(
         fbounds[jj] = cBounds(funcs.colVec(jj).m_data);
         fscale[jj] = double(dim) * 0.96 / (fbounds[jj][1] - fbounds[jj][0]);
     }
-    ImgRgba8             img(dim,dim,RgbaUC(0,0,0,255));
+    ImgRgba8             img(dim,dim,Rgba8(0,0,0,255));
     uint                margin = round<uint>(double(dim)*0.02)+1;
     for (uint ii=0; ii<dim; ++ii) {
         for (uint jj=0; jj<num; ++jj) {

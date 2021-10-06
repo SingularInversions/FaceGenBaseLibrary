@@ -174,18 +174,18 @@ normGraph(CLArgs const &)
     // S = binScale * stdNormIntegral * binsPerStdev
     double              binScale = double(S) / (sqrt2Pi() * binsPerStdev),
                         hgtRatio = 0.9;
-    ImgRgba8             img {sz,sz,RgbaUC{0}};
+    ImgRgba8             img {sz,sz,Rgba8{0}};
     for (size_t xx=0; xx<sz; ++xx) {
         size_t              hgt = round<int>(histogram[xx] * sz * hgtRatio / binScale);
         for (size_t yy=0; yy<hgt; ++yy)
-            img.xy(xx,yy) = RgbaUC{255};
+            img.xy(xx,yy) = Rgba8{255};
     }
     // Superimpose a similarly scaled Gaussian:
     Affine1D            histToRand = randToHist.inverse();
     for (size_t xx=0; xx<sz; ++xx) {
         double              val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
         size_t              hgt = round<int>(val * sz * hgtRatio);
-        img.xy(xx,hgt) = RgbaUC(255,0,0,255);
+        img.xy(xx,hgt) = Rgba8(255,0,0,255);
     }
     // Display:
     flipVertical_(img);

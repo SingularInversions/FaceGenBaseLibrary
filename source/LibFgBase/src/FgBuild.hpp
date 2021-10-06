@@ -48,7 +48,7 @@ String          getCurrentBuildDescription();
 enum struct Debrel { debug, release };
 typedef Svec<Debrel>    Debrels;
 std::ostream & operator<<(std::ostream & os,Debrel d);
-inline Debrels  getAllDebrels() {return {Debrel::debug,Debrel::release}; }
+inline Debrels  getDebrels() {return {Debrel::debug,Debrel::release}; }
 
 // The primary configuration is used in development for testing exact equality on tests with floating
 // point results that can vary on different configs. It is currently win/x64/vs19/release:
@@ -60,15 +60,15 @@ cNsOs(String const & path,BuildOS os)
 {return (os == BuildOS::win) ? replaceAll(path,'/','\\') : replaceAll(path,'\\','/'); }
 
 // Return bin directory for given configuration relative to the repo root using given file separator:
-String
-getRelBin(BuildOS,Arch,Compiler,Debrel debrel,bool backslash=false);
+String          getRelBin(BuildOS,Arch,Compiler,Debrel debrel,bool backslash=false);
+// Bin for pre-built binaries:
+String          getRelBin(BuildOS,Arch,bool backslash=false);
 
 // Fast insecure hash for generating UUIDs from unique strings of at least length 8 based on std::hash.
 // Deterministic for same compiler / bit depth for regression testing.
 // 64 and 32 bit versions will NOT generate the same value, nor will different compilers (per std::hash).
 // In future may upgrade to MurmurHash3 to ensure fully deterministic mapping:
-uint64
-cUuidHash64(String const & uniqueString);
+uint64          cUuidHash64(String const & uniqueString);
 
 struct  uint128
 {
@@ -76,8 +76,7 @@ struct  uint128
 };
 
 // As above but requires unique string at least length 16:
-uint128
-cUuidHash128(String const & uniqueString);
+uint128         cUuidHash128(String const & uniqueString);
 
 // See comments on cUuidHash64. Fills UUID 'time' fields with random bits for deterministic
 // regression testing; all randomness generated from 'name' argument:

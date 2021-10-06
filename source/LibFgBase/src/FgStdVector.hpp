@@ -497,19 +497,6 @@ findFirstIdxIf(
 }
 
 template<class T,class U>
-Sizes const &
-findAllIndsIf(
-    Svec<T> const &     vec,
-    U const &           func)       /// Allow for std::function
-{
-    Sizes               ret;
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        if (func(vec[ii]))
-            ret.push_back(ii);
-    return ret;
-}
-
-template<class T,class U>
 size_t
 findLastIdx(Svec<T> const & vec,const U & val)
 {
@@ -1005,8 +992,18 @@ template<class T>
 Svec<T>
 cSort(Svec<T> const & v)
 {
-    Svec<T>  ret(v);
+    Svec<T>             ret(v);
     std::sort(ret.begin(),ret.end());
+    return ret;
+}
+
+// ... and with predicate:
+template<class T,class P>
+Svec<T>
+cSort(Svec<T> const & v,P const & pred)
+{
+    Svec<T>             ret(v);
+    std::sort(ret.begin(),ret.end(),pred);
     return ret;
 }
 
@@ -1104,15 +1101,15 @@ transpose(Svec<Svec<T>> const & v)
     return ret;
 }
 
-// For this to work with lambdas the template type must be explicitly given with the function call:
-template<class T>
+// functional version of std::copy_if over entire vector:
+template<class T,class P>
 Svec<T>
-cFilter(Svec<T> const & vals,const std::function<bool(T const & val)> & fnSelect)
+cFilter(Svec<T> const & vals,P const & pred)    // pred() must take one T argument
 {
-    Svec<T>       ret;
-    for (auto it=vals.begin(); it!=vals.end(); ++it)
-        if (fnSelect(*it))
-            ret.push_back(*it);
+    Svec<T>             ret;
+    for (T const & v : vals)
+        if (pred(v))
+            ret.push_back(v);
     return ret;
 }
 

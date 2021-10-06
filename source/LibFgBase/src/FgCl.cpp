@@ -80,10 +80,9 @@ clUnzip(string const & fname)
 }
 
 void
-clZip(string const & dir,bool oldFormat)
+clZip(String const & dirName,String const & zipFileName)
 {
-    string      ext = (oldFormat ? ".zip " : ".7z ");
-    clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" a "+dir+ext+dir+" >> log.txt");
+    clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" a " + zipFileName + " " + dirName + " >> log.txt");
 }
 
 #else

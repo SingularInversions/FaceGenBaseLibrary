@@ -91,7 +91,7 @@ fgImgTestWrite(CLArgs const & args)
     FGTESTDIR
     char32_t        ch = 0x00004EE5;            // A Chinese character
     String8        chinese(ch);
-    ImgRgba8     redImg(16,16,RgbaUC(255,0,0,255));
+    ImgRgba8     redImg(16,16,Rgba8(255,0,0,255));
     saveImage(chinese+"0.jpg",redImg);
     saveImage(chinese+"0.png",redImg);
 }

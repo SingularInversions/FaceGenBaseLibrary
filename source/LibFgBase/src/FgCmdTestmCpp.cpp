@@ -27,57 +27,58 @@ namespace {
 
 static size_t rvoCount;
 
-struct  FgTestmRvo
+struct  TestmRvo
 {
     Doubles      data;
-    FgTestmRvo() {}
-    FgTestmRvo(double v) : data(1,v) {}
-    FgTestmRvo(const FgTestmRvo & rhs) : data(rhs.data) {++rvoCount; }
+    TestmRvo() {}
+    TestmRvo(double v) : data(1,v) {}
+    TestmRvo(TestmRvo const & rhs) : data(rhs.data) {++rvoCount; }
+    TestmRvo & operator=(TestmRvo const & rhs) = default;               // Must be explicit when CC is
 };
 
-FgTestmRvo
-fgTestmRvo()
+TestmRvo
+testmRvo()
 {
     Doubles      t0(1,3.14159);
-    return FgTestmRvo(t0[0]);
+    return TestmRvo(t0[0]);
 }
 
-FgTestmRvo
-fgTestmRvoMr(bool sel)
+TestmRvo
+testmRvoMr(bool sel)
 {
     Doubles      t0(1,2.71828),
                 t1(1,3.14159);
     if (sel)
-        return FgTestmRvo(t0[0]);
+        return TestmRvo(t0[0]);
     else
-        return FgTestmRvo(t1[0]);
+        return TestmRvo(t1[0]);
 }
 
-FgTestmRvo
-fgTestmNrvo(bool sel)
+TestmRvo
+testmNrvo(bool sel)
 {
     Doubles      t0(1,2.71828),
                 t1(1,3.14159);
-    FgTestmRvo  ret;
+    TestmRvo  ret;
     if (sel)
-        ret = FgTestmRvo(t0[0]);
+        ret = TestmRvo(t0[0]);
     else
-        ret = FgTestmRvo(t1[0]);
+        ret = TestmRvo(t1[0]);
     return ret;
 }
 
-FgTestmRvo
-fgTestmNrvoMr(bool sel)
+TestmRvo
+testmNrvoMr(bool sel)
 {
     Doubles      t0(1,2.71828),
                 t1(1,3.14159);
-    FgTestmRvo  ret;
+    TestmRvo  ret;
     if (sel) {
-        ret = FgTestmRvo(t0[0]);
+        ret = TestmRvo(t0[0]);
         return ret;
     }
     else {
-        ret = FgTestmRvo(t1[0]);
+        ret = TestmRvo(t1[0]);
         return ret;
     }
 }
@@ -85,21 +86,21 @@ fgTestmNrvoMr(bool sel)
 void
 rvo(CLArgs const &)
 {
-    FgTestmRvo      t;
+    TestmRvo      t;
     rvoCount = 0;
-    t = fgTestmRvo();
+    t = testmRvo();
     fgout << fgnl << "RVO copies: " << rvoCount;
     rvoCount = 0;
-    t = fgTestmRvoMr(true);
-    t = fgTestmRvoMr(false);
+    t = testmRvoMr(true);
+    t = testmRvoMr(false);
     fgout << fgnl << "RVO with multiple returns (both paths) copies: " << rvoCount;
     rvoCount = 0;
-    t = fgTestmNrvo(true);
-    t = fgTestmNrvo(false);
+    t = testmNrvo(true);
+    t = testmNrvo(false);
     fgout << fgnl << "NRVO copies (both assignment paths): " << rvoCount;
     rvoCount = 0;
-    t = fgTestmNrvoMr(true);
-    t = fgTestmNrvoMr(false);
+    t = testmNrvoMr(true);
+    t = testmNrvoMr(false);
     fgout << fgnl << "NRVO with multiple returns (both paths) copies: " << rvoCount;
 }
 

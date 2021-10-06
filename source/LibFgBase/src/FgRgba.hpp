@@ -40,8 +40,8 @@ struct      Rgba
     : m_c(mapCast<T,U,4>(val.m_c)) 
     {}
 
-    // Provide explicit CC when using templated conversion constructor to avoid compiler issues.
-    Rgba(Rgba const & rhs) : m_c(rhs.m_c) {}
+    // Otherwise the conversion constuctor above would override:
+    Rgba(Rgba const & rhs) = default;
 
     Rgba(T r,T g,T b,T a) : m_c {{r,g,b,a}} {}
 
@@ -124,12 +124,12 @@ struct      Rgba
     }
 };
 
-typedef Rgba<uchar>             RgbaUC;
+typedef Rgba<uchar>             Rgba8;
 typedef Rgba<ushort>            RgbaUS;
 typedef Rgba<float>             RgbaF;
 typedef Rgba<double>            RgbaD;
 
-typedef Svec<RgbaUC>            RgbaUCs;
+typedef Svec<Rgba8>            RgbaUCs;
 typedef Svec<RgbaF>             RgbaFs;
 
 template<typename T>
@@ -163,8 +163,8 @@ operator<<(std::ostream & out,Rgba<T> p)
 // r_c = f_c * f_a + b_c * b_a * (1-f_a)
 // r_a = f_a + b_a * (1-f_a)
 inline
-RgbaUC
-compositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
+Rgba8
+compositeFragmentUnweighted(Rgba8 foreground,Rgba8 background)
 {
     uint        f_a = foreground.alpha(),
                 b_a = background.alpha(),
@@ -174,19 +174,19 @@ compositeFragmentUnweighted(RgbaUC foreground,RgbaUC background)
                 b_c = mapCast<uint>(cHead<3>(background.m_c)),
                 acc = f_c * f_a + b_c * tmp,
                 r_c = (acc + cArr<uint,3>(127)) / 255U;
-    return      RgbaUC(r_c[0],r_c[1],r_c[2],f_a+tmp);
+    return      Rgba8(r_c[0],r_c[1],r_c[2],f_a+tmp);
 }
 
 // Assumes alpha-weighted colour values:
 // r_c = f_c + b_c * (1-f_a)
 // r_a = f_a + b_a * (1-f_a)
 inline
-RgbaUC
-compositeFragmentPreWeighted(RgbaUC foreground,RgbaUC background)
+Rgba8
+compositeFragmentPreWeighted(Rgba8 foreground,Rgba8 background)
 {
     uint            omfa = 255 - foreground.alpha();
     Arr4UI          acc = mapCast<uint>(background.m_c) * omfa + cArr<uint,4>(127);
-    return (foreground + RgbaUC(mapCast<uchar>(acc/255U)));
+    return (foreground + Rgba8(mapCast<uchar>(acc/255U)));
 }
 inline
 RgbaF

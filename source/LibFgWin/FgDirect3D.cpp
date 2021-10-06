@@ -280,9 +280,9 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
         FG_ASSERT_D3D(hr);
     }
     // Just in case 1x1 image has memory alignment and two-sided interpolation edge-case issues:
-    greyMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(200,200,200,255)));
-    blackMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(0,0,0,255)));
-    whiteMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(255,255,255,255)));
+    greyMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(200,200,200,255)));
+    blackMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(0,0,0,255)));
+    whiteMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(255,255,255,255)));
     {
         // Need accumulator type (eg. float) for subdivision to work:
         Svec<Vec3F>             colorsF {{
@@ -293,11 +293,11 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
         tintMaps.reserve(colors.size());
         tintTransMaps.reserve(colors.size());
         for (Vec3UC c : colors) {
-            tintMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],255})));
-            tintTransMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},RgbaUC{c[0],c[1],c[2],150})));
+            tintMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},Rgba8{c[0],c[1],c[2],255})));
+            tintTransMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},Rgba8{c[0],c[1],c[2],150})));
         }
     }
-    noModulationMap = makeMap(ImgRgba8(Vec2UI(2,2),RgbaUC(64,64,64,255)));
+    noModulationMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(64,64,64,255)));
     icosahedron = reverseWinding(cIcosahedron());                               // CC to CW
 }
 

@@ -125,7 +125,10 @@ consProj(
         ofs << " -D" << def;
     for (string const & id : incDirs) {
         string      libName = collapse(prj.name,id);
-        ofs << " -I" << libName;
+        if (beginsWith(libName,"LibFg"))
+            ofs << " -I" << libName;
+        else 
+            ofs << " -isystem " << libName;      // Tell compiler not to emit warnings for these includes
     }
     ofs << lf
         << "SDIR" << prj.name << " = " << prj.name << '/' << prj.baseDir << lf
@@ -540,7 +543,7 @@ fgConsNativeMakefiles(ConsSolution const & sln)
     bool            changed = false;
     string          fnameAll = "make_all.mk";
     changed = constIncludeFileNative(sln,fnameAll) || changed;
-    for (Debrel debrel : getAllDebrels()) {
+    for (Debrel debrel : getDebrels()) {
         changed = consMakefileOsArch(BuildOS::linux,Compiler::clang,Arch::x64,debrel,fnameAll) || changed;
         changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::x64,debrel,fnameAll) || changed;
         changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::arm8_2,debrel,fnameAll) || changed;

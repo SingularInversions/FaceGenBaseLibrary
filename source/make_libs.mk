@@ -1,6 +1,6 @@
 .PHONY: all
 all: $(BUILDIR)LibTpBoost.a $(BUILDIR)LibJpegIjg6b.a $(BUILDIR)LibFgBase.a 
-FLAGSLibTpBoost =  -w -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -ILibTpBoost/boost_1_67_0/
+FLAGSLibTpBoost =  -w -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -isystem LibTpBoost/boost_1_67_0/
 SDIRLibTpBoost = LibTpBoost/boost_1_67_0/
 ODIRLibTpBoost = $(BUILDIR)LibTpBoost/
 $(shell mkdir -p $(ODIRLibTpBoost))
@@ -102,7 +102,7 @@ $(ODIRLibTpBoost)libs_serialization_src_xml_woarchive.o: $(SDIRLibTpBoost)libs/s
 	$(CXX) -o $(ODIRLibTpBoost)libs_serialization_src_xml_woarchive.o -c $(CXXFLAGS) $(FLAGSLibTpBoost) $(SDIRLibTpBoost)libs/serialization/src/xml_woarchive.cpp
 $(ODIRLibTpBoost)libs_system_src_error_code.o: $(SDIRLibTpBoost)libs/system/src/error_code.cpp $(INCSLibTpBoost)
 	$(CXX) -o $(ODIRLibTpBoost)libs_system_src_error_code.o -c $(CXXFLAGS) $(FLAGSLibTpBoost) $(SDIRLibTpBoost)libs/system/src/error_code.cpp
-FLAGSLibJpegIjg6b =  -w -ILibJpegIjg6b/
+FLAGSLibJpegIjg6b =  -w -isystem LibJpegIjg6b/
 SDIRLibJpegIjg6b = LibJpegIjg6b/
 ODIRLibJpegIjg6b = $(BUILDIR)LibJpegIjg6b/
 $(shell mkdir -p $(ODIRLibJpegIjg6b))
@@ -228,7 +228,7 @@ $(ODIRLibJpegIjg6b)wrrle.o: $(SDIRLibJpegIjg6b)wrrle.c $(INCSLibJpegIjg6b)
 	$(CC) -o $(ODIRLibJpegIjg6b)wrrle.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrrle.c
 $(ODIRLibJpegIjg6b)wrtarga.o: $(SDIRLibJpegIjg6b)wrtarga.c $(INCSLibJpegIjg6b)
 	$(CC) -o $(ODIRLibJpegIjg6b)wrtarga.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrtarga.c
-FLAGSLibFgBase =  -Wall -Wextra -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -ILibFgBase/src/ -ILibTpEigen/ -ILibJpegIjg6b/ -ILibTpStb/stb/ -ILibTpBoost/boost_1_67_0/
+FLAGSLibFgBase =  -Wall -Wextra -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -ILibFgBase/src/ -isystem LibTpEigen/ -isystem LibJpegIjg6b/ -isystem LibTpStb/stb/ -isystem LibTpBoost/boost_1_67_0/
 SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = $(BUILDIR)LibFgBase/
 $(shell mkdir -p $(ODIRLibFgBase))

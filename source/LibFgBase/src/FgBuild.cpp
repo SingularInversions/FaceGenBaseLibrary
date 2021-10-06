@@ -267,6 +267,12 @@ getRelBin(BuildOS os,Arch arch,Compiler comp,Debrel debrel,bool backslash)
     string          ds = backslash ? "\\" : "/";
     return "bin" + ds + toStr(os) + ds + toStr(arch) + ds + toStr(comp) + ds + toStr(debrel) + ds;
 }
+string
+getRelBin(BuildOS os,Arch arch,bool backslash)
+{
+    string          ds = backslash ? "\\" : "/";
+    return "bin" + ds + toStr(os) + ds + toStr(arch) + ds;
+}
 
 uint64
 cUuidHash64(string const & str)
@@ -323,7 +329,7 @@ fgTestmCreateMicrosoftGuid(CLArgs const &)
 
 static
 Strings
-glob(string const & dir)
+glob(String const & dir)
 {
     Strings      ret;
     DirContents dc = getDirContents(dir);
@@ -339,11 +345,11 @@ glob(string const & dir)
     return ret;
 }
 
-ConsSrcDir::ConsSrcDir(string const & baseDir,string const & relDir)
+ConsSrcDir::ConsSrcDir(String const & baseDir,String const & relDir)
     : dir(relDir), files(glob(baseDir+relDir))
     {}
 
-string
+String
 ConsProj::descriptor() const
 {
     string          ret = name + ":" + baseDir + ":";
@@ -364,7 +370,7 @@ buildOSToConsType(BuildOS os)
 }
 
 ConsProj
-ConsSolution::addApp(string const & name,string const & lnkDep)
+ConsSolution::addApp(String const & name,String const & lnkDep)
 {
     if (!pathExists(name))
         fgThrow("Unable to find directory",name);
@@ -378,7 +384,7 @@ ConsSolution::addApp(string const & name,string const & lnkDep)
 }
 
 void
-ConsSolution::addAppClp(string const & name,string const & lnkDep)
+ConsSolution::addAppClp(String const & name,String const & lnkDep)
 {
     ConsProj          proj = addApp(name,lnkDep);
     proj.type = ConsProj::Type::clp;
@@ -386,7 +392,7 @@ ConsSolution::addAppClp(string const & name,string const & lnkDep)
 }
 
 void
-ConsSolution::addAppGui(string const & name,string const & lnkDep)
+ConsSolution::addAppGui(String const & name,String const & lnkDep)
 {
     ConsProj          proj = addApp(name,lnkDep);
     proj.type = ConsProj::Type::gui;
@@ -394,7 +400,7 @@ ConsSolution::addAppGui(string const & name,string const & lnkDep)
 }
 
 bool
-ConsSolution::contains(string const & projName) const
+ConsSolution::contains(String const & projName) const
 {
     for (ConsProj const & p : projects)
         if (p.name == projName)
@@ -403,7 +409,7 @@ ConsSolution::contains(string const & projName) const
 }
 
 ConsProj const &
-ConsSolution::projByName(string const & projName) const
+ConsSolution::projByName(String const & projName) const
 {
     for (ConsProj const & p : projects)
         if (p.name == projName)
@@ -414,7 +420,7 @@ ConsSolution::projByName(string const & projName) const
 
 // Topological sort of transitive includes:
 Strings
-ConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<string> & done) const
+ConsSolution::getTransitiveIncludes(String const & projName,bool fileDir,set<String> & done) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -427,7 +433,7 @@ ConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<str
             done.insert(pd.name);
         }
     }
-    for (const IncDir & id : p.incDirs) {
+    for (IncDir const & id : p.incDirs) {
         if (id.transitive) {
             if (fileDir)
                 ret.push_back("../"+p.name+"/"+p.baseDir+id.relPath+id.relFiles);
@@ -439,14 +445,14 @@ ConsSolution::getTransitiveIncludes(string const & projName,bool fileDir,set<str
 }
 
 Strings
-ConsSolution::getIncludes(string const & projName,bool fileDir) const
+ConsSolution::getIncludes(String const & projName,bool fileDir) const
 {
     ConsProj const &        p = projByName(projName);
     Strings                 ret;
     set<string>             done;
     for (ProjDep const & pd : p.projDeps)
         cat_(ret,getTransitiveIncludes(pd.name,fileDir,done));
-    for (const IncDir & id : p.incDirs) {
+    for (IncDir const & id : p.incDirs) {
         if (fileDir)
             ret.push_back(p.baseDir+id.relPath+id.relFiles);
         else
@@ -457,7 +463,7 @@ ConsSolution::getIncludes(string const & projName,bool fileDir) const
 
 // Topological sort of transitive defines:
 Strings
-ConsSolution::getTransitiveDefs(string const & projName,set<string> & done) const
+ConsSolution::getTransitiveDefs(String const & projName,set<String> & done) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -477,7 +483,7 @@ ConsSolution::getTransitiveDefs(string const & projName,set<string> & done) cons
 }
 
 Strings
-ConsSolution::getDefs(string const & projName) const
+ConsSolution::getDefs(String const & projName) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -490,7 +496,7 @@ ConsSolution::getDefs(string const & projName) const
 }
 
 Strings
-ConsSolution::getTransitiveLnkDeps(string const & projName,set<string> & done) const
+ConsSolution::getTransitiveLnkDeps(String const & projName,set<String> & done) const
 {
     Strings              ret;
     if (Fg::contains(done,projName))
@@ -507,7 +513,7 @@ ConsSolution::getTransitiveLnkDeps(string const & projName,set<string> & done) c
 }
 
 Strings
-ConsSolution::getLnkDeps(string const & projName) const
+ConsSolution::getLnkDeps(String const & projName) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -518,7 +524,7 @@ ConsSolution::getLnkDeps(string const & projName) const
 }
 
 Strings
-ConsSolution::getAllDeps(string const & projName,set<string> & done,bool dllSource) const
+ConsSolution::getAllDeps(String const & projName,set<String> & done,bool dllSource) const
 {
     Strings      ret;
     if (Fg::contains(done,projName))
@@ -534,7 +540,7 @@ ConsSolution::getAllDeps(string const & projName,set<string> & done,bool dllSour
 }
 
 Strings
-ConsSolution::getAllDeps(string const & projName,bool dllSource) const
+ConsSolution::getAllDeps(String const & projName,bool dllSource) const
 {
     set<string>     done;
     return getAllDeps(projName,done,dllSource);

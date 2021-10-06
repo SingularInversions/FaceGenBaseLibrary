@@ -709,7 +709,7 @@ getUvCover(Mesh const & mesh,Vec2UI dims)
 }
 
 ImgRgba8s
-cUvWireframeImages(Mesh const & mesh,RgbaUC wireColor)
+cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
 {
     ImgRgba8s           ret; ret.reserve(mesh.surfaces.size());
     for (Surf const & surf : mesh.surfaces)

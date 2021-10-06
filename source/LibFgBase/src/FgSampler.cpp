@@ -134,7 +134,7 @@ sampleAdaptive(
     ImgC4F              fimg = sampleAdaptiveF(img.dims(),sampleFn,256.0f,antiAliasBitDepth);
     for (size_t ii=0; ii<fimg.numPixels(); ++ii) {
         RgbaF const &       in = fimg[ii];
-        RgbaUC &            out = img[ii];
+        Rgba8 &            out = img[ii];
         for (uint jj=0; jj<4; ++jj)
             out[jj] = uchar(clamp(in[jj],0.0f,255.0f));
     }

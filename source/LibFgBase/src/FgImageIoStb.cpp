@@ -42,7 +42,7 @@ loadImage_(String8 const & fname,ImgRgba8 & img)
     StbiFree            sf(data);           // Can't use ScopeGuard since 'stbi_image_free' is extern C
     if (width*height <= 0)
         fgThrow("Invalid image dimensions",Vec2I(width,height));
-    img = ImgRgba8{Vec2UI(width,height),reinterpret_cast<RgbaUC*>(data)};
+    img = ImgRgba8{Vec2UI(width,height),reinterpret_cast<Rgba8*>(data)};
 }
 
 ImgRgba8

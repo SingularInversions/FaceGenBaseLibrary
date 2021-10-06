@@ -734,7 +734,7 @@ cNormals(Surfs const & surfs,Vec3Fs const & verts)
 }
 
 ImgRgba8
-cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,RgbaUC color)
+cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,Rgba8 color)
 {
     uint constexpr      dim {2048};
     // Domain is (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
@@ -744,7 +744,7 @@ cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,
     Vec2Is              uvsIrcs; uvsIrcs.reserve(uvs.size());
     for (Vec2F const & uv : uvs)
         uvsIrcs.push_back(Vec2I{mapFloor(xf*uv)});      // floor(IPCS) == IRCS
-    ImgRgba8            img {dim,dim,RgbaUC{0,0,0,0}};
+    ImgRgba8            img {dim,dim,Rgba8{0,0,0,0}};
     for (Vec3UI tri : tris)
         for (uint vv=0; vv<3; ++vv)
             drawLineIrcs(img,uvsIrcs[tri[vv]],uvsIrcs[tri[(vv+1)%3]],color);

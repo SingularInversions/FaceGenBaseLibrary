@@ -15,10 +15,10 @@
 namespace Fg {
 
 // Simple (aliased) filled circle. Radius 0 yields a single pixel (ie. actual radius is 0.5 larger):
-void        drawDotIrcs(ImgRgba8 & img,Vec2I posIrcs,uint radius,RgbaUC color);
-void        drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,RgbaUC color);
-void        drawLineIrcs(ImgRgba8 & img,Vec2I begin,Vec2I end,RgbaUC color);
-void        drawSolidRectangle_(ImgRgba8 & img,Vec2UI posIrcs,Vec2UI szPixels,RgbaUC clr);
+void        drawDotIrcs(ImgRgba8 & img,Vec2I posIrcs,uint radius,Rgba8 color);
+void        drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,Rgba8 color);
+void        drawLineIrcs(ImgRgba8 & img,Vec2I begin,Vec2I end,Rgba8 color);
+void        drawSolidRectangle_(ImgRgba8 & img,Vec2UI posIrcs,Vec2UI szPixels,Rgba8 clr);
 
 // Square bar graph of one or more data series:
 ImgRgba8     cBarGraph(Doubless const & data,uint pixPerBar,uint pixSpacing=0);
@@ -30,7 +30,7 @@ drawFunction(
     Sfun<double(double)>    func,
     VecD2                   bounds,         // abscissa value at image x bounds
     double                  vscale,         // y pixels per unit
-    RgbaUC                  colour);
+    Rgba8                  colour);
 
 void        drawFunctions(MatD const & funcs);  // Columns are function values
 

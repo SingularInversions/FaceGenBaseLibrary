@@ -86,13 +86,13 @@ edgeDist(CLArgs const &)
     for (size_t ii=0; ii<colVal.size(); ++ii)
         if (edgeDists[ii] < floatMax())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
-    mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,RgbaUC(255)));
+    mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
         Vec3UI              vertInds = surf.tris.posInds[tt];
         Vec3UI              uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {
-            RgbaUC          col(255);
+            Rgba8          col(255);
             col.red() = colVal[vertInds[ii]];
             col.green() = 255 - col.red();
             mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);

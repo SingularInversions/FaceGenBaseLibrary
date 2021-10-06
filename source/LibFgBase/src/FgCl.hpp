@@ -15,19 +15,13 @@
 
 namespace Fg {
 
-// Call system(). Returns true if success, false if failed and throwIfError=false
-bool
-clRun(const String & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
-
+// Call system(). Returns true if success, false if failed and throwIfError=false. 'cmd' must use native separators:
+bool            clRun(const String & cmd,bool throwIfError=true,int rvalMask=0xFFFF);
 // Call popen(). Returns output string if success, invalid value otherwise:
-Opt<String>
-clPopen(const String & cmd);
-
-void
-clUnzip(const String & fname);
-
-void
-clZip(const String & dir,bool oldFormat=false);
+Opt<String>     clPopen(const String & cmd);
+void            clUnzip(const String & fname);
+// Zip a directory into a file, which must end in '.7z':
+void            clZip(String const & dirName,String const & zipFileName);
 
 }
 

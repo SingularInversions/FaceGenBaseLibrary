@@ -366,7 +366,7 @@ Mesh            fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask);
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
 ImgUC           getUvCover(Mesh const & mesh,Vec2UI dims);
 // Wireframe image of UV layout for each surface:
-ImgRgba8s       cUvWireframeImages(Mesh const & mesh,RgbaUC wireColor);
+ImgRgba8s       cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor);
 // Emboss the given pattern onto a mesh with UVs, with max magnitude given by image value 255,
 // corresponding to a displacement (in the direction of surface normal) by 'ratio' times the
 // max bounding box dimensions of all vertices whose UV coordinate in 'pattern' sample to non-zero:

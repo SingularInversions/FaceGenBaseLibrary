@@ -100,7 +100,7 @@ struct  Img
     void            paint(uint ircs_x,uint ircs_y,T val)
     {
         if ((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]))
-            xy(ircs_x,ircs_y) = val;
+            m_data[ircs_y*m_dims[0]+ircs_x] = val;
     }
     void            paint(Vec2UI ircs,T val)
     {
@@ -131,7 +131,7 @@ typedef Svec<Img4UC>    Img4UCs;
 typedef Img<Arr4F>      Img4F;
 typedef Img<Vec4F>      ImgV4F;
 
-typedef Img<RgbaUC>     ImgRgba8;
+typedef Img<Rgba8>     ImgRgba8;
 typedef Svec<ImgRgba8>  ImgRgba8s;
 typedef Svec<ImgRgba8s> ImgRgba8ss;
 typedef Img<RgbaF>      ImgC4F;

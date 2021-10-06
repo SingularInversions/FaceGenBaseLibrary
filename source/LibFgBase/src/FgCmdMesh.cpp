@@ -786,7 +786,7 @@ cmdUvWireframe(CLArgs const & args)
     * <mesh>-uvs-#.jpg          The UV wireframe image for each surface)"
     };
     Mesh                mesh = loadMesh(syn.next());
-    ImgRgba8s           imgs = cUvWireframeImages(mesh,RgbaUC{0,255,0,255});
+    ImgRgba8s           imgs = cUvWireframeImages(mesh,Rgba8{0,255,0,255});
     String8             base = pathToBase(syn.curr());
     size_t              cnt {0};
     for (ImgRgba8 const & img : imgs) {

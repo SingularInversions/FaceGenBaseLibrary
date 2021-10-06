@@ -249,7 +249,7 @@ bool            hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
 Uints           removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts);
 Surf            reverseWinding(Surf const & surf);
 // Returns alpha-mapped 1024 X 1024 wireframe image:
-ImgRgba8        cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,RgbaUC wireColor);
+ImgRgba8        cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,Rgba8 wireColor);
 
 struct  FacetNormals
 {

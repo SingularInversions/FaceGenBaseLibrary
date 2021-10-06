@@ -414,7 +414,7 @@ struct  Gui3dWin : public GuiBaseImpl
             m_d3d->resize(m_size);
         }
         catch (ExceptD3dDeviceRemoved const &) {
-            ret.resize(dims,RgbaUC{0});
+            ret.resize(dims,Rgba8{0});
         }
         return ret;
     }

@@ -224,16 +224,18 @@ loadCsv(String8 const & fname,size_t fieldsPerLine)
 map<string,Strings>
 loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
-    FGASSERT(keyIdx < fieldsPerLine);
-    map<string,Strings>  ret;
-    String32           data = toUtf32(loadRaw(fname));
+    FGASSERT((fieldsPerLine==0) || (keyIdx < fieldsPerLine));
+    map<string,Strings> ret;
+    String32            data = toUtf32(loadRaw(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
-        Strings          line = csvGetLine(data,idx);
+        Strings             line = csvGetLine(data,idx);
         if ((fieldsPerLine > 0) && (line.size() != fieldsPerLine))
             fgThrow("CSV file contains a line with incorrect field width",fname);
-        string const &  key = line[keyIdx];
-        auto            it = ret.find(key);
+        if (keyIdx >= line.size())
+            fgThrow("CSV file line does not contain the key",line);
+        string const &      key = line[keyIdx];
+        auto                it = ret.find(key);
         if (it == ret.end())
             ret[key] = line;
         else

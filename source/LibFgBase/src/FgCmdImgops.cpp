@@ -61,7 +61,7 @@ cmdConst(CLArgs const & args)
     };
     uint                X = syn.nextAs<uint>(),
                         Y = syn.nextAs<uint>();
-    RgbaUC              rgba;
+    Rgba8              rgba;
     for (uint ii=0; ii<4; ++ii) {
         uint                v = syn.nextAs<uint>();
         if (v > 255)

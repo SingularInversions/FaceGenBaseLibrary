@@ -73,7 +73,7 @@ toStr(double const & val)
 
 template<class T>
 Strings
-toStrings(Svec<T> const & v)
+toStrs(Svec<T> const & v)
 {
     Strings         ret;
     ret.reserve(v.size());
@@ -81,6 +81,12 @@ toStrings(Svec<T> const & v)
         ret.push_back(toStr(e));
     return ret;
 }
+template<class T,class U>
+Strings         toStrs(T const & t,U const & u) {return {toStr(t),toStr(u)}; }
+template<class T,class U,class V>
+Strings         toStrs(T const & t,U const & u,V const & v) {return {toStr(t),toStr(u),toStr(v)}; }
+template<class T,class U,class V,class W>
+Strings         toStrs(T const & t,U const & u,V const & v,W const & w) {return {toStr(t),toStr(u),toStr(v),toStr(w)}; }
 
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors

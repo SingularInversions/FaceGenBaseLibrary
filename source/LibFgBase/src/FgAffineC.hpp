@@ -25,69 +25,49 @@
 
 namespace Fg {
 
-template <class T,uint dim>
+template <class T,uint D>
 struct  Affine
 {
-    Mat<T,dim,dim>      linear;           // Applied first
-    Mat<T,dim,1>        translation;      // Applied second
+    Mat<T,D,D>          linear;           // Applied first
+    Mat<T,D,1>          translation;      // Applied second
 
     FG_SERIALIZE2(linear,translation);
 
     Affine() {linear.setIdentity(); }
 
-    // Construct from form f(x) = x + b
-    explicit
-    Affine(Mat<T,dim,1> const & trans)
-    : translation(trans)
-    {linear.setIdentity(); }
+    // Construct from translation: f(x) = x + b
+    explicit Affine(Mat<T,D,1> const & trans) : translation(trans) {linear.setIdentity(); }
 
-    // Construct from form f(x) = Mx
-    explicit
-    Affine(const Mat<T,dim,dim> & mat)
-    : linear(mat)
-    {}
+    // Construct from linear transform: f(x) = Mx
+    explicit Affine(const Mat<T,D,D> & lin) : linear(lin) {}
 
-    // Construct from form f(x) = Mx + b
-    Affine(
-        const Mat<T,dim,dim> &    xform,
-        Mat<T,dim,1> const &      trans)
-        :
-        linear(xform),
+    // Construct from native form: f(x) = Mx + b
+    Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) :
+        linear(lin),
         translation(trans)
         {}
 
-    // Construct from form f(x) = M(x+b):
-    Affine(
-        Mat<T,dim,1> const &      trans,
-        const Mat<T,dim,dim> &    xform)
-        :
-        linear(xform),
-        translation(xform * trans)
+    // Construct from opposite order form: f(x) = M(x+b):
+    Affine(Mat<T,D,1> const & trans,const Mat<T,D,D> & lin) :
+        linear(lin),
+        translation(lin * trans)
         {}
-
-    // Explicit normal copy constructor:
-    Affine(const Affine & v)
-    : linear(v.linear), translation(v.translation)
-    {}
 
     // Conversion constructor:
     template<typename U>
-    Affine(const Affine<U,dim> & v)
-    : linear(v.linear), translation(v.translation)
-    {}
+    Affine(Affine<U,D> const & v) : linear(v.linear), translation(v.translation) {}
 
-    Mat<T,dim,1> const &
-    postTranslation() const
-    {return translation; }
+    // Don't let conversion constructor override default copy constructor:
+    Affine(Affine const & v) = default;
 
     // If 'vec' is a matrix, its columns are transformed as vectors into a new matrix:
     template<uint ncols>
-    Mat<T,dim,ncols>
-    operator*(const Mat<T,dim,ncols> & vec) const
+    Mat<T,D,ncols>
+    operator*(const Mat<T,D,ncols> & vec) const
     {
-        Mat<T,dim,ncols> ret = linear * vec;
+        Mat<T,D,ncols> ret = linear * vec;
         for (uint col=0; col<ncols; col++)
-            for (uint row=0; row<dim; row++)
+            for (uint row=0; row<D; row++)
                 ret.cr(col,row) += translation[row];
         return ret;
     }

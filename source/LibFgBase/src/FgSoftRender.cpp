@@ -90,7 +90,7 @@ renderSoft(
                 Vec2I               posIrcs = Vec2I(p);
                 Vec4UC              color {mapCast<uchar>(options.surfPointColor.m_c * 255.f)};
                 paintDot(img,posIrcs,color,2);
-                img.paint(posIrcs,RgbaUC(color.m));       // Ignores out-of-bounds points
+                img.paint(posIrcs,Rgba8(color.m));       // Ignores out-of-bounds points
             }
         }
     }
@@ -149,7 +149,7 @@ testSoftRender(CLArgs const &)
     ImgRgba8     map(128,128);
     for (Iter2UI it(map.dims()); it.valid(); it.next()) {
         bool        alternate = (it()[0] & 16) != (it()[1] & 16);
-        map[it()] = alternate ? RgbaUC(0,0,0,255) : RgbaUC(255,255,255,255);
+        map[it()] = alternate ? Rgba8(0,0,0,255) : Rgba8(255,255,255,255);
     }
     surf.material.albedoMap = make_shared<ImgRgba8>(map);
     // View undistorted checkerboard flat on:
