@@ -426,91 +426,58 @@ mergeSameNameSurfaces(Mesh const & in)
 }
 
 Mesh
-unifyIdenticalVerts(Mesh const & mesh)
+fuseIdenticalVerts(Mesh const & mesh)
 {
-    Mesh            ret(mesh);
-    Vec3Fs             verts;
-    Uints        map;
-    map.reserve(mesh.verts.size());
-    uint                cnt = 0;
-    for (uint vv=0; vv<mesh.verts.size(); ++vv) {
-        bool            dup = false;
-        Vec3F        v = mesh.verts[vv];
-        for (uint ww=0; ww<verts.size(); ++ww) {
-            if (verts[ww] == v) {
-                dup = true;
-                map.push_back(ww);
-                break;
-            }
-        }
-        if (!dup) {
-            verts.push_back(mesh.verts[vv]);
-            map.push_back(cnt);
-            ++cnt;
+    Mesh            ret;
+    ret.name = mesh.name;
+    ret.uvs = mesh.uvs;
+    ret.joints = mesh.joints;
+    ret.jointDofs = mesh.jointDofs;
+    Sizes           map; map.reserve(mesh.verts.size());
+    for (Vec3F const & vert : mesh.verts) {
+        size_t          idx = findFirstIdx(ret.verts,vert);
+        if (idx < ret.verts.size())         // duplicate found
+            map.push_back(idx);
+        else {
+            map.push_back(ret.verts.size());
+            ret.verts.push_back(vert);
         }
     }
-    FGASSERT(mesh.verts.size() == map.size());
-    for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
-        Surf &           surf = ret.surfaces[ss];
-        for (size_t ii=0; ii<surf.tris.size(); ++ii)
-            for (uint jj=0; jj<3; ++jj)
-                surf.tris.posInds[ii][jj] = map[surf.tris.posInds[ii][jj]];
-        for (size_t ii=0; ii<surf.quads.size(); ++ii)
-            for (uint jj=0; jj<4; ++jj)
-                surf.quads.posInds[ii][jj] = map[surf.quads.posInds[ii][jj]];
+    for (Surf surf : mesh.surfaces) {
+        for (Vec3UI & tri : surf.tris.posInds)
+            for (uint & idx : tri.m)
+                idx = map[idx];
+        for (Vec4UI & quad : surf.quads.posInds)
+            for (uint & idx : quad.m)
+                idx = map[idx];
+        ret.surfaces.push_back(surf);
     }
-    for (size_t ii=0; ii<ret.deltaMorphs.size(); ++ii) {
-        Morph const &     src = mesh.deltaMorphs[ii];
-        Morph &           dst = ret.deltaMorphs[ii];
-        FGASSERT(dst.verts.size() == map.size());
-        for (size_t jj=0; jj<dst.verts.size(); ++jj)
-            dst.verts[jj] = src.verts[map[jj]];
-    }
-    for (size_t ii=0; ii<ret.targetMorphs.size(); ++ii) {
-        IndexedMorph &    im = ret.targetMorphs[ii];
-        for (size_t jj=0; jj<im.baseInds.size(); ++jj)
-            im.baseInds[jj] = map[im.baseInds[jj]];
-    }
-    for (size_t ii=0; ii<ret.markedVerts.size(); ++ii)
-        ret.markedVerts[ii].idx = map[ret.markedVerts[ii].idx];
-    ret.verts = verts;
     return ret;
 }
 
 Mesh
-unifyIdenticalUvs(Mesh const & in)
+fuseIdenticalUvs(Mesh const & in)
 {
-    Mesh                    ret(in);
-    const Vec2Fs &    uvs = ret.uvs;
-    vector<Valid<uint> >      merge(uvs.size());
-    size_t                      cnt0 = 0,
-                                cnt1 = 0;
-    for (size_t ii=1; ii<uvs.size(); ++ii)
-        for (size_t jj=0; jj<ii-1; ++jj)
-            if (uvs[ii] == uvs[jj])
-                merge[ii] = uint(jj), ++cnt0;
-    for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
-        Surf &           surf = ret.surfaces[ss];
-        Vec3UIs &     triUvInds = surf.tris.uvInds;
-        for (size_t ii=0; ii<triUvInds.size(); ++ii) {
-            for (uint jj=0; jj<3; ++jj) {
-                if (merge[triUvInds[ii][jj]].valid()) {
-                    triUvInds[ii][jj] = merge[triUvInds[ii][jj]].val();
-                    ++cnt1;
-                }
-            }
-        }
-        vector<Vec4UI> &     quadUvInds = surf.quads.uvInds;
-        for (size_t ii=0; ii<quadUvInds.size(); ++ii) {
-            for (uint jj=0; jj<4; ++jj) {
-                if (merge[quadUvInds[ii][jj]].valid()) {
-                    quadUvInds[ii][jj] = merge[quadUvInds[ii][jj]].val();
-                    ++cnt1;
-                }
-            }
+    Mesh            ret = in;
+    ret.uvs.clear();
+    Sizes           map; map.reserve(in.uvs.size());
+    for (Vec2F const & uv : in.uvs) {
+        size_t          idx = findFirstIdx(ret.uvs,uv);
+        if (idx < ret.uvs.size())         // duplicate found
+            map.push_back(idx);
+        else {
+            map.push_back(ret.uvs.size());
+            ret.uvs.push_back(uv);
         }
     }
-    fgout << fgnl << cnt0 << " UVs merged " << cnt1 << " UV indices redirected";
+    for (Surf & surf : ret.surfaces) {
+        for (Vec3UI & tri : surf.tris.uvInds)
+            for (uint & idx : tri.m)
+                idx = map[idx];
+        for (Vec4UI & quad : surf.quads.uvInds)
+            for (uint & idx : quad.m)
+                idx = map[idx];
+    }
     return ret;
 }
 
@@ -898,7 +865,7 @@ sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaqu
         TriPoints         tps = grid.intersects(tris.posInds,pts,p);
         Floats              depths;
         for (TriPoint const & tp : tps)
-            depths.push_back(cBarycentricVert(tp.pointInds,tp.baryCoord,verts)[2]);
+            depths.push_back(cBarycentricVert(tp.vertInds,tp.baryCoord,verts)[2]);
         tps = permute(tps,sortInds(depths));
         float               transTotal = 1.0f;
         for (size_t ii=1; ii<tps.size(); ++ii) {
@@ -908,7 +875,7 @@ sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaqu
             TriPoint const &  tpp = tps[ii-1];    // Obsfucating tri
             if (tpp.triInd >= numTransparent)
                 continue;                           // Blocked by opaque
-            Vec2F            uv = cBarycentricUv(tpp.pointInds,tpp.baryCoord,src.uvs);
+            Vec2F            uv = cBarycentricUv(tpp.vertInds,tpp.baryCoord,src.uvs);
             float               alpha = sampleAlpha(albedo,uv).alpha(),
                                 trans = 1.0f - alpha/255.0f;
             transTotal *= trans;

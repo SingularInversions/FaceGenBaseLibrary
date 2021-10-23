@@ -272,20 +272,20 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
         // a homogeneous component equal to zero is a direction. Conceptually, we can't
         // transform a delta in D3PS to FHCS without knowing it's absolute position.
         // Hence we transform the end point back into FHCS and take the difference:
-        RendMeshes const &          rms = rendMeshesN.cref();
-        Vec3Fs const &             verts = rms[lastCtlClick.meshIdx].posedVertsN.cref();
-        Vec3F                    vertPos0Hcs = verts[lastCtlClick.vertIdx];
-        Vec4F                    vertPos0d3ps = worldToD3ps * asHomogVec(vertPos0Hcs);
+        RendMeshes const &      rms = rendMeshesN.cref();
+        Vec3Fs const &          verts = rms[lastCtlClick.meshIdx].posedVertsN.cref();
+        Vec3F                   vertPos0Hcs = verts[lastCtlClick.vertIdx];
+        Vec4F                   vertPos0d3ps = worldToD3ps * asHomogVec(vertPos0Hcs);
         // Convert delta to D3PS. Y inverted and Viewport aspect (compensated for in frustum)
         // is ratio to largest dimension:
-        Vec2F                    delD3ps2 = 2.0f * Vec2F(delta) / float(cMaxElem(winSize));
-        Vec4F                    delD3ps(delD3ps2[0],-delD3ps2[1],0,0),
-                                    // Normalize vector for valid addition of delta:
-                                    vertPos1d3ps = vertPos0d3ps / vertPos0d3ps[3] + delD3ps,
-                                    // We don't expect worldToD3ps to be singular:
-                                    vertPos1HcsH = solveLinear(worldToD3ps,vertPos1d3ps).val();
-        Vec3F                    vertPos1Hcs = vertPos1HcsH.subMatrix<3,1>(0,0) / vertPos1HcsH[3],
-                                    delHcs = vertPos1Hcs - vertPos0Hcs;
+        Vec2F                   delD3ps2 = 2.0f * Vec2F(delta) / float(cMaxElem(winSize));
+        Vec4F                   delD3ps(delD3ps2[0],-delD3ps2[1],0,0),
+                                // Normalize vector for valid addition of delta:
+                                vertPos1d3ps = vertPos0d3ps / vertPos0d3ps[3] + delD3ps,
+                                // We don't expect worldToD3ps to be singular:
+                                vertPos1HcsH = Vec4F(solveLinear(Mat44D(worldToD3ps),Vec4D(vertPos1d3ps)));
+        Vec3F                   vertPos1Hcs = vertPos1HcsH.subMatrix<3,1>(0,0) / vertPos1HcsH[3],
+                                delHcs = vertPos1Hcs - vertPos0Hcs;
         ctlDragAction(left,lastCtlClick,delHcs);
     }
 }

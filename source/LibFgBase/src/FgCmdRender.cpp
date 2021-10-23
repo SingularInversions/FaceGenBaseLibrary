@@ -28,185 +28,182 @@ namespace Fg {
 
 namespace {
 
-struct  ModelFiles
+struct  ModelFile
 {
-    string          triFilename;
-    string          imgFilename;
-    bool            shiny = false;
-
-    FG_SERIALIZE3(triFilename,imgFilename,shiny)
+    String              meshFilename;
+    Strings             imgFilenames;
+    bool                shiny = false;
+    FG_SERIALIZE3(meshFilename,imgFilenames,shiny)
 };
-
-struct  Pose
-{
-    QuaternionD         rotateToHcs;
-    // Euler angles applied in FHCS in following order after 'rotateToHcs':
-    double              rollRadians = 0.0;
-    double              tiltRadians = 0.0;
-    double              panRadians = 0.0;
-    // Model translation parallel to image plane, relative to half max model bound:
-    Vec2D               relTrans;
-    // Scale relative to automatically determined size of object in image:
-    double              relScale = 0.9;
-    // Field of view of larger image dimension (degrees). Must be > 0 but can set as low as 0.0001
-    // to simulate orthographic projection:
-    double              fovMaxDeg = 17.0;
-
-    FG_SERIALIZE7(rotateToHcs,rollRadians,tiltRadians,panRadians,relTrans,relScale,fovMaxDeg)
-};
+typedef Svec<ModelFile>     ModelFiles;
 
 struct  RenderArgs
 {
-    vector<ModelFiles>      models;
-    Pose                    pose;
+    ModelFiles              models;
+    SimilarityD             modelview;      // Transform world to openGL eye coordinate system (OECS)
+    // transform from projected coordinates (image tangent CS) to image unit CS (x,y in [0,1]):
+    AffineEw2D              itcsToIucs;
     Vec2UI                  imagePixelSize = Vec2UI(512,512);
     RenderOptions           options;
 
-    FG_SERIALIZE4(models,pose,imagePixelSize,options);
+    FG_SERIALIZE5(models,modelview,itcsToIucs,imagePixelSize,options);
 };
 
-struct  Options
+Meshes
+loadMeshes(ModelFiles const & mfs)
 {
-    RenderArgs              rend;
-    // Write a CSV file of label, image position (IUCS) and visibility of projected surface points,
-    // ordered by mesh->surface->point:
-    bool                    saveSurfPointFile = false;
-    string                  outputFile;
+    Meshes          meshes;
+    for (ModelFile const & mf : mfs) {
+        meshes.push_back(loadMesh(mf.meshFilename));
+        for (size_t ss=0; ss<mf.imgFilenames.size(); ++ss) {
+            if (ss < meshes.back().surfaces.size()) {
+                meshes.back().surfaces[ss].setAlbedoMap(loadImage(mf.imgFilenames[ss]));
+                meshes.back().surfaces[ss].material.shiny = mf.shiny;
+            }
+            else
+                fgout << "WARNING: more images specified than surfaces for mesh " << mf.meshFilename;
+        }
+    }
+    return meshes;
+}
 
-    FG_SERIALIZE3(rend,saveSurfPointFile,outputFile);
-};
+void
+renderRun(String const & rendFile,String const & outName)
+{
+    RenderArgs          rend;
+    // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
+    // is appended rather than overwritten, so we must clear first:
+    rend.options.lighting.lights.clear();
+    loadBsaXml(rendFile,rend);
+    Meshes              meshes = loadMeshes(rend.models);
+    // Receive surf point projection data:
+    rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();
+    ImgRgba8            image = renderSoft(
+        rend.imagePixelSize,meshes,rend.modelview,rend.itcsToIucs,rend.options);
+    saveImage(outName,image);
+    String8             outBase = pathToBase(outName);
+    Ofstream            ofs {outBase+"-landmarks.csv"};
+    for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
+        ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
+}
 
 }   // namespace
 
-/**
-   \ingroup Base_Commands
-   Command to render a mesh and colour map to an image.
- */
 void
-cmdRender(CLArgs const & args)
+cmdRenderSetup(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<name> [-s <view>] [-l <view>] (<mesh>.tri [<image>.<ext>])*
-    Render specified meshes [with texture images] using default render arguments.
-    Saves render arguments to <name>.xml and rendered image to <name>.png
-    -s     - Save the object pose and camera intrinsics in <view>_pose.xml and <view>_cam.xml
-    -l     - Load the object pose and camera intrinsics from the above files, do not calculate from <name>.xml
-    <ext> - )" + getImageFileExtCLDescriptions() + R"(
+        R"(<name>.xml (<mesh>.<ext> [<albedo>.<img>])*
+    <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
+    <img>           - )" + getImageFileExtCLDescriptions() + R"(
 OUTPUT:
-    <image>.<ext>       Rendered image
-    [<name>.xml]        A configuation file for rendering with this command
+    <name>.xml      parameters defining the render
 NOTES:
-    * If no mesh arguments are given, <name>.xml will be used for the arguments. Otherwise,
-      <name>.xml will be created and can be modified for re-use.
-    * Fields in <name>.xml can be modified as long as the XML structure is not changed.
-      This can be automated with the 'substitute' command.
-    * <name>.xml fields:
-        <models>        the list of mesh and related color map files to be rendered.
-        <pose>
-            <rotateToHcs> quaternion specifying rotation from mesh original coordinates to
-                head coordinate system (HCS): X - face's left, Y - face's up, Z - facing direction
-            <rollRadians>,<tiltRadians>,<panRadians> euler angles applied from HCS
-            <relTrans>  translation in HCS relative with unit scale equal to half max bound.
-            <relScale>  scale from original mesh scale.
-            <fovMaxDeg> field of view angle of camera in degrees (applied to larger image dimension).
+    * creates default rendering parameters for the given models
+    * fields in <name>.xml can be modified as long as the XML structure remains valid
+    * <name>.xml description:
+        <models> the list of mesh and related albedo map files to be rendered.
+        <modelview> the similarity transform from mesh coordinates to openGL eye coordinates,
+            consisting of scale, rotation (as a quaternion) and translation, applied in that order.
+        <itcsToIucs> the 2D transform from projected coordinates ("image tangent CS") to the
+            "image unit CS" in which x,y are in [0,1] with origin at top left of image.
         <imagePixelSize> width, height
         <options>
-            <lighting>  all color component values below are in the range [0,1]:
+            <lighting> all color component values below are in the range [0,1]:
                 <ambient> light coming from all directions.
                 <lights>
                     <colour> RGB order
                     <direction> in order of X,Y,Z in OpenGL Eye Coordinates.
             <backgroundColor> RGBA order, values in [0,1].
             <antiAliasBitDepth> 3 is high quality (equivalent to 8x FSAA) without running too slowly
-            <renderSurfPoints> 0 - don't, 1 - when visible, 2 - always. They are rendered as single-pixel green dots over the image.
-        <saveSurfPointFile> 0 - don't, 1 - save in <name>.csv written as <label>,<position>,<visible>
-            where <position> is in image unit coordinates; [0,1]
-        <outputFile> rendered image saved here.)"
+            <renderSurfPoints> 0 - don't, 1 - when visible, 2 - always.
+                They are rendered as single-pixel green dots over the image.)"
     };
-    string              renderName = syn.next();
-    Options             opts;
-    string              viewSave,    // If empty, option not selected
-                        viewLoad;    // "
-    while (syn.more() && (syn.peekNext()[0] == '-')) {
-        string      arg = syn.next();
-        if (arg == "-s")
-            viewSave = syn.next();
-        else if (arg == "-l")
-            viewLoad = syn.next();
-        else
-            syn.error("Unrecognized option",arg);
+    string              name = syn.next();
+    RenderArgs          rend;
+    while (syn.more()) {
+        //! Set up the default render options from the arguments:
+        ModelFile          mf;
+        mf.meshFilename = syn.next();
+        while (syn.more() && hasImageFileExt(syn.peekNext()))
+            mf.imgFilenames.push_back(syn.next());
+        rend.models.push_back(mf);
     }
-    if (syn.more()) {
-        while (syn.more()) {
-            //! Set up the default render options from the arguments:
-            ModelFiles  mf;
-            mf.triFilename = syn.next();
-            if (syn.more() && hasImageFileExt(syn.peekNext()))
-                mf.imgFilename = syn.next();
-            opts.rend.models.push_back(mf);
-        }
-        opts.outputFile = renderName + ".png";
-        saveBsaXml(renderName+".xml",opts);
-    }
-    else {
-        // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
-        // is appended rather than overwritten, so we must clear first:
-        opts.rend.options.lighting.lights.clear();
-        loadBsaXml(renderName+".xml",opts);
-        if (!opts.rend.pose.rotateToHcs.normalize())
-            fgThrow("rotateToHcs: quaternion cannot be zero magnitude");
-    }
-
-    //! Load data from files:
-    Meshes              meshes(opts.rend.models.size());
-    for (size_t ii=0; ii<meshes.size(); ++ii) {
-        const ModelFiles &  mf = opts.rend.models[ii];
-        Mesh &              mesh = meshes[ii];
-        mesh = loadTri(mf.triFilename);
-        if (!mf.imgFilename.empty())
-            loadImage_(String8(mf.imgFilename),mesh.surfaces[0].albedoMapRef());
-        mesh.xform(SimilarityD{opts.rend.pose.rotateToHcs});
-        mesh.surfaces[0].material.shiny = mf.shiny;
-    }
-
-    //! Calculate view transforms:
+    // Load data from files to validate and set modelview:
+    Meshes              meshes = loadMeshes(rend.models);
     Mat32F              bounds = cBounds(meshes);
-    CameraParams        cps(fgF2D(bounds));
-    cps.pose =
-        cRotateY(opts.rend.pose.panRadians) *
-        cRotateX(opts.rend.pose.tiltRadians) *
-        cRotateZ(opts.rend.pose.rollRadians);
-    cps.relTrans = opts.rend.pose.relTrans;
-    cps.logRelScale = std::log(opts.rend.pose.relScale);
-    cps.fovMaxDeg = opts.rend.pose.fovMaxDeg;
-    Camera              cam;
-    SimilarityD         mvm;
-    if (!viewLoad.empty()) {
-        loadBsaXml(viewLoad+"_cam.xml",cam);
-        loadBsaXml(viewLoad+"_pose.xml",mvm);
-    }
-    else {
-        cam = cps.camera(opts.rend.imagePixelSize);
-        mvm = cam.modelview;
-    }
-    if (!viewSave.empty()) {
-        saveBsaXml(viewSave+"_cam.xml",cam);
-        saveBsaXml(viewSave+"_pose.xml",mvm);
-    }
+    CameraParams        cps {fgF2D(bounds)};
+    cps.logRelScale = std::log(0.9);
+    cps.fovMaxDeg = 17.0;
+    Camera              cam = cps.camera(rend.imagePixelSize);
+    rend.modelview = cam.modelview;
+    rend.itcsToIucs = cam.itcsToIucs;
+    saveBsaXml(name,rend);
+}
 
-    //! Render:
-    opts.rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();    // Receive surf point projection data
-    Timer               timer;
-    ImgRgba8             image = renderSoft(opts.rend.imagePixelSize,meshes,mvm,cam.itcsToIucs,opts.rend.options);
-    fgout << fgnl << "Render time: " << timer.elapsedSeconds() << "s ";
+void
+cmdRenderRun(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<in>.xml <out>.<img>
+    <img>       - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    <out>.<img>             the rendered image
+    <out>-matrix.xml        the homogeneous combined projection*modelview matrix resulting from the camera model
+    <out>-landmarks.csv     label, image position (IUCS) and visibility of projected surface points,
+                            ordered by mesh then surface then point.
+NOTES:
+    * renders using the paramters in <in>.xml and saves to image <out>.<img>)"
+    };
+    String              inFile = syn.next(),
+                        outFile = syn.next();
+    PushTimer           pt {"Rendering and writing files"};
+    renderRun(inFile,outFile);
+}
 
-    //! Save results:
-    saveImage(String8(opts.outputFile),image);
-    if (opts.saveSurfPointFile) {
-        Ofstream            ofs(renderName+".csv");
-        for (const ProjectedSurfPoint & psp : *opts.rend.options.projSurfPoints)
-            ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
+void
+cmdRenderBatch(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<files>.txt <img>
+    <img>       - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    for each render parameter file <name>.xml listed in <files>.txt, the following files are created:
+    <name>.<img>             the rendered image
+    <name>-matrix.xml        the homogeneous combined projection*modelview matrix resulting from the camera model
+    <name>-landmarks.csv     label, image position (IUCS) and visibility of projected surface points,
+                             ordered by mesh then surface then point.
+NOTES:
+    renders are done in parallel using all physical cores on the current machine)"
+    };
+    Strings             rendFiles = splitWhitespace(loadRaw(syn.next()));
+    String              imgExt = syn.next();
+    if (!contains(getImageFileExts(),toLower(imgExt)))
+        syn.error("Unrecognized image format",imgExt);
+    auto                runFn = [](String const & rendFile,String const & imgFile)
+    {
+        try { renderRun(rendFile,imgFile); }
+        catch (FgException & e) {fgout << "ERROR: " << rendFile << ": " << e.tr_message(); }
+        catch (std::exception & e) { fgout << "ERROR: " << rendFile << ": " << e.what(); }
+    };
+    PushTimer           pt {"Dispatching renders "};
+    ThreadDispatcher    td;
+    for (String const & rendFile : rendFiles) {
+        String              imgFile = pathToBase(rendFile).m_str+"."+imgExt;
+        td.dispatch(bind(runFn,rendFile,imgFile));
+        fgout << ".";
     }
+}
+
+void
+cmdRender(CLArgs const & args)
+{
+    Cmds            cmds {
+        {cmdRenderBatch,"batch","batch render from a text file list of configuration file names"},
+        {cmdRenderSetup,"setup","setup a render configuration file"},
+        {cmdRenderRun,"run","run a render from a configuration file"},
+    };
+    doMenu(args,cmds);
 }
 
 Cmd
@@ -217,7 +214,7 @@ static
 bool
 imgApproxEqual(String8 const & file0,String8 const & file1)
 {
-    ImgRgba8         img0 = loadImage(file0),
+    ImgRgba8        img0 = loadImage(file0),
                     img1 = loadImage(file1);
     return fgImgApproxEqual(img0,img1,2);
 }
@@ -228,23 +225,10 @@ testRenderCmd(CLArgs const & args)
     FGTESTDIR
     copyFileToCurrentDir("base/Jane.tri");
     copyFileToCurrentDir("base/Jane.jpg");
-    Options             opts;
-    opts.rend.imagePixelSize = Vec2UI(120,160);
-    opts.rend.pose.panRadians = degToRad(55.0f);
-    opts.outputFile = "render_test.png";
-    opts.rend.options.renderSurfPoints = RenderSurfPoints::whenVisible;
-    opts.saveSurfPointFile = true;
-    ModelFiles          mf;
-    mf.triFilename = "Jane.tri";
-    mf.imgFilename = "Jane.jpg";
-    opts.rend.models.push_back(mf);
-    saveBsaXml("render_test.xml",opts);
-    cmdRender(splitChar("render render_test"));
-    regressFileRel("render_test.png","base/test/",imgApproxEqual);
-    // TODO: make a struct and serialize to XML so an approx comparison can be done (debug has precision diffs):
-    if ((getCurrentBuildOS() == BuildOS::win) && (getCurrentBuildConfig() == "release")) {
-        regressFileRel("render_test.csv","base/test/");
-    }
+    copyFileToCurrentDir("base/test/cmd-render.xml");
+    RenderArgs          rend = loadBsaXml<RenderArgs>("cmd-render.xml");
+    cmdRenderRun(splitChar("run cmd-render.xml cmd-render.png"));
+    regressFileRel("cmd-render.png","base/test/",imgApproxEqual);
 }
 
 }

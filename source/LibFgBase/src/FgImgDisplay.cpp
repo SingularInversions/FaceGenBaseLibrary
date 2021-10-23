@@ -34,7 +34,7 @@ viewImage(ImgRgba8 const & img,Vec2Fs const & pts,String const & name)
         fgout << name << ": " << fgpush << img << fgpop;
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK DisplayImage"),
-        guiImageCtrls(makeIPT(img),makeIPT(pts)).win,
+        guiImageCtrls(makeIPT(img),makeIPT(pts),true).win,
         getDirUserAppDataLocalFaceGen("SDK","DisplayImage"));
 }
 
@@ -123,7 +123,7 @@ markImage(ImgRgba8 const & img,ImagePoints const & existing,Strings const & newL
     OPT<String8>        textN = link1<Vec2Fs,String8>(ptsIucsN,textFn);
     GuiPtr              textW = guiText(textN),
                         buttonW = guiButton("Back",backFn),
-                        imgW = guiImageCtrls(imgN,ptsIucsN,leftClickFn).win,
+                        imgW = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn).win,
                         mainW = guiSplitV({textW,buttonW,imgW});
     guiStartImpl(IPT<String8>{"FaceGen Mark Image"},mainW,store);
     Vec2Fs const &      ptsIucs = ptsIucsN.cref();
@@ -185,7 +185,7 @@ compareImages(Img3F const & image0,Img3F const & image1)
     {
         Svec<Img3F const *> sels {&image0,&image1,&img0m1,&img1m0,&imgdm};
         FGASSERT(sel < sels.size());
-        return cMipMapTruncate(*sels[sel]);
+        return cMipmap(*sels[sel]);
     };
     NPT<Img3Fs>         pyramidN = link1<size_t,Img3Fs>(selN,selFn);
     // Image relative view scale is 2^zoom display pixels per image pixel:

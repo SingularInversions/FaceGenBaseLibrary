@@ -23,17 +23,15 @@ struct  UTUDecomp
     Vec3UI          p;      // Permutation map from input index to solution index
 };
 
+// Solve the Matrix equation Ax = b when A is full rank:
+Vec2D               solveLinear(MatS2D fullRank,Vec2D b);
 // Solve the Matrix equation Ax = b when A is symmetric positive definite (this is not checked):
-Vec3D
-solve(MatS3D SPD,Vec3D b);
-
+Vec3D               solveLinear(MatS3D SPD,Vec3D b);
 // Solve the matrix equation Ax = b.
 // If A is singular, this returns a solution vector with one or more components equal to zero:
-Vec3D
-solve(Mat33D A,Vec3D b);
-
+Vec3D               solve(Mat33D A,Vec3D b);
 // Compute only the eigenvalues (smallest to largest) of a real symmetrix matrix:
-Doubles     cEigvalsRsm(MatD const & rsm);
+Doubles             cEigvalsRsm(MatD const & rsm);
 
 // Compute eigenvalues and eigenvectors of a real symmetric matrix:
 // Runs in O(dim^3) time, with residual error O(dim^2.?).

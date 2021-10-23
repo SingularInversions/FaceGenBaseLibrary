@@ -44,10 +44,10 @@ namespace Fg {
 template<class T>
 struct  MatV;
 
-template <typename T,uint nrows,uint ncols>
+template <typename T,uint R,uint C>
 struct  Mat
 {
-    Arr<T,nrows*ncols>    m;
+    Arr<T,R*C>    m;
     FG_SERIALIZE1(m)
     FG_SER1(m)
 
@@ -55,38 +55,39 @@ struct  Mat
     // constant-value initialization constructor below:
     Mat()
     {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             fgInitializeBuiltinsToZero(m[ii]);
     }
 
     explicit
-    Mat(Arr<T,nrows*ncols> const & data) : m(data) {}
+    Mat(Arr<T,R*C> const & data) : m(data) {}
 
     // Constant-value initialization constructor:
     // (unfortunately a pointer-based constructor cannot be added without being ambiguous
     // to the below which is widely used. Use 'cMat' below instead)
-    explicit
-    Mat(T x)
-    {setConstant(x); }
-
+    explicit Mat(T v)
+    {
+        for (uint ii=0; ii<R*C; ii++)
+            m[ii] = v;
+    }
     // Value-set constructors; # args must agree with # elements:
     Mat(T x,T y) {
-        static_assert(nrows*ncols == 2,"Number of arguments does not match elements");
+        static_assert(R*C == 2,"Number of arguments does not match elements");
         m[0] = x; m[1] = y; }                               //-V557 (for PVS-Studio)
     Mat(T x,T y,T z) {
-        static_assert(nrows*ncols == 3,"Number of arguments does not match elements");
+        static_assert(R*C == 3,"Number of arguments does not match elements");
         m[0] = x; m[1] = y; m[2] = z; }                     //-V557 (for PVS-Studio)
     Mat(T a,T b,T c,T d) {
-        static_assert(nrows*ncols == 4,"Number of arguments does not match elements");
+        static_assert(R*C == 4,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; }                   //-V557 (for PVS-Studio)
     Mat(T a,T b,T c,T d,T e) {
-        static_assert(nrows*ncols == 5,"Number of arguments does not match elements");
+        static_assert(R*C == 5,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }           //-V557 (for PVS-Studio)
     Mat(T a,T b,T c,T d,T e,T f) {
-        static_assert(nrows*ncols == 6,"Number of arguments does not match elements");
+        static_assert(R*C == 6,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }   //-V557 (for PVS-Studio)
     Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
-        static_assert(nrows*ncols == 9,"Number of arguments does not match elements");
+        static_assert(R*C == 9,"Number of arguments does not match elements");
         m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; } //-V557 (for PVS-Studio)
 
     // CC explicit definition required to differentiate from conversion constructors below:
@@ -95,92 +96,78 @@ struct  Mat
     // Type conversion constructor. Use 'round<int>' if float->fixed rounding desired:
     template<class U>
     explicit
-    Mat(const Mat<U,nrows,ncols> & mat) {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat(const Mat<U,R,C> & mat) {
+        for (uint ii=0; ii<R*C; ++ii)
             m[ii] = static_cast<T>(mat[ii]);
     }
 
     explicit
     Mat(MatV<T> const& mm) {
-        FGASSERT((nrows == mm.numRows()) && (ncols == mm.numCols()));
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        FGASSERT((R == mm.numRows()) && (C == mm.numCols()));
+        for (uint ii=0; ii<R*C; ++ii)
             m[ii] = mm[ii];
     }
 
-    uint
-    numRows() const
-    {return nrows; }
-
-    uint
-    numCols() const
-    {return ncols; }
-
-    uint
-    numElems() const
-    {return nrows*ncols; }
-
-    size_t
-    size() const    // For template interface compatibility with std::vector
-    {return nrows*ncols; }
+    uint        numRows() const {return R; }
+    uint        numCols() const {return C; }
+    uint        numElems() const {return R*C; }
+    size_t      size() const {return R*C; }
 
     // Element access by (row,column):
     T &
     rc(size_t row,size_t col)
     {
-        FGASSERT_FAST((row < nrows) && (col < ncols));
-        return m[row*ncols+col];
+        FGASSERT_FAST((row < R) && (col < C));
+        return m[row*C+col];
     }
     T const &
     rc(size_t row,size_t col) const
     {
-        FGASSERT_FAST((row < nrows) && (col < ncols));
-        return m[row*ncols+col];
+        FGASSERT_FAST((row < R) && (col < C));
+        return m[row*C+col];
     }
     // Element access by (column,row):
     T &
     cr(size_t col,size_t row)
     {
-        FGASSERT_FAST((row < nrows) && (col < ncols));
-        return m[row*ncols+col];
+        FGASSERT_FAST((row < R) && (col < C));
+        return m[row*C+col];
     }
     T const &
     cr(size_t col,size_t row) const
     {
-        FGASSERT_FAST((row < nrows) && (col < ncols));
-        return m[row*ncols+col];
+        FGASSERT_FAST((row < R) && (col < C));
+        return m[row*C+col];
     }
     T &
     operator[](size_t xx)
     {
-        FGASSERT_FAST(xx < nrows*ncols);
+        FGASSERT_FAST(xx < R*C);
         return m[xx];
     }
     T const &
     operator[](size_t xx) const
     {
-        FGASSERT_FAST(xx < nrows*ncols);
+        FGASSERT_FAST(xx < R*C);
         return m[xx];
     }
     T &
     operator[](Mat<uint,2,1> crd)
     {
-        FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
-        return m[crd.m[1]*ncols+crd.m[0]];
+        FGASSERT_FAST((crd.m[0]<C) && (crd.m[1]<R));
+        return m[crd.m[1]*C+crd.m[0]];
     }
     T const &
     operator[](Mat<uint,2,1> crd) const
     {
-        FGASSERT_FAST((crd.m[0]<ncols) && (crd.m[1]<nrows));
-        return m[crd.m[1]*ncols+crd.m[0]];
+        FGASSERT_FAST((crd.m[0]<C) && (crd.m[1]<R));
+        return m[crd.m[1]*C+crd.m[0]];
     }
-    T const *
-    data() const
-    {return m.data(); }
 
     Mat         operator-() const
     {
         Mat           ret;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             ret.m[ii] = -m[ii];
         return ret;
     }
@@ -192,24 +179,24 @@ struct  Mat
 
     void
     operator*=(T val)
-    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] *= val; }
+    {for (uint ii=0; ii<R*C; ++ii) m[ii] *= val; }
 
     void
     operator/=(T val)
-    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] /= val; }
+    {for (uint ii=0; ii<R*C; ++ii) m[ii] /= val; }
 
     void
     operator+=(const Mat & rhs)
-    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] += rhs.m[ii]; }
+    {for (uint ii=0; ii<R*C; ++ii) m[ii] += rhs.m[ii]; }
 
     void
     operator-=(const Mat & rhs)
-    {for (uint ii=0; ii<nrows*ncols; ++ii) m[ii] -= rhs.m[ii]; }
+    {for (uint ii=0; ii<R*C; ++ii) m[ii] -= rhs.m[ii]; }
 
     bool
     operator==(const Mat & rhs) const
     {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             if (!(m[ii] == rhs.m[ii]))
                 return false;
         return true;
@@ -218,50 +205,17 @@ struct  Mat
     bool
     operator!=(const Mat & rhs) const
     {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             if (m[ii] != rhs.m[ii])
                 return true;
         return false;
-    }
-
-    // Ternary compare to match STL containers. Ordering by axis:
-    int
-    compare(const Mat & rhs) const
-    {
-        for (uint ii=0; ii<nrows*ncols; ++ii) {
-            if (m[ii] < rhs.m[ii])
-                return -1;
-            else if (rhs.m[ii] < m[ii])
-                return 1;
-        }
-        return 0;
-    }
-
-    void
-    setConstant(T v)
-    {
-        for (uint ii=0; ii<nrows*ncols; ii++)
-            m[ii] = v;
-    }
-
-    void
-    setZero()
-    {setConstant(T(0)); }
-
-    void
-    setIdentity()
-    {
-        setConstant(T(0));
-        uint nn = std::min(nrows,ncols);
-        for (uint ii=0; ii<nn; ++ii)
-            m[ii*ncols+ii] = T(1);
     }
 
     template<uint srows,uint scols>
     Mat<T,srows,scols>
     subMatrix(uint firstRow,uint firstCol) const
     {
-        FGASSERT_FAST((firstRow+srows <= nrows) && (firstCol+scols <= ncols));
+        FGASSERT_FAST((firstRow+srows <= R) && (firstCol+scols <= C));
         Mat<T,srows,scols>    ret;
         uint                        cnt = 0;
         for (uint rr=firstRow; rr<firstRow+srows; ++rr)
@@ -274,7 +228,7 @@ struct  Mat
     void
     setSubMat(const Mat<T,srows,scols> & sub,uint row,uint col)
     {
-        FGASSERT((srows+row <= nrows) && (scols+col <= ncols));
+        FGASSERT((srows+row <= R) && (scols+col <= C));
         for (uint rr=0; rr<srows; rr++)
             for (uint cc=0; cc<scols; cc++)
                 rc(rr+row,cc+col) = sub.rc(rr,cc);
@@ -284,7 +238,7 @@ struct  Mat
     mag() const         // Squared magnitude
     {
         double      ret = 0.0;
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             ret += cMag(m[ii]);    // T can be non-scalar (eg. complex)
         return ret;
     }
@@ -293,32 +247,32 @@ struct  Mat
     len() const
     {return sqrt(mag()); }
 
-    Mat<T,ncols,nrows>
+    Mat<T,C,R>
     transpose() const
     {
-        Mat<T,ncols,nrows> tMat;
-        for (uint ii=0; ii<nrows; ii++)
-            for (uint jj=0; jj<ncols; jj++)
+        Mat<T,C,R> tMat;
+        for (uint ii=0; ii<R; ii++)
+            for (uint jj=0; jj<C; jj++)
                 tMat.rc(jj,ii) = rc(ii,jj);
         return tMat;
     }
 
-    Mat<T,nrows,1>
+    Mat<T,R,1>
     colVec(uint col) const
     {
-        Mat<T,nrows,1>    ret;
-        FGASSERT_FAST(col < nrows);
-        for (uint rr=0; rr<nrows; rr++)
+        Mat<T,R,1>    ret;
+        FGASSERT_FAST(col < R);
+        for (uint rr=0; rr<R; rr++)
             ret[rr] = rc(rr,col);
         return ret;
     }
 
-    Mat<T,1,ncols>
+    Mat<T,1,C>
     rowVec(uint row) const
     {
-        Mat<T,1,ncols>    ret;
-        FGASSERT_FAST(row < nrows);
-        for (uint cc=0; cc<ncols; ++cc)
+        Mat<T,1,C>    ret;
+        FGASSERT_FAST(row < R);
+        for (uint cc=0; cc<C; ++cc)
             ret[cc] = rc(row,cc);
         return ret;
     }
@@ -336,7 +290,7 @@ struct  Mat
     explicit
     Mat(FromPtr p)
     {
-        for (uint ii=0; ii<nrows*ncols; ++ii)
+        for (uint ii=0; ii<R*C; ++ii)
             m[ii] = *(p._p++);
     }
     static
@@ -348,7 +302,7 @@ struct  Mat
     cmpntsSum() const
     {
         T   acc = m[0];
-        for (uint ii=1; ii<ncols*nrows; ++ii)
+        for (uint ii=1; ii<C*R; ++ii)
             acc += m[ii];
         return acc;
     }
@@ -357,7 +311,7 @@ struct  Mat
     cmpntsProduct() const
     {
         T   acc = m[0];
-        for (uint ii=1; ii<ncols*nrows; ++ii)
+        for (uint ii=1; ii<C*R; ++ii)
             acc *= m[ii];
         return acc;
     }
@@ -365,7 +319,7 @@ struct  Mat
     bool
     operator<(const Mat & rhs) const      // Useful for putting in a std::map
     {
-        for (uint ii=0; ii<nrows*ncols; ++ii) {
+        for (uint ii=0; ii<R*C; ++ii) {
             if (m[ii] < rhs[ii])
                 return true;
             if (rhs[ii] < m[ii])
@@ -380,7 +334,7 @@ struct  Mat
     {
         Svec<T>   ret;
         ret.reserve(size());
-        for (size_t ii=0; ii<nrows*ncols; ++ii)
+        for (size_t ii=0; ii<R*C; ++ii)
             ret.push_back(m[ii]);
         return ret;
     }
@@ -389,17 +343,17 @@ struct  Mat
 
     static Mat identity()
     {
-        static_assert(nrows == ncols,"Identity matrix must be square");
+        static_assert(R == C,"Identity matrix must be square");
         Mat               ret(T(0));
-        for (uint ii=0; ii<nrows; ++ii)
+        for (uint ii=0; ii<R; ++ii)
             ret.rc(ii,ii) = T(1);
         return ret;
     }
     static Mat diagonal(T v)
     {
-        static_assert(nrows == ncols,"Diagonal matrix must be square");
+        static_assert(R == C,"Diagonal matrix must be square");
         Mat               ret(T(0));
-        for (uint ii=0; ii<nrows; ++ii)
+        for (uint ii=0; ii<R; ++ii)
             ret.rc(ii,ii) = v;
         return ret;
     }
@@ -410,12 +364,12 @@ struct  Mat
 template<class T,size_t R,size_t C>
 inline SerPtr tsrlz(Mat<T,R,C> const & m) {return tsrlz(m.m); }
 
-template<class T,uint nrows,uint ncols>
-struct  Traits<Mat<T,nrows,ncols>>
+template<class T,uint R,uint C>
+struct  Traits<Mat<T,R,C>>
 {
     typedef typename Traits<T>::Scalar                                Scalar;
-    typedef Mat<typename Traits<T>::Accumulator,nrows,ncols>    Accumulator;
-    typedef Mat<typename Traits<T>::Floating,nrows,ncols>       Floating;
+    typedef Mat<typename Traits<T>::Accumulator,R,C>    Accumulator;
+    typedef Mat<typename Traits<T>::Floating,R,C>       Floating;
 };
 
 typedef Mat<float,2,1>          Vec2F;
@@ -490,43 +444,43 @@ typedef Mat<int64,3,2>          Mat32L;
 typedef Mat<uint,3,2>           Mat32UI;
 typedef Mat<double,3,4>         Mat34D;
 
-template<typename To,typename From,uint nrows,uint ncols>
+template<typename To,typename From,uint R,uint C>
 inline
-Mat<To,nrows,ncols>
-mapCast(Mat<From,nrows,ncols> const & mat)
-{return Mat<To,nrows,ncols>(mapCast<To,From,nrows*ncols>(mat.m)); }
+Mat<To,R,C>
+mapCast(Mat<From,R,C> const & mat)
+{return Mat<To,R,C>(mapCast<To,From,R*C>(mat.m)); }
 
-template<typename To,typename From,uint nrows,uint ncols,
+template<typename To,typename From,uint R,uint C,
     FG_ENABLE_IF(To,is_fundamental),
     FG_ENABLE_IF(From,is_fundamental)
 >
-Svec<Mat<To,nrows,ncols>>
-deepCast(Svec<Mat<From,nrows,ncols>> const & vm)
+Svec<Mat<To,R,C>>
+deepCast(Svec<Mat<From,R,C>> const & vm)
 {
-    Svec<Mat<To,nrows,ncols>>      ret;
+    Svec<Mat<To,R,C>>      ret;
     ret.reserve(vm.size());
     for (auto const & m : vm)
-        ret.push_back(mapCast<To,From,nrows,ncols>(m));
+        ret.push_back(mapCast<To,From,R,C>(m));
     return ret;
 }
 
-template<typename To,typename From,uint nrows,uint ncols,
+template<typename To,typename From,uint R,uint C,
     FG_ENABLE_IF(To,is_fundamental),
     FG_ENABLE_IF(From,is_fundamental)
 >
-Svec<Svec<Mat<To,nrows,ncols>>>
-deepCast(Svec<Svec<Mat<From,nrows,ncols>>> const & vvm)
+Svec<Svec<Mat<To,R,C>>>
+deepCast(Svec<Svec<Mat<From,R,C>>> const & vvm)
 {
-    Svec<Svec<Mat<To,nrows,ncols>>>   ret;
+    Svec<Svec<Mat<To,R,C>>>   ret;
     ret.reserve(vvm.size());
     for (auto const & vm : vvm)
-        ret.push_back(deepCast<To,From,nrows,ncols>(vm));
+        ret.push_back(deepCast<To,From,R,C>(vm));
     return ret;
 }
 
-template <class T,uint nrows,uint ncols>
+template <class T,uint R,uint C>
 std::ostream &
-operator<<(std::ostream& ss,Mat<T,nrows,ncols> const & mm)
+operator<<(std::ostream& ss,Mat<T,R,C> const & mm)
 {
     std::ios::fmtflags
         oldFlag = ss.setf(
@@ -556,55 +510,55 @@ operator<<(std::ostream& ss,Mat<T,nrows,ncols> const & mm)
     return ss;
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 void
-fgReadp(std::istream & is,Mat<T,nrows,ncols> & m)
+fgReadp(std::istream & is,Mat<T,R,C> & m)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         fgReadp(is,m[ii]);
 }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 void
-fgWritep(std::ostream & os,Mat<T,nrows,ncols> const & m)
+fgWritep(std::ostream & os,Mat<T,R,C> const & m)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         fgWritep(os,m[ii]);
 }
 
 // function 'constructors':
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
+template<typename T,uint R,uint C>
+Mat<T,R,C>
 cMat(T * const ptr)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (size_t ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (size_t ii=0; ii<R*C; ++ii)
         ret.m[ii] = *ptr++;
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>
+template<typename T,uint R,uint C>
+Mat<T,R,C>
 cMat(Svec<T> const & v)
 {
-    Mat<T,nrows,ncols>    ret;
-    FGASSERT(v.size() == nrows*ncols);
+    Mat<T,R,C>    ret;
+    FGASSERT(v.size() == R*C);
     for (size_t ii=0; ii<v.size(); ++ii)
         ret.m[ii] = v[ii];
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
-Mat<int,nrows,ncols>
-fgToInt(Mat<T,nrows,ncols> const & m)
-{return Mat<int,nrows,ncols>(m); }
+template<class T,uint R,uint C>
+Mat<int,R,C>
+fgToInt(Mat<T,R,C> const & m)
+{return Mat<int,R,C>(m); }
 
-template<class T,uint nrows,uint ncols>
+template<class T,uint R,uint C>
 bool
-isFinite(Mat<T,nrows,ncols> const & m)
+isFinite(Mat<T,R,C> const & m)
 {
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    for (uint ii=0; ii<R*C; ++ii)
         if (!std::isfinite(m[ii]))
             return false;
     return true;

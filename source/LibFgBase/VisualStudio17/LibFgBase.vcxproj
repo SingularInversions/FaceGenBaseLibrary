@@ -234,7 +234,6 @@
     <ClInclude Include="..\src\FgFileUtils.hpp" />
     <ClCompile Include="..\src\FgGeometry.cpp" />
     <ClInclude Include="..\src\FgGeometry.hpp" />
-    <ClCompile Include="..\src\FgGeometryTest.cpp" />
     <ClCompile Include="..\src\FgGridIndex.cpp" />
     <ClInclude Include="..\src\FgGridIndex.hpp" />
     <ClCompile Include="..\src\FgGridTriangles.cpp" />
@@ -343,13 +342,11 @@
     <ClInclude Include="..\src\FgStdArray.hpp" />
     <ClCompile Include="..\src\FgStdExtensions.cpp" />
     <ClInclude Include="..\src\FgStdExtensions.hpp" />
-    <ClInclude Include="..\src\FgStdFunction.hpp" />
     <ClCompile Include="..\src\FgStdio.cpp" />
     <ClInclude Include="..\src\FgStdio.hpp" />
     <ClInclude Include="..\src\FgStdLibs.hpp" />
     <ClInclude Include="..\src\FgStdMap.hpp" />
     <ClInclude Include="..\src\FgStdPair.hpp" />
-    <ClInclude Include="..\src\FgStdPtr.hpp" />
     <ClInclude Include="..\src\FgStdSet.hpp" />
     <ClCompile Include="..\src\FgStdStream.cpp" />
     <ClInclude Include="..\src\FgStdStream.hpp" />

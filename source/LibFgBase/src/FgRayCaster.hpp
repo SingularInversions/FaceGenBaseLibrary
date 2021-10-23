@@ -72,7 +72,7 @@ struct  RayCaster
     };
 
     // Return closest tri intersects for given ray:
-    BestN<float,Intersect,4>
+    BestN<float,Intersect,8>
     closestIntersects(Vec2F posIucs) const;
 };
 

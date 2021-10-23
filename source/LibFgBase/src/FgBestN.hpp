@@ -127,14 +127,9 @@ public:
 };
 
 template<class Key,class Val>
-class   Max
+struct      Max
 {
-    Key     m_key = std::numeric_limits<Key>::lowest();
-    Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
-
-public:
-    void
-    update(Key key,const Val & val)
+    void        update(Key const & key,Val const & val)
     {
         if (key > m_key) {
             m_key = key;
@@ -142,16 +137,25 @@ public:
         }
     }
 
-    bool
-    valid() const
-    {return (m_key != std::numeric_limits<Key>::lowest()); }
+    bool        valid() const {return (m_key != std::numeric_limits<Key>::lowest()); }
 
-    const Val &
-    val()
+    Key const &
+    key() const
+    {
+        FGASSERT(valid());
+        return m_key;
+    }
+
+    Val const &
+    val() const
     {
         FGASSERT(valid());
         return m_val;
     }
+
+private:
+    Key             m_key = std::numeric_limits<Key>::lowest();
+    Val             m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
 };
 
 }

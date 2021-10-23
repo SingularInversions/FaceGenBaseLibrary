@@ -365,18 +365,18 @@ toUnit4F(ImgRgba8 const & in)
 {return Img4F {in.dims(),toUnit4F(in.m_data)}; }
 
 Svec<Rgba8>
-toRgba8(Svec<Arr<float,3>> const & data)
+toRgba8(Svec<Arr<float,3>> const & data,float maxVal)
 {
-    float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
-    Svec<Rgba8>                ret; ret.reserve(data.size());
+    float                       f = 255.0f / maxVal;                // Ensure we can round-trip 1.0f <-> 255U
+    Svec<Rgba8>                 ret; ret.reserve(data.size());
     for (Arr<float,3> const & d : data)
         ret.emplace_back(uchar(d[0]*f),uchar(d[1]*f),uchar(d[2]*f),255);
     return ret;
 }
 
 ImgRgba8
-toRgba8(Img3F const & in)
-{return ImgRgba8 {in.dims(),toRgba8(in.m_data)}; }
+toRgba8(Img3F const & in,float maxVal)
+{return ImgRgba8 {in.dims(),toRgba8(in.m_data,maxVal)}; }
 
 Svec<Rgba8>
 toRgba8(Svec<RgbaF> const & data)
@@ -572,29 +572,6 @@ void
 paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC c,uint radius)
 {
     paintDot(img,Vec2I(mapFloor(ipcs)),c,radius);
-}
-
-ImgRgba8s
-cMipMapPow2(ImgRgba8 const & img)
-{
-    FGASSERT(isPow2(img.dims()));
-    size_t                  sls = log2Floor(cMinElem(img.dims())) + 1;      // min dim 1 -> size 1
-    ImgRgba8s                ret; ret.reserve(sls);
-    ret.push_back(img);
-    while (cMinElem(ret.back().dims()) > 1)
-        ret.push_back(shrink2(ret.back()));
-    return ret;
-}
-
-ImgRgba8s
-cMipMap(ImgRgba8 const & img)
-{
-    if (cMinElem(img.dims()) == 0)
-        return ImgRgba8s{};
-    if (isPow2(img.dims()))
-        return cMipMapPow2(img);
-    ImgRgba8             imgP2 = resampleToFit(img,mapPow2Ceil(img.dims()));
-    return cMipMapPow2(imgP2);
 }
 
 ImgV3F

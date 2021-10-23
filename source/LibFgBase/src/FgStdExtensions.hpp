@@ -12,7 +12,6 @@
 #include "FgStdArray.hpp"
 #include "FgStdMap.hpp"
 #include "FgStdPair.hpp"
-#include "FgStdPtr.hpp"
 #include "FgStdSet.hpp"
 #include "FgStdStream.hpp"
 #include "FgStdString.hpp"
@@ -21,6 +20,23 @@ namespace Fg {
 
 template<class T>
 using Sfun = std::function<T>;
+
+template<class T>
+using Sptr = std::shared_ptr<T>;
+
+template<class T>
+using Uptr = std::unique_ptr<T>;
+
+// A useful default:
+template<class T>
+std::ostream &
+operator<<(std::ostream & ss,std::shared_ptr<T> const & p)
+{
+    if (p)
+        return ss << *p;
+    else
+        return ss << "NULL";
+}
 
 // Like C++17 std::data() but better named:
 template <class _Elem>

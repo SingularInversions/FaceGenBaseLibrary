@@ -115,15 +115,43 @@ cDeterminant(const Mat<T,2,1> & col0,const Mat<T,2,1> & col1)
 
 template<class T>
 T
-cDeterminant(const Mat<T,3,3> & mat)
+cDeterminant(Mat<T,3,3> const & M)
 {
-    return (
-        mat[0]*mat[4]*mat[8] +
-        mat[1]*mat[5]*mat[6] +
-        mat[2]*mat[3]*mat[7] -
-        mat[2]*mat[4]*mat[6] -
-        mat[1]*mat[3]*mat[8] -
-        mat[0]*mat[5]*mat[7]);
+    return
+        M[0]*M[4]*M[8] +
+        M[1]*M[5]*M[6] +
+        M[2]*M[3]*M[7] -
+        M[2]*M[4]*M[6] -
+        M[1]*M[3]*M[8] -
+        M[0]*M[5]*M[7];
+}
+
+template<class T>
+T
+cDeterminant(Mat<T,4,4> const & M)
+{
+    // This may not be the fastest method:
+    double          d0 = cDeterminant(Mat<T,3,3>{
+        M.rc(1,1),  M.rc(1,2),  M.rc(1,3),
+        M.rc(2,1),  M.rc(2,2),  M.rc(2,3),
+        M.rc(3,1),  M.rc(3,2),  M.rc(3,3),
+    }),
+                    d1 = cDeterminant(Mat<T,3,3>{
+        M.rc(1,0),  M.rc(1,2),  M.rc(1,3),
+        M.rc(2,0),  M.rc(2,2),  M.rc(2,3),
+        M.rc(3,0),  M.rc(3,2),  M.rc(3,3),
+    }),
+                    d2 = cDeterminant(Mat<T,3,3>{
+        M.rc(1,0),  M.rc(1,1),  M.rc(1,3),
+        M.rc(2,0),  M.rc(2,1),  M.rc(2,3),
+        M.rc(3,0),  M.rc(3,1),  M.rc(3,3),
+    }),
+                    d3 = cDeterminant(Mat<T,3,3>{
+        M.rc(1,0),  M.rc(1,1),  M.rc(1,2),
+        M.rc(2,0),  M.rc(2,1),  M.rc(2,2),
+        M.rc(3,0),  M.rc(3,1),  M.rc(3,2),
+    });
+    return M[0]*d0 - M[1]*d1 + M[2]*d2 - M[3]*d3;
 }
 
 // Concatenate an element onto a column Svec:
@@ -274,8 +302,7 @@ template<class T, uint dims>
 Mat<T,dims+1,dims+1>
 asHomogMat(const Mat<T,dims,1> & translation)
 {
-    Mat<T,dims+1,dims+1>    ret;
-    ret.setIdentity();
+    auto            ret = Mat<T,dims+1,dims+1>::identity();
     for (uint rr=0; rr<dims; rr++)
         ret.rc(rr,dims) = translation[rr];
     return ret;
@@ -823,14 +850,10 @@ findFirstIdx(Mat<T,R,1> m,T v)
     return R;
 }
 
-// Solve linear system of equations of the form Ax = b. Returns x if solvable, invalid if degenerate:
-Opt<Vec2F> solveLinear(Mat22F A,Vec2F b);
-Opt<Vec3D> solveLinear(Mat33D A,Vec3D b);
-inline
-Opt<Vec3F> solveLinear(Mat33F A,Vec3F b) {return solveLinear(Mat33D(A),Vec3D(b)).cast<Vec3F>(); }
-Opt<Vec4D> solveLinear(Mat44D A,Vec4D b);
-inline
-Opt<Vec4F> solveLinear(Mat44F A,Vec4F b) {return solveLinear(Mat44D(A),Vec4D(b)).cast<Vec4F>(); }
+// Solve linear system of equations of the form Mx = b. Assumes matrix is well-conditioned:
+Vec2D           solveLinear(Mat22D const & M,Vec2D const & b);
+Vec3D           solveLinear(Mat33D const & M,Vec3D const & b);
+Vec4D           solveLinear(Mat44D const & M,Vec4D const & b);
 
 template<typename T,uint R,uint C>
 bool
@@ -851,30 +874,6 @@ template<uint R,uint C>
 Mat<float,R,C>
 fgD2F(const Mat<double,R,C> & m)
 {return Mat<float,R,C>(m); }
-
-// Contract columns to row Svec:
-template<class T,uint R,uint C>
-Mat<T,1,C>
-fgSumCols(Mat<T,R,C> const & m)
-{
-    Mat<T,1,C>    r(0);
-    for (uint rr=0; rr<R; ++rr)
-        for (uint cc=0; cc<C; ++cc)
-            r[cc] += m.rc(rr,cc);
-    return r;
-}
-
-// Contract rows to column Svec:
-template<class T,uint R,uint C>
-Mat<T,R,1>
-fgSumRows(Mat<T,R,C> const & m)
-{
-    Mat<T,R,1>    r(0);
-    for (uint rr=0; rr<R; ++rr)
-        for (uint cc=0; cc<C; ++cc)
-            r[rr] += m.rc(rr,cc);
-    return r;
-}
 
 template<class T,uint R,uint C>
 double
@@ -900,10 +899,6 @@ cReal(const Mat<std::complex<double>,R,C> & m)   // Return real compoments
         ret[ii] = m[ii].real();
     return ret;
 }
-
-// Give a tangent coordinate system for a point on a sphere centred at origin:
-Mat32D
-fgTanSphere(Vec3D p);
 
 template<class T,class U,uint R,uint C>
 void
@@ -985,7 +980,7 @@ cHermitian(Mat<T,R,C> const & mat)
     return ret;
 }
 
-// Symmetric 3x3 matrix:
+// Symmetric 3x3 double matrix:
 struct  MatS3D
 {
     Arr<double,3>       diag;
@@ -1070,6 +1065,21 @@ outerProductSelf(Vec3D v)
 
 // Isotropic random symmetric positive definite matrix with given standard deviation of log eigenvalues:
 MatS3D          randMatSpd3D(double lnEigStdev);
+
+// Symmetric 2x2 double matrix:
+struct  MatS2D
+{
+    double          m00,m11,m01;
+    FG_SER3(m00,m11,m01);
+
+    Vec2D
+    operator*(Vec2D const & rhs) const
+    {return {m00*rhs[0] + m01*rhs[1], m01*rhs[0] + m11*rhs[1]}; }
+
+    double
+    determinant() const
+    {return m00 * m11 - m01 * m01; }
+};
 
 // Upper triangular 3x3 matrix non-zero entries in row-major order
 struct  MatUT3D

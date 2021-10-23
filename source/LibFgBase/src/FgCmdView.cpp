@@ -30,7 +30,7 @@ cmdViewMesh(CLArgs const & args)
         "    -c         - Compare meshes rather than view all at once (use 'Select' tab to toggle)\n"
         "    -r         - Remove unused vertices for viewing\n"
         "    <mesh>     - Mesh to view\n"
-        "    <ext>      - " + meshLoadFormatsCLDescription() +
+        "    <ext>      - " + getMeshLoadExtsCLDescription() +
         "    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.\n"
         "    <transparency> - Transparency map\n"
         "    <specular> - Specularity map\n"
@@ -140,7 +140,7 @@ cmdViewUvs(CLArgs const & args)
 {
     Syntax              syn(args,
         "<mesh>.<ext> [<texImage>]+\n"
-        "     <ext> = " + meshLoadFormatsCLDescription());
+        "     <ext> = " + getMeshLoadExtsCLDescription());
     Mesh                mesh = loadMesh(syn.next());
     if (mesh.uvs.empty())
         syn.error("Mesh has no UVs",syn.curr());

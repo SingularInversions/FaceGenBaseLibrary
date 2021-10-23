@@ -48,7 +48,7 @@ struct  GuiWinMain : GuiMainBase
     GuiImplPtr              m_win;
     Vec2UI                  m_size;             // Current size of client area (including maximization)
     Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
-    Svec<FgFnVoid2Void>     eventHandlers;      // Respective event handlers
+    Svec<Sfun<void()>>     eventHandlers;      // Respective event handlers
     Svec<GuiKeyHandle>      keyHandlers;
     function<void()>        onUpdate;           // Run on each screen update
 

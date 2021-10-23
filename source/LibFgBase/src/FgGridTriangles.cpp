@@ -40,7 +40,7 @@ GridTriangles::nearestIntersect(Vec3UIs const & tris,Vec2Fs const & verts,Floats
             if (invDepth > bestInvDepth) {                      // Closer on same ray
                 bestInvDepth = invDepth;
                 bestTp.triInd = bin[ii];
-                bestTp.pointInds = tri;
+                bestTp.vertInds = tri;
                 bestTp.baryCoord = bc;
             }
         }
@@ -62,12 +62,12 @@ GridTriangles::intersects_(Vec3UIs const & tris,Vec2Fs const & verts,Vec2F pos,v
     for (size_t ii=0; ii<bin.size(); ++ii) {
         TriPoint      tp;
         tp.triInd = bin[ii];
-        tp.pointInds = tris[bin[ii]];
+        tp.vertInds = tris[bin[ii]];
         Opt<Vec3D>    vbc;
         // All tris in index guaranteed to have valid vertex projection values:
-        Vec2F            p0 = verts[tp.pointInds[0]],
-                            p1 = verts[tp.pointInds[1]],
-                            p2 = verts[tp.pointInds[2]];
+        Vec2F            p0 = verts[tp.vertInds[0]],
+                            p1 = verts[tp.vertInds[1]],
+                            p2 = verts[tp.vertInds[2]];
         vbc = cBarycentricCoord(pos,p0,p1,p2);
         if (vbc.valid()) {
             tp.baryCoord = Vec3F(vbc.val());
@@ -159,9 +159,9 @@ testGridTriangles(CLArgs const &)
             TriPoint &   isect(res[0]);
             Vec2F
                 rpos(
-                    verts[isect.pointInds[0]] * isect.baryCoord[0] +
-                    verts[isect.pointInds[1]] * isect.baryCoord[1] +
-                    verts[isect.pointInds[2]] * isect.baryCoord[2]);
+                    verts[isect.vertInds[0]] * isect.baryCoord[0] +
+                    verts[isect.vertInds[1]] * isect.baryCoord[1] +
+                    verts[isect.vertInds[2]] * isect.baryCoord[2]);
             FGASSERT(isApproxEqualRelMag(pos,rpos,30));
         }
         else

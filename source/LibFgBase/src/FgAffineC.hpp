@@ -33,20 +33,16 @@ struct  Affine
 
     FG_SERIALIZE2(linear,translation);
 
-    Affine() {linear.setIdentity(); }
-
+    Affine() : linear {Mat<T,D,D>::identity()} {}
     // Construct from translation: f(x) = x + b
-    explicit Affine(Mat<T,D,1> const & trans) : translation(trans) {linear.setIdentity(); }
-
+    explicit Affine(Mat<T,D,1> const & trans) : linear {Mat<T,D,D>::identity()}, translation(trans) {}
     // Construct from linear transform: f(x) = Mx
     explicit Affine(const Mat<T,D,D> & lin) : linear(lin) {}
-
     // Construct from native form: f(x) = Mx + b
     Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) :
         linear(lin),
         translation(trans)
         {}
-
     // Construct from opposite order form: f(x) = M(x+b):
     Affine(Mat<T,D,1> const & trans,const Mat<T,D,D> & lin) :
         linear(lin),

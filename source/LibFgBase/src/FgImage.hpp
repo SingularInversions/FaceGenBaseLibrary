@@ -126,7 +126,7 @@ sampleFdd1Clamp(Img<T> const & img,Vec2UI coord)
 // This is done to allow preservation of max value in round-trip conversions:
 Img3F               toUnit3F(ImgRgba8 const &);         // [0,255] -> [0,1], ignores input alpha channel
 Img4F               toUnit4F(ImgRgba8 const &);         // [0,255] -> [0,1]
-ImgRgba8            toRgba8(Img3F const &);             // [0,1] -> [0,255], alpha set to 255
+ImgRgba8            toRgba8(Img3F const &,float maxVal=1.0);    // [0,maxVal] -> [0,255], alpha set to 255
 ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255]
 ImgUC               toUC(ImgRgba8 const &);             // rec. 709 RGB -> greyscale
 ImgF                toFloat(ImgRgba8 const &);          // rec. 709 RGB -> greyscale [0,255]
@@ -167,6 +167,34 @@ cSsd(Img<T> const & lhs,Img<T> const & rhs)
 {
     FGASSERT(lhs.dims() == rhs.dims());
     return cSsd(lhs.m_data,rhs.m_data);
+}
+
+template<typename T,typename F>
+void
+mapCall_(Img<T> & img,F const & fn,bool multithread)
+{
+    if (multithread) {
+        uint                numThreads = cMin(std::thread::hardware_concurrency(),img.height()),
+                            eubX = img.width();
+        Svec<std::thread>   threads; threads.reserve(numThreads);
+        auto                tfn = [eubX,&fn,&img](uint yy,uint eubY)
+        {
+            for (; yy<eubY; ++yy)
+                for (uint xx=0; xx<eubX; ++xx)
+                    img.xy(xx,yy) = fn(Vec2UI(xx,yy));
+        };
+        for (uint tt=0; tt<numThreads; ++tt) {
+            uint            yy = (tt * img.height()) / numThreads,
+                            eubY = ((tt+1) * img.height()) / numThreads;
+            threads.emplace_back(tfn,yy,eubY);
+        }
+        for (std::thread & t : threads)
+            t.join();
+    }
+    else {
+        for (Iter2UI it{img.dims()}; it.valid(); it.next())
+            img[it()] = fn(it());
+    }
 }
 
 template<typename T,typename Fn>
@@ -340,10 +368,11 @@ smoothFloat1D(
     uint        wid,
     uchar       borderPolicy)   // See below
 {
-    dstPtr[0] = srcPtr[0]*(2+borderPolicy) + srcPtr[1];
+    typedef typename Traits<T>::Scalar   Scalar;
+    dstPtr[0] = srcPtr[0]*Scalar(2+borderPolicy) + srcPtr[1];
     for (uint ii=1; ii<wid-1; ++ii)
-        dstPtr[ii] = srcPtr[ii-1] + srcPtr[ii]*2 + srcPtr[ii+1];
-    dstPtr[wid-1] = srcPtr[wid-2] + srcPtr[wid-1]*(2+borderPolicy);
+        dstPtr[ii] = srcPtr[ii-1] + srcPtr[ii]*Scalar(2) + srcPtr[ii+1];
+    dstPtr[wid-1] = srcPtr[wid-2] + srcPtr[wid-1]*Scalar(2+borderPolicy);
 }
 template<class T>
 void
@@ -355,6 +384,7 @@ smoothFloat2D(
     uchar       borderPolicy,   // See below
     float       fac=1.0f/4.0f)  // Per-axis kernel normalization factor
 {
+    typedef typename Traits<T>::Scalar   Scalar;
     float       factor = fac*fac;
     Img<T>     acc(wid,3);
     T           *accPtr0,
@@ -364,7 +394,7 @@ smoothFloat2D(
     srcPtr += wid;
     smoothFloat1D(srcPtr,accPtr2,wid,borderPolicy);
     for (uint xx=0; xx<wid; ++xx)
-        dstPtr[xx] = (accPtr1[xx]*(2+borderPolicy) + accPtr2[xx]) * factor;
+        dstPtr[xx] = (accPtr1[xx]*Scalar(2+borderPolicy) + accPtr2[xx]) * factor;
     for (uint yy=1; yy<hgt-1; ++yy) {
         dstPtr += wid;
         srcPtr += wid;
@@ -373,11 +403,11 @@ smoothFloat2D(
         accPtr2 = acc.rowPtr((yy+1)%3);
         smoothFloat1D(srcPtr,accPtr2,wid,borderPolicy);
         for (uint xx=0; xx<wid; ++xx)
-            dstPtr[xx] = (accPtr0[xx] + accPtr1[xx] * 2 + accPtr2[xx]) * factor;
+            dstPtr[xx] = (accPtr0[xx] + accPtr1[xx] * Scalar(2) + accPtr2[xx]) * factor;
     }
     dstPtr += wid;
     for (uint xx=0; xx<wid; ++xx)
-        dstPtr[xx] = (accPtr1[xx] + accPtr2[xx]*(2+borderPolicy)) * factor;
+        dstPtr[xx] = (accPtr1[xx] + accPtr2[xx]*Scalar(2+borderPolicy)) * factor;
 }
 // Applies a [1 2 1] outer product 2D kernel smoothing to a floating point channel
 // image in a cache-friendly way.
@@ -387,7 +417,7 @@ void
 smoothFloat(
     Img<T> const &  src,
     Img<T> &        dst,                // Can be same as src
-    uchar               borderPolicy)       // 0 - zero border policy, 1 - replication border policy
+    uchar           borderPolicy)       // 0 - zero border policy, 1 - replication border policy
 {
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
@@ -669,14 +699,14 @@ paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
 void
 paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
 
-// Create a mipmap (2x2 box filtered image pyrmamid), in which:
+// Create a mipmap (2-box-filtered 2-subsamples image pyrmamid), in which:
 // * The first element is the original image
 // * Each subsequent element is half the dimensions (rounded down for odd parent dimensions)
 // * The last element is when the smaller dimension size has reached 1
 // * If the input image is empty, an empty pyramid will be returned
 template<class T>
 Svec<Img<T>>
-cMipMapTruncate(Img<T> const & img)
+cMipmap(Img<T> const & img)
 {
     Svec<Img<T>>            ret;
     uint                    minDim = cMinElem(img.dims());
@@ -689,12 +719,6 @@ cMipMapTruncate(Img<T> const & img)
         ret.push_back(shrink2(ret.back()));
     return ret;
 }
-
-// Returns 2-box-filtered 2-subsampled images of the original, which must have pow2 dimensions.
-// Smallest is when the smallest dimension is of size 1.
-Svec<ImgRgba8>       cMipMapPow2(ImgRgba8 const & img);
-// As above but resamples non-pow-2 images to the pow2 ceiling size, and empty image returns empty mipmp.
-Svec<ImgRgba8>       cMipMap(ImgRgba8 const & img);
 
 // Convert, no scaling:
 ImgV3F

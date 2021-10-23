@@ -79,7 +79,7 @@ RayCaster::RayCaster(
 RgbaF
 RayCaster::cast(Vec2F posIucs) const
 {
-    BestN<float,Intersect,4>      best = closestIntersects(posIucs);
+    BestN<float,Intersect,8>      best = closestIntersects(posIucs);
     // Compute ray color:
     RgbaF               color = background;
     for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
@@ -146,11 +146,11 @@ RayCaster::oecsToIucs(Vec3F posOecs) const
     return Vec3F(iucs[0],iucs[1],id);
 }
 
-BestN<float,RayCaster::Intersect,4>
+BestN<float,RayCaster::Intersect,8>
 RayCaster::closestIntersects(Vec2F posIucs) const
 {
     TriInds const &     triInds = grid[posIucs];
-    BestN<float,Intersect,4> best;
+    BestN<float,Intersect,8> best;
     for (TriInd ti : triInds) {
         Tris const &        tris = trisss[ti.meshIdx][ti.surfIdx];
         Vec3UI              vis = tris.posInds[ti.triIdx];

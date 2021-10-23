@@ -28,7 +28,7 @@ void
 fgClusterDeploy(
     string const &          name,
     const FgFuncCrdntor &   crdntor,
-    const FgFnStr2Str &     worker,
+    const Sfun<String(String const &)> & worker,
     string const &          coordIP,
     Strings const &          workIPs,
     String8s const &       files)

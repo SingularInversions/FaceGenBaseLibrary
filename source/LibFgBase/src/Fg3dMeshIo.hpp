@@ -82,7 +82,7 @@ Mesh            loadMeshMaps(String8 const & baseName);
 Strings         meshLoadFormats();
 // True if this file extension is a 3D mesh readable by FG:
 bool            hasMeshExtension(String8 const & filename);
-String          meshLoadFormatsCLDescription();
+String          getMeshLoadExtsCLDescription();
 
 // Note that meshes and/or surfaces may be merged and other data may be lost
 // depending on the format (see comments below per-format).
@@ -100,7 +100,7 @@ Strings const & meshExportFormatExts();
 Strings const & meshExportFormatDescriptions();
 Strings const & meshExportFormatsWithMorphs();
 // Includes 'tri':
-std::string     meshSaveFormatsCLDescription();
+std::string     getMeshSaveExtsCLDescription();
 
 // FaceGen mesh format load / save:
 Mesh            loadFgmesh(String8 const & fname);

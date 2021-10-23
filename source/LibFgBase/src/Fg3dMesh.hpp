@@ -344,7 +344,7 @@ Mesh            cNTent(uint nn);
 // vertex positions 'subdivision' times. Poor isotropy.
 TriSurf         cSphere4(size_t subdivisions);
 // Create unit radius sphere centred at origin by subdividing an icosahedron and renormalizing the
-// vertex positions 'subdivision' times:
+// vertex positions 'subdivision' times (0 - 20 tris, 1 - 80 tris, 2 - 320 tris, 3 - 1280 tris):
 TriSurf         cSphere(size_t subdivisions);
 
 Mesh            removeDuplicateFacets(Mesh const &);
@@ -352,8 +352,8 @@ Mesh            removeDuplicateFacets(Mesh const &);
 // Retains only those morphs which affect the remaining vertices:
 Mesh            removeUnusedVerts(Mesh const &);
 Mesh            mergeSameNameSurfaces(Mesh const &);
-Mesh            unifyIdenticalVerts(Mesh const &);
-Mesh            unifyIdenticalUvs(Mesh const &);
+Mesh            fuseIdenticalVerts(Mesh const &);       // morphs and marked verts are discarded
+Mesh            fuseIdenticalUvs(Mesh const &);
 Mesh            splitSurfsByUvContiguous(Mesh const &);
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:

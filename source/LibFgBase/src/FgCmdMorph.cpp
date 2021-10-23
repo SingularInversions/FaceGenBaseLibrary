@@ -74,7 +74,7 @@ apply(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
-        "    <ext>      - " + meshSaveFormatsCLDescription() + "\n"
+        "    <ext>      - " + getMeshSaveExtsCLDescription() + "\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
         "    <index>    - Morph index number (see 'morph list' command)\n"
@@ -230,8 +230,8 @@ create(CLArgs const & args)
 {
     Syntax    syn(args,
         "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription() + "\n"
         "    -i         - Ignore very small morphs (ie. do not create)\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
@@ -278,7 +278,7 @@ void
 extract(CLArgs const & args)
 {
     Syntax    syn(args,"<mesh>.tri <ext> [<base>]\n"
-        "    <ext> - Output format " + meshSaveFormatsCLDescription() + "\n"
+        "    <ext> - Output format " + getMeshSaveExtsCLDescription() + "\n"
         "OUTPUTS:\n"
         "    <mesh>_<name>.<ext> for each morph target, or\n"
         "    <base>_<name>.<ext> if <base> is specified.\n"

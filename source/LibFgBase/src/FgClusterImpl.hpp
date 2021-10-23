@@ -57,7 +57,7 @@ recvFrame(ip::tcp::socket & sock,String & msg)
 // The worker can receive and send messages in the same thread as the dispatcher won't send
 // another message until it receives its response:
 void
-fgClustWorker(FgFnStr2Str handler,uint16 port)
+fgClustWorker(Sfun<String(String const &)> handler,uint16 port)
 {
     io_service              ios;                    // Initialize networking functionality
     ip::tcp::endpoint       ep(ip::tcp::v4(),port);

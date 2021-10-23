@@ -30,8 +30,8 @@ combinesurfs(CLArgs const & args)
 {
     Syntax    syn(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription() + "\n"
         "    All input meshes must have identical vertex lists.\n"
         );
     Mesh    mesh = loadMesh(syn.next());
@@ -51,8 +51,8 @@ convert(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     saveMesh(mesh,syn.next());
@@ -63,8 +63,8 @@ copyUvList(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription()
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        in = loadMesh(syn.next());
     Mesh        out = loadMesh(syn.next());
@@ -80,8 +80,8 @@ copyUvs(CLArgs const & args)
 {
     Syntax    syn(args,
         "<from>.<ext0> <to>.<ext1>\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription()
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        in = loadMesh(syn.next());
     Mesh        out = loadMesh(syn.next());
@@ -106,8 +106,8 @@ copyverts(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription() + "\n"
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription() + "\n"
         "    <out> is modified to have the vertex list from <in>"
         );
     Mesh        in = loadMesh(syn.next());
@@ -126,9 +126,9 @@ emboss(CLArgs const & args)
         "<uvImage>.<img> <meshin>.<ext0> <val> <out>.<ext1>\n"
         "    <uvImage> = a UV-layout image whose grescale values will be used to emboss (0 - none, 255 - full)\n"
         "    <img>     = " + getImageFileExtCLDescriptions() + "\n"
-        "    <ext0>    = " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext0>    = " + getMeshLoadExtsCLDescription() + "\n"
         "    <val>     = Embossing factor as ratio of the max bounding box dimension.\n"
-        "    <ext1>    = " + meshSaveFormatsCLDescription()
+        "    <ext1>    = " + getMeshSaveExtsCLDescription()
         );
     ImgUC           img = toUC(loadImage(syn.next()));
     Mesh            mesh = loadMesh(syn.next());
@@ -148,7 +148,7 @@ cmdInject(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<src>.[w]obj <verts>.<mesh> <dst>.obj
-    <mesh>          - )" + meshLoadFormatsCLDescription() + R"(
+    <mesh>          - )" + getMeshLoadExtsCLDescription() + R"(
 OUTPUT:
     <dst>.obj       Identical to <src>.[w]obj but with all vertex positions updated to the values in <verts>.<mesh>
 NOTES:
@@ -175,8 +175,8 @@ revWind(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription() + "\n"
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription() + "\n"
         "    Inverts the winding of all facets in <in> and saves to <out>"
         );
     Mesh                mesh = loadMesh(syn.next());
@@ -189,7 +189,7 @@ markVerts(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri <verts>.<ext> <out>.tri\n"
-        "    <ext> = " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext> = " + getMeshLoadExtsCLDescription() + "\n"
         "    <out>.tri will be saved after marking a vertex in <in>.tri that is closest to each vertex in <verts>.<ext>."
         );
     Mesh    mesh = loadTri(syn.next());
@@ -228,8 +228,8 @@ mmerge(CLArgs const & args)
 {
     Syntax    syn(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     while (syn.more()) {
@@ -246,8 +246,8 @@ mergesurfs(CLArgs const & args)
 {
     Syntax      syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        mesh = loadMesh(syn.next());
     if (mesh.surfaces.size() < 2)
@@ -279,8 +279,8 @@ rtris(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut> (<surfIndex> <triEquivIndex>)+\n"
-        "    <extIn>    - " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut>   - " + meshSaveFormatsCLDescription() + "\n"
+        "    <extIn>    - " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut>   - " + getMeshSaveExtsCLDescription() + "\n"
         "    <triEquivIndex> - Tri-equivalent index of triangle or half-quad to remove."
         );
     Mesh        mesh = loadMesh(syn.next());
@@ -323,8 +323,8 @@ ruv(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     mesh = removeUnusedVerts(mesh);
@@ -337,7 +337,7 @@ sortFacets(CLArgs const & args)
     Syntax    syn(args,
         "<meshIn>.<ext> <albedo>.<img> <meshOut>.<ext> [<opaque>.<ext>]*\n"
         "    <mesh>     - Mesh to have facets sorted\n"
-        "    <ext>      - " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext>      - " + getMeshLoadExtsCLDescription() + "\n"
         "    <albedo>   - Map containing the alpha channel\n"
         "    <img>      - " + getImageFileExtCLDescriptions() + "\n"
         "    <opaque>   - Any opaque objects blocking view which affects sorting\n"
@@ -359,8 +359,8 @@ mergenamedsurfs(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     mesh = mergeSameNameSurfaces(mesh);
@@ -441,23 +441,26 @@ retopo(CLArgs const & args)
 }
 
 void
-boundaries(CLArgs const & args)
+cmdBoundEdges(CLArgs const & args)
 {
-    Syntax          syn(args,"<in>.<ext>\n"
-        "    <ext>    - " + meshLoadFormatsCLDescription() + "\n"
-        "    Saves a mesh to <in>_<num>.tri for each contiguous seam in <in> with the vertices of that seam marked."
+    Syntax          syn(args,
+        R"(<in>.<ext>
+    <ext>       - )" + getMeshLoadExtsCLDescription() + R"(
+    Saves a mesh for each contiguous boundary edge seam with the vertices of that seam marked.
+OUTPUT:
+    <in>-##.fgmesh      A numbered file for each connected boundary edge)"
     );
     string              fname = syn.next();
     Mesh                mesh = loadMesh(fname);
-    SurfTopo        topo(mesh.verts.size(),mesh.asTriSurf().tris);
+    SurfTopo            topo(mesh.verts.size(),mesh.asTriSurf().tris);
     auto                boundaries = topo.boundaries();
-    String8             fbase = pathToBase(fname) + "_";
+    String8             fbase = pathToBase(fname) + "-";
     size_t              cnt = 0;
     for (auto const & boundary : boundaries) {
         Mesh            mm = mesh;
         for (auto const & be : boundary)
             mm.markedVerts.push_back(MarkedVert{be.vertIdx});
-        saveTri(fbase + toStrDigits(cnt++,2) + ".tri",mm);
+        saveMesh(mm,fbase + toStrDigits(cnt++,2) + ".fgmesh");
     }
 }
 
@@ -466,7 +469,7 @@ cmdSplitSurf(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<mesh>.<ext> <root>
-    <ext>       - )" + meshLoadFormatsCLDescription() + R"(
+    <ext>       - )" + getMeshLoadExtsCLDescription() + R"(
 OUTPUT:
     <root>-<name>.fgmesh    For each surface <name> in <mesh>.<ext>
 NOTES:
@@ -490,7 +493,7 @@ cmdUvsSplitContig(CLArgs const & args)
 {
     Syntax              syn {args,
         "<in>.<extIn> <out>.fgmesh\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
         "Each UV-contiguous patch is given a separate surface."
     };
     Mesh                mesh = loadMesh(syn.next());
@@ -501,7 +504,7 @@ void
 splitCont(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.<extIn> <out>.fgmesh\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
         "COMMENTS:\n"
         "    Splits all surfaces by connected vertex indices"
     };
@@ -518,7 +521,7 @@ surfAdd(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
-        "    <ext>  - " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext>  - " + getMeshLoadExtsCLDescription() + "\n"
         "    <name> - Surface name"
         );
     Mesh        mesh = loadMesh(syn.next());
@@ -533,7 +536,7 @@ surfCopy(CLArgs const & args)
 {
     Syntax    syn(args,
         "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
-        "    <ext>  - " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext>  - " + getMeshLoadExtsCLDescription() + "\n"
         " * tris only, uvs not preserved."
         );
     Mesh        from = loadFgmesh(syn.next()),
@@ -586,7 +589,7 @@ surfList(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext>\n"
-        "    <ext> - " + meshLoadFormatsCLDescription()
+        "    <ext> - " + getMeshLoadExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
@@ -616,8 +619,8 @@ void
 spCopy(CLArgs const & args)
 {
     Syntax          syn(args,"<from>.<mi> <to>.<mi> <out>.<mo>\n"
-        "    <mi>   - " + meshLoadFormatsCLDescription() + "\n"
-        "    <mo>   - " + meshSaveFormatsCLDescription()
+        "    <mi>   - " + getMeshLoadExtsCLDescription() + "\n"
+        "    <mo>   - " + getMeshSaveExtsCLDescription()
     );
     Mesh            from = loadMesh(syn.next()),
                     to = loadMesh(syn.next());
@@ -699,8 +702,8 @@ toTris(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
+        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
     mesh.convertToTris();
@@ -708,29 +711,33 @@ toTris(CLArgs const & args)
 }
 
 void
-unifyuvs(CLArgs const & args)
+cmdFuseUvs(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
-        );
-    Mesh    mesh = loadMesh(syn.next());
-    mesh = unifyIdenticalUvs(mesh);
-    saveMesh(mesh,syn.next());
+    Syntax          syn {args,
+        R"(<in>.<extIn> <out>.<extOut>
+    <extIn>     - )" + getMeshLoadExtsCLDescription() + R"(
+    <extOut>    - )" + getMeshSaveExtsCLDescription()
+    };
+    Mesh            in = loadMesh(syn.next()),
+                    out = fuseIdenticalUvs(in);
+    fgout << fgnl << in.uvs.size()-out.uvs.size() << " identical UVs fused";
+    saveMesh(out,syn.next());
 }
 
 void
-unifyverts(CLArgs const & args)
+cmdFuseVerts(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <extOut> = " + meshSaveFormatsCLDescription()
-        );
-    Mesh    mesh = loadMesh(syn.next());
-    mesh = unifyIdenticalVerts(mesh);
-    saveMesh(mesh,syn.next());
+    Syntax          syn {args,
+        R"(<in>.<extIn> <out>.<extOut>
+    <extIn>     - )" + getMeshLoadExtsCLDescription() + R"(
+    <extOut>    - )" + getMeshSaveExtsCLDescription() + R"(
+NOTES:
+    * morphs and marked vertices are not preserved)"
+    };
+    Mesh            in = loadMesh(syn.next()),
+                    out = fuseIdenticalVerts(in);
+    fgout << fgnl << in.verts.size()-out.verts.size() << " identical verts fused";
+    saveMesh(out,syn.next());
 }
 
 void
@@ -738,8 +745,8 @@ uvclamp(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription()
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        in = loadMesh(syn.next());
     Mat22F        cb(0,1,0,1);
@@ -758,7 +765,7 @@ uvSolidImage(CLArgs const & args)
     Syntax    syn(args,
         "<mesh>.<extM> <size> <image>.<extI>\n"
         "    <mesh>     - The mesh must contains UVs for anything to be done.\n"
-        "    <extM>     - " + meshLoadFormatsCLDescription() + "\n"
+        "    <extM>     - " + getMeshLoadExtsCLDescription() + "\n"
         "    <size>     - Output image size (will be square).\n"
         "    <image>    - Output image.\n"
         "    <extI>     - " + getImageFileExtCLDescriptions()
@@ -779,7 +786,7 @@ cmdUvWireframe(CLArgs const & args)
     Syntax              syn {args,
         R"(<mesh>.<extm> [<background>.<exti>]+
     <mesh>     - The mesh must contains UVs
-    <extm>     - )" + meshLoadFormatsCLDescription() + R"(
+    <extm>     - )" + getMeshLoadExtsCLDescription() + R"(
     <image>    - If provided, will be used as the background
     <exti>     - )" + getImageFileExtCLDescriptions() + R"(
 "OUTPUTS:
@@ -803,9 +810,9 @@ uvmask(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
         "    <ext1> = " + getImageFileExtCLDescriptions() + "\n"
-        "    <ext2> = " + meshSaveFormatsCLDescription()
+        "    <ext2> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        mesh = loadMesh(syn.next());
     ImgRgba8     img = loadImage(syn.next());
@@ -823,8 +830,8 @@ uvunwrap(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription()
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        in = loadMesh(syn.next());
     for (size_t ii=0; ii<in.uvs.size(); ++ii) {
@@ -844,8 +851,8 @@ xformApply(CLArgs const & args)
 {
     Syntax              syn(args,
         "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext1> = " + meshSaveFormatsCLDescription()
+        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
     SimilarityD         xform;
     loadBsaXml(syn.next(),xform);
@@ -870,7 +877,7 @@ xformCreateMeshes(CLArgs const & args)
 {
     Syntax    syn(args,
         "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
-        "    <ex> = " + meshLoadFormatsCLDescription()
+        "    <ex> = " + getMeshLoadExtsCLDescription()
         );
     string      simFname = syn.next();
     Mesh    base = loadMesh(syn.next());
@@ -967,8 +974,8 @@ xformMirror(CLArgs const & args)
     Syntax        syn(args,
         "<axis> <meshIn>.<ext1> [<meshOut>.<ext2>]\n"
         "    <axis>     - (x | y | z)\n"
-        "    <ext1>     - " + meshLoadFormatsCLDescription() + "\n"
-        "    <ext2>     - " + meshSaveFormatsCLDescription()
+        "    <ext1>     - " + getMeshLoadExtsCLDescription() + "\n"
+        "    <ext2>     - " + getMeshSaveExtsCLDescription()
     );
     uint            axis = 0;
     string          axisStr = syn.nextLower().as_ascii();
@@ -992,7 +999,7 @@ cmdUvs(CLArgs const & args)
         {copyUvList,"copyUvList","Copy UV list from one mesh to another with same UV count"},
         {copyUvs,"copyUvs","Copy UVs from one mesh to another with identical facet structure"},
         {cmdUvsSplitContig,"splitcon","Split surfaces by contiguous UV mappings"},
-        {unifyuvs,"unifyUVs","Unify identical UV coordinates"},
+        {cmdFuseUvs,"fuse","fuse identical UV coordinates"},
         {uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"},
         {cmdUvWireframe,"uvWire","Create a wireframe image of meshes UV map(s)"},
         {uvSolidImage,"uvImgS","Solid white inside UV facets, black outside, 4xFSAA"},
@@ -1077,7 +1084,7 @@ void
 cmdMesh(CLArgs const & args)
 {
     Cmds            cmds {
-        {boundaries,"bounds","Extract each boundary of a manifold mesh as a file with boundary verts marked"},
+        {cmdBoundEdges,"edges","extract each boundary edge of a manifold mesh as a copy with edge verts marked"},
         {combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"},
         {convert,"convert","Convert the mesh between different formats"},
         {copyverts,"copyverts","Copy verts from one mesh to another with same vertex count"},
@@ -1095,7 +1102,7 @@ cmdMesh(CLArgs const & args)
         {cmdSplitSurf,"splitSurf","Split mesh by surface"},
         {cmdSurf,"surf","Operations on mesh surface structure"},
         {toTris,"toTris","Convert all facets to tris"},
-        {unifyverts,"unifyVerts","Unify identical vertices"},
+        {cmdFuseVerts,"fuse","fuse identical vertices"},
         {cmdUvs,"uvs","UV-specific commands"},
         {xform,"xform","Create or apply similarity transforms from/to meshes"},
     };

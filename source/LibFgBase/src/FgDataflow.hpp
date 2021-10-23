@@ -29,8 +29,7 @@
 #define FGDATAFLOW_HPP
 
 #include <boost/any.hpp>
-#include "FgStdVector.hpp"
-#include "FgStdFunction.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgString.hpp"
 #include "FgFileSystem.hpp"
 
@@ -50,8 +49,8 @@ struct  DfgNode
     virtual boost::any const & getDataCref() const = 0;
     virtual void addSink(const DfgDPtr &) = 0;
 };
-typedef std::shared_ptr<DfgNode>    DfgNPtr;
-typedef Svec<DfgNPtr>               DfgNPtrs;
+typedef Sptr<DfgNode>       DfgNPtr;
+typedef Svec<DfgNPtr>       DfgNPtrs;
 
 struct  DfgDependent
 {
@@ -68,7 +67,7 @@ private:
     DfgDPtrs                    sinks;              // Can be empty
 public:
     // Called with 'data' on destruct only if non-empty and 'data' non-empty. Can be used to save state:
-    std::function<void(boost::any const&)> onDestruct;
+    Sfun<void(boost::any const&)> onDestruct;
 
     DfgInput() {}
     template<class T> explicit DfgInput(T const & v) : data(v) {}
@@ -84,9 +83,9 @@ public:
     {data = val; if (setDefault) dataDefault = val; makeDirty(); }
     void                    setToDefault() const;      // Reset value to default if exists
 };
-typedef std::shared_ptr<DfgInput>   DfgIPtr;
+typedef Sptr<DfgInput>      DfgIPtr;
 
-typedef std::function<void(DfgNPtrs const &,boost::any &)> DfgFunc;
+typedef Sfun<void(DfgNPtrs const &,boost::any &)> DfgFunc;
 
 struct  DfgOutput : DfgNode, DfgDependent
 {
@@ -108,7 +107,7 @@ struct  DfgOutput : DfgNode, DfgDependent
     void                clearSources();
     void                addSource(const DfgNPtr & src);
 };
-typedef std::shared_ptr<DfgOutput>  DfgOPtr;
+typedef Sptr<DfgOutput>     DfgOPtr;
 
 // Receptors are handles that can point to different node types. They make dataflow creation code
 // simpler since they can be passed as arguments (already allocated) without knowing what type
@@ -129,7 +128,7 @@ public:
     virtual void addSink(const DfgDPtr & snk);
     void setSource(DfgNPtr const & nptr);
 };
-typedef std::shared_ptr<DfgReceptor>   DfgRPtr;
+typedef Sptr<DfgReceptor>   DfgRPtr;
 
 // Allows client objects to keep track of their own dirty state based on one or more sources:
 struct  DirtyFlag : DfgDependent
@@ -146,7 +145,7 @@ struct  DirtyFlag : DfgDependent
     bool checkUpdate() const;
 };
 
-typedef std::shared_ptr<DirtyFlag>   DfgFPtr;
+typedef Sptr<DirtyFlag>     DfgFPtr;
 
 void addLink(const DfgNPtr & src,const DfgOPtr & snk);
 
@@ -347,7 +346,7 @@ template<class T>
 OPT<Svec<T>>
 linkCollate(const Svec<NPT<T>> & ins = Svec<NPT<T>>())
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->data = Svec<T>();
     op->func = adapterCollate<T>;
     op->sources.reserve(ins.size());
@@ -364,7 +363,7 @@ linkCollate(const Svec<IPT<T>> & ins)
 
 template<class In,class Out>
 void
-adapterN(DfgNPtrs const & srcs,boost::any & snk,std::function<Out(const Svec<In> &)> fn)
+adapterN(DfgNPtrs const & srcs,boost::any & snk,Sfun<Out(const Svec<In> &)> fn)
 {
     Svec<In>     args;
     args.reserve(srcs.size());
@@ -375,12 +374,12 @@ adapterN(DfgNPtrs const & srcs,boost::any & snk,std::function<Out(const Svec<In>
 
 template<class In,class Out>
 OPT<Out>
-linkN(const Svec<NPT<In>> & ins,const std::function<Out(const Svec<In> &)> & fn)
+linkN(const Svec<NPT<In>> & ins,const Sfun<Out(const Svec<In> &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = std::bind(adapterN<In,Out>,std::placeholders::_1,std::placeholders::_2,fn);
     op->sources.reserve(ins.size());
-    for (const NPT<In> & in : ins) {
+    for (NPT<In> const & in : ins) {
         op->sources.push_back(in.ptr);
         in.ptr->addSink(op);
     }
@@ -388,14 +387,14 @@ linkN(const Svec<NPT<In>> & ins,const std::function<Out(const Svec<In> &)> & fn)
 }
 template<class In,class Out>
 OPT<Out>
-linkN(const Svec<IPT<In>> & ins,const std::function<Out(const Svec<In> &)> & fn)
+linkN(const Svec<IPT<In>> & ins,const Sfun<Out(const Svec<In> &)> & fn)
 {return linkN(mapConvert<IPT<In>,NPT<In>>(ins),fn); }
 
 template<class In,class Out>
 OPT<Out>
-link1(const NPT<In> & in,const std::function<Out(const In &)> & fn)
+link1(NPT<In> const & in,const Sfun<Out(const In &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
         FGASSERT(srcs.size() == 1);
@@ -409,9 +408,9 @@ link1(const NPT<In> & in,const std::function<Out(const In &)> & fn)
 
 template<class In,class Out>
 OPT<Out>
-link1_(const NPT<In> & in,const std::function<void(const In &,Out &)> & fn)
+link1_(NPT<In> const & in,const Sfun<void(const In &,Out &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
@@ -427,9 +426,9 @@ link1_(const NPT<In> & in,const std::function<void(const In &,Out &)> & fn)
 
 template<class Out,class In0,class In1>
 OPT<Out>
-link2(const NPT<In0> & in0,const NPT<In1> & in1,const std::function<Out(const In0 &,const In1 &)> & fn)
+link2(const NPT<In0> & in0,const NPT<In1> & in1,const Sfun<Out(const In0 &,const In1 &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
         FGASSERT(srcs.size() == 2);
@@ -448,9 +447,9 @@ template<class Out,class In0,class In1>
 OPT<Out>
 link2_(
     const NPT<In0> & in0,const NPT<In1> & in1,
-    const std::function<void(const In0 &,const In1 &,Out &)> & fn)
+    const Sfun<void(const In0 &,const In1 &,Out &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
@@ -471,9 +470,9 @@ template<class Out,class In0,class In1,class In2>
 OPT<Out>
 link3(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,
-    const std::function<Out(const In0 &,const In1 &,const In2 &)> & fn)
+    const Sfun<Out(const In0 &,const In1 &,const In2 &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
         FGASSERT(srcs.size() == 3);
@@ -495,9 +494,9 @@ template<class Out,class In0,class In1,class In2>
 OPT<Out>
 link3_(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,
-    const std::function<void(const In0 &,const In1 &,const In2 &,Out &)> & fn)
+    const Sfun<void(const In0 &,const In1 &,const In2 &,Out &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
@@ -521,9 +520,9 @@ template<class Out,class In0,class In1,class In2,class In3>
 OPT<Out>
 link4(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,
-    const std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &)> & fn)
+    const Sfun<Out(const In0 &,const In1 &,const In2 &,const In3 &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
         FGASSERT(srcs.size() == 4);
@@ -548,9 +547,9 @@ template<class Out,class In0,class In1,class In2,class In3>
 OPT<Out>
 link4_(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,
-    const std::function<void(const In0 &,const In1 &,const In2 &,const In3 &,Out &)> & fn)
+    const Sfun<void(const In0 &,const In1 &,const In2 &,const In3 &,Out &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->data = Out();       // Must be instantiated for output by reference
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
@@ -577,9 +576,9 @@ template<class Out,class In0,class In1,class In2,class In3,class In4>
 OPT<Out>
 link5(
     const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,const NPT<In4> & in4,
-    const std::function<Out(const In0 &,const In1 &,const In2 &,const In3 &,const In4 &)> & fn)
+    const Sfun<Out(const In0 &,const In1 &,const In2 &,const In3 &,const In4 &)> & fn)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)
     {
         FGASSERT(srcs.size() == 5);
@@ -607,7 +606,7 @@ template<class T>
 OPT<T>
 linkSelect(Svec<NPT<T>> const & inNs,NPT<size_t> selN)
 {
-    std::shared_ptr<DfgOutput> op = std::make_shared<DfgOutput>();
+    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [](DfgNPtrs const & srcs,boost::any & snk)
         {
             FGASSERT(srcs.size()>1);

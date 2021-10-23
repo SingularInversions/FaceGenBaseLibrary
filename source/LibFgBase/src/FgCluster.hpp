@@ -10,9 +10,7 @@
 #ifndef FGCLUSTER_HPP
 #define FGCLUSTER_HPP
 
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
-#include "FgStdFunction.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgString.hpp"
 
 namespace Fg {
@@ -28,7 +26,7 @@ fgClusterPortDefault() {return 59407; }
 // Serves a single client synchronously until client shuts connection.
 void
 fgClustWorker(
-    FgFnStr2Str         handler,       // Must do it's own deserialization/serialization
+    Sfun<String(String const &)> handler,       // Must do it's own deserialization/serialization
     uint16              port=fgClusterPortDefault());
 
 struct  FgClustDispatcher
@@ -57,7 +55,7 @@ void
 fgClusterDeploy(
     String const &          name,       // Name of this run (for file logging)
     const FgFuncCrdntor &   crdntor,    // Coordinates cluster work and returns on completion of all work
-    const FgFnStr2Str &     worker,     // Cluster worker function
+    const Sfun<String(String const &)> &     worker,     // Cluster worker function
     String const &          coordIP,    // IP address (or domain name) of coordinator
     Strings const &          workIPs,    // IP addresses (or domain names) of workers
     String8s const &       files);     // Data files to sync before deployment (relative to data directory)

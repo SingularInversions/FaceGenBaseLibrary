@@ -60,7 +60,7 @@ renderSoft(
                 Vec3F               spIucs = rc.oecsToIucs(spOecs);
                 spp.posIucs = Vec2F(spIucs[0],spIucs[1]);
                 if (spIucs[2] > 0) {                                // Point is in front of the camera
-                    BestN<float,RayCaster::Intersect,4>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
+                    BestN<float,RayCaster::Intersect,8>  intscts = rc.closestIntersects(Vec2F(spIucs[0],spIucs[1]));
                     if (!intscts.empty()) {                         // Point is in view of camaera
                         RayCaster::Intersect  intsct = intscts[0].second;     // First is closest
                         if ((intsct.triInd.meshIdx != mm) ||

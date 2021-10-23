@@ -57,11 +57,41 @@ testCholesky(CLArgs const &)
     fgout << fgnl << "Cholesky unsafe RMS residual: " << sqrt(resid1/N);
 }
 
-Vec3D
-solve(MatS3D A,Vec3D b)
+Vec2D
+solveLinear(MatS2D fr,Vec2D b)
 {
-    MatUT3D            cd = cCholesky(A);
-    MatUT3D            I = cd.inverse();
+    double              det = fr.m00 * fr.m11 - sqr(fr.m01),    // will be non-zero for full rank matrix
+                        n0 = fr.m11 * b[0] - fr.m01 * b[1],
+                        n1 = fr.m00 * b[1] - fr.m01 * b[0];
+    return {n0/det,n1/det};
+}
+void
+testSolveS2(CLArgs const &)
+{
+    for (size_t ii=0; ii<100; ++ii) {
+        // TODO: currently just tests SPD but 'solve' should work for all full rank:
+        double              lnEigRat = randUniform(0,-log(epsBits(20))),    // ln eigvalue ratio within limits
+                            ev0 = exp(randNormal()),
+                            ev1 = ev0 * exp(-lnEigRat),
+                            theta = randUniform(-pi(),pi()),
+                            c = cos(theta),
+                            s = sin(theta);
+        Mat22D              D {ev0, 0, 0, ev1},
+                            R {c, s, -s, c},
+                            M = R * D * R.transpose();
+        MatS2D              S {M.rc(0,0), M.rc(1,1), M.rc(0,1)};
+        Vec2D               x = Vec2D::randNormal(),
+                            b = M * x,
+                            t = solveLinear(S,b);
+        FGASSERT(isApproxEqualPrec(t,x,20));
+    }
+}
+
+Vec3D
+solveLinear(MatS3D A,Vec3D b)
+{
+    MatUT3D             cd = cCholesky(A);
+    MatUT3D             I = cd.inverse();
     Vec3D               c = I.tranposeMul(b);
     return I * c;
 }
@@ -256,7 +286,8 @@ testMatrixSolver(CLArgs const & args)
     Cmds        cmds {
         {testCholesky,"chol","Cholesky 3x3 decomposition"},
         {testAsymEigs,"asym","Arbitrary real matrix eigensystem"},
-        {testSymmEigen,"symm","Real symmetric matrix eigensystem"}
+        {testSymmEigen,"symm","Real symmetric matrix eigensystem"},
+        {testSolveS2,"solveS2","Mx=b solver for M 2x2 symmetric"},
     };
     doMenu(args,cmds,true);
 }

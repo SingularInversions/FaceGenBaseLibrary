@@ -21,7 +21,7 @@ struct   NormalDist
     Vec                 mean;
     Mat<double,dim,dim> root;       // Square root of the concentration matrix
 
-    NormalDist() {root.setIdentity(); }
+    NormalDist() : root {Mat<double,dim,dim>::identity()} {}
     NormalDist(const Vec & m,const Mat<double,dim,dim> & c) : mean(m), root(c) {}
 
     double

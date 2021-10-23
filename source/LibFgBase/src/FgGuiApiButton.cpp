@@ -13,7 +13,7 @@ using namespace std;
 namespace Fg {
 
 GuiPtr
-guiButton(String8 const & label,FgFnVoid2Void action)
+guiButton(String8 const & label,Sfun<void()> const & action)
 {
     GuiButton      b;
     b.label = label;
@@ -22,7 +22,7 @@ guiButton(String8 const & label,FgFnVoid2Void action)
 }
 
 GuiPtr
-guiButtonTr(string const & label,FgFnVoid2Void action)
+guiButtonTr(string const & label,Sfun<void()> const & action)
 {
     GuiButton      b;
     b.label = label;

@@ -114,8 +114,7 @@ struct  Camera
     FG_SERIALIZE3(modelview,frustum,itcsToIucs);
 
     // Projection from world to IPCS (and depth to inverse depth) for this camera (homogeneous representation):
-    Mat44F
-    projectIpcs(Vec2UI dims) const;
+    Mat44F          projectIpcs(Vec2UI dims) const;
 };
 
 struct  CameraParams
@@ -134,13 +133,9 @@ struct  CameraParams
     double          fovMaxDeg = 17.0;
 
     CameraParams() {}
+    explicit CameraParams(Mat32D bounds) : modelBounds(bounds) {}
 
-    explicit
-    CameraParams(Mat32D bounds)
-    : modelBounds(bounds) {}
-
-    Camera
-    camera(Vec2UI viewport) const;
+    Camera          camera(Vec2UI viewport) const;
 };
 
 }

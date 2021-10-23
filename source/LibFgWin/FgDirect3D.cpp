@@ -567,12 +567,20 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
 
 WinPtr<ID3D11Texture2D>
 D3d::loadMap(ImgRgba8 const & map) {
-    ImgRgba8s                mip = cMipMap(map); // TODO need to speed up the remapping to pow2 in here for big images
-    uint                    numMips = cMin(uint(mip.size()),8);
+    FGASSERT(!map.empty());
+    ImgRgba8s               mipmap;
+    if (isPow2(map.dims()))
+        mipmap = cMipmap(map);
+    else {                  // power of 2 images are strongly preferred by GPUs so make it so:
+        // TODO: resampling is a slow way to do this and gives noticable lag for large images.
+        ImgRgba8            p2 = resampleToFit(map,mapPow2Ceil(map.dims()));
+        mipmap = cMipmap(p2);
+    }
+    uint                    numMips = cMin(uint(mipmap.size()),8);
     D3D11_SUBRESOURCE_DATA  initData[8] = {};
     for (size_t mm=0; mm<numMips; ++mm) {
-        initData[mm].pSysMem = mip[mm].dataPtr();
-        initData[mm].SysMemPitch = mip[mm].width()*4;
+        initData[mm].pSysMem = mipmap[mm].dataPtr();
+        initData[mm].SysMemPitch = mipmap[mm].width()*4;
     }
     D3D11_TEXTURE2D_DESC desc = {};
     desc.Width = map.width();

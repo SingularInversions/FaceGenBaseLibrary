@@ -17,7 +17,6 @@
 #ifndef FGGUIAPIBASE_HPP
 #define FGGUIAPIBASE_HPP
 
-#include "FgStdFunction.hpp"
 #include "FgDataflow.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImageBase.hpp"
@@ -72,13 +71,13 @@ guiMakePtr(T const & stackVal)
 struct  GuiEvent
 {
     void *              handle;     // OS-specific handle to event for triggering main event-driven loop
-    FgFnVoid2Void       handler;    // Function to handle event
+    Sfun<void()>       handler;    // Function to handle event
 };
 
 struct  GuiKeyHandle
 {
     char                key;        // Only visible keys handled for now
-    FgFnVoid2Void       handler;
+    Sfun<void()>       handler;
 };
 
 struct  GuiOptions

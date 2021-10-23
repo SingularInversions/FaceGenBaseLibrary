@@ -32,6 +32,9 @@ struct  Rigid3D
     Rigid3D(QuaternionD const & r,Vec3D const & t) : rot{r}, trans{t} {}
 
     Affine3D        asAffine() const {return Affine3D {rot.asMatrix(),trans}; }
+
+    static Rigid3D  randNormal(double transStdev)
+    {return Rigid3D{QuaternionD::rand(),Vec3D::randNormal(transStdev)}; }
 };
 typedef Svec<Rigid3D>   Rigid3Ds;
 std::ostream & operator<<(std::ostream &,Rigid3D const &);

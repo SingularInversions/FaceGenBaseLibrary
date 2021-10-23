@@ -23,10 +23,7 @@
 #ifndef FGSERIAL_HPP
 #define FGSERIAL_HPP
 
-#include "FgStdArray.hpp"
-#include "FgStdString.hpp"
-#include "FgStdVector.hpp"
-#include "FgStdPtr.hpp"
+#include "FgStdExtensions.hpp"
 #include "FgHash.hpp"
 
 namespace Fg {

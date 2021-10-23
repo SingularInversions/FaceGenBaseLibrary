@@ -17,7 +17,7 @@ struct  TriPoint
 {
     uint        triInd;         // Index of triangle in list
     // Indices of vertices of triangle in winding order (redundant to above for efficiency):
-    Vec3UI      pointInds;
+    Vec3UI      vertInds;
     // Barycentric coordinate of intersection point in projected coordinates. Note that that harmonic interpolation
     // must be used to linaerly interpolate attributes in the original space:
     Vec3F       baryCoord;

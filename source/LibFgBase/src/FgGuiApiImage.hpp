@@ -20,7 +20,7 @@ struct  GuiImage : GuiBase
 {
     struct  Disp
     {
-        ImgRgba8 const *     imgPtr;
+        ImgRgba8 const *    imgPtr;
         Vec2I               offset;
     };
     // Callback when image is needed for bitblt to screen.
@@ -58,10 +58,13 @@ struct  GuiImg
 // Zoom-able, shift-able, click-able image of variable size:
 GuiImg
 guiImageCtrls(
-    NPT<ImgRgba8> const &        imageN,             // Image for display
+    NPT<ImgRgba8> const &       imageN,             // source image for display
     // User-selected points in IUCS will be overlaid on image.
     // NB These are NOT corrected for non-power-of-2 pixel truncation:
     IPT<Vec2Fs> const &         ptsIucsN,
+    // if true, image zoom goes up to 8x with nearest neighbour sampling
+    // if false, image zoom goes up to 2x with linear interpolated sampling
+    bool                        expertMode=false,
     // If defined, this is called when the user clicks on the image.
     // The argument is the coordinate in IUCS since this is easier when image scale varies.
     // Note however that unless the image is a power of 2 in size, small discrepencies

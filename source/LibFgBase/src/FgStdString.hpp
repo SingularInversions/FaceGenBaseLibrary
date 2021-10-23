@@ -181,13 +181,13 @@ contains(std::basic_string<T> const & str,T ch)
 
 template<typename T>
 bool
-contains(std::basic_string<T> const & str,std::basic_string<T> const & pattern)
+containsSubstr(std::basic_string<T> const & str,std::basic_string<T> const & pattern)
 {return (str.find(pattern) != std::basic_string<T>::npos); }
 
 template<typename T>
 bool
-contains(std::basic_string<T> const & str,T const * pattern_c_str)
-{return contains(str,std::basic_string<T>(pattern_c_str)); }
+containsSubstr(std::basic_string<T> const & str,T const * pattern_c_str)
+{return containsSubstr(str,std::basic_string<T>(pattern_c_str)); }
 
 template<typename T>
 std::basic_string<T>

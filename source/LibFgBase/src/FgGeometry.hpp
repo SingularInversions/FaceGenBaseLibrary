@@ -16,10 +16,9 @@ namespace Fg {
 // Returns the signed area of the parallelogram defined by the points (RHR)
 // which is twice the signed area of the triangle defined by the points (CC winding):
 double          cArea(Vec2D p0,Vec2D p1,Vec2D p2);
-
-// Returns the barycentric coordinate (wrt the input points) of the closest point in the plane
-// spanned by the points to the origin.
-Vec3D           closestBarycentricPoint(Vec3D p0,Vec3D p1,Vec3D p2);
+// Returns the vector area of the parallelogram defined by the points (RHR)
+// which is twice the vector area of the triangle defined by the points (CC winding):
+inline Vec3D    cArea(Vec3D p0,Vec3D p1,Vec3D p2) {return crossProduct(p1-p0,p2-p0); }
 
 template<typename T>
 struct  VecMag
@@ -37,9 +36,7 @@ typedef VecMag<float>   VecMagF;
 typedef VecMag<double>  VecMagD;
 
 // Returns closest point in given line segment from origin:
-VecMagD         closestPointInSegment(Vec3D p0,Vec3D p1);
-// Returns delta from point to tri:
-VecMagD         closestPointInTri(Vec3D const & point,Vec3D const & vert0,Vec3D const & vert1,Vec3D const & vert2);
+VecMagD         closestPointInSegment(Vec3D const & p0,Vec3D const & p1);
 // Returns the barycentric coord of point relative to triangle.
 // If no valid value, triangle is degenerate.
 // Point is in triangle if all coordinates are positive:

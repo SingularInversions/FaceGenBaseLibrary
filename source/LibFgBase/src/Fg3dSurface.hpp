@@ -243,6 +243,7 @@ Surfs           splitByContiguous(Surf const & surf);
 // or just the base name if there is only a single (unnamed) surface:
 Surfs           fgEnsureNamed(Surfs const & surfs,String8 const & baseName);
 Vec3Fs          cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
+Vec3Ds          cVertsUsed(Vec3UIs const & tris,Vec3Ds const & verts);
 bool            hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
 // Returned array is 1-1 with 'verts' and contains the new index value if the vert is used,
 // or uint::max otherwise. Vertex ordering is preserved:

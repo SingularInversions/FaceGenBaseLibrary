@@ -516,6 +516,20 @@ cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts)
     return ret;
 }
 
+Vec3Ds
+cVertsUsed(Vec3UIs const & tris,Vec3Ds const & verts)
+{
+    vector<bool>        used (verts.size(),false);
+    for (Vec3UI const & tri : tris)
+        for (size_t xx=0; xx<3; ++xx)
+            used.at(tri[xx]) = true;
+    Vec3Ds              ret;
+    for (size_t ii=0; ii<verts.size(); ++ii)
+        if (used[ii])
+            ret.push_back(verts[ii]);
+    return ret;
+}
+
 bool
 hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts)
 {

@@ -57,92 +57,50 @@ toDoubles(Floatss const & v)
     return ret;
 }
 
-// Gaussian elimination can be very simply explicit in this case:
-Opt<Vec2F>
-solveLinear(Mat22F A,Vec2F b)
+// 2D case allows for simple explicit formula:
+Vec2D
+solveLinear(Mat22D const & A,Vec2D const & b)
 {
-    Opt<Vec2F>    ret;
-    float                   a0 = A[0]*A[3],
-                            a1 = A[1]*A[2],
-                            a0s = a0*a0,
-                            a1s = a1*a1;
-    if (a0s > a1s) {
-        float           r1 = A[1] / A[3],
-                        a11 = A[0] - r1 * A[2],
-                        x = (b[0] - r1 * b[1]) / a11,
-                        y = (b[1] - A[2] * x) / A[3];
-        ret = Vec2F(x,y);
-    }
-    else if (a0s < a1s) {
-        float           r1 = A[0] / A[2],
-                        a12 = A[1] - r1 * A[3],
-                        y = (b[0] - r1 * b[1]) / a12,
-                        x = (b[1] - A[3] * y) / A[2];
-        ret = Vec2F(x,y);
-    }
-    return ret;
+    double              det = A[0]*A[3] - A[1]*A[2];
+    FGASSERT(det != 0.0);
+    return {
+        (b[0]*A[3] - b[1]*A[1])/det,
+        (b[1]*A[0] - b[0]*A[2])/det
+    };
 }
 
-Opt<Vec3D>
-solveLinear(Mat33D A,Vec3D b)
+Vec3D
+solveLinear(Mat33D const & M,Vec3D const & b)
 {
     Eigen::Matrix3d         mat;
     Eigen::Vector3d         vec;
     for (uint rr=0; rr<3; ++rr)
         for (uint cc=0; cc<3; ++cc)
-            mat(rr,cc) = A.rc(rr,cc);
+            mat(rr,cc) = M.rc(rr,cc);
     for (uint rr=0; rr<3; ++rr)
         vec(rr) = b[rr];
-    Opt<Vec3D>         ret;
     // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
     auto                    qr = mat.colPivHouseholderQr();
-    if (qr.isInvertible()) {
-        Eigen::Vector3d     sol = qr.solve(vec);
-        ret = Vec3D(sol(0),sol(1),sol(2));
-    }
-    return ret;
+    FGASSERT(qr.isInvertible());
+    Eigen::Vector3d         sol = qr.solve(vec);
+    return {sol(0),sol(1),sol(2)};
 }
 
-Opt<Vec4D>
-solveLinear(Mat44D A,Vec4D b)
+Vec4D
+solveLinear(Mat44D const & M,Vec4D const & b)
 {
     Eigen::Matrix4d         mat;
     Eigen::Vector4d         vec;
     for (uint rr=0; rr<4; ++rr)
         for (uint cc=0; cc<4; ++cc)
-            mat(rr,cc) = A.rc(rr,cc);
+            mat(rr,cc) = M.rc(rr,cc);
     for (uint rr=0; rr<4; ++rr)
         vec(rr) = b[rr];
-    Opt<Vec4D>         ret;
     // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
     auto                    qr = mat.colPivHouseholderQr();
-    if (qr.isInvertible()) {
-        Eigen::Vector4d     sol = qr.solve(vec);
-        ret = Vec4D(sol(0),sol(1),sol(2),sol(3));
-    }
-    return ret;
-}
-
-Mat32D
-fgTanSphere(Vec3D v)
-{
-    // Find permutation that sorts 'v' smallest to largest:
-    Vec3UI           p(0,1,2);
-    Vec3D            m = mapSqr(v);
-    if (m[0] > m[1])
-        std::swap(p[0],p[1]);
-    if (m[p[1]] > m[p[2]])
-        std::swap(p[1],p[2]);
-    if (m[p[0]] > m[p[1]])
-        std::swap(p[0],p[1]);
-    // Gram-Schmidt starting with least co-linear axes:
-    Vec3D        r0(0),
-                    vn = normalize(v);
-    r0[p[0]] = 1.0;
-    r0 -= vn * cDot(vn,r0);
-    r0 /= r0.len();
-    Vec3D        r1 = crossProduct(vn,r0);
-    return catHoriz(r0,r1);
+    FGASSERT(qr.isInvertible());
+    Eigen::Vector4d         sol = qr.solve(vec);
+    return {sol(0),sol(1),sol(2),sol(3)};
 }
 
 MatS3D
@@ -309,17 +267,27 @@ testMatS(CLArgs const &)
     }
 }
 
+template<uint D>
+void
+testSolveLinearT()
+{
+    for (size_t ii=0; ii<256; ++ii) {
+        Mat<double,D,D>     M = Mat<double,D,D>::randNormal();
+        Mat<double,D,1>     b = Mat<double,D,1>::randNormal(),
+                            x = solveLinear(M,b);
+        if (abs(cDeterminant(M)) < epsBits(20))         // don't test with ill conditioned
+            continue;
+        FGASSERT(isApproxEqualPrec(M*x,b,30));
+    }
+}
+
 void
 testSolveLinear(CLArgs const &)
 {
     randSeedRepeatable();
-    for (size_t ii=0; ii<10; ++ii) {
-        Mat44D              M = Mat44D::randNormal();
-        Vec4D               b = Vec4D::randNormal();
-        Opt<Vec4D>          x = solveLinear(M,b);
-        // Chance of values so ill-conditioned we can't get 20 bits accuracy is negligable:
-        FGASSERT(isApproxEqualPrec(M*x.val(),b,20));
-    }
+    testSolveLinearT<2>();
+    testSolveLinearT<3>();
+    testSolveLinearT<4>();
 }
 
 }

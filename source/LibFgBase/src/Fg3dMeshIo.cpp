@@ -143,7 +143,7 @@ hasMeshExtension(String8 const & filename)
 }
 
 string
-meshLoadFormatsCLDescription()
+getMeshLoadExtsCLDescription()
 {return string("(fgmesh | [w]obj | tri)"); }
 
 void
@@ -210,7 +210,7 @@ meshExportFormatDescriptions()
 }
 
 std::string
-meshSaveFormatsCLDescription()
+getMeshSaveExtsCLDescription()
 {return string("(fgmesh | tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
 
 Strings const &
@@ -258,7 +258,7 @@ cmdExport(CLArgs const & args)
 {
     Syntax    syntax(args,
         "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"
-        "    <meshExt>      - " + meshSaveFormatsCLDescription() + "\n"
+        "    <meshExt>      - " + getMeshSaveExtsCLDescription() + "\n"
         "    <imgExt>       - " + getImageFileExtCLDescriptions()
         );
     string              outFile(syntax.next());
