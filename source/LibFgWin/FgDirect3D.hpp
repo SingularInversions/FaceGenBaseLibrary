@@ -127,8 +127,13 @@ private:
     D3dMap                          greyMap;            // For surfaces without an albedo map
     D3dMap                          blackMap;           // For surfaces without a specular map
     D3dMap                          whiteMap;           // 'shiny' rendering option specular map
-    Svec<D3dMap>                    tintMaps;           // For surface coloring display option
-    Svec<D3dMap>                    tintTransMaps;      // With transparency for mesh coloring display option
+    struct  TintMap
+    {
+        D3dMap          light;      // light tint (close to white)
+        D3dMap          trans;      // half-transparent light tint
+        D3dMap          strong;     // strongly tinted for point/line coloring
+    };
+    Svec<TintMap>                   tintMaps;           // for color-coded part displays
     D3dMap                          noModulationMap;    // Modulate all with value 1
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDefault;
     ComPtr<ID3D11DepthStencilState> pDepthStencilStateDisable;
@@ -202,6 +207,7 @@ private:
     D3dSurf &                   getD3dSurf(RendSurf const & rs) const;
     void                        updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out);
     void                        setVertexBuffer(ID3D11Buffer * vertBuff);
+    size_t                      selectTintMap(size_t idx,size_t num) const;
     void                        renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass);
     void                        handleHResult(char const * fpath,uint lineNum,HRESULT hr);
 };

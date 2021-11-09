@@ -296,14 +296,18 @@ ImgUC shrink2Fixed(const ImgUC & img);
 ImgRgba8
 expand2(ImgRgba8 const & src);
 
-// Repeat each pixel value 'fac' times in both dimensions:
 template<class T>
 Img<T>
-magnify(Img<T> const & img,size_t fac)
+magnify(Img<T> const & img,uint fac)
 {
-    Img<T>              ret(img.dims()*uint(fac));
-    for (Iter2UI  it(ret.dims()); it.next(); it.valid())
-        ret[it()] = img[it()/uint(fac)];
+    Img<T>                  ret;
+    ret.m_dims = img.dims() * fac;
+    ret.m_data.reserve(img.numPixels() * fac);
+    for (uint yy=0; yy<img.height(); ++yy)
+        for (uint ff=0; ff<fac; ++ff)
+            for (uint xx=0; xx<img.width(); ++xx)
+                for (uint gg=0; gg<fac; ++gg)
+                    ret.m_data.push_back(img.xy(xx,yy));
     return ret;
 }
 

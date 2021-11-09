@@ -97,7 +97,8 @@ splitLines(string const & src,char commentFlag)
             acc += src[ii];
     }
     if (!acc.empty())
-        ret.push_back(acc);
+        if (acc[0] != commentFlag)
+            ret.push_back(acc);
     return ret;
 }
 

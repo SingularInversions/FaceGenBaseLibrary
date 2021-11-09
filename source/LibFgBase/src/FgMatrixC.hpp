@@ -1105,6 +1105,7 @@ struct  MatUT3D
     }
 
     static MatUT3D  identity()  {return MatUT3D(1,0,0,1,0,1); }
+    static MatUT3D  diagonal(double v) {return MatUT3D{v,0,0,v,0,v}; }
     static MatUT3D  randNormal(double lnEigsStdev,double shearsStdev);          // Isotropic positive definite
 
     MatUT3D         operator-(MatUT3D const & rhs) const {return MatUT3D(m-rhs.m); }

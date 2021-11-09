@@ -41,7 +41,7 @@ cmdStr(Cmd const & cmd)
 
 void
 doMenu(
-    Strings             args,
+    CLArgs              args,
     Cmds const &        cmdsUnsorted,
     bool                optionAll,
     bool                optionQuiet,
@@ -169,11 +169,5 @@ runCmd(const CmdFunc & func,string const & argStr)
 bool
 fgKeepTempFiles()
 {return s_keepTempFiles; }
-
-bool
-isAutomatedTest(CLArgs const & args)
-{
-    return ((args.size() == 2) && (args[1] == "all"));
-}
 
 }

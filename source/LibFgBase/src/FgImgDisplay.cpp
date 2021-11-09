@@ -100,7 +100,7 @@ markImage(ImgRgba8 const & img,ImagePoints const & existing,Strings const & newL
             labels.push_back(nl);
     String8             store = getDirUserAppDataLocalFaceGen("SDK","MarkImage");
     IPT<size_t>         stepN {0};              // 0 - place points, 1 - confirm
-    IPT<ImgRgba8>       imgN {magnify(img,2)};  // Best point pick is 2x magnified
+    IPT<ImgRgba8>       imgN {img};
     IPT<Vec2Fs>         ptsIucsN {existingPtsIucs};
     auto                textFn = [&labels](Vec2Fs const & ptsIucs)
     {

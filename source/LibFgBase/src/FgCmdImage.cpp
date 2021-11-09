@@ -10,6 +10,8 @@
 #include "FgSyntax.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImageIo.hpp"
+#include "FgParse.hpp"
+#include "FgImgDisplay.hpp"
 
 using namespace std;
 
@@ -18,7 +20,7 @@ namespace Fg {
 namespace {
 
 void
-addalpha(CLArgs const & args)
+cmdAlpha(CLArgs const & args)
 {
     Syntax              syn(args,
         "<rgb>.<ext> <alpha>.<ext> <out>.<ext>\n"
@@ -95,10 +97,10 @@ cmdShrink(CLArgs const & args)
 }
 
 void
-formats(CLArgs const &)
+cmdFormats(CLArgs const &)
 {
     Strings             fs = getImageFileExts();
-    fgout << fgnl << fs.size() << " formats supported:" << fgpush;
+    fgout << fgnl << fs.size() << " cmdFormats supported:" << fgpush;
     char                previous = 'Z';
     for (string const & f : fs) {
         if (f[0] != previous) {
@@ -110,15 +112,70 @@ formats(CLArgs const &)
     fgout << fgpop;
 }
 
+void        cmdMark(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"([-b] <landmarks> <images>"
+    -b              - brighten the image with gamma correction for easier viewing of dark areas
+    <landmarks>     - ( <list>.txt | (<landmarkName>)+ )
+    <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
+    <list>.txt      - must contain a whitespace-separated list
+    <landmarkName>  - cannot contain '.' character
+    <ext>           - )" + getImageFileExtCLDescriptions()
+    };
+    bool                brighten = false;
+    if (beginsWith(syn.peekNext(),"-")) {
+        if (syn.next() == "-b")
+            brighten = true;
+        else
+            syn.error("Unknown flag",syn.curr());
+    }
+    Strings             lmNames;
+    Strings             imgFiles;
+    if (endsWith(syn.peekNext(),".txt"))
+        lmNames = splitWhitespace(loadRaw(syn.next()));
+    else {
+        do
+            lmNames.push_back(syn.next());
+        while (!contains(syn.peekNext(),'.'));
+    }
+    if (endsWith(syn.peekNext(),".txt"))
+        imgFiles = splitWhitespace(loadRaw(syn.next()));
+    else {
+        do
+            imgFiles.push_back(syn.next());
+        while (syn.more());
+    }
+    for (String const & imgFile : imgFiles) {
+        ImgRgba8            img = loadImage(imgFile);
+        if (brighten)
+            for (Rgba8 & rgba : img.m_data)
+                for (uint cc=0; cc<3; ++cc)
+                    rgba[cc] = scast<uchar>(pow(rgba[cc]/255.0f,1/2.5f)*255.0f+0.5f);
+        ImagePoints         lms;
+        String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
+        if (fileExists(lmsFile))
+            lms = loadImagePoints(lmsFile);
+        lms = markImage(img,lms,lmNames);
+        if (lms.empty())
+            fgout << fgnl << "No landmarks placed, nothing saved";
+        else {
+            saveImagePoints(lms,lmsFile);
+            fgout << fgnl << lms.size() << " landmarks placed and saved in " << lmsFile;
+        }
+    }
+}
+
 void
 cmdImgops(CLArgs const & args)
 {
     Cmds            cmds {
-        {addalpha,"addalpha","Add/replace an alpha channel from an another image"},
+        {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
         {cmdComposite,"composite","Composite an image with transparency over another"},
         {cmdConst,"const","Create a constant-valued image"},
-        {cmdConvert,"convert","Convert images between different formats"},
-        {formats,"formats","List all supported formats by file extension"},
+        {cmdConvert,"convert","Convert images between different cmdFormats"},
+        {cmdFormats,"cmdFormats","List all supported cmdFormats by file extension"},
+        {cmdMark,"mark","Place landmark points on an image"},
         {cmdShrink,"shrink2","Shrink images by a factor of 2"},
     };
     doMenu(args,cmds);

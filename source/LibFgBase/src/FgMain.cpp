@@ -22,7 +22,17 @@ namespace Fg {
 
 static bool     consoleProgram  = false;
 
-bool            isConsoleProgram() noexcept {return consoleProgram; }
+bool
+isConsoleProgram() noexcept
+{return consoleProgram; }
+
+bool
+isAutomated(CLArgs const & args)
+{
+    if ((args.size() > 1) && (args[1] == "all"))
+        return true;
+    return false;
+}
 
 #ifdef _WIN32
 

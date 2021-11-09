@@ -13,12 +13,8 @@
 #ifndef FGMETAFORMAT_HPP
 #define FGMETAFORMAT_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgFileSystem.hpp"
-#include "FgString.hpp"
 #include "FgSerial.hpp"
-#include "FgSerialize.hpp"
-#include "FgStdStream.hpp"
+#include "FgFileSystem.hpp"
 
 namespace Fg {
 

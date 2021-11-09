@@ -12,12 +12,13 @@
 #include "FgString.hpp"
 #include "FgOut.hpp"
 #include "FgScopeGuard.hpp"
+#include "FgMain.hpp"
 
 using namespace std;
 
-#ifndef FG_SANDBOX
-
 namespace Fg {
+
+#ifndef FG_SANDBOX
 
 bool
 clRun(string const & cmd,bool throwIfError,int rvalMask)
@@ -71,6 +72,15 @@ clPopen(const String & cmd)
     return Opt<String>{ret};
 }
 
+void        testPopen(CLArgs const &)
+{
+    Opt<String>     out = clPopen("dir");
+    if (out.valid())
+        fgout << fgnl << "Command 'dir' output " << out.val().size() << " characters:\n" << out.val();
+    else
+        fgout << fgnl << "Command 'dir' failed";
+}
+
 #ifdef _WIN32
 
 void
@@ -101,6 +111,6 @@ zip(string const & ,string const & )
 
 #endif
 
-}
-
 #endif
+
+}

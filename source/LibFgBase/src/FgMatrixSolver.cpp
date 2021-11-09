@@ -233,7 +233,7 @@ testSymmEigenAuto(CLArgs const &)
 void
 testEigsRsmTime(CLArgs const & args)
 {
-    if (isAutomatedTest(args))
+    if (isAutomated(args))
         return;
     Syntax              syn(args,"<size>");
     // Random symmetric matrix, uniform distribution:

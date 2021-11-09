@@ -109,6 +109,8 @@ lookupFirstR(Svec<std::pair<T,U>> const & table,U const & val)
     return it->first;           // avoid warning
 }
 
+typedef Svec<std::thread>   Threads;
+
 // Simple blocking thread dispatcher - limits running threads to hardware capacity.
 struct  ThreadDispatcher
 {
@@ -126,7 +128,7 @@ struct  ThreadDispatcher
     finish();
 
 private:
-    Svec<std::thread>               threads;
+    Threads                 threads;
     // thread provides no non-blocking way if testing if it's done so use flags.
     // vector requires copyable which atomic is not so use shared pointer to flags.
     Svec<Sptr<std::atomic<bool>>>   dones;      // 1-1 with above

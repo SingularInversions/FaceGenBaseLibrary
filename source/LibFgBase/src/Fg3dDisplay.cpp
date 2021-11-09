@@ -11,7 +11,7 @@
 #include "FgFileSystem.hpp"
 #include "FgTestUtils.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dTopology.hpp"
+#include "FgTopology.hpp"
 #include "FgCommand.hpp"
 #include "FgStdSet.hpp"
 #include "FgBestN.hpp"

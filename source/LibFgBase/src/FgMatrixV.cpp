@@ -279,7 +279,7 @@ showMul(function<MatD(MatD const &,MatD const &)> fn,MatD const & l,MatD const &
 void
 testMul(CLArgs const & args)
 {
-    if (isAutomatedTest(args))
+    if (isAutomated(args))
         return;
     Syntax        syn(args,"<size>");
     size_t          sz = fromStr<size_t>(syn.next()).val();
@@ -294,7 +294,7 @@ testMul(CLArgs const & args)
 void
 loopStructTime(CLArgs const & args)
 {
-    if (isAutomatedTest(args))
+    if (isAutomated(args))
         return;
     uint            dim = 1024;     // Must divide 8 for non-generalized tests
     MatD       m1 = MatD::randNormal(dim,dim),
@@ -308,7 +308,7 @@ loopStructTime(CLArgs const & args)
 void
 eigenTest(CLArgs const & args)
 {
-    if (isAutomatedTest(args))
+    if (isAutomated(args))
         return;
     Syntax            syn(args,"<size>");
     size_t              sz = fromStr<size_t>(syn.next()).val();

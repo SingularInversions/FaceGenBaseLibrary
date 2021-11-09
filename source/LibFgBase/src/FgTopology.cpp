@@ -7,11 +7,13 @@
 #include "stdafx.h"
 
 #include "FgStdSet.hpp"
-#include "Fg3dTopology.hpp"
+#include "FgTopology.hpp"
 #include "FgOpt.hpp"
 #include "FgStdVector.hpp"
 #include "FgCommand.hpp"
 #include "Fg3dMeshIo.hpp"
+#include "Fg3dDisplay.hpp"
+#include "FgImgDisplay.hpp"
 
 using namespace std;
 
@@ -120,17 +122,33 @@ struct  TriVerts
     }
 };
 
+SurfTopo::SurfTopo(Vec3UIs const & tris)
+{
+    setup(0,tris);      // 0 means just use max reference
+}
+
 SurfTopo::SurfTopo(size_t numVerts,Vec3UIs const & tris)
 {
+    setup(uint(numVerts),tris);
+}
+
+void
+SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
+{
+    uint            maxVertReferenced = 0;
+    for (Vec3UI const & tri : tris)
+        for (uint idx : tri.m)
+            updateMax_(maxVertReferenced,idx);
+    if (numVerts == 0)
+        numVerts = maxVertReferenced + 1;
+    else if (numVerts < maxVertReferenced+1)
+        fgThrow("SurfTopo called with vertex count smaller than max index reference");
     // Detect null or duplicate tris:
     uint                    duplicates = 0,
-                            nulls = 0,
-                            outOfRanges = 0;
+                            nulls = 0;
     set<TriVerts>           vset;
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Vec3UI           vis = tris[ii];
-        if (cMaxElem(vis) >= numVerts)
-            ++outOfRanges;
         if ((vis[0] == vis[1]) || (vis[1] == vis[2]) || (vis[2] == vis[0]))
             ++nulls;
         else {
@@ -145,8 +163,6 @@ SurfTopo::SurfTopo(size_t numVerts,Vec3UIs const & tris)
                 ++duplicates;
         }
     }
-    if (outOfRanges > 0)
-        fgout << fgnl << "WARNING " << outOfRanges << " tris have out-of-range vertex references";
     if (duplicates > 0)
         fgout << fgnl << "WARNING Ignored " << duplicates << " duplicate tris";
     if (nulls > 0)
@@ -296,6 +312,21 @@ SurfTopo::boundaries() const
         if (m_edges[ee].triInds.size() == 1)            // Boundary edge
             if (!alreadyAdded(ee))
                 ret.push_back(boundaryContainingEdgeP(ee));
+    }
+    return ret;
+}
+
+Bools
+SurfTopo::boundaryVertFlags() const
+{
+    Svec<BoundEdges>    bess = boundaries();
+    Bools               ret (m_verts.size(),false);
+    for (BoundEdges const & bes : bess) {
+        for (BoundEdge const & be : bes) {
+            Edge const &        edge = m_edges[be.edgeIdx];
+            ret[edge.vertInds[0]] = true;
+            ret[edge.vertInds[1]] = true;
+        }
     }
     return ret;
 }
@@ -454,6 +485,101 @@ cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & topo,uint seedIdx)
         todo = next;
     }
     return ret;
+}
+
+void
+testmSurfTopo(CLArgs const & args)
+{
+    // Test boundary vert normals by adding marked verts along normals and viewing:
+    Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
+    TriSurf             triSurf = mesh.asTriSurf();
+    Vec3Ds              verts = mapCast<Vec3D>(triSurf.verts);
+    double              scale = cMax(cDims(verts).m) * 0.01;        // Extend norms 1% of max dim
+    SurfTopo            topo {triSurf.verts.size(),triSurf.tris};
+    Svec<SurfTopo::BoundEdges> boundaries = topo.boundaries();
+    for (auto const & boundary : boundaries) {
+        Vec3Ds              vertNorms = topo.boundaryVertNormals(boundary,verts);
+        for (size_t bb=0; bb<boundary.size(); ++bb) {
+            auto const &        be = boundary[bb];
+            Vec3D               vert = verts[be.vertIdx] + vertNorms[bb] * scale;
+            mesh.addMarkedVert(Vec3F(vert),"");
+        }
+    }
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void
+testmEdgeDist(CLArgs const & args)
+{
+    Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
+    Surf                surf = mergeSurfaces(mesh.surfaces).convertToTris();
+    SurfTopo            topo {mesh.verts.size(),surf.tris.posInds};
+    size_t              vertIdx = 0;    // Randomly choose the first
+    Floats              edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
+    float               distMax = 0;
+    for (size_t ii=0; ii<edgeDists.size(); ++ii)
+        if (edgeDists[ii] < floatMax())
+            updateMax_(distMax,edgeDists[ii]);
+    float               distToCol = 255.99f / distMax;
+    Uchars              colVal(edgeDists.size(),255);
+    for (size_t ii=0; ii<colVal.size(); ++ii)
+        if (edgeDists[ii] < floatMax())
+            colVal[ii] = uint(distToCol * edgeDists[ii]);
+    mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
+    AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
+    for (size_t tt=0; tt<surf.tris.size(); ++tt) {
+        Vec3UI              vertInds = surf.tris.posInds[tt];
+        Vec3UI              uvInds = surf.tris.uvInds[tt];
+        for (uint ii=0; ii<3; ++ii) {
+            Rgba8           col(255);
+            col.red() = colVal[vertInds[ii]];
+            col.green() = 255 - col.red();
+            mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+        }
+    }
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void
+testmBoundVertFlags(CLArgs const & args)
+{
+    Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
+    Tris const &        tris = mesh.surfaces[0].tris;
+    SurfTopo            topo {mesh.verts.size(),tris.posInds};
+    Bools               boundVertFlags = topo.boundaryVertFlags();
+    Vec2UI              sz {64};
+    ImgRgba8            map {sz,Rgba8{255}};
+    AffineEw2F          otcsToIpcs = cOtcsToIpcs(sz);
+    auto                paintFn = [&](uint uvIdx)
+    {
+        Vec2F           otcs = mesh.uvs[uvIdx];
+        Vec2UI          ircs = Vec2UI(otcsToIpcs * otcs);
+        map.paint(ircs,{255,0,0,255});
+    };
+    for (size_t tt=0; tt<tris.size(); ++tt) {
+        Vec3UI          uv = tris.uvInds[tt],
+                        tri = tris.posInds[tt];
+        for (uint vv=0; vv<3; ++vv)
+            if (boundVertFlags[tri[vv]])
+                paintFn(uv[vv]);
+    }
+    //viewImage(map);
+    mesh.surfaces[0].setAlbedoMap(map);
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void
+testSurfTopo(CLArgs const & args)
+{
+    Cmds                cmds {
+        {testmSurfTopo,"bnorm","view boundary vertex normals"},
+        {testmEdgeDist,"edist","view edge distances"},
+        {testmBoundVertFlags,"bvf","view boundary vertex flags"},
+    };
+    return doMenu(args,cmds,true);
 }
 
 }

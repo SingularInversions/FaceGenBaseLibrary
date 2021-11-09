@@ -68,4 +68,15 @@ saveImagePoints(ImagePoints const & ips,String8 const & fname)
         ofs << "\n" << ip.label << " " << ip.posIrcs[0] << " " << ip.posIrcs[1];
 }
 
+Vec2Ds
+selectImagePoints(ImagePoints const & ips,Strings const & names)
+{
+    Vec2Ds              ret;
+    for (String const & lm : names) {
+        ImagePoint const &  ip = findFirstByMember(ips,&ImagePoint::label,lm);
+        ret.emplace_back(ip.posIrcs);
+    }
+    return ret;
+}
+
 }

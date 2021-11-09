@@ -45,46 +45,11 @@ void    testSerial(CLArgs const &);
 void    testSerialize(CLArgs const &);
 void    testSimilarity(CLArgs const &);
 void    testSimilaritySolve(CLArgs const &);
+void    testSurfTopo(CLArgs const &);
 void    testStdVector(CLArgs const &);
 void    testString(CLArgs const &);
 
 Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
-
-Cmds
-getBaseTests()
-{
-    Cmds            cmds {
-        {test3d,"3d"},
-        {testBoostSer,"boostSerialization"},
-        {testDataflow,"dataflow"},
-        {testExceptions,"exception"},
-        {testFilesystem,"filesystem"},
-        {testFopen,"fopen"},
-        {testGeometry,"geometry"},
-        {testGridTriangles,"gridTriangles"},
-        {testHash,"hash"},
-        {testImage,"image"},
-        {testBaseJson,"json"},
-        {testKdTree,"kd"},
-        {testMatrixSolver,"matSol","Matrix Solver"},
-        {testMath,"math"},
-        {testMatrixC,"matC","MatrixC"},
-        {testMatrixV,"matV","MatrixV"},
-        {testMetaFormat,"metaFormat"},
-        {testMorph,"morph"},
-        {testPath,"path"},
-        {testQuaternion,"quaternion"},
-        {testRenderCmd,"rendc","render command"},
-        {testSerial,"serial"},
-        {testSerialize,"serialize"},
-        {testSimilarity,"similarity"},
-        {testSimilaritySolve,"solveSimilarity"},
-        {testStdVector,"vector"},
-        {testString,"string"},
-    };
-    cmds.push_back(testSoftRenderInfo());
-    return cmds;
-}
 
 void testmGuiImage(CLArgs const &);
 void fgTestmGuiMesh(CLArgs const &);
@@ -122,15 +87,6 @@ sysinfo(CLArgs const &)
         << fgpop;
 }
 
-static void testPopen(CLArgs const &)
-{
-    Opt<String>     out = clPopen("dir");
-    if (out.valid())
-        fgout << fgnl << "Command 'dir' output " << out.val().size() << " characters:\n" << out.val();
-    else
-        fgout << fgnl << "Command 'dir' failed";
-}
-
 void testm3d(CLArgs const &);
 void fgClusterTest(CLArgs const &);
 void fgClusterTestm(CLArgs const &);
@@ -142,34 +98,62 @@ void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
 void testmImage(CLArgs const &);
 
-Cmds
-getBaseTestms()
+static
+void
+testmBase(CLArgs const & args)
 {
-    Cmds      cmds {
+    Cmds            cmds {
         {testmGui,"gui"},
         {testm3d,"3d"},
         {fgClusterTest,"cluster"},
         {fgClusterTestm,"clusterm"},
         {fgClusterDeployTestm,"clusterDeploy"},
         {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
-        {testPopen,"popen"},
         {fg3dReadWobjTest,"readWobj"},
         {testmRandom,"random"},
         {testmGeometry,"geometry"},
         {fgTextureImageMappingRenderTest,"texturemap"},
         {testmImage,"image"}
     };
-    return cmds;
+    doMenu(args,cmds);
 }
-
-static
-void
-testm(CLArgs const & args)
-{doMenu(args,getBaseTestms()); }
 
 void
 testBase(CLArgs const & args)
-{doMenu(args,getBaseTests(),true); }
+{
+    Cmds            cmds {
+        {test3d,"3d"},
+        {testBoostSer,"boostSerialization"},
+        {testDataflow,"dataflow"},
+        {testExceptions,"exception"},
+        {testFilesystem,"filesystem"},
+        {testFopen,"fopen"},
+        {testGeometry,"geometry"},
+        {testGridTriangles,"gridTriangles"},
+        {testHash,"hash"},
+        {testImage,"image"},
+        {testBaseJson,"json"},
+        {testKdTree,"kd"},
+        {testMatrixSolver,"matSol","Matrix Solver"},
+        {testMath,"math"},
+        {testMatrixC,"matC","MatrixC"},
+        {testMatrixV,"matV","MatrixV"},
+        {testMetaFormat,"metaFormat"},
+        {testMorph,"morph"},
+        {testPath,"path"},
+        {testQuaternion,"quaternion"},
+        {testRenderCmd,"rendc","render command"},
+        {testSerial,"serial"},
+        {testSerialize,"serialize"},
+        {testSimilarity,"similarity"},
+        {testSimilaritySolve,"solveSimilarity"},
+        {testSurfTopo,"topo","surface topology analysis"},
+        {testStdVector,"vector"},
+        {testString,"string"},
+    };
+    cmds.push_back(testSoftRenderInfo());
+    doMenu(args,cmds,true);
+}
 
 void
 view(CLArgs const & args)
@@ -216,7 +200,7 @@ getFgblCmds()
         {cmdSubstitute,"substitute","Substitute first instance of exact strings in a text file"},
         {sysinfo,"sys","Show system info"},
         {testBase,"test","Automated tests"},
-        {testm,"testm","Manual tests"},
+        {testmBase,"testm","Manual tests"},
         {view,"view","Interactive GUI view of images and meshes (Windows only)"}
     };
 #ifdef _WIN32

@@ -13,7 +13,6 @@
 #include "Fg3dDisplay.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgCommand.hpp"
-#include "Fg3dTopology.hpp"
 #include "FgAffine1.hpp"
 #include "FgBuild.hpp"
 
@@ -68,39 +67,6 @@ fgTextureImageMappingRenderTest(CLArgs const &)
     viewMesh(mesh);
 }
 
-static
-void
-edgeDist(CLArgs const &)
-{
-    Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
-    Surf                surf = mergeSurfaces(mesh.surfaces).convertToTris();
-    SurfTopo        topo(mesh.verts.size(),surf.tris.posInds);
-    size_t              vertIdx = 0;    // Randomly choose the first
-    Floats       edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
-    float               distMax = 0;
-    for (size_t ii=0; ii<edgeDists.size(); ++ii)
-        if (edgeDists[ii] < floatMax())
-            updateMax_(distMax,edgeDists[ii]);
-    float               distToCol = 255.99f / distMax;
-    Uchars              colVal(edgeDists.size(),255);
-    for (size_t ii=0; ii<colVal.size(); ++ii)
-        if (edgeDists[ii] < floatMax())
-            colVal[ii] = uint(distToCol * edgeDists[ii]);
-    mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
-    AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
-    for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-        Vec3UI              vertInds = surf.tris.posInds[tt];
-        Vec3UI              uvInds = surf.tris.uvInds[tt];
-        for (uint ii=0; ii<3; ++ii) {
-            Rgba8          col(255);
-            col.red() = colVal[vertInds[ii]];
-            col.green() = 255 - col.red();
-            mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
-        }
-    }
-    viewMesh(mesh);
-}
-
 void fgSave3dsTest(CLArgs const &);
 void fgSaveLwoTest(CLArgs const &);
 void fgSaveMaTest(CLArgs const &);
@@ -129,8 +95,6 @@ test3d(CLArgs const & args)
     };
     doMenu(args,cmds,true,false,true);
 }
-
-void fgSaveFgmeshTest(CLArgs const &);
 
 void
 testmSubdFace(CLArgs const &)
@@ -189,37 +153,13 @@ testmSphere(CLArgs const &)
 }
 
 void
-testmSurfTopo(CLArgs const &)
-{
-    // Test boundary vert normals by adding marked verts along normals and viewing:
-    Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
-    TriSurf             triSurf = mesh.asTriSurf();
-    Vec3Ds              verts = mapCast<Vec3D>(triSurf.verts);
-    double              scale = cMax(cDims(verts).m) * 0.01;        // Extend norms 1% of max dim
-    SurfTopo            topo {triSurf.verts.size(),triSurf.tris};
-    Svec<SurfTopo::BoundEdges> boundaries = topo.boundaries();
-    for (auto const & boundary : boundaries) {
-        Vec3Ds              vertNorms = topo.boundaryVertNormals(boundary,verts);
-        for (size_t bb=0; bb<boundary.size(); ++bb) {
-            auto const &        be = boundary[bb];
-            Vec3D               vert = verts[be.vertIdx] + vertNorms[bb] * scale;
-            mesh.addMarkedVert(Vec3F(vert),"");
-        }
-    }
-    viewMesh(mesh);
-}
-
-void
 testm3d(CLArgs const & args)
 {
     Cmds            cmds {
-        {edgeDist,"edgeDist"},
-        {fgSaveFgmeshTest,"fgmesh","FaceGen mesh file format export"},  // Uses GUI
         {testmSubdShapes,"subd0","Loop subdivsion of simple shapes"},
         {testmSubdFace,"subd1","Loop subdivision of textured face"},
         {testmSphere4,"sphere4","Spheres created from tetrahedon"},
         {testmSphere,"sphere","Spheres created from icosahedron"},
-        {testmSurfTopo,"topo","Surface topology functions"},
     };
     doMenu(args,cmds,true,false,true);
 }

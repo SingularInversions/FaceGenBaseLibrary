@@ -11,7 +11,7 @@
 #include "FgStdStream.hpp"
 #include "FgBounds.hpp"
 #include "FgMath.hpp"
-#include "Fg3dTopology.hpp"
+#include "FgTopology.hpp"
 #include "FgStdSet.hpp"
 #include "FgQuaternion.hpp"
 

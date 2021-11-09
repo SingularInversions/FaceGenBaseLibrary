@@ -3,7 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Data structures for topological analysis of a 3D triangulated surface
+// Data structures for topological analysis of a triangulated surface
 //
 
 #ifndef FG3TOPOLOGY_HPP
@@ -28,7 +28,7 @@ struct SurfTopo
     struct      Tri
     {
         Vec3UI          vertInds;
-        Vec3UI          edgeInds;       // In same order as verts (0-1,1-2,3-0)
+        Vec3UI          edgeInds;       // In same order as verts (0-1,1-2,2-0)
 
         Vec2UI          edge(uint relIdx) const;        // Return ordered vert inds of 0,1,2 edge of tri
     };
@@ -48,7 +48,8 @@ struct SurfTopo
     Svec<Edge>          m_edges;
     Svec<Vert>          m_verts;
 
-    SurfTopo(size_t numVerts,Vec3UIs const & tris);
+    explicit SurfTopo(Vec3UIs const & tris);
+    SurfTopo(size_t numVerts,Vec3UIs const & tris);     // checks for out of bounds vertex indices
 
     Vec2UI                  edgeFacingVertInds(uint edgeIdx) const;
     bool                    vertOnBoundary(uint vertIdx) const;
@@ -68,6 +69,8 @@ struct SurfTopo
     // Returns boundaries on the surface in winding order (arbitrary starting point).
     // Mesh must be manifold, and thus boundaries form closed loops:
     Svec<BoundEdges>        boundaries() const;
+    // Returns an array of bools 1-1 with vertices, flagging all boundary edge verts:
+    Bools                   boundaryVertFlags() const;
     // Returns the outward-facing normals for each vertex in the given boundary from the given tri norms:
     Vec3Ds                  boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) const;
     // Trace a fold consisting only of edges whose facet normals differ by at least 60 degrees.
@@ -87,6 +90,7 @@ struct SurfTopo
     void                    edgeDistanceMap(Vec3Fs const & verts,Floats & init) const;
 
 private:
+    void                    setup(uint numVerts,Vec3UIs const & tris);
     BoundEdges              boundaryContainingEdgeP(uint edgeIdx) const; // edgeIdx must be a boundary edge
     Uints                   findSeam(FatBools & done) const;
     uint                    oppositeVert(uint triIdx,uint edgeIdx) const;

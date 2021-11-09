@@ -284,17 +284,24 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
     blackMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(0,0,0,255)));
     whiteMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(255,255,255,255)));
     {
-        // Need accumulator type (eg. float) for subdivision to work:
-        Svec<Vec3F>             colorsF {{
-            {255,200,200},{255,255,200},{200,255,200},{200,255,255},{200,200,255},{255,200,255},
-        }};
-        // 6 * 2 * 2 = 24 colors:
-        Svec<Vec3UC>            colors = mapCast<Vec3UC>(subdivide(subdivide(colorsF)));
-        tintMaps.reserve(colors.size());
-        tintTransMaps.reserve(colors.size());
-        for (Vec3UC c : colors) {
-            tintMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},Rgba8{c[0],c[1],c[2],255})));
-            tintTransMaps.push_back(makeMap(ImgRgba8(Vec2UI{2,2},Rgba8{c[0],c[1],c[2],150})));
+        // Need floating point for subdivision to work:
+        auto                tintFn = [](float b,float t) -> Svec<Vec4UC>
+        {
+            float constexpr     c = 255;
+            Svec<Vec4F>         init {{c,b,b,t},{c,c,b,t},{b,c,b,t},{b,c,c,t},{b,b,c,t},{c,b,c,t},};
+            return mapCast<Vec4UC>(subdivide(subdivide(init)));
+        };
+        Svec<Vec4UC>            colsL = tintFn(200,255),
+                                colsT = tintFn(200,127),
+                                colsS = tintFn(100,255);
+        size_t                  N = colsL.size();       // 6 * 2 * 2 = 24 colors
+        tintMaps.reserve(N);
+        for (size_t ii=0; ii<N; ++ii) {
+            tintMaps.push_back(TintMap{
+                makeMap(ImgRgba8{Vec2UI{2},Rgba8{colsL[ii].m}}),
+                makeMap(ImgRgba8{Vec2UI{2},Rgba8{colsT[ii].m}}),
+                makeMap(ImgRgba8{Vec2UI{2},Rgba8{colsS[ii].m}}),
+            });
         }
     }
     noModulationMap = makeMap(ImgRgba8(Vec2UI(2,2),Rgba8(64,64,64,255)));
@@ -991,18 +998,23 @@ D3d::renderBackBuffer(
         }
     }
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
-    pContext->PSSetShaderResources(0,3,dataPtr({whiteMap.view.get(),blackMap.view.get(),noModulationMap.view.get()}));
+    ID3D11ShaderResourceView *  mapViews[3] {whiteMap.view.get(),blackMap.view.get(),noModulationMap.view.get()};
     if (rendOpts.allVerts) {
-        sceneBuff = makeScene(Vec3F{0,1,0},worldToD3vs,d3vsToD3ps);
-        for (RendMesh const & rendMesh : rendMeshes) {
+        sceneBuff = makeScene(Vec3F{1,1,1},worldToD3vs,d3vsToD3ps);
+        for (size_t mm=0; mm<rendMeshes.size(); ++mm) {
+            RendMesh const &        rendMesh = rendMeshes[mm];
             D3dMesh const &         d3dMesh = getD3dMesh(rendMesh);
             if (d3dMesh.allVerts) {
                 Mesh const &        origMesh = rendMesh.origMeshN.cref();
+                mapViews[0] = tintMaps[selectTintMap(mm,rendMeshes.size())].strong.view.get();
+                pContext->PSSetShaderResources(0,3,mapViews);
                 setVertexBuffer(d3dMesh.allVerts.get());
                 pContext->Draw(uint(origMesh.verts.size()),0);
             }
         }
     }
+    mapViews[0] = whiteMap.view.get();      // modified by allverts render above
+    pContext->PSSetShaderResources(0,3,mapViews);
     if (rendOpts.markedVerts) {
         sceneBuff = makeScene(Vec3F{1,1,0},worldToD3vs,d3vsToD3ps);
         for (RendMesh const & rendMesh : rendMeshes) {
@@ -1084,20 +1096,24 @@ D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
     pContext->IASetVertexBuffers(0,1,buffers,stride,offset);
 }
 
+size_t
+D3d::selectTintMap(size_t idx,size_t num) const
+{
+    // maximize color diffs, handle M=0 and M>tintTransMaps.size():
+    size_t              colorStep = cMax(tintMaps.size()/cMax(num,size_t(1)),size_t(1));
+    return (idx*colorStep) % tintMaps.size();
+}
+
 void
 D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass)
 {
-    size_t              M = rendMeshes.size(),
-                        // maximize color diffs, handle M=0 and M>tintTransMaps.size()
-                        clrFacMesh = cMax(tintTransMaps.size()/cMax(M,size_t(1)),size_t(1));
+    size_t              M = rendMeshes.size();
     for (size_t mm=0; mm<M; ++mm) {
         RendMesh const & rendMesh = rendMeshes[mm];
         if (rendMesh.posedVertsN.cref().empty())    // Not selected
             continue;
         Mesh const &        origMesh = rendMesh.origMeshN.cref();
-        size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size()),
-                            // maximize color diffs, handle S=0 and S>tintMaps.size()
-                            clrFacSurf = cMax(tintMaps.size()/cMax(S,size_t(1)),size_t(1));
+        size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size());
         for (size_t ss=0; ss<S; ++ss) {
             Surf const &        origSurf = origMesh.surfaces[ss];
             if (origSurf.empty())
@@ -1119,10 +1135,14 @@ D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool 
                     if (d3dSurf.modulationMap.valid())
                         mapViews[2] = d3dSurf.modulationMap.view.get();
                 }
-                else if (rendOpts.albedoMode==AlbedoMode::bySurf)
-                    mapViews[0] = tintMaps[(ss*clrFacSurf)%tintMaps.size()].view.get();
-                else if (rendOpts.albedoMode==AlbedoMode::byMesh)
-                    mapViews[0] = tintTransMaps[(mm*clrFacMesh)%tintTransMaps.size()].view.get();
+                else if (rendOpts.albedoMode==AlbedoMode::bySurf) {
+                    size_t              tintIdx = selectTintMap(ss,S);
+                    mapViews[0] = tintMaps[tintIdx].light.view.get();
+                }
+                else if (rendOpts.albedoMode==AlbedoMode::byMesh) {
+                    size_t              tintIdx = selectTintMap(mm,M);
+                    mapViews[0] = tintMaps[tintIdx].trans.view.get();
+                }
                 else
                     mapViews[0] = greyMap.view.get();
                 if (rendOpts.shiny)

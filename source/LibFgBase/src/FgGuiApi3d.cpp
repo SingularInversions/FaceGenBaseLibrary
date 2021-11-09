@@ -8,7 +8,7 @@
 
 #include "FgGuiApi.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dTopology.hpp"
+#include "FgTopology.hpp"
 #include "FgAffineCwC.hpp"
 #include "FgGeometry.hpp"
 

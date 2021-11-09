@@ -185,8 +185,6 @@
     <ClCompile Include="..\src\Fg3dSurface.cpp" />
     <ClInclude Include="..\src\Fg3dSurface.hpp" />
     <ClCompile Include="..\src\Fg3dTest.cpp" />
-    <ClCompile Include="..\src\Fg3dTopology.cpp" />
-    <ClInclude Include="..\src\Fg3dTopology.hpp" />
     <ClInclude Include="..\src\FgAffine1.hpp" />
     <ClInclude Include="..\src\FgAffineC.hpp" />
     <ClInclude Include="..\src\FgAffineCwC.hpp" />
@@ -209,7 +207,7 @@
     <ClInclude Include="..\src\FgClusterImpl.hpp" />
     <ClInclude Include="..\src\FgCmd.hpp" />
     <ClCompile Include="..\src\FgCmdBase.cpp" />
-    <ClCompile Include="..\src\FgCmdImgops.cpp" />
+    <ClCompile Include="..\src\FgCmdImage.cpp" />
     <ClCompile Include="..\src\FgCmdMesh.cpp" />
     <ClCompile Include="..\src\FgCmdMorph.cpp" />
     <ClCompile Include="..\src\FgCmdRender.cpp" />
@@ -366,6 +364,8 @@
     <ClInclude Include="..\src\FgTestUtils.hpp" />
     <ClCompile Include="..\src\FgTime.cpp" />
     <ClInclude Include="..\src\FgTime.hpp" />
+    <ClCompile Include="..\src\FgTopology.cpp" />
+    <ClInclude Include="..\src\FgTopology.hpp" />
     <ClInclude Include="..\src\FgTypes.hpp" />
     <ClInclude Include="..\src\FgVersion.hpp" />
     <ClInclude Include="..\src\FgWinSpecific.hpp" />

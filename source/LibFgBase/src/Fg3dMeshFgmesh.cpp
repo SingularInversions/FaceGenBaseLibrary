@@ -163,12 +163,4 @@ void
 saveFgmesh(String8 const & fname,Meshes const & meshes)
 {saveFgmesh(fname,mergeMeshes(meshes)); }
 
-void
-fgSaveFgmeshTest(CLArgs const & args)
-{
-    FGTESTDIR;
-    saveFgmesh("Mouth.tri",loadTri(dataDir()+"base/Mouth.tri"));
-    viewMesh(loadFgmesh("Mouth.tri"));
-}
-
 }

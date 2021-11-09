@@ -3,18 +3,13 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-
 // Structures for building nested commands within a single CLI executable
 
 #ifndef FG_COMMAND_HPP
 #define FG_COMMAND_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgException.hpp"
-#include "FgOut.hpp"
-#include "FgString.hpp"
-#include "FgMain.hpp"
 #include "FgFileSystem.hpp"
+#include "FgMain.hpp"
 
 namespace Fg {
 
@@ -68,10 +63,6 @@ void            runCmd(const CmdFunc & func,String const & argStr);
 
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();
-
-// Returns true if the user is doing a 'test all', so we can choose to skip non-automatable tests:
-bool
-isAutomatedTest(CLArgs const &);
 
 }
 

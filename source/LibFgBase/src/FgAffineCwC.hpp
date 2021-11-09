@@ -3,8 +3,8 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Element-wise affine (aka Bounding Box) transform:
-// Translation and axial scaling (can be negative): x' = Sx + t
+// Element-wise affine (aka Bounding Box, Rectilinear) transform:
+// per-axis scaling and translation: x'_i = s * x_i + t
 //
 
 #ifndef FGAFFINECWC_HPP

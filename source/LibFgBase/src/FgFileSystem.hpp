@@ -9,11 +9,6 @@
 #ifndef FGFILESYSTEM_HPP
 #define FGFILESYSTEM_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgBoostLibs.hpp"
-#include "FgStdString.hpp"
-#include "FgString.hpp"
-#include "FgException.hpp"
 #include "FgPath.hpp"
 
 // **************************************************************************************

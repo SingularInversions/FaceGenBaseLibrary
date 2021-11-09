@@ -8,8 +8,6 @@
 #ifndef FGSYNTAX_HPP
 #define FGSYNTAX_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgStdString.hpp"
 #include "FgMain.hpp"
 #include "FgString.hpp"
 

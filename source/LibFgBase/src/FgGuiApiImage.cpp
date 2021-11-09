@@ -52,6 +52,23 @@ guiImage(NPT<ImgRgba8> const & imageN,Sfun<void(Vec2F)> const & onClick)
     return guiMakePtr(gi);
 }
 
+ImgRgba8s
+cMagmip(ImgRgba8 const & img,uint log2mag)
+{
+    ImgRgba8s               ret;
+    uint                    minDim = cMinElem(img.dims());
+    if (minDim == 0)
+        return ret;
+    uint                    sz = log2Floor(minDim) + 1;
+    ret.resize(sz);
+    ret[log2mag] = img;
+    for (uint ll=0; ll<log2mag; ++ll)
+        ret[log2mag-ll-1] = magnify(ret[log2mag-ll],2U);
+    for (uint ll=log2mag+1; ll<sz; ++ll)
+        ret[ll] = shrink2(ret[ll-1]);
+    return ret;
+}
+
 GuiImg
 guiImageCtrls(
     NPT<ImgRgba8> const &       imageN,
@@ -59,77 +76,84 @@ guiImageCtrls(
     bool                        expertMode,
     Sfun<void(Vec2F)> const &   onClick)
 {
-    OPT<ImgRgba8s>          mipmapN = link1<ImgRgba8,ImgRgba8s>(imageN,cMipmap<Rgba8>);
-    // offset of image centre from view area centre in original image pixels:
-    IPT<Vec2F>              offsetN {Vec2F{0,0}};
-    // zoom level is log base 2 of the linear scale:
-    IPT<int>                zoomN {0};
-    // scale of display image relative to original:
-    OPT<float>              scaleN = link1<int,float>(zoomN,exp2f);
-    // need a copy of the output image on the head for the return value pointer:
-    IPT<ImgRgba8>           imgOutputN;
+    auto                    mipmapFn = [=](ImgRgba8 const & img)
+    {
+        // some guard rails for performance on slow cpus.
+        // it's tempting to set mipmapIdxN here but that undermines the dataflow update algorithm,
+        // so you get a shrunk version for large images, which perhaps isn't such a bad thing:
+        uint            xprt = expertMode ? 1U : 0U;
+        if (img.numPixels() > (1<<24))              // > 16M pix (eg. 4Kx4K) = 64MB
+            return cMagmip(img,xprt);
+        else if (img.numPixels() > (1<<22))         // > 4M pix (eg. 2Kx2K) = 16MB
+            return cMagmip(img,xprt+1);
+        return cMagmip(img,xprt+2);
+    };
+    OPT<ImgRgba8s>          mipmapN = link1<ImgRgba8,ImgRgba8s>(imageN,mipmapFn);
+    IPT<uint>               mipmapIdxN {(expertMode ? 3U : 2U)};
+    auto                    dispImgFn = [=](Vec2Fs const & iucss,ImgRgba8s const & mipmap,uint const & idx)
+    {
+        ImgRgba8            img = mipmap[idx];
+        for (Vec2F iucs : iucss) {
+            Vec2I           ircs {mapFloor(mapMul(iucs,Vec2F{img.dims()}))};
+            paintCrosshair(img,ircs);
+        }
+        return img;
+    };
+    OPT<ImgRgba8>           lmsImageN = link3<ImgRgba8,Vec2Fs,ImgRgba8s,uint>(ptsIucsN,mipmapN,mipmapIdxN,dispImgFn);
+    // offset of image centre from view area centre in window pixels:
+    IPT<Vec2I>              offsetN {Vec2I{0}};
+    // save topleft coord used by last draw so we can calculate where user has clicked:
+    IPT<Vec2I>              topleftN {Vec2I{0}};   
     auto                    imgDispFn = [=](Vec2UI winSize)
     {
-        // Strategy is to create an image exactly the size of the display window and fill
-        // background with a color or pattern:
+        uint                mipmapIdx = mipmapIdxN.val();   // don't trigger redraw by using ref()
         ImgRgba8s const &   mipmap = mipmapN.cref();
-        Vec2F               origSize (mipmap[0].dims());
-        int                 zoom = zoomN.val();
-        uint                mipLevel = uint(cMax(0,-zoom));
-        ImgRgba8 const &    imgOrig = mipmap[mipLevel];
-        // pixel scale of output image relative to input:
-        float               scale = exp2f(zoom+mipLevel);
-        float               invScale = 1.0 / scale;
-        // TODO: clamp offset bounds:
-        Mat22I              origBounds = catHoriz(Vec2I{0},Vec2I(imgOrig.dims()));
-        AffineEw2F          originToWinCentre {Vec2F(1),-Vec2F(winSize)/2},
-                            scaleToOrig {Vec2F(invScale),Vec2F(0)},
-                            applyOffset {Vec2F(1),origSize/2-offsetN.val()},
-                            winToOrig = applyOffset * scaleToOrig * originToWinCentre;
-        ImgRgba8 &          imgOutput = imgOutputN.ref();
-        Rgba8               background {128,128,128,255};
-        imgOutput.resize(winSize);
-        if (expertMode || (zoomN.val() < 1)) {                      // sample by rounding
-            auto            fn = [=](Vec2UI ircs)
-            {
-                Vec2F           crdf = winToOrig * Vec2F(ircs);
-                Vec2I           crd =  Vec2I(mapFloor(crdf));
-                if (isInBounds(origBounds,crd))
-                    return imgOrig[Vec2UI(crd)];
+        {                   // check if image much smaller than window:
+            Vec2UI              imgDims = mipmap[mipmapIdx].dims();
+            Vec2F               relDims = mapDiv(Vec2F{winSize},Vec2F{imgDims});
+            float               winRat = cMinElem(relDims);
+            if (winRat > 2) {   // image too small so decrease mipmapIdx
+                uint            steps = log2f(winRat);
+                if (mipmapIdx > steps)
+                    mipmapIdx -= steps;
                 else
-                    return background;
-            };
-            mapCall_(imgOutput,fn,true);
+                    mipmapIdx = 0;
+                mipmapIdxN.set(mipmapIdx);          // will trigger another redraw
+            }
         }
-        else {                                                      // sample by lerping
-            auto            fn = [=](Vec2UI ircs)
-            {
-                Vec2F           crdf = winToOrig * Vec2F(ircs);
-                // TODO: why is sampleAlpha in IUCS ?
-                RgbaF       clr = sampleAlpha(imgOrig,mapDiv(crdf,origSize));
-                if (clr.alpha() > 127.0f) {
-                    clr *= (clr.alpha() / 255.0f);
-                    return Rgba8(clr);
-                }
-                else
-                    return background;
-            };
-            mapCall_(imgOutput,fn,true);
+        ImgRgba8 const &    dispImg = lmsImageN.cref();
+        // the image can only be translated in directions in which it's larger than the window,
+        // and translation is clamped to keep the window filled.
+        // This allows us to avoid painting the background for image translation draws, which 
+        // looks horrendous.
+        Vec2I               winDims {winSize},
+                            imgDims {dispImg.dims()},
+                            offset = offsetN.val(),
+                            topleft;
+        for (uint ii=0; ii<2; ++ii) {
+            int             oversize = imgDims[ii] - winDims[ii],
+                            padL = oversize/2,
+                            padR = oversize - padL;
+            topleft[ii] = -padL;
+            if (oversize > 0) {
+                int             off = clamp(offset[ii],-padL,padR);
+                topleft[ii] += off;
+                if (off != offset[ii])
+                    offsetN.ref()[ii] = off;        // will trigger another redraw
+            }
         }
-        return GuiImage::Disp{&imgOutput,{0,0}};
+        topleftN.set(topleft);
+        return GuiImage::Disp{&dispImg,topleft};
     };
     auto                    zoomInFn = [=]()
     {
-        int &               zoom = zoomN.ref();
-        int                 zoomMax = expertMode ? 4 : 2;
-        zoom = cMin(zoom+1,zoomMax);
+        uint                mipmapIdx = mipmapIdxN.val();   // don't trigger redraw
+        if (mipmapIdx > 0)
+            mipmapIdxN.set(mipmapIdx-1);
     };
     auto                    zoomOutFn = [=]()
     {
-        int &               zoom = zoomN.ref();
-        float               relSize = cMaxElem(imageN.cref().dims()) / 512.0f;  // typical window size
-        int                 zoomMin = int(floor(-4.0f - log2f(relSize)));
-        zoom = cMax(zoom-1,zoomMin);
+        ++mipmapIdxN.ref();     // gets clamped by display function
     };
     IPT<int>                zoomAccN {0};
     auto                    dragRightFn = [=](Vec2I delta)
@@ -144,26 +168,27 @@ guiImageCtrls(
         }
         zoomAccN.set(zoomAcc);
     };
-    auto                    clickLeftFn = [=](Vec2I pos)
+    auto                    dragLeftFn = [=](Vec2I winDelta)
     {
-        ImgRgba8 const &    img = imageN.cref();
-        float               scale = scaleN.val();
-        Vec2F               imgPosf = Vec2F(pos) / scale - offsetN.val();
-        Vec2I               imgPosi = Vec2I(mapFloor(imgPosf));
-        if (isInBounds(Mat22I(0,img.width(),0,img.height()),imgPosi)) {
-            Vec2D           iucs = cIrcsToIucsXf(img.dims()) * Vec2D(imgPosi);
-            onClick(Vec2F(iucs));
-        }
+        offsetN.ref() += winDelta;
+    };
+    auto                    clickLeftFn = [=](Vec2I winIrcs)
+    {
+        Vec2I               topleft = topleftN.val(),
+                            imgIrcs = winIrcs - topleft;
+        Vec2UI              imgDims = mipmapN.cref()[mipmapIdxN.val()].dims();
+        Vec2F               imgIpcs = Vec2F{imgIrcs} + Vec2F{0.5f},
+                            imgIucs = mapDiv(imgIpcs,Vec2F{imgDims});
+        if ((cMinElem(imgIucs)>0) && (cMaxElem(imgIucs)<1))
+            onClick(imgIucs);
     };
     GuiImage                gi;
     gi.getImgFn = imgDispFn;
     gi.wantStretch = Vec2B{true,true};
     gi.minSizeN = makeIPT(Vec2UI{100});
-    gi.updateFlag = makeUpdateFlag(imageN,zoomN);
-    // offset never needs background repaint since only images that more than cover the view area
-    // can be translated. Image smaller than the view area are fixed in the centre:
-    gi.updateNofill = makeUpdateFlag(offsetN,ptsIucsN);
-    gi.dragLeft = [=](Vec2I delta) {offsetN.ref() += Vec2F(delta) / scaleN.val(); };
+    gi.updateFlag = makeUpdateFlag(imageN,mipmapIdxN);
+    gi.updateNofill = makeUpdateFlag(ptsIucsN,offsetN);
+    gi.dragLeft = dragLeftFn;
     gi.dragRight = dragRightFn;
     if (onClick)
         gi.clickLeft = clickLeftFn;

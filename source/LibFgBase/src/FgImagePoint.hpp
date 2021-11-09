@@ -26,14 +26,16 @@ struct  ImagePoint
 };
 typedef Svec<ImagePoint>    ImagePoints;
 
-std::ostream &
-operator<<(std::ostream &,ImagePoint const &);
+std::ostream &      operator<<(std::ostream &,ImagePoint const &);
+std::ostream &      operator<<(std::ostream &,ImagePoints const &);
 
-std::ostream &
-operator<<(std::ostream &,ImagePoints const &);
+ImagePoints         loadImagePoints(String8 const & fname);
+void                saveImagePoints(ImagePoints const & ips,String8 const & fname);
 
-ImagePoints loadImagePoints(String8 const & fname);
-void        saveImagePoints(ImagePoints const & ips,String8 const & fname);
+Vec2Ds              // returns specified image points in order of 'names'
+selectImagePoints(
+    ImagePoints const &     ips,        // must contain all point names listed in 'names'
+    Strings const &         names);
 
 }
 

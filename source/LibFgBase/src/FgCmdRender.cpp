@@ -189,7 +189,7 @@ NOTES:
     PushTimer           pt {"Dispatching renders "};
     ThreadDispatcher    td;
     for (String const & rendFile : rendFiles) {
-        String              imgFile = pathToBase(rendFile).m_str+"."+imgExt;
+        String              imgFile = pathToDirBase(rendFile).m_str+"."+imgExt;
         td.dispatch(bind(runFn,rendFile,imgFile));
         fgout << ".";
     }

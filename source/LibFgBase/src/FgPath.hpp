@@ -20,7 +20,6 @@
 #ifndef FGPATH_HPP
 #define FGPATH_HPP
 
-#include "FgStdString.hpp"
 #include "FgString.hpp"
 
 namespace Fg {

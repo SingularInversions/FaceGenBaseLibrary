@@ -13,7 +13,7 @@
 #include "FgGeometry.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgSimilarity.hpp"
-#include "Fg3dTopology.hpp"
+#include "FgTopology.hpp"
 #include "Fg3dDisplay.hpp"
 #include "FgBestN.hpp"
 #include "FgCmd.hpp"
