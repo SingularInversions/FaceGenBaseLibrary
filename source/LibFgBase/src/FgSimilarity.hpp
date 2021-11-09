@@ -73,6 +73,7 @@ struct  SimilarityD
     Mat33D          linearComponent() const {return rot.asMatrix() * scale; }
     // operator* in this context means composition:
     SimilarityD     operator*(SimilarityD const & rhs) const;
+    SimilarityD     operator*(QuaternionD const & rhs) const {return {scale,rot*rhs,trans}; }
     SimilarityD     inverse() const;
 
     // Be more explicit than using default constructor:

@@ -40,13 +40,16 @@ typedef Svec<ModelFile>     ModelFiles;
 struct  RenderArgs
 {
     ModelFiles              models;
+    double                  roll = 0,       // Z axis rotation, radians, in order:
+                            tilt = 0,       // X axis rotation
+                            pan = 0;        // Y axis rotation
     SimilarityD             modelview;      // Transform world to openGL eye coordinate system (OECS)
     // transform from projected coordinates (image tangent CS) to image unit CS (x,y in [0,1]):
     AffineEw2D              itcsToIucs;
     Vec2UI                  imagePixelSize = Vec2UI(512,512);
     RenderOptions           options;
 
-    FG_SERIALIZE5(models,modelview,itcsToIucs,imagePixelSize,options);
+    FG_SERIALIZE8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options);
 };
 
 Meshes
@@ -68,28 +71,6 @@ loadMeshes(ModelFiles const & mfs)
 }
 
 void
-renderRun(String const & rendFile,String const & outName)
-{
-    RenderArgs          rend;
-    // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
-    // is appended rather than overwritten, so we must clear first:
-    rend.options.lighting.lights.clear();
-    loadBsaXml(rendFile,rend);
-    Meshes              meshes = loadMeshes(rend.models);
-    // Receive surf point projection data:
-    rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();
-    ImgRgba8            image = renderSoft(
-        rend.imagePixelSize,meshes,rend.modelview,rend.itcsToIucs,rend.options);
-    saveImage(outName,image);
-    String8             outBase = pathToBase(outName);
-    Ofstream            ofs {outBase+"-landmarks.csv"};
-    for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
-        ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
-}
-
-}   // namespace
-
-void
 cmdRenderSetup(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -102,12 +83,22 @@ NOTES:
     * creates default rendering parameters for the given models
     * fields in <name>.xml can be modified as long as the XML structure remains valid
     * <name>.xml description:
-        <models> the list of mesh and related albedo map files to be rendered.
-        <modelview> the similarity transform from mesh coordinates to openGL eye coordinates,
+        <models>
+            The list of mesh and related albedo map files to be rendered.
+        <roll>,<tilt>,<pan>
+            Euler angle rotations in radians applied to the models, in this order, before
+            application of <modelview> below. Can be used to orient your meshes for proper viewing
+            (FG head coordinate system is X - head's left, Y - head's up, Z - head's forward),
+            or to orient the head as desired. Defaults are 0.
+        <modelview>
+            The similarity transform from mesh coordinates to openGL eye coordinates,
             consisting of scale, rotation (as a quaternion) and translation, applied in that order.
-        <itcsToIucs> the 2D transform from projected coordinates ("image tangent CS") to the
+            Default places subject at a viewing distance from the camera to mostly fill the frame.
+        <itcsToIucs>
+            The 2D transform from projected coordinates ("image tangent CS") to the
             "image unit CS" in which x,y are in [0,1] with origin at top left of image.
-        <imagePixelSize> width, height
+        <imagePixelSize>
+            Pixel width, height
         <options>
             <lighting> all color component values below are in the range [0,1]:
                 <ambient> light coming from all directions.
@@ -139,6 +130,28 @@ NOTES:
     rend.modelview = cam.modelview;
     rend.itcsToIucs = cam.itcsToIucs;
     saveBsaXml(name,rend);
+}
+
+void
+renderRun(String const & rendFile,String const & outName)
+{
+    RenderArgs          rend;
+    // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
+    // is appended rather than overwritten, so we must clear first:
+    rend.options.lighting.lights.clear();
+    loadBsaXml(rendFile,rend);
+    Meshes              meshes = loadMeshes(rend.models);
+    // Receive surf point projection data:
+    rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();
+    SimilarityD         mvm = rend.modelview * cRotateY(rend.pan) * cRotateX(rend.tilt) * cRotateZ(rend.roll);
+    ImgRgba8            image = renderSoft(rend.imagePixelSize,meshes,mvm,rend.itcsToIucs,rend.options);
+    saveImage(outName,image);
+    String8             outBase = pathToBase(outName);
+    Ofstream            ofs {outBase+"-landmarks.csv"};
+    for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
+        ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
+    Camera              cam {rend.modelview,{},rend.itcsToIucs};
+    saveBsaXml(outBase+"-matrix.xml",cam.projectIpcs(rend.imagePixelSize));
 }
 
 void
@@ -194,6 +207,8 @@ NOTES:
         fgout << ".";
     }
 }
+
+}   // namespace
 
 void
 cmdRender(CLArgs const & args)
