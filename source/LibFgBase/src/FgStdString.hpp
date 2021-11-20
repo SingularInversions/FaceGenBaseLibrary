@@ -154,25 +154,20 @@ String          padToLen(String const & str,size_t len,char ch=' ');
 // Inspired by Python join():
 String          cat(Strings const & strings,String const & separator);
 String          cat(std::set<String> const & strings,String const & separator);
-
-inline
-String
-cat(String const & s0,String const & s1)
+inline String   cat(String const & s0,String const & s1)
 {
     String      ret(s0);
     ret.append(s1);
     return ret;
 }
-
-inline
-String
-cat(String const & s0,String const & s1,String const & s2)
+inline String   cat(String const & s0,String const & s1,String const & s2)
 {
     String      ret(s0);
     ret.append(s1);
     ret.append(s2);
     return ret;
 }
+String          catDeref(Ptrs<String> const & stringPtrs,String const & separator);
 
 template<typename T>
 bool

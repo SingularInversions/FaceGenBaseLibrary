@@ -8,8 +8,7 @@
 
 #include "Fg3dMesh.hpp"
 #include "FgMath.hpp"
-#include "FgAffineCwC.hpp"
-#include "FgAffine1.hpp"
+#include "FgAffine.hpp"
 #include "FgBounds.hpp"
 #include "FgImageDraw.hpp"
 #include "FgBestN.hpp"
@@ -204,14 +203,12 @@ removeUnusedVerts(Mesh const & mesh)
         const IndexedMorph &      src = mesh.targetMorphs[ii];
         IndexedMorph              dst;
         dst.name = src.name;
-        for (size_t jj=0; jj<src.baseInds.size(); ++jj) {
-            uint    idx = mapVerts[src.baseInds[jj]];
-            if (idx != numeric_limits<uint>::max()) {
-                dst.baseInds.push_back(idx);
-                dst.verts.push_back(src.verts[jj]);
-            }
+        for (size_t jj=0; jj<src.ivs.size(); ++jj) {
+            uint        idx = mapVerts[src.ivs[jj].idx];
+            if (idx != numeric_limits<uint>::max())
+                dst.ivs.emplace_back(idx,src.ivs[jj].vec);
         }
-        if (!dst.baseInds.empty())
+        if (!dst.ivs.empty())
             ret.targetMorphs.push_back(dst);
     }
     return  ret;
@@ -537,85 +534,60 @@ splitSurfsByUvContiguous(Mesh const & in)
     return ret;
 }
 
-Mesh
-mergeMeshSurfaces(
-    Mesh const &    m0,
-    Mesh const &    m1)
+Mesh            mergeMeshes(Ptrs<Mesh> meshPtrs)
 {
-    Mesh        ret;
-    ret.verts = m0.verts;
-    ret.uvs = m0.uvs;
-    FGASSERT(m0.verts != m1.verts);
-    FGASSERT(m0.uvs != m1.uvs);
-    for (size_t ss=0; ss<m0.surfaces.size(); ++ss)
-        ret.surfaces.push_back(m0.surfaces[ss]);
-    for (size_t ss=0; ss<m1.surfaces.size(); ++ss)
-        ret.surfaces.push_back(m1.surfaces[ss]);
-    return ret;
-}
-
-Mesh
-mergeMeshes(
-    Mesh const &    m0,
-    Mesh const &    m1)
-{
-    Mesh            ret;
-    if (!m0.name.empty() && !m1.name.empty())
-        ret.name = m0.name + "_" + m1.name;
-    else
-        ret.name = m0.name + m1.name;
-    ret.verts = cat(m0.verts,m1.verts);
-    ret.uvs = cat(m0.uvs,m1.uvs);
-    ret.surfaces = fgEnsureNamed(m0.surfaces,m0.name);
-    Surfs     s1s = fgEnsureNamed(m1.surfaces,m1.name);
-    for (uint ss=0; ss<s1s.size(); ++ss)
-        ret.surfaces.push_back(s1s[ss].offsetIndices(m0.verts.size(),m0.uvs.size()));
-    for (size_t ii=0; ii<m0.deltaMorphs.size(); ++ii) {
-        Morph     dm = m0.deltaMorphs[ii];
-        dm.verts.resize(m0.verts.size()+m1.verts.size());
-        ret.deltaMorphs.push_back(dm);
-    }
-    for (size_t ii=0; ii<m1.deltaMorphs.size(); ++ii) {
-        Morph             dm = m1.deltaMorphs[ii];
-        // Search m0 not ret in case of duplicate morph names in m1:
-        Valid<size_t>     idx = m0.findDeltaMorph(dm.name);
-        if (idx.valid())
-            ret.deltaMorphs[idx.val()].verts = cat(m0.deltaMorphs[idx.val()].verts,dm.verts);
-        else {
-            dm.verts = cat(Vec3Fs(m0.verts.size()),dm.verts);
-            ret.deltaMorphs.push_back(dm);
+    Mesh                ret;
+    Ptrs<String8>       namePtrs = sliceMemberPP(meshPtrs,&Mesh::name);
+    Ptrs<String8>       neNamePtrs = cFilter(namePtrs,[](String8 const * n){return !n->empty(); });
+    ret.name = catDeref(neNamePtrs,"+");
+    Ptrs<Vec3Fs>        vertsPtrs = sliceMemberPP(meshPtrs,&Mesh::verts);
+    Sizes               voffsets = integrate(cSizes(vertsPtrs));
+    ret.verts = catDeref(vertsPtrs);
+    Ptrs<Vec2Fs>        uvsPtrs = sliceMemberPP(meshPtrs,&Mesh::uvs);
+    Sizes               uoffsets = integrate(cSizes(uvsPtrs));
+    ret.uvs = catDeref(uvsPtrs);
+    Ptrs<Surfs>         surfsPtrs = sliceMemberPP(meshPtrs,&Mesh::surfaces);
+    Sizes               soffsets = integrate(cSizes(surfsPtrs));
+    ret.surfaces.reserve(soffsets.back());
+    map<String8,IdxVec3Fs>  deltaMorphs,
+                            targMorphs;
+    for (size_t mm=0; mm<meshPtrs.size(); ++mm) {
+        Mesh const &        mesh = *meshPtrs[mm];
+        uint                voffset = voffsets[mm],
+                            uoffset = uoffsets[mm];
+        String8 const &     meshName = mesh.name;
+        for (Surf const & surf : mesh.surfaces)
+            ret.surfaces.emplace_back(
+                meshName + surf.name,
+                offsetIndices(surf.tris,voffset,uoffset),
+                offsetIndices(surf.quads,voffset,uoffset),
+                surf.surfPoints,
+                surf.material
+            );
+        for (Morph const & m : mesh.deltaMorphs) {
+            IndexedMorph        im = deltaToIndexedMorph(m);
+            auto                it = deltaMorphs.find(im.name);
+            if (it == deltaMorphs.end())
+                deltaMorphs[im.name] = im.ivs;
+            else
+                cat_(it->second,offsetIndices(im.ivs,voffsets[mm]));
         }
-    }
-    for (size_t ii=0; ii<m0.targetMorphs.size(); ++ii)
-        ret.targetMorphs.push_back(m0.targetMorphs[ii]);
-    for (size_t ii=0; ii<m1.targetMorphs.size(); ++ii) {
-        IndexedMorph      im = m1.targetMorphs[ii];
-        im.baseInds = im.baseInds + vector<uint32>(im.baseInds.size(),uint32(m0.verts.size()));
-        Valid<size_t>     idx = m0.findTargMorph(im.name);
-        if (idx.valid()) {
-            cat_(ret.targetMorphs[idx.val()].baseInds,im.baseInds);
-            cat_(ret.targetMorphs[idx.val()].verts,im.verts);
+        for (IndexedMorph const & m : mesh.targetMorphs) {
+            auto                it = targMorphs.find(m.name);
+            if (it == targMorphs.end())
+                targMorphs[m.name] = m.ivs;
+            else
+                cat_(it->second,offsetIndices(m.ivs,voffsets[mm]));
         }
-        else
-            ret.targetMorphs.push_back(im);
+        for (MarkedVert const & mv : mesh.markedVerts)
+            ret.markedVerts.emplace_back(mv.idx + voffset,mv.label);
     }
-    ret.markedVerts = m0.markedVerts;
-    for (MarkedVert mv : m1.markedVerts) {
-        mv.idx += uint(m0.verts.size());
-        ret.markedVerts.push_back(mv);
-    }
-    return ret;
-}
-
-Mesh
-mergeMeshes(Meshes const & meshes)
-{
-    Mesh        ret;
-    if (meshes.empty())
-        return ret;
-    ret = meshes[0];
-    for (size_t mm=1; mm<meshes.size(); ++mm)
-        ret = mergeMeshes(ret,meshes[mm]);
+    ret.deltaMorphs.reserve(deltaMorphs.size());
+    for (auto const & dm : deltaMorphs)
+        ret.deltaMorphs.emplace_back(dm.first,indexedToCorrMorph(dm.second,ret.verts.size()));
+    ret.targetMorphs.reserve(targMorphs.size());
+    for (auto const & tm : targMorphs)
+        ret.targetMorphs.emplace_back(tm.first,tm.second);
     return ret;
 }
 

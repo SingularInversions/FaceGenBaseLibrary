@@ -414,6 +414,7 @@ typedef Svec<Vec4UI>            Vec4UIs;
 typedef Svec<Vec4F>             Vec4Fs;
 
 typedef Svec<Vec2Ds>            Vec2Dss;
+typedef Svec<Vec2Fs>            Vec2Fss;
 typedef Svec<Vec3Fs>            Vec3Fss;
 typedef Svec<Vec3Ds>            Vec3Dss;
 typedef Svec<Vec4UIs>           Vec4UIss;

@@ -9,7 +9,7 @@
 #include "FgSoftRender.hpp"
 #include "FgSampler.hpp"
 #include "Fg3dMesh.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgGridTriangles.hpp"
 #include "FgRayCaster.hpp"
 #include "FgMath.hpp"

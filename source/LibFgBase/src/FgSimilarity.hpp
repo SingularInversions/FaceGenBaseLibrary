@@ -14,7 +14,7 @@
 #define FGSIMILARITY_HPP
 
 #include "FgQuaternion.hpp"
-#include "FgAffineC.hpp"
+#include "FgAffine.hpp"
 #include "FgStdStream.hpp"
 #include "FgScaleTrans.hpp"
 

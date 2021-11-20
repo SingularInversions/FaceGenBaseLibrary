@@ -84,6 +84,34 @@ cmdConvert(CLArgs const & args)
     saveImage(syn.next(),img);
 }
 
+void            cmdCreate(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<num> <size> <out>.<ext>
+    <num>       - number of checkerboard squares across
+    <size>      - size of each square in pixels
+    <ext>       - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    <img>.<ext> - generated image saved here
+NOTES:
+    Creates a black and white checkerboard image)"
+    };
+    size_t              sz = syn.nextAs<size_t>(),
+                        num = syn.nextAs<size_t>();
+    ImgRgba8            img {Vec2UI{uint(sz*num)},Rgba8{0,0,0,255}};
+    for (size_t ny=0; ny<num; ++ny) {
+        for (size_t nx=0; nx<num; ++nx) {
+            uchar           col = scast<uchar>((scast<uint>(ny+nx) & 0x1U) * 255U);
+            Rgba8           rgba {col,col,col,255};
+            for (size_t sy=0; sy<sz; ++sy)
+                for (size_t sx=0; sx<sz; ++sx)
+                    img.xy(nx*sz+sx,ny*sz+sy) = rgba;
+            col = ~col;
+        }
+    }
+    saveImage(syn.next(),img);
+}
+
 void
 cmdShrink(CLArgs const & args)
 {
@@ -174,7 +202,8 @@ cmdImgops(CLArgs const & args)
         {cmdComposite,"composite","Composite an image with transparency over another"},
         {cmdConst,"const","Create a constant-valued image"},
         {cmdConvert,"convert","Convert images between different cmdFormats"},
-        {cmdFormats,"cmdFormats","List all supported cmdFormats by file extension"},
+        {cmdCreate,"create","create checkerboard images"},
+        {cmdFormats,"formats","List all supported formats by file extension"},
         {cmdMark,"mark","Place landmark points on an image"},
         {cmdShrink,"shrink2","Shrink images by a factor of 2"},
     };
@@ -184,7 +213,7 @@ cmdImgops(CLArgs const & args)
 }
 
 Cmd
-getImgopsCmd()
+getCmdImage()
 {return Cmd(cmdImgops,"image","Image operations"); }
 
 }

@@ -938,10 +938,10 @@ static void writeFacets(
 
     size_t      numTri = triList.size();
     size_t      numQuad = quadList.size();
-    size_t      numFacets = numTri + numQuad;
+    size_t      numPolys = numTri + numQuad;
 
-    ofs << "\tsetAttr -s " << numFacets 
-                << " \".fc[0:" << numFacets-1 << "]\" "
+    ofs << "\tsetAttr -s " << numPolys 
+                << " \".fc[0:" << numPolys-1 << "]\" "
                 << "-type \"polyFaces\"\n";
     for (size_t tt=0; tt<numTri; ++tt)
     {
@@ -968,7 +968,7 @@ static void writeFacets(
                 << texTriList[tt][1] << " "
                 << texTriList[tt][2];
         }
-        if (tt == numFacets-1) ofs << ";";
+        if (tt == numPolys-1) ofs << ";";
         ofs << "\n";
     }
     for (unsigned long qq=0; qq<numQuad; ++qq)
@@ -1067,7 +1067,7 @@ static void writeObjects(
                 << "-p \"" << objName << "\";\n";
         ofs << "\tsetAttr -k off \".v\";\n";
 
-        size_t  numFacets = triList.size() + quadList.size();
+        size_t  numPolys = triList.size() + quadList.size();
         int numIog = 0;
         if (texFname != "") numIog += 2;
         if (numTargets) numIog += 4;
@@ -1105,7 +1105,7 @@ static void writeObjects(
                             "-type \"componentList\" 0;\n";
                 ofs << "\tsetAttr \".iog[0].og[1].gcl\" "
                             "-type \"componentList\" 1 "
-                            << "\"f[0:" << numFacets-1 << "]\";\n";
+                            << "\"f[0:" << numPolys-1 << "]\";\n";
             }
         }
 
@@ -1147,7 +1147,7 @@ static void writeObjects(
             Vec3UIs const &texTriList = model.getTexTriList(objId);
             const vector<Vec4UI> &texQuadList=model.getTexQuadList(objId);
 
-            size_t  numFacets = triList.size() + quadList.size();
+            size_t  numPolys = triList.size() + quadList.size();
 
             string morphName = 
                 getObjMorphName(model,objId,(*morphNames)[mm]);
@@ -1168,7 +1168,7 @@ static void writeObjects(
                             << "-type \"componentList\" 0;\n";
                 ofs << "\tsetAttr \".iog[0].og[1].gcl\" "
                             << "-type \"componentList\" 1 "
-                            << "\"f[0:" << numFacets-1 << "]\";\n";
+                            << "\"f[0:" << numPolys-1 << "]\";\n";
             }
 
             ofs << "\tsetAttr \".uvst[0].uvsn\" -type \"string\" \"map1\";\n"; 
@@ -1309,7 +1309,7 @@ static void writeBlendShapes(
             string grpId = getObjBlendTexGrpIdName(model,mm);
             string grpParts = getObjBlendTexGrpPartsName(model,mm);
 
-            unsigned long numFacets = model.numTriangles(mm) 
+            unsigned long numPolys = model.numTriangles(mm) 
                                     + model.numQuads(mm);
 
             ofs << "createNode groupId -n \"" << grpId << "\";\n";
@@ -1317,7 +1317,7 @@ static void writeBlendShapes(
             ofs << "createNode groupParts -n \"" << grpParts << "\";\n";
             ofs << "\tsetAttr \".ihi\" 0;\n";
             ofs << "\tsetAttr \".ic\" -type \"componentList\" 1 \"f[0:" 
-                    << numFacets-1 << "]\";\n";
+                    << numPolys-1 << "]\";\n";
         }
         ofs << "createNode tweak -n \"" 
                     << getObjTweakName(model,mm) << "\";\n";
@@ -1390,7 +1390,7 @@ static void writePolySoftEdge(
         {
             string grpIdName = getObjPolySoftEdgeGrpId(model,mm);
             string grpPartsName = getObjPolySoftEdgeGrpParts(model,mm);
-            size_t  numFacets = model.getTriList(mm).size()
+            size_t  numPolys = model.getTriList(mm).size()
                           + model.getQuadList(mm).size();
 
             ofs << "createNode groupId -n \"" << grpIdName << "\";\n";
@@ -1398,7 +1398,7 @@ static void writePolySoftEdge(
             ofs << "createNode groupParts -n \"" << grpPartsName << "\";\n";
             ofs << "\tsetAttr \".ihi\" 0;\n";
             ofs << "\tsetAttr \".ic\" -type \"componentList\" 1 "
-                        << "\"f[0:" << numFacets-1 << "]\";\n";
+                        << "\"f[0:" << numPolys-1 << "]\";\n";
         }
     }
 }
@@ -2029,7 +2029,7 @@ void
 saveMa(
     String8 const &        fname,
     Meshes const & meshes,
-    string                  imgFormat)
+    String                  imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
     Strings          cmnts;

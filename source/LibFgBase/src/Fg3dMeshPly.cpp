@@ -17,11 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-savePly(
-    String8 const &        fname,
-    Meshes const & meshes,
-    string                  imgFormat)
+void            savePly(String8 const & fname,Meshes const & meshes,String imgFormat)
 {
     Mesh    mesh = mergeMeshes(meshes);
     Path      path(fname);
@@ -60,7 +56,7 @@ savePly(
     imgCnt = 0;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const &     surf = mesh.surfaces[ss];
-        FacetInds<3>          tris = surf.getTriEquivs();
+        Polygons<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
             Vec3UI           vinds = tris.posInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";

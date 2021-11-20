@@ -27,6 +27,7 @@
 #include "FgStdLibs.hpp"
 #include "Fg3dSurface.hpp"
 #include "FgSimilarity.hpp"
+#include "FgCmp.hpp"
 
 namespace Fg {
 
@@ -51,38 +52,37 @@ struct  Morph
 };
 typedef Svec<Morph>     Morphs;
 
-void
-macAsTargetMorph_(
-    Vec3Fs const &  baseVerts,
-    Uints const &   indices,        // Indices into 'baseVerts'
-    Vec3F const *   targVertsPtr,   // Must point to a continguous array of at least 'indices.size()' elements
-    float           val,
-    Vec3Fs &        accVerts);      // Must be same size as 'baseVerts'
+struct  IdxVec3F
+{
+    uint            idx;            // index into vertex list
+    Vec3F           vec;            // delta or absolute position depending on use
+    IdxVec3F() : idx{0}, vec{0} {}
+    IdxVec3F(uint i,Vec3F const & v) : idx{i}, vec{v} {}
+    FG_EQ_M2(IdxVec3F,idx,vec);
+};
+typedef Svec<IdxVec3F>  IdxVec3Fs;
+
+IdxVec3Fs       offsetIndices(IdxVec3Fs const & ivs,uint offset);
+Vec3Fs          indexedToCorrMorph(IdxVec3Fs const & morph,size_t baseSize);
 
 // Indexed vertices morph representation is useful when only a small fraction of the base vertices
 // are affected:
 struct      IndexedMorph
 {
     String8             name;
-    Uints               baseInds;   // Indices of base vertices to be morphed.
-    // Can represent target position or delta depending on type of morph.
-    // Must be same size() as baseInds:
-    Vec3Fs              verts;
+    IdxVec3Fs           ivs;        // element for each vertex which moves with this morph
+    IndexedMorph() {}
+    IndexedMorph(String8 const & n,IdxVec3Fs const & i) : name{n}, ivs{i} {}
 
-    void
-    accAsTarget_(Vec3Fs const & baseVerts,float val,Vec3Fs & accVerts) const
-    {macAsTargetMorph_(baseVerts,baseInds,verts.data(),val,accVerts); }
-
+    void                accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const;
     // Name of morph does not affect equality:
-    bool
-    operator==(const IndexedMorph & rhs) const
-    {return ((baseInds == rhs.baseInds) && (verts == rhs.verts)); }
+    bool                operator==(const IndexedMorph & rhs) const {return (ivs == rhs.ivs); }
 };
 typedef Svec<IndexedMorph>  IndexedMorphs;
 
 size_t          cNumVerts(IndexedMorphs const & ims);       // Number of target vertices in given indexed morphs
-// Convert using given exclusive lower bound on delta magnitude for inclusion:
-IndexedMorph    deltaToTargetIndexedMorph(Vec3Fs const & base,Morph const & deltaMorph,float magElb=0.0f);
+IndexedMorph    deltaToIndexedMorph(Morph const & morph,float diffMagThreshold=0);
+IndexedMorph    deltaToTargetMorph(Vec3Fs const & base,IndexedMorph const & morph);
 
 void
 accDeltaMorphs(
@@ -191,10 +191,10 @@ struct  Mesh
     // Return base verts plus all target morph verts plus all animPart bones:
     Vec3Fs          allVerts() const;
     void            updateAllVerts(Vec3Fs const &);     // Update verts / targetMorphs / joints
-    uint            numFacets() const;                  // tris plus quads over all surfaces
+    uint            numPolys() const;                  // tris plus quads over all surfaces
     uint            numTriEquivs() const;               // tris plus 2*quads over all surfaces
     Vec3UI          getTriEquivPosInds(uint idx) const;
-    FacetInds<3>    getTriEquivs() const;               // Over all surfaces
+    Polygons<3>    getTriEquivs() const;               // Over all surfaces
     size_t          numTris() const;                    // Just the number of tris over all surfaces
     size_t          numQuads() const;                   // Just the number of quads over all surfaces
     Surf const &    surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
@@ -288,7 +288,6 @@ struct  Mesh
 
     // EDITING:
     void            addSurfaces(Surfs const & s);
-    void            scale(float fac);
     void            xform(SimilarityD const &);         // Transform each data type appropriately
     void            convertToTris();
     void            removeUVs();
@@ -358,9 +357,10 @@ Mesh            splitSurfsByUvContiguous(Mesh const &);
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:
 Mesh            mergeMeshSurfaces(Mesh const & m0,Mesh const & m1);
-// Material of second mesh is discarded, all else (including names) are merged:
-Mesh            mergeMeshes(Mesh const & m0,Mesh const & m1);
-Mesh            mergeMeshes(const Svec<Mesh> & meshes);
+// Unify vertex lists, preserves all separate surfaces, unifies morphs with same name.
+// Does not handle Joints:
+Mesh            mergeMeshes(Ptrs<Mesh> meshPtrs);
+inline Mesh     mergeMeshes(Meshes const & ms) {return mergeMeshes(mapAddr(ms)); }
 // Doesn't preserve uvs, surface points or marked verts:
 Mesh            fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask);
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):

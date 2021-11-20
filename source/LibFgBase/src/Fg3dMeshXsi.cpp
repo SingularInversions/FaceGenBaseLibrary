@@ -614,13 +614,9 @@ static string floatToString(float val)
     return oss.str();
 }
 
-void
-saveXsi(
-    String8 const &        fname,
-    Meshes const & meshes,
-    string                  imgFormat)
+void            saveXsi(String8 const & fname,Meshes const & meshes,String imgFormat)
 {
-    FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat);
+    FgMeshLegacy        ml = fgMeshLegacy(meshes,fname,imgFormat);
     if (ml.morphs.empty())
         fffSaveXsiFile(fname,ml.base,"FaceGen");
     else

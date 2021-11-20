@@ -306,7 +306,7 @@ extract(CLArgs const & args)
    Filter out morphs that do nothing
  */
 void
-filter(CLArgs const & args)
+cmdFilter(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.tri <out>.tri\n"
         "NOTES:\n"
@@ -464,7 +464,7 @@ morph(CLArgs const & args)
         {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
         {create,"create","Create morphs for a mesh"},
         {extract,"extract","Extract all morphs to named files"},
-        {filter,"filter","Filter out delta morphs that do nothing"},
+        {cmdFilter,"filter","Filter out delta morphs that do nothing"},
         {morphList,"list","List available morphs in a mesh"},
         {removemorphs,"remove","Remove morphs from a mesh"},
         {removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"},
@@ -476,7 +476,7 @@ morph(CLArgs const & args)
 }
 
 Cmd
-getMorphCmd()
+getCmdMorph()
 {return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
 
 void

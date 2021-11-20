@@ -13,7 +13,7 @@
 #include "FgLighting.hpp"
 #include "FgGridIndex.hpp"
 #include "FgBestN.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgSimilarity.hpp"
 
 namespace Fg {

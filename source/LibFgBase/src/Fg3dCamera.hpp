@@ -68,8 +68,7 @@
 #define FG3DCAMERA_HPP
 
 #include "FgQuaternion.hpp"
-#include "FgAffineC.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgSimilarity.hpp"
 
 namespace Fg {

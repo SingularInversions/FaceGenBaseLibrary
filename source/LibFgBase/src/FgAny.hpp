@@ -20,11 +20,19 @@ namespace Fg {
 
 struct AnyPolyBase
 {
+    std::type_info const *  typeInfoPtr;    // get type info without dynamic cast
+
+    AnyPolyBase() : typeInfoPtr{nullptr} {}
+    AnyPolyBase(std::type_info const * t) : typeInfoPtr{t} {}
     virtual ~AnyPolyBase() {};
 
-    virtual
-    std::string 
-    typeName() const = 0;
+    String              typeName() const
+    {
+        if (typeInfoPtr == nullptr)
+            return "nullptr";
+        else
+            return typeInfoPtr->name();
+    }
 };
 
 template<class T>
@@ -32,18 +40,16 @@ struct AnyPoly : AnyPolyBase
 {
     T           object;
 
-    explicit AnyPoly(T const & val) : object{val} {}
-    explicit AnyPoly(T && val) : object(std::forward<T>(val)) {}
-
-    virtual
-    std::string 
-    typeName() const 
-    {return typeid(T).name(); }
+    explicit AnyPoly(T const & val) : AnyPolyBase{&typeid(T)}, object{val} {}
+    explicit AnyPoly(T && val) :  AnyPolyBase{&typeid(T)}, object(std::forward<T>(val)) {}
 };
 
-class AnyWeak
+struct  AnyWeak
 {
     std::weak_ptr<AnyPolyBase>    objPtr;
+
+    AnyWeak() {}      // Need this for vector storage
+    explicit AnyWeak(const std::shared_ptr<AnyPolyBase> & v) : objPtr(v) {}
 
     std::shared_ptr<AnyPolyBase>
     asShared() const
@@ -51,44 +57,6 @@ class AnyWeak
         if (objPtr.expired())
             fgThrow("AnyWeak expired dereference");
         return objPtr.lock();
-    }
-
-public:
-    AnyWeak() {}      // Need this for vector storage
-
-    explicit AnyWeak(const std::shared_ptr<AnyPolyBase> & v) : objPtr(v) {}
-
-    std::string
-    typeName() const
-    {return asShared()->typeName(); }
-
-    template<class T>
-    bool
-    is() const
-    {
-        const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(asShared().get());
-        return (ptr != nullptr);
-    }
-
-    template<class T>
-    T const &
-    as() const
-    {
-        const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(asShared().get());
-        if (ptr == nullptr)
-            fgThrow("AnyWeak.as incompatible type dereference",asShared()->typeName()+"->"+typeid(T).name());
-        return ptr->object;
-    }
-
-    // Use at your own risk as this violates copy semantics:
-    template<class T>
-    T &
-    ref()
-    {
-        AnyPoly<T> *      ptr = dynamic_cast<AnyPoly<T>*>(asShared().get());
-        if (ptr == nullptr)
-            fgThrow("AnyWeak.ref incompatible type dereference",asShared()->typeName()+"->"+typeid(T).name());
-        return ptr->object;
     }
 };
 
@@ -101,40 +69,23 @@ class Any
 public:
     Any() {}
 
-    // Implicit conversion is very useful here, for example 'Any x = 5;' or argument passing:
     template<class T>
-    Any(T const & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
+    explicit Any(T const & val) : objPtr(std::make_shared<AnyPoly<T> >(val)) {}
 
-    Any(Any const & rhs) : objPtr(rhs.objPtr) {}
+    Any(Any const &) = default;     // must be declared to avoid being overriden by above
 
-    explicit operator bool() const
-    {return bool(objPtr); }
+    explicit                operator bool() const {return bool(objPtr); }
 
-    std::string
-    typeName() const
-    {
-        if (!objPtr)
-            fgThrow("Any.typeName null dereference");
-        return objPtr->typeName();
-    }
-
-    template<class T>
-    void
-    operator=(T const & val)
-    {objPtr = std::make_shared<AnyPoly<T> >(val); }
-
-    void
-    operator=(Any const & var)
-    {objPtr = var.objPtr; }
+    template<class T> void  operator=(T const & val) {objPtr = std::make_shared<AnyPoly<T> >(val); }
+    void                    operator=(Any const & var) {objPtr = var.objPtr; }
 
     template<class T>
     bool
     is() const
     {
         if (!objPtr)
-            fgThrow("Any.is null dereference",typeid(T).name());
-        const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
-        return (ptr != nullptr);
+            fgThrow("Any.is() null dereference",typeid(T).name());
+        return (*(objPtr->typeInfoPtr) == typeid(T));
     }
 
     template<class T>
@@ -142,10 +93,10 @@ public:
     as() const
     {
         if (!objPtr)
-            fgThrow("Any.as null dereference",typeid(T).name());
-        const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
+            fgThrow("Any.as() null dereference",typeid(T).name());
+        AnyPoly<T> const *  ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
         if (ptr == nullptr)
-            fgThrow("Any.as incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
+            fgThrow("Any.as() incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;
     }
 
@@ -168,34 +119,20 @@ public:
     ref()
     {
         if (!objPtr)
-            fgThrow("Any.ref null dereference",typeid(T).name());
+            fgThrow("Any.ref() null dereference",typeid(T).name());
         AnyPoly<T> *      ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
         if (ptr == nullptr)
-            fgThrow("Any.ref incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
+            fgThrow("Any.ref() incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;
     }
 
-    AnyWeak
-    weak()
-    {return AnyWeak(objPtr); }
+    String                  typeName() const {return objPtr->typeName(); }
 
-    bool
-    empty() const
-    {return !bool(objPtr); }
-
-    void
-    reset()
-    {objPtr.reset(); }
-
-    template<class T>
-    void
-    reset(T const & val)
-    {objPtr.reset(new AnyPoly<T>(val)); }
-
-    template<class T>
-    void
-    reset(T && val)
-    {objPtr.reset(new AnyPoly<T>(std::forward<T>(val))); }
+    AnyWeak                 weak() {return AnyWeak(objPtr); }
+    bool                    valid() const {return bool(objPtr); }
+    void                    reset() {objPtr.reset(); }
+    template<class T> void  reset(T const & val) {objPtr.reset(new AnyPoly<T>(val)); }
+    template<class T> void  reset(T && val) {objPtr.reset(new AnyPoly<T>(std::forward<T>(val))); }
 };
 
 typedef Svec<Any>  Anys;

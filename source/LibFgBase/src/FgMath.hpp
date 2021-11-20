@@ -208,7 +208,7 @@ inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 // Shorthand for limit values:
 inline uint constexpr   uintMax() {return std::numeric_limits<uint>::max(); };
 inline double constexpr epsilonD() {return std::numeric_limits<double>::epsilon(); }
-inline float constexpr  doubleMax() {return std::numeric_limits<double>::max(); }
+inline double constexpr  doubleMax() {return std::numeric_limits<double>::max(); }
 inline float constexpr  floatMax() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):

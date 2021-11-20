@@ -11,7 +11,7 @@
 #include "FgImage.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgMath.hpp"
-#include "FgAffine1.hpp"
+#include "FgAffine.hpp"
 #include "FgMain.hpp"
 #include "FgTime.hpp"
 #include "FgCommand.hpp"

@@ -112,4 +112,14 @@ saveJfif(ImgRgba8 const & img,String8 const & fname,uint quality)
         fgThrow("STB JFIF image write error",fname);
 }
 
+String
+zlibInflate(String const & compressed,size_t sz)
+{
+    String          ret (sz,' ');
+    int             rc = stbi_zlib_decode_buffer(
+        &ret[0],int(sz),compressed.data(),int(compressed.size()));
+    FGASSERT(rc == int(sz));
+    return ret;
+}
+
 }

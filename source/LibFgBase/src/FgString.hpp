@@ -188,6 +188,7 @@ String8         cSubstr8(String8 const & str,size_t start,size_t size);
 String8         cRest(String8 const & s,size_t start);
 // Inspired by Python join():
 String8         cat(String8s const & strings,String8 const & separator);
+String8         catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator);
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:
 String          fgToVariableName(String8 const & str);

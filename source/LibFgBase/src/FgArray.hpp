@@ -20,9 +20,11 @@ struct VArray
     T                   m[maxSize];
     size_t              sz = 0;
 
+    bool                empty() const {return (sz == 0); }
     size_t              size() const {return sz; }
     T const &           operator[](size_t i) const {FGASSERT(i < sz); return m[i]; }
     T &                 operator[](size_t i) {FGASSERT(i < sz); return m[i]; }
+    void                clear() {sz = 0; }
 
     void                add(T const & v)    // 'push_back' too verbose
     {
@@ -31,22 +33,14 @@ struct VArray
         ++sz;
     }
 
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
     void                erase(size_t idx)
     {
-        FGASSERT(idx < sz);
+        // can't use #pragma GCC diagnostic ignored "-Wmaybe-uninitialized" since clang will give warnings
+        FGASSERT((idx < sz) && (idx < maxSize));
         for (size_t ii=idx; ii+1<sz; ++ii)
             m[ii] = m[ii+1];
         --sz;
     }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-
-    bool                empty() const {return (sz == 0); }
 };
 
 }

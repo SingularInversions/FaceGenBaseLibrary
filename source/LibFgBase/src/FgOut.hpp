@@ -136,7 +136,7 @@ struct  PushIndent
     PushIndent(std::string const & label = std::string{})
     {
         if (label.empty())
-            fgout << fgnl;
+            fgout << fgpush;
         else
             fgout << fgnl << label << std::flush << fgpush;
     }

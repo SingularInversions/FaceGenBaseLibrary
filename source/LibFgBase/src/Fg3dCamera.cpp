@@ -10,8 +10,7 @@
 #include "FgMath.hpp"
 #include "FgQuaternion.hpp"
 #include "FgBounds.hpp"
-#include "FgAffineC.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 
 using namespace std;
 

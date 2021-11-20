@@ -25,8 +25,7 @@ namespace Fg {
 
 namespace {
 
-void
-combinesurfs(CLArgs const & args)
+void                cmdCombinesurfs(CLArgs const & args)
 {
     Syntax    syn(args,
         "(<mesh>.<extIn>)+ <out>.<extOut>\n"
@@ -47,15 +46,40 @@ combinesurfs(CLArgs const & args)
 }
 
 void
-convert(CLArgs const & args)
+cmdConvert(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <extOut> = " + getMeshSaveExtsCLDescription()
-        );
-    Mesh    mesh = loadMesh(syn.next());
-    saveMesh(mesh,syn.next());
+    Syntax          syn {args,
+        R"(<in>.<exti> <out>.<exto>
+    <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>        If <in>.<exti> contains only a single mesh, otherwise:
+    <out>-<name>.<exto> A file for each mesh contained in <in>.<exti>, where <name> is taken from <in>,
+                        and if none is given generated as sequential integers)"
+    };
+    Meshes          meshes = loadMeshes(syn.next());
+    Path            out {syn.next()};
+    if (meshes.size() > 1) {
+        if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str))) {
+            saveMergeMesh(meshes,out.str());
+        }
+        else {
+            size_t          cnt {0};
+            for (Mesh const & mesh : meshes) {
+                String8         name = mesh.name;
+                if (name.empty())
+                    name = toStrDigits(cnt,2);
+                String8         fname = out.dirBase()+"-"+name+"."+out.ext;
+                saveMesh(mesh,fname);
+                fgout << fgnl << fname << " saved.";
+                ++cnt;
+            }
+        }
+    }
+    else {
+        saveMesh(meshes[0],syn.next());
+        fgout << fgnl << syn.curr() << " saved.";
+    }
 }
 
 void
@@ -102,25 +126,29 @@ copyUvs(CLArgs const & args)
 }
 
 void
-copyverts(CLArgs const & args)
+cmdCopyVerts(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <ext1> = " + getMeshSaveExtsCLDescription() + "\n"
-        "    <out> is modified to have the vertex list from <in>"
-        );
-    Mesh        in = loadMesh(syn.next());
-    Mesh        out = loadMesh(syn.next());
-    if (in.verts.size() != out.verts.size())
-        syn.error("Incompatible vertex list sizes");
-    out.verts = in.verts;
-    saveMesh(out,syn.curr());
-    return;
+    Syntax              syn {args,
+        R"(<verts>.<exti> <mesh>.<exti> <out>.<exto>
+    <verts>         - the mesh from which to take the vertices
+    <mesh>          - the mesh whose vertices will be replaced
+    <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>          - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>    - <mesh> but with vertices from <verts>
+NOTES:
+    <verts> must have the same vertex count as <mesh>
+)"
+    };
+    Vec3Fs              verts = loadMesh(syn.next()).verts;
+    Mesh                mesh = loadMesh(syn.next());
+    if (verts.size() != mesh.verts.size())
+        syn.error("<verts> and <mesh> vertex lists are different sizes",toStr(verts.size())+":"+toStr(mesh.verts.size()));
+    mesh.verts = verts;
+    saveMesh(mesh,syn.next());
 }
 
-void
-emboss(CLArgs const & args)
+void                cmdEmboss(CLArgs const & args)
 {
     Syntax          syn(args,
         "<uvImage>.<img> <meshin>.<ext0> <val> <out>.<ext1>\n"
@@ -143,35 +171,72 @@ emboss(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
+void                cmdExport(CLArgs const & args)
+{
+    Syntax          syn {args,
+        R"(<out>.<exto> (<mesh>.<extm> [<image>.<exti>])+
+    <exto>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <extm>          - )" + getMeshSaveExtsCLDescription() + R"(
+    <exti>          - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    <out>.<exto>    - the combined meshes
+    <out>#.png      - related image files are only stored if <exto> supports referencing image files
+NOTES:
+    * If the output format does not support multiple meshes they will be merged into one
+    * If the output format does not support references to color maps they will be ignored)"
+    };
+    String          outFile = syn.next();
+    Meshes          meshes;
+    do {
+        Mesh            mesh = loadMesh(syn.next());
+        size_t          cnt = 0;
+        while (syn.more() && toLower(pathToExt(syn.peekNext())) != "tri") {
+            String              imgFile(syn.next()),
+                                ext = pathToExt(imgFile);
+            Strings             exts = getImageFileExts();
+            auto                it = find(exts.begin(),exts.end(),ext);
+            if (it == exts.end())
+                syn.error("Unknown image file type",imgFile);
+            if (cnt < mesh.surfaces.size())
+                loadImage_(imgFile,mesh.surfaces[cnt++].albedoMapRef());
+            else
+                syn.error("More albedo map images specified than surfaces in",mesh.name);
+        }
+        meshes.push_back(mesh);
+    } while (syn.more());
+    saveMergeMesh(meshes,outFile);
+}
+
 void
 cmdInject(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<src>.[w]obj <verts>.<mesh> <dst>.obj
-    <mesh>          - )" + getMeshLoadExtsCLDescription() + R"(
+        R"(<in>.<exto> <verts>.<exti> <out>.<exto>
+    <exto>          - ([w]obj , fbx)
+    <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
 OUTPUT:
-    <dst>.obj       Identical to <src>.[w]obj but with all vertex positions updated to the values in <verts>.<mesh>
+    <out>.<exto>    - <in>.<exto> but with all vertex positions updated to the values in <verts>.<exti>
 NOTES:
-    * The vertex list in <verts>.<mesh> must be in exact correspondence with the list in <src>.[w]obj)"
+    * The vertex list in <verts>.<exti> must be in exact correspondence with <in>.<exto>
+    * If <in>.<exto> is a multi-mesh format (eg. FBX) the vertices are updated in order of appearance in the file
+    * For 'fbx' only the binary format is currently supported
+    * Unlike 'mesh copyv' this command exactly preserves all other contents of <in>.<exto>
+)"
     };
-    Strings             lines = splitLines(loadRaw(syn.next()));
-    Vec3Fs              verts = loadMesh(syn.next()).verts;
-    size_t              cnt {0};
-    for (String & line : lines) {
-        if (beginsWith(line,"v ")) {
-            if (cnt >= verts.size())
-                syn.error("<verts> contains fewer vertices than <src>");
-            Vec3F           vert = verts[cnt++];
-            line = "v " + toStr(vert[0]) + " " + toStr(vert[1]) + " " + toStr(vert[2]);
-        }
-    }
-    if (cnt < verts.size())
-        fgout << fgnl << "WARNING: <verts> contains more vertices than <src>";
-    saveRaw(cat(lines,"\n"),syn.next());
+    String              inName = syn.next(),
+                        vertsName = syn.next(),
+                        outName = syn.next(),
+                        inExt = toLower(pathToExt(inName));
+    Vec3Fs              verts = loadMesh(vertsName).verts;
+    if ((inExt == "wobj") || (inExt == "obj"))
+        injectVertsWObj(inName,verts,outName);
+    else if (inExt == "fbx")
+        injectVertsFbxBin(inName,{verts},outName);
+    else
+        syn.error("Unsupported format",inExt);
 }
 
-void
-revWind(CLArgs const & args)
+void                cmdRevWind(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -184,8 +249,7 @@ revWind(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-void
-markVerts(CLArgs const & args)
+void                cmdMarkVerts(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri <verts>.<ext> <out>.tri\n"
@@ -224,21 +288,22 @@ markVerts(CLArgs const & args)
 }
 
 void
-mmerge(CLArgs const & args)
+cmdMerge(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <extOut> = " + getMeshSaveExtsCLDescription()
-        );
-    Mesh    mesh = loadMesh(syn.next());
-    while (syn.more()) {
-        string  name = syn.next();
-        if (syn.more())
-            mesh = mergeMeshes(mesh,loadMesh(name));
-        else
-            saveMesh(mesh,name);
-    }
+    Syntax              syn {args,
+        R"(<out>.<exto> (<in>.<exti>)+
+    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
+    <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>        All <in> mesh surfaces with a single vertex list
+NOTES:
+    * If <exto> supports multiple surfaces, each surface of each input mesh will be a separate surface.)"
+    };
+    String              outName = syn.next();
+    Meshes              meshes = loadMeshes(syn.next());
+    while (syn.more())
+        cat_(meshes,loadMeshes(syn.next()));
+    saveMesh(mergeMeshes(mapAddr(meshes)),outName);
 }
 
 void
@@ -257,8 +322,7 @@ mergesurfs(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-void
-rdf(CLArgs const & args)
+void                cmdRdf(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri [<out>.tri]\n"
@@ -274,8 +338,7 @@ rdf(CLArgs const & args)
     saveTri(fno,removeDuplicateFacets(loadTri(fni)));
 }
 
-void
-rtris(CLArgs const & args)
+void                cmdRtris(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut> (<surfIndex> <triEquivIndex>)+\n"
@@ -318,8 +381,7 @@ rtris(CLArgs const & args)
     saveMesh(mesh,outName);
 }
 
-void
-ruv(CLArgs const & args)
+void                cmdRuv(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -329,29 +391,6 @@ ruv(CLArgs const & args)
     Mesh    mesh = loadMesh(syn.next());
     mesh = removeUnusedVerts(mesh);
     saveMesh(mesh,syn.next());
-}
-
-void
-sortFacets(CLArgs const & args)
-{
-    Syntax    syn(args,
-        "<meshIn>.<ext> <albedo>.<img> <meshOut>.<ext> [<opaque>.<ext>]*\n"
-        "    <mesh>     - Mesh to have facets sorted\n"
-        "    <ext>      - " + getMeshLoadExtsCLDescription() + "\n"
-        "    <albedo>   - Map containing the alpha channel\n"
-        "    <img>      - " + getImageFileExtCLDescriptions() + "\n"
-        "    <opaque>   - Any opaque objects blocking view which affects sorting\n"
-        "Will find the best compromise sorted rendering order for front/back (+/-Z), side (+/-X)\n"
-        "and top (Y) views, on a per-surface basis, and save the sorted result. All quads are\n"
-        "converted to tris and all surfaces are merged into one.");
-    Mesh        mesh = loadMesh(syn.next());
-    ImgRgba8     albedo = loadImage(syn.next());
-    String8        outName = syn.next();
-    Mesh        opaque;
-    while (syn.more())
-        opaque = mergeMeshes(opaque,loadMesh(syn.next()));
-    mesh = sortTransparentFaces(mesh,albedo,opaque);
-    saveMesh(mesh,outName);
 }
 
 void
@@ -367,8 +406,7 @@ mergenamedsurfs(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-static void
-retopo(CLArgs const & args)
+void                cmdRetopo(CLArgs const & args)
 {
     Syntax              syn { args,
         "<baseName> <retopoBase> <outBase>\n"
@@ -426,14 +464,12 @@ retopo(CLArgs const & args)
         meshOut.deltaMorphs.push_back(morphOut);
     }
     for (IndexedMorph const & morphIn : meshIn.targetMorphs) {
-        IndexedMorph        morphOut {morphIn.name,{},{}};
-        for (size_t vv=0; vv<morphIn.baseInds.size(); ++vv) {
-            uint            idxI = morphIn.baseInds[vv],
+        IndexedMorph        morphOut {morphIn.name,{}};
+        for (size_t vv=0; vv<morphIn.ivs.size(); ++vv) {
+            uint            idxI = morphIn.ivs[vv].idx,
                             idxR = mapIR[idxI];
-            if (idxR != uintMax()) {
-                morphOut.baseInds.push_back(idxR);
-                morphOut.verts.push_back(morphIn.verts[vv]);
-            }
+            if (idxR != uintMax())
+                morphOut.ivs.emplace_back(idxR,morphIn.ivs[vv].vec);
         }
         meshOut.targetMorphs.push_back(morphOut);
     }
@@ -471,7 +507,8 @@ cmdSplitSurf(CLArgs const & args)
         R"(<mesh>.<ext> <root>
     <ext>       - )" + getMeshLoadExtsCLDescription() + R"(
 OUTPUT:
-    <root>-<name>.fgmesh    For each surface <name> in <mesh>.<ext>
+    <root>-<name>.fgmesh    For each surface <name> in <mesh>.<ext>. If the surfaces do not have names,
+                            they will be assigned sequential integers.
 NOTES:
     * Each output file retains the full list of vertices and uvs)"
     };
@@ -483,8 +520,8 @@ NOTES:
         out.surfaces = {surf};
         String8             name = surf.name;
         if (name.empty())
-            name = "Unnamed-" + toStr(cnt++);
-        saveFgmesh(root+name+".fgmesh",{out});
+            name = toStrDigits(cnt++,2);
+        saveFgmesh(root+"-"+name+".fgmesh",out);
     }
 }
 
@@ -501,7 +538,7 @@ cmdUvsSplitContig(CLArgs const & args)
 }
 
 void
-splitCont(CLArgs const & args)
+cmdSplitContigVerts(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.<extIn> <out>.fgmesh\n"
         "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
@@ -697,8 +734,7 @@ spsToVerts(CLArgs const & args)
     saveTri(syn.curr(),out);
 }
 
-void
-toTris(CLArgs const & args)
+void                cmdToTris(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -710,8 +746,7 @@ toTris(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-void
-cmdFuseUvs(CLArgs const & args)
+void                cmdFuseUvs(CLArgs const & args)
 {
     Syntax          syn {args,
         R"(<in>.<extIn> <out>.<extOut>
@@ -724,8 +759,7 @@ cmdFuseUvs(CLArgs const & args)
     saveMesh(out,syn.next());
 }
 
-void
-cmdFuseVerts(CLArgs const & args)
+void                cmdFuseVerts(CLArgs const & args)
 {
     Syntax          syn {args,
         R"(<in>.<extIn> <out>.<extOut>
@@ -740,8 +774,7 @@ NOTES:
     saveMesh(out,syn.next());
 }
 
-void
-uvclamp(CLArgs const & args)
+void                cmdUvclamp(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
@@ -759,8 +792,7 @@ uvclamp(CLArgs const & args)
     return;
 }
 
-void
-uvSolidImage(CLArgs const & args)
+void                cmdUvSolidImage(CLArgs const & args)
 {
     Syntax    syn(args,
         "<mesh>.<extM> <size> <image>.<extI>\n"
@@ -780,8 +812,7 @@ uvSolidImage(CLArgs const & args)
     saveImage(syn.next(),toRgba8(img));
 }
 
-void
-cmdUvWireframe(CLArgs const & args)
+void                cmdUvWireframe(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<mesh>.<extm> [<background>.<exti>]+
@@ -805,8 +836,7 @@ cmdUvWireframe(CLArgs const & args)
     }
 }
 
-void
-uvmask(CLArgs const & args)
+void                cmdUvmask(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
@@ -825,8 +855,7 @@ uvmask(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-void
-uvunwrap(CLArgs const & args)
+void                cmdUvunwrap(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> [<out>.<ext1>]\n"
@@ -846,23 +875,21 @@ uvunwrap(CLArgs const & args)
     return;
 }
 
-void
-xformApply(CLArgs const & args)
+void                cmdXformApply(CLArgs const & args)
 {
     Syntax              syn(args,
         "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
         "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
         "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
-    SimilarityD         xform;
-    loadBsaXml(syn.next(),xform);
+    SimilarityD         cmdXform;
+    loadBsaXml(syn.next(),cmdXform);
     Mesh            in = loadMesh(syn.next()),
-                    out = transform(in,xform);
+                    out = transform(in,cmdXform);
     saveMesh(out,syn.next());
 }
 
-void
-xformCreateIdentity(CLArgs const & args)
+void                cmdXformCreateIdentity(CLArgs const & args)
 {
     Syntax    syn(args,
         "<output>.xml \n"
@@ -872,8 +899,7 @@ xformCreateIdentity(CLArgs const & args)
     saveBsaXml(simFname,SimilarityD::identity());
 }
 
-void
-xformCreateMeshes(CLArgs const & args)
+void                cmdXformCreateMeshes(CLArgs const & args)
 {
     Syntax    syn(args,
         "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
@@ -893,8 +919,7 @@ xformCreateMeshes(CLArgs const & args)
     saveBsaXml(simFname,sim);
 }
 
-void
-xformCreateRotate(CLArgs const & args)
+void                cmdXformCreateRotate(CLArgs const & args)
 {
     Syntax          syn(args,
         "<output>.xml <axis> <degrees> <point> [<input>.xml]\n"
@@ -924,8 +949,7 @@ xformCreateRotate(CLArgs const & args)
     saveBsaXml(outName,xf);
 }
 
-void
-xformCreateScale(CLArgs const & args)
+void                cmdXformCreateScale(CLArgs const & args)
 {
     Syntax    syn(args,
         "<similarity>.xml <scale>"
@@ -938,8 +962,7 @@ xformCreateScale(CLArgs const & args)
     saveBsaXml(simFname,SimilarityD(scale)*sim);
 }
 
-void
-xformCreateTrans(CLArgs const & args)
+void                cmdXformCreateTrans(CLArgs const & args)
 {
     Syntax    syn(args,
         "<similarity>.xml <X> <Y> <Z>"
@@ -955,21 +978,19 @@ xformCreateTrans(CLArgs const & args)
     saveBsaXml(simFname,SimilarityD(trans)*sim);
 }
 
-void
-xformCreate(CLArgs const & args)
+void                cmdXformCreate(CLArgs const & args)
 {
     Cmds            cmds {
-        {xformCreateIdentity,"identity","Create identity similarity transform XML file for editing"},
-        {xformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"},
-        {xformCreateRotate,"rotate","Combine a rotation with a similarity transform XML file"},
-        {xformCreateScale,"scale","Combine a scaling with a similarity transform XML file"},
-        {xformCreateTrans,"translate","Combine a translation with a similarity transform XML file"}
+        {cmdXformCreateIdentity,"identity","Create identity similarity transform XML file for editing"},
+        {cmdXformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"},
+        {cmdXformCreateRotate,"rotate","Combine a rotation with a similarity transform XML file"},
+        {cmdXformCreateScale,"scale","Combine a scaling with a similarity transform XML file"},
+        {cmdXformCreateTrans,"translate","Combine a translation with a similarity transform XML file"}
     };
     doMenu(args,cmds);
 }
 
-void
-xformMirror(CLArgs const & args)
+void                cmdXformMirror(CLArgs const & args)
 {
     Syntax        syn(args,
         "<axis> <meshIn>.<ext1> [<meshOut>.<ext2>]\n"
@@ -992,42 +1013,29 @@ xformMirror(CLArgs const & args)
     saveMesh(mesh,fname);
 }
 
-void
-cmdUvs(CLArgs const & args)
-{
-    Cmds            cmds {
-        {copyUvList,"copyUvList","Copy UV list from one mesh to another with same UV count"},
-        {copyUvs,"copyUvs","Copy UVs from one mesh to another with identical facet structure"},
-        {cmdUvsSplitContig,"splitcon","Split surfaces by contiguous UV mappings"},
-        {cmdFuseUvs,"fuse","fuse identical UV coordinates"},
-        {uvclamp,"uvclamp","Clamp UV coords to the range [0,1]"},
-        {cmdUvWireframe,"uvWire","Create a wireframe image of meshes UV map(s)"},
-        {uvSolidImage,"uvImgS","Solid white inside UV facets, black outside, 4xFSAA"},
-        {uvmask,"uvmask","Mask out geometry for any black areas of a texture image {auto symmetrized)"},
-        {uvunwrap,"uvunwrap","Unwrap wrap-around UV coords to the range [0,1]"},
-    };
-    doMenu(args,cmds);
-}
-
-void
-cmdSurfVertInds(CLArgs const & args)
+void                cmdSurfVertInds(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<in>.fgmesh <out>.txt (<surfIdx>)+
-    <in>.fgmesh     - mesh with surfaces
-    <surfIdx>       - index of a surface in the mesh
+        R"(<in>.<ext> <out>.txt <surfIdx>*
+    <in>.<ext>      - mesh with multiple surfaces or surfaces that do not reference all vertices
+    <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
+    <surfIdx>       - index of a surface in the mesh (use 'fgbl view mesh' to see surface indices).
+                      If none are specified, all surfaces are used.
 OUTPUT:
     <out>.txt       - space-sparated list of all vertex indices used by the specified surfaces
 NOTES:
-    * The output vertex indices list can be used by 'fg3t splice' to select vertices to transform as eyes
-      instead of skin)"
+    * The output vertex indices list can be used with 'fg3t ssmEyeI' to select vertices to transform
+      rigidly (as eyes) instead of deformably (as skin) )"
     };
     Mesh                mesh = loadMesh(syn.next());
-    String              out = syn.next();
+    String              outName = syn.next();
     Sizes               surfInds;
-    do {
+    while (syn.more()) {
         surfInds.push_back(syn.nextAs<size_t>());
-    } while (syn.more());
+    }
+    if (surfInds.empty())               // default to all surfs if none specified
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss)
+            surfInds.push_back(ss);
     set<uint>           vertInds;
     for (size_t ss : surfInds) {
         if (ss >= mesh.surfaces.size())
@@ -1043,11 +1051,10 @@ NOTES:
     String              content;
     for (uint idx : vertInds)
         content += toStr(idx) + " ";
-    saveRaw(content,out);
+    saveRaw(content,outName);
 }
 
-void
-cmdSurf(CLArgs const & args)
+void                cmdSurf(CLArgs const & args)
 {
     Cmds            cmds {
         {surfAdd,"add","Add an empty surface to a mesh"},
@@ -1057,7 +1064,8 @@ cmdSurf(CLArgs const & args)
         {surfList,"list","List surfaces in mesh"},
         {mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"},
         {mergesurfs,"merge","Merge all surfaces in a mesh into one"},
-        {splitCont,"splitCon","Split surfaces by contiguous vertex indices"},
+        {cmdSplitContigVerts,"splitV","Split surfaces by contiguous vertex indices"},
+        {cmdSplitSurf,"splitS","Split mesh by surface"},
         {surfRen,"ren","Rename a surface in a mesh"},
         {spCopy,"spCopy","Copy surf points between meshes with identical surface topology"},
         {spDel,"spDel","Delete a surface point"},
@@ -1069,42 +1077,54 @@ cmdSurf(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-void
-xform(CLArgs const & args)
+void                cmdUvs(CLArgs const & args)
 {
     Cmds            cmds {
-        {xformApply,"apply","Apply a simiarlity transform (from XML file) to a mesh"},
-        {xformCreate,"create","Create a similarity transform XML file"},
-        {xformMirror,"mirror","Mirror a mesh"},
+        {copyUvList,"copy","Copy UV list from one mesh to another with same UV count"},
+        {copyUvs,"copyf","Copy UVs from one mesh to another with identical facet structure"},
+        {cmdUvsSplitContig,"splitcon","Split surfaces by contiguous UV mappings"},
+        {cmdFuseUvs,"fuse","fuse identical UV coordinates"},
+        {cmdUvclamp,"clamp","Clamp UV coords to the range [0,1]"},
+        {cmdUvWireframe,"wireImg","Create a wireframe image of meshes UV map(s)"},
+        {cmdUvSolidImage,"coverImg","Create a coverage image; solid white inside UV facets, black outside, 4xFSAA"},
+        {cmdUvmask,"mask","Mask out geometry for any black areas of a texture image (auto symmetrized)"},
+        {cmdUvunwrap,"unwrap","Unwrap wrap-around UV coords to the range [0,1]"},
     };
     doMenu(args,cmds);
 }
 
-void
-cmdMesh(CLArgs const & args)
+void                cmdXform(CLArgs const & args)
+{
+    Cmds            cmds {
+        {cmdXformApply,"apply","Apply a simiarlity transform (from XML file) to a mesh"},
+        {cmdXformCreate,"create","Create a similarity transform XML file"},
+        {cmdXformMirror,"mirror","Mirror a mesh"},
+    };
+    doMenu(args,cmds);
+}
+
+void                cmdMesh(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdBoundEdges,"edges","extract each boundary edge of a manifold mesh as a copy with edge verts marked"},
-        {combinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"},
-        {convert,"convert","Convert the mesh between different formats"},
-        {copyverts,"copyverts","Copy verts from one mesh to another with same vertex count"},
-        {emboss,"emboss","Emboss a mesh based on greyscale values of a UV image"},
-        {cmdExportInfo()},
-        {cmdInject,"inject","Inject updated vertex positions into a Wavefront OBJ file"},
-        {markVerts,"markVerts","Mark vertices in a .TRI file from a given list"},
-        {mmerge,"merge","Merge multiple meshes into one. No optimization is done"},
-        {rdf,"rdf","Remove Duplicate Facets within each surface"},
-        {retopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
-        {rtris,"rtris","Remove specific tris from a mesh"},
-        {ruv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"},
-        {revWind,"rwind","Reverse facet winding of a mesh"},
-        {sortFacets,"sortFacets","Sort facets for optimal transparency viewing"},
-        {cmdSplitSurf,"splitSurf","Split mesh by surface"},
+        {cmdCombinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"},
+        {cmdConvert,"convert","Convert a mesh to a different format"},
+        {cmdCopyVerts,"copyv","Copy vertices from one mesh to another with same vertex count"},
+        {cmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"},
+        {cmdExport,"export","Convert multiple meshes and related color maps into another format"},
+        {cmdInject,"inject","Inject updated vertex positions without otherwise modifying a mesh file"},
+        {cmdMarkVerts,"markVerts","Mark vertices in a .TRI file from a given list"},
+        {cmdMerge,"merge","Merge multiple meshes into one. No optimization is done"},
+        {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
+        {cmdRetopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
+        {cmdRtris,"rtris","Remove specific tris from a mesh"},
+        {cmdRuv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"},
+        {cmdRevWind,"rwind","Reverse facet winding of a mesh"},
         {cmdSurf,"surf","Operations on mesh surface structure"},
-        {toTris,"toTris","Convert all facets to tris"},
+        {cmdToTris,"toTris","Convert all facets to tris"},
         {cmdFuseVerts,"fuse","fuse identical vertices"},
         {cmdUvs,"uvs","UV-specific commands"},
-        {xform,"xform","Create or apply similarity transforms from/to meshes"},
+        {cmdXform,"xform","Create / apply similarity transforms from / to meshes"},
     };
     doMenu(args,cmds);
 }

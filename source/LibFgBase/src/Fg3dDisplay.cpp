@@ -410,7 +410,7 @@ saveMesh2(string format,NPT<RendMeshes> rendMeshesN)
         Meshes              meshes;
         for (RendMesh const & rm : rms)
             meshes.push_back(rm.origMeshN.cref());
-        saveMesh(meshes,fname.val());
+        saveMergeMesh(meshes,fname.val());
     }
 }
 

@@ -8,8 +8,7 @@
 #define FGSCALETRANS_HPP
 
 #include "FgStdLibs.hpp"
-#include "FgAffineC.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 
 namespace Fg {
 

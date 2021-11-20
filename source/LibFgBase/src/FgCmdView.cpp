@@ -14,7 +14,7 @@
 #include "FgSyntax.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgImageDraw.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgBuild.hpp"
 #include "FgImagePoint.hpp"
 
@@ -46,26 +46,33 @@ cmdViewMesh(CLArgs const & args)
         else
             syn.error("Unrecognized option: ",syn.curr());
     }
-    Meshes           meshes;
+    Meshes           all;
     while (syn.more()) {
         Path            path(syn.next());
-        Mesh            mesh = loadMesh(path.str());
-        mesh.name = path.base;
-        if (removeUnused) {
-            size_t          origVerts = mesh.verts.size();
-            mesh = removeUnusedVerts(mesh);
-            if (mesh.verts.size() < origVerts)
-                fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
+        PushIndent      pind {path.baseExt().m_str};
+        Meshes          meshes = loadMeshes(path.str());
+        size_t          idx {0};
+        for (Mesh & mesh : meshes) {
+            if (mesh.name.empty())
+                mesh.name = path.base;
+            if (removeUnused) {
+                size_t          origVerts = mesh.verts.size();
+                mesh = removeUnusedVerts(mesh);
+                if (mesh.verts.size() < origVerts)
+                    fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
+            }
+            fgout << fgnl << toStrDigits(idx++,2) << fgpush << mesh << fgpop;
         }
-        fgout << fgnl << path.baseExt() << fgpush << mesh << fgpop;
         if (syn.more() && hasImageFileExt(syn.peekNext())) {
-            if (mesh.uvs.empty())
-                fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
-            size_t              mapIdx = 0;
+            size_t              meshIdx = 0,
+                                surfIdx = 0;
             while (syn.more() && hasImageFileExt(syn.peekNext())) {
-                ImgRgba8         albedo = loadImage(syn.next()),
-                                specular;
-                fgout << fgnl << syn.curr() << fgpush << albedo << fgpop;
+                ImgRgba8            albedo = loadImage(syn.next()),
+                                    specular;
+                if (meshes[meshIdx].uvs.empty())
+                    fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
+                fgout << fgnl << syn.curr() << " mesh " << meshIdx << " surf " << surfIdx
+                    << fgpush << albedo << fgpop;
                 if (syn.more() && (syn.peekNext()[0] == '-')) {
                     if(syn.next() == "-t") {
                         ImgRgba8         trans = loadImage(syn.next());
@@ -79,21 +86,26 @@ cmdViewMesh(CLArgs const & args)
                     else
                         syn.error("Unrecognized image map option",syn.curr());
                 }
-                if (mapIdx < mesh.surfaces.size()) {
-                    Surf &              surf = mesh.surfaces[mapIdx++];
+                if ((meshIdx < meshes.size()) && (surfIdx < meshes[meshIdx].surfaces.size())) {
+                    Surf &              surf = meshes[meshIdx].surfaces[surfIdx];
                     surf.setAlbedoMap(albedo);
                     if (!specular.empty())
                         surf.material.specularMap = make_shared<ImgRgba8>(specular);
                 }
                 else
-                    fgout << fgnl << "WARNING: " << path.baseExt() << " does not have enough surfaces for the given number of maps.";
+                    fgout << fgnl << "WARNING: more maps than surfaces";
+                ++surfIdx;
+                if (surfIdx >= meshes[meshIdx].surfaces.size()) {
+                    ++meshIdx;
+                    surfIdx = 0;
+                }
             }
         }
-        meshes.push_back(mesh);
+        cat_(all,meshes);
     }
-    if (meshes.empty())
+    if (all.empty())
         syn.error("No meshes specified");
-    Mesh        ignoreModified = viewMesh(meshes,compare);
+    Mesh        ignoreModified = viewMesh(all,compare);
 }
 
 void
@@ -144,10 +156,13 @@ cmdViewUvs(CLArgs const & args)
     Mesh                mesh = loadMesh(syn.next());
     if (mesh.uvs.empty())
         syn.error("Mesh has no UVs",syn.curr());
-    fgout << fgnl << syn.curr() << " UV Bounds: " << cBounds(mesh.uvs);
+    Mat22F              bounds = cBounds(mesh.uvs);
+    fgout << fgnl << syn.curr() << " UV Bounds: " << bounds;
+    if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))
+        fgout << fgnl << "WARNING: UVs outside [0,1] were not drawn";
     String8s            names;
     ImgRgba8s           images;
-    Rgba8              color {0,255,0,255};
+    Rgba8               color {0,255,0,255};
     size_t              cnt {0};
     for (Surf const & surf : mesh.surfaces) {
         if (surf.name.empty())

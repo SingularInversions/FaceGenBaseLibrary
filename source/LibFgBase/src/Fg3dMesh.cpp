@@ -20,51 +20,64 @@ using namespace std;
 namespace Fg {
 
 void
-macAsTargetMorph_(
-    Vec3Fs const &  baseVerts,
-    Uints const &   indices,
-    Vec3F const *   targVertsPtr,
-    float           val,
-    Vec3Fs &        accVerts)
+IndexedMorph::accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const
 {
     FGASSERT(baseVerts.size() == accVerts.size());
-    for (size_t ii=0; ii<indices.size(); ++ii) {
-        size_t      idx = indices[ii];
-        Vec3F       del = targVertsPtr[ii] - baseVerts.at(idx);
-        accVerts[idx] += del * val;
+    for (IdxVec3F const & iv : ivs) {
+        Vec3F           del = iv.vec - baseVerts[iv.idx];
+        accVerts[iv.idx] += del * coeff;
     }
+}
+
+IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset)
+{
+    return mapCall(ivs,[=](IdxVec3F const & iv){return IdxVec3F{iv.idx+offset,iv.vec}; });
+}
+
+Vec3Fs              indexedToCorrMorph(IdxVec3Fs const & ivs,size_t baseSize)
+{
+    Vec3Fs              ret {baseSize,Vec3F{0}};
+    for (IdxVec3F const & iv : ivs) {
+        FGASSERT(iv.idx < baseSize);
+        ret[iv.idx] = iv.vec;
+    }
+    return ret;
 }
 
 size_t
 cNumVerts(IndexedMorphs const & ims)
 {
-    size_t      ret = 0;
+    size_t          ret = 0;
     for (IndexedMorph const & im : ims)
-        ret += im.verts.size();
+        ret += im.ivs.size();
     return ret;
 }
 
-IndexedMorph
-deltaToTargetIndexedMorph(Vec3Fs const & base,Morph const & morph,float magElb)
+IndexedMorph        deltaToIndexedMorph(Morph const & morph,float dmag)
 {
-    size_t                  V = base.size();
-    FGASSERT(morph.verts.size() == V);
-    IndexedMorph            ret {morph.name,{},{}};
-    for (size_t vv=0; vv<V; ++vv) {
-        Vec3F const &           del = morph.verts[vv];
-        if (cMag(del) > magElb) {
-            ret.baseInds.push_back(uint(vv));
-            ret.verts.push_back(base[vv]+del);
-        }
+    IndexedMorph            ret {morph.name,{}};
+    for (size_t vv=0; vv<morph.verts.size(); ++vv) {
+        Vec3F               del = morph.verts[vv];
+        if (cMag(del) > dmag)
+            ret.ivs.emplace_back(uint(vv),del);
     }
+    return ret;
+}
+
+IndexedMorph        deltaToTargetMorph(Vec3Fs const & base,IndexedMorph const & morph)
+{
+    IndexedMorph            ret {morph.name,{}};
+    ret.ivs.reserve(morph.ivs.size());
+    for (IdxVec3F const & iv : morph.ivs)
+        ret.ivs.emplace_back(iv.idx,base[iv.idx]+iv.vec);
     return ret;
 }
 
 void
 accDeltaMorphs(
-    Morphs const &     deltaMorphs,
-    Floats const &              coord,
-    Vec3Fs &                   accVerts)
+    Morphs const &          deltaMorphs,
+    Floats const &          coord,
+    Vec3Fs &                accVerts)
 {
     FGASSERT(deltaMorphs.size() == coord.size());
     for (size_t ii=0; ii<deltaMorphs.size(); ++ii) {
@@ -77,22 +90,22 @@ accDeltaMorphs(
 
 void
 accTargetMorphs(
-    Vec3Fs const &             allVerts,
-    IndexedMorphs const & targMorphs,
-    Floats const &              coord,
-    Vec3Fs &                   accVerts)
+    Vec3Fs const &          allVerts,
+    IndexedMorphs const &   targMorphs,
+    Floats const &          coord,
+    Vec3Fs &                accVerts)
 {
     FGASSERT(targMorphs.size() == coord.size());
     size_t          numTargVerts = 0;
-    for (size_t ii=0; ii<targMorphs.size(); ++ii)
-        numTargVerts += targMorphs[ii].baseInds.size();
+    for (IndexedMorph const & tm : targMorphs)
+        numTargVerts += tm.ivs.size();
     FGASSERT(accVerts.size() + numTargVerts == allVerts.size());
     size_t          idx = accVerts.size();
     for (size_t ii=0; ii<targMorphs.size(); ++ii) {
-        Uints const &     inds = targMorphs[ii].baseInds;
-        for (size_t jj=0; jj<inds.size(); ++jj) {
-            size_t          baseIdx = inds[jj];
-            Vec3F        del = allVerts[idx++] - allVerts[baseIdx];
+        IdxVec3Fs const &   ivs = targMorphs[ii].ivs;
+        for (size_t jj=0; jj<ivs.size(); ++jj) {
+            size_t          baseIdx = ivs[jj].idx;
+            Vec3F           del = allVerts[idx++] - allVerts[baseIdx];
             accVerts[baseIdx] += del * coord[ii];
         }
     }
@@ -111,11 +124,7 @@ Mesh::Mesh(TriSurfFids const & tsf) :
 size_t
 Mesh::allVertsSize() const
 {
-    size_t              sz = verts.size();
-    for (IndexedMorph const & morph : targetMorphs)
-        sz += morph.verts.size();
-    sz += joints.size();
-    return sz;
+    return verts.size() + cNumVerts(targetMorphs) + joints.size();
 }
 
 Vec3Fs
@@ -123,8 +132,9 @@ Mesh::allVerts() const
 {
     Vec3Fs              ret; ret.reserve(allVertsSize());
     cat_(ret,verts);
-    for (IndexedMorph const & morph : targetMorphs)
-        cat_(ret,morph.verts);
+    for (IndexedMorph const & tm : targetMorphs)
+        for (IdxVec3F const & iv : tm.ivs)
+            ret.push_back(iv.vec);
     for (Joint const & joint : joints)
         ret.push_back(joint.pos);
     return ret;
@@ -137,19 +147,19 @@ Mesh::updateAllVerts(Vec3Fs const & allVerts)
     size_t          idx = 0;
     for (Vec3F & v : verts)
         v =  allVerts[idx++];
-    for (IndexedMorph & morph : targetMorphs)
-        for (Vec3F & v : morph.verts)
-            v = allVerts[idx++];
+    for (IndexedMorph & tm : targetMorphs)
+        for (IdxVec3F & iv : tm.ivs)
+            iv.vec = allVerts[idx++];
     for (Joint & joint : joints)
         joint.pos = allVerts[idx++];
 }
 
 uint
-Mesh::numFacets() const
+Mesh::numPolys() const
 {
     uint    tot = 0;
     for (size_t ss=0; ss<surfaces.size(); ++ss)
-        tot += surfaces[ss].numFacets();
+        tot += surfaces[ss].numPolys();
     return tot;
 }
 
@@ -175,10 +185,10 @@ Mesh::getTriEquivPosInds(uint idx) const
     return Vec3UI();
 }
 
-FacetInds<3>
+Polygons<3>
 Mesh::getTriEquivs() const
 {
-    FacetInds<3>      ret;
+    Polygons<3>      ret;
     if (surfaces.empty())
         return ret;
     ret = surfaces[0].getTriEquivs();
@@ -427,26 +437,22 @@ IndexedMorph
 Mesh::getMorphAsIndexedDelta(size_t idx) const
 {
     float               tol = sqr(cMaxElem(cDims(verts)) * 0.0001);
-    IndexedMorph      ret;
+    IndexedMorph        ret;
     if (idx < deltaMorphs.size()) {
         Morph const & dm = deltaMorphs[idx];
         ret.name = dm.name;
-        for (size_t ii=0; ii<dm.verts.size(); ++ii) {
-            if (dm.verts[ii].mag() > tol) {
-                ret.baseInds.push_back(uint32(ii));
-                ret.verts.push_back(dm.verts[ii]);
-            }
-        }
+        for (size_t ii=0; ii<dm.verts.size(); ++ii)
+            if (dm.verts[ii].mag() > tol)
+                ret.ivs.emplace_back(uint(ii),dm.verts[ii]);
     }
     else {
         idx -= deltaMorphs.size();
         FGASSERT(idx < targetMorphs.size());
         const IndexedMorph &  tm = targetMorphs[idx];
         ret.name = tm.name;
-        ret.baseInds = tm.baseInds;
-        ret.verts = tm.verts;
-        for (size_t ii=0; ii<ret.verts.size(); ++ii)
-            ret.verts[ii] -= verts[ret.baseInds[ii]];
+        ret.ivs = tm.ivs;
+        for (size_t ii=0; ii<ret.ivs.size(); ++ii)
+            ret.ivs[ii].vec -= verts[ret.ivs[ii].idx];
     }
     return ret;
 }
@@ -475,7 +481,7 @@ Mesh::addDeltaMorphFromTarget(String8 const & name_,Vec3Fs const & targetShape)
 void
 Mesh::addTargMorph(const IndexedMorph & morph)
 {
-    FGASSERT(cMax(morph.baseInds) < verts.size());
+    FGASSERT(cMax(sliceMember(morph.ivs,&IdxVec3F::idx)) < verts.size());
     Valid<size_t>     idx = findTargMorph(morph.name);
     if (idx.valid()) {
         fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
@@ -491,7 +497,7 @@ Mesh::addTargMorph(String8 const & name_,Vec3Fs const & targetShape)
     FGASSERT(targetShape.size() == verts.size());
     IndexedMorph       tm;
     tm.name = name_;
-    Vec3Fs             deltas = targetShape - verts;
+    Vec3Fs              deltas = targetShape - verts;
     double              maxMag = 0.0;
     for (size_t ii=0; ii<deltas.size(); ++ii)
         updateMax_(maxMag,deltas[ii].mag());
@@ -500,12 +506,9 @@ Mesh::addTargMorph(String8 const & name_,Vec3Fs const & targetShape)
         return;
     }
     maxMag *= sqr(0.001f);
-    for (size_t ii=0; ii<deltas.size(); ++ii) {
-        if (deltas[ii].mag() > maxMag) {
-            tm.baseInds.push_back(uint(ii));
-            tm.verts.push_back(targetShape[ii]);
-        }
-    }
+    for (size_t ii=0; ii<deltas.size(); ++ii)
+        if (deltas[ii].mag() > maxMag)
+            tm.ivs.emplace_back(uint(ii),targetShape[ii]);
     addTargMorph(tm);
 }
 
@@ -519,17 +522,17 @@ Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> const & poseVals) con
             mapMulAdd_(morph.verts,it->second,ret);
     }
     size_t                  targIdx = verts.size();
-    for (IndexedMorph const & morph : targetMorphs) {
-        auto                    it = poseVals.find(morph.name);
+    for (IndexedMorph const & tm : targetMorphs) {
+        auto                    it = poseVals.find(tm.name);
         if (it != poseVals.end()) {
-            FGASSERT(targIdx + morph.baseInds.size() < allVerts.size()+1);
+            FGASSERT(targIdx + tm.ivs.size() < allVerts.size()+1);
             size_t                  ti = targIdx;
-            for (uint baseIdx : morph.baseInds) {
-                Vec3F           del = allVerts[ti++] - allVerts[baseIdx];
-                ret[baseIdx] += del * it->second;
+            for (IdxVec3F const & iv : tm.ivs) {
+                Vec3F           del = allVerts[ti++] - allVerts[iv.idx];
+                ret[iv.idx] += del * it->second;
             }
         }
-        targIdx += morph.baseInds.size();
+        targIdx += tm.ivs.size();
     }
     // Accumulate the quaternion component contributions from each joint DOF:
     Vec4Fs                  jointAccs (joints.size(),Vec4F{0});
@@ -567,16 +570,6 @@ Mesh::addSurfaces(Surfs const & surfs)
 }
 
 void
-Mesh::scale(float val)
-{
-    mapMul_(val,verts);
-    for (size_t ii=0; ii<deltaMorphs.size(); ++ii)
-        mapMul_(val,deltaMorphs[ii].verts);
-    for (size_t ii=0; ii<targetMorphs.size(); ++ii)
-        mapMul_(val,targetMorphs[ii].verts);
-}
-
-void
 Mesh::xform(SimilarityD const & sim)
 {
     Affine3F            aff (sim.asAffine());
@@ -585,8 +578,9 @@ Mesh::xform(SimilarityD const & sim)
     mapMul_(aff,verts);
     for (Morph & morph : deltaMorphs)
         mapMul_(lin,morph.verts);
-    for (IndexedMorph & morph : targetMorphs)
-        mapMul_(aff,morph.verts);
+    for (IndexedMorph & tm : targetMorphs)
+        for (IdxVec3F & iv : tm.ivs)
+            iv.vec = aff * iv.vec;
     for (Joint & joint : joints)
         joint.pos = aff * joint.pos;
     for (JointDof & dof : jointDofs)
@@ -701,14 +695,12 @@ vertLt(Vec3F const & v0,Vec3F const & v1)
 std::ostream &
 operator<<(std::ostream & os,Mesh const & m)
 {
-    os  << fgnl << "Name: " << m.name
-        << fgnl << "Verts: " << m.verts.size();
-    size_t      allVerts = m.allVerts().size();
-    if (allVerts != m.verts.size())
-        os << " (" << allVerts << " with targ morphs)";
-    os  << fgnl << "UVs: " << m.uvs.size()
-        << fgnl << "Bounding Box: " << cBounds(m.verts)
-        << fgnl << "Vertex Mean:  " << cMean(m.verts)
+    Vec3Fs          allVerts = m.allVerts();
+    os  << fgnl << "Name: " << m.name;
+    if (allVerts.size() != m.verts.size())
+        os << fgnl << "AllVerts: " << allVerts.size() << " with bounds: " << cBounds(allVerts);
+    os  << fgnl << "Verts: " << m.verts.size() << " with bounds: " << cBounds(m.verts)
+        << fgnl << "UVs: " << m.uvs.size() << " with bounds: " << cBounds(m.uvs)
         << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
         << fgnl << "Target Morphs: " << m.targetMorphs.size()
         << fgnl << "Marked Verts: " << m.markedVerts.size()
@@ -717,13 +709,15 @@ operator<<(std::ostream & os,Mesh const & m)
         if (!m.markedVerts[ii].label.empty())
             os << fgnl << m.markedVerts[ii].label;
     os << fgpop;
-    os << fgnl << "Surfaces: " << m.surfaces.size();
+    os << fgnl << "Surfaces: " << m.surfaces.size() << fgpush;
     for (size_t ss=0; ss<m.surfaces.size(); ss++) {
-        Surf const &     surf = m.surfaces[ss];
-        os << fgnl << "Surface " << ss << ": " << surf.name << fgpush << surf << fgpop;
+        PushIndent      pind {toStrDigits(ss,2)};
+        Surf const &    surf = m.surfaces[ss];
+        os << surf;
         if (surf.material.albedoMap)
             os << fgnl << "Albedo: " << *surf.material.albedoMap;
     }
+    os << fgpop;
     Vec3Fs             sortVerts = m.verts;
     std::sort(sortVerts.begin(),sortVerts.end(),vertLt);
     size_t              numDups = 0;

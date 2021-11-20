@@ -15,8 +15,7 @@
 #include "FgImageBase.hpp"
 #include "FgImageIo.hpp"
 #include "FgIter.hpp"
-#include "FgAffineC.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgArray.hpp"
 
 namespace Fg {

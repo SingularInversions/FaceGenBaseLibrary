@@ -159,9 +159,12 @@ loadTri(istream & istr)
         uint32                      numTargVerts;
         readb(istr,numTargVerts);
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
-            tm.baseInds.resize(numTargVerts);
-            istr.read((char*)&tm.baseInds[0],4*numTargVerts);
-            tm.verts = cSubvec(targVerts,targVertsStart,numTargVerts);
+            tm.ivs.resize(numTargVerts);
+            size_t          cnt {0};
+            for (IdxVec3F & iv : tm.ivs) {
+                istr.read((char*)&iv.idx,4);
+                iv.vec = targVerts[targVertsStart + cnt++];
+            }
             targVertsStart += numTargVerts;
             mesh.targetMorphs.push_back(tm);
         }
@@ -202,10 +205,7 @@ writeLabel(ostream & ostr,string const & str)
     ostr.write(str.c_str(),str.size()+1);
 }
 
-void
-saveTri(
-    String8 const &     fname,
-    Mesh const &        mesh)
+void        saveTri(String8 const & fname,Mesh const & mesh)
 {
     Surf const          surf = mergeSurfaces(mesh.surfaces);
     // Mesh must have both of these for valid UVs:
@@ -238,8 +238,8 @@ saveTri(
         fgWriteb(ff,mesh.verts[ii]);
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const IndexedMorph &   tm = mesh.targetMorphs[ii];
-        for (size_t jj=0; jj<tm.verts.size(); ++jj)
-            fgWriteb(ff,tm.verts[jj]);
+        for (IdxVec3F const & iv : tm.ivs)
+            fgWriteb(ff,iv.vec);
     }
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
@@ -283,9 +283,9 @@ saveTri(
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const IndexedMorph &   morph = mesh.targetMorphs[ii];
         writeLabel(ff,morph.name.as_ascii());
-        fgWriteb(ff,uint32(morph.baseInds.size()));
-        for (size_t jj=0; jj<morph.baseInds.size(); ++jj)
-            fgWriteb(ff,uint32(morph.baseInds[jj]));
+        fgWriteb(ff,uint32(morph.ivs.size()));
+        for (size_t jj=0; jj<morph.ivs.size(); ++jj)
+            fgWriteb(ff,uint32(morph.ivs[jj].idx));
     }
 }
 

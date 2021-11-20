@@ -479,11 +479,7 @@ fffSave3dsFile(String8 const &name, const FffMultiObjectC &model)
     return true;
 }
 
-void
-save3ds(
-    String8 const &        fname,
-    Meshes        meshes,
-    string                  imgFormat)
+void            save3ds(String8 const & fname,Meshes meshes,String imgFormat)
 {
     for (size_t ii=0; ii<meshes.size(); ++ii) {
         meshes[ii].deltaMorphs.clear();

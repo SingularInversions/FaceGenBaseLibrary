@@ -17,41 +17,76 @@ using namespace std;
 
 namespace Fg {
 
-String
-meshFormatExtension(MeshFormat mf)
+Svec<pair<MeshFormat,String>>
+getMeshFormatExtMap()
 {
-    static map<MeshFormat,String>   mfs = {
+    return Svec<pair<MeshFormat,String>> {
         {MeshFormat::tri,"tri"},
         {MeshFormat::fgmesh,"fgmesh"},
-        {MeshFormat::obj,"obj"},
+        {MeshFormat::wobj,"obj"},       // both 'obj' and 'wobj' exts map to same format
+        {MeshFormat::wobj,"wobj"},
         {MeshFormat::dae,"dae"},
-        {MeshFormat::fbx,"fbx"},
+        {MeshFormat::fbxA,"fbx"},       // first format with same ext is default for save
+        {MeshFormat::fbxB,"fbx"},
         {MeshFormat::ma,"ma"},
         {MeshFormat::lwo,"lwo"},
         {MeshFormat::wrl,"wrl"},
         {MeshFormat::stl,"stl"},
-        {MeshFormat::a3ds,"3ds"},
+        {MeshFormat::_3ds,"3ds"},
         {MeshFormat::xsi,"xsi"},
+    };
+}
+
+MeshFormat          getMeshFormat(String const & ext)
+{
+    String          extl = toLower(ext);
+    MeshFormats     formats = lookupRs(getMeshFormatExtMap(),extl);
+    if (formats.empty())
+        fgThrow("No mesh file format found for extension",extl);
+    return formats[0];                  // preferred format listed first
+}
+
+bool                meshFormatSupportsMulti(MeshFormat mf)
+{
+    static map<MeshFormat,bool>   mfs = {
+        {MeshFormat::tri,false},
+        {MeshFormat::fgmesh,false},
+        {MeshFormat::wobj,false},
+        {MeshFormat::dae,true},
+        {MeshFormat::fbxA,true},
+        {MeshFormat::fbxB,true},
+        {MeshFormat::ma,true},          // but who knows how JL implemented
+        {MeshFormat::lwo,true},         // "
+        {MeshFormat::wrl,true},
+        {MeshFormat::stl,false},
+        {MeshFormat::_3ds,false},
+        {MeshFormat::xsi,true},         // "
     };
     auto            it = mfs.find(mf);
     FGASSERT(it != mfs.end());
     return it->second;
 }
 
-String
-meshFormatSpecifier(MeshFormat mf)
+String              getMeshFormatExt(MeshFormat mf)
+{
+    Svec<pair<MeshFormat,String>> mfs = getMeshFormatExtMap();
+    return lookupFirstL(mfs,mf);
+}
+
+String              getMeshFormatName(MeshFormat mf)
 {
     static map<MeshFormat,String>   mfs = {
         {MeshFormat::tri,"FaceGen TRI"},
         {MeshFormat::fgmesh,"FaceGen mesh"},
-        {MeshFormat::obj,"Wavefront OBJ"},
+        {MeshFormat::wobj,"Wavefront OBJ"},
         {MeshFormat::dae,"Collada"},
-        {MeshFormat::fbx,"Filmbox ASCII"},
+        {MeshFormat::fbxA,"Filmbox ASCII"},
+        {MeshFormat::fbxB,"Filmbox binary"},
         {MeshFormat::ma,"Maya ASCII"},
         {MeshFormat::lwo,"Lightwave Object"},
         {MeshFormat::wrl,"VRML 97"},
         {MeshFormat::stl,"3D Systems STL Binary"},
-        {MeshFormat::a3ds,"Autodesk 3DS"},
+        {MeshFormat::_3ds,"Autodesk 3DS"},
         {MeshFormat::xsi,"Softimage XSI"},
     };
     auto            it = mfs.find(mf);
@@ -59,20 +94,52 @@ meshFormatSpecifier(MeshFormat mf)
     return it->second;
 }
 
-MeshFormats
-meshExportFormats()
+MeshFormats         getMeshExportFormats()
 {
     return {
         MeshFormat::dae,
-        MeshFormat::fbx,
-        MeshFormat::obj,
+        MeshFormat::fbxA,
+        MeshFormat::wobj,
         MeshFormat::wrl,
         MeshFormat::stl,
-        MeshFormat::a3ds,
+        MeshFormat::_3ds,
         MeshFormat::ma,
         MeshFormat::lwo,
         MeshFormat::xsi,
     };
+}
+
+String
+getMeshLoadExtsCLDescription()
+{return String("(fgmesh | [w]obj | tri)"); }
+
+const Svec<pair<String,String> > &
+meshExportFormatExtDescs()
+{
+    static Svec<pair<String,String> > ret = {
+        {"dae","Collada"},
+        {"fbx","Filmbox ASCII"},
+        {"obj","Wavefront OBJ"},
+        {"wrl","VRML 97"},
+        {"stl","3DSystems STL"},
+        {"3ds","3D Studio"},
+        {"ma","Maya ASCII"},
+        {"lwo","Lightwave Object"},
+        {"xsi","Softimage"},
+    };
+    return ret;
+}
+
+String
+getMeshSaveExtsCLDescription()
+{
+    return "(fgmesh | tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)";
+}
+
+Strings
+meshExportFormatsWithMorphs()
+{
+    return {"dae","fbx","ma","lwo","xsi"};
 }
 
 Mesh
@@ -86,6 +153,21 @@ loadMesh(String8 const & fname)
     if(ext != "tri")                // this structure avoids no-return warnings after 'fgThrow'
         fgThrow("Not a loadable 3D mesh format",fname);
     return loadTri(fname);
+}
+
+Meshes
+loadMeshes(String8 const & fname)
+{
+    String8         ext = pathToExt(fname).toLower();
+    if (ext == "fgmesh")
+        return {loadFgmesh(fname)};
+    else if ((ext == "obj") || (ext == "wobj"))
+        return {loadWObj(fname)};
+    else if (ext == "fbx")
+        return loadFbx(fname);
+    if(ext != "tri")                // this structure avoids no-return warnings after 'fgThrow'
+        fgThrow("Not a loadable 3D mesh format",fname);
+    return {loadTri(fname)};
 }
 
 bool
@@ -132,95 +214,69 @@ loadMeshMaps(String8 const & baseName)
     return ret;
 }
 
-Strings
-meshLoadFormats()
-{return svec<string>("fgmesh","tri","obj","wobj"); }
-
-bool
-hasMeshExtension(String8 const & filename)
+void        saveMesh(Mesh const & mesh,String8 const & fname,String const & imgFmt)
 {
-    return contains(meshLoadFormats(),toLower(pathToExt(filename).m_str));
-}
-
-string
-getMeshLoadExtsCLDescription()
-{return string("(fgmesh | [w]obj | tri)"); }
-
-void
-saveMesh(Meshes const & meshes,String8 const & fname,string const & imgFormat)
-{
-    String8    ext = pathToExt(fname).toLower();
-    if(ext == "tri")
-        saveTri(fname,meshes);
-    else if (ext == "dae")
-        saveDae(fname,meshes,imgFormat);
-    else if ((ext == "obj") || (ext == "wobj"))
-        saveWObj(fname,meshes,imgFormat);
-    else if (ext == "wrl")
-        saveVrml(fname,meshes,imgFormat);
-    else if (ext == "fbx")
-        saveFbx(fname,meshes,imgFormat);
-    else if (ext == "stl")
-        saveStl(fname,meshes);
-    else if (ext == "lwo")
-        saveLwo(fname,meshes,imgFormat);
-    else if (ext == "ma")
-        saveMa(fname,meshes,imgFormat);
-    else if (ext == "xsi")
-        saveXsi(fname,meshes,imgFormat);
-    else if (ext == "3ds")
-        save3ds(fname,meshes,imgFormat);
-    else if (ext == "ply")
-        savePly(fname,meshes,imgFormat);
-    else if (ext == "fgmesh")
-        saveFgmesh(fname,meshes);
+    MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
+    if (fmt == MeshFormat::tri)
+        saveTri(fname,mesh);
+    else if (fmt == MeshFormat::fgmesh)
+        saveFgmesh(fname,mesh);
+    else if (fmt == MeshFormat::wobj)
+        saveWObj(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::dae)
+        saveDae(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::fbxA)
+        saveFbxAscii(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::fbxB)
+        fgThrow("saveMesh: FBX binary not yet implemented");
+    else if (fmt == MeshFormat::ma)
+        saveMa(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::lwo)
+        saveLwo(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::wrl)
+        saveVrml(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::stl)
+        saveStl(fname,{mesh});
+    else if (fmt == MeshFormat::_3ds)
+        save3ds(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::xsi)
+        saveXsi(fname,{mesh},imgFmt);
     else
-        fgThrow("Not a writeable 3D mesh format",fname);
+        fgThrow("saveMesh: unimplemented mesh format");
 }
 
-const Svec<pair<String,String> > &
-meshExportFormatExtDescs()
+void        saveMergeMesh(Meshes const & meshes,String8 const & fname,String const & imgFmt)
 {
-    static Svec<pair<String,String> > ret = {
-        {"dae","Collada"},
-        {"fbx","Filmbox ASCII"},
-        {"obj","Wavefront OBJ"},
-        {"wrl","VRML 97"},
-        {"stl","3DSystems STL"},
-        {"3ds","3D Studio"},
-        {"ma","Maya ASCII"},
-        {"lwo","Lightwave Object"},
-        {"xsi","Softimage"},
-    };
-    return ret;
+    MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
+    if (fmt == MeshFormat::tri)
+        saveTri(fname,mergeMeshes(meshes));
+    else if (fmt == MeshFormat::fgmesh)
+        saveFgmesh(fname,mergeMeshes(meshes));
+    else if (fmt == MeshFormat::wobj)
+        saveWObj(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::dae)
+        saveDae(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::fbxA)
+        saveFbxAscii(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::fbxB)
+        fgThrow("saveMesh: FBX binary not yet implemented");
+    else if (fmt == MeshFormat::ma)
+        saveMa(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::lwo)
+        saveLwo(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::wrl)
+        saveVrml(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::stl)
+        saveStl(fname,meshes);
+    else if (fmt == MeshFormat::_3ds)
+        save3ds(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::xsi)
+        saveXsi(fname,meshes,imgFmt);
+    else
+        fgThrow("saveMergeMesh: unimplemented mesh format");
 }
 
-Strings const &
-meshExportFormatExts()
-{
-    static Strings ret = sliceMember(meshExportFormatExtDescs(),&pair<String,String>::first);
-    return ret;
-}
-
-Strings const &
-meshExportFormatDescriptions()
-{
-    static Strings ret = sliceMember(meshExportFormatExtDescs(),&pair<String,String>::second);
-    return ret;
-}
-
-std::string
-getMeshSaveExtsCLDescription()
-{return string("(fgmesh | tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)"); }
-
-Strings const &
-meshExportFormatsWithMorphs()
-{
-    static Strings ret = svec<string>("dae","fbx","ma","lwo","xsi");
-    return ret;
-}
-
-string
+String
 inMetresStr(SpatialUnit u)
 {
     if (u == SpatialUnit::millimetre)
@@ -234,7 +290,7 @@ inMetresStr(SpatialUnit u)
     return "";
 }
 
-string
+String
 toStr(SpatialUnit u)
 {
     if (u == SpatialUnit::millimetre)
@@ -247,49 +303,5 @@ toStr(SpatialUnit u)
         FGASSERT_FALSE;
     return "";
 }
-
-/**
-   \ingroup Base_Commands
-   Command to Export meshes from FaceGen TRI format to other formats
- */
-static
-void
-cmdExport(CLArgs const & args)
-{
-    Syntax    syntax(args,
-        "<out>.<meshExt> (<mesh>.tri [<texImage>.<imgExt>])+\n"
-        "    <meshExt>      - " + getMeshSaveExtsCLDescription() + "\n"
-        "    <imgExt>       - " + getImageFileExtCLDescriptions()
-        );
-    string              outFile(syntax.next());
-    Meshes    meshes;
-    while (syntax.more()) {
-        string          triFile(syntax.next());
-        if (!checkExt(triFile,"tri"))
-            syntax.error("Not a .TRI file",triFile);
-        Mesh        mesh = loadTri(triFile);
-        size_t          cnt = 0;
-        while (syntax.more() && toLower(pathToExt(syntax.peekNext())) != "tri") {
-            string              imgFile(syntax.next()),
-                                ext = pathToExt(imgFile);
-            Strings             exts = getImageFileExts();
-            auto                it = find(exts.begin(),exts.end(),ext);
-            if (it == exts.end())
-                syntax.error("Unknown image file type",imgFile);
-            if (cnt < mesh.surfaces.size())
-                loadImage_(imgFile,mesh.surfaces[cnt++].albedoMapRef());
-            else
-                syntax.error("More albedo map images specified than surfaces in",mesh.name);
-        }
-        meshes.push_back(mesh);
-    }
-    if (meshes.empty())
-        syntax.error("No meshes specified");
-    saveMesh(meshes,outFile);
-}
-
-Cmd
-cmdExportInfo()
-{return Cmd(cmdExport,"export","Export FaceGen meshes and related color maps to other formats"); }
 
 }

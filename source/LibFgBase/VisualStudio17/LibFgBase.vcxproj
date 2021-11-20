@@ -185,9 +185,8 @@
     <ClCompile Include="..\src\Fg3dSurface.cpp" />
     <ClInclude Include="..\src\Fg3dSurface.hpp" />
     <ClCompile Include="..\src\Fg3dTest.cpp" />
-    <ClInclude Include="..\src\FgAffine1.hpp" />
-    <ClInclude Include="..\src\FgAffineC.hpp" />
-    <ClInclude Include="..\src\FgAffineCwC.hpp" />
+    <ClCompile Include="..\src\FgAffine.cpp" />
+    <ClInclude Include="..\src\FgAffine.hpp" />
     <ClInclude Include="..\src\FgAny.hpp" />
     <ClInclude Include="..\src\FgApproxEqual.hpp" />
     <ClCompile Include="..\src\FgApproxFunc.cpp" />

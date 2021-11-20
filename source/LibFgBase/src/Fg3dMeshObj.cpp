@@ -44,7 +44,7 @@ namespace Fg {
 
 static
 float
-parseFloat(string const & str)
+parseFloat(String const & str)
 {
     istringstream   iss(str);
     float           ret;
@@ -55,7 +55,7 @@ parseFloat(string const & str)
 static
 Vec3F
 parseVert(
-    string const &  str,
+    String const &  str,
     bool &          homogeneous, // Set to true if there is a homogeneous coord (which is ignored)
     bool &          vertColors) // Set to true if there is a vertex color specified (which is ignored)
 {
@@ -78,7 +78,7 @@ parseVert(
 
 static
 Vec2F
-parseUv(string const & str)
+parseUv(String const & str)
 {
     Strings  nums = splitChar(str,' ');
     // A third homogeneous coord value can also be specified but is only used for rational
@@ -93,11 +93,11 @@ parseUv(string const & str)
 static
 bool
 parseFacet(
-    string const &      str,
+    String const &      str,
     size_t              numVerts,
     size_t              numUvs,
-    FacetInds<3> &    tris,
-    FacetInds<4> &    quads)
+    Polygons<3> &    tris,
+    Polygons<4> &    quads)
 {
     bool            ret = false;
     Strings  strs = splitChar(str,' ');
@@ -149,64 +149,14 @@ parseFacet(
     return ret;
 }
 
-Surfs
-splitByUvDomain(Surf const & surf,Vec2Fs const & uvs,String8 const & baseName)
-{
-    set<Vec2I>              domains;
-    map<Vec2I,Uints>        domainToQuadInds,
-                            domainToTriInds;
-    bool                    mixed = false;
-    for (uint tt=0; tt<surf.tris.uvInds.size(); ++tt) {
-        Vec3UI                  uvInds = surf.tris.uvInds[tt];
-        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
-        domains.insert(domain);
-        for (uint ii=1; ii<3; ++ii)
-            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
-                mixed = true;
-        domainToTriInds[domain].push_back(tt);
-    }
-    for (uint qq=0; qq<surf.quads.uvInds.size(); ++qq) {
-        Vec4UI                  uvInds = surf.quads.uvInds[qq];
-        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
-        domains.insert(domain);
-        for (uint ii=1; ii<4; ++ii)
-            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
-                mixed = true;
-        domainToQuadInds[domain].push_back(qq);
-    }
-    if (domains.size() > 1)
-        fgout << "WARNING: OBJ UV domains detected and converted to " << domains.size() << " surfaces: ";
-    if (mixed)
-        fgout << "WARNING: some facet(s) span multiple UV domains";
-    Surfs                   ret; ret.reserve(domains.size());
-    for (Vec2I domain : domains) {
-        fgout << domain << " ";
-        Uints const &           triSels = domainToTriInds[domain];
-        Tris                    tris {
-            permute(surf.tris.posInds,triSels),
-            permute(surf.tris.uvInds,triSels),
-        };
-        Uints const &           quadSels = domainToQuadInds[domain];
-        Quads                   quads {
-            permute(surf.quads.posInds,quadSels),
-            permute(surf.quads.uvInds,quadSels),
-        };
-        String8                 name = baseName;
-        if (domains.size() > 1)
-            name += "-" + toStr(ret.size());
-        ret.emplace_back(name,tris,quads);
-    }
-    return ret;
-}
-
 Mesh
 loadWObj(String8 const & fname)
 {
     Mesh                mesh;
-    map<string,Surf>    surfMap;
+    map<String,Surf>    surfMap;
     Strings             lines = splitLines(loadRaw(fname));   // Removes empty lines
     Surf                currSurf;
-    string              currName;
+    String              currName;
     size_t              numNgons = 0;
     bool                vertexColors = false,
                         vertexHomog = false,
@@ -228,7 +178,7 @@ loadWObj(String8 const & fname)
     };
     for (size_t ii=0; ii<lines.size(); ++ii) {
         try {
-            string const &  line = lines[ii];
+            String const &  line = lines[ii];
             if (line[0] == '#')
                 continue;
             else if (beginsWith(line,"l ")) {
@@ -286,7 +236,7 @@ loadWObj(String8 const & fname)
     }
     mesh.name = pathToBase(fname);
     Surfs               labelledSurfs;
-    for (map<string,Surf>::iterator it = surfMap.begin(); it != surfMap.end(); ++it) {
+    for (map<String,Surf>::iterator it = surfMap.begin(); it != surfMap.end(); ++it) {
         Surf &   srf = it->second;
         if (!srf.tris.valid() || !srf.quads.valid()) {
             srf.tris.uvInds.clear();
@@ -296,19 +246,10 @@ loadWObj(String8 const & fname)
         srf.name = it->first;
         labelledSurfs.push_back(srf);
     }
-    // Important to remove domain info if present since this is WOBJ-specific:
-    Mat22F          uvBounds = cBounds(mesh.uvs);
-    Vec2F           uvBnds = {cMin(uvBounds.m),cMax(uvBounds.m)};
-    if ((uvBnds[0] < 0.0f) || (uvBnds[1] > 1.0f)) {
-        // WOBJs can actually use UV domains in combination with 'o', 'g', 's' or 'usemtl' elements (eg. Reallusion):
-        for (Surf const & surf : labelledSurfs)
-            cat_(mesh.surfaces,splitByUvDomain(surf,mesh.uvs,surf.name));
-        fgout << fgnl << "WARNING: OBJ UVs folded into [0,1) from " << uvBnds;
-        for (Vec2F & uv : mesh.uvs)
-            uv -= mapFloor(uv);
-    }
-    else
-        mesh.surfaces = labelledSurfs;
+    // Important to remove domain info if present since this is not used in FaceGen code:
+    // WOBJs can actually use UV domains in combination with 'o', 'g', 's' or 'usemtl' elements (eg. Reallusion):
+    for (Surf const & surf : labelledSurfs)
+        cat_(mesh.surfaces,splitByUvDomain_(surf,mesh.uvs));
     return mesh;
 }
 
@@ -377,7 +318,7 @@ writeMesh(
     Mesh const &        mesh,
     Path const &        fpath,
     Offsets             offsets,
-    string const &      imgFormat,
+    String const &      imgFormat,
     bool                mtlFile)        // Is there an associated MTL file
 {
     if (!mesh.deltaMorphs.empty())
@@ -398,7 +339,7 @@ writeMesh(
     }
     for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
         if (mesh.surfaces[tt].material.albedoMap) {
-            string  idxString = toStr(offsets.mat+tt);
+            String  idxString = toStr(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
             String8        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
             saveImage(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
@@ -423,11 +364,7 @@ writeMesh(
     return offsets;
 }
 
-void
-saveWObj(
-    String8 const &         filename,
-    Meshes const &          meshes,
-    string                  imgFormat)
+void    saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat)
 {
     Path            fpath(filename);
     bool            texImage = false;
@@ -459,12 +396,29 @@ saveWObj(
     }
 }
 
+void    injectVertsWObj(String8 const & inName,Vec3Fs const & verts,String8 const & outName)
+{
+    Strings             lines = splitLines(loadRaw(inName));
+    size_t              cnt {0};
+    for (String & line : lines) {
+        if (beginsWith(line,"v ")) {
+            if (cnt >= verts.size())
+                fgThrow("Inject verts to OBJ: Too few vertices",toStr(verts.size()));
+            Vec3F           vert = verts[cnt++];
+            line = "v " + toStr(vert[0]) + " " + toStr(vert[1]) + " " + toStr(vert[2]);
+        }
+    }
+    if (cnt < verts.size())
+        fgout << fgnl << "WARNING: Inject verts to OBJ: Too many vertices: " << verts.size() << " > " << cnt;
+    saveRaw(cat(lines,"\n"),outName);
+}
+
 void
 fgSaveObjTest(CLArgs const & args)
 {
     FGTESTDIR
     String8         dd = dataDir();
-    string          rd = "base/";
+    String          rd = "base/";
     Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.deltaMorphs.clear();       // Remove morphs to avoid warning
     mouth.targetMorphs.clear();

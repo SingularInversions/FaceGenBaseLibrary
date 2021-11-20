@@ -9,7 +9,7 @@
 #include "FgImgDisplay.hpp"
 #include "FgGuiApiImage.hpp"
 #include "FgFileSystem.hpp"
-#include "FgAffine1.hpp"
+#include "FgAffine.hpp"
 #include "FgBounds.hpp"
 #include "FgCommand.hpp"
 #include "FgGuiApi.hpp"

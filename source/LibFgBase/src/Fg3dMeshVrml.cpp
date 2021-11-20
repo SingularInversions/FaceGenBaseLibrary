@@ -71,7 +71,7 @@ void
 saveVrml(
     String8 const &         filename,
     Meshes const &          meshes,
-    string                  imgFormat)
+    String                  imgFormat)
 {
     FGASSERT(meshes.size() > 0);
     Ofstream            ofs(filename);

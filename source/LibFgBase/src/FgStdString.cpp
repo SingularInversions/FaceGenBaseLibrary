@@ -187,6 +187,18 @@ cat(set<string> const & strings,string const & separator)
     return ret;
 }
 
+String          catDeref(Ptrs<String> const & stringPtrs,String const & separator)
+{
+    String              ret;
+    size_t              sz = stringPtrs.size();
+    for (size_t ii=0; ii<sz; ++ii) {
+        ret.append(*stringPtrs[ii]);
+        if (ii+1 < sz)
+            ret.append(separator);
+    }
+    return ret;
+}
+
 template<>
 Opt<int>
 fromStr(string const & str)

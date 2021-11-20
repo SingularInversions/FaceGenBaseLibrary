@@ -58,16 +58,16 @@ cBarycentricUv(Vec3UI inds,Vec3F weights,Vec2Fs const & uvs)
         uvs[inds[2]] * weights[2];
 }
 
-template<uint dim>
-struct  FacetInds
+template<uint N>
+struct  Polygons
 {
-    typedef Mat<uint,dim,1>     Ind;
+    typedef Mat<uint,N,1>       Ind;
     Svec<Ind>                   posInds;    // CC winding
     Svec<Ind>                   uvInds;     // CC winding. Empty or same size as 'posInds'
 
-    FacetInds() {}
-    explicit FacetInds(const Svec<Ind> & vtInds) : posInds(vtInds) {}
-    FacetInds(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : posInds(vtInds), uvInds(uvIds) {}
+    Polygons() {}
+    explicit Polygons(const Svec<Ind> & vtInds) : posInds(vtInds) {}
+    Polygons(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : posInds(vtInds), uvInds(uvIds) {}
 
     bool        valid() const {return ((uvInds.size() == 0) || (uvInds.size() == posInds.size())); }
     size_t      size() const {return posInds.size(); }
@@ -94,21 +94,33 @@ struct  FacetInds
             uvInds[ii] += uo;
     }
     void
-    merge(FacetInds const & r)
+    merge(Polygons const & r)
     {
         cat_(posInds,r.posInds);
         if (posInds.empty() || !uvInds.empty())     // Preserve invariant above
             cat_(uvInds,r.uvInds);
     }
 };
-typedef FacetInds<3>        Tris;
-typedef FacetInds<4>        Quads;
+typedef Polygons<3>        Tris;
+typedef Polygons<4>        Quads;
 typedef Svec<Tris>          Triss;
 typedef Svec<Triss>         Trisss;
 
+template<uint N>
+Polygons<N>
+offsetIndices(Polygons<N> const & polys,uint vtsOffset,uint uvsOffset)
+{
+    Mat<uint,N,1> const voff {vtsOffset},
+                        uoff {uvsOffset};
+    return {
+        mapAdd(polys.posInds,voff),
+        mapAdd(polys.uvInds,uoff),
+    };
+}
+
 template<uint dim>
 void
-cat_(FacetInds<dim> & lhs,const FacetInds<dim> & rhs)
+cat_(Polygons<dim> & lhs,const Polygons<dim> & rhs)
 {
     // Avoid 'hasUvs()' compare if one is empty:
     if (rhs.empty())
@@ -179,7 +191,7 @@ struct  Surf
     bool            empty() const {return (tris.empty() && quads.empty()); }
     uint            numTris() const {return uint(tris.size()); }
     uint            numQuads() const {return uint(quads.size()); }
-    uint            numFacets() const {return (numTris() + numQuads()); }
+    uint            numPolys() const {return (numTris() + numQuads()); }
     uint            numTriEquivs() const {return numTris() + 2*numQuads(); }
     uint            vertIdxMax() const;
     std::set<uint>  vertsUsed() const;
@@ -196,7 +208,7 @@ struct  Surf
     Vec3F           surfPointPos(Vec3Fs const & verts,String const & label) const;
     Vec3Fs          surfPointPositions(Vec3Fs const & verts) const;
     LabelledVerts   surfPointsAsLabelledVerts(Vec3Fs const &) const;
-    FacetInds<3>    asTris() const;
+    Polygons<3>    asTris() const;
     Surf            convertToTris() const {return Surf {name,asTris(),surfPoints,material}; }
     void            merge(Tris const &,Quads const &,SurfPoints const &);
     void            merge(Surf const & s) {merge(s.tris,s.quads,s.surfPoints); }
@@ -233,7 +245,11 @@ void            fgWritep(std::ostream &,Surf const &);
 std::ostream& operator<<(std::ostream&,Surf const&);
 
 typedef Svec<Surf>      Surfs;
+typedef Svec<Surfs>     Surfss;
 
+// Only preserves name and polygons. Splits into <name>-## surfaces for each occupied UV domain and
+// modifies the UVs to be in [0,1]. If domains are not used, just returns the input surface:
+Surfs           splitByUvDomain_(Surf const & surf,Vec2Fs & uvs);
 Surf            removeDuplicateFacets(Surf const &);
 Surf            mergeSurfaces(Surfs const & surfs);     // Retains name & material of first surface
 // Split a surface into its (one or more) discontiguous (by vertex index) surfaces:
@@ -288,6 +304,11 @@ struct  TriSurf
     bool
     hasUnusedVerts() const
     {return Fg::hasUnusedVerts(tris,verts); }
+};
+struct      TriSurfD
+{
+    Vec3Ds                  shape;
+    Vec3UIs                 tris;
 };
 
 TriSurf         reverseWinding(TriSurf const &);

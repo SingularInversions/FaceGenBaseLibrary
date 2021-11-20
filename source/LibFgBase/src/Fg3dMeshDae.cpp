@@ -271,7 +271,7 @@ cSceneNode(Mesh const & mesh,size_t mm)
 }
 
 void
-saveDae(String8 const & filename,Meshes const & meshes,string imgFormat,SpatialUnit unit)
+saveDae(String8 const & filename,Meshes const & meshes,String imgFormat,SpatialUnit unit)
 {
     Path                fpath {filename};
     String8             dirBase = fpath.dirBase();

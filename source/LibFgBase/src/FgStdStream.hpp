@@ -41,10 +41,19 @@ struct  Ofstream : public std::ofstream
         bool                    appendFile = false,
         bool                    throwOnFail = true);
 
+    // raw binary output of simple data types:
     template<class T>
     void
     writeb(T const & val)
     {write(reinterpret_cast<char const*>(&val),sizeof(val)); }
+
+    // raw binary output from string:
+    void
+    writeBytes(String const & s)
+    {
+        if (!s.empty())
+            write(s.data(),s.size());
+    }
 };
 
 // 32/64 portable file format interface (boost::serialization tends to be incompatible with past versions).
@@ -107,15 +116,23 @@ struct  Ifstream : public std::ifstream
 
     template<typename T>
     void
-    readb(T & val)
+    readb_(T & val)
     {read(reinterpret_cast<char*>(&val),sizeof(val)); }
 
     template<typename T>
     T
-    readt()
+    readb()
     {
         T       ret;
         read(reinterpret_cast<char*>(&ret),sizeof(ret));
+        return ret;
+    }
+
+    String      readChars(size_t num)
+    {
+        String          ret(num,' ');
+        if (num > 0)
+            read(&ret[0],num);
         return ret;
     }
 };

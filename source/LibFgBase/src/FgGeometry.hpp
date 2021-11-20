@@ -9,7 +9,7 @@
 
 #include "FgStdLibs.hpp"
 #include "FgQuaternion.hpp"
-#include "FgAffineC.hpp"
+#include "FgAffine.hpp"
 
 namespace Fg {
 

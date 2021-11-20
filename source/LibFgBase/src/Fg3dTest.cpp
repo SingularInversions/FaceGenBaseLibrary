@@ -13,7 +13,7 @@
 #include "Fg3dDisplay.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgCommand.hpp"
-#include "FgAffine1.hpp"
+#include "FgAffine.hpp"
 #include "FgBuild.hpp"
 
 using namespace std;
@@ -70,7 +70,7 @@ fgTextureImageMappingRenderTest(CLArgs const &)
 void fgSave3dsTest(CLArgs const &);
 void fgSaveLwoTest(CLArgs const &);
 void fgSaveMaTest(CLArgs const &);
-void fgSaveFbxTest(CLArgs const &);
+void testSaveFbx(CLArgs const &);
 void testSaveDae(CLArgs const &);
 void fgSaveObjTest(CLArgs const &);
 void fgSavePlyTest(CLArgs const &);
@@ -85,7 +85,7 @@ test3d(CLArgs const & args)
 #ifdef _MSC_VER     // Precision differences with gcc/clang:
         {fgSaveLwoTest,"lwo","Lightwve object file format export"},
         {fgSaveMaTest,"ma","Maya ASCII file format export"},
-        {fgSaveFbxTest, "fbx", ".FBX file format export"},
+        {testSaveFbx, "fbx", ".FBX file format export"},
         {fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"},
         {fgSavePlyTest, "ply", ".PLY file format export"},
         {testVrmlSave,  "vrml", ".WRL file format export"},

@@ -15,6 +15,9 @@
             <shiny>0</shiny>
         </item>
     </models>
+	<roll>0.00000000000000000e+00</roll>
+	<tilt>0.00000000000000000e+00</tilt>
+	<pan>0.00000000000000000e+00</pan>
     <modelview class_id="4" tracking_level="0" version="0">
         <scale>1.00000000000000000e+00</scale>
         <rot class_id="5" tracking_level="0" version="0">

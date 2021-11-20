@@ -2366,10 +2366,7 @@ static bool writeLwsFile(
 }
 
 void
-saveLwo(
-    String8 const &        fname,
-    Meshes const & meshes,
-    string                  imgFormat)
+saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
     if (leg.morphs.empty())

@@ -201,10 +201,10 @@ Surf::surfPointsAsLabelledVerts(Vec3Fs const & verts) const
     return ret;
 }
 
-FacetInds<3>
+Polygons<3>
 Surf::asTris() const
 {
-    FacetInds<3>      ret;
+    Polygons<3>      ret;
     ret.posInds = cat(tris.posInds,quadsToTris(quads.posInds));
     ret.uvInds = cat(tris.uvInds,quadsToTris(quads.uvInds));
     return ret;
@@ -250,17 +250,78 @@ Surf::checkInternalConsistency()
         {FGASSERT(quads.uvInds.size() == quads.size()); }
 }
 
+template<uint N>
+ostream & operator<<(ostream & os,Polygons<N> const & f)
+{
+    os << "vertInds: " << f.posInds.size() << " uvInds: " << f.uvInds.size();
+    if (!f.uvInds.empty() && (f.uvInds.size() != f.posInds.size()))
+        os << " (MISMATCH)";
+    return os;
+}
+
 ostream &
 operator<<(ostream & os,Surf const & surf)
 {
-    os << fgnl << "Tris: " << surf.numTris()
-        << "  Quads: " << surf.numQuads()
-        << "  UVs: " << (surf.hasUvIndices() ? "YES" : "NO")
+    os
+        << fgnl << "Name: " << surf.name
+        << fgnl << "Tris: " << surf.tris
+        << fgnl << "Quads: " << surf.quads
         << fgnl << "Surf Points: " << surf.surfPoints.size() << fgpush;
         for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
             os << fgnl << ii << ": " << surf.surfPoints[ii].label;
         os << fgpop;
     return os;
+}
+
+Surfs           splitByUvDomain_(Surf const & surf,Vec2Fs & uvs)
+{
+    set<Vec2I>              domains;
+    map<Vec2I,Uints>        domainToQuadInds,
+                            domainToTriInds;
+    bool                    mixed = false;
+    for (uint tt=0; tt<surf.tris.uvInds.size(); ++tt) {
+        Vec3UI                  uvInds = surf.tris.uvInds[tt];
+        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
+        domains.insert(domain);
+        for (uint ii=1; ii<3; ++ii)
+            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
+                mixed = true;
+        domainToTriInds[domain].push_back(tt);
+    }
+    for (uint qq=0; qq<surf.quads.uvInds.size(); ++qq) {
+        Vec4UI                  uvInds = surf.quads.uvInds[qq];
+        Vec2I                   domain(mapFloor(uvs[uvInds[0]]));
+        domains.insert(domain);
+        for (uint ii=1; ii<4; ++ii)
+            if (Vec2I(mapFloor(uvs[uvInds[ii]])) != domain)
+                mixed = true;
+        domainToQuadInds[domain].push_back(qq);
+    }
+    if (domains.size() < 2)
+        return {surf};
+    fgout << fgnl << "WARNING: OBJ UV domains detected and converted to " << domains.size() << " surfaces: ";
+    if (mixed)
+        fgout << fgnl << "WARNING: some facet(s) span multiple UV domains";
+    Surfs                   ret; ret.reserve(domains.size());
+    String                  nameSep = surf.name.empty() ? "" : "-";
+    for (Vec2I domain : domains) {
+        fgout << domain << " ";
+        Uints const &           triSels = domainToTriInds[domain];
+        Tris                    tris {
+            permute(surf.tris.posInds,triSels),
+            permute(surf.tris.uvInds,triSels),
+        };
+        Uints const &           quadSels = domainToQuadInds[domain];
+        Quads                   quads {
+            permute(surf.quads.posInds,quadSels),
+            permute(surf.quads.uvInds,quadSels),
+        };
+        String8                 name = surf.name +nameSep + toStrDigits(ret.size(),2);
+        ret.emplace_back(name,tris,quads);
+    }
+    for (Vec2F & uv : uvs)
+        uv -= mapFloor(uv);
+    return ret;
 }
 
 static

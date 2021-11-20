@@ -187,14 +187,17 @@ cmdSubstitute(CLArgs const & args)
     ofs << body;
 }
 
+Cmd     getCmdImage();
+Cmd     getCmdMorph();
+
 Cmds
 getFgblCmds()
 {
     Cmds        cmds {
         {getCmdGraph()},
-        {getImgopsCmd()},
+        {getCmdImage()},
         {getCmdMesh()},
-        {getMorphCmd()},
+        {getCmdMorph()},
         {getCmdRender()},
         {cmdCons,"cons","Construct makefiles / solution file / project files"},
         {cmdSubstitute,"substitute","Substitute first instance of exact strings in a text file"},

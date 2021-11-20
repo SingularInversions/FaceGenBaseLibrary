@@ -10,7 +10,7 @@
 #include "FgGuiApiSlider.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
-#include "FgAffine1.hpp"
+#include "FgAffine.hpp"
 
 using namespace std;
 

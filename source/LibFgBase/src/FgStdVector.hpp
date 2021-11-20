@@ -18,8 +18,8 @@ namespace Fg {
 
 // Frequently used shorthands:
 
-template<class T>
-using Svec = std::vector<T>;
+template<class T>   using Svec = std::vector<T>;
+template<class T>   using Ptrs = std::vector<T const *>;
 
 typedef Svec<bool>              Bools;
 typedef Svec<char>              Chars;
@@ -370,6 +370,7 @@ inline void
 cat_(Svec<T> & base,Svec<T> const & app)
 {base.insert(base.end(),app.begin(),app.end()); }
 
+// see 'flatten' instead of cat(Svec<Svec<T>>)
 template<class T>
 Svec<T>
 cat(Svec<T> const & v0,Svec<T> const & v1)
@@ -403,6 +404,19 @@ cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2,Svec<T> const & v3)
     ret.insert(ret.end(),v3.begin(),v3.end());
     return ret;
 }
+template<class T>
+Svec<T>
+catDeref(Svec<Svec<T> const *> const & tsPtrs)
+{
+    Svec<T>             ret;
+    size_t              sz {0};
+    for (Svec<T> const * tsPtr : tsPtrs)
+        sz += tsPtr->size();
+    ret.reserve(sz);
+    for (Svec<T> const * tsPtr : tsPtrs)
+        cat_(ret,*tsPtr);
+    return ret;
+}
 
 // Avoid re-typeing argument for vector::erase of a single element:
 template<class T>
@@ -430,8 +444,8 @@ template<class T>
 Svec<T>
 flatten(Svec<Svec<T>> const & v)
 {
-    Svec<T>       ret;
-    size_t          sz = 0;
+    Svec<T>             ret;
+    size_t              sz = 0;
     for (size_t ii=0; ii<v.size(); ++ii)
         sz += v[ii].size();
     ret.reserve(sz);
@@ -1062,21 +1076,41 @@ cUnique(Svec<T> const & sorted)
 
 template<class T,class U>
 Svec<U>
-sliceMember(Svec<T> const & v,U T::*m)
+sliceMember(Svec<T> const & vs,U T::*m)
 {
-    Svec<U>             ret; ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.push_back(v[ii].*m);
+    Svec<U>             ret; ret.reserve(vs.size());
+    for (T const & v : vs)
+        ret.push_back(v.*m);
     return ret;
 }
-
+// pointers to pointers member slice:
 template<class T,class U>
-Svec<U const *>
-sliceMemberAddr(Svec<T> const & v,U T::*m)
+Ptrs<U>
+sliceMemberPP(Ptrs<T> const & ps,U T::*m)
 {
-    Svec<U const *>     ret; ret.reserve(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.push_back(&(v[ii].*m));
+    Ptrs<U>             ret; ret.reserve(ps.size());
+    for (T const * p : ps)
+        ret.push_back(&(p->*m));
+    return ret;
+}
+// pointers to values member slice:
+template<class T,class U>
+Svec<U>
+sliceMemberPV(Ptrs<T> const & ps,U T::*m)
+{
+    Svec<U>             ret; ret.reserve(ps.size());
+    for (T const * p : ps)
+        ret.push_back(p->*m);
+    return ret;
+}
+// values to pointers member slice:
+template<class T,class U>
+Ptrs<U>
+sliceMemberVP(Svec<T> const & vs,U T::*m)
+{
+    Ptrs<U>             ret; ret.reserve(vs.size());
+    for (T const & v : vs)
+        ret.push_back(&(v.*m));
     return ret;
 }
 
@@ -1150,11 +1184,21 @@ inject(Svec<T> const & src,Svec<T> const & dst,Bools const & where)
 
 template<class T>
 Sizes
-cSizes(Svec<Svec<T>> const & v)
+cSizes(Svec<Svec<T>> const & vss)
 {
-    Sizes               ret; ret.reserve(v.size());
-    for (Svec<T> const & s : v)
-        ret.push_back(s.size());
+    Sizes               ret; ret.reserve(vss.size());
+    for (Svec<T> const & vs : vss)
+        ret.push_back(vs.size());
+    return ret;
+}
+// Overload for vector of pointers to vector:
+template<class T>
+Sizes
+cSizes(Svec<Svec<T> const *> const & vsPtrs)
+{
+    Sizes               ret; ret.reserve(vsPtrs.size());
+    for (Svec<T> const * vsPtr : vsPtrs)
+        ret.push_back(vsPtr->size());
     return ret;
 }
 

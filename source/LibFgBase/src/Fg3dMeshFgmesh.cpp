@@ -23,7 +23,7 @@ namespace Fg {
 
 template<uint dim>
 void
-fgReadp(std::istream & is,FacetInds<dim> & fi)
+fgReadp(std::istream & is,Polygons<dim> & fi)
 {
     fgReadp(is,fi.posInds);
     fgReadp(is,fi.uvInds);
@@ -31,7 +31,7 @@ fgReadp(std::istream & is,FacetInds<dim> & fi)
 
 template<uint dim>
 void
-fgWritep(std::ostream & os,const FacetInds<dim> & fi)
+fgWritep(std::ostream & os,const Polygons<dim> & fi)
 {
     fgWritep(os,fi.posInds);
     fgWritep(os,fi.uvInds);
@@ -103,16 +103,18 @@ void
 fgReadp(std::istream & is,IndexedMorph & m)
 {
     fgReadp(is,m.name);
-    fgReadp(is,m.baseInds);
-    fgReadp(is,m.verts);
+    for (IdxVec3F & iv : m.ivs)
+        fgReadp(is,iv.idx);
+    for (IdxVec3F & iv : m.ivs)
+        fgReadp(is,iv.vec);
 }
 
 void
 fgWritep(std::ostream & os,const IndexedMorph & m)
 {
     fgWritep(os,m.name);
-    fgWritep(os,m.baseInds);
-    fgWritep(os,m.verts);
+    fgWritep(os,sliceMember(m.ivs,&IdxVec3F::idx));
+    fgWritep(os,sliceMember(m.ivs,&IdxVec3F::vec));
 }
 
 void
@@ -158,9 +160,5 @@ saveFgmesh(String8 const & fname,Mesh const & mesh)
     fgWritep(ofs,string("FgMesh01"));
     fgWritep(ofs,mesh);
 }
-
-void
-saveFgmesh(String8 const & fname,Meshes const & meshes)
-{saveFgmesh(fname,mergeMeshes(meshes)); }
 
 }

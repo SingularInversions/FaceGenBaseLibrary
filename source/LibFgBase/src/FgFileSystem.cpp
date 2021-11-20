@@ -171,14 +171,14 @@ loadRaw(String8 const & filename)
 }
 
 bool
-saveRaw(string const & data,String8 const & filename,bool onlyIfChanged)
+saveRaw(String const & data,String8 const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
         string      fileData = loadRaw(filename);
         if (data == fileData)
             return false;
     }
-    Ofstream  ofs(filename);
+    Ofstream            ofs(filename);
     ofs << data;
     return true;
 }

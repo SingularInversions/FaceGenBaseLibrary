@@ -245,6 +245,17 @@ cat(String8s const & strings,String8 const & separator)
     }
     return ret;
 }
+String8         catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator)
+{
+    String8             ret;
+    size_t              sz = stringPtrs.size();
+    for (size_t ii=0; ii<sz; ++ii) {
+        ret.m_str.append(stringPtrs[ii]->m_str);
+        if (ii+1 < sz)
+            ret.m_str.append(separator.m_str);
+    }
+    return ret;
+}
 
 string
 fgToVariableName(String8 const & str)

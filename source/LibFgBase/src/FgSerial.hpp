@@ -38,16 +38,25 @@ template<class T>
 void dsrlz_(String const & s,size_t & p,T & v)
 {v.dsrlzm_(s,p); }
 
-// Direct binary serialization (no transformation)
-template<class T>   // T must be simple type
-void
-srlzDirect_(T v,String & s)
+// Direct binary serialization (no transformation). T must be simple type
+template<class T> void srlzRaw_(T v,String & s)
 {
     s.append(reinterpret_cast<char const *>(&v),sizeof(v));
 }
-template<class T>   // T must be simple type
-void
-dsrlzDirect_(String const & s,size_t & p,T & v)
+template<class T> void srlzRaw_(Svec<T> const & v,String & s)
+{
+    if (!v.empty())
+        s.append(reinterpret_cast<char const *>(&v[0]),sizeof(T)*v.size());
+}
+template<class T> void srlzRawOverwrite_(T v,String & s,size_t pos)  // random access overwrite version
+{
+    size_t          len = sizeof(v);
+    FGASSERT(pos+len <= s.size());
+    char const *    src = reinterpret_cast<char const *>(&v);
+    for (size_t ii=0; ii<len; ++ii)
+        s[pos+ii] = src[ii];
+}
+template<class T> void dsrlzRaw_(String const & s,size_t & p,T & v)
 {
     size_t          sz = sizeof(v);
     FGASSERT(p+sz <= s.size());
@@ -57,26 +66,26 @@ dsrlzDirect_(String const & s,size_t & p,T & v)
 
 // Base cases for builtins:
 void srlz_(bool v,String & s);                                              // Store as uchar
-inline void srlz_(uchar v,String & s) {srlzDirect_(v,s); }                  // Assume always 8bit
-inline void srlz_(int v,String & s) {srlzDirect_(v,s); }                    // Assume always 32bit
-inline void srlz_(uint v,String & s) {srlzDirect_(v,s); }                   // "
-inline void srlz_(long v,String & s) {srlzDirect_(int64(v),s); }            // LP64 / LLP64 interop
-inline void srlz_(unsigned long v,String & s) {srlzDirect_(uint64(v),s); }  // "
-inline void srlz_(long long v,String & s) {srlzDirect_(v,s); }              // Assume always 64bit
-inline void srlz_(unsigned long long v,String & s) {srlzDirect_(v,s); }     // "
-inline void srlz_(float v,String & s) {srlzDirect_(v,s); }                  // Assume always IEEE 754
-inline void srlz_(double v,String & s) {srlzDirect_(v,s); }                 // "
+inline void srlz_(uchar v,String & s) {srlzRaw_(v,s); }                     // Assume always 8bit
+inline void srlz_(int v,String & s) {srlzRaw_(v,s); }                       // Assume always 32bit
+inline void srlz_(uint v,String & s) {srlzRaw_(v,s); }                      // "
+inline void srlz_(long v,String & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
+inline void srlz_(unsigned long v,String & s) {srlzRaw_(uint64(v),s); }     // "
+inline void srlz_(long long v,String & s) {srlzRaw_(v,s); }                 // Assume always 64bit
+inline void srlz_(unsigned long long v,String & s) {srlzRaw_(v,s); }        // "
+inline void srlz_(float v,String & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
+inline void srlz_(double v,String & s) {srlzRaw_(v,s); }                    // "
 
 void dsrlz_(String const & s,size_t & p,bool & v);
-inline void dsrlz_(String const & s,size_t & p,uchar & v) {dsrlzDirect_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,int & v) {dsrlzDirect_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,uint & v) {dsrlzDirect_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
 void dsrlz_(String const & s,size_t & p,long & v);                          // interop w/ bounds checks
 void dsrlz_(String const & s,size_t & p,unsigned long & v);                 // "
-inline void dsrlz_(String const & s,size_t & p,int64 & v) {dsrlzDirect_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,uint64 & v) {dsrlzDirect_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,float & v) {dsrlzDirect_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,double & v) {dsrlzDirect_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
+inline void dsrlz_(String const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
 
 // Base cases for std lib classes:
 template<typename T,size_t S>

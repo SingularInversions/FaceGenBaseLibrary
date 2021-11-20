@@ -9,7 +9,7 @@
 #include "FgGuiApi.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgTopology.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 #include "FgGeometry.hpp"
 
 using namespace std;

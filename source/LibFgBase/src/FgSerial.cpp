@@ -32,7 +32,7 @@ void
 dsrlz_(String const & s,size_t & p,long & v)
 {
     int64           t;
-    dsrlzDirect_(s,p,t);
+    dsrlzRaw_(s,p,t);
     FGASSERT(t >= std::numeric_limits<long>::lowest());
     FGASSERT(t <= std::numeric_limits<long>::max());
     v = static_cast<long>(t);
@@ -41,7 +41,7 @@ void
 dsrlz_(String const & s,size_t & p,unsigned long & v)
 {
     uint64          t;
-    dsrlzDirect_(s,p,t);
+    dsrlzRaw_(s,p,t);
     FGASSERT(t <= std::numeric_limits<unsigned long>::max());
     v = static_cast<unsigned long>(t);
 }

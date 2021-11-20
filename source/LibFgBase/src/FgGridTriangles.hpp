@@ -9,7 +9,7 @@
 #define FG_GRIDTRIANGLES_HPP
 
 #include "FgImage.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 
 namespace Fg {
 

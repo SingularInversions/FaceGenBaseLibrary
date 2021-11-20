@@ -9,7 +9,7 @@
 #define FG_GRIDINDEX_HPP
 
 #include "FgImage.hpp"
-#include "FgAffineCwC.hpp"
+#include "FgAffine.hpp"
 
 namespace Fg {
 

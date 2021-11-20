@@ -775,7 +775,7 @@ D3dMesh &
 D3d::getD3dMesh(RendMesh const & rm) const
 {
     Any &  gpuMesh = *rm.gpuData;
-    if (gpuMesh.empty())
+    if (!gpuMesh.valid())
         gpuMesh.reset(D3dMesh{makeUpdateFlag(rm.posedVertsN)});
     return gpuMesh.ref<D3dMesh>();
 }
@@ -784,7 +784,7 @@ D3dSurf &
 D3d::getD3dSurf(RendSurf const & rs) const
 {
     Any &  gpuSurf = *rs.gpuData;
-    if (gpuSurf.empty()) {
+    if (!gpuSurf.valid()) {
         gpuSurf.reset(D3dSurf{
             rs.smoothMapN,
             rs.modulationMapN,
