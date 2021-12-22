@@ -45,7 +45,7 @@ RayCaster::RayCaster(
         triss.reserve(mesh.surfaces.size());
         materials.reserve(mesh.surfaces.size());
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-            triss.push_back(mesh.surfaces[ss].asTris());
+            triss.push_back(mesh.surfaces[ss].getTriEquivs());
             materials.push_back(mesh.surfaces[ss].material);
         }
         Vec3Fs &           verts = vertss[mm];
@@ -82,7 +82,7 @@ RayCaster::cast(Vec2F posIucs) const
     BestN<float,Intersect,8>      best = closestIntersects(posIucs);
     // Compute ray color:
     RgbaF               color = background;
-    for (uint ii=best.size(); ii>0; --ii) {             // Render back to front
+    for (size_t ii=best.size(); ii>0; --ii) {             // Render back to front
         Intersect           isct = best[ii-1].second;
         Tris const &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];

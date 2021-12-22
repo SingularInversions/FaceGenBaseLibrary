@@ -185,15 +185,15 @@ Mesh::getTriEquivPosInds(uint idx) const
     return Vec3UI();
 }
 
-Polygons<3>
+NPolys<3>
 Mesh::getTriEquivs() const
 {
-    Polygons<3>      ret;
+    NPolys<3>       ret;
     if (surfaces.empty())
         return ret;
     ret = surfaces[0].getTriEquivs();
     for (size_t ii=1; ii<surfaces.size(); ++ii)
-        cat_(ret,surfaces[ii].getTriEquivs());
+        ret = concat(ret,surfaces[ii].getTriEquivs());
     return ret;
 }
 
@@ -324,7 +324,7 @@ Mesh::asTriSurf() const
     for (Surf const & surf : surfaces) {
         cat_(ret.tris,surf.tris.posInds);
         if (!surf.quads.posInds.empty())
-            cat_(ret.tris,quadsToTris(surf.quads.posInds));
+            cat_(ret.tris,asTris(surf.quads.posInds));
     }
     return ret;
 }
@@ -570,11 +570,9 @@ Mesh::addSurfaces(Surfs const & surfs)
 }
 
 void
-Mesh::xform(SimilarityD const & sim)
+Mesh::transform_(Affine3F const & aff)
 {
-    Affine3F            aff (sim.asAffine());
     Mat33F              lin = aff.linear;
-    Mat33F              rot (sim.rot.asMatrix());
     mapMul_(aff,verts);
     for (Morph & morph : deltaMorphs)
         mapMul_(lin,morph.verts);
@@ -584,7 +582,7 @@ Mesh::xform(SimilarityD const & sim)
     for (Joint & joint : joints)
         joint.pos = aff * joint.pos;
     for (JointDof & dof : jointDofs)
-        dof.rotAxis = rot * dof.rotAxis;
+        dof.rotAxis = normalize(lin * dof.rotAxis);
 }
 
 void
@@ -674,41 +672,38 @@ Mesh
 transform(Mesh const & mesh,SimilarityD const & sim)
 {
     Mesh                ret = mesh;
-    ret.xform(sim);
+    ret.transform_(sim);
     return ret;
-}
-
-static
-bool
-vertLt(Vec3F const & v0,Vec3F const & v1)
-{
-    if (v0[0] == v1[0]) {
-        if (v0[1] == v1[1])
-            return (v0[2] < v1[2]);
-        else
-            return (v0[1] < v1[1]);
-    }
-    else
-        return (v0[0] < v1[0]);
 }
 
 std::ostream &
 operator<<(std::ostream & os,Mesh const & m)
 {
-    Vec3Fs          allVerts = m.allVerts();
     os  << fgnl << "Name: " << m.name;
+    Vec3Fs              allVerts = m.allVerts();
     if (allVerts.size() != m.verts.size())
         os << fgnl << "AllVerts: " << allVerts.size() << " with bounds: " << cBounds(allVerts);
-    os  << fgnl << "Verts: " << m.verts.size() << " with bounds: " << cBounds(m.verts)
-        << fgnl << "UVs: " << m.uvs.size() << " with bounds: " << cBounds(m.uvs)
-        << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
+    os  << fgnl << "Verts: " << m.verts.size();
+    size_t              numUniqueVerts = getUniqueSorted(cSort(m.verts)).size();
+    if (numUniqueVerts < m.verts.size())
+        fgout << " unique: " << numUniqueVerts;
+    os  << " with bounds: " << cBounds(m.verts)
+        << fgnl << "UVs: " << m.uvs.size();
+    if (!m.uvs.empty()) {
+        size_t          numUnique = getUniqueSorted(cSort(m.uvs)).size();
+        if (numUnique < m.uvs.size())
+            os << " unique: " << numUnique;
+        os << " with bounds: " << cBounds(m.uvs);
+    }
+    os  << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
         << fgnl << "Target Morphs: " << m.targetMorphs.size()
-        << fgnl << "Marked Verts: " << m.markedVerts.size()
-        << fgpush;
-    for (size_t ii=0; ii<m.markedVerts.size(); ++ii)
-        if (!m.markedVerts[ii].label.empty())
-            os << fgnl << m.markedVerts[ii].label;
-    os << fgpop;
+        << fgnl << "Marked Verts: " << m.markedVerts.size();
+    {
+        PushIndent          pind;
+        for (MarkedVert const & mv : m.markedVerts)
+            if (!mv.label.empty())
+                os << fgnl << toStrDigits(mv.idx,2) << ": " << mv.label;
+    }
     os << fgnl << "Surfaces: " << m.surfaces.size() << fgpush;
     for (size_t ss=0; ss<m.surfaces.size(); ss++) {
         PushIndent      pind {toStrDigits(ss,2)};
@@ -718,14 +713,7 @@ operator<<(std::ostream & os,Mesh const & m)
             os << fgnl << "Albedo: " << *surf.material.albedoMap;
     }
     os << fgpop;
-    Vec3Fs             sortVerts = m.verts;
-    std::sort(sortVerts.begin(),sortVerts.end(),vertLt);
-    size_t              numDups = 0;
-    for (size_t ii=1; ii<sortVerts.size(); ++ii)
-        if (sortVerts[ii] == sortVerts[ii-1])
-            ++numDups;
-    os << fgnl << "Duplicate vertices: " << numDups;
-    SurfTopo        topo(m.verts.size(),m.getTriEquivs().posInds);
+    SurfTopo            topo(m.verts.size(),m.getTriEquivs().posInds);
     Vec3UI              te = topo.isManifold();
     os << fgnl << "Watertight: ";
     if (te == Vec3UI(0))
@@ -840,7 +828,7 @@ subdivide(Mesh const & in,bool loop)
             sp.triEquivIdx += uint(allTris.size());
             allSps.push_back(sp);
         }
-        cat_(allTris,surf.tris);
+        allTris = concat(allTris,surf.tris);
     }
     Mesh                ret;
     ret.verts = in.verts;   // Modified later in case of Loop:

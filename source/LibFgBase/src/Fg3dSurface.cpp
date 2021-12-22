@@ -25,23 +25,20 @@ selectVerts(const LabelledVerts & labVerts,Strings const & labels)
     return ret;
 }
 
-Vec3UIs
-quadsToTris(const vector<Vec4UI> & quads)
+Vec3UIs             asTris(Vec4UIs const & quads)
 {
-    Vec3UIs   ret;
-    for (size_t ii=0; ii<quads.size(); ++ii) {
-        const Vec4UI &   quad = quads[ii];
+    Vec3UIs             ret; ret.reserve(quads.size()*2);
+    for (Vec4UI const & q : quads) {
         // Ordering must match triEquiv ordering for surface point to remain valid:
-        ret.push_back(Vec3UI(quad[0],quad[1],quad[2]));
-        ret.push_back(Vec3UI(quad[2],quad[3],quad[0]));
+        ret.emplace_back(q[0],q[1],q[2]);
+        ret.emplace_back(q[2],q[3],q[0]);
     }
     return ret;
 }
 
-TriUv
-cTriEquiv(Tris const & tris,Quads const & quads,size_t tt)
+TriUv               cTriEquiv(Tris const & tris,Quads const & quads,size_t tt)
 {
-    TriUv       ret;
+    TriUv               ret;
     ret.uvInds = Vec3UI(0);
     if (tt < tris.posInds.size()) {
         ret.posInds = tris.posInds[tt];
@@ -79,59 +76,32 @@ cTriEquiv(Tris const & tris,Quads const & quads,size_t tt)
 }
 
 Vec3UI
-cTriEquivPosInds(Tris const & tris,Quads const & quads,size_t tt)
+cTriEquivVertInds(Tris const & tris,Quads const & quads,size_t tt)
 {
     if (tt < tris.size())
         return tris.posInds[tt];
-    else
-    {
+    else {
         tt -= tris.size();
-        size_t      qq = tt >> 1;
+        size_t              qq = tt / 2;
         FGASSERT(qq < quads.size());
-        if (tt & 0x01)
-            return 
-                Vec3UI(
-                    quads.posInds[qq][2],
-                    quads.posInds[qq][3],
-                    quads.posInds[qq][0]);
+        Vec4UI const &      quad = quads.posInds[qq];
+        if (tt & 0x01U)
+            return Vec3UI{quad[2],quad[3],quad[0]};
         else
-            return
-                Vec3UI(
-                    quads.posInds[qq][0],
-                    quads.posInds[qq][1],
-                    quads.posInds[qq][2]);
+            return Vec3UI{quad[0],quad[1],quad[2]};
 	}
-}
-
-Tris
-cTriEquivs(Tris const & tris,Quads const & quads)
-{
-    Tris          ret = tris;
-    for (size_t ii=0; ii<quads.size(); ++ii) {
-        Vec4UI       quad = quads.posInds[ii];
-        ret.posInds.push_back(Vec3UI(quad[0],quad[1],quad[2]));
-        ret.posInds.push_back(Vec3UI(quad[2],quad[3],quad[0]));
-    }
-    for (size_t ii=0; ii<quads.uvInds.size(); ++ii) {
-        Vec4UI       quad = quads.uvInds[ii];
-        ret.uvInds.push_back(Vec3UI(quad[0],quad[1],quad[2]));
-        ret.uvInds.push_back(Vec3UI(quad[2],quad[3],quad[0]));
-    }
-    return ret;
 }
 
 Vec3F
 cSurfPointPos(
     uint                    triEquivIdx,
-    Vec3F const &           barycentricCoord,
+    Vec3F const &           baryCoord,
     Tris const &            tris,
     Quads const &           quads,
     Vec3Fs const &          verts)
 {
-    Vec3UI           vertInds = cTriEquivPosInds(tris,quads,triEquivIdx);
-    return (verts[vertInds[0]] * barycentricCoord[0] +
-            verts[vertInds[1]] * barycentricCoord[1] +
-            verts[vertInds[2]] * barycentricCoord[2]);
+    Vec3UI           tri = cTriEquivVertInds(tris,quads,triEquivIdx);
+    return interpolate(tri,baryCoord,verts);
 }
 
 uint
@@ -173,7 +143,7 @@ Surf::surfPointPos(Vec3Fs const & verts,string const & label) const
 {
     SurfPoint const & sp = findFirst(surfPoints,label);
     Vec3UI           tri = getTriEquivPosInds(sp.triEquivIdx);
-    return cBarycentricVert(tri,sp.weights,verts);
+    return interpolate(tri,sp.weights,verts);
 }
 
 Vec3Fs
@@ -182,7 +152,7 @@ Surf::surfPointPositions(Vec3Fs const & verts) const
     Vec3Fs      ret;
     for (SurfPoint const & sp : surfPoints) {
         Vec3UI      tri = getTriEquivPosInds(sp.triEquivIdx);
-        ret.push_back(cBarycentricVert(tri,sp.weights,verts));
+        ret.push_back(interpolate(tri,sp.weights,verts));
     }
     return ret;
 }
@@ -201,15 +171,6 @@ Surf::surfPointsAsLabelledVerts(Vec3Fs const & verts) const
     return ret;
 }
 
-Polygons<3>
-Surf::asTris() const
-{
-    Polygons<3>      ret;
-    ret.posInds = cat(tris.posInds,quadsToTris(quads.posInds));
-    ret.uvInds = cat(tris.uvInds,quadsToTris(quads.uvInds));
-    return ret;
-}
-
 void
 Surf::merge(Tris const & ts,Quads const & qs,SurfPoints const & sps)
 {
@@ -220,8 +181,8 @@ Surf::merge(Tris const & ts,Quads const & qs,SurfPoints const & sps)
             sp.triEquivIdx += uint(tris.size() + 2*quads.size());
         surfPoints.push_back(sp);
     }
-    tris.merge(ts);
-    quads.merge(qs);
+    tris = concat(tris,ts);
+    quads = concat(quads,qs);
 }
 
 void
@@ -251,7 +212,7 @@ Surf::checkInternalConsistency()
 }
 
 template<uint N>
-ostream & operator<<(ostream & os,Polygons<N> const & f)
+ostream & operator<<(ostream & os,NPolys<N> const & f)
 {
     os << "vertInds: " << f.posInds.size() << " uvInds: " << f.uvInds.size();
     if (!f.uvInds.empty() && (f.uvInds.size() != f.posInds.size()))
@@ -268,7 +229,7 @@ operator<<(ostream & os,Surf const & surf)
         << fgnl << "Quads: " << surf.quads
         << fgnl << "Surf Points: " << surf.surfPoints.size() << fgpush;
         for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
-            os << fgnl << ii << ": " << surf.surfPoints[ii].label;
+            os << fgnl << toStrDigits(ii,2) << ": " << surf.surfPoints[ii].label;
         os << fgpop;
     return os;
 }
@@ -512,21 +473,6 @@ splitByContiguous(Surf const & surf)
     return ret;
 }
 
-Surfs
-fgEnsureNamed(Surfs const & surfs,String8 const & baseName)
-{
-    Surfs     ret = surfs;
-    if ((ret.size() == 1) && (ret[0].name.empty()))
-        ret[0].name = baseName;
-    else {
-        size_t                  cnt = 0;
-        for (size_t ss=0; ss<ret.size(); ++ss)
-            if (ret[ss].name.empty())
-                ret[ss].name = baseName + toStr(cnt++);
-    }
-    return ret;
-}
-
 void
 Surf::removeTri(size_t triIdx)
 {
@@ -618,8 +564,7 @@ removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts)
     return remap;
 }
 
-Vec3UIs
-reverseWinding(Vec3UIs const & tris)
+Vec3UIs             reverseWinding(Vec3UIs const & tris)
 {
     Vec3UIs             ret; ret.reserve(tris.size());
     for (Vec3UI const & t : tris)
@@ -627,8 +572,7 @@ reverseWinding(Vec3UIs const & tris)
     return ret;
 }
 
-Vec4UIs
-reverseWinding(Vec4UIs const & quads)
+Vec4UIs             reverseWinding(Vec4UIs const & quads)
 {
     Vec4UIs             ret; ret.reserve(quads.size());
     for (Vec4UI const & q : quads)
@@ -636,29 +580,29 @@ reverseWinding(Vec4UIs const & quads)
     return ret;
 }
 
-SurfPoints
-reverseWinding(SurfPoints const & sps,size_t numTris)
+SurfPoints          reverseWinding(SurfPoints const & sps,size_t numTris)
 {
     SurfPoints          ret; ret.reserve(sps.size());
     for (SurfPoint const & sp : sps) {
-        Vec3F const &       w = sp.weights;
+        Vec3F               w = sp.weights;
         if (sp.triEquivIdx < numTris) {
             Vec3F               wr {w[0],w[2],w[1]};
             ret.emplace_back(sp.triEquivIdx,wr,sp.label);
         }
         else {
-            Vec3F           wr {w[2],w[1],w[0]};
-            if ((sp.triEquivIdx-numTris) & 0x01)        // On second tri of quad
+            // quad was transformed [0123] -> [0321] thus the equivalent tris were transformed:
+            // [012],[230] -> [032],[210] thus both tris have order reversed (and tris are swapped):
+            Vec3F               wr {w[2],w[1],w[0]};
+            if ((sp.triEquivIdx-numTris) & 0x01)        // second tri of quad -> first tri
                 ret.emplace_back(sp.triEquivIdx-1,wr,sp.label);
-            else                                        // On first tri of quad
+            else                                        // first tri of quad -> second tri
                 ret.emplace_back(sp.triEquivIdx+1,wr,sp.label);
         }
     }
     return ret;
 }
 
-Surf
-reverseWinding(Surf const & in)
+Surf                reverseWinding(Surf const & in)
 {
     return              Surf {
         in.name,
@@ -675,14 +619,7 @@ reverseWinding(Surf const & in)
     };
 }
 
-TriSurf
-reverseWinding(TriSurf const & ts)
-{
-    return TriSurf {ts.verts,reverseWinding(ts.tris)};
-}
-
-TriSurf
-removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
+TriSurf             removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
 {
     TriSurf             ret;
     Uints               remap = removeUnusedVertsRemap(tris,verts);
@@ -696,114 +633,113 @@ removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
     return ret;
 }
 
-Vec3D
-cTriNorm(Vec3UI const & tri,Vec3Ds const & verts)
+Vec3F               cQuadNorm(Vec4UI const & quad,Vec3Fs const & verts)
 {
-    Vec3D               v0 = verts[tri[0]],
-                        v1 = verts[tri[1]],
-                        v2 = verts[tri[2]],
-                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
-    double              mag = cMag(cross);
-    return (mag == 0.0) ? Vec3D{0} : cross * (1.0 / sqrt(mag));
+    // This least squares surface normal is taken from [Mantyla 87]:
+    Vec3F           v0 = verts[quad[0]],
+                    v1 = verts[quad[1]],
+                    v2 = verts[quad[2]],
+                    v3 = verts[quad[3]];
+    Vec3F           cross {
+        (v0[1]-v1[1]) * (v0[2]+v1[2]) +
+        (v1[1]-v2[1]) * (v1[2]+v2[2]) +
+        (v2[1]-v3[1]) * (v2[2]+v3[2]) +
+        (v3[1]-v0[1]) * (v3[2]+v0[2]),
+
+        (v0[2]-v1[2]) * (v0[0]+v1[0]) +
+        (v1[2]-v2[2]) * (v1[0]+v2[0]) +
+        (v2[2]-v3[2]) * (v2[0]+v3[0]) +
+        (v3[2]-v0[2]) * (v3[0]+v0[0]),
+
+        (v0[0]-v1[0]) * (v0[1]+v1[1]) +
+        (v1[0]-v2[0]) * (v1[1]+v2[1]) +
+        (v2[0]-v3[0]) * (v2[1]+v3[1]) +
+        (v3[0]-v0[0]) * (v3[1]+v0[1])
+    };
+    double          crossMag = cMag(cross);
+    if (crossMag == 0.0)
+        return Vec3F{0};
+    else
+        return cross * (1.0 / sqrt(crossMag));
 }
 
-Vec3F
-cTriNorm(Vec3UI const & tri,Vec3Fs const & verts)
+// calculate facet norm, accumulate it weighted by subtended angle to each vertex, return facet norm:
+template<typename T>
+Mat<T,3,1>          accNorm_(Svec<Mat<T,3,1>> const & verts,Vec3UI tri,Svec<Mat<T,3,1>> & acc)
 {
-    Vec3F               v0 = verts[tri[0]],
-                        v1 = verts[tri[1]],
-                        v2 = verts[tri[2]],
-                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
-    float               mag = cMag(cross);
-    return (mag == 0.0f) ? Vec3F{0} : cross * (1.0f / sqrt(mag));
+    Mat<T,3,1>      v0 = verts[tri[0]],
+                    v1 = verts[tri[1]],
+                    v2 = verts[tri[2]],
+                    v01 = v1-v0,
+                    v12 = v2-v1,
+                    v20 = v0-v2,
+                    cross = crossProduct(v01,-v20);         // CC winding
+    T               crossMag = cMag(cross);
+    if (crossMag > 0) {                                     // non-degenerate
+        // This methods weights the contribution of each tri norm to the vertex norm by the angle
+        // subtended by that tri. This may give a more reasonable value than averaging (according
+        // to Keenan Crane), and avoids problems caused by degenerate tris (with arbitrary normal):
+        Mat<T,3,1>      norm = cross / sqrt(crossMag);
+        T               len01 = cLen(v01),
+                        len12 = cLen(v12),
+                        len20 = cLen(v20),
+                        wgt0 = acos(-cDot(v01,v20)/(len01*len20)),
+                        wgt1 = acos(-cDot(v12,v01)/(len12*len01)),
+                        wgt2 = acos(-cDot(v20,v12)/(len20*len12));
+        acc[tri[0]] += norm * wgt0;
+        acc[tri[1]] += norm * wgt1;
+        acc[tri[2]] += norm * wgt2;
+        return norm;
+    }
+    return {0,0,1};     // arbitrary for degenerate tri
 }
 
 Vec3Ds
 cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
 {
-    Vec3Ds          vertNorms(verts.size(),Vec3D(0));
-    for (Vec3UI tri : tris) {
-        Vec3D       norm = cTriNorm(tri,verts);
-        vertNorms[tri[0]] += norm;
-        vertNorms[tri[1]] += norm;
-        vertNorms[tri[2]] += norm;
-    }
-    Vec3Ds          ret;
-    ret.reserve(verts.size());
-    for (Vec3D norm : vertNorms) {
+    Vec3Ds          ret (verts.size(),Vec3D{0});
+    for (Vec3UI const & tri : tris)
+        accNorm_(verts,tri,ret);
+    for (Vec3D & norm : ret) {
         double          len = cLen(norm);
         if(len > 0.0)
-            ret.push_back(norm/len);
+            norm /= len;
         else
-            ret.push_back(Vec3D(0,0,1));     // Arbitrary
+            norm = Vec3D{0,0,1};        // arbitrary when not part of a non-denerate surface
     }
     return ret;
 }
 
-// Vertex normals are just approximated by a simple average of the facet normals of all
-// facets containing the vertex:
 MeshNormals
 cNormals(Surfs const & surfs,Vec3Fs const & verts)
 {
     MeshNormals         norms;
     norms.facet.resize(surfs.size());
-    Vec3Fs              vertNorms(verts.size(),Vec3F{0});
-    // Calculate facet normals and accumulate unnormalized vertex normals:
+    norms.vert.resize(verts.size(),Vec3F{0});
+    // Calculate facet normals and accumulate weighted vertex normals:
     for (size_t ss=0; ss<surfs.size(); ss++) {
         Surf const &        surf = surfs[ss];
         FacetNormals &      fnorms = norms.facet[ss];
         fnorms.tri.reserve(surf.numTris());
         fnorms.quad.reserve(surf.numQuads());
         // TRIs
-        for (Vec3UI tri : surf.tris.posInds) {
-            Vec3F       norm = cTriNorm(tri,verts);
-            vertNorms[tri[0]] += norm;
-            vertNorms[tri[1]] += norm;
-            vertNorms[tri[2]] += norm;
-            Vec3F       normf(norm);
-            fnorms.tri.push_back(normf);
-        }
+        for (Vec3UI const & tri : surf.tris.posInds)
+            fnorms.tri.push_back(accNorm_(verts,tri,norms.vert));
         // QUADs
-        // This least squares surface normal is taken from [Mantyla 87]:
-        for (Vec4UI quad : surf.quads.posInds) {
-            Vec3F       v0(verts[quad[0]]),
-                        v1(verts[quad[1]]),
-                        v2(verts[quad[2]]),
-                        v3(verts[quad[3]]);
-            Vec3F       cross,norm;
-            cross[0] =  (v0[1]-v1[1]) * (v0[2]+v1[2]) +
-                        (v1[1]-v2[1]) * (v1[2]+v2[2]) +
-                        (v2[1]-v3[1]) * (v2[2]+v3[2]) +
-                        (v3[1]-v0[1]) * (v3[2]+v0[2]);
-            cross[1] =  (v0[2]-v1[2]) * (v0[0]+v1[0]) +
-                        (v1[2]-v2[2]) * (v1[0]+v2[0]) +
-                        (v2[2]-v3[2]) * (v2[0]+v3[0]) +
-                        (v3[2]-v0[2]) * (v3[0]+v0[0]);
-            cross[2] =  (v0[0]-v1[0]) * (v0[1]+v1[1]) +
-                        (v1[0]-v2[0]) * (v1[1]+v2[1]) +
-                        (v2[0]-v3[0]) * (v2[1]+v3[1]) +
-                        (v3[0]-v0[0]) * (v3[1]+v0[1]);
-            double      crossMag = cross.len();
-            if (crossMag == 0.0)
-                norm = Vec3F(0);
-            else
-                norm = cross * (1.0 / crossMag);
-            vertNorms[quad[0]] += norm;
-            vertNorms[quad[1]] += norm;
-            vertNorms[quad[2]] += norm;
-            vertNorms[quad[3]] += norm;
-            Vec3F       normf(norm);
-            fnorms.quad.push_back(normf);
+        for (Vec4UI const & q : surf.quads.posInds) {
+            fnorms.quad.push_back(cQuadNorm(q,verts));      // use the least squares approx for facet
+            // accumulate tri vertex normal contributions but ignore tri facet norms:
+            accNorm_(verts,{q[0],q[1],q[2]},norms.vert),
+            accNorm_(verts,{q[2],q[3],q[0]},norms.vert);
         }
     }
-    // Normalize vertex normals:
-    norms.vert.reserve(verts.size());
-    for (Vec3F const & norm : vertNorms) {
-        float           len = cLen(norm);
-        if(len > 0.0f)
-            norms.vert.push_back(Vec3F(norm/len));
+    // normalize accumulated weighted vertex normals:
+    for (Vec3F & norm : norms.vert) {
+        float               mag = cMag(norm);
+        if (mag > 0)
+            norm *= 1.0f / sqrt(mag);
         else
-            norms.vert.push_back(Vec3F(0,0,1));     // Arbitrary
+            norm = Vec3F{0,0,1};        // arbitrary. effectively only happens for unused verts.
     }
     return norms;
 }

@@ -12,54 +12,37 @@
 
 namespace Fg {
 
-template<class Key,class Val,uint MaxNum>
+template<class Key,class Val,size_t N>
 struct      BestN
 {
-    uint                    m_num = 0;          // How many valid values do we have ?
-    std::pair<Key,Val>      m_best[MaxNum];
+    size_t              m_size = 0;          // How many valid values do we have ?
+    std::array<std::pair<Key,Val>,N> m_best;
 
-    bool
-    update(Key key,Val val)
+    bool                update(Key key,Val const & val)
     {
-        for (uint ii=0; ii<m_num; ++ii) {
+        for (size_t ii=0; ii<m_size; ++ii) {
             if (key > m_best[ii].first) {
-                for (uint jj=MaxNum-1; jj>ii; --jj)
+                for (uint jj=N-1; jj>ii; --jj)
                     m_best[jj] = m_best[jj-1];
                 m_best[ii].first = key;
                 m_best[ii].second = val;
-                if (m_num < MaxNum)
-                    ++m_num;
+                if (m_size < N)
+                    ++m_size;
                 return true;
             }
         }
-        if (m_num < MaxNum) {
-            m_best[m_num].first = key;
-            m_best[m_num++].second = val;
+        if (m_size < N) {
+            m_best[m_size].first = key;
+            m_best[m_size++].second = val;
             return true;
         }
         return false;
     }
-
-    uint
-    size() const
-    {return m_num; }
-
-    bool
-    empty() const
-    {return (m_num == 0); }
-
-    std::pair<Key,Val>
-    operator[](uint idx) const
-    {return m_best[idx]; }
-
-    Svec<Val>
-    vals() const
-    {
-        Svec<Val>     ret(m_num);
-        for (uint ii=0; ii<m_num; ++ii)
-            ret[ii] = m_best[ii].second;
-        return ret;
-    }
+    std::pair<Key,Val> const & operator[](size_t idx) const {return m_best[idx]; }
+    bool                empty() const {return (m_size == 0); }
+    size_t              size() const {return m_size; }
+    auto                begin() const {return m_best.begin(); }
+    auto                end() const {return m_best.end() - (N-m_size); }
 };
 
 template<class Key,class Val,class Cmp=std::less<Key> >
@@ -70,8 +53,7 @@ struct      BestV
 
     BestV(size_t maxNum_) : maxNum(maxNum_) {}
 
-    bool
-    update(Key key,Val const & val)
+    bool                update(Key key,Val const & val)
     {
         for (uint ii=0; ii<best.size(); ++ii) {
             if (Cmp{}(key,best[ii].first)) {
@@ -87,39 +69,27 @@ struct      BestV
         }
         return false;
     }
-
-    Svec<Val>
-    vals() const
-    {return sliceMember(best,&std::pair<Key,Val>::second); }
+    Svec<Val>           vals() const {return sliceMember(best,&std::pair<Key,Val>::second); }
 };
 
 // Keep the value corresponding to the minimum key:
 template<class Key,class Val>
 class   Min
 {
-    Key     m_key = std::numeric_limits<Key>::max();
-    Val     m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
+    Key             m_key = std::numeric_limits<Key>::max();
+    Val             m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
 
 public:
-    void
-    update(Key key,const Val & val)
+    void            update(Key key,const Val & val)
     {
         if (key < m_key) {
             m_key = key;
             m_val = val;
         }
     }
-
-    bool
-    valid() const
-    {return (m_key != std::numeric_limits<Key>::max()); }
-
-    Key
-    key() const
-    {return m_key; }
-
-    const Val &
-    val()
+    bool            valid() const {return (m_key != std::numeric_limits<Key>::max()); }
+    Key             key() const {return m_key; }
+    const Val &     val() const 
     {
         FGASSERT(valid());
         return m_val;
@@ -129,25 +99,20 @@ public:
 template<class Key,class Val>
 struct      Max
 {
-    void        update(Key const & key,Val const & val)
+    void            update(Key const & key,Val const & val)
     {
         if (key > m_key) {
             m_key = key;
             m_val = val;
         }
     }
-
-    bool        valid() const {return (m_key != std::numeric_limits<Key>::lowest()); }
-
-    Key const &
-    key() const
+    bool            valid() const {return (m_key != std::numeric_limits<Key>::lowest()); }
+    Key const &     key() const
     {
         FGASSERT(valid());
         return m_key;
     }
-
-    Val const &
-    val() const
+    Val const &     val() const
     {
         FGASSERT(valid());
         return m_val;

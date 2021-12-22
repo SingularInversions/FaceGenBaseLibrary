@@ -99,16 +99,12 @@ Syntax::rest()
     return ret;
 }
 
-static
-void
-removeEndline(string & line)
+static void         removeEndline(string & line)
 {
     while (!line.empty() && isCrLf(line.back()))
         line.resize(line.size()-1);
 }
-static
-bool
-hasLeadingSpaces(string const & line,size_t num)
+static bool         hasLeadingSpaces(string const & line,size_t num)
 {
     for (size_t ii=0; ii<num; ++ii)
         if (line[ii] != ' ')
@@ -152,16 +148,18 @@ formatLine(string const & line,size_t indent,size_t maxWidth)
     }
     return ret;
 }
-static
-string
-formatLines(string const & desc)
+static size_t       findFirstMarker(String const & str)
+{
+    return std::min(str.find(" - ",0),str.find(" * ",0));
+}
+static string       formatLines(string const & desc)
 {
     // Convert from old-style manual formatting to long lines:
-    Strings     ins = splitLines(desc),
-                outs;
-    size_t      indent = 0;
+    Strings             ins = splitLines(desc),
+                        outs;
+    size_t              indent = 0;
     for (string const & line : ins) {
-        size_t      mark = line.find(" - ",0);
+        size_t              mark = findFirstMarker(line);
         if (mark == string::npos) {
             if ((indent > 0) && (line.size() > indent) && (hasLeadingSpaces(line,indent))) {
                 // This line is a continuation:
@@ -184,7 +182,7 @@ formatLines(string const & desc)
     string              ret;
     uint                maxWidth = std::min(fgConsoleWidth(),160U);     // 160 upper limit for readability
     for (string const & line : outs) {
-        size_t      mark = line.find(" - ",0);
+        size_t              mark = findFirstMarker(line);
         if (mark == string::npos)
             ret += formatLine(line,0,maxWidth);
         else

@@ -67,31 +67,29 @@ fgTextureImageMappingRenderTest(CLArgs const &)
     viewMesh(mesh);
 }
 
-void fgSave3dsTest(CLArgs const &);
-void fgSaveLwoTest(CLArgs const &);
-void fgSaveMaTest(CLArgs const &);
+void testSave3ds(CLArgs const &);
+void testSaveLwo(CLArgs const &);
+void testSaveMa(CLArgs const &);
 void testSaveFbx(CLArgs const &);
 void testSaveDae(CLArgs const &);
-void fgSaveObjTest(CLArgs const &);
-void fgSavePlyTest(CLArgs const &);
-void fgSaveXsiTest(CLArgs const &);
-void testVrmlSave(CLArgs const &);
+void testSaveObj(CLArgs const &);
+void testSavePly(CLArgs const &);
+void testSaveXsi(CLArgs const &);
+void testSaveVrml(CLArgs const &);
 
 void
 test3d(CLArgs const & args)
 {
     Cmds            cmds {
-        {fgSave3dsTest,"3ds",".3DS file format export"},
-#ifdef _MSC_VER     // Precision differences with gcc/clang:
-        {fgSaveLwoTest,"lwo","Lightwve object file format export"},
-        {fgSaveMaTest,"ma","Maya ASCII file format export"},
+        {testSave3ds,"3ds",".3DS file format export"},
+        {testSaveLwo,"lwo","Lightwve object file format export"},
+        {testSaveMa,"ma","Maya ASCII file format export"},
         {testSaveFbx, "fbx", ".FBX file format export"},
-        {fgSaveObjTest, "obj", "Wavefront OBJ ASCII file format export"},
-        {fgSavePlyTest, "ply", ".PLY file format export"},
-        {testVrmlSave,  "vrml", ".WRL file format export"},
+        {testSaveObj, "obj", "Wavefront OBJ ASCII file format export"},
+        {testSavePly, "ply", ".PLY file format export"},
+        {testSaveVrml,  "vrml", ".WRL file format export"},
         {testSaveDae, "dae", "Collada DAE format export"},
-        {fgSaveXsiTest, "xsi", ".XSI file format export"},
-#endif
+        {testSaveXsi, "xsi", ".XSI file format export"},
     };
     doMenu(args,cmds,true,false,true);
 }

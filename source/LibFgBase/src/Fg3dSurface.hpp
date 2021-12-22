@@ -23,11 +23,19 @@ struct  LabelledVert
 typedef Svec<LabelledVert>  LabelledVerts;
 // Returns the vertices with the selected labels in that order. Throws if any are not found.
 Vec3Fs          selectVerts(LabelledVerts const & labVerts,Strings const & labels);
+// barycentric coordinate interpolation:
+template<typename T,typename F,FG_ENABLE_IF(F,is_floating_point)>
+T               interpolate(Vec3UI tri,Mat<F,3,1> const & baryCoord,Svec<T> const & vals)
+{
+    return vals[tri[0]]*baryCoord[0] + vals[tri[1]]*baryCoord[1] + vals[tri[2]]*baryCoord[2];
+}
 
 struct SurfPoint
 {
     uint            triEquivIdx;
     Vec3F           weights;        // Barycentric coordinate of point in triangle
+    // for left/right surface points on saggitally symmetric meshes, this label should end in
+    // the character L or R, which will be automatically swapped if the mesh is mirrored:
     String          label;          // Optional
 
     SurfPoint() {};
@@ -36,38 +44,18 @@ struct SurfPoint
 
     bool        operator==(String const & rhs) const {return (label == rhs); }
 };
-
 typedef Svec<SurfPoint>    SurfPoints;
 
-inline
-Vec3F
-cBarycentricVert(Vec3UI inds,Vec3F weights,Vec3Fs const & verts)
-{
-    return
-        verts[inds[0]] * weights[0] +
-        verts[inds[1]] * weights[1] +
-        verts[inds[2]] * weights[2];
-}
-inline
-Vec2F
-cBarycentricUv(Vec3UI inds,Vec3F weights,Vec2Fs const & uvs)
-{
-    return
-        uvs[inds[0]] * weights[0] +
-        uvs[inds[1]] * weights[1] +
-        uvs[inds[2]] * weights[2];
-}
-
 template<uint N>
-struct  Polygons
+struct  NPolys
 {
-    typedef Mat<uint,N,1>       Ind;
-    Svec<Ind>                   posInds;    // CC winding
-    Svec<Ind>                   uvInds;     // CC winding. Empty or same size as 'posInds'
+    typedef Mat<uint,N,1>       Ind;        // CC winding unless otherwise specified
+    Svec<Ind>                   posInds;
+    Svec<Ind>                   uvInds;     // must be empty or same size as 'posInds'
 
-    Polygons() {}
-    explicit Polygons(const Svec<Ind> & vtInds) : posInds(vtInds) {}
-    Polygons(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : posInds(vtInds), uvInds(uvIds) {}
+    NPolys() {}
+    explicit NPolys(Svec<Ind> const & vs) : posInds (vs) {}
+    NPolys(const Svec<Ind> & vtInds, const Svec<Ind> & uvIds) : posInds(vtInds), uvInds(uvIds) {}
 
     bool        valid() const {return ((uvInds.size() == 0) || (uvInds.size() == posInds.size())); }
     size_t      size() const {return posInds.size(); }
@@ -93,22 +81,28 @@ struct  Polygons
         for (size_t ii=0; ii<uvInds.size(); ++ii)
             uvInds[ii] += uo;
     }
-    void
-    merge(Polygons const & r)
-    {
-        cat_(posInds,r.posInds);
-        if (posInds.empty() || !uvInds.empty())     // Preserve invariant above
-            cat_(uvInds,r.uvInds);
-    }
 };
-typedef Polygons<3>        Tris;
-typedef Polygons<4>        Quads;
+typedef NPolys<3>           Tris;
+typedef NPolys<4>           Quads;          // treated as 2 tris for many operations; i0-i1-i2 and i2-i3-i0
 typedef Svec<Tris>          Triss;
 typedef Svec<Triss>         Trisss;
 
+// UVs must be discarded if one of the arguments has position indices but no UV indices:
 template<uint N>
-Polygons<N>
-offsetIndices(Polygons<N> const & polys,uint vtsOffset,uint uvsOffset)
+NPolys<N>       concat(NPolys<N> const & l,NPolys<N> const & r)
+{
+    // UVs must be discarded if both do not have, to preserve validity:
+    if (l.hasUvs() && r.hasUvs())
+        return NPolys<N>{cat(l.posInds,r.posInds),cat(l.uvInds,r.uvInds)};
+    else
+        return NPolys<N>{cat(l.posInds,r.posInds)};
+}
+Vec3UIs         asTris(Vec4UIs const & quads);      // [i0,i1,i2,i3] -> [i0,i1,i2],[i2,i3,i0]
+inline Tris     asTris(Quads const & quads) {return Tris{asTris(quads.posInds),asTris(quads.uvInds)}; }
+
+template<uint N>
+NPolys<N>
+offsetIndices(NPolys<N> const & polys,uint vtsOffset,uint uvsOffset)
 {
     Mat<uint,N,1> const voff {vtsOffset},
                         uoff {uvsOffset};
@@ -118,45 +112,19 @@ offsetIndices(Polygons<N> const & polys,uint vtsOffset,uint uvsOffset)
     };
 }
 
-template<uint dim>
-void
-cat_(Polygons<dim> & lhs,const Polygons<dim> & rhs)
-{
-    // Avoid 'hasUvs()' compare if one is empty:
-    if (rhs.empty())
-        return;
-    if (lhs.empty()) {
-        lhs = rhs;
-        return;
-    }
-    if (lhs.hasUvs() != rhs.hasUvs()) {
-        fgout << fgnl << "WARNING: Merging surfaces with UVs and without. UVs discarded.";
-        lhs.uvInds.clear();
-    }
-    else
-        cat_(lhs.uvInds,rhs.uvInds);
-    cat_(lhs.posInds,rhs.posInds);
-}
-
-Vec3UIs         quadsToTris(Vec4UIs const & quads);
-
 struct      TriUv
 {
     Vec3UI       posInds;
     Vec3UI       uvInds;
 };
 
+// "tri equivalent" index is an index into the tris, then beyond that into the quads, with 2 indices
+// per quad, referring to the implicit tris: (i0,i1,i2) and (i2,i3,i0)
 // the returned 'uvInds' is all zeros if there are no UVs:
 TriUv           cTriEquiv(Tris const & tris,Quads const & quads,size_t tt);
-Vec3UI          cTriEquivPosInds(Tris const & tris,Quads const & quads,size_t tt);
-Tris            cTriEquivs(Tris const & tris,Quads const & quads);
-Vec3F
-cSurfPointPos(
-    uint                    triEquivIdx,        // Which of 'tris' implicit tri in 'quads' below
-    Vec3F const &           barycentricCoord,
-    Tris const &            tris,
-    Quads const &           quads,
-    Vec3Fs const &          verts);
+Vec3UI          cTriEquivVertInds(Tris const & tris,Quads const & quads,size_t tt);
+Vec3F           cSurfPointPos(uint triEquivIdx,Vec3F const & barycentricCoord,Tris const & tris,
+                    Quads const & quads,Vec3Fs const & verts);
 
 struct  Material
 {
@@ -199,8 +167,8 @@ struct  Surf
     Vec3UI          getTriPosInds(uint ind) const {return tris.posInds[ind]; }
     Vec4UI          getQuadPosInds(uint ind) const {return quads.posInds[ind]; }
     // Returns the vertex indices for the tri equiv:
-    Vec3UI          getTriEquivPosInds(size_t ind) const {return cTriEquivPosInds(tris,quads,ind); }
-    Tris            getTriEquivs() const {return cTriEquivs(tris,quads); }
+    Vec3UI          getTriEquivPosInds(size_t ind) const {return cTriEquivVertInds(tris,quads,ind); }
+    Tris            getTriEquivs() const {return concat(tris,Fg::asTris(quads)); }
     bool            isTri(size_t triEquivIdx) const {return (triEquivIdx < tris.size()); }
     bool            hasUvIndices() const {return !(tris.uvInds.empty() && quads.uvInds.empty()); }
     Vec3F           surfPointPos(Vec3Fs const & verts,size_t surfPointIdx) const;
@@ -208,8 +176,7 @@ struct  Surf
     Vec3F           surfPointPos(Vec3Fs const & verts,String const & label) const;
     Vec3Fs          surfPointPositions(Vec3Fs const & verts) const;
     LabelledVerts   surfPointsAsLabelledVerts(Vec3Fs const &) const;
-    Polygons<3>    asTris() const;
-    Surf            convertToTris() const {return Surf {name,asTris(),surfPoints,material}; }
+    Surf            convertToTris() const {return Surf {name,getTriEquivs(),surfPoints,material}; }
     void            merge(Tris const &,Quads const &,SurfPoints const &);
     void            merge(Surf const & s) {merge(s.tris,s.quads,s.surfPoints); }
     void            checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx) const;
@@ -255,15 +222,18 @@ Surf            mergeSurfaces(Surfs const & surfs);     // Retains name & materi
 // Split a surface into its (one or more) discontiguous (by vertex index) surfaces:
 Surfs           splitByContiguous(Surf const & surf);
 
-// Name any unnamed surfaces as numbered extensions of the given base name,
-// or just the base name if there is only a single (unnamed) surface:
-Surfs           fgEnsureNamed(Surfs const & surfs,String8 const & baseName);
 Vec3Fs          cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
 Vec3Ds          cVertsUsed(Vec3UIs const & tris,Vec3Ds const & verts);
 bool            hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
 // Returned array is 1-1 with 'verts' and contains the new index value if the vert is used,
 // or uint::max otherwise. Vertex ordering is preserved:
 Uints           removeUnusedVertsRemap(Vec3UIs const & tris,Vec3Fs const & verts);
+// note that this necessarily impacts any barycentric coordinates for the tri:
+Vec3UIs         reverseWinding(Vec3UIs const & tris);       // [0,1,2] -> [0,2,1]
+// reverse quad winding in such a way that the default triangulation (0123 -> 012,230) remains the same.
+// note that this necessarily changes the tri-equivalent ordering as well as barycentric coordinates:
+Vec4UIs         reverseWinding(Vec4UIs const & quads);      // [0,1,2,3] -> [0,3,2,1]
+SurfPoints      reverseWinding(SurfPoints const & sps,size_t numTris);  // update for reversed winding per above
 Surf            reverseWinding(Surf const & surf);
 // Returns alpha-mapped 1024 X 1024 wireframe image:
 ImgRgba8        cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,Rgba8 wireColor);
@@ -292,8 +262,17 @@ struct  MeshNormals
 typedef Svec<MeshNormals>       MeshNormalss;
 
 // CC winding. Norm is 0 for degenerate tris:
-Vec3D           cTriNorm(Vec3UI const & tri,Vec3Ds const & verts);
-Vec3F           cTriNorm(Vec3UI const & tri,Vec3Fs const & verts);
+template<typename T>
+Mat<T,3,1>      cTriNorm(Vec3UI const & tri,Svec<Mat<T,3,1>> const & verts)
+{
+    Mat<T,3,1>          v0 = verts[tri[0]],
+                        v1 = verts[tri[1]],
+                        v2 = verts[tri[2]],
+                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
+    double              mag = cMag(cross);
+    return (mag == 0.0) ? Mat<T,3,1>{0} : cross * (1.0 / sqrt(mag));
+}
+Vec3F           cQuadNorm(Vec4UI const & quad,Vec3Fs const & verts);    // least squares surface fit normal
 Vec3Ds          cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
 
 struct  TriSurf
@@ -311,10 +290,9 @@ struct      TriSurfD
     Vec3UIs                 tris;
 };
 
-TriSurf         reverseWinding(TriSurf const &);
+inline TriSurf  reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
 TriSurf         removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
 inline TriSurf  removeUnusedVerts(TriSurf const & ts) {return removeUnusedVerts(ts.verts,ts.tris); }
-inline Vec3Ds   cVertNorms(TriSurf const & ts) {return cVertNorms(deepCast<double>(ts.verts),ts.tris); }
 MeshNormals     cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 struct      TriSurfFids

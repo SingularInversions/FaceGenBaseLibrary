@@ -28,6 +28,7 @@ typedef Svec<unsigned char>     Uchars;
 typedef Svec<int>               Ints;
 typedef Svec<uint>              Uints;
 typedef Svec<size_t>            Sizes;
+typedef Svec<int64>             Int64s;
 typedef Svec<uint64>            Uint64s;
 typedef Svec<float>             Floats;
 typedef Svec<double>            Doubles;
@@ -545,14 +546,15 @@ findAllByMember(Svec<T> const & vec,U T::*mbr,U const & val)
 
 // Returns first instance whose given member matches 'val'. Throws if none.
 template<class T,class U>
-T
-findFirstByMember(Svec<T> const & vec,U T::*mbr,U const & val)
+T const &           findFirstByMember(Svec<T> const & svec,U T::*mbr,U const & val)
 {
-    for (T const & elm : vec)
-        if (elm.*mbr == val)
-            return elm;
-    FGASSERT_FALSE;
-    return T{};
+    size_t          ii = 0;
+    for (; ii<svec.size(); ++ii)
+        if (svec[ii].*mbr == val)
+            break;
+    if (ii >= svec.size())
+        fgThrow("findFirstByMember not found");
+    return svec[ii];
 }
 
 template<class T,class U>
@@ -1062,7 +1064,7 @@ containsDuplicates(Svec<T> const & mustBeSorted)
 // Removes duplicates from a sorted vector (I don't get std::unique):
 template<class T>
 Svec<T>
-cUnique(Svec<T> const & sorted)
+getUniqueSorted(Svec<T> const & sorted)
 {
     Svec<T>       ret;
     if (!sorted.empty()) {
@@ -1071,6 +1073,18 @@ cUnique(Svec<T> const & sorted)
             if (!(sorted[ii] == ret.back()))     // In case type only defines operator==
                 ret.push_back(sorted[ii]);
     }
+    return ret;
+}
+// Removes duplicates from an unsorted vector and returns uniques in order of appearance.
+// Not designed for large return lists as uniqueness test is linear search:
+template<class T>
+Svec<T>
+getUniqueUnsorted(Svec<T> const & vs)
+{
+    Svec<T>       ret;
+    for (T const & v : vs)
+        if (!contains(ret,v))
+            ret.push_back(v);
     return ret;
 }
 

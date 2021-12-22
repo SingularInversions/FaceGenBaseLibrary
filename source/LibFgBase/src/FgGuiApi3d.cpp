@@ -214,7 +214,7 @@ markMeshVertex(
             Mesh &                  meshIn = *origMeshPtr;
             Surf const &            surf = meshIn.surfaces[pt.surfIdx];
             uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
-            uint                    vertIdx = cTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
+            uint                    vertIdx = cTriEquivVertInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
             if (vertMarkMode == 0) {
                 if (!contains(meshIn.markedVerts,vertIdx))
@@ -257,7 +257,7 @@ Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
         Mesh const &        mesh = rm.origMeshN.cref();
         Surf const &     surf = mesh.surfaces[pt.surfIdx];
         lastCtlClick.meshIdx = pt.meshIdx;
-        lastCtlClick.vertIdx = cTriEquivPosInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[mi];
+        lastCtlClick.vertIdx = cTriEquivVertInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[mi];
         lastCtlClick.valid = true;
     }
     else

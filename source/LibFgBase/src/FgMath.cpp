@@ -177,6 +177,18 @@ testZorder()
     FGASSERT(r0 == r1);
 }
 
+double          logit(double f)
+{
+    FGASSERT((f > 0.0) && (f < 1.0));
+    return log(f / (1.0-f));
+}
+double          sigmoidqInv(double f)
+{
+    double          ff = sqr(f);
+    FGASSERT(ff < 1.0);
+    return f / sqrt(1-ff);
+}
+
 // Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).
 static void
 testFgRand()

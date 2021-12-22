@@ -317,7 +317,7 @@ struct  Mat
     }
 
     bool
-    operator<(const Mat & rhs) const      // Useful for putting in a std::map
+    operator<(const Mat & rhs) const      // Useful for putting in a std::map or sorting for unique check
     {
         for (uint ii=0; ii<R*C; ++ii) {
             if (m[ii] < rhs[ii])

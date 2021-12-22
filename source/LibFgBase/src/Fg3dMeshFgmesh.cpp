@@ -23,7 +23,7 @@ namespace Fg {
 
 template<uint dim>
 void
-fgReadp(std::istream & is,Polygons<dim> & fi)
+fgReadp(std::istream & is,NPolys<dim> & fi)
 {
     fgReadp(is,fi.posInds);
     fgReadp(is,fi.uvInds);
@@ -31,7 +31,7 @@ fgReadp(std::istream & is,Polygons<dim> & fi)
 
 template<uint dim>
 void
-fgWritep(std::ostream & os,const Polygons<dim> & fi)
+fgWritep(std::ostream & os,const NPolys<dim> & fi)
 {
     fgWritep(os,fi.posInds);
     fgWritep(os,fi.uvInds);

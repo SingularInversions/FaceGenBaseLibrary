@@ -63,8 +63,7 @@ operator<<(std::ostream & os,const Arr<T,S> & arr)
 }
 
 template<class T,size_t S,size_t R>
-Arr<T,S+R>
-cat(Arr<T,S> const & lhs,Arr<T,R> const & rhs)
+Arr<T,S+R>                  cat(Arr<T,S> const & lhs,Arr<T,R> const & rhs)
 {
     Arr<T,S+R>              ret;
     size_t                  cnt {0};
@@ -72,6 +71,15 @@ cat(Arr<T,S> const & lhs,Arr<T,R> const & rhs)
         ret[cnt++] = l;
     for (T const & r : rhs)
         ret[cnt++] = r;
+    return ret;
+}
+
+template<class T,size_t S>
+Arr<size_t,S>               cSizes(Arr<std::vector<T>,S> const & vss)
+{
+    Arr<size_t,S>           ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = vss[ii].size();
     return ret;
 }
 

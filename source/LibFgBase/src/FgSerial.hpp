@@ -385,7 +385,8 @@ fromMessage_(String const & msg,uint64 typeSig,T & v)
     size_t          p {0};
     uint64          msgID {0};
     dsrlz_(msg,p,msgID);
-    FGASSERT(msgID == typeSig);
+    if (msgID != typeSig)
+        fgThrow("message deserialization non-matching type signature",toStr(msgID)+"!="+toStr(typeSig));
     dsrlz_(msg,p,v);
 }
 

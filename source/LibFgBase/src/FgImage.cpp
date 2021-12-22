@@ -591,8 +591,8 @@ fgSsi(const ImgV3F & img,uchar borderPolicy)
     ImgV3Fs        ret(log2Floor(cMinElem(img.dims()))+1);
     ret[0] = img;
     for (size_t ii=0; ii<ret.size()-1; ++ii) {
-        smoothFloat(ret[ii],ret[ii],borderPolicy);
-        smoothFloat(ret[ii],ret[ii],borderPolicy);
+        smoothFloat_(ret[ii],ret[ii],borderPolicy);
+        smoothFloat_(ret[ii],ret[ii],borderPolicy);
         shrink2_(ret[ii],ret[ii+1]);
     }
     return ret;

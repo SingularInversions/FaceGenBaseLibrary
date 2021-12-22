@@ -972,8 +972,10 @@ D3d::renderBackBuffer(
         pContext->RSSetState(rasterizer.get());
         for (RendMesh const & rendMesh : rendMeshes) {
             Mesh const &        origMesh = rendMesh.origMeshN.cref();
-            size_t              S = origMesh.surfaces.size();
-            FGASSERT(rendMesh.rendSurfs.size() == S);
+            size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size());
+            //if (origMesh.surfaces.size() != rendMesh.rendSurfs.size())
+            //    fgout << fgnl << "WARNING: wireframe render surf counts differ: "
+            //        << origMesh.surfaces.size() << " != " << rendMesh.rendSurfs.size();
             // Must loop through origMesh surfaces in case the mesh has been emptied (and the redsurfs remain):
             for (size_t ss=0; ss<S; ++ss) {
                 D3dSurf &           d3dSurf = getD3dSurf(rendMesh.rendSurfs[ss]);

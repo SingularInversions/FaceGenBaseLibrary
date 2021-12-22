@@ -177,7 +177,7 @@ saveVrml(
 }
 
 void
-testVrmlSave(CLArgs const & args)
+testSaveVrml(CLArgs const & args)
 {
     FGTESTDIR
     String8         dd = dataDir();

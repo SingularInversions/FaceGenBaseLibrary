@@ -143,7 +143,7 @@ cmdFormats(CLArgs const &)
 void        cmdMark(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"([-b] <landmarks> <images>"
+        R"([-b] <landmarks> <images>
     -b              - brighten the image with gamma correction for easier viewing of dark areas
     <landmarks>     - ( <list>.txt | (<landmarkName>)+ )
     <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
@@ -184,12 +184,12 @@ void        cmdMark(CLArgs const & args)
         String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
         if (fileExists(lmsFile))
             lms = loadImagePoints(lmsFile);
-        lms = markImage(img,lms,lmNames);
-        if (lms.empty())
+        ImagePoints         lmsNew = markImage(img,lms,lmNames);
+        if (lmsNew == lms)
             fgout << fgnl << "No landmarks placed, nothing saved";
         else {
-            saveImagePoints(lms,lmsFile);
-            fgout << fgnl << lms.size() << " landmarks placed and saved in " << lmsFile;
+            saveImagePoints(lmsNew,lmsFile);
+            fgout << fgnl << lmsNew.size() << " landmarks saved in " << lmsFile;
         }
     }
 }

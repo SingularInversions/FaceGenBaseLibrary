@@ -25,17 +25,20 @@ namespace Fg {
 void
 cmdViewMesh(CLArgs const & args)
 {
-    Syntax            syn(args,
-        "[-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+ )+\n"
-        "    -c         - Compare meshes rather than view all at once (use 'Select' tab to toggle)\n"
-        "    -r         - Remove unused vertices for viewing\n"
-        "    <mesh>     - Mesh to view\n"
-        "    <ext>      - " + getMeshLoadExtsCLDescription() +
-        "    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.\n"
-        "    <transparency> - Transparency map\n"
-        "    <specular> - Specularity map\n"
-        "    <img>      - " + getImageFileExtCLDescriptions()
-    );
+    Syntax            syn {args,
+        R"([-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+ )+
+    -c         - Compare meshes rather than view all at once (use 'Select' tab to toggle)
+    -r         - Remove unused vertices for viewing
+    <mesh>     - Mesh to view
+    <ext>      - )" + getMeshLoadExtsCLDescription() + R"(
+    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.
+    <transparency> - Transparency map
+    <specular> - Specularity map
+    <img>      - " + getImageFileExtCLDescriptions()
+NOTES:
+    * If only one mesh is selected, the Edit tab will allow selection of surface points and
+      marked vertices, along with a Save option.)"
+    };
     bool            compare = false,
                     removeUnused = false;
     while (syn.peekNext()[0] == '-') {
@@ -153,27 +156,31 @@ cmdViewUvs(CLArgs const & args)
     Syntax              syn(args,
         "<mesh>.<ext> [<texImage>]+\n"
         "     <ext> = " + getMeshLoadExtsCLDescription());
-    Mesh                mesh = loadMesh(syn.next());
-    if (mesh.uvs.empty())
-        syn.error("Mesh has no UVs",syn.curr());
-    Mat22F              bounds = cBounds(mesh.uvs);
-    fgout << fgnl << syn.curr() << " UV Bounds: " << bounds;
-    if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))
-        fgout << fgnl << "WARNING: UVs outside [0,1] were not drawn";
+    Meshes              meshes = loadMeshes(syn.next());
     String8s            names;
     ImgRgba8s           images;
     Rgba8               color {0,255,0,255};
-    size_t              cnt {0};
-    for (Surf const & surf : mesh.surfaces) {
-        if (surf.name.empty())
-            names.emplace_back("Unnamed-" + toStr(cnt++));
-        else
-            names.push_back(surf.name);
-        ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,color);
-        if (syn.more())
-            images.push_back(composite(wi,loadImage(syn.next())));
-        else
-            images.push_back(wi);
+    for (size_t mm=0; mm<meshes.size(); ++mm) {
+        Mesh const &        mesh = meshes[mm];
+        String              meshName = mesh.name.empty() ? toStrDigits(mm,2) : mesh.name.m_str;
+        PushIndent          pind {"Mesh "+meshName};
+        if (mesh.uvs.empty())
+            fgout << fgnl << "WARNING: mesh has no UVs";
+        Mat22F              bounds = cBounds(mesh.uvs);
+        fgout << fgnl << syn.curr() << " UV Bounds: " << bounds;
+        if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))
+            fgout << fgnl << "WARNING: UVs outside [0,1] were not drawn";
+        fgout << fgnl << "Surfaces: " << mesh.surfaces.size();
+        for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
+            Surf const &        surf = mesh.surfaces[ss];
+            String              surfName = surf.name.empty() ? toStrDigits(ss,2) : surf.name.m_str;
+            ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,color);
+            names.push_back(meshName + " - " + surfName);
+            if (syn.more())
+                images.push_back(composite(wi,loadImage(syn.next())));
+            else
+                images.push_back(wi);
+        }
     }
     viewImages(images,names);
 }

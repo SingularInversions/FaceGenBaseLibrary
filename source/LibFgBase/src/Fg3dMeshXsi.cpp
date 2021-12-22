@@ -624,7 +624,7 @@ void            saveXsi(String8 const & fname,Meshes const & meshes,String imgFo
 }
 
 void
-fgSaveXsiTest(CLArgs const & args)
+testSaveXsi(CLArgs const & args)
 {
     FGTESTDIR
     String8    dd = dataDir();
@@ -634,7 +634,8 @@ fgSaveXsiTest(CLArgs const & args)
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     saveXsi("meshExportXsi",svec(mouth,glasses));
-    regressFileRel("meshExportXsi.xsi","base/test/");
+    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+        regressFileRel("meshExportXsi.xsi","base/test/");
     regressFileRel("meshExportXsi0.png","base/test/");
     regressFileRel("meshExportXsi1.png","base/test/");
 }

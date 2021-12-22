@@ -185,7 +185,7 @@ struct  Mesh
     Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
     Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs) {}
     Mesh(Vec3Fs const & v,Surfs const & s,Morphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
-    Mesh(TriSurfFids const & tsf);
+    explicit Mesh(TriSurfFids const & tsf);
 
     size_t          allVertsSize() const;               // size of below
     // Return base verts plus all target morph verts plus all animPart bones:
@@ -194,7 +194,7 @@ struct  Mesh
     uint            numPolys() const;                  // tris plus quads over all surfaces
     uint            numTriEquivs() const;               // tris plus 2*quads over all surfaces
     Vec3UI          getTriEquivPosInds(uint idx) const;
-    Polygons<3>    getTriEquivs() const;               // Over all surfaces
+    NPolys<3>    getTriEquivs() const;               // Over all surfaces
     size_t          numTris() const;                    // Just the number of tris over all surfaces
     size_t          numQuads() const;                   // Just the number of quads over all surfaces
     Surf const &    surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
@@ -288,7 +288,8 @@ struct  Mesh
 
     // EDITING:
     void            addSurfaces(Surfs const & s);
-    void            xform(SimilarityD const &);         // Transform each data type appropriately
+    void            transform_(Affine3F const &);     // Transform each data type appropriately
+    void            transform_(SimilarityD const & sim) {transform_(Affine3F{sim.asAffine()}); }
     void            convertToTris();
     void            removeUVs();
     void            checkValidity() const;          // Throws if the mesh is not valid
@@ -338,6 +339,7 @@ TriSurf         cTetrahedron(bool open=false);
 TriSurf         cOctahedron();                      // Size (max width) 2 centred around origin. CC winding.
 // Regular icosahedron, centre at origin, all vertices distance 1 from origin, CC winding:
 TriSurf         cIcosahedron();
+TriSurf         cIcosahedron(float scale,Vec3F const & centre); // as above but scaled then translated
 Mesh            cNTent(uint nn);
 // Create unit radius sphere centred at origin by subdividing a tetrahedron and renormalizing the 
 // vertex positions 'subdivision' times. Poor isotropy.
@@ -387,8 +389,9 @@ Vec3Fs          poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
 // Cannot be functional since marked verts are stored as indices into the vertex array, which must
 // be updated in sync:
 void            surfPointsToMarkedVerts_(Mesh const & in,Mesh & out);
-// Mirror vertices around the given axis and reverse facet winding:
-TriSurf         cMirror(TriSurf const &,uint axis);
+Vec3Fs          cMirror(Vec3Fs const & verts,uint axis);        // reflect verts in axis=0 plane
+inline TriSurf  cMirror(TriSurf const & ts,uint axis) {return {cMirror(ts.verts,axis),reverseWinding(ts.tris)}; }
+Surf            cMirror(Surf const & surf);     // same as reverseWinding but also modifies surface point names
 // Mirror vertices around the given axis, reverse facet winding and UV winding.
 // UVs, maps, points left unchanged, morphs removed:
 Mesh            cMirror(Mesh const &,uint axis);

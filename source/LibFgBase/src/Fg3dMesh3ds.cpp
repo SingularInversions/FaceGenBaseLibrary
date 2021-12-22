@@ -492,7 +492,7 @@ void            save3ds(String8 const & fname,Meshes meshes,String imgFormat)
 }
 
 void
-fgSave3dsTest(CLArgs const & args)
+testSave3ds(CLArgs const & args)
 {
     FGTESTDIR
     String8    dd = dataDir();

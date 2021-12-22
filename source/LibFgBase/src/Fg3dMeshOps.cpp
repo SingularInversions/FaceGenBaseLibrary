@@ -315,8 +315,7 @@ cOctahedron()
     };
 }
 
-TriSurf
-cIcosahedron()
+TriSurf         cIcosahedron()
 {
     // Data copied from github cginternals:
     float const         t = 0.5f * (1.0f + sqrt(5.0f)),
@@ -362,6 +361,14 @@ cIcosahedron()
             { 9, 8, 1},
         },
     };
+}
+
+TriSurf         cIcosahedron(float scale,Vec3F const & centre)
+{
+    TriSurf         ret;
+    for (Vec3F & v : ret.verts)
+        v = v * scale + centre;
+    return ret;
 }
 
 Mesh
@@ -726,42 +733,41 @@ surfPointsToMarkedVerts_(Mesh const & in,Mesh & out)
     }
 }
 
-TriSurf
-cMirror(TriSurf const & ts,uint axis)
+Vec3Fs              cMirror(Vec3Fs const & verts,uint axis)
 {
-    FGASSERT(axis < 3);
-    TriSurf         ret;
-    ret.verts = ts.verts;
-    for (Vec3F & vert : ret.verts)
-        vert[axis] *= -1.0f;
-    ret.tris = ts.tris;
-    for (Vec3UI & tri : ret.tris)
-        swap(tri[1],tri[2]);
+    Vec3Fs              ret; ret.reserve(verts.size());
+    for (Vec3F v : verts) {
+        v[axis] *= -1.0f;
+        ret.push_back(v);
+    }
     return ret;
 }
 
-Mesh
-cMirror(Mesh const & m,uint axis)
+void                mirrorLabel_(String & l)
 {
-    FGASSERT(axis < 3);
-    Mesh        ret;
-    ret.verts = m.verts;
-    for (Vec3F & vert : ret.verts)
-        vert[axis] *= -1.0f;
-    ret.surfaces = m.surfaces;
-    for (Surf & surf : ret.surfaces) {
-        for (Vec3UI & t : surf.tris.posInds)
-            swap(t[1],t[2]);
-        for (Vec3UI & t : surf.tris.uvInds)
-            swap(t[1],t[2]);
-        for (Vec4UI & q : surf.quads.posInds)
-            q = Vec4UI {q[0],q[3],q[2],q[1]};
-        for (Vec4UI & q : surf.quads.uvInds)
-            q = Vec4UI {q[0],q[3],q[2],q[1]};
-    }
-    // Unchanged:
+    if (l.back() == 'L')
+        l.back() = 'R';
+    else if (l.back() == 'R')
+        l.back() = 'L';
+}
+
+Surf                cMirror(Surf const & surf)
+{
+    Surf            ret = reverseWinding(surf);
+    for (SurfPoint & sp : ret.surfPoints)
+        mirrorLabel_(sp.label);
+    return ret;
+}
+
+Mesh                cMirror(Mesh const & m,uint axis)
+{
+    Mesh            ret;
+    ret.verts = cMirror(m.verts,axis);
     ret.uvs = m.uvs;
+    ret.surfaces = mapCall(m.surfaces,[](Surf const & s){return cMirror(s);});
     ret.markedVerts = m.markedVerts;
+    for (MarkedVert & mv : ret.markedVerts)
+        mirrorLabel_(mv.label);
     return ret;
 }
 
@@ -819,9 +825,9 @@ Mesh
 sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaque)
 {
     FGASSERT(!albedo.empty());
-    Tris                    tris = mergeSurfaces(src.surfaces).asTris();
+    Tris                    tris = mergeSurfaces(src.surfaces).getTriEquivs();
     size_t                  numTransparent = tris.size();
-    cat_(tris,mergeSurfaces(opaque.surfaces).asTris());
+    tris = concat(tris,mergeSurfaces(opaque.surfaces).getTriEquivs());
     FGASSERT(tris.hasUvs());
     Mat32F                  domain = cBounds(src.verts),
                             range = {0,1, 0,1, 0,1};
@@ -837,7 +843,7 @@ sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaqu
         TriPoints         tps = grid.intersects(tris.posInds,pts,p);
         Floats              depths;
         for (TriPoint const & tp : tps)
-            depths.push_back(cBarycentricVert(tp.vertInds,tp.baryCoord,verts)[2]);
+            depths.push_back(interpolate(tp.vertInds,tp.baryCoord,verts)[2]);
         tps = permute(tps,sortInds(depths));
         float               transTotal = 1.0f;
         for (size_t ii=1; ii<tps.size(); ++ii) {
@@ -847,7 +853,7 @@ sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaqu
             TriPoint const &  tpp = tps[ii-1];    // Obsfucating tri
             if (tpp.triInd >= numTransparent)
                 continue;                           // Blocked by opaque
-            Vec2F            uv = cBarycentricUv(tpp.vertInds,tpp.baryCoord,src.uvs);
+            Vec2F               uv = interpolate(tpp.vertInds,tpp.baryCoord,src.uvs);
             float               alpha = sampleAlpha(albedo,uv).alpha(),
                                 trans = 1.0f - alpha/255.0f;
             transTotal *= trans;

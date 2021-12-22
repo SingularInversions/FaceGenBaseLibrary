@@ -66,10 +66,11 @@ guiImageCtrls(
     // if false, image zoom goes up to 4x for <=2K images.
     bool                        expertMode=false,
     // If defined, this is called when the user clicks on the image.
-    // The argument is the coordinate in IUCS since this is easier when image scale varies.
-    // Note however that unless the image is a power of 2 in size, small discrepencies
-    // exist between the different SLs, but they are sub-pixel so don't really matter:
-    Sfun<void(Vec2F)> const &   onClick=nullptr);
+    // The first argument is the coordinate in IUCS. The second argument are the image dimensions at the
+    // current viewing zoom level. The latter can be useful for determining accidental near double-clicks.
+    // Note that unless the image is a power of 2 in size, small discrepencies exist between the coord
+    // in different SLs, but they are sub-pixel:
+    Sfun<void(Vec2F,Vec2UI)> const & onClick=nullptr);
 
 }
 

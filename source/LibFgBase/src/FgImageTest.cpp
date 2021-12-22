@@ -73,7 +73,7 @@ testmSfs(CLArgs const &)
         img[ii] = Vec3F(mapCast<float>(cHead<3>(orig[ii].m_c)));
     Timer             time;
     for (uint ii=0; ii<100; ++ii)
-        smoothFloat(img,img,1);
+        smoothFloat_(img,img,1);
     double              ms = time.elapsedSeconds();
     fgout << fgnl << "smoothFloat time: " << ms;
     viewImage(img);
@@ -96,7 +96,7 @@ testConvolve(CLArgs const &)
     for (size_t ii=0; ii<tst.numPixels(); ++ii)
         tst[ii] = float(randUniform());
     ImgF          i0,i1;
-    smoothFloat(tst,i0,1);
+    smoothFloat_(tst,i0,1);
     fgConvolveFloat(tst,Mat33F(1,2,1,2,4,2,1,2,1)/16.0f,i1,1);
     //fgout << fgnl << i0.m_data << fgnl << i1.m_data;
     FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));

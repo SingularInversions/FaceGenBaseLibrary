@@ -2040,7 +2040,7 @@ saveMa(
 }
 
 void
-fgSaveMaTest(CLArgs const & args)
+testSaveMa(CLArgs const & args)
 {
     FGTESTDIR
     String8    dd = dataDir();

@@ -2377,7 +2377,7 @@ saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat)
 }
 
 void
-fgSaveLwoTest(CLArgs const & args)
+testSaveLwo(CLArgs const & args)
 {
     FGTESTDIR
     String8    dd = dataDir();

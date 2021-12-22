@@ -45,7 +45,8 @@ doMenu(
     Cmds const &        cmdsUnsorted,
     bool                optionAll,
     bool                optionQuiet,
-    bool                optionKeep)
+    bool                optionKeep,
+    String const &      notes)
 {
     s_breadcrumb += toLower(pathToBase(args[0]).m_str) + "_";
     string              cl,desc;
@@ -68,6 +69,8 @@ doMenu(
     sort(cmds.begin(),cmds.end());
     for (size_t ii=0; ii<cmds.size(); ++ii)
         desc += cmdStr(cmds[ii]);
+    if (!notes.empty())
+        desc += "\nNOTES:\n    " + notes;
     Syntax              syn {args,cl+desc};
     while (syn.peekNext()[0] == '-') {
         string              opt = syn.next();

@@ -74,7 +74,7 @@ guiImageCtrls(
     NPT<ImgRgba8> const &       imageN,
     IPT<Vec2Fs> const &         ptsIucsN,
     bool                        expertMode,
-    Sfun<void(Vec2F)> const &   onClick)
+    Sfun<void(Vec2F,Vec2UI)> const & onClick)
 {
     auto                    mipmapFn = [=](ImgRgba8 const & img)
     {
@@ -180,7 +180,7 @@ guiImageCtrls(
         Vec2F               imgIpcs = Vec2F{imgIrcs} + Vec2F{0.5f},
                             imgIucs = mapDiv(imgIpcs,Vec2F{imgDims});
         if ((cMinElem(imgIucs)>0) && (cMaxElem(imgIucs)<1))
-            onClick(imgIucs);
+            onClick(imgIucs,imgDims);
     };
     GuiImage                gi;
     gi.getImgFn = imgDispFn;

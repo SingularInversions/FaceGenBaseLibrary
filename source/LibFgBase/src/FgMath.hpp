@@ -269,12 +269,14 @@ cSubsets(Svec<T> const & v,size_t min,size_t max)
     return ret;
 }
 
-Doubles
-solveCubicReal(double c0,double c1,double c2);
-
+Doubles         solveCubicReal(double c0,double c1,double c2);
 // Z-order curve aka Lebesgue curve aka Morton number
 // interleave bits of v0,v1,v2 respectively right to left. Values must all be < 2^10.
-size_t      zorder(size_t v0,size_t v1,size_t v2);
+size_t          zorder(size_t v0,size_t v1,size_t v2);
+inline double   logistic(double x) {return 1.0 / (1.0 + exp(-x)); }     // Logistic function: x{R} -> (0,1)
+double          logit(double f);                                        // & inverse: f(0,1) -> R
+inline double   sigmoidq(double x) {return x / sqrt(1+sqr(x)); }        // signed quadratic sigmoid: x{R} -> (-1,1)
+double          sigmoidqInv(double f);                                  // & inverse: f(-1,1) -> R
 
 }
 

@@ -347,7 +347,8 @@ testSaveFbxAscii(CLArgs const & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     saveFbxAscii("meshExportFbx",{mouth,glasses});
-    regressFileRel("meshExportFbx.fbx","base/test/");
+    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+        regressFileRel("meshExportFbx.fbx","base/test/");
     regressFileRel("meshExportFbx0_0.png","base/test/");
     regressFileRel("meshExportFbx1_0.png","base/test/");
 }
@@ -569,6 +570,142 @@ writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
     srlzRawOverwrite_(uint32(out.size()),out,offsetIdx);
 }
 
+Mesh        readBinMesh(Sptr<RecordRaw> const & rp1)
+{
+    Mesh            mesh;
+    // the name is the initial c-string within a longer description:
+    mesh.name = splitChar(rp1->getPropertyData(1,'S').as<String>(),'\0')[0];
+    Ints            polyVertInds;
+    Ints            polyUvInds;
+    Ints            materialInds;   // 1-1 with polys
+    for (Sptr<RecordRaw> const & rp2 : rp1->subs) {
+        if (rp2->name == "Vertices") {
+            Doubles const & dbls = rp2->getPropertyData(0,'d').as<Doubles>();
+            for (size_t ii=0; ii<dbls.size()/3; ++ii) {
+                mesh.verts.emplace_back(
+                    scast<float>(dbls[ii*3]),
+                    scast<float>(dbls[ii*3+1]),
+                    scast<float>(dbls[ii*3+2])
+                );
+            }
+        }
+        else if (rp2->name == "PolygonVertexIndex")
+            polyVertInds = rp2->getPropertyData(0,'i').as<Ints>();
+        else if (rp2->name == "LayerElementUV") {
+            for (Sptr<RecordRaw> const & rp3 : rp2->subs) {
+                if (rp3->name == "UV") {
+                    Doubles const & dbls = rp3->getPropertyData(0,'d').as<Doubles>();
+                    for (size_t ii=0; ii<dbls.size()/2; ++ii) {
+                        mesh.uvs.emplace_back(
+                            scast<float>(dbls[ii*2]),
+                            scast<float>(dbls[ii*2+1])
+                        );
+                    }
+                }
+                else if (rp3->name == "UVIndex") {
+                    if (!polyUvInds.empty())
+                        fgout << fgnl << "WARNING: duplicate UV indices ignored for " << mesh.name;
+                    else
+                        polyUvInds = rp3->getPropertyData(0,'i').as<Ints>();
+                }
+            }
+        }
+        else if (rp2->name == "LayerElementMaterial") {
+            String              type;
+            for (Sptr<RecordRaw> const & rp3 : rp2->subs) {
+                if (rp3->name == "MappingInformationType")
+                    type = rp3->getPropertyData(0,'S').as<String>();
+                if (rp3->name == "Materials") {
+                    if (type == "ByPolygon")    // don't read size 1 data for "AllSame" type
+                        materialInds = rp3->getPropertyData(0,'i').as<Ints>();
+                }
+            }
+        }
+    }
+    // convert FBX data to FaceGen Mesh format:
+    Uints               polySizes;
+    {
+        uint            cnt {0};
+        for (int & vIdx : polyVertInds) {
+            ++cnt;
+            if (vIdx < 0) {         // last index of a vInds signified by XOR'd value
+                polySizes.push_back(cnt);
+                vIdx = ~vIdx;       // simplify next algo now that we've extract poly size
+                cnt = 0;
+            }
+        }
+    }
+    if (cMax(polySizes) > 4)
+        fgout << fgnl << "WARNING: N-gons with N>4 ignored";
+    auto                readPolysFn = [&](Ints const & inds)
+    {
+        Svec<VArray<uint,4>>    ret;
+        size_t          cnt {0};
+        for (uint sz : polySizes) {
+            if (sz == 3)
+                ret.emplace_back(inds[cnt],inds[cnt+1],inds[cnt+2]);
+            else if (sz == 4)
+                ret.emplace_back(inds[cnt],inds[cnt+1],inds[cnt+2],inds[cnt+3]);
+            cnt += sz;
+        }
+        return ret;
+    };
+    VArrayUI4s          posInds = readPolysFn(polyVertInds),
+                        uvInds;
+    if (!polyUvInds.empty()) {
+        if (polyUvInds.size() != polyVertInds.size())
+            fgout << fgnl << "WARNING: UV indices ignored due to size mismatch: "
+                << polyUvInds.size() << " != " << polyVertInds.size();
+        else
+            uvInds = readPolysFn(polyUvInds);
+    }
+    Svec<VArrayUI4s>    posIndss,       // indices split up by material
+                        uvIndss;
+    if (materialInds.empty()) {         // default is one material:
+        posIndss = {posInds};
+        uvIndss = {uvInds};
+    }
+    else {
+        if (materialInds.size() != posInds.size())
+            fgout << fgnl << "WARNING: material indices size != poly size: " << materialInds.size() << " != " << posInds.size();
+        // RCC export is structured for only one poly list per vertex list but there is also
+        // a per-poly material index. These material indices are typically just 0,1,2,..,N
+        Ints            materials = cSort(getUniqueUnsorted(materialInds));
+        auto            splitByMatFn = [&](VArrayUI4s const & polys)
+        {
+            Svec<VArrayUI4s>    ret (materials.size());
+            for (size_t pp=0; pp<polys.size(); ++pp) {
+                int             material = materialInds[pp];
+                size_t          idx = findFirstIdx(materials,material);
+                ret[idx].push_back(polys[pp]);
+            }
+            return ret;
+        };
+        posIndss = splitByMatFn(posInds),
+        uvIndss = splitByMatFn(uvInds);
+    }
+    auto                toPolyFn = [](VArrayUI4s const & inds,Vec3UIs & tris,Vec4UIs & quads)
+    {
+        for (VArrayUI4 const & idx : inds) {
+            if (idx.size() == 3)
+                tris.emplace_back(idx[0],idx[1],idx[2]);
+            else
+                quads.emplace_back(idx[0],idx[1],idx[2],idx[3]);
+        }
+    };
+    mesh.surfaces.resize(posIndss.size());
+    for (size_t ss=0; ss<posIndss.size(); ++ss) {
+        Surf &          surf = mesh.surfaces[ss];
+        toPolyFn(posIndss[ss],surf.tris.posInds,surf.quads.posInds);
+        if (!uvIndss.empty())
+            toPolyFn(uvIndss[ss],surf.tris.uvInds,surf.quads.uvInds);
+    }
+    // map domain UVs back to [0,1) domain:
+    for (Vec2F & uv : mesh.uvs)
+        uv = uv - mapFloor(uv);
+    return mesh;
+}
+
 struct      FbxBin
 {
     String                  header;     // everything up to version below
@@ -630,99 +767,71 @@ testFbxBin(CLArgs const & args)
 
 Meshes              loadFbx(String8 const & filename)
 {
-    Meshes          ret;
-    FbxBin          fb = loadFbxBinRaw(filename);
+    Meshes                      geoms;
+    Int64s                      geomIds;            // 1-1 with above
+    Svec<pair<int64,String>>    meshIdNames;
+    Svec<pair<int64,String>>    materialIdNames;
+    Svec<pair<int64,int64>>     connections;        // object-object (OO) src,dst connections only
+    FbxBin                      fb = loadFbxBinRaw(filename);
     for (Sptr<RecordRaw> const & rp0 : fb.records) {
         if (rp0->name == "Objects") {
             for (Sptr<RecordRaw> const & rp1 : rp0->subs) {
                 if (rp1->name == "Geometry") {
-                    String          p2s = rp1->getPropertyData(2,'S').as<String>();
-                    if (p2s == "Mesh") {
-                        Mesh            mesh;
-                        // the name is the initial c-string within a longer description:
-                        mesh.name = splitChar(rp1->getPropertyData(1,'S').as<String>(),'\0')[0];
-                        mesh.surfaces.resize(1);
-                        // only the vertex indices include polygon size information so we need to keep
-                        // this for parsing the UV indices:
-                        Uints           polySizes;
-                        // RCC export seems structured for only 1 surface per vertex list, but Reallusion
-                        // uses UV domains to separate:
-                        Surf            surf = mesh.surfaces[0];
-                        for (Sptr<RecordRaw> const & rp2 : rp1->subs) {
-                            if (rp2->name == "Vertices") {
-                                Doubles const & dbls = rp2->getPropertyData(0,'d').as<Doubles>();
-                                for (size_t ii=0; ii<dbls.size()/3; ++ii) {
-                                    mesh.verts.emplace_back(
-                                        scast<float>(dbls[ii*3]),
-                                        scast<float>(dbls[ii*3+1]),
-                                        scast<float>(dbls[ii*3+2])
-                                    );
-                                }
-                            }
-                            else if (rp2->name == "PolygonVertexIndex") {
-                                Ints const &        ints = rp2->getPropertyData(0,'i').as<Ints>();
-                                VArray<int,4>       poly;
-                                for (int ii : ints) {
-                                    if (ii < 0) {       // last index of a poly signified by XOR'd value
-                                        int         jj = ~ii;
-                                        if (poly.size() == 2) {
-                                            surf.tris.posInds.emplace_back(poly[0],poly[1],jj);
-                                            polySizes.push_back(3);
-                                        }
-                                        else if (poly.size() == 3) {
-                                            surf.quads.posInds.emplace_back(poly[0],poly[1],poly[2],jj);
-                                            polySizes.push_back(4);
-                                        }
-                                        else
-                                            fgout << fgnl << "WARNING: unhandled poly of size " << poly.size()+1;
-                                        poly.clear();
-                                    }
-                                    else
-                                        poly.add(ii);
-                                }
-                            }
-                            else if (rp2->name == "LayerElementUV") {
-                                for (Sptr<RecordRaw> const & rp3 : rp2->subs) {
-                                    if (rp3->name == "UV") {
-                                        Doubles const & dbls = rp3->getPropertyData(0,'d').as<Doubles>();
-                                        for (size_t ii=0; ii<dbls.size()/2; ++ii) {
-                                            mesh.uvs.emplace_back(
-                                                scast<float>(dbls[ii*2]),
-                                                scast<float>(dbls[ii*2+1])
-                                            );
-                                        }
-                                    }
-                                    else if (rp3->name == "UVIndex") {
-                                        if (!(surf.tris.uvInds.empty() && surf.quads.uvInds.empty()))
-                                            fgout << fgnl << "WARNING: duplicate UV indices ignored for " << mesh.name;
-                                        else {
-                                            Ints const &    ints = rp3->getPropertyData(0,'i').as<Ints>();
-                                            if (ints.size() == cSum(polySizes)) {
-                                                size_t          ii {0};
-                                                for (uint sz : polySizes) {
-                                                    if (sz == 3)
-                                                        surf.tris.uvInds.emplace_back(ints[ii],ints[ii+1],ints[ii+2]);
-                                                    else
-                                                        surf.quads.uvInds.emplace_back(ints[ii],ints[ii+1],ints[ii+2],ints[ii+3]);
-                                                    ii += sz;
-                                                }
-                                            }
-                                            else
-                                                fgout << fgnl << "WARNING: UV indices ignored due to size mismatch: "
-                                                    << ints.size() << " != " << cSum(polySizes);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        mesh.surfaces = splitByUvDomain_(surf,mesh.uvs);
-                        ret.push_back(mesh);
+                    String          type = rp1->getPropertyData(2,'S').as<String>();
+                    if (type == "Mesh") {
+                        geomIds.push_back(rp1->getPropertyData(0,'L').as<int64>());
+                        geoms.push_back(readBinMesh(rp1));
+                    }
+                }
+                else if (rp1->name == "Model") {
+                    String          type = rp1->getPropertyData(2,'S').as<String>();
+                    if (type == "Mesh") {
+                        int64           id = rp1->getPropertyData(0,'L').as<int64>();
+                        String          nameType = rp1->getPropertyData(1,'S').as<String>(),
+                                        name = splitChar(nameType,'\0')[0];
+                        meshIdNames.emplace_back(id,name);
+                    }
+                }
+                else if (rp1->name == "Material") {
+                    int64           id = rp1->getPropertyData(0,'L').as<int64>();
+                    String          nameType = rp1->getPropertyData(1,'S').as<String>(),
+                                    name = splitChar(nameType,'\0')[0];
+                    materialIdNames.emplace_back(id,name);
+                }
+            }
+        }
+        else if (rp0->name == "Connections") {
+            for (Sptr<RecordRaw> const & rp1 : rp0->subs) {
+                if (rp1->name == "C") {
+                    String          type = rp1->getPropertyData(0,'S').as<String>();
+                    if (type == "OO") {
+                        int64           src = rp1->getPropertyData(1,'L').as<int64>(),
+                                        dst = rp1->getPropertyData(2,'L').as<int64>();
+                        connections.emplace_back(src,dst);
                     }
                 }
             }
         }
     }
-    return ret;
+    for (auto const & meshIdName : meshIdNames) {
+        for (size_t gg=0; gg<geoms.size(); ++gg) {
+            Mesh &          geom = geoms[gg];
+            if (contains(connections,make_pair(geomIds[gg],meshIdName.first))) {
+                // it appears that material indices correspond to the order in which the materials are
+                // defined (or possibly linked).
+                size_t          cnt {0};
+                for (auto const & matIdName : materialIdNames) {
+                    if (contains(connections,make_pair(matIdName.first,meshIdName.first))) {
+                        if (cnt < geom.surfaces.size())
+                            geom.surfaces[cnt++].name = matIdName.second;
+                        else
+                            fgout << "WARNING: more Materials defined than material indices: " << geom.name;
+                    }
+                }
+            }
+        }
+    }
+    return geoms;
 }
 
 void

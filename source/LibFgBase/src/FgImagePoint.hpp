@@ -32,8 +32,8 @@ std::ostream &      operator<<(std::ostream &,ImagePoints const &);
 ImagePoints         loadImagePoints(String8 const & fname);
 void                saveImagePoints(ImagePoints const & ips,String8 const & fname);
 
-Vec2Ds              // returns specified image points in order of 'names'
-selectImagePoints(
+// returns specified image points in order of 'names'
+Vec2Ds              selectImagePoints(
     ImagePoints const &     ips,        // must contain all point names listed in 'names'
     Strings const &         names);
 

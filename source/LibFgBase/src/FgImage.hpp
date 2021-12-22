@@ -37,7 +37,7 @@ std::ostream &      operator<<(std::ostream &,ImgC4F const &);
 
 AffineEw2D          cIpcsToIucsXf(Vec2UI dims);
 AffineEw2D          cIrcsToIucsXf(Vec2UI imageDims);
-AffineEw2F          cIucsToIrcsXf(Vec2UI ircsDims);
+AffineEw2F          cIucsToIrcsXf(Vec2UI imageDims);
 AffineEw2F          cIucsToIpcsXf(Vec2UI dims);
 AffineEw2F          cOicsToIucsXf();
 inline Vec2F        cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord) {return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
@@ -365,7 +365,7 @@ ImgRgba8 smoothUint(ImgRgba8 const & src,uchar borderPolicy=1);
 // Perhaps the compiler is smart enough to look at the calling context:
 template<class T>
 void
-smoothFloat1D(
+smoothFloat1D_(
     T const *   srcPtr,
     T *         dstPtr,         // Must not overlap with srcPtr
     uint        wid,
@@ -379,23 +379,22 @@ smoothFloat1D(
 }
 template<class T>
 void
-smoothFloat2D(
+smoothFloat2D_(
     T const *   srcPtr,
-    T *         dstPtr,         // Must not overlap with srcPtr
+    T *         dstPtr,         // can point to same image as srcPtr
     uint        wid,
     uint        hgt,
-    uchar       borderPolicy,   // See below
-    float       fac=1.0f/4.0f)  // Per-axis kernel normalization factor
+    uchar       borderPolicy)
 {
     typedef typename Traits<T>::Scalar   Scalar;
-    float       factor = fac*fac;
-    Img<T>     acc(wid,3);
+    float constexpr factor = 0.25f * 0.25f;
+    Img<T>      acc {wid,3};
     T           *accPtr0,
                 *accPtr1 = acc.rowPtr(0),
                 *accPtr2 = acc.rowPtr(1);
-    smoothFloat1D(srcPtr,accPtr1,wid,borderPolicy);
+    smoothFloat1D_(srcPtr,accPtr1,wid,borderPolicy);
     srcPtr += wid;
-    smoothFloat1D(srcPtr,accPtr2,wid,borderPolicy);
+    smoothFloat1D_(srcPtr,accPtr2,wid,borderPolicy);
     for (uint xx=0; xx<wid; ++xx)
         dstPtr[xx] = (accPtr1[xx]*Scalar(2+borderPolicy) + accPtr2[xx]) * factor;
     for (uint yy=1; yy<hgt-1; ++yy) {
@@ -404,7 +403,7 @@ smoothFloat2D(
         accPtr0 = acc.rowPtr((yy-1)%3);
         accPtr1 = acc.rowPtr(yy%3);
         accPtr2 = acc.rowPtr((yy+1)%3);
-        smoothFloat1D(srcPtr,accPtr2,wid,borderPolicy);
+        smoothFloat1D_(srcPtr,accPtr2,wid,borderPolicy);
         for (uint xx=0; xx<wid; ++xx)
             dstPtr[xx] = (accPtr0[xx] + accPtr1[xx] * Scalar(2) + accPtr2[xx]) * factor;
     }
@@ -417,26 +416,15 @@ smoothFloat2D(
 // The Source and destination images can be the same, for in-place convolution.
 template<class T>
 void
-smoothFloat(
+smoothFloat_(
     Img<T> const &  src,
-    Img<T> &        dst,                // Can be same as src
+    Img<T> &        dst,                // Returned. Can be same object as src
     uchar           borderPolicy)       // 0 - zero border policy, 1 - replication border policy
 {
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.dims());
-    smoothFloat2D(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
-}
-
-// Only defined for binarized images, output is binarized:
-template<class T>
-Img<T>
-fgDilate(Img<T> const & img)
-{
-    Img<T>      ret = smoothUint(img);
-    for (T & p : ret.m_data)
-        p = (p > 0) ? std::numeric_limits<T>::max() : 0;
-    return ret;
+    smoothFloat2D_(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
 }
 
 // Applies a 3x3 non-separable kernel to a floating-point channel image. (technically a correlation

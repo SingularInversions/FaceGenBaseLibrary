@@ -120,10 +120,10 @@ fromStrThrow(String const & str)
 // Ensures a minimum number of digits are printed:
 template<class T>
 String
-toStrDigits(T val,uint numDigits)
+toStrDigits(T val,uint minDigits)
 {
     std::ostringstream   oss;
-    oss << std::setw(numDigits) << std::setfill('0') << val;
+    oss << std::setw(minDigits) << std::setfill('0') << val;
     return oss.str();
 }
 
@@ -259,6 +259,9 @@ endsWith(std::basic_string<T> const & str,T const * pattern_c_str)
 {
     return endsWith(str,std::basic_string<T>(pattern_c_str));
 }
+
+// Returns the strings <prefix># from 0 through num-1, all with the same number of digits (as required):
+Strings             numberedStrings(String const & prefix,size_t num);
 
 }
 

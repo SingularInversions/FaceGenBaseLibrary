@@ -471,7 +471,7 @@ writeSln(
                 "Project(\"" + uuidFolder + "\") = \"design\", \"design\", \"{56DCB0CB-CA3C-4FD8-9799-2DAB9E0724A7}\"\n"
                 "	ProjectSection(SolutionItems) = preProject\n";
             for (String8 const & fname : getDirContents(path).filenames)
-                if (pathToExt(fname) == "html")
+                if ((pathToExt(fname) == "html") || (pathToExt(fname) == "txt"))
                     ofs << "		" + path+fname + " = " + path+fname + "\n";
             ofs <<
                 "	EndProjectSection\n"

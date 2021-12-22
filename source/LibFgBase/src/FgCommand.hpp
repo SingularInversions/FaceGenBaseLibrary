@@ -34,7 +34,8 @@ doMenu(
     Cmds const &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
     bool                optionQuiet=false,  // Give option to silence console output
-    bool                optionKeep=false);  // Give option to keep test files
+    bool                optionKeep=false,   // Give option to keep test files
+    String const &      notes=String{});    // Printed out below the list of commands under the title NOTES:
 
 // Creates a temporary directory with a name giving the CL args and date/time on construction,
 // and removes the directory on destruction (unless the 'keep temp files' option has been selected):

@@ -56,7 +56,7 @@ void            savePly(String8 const & fname,Meshes const & meshes,String imgFo
     imgCnt = 0;
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const &     surf = mesh.surfaces[ss];
-        Polygons<3>          tris = surf.getTriEquivs();
+        NPolys<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
             Vec3UI           vinds = tris.posInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";
@@ -77,7 +77,7 @@ void            savePly(String8 const & fname,Meshes const & meshes,String imgFo
 }
 
 void
-fgSavePlyTest(CLArgs const & args)
+testSavePly(CLArgs const & args)
 {
     FGTESTDIR
     String8            dd = dataDir();
@@ -87,7 +87,8 @@ fgSavePlyTest(CLArgs const & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     savePly("meshExportPly",svec(mouth,glasses));
-    regressFileRel("meshExportPly.ply","base/test/");
+    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+        regressFileRel("meshExportPly.ply","base/test/");
     regressFileRel("meshExportPly0.png","base/test/");
     regressFileRel("meshExportPly1.png","base/test/");
 }

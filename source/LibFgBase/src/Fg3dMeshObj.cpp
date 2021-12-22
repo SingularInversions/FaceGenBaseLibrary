@@ -96,8 +96,8 @@ parseFacet(
     String const &      str,
     size_t              numVerts,
     size_t              numUvs,
-    Polygons<3> &    tris,
-    Polygons<4> &    quads)
+    NPolys<3> &    tris,
+    NPolys<4> &    quads)
 {
     bool            ret = false;
     Strings  strs = splitChar(str,' ');
@@ -414,7 +414,7 @@ void    injectVertsWObj(String8 const & inName,Vec3Fs const & verts,String8 cons
 }
 
 void
-fgSaveObjTest(CLArgs const & args)
+testSaveObj(CLArgs const & args)
 {
     FGTESTDIR
     String8         dd = dataDir();
@@ -426,7 +426,8 @@ fgSaveObjTest(CLArgs const & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     saveWObj("meshExportObj.obj",svec(mouth,glasses));
-    regressFileRel("meshExportObj.obj","base/test/");
+    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+        regressFileRel("meshExportObj.obj","base/test/");
     regressFileRel("meshExportObj.mtl","base/test/");
     regressFileRel("meshExportObj1.png","base/test/");
     regressFileRel("meshExportObj2.png","base/test/");

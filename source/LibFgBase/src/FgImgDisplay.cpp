@@ -114,7 +114,7 @@ markImage(ImgRgba8 const & img,ImagePoints const & existing,Strings const & newL
         if (ptsIucs.size() > 0)
             ptsIucs.pop_back();
     };
-    auto                leftClickFn = [&labels,ptsIucsN](Vec2F posIucs)
+    auto                leftClickFn = [&labels,ptsIucsN](Vec2F posIucs,Vec2UI)
     {
         Vec2Fs &            ptsIucs = ptsIucsN.ref();
         if (ptsIucs.size() < labels.size())

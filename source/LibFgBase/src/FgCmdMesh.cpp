@@ -249,61 +249,84 @@ void                cmdRevWind(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-void                cmdMarkVerts(CLArgs const & args)
+void                cmdMarkLabel(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.tri <verts>.<ext> <out>.tri\n"
-        "    <ext> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <out>.tri will be saved after marking a vertex in <in>.tri that is closest to each vertex in <verts>.<ext>."
-        );
-    Mesh    mesh = loadTri(syn.next());
-    Vec3Fs     verts = loadMesh(syn.next()).verts;
-    float       dim = cMaxElem(cDims(mesh.verts));
-    uint        poorMatches = 0,
-                totalMatches = 0;
-    for (size_t vv=0; vv<verts.size(); ++vv) {
-        Vec3F        v = verts[vv];
-        float           bestMag = floatMax();
-        uint            bestIdx = 0;
-        for (size_t ii=0; ii<mesh.verts.size(); ++ii) {
-            float       mag = cMag(mesh.verts[ii]-v);
-            if (mag < bestMag) {
-                bestMag = mag;
-                bestIdx = uint(ii);
-            }
-        }
-        if (sqrt(bestMag) / dim > 0.00001f)
-            ++poorMatches;
-        if (!contains(mesh.markedVerts,bestIdx)) {
-            mesh.markedVerts.push_back(MarkedVert(bestIdx));
-            ++totalMatches;
-        }
-    }
-    if (poorMatches > 0)
-        fgout << fgnl << "WARNING: " << poorMatches << " poor matches.";
-    if (totalMatches < verts.size())
-        fgout << fgnl << "WARNING: duplicate matches.";
-    fgout << fgnl << totalMatches << " vertices marked.";
-    saveTri(syn.next(),mesh);
+    Syntax              syn {args,
+        R"(<in>.fgmesh <idx> <name> <out>.fgmesh
+OUTPUT:
+    <out>.fgmesh    - identical to <in>.fgmesh except that marked vertex <idx> is now labelled <name>
+NOTES:
+    .tri format can also be used but other mesh formats are not supported)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    uint                idx = syn.nextAs<uint>();
+    if (idx >= mesh.markedVerts.size())
+        syn.error("<idx> is larger than available marked vertices",toStr(mesh.markedVerts.size()));
+    mesh.markedVerts[idx].label = syn.next();
+    saveMesh(mesh,syn.next());
+}
+
+void                cmdMarkList(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<in>.fgmesh
+NOTES:
+    .tri format can also be used but other mesh formats are not supported)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    PushIndent          pind {toStr(mesh.markedVerts.size()) + " Marked Vertices"};
+    size_t              cnt {0};
+    for (auto const & mv : mesh.markedVerts)
+        fgout << fgnl << toStrDigits(cnt,2) << ": idx " << mv.idx << " " << mv.label;
+}
+
+void                cmdMark(CLArgs const & args)
+{
+    Cmds            cmds {
+        {cmdMarkLabel,"label","label a marked vertex"},
+        {cmdMarkList,"list","list all marked vertices"},
+    };
+    doMenu(args,cmds,false,false,false,"Use 'view mesh' to interactively create marked vertices");
 }
 
 void
-cmdMerge(CLArgs const & args)
+cmdMergeMeshes(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<out>.<exto> (<in>.<exti>)+
-    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
+        R"((<in>.<exti>)+ -o <out>.<exto>
     <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
 OUTPUT:
     <out>.<exto>        All <in> mesh surfaces with a single vertex list
 NOTES:
     * If <exto> supports multiple surfaces, each surface of each input mesh will be a separate surface.)"
     };
-    String              outName = syn.next();
     Meshes              meshes = loadMeshes(syn.next());
-    while (syn.more())
-        cat_(meshes,loadMeshes(syn.next()));
+    while (syn.next() != "-o")
+        cat_(meshes,loadMeshes(syn.curr()));
+    String              outName = syn.next();
     saveMesh(mergeMeshes(mapAddr(meshes)),outName);
+}
+
+void            cmdMeshMirror(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<in>.<exti> <axis> <out>.<exto>
+    <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
+    axis        - (x,y,z) the mesh will be mirrored around the zero coordinate (plane) of this axis
+    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>
+NOTES:
+    all vertex coordinates will be mirrored, windings will be reversed (to preserve surface orientation),
+    and any point labels ending in 'L' or 'R' will be reversed.)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    String              axisL = syn.nextLower().m_str;
+    size_t              axis = findFirstIdx(Svec<char>{'x','y','z'},axisL[0]);
+    if (axis > 2)
+        syn.error("Invalid axis",axisL);
+    saveMesh(cMirror(mesh,uint(axis)),syn.next());
 }
 
 void
@@ -1113,8 +1136,9 @@ void                cmdMesh(CLArgs const & args)
         {cmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"},
         {cmdExport,"export","Convert multiple meshes and related color maps into another format"},
         {cmdInject,"inject","Inject updated vertex positions without otherwise modifying a mesh file"},
-        {cmdMarkVerts,"markVerts","Mark vertices in a .TRI file from a given list"},
-        {cmdMerge,"merge","Merge multiple meshes into one. No optimization is done"},
+        {cmdMark,"mark","List and label marked vertices"},
+        {cmdMergeMeshes,"merge","Merge multiple meshes into one. No optimization is done"},
+        {cmdMeshMirror,"mirror","Mirror the mesh around an axis=0 plane"},
         {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
         {cmdRetopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
         {cmdRtris,"rtris","Remove specific tris from a mesh"},

@@ -65,7 +65,16 @@
 
 namespace Fg {
 
-constexpr bool      is64Bit()
+// handy for avoiding ugly macros when things compile cross-platform but we want conditional behaviour:
+bool constexpr      isCompiledWithMsvc()
+{
+#ifdef _MSC_VER
+    return true;
+#else
+    return false;
+#endif
+}
+bool constexpr      is64Bit()
 {
 #ifdef FG_64
     return true;
@@ -73,10 +82,8 @@ constexpr bool      is64Bit()
     return false;
 #endif
 }
-
-constexpr bool      is32Bit() {return !is64Bit(); }
-
-constexpr bool      isDebug()
+bool constexpr      is32Bit() {return !is64Bit(); }
+bool constexpr      isDebug()
 {
 #ifdef _DEBUG
     return true;
@@ -84,8 +91,7 @@ constexpr bool      isDebug()
     return false;
 #endif
 }
-
-constexpr bool      isRelease() {return !isDebug(); }
+bool constexpr      isRelease() {return !isDebug(); }
 
 // Returns "32" if the current executable is 32-bit, "64" if 64-bit:
 std::string         cBitsString();

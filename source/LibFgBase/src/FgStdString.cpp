@@ -265,6 +265,19 @@ cRest(String32 const & str,size_t start)
     return String32{str.begin()+start,str.end()};
 }
 
+Strings             numberedStrings(String const & prefix,size_t const num)
+{
+    Strings             ret; ret.reserve(num);
+    uint                numDigits = 1;
+    size_t              maxVal = 10;
+    while (num > maxVal) {
+        ++numDigits;
+        maxVal *= 10;
+    }
+    for (size_t ii=0; ii<num; ++ii)
+        ret.push_back(prefix+toStrDigits(ii,numDigits));
+    return ret;
+}
 
 }
 

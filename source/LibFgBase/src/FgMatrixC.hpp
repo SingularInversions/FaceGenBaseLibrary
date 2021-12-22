@@ -923,37 +923,12 @@ transpose(Svec<Mat<T,R,C>> const & v)
     return ret;
 }
 
-// Return a vector normal to 'unitMag' (which must have .mag() == 1) by Gram-Schmidt of 'seed'.
-// Resulting value is not normalized. 'seed' must not be parallel to 'unitMag'.
+// project a vector onto an unnormalized arbitrary axis
+// (ie. find the vector component parallel to that axis):
 template<class T,uint dim>
 Mat<T,dim,1>
-orthogonalize(Mat<T,dim,1> seed,Mat<T,dim,1> unitMag)
-{return seed - dotProd(seed,unitMag)*unitMag; }
-
-template<uint dim>
-bool
-fgIsValidPermutation(Mat<uint,dim,1> perm)
-{
-    Mat<uint,dim,1>  chk(0);
-    for (uint dd=0; dd<dim; ++dd) {
-        if (perm[dd] >= dim)
-            return false;
-        chk[perm[dd]] = 1;
-    }
-    if (cMinElem(chk) == 1)
-        return true;
-    return false;
-}
-
-template<class T,uint dim>
-Mat<T,dim,1>
-fgPermute(Mat<T,dim,1> const & v,Mat<uint,dim,1> perm)  // Assumes a valid permutation, use above to check
-{
-    Mat<T,dim,1>      ret;
-    for (uint dd=0; dd<dim; ++dd)
-        ret[dd] = v[perm[dd]];
-    return ret;
-}
+projectVec(Mat<T,dim,1> vec,Mat<T,dim,1> axis)
+{return axis * (cDot(vec,axis) / cMag(axis)); }
 
 // Change a square matrix representation under a permutation of 2 of the axes:
 template<class T,uint dim>
@@ -1084,25 +1059,16 @@ struct  MatS2D
 // Upper triangular 3x3 matrix non-zero entries in row-major order
 struct  MatUT3D
 {
-    Arr<double,6>     m;
+    Arr<double,6>       m;
     FG_SER1(m)
 
     MatUT3D() {}
-    explicit MatUT3D(Arr<double,6> const & data) : m(data) {}
-    MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5)
-    {m[0]=m0; m[1]=m1; m[2]=m2; m[3]=m3; m[4]=m4; m[5]=m5; }
-    explicit MatUT3D(Arr3D const & scales)          // Diagonal version
-    {
-        m[0]=scales[0]; m[1]=0.0;       m[2]=0.0;
-                        m[3]=scales[1]; m[4]=0.0;
-                                        m[5]=scales[2];
-    }
-    MatUT3D(Arr3D scales,Arr3D shears)              // Scales are the diag elems, shears are off-diag UT
-    {
-        m[0]=scales[0]; m[1]=shears[0]; m[2]=shears[1];
-                        m[3]=scales[1]; m[4]=shears[2];
-                                        m[5]=scales[2];
-    }
+    explicit MatUT3D(Arr<double,6> const & data) : m{data} {}
+    MatUT3D(double s0,double s1,double s2) : m{{s0,0,0,s1,0,s2}} {}         // diagonal matrix (scales only)
+    MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5) : m{{m0,m1,m2,m3,m4,m5}} {}
+    explicit MatUT3D(Arr3D const & s) : m{{s[0],0,0,s[1],0,s[2]}} {}        // diagonal matrix (scales only)
+    MatUT3D(Arr3D const & scales,Arr3D const & shears) :                    // Scales are the diag elems, shears are off-diag UT
+        m{{scales[0],shears[0],shears[1],scales[1],shears[2],scales[2]}} {}
 
     static MatUT3D  identity()  {return MatUT3D(1,0,0,1,0,1); }
     static MatUT3D  diagonal(double v) {return MatUT3D{v,0,0,v,0,v}; }
