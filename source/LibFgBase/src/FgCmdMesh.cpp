@@ -53,16 +53,15 @@ cmdConvert(CLArgs const & args)
     <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
     <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
 OUTPUT:
-    <out>.<exto>        If <in>.<exti> contains only a single mesh, otherwise:
-    <out>-<name>.<exto> A file for each mesh contained in <in>.<exti>, where <name> is taken from <in>,
-                        and if none is given generated as sequential integers)"
+    <out>.<exto>        If <exto> format can contain all meshes in <in>, otherwise:
+    <out>-<name>.<exto> A file for each mesh contained in <in>, where <name> is taken from <in>,
+                        and if none is given, generated as sequential integers)"
     };
     Meshes          meshes = loadMeshes(syn.next());
     Path            out {syn.next()};
     if (meshes.size() > 1) {
-        if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str))) {
+        if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str)))
             saveMergeMesh(meshes,out.str());
-        }
         else {
             size_t          cnt {0};
             for (Mesh const & mesh : meshes) {
@@ -76,10 +75,8 @@ OUTPUT:
             }
         }
     }
-    else {
-        saveMesh(meshes[0],syn.next());
-        fgout << fgnl << syn.curr() << " saved.";
-    }
+    else
+        saveMesh(meshes[0],out.str());
 }
 
 void

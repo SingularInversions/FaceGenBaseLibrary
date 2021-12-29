@@ -27,7 +27,8 @@ struct  FgWinsockDll
 {
     WSADATA     wsaData;
 
-    FgWinsockDll() {
+    FgWinsockDll()
+    {
         // Initialize Winsock DLL version 2.2:
         int         itmp = WSAStartup(MAKEWORD(2,2),&wsaData);
         if(itmp != 0)
@@ -41,26 +42,17 @@ struct  FgWinsockDll
     }
 };
 
-static
-void
-initWinsock()
-{
-    static  FgWinsockDll  wsd;
-}
+static void initWinsock() {static  FgWinsockDll  wsd; }
 
-bool
-runTcpClient(
+bool            runTcpClient_(
     String const &      hostname,
     uint16              port,
     String const &      data,
-    bool                getResponse,
-    String &            response)
+    String *            responsePtr)
 {
     initWinsock();
-    SOCKET              socketHandle;
-    struct addrinfo *   addressInfo;
-    socketHandle = INVALID_SOCKET;
-    addressInfo = NULL;
+    SOCKET              socketHandle = INVALID_SOCKET;
+    struct addrinfo *   addressInfo = nullptr;
     struct addrinfo     hints;
     int                 itmp;
     ZeroMemory(&hints,sizeof(hints));
@@ -91,9 +83,11 @@ runTcpClient(
             freeaddrinfo(addressInfo);
             FGASSERT_FALSE1(toStr(WSAGetLastError()));
         }
-        // Set the timeout so the user isn't waiting for ages if the connection fails:
-        DWORD           timeout = 5000;     // 5 seconds
-        setsockopt(socketHandle,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
+        // setsockopt() with SO_RCVTIMEO/SO_SNDTIMEO only affects messages, not the initial
+        // connection, so the only way to check a connection without a long timeout (~23 seconds)
+        // is to switch to asynchronous mode.
+        //DWORD           timeout = timeoutSeconds * 1000;        // specify in milliseconds
+        //setsockopt(socketHandle,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
         // Try to connect to the server
         itmp = connect(socketHandle,ptr->ai_addr,(int)ptr->ai_addrlen);
         if (itmp == 0)
@@ -114,8 +108,8 @@ runTcpClient(
     // size data packet if server is waiting for more (ie to flush the stream).
     itmp = shutdown(socketHandle,SD_SEND);
     FGASSERT1(itmp != SOCKET_ERROR,toStr(WSAGetLastError()));
-    if (getResponse) {
-        response.clear();
+    if (responsePtr != nullptr) {
+        responsePtr->clear();
         do {
             char    buff[1024];
             // If server doesn't respond and closes connection we'll immediately get
@@ -130,7 +124,7 @@ runTcpClient(
                 return false;
             }
             if (itmp > 0)
-                response += String(buff,itmp);
+                *responsePtr += String(buff,itmp);
         }
         while (itmp > 0);
         FGASSERT(itmp == 0);
@@ -140,8 +134,7 @@ runTcpClient(
     return true;
 }
 
-void
-runTcpServer(
+void            runTcpServer(
     uint16              port,
     bool                respond,
     TcpHandlerFunc      handler,
@@ -195,7 +188,7 @@ runTcpServer(
         fgout << fgnl << " receiving " << std::flush;
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
-        DWORD               timeout = 5000;     // 5 seconds
+        DWORD               timeout = 3000;     // 3 seconds
         setsockopt(sockClient,SOL_SOCKET,SO_RCVTIMEO,(char const*)&timeout,sizeof(timeout));
 		char *              clientStringPtr = inet_ntoa(sa.sin_addr);
         FGASSERT(clientStringPtr != nullptr);

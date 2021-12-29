@@ -3,7 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// These functions are defined in the OS-specific library
+// These functions are defined in the OS-specific files (nix) / library (win)
 
 #ifndef FGTCP_HPP
 #define FGTCP_HPP
@@ -14,26 +14,21 @@
 namespace Fg {
 
 // Returns false if unable to connect to server:
-bool
-runTcpClient(
+bool            runTcpClient_(
     String const &      hostname,       // DNS or IP
     uint16              port,
     String const &      data,
-    bool                getResponse,
-    String &            response);      // Ignored if 'getResponse' == false
+    String *            response);      // no response expected if nullptr
 
-inline
-bool
-runTcpClient(String const & hostname,uint16 port,String const & data)
+inline bool     runTcpClient(String const & hostname,uint16 port,String const & data)
 {
-    String     dummy;
-    return runTcpClient(hostname,port,data,false,dummy);
+    return runTcpClient_(hostname,port,data,nullptr);
 }
 
-inline
-bool
-runTcpClient(String const & hostname,uint16 port,String const & data,String & response)
-{return runTcpClient(hostname,port,data,true,response); }
+inline bool     runTcpClient_(String const & hostname,uint16 port,String const & data,String & response)
+{
+    return runTcpClient_(hostname,port,data,&response);
+}
 
 typedef std::function<bool        // Return false to terminate server
     (String const &,                // IP Address of the client
@@ -42,8 +37,7 @@ typedef std::function<bool        // Return false to terminate server
      String &)>
      TcpHandlerFunc;
 
-void
-runTcpServer(
+void            runTcpServer(
     uint16              port,
     // If true, don't disconnect client until handler returns, then respond. Hander must complete
     // before TCP timeout in this case:

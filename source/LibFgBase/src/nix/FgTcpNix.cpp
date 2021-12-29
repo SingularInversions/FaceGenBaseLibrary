@@ -37,12 +37,11 @@
 namespace Fg {
 
 bool
-runTcpClient(
+runTcpClient_(
     std::string const &     hostname,
     uint16                  port,
     std::string const &     data,
-    bool                    getResponse,
-    std::string &           response)
+    std::string *           responsePtr)
 {
     int                     clientSock = socket(
                             AF_INET,            // IPv4 protocol family
@@ -51,12 +50,13 @@ runTcpClient(
     );
     FGASSERT(clientSock >= 0);
     ScopeGuard              closeSocket(std::bind(close,clientSock));
-    // Set the timeout so the user doesn't have to wait forever if the connection fails:
-    timeval                 timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
-    if (setsockopt(clientSock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
-        FGASSERT_FALSE;
+    // timeout values only affect how long the connection waits for more data packets and has no effect
+    // on the initial connection timeout which is controlled by the kernel, so no point in using:
+    //timeval                 timeout;
+    //timeout.tv_sec = timeoutSeconds;
+    //timeout.tv_usec = 0;
+    //if (setsockopt(clientSock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
+    //    FGASSERT_FALSE;
     struct hostent *        remoteHost = gethostbyname(hostname.c_str());
     if (remoteHost == NULL) {
         //fgout << fgnl << "Unable to resolve " << hostname;
@@ -84,15 +84,15 @@ runTcpClient(
     // send the amount of data before sending the data so the receiver knows when
     // to stop calling recv():
     shutdown(clientSock,1);
-    if (getResponse) {
-        response.clear();
+    if (responsePtr != nullptr) {
+        responsePtr->clear();
         char                    buff[1024];
         do {
             // read() same as recv() with flag=0:
             nBytes = read(clientSock,buff,sizeof(buff));
             FGASSERT(nBytes >= 0);
             if (nBytes > 0)
-                response += std::string(buff,nBytes);
+                *responsePtr += std::string(buff,nBytes);
         }
         while (nBytes > 0);
         FGASSERT(nBytes == 0);
@@ -178,7 +178,7 @@ runTcpServer(
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
         timeval                     timeout;
-        timeout.tv_sec = 5;
+        timeout.tv_sec = 3;
         timeout.tv_usec = 0;
         if (setsockopt(dataSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
             FGASSERT_FALSE;

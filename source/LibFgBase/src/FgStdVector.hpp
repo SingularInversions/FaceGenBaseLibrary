@@ -599,7 +599,7 @@ containsMember(Svec<T> const & vec,U T::*mbr,U const & val)
 
 template<class T>
 void
-fgReplace_(Svec<T> & v,T a,T b)       // Replace each 'a' with 'b'
+replaceAll_(Svec<T> & v,T a,T b)       // Replace each 'a' with 'b'
 {
     for (size_t ii=0; ii<v.size(); ++ii)
         if (v[ii] == a)

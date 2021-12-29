@@ -78,11 +78,11 @@ cmdRenderSetup(CLArgs const & args)
     <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
     <img>           - )" + getImageFileExtCLDescriptions() + R"(
 OUTPUT:
-    <name>.xml      parameters defining the render
+    <name>.xml      - render configuration file
 NOTES:
     * creates default rendering parameters for the given models
     * fields in <name>.xml can be modified as long as the XML structure remains valid
-    * <name>.xml description:
+    <name>.xml description:
         <models>
             The list of mesh and related albedo map files to be rendered.
         <roll>,<tilt>,<pan>
@@ -159,14 +159,15 @@ cmdRenderRun(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<in>.xml <out>.<img>
+    <in>.xml    - the render configuration file created using 'fgbl render setup'
     <img>       - )" + getImageFileExtCLDescriptions() + R"(
 OUTPUT:
-    <out>.<img>             the rendered image
-    <out>-matrix.xml        the homogeneous combined projection*modelview matrix resulting from the camera model
-    <out>-landmarks.csv     label, image position (IUCS) and visibility of projected surface points,
-                            ordered by mesh then surface then point.
-NOTES:
-    * renders using the paramters in <in>.xml and saves to image <out>.<img>)"
+    <out>.<img>         -   the rendered image
+    <out>-matrix.xml    -   the homogeneous combined projection*modelview matrix resulting from the camera model
+    <out>-landmarks.csv -   label, image position (IUCS) and visibility of projected surface points,
+                            ordered by mesh then surface then point. Surface points can be interactively placed
+                            on a mesh (Windoows only) using 'fgbl view mesh' on a single mesh,
+                            from the 'Edit' -> 'Points' tab, and saved in either TRI or FGMESH formats.)"
     };
     String              inFile = syn.next(),
                         outFile = syn.next();

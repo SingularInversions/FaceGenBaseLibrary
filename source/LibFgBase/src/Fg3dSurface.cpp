@@ -431,7 +431,7 @@ splitByContiguous(Surf const & surf)
                 for (uint kk=0; kk<triInds.size(); ++kk) {
                     uint            ntt = triInds[kk];
                     if (groupLut[tt] != groupLut[ntt]) {
-                        fgReplace_(groupLut,groupLut[ntt],groupLut[tt]);
+                        replaceAll_(groupLut,groupLut[ntt],groupLut[tt]);
                         done = false;
                     }
                 }
