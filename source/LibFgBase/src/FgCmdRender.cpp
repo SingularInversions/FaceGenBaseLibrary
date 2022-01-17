@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -74,7 +74,8 @@ void
 cmdRenderSetup(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<name>.xml (<mesh>.<ext> [<albedo>.<img>])*
+        R"(<name>.xml (-<option> <value>)* (<mesh>.<ext> [<albedo>.<img>])*
+    <option>        - (roll | tilt | pan) - specify object pose, with <value> given in degrees
     <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
     <img>           - )" + getImageFileExtCLDescriptions() + R"(
 OUTPUT:
@@ -113,8 +114,19 @@ NOTES:
     string              name = syn.next();
     RenderArgs          rend;
     while (syn.more()) {
+        if (syn.peekNext()[0] == '-') {         // option
+            String          opt = syn.next();
+            if (opt == "-roll")
+                rend.roll = degToRad(syn.nextAs<float>());
+            else if (opt == "-tilt")
+                rend.tilt = degToRad(syn.nextAs<float>());
+            else if (opt == "-pan")
+                rend.pan = degToRad(syn.nextAs<float>());
+            else
+                syn.error("Unrecognized option",opt);
+        }
         //! Set up the default render options from the arguments:
-        ModelFile          mf;
+        ModelFile           mf;
         mf.meshFilename = syn.next();
         while (syn.more() && hasImageFileExt(syn.peekNext()))
             mf.imgFilenames.push_back(syn.next());

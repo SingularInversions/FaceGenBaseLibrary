@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -69,14 +69,14 @@ assertWindows(char const * fname,int line)
 void
 assertWinReturnZero(char const * fname,int line,long rval)
 {
-    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toHexString(rval));
+    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toHexString(scast<uint32>(rval)));
 }
 
 void
 assertHResult(char const * fpath,uint lineNum,HRESULT hr)
 {
     if (hr < 0)
-        throwWindows("Windows HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr));
+        throwWindows("Windows HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(scast<uint32>(hr)));
 }
 
 }

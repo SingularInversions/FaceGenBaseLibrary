@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,9 @@ MeshFormat      getMeshFormat(String const & ext);
 bool            meshFormatSupportsMulti(MeshFormat);    // true if format supports multiple vertex lists
 String          getMeshFormatExt(MeshFormat);
 String          getMeshFormatName(MeshFormat);
-MeshFormats     getMeshExportFormats();                 // save formats not including FaceGen (fgmesh,tri)
+MeshFormats     getMeshNativeFormats();                 // FaceGen formats (fgmesh,tri) are fully supported
+MeshFormats     getMeshExportFormats();                 // save formats not including FaceGen formats
+String          getClOptionsString(MeshFormats const &);
 String          getMeshLoadExtsCLDescription();
 Strings         meshExportFormatsWithMorphs();
 // Includes 'tri':
@@ -86,11 +88,11 @@ void            saveFbxAscii(String8 const & filename,Meshes const & meshes,Stri
 void            injectVertsFbxBin(String8 const & inFile,Vec3Fs const & verts,String8 const & outFile);
 // All surfaces are merged during write, ignores UVs, textures, morphs, etc.:
 void            saveStl(String8 const & fname,Meshes const & meshes);
-// Morph targets are also saved:
+// morph targets are also saved:
 void            saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-// Morph targets are also saved:
+// morph targets are also saved:
 void            saveMa(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
-// Morph targets are also saved:
+// morph targets are also saved:
 void            saveXsi(String8 const & fname,Meshes const & meshes,String imgFormat = "png");
 // 3DS:
 // * No morph targets

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,8 +19,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,Rgba8 color)
+void                drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,Rgba8 color)
 {
     FGASSERT(!img.empty());
     int         rad = scast<int>(radius),
@@ -36,18 +35,10 @@ drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,Rgba8 color)
         }
     }
 }
-void
-drawDotIucs(ImgRgba8 & img,Vec2D posIucs,uint radius,Rgba8 color)
-{
-    Vec2F               ircs = cIucsToIrcs(img.dims(),Vec2F(posIucs));
-    drawDotIrcs(img,mapRound<int,float,2,1>(ircs),radius,color);
-}
-
 // Simple (aliased) Bresenham line draw, single-pixel thickness. Efficiency could be greatly
 // improved by clippping begin/end points to valid image area, updating 'acc' appropriately,
 // and then calling 'xy' instead of 'paint':
-void
-drawLineIrcs(
+void                drawLineIrcs(
     ImgRgba8 &       img,
     Vec2I            beg,
     Vec2I            end,
@@ -76,9 +67,7 @@ drawLineIrcs(
         }
     }
 }
-
-void
-drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,Rgba8 clr)
+void                drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,Rgba8 clr)
 {
     Vec2UI              dims = img.dims();
     for (uint dd=0; dd<2; ++dd) {
@@ -89,9 +78,7 @@ drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,Rgba8 clr)
     for (Iter2UI it{sz}; it.valid(); it.next())
         img[pos+it()] = clr;
 }
-
-ImgRgba8
-cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpacing)
+ImgRgba8            cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpacing)
 {
     FGASSERT(!datas.empty());
     size_t              D = datas.size(),                   // data per sample (not all may be valid)
@@ -119,21 +106,17 @@ cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpacing)
     }
     return img;
 }
-
-ImgRgba8
-cBarGraph(Sizes const & data)
+ImgRgba8            cBarGraph(Sizes const & data)
 {
     Doubles         dt = mapCast<double>(data);
     return cBarGraph({dt},1);
 }
-
-void
-drawFunction(
-    ImgRgba8 &       img,            // OUTPUT
-    std::function<double(double)> func,
-    VecD2            bounds,         // abscissa value at image x bounds
+void                drawFunction(
+    ImgRgba8 &          img,            // OUTPUT
+    Sfun<double(double)> func,
+    VecD2               bounds,         // abscissa value at image x bounds
     double              vscale,         // y pixels per unit
-    Rgba8            colour)
+    Rgba8               colour)
 {
     FGASSERT(!img.empty());
     int             wid = img.width(),
@@ -150,9 +133,7 @@ drawFunction(
         lastPoint = point;
     }
 }
-
-void
-drawFunctions(
+void                drawFunctions(
     MatD const &   funcs)      // Columns are function values
 {
     uint            dim = funcs.numRows(),
@@ -200,9 +181,7 @@ drawFunctions(
     }
     viewImage(img);
 }
-
-void
-cmdGraph(CLArgs const & args)
+void                cmdGraph(CLArgs const & args)
 {
     Syntax                  syn{args,"[-b <num>] [-g <num>] (<data>.txt)+ [<image>.jpg]\n"
         "   Creates bar graph of given data sequence(s), display, and optionally save.\n"
@@ -242,8 +221,7 @@ cmdGraph(CLArgs const & args)
     viewImage(cBarGraph(datas,barThick,gapThick));
 }
 
-Cmd
-getCmdGraph()
+Cmd                 getCmdGraph()
 {
     return Cmd{cmdGraph,"graph","Create simple bar graphs from text data"};
 }

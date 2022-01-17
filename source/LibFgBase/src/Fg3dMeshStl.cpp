@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,7 +22,7 @@ saveStl(Ofstream & ff,Mesh const & mesh)
         Surf const &         surf = mesh.surfaces[ss];
         const FacetNormals &    facetNorms = norms.facet[ss];
         for (uint ii=0; ii<surf.numTris(); ++ii) {
-            Vec3UI           tri = surf.getTriPosInds(ii);
+            Vec3UI           tri = surf.tris.vertInds[ii];
             Vec3F            norm = facetNorms.tri[ii];
             for (uint jj=0; jj<3; ++jj)
                 ff.writeb(norm[jj]);
@@ -34,7 +34,7 @@ saveStl(Ofstream & ff,Mesh const & mesh)
             ff.writeb(uint16(0));
         }
         for (uint ii=0; ii<surf.numQuads(); ++ii) {
-            Vec4UI           quad = surf.getQuadPosInds(ii);
+            Vec4UI           quad = surf.quads.vertInds[ii];
             Vec3F            norm = facetNorms.quad[ii];
             for (uint jj=0; jj<3; ++jj)
                 ff.writeb(norm[jj]);

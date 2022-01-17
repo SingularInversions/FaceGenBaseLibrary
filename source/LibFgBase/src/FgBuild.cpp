@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -311,11 +311,11 @@ createMicrosoftGuid(string const & name,bool wsb)
     string          ret;
     if (wsb) ret += '{';
     ret += 
-        toHexString(valPtr,4) + '-' +
-        toHexString(valPtr+4,2) + '-' +
-        toHexString(valPtr+6,2) + '-' +
-        toHexString(valPtr+8,2) + '-' +
-        toHexString(valPtr+10,6);
+        bytesToHexString(valPtr,4) + '-' +
+        bytesToHexString(valPtr+4,2) + '-' +
+        bytesToHexString(valPtr+6,2) + '-' +
+        bytesToHexString(valPtr+8,2) + '-' +
+        bytesToHexString(valPtr+10,6);
     if (wsb) ret += '}';
     return ret;
 }

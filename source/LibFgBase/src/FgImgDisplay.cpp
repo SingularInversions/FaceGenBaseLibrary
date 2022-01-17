@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -83,17 +83,16 @@ viewImage(const ImgV3F & img)
     viewImage(disp);
 }
 
-ImagePoints
-markImage(ImgRgba8 const & img,ImagePoints const & existing,Strings const & newLabels)
+NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,Strings const & newLabels)
 {
     FGASSERT(!img.empty());
     AffineEw2F          iucsToIrcs = cIucsToIrcsXf(img.dims()),
                         ircsToIucs = iucsToIrcs.inverse();
     Vec2Fs              existingPtsIucs;
     Strings             labels;
-    for (ImagePoint const & e : existing) {
-        existingPtsIucs.push_back(ircsToIucs * e.posIrcs);
-        labels.push_back(e.label);
+    for (NameVec2F const & e : existing) {
+        existingPtsIucs.push_back(ircsToIucs * e.vec);
+        labels.push_back(e.name);
     }
     for (String const & nl : newLabels)
         if (!contains(labels,nl))
@@ -128,7 +127,7 @@ markImage(ImgRgba8 const & img,ImagePoints const & existing,Strings const & newL
     guiStartImpl(IPT<String8>{"FaceGen Mark Image"},mainW,store);
     Vec2Fs const &      ptsIucs = ptsIucsN.cref();
     FGASSERT(ptsIucs.size() <= labels.size());
-    ImagePoints         ret; ret.reserve(ptsIucs.size());
+    NameVec2Fs         ret; ret.reserve(ptsIucs.size());
     for (size_t ii=0; ii<ptsIucs.size(); ++ii)
         ret.emplace_back(labels[ii],iucsToIrcs * ptsIucs[ii]);
     return ret;

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,126 +21,63 @@ struct  String8
     String     m_str;      // UTF-8 unicode
 
     String8() {};
-
     String8(char const * utf8_c_string) : m_str(utf8_c_string) {};
-
-    String8(const String & utf8_string) : m_str(utf8_string) {};
-
+    String8(String const & utf8_string) : m_str(utf8_string) {};
     explicit String8(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
+    explicit String8(String32 const & utf32) : m_str(toUtf8(utf32)) {}
 
-    explicit
-    String8(String32 const & utf32) : m_str(toUtf8(utf32)) {}
+    String8 &       operator+=(String8 const&);
+    String8         operator+(String8 const&) const;
+    String8         operator+(char const * utf8_c_str) {return String8(m_str + utf8_c_str); }
+    String8         operator+(char c) const;
 
-    String8 &
-    operator+=(String8 const&);
-
-    String8
-    operator+(String8 const&) const;
-
-    String8
-    operator+(char const * utf8_c_str)
-    {return String8(m_str + utf8_c_str); }
-
-    String8
-    operator+(char c) const;
-
-    // Use sparingly as this function is very inefficient in UTF-8 encoding:
-    uint32
-    operator[](size_t) const;
-
+    // Use sparingly as this function is very inefficient for sequential use (due to UTF-8 encoding):
+    uint32          operator[](size_t) const;
     // Returns number of unicode characters in string
-    size_t
-    size() const;
+    size_t          size() const;
+    bool            empty() const {return m_str.empty(); }
+    void            clear() {m_str.clear(); }
+    bool            operator==(String8 const & rhs) const {return m_str == rhs.m_str; }
+    bool            operator!=(String8 const & other) const {return !(*this == other); }
+    bool            operator<(String8 const & other) const {return m_str < other.m_str; }
+    int             compare(String8 const & rhs) const {return m_str.compare(rhs.m_str); }
 
-    bool
-    empty() const
-    {return m_str.empty(); }
+    // The narrow-character stream operators do not do any character set conversion:
+    friend          std::ostream& operator<<(std::ostream&, String8 const &);
+    friend          std::istream& operator>>(std::istream&, String8 &);
 
-    void
-    clear()
-    {m_str.clear(); }
-
-    bool operator==(String8 const & rhs) const
-    {return m_str == rhs.m_str; }
-
-    bool operator!=(String8 const & other) const
-    {return !(*this == other); }
-
-    bool operator<(String8 const & other) const
-    {return m_str < other.m_str; }
-
-    int compare(String8 const & rhs) const
-    {return m_str.compare(rhs.m_str); }
-
-    // The narrow-character stream operators do *not* do any
-    // character set conversion:
-    friend 
-    std::ostream& operator<<(std::ostream&, String8 const &);
-
-    friend
-    std::istream& operator>>(std::istream&, String8 &);
-
-    String const &
-    as_utf8_string() const
-    {return m_str; }
-
-    String32
-    as_utf32() const
-    {return toUtf32(m_str); }
+    String const &  as_utf8_string() const {return m_str; }
+    String32        as_utf32() const {return toUtf32(m_str); }
 
     // Return native unicode string (UTF-16 for Win, UTF-8 for Nix):
 #ifdef _WIN32
     // Construct from a wstring. Since sizeof(wchar_t) is compiler/platform dependent,
     // encoding is utf16 for Windows, utf32 for gcc & XCode:
-    String8(const wchar_t *);
-    String8(const std::wstring &);
+    String8(wchar_t const *);
+    String8(std::wstring const &);
 
     // Encoded as UTF16 if wchar_t is 16-bit, UTF32 if wchar_t is 32-bit:
-    std::wstring
-    as_wstring() const;
-
-    std::wstring
-    ns() const
-    {return as_wstring(); }
+    std::wstring    as_wstring() const;
+    std::wstring    ns() const {return as_wstring(); }
 #else
-    String
-    ns() const
-    {return as_utf8_string(); }
+    String          ns() const {return as_utf8_string(); }
 #endif
 
-    bool
-    is_ascii() const;
-
+    bool            is_ascii() const;
     // Throw if there are any non-ascii characters:
-    const String &
-    ascii() const;
-
+    const String &  ascii() const;
     // Mutilate any non-ASCII characters into ASCII:
-    String
-    as_ascii() const;
-
+    String          as_ascii() const;
     // Replace all occurrences of 'a' with 'b'. Slow due to utf32<->utf8 conversions.
     // 'a' and 'b' are considered as unsigned values when comparing with UTF code points:
-    String8
-    replace(char a, char b) const;
-
+    String8         replace(char a, char b) const;
     // Split into multiple strings based on split character which is not included in
     // results. At least one string is created and every split character creates an
     // additional string (empty or otherwise):
-    Svec<String8>
-    split(char ch) const;
-
-    bool
-    beginsWith(String8 const & s) const;
-
-    bool
-    endsWith(String8 const & str) const;
-
-    uint
-    maxWidth(char ch) const;
-
-    String8
-    toLower() const;        // Member func avoids ambiguity with toLower on string literals
+    Svec<String8>   split(char ch) const;
+    bool            beginsWith(String8 const & s) const;
+    bool            endsWith(String8 const & str) const;
+    String8         toLower() const;        // Member func avoids ambiguity with toLower on string literals
 
     FG_SERIALIZE1(m_str)
 };

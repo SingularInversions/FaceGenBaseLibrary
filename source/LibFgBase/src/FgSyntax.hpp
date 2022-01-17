@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,10 +13,10 @@
 
 namespace Fg {
 
-struct  FgExceptionCommandSyntax
+struct      FgExceptionCommandSyntax
 {};
 
-struct  Syntax
+struct      Syntax
 {
     Syntax(
         CLArgs const &  args,   // Accepts UTF-8 here
@@ -26,70 +26,46 @@ struct  Syntax
 
     ~Syntax();
 
-    String const &
-    next()
+    String const &      next()
     {
         if (m_idx+1 == m_args.size())
             error("Expected another argument after",m_args[m_idx]);
         return m_args[++m_idx];
     }
-
     template<typename T>
-    T
-    nextAs()
+    T                   nextAs()
     {
         Opt<T>    ret = fromStr<T>(next());
         if (!ret.valid())
             error("Unable to convert string to "+String(typeid(T).name()),curr());
         return ret.val();
     }
-
-    String8
-    nextLower()             // As above but lower case
-    {return toLower(String8(next())); }
-
-    String const &
-    curr() const
-    {return m_args[m_idx]; }
-
-    bool
-    more() const
-    {return (m_idx+1 < m_args.size()); }
-
-    String const &
-    peekNext();
-
-    CLArgs
-    rest();             // Starting with current
-
+    String8             nextLower()             // As above but lower case
+    {
+        return toLower(String8(next()));
+    }
+    String const &      curr() const
+    {
+        return m_args[m_idx];
+    }
+    bool                more() const
+    {
+        return (m_idx+1 < m_args.size());
+    }
+    String const &      peekNext();
+    CLArgs              rest();             // Starting with current
     void                error() {throwSyntax(); }
     void                error(String const & errMsg);
-
-    void
-    error(String const & errMsg,String8 const & data);
-
-    void
-    incorrectNumArgs();
-
+    void                error(String const & errMsg,String8 const & data);
+    void                incorrectNumArgs();
     // Throws appropriate syntax error:
-    void
-    checkExtension(
-        String8 const & fname,
-        String const & ext);
-    void
-    checkExtension(
-        String const &          fname,
-        Strings const &         exts);
-
+    void                checkExtension(String8 const & fname,String const & ext);
+    void                checkExtension(String const & fname,Strings const & exts);
     // Throws appropriate syntax error if different:
-    void
-    numArgsMustBe(uint numArgsNotIncludingCommand);
-
+    void                numArgsMustBe(uint numArgsNotIncludingCommand);
     // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
     // referencing 'argDescription':
-    uint
-    nextSelectionIndex(Strings const & validValues,String const & argDescription);
-
+    uint                nextSelectionIndex(Strings const & validValues,String const & argDescription);
     void                noMoreArgsExpected();       // Throws is the user has supplied more arguments
 
 private:

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,7 +25,7 @@ template<uint dim>
 void
 fgReadp(std::istream & is,NPolys<dim> & fi)
 {
-    fgReadp(is,fi.posInds);
+    fgReadp(is,fi.vertInds);
     fgReadp(is,fi.uvInds);
 }
 
@@ -33,23 +33,23 @@ template<uint dim>
 void
 fgWritep(std::ostream & os,const NPolys<dim> & fi)
 {
-    fgWritep(os,fi.posInds);
+    fgWritep(os,fi.vertInds);
     fgWritep(os,fi.uvInds);
 }
 
 void
 fgReadp(std::istream & is,SurfPoint & sp)
 {
-    fgReadp(is,sp.triEquivIdx);
-    fgReadp(is,sp.weights);
+    fgReadp(is,sp.point.triEquivIdx);
+    fgReadp(is,sp.point.weights);
     fgReadp(is,sp.label);
 }
 
 void
 fgWritep(std::ostream & os,SurfPoint const & sp)
 {
-    fgWritep(os,sp.triEquivIdx);
-    fgWritep(os,sp.weights);
+    fgWritep(os,sp.point.triEquivIdx);
+    fgWritep(os,sp.point.weights);
     fgWritep(os,sp.label);
 }
 
@@ -86,14 +86,14 @@ fgWritep(std::ostream & os,const MarkedVert & m)
 }
 
 void
-fgReadp(std::istream & is,Morph & m)
+fgReadp(std::istream & is,DirectMorph & m)
 {
     fgReadp(is,m.name);
     fgReadp(is,m.verts);
 }
 
 void
-fgWritep(std::ostream & os,Morph const & m)
+fgWritep(std::ostream & os,DirectMorph const & m)
 {
     fgWritep(os,m.name);
     fgWritep(os,m.verts);

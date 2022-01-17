@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,25 +30,29 @@ struct  Rigid3D
     explicit Rigid3D(QuaternionD const & r) : rot{r} {}
     explicit Rigid3D(Vec3D const & t) : trans{t} {}
     Rigid3D(QuaternionD const & r,Vec3D const & t) : rot{r}, trans{t} {}
+    // construct from translation followed by rotation: y = R(x+t) = Rx + Rt
+    Rigid3D(Vec3D const & t,QuaternionD const & r) : rot{r}, trans{r*t} {}
 
     Affine3D        asAffine() const {return Affine3D {rot.asMatrix(),trans}; }
+    Rigid3D         inverse() const {return Rigid3D {-trans,rot.inverse()}; }
+    // composition operator:
+    Rigid3D         operator*(Rigid3D const & r) const {return {rot*r.rot,trans+rot*r.trans}; }
 
     static Rigid3D  randNormal(double transStdev)
     {return Rigid3D{QuaternionD::rand(),Vec3D::randNormal(transStdev)}; }
 };
 typedef Svec<Rigid3D>   Rigid3Ds;
-std::ostream & operator<<(std::ostream &,Rigid3D const &);
+std::ostream &      operator<<(std::ostream &,Rigid3D const &);
 
-inline Rigid3D
-operator*(QuaternionD const & lhs,Rigid3D const & rhs)      // composition operator
+// rotate around given point:
+inline Rigid3D      cRotateAround(Vec3D const & pnt,QuaternionD const & rot)
 {
-    return {lhs*rhs.rot,lhs*rhs.trans};
+    // y = R(x-p)+p = Rx + (p-Rp)
+    return Rigid3D{rot,pnt-rot*pnt};
 }
-inline Rigid3D
-operator*(Rigid3D const & l,Rigid3D const & r)              // composition operator
-{
-    return {l.rot*r.rot,l.trans+l.rot*r.trans};
-}
+
+// composition operator:
+inline Rigid3D      operator*(QuaternionD const & lhs,Rigid3D const & rhs) {return {lhs*rhs.rot,lhs*rhs.trans}; }
 
 struct  SimilarityD
 {
@@ -80,25 +84,14 @@ struct  SimilarityD
     static SimilarityD identity() {return SimilarityD(1.0,QuaternionD{},Vec3D{0}); }
 };
 
-inline Mat44D
-asHomogMat(SimilarityD const & s)
-{return asHomogMat(s.asAffine()); }
-
-SimilarityD
-similarityRand();
-
+inline Mat44D       asHomogMat(SimilarityD const & s) {return asHomogMat(s.asAffine()); }
+SimilarityD         similarityRand();
 // Uses Horn '87 "Closed-Form Solution of Absolute Orientation..." to find the similarity
 // transform FROM the domain points TO the range points very quickly with high accuracy:
-SimilarityD
-solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
-
-inline
-SimilarityD
-solveSimilarity(Vec3Fs const & d,Vec3Fs const & r)
-{return solveSimilarity(deepCast<double>(d),deepCast<double>(r)); }
-
-SimilarityD
-interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
+SimilarityD         solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
+inline SimilarityD  solveSimilarity(Vec3Fs const & d,Vec3Fs const & r)
+                        {return solveSimilarity(deepCast<double>(d),deepCast<double>(r)); }
+SimilarityD         interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
 
 // Reverse-order similarity transform: v' = sR(v + t) = sRv + sRt
 // Useful when you want the translation relative to the input shape (v) not the output (v').
@@ -130,8 +123,7 @@ struct  SimilarityRD
 };
 typedef Svec<SimilarityRD>   SimilarityRDs;
 
-std::ostream &
-operator<<(std::ostream & os,SimilarityRD const & v);
+std::ostream &      operator<<(std::ostream & os,SimilarityRD const & v);
 
 }
 

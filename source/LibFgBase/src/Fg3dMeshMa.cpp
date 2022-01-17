@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -1174,7 +1174,7 @@ static void writeObjects(
             ofs << "\tsetAttr \".uvst[0].uvsn\" -type \"string\" \"map1\";\n"; 
             ofs << "\tsetAttr \".cuvs\" -type \"string\" \"map1\";\n";
 
-            // Morph vertices
+            // morph vertices
             writeVertices(ofs,mVtxList);
 
             // Other info.
@@ -1999,8 +1999,8 @@ fgMeshLegacy(Meshes const & meshes,String8 const & fname,string const & imgForma
                     texBase = baseName + toStr(imgIdx++) + "." + imgFormat;
                     saveImage(path.dir()+texBase,*surf.material.albedoMap);
                 }
-                od.triList = surf.tris.posInds;
-                od.quadList = surf.quads.posInds;
+                od.triList = surf.tris.vertInds;
+                od.quadList = surf.quads.vertInds;
                 od.texTriList = surf.tris.uvInds;
                 od.texQuadList = surf.quads.uvInds;
                 od.textureFile = texBase;

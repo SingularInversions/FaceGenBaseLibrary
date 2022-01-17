@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,8 +19,7 @@ namespace Fg {
 
 namespace {
 
-void
-cmdAlpha(CLArgs const & args)
+void                cmdAlpha(CLArgs const & args)
 {
     Syntax              syn(args,
         "<rgb>.<ext> <alpha>.<ext> <out>.<ext>\n"
@@ -36,9 +35,7 @@ cmdAlpha(CLArgs const & args)
         rgb.m_data[ii].alpha() = alpha.m_data[ii].rec709();
     saveImage(syn.next(),rgb);
 }
-
-void
-cmdComposite(CLArgs const & args)
+void                cmdComposite(CLArgs const & args)
 {
     Syntax              syn(args,
         "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
@@ -51,9 +48,7 @@ cmdComposite(CLArgs const & args)
         syn.error("The images must have identical pixel dimensions");
     saveImage(syn.next(),composite(overlay,base));
 }
-
-void
-cmdConst(CLArgs const & args)
+void                cmdConst(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<X size> <Y size> <R> <G> <B> <A> <out>.<ext>
@@ -72,9 +67,7 @@ cmdConst(CLArgs const & args)
     }
     saveImage(syn.next(),ImgRgba8{X,Y,rgba});
 }
-
-void
-cmdConvert(CLArgs const & args)
+void                cmdConvert(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<ext> <out>.<ext>\n"
@@ -83,8 +76,7 @@ cmdConvert(CLArgs const & args)
     ImgRgba8            img = loadImage(syn.next());
     saveImage(syn.next(),img);
 }
-
-void            cmdCreate(CLArgs const & args)
+void                cmdCreate(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<num> <size> <out>.<ext>
@@ -111,9 +103,7 @@ NOTES:
     }
     saveImage(syn.next(),img);
 }
-
-void
-cmdShrink(CLArgs const & args)
+void                cmdShrink(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<ext> <out>.<ext>\n"
@@ -123,9 +113,7 @@ cmdShrink(CLArgs const & args)
     img = shrink2(img);
     saveImage(syn.next(),img);
 }
-
-void
-cmdFormats(CLArgs const &)
+void                cmdFormats(CLArgs const &)
 {
     Strings             fs = getImageFileExts();
     fgout << fgnl << fs.size() << " cmdFormats supported:" << fgpush;
@@ -139,8 +127,7 @@ cmdFormats(CLArgs const &)
     }
     fgout << fgpop;
 }
-
-void        cmdMark(CLArgs const & args)
+void                cmdMark(CLArgs const & args)
 {
     Syntax              syn {args,
         R"([-b] <landmarks> <images>
@@ -149,7 +136,16 @@ void        cmdMark(CLArgs const & args)
     <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
     <list>.txt      - must contain a whitespace-separated list
     <landmarkName>  - cannot contain '.' character
-    <ext>           - )" + getImageFileExtCLDescriptions()
+    <ext>           - )" + getImageFileExtCLDescriptions() + R"(
+OUTPUT:
+    <fileName>.lms.txt  - for each <fileName> image containing landmarks added
+NOTES:
+    * images will be displayed in order of appearance
+    * landmark names will be prompted in order of appearance
+    * the .lms.txt format is one landmark per line each line consisting of <name> <X> <Y>
+      where <X> and <y> are the raster positions (floating point permitted).
+      Lines beginning with # are ignored (comments).
+    * landmarks already existing in <fileName>.lms.txt will not be prompted for update)"
     };
     bool                brighten = false;
     if (beginsWith(syn.peekNext(),"-")) {
@@ -180,22 +176,20 @@ void        cmdMark(CLArgs const & args)
             for (Rgba8 & rgba : img.m_data)
                 for (uint cc=0; cc<3; ++cc)
                     rgba[cc] = scast<uchar>(pow(rgba[cc]/255.0f,1/2.5f)*255.0f+0.5f);
-        ImagePoints         lms;
+        NameVec2Fs          lms;
         String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
         if (fileExists(lmsFile))
-            lms = loadImagePoints(lmsFile);
-        ImagePoints         lmsNew = markImage(img,lms,lmNames);
+            lms = loadImageLandmarks(lmsFile);
+        NameVec2Fs          lmsNew = markImage(img,lms,lmNames);
         if (lmsNew == lms)
             fgout << fgnl << "No landmarks placed, nothing saved";
         else {
-            saveImagePoints(lmsNew,lmsFile);
+            saveImageLandmarks(lmsNew,lmsFile);
             fgout << fgnl << lmsNew.size() << " landmarks saved in " << lmsFile;
         }
     }
 }
-
-void
-cmdImgops(CLArgs const & args)
+void                cmdImgops(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
@@ -212,9 +206,7 @@ cmdImgops(CLArgs const & args)
 
 }
 
-Cmd
-getCmdImage()
-{return Cmd(cmdImgops,"image","Image operations"); }
+Cmd                 getCmdImage() {return Cmd{cmdImgops,"image","Image operations"}; }
 
 }
 

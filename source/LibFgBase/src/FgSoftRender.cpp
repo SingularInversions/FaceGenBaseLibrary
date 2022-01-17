@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -55,7 +55,7 @@ renderSoft(
                 ProjectedSurfPoint      spp;
                 spp.label = sp.label;
                 Vec3F               spOecs = surf.surfPointPos(verts,ii),
-                                    spNorm = norms.facet[ss].triEquiv(sp.triEquivIdx);
+                                    spNorm = norms.facet[ss].triEquiv(sp.point.triEquivIdx);
                 spp.visible = (cDot(spOecs,spNorm) < 0);           // Point is camera-facing
                 Vec3F               spIucs = rc.oecsToIucs(spOecs);
                 spp.posIucs = Vec2F(spIucs[0],spIucs[1]);
@@ -65,7 +65,7 @@ renderSoft(
                         RayCaster::Intersect  intsct = intscts[0].second;     // First is closest
                         if ((intsct.triInd.meshIdx != mm) ||
                             (intsct.triInd.surfIdx != ss) ||
-                            (intsct.triInd.triIdx != sp.triEquivIdx)) {         // Point is occluded
+                            (intsct.triInd.triIdx != sp.point.triEquivIdx)) {         // Point is occluded
                             spp.visible = false;
                         }
                     }
@@ -123,20 +123,20 @@ testSoftRender(CLArgs const &)
 
     // Model a single triangle of equal width and height intersected by the optical axis in OECS at the barycentric centre:
     mesh.verts = { {-1,1.5,-4}, {-1,-1.5,-4}, {2,0,-4} };
-    surf.tris.posInds = {{0,1,2}};         // CC winding
+    surf.tris.vertInds = {{0,1,2}};         // CC winding
     surf.surfPoints = svec(SurfPoint(0,Vec3F(1.0f/3.0f)));
     // Test that the point is visible in the current configuration:
     ro.renderSurfPoints = RenderSurfPoints::whenVisible;
     ImgRgba8     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
     regressTestApprox<ImgRgba8>(img,"t0.png",bind(fgImgApproxEqual,_1,_2,2U));
     // Flip the winding to test the surface point is not visible from behind:
-    surf.tris.posInds.back() = {1,0,2};
+    surf.tris.vertInds.back() = {1,0,2};
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
     regressTestApprox<ImgRgba8>(img,"t4.png",bind(fgImgApproxEqual,_1,_2,2U));
-    surf.tris.posInds.back() = {0,1,2};    // Restore
+    surf.tris.vertInds.back() = {0,1,2};    // Restore
     // Place a triangle just in front to test occlusion of the surface point:
     mesh.verts.push_back( {2,0,-3.9} );
-    surf.tris.posInds.push_back( {0,1,3} );
+    surf.tris.vertInds.push_back( {0,1,3} );
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
     regressTestApprox<ImgRgba8>(img,"t3.png",bind(fgImgApproxEqual,_1,_2,2U));
 
@@ -144,7 +144,7 @@ testSoftRender(CLArgs const &)
     // Model 2 right angle triangles making a sqaure with a checkerboard color map (preserving aspect ratio):
     mesh.verts = {{-1,1.5,-4}, {-1,-1.5,-4}, {2,1.5,-4}, {2,-1.5,-4}};
     mesh.uvs = {{0,1}, {0,0}, {1,1}, {1,0}};
-    surf.tris.posInds = {{0,1,2}, {2,1,3}};
+    surf.tris.vertInds = {{0,1,2}, {2,1,3}};
     surf.tris.uvInds = {{0,1,2}, {2,1,3}};
     ImgRgba8     map(128,128);
     for (Iter2UI it(map.dims()); it.valid(); it.next()) {

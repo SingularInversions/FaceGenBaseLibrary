@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,12 +16,8 @@ namespace Fg {
 
 struct  KdVal
 {
-    Vec3F       closest;    // Closest vertex to query (if valid)
-    double      distMag;    // if == ::max() this object is invalid
-
-    KdVal() : distMag(std::numeric_limits<double>::max()) {}
-
-    bool valid() const {return (distMag != std::numeric_limits<double>::max()); }
+    Vec3F               closest;
+    float               distMag;    // squared magnitude of distance from query point to 'closest' above
 };
 
 struct  KdTree
@@ -36,14 +32,13 @@ struct  KdTree
         Node(Vec3F v,uint l) : vert(v), idxLo(l) {}
         Node(Vec3F v,uint l,uint h) : vert(v), idxLo(l), idxHi(h) {}
     };
-    Svec<Node>      m_tree;                     // Last node is root
+    Svec<Node>          m_tree;                 // Last node is root
 
-    explicit KdTree(Vec3Fs const & pnts);       // Can't be empty
+    explicit KdTree(Vec3Fs const & pnts);       // Can't be empty. Duplicates are ignored.
 
-    KdVal   findClosest(Vec3D query) const;     // If multiple points are equidistant 1 is arbirarily chosen
-
-    KdVal   findClosest(Vec3F query) const
-    {return findClosest(Vec3D(query)); }
+    // If multiple points are exactly equidistant 1 is arbirarily chosen:
+    KdVal               findClosest(Vec3F query) const;
+    KdVal               findClosest(Vec3D query) const {return findClosest(Vec3F(query)); }
 };
 
 }

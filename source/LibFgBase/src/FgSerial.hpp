@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,23 +32,21 @@ namespace Fg {
 // to avoid confusing errors (ie. when global can't be resolved it tries to call itself but has
 // wrong number of arguments):
 template<class T>
-void srlz_(T const & v,String & s)
-{v.srlzm_(s); }
+void                srlz_(T const & v,String & s) {v.srlzm_(s); }
 template<class T>
-void dsrlz_(String const & s,size_t & p,T & v)
-{v.dsrlzm_(s,p); }
+void                dsrlz_(String const & s,size_t & p,T & v) {v.dsrlzm_(s,p); }
 
 // Direct binary serialization (no transformation). T must be simple type
-template<class T> void srlzRaw_(T v,String & s)
-{
-    s.append(reinterpret_cast<char const *>(&v),sizeof(v));
-}
-template<class T> void srlzRaw_(Svec<T> const & v,String & s)
+template<class T>
+void                srlzRaw_(T v,String & s) {s.append(reinterpret_cast<char const *>(&v),sizeof(v)); }
+template<class T>
+void                srlzRaw_(Svec<T> const & v,String & s)
 {
     if (!v.empty())
         s.append(reinterpret_cast<char const *>(&v[0]),sizeof(T)*v.size());
 }
-template<class T> void srlzRawOverwrite_(T v,String & s,size_t pos)  // random access overwrite version
+template<class T>
+void                srlzRawOverwrite_(T v,String & s,size_t pos)  // random access overwrite version
 {
     size_t          len = sizeof(v);
     FGASSERT(pos+len <= s.size());
@@ -56,7 +54,8 @@ template<class T> void srlzRawOverwrite_(T v,String & s,size_t pos)  // random a
     for (size_t ii=0; ii<len; ++ii)
         s[pos+ii] = src[ii];
 }
-template<class T> void dsrlzRaw_(String const & s,size_t & p,T & v)
+template<class T>
+void                dsrlzRaw_(String const & s,size_t & p,T & v)
 {
     size_t          sz = sizeof(v);
     FGASSERT(p+sz <= s.size());
@@ -65,52 +64,52 @@ template<class T> void dsrlzRaw_(String const & s,size_t & p,T & v)
 }
 
 // Base cases for builtins:
-void srlz_(bool v,String & s);                                              // Store as uchar
-inline void srlz_(uchar v,String & s) {srlzRaw_(v,s); }                     // Assume always 8bit
-inline void srlz_(int v,String & s) {srlzRaw_(v,s); }                       // Assume always 32bit
-inline void srlz_(uint v,String & s) {srlzRaw_(v,s); }                      // "
-inline void srlz_(long v,String & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
-inline void srlz_(unsigned long v,String & s) {srlzRaw_(uint64(v),s); }     // "
-inline void srlz_(long long v,String & s) {srlzRaw_(v,s); }                 // Assume always 64bit
-inline void srlz_(unsigned long long v,String & s) {srlzRaw_(v,s); }        // "
-inline void srlz_(float v,String & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
-inline void srlz_(double v,String & s) {srlzRaw_(v,s); }                    // "
+void            srlz_(bool v,String & s);                                       // Store as uchar
+inline void     srlz_(uchar v,String & s) {srlzRaw_(v,s); }                     // Assume always 8bit
+inline void     srlz_(int v,String & s) {srlzRaw_(v,s); }                       // Assume always 32bit
+inline void     srlz_(uint v,String & s) {srlzRaw_(v,s); }                      // "
+inline void     srlz_(long v,String & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
+inline void     srlz_(unsigned long v,String & s) {srlzRaw_(uint64(v),s); }     // "
+inline void     srlz_(long long v,String & s) {srlzRaw_(v,s); }                 // Assume always 64bit
+inline void     srlz_(unsigned long long v,String & s) {srlzRaw_(v,s); }        // "
+inline void     srlz_(float v,String & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
+inline void     srlz_(double v,String & s) {srlzRaw_(v,s); }                    // "
 
-void dsrlz_(String const & s,size_t & p,bool & v);
-inline void dsrlz_(String const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
-void dsrlz_(String const & s,size_t & p,long & v);                          // interop w/ bounds checks
-void dsrlz_(String const & s,size_t & p,unsigned long & v);                 // "
-inline void dsrlz_(String const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
-inline void dsrlz_(String const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
+void            dsrlz_(String const & s,size_t & p,bool & v);
+inline void     dsrlz_(String const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
+inline void     dsrlz_(String const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
+inline void     dsrlz_(String const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
+void            dsrlz_(String const & s,size_t & p,long & v);                   // interop w/ bounds checks
+void            dsrlz_(String const & s,size_t & p,unsigned long & v);          // "
+inline void     dsrlz_(String const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
+inline void     dsrlz_(String const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
+inline void     dsrlz_(String const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
+inline void     dsrlz_(String const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
 
 // Base cases for std lib classes:
 template<typename T,size_t S>
-void srlz_(Arr<T,S> const & v,String & s)
+void                srlz_(Arr<T,S> const & v,String & s)
 {
     for (T const & e : v)
         srlz_(e,s);
 }
 template<typename T,size_t S>
-void dsrlz_(String const & s,size_t & p,Arr<T,S> & v)
+void                dsrlz_(String const & s,size_t & p,Arr<T,S> & v)
 {
     for (T & e : v)
         dsrlz_(s,p,e);
 }
-void srlz_(String const & v,String & s);
-void dsrlz_(String const & s,size_t & p,String & v);
+void                srlz_(String const & v,String & s);
+void                dsrlz_(String const & s,size_t & p,String & v);
 template<typename T>
-void srlz_(Svec<T> const & v,String &s)
+void                srlz_(Svec<T> const & v,String &s)
 {
     srlz_(uint64(v.size()),s);
     for (T const & e : v)
         srlz_(e,s);
 }
 template<typename T>
-void dsrlz_(String const & s,size_t & p,Svec<T> & v)
+void                dsrlz_(String const & s,size_t & p,Svec<T> & v)
 {
     uint64              sz;
     dsrlz_(s,p,sz);
@@ -251,32 +250,35 @@ struct                  SerNodeArr : SerNode
     }
 };
 inline std::ostream & operator<<(std::ostream & os,SerPtr const & sp) {sp->print(os); return os; }
-inline SerPtr cSerVal(String const & v) {return std::make_shared<SerNodeVal>(v); }
-template<class T>  SerPtr tsrlz(T const & v) {return v.tsrlzm(); }          // base case redirects to member
-inline SerPtr tsrlz(bool v) {return cSerVal(v ? "true" : "false"); }
-inline SerPtr tsrlz(char v) {return cSerVal(String{v}); }
-inline SerPtr tsrlz(uchar v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(int16 v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(uint16 v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(int v) {return cSerVal(toStr(v)); }                     // overloads for builtin & lib types
-inline SerPtr tsrlz(uint v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(int64 v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(uint64 v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(float v) {return cSerVal(toStr(v)); }
-inline SerPtr tsrlz(double v) {return cSerVal(toStrDigits(v,6)); }
-inline SerPtr tsrlz(String const & s) {return cSerVal(s); }
+inline SerPtr       cSerVal(String const & v) {return std::make_shared<SerNodeVal>(v); }
+template<class T>
+SerPtr              tsrlz(T const & v) {return v.tsrlzm(); }        // base case redirects to member
+inline SerPtr       tsrlz(bool v) {return cSerVal(v ? "true" : "false"); }
+inline SerPtr       tsrlz(char v) {return cSerVal(String{v}); }
+inline SerPtr       tsrlz(uchar v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(int16 v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(uint16 v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(int v) {return cSerVal(toStr(v)); }       // overloads for builtin & lib types
+inline SerPtr       tsrlz(uint v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(int64 v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(uint64 v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(float v) {return cSerVal(toStr(v)); }
+inline SerPtr       tsrlz(double v) {return cSerVal(toStrDigits(v,6)); }
+inline SerPtr       tsrlz(String const & s) {return cSerVal(s); }
 #ifdef _WIN32       // wstring == String32 on nix:
-inline SerPtr tsrlz(std::wstring const & s) {return cSerVal(toUtf8(s)); }
+inline SerPtr       tsrlz(std::wstring const & s) {return cSerVal(toUtf8(s)); }
 #endif
-inline SerPtr tsrlz(String32 const & s) {return cSerVal(toUtf8(s)); }
-template<class T,size_t S> SerPtr tsrlz(std::array<T,S> const & v)
+inline SerPtr       tsrlz(String32 const & s) {return cSerVal(toUtf8(s)); }
+template<class T,size_t S>
+SerPtr              tsrlz(std::array<T,S> const & v)
 {
     SerPtrs                 ret; ret.reserve(S);
     for (T const & e : v)
         ret.push_back(tsrlz(e));
     return std::make_shared<SerNodeArr>(ret);
 }
-template<class T> SerPtr tsrlz(std::vector<T> const & v)
+template<class T>
+SerPtr              tsrlz(std::vector<T> const & v)
 {
     SerPtrs                 ret; ret.reserve(v.size());
     for (T const & e : v)
@@ -342,45 +344,37 @@ FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T4(E,F,G,H) FG_SER_T_END
 
 // Client direct usage of serialization (no message packaging):
 template<class T>
-String
-srlz(T const & v)
+String              srlz(T const & v)
 {
     String          ret;
     srlz_(v,ret);
     return ret;
 }
 template<class T>
-T
-dsrlz(String const & s)
+T                   dsrlz(String const & s)
 {
     T               ret;
     size_t          p = 0;
     dsrlz_(s,p,ret);
     return ret;
 }
-
 // A message is a uint64 type signature followed by a binary serialized simple object:
 template<class T>
-String
-toMessage(T const & v,uint64 typeSig)
+String              toMessage(T const & v,uint64 typeSig)
 {
     String          msg;
     srlz_(typeSig,msg);
     srlz_(v,msg);
     return msg;
 }
-
 // Serialize to message using the default-defined tree hash type signature:
 template<class T>
-inline String toMessage(T const & v) {return toMessage(v,T::typeSig()); }
-
+inline String       toMessage(T const & v) {return toMessage(v,T::typeSig()); }
 // Serialize to message using the type signature manually-defined by T::typeID()
 template<class T>
-inline String toMessageExplicit(T const & v) {return toMessage(v,T::typeID()); }
-
+inline String       toMessageExplicit(T const & v) {return toMessage(v,T::typeID()); }
 template<class T>
-void
-fromMessage_(String const & msg,uint64 typeSig,T & v)
+void                fromMessage_(String const & msg,uint64 typeSig,T & v)
 {
     size_t          p {0};
     uint64          msgID {0};
@@ -389,51 +383,42 @@ fromMessage_(String const & msg,uint64 typeSig,T & v)
         fgThrow("message deserialization non-matching type signature",toStr(msgID)+"!="+toStr(typeSig));
     dsrlz_(msg,p,v);
 }
-
 // Deserialize from message validating the default tree hash type signature:
 template<class T>
-inline void fromMessage_(String const & msg,T & v) {fromMessage_(msg,T::typeSig(),v); }
-
+inline void         fromMessage_(String const & msg,T & v) {fromMessage_(msg,T::typeSig(),v); }
 template<class T>
-T
-fromMessage(String const & s)
+T                   fromMessage(String const & s)
 {
     T               ret;
     fromMessage_(s,ret);
     return ret;
 }
-
 // Deserialize from message validating the type signature manually defined by T::typeID()
 template<class T>
-inline void fromMessageExplicit_(String const & msg,T & v) {fromMessage_(msg,T::typeID(),v); }
-
+inline void         fromMessageExplicit_(String const & msg,T & v) {fromMessage_(msg,T::typeID(),v); }
 template<class T>
-T
-fromMessageExplicit(String const & s)
+T                   fromMessageExplicit(String const & s)
 {
     T               ret;
     fromMessageExplicit_(s,ret);
     return ret;
 }
-
 // Reflection utilities:
 template<typename T>
-void
-typeNames_(Strings & str,T const & v)
+void                typeNames_(Strings & str,T const & v)
 {
     str.push_back(typeid(v).name());
 }
 template<typename T,typename... Ts>
-void
-typeNames_(Strings & str,T const & v,Ts... vs)
+void                typeNames_(Strings & str,T const & v,Ts... vs)
 {
     str.push_back(typeid(v).name());
     typeNames_(str,vs...);
 }
-
 // Used in macros to enable struct name reflection; default used for all external code
 // and complete specializations made for each reflected struct:
-template<class T> void reflectNames_(Strings &) {}
+template<class T>
+void                reflectNames_(Strings &) {}
 
 #define FG_REFLECT_SIG(S) template<> inline void reflectNames_<S>(Strings & s)
 #define FG_REFLECT_1(A) s.push_back(#A);

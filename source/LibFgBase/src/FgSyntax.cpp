@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,9 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-Syntax::Syntax(
-    CLArgs const &      args,
-    string const & syntax)
+Syntax::Syntax(CLArgs const & args,String const & syntax)
     :
     m_args(args), m_idx(0)
 {
@@ -35,7 +33,6 @@ Syntax::Syntax(
             throwSyntax();
     }
 }
-
 Syntax::~Syntax()
 {
     size_t      unused = m_args.size() - m_idx - 1;
@@ -43,86 +40,69 @@ Syntax::~Syntax()
         fgout << fgnl << "WARNING: last " << unused
             << " argument(s) not used : " << cat(cTail(m_args,unused)," ");
 }
-
-void
-Syntax::error(string const & errMsg)
+void                Syntax::error(String const & errMsg)
 {
     fgout.setDefOut(true);    // Don't write directly to cout to ensure proper logging:
     fgout << "\nERROR: " << errMsg << '\n';
     throwSyntax();
 }
-
-void
-Syntax::error(string const & errMsg,String8 const & data)
+void                Syntax::error(String const & errMsg,String8 const & data)
 {
     fgout.setDefOut(true);
     fgout << "\nERROR: " << errMsg << ": " << data << '\n';
     throwSyntax();
 }
-
-void
-Syntax::incorrectNumArgs()
+void                Syntax::incorrectNumArgs()
 {
     error("Incorrect number of arguments");
 }
-
-void
-Syntax::checkExtension(String8 const & fname,string const & ext)
+void                Syntax::checkExtension(String8 const & fname,String const & ext)
 {
     if (!checkExt(fname,ext))
         error("File must have extension "+ext,fname);
 }
-
-void
-Syntax::checkExtension(string const & fname,Strings const & exts)
+void                Syntax::checkExtension(String const & fname,Strings const & exts)
 {
-    string      fext = toLower(pathToExt(fname));
+    String      fext = toLower(pathToExt(fname));
     for (size_t ii=0; ii<exts.size(); ++ii)
         if (fext == toLower(exts[ii]))
             return;
     error("Filename did not have on of the required extensions",fname + " : " + toStr(exts));
 }
-
-string const &
-Syntax::peekNext()
+String const &      Syntax::peekNext()
 {
     if (m_idx+1 == m_args.size())
         error("Expected another argument after",m_args[m_idx]);
     return m_args[m_idx+1];
 }
-
-CLArgs
-Syntax::rest()
+CLArgs              Syntax::rest()
 {
     CLArgs  ret(m_args.begin()+m_idx,m_args.end());
     m_idx = m_args.size()-1;
     return ret;
 }
-
-static void         removeEndline(string & line)
+static void         removeEndline(String & line)
 {
     while (!line.empty() && isCrLf(line.back()))
         line.resize(line.size()-1);
 }
-static bool         hasLeadingSpaces(string const & line,size_t num)
+static bool         hasLeadingSpaces(String const & line,size_t num)
 {
     for (size_t ii=0; ii<num; ++ii)
         if (line[ii] != ' ')
             return false;
     return true;
 }
-static
-string
-formatLine(string const & line,size_t indent,size_t maxWidth)
+static String       formatLine(String const & line,size_t indent,size_t maxWidth)
 {
     --maxWidth;         // CRLF takes up a space
-    string      ret;
+    String      ret;
     size_t      done = 0;
     while (done < line.size()) {
         size_t          remaining = line.size() - done;
         size_t          nextSz;
         if (done > 0) {
-            ret += string(indent,' ');
+            ret += String(indent,' ');
             nextSz = std::min(remaining,maxWidth-indent);
         }
         else
@@ -152,15 +132,15 @@ static size_t       findFirstMarker(String const & str)
 {
     return std::min(str.find(" - ",0),str.find(" * ",0));
 }
-static string       formatLines(string const & desc)
+static String       formatLines(String const & desc)
 {
     // Convert from old-style manual formatting to long lines:
     Strings             ins = splitLines(desc),
                         outs;
     size_t              indent = 0;
-    for (string const & line : ins) {
+    for (String const & line : ins) {
         size_t              mark = findFirstMarker(line);
-        if (mark == string::npos) {
+        if (mark == String::npos) {
             if ((indent > 0) && (line.size() > indent) && (hasLeadingSpaces(line,indent))) {
                 // This line is a continuation:
                 removeEndline(outs.back());
@@ -179,44 +159,36 @@ static string       formatLines(string const & desc)
         }
     }
     // Now format the lines:
-    string              ret;
+    String              ret;
     uint                maxWidth = std::min(fgConsoleWidth(),160U);     // 160 upper limit for readability
-    for (string const & line : outs) {
+    for (String const & line : outs) {
         size_t              mark = findFirstMarker(line);
-        if (mark == string::npos)
+        if (mark == String::npos)
             ret += formatLine(line,0,maxWidth);
         else
             ret += formatLine(line,mark+3,maxWidth);
     }
     return ret;
 }
-
-void
-Syntax::throwSyntax()
+void                Syntax::throwSyntax()
 {
     m_idx = m_args.size()-1;    // Don't print warning for unused args in this case
     fgout << fgnl << formatLines(m_syntax);
     throw FgExceptionCommandSyntax();
 }
-
-void
-Syntax::numArgsMustBe(uint num)
+void                Syntax::numArgsMustBe(uint num)
 {
     if (num+1 != m_args.size())
         incorrectNumArgs();
 }
-
-uint
-Syntax::nextSelectionIndex(Strings const & validValues,string const & argDescription)
+uint                Syntax::nextSelectionIndex(Strings const & validValues,String const & argDescription)
 {
     size_t      idx = findFirstIdx(validValues,next());
     if (idx == validValues.size())
         error("Invalid value for",argDescription);
     return uint(idx);
 }
-
-void
-Syntax::noMoreArgsExpected()
+void                Syntax::noMoreArgsExpected()
 {
     if (more())
         error("too many arguments supplied");

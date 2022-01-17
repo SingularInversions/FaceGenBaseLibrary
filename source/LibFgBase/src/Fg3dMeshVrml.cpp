@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -131,14 +131,14 @@ saveVrml(
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             if (surf.numTris() > 0) {
-                writeIndices(ofs,surf.tris.posInds);
+                writeIndices(ofs,surf.tris.vertInds);
                 if (surf.numQuads() > 0)
                     ofs << ",\n";
                 else
                     ofs << "\n";
             }
             if (surf.numQuads() > 0) {
-                writeIndices(ofs,surf.quads.posInds);
+                writeIndices(ofs,surf.quads.vertInds);
                 ofs << "\n";
             }
         }

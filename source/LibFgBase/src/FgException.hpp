@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -41,22 +41,17 @@ struct  FgException
 {
     struct  Context
     {
-        std::string     msg;            // In english
-        std::string     dataUtf8;       // Non-translatable UTF-8
+        std::string         msg;            // In english
+        std::string         dataUtf8;       // Non-translatable UTF-8
 
         Context(const std::string & m,const std::string & d) : msg(m), dataUtf8(d) {}
 
-        std::string                 // UTF-8
-        trans() const;
-
-        std::string                 // UTF-8
-        noTrans() const;
+        std::string         trans() const;      // UTF-8
+        std::string         noTrans() const;    // UTF-8
     };
     std::vector<Context>    m_ct;       // From lowest stack/context to highest
 
-    virtual
-    ~FgException()
-    {}
+    virtual ~FgException() {}
 
     FgException() {}
         /**
@@ -82,19 +77,15 @@ struct  FgException
             Push some more exception information onto this exception
             instance. The usage is similar to that of the constructors.
         */
-    void
-    pushMsg(
+    void                pushMsg(
         const std::string & msg,
         const std::string & dataUtf8 = std::string())
     {
         m_ct.push_back(Context(msg,dataUtf8));
     }
 
-    std::string
-    tr_message() const;
-
-    std::string
-    no_tr_message() const;
+    std::string             tr_message() const;
+    std::string             no_tr_message() const;
 };
 
 // Should be caught in an end-user context as a failed operation, rather than reported
@@ -123,8 +114,10 @@ struct FgExceptionNotImplemented : public FgException
         : FgException("Functionality not implemented on this platform",data) {}
 };
 
-inline void fgThrow(const std::string & msg)
-{throw FgException(msg,std::string()); }
+inline void         fgThrow(const std::string & msg)
+{
+    throw FgException(msg,std::string());
+}
 
 // Only way to avoid VS warnings since some configs warn for unreachable code (returns),
 // others for not returning a value ...

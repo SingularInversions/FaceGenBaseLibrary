@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -147,8 +147,8 @@ cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
             ofs << " 4";
         ofs << " </vcount>\n"
             "          <p>";
-        for (size_t ii=0; ii<surf.tris.posInds.size(); ++ii) {
-            Vec3UI       tri = surf.tris.posInds[ii];
+        for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
+            Vec3UI       tri = surf.tris.vertInds[ii];
             for (size_t jj=0; jj<3; ++jj) {
                 ofs << " " << tri[jj];      // vertex index
                 ofs << " " << tri[jj];      // normal index
@@ -156,8 +156,8 @@ cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
                     ofs << " " << surf.tris.uvInds[ii][jj];
             }
         }
-        for (size_t ii=0; ii<surf.quads.posInds.size(); ++ii) {
-            Vec4UI       quad = surf.quads.posInds[ii];
+        for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
+            Vec4UI       quad = surf.quads.vertInds[ii];
             for (size_t jj=0; jj<4; ++jj) {
                 ofs << " " << quad[jj];     // vertex index
                 ofs << " " << quad[jj];     // normal index

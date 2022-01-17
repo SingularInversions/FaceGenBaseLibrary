@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,8 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-Svec<pair<MeshFormat,String>>
-getMeshFormatExtMap()
+Svec<pair<MeshFormat,String>> getMeshFormatExtMap()
 {
     return Svec<pair<MeshFormat,String>> {
         {MeshFormat::tri,"tri"},
@@ -36,7 +35,6 @@ getMeshFormatExtMap()
         {MeshFormat::xsi,"xsi"},
     };
 }
-
 MeshFormat          getMeshFormat(String const & ext)
 {
     String          extl = toLower(ext);
@@ -45,7 +43,6 @@ MeshFormat          getMeshFormat(String const & ext)
         fgThrow("No mesh file format found for extension",extl);
     return formats[0];                  // preferred format listed first
 }
-
 bool                meshFormatSupportsMulti(MeshFormat mf)
 {
     static map<MeshFormat,bool>   mfs = {
@@ -66,13 +63,11 @@ bool                meshFormatSupportsMulti(MeshFormat mf)
     FGASSERT(it != mfs.end());
     return it->second;
 }
-
 String              getMeshFormatExt(MeshFormat mf)
 {
     Svec<pair<MeshFormat,String>> mfs = getMeshFormatExtMap();
     return lookupFirstL(mfs,mf);
 }
-
 String              getMeshFormatName(MeshFormat mf)
 {
     static map<MeshFormat,String>   mfs = {
@@ -93,7 +88,13 @@ String              getMeshFormatName(MeshFormat mf)
     FGASSERT(it != mfs.end());
     return it->second;
 }
-
+MeshFormats         getMeshNativeFormats()
+{
+    return {
+        MeshFormat::fgmesh,
+        MeshFormat::tri,
+    };
+}
 MeshFormats         getMeshExportFormats()
 {
     return {
@@ -108,13 +109,20 @@ MeshFormats         getMeshExportFormats()
         MeshFormat::xsi,
     };
 }
-
-String
-getMeshLoadExtsCLDescription()
-{return String("(fgmesh | [w]obj | tri)"); }
-
-const Svec<pair<String,String> > &
-meshExportFormatExtDescs()
+String              getClOptionsString(MeshFormats const & formats)
+{
+    FGASSERT(!formats.empty());
+    String              ret = "(" + getMeshFormatExt(formats[0]);
+    for (size_t ii=1; ii<formats.size(); ++ii)
+        ret += "," + getMeshFormatExt(formats[ii]);
+    ret += ")";
+    return ret;
+}
+String              getMeshLoadExtsCLDescription()
+{
+    return String("(fgmesh | [w]obj | tri)");
+}
+Svec<pair<String,String> > const & meshExportFormatExtDescs()
 {
     static Svec<pair<String,String> > ret = {
         {"dae","Collada"},
@@ -129,21 +137,15 @@ meshExportFormatExtDescs()
     };
     return ret;
 }
-
-String
-getMeshSaveExtsCLDescription()
+String              getMeshSaveExtsCLDescription()
 {
     return "(fgmesh | tri | [w]obj | dae | wrl | fbx | stl | lwo | ma | xsi | 3ds | ply)";
 }
-
-Strings
-meshExportFormatsWithMorphs()
+Strings             meshExportFormatsWithMorphs()
 {
     return {"dae","fbx","ma","lwo","xsi"};
 }
-
-Mesh
-loadMesh(String8 const & fname)
+Mesh                loadMesh(String8 const & fname)
 {
     String8         ext = pathToExt(fname).toLower();
     if (ext == "fgmesh")
@@ -154,9 +156,7 @@ loadMesh(String8 const & fname)
         fgThrow("Not a loadable 3D mesh format",fname);
     return loadTri(fname);
 }
-
-Meshes
-loadMeshes(String8 const & fname)
+Meshes              loadMeshes(String8 const & fname)
 {
     String8         ext = pathToExt(fname).toLower();
     if (ext == "fgmesh")
@@ -169,9 +169,7 @@ loadMeshes(String8 const & fname)
         fgThrow("Not a loadable 3D mesh format",fname);
     return {loadTri(fname)};
 }
-
-bool
-loadMeshAnyFormat_(String8 const & fname,Mesh & mesh)
+bool                loadMeshAnyFormat_(String8 const & fname,Mesh & mesh)
 {
     Path            path(fname);
     if (path.ext.empty()) {
@@ -188,18 +186,14 @@ loadMeshAnyFormat_(String8 const & fname,Mesh & mesh)
     }
     return true;
 }
-
-Mesh
-loadMeshAnyFormat(String8 const & fname)
+Mesh                loadMeshAnyFormat(String8 const & fname)
 {
     Mesh                ret;
     if (!loadMeshAnyFormat_(fname,ret))
         fgThrow("No mesh format found for base name",fname);
     return ret;
 }
-
-Mesh
-loadMeshMaps(String8 const & baseName)
+Mesh                loadMeshMaps(String8 const & baseName)
 {
     Mesh            ret = loadMesh(baseName);
     if (!ret.surfaces.empty()) {
@@ -213,8 +207,7 @@ loadMeshMaps(String8 const & baseName)
     }
     return ret;
 }
-
-void        saveMesh(Mesh const & mesh,String8 const & fname,String const & imgFmt)
+void                saveMesh(Mesh const & mesh,String8 const & fname,String const & imgFmt)
 {
     MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
     if (fmt == MeshFormat::tri)
@@ -244,8 +237,7 @@ void        saveMesh(Mesh const & mesh,String8 const & fname,String const & imgF
     else
         fgThrow("saveMesh: unimplemented mesh format");
 }
-
-void        saveMergeMesh(Meshes const & meshes,String8 const & fname,String const & imgFmt)
+void                saveMergeMesh(Meshes const & meshes,String8 const & fname,String const & imgFmt)
 {
     MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
     if (fmt == MeshFormat::tri)
@@ -275,9 +267,7 @@ void        saveMergeMesh(Meshes const & meshes,String8 const & fname,String con
     else
         fgThrow("saveMergeMesh: unimplemented mesh format");
 }
-
-String
-inMetresStr(SpatialUnit u)
+String              inMetresStr(SpatialUnit u)
 {
     if (u == SpatialUnit::millimetre)
         return "0.001";
@@ -289,9 +279,7 @@ inMetresStr(SpatialUnit u)
         FGASSERT_FALSE;
     return "";
 }
-
-String
-toStr(SpatialUnit u)
+String              toStr(SpatialUnit u)
 {
     if (u == SpatialUnit::millimetre)
         return "millimetre";

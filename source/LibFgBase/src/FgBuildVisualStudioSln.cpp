@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -223,16 +223,19 @@ writeVcxproj(
                 "      <DebugInformationFormat>" << ((cc == 0) ? "ProgramDatabase" : "\n      ") << "</DebugInformationFormat>\n"
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
                 // Note that MSVC fast floating point model is an extension to the standard and thus cannot
-                // be used in combination with disabling MSVC language extensions:
+                // be used in combination with: Disable Language Extensions (/Za)
                 "      <FloatingPointModel>Fast</FloatingPointModel>\n";
                 // Don't support OpenMP in Visual Studio since:
                 // * It's a pain to get working cross platform
                 // * If used it requires VCOMP140.DLL which is not always present with Win7
-                // * Threads aren't much more work
+                // * direct use of threads is not hard
                 //"      <OpenMPSupport>true</OpenMPSupport>\n";
             if (vsver >= 17)    // Improved error position indicator:
                 ofs <<
-                "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n";
+                "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n"
+                // ensure source code conforms to the language specification; this does not
+                // preclude non-conforming code generation (see /fpFast above)
+                "      <ConformanceMode>true</ConformanceMode>\n";
             ofs <<
                 "    </ClCompile>\n";
             if (proj.isLinked()) {

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -308,22 +308,18 @@ NOTES:
 void            cmdMeshMirror(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<in>.<exti> <axis> <out>.<exto>
+        R"(<in>.<exti> <out>.<exto>
     <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
-    axis        - (x,y,z) the mesh will be mirrored around the zero coordinate (plane) of this axis
     <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
 OUTPUT:
     <out>.<exto>
 NOTES:
-    all vertex coordinates will be mirrored, windings will be reversed (to preserve surface orientation),
-    and any point labels ending in 'L' or 'R' will be reversed.)"
+    * all vertex coordinates will be mirrored around X=0
+    * windings will be reversed (to preserve surface orientation)
+    * any point labels ending in 'L' or 'R' will be reversed)"
     };
     Mesh                mesh = loadMesh(syn.next());
-    String              axisL = syn.nextLower().m_str;
-    size_t              axis = findFirstIdx(Svec<char>{'x','y','z'},axisL[0]);
-    if (axis > 2)
-        syn.error("Invalid axis",axisL);
-    saveMesh(cMirror(mesh,uint(axis)),syn.next());
+    saveMesh(cMirrorX(mesh),syn.next());
 }
 
 void
@@ -380,16 +376,16 @@ void                cmdRtris(CLArgs const & args)
             surf.removeTri(ti);
         else {
             ti -= surf.tris.size();
-            Vec4UI       qvs = surf.quads.posInds[ti/2];
+            Vec4UI       qvs = surf.quads.vertInds[ti/2];
             Vec4UI       uvs(0);
             if (!surf.quads.uvInds.empty())
                 uvs = surf.quads.uvInds[ti/2];
             surf.removeQuad(ti/2);
             // The other tri making up the quad needs to be appended to tris:
             if (ti & 0x1)
-                surf.tris.posInds.push_back(Vec3UI(qvs[0],qvs[1],qvs[2]));
+                surf.tris.vertInds.push_back(Vec3UI(qvs[0],qvs[1],qvs[2]));
             else
-                surf.tris.posInds.push_back(Vec3UI(qvs[2],qvs[3],qvs[0]));
+                surf.tris.vertInds.push_back(Vec3UI(qvs[2],qvs[3],qvs[0]));
             if (!surf.tris.uvInds.empty()) {
                 if (ti & 0x1)
                     surf.tris.uvInds.push_back(Vec3UI(uvs[0],uvs[1],uvs[2]));
@@ -472,8 +468,8 @@ void                cmdRetopo(CLArgs const & args)
         }
     }
     Mesh                meshOut = meshRe;
-    for (Morph const & morphIn : meshIn.deltaMorphs) {
-        Morph               morphOut {morphIn.name};
+    for (DirectMorph const & morphIn : meshIn.deltaMorphs) {
+        DirectMorph               morphOut {morphIn.name};
         for (size_t vv=0; vv<meshRe.verts.size(); ++vv) {
             uint                idx = mapRI[vv];
             if (idx == uintMax())
@@ -1010,29 +1006,6 @@ void                cmdXformCreate(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-void                cmdXformMirror(CLArgs const & args)
-{
-    Syntax        syn(args,
-        "<axis> <meshIn>.<ext1> [<meshOut>.<ext2>]\n"
-        "    <axis>     - (x | y | z)\n"
-        "    <ext1>     - " + getMeshLoadExtsCLDescription() + "\n"
-        "    <ext2>     - " + getMeshSaveExtsCLDescription()
-    );
-    uint            axis = 0;
-    string          axisStr = syn.nextLower().as_ascii();
-    if (axisStr == "x")
-        axis = 0;
-    else if (axisStr == "y")
-        axis = 1;
-    else if (axisStr == "z")
-        axis = 3;
-    else
-        syn.error("Invalid value of <axis>",axisStr);
-    Mesh            mesh = cMirror(loadMesh(syn.next()),axis);
-    String8         fname = (syn.more() ? syn.next() : syn.curr());
-    saveMesh(mesh,fname);
-}
-
 void                cmdSurfVertInds(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -1061,10 +1034,10 @@ NOTES:
         if (ss >= mesh.surfaces.size())
             syn.error("Surface index is larger than number of surfaces in mesh",toStr(ss));
         Surf const &        surf = mesh.surfaces[ss];
-        for (Vec3UI inds : surf.tris.posInds)
+        for (Vec3UI inds : surf.tris.vertInds)
             for (uint ind : inds.m)
                 vertInds.insert(ind);
-        for (Vec4UI inds : surf.quads.posInds)
+        for (Vec4UI inds : surf.quads.vertInds)
             for (uint ind : inds.m)
                 vertInds.insert(ind);
     }
@@ -1118,7 +1091,7 @@ void                cmdXform(CLArgs const & args)
     Cmds            cmds {
         {cmdXformApply,"apply","Apply a simiarlity transform (from XML file) to a mesh"},
         {cmdXformCreate,"create","Create a similarity transform XML file"},
-        {cmdXformMirror,"mirror","Mirror a mesh"},
+        {cmdMeshMirror,"mirror","Mirror the mesh around the X=0 plane"},
     };
     doMenu(args,cmds);
 }
@@ -1135,7 +1108,6 @@ void                cmdMesh(CLArgs const & args)
         {cmdInject,"inject","Inject updated vertex positions without otherwise modifying a mesh file"},
         {cmdMark,"mark","List and label marked vertices"},
         {cmdMergeMeshes,"merge","Merge multiple meshes into one. No optimization is done"},
-        {cmdMeshMirror,"mirror","Mirror the mesh around an axis=0 plane"},
         {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
         {cmdRetopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
         {cmdRtris,"rtris","Remove specific tris from a mesh"},

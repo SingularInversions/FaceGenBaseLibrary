@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -216,7 +216,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
                 nullptr,nullptr);
             if (SUCCEEDED(hr))
                 break;
-            failString += "HR="+toHexString(hr)+" ";
+            failString += "HR="+toHexString(scast<uint32>(hr))+" ";
         }
         if (FAILED(hr))
             throwWindows("No Direct3D 11.0 support",failString);
@@ -463,7 +463,7 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
     Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
     for (Surf const & origSurf : origMesh.surfaces) {
         for (SurfPoint const & sp : origSurf.surfPoints) {
-            Vec3F               pos = cSurfPointPos(sp.triEquivIdx,sp.weights,origSurf.tris,origSurf.quads,rendVerts);
+            Vec3F               pos = origSurf.surfPointPos(rendVerts,sp.point);
             for (Vec3UI tri : icosahedron.tris) {
                 for (uint idx : tri.m) {
                     Vert            v;
@@ -508,8 +508,7 @@ D3d::makeAllVerts(Vec3Fs const & verts)
     return makeVertBuff(avs);
 }
 
-D3d::Verts
-D3d::makeVertList(
+D3d::Verts          D3d::makeVertList(
     RendMesh const &        rendMesh,
     Mesh const &            origMesh,
     size_t                  surfNum,
@@ -517,24 +516,26 @@ D3d::makeVertList(
 {
     D3d::Verts              vertList;
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    MeshNormals const &         normals = rendMesh.normalsN.cref();
+    MeshNormals const &     normals = rendMesh.normalsN.cref();
     Vec3Fs const &          norms = normals.vert;
     FacetNormals const &    normFlats = normals.facet[surfNum];
     Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
     vertList.reserve(3*size_t(origSurf.numTriEquivs()));
+    bool                    hasUVs = origSurf.hasUvIndices();
     for (size_t tt=0; tt<origSurf.numTriEquivs(); ++tt) {
-        TriUv                   tri = origSurf.getTriEquiv(tt);
+        Vec3UI                  vertInds = origSurf.getTriEquivVertInds(tt),
+                                uvInds = hasUVs ? origSurf.getTriEquivUvInds(tt) : Vec3UI{0};
         for (uint ii=2; ii<3; --ii) {   // Reverse order due to D3D LEFT-handed coordinate system
             Vert                v;
-            size_t              posIdx = tri.posInds[ii];
-            v.pos = verts[posIdx];
+            size_t              vertIdx = vertInds[ii];
+            v.pos = verts[vertIdx];
             if (shadeFlat)
                 v.norm = normFlats.triEquiv(tt);
             else
-                v.norm = norms[posIdx];
-            if (!origMesh.uvs.empty()) {
-                v.uv = origMesh.uvs[tri.uvInds[ii]];
-                v.uv[1] = 1.0f - v.uv[1];   // Convert from OTCS to D3TCS
+                v.norm = norms[vertIdx];
+            if (hasUVs) {
+                v.uv = origMesh.uvs[uvInds[ii]];
+                v.uv[1] = 1.0f - v.uv[1];               // Convert from OTCS to D3TCS
             }
             vertList.push_back(v);
         }
@@ -547,8 +548,8 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
     D3d::Verts              ret;
     Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    Vec3UIs const &         tris = origSurf.tris.posInds;
-    Vec4UIs const &         quads = origSurf.quads.posInds;
+    Vec3UIs const &         tris = origSurf.tris.vertInds;
+    Vec4UIs const &         quads = origSurf.quads.vertInds;
     ret.reserve(8*quads.size()+6*tris.size());
     Vert                        v;
     v.norm = Vec3F(0,0,1);
@@ -1175,7 +1176,8 @@ D3d::handleHResult(char const * fpath,uint lineNum,HRESULT hr)
     if (hr < 0) {
         string          v11_1 = supports11_1 ? " D3D11.1" : " D3D11.0",     // wrong way around throug Mod v3.22
                         flip = supportsFlip ? " flip" : " noflip";
-        throwWindows("D3D HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(hr)+v11_1+flip);
+        throwWindows("D3D HRESULT",
+            pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(scast<uint32>(hr))+v11_1+flip);
     }
 }
 

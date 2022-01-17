@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,41 +32,34 @@
 namespace Fg {
 
 // Per-vertex morph, typically represented as deltas from base shape (aka blendshape):
-struct  Morph
+struct  DirectMorph
 {
     String8             name;
     Vec3Fs              verts;      // 1-1 correspondence with base verts
 
-    Morph() {}
-    explicit Morph(String8 const & n) : name(n) {}
-    Morph(String8 const & n,Vec3Fs const & v)
-        : name(n), verts(v) {}
+    DirectMorph() {}
+    explicit DirectMorph(String8 const & n) : name(n) {}
+    DirectMorph(String8 const & n,Vec3Fs const & v) : name(n), verts(v) {}
 
-    void
-    accAsDelta_(float val,Vec3Fs & accVerts) const
-    {
-        FGASSERT(verts.size() == accVerts.size());
-        for (size_t ii=0; ii<verts.size(); ++ii)
-            accVerts[ii] += verts[ii] * val;
-    }
+    inline void         accAsDelta_(float val,Vec3Fs & accVerts) const {mapMulAcc_(verts,val,accVerts); }
+    bool                operator==(String8 const & n) const {return (name==n); }    // easy lookup
 };
-typedef Svec<Morph>     Morphs;
+typedef Svec<DirectMorph>     DirectMorphs;
 
 struct  IdxVec3F
 {
-    uint            idx;            // index into vertex list
-    Vec3F           vec;            // delta or absolute position depending on use
+    uint                idx;            // index into vertex list
+    Vec3F               vec;            // delta or absolute position depending on use
     IdxVec3F() : idx{0}, vec{0} {}
     IdxVec3F(uint i,Vec3F const & v) : idx{i}, vec{v} {}
     FG_EQ_M2(IdxVec3F,idx,vec);
 };
 typedef Svec<IdxVec3F>  IdxVec3Fs;
 
-IdxVec3Fs       offsetIndices(IdxVec3Fs const & ivs,uint offset);
-Vec3Fs          indexedToCorrMorph(IdxVec3Fs const & morph,size_t baseSize);
+IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset);
+Vec3Fs              indexedToCorrMorph(IdxVec3Fs const & morph,size_t baseSize);
 
-// Indexed vertices morph representation is useful when only a small fraction of the base vertices
-// are affected:
+// Indexed vertices morph representation is advantageous when only a fraction of the vertices are affected:
 struct      IndexedMorph
 {
     String8             name;
@@ -75,25 +68,23 @@ struct      IndexedMorph
     IndexedMorph(String8 const & n,IdxVec3Fs const & i) : name{n}, ivs{i} {}
 
     void                accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const;
-    // Name of morph does not affect equality:
-    bool                operator==(const IndexedMorph & rhs) const {return (ivs == rhs.ivs); }
+    bool                operator==(IndexedMorph const & rhs) const {return (ivs == rhs.ivs); }  // duplicate check
+    bool                operator==(String8 const & n) const {return (name==n); }    // easy lookup by name
 };
 typedef Svec<IndexedMorph>  IndexedMorphs;
 
-size_t          cNumVerts(IndexedMorphs const & ims);       // Number of target vertices in given indexed morphs
-IndexedMorph    deltaToIndexedMorph(Morph const & morph,float diffMagThreshold=0);
-IndexedMorph    deltaToTargetMorph(Vec3Fs const & base,IndexedMorph const & morph);
+size_t              cNumVerts(IndexedMorphs const & ims);       // Number of target vertices in given indexed morphs
+IndexedMorph        deltaToIndexedMorph(DirectMorph const & morph,float diffMagThreshold=0);
+IndexedMorph        deltaToTargetMorph(Vec3Fs const & base,IndexedMorph const & morph);
 
-void
-accDeltaMorphs(
-    Morphs const &              deltaMorphs,
+void                accDeltaMorphs(
+    DirectMorphs const &        deltaMorphs,
     Floats const &              coord,
     Vec3Fs &                    accVerts);      // MODIFIED: morphing delta accumualted here
 
 // This version of target morph application is more suited to SSM dataflow, where the
 // target positions have been transformed as part of the 'allVerts' array:
-void
-accTargetMorphs(
+void                accTargetMorphs(
     Vec3Fs const &              allVerts,       // Base verts plus all target morph verts
     IndexedMorphs const &       targMorphs,     // Only 'baseInds' is used.
     Floats const &              coord,          // morph coefficient for each target morph
@@ -140,10 +131,7 @@ struct      PoseDef
     PoseDef() {}
     PoseDef(String8 const & n,Vec2F const & b,float u) : name(n), bounds(b), neutral(u) {}
 
-    // Allow for finding by name:
-    bool
-    operator==(String8 const & rhsName) const
-    {return (name == rhsName); }
+    bool                operator==(String8 const & rhsName) const {return (name == rhsName); }
 };
 typedef Svec<PoseDef>          PoseDefs;
 
@@ -156,11 +144,8 @@ struct  MarkedVert
     explicit MarkedVert(uint i) : idx(i) {}
     MarkedVert(uint i,String const & l) : idx(i), label(l) {}
 
-    bool operator==(uint rhs) const
-    {return (idx == rhs); }
-
-    bool operator==(String const & rhs) const
-    {return (label == rhs); }
+    bool                operator==(uint rhs) const {return (idx == rhs); }
+    bool                operator==(String const & rhs) const {return (label == rhs); }
 };
 
 typedef Svec<MarkedVert>    MarkedVerts;
@@ -171,7 +156,7 @@ struct  Mesh
     Vec3Fs                  verts;          // Base shape
     Vec2Fs                  uvs;            // OTCS. Values outside [0,1) could mean wraparound but should be avoided
     Surfs                   surfaces;
-    Morphs                  deltaMorphs;
+    DirectMorphs            deltaMorphs;
     IndexedMorphs           targetMorphs;
     MarkedVerts             markedVerts;
     Joints                  joints;
@@ -184,39 +169,38 @@ struct  Mesh
     Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(svec(Surf(ts))) {}
     Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
     Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs) {}
-    Mesh(Vec3Fs const & v,Surfs const & s,Morphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
+    Mesh(Vec3Fs const & v,Surfs const & s,DirectMorphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
     explicit Mesh(TriSurfFids const & tsf);
 
-    size_t          allVertsSize() const;               // size of below
+    size_t              allVertsSize() const;               // size of below
     // Return base verts plus all target morph verts plus all animPart bones:
-    Vec3Fs          allVerts() const;
-    void            updateAllVerts(Vec3Fs const &);     // Update verts / targetMorphs / joints
-    uint            numPolys() const;                  // tris plus quads over all surfaces
-    uint            numTriEquivs() const;               // tris plus 2*quads over all surfaces
-    Vec3UI          getTriEquivPosInds(uint idx) const;
-    NPolys<3>    getTriEquivs() const;               // Over all surfaces
-    size_t          numTris() const;                    // Just the number of tris over all surfaces
-    size_t          numQuads() const;                   // Just the number of quads over all surfaces
-    Surf const &    surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
-    size_t          surfPointNum() const;              // Over all surfaces
-    Vec3F           surfPointPos(Vec3Fs const & verts,size_t num) const;
-    Vec3F           surfPointPos(size_t num) const {return surfPointPos(verts,num); }
-    Opt<Vec3F>      surfPointPos(String const & label) const;
-    LabelledVerts   surfPointsAsLabelledVerts() const;
-    Vec3Fs          surfPointPositions(Strings const & labels) const;
-    Vec3Fs          surfPointPositions() const;
-    Vec3F           markedVertPos(String const & name_) const {return verts[findFirst(markedVerts,name_).idx]; }
-    Vec3Fs          markedVertPositions() const;        // Return positions of all marked verts
+    Vec3Fs              allVerts() const;
+    void                updateAllVerts(Vec3Fs const &);     // Update verts / targetMorphs / joints
+    uint                numPolys() const;                  // tris plus quads over all surfaces
+    uint                numTriEquivs() const;               // tris plus 2*quads over all surfaces
+    Vec3UI              getTriEquivVertInds(uint idx) const;
+    NPolys<3>           getTriEquivs() const;               // Over all surfaces
+    size_t              numTris() const;                    // Just the number of tris over all surfaces
+    size_t              numQuads() const;                   // Just the number of quads over all surfaces
+    Surf const &        surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
+    size_t              surfPointNum() const;              // Over all surfaces
+    Vec3F               surfPointPos(Vec3Fs const & verts,size_t num) const;
+    Vec3F               surfPointPos(size_t num) const {return surfPointPos(verts,num); }
+    Opt<Vec3F>          surfPointPos(String const & label) const;
+    LabelledVerts       surfPointsAsLabelledVerts() const {return surfPointsToLabelledVerts(surfaces,verts); }
+    Vec3Fs              surfPointPositions(Strings const & labels) const;
+    Vec3Fs              surfPointPositions() const;
+    Vec3F               markedVertPos(String const & name_) const {return verts[findFirst(markedVerts,name_).idx]; }
+    Vec3Fs              markedVertPositions() const;        // Return positions of all marked verts
     // Returns the marked verts with the given labels (including duplicates) in the given order:
-    Vec3Fs          markedVertPositions(Strings const & labels) const;
-    LabelledVerts   markedVertsAsLabelledVerts() const;
-    void            addMarkedVert(Vec3F pos,String const & label)
+    Vec3Fs              markedVertPositions(Strings const & labels) const;
+    LabelledVerts       markedVertsAsLabelledVerts() const;
+    void                addMarkedVert(Vec3F pos,String const & label)
     {
         markedVerts.push_back(MarkedVert(uint(verts.size()),label));
         verts.push_back(pos);
     }
-    Svec<Sptr<ImgRgba8>>
-    albedoMaps() const
+    Svec<Sptr<ImgRgba8>> albedoMaps() const
     {
         Svec<Sptr<ImgRgba8>>         ret;
         ret.reserve(surfaces.size());
@@ -224,8 +208,7 @@ struct  Mesh
             ret.push_back(surfaces[ss].material.albedoMap);
         return ret;
     }
-    uint
-    numValidAlbedoMaps() const
+    uint                numValidAlbedoMaps() const
     {
         uint        ret = 0;
         for (size_t ss=0; ss<surfaces.size(); ++ss)
@@ -233,8 +216,7 @@ struct  Mesh
                 ++ret;
         return ret;
     }
-    Svec<ImgRgba8>
-    albedoMapsOld() const
+    Svec<ImgRgba8>      albedoMapsOld() const
     {
         Svec<ImgRgba8>     ret;
         ret.reserve(surfaces.size());
@@ -246,53 +228,48 @@ struct  Mesh
         }
         return ret;
     }
-    TriSurf         asTriSurf() const;
+    TriSurf             asTriSurf() const;
 
     // MORPHS:
-    size_t          numMorphs() const {return deltaMorphs.size() + targetMorphs.size(); }
-    String8         morphName(size_t idx) const;
-    String8s        morphNames() const;
-    Valid<size_t>   findDeltaMorph(String8 const & name) const;
-    Valid<size_t>   findTargMorph(String8 const & name) const;
-    Valid<size_t>   findMorph(String8 const & name) const;          // Return the combined morph index
-    // Morph using member base and target vertices:
-    void
-    morph(
-        Floats const &      coord,
-        Vec3Fs &            outVerts)       // RETURNED
-        const;
-    // Morph using given base and target vertices:
-    void
-    morph(
+    size_t              numMorphs() const {return deltaMorphs.size() + targetMorphs.size(); }
+    String8             morphName(size_t idx) const;
+    String8s            morphNames() const;
+    Valid<size_t>       findDeltaMorph(String8 const & name) const;
+    Valid<size_t>       findTargMorph(String8 const & name) const;
+    Valid<size_t>       findMorph(String8 const & name) const;          // Return the combined morph index
+    // morph using member base and target vertices:
+    void                morph(Floats const & coord,Vec3Fs & outVerts) const;
+    // morph using given base and target vertices:
+    void                morph(
         Vec3Fs const &      allVerts,       // Must have same number of verts as base plus targets
         Floats const &      coord,          // Combined morph coordinate over delta then targer morphs
         Vec3Fs &            outVerts)       // RETURNED. Same size as base verts
         const;
-    // Morph using member base and target vertices:
-    Vec3Fs
-    morph(
+    // morph using member base and target vertices:
+    Vec3Fs              morph(
         Floats const &      deltaMorphCoord,
         Floats const &      targMorphCoord)
         const;
     // Apply just a single morph by its universal index (ie over deltas & targets):
-    Vec3Fs          morphSingle(size_t idx,float val = 1.0f) const;
-    IndexedMorph    getMorphAsIndexedDelta(size_t idx) const;
-    void            addDeltaMorph(Morph const & deltaMorph);        // Overwrites any existing morph of the same name
+    Vec3Fs              morphSingle(size_t idx,float val = 1.0f) const;
+    IndexedMorph        getMorphAsIndexedDelta(size_t idx) const;
     // Overwrites any existing morph of the same name:
-    void            addDeltaMorphFromTarget(String8 const & name,Vec3Fs const & targetShape);
+    void                addDeltaMorph(DirectMorph const & deltaMorph);
     // Overwrites any existing morph of the same name:
-    void            addTargMorph(const IndexedMorph & morph);
+    void                addDeltaMorphFromTarget(String8 const & name,Vec3Fs const & targetShape);
     // Overwrites any existing morph of the same name:
-    void            addTargMorph(String8 const & name,Vec3Fs const & targetShape);
-    Vec3Fs          poseShape(Vec3Fs const & allVerts,std::map<String8,float> const & poseVals) const;
+    void                addTargMorph(const IndexedMorph & morph);
+    // Overwrites any existing morph of the same name:
+    void                addTargMorph(String8 const & name,Vec3Fs const & targetShape);
+    Vec3Fs              poseShape(Vec3Fs const & allVerts,std::map<String8,float> const & poseVals) const;
 
     // EDITING:
-    void            addSurfaces(Surfs const & s);
-    void            transform_(Affine3F const &);     // Transform each data type appropriately
-    void            transform_(SimilarityD const & sim) {transform_(Affine3F{sim.asAffine()}); }
-    void            convertToTris();
-    void            removeUVs();
-    void            checkValidity() const;          // Throws if the mesh is not valid
+    void                addSurfaces(Surfs const & s);
+    void                transform_(Affine3F const &);     // Transform each data type appropriately
+    void                transform_(SimilarityD const & sim) {transform_(Affine3F{sim.asAffine()}); }
+    void                convertToTris();
+    void                removeUVs();
+    void                checkValidity() const;          // Throws if the mesh is not valid
 };
 typedef Svec<Mesh>      Meshes;
 std::ostream &          operator<<(std::ostream &,Mesh const &);
@@ -389,12 +366,18 @@ Vec3Fs          poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
 // Cannot be functional since marked verts are stored as indices into the vertex array, which must
 // be updated in sync:
 void            surfPointsToMarkedVerts_(Mesh const & in,Mesh & out);
-Vec3Fs          cMirror(Vec3Fs const & verts,uint axis);        // reflect verts in axis=0 plane
-inline TriSurf  cMirror(TriSurf const & ts,uint axis) {return {cMirror(ts.verts,axis),reverseWinding(ts.tris)}; }
-Surf            cMirror(Surf const & surf);     // same as reverseWinding but also modifies surface point names
-// Mirror vertices around the given axis, reverse facet winding and UV winding.
+Vec3Fs          cMirrorX(Vec3Fs const & verts);             // reflect verts in X=0 plane
+inline TriSurf  cMirrorX(TriSurf const & ts) {return {cMirrorX(ts.verts),reverseWinding(ts.tris)}; }
+Surf            cMirrorX(Surf const & surf);        // same as reverseWinding but also modifies surface point names
+// Mirror vertex positions around X=0 plane, reverse poly winding and UV winding
+// swap surface point and marked vertex labels ending in 'L' and 'R'
 // UVs, maps, points left unchanged, morphs removed:
-Mesh            cMirror(Mesh const &,uint axis);
+Mesh            cMirrorX(Mesh const &);
+// Mirrors geometry around X=0 plane, fused through vertices on that plane (X value exactly 0.0).
+// All input verts must have X>=0. Surface points not mirrored.
+// Delta morphs are mirrored but they must be X=0 symmetry friendly or ugliness will result.
+// UVs, target morphs, etc. discarded.
+Mesh            mirrorXFuse(Mesh const & in);
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
 Mesh            copySurfaceStructure(Mesh const & from,Mesh const & to);
 // Merge all surface facets converted to tris:

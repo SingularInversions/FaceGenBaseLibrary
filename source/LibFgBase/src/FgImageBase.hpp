@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -95,6 +95,8 @@ struct  Img
     T const *       rowPtr(uint row) const {return &m_data[row*m_dims[0]]; }
 
     bool            operator==(Img const & rhs) const {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
+    Img             operator+(Img const & r) const {FGASSERT(m_dims==r.m_dims); return Img{m_dims,m_data+r.m_data}; }
+    Img             operator-(Img const & r) const {FGASSERT(m_dims==r.m_dims); return Img{m_dims,m_data-r.m_data}; }
 
     // 'paint' access is bounds checked and out of bounds paints are ignored:
     void            paint(uint ircs_x,uint ircs_y,T val)

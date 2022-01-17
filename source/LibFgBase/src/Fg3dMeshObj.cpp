@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -129,18 +129,18 @@ parseFacet(
     for (size_t ii=1; ii<nums.size(); ++ii)
         FGASSERT(nums[ii].size() == nums[ii-1].size());
     if (nums.size() == 3) {
-        tris.posInds.push_back(Vec3UI(nums[0][0],nums[1][0],nums[2][0]));
+        tris.vertInds.push_back(Vec3UI(nums[0][0],nums[1][0],nums[2][0]));
         if (nums[0].size() > 1)
             tris.uvInds.push_back(Vec3UI(nums[0][1],nums[1][1],nums[2][1]));
     }
     if (nums.size() == 4) {
-        quads.posInds.push_back(Vec4UI(nums[0][0],nums[1][0],nums[2][0],nums[3][0]));
+        quads.vertInds.push_back(Vec4UI(nums[0][0],nums[1][0],nums[2][0],nums[3][0]));
         if (nums[0].size() > 1)
             quads.uvInds.push_back(Vec4UI(nums[0][1],nums[1][1],nums[2][1],nums[3][1]));
     }
     if (nums.size() > 4) {          // N-gon
         for (size_t ii=0; ii<nums.size()-2; ++ii) {
-            tris.posInds.push_back(Vec3UI(nums[0][0],nums[ii+1][0],nums[ii+2][0]));
+            tris.vertInds.push_back(Vec3UI(nums[0][0],nums[ii+1][0],nums[ii+2][0]));
             if (nums[ii].size() > 1)
                 tris.uvInds.push_back(Vec3UI(nums[0][1],nums[ii+1][1],nums[ii+2][1]));
         }
@@ -355,8 +355,8 @@ writeMesh(
         ofs << "g " << name << "\n";
         if (mtlFile)    // Meshlab can't handle 'usemtl' if there is no MTL file:
             ofs << "usemtl Texture" << toStr(offsets.mat+ii) << "\n";
-        writeFacets(ofs,surf.tris.posInds,surf.tris.uvInds,offsets);
-        writeFacets(ofs,surf.quads.posInds,surf.quads.uvInds,offsets);
+        writeFacets(ofs,surf.tris.vertInds,surf.tris.uvInds,offsets);
+        writeFacets(ofs,surf.quads.vertInds,surf.quads.uvInds,offsets);
     }
     offsets.vert += uint(mesh.verts.size());
     offsets.uv += uint(mesh.uvs.size());

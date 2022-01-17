@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -322,11 +322,11 @@ assignTri2(      // Re-assign a tri (or quad) to a different surface if intersec
             if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
                 Surf &           srcSurf = meshPtr->surfaces[isct.surfIdx];
                 Surf &           dstSurf = meshPtr->surfaces[dstSurfIdx];
-                if (srcSurf.isTri(isct.surfPnt.triEquivIdx)) {
+                if (isct.surfPnt.triEquivIdx < srcSurf.tris.size()) {   // it's a tri
                     // Copy surface points on selected tri to destination surface:
                     for (SurfPoint sp : srcSurf.surfPoints) {
-                        if (sp.triEquivIdx == isct.surfPnt.triEquivIdx) {
-                            sp.triEquivIdx = uint(dstSurf.tris.size());
+                        if (sp.point.triEquivIdx == isct.surfPnt.triEquivIdx) {
+                            sp.point.triEquivIdx = uint(dstSurf.tris.size());
                             dstSurf.surfPoints.push_back(sp);
                         }
                     }
@@ -334,26 +334,26 @@ assignTri2(      // Re-assign a tri (or quad) to a different surface if intersec
                     size_t          idx = isct.surfPnt.triEquivIdx;
                     if (srcSurf.tris.hasUvs() && dstSurf.tris.hasUvs())
                         dstSurf.tris.uvInds.push_back(srcSurf.tris.uvInds[idx]);
-                    dstSurf.tris.posInds.push_back(srcSurf.tris.posInds[idx]);
+                    dstSurf.tris.vertInds.push_back(srcSurf.tris.vertInds[idx]);
                     srcSurf.removeTri(isct.surfPnt.triEquivIdx);
                 }
-                else {                      // It's a quad
+                else {                                                  // It's a quad
                     // Copy surface points on selected quad to destination surface:
                     size_t                  quadIdx = (isct.surfPnt.triEquivIdx - srcSurf.tris.size())/2;
                     for (SurfPoint sp : srcSurf.surfPoints) {
-                        size_t              spQuadIdx2 = sp.triEquivIdx - srcSurf.tris.size(),
+                        size_t              spQuadIdx2 = sp.point.triEquivIdx - srcSurf.tris.size(),
                                             spQuadIdx = spQuadIdx2 / 2,
                                             spQuadMod = spQuadIdx2 % 2;
                         if (spQuadIdx == quadIdx) {
                             size_t          idx = dstSurf.tris.size() + 2*dstSurf.quads.size() + spQuadMod;
-                            sp.triEquivIdx = uint(idx);
+                            sp.point.triEquivIdx = uint(idx);
                             dstSurf.surfPoints.push_back(sp);
                         }
                     }
                     // Move selected quad to destination surface:
                     if (srcSurf.quads.hasUvs() && dstSurf.quads.hasUvs())
                         dstSurf.quads.uvInds.push_back(srcSurf.quads.uvInds[quadIdx]);
-                    dstSurf.quads.posInds.push_back(srcSurf.quads.posInds[quadIdx]);
+                    dstSurf.quads.vertInds.push_back(srcSurf.quads.vertInds[quadIdx]);
                     srcSurf.removeQuad(quadIdx);
                 }
             }
@@ -379,10 +379,10 @@ assignPaint2(
         Mesh *                  meshPtr = rm.origMeshN.valPtr();
         if (meshPtr) {
             if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
-                Vec3UI          tri = meshPtr->surfaces[isct.surfIdx].getTriEquivPosInds(isct.surfPnt.triEquivIdx);
+                Vec3UI          tri = meshPtr->surfaces[isct.surfIdx].getTriEquivVertInds(isct.surfPnt.triEquivIdx);
                 Surfs           surfs = splitByContiguous(meshPtr->surfaces[isct.surfIdx]);
                 for (size_t ss=0; ss<surfs.size(); ++ss) {
-                    if (contains(surfs[ss].tris.posInds,tri)) {
+                    if (contains(surfs[ss].tris.vertInds,tri)) {
                         meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
                         surfs.erase(surfs.begin()+ss);
                         Surf                tmp = mergeSurfaces(surfs);
@@ -428,14 +428,13 @@ makeEditPoints(Gui3d & api)
         if (vpt.valid()) {
             // Perform all calculations in the original mesh coordinates:
             MeshesIntersect const & pt = vpt.val();
-            SurfPoint const &       sp = pt.surfPnt;
+            BaryPoint const &       sp = pt.surfPnt;
             FGASSERT(pt.meshIdx < rms.size());
             RendMesh const &        rm = rms[pt.meshIdx];
             Mesh const &            origMesh = rm.origMeshN.cref();
             FGASSERT(pt.surfIdx < origMesh.surfaces.size());
             Surf const &            origSurf = origMesh.surfaces[pt.surfIdx];
-            Vec3F                   origPos =
-                cSurfPointPos(sp.triEquivIdx,sp.weights,origSurf.tris,origSurf.quads,origMesh.verts);
+            Vec3F                   origPos = origSurf.surfPointPos(origMesh.verts,sp);
             // Find the closest surface point name
             Min<double,string>      closest;
             for (Surf const & surf : origMesh.surfaces) {
@@ -539,7 +538,7 @@ makeEditPane(OPT<MeshSurfsNames> const & meshSurfsNamesN,Gui3d & api)
             for (RendMesh const & rm : rms) {
                 Mesh *          meshPtr = rm.origMeshN.valPtr();
                 if (meshPtr) {
-                    SurfTopo        topo {meshPtr->verts.size(),meshPtr->getTriEquivs().posInds};
+                    SurfTopo        topo {meshPtr->verts.size(),meshPtr->getTriEquivs().vertInds};
                     auto                boundaries = topo.boundaries();
                     for (auto const & boundary : boundaries)
                         for (auto const & be : boundary)
@@ -1066,7 +1065,7 @@ viewMesh(Meshes const & meshes,bool compare)
         meshSelect = guiSplitScroll({selMeshRadio});
         auto                filterFn = [](RendMeshes const & rms,Bools const & sels)
         {
-            return cFilter(rms,sels);
+            return findAll(rms,sels);
         };
         rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,filterFn);
     }
@@ -1084,7 +1083,7 @@ viewMesh(Meshes const & meshes,bool compare)
         selsN = linkCollate(selectNs);
         auto                filterFn = [](RendMeshes const & rms,Bools const & sels)
         {
-            return cFilter(rms,sels);
+            return findAll(rms,sels);
         };
         rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,filterFn);
     }
@@ -1216,12 +1215,12 @@ surfs(CLArgs const &)
     mesh.verts.push_back(Vec3F(0,1,-1));
     Surf            surf;
     surf.name = "1";
-    surf.tris.posInds.push_back(Vec3UI(0,1,2));
-    surf.tris.posInds.push_back(Vec3UI(2,3,0));
+    surf.tris.vertInds.push_back(Vec3UI(0,1,2));
+    surf.tris.vertInds.push_back(Vec3UI(2,3,0));
     //mesh.surfaces.push_back(surf);
     //surf.name = "2";
-    surf.tris.posInds.push_back(Vec3UI(0,3,5));
-    surf.tris.posInds.push_back(Vec3UI(5,4,0));
+    surf.tris.vertInds.push_back(Vec3UI(0,3,5));
+    surf.tris.vertInds.push_back(Vec3UI(5,4,0));
     mesh.surfaces.push_back(surf);
     viewMesh(mesh);
 }

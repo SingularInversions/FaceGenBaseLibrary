@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -58,7 +58,7 @@ void            savePly(String8 const & fname,Meshes const & meshes,String imgFo
         Surf const &     surf = mesh.surfaces[ss];
         NPolys<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
-            Vec3UI           vinds = tris.posInds[ii];
+            Vec3UI           vinds = tris.vertInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";
             if (surf.tris.uvInds.empty())
                 ofs << "0 0 0 0 0 0 ";

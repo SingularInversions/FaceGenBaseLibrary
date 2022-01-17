@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -514,7 +514,7 @@ testmEdgeDist(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
     Surf                surf = mergeSurfaces(mesh.surfaces).convertToTris();
-    SurfTopo            topo {mesh.verts.size(),surf.tris.posInds};
+    SurfTopo            topo {mesh.verts.size(),surf.tris.vertInds};
     size_t              vertIdx = 0;    // Randomly choose the first
     Floats              edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
     float               distMax = 0;
@@ -529,7 +529,7 @@ testmEdgeDist(CLArgs const & args)
     mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-        Vec3UI              vertInds = surf.tris.posInds[tt];
+        Vec3UI              vertInds = surf.tris.vertInds[tt];
         Vec3UI              uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {
             Rgba8           col(255);
@@ -547,7 +547,7 @@ testmBoundVertFlags(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
     Tris const &        tris = mesh.surfaces[0].tris;
-    SurfTopo            topo {mesh.verts.size(),tris.posInds};
+    SurfTopo            topo {mesh.verts.size(),tris.vertInds};
     Bools               boundVertFlags = topo.boundaryVertFlags();
     Vec2UI              sz {64};
     ImgRgba8            map {sz,Rgba8{255}};
@@ -560,7 +560,7 @@ testmBoundVertFlags(CLArgs const & args)
     };
     for (size_t tt=0; tt<tris.size(); ++tt) {
         Vec3UI          uv = tris.uvInds[tt],
-                        tri = tris.posInds[tt];
+                        tri = tris.vertInds[tt];
         for (uint vv=0; vv<3; ++vv)
             if (boundVertFlags[tri[vv]])
                 paintFn(uv[vv]);

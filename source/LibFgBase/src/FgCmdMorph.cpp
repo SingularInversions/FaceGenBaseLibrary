@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -69,46 +69,57 @@ anim(CLArgs const & args)
    \ingroup Base_Commands
    Apply morphs by index number to a mesh.
  */
-void
-apply(CLArgs const & args)
+void                cmdMorphApply(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<meshIn>.tri <meshOut>.<ext> ((d | t) <index> <value>)+\n"
-        "    <ext>      - " + getMeshSaveExtsCLDescription() + "\n"
-        "    d          - Delta morph\n"
-        "    t          - Target morph\n"
-        "    <index>    - Morph index number (see 'morph list' command)\n"
-        "    <value>    - Any floating point number (0: no application, 1: full application)\n"
-        "COMMENTS:\n"
-        "    - The output mesh will have no morphs defined as application of the morphs\n"
-        "      to the vertex list necessarily invalidates the morph data.\n"
-        "    - Note that the index number of the same morph will be different for different meshes."
-        );
-    string      inFile = syn.next(),
-                outFile = syn.next();
-    if (!checkExt(inFile,"tri"))
-        syn.error("Not a TRI file",inFile);
-    Mesh        mesh = loadTri(inFile);
-    Floats   deltas(mesh.deltaMorphs.size(),0.0f),
-                    targets(mesh.targetMorphs.size(),0.0f);
+    Syntax              syn {args,
+        R"(<meshIn>.<exti> <meshOut>.<exto> (<specifier> <value>)+
+    <exti>      - )" + getClOptionsString(getMeshNativeFormats()) +  R"(
+    <ext>       - )" + getMeshSaveExtsCLDescription() + R"(
+    <specifier> - (<index> | <name>)
+    <index>     - (d | t) <number>
+    d           - delta morph 
+    t           - target morph
+    <number>    - respective morph index number from 'morph list' command
+    <name>      - the name of the morph (use quotes if it contains spaces)
+    <value>     - Any floating point number (0: no application, 1: full application)
+COMMENTS:
+    - The output mesh will have no morphs defined since application of the morphs to the vertex
+      list necessarily invalidates the morph data.
+    - If using the <index> specifier, note that <number> of the same morph will be different for
+      different meshes.)"
+    };
+    string              inFile = syn.next(),
+                        outFile = syn.next();
+    Mesh                mesh = loadMesh(inFile);
+    Floats              deltas (mesh.deltaMorphs.size(),0.0f),
+                        targets (mesh.targetMorphs.size(),0.0f);
     while (syn.more()) {
-        String8    arg = syn.nextLower();
-        uint        idx = syn.nextAs<uint>();
-        float       val = syn.nextAs<float>();
-
-        //! Apply the morph:
-        if (arg == "d") {
+        String              spec = syn.next();
+        if (spec == "d") {
+            uint                idx = syn.nextAs<uint>();
             if (idx >= deltas.size())
                 fgThrow("Delta morph index out of bounds",toStr(idx));
-            deltas[idx] = val;
+            deltas[idx] = syn.nextAs<float>();
         }
-        else if (arg == "t") {
+        else if (spec == "t") {
+            uint                idx = syn.nextAs<uint>();
             if (idx >= targets.size())
                 fgThrow("Target morph index out of bounds",toStr(idx));
-            targets[idx] = val;
+            targets[idx] = syn.nextAs<float>();
         }
-        else
-            syn.error("Invalid morph type",arg);
+        else {
+            String8             name {spec};
+            size_t              idx = findFirstIdx(mesh.deltaMorphs,name);
+            if (idx < mesh.deltaMorphs.size()) {
+                deltas[idx] = syn.nextAs<float>();
+                continue;
+            }
+            idx = findFirstIdx(mesh.targetMorphs,name);
+            if (idx < mesh.targetMorphs.size())
+                targets[idx] = syn.nextAs<float>();
+            else
+                syn.error("Morph name not found",spec);
+        }
     }
     mesh.verts = mesh.morph(deltas,targets);
     // The morphs are invalidated once the base verts are changed:
@@ -149,7 +160,7 @@ clampMorphDeltas(CLArgs const & args)
     for (size_t ii=0; ii<mesh.verts.size(); ++ii)
         if (kd.findClosest(mesh.verts[ii]).distMag < closeSqr)
             clampVertInds.insert(uint(ii));
-    for (Morph & morph : mesh.deltaMorphs)
+    for (DirectMorph & morph : mesh.deltaMorphs)
         for (uint ii : clampVertInds)
             morph.verts[ii] = Vec3F(0);
     saveTri(syn.next(),mesh);
@@ -181,7 +192,7 @@ copymorphs(CLArgs const & args)
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)*\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
-        "    <index>    - Morph index number (see 'morph list' command)\n"
+        "    <index>    - morph index number (see 'morph list' command)\n"
         "COMMENTS:\n"
         "    If no morphs are specified, all morphs are copied *and destination morphs are overwritten*.\n"
         "    The meshes must have the same number of vertices and those vertices should correspond\n"
@@ -258,7 +269,7 @@ create(CLArgs const & args)
     }
     string      type = syn.next();
     if (type == "d") {
-        Morph    m;
+        DirectMorph    m;
         m.name = syn.next();
         m.verts = target.verts - base.verts;
         base.deltaMorphs.push_back(m);
@@ -317,7 +328,7 @@ cmdFilter(CLArgs const & args)
     out.deltaMorphs.clear();
     float           dim = cMaxElem(cDims(in.verts)),
                     minDelta = dim * 0.001;
-    for (Morph const & morph : in.deltaMorphs)
+    for (DirectMorph const & morph : in.deltaMorphs)
         if (cMaxElem(cMax(morph.verts)) > minDelta)
             out.deltaMorphs.push_back(morph);
     saveTri(syn.next(),out);
@@ -337,7 +348,7 @@ morphList(CLArgs const & args)
         syn.incorrectNumArgs();
     string                  inFile = syn.next();
     Mesh                    mesh = loadMesh(inFile);
-    Morphs const &          dmorphs = mesh.deltaMorphs;
+    DirectMorphs const &    dmorphs = mesh.deltaMorphs;
     fgout << fgnl << dmorphs.size() << " delta morphs:" << fgpush;
     for (size_t ii=0; ii<dmorphs.size(); ++ii)
         fgout << fgnl << toStrDigits(ii,2) << " " << dmorphs[ii].name;
@@ -359,7 +370,7 @@ removebrackets(CLArgs const & args)
         "<meshIn>.tri <meshOut>.tri\n"
         );
     Mesh            mesh = loadTri(syn.next());
-    Morphs &   dms = mesh.deltaMorphs;
+    DirectMorphs &  dms = mesh.deltaMorphs;
     for (size_t ii=0; ii<dms.size(); ++ii)
         dms[ii].name = removeChars(removeChars(dms[ii].name,'('),')');
     IndexedMorphs &    tms = mesh.targetMorphs;
@@ -379,7 +390,7 @@ removemorphs(CLArgs const & args)
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)+\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
-        "    <index>    - Morph index number (see 'morph list' command)"
+        "    <index>    - morph index number (see 'morph list' command)"
         );
 
     string      inFile = syn.next(),
@@ -430,7 +441,7 @@ renameMorph(CLArgs const & args)
         "<mesh>.tri (d | t) <index> <name>\n"
         "    d          - Delta morph\n"
         "    t          - Target morph\n"
-        "    <index>    - Morph index number (see 'morph list' command)"
+        "    <index>    - morph index number (see 'morph list' command)"
         );
     string      fname = syn.next();
     if (!checkExt(fname,"tri"))
@@ -458,7 +469,7 @@ morph(CLArgs const & args)
 {
     Cmds   cmds {
         {anim,"anim","Apply morphs by name to multiple meshes"},
-        {apply,"apply","Apply morphs by index number in a single mesh"},
+        {cmdMorphApply,"apply","Apply morphs by index number in a single mesh"},
         {clampMorphDeltas,"clampMorphDeltas","Clamp delta morphs to zero on seam vertices"},
         {clear,"clear","Clear all morphs from a mesh"},
         {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
@@ -484,7 +495,7 @@ testMorph(CLArgs const & args)
 {
     FGTESTDIR
     copyFileToCurrentDir("base/Jane.tri");
-    runCmd(apply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
+    runCmd(cmdMorphApply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
     regressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
 }
 

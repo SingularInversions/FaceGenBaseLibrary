@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -58,8 +58,8 @@ RayCaster::RayCaster(
             iucsVerts.push_back(oecsToIucs(v));
         for (size_t ss=0; ss<triss.size(); ++ss) {
             Tris const &  tris = triss[ss];
-            for (size_t tt=0; tt<tris.posInds.size(); ++tt) {
-                Vec3UI       t = tris.posInds[tt];
+            for (size_t tt=0; tt<tris.vertInds.size(); ++tt) {
+                Vec3UI       t = tris.vertInds[tt];
                 Vec3F        v0 = iucsVerts[t[0]],
                                 v1 = iucsVerts[t[1]],
                                 v2 = iucsVerts[t[2]];
@@ -87,7 +87,7 @@ RayCaster::cast(Vec2F posIucs) const
         Tris const &        tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
         MeshNormals const &     norms = normss[isct.triInd.meshIdx];
-        Vec3UI              vis = tris.posInds[isct.triInd.triIdx];
+        Vec3UI              vis = tris.vertInds[isct.triInd.triIdx];
         // TODO: Use perspective-correct normal and UV interpolation (makes very little difference for small tris):
         Vec3F               n0 = norms.vert[vis[0]],
                             n1 = norms.vert[vis[1]],
@@ -153,7 +153,7 @@ RayCaster::closestIntersects(Vec2F posIucs) const
     BestN<float,Intersect,8> best;
     for (TriInd ti : triInds) {
         Tris const &        tris = trisss[ti.meshIdx][ti.surfIdx];
-        Vec3UI              vis = tris.posInds[ti.triIdx];
+        Vec3UI              vis = tris.vertInds[ti.triIdx];
         Vec3Fs const &      iucsVerts = iucsVertss[ti.meshIdx];
         Vec3F               v0 = iucsVerts[vis[0]],
                             v1 = iucsVerts[vis[1]],

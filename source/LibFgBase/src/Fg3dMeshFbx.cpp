@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -105,7 +105,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-                Vec3UI   i = surf.tris.posInds[tt];
+                Vec3UI   i = surf.tris.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -113,7 +113,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
             for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-                Vec4UI   i = surf.quads.posInds[tt];
+                Vec4UI   i = surf.quads.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -696,7 +696,7 @@ Mesh        readBinMesh(Sptr<RecordRaw> const & rp1)
     mesh.surfaces.resize(posIndss.size());
     for (size_t ss=0; ss<posIndss.size(); ++ss) {
         Surf &          surf = mesh.surfaces[ss];
-        toPolyFn(posIndss[ss],surf.tris.posInds,surf.quads.posInds);
+        toPolyFn(posIndss[ss],surf.tris.vertInds,surf.quads.vertInds);
         if (!uvIndss.empty())
             toPolyFn(uvIndss[ss],surf.tris.uvInds,surf.quads.uvInds);
     }

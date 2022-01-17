@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -94,12 +94,12 @@ loadTri(istream & istr)
         mesh.surfaces.resize(1);
     Surf            dummy;
     Surf &          surf = hasSurface ? mesh.surfaces[0] : dummy;
-    surf.tris.posInds.resize(numTris);
+    surf.tris.vertInds.resize(numTris);
     if (numTris > 0)
-        istr.read(reinterpret_cast<char*>(&surf.tris.posInds[0]),int(12*numTris));
-    surf.quads.posInds.resize(numQuads);
+        istr.read(reinterpret_cast<char*>(&surf.tris.vertInds[0]),int(12*numTris));
+    surf.quads.vertInds.resize(numQuads);
     if (numQuads > 0)
-        istr.read(reinterpret_cast<char*>(&surf.quads.posInds[0]),int(16*numQuads));
+        istr.read(reinterpret_cast<char*>(&surf.quads.vertInds[0]),int(16*numQuads));
     // Marked verts:
     mesh.markedVerts.resize(numLabVerts);
     for (uint jj=0; jj<numLabVerts; jj++) {
@@ -109,8 +109,8 @@ loadTri(istream & istr)
     // Surface points:
     for (uint ii=0; ii<numSurfPts; ii++) {
         SurfPoint     sp;
-        sp.triEquivIdx = fgReadt<uint32>(istr);
-        readb(istr,sp.weights);
+        sp.point.triEquivIdx = fgReadt<uint32>(istr);
+        readb(istr,sp.point.weights);
         sp.label = readString(istr,wchar);
         surf.surfPoints.push_back(sp);
     }
@@ -132,10 +132,10 @@ loadTri(istream & istr)
         istr.read(reinterpret_cast<char*>(&mesh.uvs[0]),int(8*numVerts));
         for (uint ii=0; ii<surf.tris.size(); ii++)
             for (uint jj=0; jj<3; jj++)
-                surf.tris.uvInds[ii][jj] = surf.tris.posInds[ii][jj];
+                surf.tris.uvInds[ii][jj] = surf.tris.vertInds[ii][jj];
         for (uint ii=0; ii<surf.quads.size(); ii++)
             for (uint jj=0; jj<4; jj++)
-                surf.quads.uvInds[ii][jj] = surf.quads.posInds[ii][jj];
+                surf.quads.uvInds[ii][jj] = surf.quads.vertInds[ii][jj];
     }
     // Delta morphs:
     mesh.deltaMorphs.resize(numDiffMorph);
@@ -243,9 +243,9 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
     }
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
-        fgWriteb(ff,surf.getTriPosInds(ii));
+        fgWriteb(ff,surf.tris.vertInds[ii]);
     for (uint ii=0; ii<surf.numQuads(); ++ii)
-        fgWriteb(ff,surf.getQuadPosInds(ii));
+        fgWriteb(ff,surf.quads.vertInds[ii]);
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
         fgWriteb(ff,uint32(mesh.markedVerts[ii].idx));
@@ -254,8 +254,8 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
         SurfPoint const &   sp = surfPoints[ii];
-        fgWriteb(ff,uint32(sp.triEquivIdx));
-        fgWriteb(ff,sp.weights);
+        fgWriteb(ff,uint32(sp.point.triEquivIdx));
+        fgWriteb(ff,sp.point.weights);
         writeLabel(ff,sp.label);
     }
     // UV list and per-facet UV indices if present:
@@ -270,7 +270,7 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
     }
     // Delta morphs:
     for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {   
-        Morph const &   morph = mesh.deltaMorphs[ii];
+        DirectMorph const &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
         float           scale = float(numeric_limits<short>::max()-1) / cMaxElem(mapAbs(cBounds(morph.verts)));

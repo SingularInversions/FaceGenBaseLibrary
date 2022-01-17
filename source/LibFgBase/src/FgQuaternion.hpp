@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,47 +31,28 @@ struct  Quaternion
     FG_SERIALIZE2(real,imag);
     FG_SER2(real,imag)
 
-    // Default constructor is identity:
-    Quaternion() : real(1), imag(Mat<T,3,1>(0)) {}
-
-    Quaternion(T r,Mat<T,3,1> i) : real(r), imag(i) 
-    {normalizeP(); }
-
-    Quaternion(T r,T rotAxisX,T rotAxisY,T rotAxisZ) : real(r), imag(rotAxisX,rotAxisY,rotAxisZ)
-    {normalizeP(); }
-
+    Quaternion() : real(1), imag(Mat<T,3,1>(0)) {}      // Default constructor is identity
+    Quaternion(T r,Mat<T,3,1> i) : real(r), imag(i) {normalizeP(); }
+    Quaternion(T r,T rotAxisX,T rotAxisY,T rotAxisZ) : real(r), imag(rotAxisX,rotAxisY,rotAxisZ) {normalizeP(); }
     // Create a rotation around a coordinate axis (0 - X, 1 - Y, 2 - Z):
-    Quaternion(T radians,uint axis) :
-        real(std::cos(radians/2))
+    Quaternion(T radians,uint axis) : real(std::cos(radians/2))
     {
         FGASSERT(axis < 3);
         imag[axis] = std::sin(radians/2);
     }
+    explicit Quaternion(Mat<T,4,1> const & v) : real(v[0]), imag(v[1],v[2],v[3]) {normalizeP(); }
 
-    explicit 
-    Quaternion(const Mat<T,4,1> & v) : real(v[0]), imag(v[1],v[2],v[3])
-    {normalizeP(); }
-
-    bool
-    operator==(const Quaternion & rhs) const
-    {return ((real == rhs.real) && (imag == rhs.imag)); }
-
+    bool            operator==(const Quaternion & rhs) const {return ((real == rhs.real) && (imag == rhs.imag)); }
     // Composition operator:
-    Quaternion
-    operator*(const Quaternion & rhs) const
+    Quaternion      operator*(const Quaternion & rhs) const
     {
         Quaternion    ret;
         ret.real = real*(rhs.real) - cDot(imag,rhs.imag);
         ret.imag = real*(rhs.imag) + (rhs.real)*imag + crossProduct(imag,rhs.imag);
         return ret;
     }
-
-    Quaternion
-    inverse() const
-    {return Quaternion(real,-imag); }
-
-    Mat<T,3,3>
-    asMatrix() const
+    Quaternion      inverse() const {return Quaternion(real,-imag); }
+    Mat<T,3,3>      asMatrix() const
     {
         Mat<T,3,3>      ret;
         T               rm = sqr(real),
@@ -89,13 +70,9 @@ struct  Quaternion
         ret[7] = T(2) * (imag[1]*imag[2] + real*imag[0]);
         return ret;
     }
-
-    Mat<T,4,1>
-    asVec4() const
-    {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
-
-    bool            // false if zero magnitude
-    normalize()     // Useful for deserialization of user data
+    Mat<T,4,1>      asVec4() const {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
+    // useful for deserialization. Returns false if zero magnitude:
+    bool            normalize()
     {
         T   mag = real*real + imag.mag();
         if (mag == T(0))
@@ -105,58 +82,32 @@ struct  Quaternion
         imag *= fac;
         return true;
     }
-
-    void
-    normalizeP()
-    {FGASSERT(normalize()); }
-
-    static
-    Quaternion
-    rand()      // Samples evenly from SO(3)
-    {return Quaternion(Mat<T,4,1>::randNormal()); } // Use normal distros to ensure isotropy
+    void            normalizeP() {FGASSERT(normalize()); }
+    // Samples evenly from SO(3):
+    static Quaternion rand() {return Quaternion(Mat<T,4,1>::randNormal()); } // Use normal distros to ensure isotropy
 };
 
 template<class T,uint ncols>
-Mat<T,3,ncols>
-operator*(const Quaternion<T> & lhs,const Mat<T,3,ncols> & rhs)
-{ return (lhs.asMatrix() * rhs); }
-
+Mat<T,3,ncols>      operator*(const Quaternion<T> & lhs,const Mat<T,3,ncols> & rhs) {return (lhs.asMatrix() * rhs); }
 template <class T>
-std::ostream& operator<<(std::ostream& s,const Quaternion<T> & q)
-{return (s << q.asVec4()); }
+std::ostream &      operator<<(std::ostream& s,const Quaternion<T> & q) {return (s << q.asVec4()); }
 
 typedef Quaternion<float>       QuaternionF;
 typedef Quaternion<double>      QuaternionD;
 typedef Svec<QuaternionD>       QuaternionDs;
 
-inline
-QuaternionD
-cRotateX(double radians)
-{return QuaternionD(radians,0); }
-
-inline
-QuaternionD
-cRotateY(double radians)
-{return QuaternionD(radians,1); }
-
-inline
-QuaternionD
-cRotateZ(double radians)
-{return QuaternionD(radians,2); }
+inline QuaternionD  cRotateX(double radians) {return QuaternionD(radians,0); }
+inline QuaternionD  cRotateY(double radians) {return QuaternionD(radians,1); }
+inline QuaternionD  cRotateZ(double radians) {return QuaternionD(radians,2); }
 
 // Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
 // Useful for rotation prior.
-double
-tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
-
+double              tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
 template<typename T>
-Mat<T,4,4>
-asHomogMat(Quaternion<T> q)
-{return asHomogMat(q.asMatrix()); }
+Mat<T,4,4>          asHomogMat(Quaternion<T> q) {return asHomogMat(q.asMatrix()); }
 
 // Approx exponential map interpolation. 'val' must be [0,1]:
-QuaternionD
-interpolate(
+QuaternionD         interpolate(
     QuaternionD         q0,         // Must be normalized
     QuaternionD         q1,         // Must be normalized
     double              val);       // Must be [0,1]

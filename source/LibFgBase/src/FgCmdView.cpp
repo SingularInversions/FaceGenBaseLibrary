@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,6 @@
 #include "FgImageDraw.hpp"
 #include "FgAffine.hpp"
 #include "FgBuild.hpp"
-#include "FgImagePoint.hpp"
 
 using namespace std;
 
@@ -114,24 +113,24 @@ NOTES:
 void
 cmdViewImage(CLArgs const & args)
 {
-    Syntax          syn {args,"<image>.<ext> [<points>.txt]\n"
+    Syntax              syn {args,"<image>.<ext> [<points>.txt]\n"
         "    <ext>      - (" + cat(getImageFileExts(),",") + ")\n"
         "    <points>   - optional points annotation file in simple YOLO format"
     };
-    ImgRgba8         img = loadImage(syn.next());
+    ImgRgba8            img = loadImage(syn.next());
     fgout << img;
-    ImagePoints     ips;
+    NameVec2Fs          lmsIrcs;
     if (syn.more()) {
-        ips = loadImagePoints(syn.next());
-        fgout << ips;
+        lmsIrcs = loadImageLandmarks(syn.next());
+        fgout << lmsIrcs;
     }
-    AffineEw2F      xf = cIrcsToIucsXf(img.dims());
-    Mat22F          bnds {0,1,0,1};
-    Vec2Fs          pts;
-    for (ImagePoint const & ip : ips) {
-        Vec2F           iucs = xf * ip.posIrcs;
+    AffineEw2F          xf = cIrcsToIucsXf(img.dims());
+    Mat22F              bnds {0,1,0,1};
+    Vec2Fs              pts;
+    for (NameVec2F const & lm : lmsIrcs) {
+        Vec2F               iucs = xf * lm.vec;
         if (!isInBounds(bnds,iucs))
-            fgout << fgnl << "WARNING point is not on image: " << ip.label;
+            fgout << fgnl << "WARNING point is not on image: " << lm.name;
         pts.push_back(iucs);
     }
     viewImage(img,pts);

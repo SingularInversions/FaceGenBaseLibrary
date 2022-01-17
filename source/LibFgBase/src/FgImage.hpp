@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -130,22 +130,6 @@ ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255]
 ImgUC               toUC(ImgRgba8 const &);             // rec. 709 RGB -> greyscale
 ImgF                toFloat(ImgRgba8 const &);          // rec. 709 RGB -> greyscale [0,255]
 ImgRgba8            toRgba8(ImgUC const &);             // replicate to RGB, set alpha to 255
-
-template<typename T>
-Img<T>
-operator+(Img<T> const & lhs,Img<T> const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return Img<T>(lhs.dims(),lhs.m_data+rhs.m_data);
-}
-
-template<typename T>
-Img<T>
-operator-(Img<T> const & lhs,Img<T> const & rhs)
-{
-    FGASSERT(lhs.dims() == rhs.dims());
-    return Img<T>(lhs.dims(),lhs.m_data-rhs.m_data);
-}
 
 template<class T,class U>
 void

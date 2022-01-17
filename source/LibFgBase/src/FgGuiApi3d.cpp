@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2021 Singular Inversions Inc. (facegen.com)
+// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -55,7 +55,7 @@ intersectMeshes(
             Surf const & surf = mesh.surfaces[ss];
             size_t              numTriEquivs = surf.numTriEquivs();
             for (size_t tt=0; tt<numTriEquivs; ++tt) {
-                Vec3UI          tri = surf.getTriEquivPosInds(tt);
+                Vec3UI          tri = surf.getTriEquivVertInds(tt);
                 Vec3F           t0 = pvs[tri[0]],
                                 t1 = pvs[tri[1]],
                                 t2 = pvs[tri[2]];
@@ -171,27 +171,27 @@ markSurfacePoint(
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,viewportPos,worldToD3ps,rms);
     if (vpt.valid() && pointLabelN.ptr) {
         MeshesIntersect         pt = vpt.val();
-        SurfPoint const &       sp = pt.surfPnt;
+        BaryPoint const &       sp = pt.surfPnt;
         FGASSERT(pt.meshIdx < rms.size());
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
         FGASSERT(pt.surfIdx < origMeshPtr->surfaces.size());
         Surf &                  surf = origMeshPtr->surfaces[pt.surfIdx];
-        Vec3F                   pos = cSurfPointPos(sp.triEquivIdx,sp.weights,surf.tris,surf.quads,origMeshPtr->verts);
+        Vec3F                   pos = surf.surfPointPos(origMeshPtr->verts,sp);
         fgout << fgnl << "Surf point placed on surf " << pt.surfIdx << " at coord: " << pos;
         if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
             SurfPoints &            surfPoints =  surf.surfPoints;
-            pt.surfPnt.label = pointLabelN.cref().as_ascii();
-            if (!pt.surfPnt.label.empty()) {
+            String                     label = pointLabelN.cref().as_ascii();
+            if (!label.empty()) {
                 for (size_t ii=0; ii<surfPoints.size(); ++ii) {
-                    if (surfPoints[ii].label == pt.surfPnt.label) {     // Replace SPs of same name:
-                        surfPoints[ii] = pt.surfPnt;
+                    if (surfPoints[ii].label == label) {            // Replace SPs of same name:
+                        surfPoints[ii].point = pt.surfPnt;
                         return;
                     }
                 }
             }
             // Add new SP:
-            surfPoints.push_back(pt.surfPnt);
+            surfPoints.emplace_back(pt.surfPnt,label);
         }
     }
 }
@@ -214,14 +214,15 @@ markMeshVertex(
             Mesh &                  meshIn = *origMeshPtr;
             Surf const &            surf = meshIn.surfaces[pt.surfIdx];
             uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
-            uint                    vertIdx = cTriEquivVertInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[facetIdx];
+            Vec3UI                  vertInds = surf.getTriEquivVertInds(pt.surfPnt.triEquivIdx);
+            uint                    vertIdx = vertInds[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
             if (vertMarkMode == 0) {
                 if (!contains(meshIn.markedVerts,vertIdx))
                     meshIn.markedVerts.push_back(MarkedVert(vertIdx));
             }
             else if (vertMarkMode < 4) {
-                Vec3UIs             tris = surf.getTriEquivs().posInds;
+                Vec3UIs             tris = surf.getTriEquivs().vertInds;
                 SurfTopo        topo(meshIn.verts.size(),tris);
                 set<uint>           seam;
                 if (vertMarkMode == 1) {
@@ -231,7 +232,7 @@ markMeshVertex(
                 }
                 else if (vertMarkMode == 2) {
                     Surf                tmpSurf;
-                    tmpSurf.tris.posInds = tris;
+                    tmpSurf.tris.vertInds = tris;
                     vector<FatBool>      done(meshIn.verts.size(),false);
                     seam = topo.traceFold(cNormals(svec(tmpSurf),meshIn.verts),done,vertIdx);
                 }
@@ -257,7 +258,7 @@ Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
         Mesh const &        mesh = rm.origMeshN.cref();
         Surf const &     surf = mesh.surfaces[pt.surfIdx];
         lastCtlClick.meshIdx = pt.meshIdx;
-        lastCtlClick.vertIdx = cTriEquivVertInds(surf.tris,surf.quads,pt.surfPnt.triEquivIdx)[mi];
+        lastCtlClick.vertIdx = surf.getTriEquivVertInds(pt.surfPnt.triEquivIdx)[mi];
         lastCtlClick.valid = true;
     }
     else
