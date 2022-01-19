@@ -44,20 +44,28 @@ void                cmdCombinesurfs(CLArgs const & args)
             saveMesh(mesh,name);
     }
 }
-
-void
-cmdConvert(CLArgs const & args)
+void                cmdConvert(CLArgs const & args)
 {
     Syntax          syn {args,
-        R"(<in>.<exti> <out>.<exto>
+        R"([-m] <in>.<exti> <out>.<exto>
+    -m          - if <in> contains multiple meshes, merge them preserving vertex order
     <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
     <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
 OUTPUT:
-    <out>.<exto>        If <exto> format can contain all meshes in <in>, otherwise:
+    <out>.<exto>        If <exto> format can contain all meshes in <in> (or merge option chosen), otherwise:
     <out>-<name>.<exto> A file for each mesh contained in <in>, where <name> is taken from <in>,
                         and if none is given, generated as sequential integers)"
     };
+    bool            merge = false;
+    while (syn.peekNext()[0] == '-') {
+        if (syn.next() == "-m")
+            merge = true;
+        else
+            syn.error("Unrecognized option",syn.curr());
+    }
     Meshes          meshes = loadMeshes(syn.next());
+    if ((meshes.size() > 1) && merge)
+        meshes = {mergeMeshes(meshes)};
     Path            out {syn.next()};
     if (meshes.size() > 1) {
         if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str)))
@@ -78,9 +86,7 @@ OUTPUT:
     else
         saveMesh(meshes[0],out.str());
 }
-
-void
-copyUvList(CLArgs const & args)
+void                copyUvList(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext0> <out>.<ext1>\n"
@@ -95,9 +101,7 @@ copyUvList(CLArgs const & args)
     saveMesh(out,syn.curr());
     return;
 }
-
-void
-copyUvs(CLArgs const & args)
+void                copyUvs(CLArgs const & args)
 {
     Syntax    syn(args,
         "<from>.<ext0> <to>.<ext1>\n"
@@ -121,9 +125,7 @@ copyUvs(CLArgs const & args)
     saveMesh(out,syn.curr());
     return;
 }
-
-void
-cmdCopyVerts(CLArgs const & args)
+void                cmdCopyVerts(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<verts>.<exti> <mesh>.<exti> <out>.<exto>
@@ -144,7 +146,6 @@ NOTES:
     mesh.verts = verts;
     saveMesh(mesh,syn.next());
 }
-
 void                cmdEmboss(CLArgs const & args)
 {
     Syntax          syn(args,
@@ -167,7 +168,6 @@ void                cmdEmboss(CLArgs const & args)
     mesh.verts = embossMesh(mesh,img,val);
     saveMesh(mesh,syn.next());
 }
-
 void                cmdExport(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -203,16 +203,16 @@ NOTES:
     } while (syn.more());
     saveMergeMesh(meshes,outFile);
 }
-
-void
-cmdInject(CLArgs const & args)
+void                cmdInject(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<in>.<exto> <verts>.<exti> <out>.<exto>
+        R"(<in>.<exto> <verts>.<exti> [-d <vertsBase>.<exti>] <out>.<exto>
     <exto>          - ([w]obj , fbx)
     <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
+    -d              - inject vertex deltas rather than absolute positions, where the deltas are given
+                      by <verts> - <vertsBase>
 OUTPUT:
-    <out>.<exto>    - <in>.<exto> but with all vertex positions updated to the values in <verts>.<exti>
+    <out>.<exto>    - <in>.<exto> but with all vertex positions updated to the values in <verts> [-<vertsBase>]
 NOTES:
     * The vertex list in <verts>.<exti> must be in exact correspondence with <in>.<exto>
     * If <in>.<exto> is a multi-mesh format (eg. FBX) the vertices are updated in order of appearance in the file
@@ -221,10 +221,22 @@ NOTES:
 )"
     };
     String              inName = syn.next(),
-                        vertsName = syn.next(),
-                        outName = syn.next(),
                         inExt = toLower(pathToExt(inName));
-    Vec3Fs              verts = loadMesh(vertsName).verts;
+    Vec3Fs              vertsIn = loadMesh(inName).verts;
+    Vec3Fs              verts = loadMesh(syn.next()).verts;
+    if (verts.size() != vertsIn.size())
+        syn.error("Vertex count mismatch between <in> and <verts>");
+    if (syn.peekNext()[0] == '-') {
+        if (syn.next() == "-d") {
+            Vec3Fs          vertsBase = loadMesh(syn.next()).verts;
+            if (vertsBase.size() != verts.size())
+                syn.error("Vertex count mismatch between <verts> and <vertsBase>");
+            verts = vertsIn + verts - vertsBase;
+        }
+        else
+            syn.error("Unrecognized option",syn.curr());
+    }
+    String              outName = syn.next();
     if ((inExt == "wobj") || (inExt == "obj"))
         injectVertsWObj(inName,verts,outName);
     else if (inExt == "fbx")
@@ -232,7 +244,6 @@ NOTES:
     else
         syn.error("Unsupported format",inExt);
 }
-
 void                cmdRevWind(CLArgs const & args)
 {
     Syntax              syn(args,
@@ -245,7 +256,6 @@ void                cmdRevWind(CLArgs const & args)
     mesh.surfaces = mapCall<Surf>(mesh.surfaces,[&](Surf const & s){return reverseWinding(s); });
     saveMesh(mesh,syn.next());
 }
-
 void                cmdMarkLabel(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -262,7 +272,6 @@ NOTES:
     mesh.markedVerts[idx].label = syn.next();
     saveMesh(mesh,syn.next());
 }
-
 void                cmdMarkList(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -276,7 +285,6 @@ NOTES:
     for (auto const & mv : mesh.markedVerts)
         fgout << fgnl << toStrDigits(cnt,2) << ": idx " << mv.idx << " " << mv.label;
 }
-
 void                cmdMark(CLArgs const & args)
 {
     Cmds            cmds {
@@ -285,9 +293,7 @@ void                cmdMark(CLArgs const & args)
     };
     doMenu(args,cmds,false,false,false,"Use 'view mesh' to interactively create marked vertices");
 }
-
-void
-cmdMergeMeshes(CLArgs const & args)
+void                cmdMergeMeshes(CLArgs const & args)
 {
     Syntax              syn {args,
         R"((<in>.<exti>)+ -o <out>.<exto>
@@ -304,8 +310,7 @@ NOTES:
     String              outName = syn.next();
     saveMesh(mergeMeshes(mapAddr(meshes)),outName);
 }
-
-void            cmdMeshMirror(CLArgs const & args)
+void                cmdMeshMirror(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<in>.<exti> <out>.<exto>
@@ -321,9 +326,7 @@ NOTES:
     Mesh                mesh = loadMesh(syn.next());
     saveMesh(cMirrorX(mesh),syn.next());
 }
-
-void
-mergesurfs(CLArgs const & args)
+void                mergesurfs(CLArgs const & args)
 {
     Syntax      syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -337,7 +340,6 @@ mergesurfs(CLArgs const & args)
         mesh.surfaces = {mergeSurfaces(mesh.surfaces)};
     saveMesh(mesh,syn.next());
 }
-
 void                cmdRdf(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -353,7 +355,6 @@ void                cmdRdf(CLArgs const & args)
         fno = syn.next();
     saveTri(fno,removeDuplicateFacets(loadTri(fni)));
 }
-
 void                cmdRtris(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -396,7 +397,6 @@ void                cmdRtris(CLArgs const & args)
     }
     saveMesh(mesh,outName);
 }
-
 void                cmdRuv(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -408,9 +408,7 @@ void                cmdRuv(CLArgs const & args)
     mesh = removeUnusedVerts(mesh);
     saveMesh(mesh,syn.next());
 }
-
-void
-mergenamedsurfs(CLArgs const & args)
+void                mergenamedsurfs(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<extIn> <out>.<extOut>\n"
@@ -421,7 +419,6 @@ mergenamedsurfs(CLArgs const & args)
     mesh = mergeSameNameSurfaces(mesh);
     saveMesh(mesh,syn.next());
 }
-
 void                cmdRetopo(CLArgs const & args)
 {
     Syntax              syn { args,
@@ -491,9 +488,7 @@ void                cmdRetopo(CLArgs const & args)
     }
     saveTri(baseOut+".tri",meshOut);
 }
-
-void
-cmdBoundEdges(CLArgs const & args)
+void                cmdBoundEdges(CLArgs const & args)
 {
     Syntax          syn(args,
         R"(<in>.<ext>
@@ -515,9 +510,7 @@ OUTPUT:
         saveMesh(mm,fbase + toStrDigits(cnt++,2) + ".fgmesh");
     }
 }
-
-void
-cmdSplitSurf(CLArgs const & args)
+void                cmdSplitSurf(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<mesh>.<ext> <root>
@@ -540,9 +533,7 @@ NOTES:
         saveFgmesh(root+"-"+name+".fgmesh",out);
     }
 }
-
-void
-cmdUvsSplitContig(CLArgs const & args)
+void                cmdUvsSplitContig(CLArgs const & args)
 {
     Syntax              syn {args,
         "<in>.<extIn> <out>.fgmesh\n"
@@ -552,9 +543,7 @@ cmdUvsSplitContig(CLArgs const & args)
     Mesh                mesh = loadMesh(syn.next());
     saveMesh(splitSurfsByUvContiguous(mesh),syn.next());
 }
-
-void
-cmdSplitContigVerts(CLArgs const & args)
+void                cmdSplitContigVerts(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.<extIn> <out>.fgmesh\n"
         "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
@@ -568,9 +557,7 @@ cmdSplitContigVerts(CLArgs const & args)
     mesh.surfaces = surfs;
     saveFgmesh(syn.next(),mesh);
 }
-
-void
-surfAdd(CLArgs const & args)
+void                surfAdd(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
@@ -583,9 +570,7 @@ surfAdd(CLArgs const & args)
     mesh.surfaces.push_back(surf);
     saveFgmesh(syn.next(),mesh);
 }
-
-void
-surfCopy(CLArgs const & args)
+void                surfCopy(CLArgs const & args)
 {
     Syntax    syn(args,
         "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
@@ -596,9 +581,7 @@ surfCopy(CLArgs const & args)
                     to = loadMesh(syn.next());
     saveFgmesh(syn.next(),copySurfaceStructure(from,to));
 }
-
-void
-surfDel(CLArgs const & args)
+void                surfDel(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh <idx>+\n"
         "    <idx> - surface indices to delete"
@@ -617,9 +600,7 @@ surfDel(CLArgs const & args)
         mesh.surfaces.erase(mesh.surfaces.begin()+idx);
     saveMesh(mesh,outName);
 }
-
-void
-surfIso(CLArgs const & args)
+void                surfIso(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh (<idx>)+\n"
         "    <idx> - surface index to delete"
@@ -636,9 +617,7 @@ surfIso(CLArgs const & args)
     mesh.surfaces = permute(mesh.surfaces,inds);
     saveMesh(mesh,outName);
 }
-
-void
-surfList(CLArgs const & args)
+void                surfList(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext>\n"
@@ -650,9 +629,7 @@ surfList(CLArgs const & args)
         fgout << fgnl << ss << ": " << surf.name;
     }
 }
-
-void
-surfRen(CLArgs const & args)
+void                surfRen(CLArgs const & args)
 {
     Syntax                  syn(args,
         "<in>.fgmesh <idx> <name>\n"
@@ -667,9 +644,7 @@ surfRen(CLArgs const & args)
     mesh.surfaces[idx].name = syn.next();
     saveFgmesh(meshFname,mesh);
 }
-
-void
-spCopy(CLArgs const & args)
+void                spCopy(CLArgs const & args)
 {
     Syntax          syn(args,"<from>.<mi> <to>.<mi> <out>.<mo>\n"
         "    <mi>   - " + getMeshLoadExtsCLDescription() + "\n"
@@ -683,9 +658,7 @@ spCopy(CLArgs const & args)
         cat_(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
     saveMesh(to,syn.next());
 }
-
-void
-spDel(CLArgs const & args)
+void                spDel(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri <ptIdx>\n"
@@ -700,9 +673,7 @@ spDel(CLArgs const & args)
     surf.surfPoints.erase(surf.surfPoints.begin() + ii);
     saveTri(meshFname,mesh);
 }
-
-void
-spList(CLArgs const & args)
+void                spList(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.fgmesh");
     Mesh    mesh = loadMesh(syn.next());
@@ -714,9 +685,7 @@ spList(CLArgs const & args)
         fgout << fgpop;
     }
 }
-
-void
-spRen(CLArgs const & args)
+void                spRen(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
@@ -736,9 +705,7 @@ spRen(CLArgs const & args)
     surf.surfPoints[ii].label = syn.next();
     saveFgmesh(meshFname,mesh);
 }
-
-void
-spsToVerts(CLArgs const & args)
+void                spsToVerts(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri <out>.tri\n"
@@ -749,7 +716,6 @@ spsToVerts(CLArgs const & args)
     surfPointsToMarkedVerts_(in,out);
     saveTri(syn.curr(),out);
 }
-
 void                cmdToTris(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -761,7 +727,6 @@ void                cmdToTris(CLArgs const & args)
     mesh.convertToTris();
     saveMesh(mesh,syn.next());
 }
-
 void                cmdFuseUvs(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -774,7 +739,6 @@ void                cmdFuseUvs(CLArgs const & args)
     fgout << fgnl << in.uvs.size()-out.uvs.size() << " identical UVs fused";
     saveMesh(out,syn.next());
 }
-
 void                cmdFuseVerts(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -789,7 +753,6 @@ NOTES:
     fgout << fgnl << in.verts.size()-out.verts.size() << " identical verts fused";
     saveMesh(out,syn.next());
 }
-
 void                cmdUvclamp(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -807,7 +770,6 @@ void                cmdUvclamp(CLArgs const & args)
         saveMesh(in,syn.curr());
     return;
 }
-
 void                cmdUvSolidImage(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -827,7 +789,6 @@ void                cmdUvSolidImage(CLArgs const & args)
     img = shrink2Fixed(img);
     saveImage(syn.next(),toRgba8(img));
 }
-
 void                cmdUvWireframe(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -851,7 +812,6 @@ void                cmdUvWireframe(CLArgs const & args)
             saveJfif(img,fname);
     }
 }
-
 void                cmdUvmask(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -870,7 +830,6 @@ void                cmdUvmask(CLArgs const & args)
     mesh = fg3dMaskFromUvs(mesh,mask);
     saveMesh(mesh,syn.next());
 }
-
 void                cmdUvunwrap(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -890,7 +849,6 @@ void                cmdUvunwrap(CLArgs const & args)
         saveMesh(in,syn.curr());
     return;
 }
-
 void                cmdXformApply(CLArgs const & args)
 {
     Syntax              syn(args,
@@ -904,7 +862,6 @@ void                cmdXformApply(CLArgs const & args)
                     out = transform(in,cmdXform);
     saveMesh(out,syn.next());
 }
-
 void                cmdXformCreateIdentity(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -914,7 +871,6 @@ void                cmdXformCreateIdentity(CLArgs const & args)
     string      simFname = syn.next();
     saveBsaXml(simFname,SimilarityD::identity());
 }
-
 void                cmdXformCreateMeshes(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -934,7 +890,6 @@ void                cmdXformCreateMeshes(CLArgs const & args)
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
     saveBsaXml(simFname,sim);
 }
-
 void                cmdXformCreateRotate(CLArgs const & args)
 {
     Syntax          syn(args,
@@ -964,7 +919,6 @@ void                cmdXformCreateRotate(CLArgs const & args)
         xf = xf * loadBsaXml<SimilarityD>(syn.next());
     saveBsaXml(outName,xf);
 }
-
 void                cmdXformCreateScale(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -977,7 +931,6 @@ void                cmdXformCreateScale(CLArgs const & args)
     double          scale = syn.nextAs<double>();
     saveBsaXml(simFname,SimilarityD(scale)*sim);
 }
-
 void                cmdXformCreateTrans(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -993,7 +946,6 @@ void                cmdXformCreateTrans(CLArgs const & args)
     trans[2] = syn.nextAs<double>();
     saveBsaXml(simFname,SimilarityD(trans)*sim);
 }
-
 void                cmdXformCreate(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1005,7 +957,6 @@ void                cmdXformCreate(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
-
 void                cmdSurfVertInds(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -1046,7 +997,6 @@ NOTES:
         content += toStr(idx) + " ";
     saveRaw(content,outName);
 }
-
 void                cmdSurf(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1069,7 +1019,6 @@ void                cmdSurf(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
-
 void                cmdUvs(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1085,7 +1034,6 @@ void                cmdUvs(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
-
 void                cmdXform(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1095,7 +1043,6 @@ void                cmdXform(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
-
 void                cmdMesh(CLArgs const & args)
 {
     Cmds            cmds {
