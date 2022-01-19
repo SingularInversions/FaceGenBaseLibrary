@@ -222,7 +222,7 @@ NOTES:
     };
     String              inName = syn.next(),
                         inExt = toLower(pathToExt(inName));
-    Vec3Fs              vertsIn = loadMesh(inName).verts;
+    Vec3Fs              vertsIn = mergeMeshes(loadMeshes(inName)).verts;
     Vec3Fs              verts = loadMesh(syn.next()).verts;
     if (verts.size() != vertsIn.size())
         syn.error("Vertex count mismatch between <in> and <verts>");
