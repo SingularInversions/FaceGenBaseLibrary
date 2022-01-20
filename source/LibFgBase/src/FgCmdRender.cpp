@@ -28,7 +28,7 @@ namespace Fg {
 
 namespace {
 
-struct  ModelFile
+struct      ModelFile
 {
     String              meshFilename;
     Strings             imgFilenames;
@@ -37,7 +37,7 @@ struct  ModelFile
 };
 typedef Svec<ModelFile>     ModelFiles;
 
-struct  RenderArgs
+struct      RenderArgs
 {
     ModelFiles              models;
     double                  roll = 0,       // Z axis rotation, radians, in order:
@@ -52,8 +52,7 @@ struct  RenderArgs
     FG_SERIALIZE8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options);
 };
 
-Meshes
-loadMeshes(ModelFiles const & mfs)
+Meshes              loadMeshes(ModelFiles const & mfs)
 {
     Meshes          meshes;
     for (ModelFile const & mf : mfs) {
@@ -70,8 +69,7 @@ loadMeshes(ModelFiles const & mfs)
     return meshes;
 }
 
-void
-cmdRenderSetup(CLArgs const & args)
+void                cmdRenderSetup(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<name>.xml (-<option> <value>)* (<mesh>.<ext> [<albedo>.<img>])*
@@ -144,8 +142,7 @@ NOTES:
     saveBsaXml(name,rend);
 }
 
-void
-renderRun(String const & rendFile,String const & outName)
+void                renderRun(String const & rendFile,String const & outName)
 {
     RenderArgs          rend;
     // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
@@ -162,12 +159,11 @@ renderRun(String const & rendFile,String const & outName)
     Ofstream            ofs {outBase+"-landmarks.csv"};
     for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
         ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
-    Camera              cam {rend.modelview,{},rend.itcsToIucs};
+    Camera              cam {mvm,{},rend.itcsToIucs};
     saveBsaXml(outBase+"-matrix.xml",cam.projectIpcs(rend.imagePixelSize));
 }
 
-void
-cmdRenderRun(CLArgs const & args)
+void                cmdRenderRun(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<in>.xml <out>.<img>
@@ -187,8 +183,7 @@ OUTPUT:
     renderRun(inFile,outFile);
 }
 
-void
-cmdRenderBatch(CLArgs const & args)
+void                cmdRenderBatch(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<files>.txt <img>
@@ -221,10 +216,16 @@ NOTES:
     }
 }
 
+bool                imgApproxEqual(String8 const & file0,String8 const & file1)
+{
+    ImgRgba8        img0 = loadImage(file0),
+                    img1 = loadImage(file1);
+    return fgImgApproxEqual(img0,img1,2);
+}
+
 }   // namespace
 
-void
-cmdRender(CLArgs const & args)
+void                cmdRender(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdRenderBatch,"batch","batch render from a text file list of configuration file names"},
@@ -234,21 +235,7 @@ cmdRender(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-Cmd
-getCmdRender()
-{return Cmd(cmdRender,"render","Render meshes with color & specular maps to an image file"); }
-
-static
-bool
-imgApproxEqual(String8 const & file0,String8 const & file1)
-{
-    ImgRgba8        img0 = loadImage(file0),
-                    img1 = loadImage(file1);
-    return fgImgApproxEqual(img0,img1,2);
-}
-
-void
-testRenderCmd(CLArgs const & args)
+void                testRenderCmd(CLArgs const & args)
 {
     FGTESTDIR
     copyFileToCurrentDir("base/Jane.tri");

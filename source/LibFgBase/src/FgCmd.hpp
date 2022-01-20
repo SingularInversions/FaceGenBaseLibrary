@@ -12,7 +12,6 @@
 namespace Fg {
 
 Cmd     getCmdMesh();
-Cmd     getCmdRender();
 void    cmdCons(CLArgs const &);
 Cmds    getViewCmds();
 Cmd     getCompileShadersCmd();

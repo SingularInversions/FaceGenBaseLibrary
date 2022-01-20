@@ -187,8 +187,9 @@ cmdSubstitute(CLArgs const & args)
     ofs << body;
 }
 
-Cmd     getCmdImage();
-Cmd     getCmdMorph();
+Cmd                 getCmdImage();
+Cmd                 getCmdMorph();
+void                cmdRender(CLArgs const &);
 
 Cmds
 getFgblCmds()
@@ -198,7 +199,7 @@ getFgblCmds()
         {getCmdImage()},
         {getCmdMesh()},
         {getCmdMorph()},
-        {getCmdRender()},
+        {cmdRender,"render","Render meshes with color & specular maps to an image file"},
         {cmdCons,"cons","Construct makefiles / solution file / project files"},
         {cmdSubstitute,"substitute","Substitute first instance of exact strings in a text file"},
         {sysinfo,"sys","Show system info"},
