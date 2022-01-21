@@ -111,19 +111,18 @@ NOTES:
     };
     string              name = syn.next();
     RenderArgs          rend;
-    while (syn.more()) {
-        if (syn.peekNext()[0] == '-') {         // option
-            String          opt = syn.next();
-            if (opt == "-roll")
-                rend.roll = degToRad(syn.nextAs<float>());
-            else if (opt == "-tilt")
-                rend.tilt = degToRad(syn.nextAs<float>());
-            else if (opt == "-pan")
-                rend.pan = degToRad(syn.nextAs<float>());
-            else
-                syn.error("Unrecognized option",opt);
-        }
-        //! Set up the default render options from the arguments:
+    while (syn.more() && (syn.peekNext()[0] == '-')) {          // options
+        String          opt = syn.next();
+        if (opt == "-roll")
+            rend.roll = degToRad(syn.nextAs<float>());
+        else if (opt == "-tilt")
+            rend.tilt = degToRad(syn.nextAs<float>());
+        else if (opt == "-pan")
+            rend.pan = degToRad(syn.nextAs<float>());
+        else
+            syn.error("Unrecognized option",opt);
+    }
+    while (syn.more()) {                                        // meshes & maps
         ModelFile           mf;
         mf.meshFilename = syn.next();
         while (syn.more() && hasImageFileExt(syn.peekNext()))
