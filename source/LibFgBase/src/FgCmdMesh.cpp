@@ -44,6 +44,7 @@ void                cmdCombinesurfs(CLArgs const & args)
             saveMesh(mesh,name);
     }
 }
+
 void                cmdConvert(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -86,6 +87,7 @@ OUTPUT:
     else
         saveMesh(meshes[0],out.str());
 }
+
 void                copyUvList(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -101,6 +103,7 @@ void                copyUvList(CLArgs const & args)
     saveMesh(out,syn.curr());
     return;
 }
+
 void                copyUvs(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -125,6 +128,7 @@ void                copyUvs(CLArgs const & args)
     saveMesh(out,syn.curr());
     return;
 }
+
 void                cmdCopyVerts(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -146,12 +150,13 @@ NOTES:
     mesh.verts = verts;
     saveMesh(mesh,syn.next());
 }
+
 void                cmdEmboss(CLArgs const & args)
 {
     Syntax          syn(args,
         "<uvImage>.<img> <meshin>.<ext0> <val> <out>.<ext1>\n"
         "    <uvImage> = a UV-layout image whose grescale values will be used to emboss (0 - none, 255 - full)\n"
-        "    <img>     = " + getImageFileExtCLDescriptions() + "\n"
+        "    <img>     = " + clOptionsStr(getImgExts()) + "\n"
         "    <ext0>    = " + getMeshLoadExtsCLDescription() + "\n"
         "    <val>     = Embossing factor as ratio of the max bounding box dimension.\n"
         "    <ext1>    = " + getMeshSaveExtsCLDescription()
@@ -168,13 +173,14 @@ void                cmdEmboss(CLArgs const & args)
     mesh.verts = embossMesh(mesh,img,val);
     saveMesh(mesh,syn.next());
 }
+
 void                cmdExport(CLArgs const & args)
 {
     Syntax          syn {args,
         R"(<out>.<exto> (<mesh>.<extm> [<image>.<exti>])+
     <exto>          - )" + getMeshLoadExtsCLDescription() + R"(
     <extm>          - )" + getMeshSaveExtsCLDescription() + R"(
-    <exti>          - )" + getImageFileExtCLDescriptions() + R"(
+    <exti>          - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <out>.<exto>    - the combined meshes
     <out>#.png      - related image files are only stored if <exto> supports referencing image files
@@ -190,7 +196,7 @@ NOTES:
         while (syn.more() && toLower(pathToExt(syn.peekNext())) != "tri") {
             String              imgFile(syn.next()),
                                 ext = pathToExt(imgFile);
-            Strings             exts = getImageFileExts();
+            Strings             exts = getImgExts();
             auto                it = find(exts.begin(),exts.end(),ext);
             if (it == exts.end())
                 syn.error("Unknown image file type",imgFile);
@@ -203,6 +209,7 @@ NOTES:
     } while (syn.more());
     saveMergeMesh(meshes,outFile);
 }
+
 void                cmdInject(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -244,6 +251,7 @@ NOTES:
     else
         syn.error("Unsupported format",inExt);
 }
+
 void                cmdRevWind(CLArgs const & args)
 {
     Syntax              syn(args,
@@ -256,6 +264,7 @@ void                cmdRevWind(CLArgs const & args)
     mesh.surfaces = mapCall<Surf>(mesh.surfaces,[&](Surf const & s){return reverseWinding(s); });
     saveMesh(mesh,syn.next());
 }
+
 void                cmdMarkLabel(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -272,6 +281,7 @@ NOTES:
     mesh.markedVerts[idx].label = syn.next();
     saveMesh(mesh,syn.next());
 }
+
 void                cmdMarkList(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -285,6 +295,7 @@ NOTES:
     for (auto const & mv : mesh.markedVerts)
         fgout << fgnl << toStrDigits(cnt,2) << ": idx " << mv.idx << " " << mv.label;
 }
+
 void                cmdMark(CLArgs const & args)
 {
     Cmds            cmds {
@@ -293,6 +304,7 @@ void                cmdMark(CLArgs const & args)
     };
     doMenu(args,cmds,false,false,false,"Use 'view mesh' to interactively create marked vertices");
 }
+
 void                cmdMergeMeshes(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -310,6 +322,7 @@ NOTES:
     String              outName = syn.next();
     saveMesh(mergeMeshes(mapAddr(meshes)),outName);
 }
+
 void                cmdMeshMirror(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -326,6 +339,7 @@ NOTES:
     Mesh                mesh = loadMesh(syn.next());
     saveMesh(cMirrorX(mesh),syn.next());
 }
+
 void                mergesurfs(CLArgs const & args)
 {
     Syntax      syn(args,
@@ -340,6 +354,7 @@ void                mergesurfs(CLArgs const & args)
         mesh.surfaces = {mergeSurfaces(mesh.surfaces)};
     saveMesh(mesh,syn.next());
 }
+
 void                cmdRdf(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -355,6 +370,7 @@ void                cmdRdf(CLArgs const & args)
         fno = syn.next();
     saveTri(fno,removeDuplicateFacets(loadTri(fni)));
 }
+
 void                cmdRtris(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -397,6 +413,7 @@ void                cmdRtris(CLArgs const & args)
     }
     saveMesh(mesh,outName);
 }
+
 void                cmdRuv(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -408,6 +425,7 @@ void                cmdRuv(CLArgs const & args)
     mesh = removeUnusedVerts(mesh);
     saveMesh(mesh,syn.next());
 }
+
 void                mergenamedsurfs(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -419,6 +437,7 @@ void                mergenamedsurfs(CLArgs const & args)
     mesh = mergeSameNameSurfaces(mesh);
     saveMesh(mesh,syn.next());
 }
+
 void                cmdRetopo(CLArgs const & args)
 {
     Syntax              syn { args,
@@ -488,6 +507,7 @@ void                cmdRetopo(CLArgs const & args)
     }
     saveTri(baseOut+".tri",meshOut);
 }
+
 void                cmdBoundEdges(CLArgs const & args)
 {
     Syntax          syn(args,
@@ -510,6 +530,7 @@ OUTPUT:
         saveMesh(mm,fbase + toStrDigits(cnt++,2) + ".fgmesh");
     }
 }
+
 void                cmdSplitSurf(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -533,6 +554,7 @@ NOTES:
         saveFgmesh(root+"-"+name+".fgmesh",out);
     }
 }
+
 void                cmdUvsSplitContig(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -543,6 +565,7 @@ void                cmdUvsSplitContig(CLArgs const & args)
     Mesh                mesh = loadMesh(syn.next());
     saveMesh(splitSurfsByUvContiguous(mesh),syn.next());
 }
+
 void                cmdSplitContigVerts(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.<extIn> <out>.fgmesh\n"
@@ -557,6 +580,7 @@ void                cmdSplitContigVerts(CLArgs const & args)
     mesh.surfaces = surfs;
     saveFgmesh(syn.next(),mesh);
 }
+
 void                surfAdd(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -570,6 +594,7 @@ void                surfAdd(CLArgs const & args)
     mesh.surfaces.push_back(surf);
     saveFgmesh(syn.next(),mesh);
 }
+
 void                surfCopy(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -581,6 +606,7 @@ void                surfCopy(CLArgs const & args)
                     to = loadMesh(syn.next());
     saveFgmesh(syn.next(),copySurfaceStructure(from,to));
 }
+
 void                surfDel(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh <idx>+\n"
@@ -600,6 +626,7 @@ void                surfDel(CLArgs const & args)
         mesh.surfaces.erase(mesh.surfaces.begin()+idx);
     saveMesh(mesh,outName);
 }
+
 void                surfIso(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh (<idx>)+\n"
@@ -617,6 +644,7 @@ void                surfIso(CLArgs const & args)
     mesh.surfaces = permute(mesh.surfaces,inds);
     saveMesh(mesh,outName);
 }
+
 void                surfList(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -629,6 +657,7 @@ void                surfList(CLArgs const & args)
         fgout << fgnl << ss << ": " << surf.name;
     }
 }
+
 void                surfRen(CLArgs const & args)
 {
     Syntax                  syn(args,
@@ -644,7 +673,8 @@ void                surfRen(CLArgs const & args)
     mesh.surfaces[idx].name = syn.next();
     saveFgmesh(meshFname,mesh);
 }
-void                spCopy(CLArgs const & args)
+
+void                cmdSurfPointCopy(CLArgs const & args)
 {
     Syntax          syn(args,"<from>.<mi> <to>.<mi> <out>.<mo>\n"
         "    <mi>   - " + getMeshLoadExtsCLDescription() + "\n"
@@ -658,34 +688,111 @@ void                spCopy(CLArgs const & args)
         cat_(to.surfaces[ss].surfPoints,from.surfaces[ss].surfPoints);
     saveMesh(to,syn.next());
 }
-void                spDel(CLArgs const & args)
+
+void                cmdSurfPointDel(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.tri <ptIdx>\n"
-        "   <spIdx>   - Which point on that surface to delete"
-        );
-    String8        meshFname = syn.next();
-    Mesh        mesh = loadTri(meshFname);
-    size_t          ii = syn.nextAs<size_t>();
-    Surf &   surf = mesh.surfaces[0];
-    if (ii >= surf.surfPoints.size())
-        fgThrow("Point index value larger than availables points");
-    surf.surfPoints.erase(surf.surfPoints.begin() + ii);
-    saveTri(meshFname,mesh);
+    Syntax              syn {args,
+        R"(<in>.<ext> (<surfIdx> <pointIdx> | all)
+    <ext>           - (tri | fgmesh)
+    <surfIdx>       - surface index
+    <pointIdx>      - point index within that surface
+OUTPUT:
+    <in>.<ext> is modified to delete the specified surface point(s)
+NOTES:
+    Use 'fgbl mesh surf point list' to see the surface and point indices of all surface points
+)"
+    };
+    String              meshFname = syn.next();
+    Mesh                mesh = loadMesh(meshFname);
+    if (syn.peekNext() == "all") {
+        syn.next();
+        for (Surf & surf : mesh.surfaces)
+            surf.surfPoints.clear();
+    }
+    else {
+        size_t              ss = syn.nextAs<size_t>();
+        if (ss >= mesh.surfaces.size())
+            syn.error("surface index out of bounds",syn.curr());
+        Surf &              surf = mesh.surfaces[ss];
+        size_t              ii = syn.nextAs<size_t>();
+        if (ii >= surf.surfPoints.size())
+            syn.error("point index out of bounds",syn.curr());
+        surf.surfPoints.erase(surf.surfPoints.begin() + ii);
+    }
+    saveMesh(mesh,meshFname);
 }
-void                spList(CLArgs const & args)
+
+void                cmdSurfPointList(CLArgs const & args)
 {
-    Syntax    syn(args,"<in>.fgmesh");
-    Mesh    mesh = loadMesh(syn.next());
+    Syntax              syn {args,
+        R"(<in>.<ext>
+    <ext>           - (tri | fgmesh)
+OUTPUT:
+    prints out a list of all surface points for each surface in the mesh by index number)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        Surf const & surf = mesh.surfaces[ss];
-        fgout << fgnl << "Surface " << ss << ": " << surf.name << fgpush;
-        for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
-            fgout << fgnl << ii << " : " << surf.surfPoints[ii].label;
-        fgout << fgpop;
+        Surf const &        surf = mesh.surfaces[ss];
+        fgout << fgnl << "Surface " << ss << ": ";
+        if (surf.surfPoints.empty())
+            fgout << "no surface points";
+        else {
+            PushIndent          pind;
+            for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
+                fgout << fgnl << ii << " : " << surf.surfPoints[ii].label;
+        }
     }
 }
-void                spRen(CLArgs const & args)
+
+void                cmdSurfPointMark(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"([-c] (<mesh>.<ext> | <meshList>.txt) (<landmark> | <fidList>.txt)
+    -c              - if there is an image file of the same base name use it as a color map
+    <ext>           - (tri | fgmesh)
+    <meshList>.txt  - contains one or more lines, each of the format <mesh>.<ext>
+    <landmark>      - name of the surface point to place
+    <fidList>.txt   - contains one or more lines, each of the format <landmark>
+OUTPUT:
+    <mesh>.<ext> is updated with the interactively placed surface points
+NOTES:
+    * Requires a GUI; Windows only.
+    * Repeated point placement will update the position of the current point.
+    * Close the GUI window to select each point placement. It will re-open for the next point.
+    * The list files can contain comment lines beginning with the '#' character.)"
+    };
+    bool                useColor = false;
+    if (syn.peekNext()[0] == '-') {
+        if (syn.next() == "-c")
+            useColor = true;
+        else
+            syn.error("unknown option",syn.curr());
+    }
+    Strings             meshPaths;
+    if (endsWith(syn.peekNext(),".txt"))
+        meshPaths = splitLines(loadRaw(syn.next()),'#');
+    else
+        meshPaths.emplace_back(syn.next());
+    Strings             lmNames;
+    if (endsWith(syn.peekNext(),".txt"))
+        lmNames = splitLines(loadRaw(syn.next()),'#');
+    else
+        lmNames.push_back(syn.next());
+    for (String const & meshPath : meshPaths) {
+        Mesh                mesh = loadMesh(meshPath);
+        if (useColor && !mesh.surfaces.empty()) {
+            String8             dirBase = pathToDirBase(meshPath);
+            Strings             imgExts = findExts(dirBase,getImgExts());
+            if (!imgExts.empty())
+                mesh.surfaces[0].setAlbedoMap(loadImage(dirBase+"."+imgExts[0]));
+        }
+        PushIndent          pind {meshPath};
+        if (guiPlaceSurfPoints_(lmNames,mesh))
+            saveMesh(mesh,meshPath);
+    }
+}
+
+void                cmdSurfPointRen(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
@@ -705,7 +812,8 @@ void                spRen(CLArgs const & args)
     surf.surfPoints[ii].label = syn.next();
     saveFgmesh(meshFname,mesh);
 }
-void                spsToVerts(CLArgs const & args)
+
+void                cmdSurfPointToVert(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.tri <out>.tri\n"
@@ -716,6 +824,7 @@ void                spsToVerts(CLArgs const & args)
     surfPointsToMarkedVerts_(in,out);
     saveTri(syn.curr(),out);
 }
+
 void                cmdToTris(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -727,6 +836,7 @@ void                cmdToTris(CLArgs const & args)
     mesh.convertToTris();
     saveMesh(mesh,syn.next());
 }
+
 void                cmdFuseUvs(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -739,6 +849,7 @@ void                cmdFuseUvs(CLArgs const & args)
     fgout << fgnl << in.uvs.size()-out.uvs.size() << " identical UVs fused";
     saveMesh(out,syn.next());
 }
+
 void                cmdFuseVerts(CLArgs const & args)
 {
     Syntax          syn {args,
@@ -753,6 +864,7 @@ NOTES:
     fgout << fgnl << in.verts.size()-out.verts.size() << " identical verts fused";
     saveMesh(out,syn.next());
 }
+
 void                cmdUvclamp(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -770,6 +882,7 @@ void                cmdUvclamp(CLArgs const & args)
         saveMesh(in,syn.curr());
     return;
 }
+
 void                cmdUvSolidImage(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -778,7 +891,7 @@ void                cmdUvSolidImage(CLArgs const & args)
         "    <extM>     - " + getMeshLoadExtsCLDescription() + "\n"
         "    <size>     - Output image size (will be square).\n"
         "    <image>    - Output image.\n"
-        "    <extI>     - " + getImageFileExtCLDescriptions()
+        "    <extI>     - " + clOptionsStr(getImgExts())
         );
     Mesh        mesh = loadMesh(syn.next());
     uint            sz = syn.nextAs<uint>();
@@ -789,6 +902,7 @@ void                cmdUvSolidImage(CLArgs const & args)
     img = shrink2Fixed(img);
     saveImage(syn.next(),toRgba8(img));
 }
+
 void                cmdUvWireframe(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -796,7 +910,7 @@ void                cmdUvWireframe(CLArgs const & args)
     <mesh>     - The mesh must contains UVs
     <extm>     - )" + getMeshLoadExtsCLDescription() + R"(
     <image>    - If provided, will be used as the background
-    <exti>     - )" + getImageFileExtCLDescriptions() + R"(
+    <exti>     - )" + clOptionsStr(getImgExts()) + R"(
 "OUTPUTS:
     * <mesh>-uvs-#.jpg          The UV wireframe image for each surface)"
     };
@@ -812,12 +926,13 @@ void                cmdUvWireframe(CLArgs const & args)
             saveJfif(img,fname);
     }
 }
+
 void                cmdUvmask(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.<ext0> <imageIn>.<ext1> <meshOut>.<ext2>\n"
         "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <ext1> = " + getImageFileExtCLDescriptions() + "\n"
+        "    <ext1> = " + clOptionsStr(getImgExts()) + "\n"
         "    <ext2> = " + getMeshSaveExtsCLDescription()
         );
     Mesh        mesh = loadMesh(syn.next());
@@ -830,6 +945,7 @@ void                cmdUvmask(CLArgs const & args)
     mesh = fg3dMaskFromUvs(mesh,mask);
     saveMesh(mesh,syn.next());
 }
+
 void                cmdUvunwrap(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -849,6 +965,7 @@ void                cmdUvunwrap(CLArgs const & args)
         saveMesh(in,syn.curr());
     return;
 }
+
 void                cmdXformApply(CLArgs const & args)
 {
     Syntax              syn(args,
@@ -862,6 +979,7 @@ void                cmdXformApply(CLArgs const & args)
                     out = transform(in,cmdXform);
     saveMesh(out,syn.next());
 }
+
 void                cmdXformCreateIdentity(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -871,6 +989,7 @@ void                cmdXformCreateIdentity(CLArgs const & args)
     string      simFname = syn.next();
     saveBsaXml(simFname,SimilarityD::identity());
 }
+
 void                cmdXformCreateMeshes(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -890,6 +1009,7 @@ void                cmdXformCreateMeshes(CLArgs const & args)
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
     saveBsaXml(simFname,sim);
 }
+
 void                cmdXformCreateRotate(CLArgs const & args)
 {
     Syntax          syn(args,
@@ -919,6 +1039,7 @@ void                cmdXformCreateRotate(CLArgs const & args)
         xf = xf * loadBsaXml<SimilarityD>(syn.next());
     saveBsaXml(outName,xf);
 }
+
 void                cmdXformCreateScale(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -931,6 +1052,7 @@ void                cmdXformCreateScale(CLArgs const & args)
     double          scale = syn.nextAs<double>();
     saveBsaXml(simFname,SimilarityD(scale)*sim);
 }
+
 void                cmdXformCreateTrans(CLArgs const & args)
 {
     Syntax    syn(args,
@@ -946,6 +1068,7 @@ void                cmdXformCreateTrans(CLArgs const & args)
     trans[2] = syn.nextAs<double>();
     saveBsaXml(simFname,SimilarityD(trans)*sim);
 }
+
 void                cmdXformCreate(CLArgs const & args)
 {
     Cmds            cmds {
@@ -957,6 +1080,7 @@ void                cmdXformCreate(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
+
 void                cmdSurfVertInds(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -997,6 +1121,20 @@ NOTES:
         content += toStr(idx) + " ";
     saveRaw(content,outName);
 }
+
+void                cmdSurfPoint(CLArgs const & args)
+{
+    Cmds            cmds {
+        {cmdSurfPointCopy,"copy","copy surf points between meshes with identical surface topology"},
+        {cmdSurfPointDel,"del","delete a surface point"},
+        {cmdSurfPointList,"list","list surface points in each surface"},
+        {cmdSurfPointMark,"mark","mark surface points on meshes"},
+        {cmdSurfPointRen,"ren","rename a surface point"},
+        {cmdSurfPointToVert,"vert","convert surface points to marked vertices"},
+    };
+    doMenu(args,cmds);
+}
+
 void                cmdSurf(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1007,18 +1145,15 @@ void                cmdSurf(CLArgs const & args)
         {surfList,"list","List surfaces in mesh"},
         {mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"},
         {mergesurfs,"merge","Merge all surfaces in a mesh into one"},
+        {cmdSurfPoint,"point","operations on surface points"},
         {cmdSplitContigVerts,"splitV","Split surfaces by contiguous vertex indices"},
         {cmdSplitSurf,"splitS","Split mesh by surface"},
         {surfRen,"ren","Rename a surface in a mesh"},
-        {spCopy,"spCopy","Copy surf points between meshes with identical surface topology"},
-        {spDel,"spDel","Delete a surface point"},
-        {spList,"spList","List surface points in each surface"},
-        {spRen,"spRen","Rename a surface point"},
-        {spsToVerts,"spVert","Convert surface points to marked vertices"},
         {cmdSurfVertInds,"vinds","Save a TXT list of all vertex indices referenced by given surfaces"},
     };
     doMenu(args,cmds);
 }
+
 void                cmdUvs(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1034,6 +1169,7 @@ void                cmdUvs(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
+
 void                cmdXform(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1043,6 +1179,7 @@ void                cmdXform(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
+
 void                cmdMesh(CLArgs const & args)
 {
     Cmds            cmds {
@@ -1071,9 +1208,10 @@ void                cmdMesh(CLArgs const & args)
 
 }
 
-Cmd
-getCmdMesh()
-{return Cmd(cmdMesh,"mesh","3D Mesh IO and manipulation tools"); }
+Cmd                 getCmdMesh()
+{
+    return Cmd(cmdMesh,"mesh","3D Mesh IO and manipulation tools");
+}
 
 }
 

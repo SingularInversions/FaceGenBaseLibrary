@@ -28,15 +28,15 @@ testCurrentDirectory(CLArgs const & args)
     try
     {
         char32_t        ch = 0x00004EE5;            // A Chinese character
-        String8        chinese(ch);
-        String8        oldDir = getCurrentDir();
-        String8        dirName = chinese + fgDirSep();
+        String8         chinese(ch);
+        String8         oldDir = getCurrentDir();
+        String8         dirName = chinese + nativeDirSep8;
         createDirectory(dirName);
         setCurrentDir(dirName);
-        String8        newDir = getCurrentDir();
-        String8        expected = oldDir + dirName;
+        String8         newDir = getCurrentDir();
+        String8         expected = oldDir + dirName;
         setCurrentDir(oldDir);
-        String8        restored = getCurrentDir();
+        String8         restored = getCurrentDir();
         FGASSERT(removeDirectory(dirName));
         fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
         fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
@@ -46,7 +46,7 @@ testCurrentDirectory(CLArgs const & args)
     }
     catch (FgExceptionNotImplemented const & e) 
     {
-        fgout << e.no_tr_message();
+        fgout << e.tr_message();
     }
 }
 

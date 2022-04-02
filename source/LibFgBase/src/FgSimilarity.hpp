@@ -86,11 +86,13 @@ struct  SimilarityD
 
 inline Mat44D       asHomogMat(SimilarityD const & s) {return asHomogMat(s.asAffine()); }
 SimilarityD         similarityRand();
-// Uses Horn '87 "Closed-Form Solution of Absolute Orientation..." to find the similarity
-// transform FROM the domain points TO the range points very quickly with high accuracy:
-SimilarityD         solveSimilarity(Vec3Ds const & domainPts,Vec3Ds const & rangePts);
-inline SimilarityD  solveSimilarity(Vec3Fs const & d,Vec3Fs const & r)
-                        {return solveSimilarity(deepCast<double>(d),deepCast<double>(r)); }
+// Uses Horn '87 "Closed-Form Solution of Absolute Orientation..." to quickly find an accurate approximation
+// of the least squares similarity transform for a 1-1 mapping from the domain to the range points.
+// at least 3 non-degenerate non-colinear points must be provided:
+SimilarityD         solveSimilarity(Vec3Ds const & domain,Vec3Ds const & range);
+SimilarityD         solveSimilarity(Vec3Fs const & domain,Vec3Fs const & range);
+// as above but for count-weighted samples (eg. by inverse variance):
+SimilarityD         solveSimilarity(Vec3Ds const & domain,Vec3Ds const & range,Doubles weights);
 SimilarityD         interpolateAsModelview(SimilarityD s0,SimilarityD s1,double val);  // val [0,1]
 
 // Reverse-order similarity transform: v' = sR(v + t) = sRv + sRt
@@ -112,8 +114,7 @@ struct  SimilarityRD
     // More efficient if applying the transform to many vectors:
     Affine3D                asAffine() const;
     SimilarityRD            inverse() const;
-    // Return inverse of only the linear component (no translation):
-    Mat33D                  linearInverse() const {return rot.inverse().asMatrix() / scale; }
+    Mat33D                  linearComponent() const {return rot.asMatrix() * scale; }
     // SimilarityR: v' = sR(v + t) = sRv + sRt
     SimilarityD             asSimilarityD() const
     {return SimilarityD{scale,rot,scale*(rot*trans)}; }

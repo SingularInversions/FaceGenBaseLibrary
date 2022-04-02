@@ -17,10 +17,7 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-void
-guiDialogMessage(
-    String8 const & cap,
-    String8 const & msg)
+void                guiDialogMessage(String8 const & cap,String8 const & msg)
 {
     MessageBox(
         // Sending the main window handle makes it the OWNER of this window (not parent since
@@ -31,8 +28,7 @@ guiDialogMessage(
         MB_OK);
 }
 
-Opt<String8>
-guiDialogFileLoad(
+Opt<String8>        guiDialogFileLoad(
     String8 const &         description,
     Strings const &         extensions,
     string const &          storeID)
@@ -91,10 +87,7 @@ guiDialogFileLoad(
     return ret;
 }
 
-Opt<String8>
-guiDialogFileSave(
-    String8 const &    description,
-    string const &      extension)
+Opt<String8>        guiDialogFileSave(String8 const & description,string const & extension)
 {
     FGASSERT(!extension.empty());
     Opt<String8>          ret;
@@ -150,8 +143,7 @@ guiDialogFileSave(
     return ret;
 }
 
-Opt<String8>
-guiDialogDirSelect()
+Opt<String8>        guiDialogDirSelect()
 {
     Opt<String8>            ret;
     HRESULT                 hr;
@@ -236,60 +228,9 @@ struct  GuiDialogProgressWin
     }
 };
 
-void
-threadWorker(
-    WorkerFunc const &  workerFn,
-    HWND                hwndMain,
-    HWND                hwndDialog,
-    HWND                hwndProgBar,
-    bool &              cancelFlag,
-    String8 &           errMsg)
-{
-    WorkerCallback      callback = [hwndMain,hwndDialog,hwndProgBar,&cancelFlag,&errMsg](bool isMilestone)
-    {
-        if (cancelFlag) {
-            // Main window must be enabled before the WM_CLOSE PostMessage below, or focus will be lost
-            // and Windows may bring a different program to foreground:
-            EnableWindow(hwndMain,TRUE);
-            // PostMessage places the message on the queue for the correct thread (message loop) to retrieve it:
-            PostMessage(hwndDialog,WM_CLOSE,0,0);
-            return true;
-        }
-        if (isMilestone)
-            PostMessage(hwndProgBar,PBM_STEPIT,0,0);
-        return false;
-    };
-    try {
-        workerFn(callback);
-    }
-    catch(FgException const & e)
-    {
-        errMsg = "FG Exception\n" + e.no_tr_message();
-    }
-    catch(std::bad_alloc const &)
-    {
-        errMsg = "OUT OF MEMORY\n";
-#ifndef FG_64
-        if (fg64bitOS())
-            errMsg += "(install 64-bit version if possible) ";
-#endif
-    }
-    catch(std::exception const & e)
-    {
-        errMsg = "std::exception\n" + String8(e.what());
-    }
-    catch(...)
-    {
-        errMsg = "Unknown type\n";
-    }
-    EnableWindow(hwndMain,TRUE);
-    PostMessage(hwndDialog,WM_CLOSE,0,0);
 }
 
-}
-
-bool
-guiDialogProgress(String8 const & title,uint progressSteps,WorkerFunc worker)
+bool                guiDialogProgress(String8 const & title,uint progressSteps,WorkerFunc const & workerFn)
 {
     GuiDialogProgressWin    progBar;
     progBar.progressSteps = progressSteps;
@@ -300,9 +241,31 @@ guiDialogProgress(String8 const & title,uint progressSteps,WorkerFunc worker)
     // the main window focus can be lost:
     EnableWindow(s_guiWin.hwndMain,FALSE);    // Disable main window for model dialog
     UpdateWindow(hwndDialog);
-    String8                 errMsg;
-    thread                  compute(threadWorker,
-        cref(worker),s_guiWin.hwndMain,hwndDialog,progBar.hwndProgBar,ref(progBar.cancelFlag),ref(errMsg));
+    auto                    callbackFn = [&](bool isMilestone)
+    {
+        if (progBar.cancelFlag) {
+            // Main window must be enabled before the WM_CLOSE PostMessage below, or focus will be lost
+            // and Windows may bring a different program to foreground:
+            EnableWindow(s_guiWin.hwndMain,TRUE);
+            // PostMessage places the message on the queue for the correct thread (message loop) to retrieve it:
+            PostMessage(hwndDialog,WM_CLOSE,0,0);
+            return true;
+        }
+        if (isMilestone)
+            PostMessage(progBar.hwndProgBar,PBM_STEPIT,0,0);
+        return false;
+    };
+    FgException             except;
+    auto                    threadFn = [&]()
+    {
+        try {workerFn(callbackFn); }
+        catch (FgException const & e) {except = e; }    // copy from thread stack to main stack
+        catch (std::exception const & e) {except.addContext("std::exception",e.what()); }
+        catch (...) {except.addContext("unknown exception"); }
+        EnableWindow(s_guiWin.hwndMain,TRUE);
+        PostMessage(hwndDialog,WM_CLOSE,0,0);
+    };
+    thread                  compute {threadFn};
     MSG                     msg;
     while (GetMessage(&msg,NULL,0,0)) {
         TranslateMessage(&msg);
@@ -315,15 +278,14 @@ guiDialogProgress(String8 const & title,uint progressSteps,WorkerFunc worker)
     compute.join();
     DestroyWindow(hwndDialog);
     UpdateWindow(s_guiWin.hwndMain);
-    if (!errMsg.empty())
-        fgThrow("Exception in guiDialogProgress",errMsg);
+    if (!except.empty())
+        throw except;
     return !progBar.cancelFlag;
 }
 
 // **************************************** Splash Screen *****************************************
 
-static
-const int s_splashSize = 256;
+static const int s_splashSize = 256;
 
 struct  GuiDialogSplashScreenWin
 {
@@ -393,24 +355,20 @@ struct  GuiDialogSplashScreenWin
     }
 };
 
-static
-GuiDialogSplashScreenWin  s_fgGuiWinDialogSplashScreen;
+static GuiDialogSplashScreenWin  s_fgGuiWinDialogSplashScreen;
 
-static
-INT_PTR CALLBACK
-fgGuiWinDialogFunc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
-{return s_fgGuiWinDialogSplashScreen.wndProc(hwndDlg,uMsg,wParam,lParam); }
+static INT_PTR CALLBACK fgGuiWinDialogFunc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lParam)
+{
+    return s_fgGuiWinDialogSplashScreen.wndProc(hwndDlg,uMsg,wParam,lParam);
+}
 
-static
-void
-fgGuiWinDialogSplashClose()
+static void         fgGuiWinDialogSplashClose()
 {
     if (s_fgGuiWinDialogSplashScreen.hwndThis != 0)
         EndDialog(s_fgGuiWinDialogSplashScreen.hwndThis,0);
 }
 
-std::function<void(void)>
-guiDialogSplashScreen()
+std::function<void(void)>   guiDialogSplashScreen()
 {
     // Need 4 bytes of zero after the DLGTEMPLATE structure for 'CreateDialog...' to work:
     void *          mem = malloc(sizeof(DLGTEMPLATE)+4);

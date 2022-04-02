@@ -7,7 +7,7 @@
 // 
 // INVARIANTS:
 //
-// m_data.size() = m_dims[0] * m_dims[1];
+// m_data.size() == m_dims[0] * m_dims[1];
 //
 // COORDINATE SYSTEMS:
 //
@@ -104,10 +104,7 @@ struct  Img
         if ((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]))
             m_data[ircs_y*m_dims[0]+ircs_x] = val;
     }
-    void            paint(Vec2UI ircs,T val)
-    {
-        paint(ircs[0],ircs[1],val);
-    }
+    void            paint(Vec2UI ircs,T val) {paint(ircs[0],ircs[1],val); }
     void            paint(Vec2I ircs,T val)
     {
         if ((ircs[0] >= 0) && (ircs[1] >= 0))
@@ -139,15 +136,13 @@ typedef Svec<ImgRgba8s> ImgRgba8ss;
 typedef Img<RgbaF>      ImgC4F;
 
 template<typename To,typename From>
-Img<To>
-mapCast(Img<From> const & img)
+Img<To>             mapCast(Img<From> const & img)
 {
     return Img<To>(img.dims(),mapCast<To>(img.m_data));
 }
 
 template<typename To,typename From>
-void
-deepCast_(Img<To> const & from,Img<From> & to)
+void                deepCast_(Img<To> const & from,Img<From> & to)
 {
     to.resize(from.dims());
     deepCast_(from.m_data,to.m_data);

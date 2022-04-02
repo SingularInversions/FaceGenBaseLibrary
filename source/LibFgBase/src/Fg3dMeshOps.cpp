@@ -562,10 +562,9 @@ Mesh            mergeMeshes(Ptrs<Mesh> meshPtrs)
         Mesh const &        mesh = *meshPtrs[mm];
         uint                voffset = voffsets[mm],
                             uoffset = uoffsets[mm];
-        String8 const &     meshName = mesh.name;
         for (Surf const & surf : mesh.surfaces)
             ret.surfaces.emplace_back(
-                meshName + surf.name,
+                surf.name,
                 offsetIndices(surf.tris,voffset,uoffset),
                 offsetIndices(surf.quads,voffset,uoffset),
                 surf.surfPoints,
@@ -639,8 +638,7 @@ fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
     return removeUnusedVerts(Mesh(mesh.verts,nsurfs));
 }
 
-ImgUC
-getUvCover(Mesh const & mesh,Vec2UI dims)
+ImgUC               getUvCover(Mesh const & mesh,Vec2UI dims)
 {
     ImgUC                 ret(dims,uchar(0));
     Vec3UIs              tris = mesh.getTriEquivs().uvInds;
@@ -654,8 +652,7 @@ getUvCover(Mesh const & mesh,Vec2UI dims)
     return ret;
 }
 
-ImgRgba8s
-cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
+ImgRgba8s           cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
 {
     ImgRgba8s           ret; ret.reserve(mesh.surfaces.size());
     for (Surf const & surf : mesh.surfaces)
@@ -663,8 +660,7 @@ cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
     return ret;
 }
 
-Vec3Fs
-embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
+Vec3Fs              embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
 {
     Vec3Fs         ret;
     // Don't check for UV seams, just let the emboss value be the last one traversed:
@@ -707,8 +703,7 @@ embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
     return ret;
 }
 
-Vec3Fs
-poseMesh(Mesh const & mesh,MorphVals const & expression)
+Vec3Fs              poseMesh(Mesh const & mesh,MorphVals const & expression)
 {
     Vec3Fs          ret;
     Floats          coord(mesh.numMorphs(),0);
@@ -720,6 +715,7 @@ poseMesh(Mesh const & mesh,MorphVals const & expression)
     mesh.morph(coord,ret);
     return ret;
 }
+
 void                surfPointsToMarkedVerts_(Mesh const & in,Mesh & out)
 {
     for (size_t ii=0; ii<in.surfaces.size(); ++ii) {
@@ -746,6 +742,7 @@ static void         mirrorLabel_(String & l)
     else if (l.back() == 'R')
         l.back() = 'L';
 }
+
 Surf                cMirrorX(Surf const & surf)
 {
     Surf            ret = reverseWinding(surf);
@@ -753,6 +750,7 @@ Surf                cMirrorX(Surf const & surf)
         mirrorLabel_(sp.label);
     return ret;
 }
+
 Mesh                cMirrorX(Mesh const & m)
 {
     Mesh            ret;
@@ -764,6 +762,25 @@ Mesh                cMirrorX(Mesh const & m)
         mirrorLabel_(mv.label);
     return ret;
 }
+
+NameVec3Fs          mirrorXFuse(NameVec3Fs const & lvs)
+{
+    NameVec3Fs          ret;
+    for (NameVec3F lv : lvs) {
+        if (lv.name.back() == 'L') {
+            ret.push_back(lv);
+            lv.vec[0] *= -1;
+            lv.name.back() = 'R';
+            ret.push_back(lv);
+        }
+        else {
+            lv.vec[0] = 0;
+            ret.push_back(lv);
+        }
+    }
+    return ret;
+}
+
 Mesh                mirrorXFuse(Mesh const & in)
 {
     size_t              V = in.verts.size();
@@ -802,6 +819,7 @@ Mesh                mirrorXFuse(Mesh const & in)
     }
     return Mesh {verts,surfs,dmorphs};
 }
+
 Mesh                copySurfaceStructure(Mesh const & from,Mesh const & to)
 {
     Mesh            ret(to);
@@ -832,102 +850,11 @@ Mesh                copySurfaceStructure(Mesh const & from,Mesh const & to)
     return ret;
 }
 
-Vec3UIs
-meshSurfacesAsTris(Mesh const & m)
+Vec3UIs             meshSurfacesAsTris(Mesh const & m)
 {
     Vec3UIs   ret;
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
         cat_(ret,m.surfaces[ss].convertToTris().tris.vertInds);
-    return ret;
-}
-
-TriSurf
-cTriSurface(Mesh const & src,size_t surfIdx)
-{
-    TriSurf       ts;
-    FGASSERT(src.surfaces.size() > surfIdx);
-    ts.tris = src.surfaces[surfIdx].tris.vertInds;
-    ts.verts = src.verts;
-    return removeUnusedVerts(ts);
-}
-
-Mesh
-sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaque)
-{
-    FGASSERT(!albedo.empty());
-    Tris                    tris = mergeSurfaces(src.surfaces).getTriEquivs();
-    size_t                  numTransparent = tris.size();
-    tris = concat(tris,mergeSurfaces(opaque.surfaces).getTriEquivs());
-    FGASSERT(tris.hasUvs());
-    Mat32F                  domain = cBounds(src.verts),
-                            range = {0,1, 0,1, 0,1};
-    AffineEw3F              xform(domain,range);
-    Vec3Fs                  verts = mapMul(xform,src.verts);
-    Mat23F                  proj {1,0,0,0,1,0};
-    Vec2Fs                  pts = mapMulT<Vec2F>(proj,verts);
-    GridTriangles           grid = gridTriangles(pts,tris.vertInds);
-    // Map obsfucating tri indices to extents for each tri:
-    vector<map<uint,float> > obsfs(tris.vertInds.size());
-    for (Iter2UI it(512); it.valid(); it.next()) {
-        Vec2F            p = (Vec2F(it()) + Vec2F(0.5f)) / 512.0f;
-        TriPoints         tps = grid.intersects(tris.vertInds,pts,p);
-        Floats              depths;
-        for (TriPoint const & tp : tps)
-            depths.push_back(interpolate(tp.vertInds,tp.baryCoord,verts)[2]);
-        tps = permute(tps,sortInds(depths));
-        float               transTotal = 1.0f;
-        for (size_t ii=1; ii<tps.size(); ++ii) {
-            TriPoint const &  tp = tps[ii];
-            if (tp.triInd >= numTransparent)
-                continue;                           // Don't analyze opaque
-            TriPoint const &  tpp = tps[ii-1];    // Obsfucating tri
-            if (tpp.triInd >= numTransparent)
-                continue;                           // Blocked by opaque
-            Vec2F               uv = interpolate(tpp.vertInds,tpp.baryCoord,src.uvs);
-            float               alpha = sampleAlpha(albedo,uv).alpha(),
-                                trans = 1.0f - alpha/255.0f;
-            transTotal *= trans;
-            if (transTotal > 0.0f) {
-                map<uint,float> &   obsf = obsfs[tp.triInd];
-                auto        it2 = obsf.find(tpp.triInd);
-                if (it2 == obsf.end())
-                    obsf[tpp.triInd] = transTotal;
-                else
-                    obsf[tpp.triInd] += transTotal;
-            }
-        }
-    }
-    // Peel of the ordering:
-    Uints                 order;
-    set<uint>               done;
-    while (done.size() < numTransparent) {
-        float               minObs = floatMax();
-        uint                mini = 0;
-        for (uint ii=0; ii<numTransparent; ++ii) {
-            if (done.find(ii) == done.end()) {
-                map<uint,float> const &     obsf = obsfs[ii];
-                float               obsfTot = 0;
-                for (auto it=obsf.begin(); it != obsf.end(); ++it) {
-                    if (done.find(it->first) != done.end())
-                        obsfTot += it->second;
-                }
-                if (obsfTot < minObs) {
-                    minObs = obsfTot;
-                    mini = ii;
-                }
-            }
-        }
-        order.push_back(mini);
-        done.insert(mini);
-    }
-    order = cReverse(order);
-    Surf     surf;
-    surf.tris.vertInds = permute(tris.vertInds,order);
-    surf.tris.uvInds = permute(tris.uvInds,order);
-    Mesh        ret;
-    ret.verts = src.verts;
-    ret.uvs = src.uvs;
-    ret.surfaces.push_back(surf);
     return ret;
 }
 

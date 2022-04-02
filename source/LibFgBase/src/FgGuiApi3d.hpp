@@ -17,16 +17,16 @@
 
 namespace Fg {
 
-enum struct AlbedoMode {
+enum struct     AlbedoMode {
     map    = 0,
     none   = 1,
     byMesh = 2,
     bySurf = 3,
 };
 
-String8s     cAlbedoModeLabels();
+String8s            cAlbedoModeLabels();
 
-struct  RendOptions
+struct      RendOptions
 {
     bool            facets;
     AlbedoMode      albedoMode = AlbedoMode::map;
@@ -41,17 +41,17 @@ struct  RendOptions
     bool            showAxes=false;
 };
 
-struct  MeshesIntersect
+struct      MeshesIntersect
 {
     size_t              meshIdx;
     size_t              surfIdx;
     BaryPoint           surfPnt;
 };
 
-struct  BackgroundImage
+struct      BackgroundImage
 {
     // User-selected background image. Empty means none selected and ignore all values below. Should have alpha=1:
-    IPT<ImgRgba8>            imgN;
+    IPT<ImgRgba8>           imgN;
     // Original image dimensions must be known to get correct aspect ratio for display:
     IPT<Vec2UI>             origDimsN;
     // These inputs are needed for mouse+keyboard controls.
@@ -60,12 +60,13 @@ struct  BackgroundImage
     IPT<double>             lnScale;    // Log units relative to filling render window
     IPT<double>             foregroundTransparency;     // 0 - foreground opaque, 1 - foreground invisible
 
-    DfgNPtrs
-    deps() const
-    {return svec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr); }
+    DfgNPtrs                deps() const
+    {
+        return svec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr);
+    }
 };
 
-struct  RendSurf
+struct      RendSurf
 {
     NPT<ImgRgba8>           smoothMapN;                 // albedo without detail texture. Image can be empty
     NPT<bool>               albedoHasTransparencyN;     // true only if smoothMap exists and has transparency
@@ -77,7 +78,7 @@ struct  RendSurf
 };
 typedef Svec<RendSurf>  RendSurfs;
 
-struct  RendMesh
+struct      RendMesh
 {
     // The original mesh will be empty if this mesh is not currently selected:
     NPT<Mesh>               origMeshN;          // Should point to an Input if client wants mesh editing
@@ -88,29 +89,28 @@ struct  RendMesh
 };
 typedef Svec<RendMesh>      RendMeshes;
 
-Opt<MeshesIntersect>
-intersectMeshes(
+Opt<MeshesIntersect> intersectMeshes(
     Vec2UI                  winSize,
     Vec2I                   pos,
     Mat44F                  worldToD3ps,
     RendMeshes const &      meshes);
 
 // bool: is shift key down as well ? Vec2I: drag delta in pixels
-typedef Sfun<void(bool,Vec2I)>              BothButtonsDragAction;
+typedef Sfun<void(bool,Vec2I)>          BothButtonsDragAction;
 // Vec2UI: viewport size
 // Vec2I: final position
 // Mat44F: transform verts to OICS
-typedef Sfun<void(Vec2UI,Vec2I,Mat44F)>     DragAction;
+typedef Sfun<void(Vec2UI,Vec2I,Mat44F)> DragAction;
 // Vec2UI: viewport size
 // Vec2I: click position
 // Mat44F: transform verts to OICS
-typedef Sfun<void(Vec2UI,Vec2I,Mat44F)>     ClickAction;
+typedef Sfun<void(Vec2UI,Vec2I,Mat44F)> ClickAction;
 
 // This function must be defined in the corresponding OS-specific implementation:
-struct  Gui3d;
-GuiImplPtr guiGetOsImpl(Gui3d const & guiApi);
+struct      Gui3d;
+GuiImplPtr          guiGetOsImpl(Gui3d const & guiApi);
 
-struct  Gui3d : GuiBase
+struct      Gui3d : GuiBase
 {
     // Unmodified sources. Must be defined unless labelled [opt]:
     NPT<RendMeshes>             rendMeshesN;
@@ -120,7 +120,7 @@ struct  Gui3d : GuiBase
     RPT<RendOptions>            renderOptions;
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
-    struct  Capture {           // Put in struct for easier syntax to call a std::function
+    struct      Capture {       // Put in struct for easier syntax to call a std::function
         // First argument is desired pixel size, second is background transparency option:
         Sfun<ImgRgba8(Vec2UI,bool)>   func;
     };
@@ -128,7 +128,6 @@ struct  Gui3d : GuiBase
     Sptr<Capture> const         capture = std::make_shared<Capture>();
     // If defined, will be called with the filename when the user drops it on the 3D window:
     Sfun<void(String8 const &)> fileDragDrop;
-
 
     // Modified (by mouse/keyboard commands processed by viewport):
     IPT<double>                 panDegrees;
@@ -140,7 +139,7 @@ struct  Gui3d : GuiBase
     IPT<String8>                gpuInfo;
 
     // Mouse-Keyboard Actions:
-    struct  VertIdx
+    struct      VertIdx
     {
         bool        valid=false;
         size_t      meshIdx;
@@ -152,51 +151,36 @@ struct  Gui3d : GuiBase
     DragAction                      shiftRightDragAction;
     Marr3<ClickAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
 
+    // current design is to call 'makeViewControls' to complete setup of this object.
+    // TODO: break that up into calls which are made first and results can be passed to a constructor:
     Gui3d(NPT<RendMeshes> const & rmN) : rendMeshesN{rmN} {}
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
-
+    virtual GuiImplPtr      getInstance() {return guiGetOsImpl(*this); }
     // Implementation:
-    void
-    panTilt(Vec2I delta);
-
+    void                    panTilt(Vec2I delta);
     // Used by two-finger rotate gesture. Does nothing in pan-tilt mode:
-    void
-    roll(int delta);
-
-    void
-    scale(int delta);
-
-    void
-    translate(Vec2I delta);
-
-    void
-    ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps);
-
-    void
-    ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps);
-
-    void
-    translateBgImage(Vec2UI winSize,Vec2I delta);
-
-    void
-    scaleBgImage(Vec2UI winSize,Vec2I delta);
+    void                    roll(int delta);
+    void                    scale(int delta);
+    void                    translate(Vec2I delta);
+    void                    ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps);
+    void                    ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps);
+    void                    translateBgImage(Vec2UI winSize,Vec2I delta);
+    void                    scaleBgImage(Vec2UI winSize,Vec2I delta);
 
 private:
-    VertIdx             lastCtlClick;
+    VertIdx                 lastCtlClick;
 };
 
-void
-markSurfacePoint(
+// if 'pos' intersects a surface, it overwrites any surface point on that surface with the same
+// name as 'pointLabelN', otherwise creates a new one:
+void                markSurfacePoint(
     NPT<RendMeshes> const & rendMeshesN,
     NPT<String8> const &    pointLabelN,
-    Vec2UI          winSize,
-    Vec2I           pos,
-    Mat44F          worldToD3ps);
+    Vec2UI                  winSize,
+    Vec2I                   pos,
+    Mat44F                  worldToD3ps);
 
-void
-markMeshVertex(
+void                markMeshVertex(
     NPT<RendMeshes> const & rendMeshesN,
     NPT<size_t> const &     vertMarkModeN,
     Vec2UI                  winSize,

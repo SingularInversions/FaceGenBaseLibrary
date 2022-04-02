@@ -39,7 +39,7 @@ Compilers       getAllCompilers();
 // Supported build compilers for given OS.
 // The first listed compiler is the default for binary distribution:
 Compilers       getBuildCompilers(BuildOS os);
-inline String   getDefaultCompiler(BuildOS os) {return toStr(getBuildCompilers(os)[0]); }
+inline Compiler getDefaultCompiler(BuildOS os) {return getBuildCompilers(os)[0]; }
 Compilers       getBuildCompilers();                // For current Build OS (starting with default)
 Compiler        getCurrentCompiler();
 String          getCurrentBuildConfig();

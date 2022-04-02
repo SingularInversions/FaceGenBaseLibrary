@@ -27,16 +27,13 @@
 namespace Fg {
 
 // Gives radio button choice of supported image load/save formats:
-GuiVal<String>
-guiImageFormat(
+GuiVal<String>      guiImageFormat(
     String const &      label,
-    bool                warnTransparency,
-    String8 const &     store);     // Don't store if empty
+    String8 const &     store);         // Don't store last choice if empty
 
 // Set the cursor to show the application is busy.
 // Resets automatically when application becomes responsive.
-void
-guiBusyCursor();
+void                guiBusyCursor();
 
 }
 

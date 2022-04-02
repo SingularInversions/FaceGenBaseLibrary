@@ -32,8 +32,7 @@ std::ostream &          fgreset(std::ostream& ss);  // Reset indent to zero (use
 
 // ADL won't find this for FgOut::operator<< below so it must be visible up front for clang:
 template<class T>
-std::ostream &
-operator<<(std::ostream &,std::vector<T> const &);
+std::ostream &          operator<<(std::ostream &,std::vector<T> const &);
 
 struct  FgOut
 {
@@ -46,50 +45,34 @@ struct  FgOut
 
     bool            setDefOut(bool b);          // Returns true if default output was initially enabled
     bool            defOutEnabled();            // As above. Non-const only for technical reasons.
-
-    void
-    logFile(const std::string & fnameUtf8,bool appendFile=true,bool prependDate=true);
-
-    void logFileClose();
-
-    void
-    push()
+    void            logFile(const std::string & fnameUtf8,bool appendFile=true,bool prependDate=true);
+    void            logFileClose();
+    void            push()
     {
         for (OStr & o : m_streams)
             ++o.indent;
     }
-
-    void
-    pop()
+    void            pop()
     {
         for (OStr & o : m_streams)
             if (o.indent > 0)
                 --o.indent;
     }
-
-    uint
-    indentLevel() const
+    uint            indentLevel() const
     {
         if (m_streams.empty())
             return 0;
         return uint(m_streams[0].indent);
     }
-
-    void
-    setIndentLevel(uint);
-
-    void
-    reset()
+    void            setIndentLevel(uint);
+    void            reset()
     {
         for (OStr & o : m_streams)
             o.indent = 0;
     }
-
-    FgOut & flush();
-
+    FgOut &         flush();
     template<typename T>
-    FgOut &
-    operator<<(T const & arg)
+    FgOut &         operator<<(T const & arg)
     {
         // In this approach we stringize each arg for each output stream, which is perhaps
         // inefficent but also allows for ostreams with different settings:
@@ -97,11 +80,8 @@ struct  FgOut
             (*ostr.pOStr) << arg;
         return *this;
     }
-
     // Manipulators are just passed through to each ostream:
-    FgOut &
-    operator<<(std::ostream & (*manip)(std::ostream&));
-
+    FgOut &         operator<<(std::ostream & (*manip)(std::ostream&));
     // add this ostream to the output list. Ignored if already in the list:
     void            addStream(std::ostream *,size_t indentLevel=0);
     // remove this ostream from the output list. Ignored if not in the list. Returns its current indent level,
@@ -109,7 +89,7 @@ struct  FgOut
     size_t          delStream(std::ostream *);
 
 private:
-    struct  OStr
+    struct      OStr
     {
         std::ostream        *pOStr;
         size_t              indent = 0;     // Note that atomic cannot be copy constructed
@@ -122,18 +102,16 @@ private:
     std::vector<OStr>   m_streams;          // Defaults to point to 'cout' unless no CLI, then 'm_stringStream'.
     std::ostringstream  m_stringStream;     // Only used per 'm_stream' above
 
-    std::ostream *
-    defOut();
+    std::ostream *      defOut();
 };
 
 extern FgOut      fgout;
 
 struct  PushIndent
 {
-    size_t          depth = 1;
+    size_t              depth = 1;
 
-    explicit
-    PushIndent(std::string const & label = std::string{})
+    explicit PushIndent(std::string const & label = std::string{})
     {
         if (label.empty())
             fgout << fgpush;
@@ -141,11 +119,9 @@ struct  PushIndent
             fgout << fgnl << label << std::flush << fgpush;
     }
 
-    ~PushIndent()
-    {pop(); }
+    ~PushIndent() {pop(); }
 
-    void
-    next(const std::string & nextLabel) const
+    void                next(const std::string & nextLabel) const
     {
         if (depth > 0)
             fgout << fgpop;
@@ -154,8 +130,7 @@ struct  PushIndent
             fgout << fgpush;
     }
 
-    void
-    pop()
+    void                pop()
     {
         if (depth > 0) {
             fgout << fgpop;

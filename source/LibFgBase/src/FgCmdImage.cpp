@@ -23,7 +23,7 @@ void                cmdAlpha(CLArgs const & args)
 {
     Syntax              syn(args,
         "<rgb>.<ext> <alpha>.<ext> <out>.<ext>\n"
-        "    <ext>      - " + getImageFileExtCLDescriptions() + "\n"
+        "    <ext>      - " + clOptionsStr(getImgExts()) + "\n"
         "    <rgb>      - Any existing alpha channel will be ignored\n"
         "    <alpha>    - If this is not a single-channel image, a greyscale mapping will be applied"
         );
@@ -41,7 +41,7 @@ void                cmdComposite(CLArgs const & args)
         "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
         "    Composite images of equal pixel dimensions.\n"
         "    <overlay>.<imgExt> must have an alpha channel\n"
-        "    <imgExt> = " + getImageFileExtCLDescriptions());
+        "    <imgExt> = " + clOptionsStr(getImgExts()));
     ImgRgba8            base = loadImage(syn.next()),
                         overlay = loadImage(syn.next());
     if (base.dims() != overlay.dims())
@@ -54,7 +54,7 @@ void                cmdConst(CLArgs const & args)
         R"(<X size> <Y size> <R> <G> <B> <A> <out>.<ext>
     <X,Y size>      - in pixels
     <R,G,B>         - [0,255]
-    <ext>           - )" + getImageFileExtCLDescriptions()
+    <ext>           - )" + clOptionsStr(getImgExts())
     };
     uint                X = syn.nextAs<uint>(),
                         Y = syn.nextAs<uint>();
@@ -71,7 +71,7 @@ void                cmdConvert(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<ext> <out>.<ext>\n"
-        "    <ext>      - " + getImageFileExtCLDescriptions()
+        "    <ext>      - " + clOptionsStr(getImgExts())
         );
     ImgRgba8            img = loadImage(syn.next());
     saveImage(syn.next(),img);
@@ -82,7 +82,7 @@ void                cmdCreate(CLArgs const & args)
         R"(<num> <size> <out>.<ext>
     <num>       - number of checkerboard squares across
     <size>      - size of each square in pixels
-    <ext>       - )" + getImageFileExtCLDescriptions() + R"(
+    <ext>       - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <img>.<ext> - generated image saved here
 NOTES:
@@ -107,7 +107,7 @@ void                cmdShrink(CLArgs const & args)
 {
     Syntax              syn(args,
         "<in>.<ext> <out>.<ext>\n"
-        "    <ext>      - " + getImageFileExtCLDescriptions()
+        "    <ext>      - " + clOptionsStr(getImgExts())
         );
     ImgRgba8            img = loadImage(syn.next());
     img = shrink2(img);
@@ -115,7 +115,7 @@ void                cmdShrink(CLArgs const & args)
 }
 void                cmdFormats(CLArgs const &)
 {
-    Strings             fs = getImageFileExts();
+    Strings             fs = getImgExts();
     fgout << fgnl << fs.size() << " cmdFormats supported:" << fgpush;
     char                previous = 'Z';
     for (string const & f : fs) {
@@ -136,7 +136,7 @@ void                cmdMark(CLArgs const & args)
     <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
     <list>.txt      - must contain a whitespace-separated list
     <landmarkName>  - cannot contain '.' character
-    <ext>           - )" + getImageFileExtCLDescriptions() + R"(
+    <ext>           - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <fileName>.lms.txt  - for each <fileName> image containing landmarks added
 NOTES:

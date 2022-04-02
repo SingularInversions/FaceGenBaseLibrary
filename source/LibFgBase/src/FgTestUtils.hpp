@@ -30,9 +30,9 @@ namespace Fg {
         }                                                               \
         catch(FgException const &e)                                     \
         {                                                               \
-            fgout << fgnl << e.no_tr_message();                         \
+            fgout << fgnl << e.tr_message();                         \
             fgout << fgnl << e1;                                        \
-            FGASSERT(beginsWith(e.no_tr_message(),e1));               \
+            FGASSERT(beginsWith(e.tr_message(),e1));               \
             fg_test_check_threw = true;                                 \
         }                                                               \
         catch(...){fg_test_check_threw = true;}                         \

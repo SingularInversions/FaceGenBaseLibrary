@@ -16,8 +16,7 @@ using namespace std;
 
 namespace Fg {
 
-double
-tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs)
+double              tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs)
 {
     Vec4D    lv = lhs.asVec4(),
                 rv = rhs.asVec4();
@@ -27,8 +26,7 @@ tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs)
     return cMag(rv-lv);
 }
 
-QuaternionD
-interpolate(QuaternionD q0, QuaternionD q1,double val)
+QuaternionD         interpolate(QuaternionD q0, QuaternionD q1,double val)
 {
     Vec4D       v0 = q0.asVec4(),
                 v1 = q1.asVec4();
@@ -42,26 +40,32 @@ interpolate(QuaternionD q0, QuaternionD q1,double val)
     return QuaternionD {vi}; // normalizes
 }
 
-void
-testQuaternion(CLArgs const &)
+bool                isApproxEqual(QuaternionD const & l,QuaternionD const & r,double prec)
 {
-    QuaternionD           id;
-    // Axis rotations:
+    return (
+        // must check the 2 equivalent representations:
+        (isApproxEqual(l.real,r.real,prec) && isApproxEqual(l.imag,r.imag,prec)) ||
+        (isApproxEqual(l.real,-r.real,prec) && isApproxEqual(l.imag,-r.imag,prec))
+    );
+}
+
+void                testQuaternion(CLArgs const &)
+{
     randSeedRepeatable();
+    double constexpr    prec = epsilonD()*8;
+    QuaternionD const   id;
+    // Axis rotations:
     for (size_t ii=0; ii<5; ++ii) {
         double          r = randNormal();
         Mat33D          qx = cRotateX(r).asMatrix(),
-                        mx = matRotateX(r),
-                        dx = qx - mx;
-        FGASSERT(cMax(mapAbs(dx.m)) < epsilonD()*8);
+                        mx = matRotateX(r);
+        FGASSERT(isApproxEqual(qx,mx,prec));
         Mat33D          qy = cRotateY(r).asMatrix(),
-                        my = matRotateY(r),
-                        dy = qy - my;
-        FGASSERT(cMax(mapAbs(dy.m)) < epsilonD()*8);
+                        my = matRotateY(r);
+        FGASSERT(isApproxEqual(qy,my,prec));
         Mat33D          qz = cRotateZ(r).asMatrix(),
-                        mz = matRotateZ(r),
-                        dz = qz - mz;
-        FGASSERT(cMax(mapAbs(dz.m)) < epsilonD()*8);
+                        mz = matRotateZ(r);
+        FGASSERT(isApproxEqual(qz,mz,prec));
     }
     // asMatrix is orthonormal:
     for (size_t ii=0; ii<5; ++ii) {
@@ -88,6 +92,13 @@ testQuaternion(CLArgs const &)
                         q1 = q0.inverse(),
                         q2 = q1 * q0;
         FGASSERT(sqrt(tanDeltaMag(q2,id)) < epsilonD()*8);
+    }
+    // multiplication keeps values normalized:
+    for (size_t ii=0; ii<10; ++ii) {
+        QuaternionD         q0 = QuaternionD::rand(),
+                            q1 = QuaternionD::rand(),
+                            q2 = q0 * q1;
+        FGASSERT(isApproxEqual(q2.mag(),1.0,prec));
     }
 }
 

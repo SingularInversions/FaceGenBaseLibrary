@@ -170,7 +170,7 @@ struct  Mesh
     Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
     Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs) {}
     Mesh(Vec3Fs const & v,Surfs const & s,DirectMorphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
-    explicit Mesh(TriSurfFids const & tsf);
+    explicit Mesh(TriSurfLms const & tsf);
 
     size_t              allVertsSize() const;               // size of below
     // Return base verts plus all target morph verts plus all animPart bones:
@@ -187,14 +187,14 @@ struct  Mesh
     Vec3F               surfPointPos(Vec3Fs const & verts,size_t num) const;
     Vec3F               surfPointPos(size_t num) const {return surfPointPos(verts,num); }
     Opt<Vec3F>          surfPointPos(String const & label) const;
-    LabelledVerts       surfPointsAsLabelledVerts() const {return surfPointsToLabelledVerts(surfaces,verts); }
+    NameVec3Fs          surfPointsAsNameVecs() const {return surfPointsToNameVecs(surfaces,verts); }
     Vec3Fs              surfPointPositions(Strings const & labels) const;
     Vec3Fs              surfPointPositions() const;
     Vec3F               markedVertPos(String const & name_) const {return verts[findFirst(markedVerts,name_).idx]; }
     Vec3Fs              markedVertPositions() const;        // Return positions of all marked verts
     // Returns the marked verts with the given labels (including duplicates) in the given order:
     Vec3Fs              markedVertPositions(Strings const & labels) const;
-    LabelledVerts       markedVertsAsLabelledVerts() const;
+    NameVec3Fs          markedVertsAsNameVecs() const;
     void                addMarkedVert(Vec3F pos,String const & label)
     {
         markedVerts.push_back(MarkedVert(uint(verts.size()),label));
@@ -373,6 +373,9 @@ Surf            cMirrorX(Surf const & surf);        // same as reverseWinding bu
 // swap surface point and marked vertex labels ending in 'L' and 'R'
 // UVs, maps, points left unchanged, morphs removed:
 Mesh            cMirrorX(Mesh const &);
+// for all points whose name ends in 'L'/'R', add the mirror point (around X=0) ending in 'R'/'L'.
+// points not ending in 'L' or 'R' have X value set to 0:
+NameVec3Fs      mirrorXFuse(NameVec3Fs const & nvs);
 // Mirrors geometry around X=0 plane, fused through vertices on that plane (X value exactly 0.0).
 // All input verts must have X>=0. Surface points not mirrored.
 // Delta morphs are mirrored but they must be X=0 symmetry friendly or ugliness will result.
@@ -382,8 +385,6 @@ Mesh            mirrorXFuse(Mesh const & in);
 Mesh            copySurfaceStructure(Mesh const & from,Mesh const & to);
 // Merge all surface facets converted to tris:
 Svec<Vec3UI>    meshSurfacesAsTris(Mesh const &);
-TriSurf         cTriSurface(Mesh const & src,size_t surfIdx);
-Mesh            sortTransparentFaces(Mesh const & src,ImgRgba8 const & albedo,Mesh const & opaque);
 
 }
 

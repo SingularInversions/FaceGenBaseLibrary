@@ -17,8 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-String8s
-cAlbedoModeLabels()
+String8s            cAlbedoModeLabels()
 {
     return {
         "albedo map",
@@ -28,8 +27,7 @@ cAlbedoModeLabels()
     };
 }
 
-Opt<MeshesIntersect>
-intersectMeshes(
+Opt<MeshesIntersect> intersectMeshes(
     Vec2UI              winSize,
     Vec2I               pos,
     Mat44F              worldToD3ps,
@@ -87,8 +85,7 @@ intersectMeshes(
     return Opt<MeshesIntersect>();
 }
 
-void
-Gui3d::panTilt(Vec2I delta)
+void                Gui3d::panTilt(Vec2I delta)
 {
     size_t          mode = panTiltMode.val();
     if (mode == 0) {
@@ -120,8 +117,7 @@ Gui3d::panTilt(Vec2I delta)
     }
 }
 
-void
-Gui3d::roll(int delta)
+void                Gui3d::roll(int delta)
 {
     size_t          mode = panTiltMode.val();
     if (mode == 1) {
@@ -133,8 +129,7 @@ Gui3d::roll(int delta)
     }
 }
 
-void
-Gui3d::scale(int delta)
+void                Gui3d::scale(int delta)
 {
     double          rs = logRelSize.val();
     rs += double(delta)/200.0;
@@ -149,8 +144,7 @@ Gui3d::scale(int delta)
     logRelSize.set(rs);
 }
 
-void
-Gui3d::translate(Vec2I delta)
+void                Gui3d::translate(Vec2I delta)
 {
     delta[1] *= -1;
     Vec2D    tr = trans.val();
@@ -159,8 +153,7 @@ Gui3d::translate(Vec2I delta)
     trans.set(tr);
 }
 
-void
-markSurfacePoint(
+void                markSurfacePoint(
     NPT<RendMeshes> const & rendMeshesN,
     NPT<String8> const &    pointLabelN,
     Vec2UI          winSize,
@@ -196,8 +189,7 @@ markSurfacePoint(
     }
 }
 
-void
-markMeshVertex(
+void                markMeshVertex(
     NPT<RendMeshes> const & rendMeshesN,
     NPT<size_t> const &     vertMarkModeN,
     Vec2UI                  winSize,
@@ -213,7 +205,7 @@ markMeshVertex(
         if (origMeshPtr) {
             Mesh &                  meshIn = *origMeshPtr;
             Surf const &            surf = meshIn.surfaces[pt.surfIdx];
-            uint                    facetIdx = cMaxIdx(pt.surfPnt.weights);
+            size_t                  facetIdx = cMaxIdx(pt.surfPnt.weights);
             Vec3UI                  vertInds = surf.getTriEquivVertInds(pt.surfPnt.triEquivIdx);
             uint                    vertIdx = vertInds[facetIdx];
             size_t                  vertMarkMode = vertMarkModeN.val();
@@ -246,17 +238,16 @@ markMeshVertex(
     }
 }
 
-void
-Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
+void                Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
 {
-    RendMeshes const &          rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
     if (vpt.valid()) {
-        MeshesIntersect       pt = vpt.val();
-        uint                    mi = cMaxIdx(pt.surfPnt.weights);
-        RendMesh const &       rm = rms[pt.meshIdx];
-        Mesh const &        mesh = rm.origMeshN.cref();
-        Surf const &     surf = mesh.surfaces[pt.surfIdx];
+        MeshesIntersect         pt = vpt.val();
+        size_t                  mi = cMaxIdx(pt.surfPnt.weights);
+        RendMesh const &        rm = rms[pt.meshIdx];
+        Mesh const &            mesh = rm.origMeshN.cref();
+        Surf const &            surf = mesh.surfaces[pt.surfIdx];
         lastCtlClick.meshIdx = pt.meshIdx;
         lastCtlClick.vertIdx = surf.getTriEquivVertInds(pt.surfPnt.triEquivIdx)[mi];
         lastCtlClick.valid = true;
@@ -265,8 +256,7 @@ Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
         lastCtlClick.valid = false;
 }
 
-void
-Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
+void                Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
 {
     if (lastCtlClick.valid) {
         // Interestingly, the concept of a delta vector doesn't work in projective space;
@@ -291,8 +281,7 @@ Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F worldToD3ps)
     }
 }
 
-void
-Gui3d::translateBgImage(Vec2UI winSize,Vec2I delta)
+void                Gui3d::translateBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
         ImgRgba8 const & img = bgImg.imgN.cref();
@@ -304,8 +293,7 @@ Gui3d::translateBgImage(Vec2UI winSize,Vec2I delta)
     }
 }
 
-void
-Gui3d::scaleBgImage(Vec2UI winSize,Vec2I delta)
+void                Gui3d::scaleBgImage(Vec2UI winSize,Vec2I delta)
 {
     if (bgImg.imgN.ptr) {
         ImgRgba8 const & img = bgImg.imgN.cref();

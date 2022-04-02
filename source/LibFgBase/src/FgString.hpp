@@ -18,7 +18,7 @@ namespace Fg {
 
 struct  String8
 {
-    String     m_str;      // UTF-8 unicode
+    String          m_str;      // UTF-8 unicode
 
     String8() {};
     String8(char const * utf8_c_string) : m_str(utf8_c_string) {};
@@ -26,7 +26,8 @@ struct  String8
     explicit String8(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
     explicit String8(String32 const & utf32) : m_str(toUtf8(utf32)) {}
 
-    String8 &       operator+=(String8 const&);
+    String8 &       operator+=(String8 const & rhs);
+    String8 &       operator+=(char rhs);               // checks that 'rhs' is ASCII
     String8         operator+(String8 const&) const;
     String8         operator+(char const * utf8_c_str) {return String8(m_str + utf8_c_str); }
     String8         operator+(char c) const;
@@ -84,55 +85,45 @@ struct  String8
 typedef Svec<String8>   String8s;
 typedef Svec<String8s>  String8ss;
 
-String8s        toUstrings(Strings const & strs);
+String8s            toUstrings(Strings const & strs);
 
 template<>
-inline String
-toStr(String8 const & str)
-{return str.m_str; }
-
+inline String       toStr(String8 const & str) {return str.m_str; }
 template<class T>
-void fgThrow(const String & msg,T const & data) 
-{throw FgException(msg,toStr(data));  }
-
+void                fgThrow(String const & msg,T const & data)  {throw FgException(msg,toStr(data));  }
 template<class T,class U>
-void fgThrow(const String & msg,T const data0,const U & data1) 
-{throw FgException(msg,toStr(data0)+","+toStr(data1)); }
+void                fgThrow(String const & msg,T const data0,const U & data1) 
+{
+    throw FgException(msg,toStr(data0)+","+toStr(data1));
+}
 
-inline
-String8
-toLower(String8 const & str)
-{return str.toLower(); }
-
-inline
-String8
-operator+(const String & lhs,String8 const & rhs)
-{return String8(lhs) + rhs; }
+inline String8      toLower(String8 const & str) {return str.toLower(); }
+inline String8      operator+(const String & lhs,String8 const & rhs) {return String8(lhs) + rhs; }
 
 // Translate an English message into a UTF-8 string. If the message is
 // not found, the untranslated message is returned.
 // TODO: This should return const references eventually as they will
 // be referenecs to something in a map:
-String8         fgTr(const String & message);
+String8             fgTr(const String & message);
 // Remove all instances of a given character:
-String8         removeChars(String8 const & str,uchar chr);
+String8             removeChars(String8 const & str,uchar chr);
 // Remove all instances of any of the given characters:
-String8         removeChars(String8 const & str,String8 chrs);
+String8             removeChars(String8 const & str,String8 chrs);
 // Very simple glob match. Only supports '*' character at beginning or end (but not both)
 // or for whole glob string:
-bool            isGlobMatch(String8 const & globStr,String8 const & str);
-String8         cSubstr8(String8 const & str,size_t start,size_t size);
-String8         cRest(String8 const & s,size_t start);
+bool                isGlobMatch(String8 const & globStr,String8 const & str);
+String8             cSubstr8(String8 const & str,size_t start,size_t size);
+String8             cRest(String8 const & s,size_t start);
 // Inspired by Python join():
-String8         cat(String8s const & strings,String8 const & separator);
-String8         catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator);
+String8             cat(String8s const & strings,String8 const & separator);
+String8             catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator);
 // Changes all non-ASCII-alphanumeric characters to '_' and ensures the first charcter is non-numeric.
 // Non-ASCII characters are projected down to ASCII to minimize ambiguities:
-String          fgToVariableName(String8 const & str);
+String              fgToVariableName(String8 const & str);
 // Replace all instances of 'from' with 'to' in 'in':
-String8         replaceCharWithString(String8 const & in,char32_t from,String8 const to);
+String8             replaceCharWithString(String8 const & in,char32_t from,String8 const to);
 // Print a title and indented list of items one per line:
-void            printList(String const & title,Strings const & items,bool numbered);
+void                printList(String const & title,Strings const & items,bool numbered);
 
 }
 

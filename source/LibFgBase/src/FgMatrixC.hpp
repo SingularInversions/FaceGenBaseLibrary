@@ -355,12 +355,12 @@ Mat<T,R,C>          mapDiv(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
         ret[ii] = lhs[ii] / rhs[ii];
     return ret;
 }
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapCall(Mat<T,R,C> m,T(*func)(T))
+template<typename T,uint R,uint C,class F>
+Mat<T,R,C>          mapCall(Mat<T,R,C> const & mat,F const & func)
 {
-    Mat<T,R,C>    ret;
+    Mat<T,R,C>          ret;
     for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = func(m[ii]);
+        ret[ii] = func(mat[ii]);
     return ret;
 }
 template<class T,uint R,uint C>
@@ -377,6 +377,14 @@ Mat<T,R,C>          mapSqr(Mat<T,R,C> m)
     Mat<T,R,C>    r;
     for (uint ii=0; ii<R*C; ++ii)
         r[ii] = sqr(m[ii]);
+    return r;
+}
+template<class T,uint R,uint C>
+Mat<T,R,C>          mapSqrt(Mat<T,R,C> m)
+{
+    Mat<T,R,C>    r;
+    for (uint ii=0; ii<R*C; ++ii)
+        r[ii] = sqrt(m[ii]);
     return r;
 }
 template<typename T,uint R,uint C>
@@ -626,19 +634,6 @@ Mat<double,R,C>
 interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val [0,1]
 {return m0*(1.0-val) + m1*(val); }
 
-template<typename Flt,typename Int,uint dim>
-void
-fgUninterpolate(
-    const Mat<Flt,dim,1> &    coord,
-    Mat<Int,dim,1> &          coordLo,    // Returned
-    Mat<Flt,dim,2> &          weights)    // Returned
-{
-    Mat<Flt,dim,1>    coordL = cFloor(coord),
-                            coordH = coordL + Mat<Flt,dim,1>(1);
-    weights = catHoriz(coordH-coord,coord-coordL);
-    coordLo = Mat<Int,dim,1>(coordL);
-}
-
 // Provide an ordering by axis order
 // (without making it the default operator as this may not be desired):
 template<typename T,uint R,uint C>
@@ -654,14 +649,7 @@ fgLt(
 }
 
 template<class T,uint R,uint C>
-T
-fgSumElems(Mat<T,R,C> const & m)
-{
-    T   ret(m[0]);
-    for (uint ii=1; ii<R*C; ++ii)
-        ret += m[ii];
-    return ret;
-}
+inline T            cSumElems(Mat<T,R,C> const & m) {return cSum(m.m); }
 
 template<class T,uint sz>
 Mat<T,sz,sz>
@@ -854,10 +842,9 @@ struct  MatS3D
     explicit MatS3D(Mat33D const &);   // Checks for symmetry
     MatS3D(Arr<double,3> const & d,Arr<double,3> const & o) : diag(d), offd(o)  {}
 
-    static MatS3D identity() {return { {{1,1,1}} , {{0,0,0}} }; }
+    static MatS3D       identity() {return { {{1,1,1}} , {{0,0,0}} }; }
 
-    double
-    rc(size_t row,size_t col) const
+    double              rc(size_t row,size_t col) const
     {
         FGASSERT((row<3)&&(col<3));
         if (row==col)
@@ -865,41 +852,28 @@ struct  MatS3D
         else
             return offd[row+col-1];
     }
-    Mat33D          asMatC() const
+    Mat33D              asMatC() const
     {
         return Mat33D {diag[0],offd[0],offd[1], offd[0],diag[1],offd[2], offd[1],offd[2],diag[2]};
     }
-    void            operator+=(MatS3D const & rhs) {diag += rhs.diag; offd += rhs.offd; }
-    MatS3D          operator+(MatS3D const & rhs) const {return {diag+rhs.diag,offd+rhs.offd}; }
-    MatS3D          operator-(MatS3D const & rhs) const {return {diag-rhs.diag,offd-rhs.offd}; }
-    MatS3D          operator*(double rhs) const {return {diag*rhs,offd*rhs}; }
-    Vec3D
-    operator*(Vec3D rhs) const
-    {
-        return {
-            diag[0]*rhs[0] + offd[0]*rhs[1] + offd[1]*rhs[2],
-            offd[0]*rhs[0] + diag[1]*rhs[1] + offd[2]*rhs[2],
-            offd[1]*rhs[0] + offd[2]*rhs[1] + diag[2]*rhs[2],
-        };
-    }
-    Vec3D           diagonal() const {return Vec3D{diag}; }
-    double          sumElems() const {return cSum(diag) + 2.0 * cSum(offd); }
+    void                operator+=(MatS3D const & rhs) {diag += rhs.diag; offd += rhs.offd; }
+    MatS3D              operator+(MatS3D const & rhs) const {return {diag+rhs.diag,offd+rhs.offd}; }
+    Mat33D              operator+(Mat33D const & rhs) const;
+    MatS3D              operator-(MatS3D const & rhs) const {return {diag-rhs.diag,offd-rhs.offd}; }
+    MatS3D              operator*(double rhs) const {return {diag*rhs,offd*rhs}; }
+    Vec3D               operator*(Vec3D rhs) const;
+    // product of symmetric matrices is not in general symmetric:
+    Mat33D              operator*(MatS3D const & rhs) const;
+    Mat33D              operator*(Mat33D const & rhs) const;
+    Vec3D               diagonal() const {return Vec3D{diag}; }
+    double              sumElems() const {return cSum(diag) + 2.0 * cSum(offd); }
     // Sum of squares of elements (== square of frobenius norm):
-    double          mag() const {return cMag(diag) + 2.0 * cMag(offd); }
-    double          dot(MatS3D const & rhs) const {return cDot(diag,rhs.diag) + 2.0 * cDot(offd,rhs.offd); }
-    double
-    determinant() const
-    {
-        return
-            diag[0]*diag[1]*diag[2] +
-            offd[0]*offd[1]*offd[2] * 2 -
-            diag[0]*offd[2]*offd[2] -
-            diag[1]*offd[1]*offd[1] -
-            diag[2]*offd[0]*offd[0];
-    }
-    MatS3D          inverse() const;
+    double              mag() const {return cMag(diag) + 2.0 * cMag(offd); }
+    double              dot(MatS3D const & rhs) const {return cDot(diag,rhs.diag) + 2.0 * cDot(offd,rhs.offd); }
+    double              determinant() const;
+    MatS3D              inverse() const;
+    MatS3D              square() const;     // the square of a symmetric matrix is also symmetric
 };
-
 std::ostream &      operator<<(std::ostream & os,MatS3D const & m);
 inline double       cMag(MatS3D const & m) {return m.mag(); }
 inline double       cSum(MatS3D const & m) {return m.sumElems(); }
@@ -907,44 +881,34 @@ inline double       cDot(MatS3D const & l,MatS3D const & r) {return l.dot(r); }
 inline double       cDeterminant(MatS3D const & m) {return m.determinant(); }
 inline MatS3D       cInverse(MatS3D const & m) {return m.inverse(); }
 inline double       cQuadForm(MatS3D const & Q,Vec3D const & x_m) {return cDot(x_m,Q*x_m); }
-
-inline
-MatS3D
-mapSqr(MatS3D const & m)
+inline MatS3D       mapSqr(MatS3D const & m) {return MatS3D {mapSqr(m.diag),mapSqr(m.offd)}; }
+inline MatS3D       mapMul(MatS3D const & m,MatS3D const & n)
 {
-    return MatS3D {mapSqr(m.diag),mapSqr(m.offd)};
+    return {mapMul(m.diag,n.diag),mapMul(m.offd,n.offd)};
 }
-
-inline
-MatS3D
-outerProductSelf(Vec3D v)
+inline double       sumElems(MatS3D const & m) {return cSum(m.diag) + cSum(m.offd) * 2; }
+inline MatS3D       outerProductSelf(Vec3D v)
 {
-    return          MatS3D {
-        {{sqr(v[0]),sqr(v[1]),sqr(v[2])}},
-        {{v[0]*v[1],v[0]*v[2],v[1]*v[2]}},
-    };
+    return          {{mapSqr(v.m)},{{v[0]*v[1],v[0]*v[2],v[1]*v[2]}}};
 }
-
 // Isotropic random symmetric positive definite matrix with given standard deviation of log eigenvalues:
-MatS3D          randMatSpd3D(double lnEigStdev);
+MatS3D              randMatSpd3D(double lnEigStdev);
 
 // Symmetric 2x2 double matrix:
-struct  MatS2D
+struct      MatS2D
 {
     double          m00,m11,m01;
     FG_SER3(m00,m11,m01);
 
-    Vec2D
-    operator*(Vec2D const & rhs) const
-    {return {m00*rhs[0] + m01*rhs[1], m01*rhs[0] + m11*rhs[1]}; }
-
-    double
-    determinant() const
-    {return m00 * m11 - m01 * m01; }
+    Vec2D           operator*(Vec2D const & rhs) const
+    {
+        return {m00*rhs[0] + m01*rhs[1], m01*rhs[0] + m11*rhs[1]};
+    }
+    double          determinant() const {return m00 * m11 - m01 * m01; }
 };
 
 // Upper triangular 3x3 matrix non-zero entries in row-major order
-struct  MatUT3D
+struct      MatUT3D
 {
     Arr<double,6>       m;
     FG_SER1(m)
@@ -1002,8 +966,22 @@ struct      NameVec
 };
 typedef NameVec<float,2>    NameVec2F;
 typedef Svec<NameVec2F>     NameVec2Fs;
+typedef NameVec<float,3>    NameVec3F;
+typedef Svec<NameVec3F>     NameVec3Fs;
 template<class T,uint D>
-std::ostream &      operator<<(std::ostream & os,NameVec<T,D> const & nv) {return os << nv.name << ": " << nv.vec; }
+std::ostream &      operator<<(std::ostream & os,NameVec<T,D> const & nv)
+{
+    return os << nv.name << ": " << nv.vec;
+}
+// select nameVecs in order of names and return the vecs. Throws if any of names is not found in nameVecs:
+template<class T,uint D>
+Svec<Mat<T,D,1>>    selectVecsByName(Svec<NameVec<T,D>> const & nameVecs,Strings const & names)
+{
+    Svec<Mat<T,D,1>>    ret; ret.reserve(names.size());
+    for (String const & name : names)
+        ret.push_back(findFirst(nameVecs,name).vec);
+    return ret;
+}
 
 }
 

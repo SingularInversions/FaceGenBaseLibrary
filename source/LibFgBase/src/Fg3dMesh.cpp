@@ -111,12 +111,12 @@ accTargetMorphs(
     }
 }
 
-Mesh::Mesh(TriSurfFids const & tsf) :
-    verts {cat(tsf.surf.verts,tsf.fids)},
+Mesh::Mesh(TriSurfLms const & tsf) :
+    verts {cat(tsf.surf.verts,tsf.landmarks)},
     surfaces {Surf{tsf.surf.tris}}
 {
     size_t          V = tsf.surf.verts.size(),
-                    F = tsf.fids.size();
+                    F = tsf.landmarks.size();
     for (size_t ii=V; ii<V+F; ++ii)
         markedVerts.push_back(MarkedVert{uint(ii)});
 }
@@ -288,13 +288,11 @@ Mesh::markedVertPositions(Strings const & labels) const
     return ret;
 }
 
-LabelledVerts
-Mesh::markedVertsAsLabelledVerts() const
+NameVec3Fs          Mesh::markedVertsAsNameVecs() const
 {
-    LabelledVerts       ret;
-    ret.reserve(markedVerts.size());
+    NameVec3Fs          ret; ret.reserve(markedVerts.size());
     for (MarkedVert const & mv : markedVerts)
-        ret.push_back(LabelledVert{verts[mv.idx],mv.label});
+        ret.emplace_back(mv.label,verts[mv.idx]);
     return ret;
 }
 

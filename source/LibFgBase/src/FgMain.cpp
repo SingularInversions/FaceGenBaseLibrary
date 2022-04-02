@@ -20,14 +20,11 @@ using namespace std;
 
 namespace Fg {
 
-static bool     consoleProgram  = false;
+static bool         consoleProgram  = false;
 
-bool
-isConsoleProgram() noexcept
-{return consoleProgram; }
+bool                isConsoleProgram() noexcept {return consoleProgram; }
 
-bool
-isAutomated(CLArgs const & args)
+bool                isAutomated(CLArgs const & args)
 {
     if ((args.size() > 1) && (args[1] == "all"))
         return true;
@@ -44,10 +41,9 @@ isAutomated(CLArgs const & args)
 
 #endif
 
-static CLArgs s_mainArgs;
+static CLArgs       s_mainArgs;
 
-int
-mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
+int                 mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
 {
     consoleProgram = true;
     int         retval = 0;
@@ -89,12 +85,12 @@ mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
     }
     catch(FgException const & e)
     {
-        errStr += "\nERROR (FG exception): " + e.no_tr_message();
+        errStr += "\nERROR (FG exception)\n" + e.tr_message();
         retval = -1;
     }
     catch(std::bad_alloc const &)
     {
-        errStr += "\nERROR (std::bad_alloc): OUT OF MEMORY";
+        errStr += "\nERROR (std::bad_alloc) OUT OF MEMORY";
 #ifndef FG_64
         errStr += "\nTry running a 64-bit binary instead of this 32-bit binary";
 #endif
@@ -102,12 +98,12 @@ mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
     }
     catch(std::exception const & e)
     {
-        errStr += "\nERROR (std::exception): " + string(e.what());
+        errStr += "\nERROR (std::exception)\n" + string(e.what());
         retval = -2;
     }
     catch(...)
     {
-        errStr += "\nERROR (unknown type):";
+        errStr += "\nERROR (unknown type)";
         retval = -3;
     }
     if (!errStr.empty()) {
@@ -121,8 +117,7 @@ mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv[])
     return retval;
 }
 
-string
-mainArgs()
+string              mainArgs()
 {
     string      ret;
     for (size_t aa=0; aa<s_mainArgs.size(); ++aa) {

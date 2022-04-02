@@ -17,6 +17,26 @@ using namespace std;
 
 namespace Fg {
 
+//typedef Sfun<Mesh(String8 const &,
+
+//struct      MeshFormatInfo
+//{
+//    MeshFormat          format;
+//    Strings             exts;           // if more than 1, first is the most common
+//    String              description;    // descriptive name of format
+//    String              usage;          // single line summary of format usage considerations
+//    Sfun<Mesh(String8 
+//    bool                multiMesh;      // if true, formats supports multiple separate vertex lists
+//};
+//typedef Svec<MeshFormatInfo>    MeshFormatsInfo;
+//
+//MeshFormatsInfo         getMeshFormatsInfo()
+//{
+//    return MeshFormatsInfo {
+//        {MeshFormat::tri,"tri","FaceGen TRI",},
+//    };
+//}
+
 Svec<pair<MeshFormat,String>> getMeshFormatExtMap()
 {
     return Svec<pair<MeshFormat,String>> {
@@ -193,20 +213,26 @@ Mesh                loadMeshAnyFormat(String8 const & fname)
         fgThrow("No mesh format found for base name",fname);
     return ret;
 }
-Mesh                loadMeshMaps(String8 const & baseName)
+
+Mesh                loadMeshMaps(String8 const & dirBase)
 {
-    Mesh            ret = loadMesh(baseName);
+    Mesh            ret = loadMesh(dirBase);
     if (!ret.surfaces.empty()) {
-        Strings         albExts = getImageFiles(baseName);
-        if (!albExts.empty())
-            ret.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(baseName+"."+albExts[0]));
-        String8         specBase = baseName+"_Specular";
-        Strings         specExts = getImageFiles(specBase);
-        if (!specExts.empty())
-            ret.surfaces[0].material.specularMap = make_shared<ImgRgba8>(loadImage(specBase+"."+specExts[0]));
+        {
+            Strings         exts = findExts(dirBase,getImgExts());
+            if (!exts.empty())
+                ret.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(dirBase+"."+exts[0]));
+        }
+        {
+            String8         dbs = dirBase+"_Specular";
+            Strings         exts = findExts(dbs,getImgExts());
+            if (!exts.empty())
+                ret.surfaces[0].material.specularMap = make_shared<ImgRgba8>(loadImage(dbs+"."+exts[0]));
+        }
     }
     return ret;
 }
+
 void                saveMesh(Mesh const & mesh,String8 const & fname,String const & imgFmt)
 {
     MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);

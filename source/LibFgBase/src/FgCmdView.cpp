@@ -21,8 +21,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-cmdViewMesh(CLArgs const & args)
+void                cmdViewMesh(CLArgs const & args)
 {
     Syntax            syn {args,
         R"([-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+ )+
@@ -33,7 +32,7 @@ cmdViewMesh(CLArgs const & args)
     <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.
     <transparency> - Transparency map
     <specular> - Specularity map
-    <img>      - " + getImageFileExtCLDescriptions()
+    <img>      - " + clOptionsStr(getImgExts())
 NOTES:
     * If only one mesh is selected, the Edit tab will allow selection of surface points and
       marked vertices, along with a Save option.)"
@@ -55,8 +54,12 @@ NOTES:
         Meshes          meshes = loadMeshes(path.str());
         size_t          idx {0};
         for (Mesh & mesh : meshes) {
-            if (mesh.name.empty())
-                mesh.name = path.base;
+            if (mesh.name.empty()) {            // multi-mesh files can load mesh names
+                if (meshes.size() > 1)          // but in this case didn't
+                    mesh.name = path.base + "-" + toStr(idx);
+                else
+                    mesh.name = path.base;
+            }
             if (removeUnused) {
                 size_t          origVerts = mesh.verts.size();
                 mesh = removeUnusedVerts(mesh);
@@ -65,10 +68,10 @@ NOTES:
             }
             fgout << fgnl << toStrDigits(idx++,2) << fgpush << mesh << fgpop;
         }
-        if (syn.more() && hasImageFileExt(syn.peekNext())) {
+        if (syn.more() && hasImgFileExt(syn.peekNext())) {
             size_t              meshIdx = 0,
                                 surfIdx = 0;
-            while (syn.more() && hasImageFileExt(syn.peekNext())) {
+            while (syn.more() && hasImgFileExt(syn.peekNext())) {
                 ImgRgba8            albedo = loadImage(syn.next()),
                                     specular;
                 if (meshes[meshIdx].uvs.empty())
@@ -110,51 +113,49 @@ NOTES:
     Mesh        ignoreModified = viewMesh(all,compare);
 }
 
-void
-cmdViewImage(CLArgs const & args)
+void                cmdViewImage(CLArgs const & args)
 {
-    Syntax              syn {args,"<image>.<ext> [<points>.txt]\n"
-        "    <ext>      - (" + cat(getImageFileExts(),",") + ")\n"
-        "    <points>   - optional points annotation file in simple YOLO format"
+    Syntax              syn {args,
+        R"(<image>.<ext> [<points>.txt]
+    <ext>      - ()" + cat(getImgExts(),",") + R"()
+    <points>   - optional points annotation file in simple YOLO format
+OUTPUT:
+    displays the image [and landmarks] in a window, allowing for zoom
+NOTES:
+    if the file <image>.lms.txt exists (and no <points> is specified),
+    it will be automatically used to load landmarks.)"
     };
-    ImgRgba8            img = loadImage(syn.next());
+    String8             imgFname = syn.next(),
+                        lmsFname = pathToDirBase(imgFname)+".lms.txt";
+    ImgRgba8            img = loadImage(imgFname);
     fgout << img;
     NameVec2Fs          lmsIrcs;
-    if (syn.more()) {
+    if (syn.more())
         lmsIrcs = loadImageLandmarks(syn.next());
-        fgout << lmsIrcs;
-    }
-    AffineEw2F          xf = cIrcsToIucsXf(img.dims());
-    Mat22F              bnds {0,1,0,1};
+    else if (fileExists(lmsFname))
+        lmsIrcs = loadImageLandmarks(lmsFname);
     Vec2Fs              pts;
-    for (NameVec2F const & lm : lmsIrcs) {
-        Vec2F               iucs = xf * lm.vec;
-        if (!isInBounds(bnds,iucs))
-            fgout << fgnl << "WARNING point is not on image: " << lm.name;
-        pts.push_back(iucs);
+    if (!lmsIrcs.empty()) {
+        PushIndent          pind {"Landmarks"};
+        AffineEw2F          xf = cIrcsToIucsXf(img.dims());
+        Mat22F              bnds {0,1,0,1};
+        for (NameVec2F const & lm : lmsIrcs) {
+            fgout << fgnl << lm.name << ": " << lm.vec;
+            Vec2F               iucs = xf * lm.vec;
+            if (!isInBounds(bnds,iucs))
+                fgout << " WARNING point not within image boundaries";
+            pts.push_back(iucs);
+        }
     }
     viewImage(img,pts);
 }
 
-void
-cmdViewImageF(CLArgs const & args)
+void                cmdViewUvs(CLArgs const & args)
 {
-    Syntax    syn(args,"<imageFileName> [<saveName>]");
-    ImgF      img;
-    if (toLower(pathToExt(syn.next())) == "fgpbn")
-        loadBsaPBin(syn.curr(),img);
-    if (syn.more())
-        saveBsaPBin(syn.next(),img);
-    fgout << fgnl << img;
-    viewImage(img);
-}
-
-void
-cmdViewUvs(CLArgs const & args)
-{
-    Syntax              syn(args,
-        "<mesh>.<ext> [<texImage>]+\n"
-        "     <ext> = " + getMeshLoadExtsCLDescription());
+    Syntax              syn {args,
+        R"(<mesh>.<ext> [<texImage>]+
+    <ext> = )" + getMeshLoadExtsCLDescription()
+    };
     Meshes              meshes = loadMeshes(syn.next());
     String8s            names;
     ImgRgba8s           images;
@@ -184,13 +185,11 @@ cmdViewUvs(CLArgs const & args)
     viewImages(images,names);
 }
 
-Cmds
-getViewCmds()
+Cmds                getViewCmds()
 {
     Cmds            cmds {
         {cmdViewMesh,"mesh","Interactively view 3D meshes"},
         {cmdViewImage,"image","Basic image viewer"},
-        {cmdViewImageF,"imagef","Floating point image viewer"},
         {cmdViewUvs,"uvs","View the UV layout of a 3D mesh"},
     };
     return cmds;

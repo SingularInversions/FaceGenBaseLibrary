@@ -21,8 +21,7 @@ namespace Fg {
 
 namespace {
 
-bool
-valsDiffer(
+bool                valsDiffer(
     RgbaF const &               centre,
     Mat<RgbaF,2,2> const &      corners,
     float                       maxDiff)
@@ -35,8 +34,37 @@ valsDiffer(
         (cMax(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
 }
 
-RgbaF
-sampleRecurse(
+// gamma-space bit depth requires more linear bit depth for small color values
+// requires all values in [0,1]
+//bool                valsDifferGamma(
+//    RgbaF const &               centre,
+//    Mat<RgbaF,2,2> const &      corners,
+//    float                       maxDiff)    // max diff in gamma (2) space
+//{
+//    float           noiseStdev = 1.0f / float(1U<<8);       // avoid excessive precision near zero
+//    for (RgbaF const & corner : corners.m) {
+//        // we can ignore alpha channel in difference comparison as it's already weighted into the color
+//        // channels and there is no likely scenario where colors match closely and alpha doesn't:
+//        for (size_t cc=0; cc<3; ++cc) {
+//            // the comparison should be symmetric in the order or arguments so use the mean for gamma slope:
+//            float           v0 = centre[cc],
+//                            v1 = corner[cc],
+//                            mean = (v0 + v1)*0.5f + noiseStdev; // TODO: not alpha unweighted
+//            // l - linear val, g - gamma val, d - gamma max diff (small)
+//            // l = g^2      typical gamma
+//            // l' = (g+d)^2 ~ g^2+2dg = l + 2dg
+//            // and when l=g=1 we get l' - l = 2d
+//            // so 'd' represents half the diff threshold at l=g=1
+//            float           gm = sqrt(mean),        // gamma of mean
+//                            del = maxDiff * gm * 2;
+//            if (abs(v1-v0) > del)
+//                return true;
+//        }
+//    }
+//    return false;
+//}
+
+RgbaF               sampleRecurse(
     SampleFn const &        sampleFn,
     Vec2F                   lc,             // Lower corner sample point
     Vec2F                   uc,             // Upper corner sample point (IUCS so not square)
@@ -82,8 +110,7 @@ sampleRecurse(
 
 }
 
-ImgC4F
-sampleAdaptiveF(
+ImgC4F              sampleAdaptiveF(
     Vec2UI              dims,
     SampleFn const &    sampleFn,
     float               channelBound,
@@ -123,8 +150,7 @@ sampleAdaptiveF(
     return img;
 }
 
-ImgRgba8
-sampleAdaptive(
+ImgRgba8            sampleAdaptive(
     Vec2UI              dims,
     SampleFn const &    sampleFn,
     uint                antiAliasBitDepth)
@@ -143,8 +169,7 @@ sampleAdaptive(
 
 namespace {
 
-RgbaF
-halfMoon(Vec2F ics)
+RgbaF               halfMoon(Vec2F ics)
 {
     if ((ics[1] > 0.5f) && ((ics-Vec2F(0.5f,0.5f)).len() < 0.3f))
         return RgbaF(255.0f,255.0f,255.0f,255.0f);
@@ -152,14 +177,14 @@ halfMoon(Vec2F ics)
         return RgbaF(0.0f,0.0f,0.0f,255.0f);
 }
 
-void
-testmHalfMoon(CLArgs const &)
+void                testHalfMoon(CLArgs const & args)
 {
-    viewImage(sampleAdaptive(Vec2UI(128),halfMoon,4));
+    ImgRgba8            img = sampleAdaptive(Vec2UI(128),halfMoon,4);
+    if (!isAutomated(args))
+        viewImage(img);
 }
 
-RgbaF
-mandelbrot(Vec2F ics)
+RgbaF               mandelbrot(Vec2F ics)
 {
     double              zr = 0.0,
                         zc = 0.0,
@@ -177,25 +202,24 @@ mandelbrot(Vec2F ics)
     return RgbaF(float(ii));
 }
 
-void
-testmMandelbrot(CLArgs const &)
+void                testMandelbrot(CLArgs const & args)
 {
     Timer               time;
-    ImgRgba8             img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
-    fgout << "Time: " << time.elapsedSeconds() << "s";
-    viewImage(img);
+    ImgRgba8            img = sampleAdaptive(Vec2UI(1024),mandelbrot,3);
+    fgout << "time: " << time.elapsedSeconds() << "s";
+    if (!isAutomated(args))
+        viewImage(img);
 }
 
 }
 
-void
-testmSampler(CLArgs const & args)
+void                testSampler(CLArgs const & args)
 {
     Cmds                cmds {
-        {testmHalfMoon,"hm","half moon"},
-        {testmMandelbrot,"mandel","Mandelbrot set"},
+        {testHalfMoon,"hm","half moon"},
+        {testMandelbrot,"mandel","Mandelbrot set"},
     };
-    doMenu(args,cmds);
+    doMenu(args,cmds,true);
 }
 
 }

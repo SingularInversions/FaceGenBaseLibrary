@@ -194,4 +194,15 @@ void                Syntax::noMoreArgsExpected()
         error("too many arguments supplied");
 }
 
+String              clOptionsStr(Strings const & options)
+{
+    FGASSERT(!options.empty());
+    String          ret = "(";
+    ret += options[0];
+    for (size_t ii=1; ii<options.size(); ++ii)
+        ret += " | " + options[ii];
+    ret += ")";
+    return ret;
+}
+
 }

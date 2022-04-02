@@ -34,19 +34,19 @@ typedef std::int32_t    int32;
 typedef std::uint32_t   uint32;
 
 // Useful if we need to initialize templated members only in the case of builtins:
-template<class T> inline void fgInitializeBuiltinsToZero(T &) {}
-template<> inline void fgInitializeBuiltinsToZero(char & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uchar & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(schar & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(short & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(ushort & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(int & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uint & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(int64 & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(uint64 & v) {v=0;}
-template<> inline void fgInitializeBuiltinsToZero(float & v) {v=0.0f;}
-template<> inline void fgInitializeBuiltinsToZero(double & v) {v=0.0;}
-template<> inline void fgInitializeBuiltinsToZero(bool & v) {v=false;}
+template<class T> inline void initializeBuiltinsToZero(T &) {}
+template<> inline void initializeBuiltinsToZero(char & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(uchar & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(schar & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(short & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(ushort & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(int & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(uint & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(int64 & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(uint64 & v) {v=0;}
+template<> inline void initializeBuiltinsToZero(float & v) {v=0.0f;}
+template<> inline void initializeBuiltinsToZero(double & v) {v=0.0;}
+template<> inline void initializeBuiltinsToZero(bool & v) {v=false;}
 
 template<class T> struct Traits;
 

@@ -11,21 +11,21 @@
 
 namespace Fg {
 
-// This function must be defined in the corresponding OS-specific implementation:
-struct  GuiButton;
-GuiImplPtr guiGetOsImpl(GuiButton const & guiApi);
+struct      GuiButton;
 
-struct GuiButton : GuiBase
+// This function must be defined in the corresponding OS-specific implementation:
+GuiImplPtr          guiGetOsImpl(GuiButton const & guiApi);
+
+struct      GuiButton : GuiBase
 {
     String8                label;
     Sfun<void()>           action;
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    virtual GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
 };
 
-GuiPtr          guiButton(String8 const & label,Sfun<void()> const & action);
-GuiPtr          guiButtonTr(const std::string & label,Sfun<void()> const & action);
+GuiPtr              guiButton(String8 const & label,Sfun<void()> const & action);
+GuiPtr              guiButtonTr(const std::string & label,Sfun<void()> const & action);
 
 }
 

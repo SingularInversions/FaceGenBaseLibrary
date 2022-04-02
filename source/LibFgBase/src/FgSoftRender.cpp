@@ -26,8 +26,7 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-ImgRgba8
-renderSoft(
+ImgRgba8            renderSoft(
     Vec2UI                  pxSz,
     Meshes const &          meshes,
     SimilarityD             modelview,
@@ -97,8 +96,7 @@ renderSoft(
     return img;
 }
 
-ImgRgba8
-renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor)
+ImgRgba8            renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor)
 {
     CameraParams        camPrms {Mat32D(cBounds(meshes))};
     Camera              camera = camPrms.camera(pixelSize);
@@ -107,8 +105,7 @@ renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor)
     return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,ro);
 }
 
-static void
-testSoftRender(CLArgs const &)
+static void         testSoftRender(CLArgs const &)
 {
     PushDir         pd(dataDir()+"base/test/render/");
 
@@ -161,9 +158,10 @@ testSoftRender(CLArgs const &)
     regressTestApprox<ImgRgba8>(img,"t2.png",bind(fgImgApproxEqual,_1,_2,2U));
 }
 
-Cmd
-testSoftRenderInfo()
-{return Cmd(testSoftRender,"rend","renderSoft function"); }
+Cmd                 testSoftRenderInfo()
+{
+    return Cmd(testSoftRender,"rend","renderSoft function");
+}
 
 }
 

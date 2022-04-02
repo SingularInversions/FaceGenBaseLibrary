@@ -15,13 +15,9 @@
 
 namespace Fg {
 
-// Always opens in 'binary' mode. Throws a descriptive error if the file cannot be opened.
-// Avoid this function on Windows, especially for writing, as it seems to encounter denied permissions
-// in situations where opening an ofstream doesn't:
-FILE *
-openFile(
-    String8 const &    filename,
-    bool                write);         // false = read
+// Always opens in 'binary' mode.
+// Throws a descriptive error if the file cannot be opened - never returns nullptr.
+FILE *              openFile(String8 const & filename,bool write);  // false = read
 
 #endif
 

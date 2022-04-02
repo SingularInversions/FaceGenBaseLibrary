@@ -39,9 +39,9 @@ struct  NcScript
 };
 
 inline uint16           getNcServerPort() {return 59405; }
-inline String           getCiShareBoot() {return getNcShare() + toNativeSeparator("ci/boot/"); }
+inline String           getCiShareBoot() {return getNcShare() + toNativeDirSep(String{"ci/boot/"}); }
 inline String           getCiShareBoot(BuildOS os) {return getNcShare(os) + cNsOs("ci/boot/",os); }
-inline String           getCiShareRepo() {return getNcShare() + toNativeSeparator("ci/root/"); }
+inline String           getCiShareRepo() {return getNcShare() + toNativeDirSep(String{"ci/root/"}); }
 inline String           getCiShareRepo(BuildOS os) {return getNcShare(os) + cNsOs("ci/root/",os); }
 
 }

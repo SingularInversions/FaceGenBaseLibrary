@@ -108,13 +108,13 @@ DfgOutput::update() const
     }
     catch(FgException & e)
     {
-        e.pushMsg("Executing DfgOutput link",cSignature(data));
+        e.addContext("Executing DfgOutput link",cSignature(data));
         throw;
     }
     catch(std::exception const & e)
     {
         FgException     ex("std::exception",e.what());
-        ex.pushMsg("Executing DfgOutput link",cSignature(data));
+        ex.addContext("Executing DfgOutput link",cSignature(data));
         throw ex;
     }
     catch(...)

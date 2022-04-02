@@ -16,62 +16,31 @@ using namespace std;
 
 namespace Fg {
 
-FileFormats         getImageFileFormats()
+ImgFormatsInfo      getImgFormatsInfo()     // first is default for writing
 {
-    static FileFormats   ret = {
-        {"PNG - RGBA, lossless compression low ratio",{"png"}},
-        {"JPEG - RGB, lossy compression high ratio",{"jpg","jpeg"}},
-        {"TARGA - RGBA, lossless compression very low ratio",{"tga"}},
-        {"BMP - RGB Lossless compression medium ratio",{"bmp"}}
+    static ImgFormatsInfo ret {
+        {ImgFormat::png,{"png"},        "PNG: lossless compression, medium file size"},
+        {ImgFormat::jpg,{"jpg","jpeg"}, "JPG: lossy compression small file size, no transparency"},
+        {ImgFormat::tga,{"tga"},        "TGA: lossless compression large file size"},
+        {ImgFormat::bmp,{"bmp"},        "BMP: Lossless compression medium file size, no transparency"},
     };
     return ret;
 }
-Strings             getImageFileExts()
+
+Strings             getImgExts()
 {
     Strings         ret;
-    for (FileFormat const & iff : getImageFileFormats())
-        cat_(ret,iff.extensions);
+    for (ImgFormatInfo const & ifi : getImgFormatsInfo())
+        cat_(ret,ifi.extensions);
     return ret;
 }
-string              getImageFileExtCLDescriptions()
-{
-    Strings  cf = getImageFileExts();
-    string  retval("(");
-    retval += cf[0];
-    for (size_t ii=1; ii<cf.size(); ++ii)
-        retval += string(" | ") + cf[ii];
-    return (retval + ")");
-}
-bool                hasImageFileExt(String8 const & fname)
+
+bool                hasImgFileExt(String8 const & fname)
 {
     string              ext = toLower(pathToExt(fname).m_str);
-    return contains(getImageFileExts(),ext);
+    return contains(getImgExts(),ext);
 }
-Strings             getImageFiles(String8 const & baseName)
-{
-    Strings             ret,
-                        exts = getImageFileExts();
-    for (size_t ii=0; ii<exts.size(); ++ii)
-        if (fileReadable(baseName+"."+exts[ii]))
-            ret.push_back(exts[ii]);
-    return ret;
-}
-bool                loadImageAnyFormat_(String8 const & baseName,ImgRgba8 & img)
-{
-    Strings             exts = getImageFiles(baseName);
-    if (exts.empty())
-        return false;
-    String8             fname = baseName + "." + exts[0];
-    loadImage_(fname,img);
-    return true;
-}
-ImgRgba8            loadImageAnyFormat(String8 const & baseName)
-{
-    ImgRgba8            ret;
-    if (!loadImageAnyFormat_(baseName,ret))
-        fgThrow("Unable to find image file with base name",baseName);
-    return ret;
-}
+
 NameVec2Fs          loadImageLandmarks(String8 const & fname)
 {
     Strings             lines = splitLines(loadRaw(fname),'#');     // removes empty lines
@@ -99,6 +68,7 @@ NameVec2Fs          loadImageLandmarks(String8 const & fname)
     }
     return ret;
 }
+
 void                saveImageLandmarks(NameVec2Fs const & lmsIrcs,String8 const & fname)
 {
     Ofstream            ofs {fname};
@@ -108,16 +78,6 @@ void                saveImageLandmarks(NameVec2Fs const & lmsIrcs,String8 const 
         << "# <X> and <Y> can be signed floating point values";
     for (NameVec2F const & nv : lmsIrcs)
         ofs << "\n" << nv.name << " " << nv.vec[0] << " " << nv.vec[1];
-}
-
-void                fgImgTestWrite(CLArgs const & args)
-{
-    FGTESTDIR
-    char32_t            ch = 0x00004EE5;            // A Chinese character
-    String8             chinese(ch);
-    ImgRgba8            redImg(16,16,Rgba8(255,0,0,255));
-    saveImage(chinese+"0.jpg",redImg);
-    saveImage(chinese+"0.png",redImg);
 }
 
 }

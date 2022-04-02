@@ -18,8 +18,7 @@ namespace Fg {
 
 #else
 
-FILE *
-openFile(String8 const & fname,bool write)
+FILE *              openFile(String8 const & fname,bool write)
 {
     FILE *          fPtr;
     char const *    mode = write ? "wb" : "rb";
@@ -33,8 +32,7 @@ openFile(String8 const & fname,bool write)
 
 #endif
 
-void
-testFopen(CLArgs const & args)
+void                testFopen(CLArgs const & args)
 {
     FGTESTDIR;
     char32_t        ch = 0x00004EE5;            // A Chinese character

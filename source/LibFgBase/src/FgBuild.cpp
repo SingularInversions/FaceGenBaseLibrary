@@ -16,8 +16,7 @@ using namespace std;
 
 namespace Fg {
 
-const vector<pair<BuildOS,string> > &
-fgBuildOSStrs()
+const vector<pair<BuildOS,string> > & fgBuildOSStrs()
 {
     static vector<pair<BuildOS,string> >  ret =
     {
@@ -30,8 +29,7 @@ fgBuildOSStrs()
     return ret;
 }
 
-std::ostream &
-operator<<(std::ostream & os ,BuildOS bos)
+std::ostream &      operator<<(std::ostream & os ,BuildOS bos)
 {
     const vector<pair<BuildOS,string> > & lst = fgBuildOSStrs();
     for (const pair<BuildOS,string> & l : lst)
@@ -41,8 +39,7 @@ operator<<(std::ostream & os ,BuildOS bos)
     FG_UNREACHABLE_RETURN(os);
 }
 
-BuildOS
-strToBuildOS(string const & str)
+BuildOS             strToBuildOS(string const & str)
 {
     const vector<pair<BuildOS,string> > & lst = fgBuildOSStrs();
     for (const pair<BuildOS,string> & l : lst)
@@ -52,26 +49,22 @@ strToBuildOS(string const & str)
     FG_UNREACHABLE_RETURN(BuildOS::win);
 }
 
-BuildOSs
-getAllBuildOss()
+BuildOSs            getAllBuildOss()
 {
     return sliceMember(fgBuildOSStrs(),&pair<BuildOS,string>::first);
 }
 
-BuildOSs
-getNativeBuildOSs()
+BuildOSs            getNativeBuildOSs()
 {
     return {BuildOS::win,BuildOS::linux,BuildOS::macos};
 }
 
-BuildOSs
-getCrossBuildOSs()
+BuildOSs            getCrossBuildOSs()
 {
     return {BuildOS::ios,BuildOS::android};
 }
 
-BuildOS
-getCurrentBuildOS()
+BuildOS             getCurrentBuildOS()
 {
 #ifdef _WIN32
     return BuildOS::win;
@@ -86,8 +79,7 @@ getCurrentBuildOS()
 #endif
 }
 
-Svec<pair<Arch,string> >
-getArchStrs()
+Svec<pair<Arch,string> > getArchStrs()
 {
     return {
         {Arch::x86,"x86"},
@@ -99,8 +91,7 @@ getArchStrs()
     };
 }
 
-std::ostream &
-operator<<(std::ostream & os,Arch arch)
+std::ostream &      operator<<(std::ostream & os,Arch arch)
 {
     const vector<pair<Arch,string> > &    lst = getArchStrs();
     for (const pair<Arch,string> & l : lst)
@@ -110,8 +101,7 @@ operator<<(std::ostream & os,Arch arch)
     FG_UNREACHABLE_RETURN(os);
 }
 
-Arch
-strToArch(string const & str)
+Arch                strToArch(string const & str)
 {
     const vector<pair<Arch,string> > &    lst = getArchStrs();
     for (const pair<Arch,string> & l : lst)
@@ -121,8 +111,7 @@ strToArch(string const & str)
     FG_UNREACHABLE_RETURN(Arch::x86);
 }
 
-Archs
-getBuildArchs(BuildOS os)
+Archs               getBuildArchs(BuildOS os)
 {
     if (os == BuildOS::win)
         return { Arch::x86, Arch::x64 };
@@ -141,14 +130,12 @@ getBuildArchs(BuildOS os)
     FG_UNREACHABLE_RETURN(Archs());
 }
 
-Archs
-getAllArchs()
+Archs               getAllArchs()
 {
     return { Arch::x86, Arch::x64, Arch::armv7, Arch::arm8_0, Arch::arm8_2, Arch::arm8_3 };
 }
 
-const vector<pair<Compiler,string> > &
-compilerStrs()
+const vector<pair<Compiler,string> > & compilerStrs()
 {
     static vector<pair<Compiler,string> >  ret =
     {
@@ -161,8 +148,7 @@ compilerStrs()
     return ret;
 }
 
-std::ostream &
-operator<<(std::ostream & os,Compiler comp)
+std::ostream &      operator<<(std::ostream & os,Compiler comp)
 {
     for (auto const & l : compilerStrs())
         if (l.first == comp)
@@ -171,8 +157,7 @@ operator<<(std::ostream & os,Compiler comp)
     FG_UNREACHABLE_RETURN(os);
 }
 
-Compilers
-getAllCompilers()
+Compilers           getAllCompilers()
 {
     return sliceMember(compilerStrs(),&pair<Compiler,string>::first);
 }
@@ -186,8 +171,7 @@ Compiler strToCompiler(string const & str)
     FG_UNREACHABLE_RETURN(Compiler::vs17);
 }
 
-Compilers
-getBuildCompilers(BuildOS os)
+Compilers           getBuildCompilers(BuildOS os)
 {
     if (os == BuildOS::win)
         return {Compiler::vs19,Compiler::vs17};
@@ -203,12 +187,9 @@ getBuildCompilers(BuildOS os)
     FG_UNREACHABLE_RETURN(Compilers());
 }
 
-Compilers
-getBuildCompilers()
-{return getBuildCompilers(getCurrentBuildOS()); }
+Compilers           getBuildCompilers() {return getBuildCompilers(getCurrentBuildOS()); }
 
-Compiler
-getCurrentCompiler()
+Compiler            getCurrentCompiler()
 {
 #if defined _MSC_VER
     #if((_MSC_VER >= 1910) && (_MSC_VER < 1920))
@@ -229,8 +210,7 @@ getCurrentCompiler()
 #endif
 }
 
-string
-getCurrentBuildConfig()
+string              getCurrentBuildConfig()
 {
 #ifdef _DEBUG
     return "debug";
@@ -239,8 +219,7 @@ getCurrentBuildConfig()
 #endif
 }
 
-string
-getCurrentBuildDescription()
+string              getCurrentBuildDescription()
 {
     return 
         toStr(getCurrentBuildOS()) + " " +
@@ -248,8 +227,7 @@ getCurrentBuildDescription()
         cBitsString() + " " + getCurrentBuildConfig();
 }
 
-ostream &
-operator<<(ostream & os,Debrel d)
+ostream &           operator<<(ostream & os,Debrel d)
 {
     if (d == Debrel::debug)
         return os << "debug";
@@ -257,25 +235,23 @@ operator<<(ostream & os,Debrel d)
         return os << "release";
 }
 
-bool
-isPrimaryConfig()
-{return (is64Bit() && isRelease() && (getCurrentCompiler() == getBuildCompilers()[0])); }
+bool                isPrimaryConfig()
+{
+    return (is64Bit() && isRelease() && (getCurrentCompiler() == getBuildCompilers()[0]));
+}
 
-string
-getRelBin(BuildOS os,Arch arch,Compiler comp,Debrel debrel,bool backslash)
+string              getRelBin(BuildOS os,Arch arch,Compiler comp,Debrel debrel,bool backslash)
 {
     string          ds = backslash ? "\\" : "/";
     return "bin" + ds + toStr(os) + ds + toStr(arch) + ds + toStr(comp) + ds + toStr(debrel) + ds;
 }
-string
-getRelBin(BuildOS os,Arch arch,bool backslash)
+string              getRelBin(BuildOS os,Arch arch,bool backslash)
 {
     string          ds = backslash ? "\\" : "/";
     return "bin" + ds + toStr(os) + ds + toStr(arch) + ds;
 }
 
-uint64
-cUuidHash64(string const & str)
+uint64              cUuidHash64(string const & str)
 {
     FGASSERT(str.size() >= 8);
     std::hash<string>   hf;         // Returns size_t
@@ -288,8 +264,7 @@ cUuidHash64(string const & str)
 #endif
 }
 
-uint128
-cUuidHash128(string const & str)
+uint128             cUuidHash128(string const & str)
 {
     uint128       ret;
     FGASSERT(str.size() >= 16);
@@ -303,8 +278,7 @@ cUuidHash128(string const & str)
 // A UUID is composed of 32 hex digits (ie 16 bytes / 128 bits) in a specific hyphonated pattern,
 // the first bits representing time values, although we just use all hash bits for repeatability
 // (we don't want to force rebuilds every time we generate new solution/project files):
-string
-createMicrosoftGuid(string const & name,bool wsb)
+string              createMicrosoftGuid(string const & name,bool wsb)
 {
     uint128       val = cUuidHash128(name);
     uchar           *valPtr = &val.m[0];
@@ -320,16 +294,13 @@ createMicrosoftGuid(string const & name,bool wsb)
     return ret;
 }
 
-void
-fgTestmCreateMicrosoftGuid(CLArgs const &)
+void                testmCreateMicrosoftGuid(CLArgs const &)
 {
     fgout << fgnl << createMicrosoftGuid("This string should hash to a consistent value");
 }
 
 
-static
-Strings
-glob(String const & dir)
+static Strings      glob(String const & dir)
 {
     Strings      ret;
     DirContents dc = getDirContents(dir);
@@ -349,8 +320,7 @@ ConsSrcDir::ConsSrcDir(String const & baseDir,String const & relDir)
     : dir(relDir), files(glob(baseDir+relDir))
     {}
 
-String
-ConsProj::descriptor() const
+String              ConsProj::descriptor() const
 {
     string          ret = name + ":" + baseDir + ":";
     for (const ConsSrcDir & csg : srcGroups)
@@ -358,8 +328,7 @@ ConsProj::descriptor() const
     return ret;
 }
 
-ConsType
-buildOSToConsType(BuildOS os)
+ConsType            buildOSToConsType(BuildOS os)
 {
     ConsType            type {ConsType::nix};
     if (os == BuildOS::win)
@@ -369,8 +338,7 @@ buildOSToConsType(BuildOS os)
     return type;
 }
 
-ConsProj
-ConsSolution::addApp(String const & name,String const & lnkDep)
+ConsProj            ConsSolution::addApp(String const & name,String const & lnkDep)
 {
     if (!pathExists(name))
         fgThrow("Unable to find directory",name);
@@ -383,24 +351,21 @@ ConsSolution::addApp(String const & name,String const & lnkDep)
     return proj;
 }
 
-void
-ConsSolution::addAppClp(String const & name,String const & lnkDep)
+void                ConsSolution::addAppClp(String const & name,String const & lnkDep)
 {
     ConsProj          proj = addApp(name,lnkDep);
     proj.type = ConsProj::Type::clp;
     projects.push_back(proj);
 }
 
-void
-ConsSolution::addAppGui(String const & name,String const & lnkDep)
+void                ConsSolution::addAppGui(String const & name,String const & lnkDep)
 {
     ConsProj          proj = addApp(name,lnkDep);
     proj.type = ConsProj::Type::gui;
     projects.push_back(proj);
 }
 
-bool
-ConsSolution::contains(String const & projName) const
+bool                ConsSolution::contains(String const & projName) const
 {
     for (ConsProj const & p : projects)
         if (p.name == projName)
@@ -408,8 +373,7 @@ ConsSolution::contains(String const & projName) const
     return false;
 }
 
-ConsProj const &
-ConsSolution::projByName(String const & projName) const
+ConsProj const &    ConsSolution::projByName(String const & projName) const
 {
     for (ConsProj const & p : projects)
         if (p.name == projName)
@@ -419,8 +383,7 @@ ConsSolution::projByName(String const & projName) const
 }
 
 // Topological sort of transitive includes:
-Strings
-ConsSolution::getTransitiveIncludes(String const & projName,bool fileDir,set<String> & done) const
+Strings             ConsSolution::getTransitiveIncludes(String const & projName,bool fileDir,set<String> & done) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -444,8 +407,7 @@ ConsSolution::getTransitiveIncludes(String const & projName,bool fileDir,set<Str
     return ret;
 }
 
-Strings
-ConsSolution::getIncludes(String const & projName,bool fileDir) const
+Strings             ConsSolution::getIncludes(String const & projName,bool fileDir) const
 {
     ConsProj const &        p = projByName(projName);
     Strings                 ret;
@@ -462,8 +424,7 @@ ConsSolution::getIncludes(String const & projName,bool fileDir) const
 }
 
 // Topological sort of transitive defines:
-Strings
-ConsSolution::getTransitiveDefs(String const & projName,set<String> & done) const
+Strings             ConsSolution::getTransitiveDefs(String const & projName,set<String> & done) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -482,8 +443,7 @@ ConsSolution::getTransitiveDefs(String const & projName,set<String> & done) cons
     return ret;
 }
 
-Strings
-ConsSolution::getDefs(String const & projName) const
+Strings             ConsSolution::getDefs(String const & projName) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -495,8 +455,7 @@ ConsSolution::getDefs(String const & projName) const
     return ret;
 }
 
-Strings
-ConsSolution::getTransitiveLnkDeps(String const & projName,set<String> & done) const
+Strings             ConsSolution::getTransitiveLnkDeps(String const & projName,set<String> & done) const
 {
     Strings              ret;
     if (Fg::contains(done,projName))
@@ -512,8 +471,7 @@ ConsSolution::getTransitiveLnkDeps(String const & projName,set<String> & done) c
     return ret;
 }
 
-Strings
-ConsSolution::getLnkDeps(String const & projName) const
+Strings             ConsSolution::getLnkDeps(String const & projName) const
 {
     ConsProj const &  p = projByName(projName);
     Strings              ret;
@@ -523,8 +481,7 @@ ConsSolution::getLnkDeps(String const & projName) const
     return cReverse(ret);
 }
 
-Strings
-ConsSolution::getAllDeps(String const & projName,set<String> & done,bool dllSource) const
+Strings             ConsSolution::getAllDeps(String const & projName,set<String> & done,bool dllSource) const
 {
     Strings      ret;
     if (Fg::contains(done,projName))
@@ -539,15 +496,13 @@ ConsSolution::getAllDeps(String const & projName,set<String> & done,bool dllSour
     return ret;
 }
 
-Strings
-ConsSolution::getAllDeps(String const & projName,bool dllSource) const
+Strings             ConsSolution::getAllDeps(String const & projName,bool dllSource) const
 {
     set<string>     done;
     return getAllDeps(projName,done,dllSource);
 }
 
-Strings
-ConsSolution::getAllDeps(Strings const & projNames,bool dllSource) const
+Strings             ConsSolution::getAllDeps(Strings const & projNames,bool dllSource) const
 {
     set<string>     done;
     Strings          ret;
@@ -556,8 +511,7 @@ ConsSolution::getAllDeps(Strings const & projNames,bool dllSource) const
     return ret;
 }
 
-ConsSolution
-getConsData(ConsType type)
+ConsSolution        getConsData(ConsType type)
 {
     ConsSolution  ret(type);
 
@@ -620,21 +574,15 @@ getConsData(ConsType type)
 }
 
 // Create Visual Studio 2015/17/19 solution & project files for given solution in current directory tree:
-bool
-fgConsVs201x(ConsSolution const & sln);
-
+bool                fgConsVs201x(ConsSolution const & sln);
 // Create native-build OS makefiles for given solution in current directory
 // Returns true if different from existing (useful for source control & CI):
-bool
-fgConsNativeMakefiles(ConsSolution const & sln);
-
+bool                fgConsNativeMakefiles(ConsSolution const & sln);
 // Create cross-compile-build OS makefiles for given solution in current directory
 // Returns true if different from existing (useful for source control & CI):
-bool
-fgConsCrossMakefiles(ConsSolution const & sln);
+bool                fgConsCrossMakefiles(ConsSolution const & sln);
 
-bool
-constructBuildFiles(ConsSolution const & sln)
+bool                constructBuildFiles(ConsSolution const & sln)
 {
     PushDir       pd;
     if (pathExists("source"))
@@ -651,8 +599,7 @@ constructBuildFiles(ConsSolution const & sln)
     return changed;
 }
 
-void
-constructBuildFiles()
+void                constructBuildFiles()
 {
     PushDir       pd;
     if (pathExists("source"))
@@ -662,8 +609,7 @@ constructBuildFiles()
     constructBuildFiles(getConsData(ConsType::cross));
 }
 
-void
-cmdCons(CLArgs const & args)
+void                cmdCons(CLArgs const & args)
 {
     Syntax        syntax(args,
         "(sln | make) <option>*\n"

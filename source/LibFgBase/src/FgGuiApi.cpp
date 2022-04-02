@@ -14,8 +14,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-fgGuiTestmDialogSplashScreen(CLArgs const &)
+void                testGuiDialogSplashScreen(CLArgs const &)
 {
     std::function<void(void)>     f = guiDialogSplashScreen();
     fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
@@ -23,28 +22,24 @@ fgGuiTestmDialogSplashScreen(CLArgs const &)
     f();
 }
 
-GuiVal<string>
-guiImageFormat(string const & label,bool warnTransparency,String8 const & store)
+GuiVal<String>      guiImageFormat(String const & label,String8 const & store)
 {
     GuiVal<string>      ret;
-    String8s            descs;
+    String8s            labels;
     Strings             exts;
-    for (FileFormat const & iff : getImageFileFormats()) {
-        descs.push_back(iff.description);
-        exts.push_back(iff.extensions.at(0));
+    for (ImgFormatInfo const & ifi : getImgFormatsInfo()) {
+        labels.push_back(ifi.description);
+        exts.push_back(ifi.extensions.at(0));
     }
-    if (warnTransparency)
-        descs[1] += " (no transparency)";
-    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPTEub<size_t>(0,store,descs.size());
-    ret.win = guiGroupbox(label,guiRadio(descs,idxN));
+    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPTEub<size_t>(0,store,labels.size());
+    ret.win = guiGroupbox(label,guiRadio(labels,idxN));
     ret.valN = link1<size_t,string>(idxN,[=](size_t const & idx){return exts.at(idx);});
     return ret;
 }
 
-void
-fgTestmGui2(CLArgs const &)
+void                testGui2(CLArgs const &)
 {
-    String8                 store = getDirUserAppDataLocalFaceGen("base","testm gui2");
+    String8                 store = getDirUserAppDataLocalFaceGen({"base","testm gui2"});
     GuiPtr                  checkboxes;
     {
         String8s                labels {"Box 1","Box 2",};
@@ -74,7 +69,7 @@ fgTestmGui2(CLArgs const &)
     GuiPtr    sliders;
     {
         String8s            labs = {"Slider 1","Slider 2"};
-        Svec<IPT<double> >  valNs = generateT<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
+        Svec<IPT<double> >  valNs = generateSvec<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
         sliders = guiSliderBank(valNs,labs,VecD2(-1,1),0.1);
     }
     GuiPtr        scroll;
@@ -92,7 +87,7 @@ fgTestmGui2(CLArgs const &)
                 tab1 = guiSplitH({left,img}),
                 tab2 = guiSplitV({txt,sliders}),
                 win = guiTabs(svec(guiTab("Tab1",tab1),guiTab("Tab2",tab2),guiTab("Scroll",scroll)));
-    guiStartImpl(makeIPT<String8>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen("Base","GUI2 testm"));
+    guiStartImpl(makeIPT<String8>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen({"Base","GUI2 testm"}));
 }
 
 }

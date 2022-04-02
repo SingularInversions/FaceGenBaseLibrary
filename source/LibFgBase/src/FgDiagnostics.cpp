@@ -13,38 +13,35 @@ using namespace std;
 
 namespace Fg {
 
-string
-pathToName(char const * fname)
+string              toFilePosString(char const * path_cstr,int line)
 {
-    string      fs(fname);
-    size_t      pos = fs.rfind('\\');
-    if (pos == string::npos)
-        pos = 0;
-    else
-        ++pos;      // Skip over character
-    return fs.substr(pos);
+    // don't use Fg::Path here since we cannot throw within this function:
+    string          path = path_cstr;
+    size_t          pos = 0;
+    for (size_t ii=0; ii<path.size(); ++ii) {
+        char            ch = path[ii];
+        if ((ch == '\\') || (ch == '/'))        // win or nix
+            pos = ii+1;
+    }
+    string          fname;
+    if (pos < path.size())
+        fname = path.substr(pos);               // to end of string
+    return fname + ":" + toStr(line);
 }
 
-string
-fgDiagString(char const * fname,int line)
-{return pathToName(fname) + ":" + toStr(line); }
-
-void
-fgAssert(char const * fname,int line,string const &  msg)
+void                fgAssert(char const * fname,int line,string const &  msg)
 {
-    fgThrow("Internal program error",msg+"\n"+fgDiagString(fname,line));
+    fgThrow("Internal program error",msg+"\n"+toFilePosString(fname,line));
 }
 
-void
-fgWarn(const std::string & msg,const std::string & dataUtf8)
+void                fgWarn(const std::string & msg,const std::string & dataUtf8)
 {
     fgout << "\nWARNING: " << msg << ": " << dataUtf8;
 }
 
-void
-fgWarn(char const * fname,int line,string const & msg)
+void                fgWarn(char const * fname,int line,string const & msg)
 {
-    fgout << "\nWARNING: " <<  msg << " (" << fgDiagString(fname,line) << ")";
+    fgout << "\nWARNING: " <<  msg << " (" << toFilePosString(fname,line) << ")";
 }
 
 }

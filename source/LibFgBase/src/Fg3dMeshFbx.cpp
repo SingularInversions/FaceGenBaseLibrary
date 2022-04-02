@@ -31,20 +31,19 @@ namespace Fg {
 
 namespace {
 
-size_t          idModel(size_t mm) {return mm*100+1; }
-size_t          idGeometry(size_t mm) {return mm*100+2; }
-size_t          idGeoExp(size_t mm,size_t ee) {return ee*1000+mm*100+7; }
-size_t          idDeformer(size_t mm,size_t ee) {return ee*1000+mm*100+8; }
-size_t          idSubdeformer(size_t mm,size_t ee) {return ee*1000+mm*100+9; }
-size_t          idMaterial(size_t mm,size_t tt) {return mm*100+tt*10+3; }
-size_t          idTexture(size_t mm,size_t tt) {return mm*100+tt*10+4; }
-size_t          idVideo(size_t mm,size_t tt) {return mm*100+tt*10+5; }
-string          nmVideo(size_t mm,size_t tt) {return "\"Video::Video"+toStr(mm)+"_"+toStr(tt)+"\""; }
+size_t              idModel(size_t mm) {return mm*100+1; }
+size_t              idGeometry(size_t mm) {return mm*100+2; }
+size_t              idGeoExp(size_t mm,size_t ee) {return ee*1000+mm*100+7; }
+size_t              idDeformer(size_t mm,size_t ee) {return ee*1000+mm*100+8; }
+size_t              idSubdeformer(size_t mm,size_t ee) {return ee*1000+mm*100+9; }
+size_t              idMaterial(size_t mm,size_t tt) {return mm*100+tt*10+3; }
+size_t              idTexture(size_t mm,size_t tt) {return mm*100+tt*10+4; }
+size_t              idVideo(size_t mm,size_t tt) {return mm*100+tt*10+5; }
+string              nmVideo(size_t mm,size_t tt) {return "\"Video::Video"+toStr(mm)+"_"+toStr(tt)+"\""; }
 
 }   // namespace
 
-void
-saveFbxAscii(String8 const & filename,Meshes const & meshes,String imgFormat)
+void                saveFbxAscii(String8 const & filename,Meshes const & meshes,String imgFormat)
 {
     FGASSERT(!meshes.empty());
     Path            path(filename);
@@ -336,8 +335,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
     }
     ofs << "}\n";
 }
-void
-testSaveFbxAscii(CLArgs const & args)
+void                testSaveFbxAscii(CLArgs const & args)
 {
     FGTESTDIR
     String8         dd = dataDir();
@@ -353,19 +351,19 @@ testSaveFbxAscii(CLArgs const & args)
     regressFileRel("meshExportFbx1_0.png","base/test/");
 }
 
-String      zlibInflate(String const & compressed,size_t sz);
+String              zlibInflate(String const & compressed,size_t sz);
 
 namespace {
 
 template<typename T>
-Any         readBin(Ifstream & ifs)
+Any                 readBin(Ifstream & ifs)
 {
     T           v = ifs.readb<T>();
     //fgout << v << " ";
     return Any{v};
 }
 template<typename T>
-Any         readBinArray(Ifstream & ifs)
+Any                 readBinArray(Ifstream & ifs)
 {
     size_t          arrayLen = ifs.readb<int32>(),
                     encoding = ifs.readb<int32>(),
@@ -386,7 +384,7 @@ Any         readBinArray(Ifstream & ifs)
     return Any{arr};
 }
 template<typename T>
-void        writeBinArray_(Any const & in,String & out)
+void                writeBinArray_(Any const & in,String & out)
 {
     Svec<T> const &     arr = in.as<Svec<T>>();
     srlzRaw_(uint32(arr.size()),out);
@@ -399,22 +397,21 @@ void        writeBinArray_(Any const & in,String & out)
 // but there is no way to skip individual properties
 struct      Property
 {
-    Any             data;           // type given above
+    Any             data;           // type given by 'typeChar'
     char            typeChar;       // the FBX type character code
 };
 
 struct      RecordRaw
 {
-    uint32                  endOffset,          // from the input file, not relevent to output
+    uint64                  endOffset,          // from the input file, not relevent to output
                             numProperties;
     String                  name;
     Svec<Property>          propertyList;
     Svec<Sptr<RecordRaw>>   subs;
 
-    RecordRaw(uint32 e,uint32 n) : endOffset{e}, numProperties{n} {}
+    RecordRaw(uint64 e,uint64 n) : endOffset{e}, numProperties{n} {}
 
-    Any const &
-    getPropertyData(size_t idx,char typeChar) const
+    Any const &         getPropertyData(size_t idx,char typeChar) const
     {
         if (idx >= propertyList.size())
             fgThrow("FBX record does not have enough properties",name+":"+toStr(idx));
@@ -424,8 +421,7 @@ struct      RecordRaw
         return prop.data;
     }
 
-    Any &
-    getPropertyData(size_t idx,char typeChar)
+    Any &               getPropertyData(size_t idx,char typeChar)
     {
         if (idx >= propertyList.size())
             fgThrow("FBX record does not have enough properties",name+":"+toStr(idx));
@@ -436,18 +432,27 @@ struct      RecordRaw
     }
 };
 
+#define FG_DIAG(X)          // for diagnostics, change to: #define FG_DIAG(X) X
+
 // because 'endOffset' values are absolute, and because vertex arrays are compressed, any change
 // in vertex positions will involve changing every subsequent 'endOffset', thus we must parse
 // every record (instead of just keeping all subs as a raw block) in order to be able to re-write
 // them with updated 'endOffset' values. Luckily this is not true of the property list.
-Sptr<RecordRaw>
-readBinRecord(Ifstream & ifs)
+Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
 {
     Sptr<RecordRaw>     ret;
+    uint64              endOffset, numProperties, propertyListLen;
     // read in the data shared by sentinel & actual records:
-    uint32              endOffset = ifs.readb<uint32>(),
-                        numProperties = ifs.readb<uint32>(),
-                        propertyListLen = ifs.readb<uint32>();
+    if (use64) {
+        endOffset = ifs.readb<uint64>();
+        numProperties = ifs.readb<uint64>();
+        propertyListLen = ifs.readb<uint64>();
+    }
+    else {
+        endOffset = ifs.readb<uint32>();
+        numProperties = ifs.readb<uint32>();
+        propertyListLen = ifs.readb<uint32>();
+    }
     size_t              nameLen = ifs.readb<uchar>();
     if (endOffset == 0)          // sentinel record, no property list or subs, end of current list.
         return ret;
@@ -455,12 +460,12 @@ readBinRecord(Ifstream & ifs)
     ret = make_shared<RecordRaw>(endOffset,numProperties);
     if (nameLen > 0)                // istream does not accept 0 size reads
         ret->name = ifs.readChars(nameLen);
-    //fgout << fgnl << ret->name << " ";
+    FG_DIAG(fgout << fgnl << ret->name << " ";)
     size_t              propertyStartIdx = ifs.tellg();
-    for (uint pp=0; pp<numProperties; ++pp) {     // read property list
+    for (uint64 pp=0; pp<numProperties; ++pp) {     // read property list
         Any                 data;
         char                type = ifs.get();
-        //fgout << type << ": ";
+        FG_DIAG(fgout << type << ": ";)
         if (type == 'Y')
             data = readBin<int16>(ifs);
         else if (type == 'C')
@@ -486,12 +491,12 @@ readBinRecord(Ifstream & ifs)
         else if (type == 'S') {
             size_t          len = ifs.readb<uint32>();      // can be empty
             String          str = ifs.readChars(len);
-            //fgout << str << " ";
+            FG_DIAG(fgout << str << " ";)
             data = str;
         }
         else if (type == 'R') {
             size_t          len = ifs.readb<uint32>();
-            //fgout << len << " ";
+            FG_DIAG(fgout << len << " ";)
             data = ifs.readChars(len);
         }
         else    // can't recover, no way to skip single property w/o parsing
@@ -500,22 +505,25 @@ readBinRecord(Ifstream & ifs)
     }
     if ((size_t(ifs.tellg()) - propertyStartIdx) != propertyListLen)
         fgThrow("FBX invalid property list length",ret->name+":"+toStr(propertyListLen));
-    PushIndent          pind;
+    FG_DIAG(PushIndent          pind;)
     // while there is space not accounted for by the 13 terminating nulls (sentinel record):
-    while (ifs.tellg()+13LL < endOffset)
-        ret->subs.push_back(readBinRecord(ifs));
+    while (scast<uint64>(ifs.tellg())+13U < endOffset) {
+        Sptr<RecordRaw>         rec = readBinRecord(ifs,use64);
+        // as of v7.5 these can be null records (endOffset 0):
+        if (rec)
+            ret->subs.push_back(rec);
+    }
     // this is necessary because some implementations occasionally add a null record to an empty
     // list so we can never be sure if there is a null record for an empty list:
     ifs.seekg(endOffset);
     return ret;
 }
-void
-writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
+void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
 {
     String const        sentinel (13,'\0');
     RecordRaw const &   rec = *recPtr;
     size_t              offsetIdx = out.size();
-    srlzRaw_(rec.endOffset,out);
+    srlzRaw_(scast<uint32>(rec.endOffset),out);
     String              plOut;
     for (Property const & prop : rec.propertyList) {
         char                type = prop.typeChar;
@@ -555,7 +563,7 @@ writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
         else
             FGASSERT_FALSE;
     }
-    srlzRaw_(rec.numProperties,out);
+    srlzRaw_(scast<uint32>(rec.numProperties),out);
     srlzRaw_(uint32(plOut.size()),out);
     srlzRaw_(uchar(rec.name.size()),out);
     out += rec.name;
@@ -570,7 +578,7 @@ writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
     srlzRawOverwrite_(uint32(out.size()),out,offsetIdx);
 }
 
-Mesh        readBinMesh(Sptr<RecordRaw> const & rp1)
+Mesh                parseBinMesh(Sptr<RecordRaw> const & rp1)
 {
     Mesh            mesh;
     // the name is the initial c-string within a longer description:
@@ -714,8 +722,7 @@ struct      FbxBin
     String                  footer;     // includes the null record at end
 };
 
-FbxBin
-loadFbxBinRaw(String8 const & filename)
+FbxBin              loadFbxBinRaw(String8 const & filename)
 {
     Ifstream        ifs {filename};
     FbxBin          ret;
@@ -723,9 +730,10 @@ loadFbxBinRaw(String8 const & filename)
     if (!beginsWith(ret.header,"Kaydara FBX Binary"))
         fgThrow("file is not a Kaydara FBX binary",filename);
     ret.version = ifs.readb<uint32>();
-    //fgout << "Version: " << ret.version;
+    bool            use64 = (ret.version >= 7500);      // 7.5 and later (2016) use 64-bit counts in header
+    FG_DIAG(fgout << fgnl << "Version: " << ret.version;)
     // the top level is just a NestedList of records with no header:
-    while(Sptr<RecordRaw> rp = readBinRecord(ifs))      // will return null ptr for terminating null record
+    while(Sptr<RecordRaw> rp = readBinRecord(ifs,use64))    // will return null ptr for terminating null record
         ret.records.push_back(rp);
     for (;;) {
         char        ch = ifs.readb<char>();
@@ -733,13 +741,11 @@ loadFbxBinRaw(String8 const & filename)
             break;
         ret.footer.append(1,ch);
     }
-    //fgout << fgnl << ret.records.size() << " top level records read"
-    //    << fgnl << ret.footer.size() << " footer bytes";
+    FG_DIAG(fgout << fgnl << ret.records.size() << " top level records read"  << fgnl << ret.footer.size() << " footer bytes";)
     return ret;
 }
 
-void
-saveFbxBinRaw(String8 const & filename,FbxBin const & fbx)
+void                saveFbxBinRaw(String8 const & filename,FbxBin const & fbx)
 {
     String const        sentinel (13,'\0');
     String              blob = fbx.header;
@@ -751,8 +757,7 @@ saveFbxBinRaw(String8 const & filename,FbxBin const & fbx)
     saveRaw(blob,filename,false);
 }
 
-void
-testFbxBin(CLArgs const & args)
+void                testFbxBin(CLArgs const & args)
 {
     if (isAutomated(args))
         return;
@@ -780,7 +785,7 @@ Meshes              loadFbx(String8 const & filename)
                     String          type = rp1->getPropertyData(2,'S').as<String>();
                     if (type == "Mesh") {
                         geomIds.push_back(rp1->getPropertyData(0,'L').as<int64>());
-                        geoms.push_back(readBinMesh(rp1));
+                        geoms.push_back(parseBinMesh(rp1));
                     }
                 }
                 else if (rp1->name == "Model") {
@@ -834,8 +839,7 @@ Meshes              loadFbx(String8 const & filename)
     return geoms;
 }
 
-void
-injectVertsFbxBin(String8 const & inFile,Vec3Fs const & verts,String8 const & outFile)
+void                injectVertsFbxBin(String8 const & inFile,Vec3Fs const & verts,String8 const & outFile)
 {
     Floats          flts = flatten(verts);
     FbxBin          fbx = loadFbxBinRaw(inFile);
@@ -865,8 +869,7 @@ injectVertsFbxBin(String8 const & inFile,Vec3Fs const & verts,String8 const & ou
         fgout << fgnl << "WARNING: inject verts FBX too many vertices: " << verts.size();
 }
 
-void
-testSaveFbx(CLArgs const & args)
+void                testSaveFbx(CLArgs const & args)
 {
     Cmds            cmds {
         {testSaveFbxAscii,"ascii",""},

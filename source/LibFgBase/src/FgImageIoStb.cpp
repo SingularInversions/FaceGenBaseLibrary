@@ -19,20 +19,19 @@ using namespace std;
 
 namespace Fg {
 
-struct  StbiFree
+struct      StbiFree
 {
     uchar       *data;
     StbiFree(uchar * d) : data(d) {}
     ~StbiFree() {stbi_image_free(data); }
 };
 
-void
-loadImage_(String8 const & fname,ImgRgba8 & img)
+void                loadImage_(String8 const & fname,ImgRgba8 & img)
 {
     int                 width,height,channels;
     uchar *             data = nullptr;
-    FILE *              fPtr = openFile(fname,false);     // Throws if unable to open
-    FGASSERT(fPtr);
+    FILE *              fPtr = openFile(fname,false);     // Throws if unable to open, never return nullptr
+    FGASSERT(fPtr != nullptr);
     data = stbi_load_from_file(fPtr,&width,&height,&channels,4);    // request 4 channels. Can't throw.
     fclose(fPtr);
     if (data == nullptr) {
@@ -45,24 +44,20 @@ loadImage_(String8 const & fname,ImgRgba8 & img)
     img = ImgRgba8{Vec2UI(width,height),reinterpret_cast<Rgba8*>(data)};
 }
 
-ImgRgba8
-loadImage(String8 const & fname)
+ImgRgba8            loadImage(String8 const & fname)
 {
     ImgRgba8         ret;
     loadImage_(fname,ret);
     return ret;
 }
 
-static
-void
-writeToFile(void *context,void * data,int size)
+static void         writeToFile(void *context,void * data,int size)
 {
     Ofstream &          ofs = *reinterpret_cast<Ofstream*>(context);
     ofs.write(reinterpret_cast<char*>(data),size);
 }
 
-void
-saveImage(String8 const & fname,ImgRgba8 const & img)
+void                saveImage(String8 const & fname,ImgRgba8 const & img)
 {
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);
@@ -70,7 +65,7 @@ saveImage(String8 const & fname,ImgRgba8 const & img)
     String8             ext = toLower(path.ext);
     if (ext.empty())
         fgThrow("No image file extension specified",fname);
-    if (!contains(getImageFileExts(),ext.m_str))
+    if (!contains(getImgExts(),ext.m_str))
         fgThrow("File extension is not a supported image output format",fname);
     uint                wid = img.width(),
                         hgt = img.height();
@@ -93,8 +88,7 @@ saveImage(String8 const & fname,ImgRgba8 const & img)
         fgThrow("STB image write error",fname);
 }
 
-void
-saveJfif(ImgRgba8 const & img,String8 const & fname,uint quality)
+void                saveJfif(ImgRgba8 const & img,String8 const & fname,uint quality)
 {
     if (fname.empty())
         fgThrow("Cannot save image to empty filename");
@@ -112,8 +106,7 @@ saveJfif(ImgRgba8 const & img,String8 const & fname,uint quality)
         fgThrow("STB JFIF image write error",fname);
 }
 
-String
-zlibInflate(String const & compressed,size_t sz)
+String              zlibInflate(String const & compressed,size_t sz)
 {
     String          ret (sz,' ');
     int             rc = stbi_zlib_decode_buffer(

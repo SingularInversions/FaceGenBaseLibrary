@@ -22,23 +22,13 @@ namespace Fg {
 // dealt with but I haven't bothered; currently the source will not compile properly in a
 // non-ascii path.
 
-// Remove path from filename (see above).
-// This simple version does NOT handle base filenames after Windows drive specifiers (eg. C:filename)
-// as it only detects the '\' character:
-std::string
-pathToName(char const * asciiFilePath);
-
-std::string
-fgDiagString(char const *fname,int line);
-
+std::string         toFilePosString(char const *fname,int line);
 // If you're trying to pass a UTF-8 'msg' here, you should probably be using 'fgThrow' instead:
-void
-fgAssert(char const * fname,int line,const std::string & msg = "");
-
+void                fgAssert(char const * fname,int line,const std::string & msg = "");
 // Crude warning system outputs to cout. Use when we don't want to throw in release distros.
 // Currently just outputs to fgout but could add telemetry, special dev behaviour:
-void fgWarn(char const * fname,int line,const std::string & msg="");
-void fgWarn(const std::string & msg,const std::string & dataUtf8="");
+void                fgWarn(char const * fname,int line,const std::string & msg="");
+void                fgWarn(const std::string & msg,const std::string & dataUtf8="");
 
 }
 
@@ -92,13 +82,6 @@ void fgWarn(const std::string & msg,const std::string & dataUtf8="");
          << #Y ": " << (Y) << " "                                           \
          << #Z ": " << (Z) << " "                                           \
          << #A ": " << (A) << std::flush
-
-// Use string for debug build, empty string otherwise:
-#ifdef _DEBUG
-#define FG_DBG_STR(str) str
-#else
-#define FG_DBG_STR(str) ""
-#endif
 
 #define FGWARN Fg::fgWarn(__FILE__,__LINE__)
 #define FGWARN1(X) Fg::fgWarn(__FILE__,__LINE__,X)

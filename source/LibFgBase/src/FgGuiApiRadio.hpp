@@ -24,26 +24,22 @@
 namespace Fg {
 
 // This function must be defined in the corresponding OS-specific implementation:
-struct  GuiRadio;
-GuiImplPtr guiGetOsImpl(GuiRadio const & guiApi);
+struct      GuiRadio;
+GuiImplPtr          guiGetOsImpl(GuiRadio const & guiApi);
 
-struct GuiRadio : GuiBase
+struct      GuiRadio : GuiBase
 {
     String8s            labels;
     Sfun<uint()>        getFn;      // Will be called for display updates. Must return current selection.
     Sfun<void(uint)>    setFn;      // Will be called when user makes a selection.
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
 
 // If desired output is the index:
-GuiPtr
-guiRadio(String8s const & labels,IPT<size_t> idxN);
-
+GuiPtr              guiRadio(String8s const & labels,IPT<size_t> idxN);
 // If desired output is the label:
-GuiVal<String8>
-guiRadioLabel(String8s const & labels,IPT<size_t> idxN);
+GuiVal<String8>     guiRadioLabel(String8s const & labels,IPT<size_t> idxN);
 
 }
 

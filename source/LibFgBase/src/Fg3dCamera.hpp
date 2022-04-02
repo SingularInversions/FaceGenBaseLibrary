@@ -76,6 +76,7 @@ namespace Fg {
 inline AffineEw2D   cOtcsToIucs() {return AffineEw2D {Vec2D{1,-1},Vec2D{0,1}}; }
 inline AffineEw2D   cIucsToOtcs() {return AffineEw2D {Vec2D{1,-1},Vec2D{0,1}}; }
 inline AffineEw2D   cOtcsToIpcs(Vec2UI imgDims) {return AffineEw2D {Mat22D(0,1,1,0),Mat22D(0,imgDims[0],0,imgDims[1])}; }
+inline AffineEw2D   cOtcsToIrcs(Vec2UI dims) {return {Vec2D(dims[0],dims[1]*-1.0),Vec2D{-0.5,dims[1]-0.5}}; }
 inline QuaternionD  cOecsToFccs() {return QuaternionD(pi(),0); }      // Same as negating Y,Z
 AffineEw2D          cItcsToIucs(Vec2D const & halfFovItcs);     // Assuming principal point at centre of image
 

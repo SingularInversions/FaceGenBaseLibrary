@@ -172,18 +172,10 @@ loadTri(istream & istr)
     return mesh;
 }
 
-Mesh
-loadTri(String8 const & fname)
+Mesh                loadTri(String8 const & fname)
 {
-    Mesh        ret;
-    try {
-        Ifstream      ff(fname);
-        ret = loadTri(ff);
-    }
-    catch (FgException & e) {
-        e.m_ct.back().dataUtf8 = fname.m_str;
-        throw;
-    }
+    Ifstream        ff {fname};
+    Mesh            ret = loadTri(ff);
     ret.name = pathToBase(fname);
     return ret;
 }

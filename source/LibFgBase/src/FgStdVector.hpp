@@ -33,6 +33,7 @@ typedef Svec<uint64>            Uint64s;
 typedef Svec<float>             Floats;
 typedef Svec<double>            Doubles;
 
+typedef Svec<Bools>             Boolss;
 typedef Svec<Doubles>           Doubless;
 typedef Svec<Floats>            Floatss;
 typedef Svec<Ints>              Intss;
@@ -197,22 +198,32 @@ void                mapAsgn_(Svec<T> & vec,T val) {std::fill(vec.begin(),vec.end
 // Generate elements using a callable type that accepts a 'size_t' argument and returns a T:
 // NOTE: T must be explicitly specified:
 template<class T,class C>
-Svec<T>             generateT(size_t num,C const & callable)
+Svec<T>             generateSvec(size_t num,C const & callable)
 {
     Svec<T>             ret; ret.reserve(num);
     for (size_t ii=0; ii<num; ++ii)
         ret.push_back(callable(ii));
     return ret;
 }
-// Generate elements using a function that takes the index as an argument:
-// NOTE: template must be specified as compiler cannot infer from std::function:
-template<class T>
-Svec<T>             generateIdx(size_t num,std::function<T(size_t)> const & generator)
+// multithreaded version is structurally different so different function rather than boolean arg:
+template<class T,class C>
+Svec<T>             generateSvecMt(size_t num,C const & callable)
 {
-    Svec<T>       ret;
-    ret.reserve(num);
-    for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(generator(ii));
+    Svec<T>             ret(num);           // default-constructable required
+    size_t              nt = std::min(size_t(std::thread::hardware_concurrency()),num);
+    auto                fn = [&callable,&ret](size_t lo,size_t eub)
+    {
+        for (size_t ii=lo; ii<eub; ++ii)
+            ret[ii] = callable(ii);
+    };
+    Svec<std::thread>   threads; threads.reserve(nt);
+    for (size_t tt=0; tt<nt; ++tt) {
+        size_t              lo = (tt*num)/nt,
+                            hi = ((tt+1)*num)/nt;
+        threads.emplace_back(fn,lo,hi);
+    }
+    for (std::thread & thread : threads)
+        thread.join();
     return ret;
 }
 template<class T,class U>
@@ -406,11 +417,17 @@ size_t              findFirstIdx(
 }
 // Functional specialization of std::find, throws if not found:
 template<class T,class U>
-T const &           findFirst(
-    Svec<T> const &     vec,
-    U const &           rhs)        // Allow for T::operator==(U)
+T const &           findFirst(Svec<T> const & vec,U const & rhs)        // Allow for T::operator==(U)
 {
-    auto const &        it = std::find(vec.begin(),vec.end(),rhs);
+    auto            it = std::find(vec.cbegin(),vec.cend(),rhs);
+    FGASSERT(it != vec.end());
+    return *it;
+}
+// non-const version:
+template<class T,class U>
+T &                 findFirst(Svec<T> & vec,U const & rhs)              // Allow for T::operator==(U)
+{
+    auto            it = std::find(vec.begin(),vec.end(),rhs);
     FGASSERT(it != vec.end());
     return *it;
 }
@@ -420,7 +437,7 @@ T const &           findFirstIf(
     Svec<T> const &     vec,
     U const &           func)       // Allow for std::function
 {
-    auto const &        it = std::find_if(vec.begin(),vec.end(),func);
+    auto            it = std::find_if(vec.begin(),vec.end(),func);
     FGASSERT(it != vec.end());
     return *it;
 }
@@ -648,14 +665,12 @@ T                   cProduct(Svec<T> const & v)
         acc *= Acc(v[ii]);
     return T(acc);
 }
-// The value is accumulated in the templated type. Make a special purpose function
-// if the accumulator type must be larger than the templated type:
+// The value is accumulated in the templated type:
 template<class T>
 T                   cMean(Svec<T> const & v)
 {
     typedef typename Traits<T>::Scalar    S;
-    static_assert(std::is_floating_point<S>::value,"Multiplication by a reciprocal");
-    return cSum(v) * (S(1) / S(v.size()));
+    return cSum(v) / static_cast<S>(v.size());
 }
 template<class T>
 double              cMag(Svec<T> const & v)              // Sum of squared magnitude values:
@@ -1066,9 +1081,9 @@ Svec<T>             setwiseIntersect(Svec<Svec<T>> const & vs)
 template<class T>
 Svec<T>             multisetIntersect(Svec<T> const & v0,Svec<T> v1)
 {
-    Svec<T>       ret;
+    Svec<T>         ret;
     for (T const & v : v0) {
-        auto        it = find(v1.begin(),v1.end(),v);
+        auto            it = find(v1.cbegin(),v1.cend(),v);
         if (it != v1.end()) {
             ret.push_back(v);
             v1.erase(it);

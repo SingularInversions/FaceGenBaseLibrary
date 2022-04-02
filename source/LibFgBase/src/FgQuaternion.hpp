@@ -43,7 +43,7 @@ struct  Quaternion
     explicit Quaternion(Mat<T,4,1> const & v) : real(v[0]), imag(v[1],v[2],v[3]) {normalizeP(); }
 
     bool            operator==(const Quaternion & rhs) const {return ((real == rhs.real) && (imag == rhs.imag)); }
-    // Composition operator:
+    // Composition operator. Retains normalization to precision but does NOT renormalize:
     Quaternion      operator*(const Quaternion & rhs) const
     {
         Quaternion    ret;
@@ -71,15 +71,17 @@ struct  Quaternion
         return ret;
     }
     Mat<T,4,1>      asVec4() const {return Mat<T,4,1>(real,imag[0],imag[1],imag[2]); }
+    // should always be very close to 1, this is just for testing:
+    T               mag() const {return sqr(real) + cMag(imag); }
     // useful for deserialization. Returns false if zero magnitude:
     bool            normalize()
     {
-        T   mag = real*real + imag.mag();
-        if (mag == T(0))
+        T               m = mag();
+        if (m == T(0))
             return false;
-        T   fac = T(1) / sqrt(mag);
-        real *= fac;
-        imag *= fac;
+        T               len = sqrt(m);
+        real /= len;
+        imag /= len;
         return true;
     }
     void            normalizeP() {FGASSERT(normalize()); }
@@ -111,6 +113,8 @@ QuaternionD         interpolate(
     QuaternionD         q0,         // Must be normalized
     QuaternionD         q1,         // Must be normalized
     double              val);       // Must be [0,1]
+
+bool                isApproxEqual(QuaternionD const & l,QuaternionD const & r,double prec);
 
 }
 

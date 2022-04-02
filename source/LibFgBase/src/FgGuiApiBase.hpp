@@ -24,18 +24,16 @@
 namespace Fg {
 
 // Returns true if GUI is supported on this platform (GUI calls do nothing otherwise):
-bool
-isGuiSupported();
+bool                isGuiSupported();
 
 // Set up this data structure for application error handling (eg. report to server):
 struct  GuiExceptHandler
 {
-    String8                        appNameVer;     // Full name of application plus version
+    // set to full application name with version and bits if applicable:
+    String8                        appNameVerBits;
     // Client-defined error reporting. Can be null.
     // Accepts error message, returns true if reported, false otherwise (so default dialog can be shown):
     std::function<bool(String8)> reportError;
-    // Prepended to error message and displayed if 'reportError' == NULL or 'reportError' returns false:
-    String8                        reportFailMsg;
 };
 
 extern GuiExceptHandler         g_guiDiagHandler;
@@ -85,6 +83,7 @@ struct  GuiOptions
     Svec<GuiEvent>      events;
     Svec<GuiKeyHandle>  keyHandlers;
     Sfun<void()>        onUpdate;       // Used to store to undo stack
+    Vec2I               defaultSize = {1400,900};
 };
 
 template<class T>
@@ -98,16 +97,14 @@ struct  GuiVal           // Combine a window and a related node
 };
 
 // Defined in OS-specific code:
-void
-guiStartImpl(
+void                guiStartImpl(
     NPT<String8>                titleN,
     GuiPtr                      gui,
     String8 const &             store,          // Directory in which to store state
     GuiOptions const &          options=GuiOptions());
 
 // Send message to terminate GUI. Defined in OS-specific code. TODO: make it not global:
-void
-guiQuit();
+void                guiQuit();
 
 }
 

@@ -19,8 +19,7 @@ using namespace boost::filesystem;
 
 namespace Fg {
 
-void
-fileCopy(String8 const & src,String8 const & dst,bool overwrite)
+void                fileCopy(String8 const & src,String8 const & dst,bool overwrite)
 {
     if (pathExists(dst)) {
         if (overwrite) {
@@ -38,8 +37,7 @@ fileCopy(String8 const & src,String8 const & dst,bool overwrite)
         copy_file(src.ns(),dst.ns());
 }
 
-void
-fileMove(String8 const & src,String8 const & dst,bool overwrite)
+void                fileMove(String8 const & src,String8 const & dst,bool overwrite)
 {
     // We use copy and delete since boost::filesystem::rename will fail if the target
     // is on a different volume:
@@ -47,8 +45,7 @@ fileMove(String8 const & src,String8 const & dst,bool overwrite)
     deleteFile(src);
 }
 
-bool
-pathExists(String8 const & fname)
+bool                pathExists(String8 const & fname)
 {
     // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
     // We don't want that - consider it just not there:
@@ -63,16 +60,14 @@ pathExists(String8 const & fname)
 }
 
 // TODO: re-write more efficient OS-specific code (utime on Linus, god knows what on Win):
-void
-fileTouch(String8 const & fname)
+void                fileTouch(String8 const & fname)
 {
     // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
     String      tmp = loadRaw(fname);
     saveRaw(tmp,fname,false);
 }
 
-bool
-setCurrentDirUp()
+bool                setCurrentDirUp()
 {
     Path      cd = asDirectory(getCurrentDir());
     if (cd.dirs.empty())
@@ -81,8 +76,7 @@ setCurrentDirUp()
     return true;
 }
 
-String8
-toAbsolutePath(String8 const & anyPath)
+String8             toAbsolutePath(String8 const & anyPath)
 {
     Path            path {anyPath};
     if (!path.root)
@@ -90,16 +84,14 @@ toAbsolutePath(String8 const & anyPath)
     return path.str();
 }
 
-void
-deleteDirectoryFiles(String8 const & dirname)
+void                deleteDirectoryFiles(String8 const & dirname)
 {
     DirContents       dc = getDirContents(dirname);
     for (size_t ii=0; ii<dc.filenames.size(); ii++)
         deleteFile(dirname+"/"+dc.filenames[ii]);
 }
 
-void
-deleteDirectoryRecursive(String8 const & dirname)
+void                deleteDirectoryRecursive(String8 const & dirname)
 {
 #ifdef _WIN32
     // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
@@ -119,8 +111,7 @@ deleteDirectoryRecursive(String8 const & dirname)
 #endif
 }
 
-void
-createPath(String8 const & path)
+void                createPath(String8 const & path)
 {
     Path          p(asDirectory(path));
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
@@ -134,35 +125,37 @@ createPath(String8 const & path)
     }
 }
 
-String8
-getExecutableDirectory()
+String8             getExecutableDirectory()
 {
     //return getCurrentDir();         // For debugging installed versions
     Path      p(getExecutablePath());
     return p.dir();
 }
 
-bool
-fileReadable(String8 const & filename)
+bool                fileReadable(String8 const & filename)
 {
     Ifstream ifs(filename,false);
     if (!ifs.is_open()) return false;
     return true;
 }
 
-String8
-getDirUserAppDataLocal(Strings const & subPath)
+String8             getDirUserAppDataLocal(Strings const & subPath)
 {
-    String8    ret = getDirUserAppDataLocal();
-    for (size_t ii=0; ii<subPath.size(); ++ii) {
-        ret += subPath[ii] + fgDirSep();
+    String8         ret = getDirUserAppDataLocal();
+    for (String const & dir : subPath) {
+        ret += dir;
+        ret += nativeDirSep8;
         createDirectory(ret);
     }
     return ret;
 }
 
-string
-loadRaw(String8 const & filename)
+String8             getDirUserAppDataLocalFaceGen(Strings const & subDirs)
+{
+    return getDirUserAppDataLocal(prepend(String{"FaceGen"},subDirs));
+}
+
+string              loadRaw(String8 const & filename)
 {
     Ifstream          ifs(filename);
     ostringstream       ss;
@@ -170,8 +163,7 @@ loadRaw(String8 const & filename)
     return ss.str();
 }
 
-bool
-saveRaw(String const & data,String8 const & filename,bool onlyIfChanged)
+bool                saveRaw(String const & data,String8 const & filename,bool onlyIfChanged)
 {
     if (onlyIfChanged && pathExists(filename)) {
         string      fileData = loadRaw(filename);
@@ -183,15 +175,13 @@ saveRaw(String const & data,String8 const & filename,bool onlyIfChanged)
     return true;
 }
 
-void
-appendRaw(String8 const & filename,String const & data)
+void                appendRaw(String8 const & filename,String const & data)
 {
     Ofstream            ofs {filename,true};
     ofs << data;
 }
 
-bool
-equateFilesBinary(
+bool                equateFilesBinary(
     String8 const & file1,
     String8 const & file2)
 {
@@ -200,38 +190,28 @@ equateFilesBinary(
     return contents1 == contents2;
 }
 
-bool
-equateFilesText(String8 const & fname0,String8 const & fname1)
+bool                equateFilesText(String8 const & fname0,String8 const & fname1)
 {
     return (splitLinesUtf8(loadRaw(fname0)) == splitLinesUtf8(loadRaw(fname1)));
 }
 
-static String8 s_fgDataDir;
-
-String8 const &
-dataDir(bool throwIfNotFound)
+String8             getDataDir(bool throwIfNotFound)
 {
     // Typical locations relative to executable:
     //  ./data                  (applications & remote execution)
     //  ../../data              (pre-built sdk binaries in bin/os/)
     //  ../../../../../data     (dev & sdk binaries)
-    if (!s_fgDataDir.empty())
-        return s_fgDataDir;
-    String8         pathStr = getExecutableDirectory();
-    Path            path(pathStr);
-    string          data("data/"),
-                    flag("_facegen_data_dir.flag");
-    bool            keepSearching = true;
-    while (keepSearching) {
-        String8        dd = path.str()+data;
-        if (isDirectory(dd)) {
-            if (pathExists(dd+flag)) {
-                s_fgDataDir = dd;
-                return s_fgDataDir;
-            }
-        }
+    String8         pathStr = getExecutablePath();
+    Path            path {pathStr};
+    string          data = "data/",
+                    flag = "_facegen_data_dir.flag";
+    // check exe dir and every dir above in that order (incl. top level in case of thumb drive etc.):
+    for(;;) {
+        String8        dd = path.dir() + data;
+        if (pathExists(dd+flag))
+            return dd;
         if (path.dirs.empty())
-            keepSearching = false;
+            break;
         else
             path.dirs.pop_back();
     }
@@ -241,19 +221,26 @@ dataDir(bool throwIfNotFound)
             "You must also copy the 'data' directory (including contents)\n"
             "to the same location or one of its parent directories",
             pathStr);
+    return String8{};
+}
+
+static String8      s_fgDataDir;
+
+String8 const &     dataDir(bool throwIfNotFound)
+{
+    if (s_fgDataDir.empty())
+        s_fgDataDir = getDataDir(throwIfNotFound);
     return s_fgDataDir;
 }
 
-void
-setDataDir(String8 const & dir)
+void                setDataDir(String8 const & dir)
 {
     if (!pathExists(dir+"_facegen_data_dir.flag"))
         fgThrow("setDataDir FaceGen data flag not found",dir);
     s_fgDataDir = dir;
 }
 
-bool
-fileNewer(String8s const & sources,String8s const & sinks)
+bool                fileNewer(String8s const & sources,String8s const & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
     time_t      srcTime = getLastWriteTime(sources[0]);
@@ -272,8 +259,7 @@ fileNewer(String8s const & sources,String8s const & sinks)
     return false;
 }
 
-String8s
-globFiles(Path const & path)
+String8s            globFiles(Path const & path)
 {
     String8s               ret;
     DirContents     dc = getDirContents(path.dir());
@@ -285,8 +271,7 @@ globFiles(Path const & path)
     return ret;
 }
 
-String8s
-globFiles(String8 const & basePath,String8 const & relPath,String8 const & filePattern)
+String8s            globFiles(String8 const & basePath,String8 const & relPath,String8 const & filePattern)
 {
     String8s       ret = globFiles(basePath+relPath+filePattern);
     for (String8 & r : ret)
@@ -294,8 +279,7 @@ globFiles(String8 const & basePath,String8 const & relPath,String8 const & fileP
     return ret;
 }
 
-DirContents
-globNodeStartsWith(Path const & path)
+DirContents         globNodeStartsWith(Path const & path)
 {
     DirContents ret;
     DirContents dc = getDirContents(path.dir());
@@ -308,8 +292,7 @@ globNodeStartsWith(Path const & path)
     return ret;
 }
 
-String8s
-globBaseVariants(const String8 & pathBaseExt)
+String8s            globBaseVariants(const String8 & pathBaseExt)
 {
     Path            path {pathBaseExt};
     String8s        fnames = globNodeStartsWith(path.dirBase()).filenames;
@@ -322,8 +305,7 @@ globBaseVariants(const String8 & pathBaseExt)
     return ret;
 }
 
-bool
-fgCopyAllFiles(String8 const & fromDir_,String8 const & toDir_,bool overwrite)
+bool                fgCopyAllFiles(String8 const & fromDir_,String8 const & toDir_,bool overwrite)
 {
     bool                    ret = false;
     String8                fromDir = asDirectory(fromDir_),  // Ensure ends with delim
@@ -341,16 +323,14 @@ fgCopyAllFiles(String8 const & fromDir_,String8 const & toDir_,bool overwrite)
     return ret;
 }
 
-void
-fgCopyToCurrentDir(Path const & file)
+void                fgCopyToCurrentDir(Path const & file)
 {
     if (pathExists(file.baseExt()))
         fgThrow("Attempt to copy to current directory which already contains",file.baseExt());
     fileCopy(file.str(),file.baseExt());
 }
 
-void
-copyRecursive(String8 const & fromDir,String8 const & toDir)
+void                copyRecursive(String8 const & fromDir,String8 const & toDir)
 {
     if (!isDirectory(fromDir))
         fgThrow("Not a directory (unable to copy)",fromDir);
@@ -370,8 +350,7 @@ copyRecursive(String8 const & fromDir,String8 const & toDir)
     }
 }
 
-void
-mirrorFile(Path const & src,Path const & dst)
+void                mirrorFile(Path const & src,Path const & dst)
 {
     FGASSERT(!src.base.empty());
     FGASSERT(!dst.base.empty());
@@ -386,6 +365,15 @@ mirrorFile(Path const & src,Path const & dst)
     }
     if (fileNewer(src.str(),dst.str()))
         fileCopy(src.str(),dst.str(),true);
+}
+
+Strings             findExts(String8 const & dirBase,Strings const & exts)
+{
+    Strings             ret;
+    for (String const & ext : exts)
+        if (fileExists(dirBase+"."+ext))
+            ret.push_back(ext);
+    return ret;
 }
 
 }

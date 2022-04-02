@@ -28,16 +28,14 @@ namespace Fg {
 template <class T>
 struct  Affine1
 {
-    T       m_scale;
-    T       m_trans;
+    T               m_scale;
+    T               m_trans;
 
     Affine1() : m_scale(T(1)), m_trans(T(0)) {}
     Affine1(T scale,T trans) : m_scale(scale), m_trans(trans) {}
 
     // Construct from bounding box mapping:
-    Affine1(
-        Mat<T,1,2> domainBounds,
-        Mat<T,1,2> rangeBounds)
+    Affine1(Mat<T,1,2> domainBounds,Mat<T,1,2> rangeBounds)
     {
         T   domainDelta = domainBounds[1] - domainBounds[0],
             rangeDelta = rangeBounds[1] - rangeBounds[0];
@@ -46,25 +44,16 @@ struct  Affine1
         m_trans = rangeBounds[0] - domainBounds[0] * m_scale;
     }
 
-    T
-    operator*(T domainVal) const
-    {return (m_scale * domainVal + m_trans); }
-
+    T               operator*(T domainVal) const {return (m_scale * domainVal + m_trans); }
     // x = (x'-t)/s = (1/s)x' + (-t/s)
-    Affine1
-    inverse() const
-    {return Affine1(T(1)/m_scale,-m_trans/m_scale); }
-
-    T
-    invXform(T rangeVal) const
-    {return ((rangeVal - m_trans) / m_scale); }
+    Affine1         inverse() const {return Affine1(T(1)/m_scale,-m_trans/m_scale); }
+    T               invXform(T rangeVal) const {return ((rangeVal - m_trans) / m_scale); }
 };
 typedef Affine1<float>       Affine1F;
 typedef Affine1<double>      Affine1D;
 
 template<class T>
-std::ostream &
-operator<<(std::ostream & os,const Affine1<T> & v)
+std::ostream &      operator<<(std::ostream & os,const Affine1<T> & v)
 {
     os  << fgnl << "Scale: " << v.m_scale
         << fgnl << " Translation: " << v.m_trans;
@@ -73,7 +62,7 @@ operator<<(std::ostream & os,const Affine1<T> & v)
 
 // Full N-dimensional version with matrix/vector members
 template <class T,uint D>
-struct  Affine
+struct      Affine
 {
     Mat<T,D,D>          linear;           // Applied first
     Mat<T,D,1>          translation;      // Applied second
@@ -86,27 +75,18 @@ struct  Affine
     // Construct from linear transform: f(x) = Mx
     explicit Affine(const Mat<T,D,D> & lin) : linear(lin) {}
     // Construct from native form: f(x) = Mx + b
-    Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) :
-        linear(lin),
-        translation(trans)
-        {}
-    // Construct from opposite order form: f(x) = M(x+b):
-    Affine(Mat<T,D,1> const & trans,const Mat<T,D,D> & lin) :
-        linear(lin),
-        translation(lin * trans)
-        {}
-
+    Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) : linear(lin), translation(trans) {}
+    // Construct from opposite order form: f(x) = M(x+b) = Mx + Mb
+    Affine(Mat<T,D,1> const & trans,const Mat<T,D,D> & lin) : linear(lin), translation(lin * trans) {}
     // Conversion constructor:
     template<typename U>
     Affine(Affine<U,D> const & v) : linear(v.linear), translation(v.translation) {}
-
     // Don't let conversion constructor override default copy constructor:
     Affine(Affine const & v) = default;
 
     // If 'vec' is a matrix, its columns are transformed as vectors into a new matrix:
     template<uint ncols>
-    Mat<T,D,ncols>
-    operator*(const Mat<T,D,ncols> & vec) const
+    Mat<T,D,ncols>      operator*(const Mat<T,D,ncols> & vec) const
     {
         Mat<T,D,ncols> ret = linear * vec;
         for (uint col=0; col<ncols; col++)
@@ -116,8 +96,7 @@ struct  Affine
     }
 
     // Operator composition: L*R -> L(Rx+r) + l = LRx + Lr + l = (LR)x + (Lr+l)
-    Affine
-    operator*(const Affine & rhs) const
+    Affine              operator*(const Affine & rhs) const
     {
         Affine       ret;
         ret.linear = linear * rhs.linear;
@@ -126,13 +105,10 @@ struct  Affine
     }
 
     // new = scalar * old:
-    void
-    postScale(T val)
-    {linear *= val; translation *= val; }
+    void                postScale(T val) {linear *= val; translation *= val; }
 
     // Ax + a = y -> x = A^-1(y - a) = (A^-1)y - (A^-1a)
-    Affine
-    inverse() const
+    Affine              inverse() const
     {
         Affine       ret;
         ret.linear = cInverse(linear);
@@ -148,27 +124,19 @@ typedef Affine<double,3>       Affine3D;
 
 // Operator composition: N(Mx+b) = (NM)x + Nb
 template<class T,uint dim>
-Affine<T,dim>
-operator*(
-    const Mat<T,dim,dim> &    lhs,
-    const Affine<T,dim> &        rhs)
+Affine<T,dim>       operator*(const Mat<T,dim,dim> & lhs,const Affine<T,dim> & rhs)
 {
-    return
-        Affine<T,dim>(lhs*rhs.linear,lhs*rhs.translation);
+    return Affine<T,dim>(lhs*rhs.linear,lhs*rhs.translation);
 }
 
 template<class T,uint dim>
-std::ostream &
-operator<<(std::ostream & os,const Affine<T,dim> & v)
+std::ostream &      operator<<(std::ostream & os,const Affine<T,dim> & v)
 {
-    return
-        os  << fgnl << "Linear: " << v.linear 
-            << fgnl << " Translation: " << v.translation;
+    return os  << fgnl << "Linear: " << v.linear << fgnl << " Translation: " << v.translation;
 }
 
 template<typename T,uint dim>
-Mat<T,dim+1,dim+1>
-asHomogMat(Affine<T,dim> a)
+Mat<T,dim+1,dim+1>  asHomogMat(Affine<T,dim> a)
 {
     Mat<T,dim+1,dim+1>      ret = asHomogMat(a.linear);
     for (uint ii=0; ii<dim; ++ii)
@@ -183,26 +151,20 @@ Affine3D            solveAffine(Vec3Ds const & base,Vec3Ds const & targ);
 // Element-wise affine (aka Bounding Box, Rectilinear) transform:
 // per-axis scaling and translation: x'_i = s * x_i + t
 template <class T,uint dim>
-struct  AffineEw
+struct      AffineEw
 {
     Mat<T,dim,1>      m_scales;       // Applied first
     Mat<T,dim,1>      m_trans;
     FG_SERIALIZE2(m_scales,m_trans);
 
     AffineEw() : m_scales(T(1)), m_trans(0) {}
-
-    AffineEw(
-        Mat<T,dim,1> const &  scales,
-        Mat<T,dim,1> const &  trans)
-        : m_scales(scales), m_trans(trans) {}
-
+    AffineEw(Mat<T,dim,1> const &  scales,Mat<T,dim,1> const &  trans) : m_scales(scales), m_trans(trans) {}
     // Conversion constructor:
     template<class U>
     AffineEw(const AffineEw<U,dim> & rhs) :
         m_scales(Mat<T,dim,1>(rhs.m_scales)),
         m_trans(Mat<T,dim,1>(rhs.m_trans))
     {}
-
     // Construct from bounding box mapping:
     AffineEw(
         Mat<T,dim,2> const & domainBounds,    // Column vectors are lo and hi bounds resp.
@@ -221,8 +183,7 @@ struct  AffineEw
 
     // Matrices are treated as collated column vectors:
     template<uint numVecs>
-    Mat<T,dim,numVecs>
-    operator*(const Mat<T,dim,numVecs> & vec) const
+    Mat<T,dim,numVecs>  operator*(const Mat<T,dim,numVecs> & vec) const
     {
         Mat<T,dim,numVecs>    ret;
         for (uint rr=0; rr<dim; ++rr)
@@ -235,8 +196,7 @@ struct  AffineEw
     // y = Sx + t
     // z = S'y + t' = S'(Sx+t) + t' = (S'S)x + (S't + t')
     // rhs below is 'y' above:
-    AffineEw<T,dim>
-    operator*(AffineEw<T,dim> rhs) const
+    AffineEw<T,dim>     operator*(AffineEw<T,dim> rhs) const
     {
         AffineEw<T,dim>      ret;
         for (uint dd=0; dd<dim; ++dd) {
@@ -246,8 +206,7 @@ struct  AffineEw
         return ret;
     }
 
-    Affine<T,dim>
-    asAffine() const
+    Affine<T,dim>       asAffine() const
     {
         Mat<T,dim,dim>    scales;
         for (uint ii=0; ii<dim; ++ii)
@@ -256,8 +215,7 @@ struct  AffineEw
     }
 
     // y = Sx + t, x = (y - t)/S = (1/S)y - (t/S)
-    AffineEw<T,dim>
-    inverse() const
+    AffineEw<T,dim>     inverse() const
     {
         AffineEw   ret;
         for (uint dd=0; dd<dim; ++dd) {
@@ -267,15 +225,8 @@ struct  AffineEw
         return ret;
     }
 
-    static
-    AffineEw
-    scale(T s)
-    {return AffineEw(Mat<T,dim,1>(s),Mat<T,dim,1>(0)); }
-
-    static
-    AffineEw
-    translate(Mat<T,dim,1> t)
-    {return AffineEw(Mat<T,dim,1>(1),t); }
+    static AffineEw     scale(T s) {return AffineEw(Mat<T,dim,1>(s),Mat<T,dim,1>(0)); }
+    static AffineEw     translate(Mat<T,dim,1> t) {return AffineEw(Mat<T,dim,1>(1),t); }
 };
 
 typedef AffineEw<float,2>       AffineEw2F;
@@ -288,16 +239,14 @@ typedef Svec<AffineEw3F>        AffineEw3Fs;
 typedef Svec<AffineEw3D>        AffineEw3Ds;
 
 template<class T,uint dim>
-inline std::ostream &
-operator<<(std::ostream & os,const AffineEw<T,dim> & v)
+inline std::ostream & operator<<(std::ostream & os,const AffineEw<T,dim> & v)
 {
     os  << "Scales: " << v.m_scales << " Translation: " << v.m_trans;
     return os;
 }
 
 template<uint dim>
-AffineEw<float,dim>
-fgD2F(const AffineEw<double,dim> & v)
+AffineEw<float,dim> fgD2F(const AffineEw<double,dim> & v)
 {
     return AffineEw<float,dim>(
         Mat<float,dim,1>(v.m_scales),
@@ -305,8 +254,7 @@ fgD2F(const AffineEw<double,dim> & v)
 }
 
 template<typename T,uint dim>
-Mat<T,dim+1,dim+1>
-asHomogMat(AffineEw<T,dim> a)
+Mat<T,dim+1,dim+1>  asHomogMat(AffineEw<T,dim> a)
 {
     Mat<T,dim+1,dim+1>  ret(0);
     for (uint ii=0; ii<dim; ++ii) {
@@ -318,8 +266,7 @@ asHomogMat(AffineEw<T,dim> a)
 }
 
 template<uint dim>
-AffineEw<double,dim>
-interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
+AffineEw<double,dim> interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
 {
     return AffineEw<double,dim> {
         mapExp(interpolate(mapLog(a0.m_scales),mapLog(a1.m_scales),val)),
@@ -328,8 +275,7 @@ interpolate(AffineEw<double,dim> a0,AffineEw<double,dim> a1,double val)
 }
 
 template <class T,uint dim>
-bool
-isApproxEqual(AffineEw<T,dim> const & l,AffineEw<T,dim> const & r,T maxDiff)
+bool                isApproxEqual(AffineEw<T,dim> const & l,AffineEw<T,dim> const & r,T maxDiff)
 {
     return  isApproxEqual(l.m_scales,r.m_scales,maxDiff) &&
             isApproxEqual(l.m_trans,r.m_trans,maxDiff);

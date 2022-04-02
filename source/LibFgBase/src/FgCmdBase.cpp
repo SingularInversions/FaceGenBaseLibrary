@@ -20,58 +20,23 @@ using namespace std;
 
 namespace Fg {
 
-void    test3d(CLArgs const &);
-void    testBaseJson(CLArgs const &);
-void    testBoostSer(CLArgs const &);
-void    testDataflow(CLArgs const &);
-void    testExceptions(CLArgs const &);
-void    testFilesystem(CLArgs const &);
-void    testFopen(CLArgs const &);
-void    testGeometry(CLArgs const &);
-void    testGridTriangles(CLArgs const &);
-void    testHash(CLArgs const &);
-void    testImage(CLArgs const &);
-void    testKdTree(CLArgs const &);
-void    testMatrixSolver(CLArgs const &);
-void    testMath(CLArgs const &);
-void    testMatrixC(CLArgs const &);
-void    testMatrixV(CLArgs const &);
-void    testMetaFormat(CLArgs const &);
-void    testMorph(CLArgs const &);
-void    testPath(CLArgs const &);
-void    testQuaternion(CLArgs const &);
-void    testRenderCmd(CLArgs const &);
-void    testSerial(CLArgs const &);
-void    testSerialize(CLArgs const &);
-void    testSimilarity(CLArgs const &);
-void    testSimilaritySolve(CLArgs const &);
-void    testSurfTopo(CLArgs const &);
-void    testStdVector(CLArgs const &);
-void    testString(CLArgs const &);
-
 Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
 void testmGuiImage(CLArgs const &);
-void fgTestmGuiMesh(CLArgs const &);
-void fgTestmGui2(CLArgs const &);
-void fgGuiTestmDialogSplashScreen(CLArgs const &);
+void testGui2(CLArgs const &);
+void testGuiDialogSplashScreen(CLArgs const &);
 
-static
-void
-testmGui(CLArgs const & args)
+static void         testmGui(CLArgs const & args)
 {
     Cmds            cmds {
         {testmGuiImage,"image"},
-        {fgTestmGui2,"gui2"},
-        {fgTestmGuiMesh,"mesh"},
-        {fgGuiTestmDialogSplashScreen,"splash"}
+        {testGui2,"gui2"},
+        {testGuiDialogSplashScreen,"splash"}
     };
     doMenu(args,cmds);
 }
 
-static
-void
-sysinfo(CLArgs const &)
+static void         sysinfo(CLArgs const &)
 {
     fgout
         << fgnl << "Computer name: " << fgComputerName()
@@ -98,9 +63,7 @@ void testmGeometry(CLArgs const &);
 void fgTextureImageMappingRenderTest(CLArgs const &);
 void testmImage(CLArgs const &);
 
-static
-void
-testmBase(CLArgs const & args)
+static void         testmBase(CLArgs const & args)
 {
     Cmds            cmds {
         {testmGui,"gui"},
@@ -118,14 +81,40 @@ testmBase(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-void
-testBase(CLArgs const & args)
+void    test3d(CLArgs const &);
+void    testBaseJson(CLArgs const &);
+void    testBoostSer(CLArgs const &);
+void    testDataflow(CLArgs const &);
+void    testFilesystem(CLArgs const &);
+void    testFopen(CLArgs const &);
+void    testGeometry(CLArgs const &);
+void    testGridTriangles(CLArgs const &);
+void    testHash(CLArgs const &);
+void    testImage(CLArgs const &);
+void    testKdTree(CLArgs const &);
+void    testMatrixSolver(CLArgs const &);
+void    testMath(CLArgs const &);
+void    testMatrixC(CLArgs const &);
+void    testMatrixV(CLArgs const &);
+void    testMetaFormat(CLArgs const &);
+void    testMorph(CLArgs const &);
+void    testPath(CLArgs const &);
+void    testQuaternion(CLArgs const &);
+void    testRenderCmd(CLArgs const &);
+void    testSampler(CLArgs const &);
+void    testSerial(CLArgs const &);
+void    testSerialize(CLArgs const &);
+void    testSimilarity(CLArgs const &);
+void    testSurfTopo(CLArgs const &);
+void    testStdVector(CLArgs const &);
+void    testString(CLArgs const &);
+
+void                testBase(CLArgs const & args)
 {
     Cmds            cmds {
         {test3d,"3d"},
         {testBoostSer,"boostSerialization"},
         {testDataflow,"dataflow"},
-        {testExceptions,"exception"},
         {testFilesystem,"filesystem"},
         {testFopen,"fopen"},
         {testGeometry,"geometry"},
@@ -143,10 +132,10 @@ testBase(CLArgs const & args)
         {testPath,"path"},
         {testQuaternion,"quaternion"},
         {testRenderCmd,"rendc","render command"},
+        {testSampler,"sampler"},
         {testSerial,"serial"},
         {testSerialize,"serialize"},
-        {testSimilarity,"similarity"},
-        {testSimilaritySolve,"solveSimilarity"},
+        {testSimilarity,"sim","similarity transform and solver"},
         {testSurfTopo,"topo","surface topology analysis"},
         {testStdVector,"vector"},
         {testString,"string"},
@@ -155,18 +144,15 @@ testBase(CLArgs const & args)
     doMenu(args,cmds,true);
 }
 
-void
-view(CLArgs const & args)
-{doMenu(args,getViewCmds()); }
+void                view(CLArgs const & args) {doMenu(args,getViewCmds()); }
 
-Cmd         getCmdGraph();
+Cmd                 getCmdGraph();
 
 /**
    \ingroup Main_Commands
    Command to substitute strings for automated paramter setting in .xml parameter files.
  */
-void
-cmdSubstitute(CLArgs const & args)
+void                cmdSubstitute(CLArgs const & args)
 {
     Syntax        syntax(args,
         "<inFile> <outFile> (<stringIn> <stringOut>)+\n"
@@ -191,8 +177,7 @@ Cmd                 getCmdImage();
 Cmd                 getCmdMorph();
 void                cmdRender(CLArgs const &);
 
-Cmds
-getFgblCmds()
+Cmds                getFgblCmds()
 {
     Cmds        cmds {
         {getCmdGraph()},
@@ -217,16 +202,14 @@ getFgblCmds()
    \defgroup Base_Commands Base Library Command Line
    Commands in the program 'fgbl' demonstrating use of the FaceGen Base Library.
  */
-void
-cmdFgbl(CLArgs const & args)
+void                cmdFgbl(CLArgs const & args)
 {
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << getSdkVersion(".") << " (" << getCurrentBuildDescription() << ")"; 
     doMenu(args,getFgblCmds());
 }
 
-Cmd
-getCompileShadersCmd()
+Cmd                 getCompileShadersCmd()
 {
     Cmd         ret;
 #ifdef _WIN32
@@ -262,8 +245,7 @@ getCompileShadersCmd()
 
 namespace Fg {
 
-void
-testBaseJson(CLArgs const &)
+void                testBaseJson(CLArgs const &)
 {
     String          str {
 R"(

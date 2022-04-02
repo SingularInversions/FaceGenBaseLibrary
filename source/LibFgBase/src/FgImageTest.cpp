@@ -21,8 +21,7 @@ namespace Fg {
 
 namespace {
 
-void
-testmCompare(CLArgs const &)
+void                testmCompare(CLArgs const &)
 {
     String8             dd = dataDir();
     Img3F               img0 = toUnit3F(loadImage(dd+"base/Mandrill512.png")),
@@ -30,8 +29,7 @@ testmCompare(CLArgs const &)
     compareImages(img0,img1);
 }
 
-void
-testmDisplay(CLArgs const &)
+void                testmDisplay(CLArgs const &)
 {
     String8     dd = dataDir();
     string      testorig_jpg("base/test/testorig.jpg");
@@ -42,8 +40,7 @@ testmDisplay(CLArgs const &)
     viewImage(img);
 }
 
-void
-testmResize(CLArgs const &)
+void                testmResize(CLArgs const &)
 {
     string          fname("base/test/testorig.jpg");
     ImgRgba8         img = loadImage(dataDir()+fname);
@@ -52,8 +49,7 @@ testmResize(CLArgs const &)
     viewImage(out);
 }
 
-void
-resamp(CLArgs const &)
+void                resamp(CLArgs const &)
 {
     Img3F                   in = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
     Vec2D                   lo {94.3,37.8};
@@ -64,32 +60,66 @@ resamp(CLArgs const &)
     }
 }
 
-void
-testmSfs(CLArgs const &)
+void                testmSfs(CLArgs const &)
 {
-    ImgRgba8         orig = loadImage(dataDir()+"base/Mandrill512.png");
-    Img<Vec3F>      img(orig.dims());
-    for (size_t ii=0; ii<img.numPixels(); ++ii)
-        img[ii] = Vec3F(mapCast<float>(cHead<3>(orig[ii].m_c)));
-    Timer             time;
-    for (uint ii=0; ii<100; ++ii)
-        smoothFloat_(img,img,1);
-    double              ms = time.elapsedSeconds();
-    fgout << fgnl << "smoothFloat time: " << ms;
-    viewImage(img);
+    Img3F               img = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
+    {
+        PushTimer           timer {"floating point image smooth"};
+        for (uint ii=0; ii<64; ++ii)
+            smoothFloat_(img,img,1);
+    }
+    viewImage(toRgba8(img));
 }
 
-void
-testComposite(CLArgs const &)
+void                testBlerp(CLArgs const &)
+{
+    {
+        ImgF            empty;
+        Blerp           blerp {{0,0},empty.dims()};
+        FGASSERT(!blerp.valid());
+    }
+    {
+        ImgF            two {2,2,{
+            1.0f,   2.0f,
+            4.0f,   8.0f
+        }};
+        auto            fn = [&two](Vec2F ircs,float resultZero,float resultClamp)
+        {
+            {
+                Blerp           blerp {ircs,two.dims()};
+                float           val = blerp.sample(two).wval;
+                FGASSERT(val == resultZero);
+            }
+            {
+                BlerpClamp      blerp {ircs,two.dims()};
+                float           val = blerp.sample(two);
+                FGASSERT(val == resultClamp);
+            }
+        };
+        fn({-1,-1},     0,1);
+        fn({-1,0},      0,1);
+        fn({0,-1},      0,1);
+        fn({-0.5,0},    0.5,1);
+        fn({0,-0.5},    0.5,1);
+        fn({0,0},       1,1);
+        fn({0.5,0},     1.5f,1.5f);
+        fn({0.25,0},    1.25f,1.25f);
+        fn({0.75,0.25}, 3.0625f,3.0625f);
+        fn({2,0},       0,2);
+        fn({0,2},       0,4);
+        fn({2,2},       0,8);
+    }
+}
+
+void                testComposite(CLArgs const &)
 {
     String8             dd = dataDir();
-    ImgRgba8             overlay = loadImage(dd+"base/Teeth512.png"),
+    ImgRgba8            overlay = loadImage(dd+"base/Teeth512.png"),
                         base = loadImage(dd+"base/Mandrill512.png");
     regressTest(composite(overlay,base),dd+"base/test/imgops/composite.png");
 }
 
-void
-testConvolve(CLArgs const &)
+void                testConvolve(CLArgs const &)
 {
     randSeedRepeatable();
     ImgF          tst(16,16);
@@ -102,8 +132,7 @@ testConvolve(CLArgs const &)
     FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));
 }
 
-void
-testTransform(CLArgs const &)
+void                testTransform(CLArgs const &)
 {
     AffineEw2F          identity;
     Vec2UIs             dimss {{16,32},{19,47}};
@@ -121,8 +150,7 @@ testTransform(CLArgs const &)
 
 }
 
-void
-testmImage(CLArgs const & args)
+void                testmImage(CLArgs const & args)
 {
     Cmds                cmds {
         {testmCompare,"comp","view to compare images"},
@@ -134,16 +162,13 @@ testmImage(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-void    fgImgTestWrite(CLArgs const &);
-
-void
-testImage(CLArgs const & args)
+void                testImage(CLArgs const & args)
 {
     Cmds                cmds {
+        {testBlerp,"blerp","bilinear interpolation"},
         {testComposite,"composite"},
         {testConvolve,"conv"},
         {testTransform,"xf"},
-        {fgImgTestWrite,"write"},
     };
     doMenu(args,cmds,true,false,true);
 }

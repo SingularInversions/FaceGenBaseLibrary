@@ -13,8 +13,7 @@
 
 namespace Fg {
 
-struct      FgExceptionCommandSyntax
-{};
+struct      FgExceptionCommandSyntax {};
 
 struct      Syntax
 {
@@ -75,6 +74,9 @@ private:
 
     void                throwSyntax();
 };
+
+// Return a string of the form "( e0 | e1 | ... | )":
+String              clOptionsStr(Strings const & options);
 
 }
 

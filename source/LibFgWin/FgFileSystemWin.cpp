@@ -18,8 +18,7 @@ using namespace std;
 
 namespace Fg {
 
-bool
-isDirectory(String8 const & name)
+bool                isDirectory(String8 const & name)
 {
     wstring         nameW = name.as_wstring();
     DWORD           attr = GetFileAttributesW(nameW.c_str());
@@ -29,8 +28,7 @@ isDirectory(String8 const & name)
 }
 
 // Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
-DirContents
-getDirContents(String8 const & dirName,bool includeDot)
+DirContents         getDirContents(String8 const & dirName,bool includeDot)
 {
     Path                dir(asDirectory(dirName));
     DirContents   ret;
@@ -52,8 +50,7 @@ getDirContents(String8 const & dirName,bool includeDot)
     return ret;
 }
 
-String8
-getCurrentDir()
+String8             getCurrentDir()
 {
     wchar_t     buff[MAX_PATH]= {0};
     if (!GetCurrentDirectory(MAX_PATH,buff))
@@ -66,10 +63,7 @@ getCurrentDir()
 
 // We use OS-specific APIs for this one since boost::filesystem::current_directory
 // doesn't return a success flag:
-bool
-setCurrentDir(
-    String8 const &    dir,
-    bool                throwOnFail)
+bool                setCurrentDir(String8 const & dir,bool throwOnFail)
 {
     wstring wdir = dir.as_wstring();
     bool ret = (SetCurrentDirectory(wdir.c_str()) != 0);
@@ -79,8 +73,7 @@ setCurrentDir(
 }
 
 // Deletes regardless of read-only or hidden flags, but will not delete system files.
-void
-deleteFile(String8 const & fname)
+void                deleteFile(String8 const & fname)
 {
     wstring wfname = fname.as_wstring();
     DWORD   attributes = GetFileAttributes(wfname.c_str());
@@ -92,8 +85,7 @@ deleteFile(String8 const & fname)
     pathRemove(fname);
 }
 
-bool
-removeDirectory(
+bool                removeDirectory(
     String8 const &    dirname,
     bool                throwOnFail)
 {
@@ -106,8 +98,7 @@ removeDirectory(
     return false;
 }
 
-bool
-createDirectory(String8 const & dirname)
+bool                createDirectory(String8 const & dirname)
 {
     String8     templateDir;
     // Figure out the parent directory for the "template" (WTF):
@@ -129,16 +120,14 @@ createDirectory(String8 const & dirname)
     return true;
 }
 
-String8
-getExecutablePath()
+String8             getExecutablePath()
 {
     wchar_t     module_name[MAX_PATH] = {0};
     GetModuleFileNameW(0,module_name,sizeof(module_name));
     return String8(module_name);
 }
 
-String8
-getDirSystemAppData()
+String8             getDirSystemAppData()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -154,8 +143,7 @@ getDirSystemAppData()
 }
 
 // Return true if succeeded:
-static bool
-setAllUsersFullControl(String8 const path)  // Directory or file
+static bool         setAllUsersFullControl(String8 const path)  // Directory or file
 {
     FGASSERT(!path.empty());
     wstring                 pathw = path.as_wstring();
@@ -229,8 +217,7 @@ setAllUsersFullControl(String8 const path)  // Directory or file
 	return ret;
 }
 
-String8
-getDirSystemAppData(String8 const & groupName,String8 const & appName)
+String8             getDirSystemAppData(String8 const & groupName,String8 const & appName)
 {
     String8    appDir = getDirSystemAppData() + groupName;
     if (!pathExists(appDir)) {
@@ -241,13 +228,12 @@ getDirSystemAppData(String8 const & groupName,String8 const & appName)
         // by subdirectories and files within them (tested):
         setAllUsersFullControl(appDir.as_wstring().c_str());
     }
-    appDir = appDir + fgDirSep() + appName;
+    appDir = appDir + nativeDirSep8 + appName;
     createDirectory(appDir);
-    return appDir + fgDirSep();
+    return appDir + nativeDirSep8;
 }
 
-String8
-getDirUserAppDataRoaming()
+String8             getDirUserAppDataRoaming()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -262,8 +248,7 @@ getDirUserAppDataRoaming()
     return String8(path) + "\\";
 }
 
-String8
-getDirUserAppDataLocal()
+String8             getDirUserAppDataLocal()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -278,8 +263,7 @@ getDirUserAppDataLocal()
     return String8(path) + "\\";
 }
 
-String8
-getUserDocsDir(bool throwOnFail)
+String8             getUserDocsDir(bool throwOnFail)
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -298,8 +282,7 @@ getUserDocsDir(bool throwOnFail)
     return String8(path) + "\\";
 }
 
-String8
-getPublicDocsDir()
+String8             getPublicDocsDir()
 {
     wchar_t     path[MAX_PATH];
     HRESULT     retval =
@@ -314,8 +297,7 @@ getPublicDocsDir()
     return String8(path) + "\\";
 }
 
-bool
-getCreationTimePrecise(String8 const & path,uint64 & time)
+bool                getCreationTimePrecise(String8 const & path,uint64 & time)
 {
     HANDLE hndl =
         CreateFile(
@@ -339,16 +321,14 @@ getCreationTimePrecise(String8 const & path,uint64 & time)
     return true;
 }
 
-uint64
-getCreationTime(String8 const & path)
+uint64              getCreationTime(String8 const & path)
 {
     uint64          tn;
     FGASSERT(getCreationTimePrecise(path,tn));
     return tn / 10000000;       // Convert to seconds
 }
 
-uint64
-getLastWriteTime(String8 const & fname)
+uint64              getLastWriteTime(String8 const & fname)
 {
     // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
     HANDLE          hndl =

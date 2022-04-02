@@ -98,7 +98,7 @@ writeVcxproj(
     ofs <<
         "  </ItemGroup>\n"
         "  <PropertyGroup Label=\"Globals\">\n"
-        "    <ProjectGuid>" << fgLookup(nameToGuid,proj.name) << "</ProjectGuid>\n"
+        "    <ProjectGuid>" << nameToGuid.find(proj.name)->second << "</ProjectGuid>\n"
         "    <RootNamespace>" << proj.name << "</RootNamespace>\n"
         "    <Keyword>Win32Proj</Keyword>\n"
         "    <WindowsTargetPlatformVersion>" + winSdkVer + "</WindowsTargetPlatformVersion>\n"
@@ -282,7 +282,7 @@ writeVcxproj(
                 ofs <<
                     "    <ProjectReference Include=\"..\\..\\" << name << "\\VisualStudio"
                         << verStr << "\\" << name << ".vcxproj\">\n"
-                    "      <Project>" << fgLookup(nameToGuid,name) << "</Project>\n"
+                    "      <Project>" << nameToGuid.find(name)->second << "</Project>\n"
                     "      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>\n"
                     "      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>\n"
                     "    </ProjectReference>\n";
@@ -408,7 +408,7 @@ writeSln(
             ofs <<
                 "Project(\"" + slnGuid + "\") = \""
                 << proj.name << "\", \"" << proj.name << "\\VisualStudio" << verStr << "\\"
-                << proj.name << ".vcxproj\", \"" << fgLookup(nameToGuid,proj.name) << "\"\n"
+                << proj.name << ".vcxproj\", \"" << nameToGuid.find(proj.name)->second << "\"\n"
                 "EndProject\n";
         }
     }
@@ -492,7 +492,7 @@ writeSln(
         "	GlobalSection(ProjectConfigurationPlatforms) = postSolution\n";
     for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
-            string          guid = fgLookup(nameToGuid,proj.name);
+            string          guid = nameToGuid.find(proj.name)->second;
             ofs <<
                 "		" << guid << ".Debug|Win32.ActiveCfg = Debug|Win32\n"
                 "		" << guid << ".Debug|Win32.Build.0 = Debug|Win32\n"

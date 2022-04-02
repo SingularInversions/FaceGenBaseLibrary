@@ -16,22 +16,15 @@ using namespace std;
 
 namespace Fg {
 
-// Empty if 'GetLastError()' is ERROR_SUCCESS or has no message.
-static
-string
-winLastErrUtf8(bool forceEnglish)
+string              getWinErrMsg(DWORD errCode,DWORD language)
 {
-    DWORD           errNum = GetLastError();
-    if (errNum == ERROR_SUCCESS)    // If last Win API func had an error it forgot to set lasterror
+    if (errCode == ERROR_SUCCESS)    // If last Win API func had an error it forgot to set lasterror
         return string{};
-    DWORD           language = forceEnglish ?
-        MAKELANGID(LANG_ENGLISH,SUBLANG_ENGLISH_US) :
-        MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT);
     LPVOID          lpMsgBuf;
     DWORD           numChars = FormatMessage(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
         NULL,
-        errNum,
+        errCode,
         language,
         (LPTSTR) &lpMsgBuf,
         0,
@@ -45,35 +38,55 @@ winLastErrUtf8(bool forceEnglish)
     while ((msg32.back() == '\r') || (msg32.back() == '\n'))
         msg32.pop_back();
     return toUtf8(msg32);
-} 
-
-void
-throwWindows(string const & msg,String8 const & data)
-{
-    FgException     exc(msg,data.m_str);
-    string          winMsgLocal = winLastErrUtf8(false);
-    if (!winMsgLocal.empty())
-        exc.pushMsg("Windows message",winMsgLocal);
-    string          winMsgEnglish = winLastErrUtf8(true);
-    if (!winMsgEnglish.empty() && (winMsgEnglish != winMsgLocal))
-        exc.pushMsg("Windows message",winMsgEnglish);
-    throw exc;
 }
 
-void
-assertWindows(char const * fname,int line)
+// Empty if 'GetLastError()' is ERROR_SUCCESS or has no message.
+string              errCodeToMsg(DWORD errCode,bool forceEnglish)
 {
-    throwWindows("Internal program error",fgDiagString(fname,line));
+    DWORD           language = forceEnglish ?
+        MAKELANGID(LANG_ENGLISH,SUBLANG_ENGLISH_US) :
+        MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT);
+    return getWinErrMsg(errCode,language);
 }
 
-void
-assertWinReturnZero(char const * fname,int line,long rval)
+String              getWinErrMsgEnglish(DWORD errCode)
 {
-    throwWindows("Internal program error",fgDiagString(fname,line)+" rval: "+toHexString(scast<uint32>(rval)));
+    DWORD           englishID = MAKELANGID(LANG_ENGLISH,SUBLANG_ENGLISH_US);
+    return getWinErrMsg(errCode,englishID);
+}
+String              getWinErrMsgIfNotEnglish(DWORD errCode)
+{
+    DWORD           englishID = MAKELANGID(LANG_ENGLISH,SUBLANG_ENGLISH_US),
+                    localID = MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT);
+    if (localID == englishID)
+        return String{};
+    else
+        return getWinErrMsg(errCode,localID);
 }
 
-void
-assertHResult(char const * fpath,uint lineNum,HRESULT hr)
+void                throwWindows(String const & msg,String8 const & data)
+{
+    DWORD               errCode = GetLastError();
+    String              errStr = "0x"+toHexString(uint32(errCode)),
+                        english = getWinErrMsgEnglish(errCode),
+                        foreign = getWinErrMsgIfNotEnglish(errCode);
+    throw FgException {{
+        {msg,"",data.m_str},
+        {english,foreign,errStr},
+    }};
+}
+
+void                assertWindows(char const * fname,int line)
+{
+    throwWindows("Internal program error",toFilePosString(fname,line));
+}
+
+void                assertWinReturnZero(char const * fname,int line,long rval)
+{
+    throwWindows("Internal program error",toFilePosString(fname,line)+" rval: "+toHexString(scast<uint32>(rval)));
+}
+
+void                assertHResult(char const * fpath,uint lineNum,HRESULT hr)
 {
     if (hr < 0)
         throwWindows("Windows HRESULT",pathToName(fpath)+":"+toStr(lineNum)+":HR="+toHexString(scast<uint32>(hr)));

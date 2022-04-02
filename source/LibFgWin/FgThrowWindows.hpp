@@ -13,25 +13,20 @@
 
 namespace Fg {
 
+// get the Windows error string from the error code
+String              errCodeToMsg(
+    DWORD               errCode,        // returns empty if this is ERROR_SUCCESS
+    bool                forceEnglish);  // if false, use the current default language
+String              getWinErrMsgEnglish(DWORD errCode);
+String              getWinErrMsgIfNotEnglish(DWORD errCode);
+
 // Appends the information from Windows' "GetLastError" into the exception message:
-void
-throwWindows(const std::string & msg,String8 const & data=String8());
-
-inline
-void
-throwWindows(const std::string & msg,const std::string & data)
-{throwWindows(msg,String8(data)); }
-
+void                throwWindows(String const & msg,String8 const & data=String8());
+inline void         throwWindows(String const & msg,String const & data) {throwWindows(msg,String8(data)); }
 template<class T>
-void
-throwWindows(const std::string & msg,T const & data)
-{return throwWindows(msg,String8(toStr(data))); }
-
-void
-assertWindows(char const * fname,int line);
-
-void
-assertWinReturnZero(char const * fname,int line,long rval);
+void                throwWindows(String const & msg,T const & data) {return throwWindows(msg,String8(toStr(data))); }
+void                assertWindows(char const * fname,int line);
+void                assertWinReturnZero(char const * fname,int line,long rval);
 
 // Templated custom destructor superior to function object since it's compatible with containers:
 template<class T>
@@ -48,8 +43,7 @@ using WinPtr = std::unique_ptr<T,WinRelease<T> >;
 template<class T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-void
-assertHResult(char const * fpath,uint lineNum,HRESULT hr);
+void                assertHResult(char const * fpath,uint lineNum,HRESULT hr);
 
 }
 

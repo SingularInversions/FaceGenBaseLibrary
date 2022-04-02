@@ -75,7 +75,7 @@ void                cmdRenderSetup(CLArgs const & args)
         R"(<name>.xml (-<option> <value>)* (<mesh>.<ext> [<albedo>.<img>])*
     <option>        - (roll | tilt | pan) - specify object pose, with <value> given in degrees
     <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
-    <img>           - )" + getImageFileExtCLDescriptions() + R"(
+    <img>           - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <name>.xml      - render configuration file
 NOTES:
@@ -125,7 +125,7 @@ NOTES:
     while (syn.more()) {                                        // meshes & maps
         ModelFile           mf;
         mf.meshFilename = syn.next();
-        while (syn.more() && hasImageFileExt(syn.peekNext()))
+        while (syn.more() && hasImgFileExt(syn.peekNext()))
             mf.imgFilenames.push_back(syn.next());
         rend.models.push_back(mf);
     }
@@ -167,7 +167,7 @@ void                cmdRenderRun(CLArgs const & args)
     Syntax              syn {args,
         R"(<in>.xml <out>.<img>
     <in>.xml    - the render configuration file created using 'fgbl render setup'
-    <img>       - )" + getImageFileExtCLDescriptions() + R"(
+    <img>       - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <out>.<img>         -   the rendered image
     <out>-matrix.xml    -   the homogeneous combined projection*modelview matrix resulting from the camera model
@@ -186,7 +186,7 @@ void                cmdRenderBatch(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<files>.txt <img>
-    <img>       - )" + getImageFileExtCLDescriptions() + R"(
+    <img>       - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     for each render parameter file <name>.xml listed in <files>.txt, the following files are created:
     <name>.<img>             the rendered image
@@ -198,7 +198,7 @@ NOTES:
     };
     Strings             rendFiles = splitWhitespace(loadRaw(syn.next()));
     String              imgExt = syn.next();
-    if (!contains(getImageFileExts(),toLower(imgExt)))
+    if (!contains(getImgExts(),toLower(imgExt)))
         syn.error("Unrecognized image format",imgExt);
     auto                runFn = [](String const & rendFile,String const & imgFile)
     {

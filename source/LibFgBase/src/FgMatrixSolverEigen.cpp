@@ -44,8 +44,7 @@ namespace {
 
 // Ensure exact symmetry and valid finite floating point values while converting to Eigen format
 // (any asymmetry will cause totally incorrect results from RSM solver):
-void
-convertRsm_(MatD const & rsm,MatrixXd & ret)
+void                convertRsm_(MatD const & rsm,MatrixXd & ret)
 {
     size_t          dim = rsm.ncols;
     FGASSERT(rsm.nrows == dim);
@@ -61,8 +60,7 @@ convertRsm_(MatD const & rsm,MatrixXd & ret)
 
 }
 
-Vec3D
-solve(Mat33D A_,Vec3D b_)
+Vec3D               solve(Mat33D A_,Vec3D b_)
 {
     Matrix3d        A;
     Vector3d        b;
@@ -77,8 +75,7 @@ solve(Mat33D A_,Vec3D b_)
     return Vec3D {r[0],r[1],r[2]};
 }
 
-Doubles
-cEigvalsRsm(MatD const & rsm)
+Doubles             cEigvalsRsm(MatD const & rsm)
 {
     size_t              dim = rsm.ncols;
     MatrixXd            mat(dim,dim);
@@ -91,8 +88,7 @@ cEigvalsRsm(MatD const & rsm)
     return ret;
 }
 
-void
-cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
+void                cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
 {
     size_t              dim = rsm.ncols;
     MatrixXd            mat(dim,dim);
@@ -111,8 +107,7 @@ cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
             vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
 }
 
-EigsRsmC<3>
-cEigsRsm(const Mat<double,3,3> & rsm)
+EigsRsmC<3>         cEigsRsm(Mat33D const & rsm)
 {
     Matrix3d            mat;
     for (size_t rr=0; rr<3; ++rr) {
@@ -136,8 +131,7 @@ cEigsRsm(const Mat<double,3,3> & rsm)
     return ret;
 }
 
-EigsRsmC<4>
-cEigsRsm(const Mat<double,4,4> & rsm)
+EigsRsmC<4>         cEigsRsm(Mat44D const & rsm)
 {
     Matrix4d            mat;
     for (size_t rr=0; rr<4; ++rr) {
@@ -161,8 +155,7 @@ cEigsRsm(const Mat<double,4,4> & rsm)
 }
 
 template<size_t dim>
-EigsC<dim>
-fgEigsT(const Mat<double,dim,dim> & in)
+EigsC<dim>          fgEigsT(const Mat<double,dim,dim> & in)
 {
     // Ensure valid value and copy into Eigen format:
     MatrixXd            mat(dim,dim);
@@ -188,12 +181,13 @@ fgEigsT(const Mat<double,dim,dim> & in)
 
 // Eigen does not have specialized solutions of 'EigenSolve' for small values
 // so we just insantiate generic version above:
-EigsC<3>
-cEigs(Mat33D const & mat)
-{return fgEigsT<3>(mat); }
-
-EigsC<4>
-cEigs(Mat44D const & mat)
-{return fgEigsT<4>(mat); }
+EigsC<3>            cEigs(Mat33D const & mat)
+{
+    return fgEigsT<3>(mat);
+}
+EigsC<4>            cEigs(Mat44D const & mat)
+{
+    return fgEigsT<4>(mat);
+}
 
 }

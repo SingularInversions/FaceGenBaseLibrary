@@ -274,7 +274,7 @@ size_t              cMinIdx(const Arr<T,S> & v)
     return ret;
 }
 template<class T,size_t S>
-size_t              cMaxIdx(const Arr<T,S> & v)
+size_t              cMaxIdx(Arr<T,S> const & v)
 {
     size_t      ret = 0;
     for (size_t ii=1; ii<v.size(); ++ii)

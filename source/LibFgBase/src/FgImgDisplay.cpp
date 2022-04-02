@@ -24,7 +24,7 @@ viewImageFixed(ImgRgba8 const & img)
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK viewImageFixed"),
         guiImage(makeIPT(img)),
-        getDirUserAppDataLocalFaceGen("SDK","viewImageFixed"));
+        getDirUserAppDataLocalFaceGen({"SDK","viewImageFixed"}));
 }
 
 void
@@ -35,7 +35,7 @@ viewImage(ImgRgba8 const & img,Vec2Fs const & pts,String const & name)
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK DisplayImage"),
         guiImageCtrls(makeIPT(img),makeIPT(pts),true).win,
-        getDirUserAppDataLocalFaceGen("SDK","DisplayImage"));
+        getDirUserAppDataLocalFaceGen({"SDK","DisplayImage"}));
 }
 
 void
@@ -97,7 +97,7 @@ NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,S
     for (String const & nl : newLabels)
         if (!contains(labels,nl))
             labels.push_back(nl);
-    String8             store = getDirUserAppDataLocalFaceGen("SDK","MarkImage");
+    String8             store = getDirUserAppDataLocalFaceGen({"SDK","MarkImage"});
     IPT<size_t>         stepN {0};              // 0 - place points, 1 - confirm
     IPT<ImgRgba8>       imgN {img};
     IPT<Vec2Fs>         ptsIucsN {existingPtsIucs};
@@ -142,7 +142,7 @@ testmGuiImage(CLArgs const &)
 void
 viewImages(ImgRgba8s const & images,String8s names)
 {
-    String8                 store = getDirUserAppDataLocalFaceGen("SDK","ViewImages");
+    String8                 store = getDirUserAppDataLocalFaceGen({"SDK","ViewImages"});
     while (names.size() < images.size())
         names.push_back("Unnamed-"+toStr(names.size()));
     FGASSERT(images.size() == names.size());
@@ -178,7 +178,7 @@ compareImages(Img3F const & image0,Img3F const & image1)
         return Arr3F{m,m,m};
     };
     Img3F               imgdm = mapCall(image0,image1,diffMagFn);
-    String8             store = getDirUserAppDataLocalFaceGen("SDK","ImageComparison");
+    String8             store = getDirUserAppDataLocalFaceGen({"SDK","ImageComparison"});
     IPT<size_t>         selN = makeSavedIPT<size_t>(0,store+"Sel");
     auto                selFn = [&](size_t const & sel)
     {

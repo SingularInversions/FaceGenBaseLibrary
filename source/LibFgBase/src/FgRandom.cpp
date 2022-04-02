@@ -148,7 +148,7 @@ randNearUnit()
 Doubles
 randNearUnits(size_t num)
 {
-    return generateT<double>(num,[](size_t){return randNearUnit(); });
+    return generateSvec<double>(num,[](size_t){return randNearUnit(); });
 }
 
 namespace {

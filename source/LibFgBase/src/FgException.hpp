@@ -16,14 +16,14 @@
 //
 //      USE - CHAINING CONTEXT:
 //
-// Clients can make intermediate exception catches to add context to problem descriptions:
+// Clients can catch exceptions to add context to problem descriptions:
 //
 // catch (FgException & e)
 // {
 //     e.pushMsg("Another unique translatable english message",more_state_information);
 //     throw;
 // }
-//
+// 
 // All exceptions should be caught by reference (see More Effective C++, Meyers).
 //
 
@@ -41,51 +41,37 @@ struct  FgException
 {
     struct  Context
     {
-        std::string         msg;            // In english
-        std::string         dataUtf8;       // Non-translatable UTF-8
+        std::string         msgEnglish;     // Translatable english message (ASCII)
+        std::string         msgNative;      // If language setting not english, translated message (UTF8)
+        std::string         dataUtf8;       // Non-translatable UTF-8 data (eg. names)
 
-        Context(const std::string & m,const std::string & d) : msg(m), dataUtf8(d) {}
-
-        std::string         trans() const;      // UTF-8
-        std::string         noTrans() const;    // UTF-8
+        Context(std::string const & m,std::string const & d) :
+            msgEnglish(m), dataUtf8(d)
+        {
+            //TODO: look up msgNative from msgEnglish (if found) using application message dictionary
+        }
+        Context(std::string const & e,std::string const & n,std::string const & d) :
+            msgEnglish(e), msgNative(n), dataUtf8(d) {}
     };
-    std::vector<Context>    m_ct;       // From lowest stack/context to highest
+    std::vector<Context>    contexts;       // From lowest stack level to to highest stack level context
+
+    FgException() {}
+    explicit FgException(std::vector<Context> const & c) : contexts{c} {}
+    FgException(const std::string & msg,const std::string & dataUtf8)
+        : contexts(1,Context(msg,dataUtf8))
+    {}
 
     virtual ~FgException() {}
 
-    FgException() {}
-        /**
-           Construct an exception with a message and append a second
-           string to a translation of the message. For example:
-
-           \begincode
-             throw FgException("Could not open file", some_file_name);
-           \endcode
-
-           The second argument is appended with a " : " separator. So
-           in the above instance, the final message looks like:
-
-           Could not open file : some_file_name
-
-           Where the first part of the phrase is appropriately translated.
-        */
-    FgException(const std::string & msg,const std::string & dataUtf8)
-        : m_ct(1,Context(msg,dataUtf8))
-    {}
-
-        /**
-            Push some more exception information onto this exception
-            instance. The usage is similar to that of the constructors.
-        */
-    void                pushMsg(
-        const std::string & msg,
-        const std::string & dataUtf8 = std::string())
+    bool                empty() const {return contexts.empty(); }
+    //! add context to err when translated message needs to be looked up (if current lang not english):
+    void                addContext(std::string const & english,std::string const & data = std::string());
+    //! add context to err when translated message is already known (or empty if none needed):
+    void                addContext(std::string const & english,std::string const & foreign,std::string const data)
     {
-        m_ct.push_back(Context(msg,dataUtf8));
+        contexts.emplace_back(english,foreign,data);
     }
-
     std::string             tr_message() const;
-    std::string             no_tr_message() const;
 };
 
 // Should be caught in an end-user context as a failed operation, rather than reported

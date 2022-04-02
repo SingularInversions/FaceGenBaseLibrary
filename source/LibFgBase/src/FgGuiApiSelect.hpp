@@ -13,23 +13,20 @@
 namespace Fg {
 
 // This function must be defined in the corresponding OS-specific implementation:
-struct  GuiSelect;
-GuiImplPtr guiGetOsImpl(GuiSelect const & guiApi);
+struct      GuiSelect;
+GuiImplPtr          guiGetOsImpl(GuiSelect const & guiApi);
 
-struct  GuiSelect : GuiBase
+struct      GuiSelect : GuiBase
 {
     GuiPtrs             wins;
     NPTF<size_t>        selection;
 
     GuiSelect(GuiPtrs const & w,NPT<size_t> const & s) : wins(w), selection(s) {}
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
 
-inline
-GuiPtr
-guiSelect(IPT<size_t> select,GuiPtrs const & wins)
+inline GuiPtr           guiSelect(IPT<size_t> select,GuiPtrs const & wins)
 {
     return std::make_shared<GuiSelect>(wins,select);
 }

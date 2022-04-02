@@ -13,7 +13,7 @@
 
 namespace Fg {
 
-struct Cmd
+struct      Cmd
 {
     CmdFunc         func;
     String          name;
@@ -28,8 +28,7 @@ struct Cmd
 };
 typedef Svec<Cmd> Cmds;
 
-void
-doMenu(
+void                doMenu(
     CLArgs              args,
     Cmds const &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
@@ -39,15 +38,13 @@ doMenu(
 
 // Creates a temporary directory with a name giving the CL args and date/time on construction,
 // and removes the directory on destruction (unless the 'keep temp files' option has been selected):
-struct TestDir
+struct      TestDir
 {
     PushDir         pd;
     Path            path;
 
     TestDir() {}
-
     TestDir(String const & name);
-
     ~TestDir();
 };
 
@@ -60,7 +57,7 @@ void            fgSetRootTestDir(String8 const & dir);
 // Make a copy of a data file in current directory. Throws if file already exists.
 void            copyFileToCurrentDir(String const & nameRelativeToDataDir);
 // fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
-void            runCmd(const CmdFunc & func,String const & argStr);
+void            runCmd(CmdFunc const & func,String const & argStr);
 
 // Are we currently configured to keep temporary files ?
 bool fgKeepTempFiles();

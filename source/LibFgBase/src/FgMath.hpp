@@ -13,22 +13,19 @@
 namespace Fg {
 
 template <typename T>
-inline T sqr(T a) {return (a*a); }
-
+inline T            sqr(T a) {return (a*a); }
 template <typename T>
-inline T cube(T a) {return (a*a*a); }
-
+inline T            cube(T a) {return (a*a*a); }
 // Euclidean length (L2 norm):
 template<typename T,size_t S>
-double cLen(std::array<T,S> const a) {return std::sqrt(cMag(a)); }
+double              cLen(std::array<T,S> const a) {return std::sqrt(cMag(a)); }
 // Dot product function base case:
-inline double cDot(double a,double b) {return a*b; }
+inline double       cDot(double a,double b) {return a*b; }
 
 template<class T>
-double
-cDot(Svec<T> const & v0,Svec<T> const & v1)
+double              cDot(Svec<T> const & v0,Svec<T> const & v1)
 {
-    double      acc(0);
+    double          acc {0};
     FGASSERT(v0.size() == v1.size());
     for (size_t ii=0; ii<v0.size(); ++ii)
         acc += cDot(v0[ii],v1[ii]);
@@ -36,31 +33,29 @@ cDot(Svec<T> const & v0,Svec<T> const & v1)
 }
 
 template<class T>
-double
-cCos(Svec<T> const & v0,Svec<T> const & v1)
+double              cCos(Svec<T> const & v0,Svec<T> const & v1)
 {
-    double      mag = cMag(v0) * cMag(v1);
+    double          mag = cMag(v0) * cMag(v1);
     FGASSERT(mag > 0.0);
     return cDot(v0,v1) / sqrt(mag);
 }
 
 template<typename T,FG_ENABLE_IF(T,is_integral)>
-bool            isPow2(T val) {return ((val > 0) && ((val & (val-1)) == 0)); }
+bool                isPow2(T val) {return ((val > 0) && ((val & (val-1)) == 0)); }
 
-uint            numLeadingZeros(uint32 xx);         // 0 returns 32.
-uint8           numNonzeroBits8(uint8 xx);
-uint16          numNonzeroBits16(uint16 xx);
-uint            numNonzeroBits32(uint32 xx);
-inline uint     log2Floor(uint32 xx) {return (31-numLeadingZeros(xx)); }    // Not valid for 0.
-uint            log2Ceil(uint32 xx);                                        // "
-inline uint     pow2Ceil(uint32 xx){return (1 << log2Ceil(xx)); }           // "
+uint                numLeadingZeros(uint32 xx);         // 0 returns 32.
+uint8               numNonzeroBits8(uint8 xx);
+uint16              numNonzeroBits16(uint16 xx);
+uint                numNonzeroBits32(uint32 xx);
+inline uint         log2Floor(uint32 xx) {return (31-numLeadingZeros(xx)); }    // Not valid for 0.
+uint                log2Ceil(uint32 xx);                                        // "
+inline uint         pow2Ceil(uint32 xx){return (1 << log2Ceil(xx)); }           // "
 
 // Safe version of 'exp' that throws when values fall outside type bounds:
 template<typename T>
-T
-expSafe(T val,bool clampVal=false)
+T                   expSafe(T val,bool clampVal=false)
 {
-    static T    maxIn = std::log(std::numeric_limits<T>::max());
+    static T            maxIn = std::log(std::numeric_limits<T>::max());
     if (std::abs(val) < maxIn)
         return std::exp(val);
     FGASSERT(clampVal);
@@ -72,20 +67,19 @@ expSafe(T val,bool clampVal=false)
 // Fast exp with no check for NaNs, overflow or underflow.
 // This was necessary as GNU's libm 'exp' (used by gcc and clang) is very slow.
 // (Microsoft's is actually a bit faster than this one):
-double          expFast(double x);
+double              expFast(double x);
 
 // Returns one of {-1,0,1}. Branchless.
 // Not compatible with FP positive/negative for 0/Inf/Nan.
 // Use the slower std::sgnbit and std::copysign for that.
 template<typename T>
-int cmpTernary(T val) {return (T(0) < val) - (val < T(0)); }
+int                 cmpTernary(T val) {return (T(0) < val) - (val < T(0)); }
 
 // std::fmod gives a remainder not a modulus (ie it can be negative):
 template<typename T>
-T
-cMod(T val,T divisor)
+T                   cMod(T val,T divisor)
 {
-    T       div = std::floor(val / divisor);
+    T               div = std::floor(val / divisor);
     return val - divisor * div;
 }
 
@@ -97,26 +91,22 @@ double constexpr    exp1()      {return 2.718281828459045235360287; }
 double constexpr    degToRad(double degrees) {return degrees * pi() / 180.0; }
 float  constexpr    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
 
-struct   Modulo
+struct      Modulo
 {
-    size_t      val;        // Invariant: [0,mod)
-    size_t      mod;
+    size_t          val;        // Invariant: [0,mod)
+    size_t          mod;
 
     Modulo() {}
+    Modulo(size_t v,size_t m) : val(v), mod(m) {FGASSERT(val < mod); }
 
-    Modulo(size_t v,size_t m) : val(v), mod(m)
-    {FGASSERT(val < mod); }
-
-    void
-    operator++()
+    void            operator++()
     {
         ++val;
         if (val == mod)
             val = 0;
     }
 
-    void
-    operator--()
+    void            operator--()
     {
         if (val == 0)
             val = mod;
@@ -124,15 +114,14 @@ struct   Modulo
     }
 };
 
-typedef Svec<Modulo> Modulos;
+typedef Svec<Modulo>    Modulos;
 
-inline double cSsd(uchar l,uchar r) {return sqr(double(l)-double(r)); }
-inline double cSsd(float l,float r) {return sqr(l-r); }
-inline double cSsd(double l,double r) {return sqr(l-r); }
+inline double       cSsd(uchar l,uchar r) {return sqr(double(l)-double(r)); }
+inline double       cSsd(float l,float r) {return sqr(l-r); }
+inline double       cSsd(double l,double r) {return sqr(l-r); }
 
 template<class T,size_t S>
-double
-cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
+double              cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
 {
     FGASSERT(l.size() == r.size());
     double          acc = 0.0;
@@ -141,8 +130,7 @@ cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
     return acc;
 }
 template<class T>
-double
-cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
+double              cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
     double          acc = 0.0;
@@ -152,48 +140,41 @@ cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
 }
 
 template<class T>
-double
-cRms(Svec<T> const & v)                          // Root mean squared
-{return std::sqrt(cMag(v) / v.size()); }
-
+double              cRms(Svec<T> const & v) {return std::sqrt(cMag(v) / v.size()); }
 template<class T,size_t S>
-double
-cRms(Arr<T,S> const & a)
-{return cMag(a) / double(S); }
+double              cRms(Arr<T,S> const & a) {return cMag(a) / double(S); }
 
 // Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
 template<class T>
-inline T cMax(T x1,T x2) {return std::max(x1,x2); }
+T                   cMax(T x1,T x2) {return std::max(x1,x2); }
 template<class T> 
-inline T cMax(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
+T                   cMax(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
 template<class T> 
-inline T cMax(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
+T                   cMax(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
 template<class T>
-inline T cMin(T x1,T x2) {return std::min(x1,x2); }
+T                   cMin(T x1,T x2) {return std::min(x1,x2); }
 template<class T>
-inline T cMin(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
+T                   cMin(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
 
 template<class T,size_t S>
-inline T cMax(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
+T                   cMax(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
 template<class T,size_t S>
-inline T cMin(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
+T                   cMin(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
 template<typename T>
-T
-cMin(Svec<T> const & v)
+T                   cMin(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return *std::min_element(v.begin(),v.end());
 }
 template<class T>
-T
-cMax(Svec<T> const & v)
+T                   cMax(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return *std::max_element(v.begin(),v.end());
 }
 
 template<class T,size_t S>
-Arr<T,S> mapAbs(const Arr<T,S> & a)
+Arr<T,S>            mapAbs(const Arr<T,S> & a)
 {
     Arr<T,S>     ret;
     for (size_t ii=0; ii<S; ++ii)
@@ -202,25 +183,23 @@ Arr<T,S> mapAbs(const Arr<T,S> & a)
 }
 
 // Useful for min/max with different types:
-inline uint64 cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
-inline uint64 cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
+inline uint64       cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
+inline uint64       cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
 // Shorthand for limit values:
-inline uint constexpr   uintMax() {return std::numeric_limits<uint>::max(); };
-inline double constexpr epsilonD() {return std::numeric_limits<double>::epsilon(); }
-inline double constexpr  doubleMax() {return std::numeric_limits<double>::max(); }
-inline float constexpr  floatMax() {return std::numeric_limits<float>::max(); }
+uint constexpr      uintMax() {return std::numeric_limits<uint>::max(); };
+double constexpr    epsilonD() {return std::numeric_limits<double>::epsilon(); }
+double constexpr    doubleMax() {return std::numeric_limits<double>::max(); }
+float constexpr     floatMax() {return std::numeric_limits<float>::max(); }
 
 // 1D convolution with zero-value boundary handling (non-optimized):
-Doubles
-convolve(
+Doubles             convolve(
     Doubles const &         data,
     Doubles const &         kernel);    // Must be odd size with convolution centre in middle.
 
 // 1D Gaussian convolution for large kernels (direct sampled kernel)
 // with zero-value boundary handling:
-Doubles
-convolveGauss(
+Doubles             convolveGauss(
     Doubles const &         in,
     double                  stdev); // Kernel stdev relative to sample spacing.
 
@@ -229,26 +208,12 @@ convolveGauss(
 // Limit values of +/- 2 for very different values.
 // 'minAbs' is used as the minimum scale for determining relative difference
 // (important when one value may be very small or zero).
-inline
-double
-cRelDiff(double a,double b,double minAbs=epsilonD())
-{
-    double      del = b-a,
-                denom = std::abs(b)+std::abs(a);
-    if (denom == 0.0)
-        return 0.0;
-    else if (denom < minAbs)
-        denom = minAbs;
-    return del * 2.0 / denom;
-}
-
-Doubles
-cRelDiff(Doubles const & a,Doubles const & b,double minAbs=epsilonD());
+double              cRelDiff(double a,double b,double minAbs=epsilonD());
+Doubles             cRelDiff(Doubles const & a,Doubles const & b,double minAbs=epsilonD());
 
 // Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
 template<class T>
-Svec<Svec<T> >
-cSubsets(Svec<T> const & v,size_t min,size_t max)
+Svec<Svec<T> >      cSubsets(Svec<T> const & v,size_t min,size_t max)
 {
     Svec<Svec<T> >      ret;
     if (!v.empty() && (max>=min)) {
@@ -269,14 +234,14 @@ cSubsets(Svec<T> const & v,size_t min,size_t max)
     return ret;
 }
 
-Doubles         solveCubicReal(double c0,double c1,double c2);
+Doubles             solveCubicReal(double c0,double c1,double c2);
 // Z-order curve aka Lebesgue curve aka Morton number
 // interleave bits of v0,v1,v2 respectively right to left. Values must all be < 2^10.
-size_t          zorder(size_t v0,size_t v1,size_t v2);
-inline double   logistic(double x) {return 1.0 / (1.0 + exp(-x)); }     // Logistic function: x{R} -> (0,1)
-double          logit(double f);                                        // & inverse: f(0,1) -> R
-inline double   sigmoidq(double x) {return x / sqrt(1+sqr(x)); }        // signed quadratic sigmoid: x{R} -> (-1,1)
-double          sigmoidqInv(double f);                                  // & inverse: f(-1,1) -> R
+size_t              zorder(size_t v0,size_t v1,size_t v2);
+inline double       logistic(double x) {return 1.0 / (1.0 + exp(-x)); } // Logistic function: x{R} -> (0,1)
+double              logit(double f);                                    // & inverse: f(0,1) -> R
+inline double       sigmoidq(double x) {return x / sqrt(1+sqr(x)); }    // signed quadratic sigmoid: x{R} -> (-1,1)
+double              sigmoidqInv(double f);                              // & inverse: f(-1,1) -> R
 
 }
 

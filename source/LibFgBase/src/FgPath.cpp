@@ -16,14 +16,35 @@ using namespace std;
 
 namespace Fg {
 
-string
-fgDirSep()
-{
+char constexpr      otherDirSep8 =
 #ifdef _WIN32
-    return string("\\");
+    '/';
 #else
-    return string("/");
+    '\\';
 #endif
+char32_t constexpr  otherDirSep32 = 
+#ifdef _WIN32
+    U'/';
+#else
+    U'\\';
+#endif
+
+String              toNativeDirSep(String const & path)
+{
+    String          ret = path;
+    for (char & ch : ret)
+        if (ch == otherDirSep8)
+            ch = nativeDirSep8;
+    return ret;
+}
+
+String8             toNativeDirSep(String8 const & path)
+{
+    String32            ret = path.as_utf32();
+    for (char32_t & ch : ret)
+        if (ch == otherDirSep32)
+            ch = nativeDirSep32;
+    return String8{ret};
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
@@ -89,8 +110,7 @@ Path::Path(String8 const & pathUtf8)
     }
 }
 
-String8
-Path::str() const
+String8             Path::str() const
 {
     String8    ret = dir();
     ret += base;
@@ -99,20 +119,21 @@ Path::str() const
     return ret;
 }
 
-String8
-Path::dir(size_t n) const
+String8             Path::dir(size_t numDirs) const
 {
-    FGASSERT(n <= dirs.size());
-    String8    ret(drive);
+    FGASSERT(numDirs <= dirs.size());
+    String8         ret = drive;
     if (root)
-        ret += fgDirSep();
-    for (size_t ii=0; ii<n; ++ii)
-        ret += dirs[ii] + fgDirSep();
+        ret += nativeDirSep8;
+    for (size_t dd=0; dd<numDirs; ++dd) {
+        String8 const &     dir = dirs[dd];
+        ret += dir;
+        ret += nativeDirSep8;
+    }
     return ret;
 }
 
-String8
-Path::baseExt() const
+String8             Path::baseExt() const
 {
     String8        ret(base);
     if (!ext.empty())
@@ -120,8 +141,7 @@ Path::baseExt() const
     return ret;
 }
 
-Path
-Path::operator+(Path const &  rhs) const
+Path                Path::operator+(Path const &  rhs) const
 {
     FGASSERT((base.empty()) && (ext.empty()));      // lhs is directory only
     FGASSERT((rhs.drive.empty()) && (!rhs.root));   // rhs is relative path
@@ -132,15 +152,13 @@ Path::operator+(Path const &  rhs) const
             rhs.base,rhs.ext);
 }
 
-void
-Path::popDirs(uint n)
+void                Path::popDirs(uint n)
 {
     FGASSERT(n <= dirs.size());
     dirs.resize(dirs.size()-n);
 }
 
-Path
-pathFromDir(String8 const & directory)
+Path                pathFromDir(String8 const & directory)
 {
     Path      ret(directory);
     if (!ret.base.empty()) {
@@ -151,43 +169,30 @@ pathFromDir(String8 const & directory)
     return ret;
 }
 
-String8
-pathToBase(String8 const & f)
-{return Path(f).base; }
+String8             pathToBase(String8 const & f) {return Path(f).base; }
 
-String8
-pathToDirBase(String8 const & p)
-{return Path(p).dirBase(); }
+String8             pathToDirBase(String8 const & p) {return Path(p).dirBase(); }
 
-String8
-pathToExt(String8 const & p)
-{return Path(p).ext; }
+String8             pathToExt(String8 const & p) {return Path(p).ext; }
 
-std::string
-pathToExt(const std::string & p)
-{return pathToExt(String8(p)).m_str; }
+String              pathToExt(String const & p) {return pathToExt(String8(p)).m_str; }
 
-bool
-checkExt(String8 const & path,string const & ext)
+bool                checkExt(String8 const & path,String const & ext)
 {
     Path      p(path);
     return (p.ext.toLower() == toLower(ext));
 }
 
-String8
-setExt(String8 const & path,String const & ext)
+String8             setExt(String8 const & path,String const & ext)
 {
     Path            p {path};
     p.ext = ext;
     return p.str();
 }
 
-String8
-pathToName(String8 const & f)
-{return Path(f).baseExt(); }
+String8             pathToName(String8 const & f) {return Path(f).baseExt(); }
 
-String8
-asDirectory(String8 const & path)
+String8             asDirectory(String8 const & path)
 {
     String8        ret = path;
     if (path.empty())
@@ -203,12 +208,9 @@ asDirectory(String8 const & path)
     return ret;
 }
 
-string
-asDirectory(string const & path)
-{return asDirectory(String8(path)).m_str; }
+String              asDirectory(String const & path) {return asDirectory(String8(path)).m_str; }
 
-void
-testPath(CLArgs const &)
+void                testPath(CLArgs const &)
 {
     Path  p;
 

@@ -34,10 +34,16 @@ String8::as_wstring() const
 
 #endif
 
-String8&
-String8::operator+=(String8 const & s)
+String8 &           String8::operator+=(String8 const & rhs)
 {
-    m_str += s.m_str;
+    m_str += rhs.m_str;
+    return *this;
+}
+
+String8 &           String8::operator+=(char rhs)
+{
+    FGASSERT(uint(rhs) < 128U);     // must be ASCII
+    m_str += rhs;
     return *this;
 }
 

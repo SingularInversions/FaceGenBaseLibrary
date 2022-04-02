@@ -14,42 +14,24 @@ using namespace std;
 
 namespace Fg {
 
-string
-FgException::Context::trans() const
+void                FgException::addContext(std::string const & english,std::string const & data)
 {
-    if (dataUtf8.empty())
-        return fgTr(msg).m_str;
-    else
-        return (fgTr(msg) + " : " + dataUtf8).m_str;
+    // TODO: if current language is not english, look up translation for context:
+    contexts.emplace_back(english,"",data);
 }
 
-string
-FgException::Context::noTrans() const
+string              FgException::tr_message() const
 {
-    if (dataUtf8.empty())
-        return msg;
-    else
-        return msg + " : " + dataUtf8;
-}
-
-string
-FgException::tr_message() const
-{
-    Strings          strs;
-    // Translate and reverse order so most proximal message comes first:
-    for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
-        strs.push_back(it->trans());
-    return cat(strs,"\n");
-}
-
-string
-FgException::no_tr_message() const
-{
-    Strings          strs;
-    // Translate and reverse order so most proximal message comes first:
-    for (auto it=m_ct.rbegin(); it!=m_ct.rend(); ++it)
-        strs.push_back(it->noTrans());
-    return cat(strs,"\n");
+    string          ret;
+    for (Context const & ctxt : contexts) {
+        ret += ctxt.msgEnglish;
+        if (!ctxt.dataUtf8.empty())
+            ret += " :\n" + ctxt.dataUtf8;
+        if (!ctxt.msgNative.empty())
+            ret += "\n\n" + ctxt.msgNative + " : " + ctxt.dataUtf8;
+        ret += "\n\n";
+    }
+    return ret;
 }
 
 }

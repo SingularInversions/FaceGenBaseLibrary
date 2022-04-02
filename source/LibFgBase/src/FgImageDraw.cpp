@@ -136,7 +136,7 @@ void                drawFunction(
 void                drawFunctions(
     MatD const &   funcs)      // Columns are function values
 {
-    uint            dim = funcs.numRows(),
+    size_t          dim = funcs.numRows(),
                     num = funcs.numCols();
     FGASSERT((dim > 1) && (num > 0));
 

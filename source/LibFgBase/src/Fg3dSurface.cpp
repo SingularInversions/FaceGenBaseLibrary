@@ -16,13 +16,6 @@ using namespace std;
 
 namespace Fg {
 
-Vec3Fs              selectVerts(LabelledVerts const & labVerts,Strings const & labels)
-{
-    Vec3Fs          ret; ret.reserve(labels.size());
-    for (String const & lab : labels)
-        ret.push_back(findFirstByMember(labVerts,&LabelledVert::label,lab).pos);
-    return ret;
-}
 Vec3UI              getTriEquivalent(size_t tt,Vec3UIs const & tris,Vec4UIs const & quads)
 {
     if (tt < tris.size())
@@ -43,15 +36,15 @@ Vec3F               BaryPoint::pos(Vec3UIs const & tris,Vec4UIs const & quads,Ve
     Vec3UI              tri = getTriEquivalent(triEquivIdx,tris,quads);
     return interpolate(tri,weights,verts);
 }
-LabelledVerts       toLabelledVerts(
+NameVec3Fs          toNameVecs(
     SurfPoints const &  sps,
     Vec3UIs const &     tris,
     Vec4UIs const &     quads,
     Vec3Fs const &      verts)
 {
-    LabelledVerts       ret; ret.reserve(sps.size());
+    NameVec3Fs          ret; ret.reserve(sps.size());
     for (SurfPoint const & sp : sps)
-        ret.emplace_back(sp.point.pos(tris,quads,verts),sp.label);
+        ret.emplace_back(sp.label,sp.point.pos(tris,quads,verts));
     return ret;
 }
 
@@ -163,11 +156,11 @@ ostream &           operator<<(ostream & os,Surf const & surf)
         os << fgpop;
     return os;
 }
-LabelledVerts       surfPointsToLabelledVerts(Surfs const & surfs,Vec3Fs const & verts)
+NameVec3Fs          surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & verts)
 {
-    LabelledVerts       ret;
+    NameVec3Fs          ret;
     for (Surf const & surf : surfs)
-        cat_(ret,surf.surfPointsAsLabelledVerts(verts));
+        cat_(ret,surf.surfPointsAsNameVecs(verts));
     return ret;
 }
 Surfs               splitByUvDomain_(Surf const & surf,Vec2Fs & uvs)

@@ -26,9 +26,7 @@ static string       s_breadcrumb;
 static string       s_annotateTestDir;
 static bool         s_keepTempFiles = false;
 
-static
-string
-cmdStr(Cmd const & cmd)
+static string       cmdStr(Cmd const & cmd)
 {
     string          si = "\n        " + cmd.name;
     if (!cmd.description.empty()) {
@@ -39,8 +37,7 @@ cmdStr(Cmd const & cmd)
     return si;
 }
 
-void
-doMenu(
+void                doMenu(
     CLArgs              args,
     Cmds const &        cmdsUnsorted,
     bool                optionAll,
@@ -113,7 +110,7 @@ doMenu(
 
 static String8 s_rootTestDir;
 
-TestDir::TestDir(string const & name)
+TestDir::TestDir(String const & name)
 {
     FGASSERT(!name.empty());
     if (s_rootTestDir.empty()) {
@@ -147,12 +144,9 @@ TestDir::~TestDir()
     }
 }
 
-void
-fgSetRootTestDir(String8 const & dir)
-{ s_rootTestDir = dir; }
+void                fgSetRootTestDir(String8 const & dir) { s_rootTestDir = dir; }
 
-void
-copyFileToCurrentDir(string const & relPath)
+void                copyFileToCurrentDir(String const & relPath)
 {
     String8        name = pathToName(relPath);
     if (pathExists(name))
@@ -161,16 +155,13 @@ copyFileToCurrentDir(string const & relPath)
     fileCopy(source,name);
 }
 
-void
-runCmd(const CmdFunc & func,string const & argStr)
+void                runCmd(CmdFunc const & func,String const & argStr)
 {
     fgout << fgnl << argStr << " " << fgpush;
     func(splitChar(argStr));
     fgout << fgpop;
 }
 
-bool
-fgKeepTempFiles()
-{return s_keepTempFiles; }
+bool                fgKeepTempFiles() {return s_keepTempFiles; }
 
 }

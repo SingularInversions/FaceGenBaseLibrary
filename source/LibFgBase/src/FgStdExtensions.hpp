@@ -29,8 +29,7 @@ using Uptr = std::unique_ptr<T>;
 
 // A useful default:
 template<class T>
-std::ostream &
-operator<<(std::ostream & ss,std::shared_ptr<T> const & p)
+std::ostream &      operator<<(std::ostream & ss,std::shared_ptr<T> const & p)
 {
     if (p)
         return ss << *p;
@@ -40,23 +39,11 @@ operator<<(std::ostream & ss,std::shared_ptr<T> const & p)
 
 // Like C++17 std::data() but better named:
 template <class _Elem>
-static
-constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
+static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
 {return _Ilist.begin(); }
 
 template<class T,class U>
-Svec<U>
-lookupLs(Svec<std::pair<T,U>> const & table,T const & val)
-{
-    Svec<U>                 ret;
-    for (auto const & row : table)
-        if (row.first == val)
-            ret.push_back(row.second);
-    return ret;
-}
-template<class T,class U>
-Svec<T>
-lookupRs(Svec<std::pair<T,U>> const & table,U const & val)
+Svec<T>             lookupRs(Svec<std::pair<T,U>> const & table,U const & val)
 {
     Svec<T>                 ret;
     for (auto const & row : table)
@@ -65,8 +52,7 @@ lookupRs(Svec<std::pair<T,U>> const & table,U const & val)
     return ret;
 }
 template<class T,class U>
-Sizes
-lookupIndsL(Svec<std::pair<T,U>> const & table,T const & val)
+Sizes               lookupIndsL(Svec<std::pair<T,U>> const & table,T const & val)
 {
     Sizes               ret;
     for (size_t ii=0; ii<table.size(); ++ii)
@@ -75,8 +61,7 @@ lookupIndsL(Svec<std::pair<T,U>> const & table,T const & val)
     return ret;
 }
 template<class T,class U>
-Sizes
-lookupIndsR(Svec<std::pair<T,U>> const & table,U const & val)
+Sizes               lookupIndsR(Svec<std::pair<T,U>> const & table,U const & val)
 {
     Sizes               ret;
     for (size_t ii=0; ii<table.size(); ++ii)
@@ -87,8 +72,7 @@ lookupIndsR(Svec<std::pair<T,U>> const & table,U const & val)
 
 // Throws if not found:
 template<class T,class U>
-U const &
-lookupFirstL(Svec<std::pair<T,U>> const & table,T const & val)
+U const &           lookupFirstL(Svec<std::pair<T,U>> const & table,T const & val)
 {
     auto        it=table.begin();
     for (; it!=table.end(); ++it)
@@ -98,8 +82,7 @@ lookupFirstL(Svec<std::pair<T,U>> const & table,T const & val)
     return it->second;          // avoid warning
 }
 template<class T,class U>
-T const &
-lookupFirstR(Svec<std::pair<T,U>> const & table,U const & val)
+T const &           lookupFirstR(Svec<std::pair<T,U>> const & table,U const & val)
 {
     auto        it=table.begin();
     for (; it!=table.end(); ++it)
@@ -112,7 +95,7 @@ lookupFirstR(Svec<std::pair<T,U>> const & table,U const & val)
 typedef Svec<std::thread>   Threads;
 
 // Simple blocking thread dispatcher - limits running threads to hardware capacity.
-struct  ThreadDispatcher
+struct      ThreadDispatcher
 {
     ThreadDispatcher()
     {
@@ -121,20 +104,16 @@ struct  ThreadDispatcher
     }
     ~ThreadDispatcher() {finish(); }      // thread terminates if destructed before join()
 
-    void
-    dispatch(std::function<void()> const & fn);
-
-    void
-    finish();
+    void            dispatch(std::function<void()> const & fn);
+    void            finish();
 
 private:
-    Threads                 threads;
+    Threads         threads;
     // thread provides no non-blocking way if testing if it's done so use flags.
     // vector requires copyable which atomic is not so use shared pointer to flags.
     Svec<Sptr<std::atomic<bool>>>   dones;      // 1-1 with above
 
-    void
-    worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done)
+    void            worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done)
     {
         fn();
         done->store(true);

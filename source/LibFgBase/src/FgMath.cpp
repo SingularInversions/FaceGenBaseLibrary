@@ -16,8 +16,7 @@ namespace Fg {
 
 // Without a hardware nlz (number of leading zeros) instruction, this function has
 // to be iterative (C / C++ doesn't have any keyword for this operator):
-uint
-numLeadingZeros(uint32 x)
+uint                numLeadingZeros(uint32 x)
 {
    uint     n = 0;
    if (x == 0) return(32);
@@ -29,29 +28,24 @@ numLeadingZeros(uint32 x)
    return n;
 }
 
-
-uint8
-numNonzeroBits8(uint8 xx)
+uint8               numNonzeroBits8(uint8 xx)
 {
     return
         (xx & 1U) + (xx & 2U)/2 + (xx & 4U)/4 + (xx & 8U)/8 +
         (xx & 16U)/16 + (xx & 32U)/32 + (xx & 64U)/64 + (xx & 128U)/128;
 }
-uint16
-numNonzeroBits16(uint16 xx)
+uint16              numNonzeroBits16(uint16 xx)
 {
     return numNonzeroBits8(xx & 255) + numNonzeroBits8(xx >> 8);
 }
-uint
-numNonzeroBits32(uint32 xx)
+uint                numNonzeroBits32(uint32 xx)
 {
     return
         numNonzeroBits8(xx & 255) + numNonzeroBits8((xx >> 8) & 255) +
         numNonzeroBits8((xx >> 16) & 255) + numNonzeroBits8((xx >> 24));
 }
 
-uint
-log2Ceil(uint32 xx)
+uint                log2Ceil(uint32 xx)
 {
     uint    logFloor = log2Floor(xx);
     if (xx == (1u << logFloor))
@@ -63,13 +57,12 @@ log2Ceil(uint32 xx)
 // RETURNS: Between 1 and 3 real roots of the equation. Duplicate roots are returned in duplicate.
 // The cubic term co-efficient is assumed to be 1.0.
 // From Spiegel '99, Mathematical Handbook of Formulas and Tables.
-vector<double>
-solveCubicReal(
-    double      c0,         // constant term
-    double      c1,         // first order coefficient
-    double      c2)         // second order coefficient
+Doubles             solveCubicReal(
+    double          c0,         // constant term
+    double          c1,         // first order coefficient
+    double          c2)         // second order coefficient
 {
-    vector<double>  retval;
+    Doubles         retval;
 
     double      qq = (3.0 * c1 - sqr(c2)) / 9.0,
                 rr = (9.0 * c1 * c2 - 27.0 * c0 - 2.0 * cube(c2)) / 54.0,
@@ -96,14 +89,10 @@ solveCubicReal(
         retval.push_back(ss * cos(theta3 + 2.0 * pi() / 3.0) - c23);
         retval.push_back(ss * cos(theta3 - 2.0 * pi() / 3.0) - c23);
     }
-
     return retval;
 }
 
-vector<double>
-convolve(
-    const vector<double> &     data,
-    const vector<double> &     kernel)
+Doubles             convolve(Doubles const & data,Doubles const & kernel)
 {
     FGASSERT(data.size() * kernel.size() > 0);
     FGASSERT((kernel.size() % 2) == 1);
@@ -119,10 +108,7 @@ convolve(
     return ret;
 }
 
-vector<double>
-convolveGauss(
-    const std::vector<double> &     in,
-    double                          stdev)
+Doubles             convolveGauss(Doubles const & in,double stdev)
 {
     FGASSERT(stdev > 0.0);
     // Create kernel w/ 6 stdevs on each side for double since this is 2 parts in 1B:
@@ -141,10 +127,20 @@ convolveGauss(
     return convolve(in,kernel);
 }
 
-vector<double>
-cRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
+double              cRelDiff(double a,double b,double minAbs)
 {
-    vector<double>      ret;
+    double      del = b-a,
+                denom = std::abs(b)+std::abs(a);
+    if (denom == 0.0)
+        return 0.0;
+    else if (denom < minAbs)
+        denom = minAbs;
+    return del * 2.0 / denom;
+}
+
+Doubles             cRelDiff(Doubles const & a,Doubles const & b,double minAbs)
+{
+    Doubles         ret;
     FGASSERT(a.size() == b.size());
     ret.resize(a.size());
     for (size_t ii=0; ii<a.size(); ++ii)
@@ -152,8 +148,7 @@ cRelDiff(const vector<double> & a,const vector<double> & b,double minAbs)
     return ret;
 }
 
-size_t
-zorder(size_t v0,size_t v1,size_t v2)
+size_t              zorder(size_t v0,size_t v1,size_t v2)
 {
     size_t          ret = 0;
     for (size_t ii=0; ii<10; ++ii) {
@@ -166,8 +161,7 @@ zorder(size_t v0,size_t v1,size_t v2)
     return ret;
 }
 
-static void
-testZorder()
+static void         testZorder()
 {
     size_t      v0 = 0x01,
                 v1 = 0x02,
@@ -190,8 +184,7 @@ double          sigmoidqInv(double f)
 }
 
 // Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).
-static void
-testFgRand()
+static void         testFgRand()
 {
     randSeedRepeatable();
     const uint      numSamples = 1000000;
@@ -214,8 +207,7 @@ testFgRand()
     FGASSERT(std::abs(rms * 3.0 - 1.0) < 0.01);
 }
 
-void
-testMath(CLArgs const &)
+void                testMath(CLArgs const &)
 {
     PushIndent       op("Testing rand");
     testFgRand();
@@ -254,7 +246,7 @@ typedef union
     struct {int32_t  lo,hi;} asInt;
 }  FgExpFast;
 
-double expFast(double x)
+double              expFast(double x)
 {
     x *=  1.4426950408889634074;        // Convert to base 2 exponent
     double      ipart = floor(x+0.5),

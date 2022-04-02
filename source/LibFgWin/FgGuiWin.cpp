@@ -41,14 +41,14 @@ namespace Fg {
 
 GuiWinStatics s_guiWin;
 
-struct  GuiWinMain : GuiMainBase
+struct      GuiWinMain : GuiMainBase
 {
     NPTF<String8>           titleNF;
     String8                 m_store;            // Base filename for state storage
     GuiImplPtr              m_win;
     Vec2UI                  m_size;             // Current size of client area (including maximization)
     Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
-    Svec<Sfun<void()>>     eventHandlers;      // Respective event handlers
+    Svec<Sfun<void()>>      eventHandlers;      // Respective event handlers
     Svec<GuiKeyHandle>      keyHandlers;
     function<void()>        onUpdate;           // Run on each screen update
 
@@ -75,8 +75,7 @@ struct  GuiWinMain : GuiMainBase
         }
     }
 */
-    void
-    updateGui() const
+    void                updateGui() const
     {
     //fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
         if (titleNF.checkUpdate()) {
@@ -88,8 +87,7 @@ struct  GuiWinMain : GuiMainBase
     //fgout << fgnl << "SendMessage returned: " << ret << flush;
     }
 
-    void
-    start()
+    void                start(Vec2I defaultSize)
     {
         // startTime = getTimeMs();
         // Load common controls DLL:
@@ -98,12 +96,14 @@ struct  GuiWinMain : GuiMainBase
         icc.dwICC = ICC_BAR_CLASSES;
         InitCommonControlsEx(&icc);
 
-        // Retrieve previously saved window state if present and valid:
         // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
         // col vec 1 is size. Windows screen coordinates:
         // x - right, y - down, origin - upper left corner of MAIN screen.
-        Mat22I          posDims {CW_USEDEFAULT,1400,CW_USEDEFAULT,900},
+        // CW_USEDEFAULT doesn't pick the centre of the screen(s) because Microsoft.
+        // TODO: use GetSystemMetrics(SM_CXSCREEN) to figure out screen size ... but multi-screens ...
+        Mat22I          posDims {CW_USEDEFAULT,defaultSize[0],CW_USEDEFAULT,defaultSize[1]},
                         pdTmp;
+        // Retrieve previously saved window state if present and valid:
         if (loadBsaXml(m_store+"Dims.xml",pdTmp,false)) {
             Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
             Vec2I    pdMin = Vec2I(m_win->getMinSize());
@@ -214,8 +214,7 @@ struct  GuiWinMain : GuiMainBase
         }
     }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         LRESULT         ret = 0;
         Timer           timer;
@@ -308,8 +307,7 @@ struct  GuiWinMain : GuiMainBase
     }
 };
 
-void
-guiStartImpl(
+void                guiStartImpl(
     NPT<String8>                titleN,
     GuiPtr                      gui,
     String8 const &             store,
@@ -334,12 +332,11 @@ guiStartImpl(
     win.keyHandlers = options.keyHandlers;
     win.onUpdate = options.onUpdate;
     s_guiWin.guiMainPtr = &win;
-    win.start();
+    win.start(options.defaultSize);
     s_guiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
 }
 
-Vec2I
-winScreenPos(HWND hwnd,LPARAM lParam)
+Vec2I               winScreenPos(HWND hwnd,LPARAM lParam)
 {
     POINT       coord;
     coord.x = GET_X_LPARAM(lParam);
@@ -348,8 +345,7 @@ winScreenPos(HWND hwnd,LPARAM lParam)
     return Vec2I(coord.x,coord.y);
 }
 
-Vec2UI
-winNcSize(HWND hwnd)
+Vec2UI              winNcSize(HWND hwnd)
 {
     // Calculate how much space Windows is taking for the NC area.
     // I was unable to get similar values using GetSystemMetrics (eg. for
@@ -364,18 +360,11 @@ winNcSize(HWND hwnd)
             (rectW.bottom-rectW.top)-(rectC.bottom-rectC.top));
 }
 
-LRESULT
-winCallCatch(std::function<LRESULT(void)> func,string const & className)
+LRESULT             winCallCatch(std::function<LRESULT(void)> func,string const & className)
 {
     String8         msg;
-    try
-    {
-        return func();
-    }
-    catch(FgException const & e)
-    {
-        msg = e.no_tr_message() + "\nFgException";
-    }
+    try {return func(); }
+    catch(FgException const & e) {msg = e.tr_message(); }   // ends with two CRLFs
     catch(std::bad_alloc const &)
     {
         msg = "OUT OF MEMORY";
@@ -383,47 +372,38 @@ winCallCatch(std::function<LRESULT(void)> func,string const & className)
         if (fg64bitOS())
             msg += " (install 64-bit version if possible)";
 #endif
+        msg += "\n\n";
     }
-    catch(std::exception const & e)
+    catch(std::exception const & e) {msg = String8(e.what()) + "\n\n"; }
+    catch(...) { msg = "Unknown exception\n\n"; }
+    msg += "While running winCallCatch for " + className;
+    auto            diagnosticFn = [&]()
     {
-        msg = String8(e.what()) + "\nstd::exception";
-    }
-    catch(...)
-    {
-        msg = "Unknown exception";
-    }
-    msg += " (winCallCatch) " + className;
-    String8         caption = "ERROR";
-    bool            errorSent = false;
-    if (g_guiDiagHandler.reportError) {
-        try {
-            errorSent = g_guiDiagHandler.reportError(msg);
+        if (g_guiDiagHandler.reportError) {
+            try {g_guiDiagHandler.reportError(msg); }
+            catch(...) {}
         }
-        catch(...)
-        {}
-    }
-    if (errorSent)
-        guiDialogMessage(caption,msg);
-    else
-        guiDialogMessage(caption,g_guiDiagHandler.reportFailMsg+"\n"+msg);
+    };
+    thread          diagThread {diagnosticFn};
+    String8         caption = "ERROR in " + g_guiDiagHandler.appNameVerBits;
+    guiDialogMessage(caption,msg);
+    diagThread.join();
     return LRESULT(0);
 }
 
-void winUpdateScreen()
+void                winUpdateScreen()
 {
     s_guiWin.guiMainPtr->updateGui();
 }
 
-void
-guiQuit()
+void                guiQuit()
 {
     // When a WM_CLOSE message is generated by the user clicking the close 'X' button,
     // the default (DefWindowProc) is to do this, which generates a WM_DESTROY:
     DestroyWindow(s_guiWin.hwndMain);
 }
 
-void
-guiBusyCursor()
+void                guiBusyCursor()
 {
     SetCursor(LoadCursorW(NULL,IDC_WAIT));
 }

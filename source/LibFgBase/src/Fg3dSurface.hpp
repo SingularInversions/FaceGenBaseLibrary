@@ -15,21 +15,6 @@
 
 namespace Fg {
 
-struct  LabelledVert
-{
-    Vec3F       pos;
-    String      label;
-
-    LabelledVert() {}
-    LabelledVert(Vec3F const & p,String const & l) : pos{p}, label{l} {}
-
-    bool        operator==(String const & l) const {return (label == l); }    // simplify lookup
-};
-typedef Svec<LabelledVert>  LabelledVerts;
-
-// Returns the vertices with the selected labels in that order. Throws if any are not found.
-Vec3Fs              selectVerts(LabelledVerts const & labVerts,Strings const & labels);
-
 template<typename T,typename F,FG_ENABLE_IF(F,is_floating_point)>
 T                   interpolate(        // barycentric coordinate interpolation
     Vec3UI              tri,            // triangle vertex indices into 'vals'
@@ -60,7 +45,7 @@ struct  SurfPoint
     BaryPoint       point;
     // for left/right surface points on saggitally symmetric meshes, this label should end in
     // the character L or R, which will be automatically swapped if the mesh is mirrored:
-    String          label;          // Optional
+    String          label;          // Can be empty
 
     SurfPoint() {}
     SurfPoint(BaryPoint const & p,String const & l) : point{p}, label{l} {}
@@ -71,7 +56,7 @@ struct  SurfPoint
 };
 typedef Svec<SurfPoint>     SurfPoints;
 
-LabelledVerts       toLabelledVerts(
+NameVec3Fs          toNameVecs(
     SurfPoints const &  sps,
     Vec3UIs const &     tris,
     Vec4UIs const &     quads,
@@ -185,15 +170,14 @@ struct  Surf
     Vec3F           surfPointPos(Vec3Fs const & verts,size_t surfPointIdx) const;
     Vec3F           surfPointPos(Vec3Fs const & verts,String const & label) const;
     Vec3Fs          surfPointPositions(Vec3Fs const & verts) const;
-    LabelledVerts   surfPointsAsLabelledVerts(Vec3Fs const & verts) const
-                    {return toLabelledVerts(surfPoints,tris.vertInds,quads.vertInds,verts); }
+    NameVec3Fs      surfPointsAsNameVecs(Vec3Fs const & verts) const
+                    {return toNameVecs(surfPoints,tris.vertInds,quads.vertInds,verts); }
     Surf            convertToTris() const {return Surf {name,getTriEquivs(),surfPoints,material}; }
     void            merge(Tris const &,Quads const &,SurfPoints const &);
     void            merge(Surf const & s) {merge(s.tris,s.quads,s.surfPoints); }
     void            checkMeshConsistency(uint maxCoordIdx,uint maxUvIdx) const;
     // Return a surface with all indices offset by the given amounts:
-    Surf
-    offsetIndices(size_t vertsOffset,size_t uvsOffset) const
+    Surf            offsetIndices(size_t vertsOffset,size_t uvsOffset) const
     {
         Surf ret(*this);
         ret.tris.offsetIndices(vertsOffset,uvsOffset);
@@ -203,8 +187,7 @@ struct  Surf
     // Useful for searching by name:
     bool            operator==(String8 const & str) const {return (name == str); }
     void            setAlbedoMap(ImgRgba8 const & img) {material.albedoMap = std::make_shared<ImgRgba8>(img); }
-    ImgRgba8 &
-    albedoMapRef()
+    ImgRgba8 &      albedoMapRef()
     {
         if (!material.albedoMap)
             material.albedoMap = std::make_shared<ImgRgba8>();
@@ -213,8 +196,7 @@ struct  Surf
     void            removeTri(size_t triIdx);
     void            removeQuad(size_t quadIdx);
 private:
-    void
-    checkInternalConsistency();
+    void            checkInternalConsistency();
 };
 
 void            fgReadp(std::istream &,Surf &);
@@ -225,7 +207,7 @@ std::ostream& operator<<(std::ostream&,Surf const&);
 typedef Svec<Surf>      Surfs;
 typedef Svec<Surfs>     Surfss;
 
-LabelledVerts   surfPointsToLabelledVerts(Surfs const & surfs,Vec3Fs const & verts);
+NameVec3Fs      surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & verts);
 // Only preserves name and polygons. Splits into <name>-## surfaces for each occupied UV domain and
 // modifies the UVs to be in [0,1]. If domains are not used, just returns the input surface:
 Surfs           splitByUvDomain_(Surf const & surf,Vec2Fs & uvs);
@@ -255,11 +237,10 @@ ImgRgba8        cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UI
 
 struct  FacetNormals
 {
-    Vec3Fs               tri;        // Tri facet normals for a surface
-    Vec3Fs               quad;       // Quad facet normals for a surface
+    Vec3Fs              tri;        // Tri facet normals for a surface
+    Vec3Fs              quad;       // Quad facet normals for a surface
 
-    Vec3F
-    triEquiv(size_t idx) const
+    Vec3F               triEquiv(size_t idx) const
     {
         if (idx < tri.size())
             return tri[idx];
@@ -295,9 +276,7 @@ struct  TriSurf
     Vec3Fs          verts;
     Vec3UIs         tris;
 
-    bool
-    hasUnusedVerts() const
-    {return Fg::hasUnusedVerts(tris,verts); }
+    bool            hasUnusedVerts() const {return Fg::hasUnusedVerts(tris,verts); }
 };
 struct      TriSurfD
 {
@@ -305,18 +284,17 @@ struct      TriSurfD
     Vec3UIs                 tris;
 };
 
-inline TriSurf  reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
-TriSurf         removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
-inline TriSurf  removeUnusedVerts(TriSurf const & ts) {return removeUnusedVerts(ts.verts,ts.tris); }
-MeshNormals     cNormals(Surfs const & surfs,Vec3Fs const & verts);
+inline TriSurf      reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
+TriSurf             removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
+inline TriSurf      removeUnusedVerts(TriSurf const & ts) {return removeUnusedVerts(ts.verts,ts.tris); }
+MeshNormals         cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
-struct      TriSurfFids
+struct      TriSurfLms
 {
     TriSurf         surf;
-    Vec3Fs          fids;   // When it's handy to have landmark points explicitly separate from surface
+    Vec3Fs          landmarks;
 };
-
-typedef Svec<TriSurfFids>   TriSurfFidss;
+typedef Svec<TriSurfLms>   TriSurfLmss;
 
 struct      QuadSurf
 {

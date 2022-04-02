@@ -227,7 +227,6 @@
     <ClInclude Include="..\src\FgDynLib.h" />
     <ClCompile Include="..\src\FgException.cpp" />
     <ClInclude Include="..\src\FgException.hpp" />
-    <ClCompile Include="..\src\FgExceptionTest.cpp" />
     <ClCompile Include="..\src\FgFileSystem.cpp" />
     <ClInclude Include="..\src\FgFileSystem.hpp" />
     <ClCompile Include="..\src\FgFileSystemTest.cpp" />

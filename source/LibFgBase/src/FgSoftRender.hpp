@@ -55,8 +55,7 @@ struct  RenderXform
     RenderXform(SimilarityD const & s,AffineEw2D const & a) : modelview(s), itcsToIucs(a) {}
 };
 
-inline RenderXform
-interpolate(RenderXform const & rx0,RenderXform const & rx1,double val)
+inline RenderXform  interpolate(RenderXform const & rx0,RenderXform const & rx1,double val)
 {
     return RenderXform {
         interpolateAsModelview(rx0.modelview,rx1.modelview,val),
@@ -64,8 +63,7 @@ interpolate(RenderXform const & rx0,RenderXform const & rx1,double val)
     };
 }
 
-ImgRgba8
-renderSoft(
+ImgRgba8            renderSoft(
     Vec2UI                  pixelSize,
     Meshes const &          meshes,
     SimilarityD             meshToOecs,     // aka Modelview
@@ -74,21 +72,26 @@ renderSoft(
     AffineEw2D              itcsToIucs,
     RenderOptions const &   options=RenderOptions());
 
-inline
-ImgRgba8
-renderSoft(
-    Vec2UI pixelSize,Meshes const & meshes,RenderXform const & transform,RenderOptions const & options=RenderOptions())
-{return renderSoft(pixelSize,meshes,transform.modelview,transform.itcsToIucs,options); }
+inline ImgRgba8     renderSoft(
+    Vec2UI              pixelSize,
+    Meshes const &      meshes,
+    RenderXform const & transform,
+    RenderOptions const & options=RenderOptions())
+{
+    return renderSoft(pixelSize,meshes,transform.modelview,transform.itcsToIucs,options);
+}
 
-inline
-ImgRgba8
-renderSoft(
-    Vec2UI pixelSize,Meshes const & meshes,Camera const & camera,RenderOptions const & options=RenderOptions())
-{return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,options); }
+inline ImgRgba8     renderSoft(
+    Vec2UI              pixelSize,
+    Meshes const &      meshes,
+    Camera const &      camera,
+    RenderOptions const & options=RenderOptions())
+{
+    return renderSoft(pixelSize,meshes,camera.modelview,camera.itcsToIucs,options);
+}
 
 // Render with default camera:
-ImgRgba8
-renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor);
+ImgRgba8            renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor);
 
 #endif
 
