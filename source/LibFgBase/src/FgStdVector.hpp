@@ -999,7 +999,8 @@ Ptrs<U>             sliceMemberVP(Svec<T> const & vs,U T::*m)
     return ret;
 }
 // Transpose a vector of vectors just like Python 'zip' on lists.
-// All sub-vectors must have the same size():
+// All sub-vectors must have the same size().
+// This function is an involution when both sizes are non-zero.
 template<class T>
 Svec<Svec<T>>       transpose(Svec<Svec<T>> const & v)
 {

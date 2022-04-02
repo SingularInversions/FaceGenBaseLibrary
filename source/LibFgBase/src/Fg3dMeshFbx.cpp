@@ -518,12 +518,11 @@ Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
     ifs.seekg(endOffset);
     return ret;
 }
-void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
+void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,bool use64,String & out)
 {
-    String const        sentinel (13,'\0');
+    String const        sentinel = use64 ? String(25,'\0') : String(13,'\0');
     RecordRaw const &   rec = *recPtr;
     size_t              offsetIdx = out.size();
-    srlzRaw_(scast<uint32>(rec.endOffset),out);
     String              plOut;
     for (Property const & prop : rec.propertyList) {
         char                type = prop.typeChar;
@@ -563,13 +562,21 @@ void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,String & out)
         else
             FGASSERT_FALSE;
     }
-    srlzRaw_(scast<uint32>(rec.numProperties),out);
-    srlzRaw_(uint32(plOut.size()),out);
+    if (use64) {
+        srlzRaw_(scast<uint64>(rec.endOffset),out);
+        srlzRaw_(scast<uint64>(rec.numProperties),out);
+        srlzRaw_(scast<uint64>(plOut.size()),out);
+    }
+    else {
+        srlzRaw_(scast<uint32>(rec.endOffset),out);
+        srlzRaw_(scast<uint32>(rec.numProperties),out);
+        srlzRaw_(scast<uint32>(plOut.size()),out);
+    }
     srlzRaw_(uchar(rec.name.size()),out);
     out += rec.name;
     out += plOut;
     for (auto const & record : rec.subs)
-        writeBinRecord_(record,out);
+        writeBinRecord_(record,use64,out);
     // sentinels only for non-empty record lists (although some implementations occasionally
     // insert a sentinel for an empty list, I think just at the first sub-level):
     if (!rec.subs.empty())
@@ -720,6 +727,10 @@ struct      FbxBin
     uint32                  version;
     Svec<Sptr<RecordRaw>>   records;
     String                  footer;     // includes the null record at end
+
+    // v7.5 introduced 64-bit file support in 2016:
+    bool                    use64() const {return (version >= 7500); }
+    String                  sentinel() const {return use64() ? String (25,'\0') : String (13,'\0'); }
 };
 
 FbxBin              loadFbxBinRaw(String8 const & filename)
@@ -730,10 +741,9 @@ FbxBin              loadFbxBinRaw(String8 const & filename)
     if (!beginsWith(ret.header,"Kaydara FBX Binary"))
         fgThrow("file is not a Kaydara FBX binary",filename);
     ret.version = ifs.readb<uint32>();
-    bool            use64 = (ret.version >= 7500);      // 7.5 and later (2016) use 64-bit counts in header
     FG_DIAG(fgout << fgnl << "Version: " << ret.version;)
     // the top level is just a NestedList of records with no header:
-    while(Sptr<RecordRaw> rp = readBinRecord(ifs,use64))    // will return null ptr for terminating null record
+    while(Sptr<RecordRaw> rp = readBinRecord(ifs,ret.use64())) // will return null ptr for terminating null record
         ret.records.push_back(rp);
     for (;;) {
         char        ch = ifs.readb<char>();
@@ -747,12 +757,11 @@ FbxBin              loadFbxBinRaw(String8 const & filename)
 
 void                saveFbxBinRaw(String8 const & filename,FbxBin const & fbx)
 {
-    String const        sentinel (13,'\0');
     String              blob = fbx.header;
     srlzRaw_(fbx.version,blob);
     for (auto const & record : fbx.records)
-        writeBinRecord_(record,blob);
-    blob += sentinel;
+        writeBinRecord_(record,fbx.use64(),blob);
+    blob += fbx.sentinel();
     blob += fbx.footer;
     saveRaw(blob,filename,false);
 }
