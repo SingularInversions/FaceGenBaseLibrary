@@ -76,7 +76,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibJpegIjg6b\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -99,7 +99,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibJpegIjg6b\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -120,7 +120,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibJpegIjg6b\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -145,7 +145,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibJpegIjg6b\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_67_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -279,7 +279,6 @@
     <ClCompile Include="..\src\FgImageTest.cpp" />
     <ClCompile Include="..\src\FgImgDisplay.cpp" />
     <ClInclude Include="..\src\FgImgDisplay.hpp" />
-    <ClCompile Include="..\src\FgImgJpeg.cpp" />
     <ClInclude Include="..\src\FgIter.hpp" />
     <ClCompile Include="..\src\FgKdTree.cpp" />
     <ClInclude Include="..\src\FgKdTree.hpp" />
@@ -365,8 +364,6 @@
     <ClInclude Include="..\src\FgTypes.hpp" />
     <ClInclude Include="..\src\FgVersion.hpp" />
     <ClInclude Include="..\src\FgWinSpecific.hpp" />
-    <ClCompile Include="..\src\jpeg_mem_dest.cpp" />
-    <ClCompile Include="..\src\jpeg_mem_src.cpp" />
     <ClInclude Include="..\src\json.hpp" />
     <ClCompile Include="..\src\MurmurHash2.cpp" />
     <ClInclude Include="..\src\MurmurHash2.h" />

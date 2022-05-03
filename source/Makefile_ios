@@ -1,10 +1,8 @@
 OUTDIR = ../build_ios/
 .PHONY: all FORCE clean
-all: $(OUTDIR)LibTpBoost.a $(OUTDIR)LibJpegIjg6b.a $(OUTDIR)LibFgBase.a 
+all: $(OUTDIR)LibTpBoost.a $(OUTDIR)LibFgBase.a 
 $(OUTDIR)LibTpBoost.a: $(OUTDIR)x64/clang/release/LibTpBoost.a $(OUTDIR)armv7/clang/release/LibTpBoost.a $(OUTDIR)arm8_0/clang/release/LibTpBoost.a $(OUTDIR)arm8_3/clang/release/LibTpBoost.a
 	xcrun -sdk iphoneos lipo -create -output $(OUTDIR)LibTpBoost.a $(OUTDIR)x64/clang/release/LibTpBoost.a $(OUTDIR)armv7/clang/release/LibTpBoost.a $(OUTDIR)arm8_0/clang/release/LibTpBoost.a $(OUTDIR)arm8_3/clang/release/LibTpBoost.a
-$(OUTDIR)LibJpegIjg6b.a: $(OUTDIR)x64/clang/release/LibJpegIjg6b.a $(OUTDIR)armv7/clang/release/LibJpegIjg6b.a $(OUTDIR)arm8_0/clang/release/LibJpegIjg6b.a $(OUTDIR)arm8_3/clang/release/LibJpegIjg6b.a
-	xcrun -sdk iphoneos lipo -create -output $(OUTDIR)LibJpegIjg6b.a $(OUTDIR)x64/clang/release/LibJpegIjg6b.a $(OUTDIR)armv7/clang/release/LibJpegIjg6b.a $(OUTDIR)arm8_0/clang/release/LibJpegIjg6b.a $(OUTDIR)arm8_3/clang/release/LibJpegIjg6b.a
 $(OUTDIR)LibFgBase.a: $(OUTDIR)x64/clang/release/LibFgBase.a $(OUTDIR)armv7/clang/release/LibFgBase.a $(OUTDIR)arm8_0/clang/release/LibFgBase.a $(OUTDIR)arm8_3/clang/release/LibFgBase.a
 	xcrun -sdk iphoneos lipo -create -output $(OUTDIR)LibFgBase.a $(OUTDIR)x64/clang/release/LibFgBase.a $(OUTDIR)armv7/clang/release/LibFgBase.a $(OUTDIR)arm8_0/clang/release/LibFgBase.a $(OUTDIR)arm8_3/clang/release/LibFgBase.a
 $(OUTDIR)x64/clang/release/%.a: FORCE

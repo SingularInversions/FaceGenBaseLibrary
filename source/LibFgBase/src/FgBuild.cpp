@@ -528,15 +528,6 @@ ConsSolution        getConsData(ConsType type)
     boost.warn = 2;
     ret.projects.push_back(boost);
 
-    // This library is set up such that you run a config script to adapt the source code to
-    // the platform (eg. generate config.h and remove other-platform .c files). So a bit of work
-    // is required to make it properly source-compatible cross-platform:
-    ConsProj      jpeg("LibJpegIjg6b","");
-    jpeg.addSrcDir("");
-    jpeg.addIncDir("",true);
-    jpeg.warn = 2;
-    ret.projects.push_back(jpeg);
-
     ConsProj      eigen("LibTpEigen","");
     eigen.addIncDir("","Eigen/",true);
     ret.projects.push_back(eigen);
@@ -552,7 +543,6 @@ ConsSolution        getConsData(ConsType type)
         base.addSrcDir("nix/");
     base.addDep(boost.name,true);
     base.addDep(stb.name,false);
-    base.addDep(jpeg.name,false);
     base.addDep(eigen.name,false);
     ret.projects.push_back(base);
 

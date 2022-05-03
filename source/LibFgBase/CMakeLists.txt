@@ -14,7 +14,6 @@ add_library(LibFgBase STATIC ${SOURCES} ${UNIXSOURCES})
 
 target_link_libraries(LibFgBase
 	PUBLIC LibTpBoost
-	PUBLIC LibJpegIjg6b
 	PRIVATE LibTpStb
 	PRIVATE LibTpEigen)
 

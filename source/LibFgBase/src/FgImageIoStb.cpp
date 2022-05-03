@@ -9,6 +9,8 @@
 #include "FgImageIo.hpp"
 #include "FgFileSystem.hpp"
 #include "FgStdio.hpp"
+#include "FgCommand.hpp"
+#include "FgImgDisplay.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -106,6 +108,47 @@ void                saveJfif(ImgRgba8 const & img,String8 const & fname,uint qua
         fgThrow("STB JFIF image write error",fname);
 }
 
+static void         writeToMem(void * context,void * data,int size)
+{
+    Uchars *            buffPtr = reinterpret_cast<Uchars*>(context);
+    Uchars &            buff = *buffPtr;
+    size_t              off = buff.size();
+    buff.resize(off+size);
+    memcpy(&buff[off],data,size);
+};
+
+Uchars              encodeJpeg(uint w,uint h,uchar const * data,int quality)
+{
+    int                 wid = w,
+                        hgt = h;
+    Uchars              ret;
+    int                 stbRet = stbi_write_jpg_to_func(writeToMem,&ret,wid,hgt,4,data,quality);
+    if (stbRet == 0)
+        fgThrow("STB jpeg encoding error");
+    return ret;
+}
+
+Uchars              encodeJpeg(ImgRgba8 const & img,int quality)
+{
+    return encodeJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],quality);
+}
+
+ImgRgba8            decodeJpeg(Uchars const & jfifBlob)
+{
+    int                 width,height,channels;
+    uchar *             data = nullptr;
+    // require 4 channels:
+    data = stbi_load_from_memory(&jfifBlob[0],scast<int>(jfifBlob.size()),&width,&height,&channels,4);
+    if (data == nullptr) {
+        string          reason(stbi__g_failure_reason);
+        fgThrow("STB unable to decode JFIF blob",reason);
+    }
+    StbiFree            sf {data};
+    FGASSERT((width > 0) && (height > 0));
+    Vec2UI              dims {scast<uint>(width),scast<uint>(height)};
+    return ImgRgba8 {dims,reinterpret_cast<Rgba8*>(data)};
+}
+
 String              zlibInflate(String const & compressed,size_t sz)
 {
     String          ret (sz,' ');
@@ -113,6 +156,18 @@ String              zlibInflate(String const & compressed,size_t sz)
         &ret[0],int(sz),compressed.data(),int(compressed.size()));
     FGASSERT(rc == int(sz));
     return ret;
+}
+
+void                testDecodeJfif(CLArgs const &)
+{
+    String8             pathBase = dataDir() + "base/Mandrill512";
+    String              blob = loadRaw(pathBase+".jpg");
+    Uchars              ub; ub.reserve(blob.size());
+    for (char ch : blob)
+        ub.push_back(scast<uchar>(ch));
+    ImgRgba8            tst = decodeJpeg(ub),
+                        ref = loadImage(pathBase+"-jpeg.png");  // baseline jpg encoding using STB on windows
+    FGASSERT(isApproxEqual(tst,ref,3U));
 }
 
 }

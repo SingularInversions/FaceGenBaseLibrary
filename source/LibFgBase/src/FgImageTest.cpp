@@ -139,8 +139,8 @@ void                testDecodeJpeg(CLArgs const &)
     Uchars              ub; ub.reserve(blob.size());
     for (char ch : blob)
         ub.push_back(scast<uchar>(ch));
-    ImgRgba8            tst = decodeJpeg(ub),           // uses IJG LibJpeg
-                        ref = loadImage(imgFile);       // uses STB
+    ImgRgba8            tst = decodeJpeg(ub),
+                        ref = loadImage(imgFile);
     FGASSERT(isApproxEqual(tst,ref,3U));
 }
 
@@ -174,12 +174,15 @@ void                testmImage(CLArgs const & args)
     doMenu(args,cmds);
 }
 
+void                testDecodeJfif(CLArgs const &);
+
 void                testImage(CLArgs const & args)
 {
     Cmds                cmds {
         {testBlerp,"blerp","bilinear interpolation"},
         {testComposite,"composite"},
         {testConvolve,"conv"},
+        {testDecodeJfif,"jfif"},
         {testDecodeJpeg,"jpg"},
         {testTransform,"xf"},
     };

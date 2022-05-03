@@ -103,139 +103,13 @@ $(ODIRLibTpBoost)libs_serialization_src_xml_woarchive.o: $(SDIRLibTpBoost)libs/s
 	$(CXX) -o $(ODIRLibTpBoost)libs_serialization_src_xml_woarchive.o -c $(CXXFLAGS) $(FLAGSLibTpBoost) $(SDIRLibTpBoost)libs/serialization/src/xml_woarchive.cpp
 $(ODIRLibTpBoost)libs_system_src_error_code.o: $(SDIRLibTpBoost)libs/system/src/error_code.cpp $(INCSLibTpBoost)
 	$(CXX) -o $(ODIRLibTpBoost)libs_system_src_error_code.o -c $(CXXFLAGS) $(FLAGSLibTpBoost) $(SDIRLibTpBoost)libs/system/src/error_code.cpp
-FLAGSLibJpegIjg6b =  -w -isystem LibJpegIjg6b/
-SDIRLibJpegIjg6b = LibJpegIjg6b/
-ODIRLibJpegIjg6b = $(BUILDIR)LibJpegIjg6b/
-$(shell mkdir -p $(ODIRLibJpegIjg6b))
-INCSLibJpegIjg6b := $(wildcard LibJpegIjg6b/*.hpp) 
-$(BUILDIR)LibJpegIjg6b.a: $(ODIRLibJpegIjg6b)jcapimin.o $(ODIRLibJpegIjg6b)jcapistd.o $(ODIRLibJpegIjg6b)jccoefct.o $(ODIRLibJpegIjg6b)jccolor.o $(ODIRLibJpegIjg6b)jcdctmgr.o $(ODIRLibJpegIjg6b)jchuff.o $(ODIRLibJpegIjg6b)jcinit.o $(ODIRLibJpegIjg6b)jcmainct.o $(ODIRLibJpegIjg6b)jcmarker.o $(ODIRLibJpegIjg6b)jcmaster.o $(ODIRLibJpegIjg6b)jcomapi.o $(ODIRLibJpegIjg6b)jcparam.o $(ODIRLibJpegIjg6b)jcphuff.o $(ODIRLibJpegIjg6b)jcprepct.o $(ODIRLibJpegIjg6b)jcsample.o $(ODIRLibJpegIjg6b)jctrans.o $(ODIRLibJpegIjg6b)jdapimin.o $(ODIRLibJpegIjg6b)jdapistd.o $(ODIRLibJpegIjg6b)jdatadst.o $(ODIRLibJpegIjg6b)jdatasrc.o $(ODIRLibJpegIjg6b)jdcoefct.o $(ODIRLibJpegIjg6b)jdcolor.o $(ODIRLibJpegIjg6b)jddctmgr.o $(ODIRLibJpegIjg6b)jdhuff.o $(ODIRLibJpegIjg6b)jdinput.o $(ODIRLibJpegIjg6b)jdmainct.o $(ODIRLibJpegIjg6b)jdmarker.o $(ODIRLibJpegIjg6b)jdmaster.o $(ODIRLibJpegIjg6b)jdmerge.o $(ODIRLibJpegIjg6b)jdphuff.o $(ODIRLibJpegIjg6b)jdpostct.o $(ODIRLibJpegIjg6b)jdsample.o $(ODIRLibJpegIjg6b)jdtrans.o $(ODIRLibJpegIjg6b)jerror.o $(ODIRLibJpegIjg6b)jfdctflt.o $(ODIRLibJpegIjg6b)jfdctfst.o $(ODIRLibJpegIjg6b)jfdctint.o $(ODIRLibJpegIjg6b)jidctflt.o $(ODIRLibJpegIjg6b)jidctfst.o $(ODIRLibJpegIjg6b)jidctint.o $(ODIRLibJpegIjg6b)jidctred.o $(ODIRLibJpegIjg6b)jmemmgr.o $(ODIRLibJpegIjg6b)jmemnobs.o $(ODIRLibJpegIjg6b)jquant1.o $(ODIRLibJpegIjg6b)jquant2.o $(ODIRLibJpegIjg6b)jutils.o $(ODIRLibJpegIjg6b)rdbmp.o $(ODIRLibJpegIjg6b)rdcolmap.o $(ODIRLibJpegIjg6b)rdgif.o $(ODIRLibJpegIjg6b)rdppm.o $(ODIRLibJpegIjg6b)rdrle.o $(ODIRLibJpegIjg6b)rdswitch.o $(ODIRLibJpegIjg6b)rdtarga.o $(ODIRLibJpegIjg6b)transupp.o $(ODIRLibJpegIjg6b)wrbmp.o $(ODIRLibJpegIjg6b)wrgif.o $(ODIRLibJpegIjg6b)wrppm.o $(ODIRLibJpegIjg6b)wrrle.o $(ODIRLibJpegIjg6b)wrtarga.o 
-	$(AR) rc $(BUILDIR)LibJpegIjg6b.a $(ODIRLibJpegIjg6b)jcapimin.o $(ODIRLibJpegIjg6b)jcapistd.o $(ODIRLibJpegIjg6b)jccoefct.o $(ODIRLibJpegIjg6b)jccolor.o $(ODIRLibJpegIjg6b)jcdctmgr.o $(ODIRLibJpegIjg6b)jchuff.o $(ODIRLibJpegIjg6b)jcinit.o $(ODIRLibJpegIjg6b)jcmainct.o $(ODIRLibJpegIjg6b)jcmarker.o $(ODIRLibJpegIjg6b)jcmaster.o $(ODIRLibJpegIjg6b)jcomapi.o $(ODIRLibJpegIjg6b)jcparam.o $(ODIRLibJpegIjg6b)jcphuff.o $(ODIRLibJpegIjg6b)jcprepct.o $(ODIRLibJpegIjg6b)jcsample.o $(ODIRLibJpegIjg6b)jctrans.o $(ODIRLibJpegIjg6b)jdapimin.o $(ODIRLibJpegIjg6b)jdapistd.o $(ODIRLibJpegIjg6b)jdatadst.o $(ODIRLibJpegIjg6b)jdatasrc.o $(ODIRLibJpegIjg6b)jdcoefct.o $(ODIRLibJpegIjg6b)jdcolor.o $(ODIRLibJpegIjg6b)jddctmgr.o $(ODIRLibJpegIjg6b)jdhuff.o $(ODIRLibJpegIjg6b)jdinput.o $(ODIRLibJpegIjg6b)jdmainct.o $(ODIRLibJpegIjg6b)jdmarker.o $(ODIRLibJpegIjg6b)jdmaster.o $(ODIRLibJpegIjg6b)jdmerge.o $(ODIRLibJpegIjg6b)jdphuff.o $(ODIRLibJpegIjg6b)jdpostct.o $(ODIRLibJpegIjg6b)jdsample.o $(ODIRLibJpegIjg6b)jdtrans.o $(ODIRLibJpegIjg6b)jerror.o $(ODIRLibJpegIjg6b)jfdctflt.o $(ODIRLibJpegIjg6b)jfdctfst.o $(ODIRLibJpegIjg6b)jfdctint.o $(ODIRLibJpegIjg6b)jidctflt.o $(ODIRLibJpegIjg6b)jidctfst.o $(ODIRLibJpegIjg6b)jidctint.o $(ODIRLibJpegIjg6b)jidctred.o $(ODIRLibJpegIjg6b)jmemmgr.o $(ODIRLibJpegIjg6b)jmemnobs.o $(ODIRLibJpegIjg6b)jquant1.o $(ODIRLibJpegIjg6b)jquant2.o $(ODIRLibJpegIjg6b)jutils.o $(ODIRLibJpegIjg6b)rdbmp.o $(ODIRLibJpegIjg6b)rdcolmap.o $(ODIRLibJpegIjg6b)rdgif.o $(ODIRLibJpegIjg6b)rdppm.o $(ODIRLibJpegIjg6b)rdrle.o $(ODIRLibJpegIjg6b)rdswitch.o $(ODIRLibJpegIjg6b)rdtarga.o $(ODIRLibJpegIjg6b)transupp.o $(ODIRLibJpegIjg6b)wrbmp.o $(ODIRLibJpegIjg6b)wrgif.o $(ODIRLibJpegIjg6b)wrppm.o $(ODIRLibJpegIjg6b)wrrle.o $(ODIRLibJpegIjg6b)wrtarga.o 
-	$(RANLIB) $(BUILDIR)LibJpegIjg6b.a
-$(ODIRLibJpegIjg6b)jcapimin.o: $(SDIRLibJpegIjg6b)jcapimin.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcapimin.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcapimin.c
-$(ODIRLibJpegIjg6b)jcapistd.o: $(SDIRLibJpegIjg6b)jcapistd.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcapistd.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcapistd.c
-$(ODIRLibJpegIjg6b)jccoefct.o: $(SDIRLibJpegIjg6b)jccoefct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jccoefct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jccoefct.c
-$(ODIRLibJpegIjg6b)jccolor.o: $(SDIRLibJpegIjg6b)jccolor.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jccolor.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jccolor.c
-$(ODIRLibJpegIjg6b)jcdctmgr.o: $(SDIRLibJpegIjg6b)jcdctmgr.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcdctmgr.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcdctmgr.c
-$(ODIRLibJpegIjg6b)jchuff.o: $(SDIRLibJpegIjg6b)jchuff.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jchuff.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jchuff.c
-$(ODIRLibJpegIjg6b)jcinit.o: $(SDIRLibJpegIjg6b)jcinit.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcinit.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcinit.c
-$(ODIRLibJpegIjg6b)jcmainct.o: $(SDIRLibJpegIjg6b)jcmainct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcmainct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcmainct.c
-$(ODIRLibJpegIjg6b)jcmarker.o: $(SDIRLibJpegIjg6b)jcmarker.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcmarker.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcmarker.c
-$(ODIRLibJpegIjg6b)jcmaster.o: $(SDIRLibJpegIjg6b)jcmaster.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcmaster.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcmaster.c
-$(ODIRLibJpegIjg6b)jcomapi.o: $(SDIRLibJpegIjg6b)jcomapi.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcomapi.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcomapi.c
-$(ODIRLibJpegIjg6b)jcparam.o: $(SDIRLibJpegIjg6b)jcparam.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcparam.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcparam.c
-$(ODIRLibJpegIjg6b)jcphuff.o: $(SDIRLibJpegIjg6b)jcphuff.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcphuff.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcphuff.c
-$(ODIRLibJpegIjg6b)jcprepct.o: $(SDIRLibJpegIjg6b)jcprepct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcprepct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcprepct.c
-$(ODIRLibJpegIjg6b)jcsample.o: $(SDIRLibJpegIjg6b)jcsample.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jcsample.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jcsample.c
-$(ODIRLibJpegIjg6b)jctrans.o: $(SDIRLibJpegIjg6b)jctrans.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jctrans.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jctrans.c
-$(ODIRLibJpegIjg6b)jdapimin.o: $(SDIRLibJpegIjg6b)jdapimin.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdapimin.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdapimin.c
-$(ODIRLibJpegIjg6b)jdapistd.o: $(SDIRLibJpegIjg6b)jdapistd.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdapistd.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdapistd.c
-$(ODIRLibJpegIjg6b)jdatadst.o: $(SDIRLibJpegIjg6b)jdatadst.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdatadst.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdatadst.c
-$(ODIRLibJpegIjg6b)jdatasrc.o: $(SDIRLibJpegIjg6b)jdatasrc.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdatasrc.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdatasrc.c
-$(ODIRLibJpegIjg6b)jdcoefct.o: $(SDIRLibJpegIjg6b)jdcoefct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdcoefct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdcoefct.c
-$(ODIRLibJpegIjg6b)jdcolor.o: $(SDIRLibJpegIjg6b)jdcolor.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdcolor.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdcolor.c
-$(ODIRLibJpegIjg6b)jddctmgr.o: $(SDIRLibJpegIjg6b)jddctmgr.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jddctmgr.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jddctmgr.c
-$(ODIRLibJpegIjg6b)jdhuff.o: $(SDIRLibJpegIjg6b)jdhuff.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdhuff.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdhuff.c
-$(ODIRLibJpegIjg6b)jdinput.o: $(SDIRLibJpegIjg6b)jdinput.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdinput.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdinput.c
-$(ODIRLibJpegIjg6b)jdmainct.o: $(SDIRLibJpegIjg6b)jdmainct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdmainct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdmainct.c
-$(ODIRLibJpegIjg6b)jdmarker.o: $(SDIRLibJpegIjg6b)jdmarker.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdmarker.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdmarker.c
-$(ODIRLibJpegIjg6b)jdmaster.o: $(SDIRLibJpegIjg6b)jdmaster.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdmaster.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdmaster.c
-$(ODIRLibJpegIjg6b)jdmerge.o: $(SDIRLibJpegIjg6b)jdmerge.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdmerge.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdmerge.c
-$(ODIRLibJpegIjg6b)jdphuff.o: $(SDIRLibJpegIjg6b)jdphuff.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdphuff.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdphuff.c
-$(ODIRLibJpegIjg6b)jdpostct.o: $(SDIRLibJpegIjg6b)jdpostct.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdpostct.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdpostct.c
-$(ODIRLibJpegIjg6b)jdsample.o: $(SDIRLibJpegIjg6b)jdsample.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdsample.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdsample.c
-$(ODIRLibJpegIjg6b)jdtrans.o: $(SDIRLibJpegIjg6b)jdtrans.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jdtrans.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jdtrans.c
-$(ODIRLibJpegIjg6b)jerror.o: $(SDIRLibJpegIjg6b)jerror.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jerror.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jerror.c
-$(ODIRLibJpegIjg6b)jfdctflt.o: $(SDIRLibJpegIjg6b)jfdctflt.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jfdctflt.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jfdctflt.c
-$(ODIRLibJpegIjg6b)jfdctfst.o: $(SDIRLibJpegIjg6b)jfdctfst.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jfdctfst.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jfdctfst.c
-$(ODIRLibJpegIjg6b)jfdctint.o: $(SDIRLibJpegIjg6b)jfdctint.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jfdctint.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jfdctint.c
-$(ODIRLibJpegIjg6b)jidctflt.o: $(SDIRLibJpegIjg6b)jidctflt.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jidctflt.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jidctflt.c
-$(ODIRLibJpegIjg6b)jidctfst.o: $(SDIRLibJpegIjg6b)jidctfst.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jidctfst.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jidctfst.c
-$(ODIRLibJpegIjg6b)jidctint.o: $(SDIRLibJpegIjg6b)jidctint.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jidctint.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jidctint.c
-$(ODIRLibJpegIjg6b)jidctred.o: $(SDIRLibJpegIjg6b)jidctred.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jidctred.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jidctred.c
-$(ODIRLibJpegIjg6b)jmemmgr.o: $(SDIRLibJpegIjg6b)jmemmgr.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jmemmgr.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jmemmgr.c
-$(ODIRLibJpegIjg6b)jmemnobs.o: $(SDIRLibJpegIjg6b)jmemnobs.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jmemnobs.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jmemnobs.c
-$(ODIRLibJpegIjg6b)jquant1.o: $(SDIRLibJpegIjg6b)jquant1.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jquant1.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jquant1.c
-$(ODIRLibJpegIjg6b)jquant2.o: $(SDIRLibJpegIjg6b)jquant2.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jquant2.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jquant2.c
-$(ODIRLibJpegIjg6b)jutils.o: $(SDIRLibJpegIjg6b)jutils.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)jutils.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)jutils.c
-$(ODIRLibJpegIjg6b)rdbmp.o: $(SDIRLibJpegIjg6b)rdbmp.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdbmp.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdbmp.c
-$(ODIRLibJpegIjg6b)rdcolmap.o: $(SDIRLibJpegIjg6b)rdcolmap.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdcolmap.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdcolmap.c
-$(ODIRLibJpegIjg6b)rdgif.o: $(SDIRLibJpegIjg6b)rdgif.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdgif.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdgif.c
-$(ODIRLibJpegIjg6b)rdppm.o: $(SDIRLibJpegIjg6b)rdppm.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdppm.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdppm.c
-$(ODIRLibJpegIjg6b)rdrle.o: $(SDIRLibJpegIjg6b)rdrle.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdrle.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdrle.c
-$(ODIRLibJpegIjg6b)rdswitch.o: $(SDIRLibJpegIjg6b)rdswitch.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdswitch.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdswitch.c
-$(ODIRLibJpegIjg6b)rdtarga.o: $(SDIRLibJpegIjg6b)rdtarga.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)rdtarga.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)rdtarga.c
-$(ODIRLibJpegIjg6b)transupp.o: $(SDIRLibJpegIjg6b)transupp.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)transupp.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)transupp.c
-$(ODIRLibJpegIjg6b)wrbmp.o: $(SDIRLibJpegIjg6b)wrbmp.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)wrbmp.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrbmp.c
-$(ODIRLibJpegIjg6b)wrgif.o: $(SDIRLibJpegIjg6b)wrgif.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)wrgif.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrgif.c
-$(ODIRLibJpegIjg6b)wrppm.o: $(SDIRLibJpegIjg6b)wrppm.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)wrppm.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrppm.c
-$(ODIRLibJpegIjg6b)wrrle.o: $(SDIRLibJpegIjg6b)wrrle.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)wrrle.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrrle.c
-$(ODIRLibJpegIjg6b)wrtarga.o: $(SDIRLibJpegIjg6b)wrtarga.c $(INCSLibJpegIjg6b)
-	$(CC) -o $(ODIRLibJpegIjg6b)wrtarga.o -c $(CCFLAGS) $(FLAGSLibJpegIjg6b) $(SDIRLibJpegIjg6b)wrtarga.c
-FLAGSLibFgBase =  -Wall -Wextra -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -ILibFgBase/src/ -isystem LibTpEigen/ -isystem LibJpegIjg6b/ -isystem LibTpStb/stb/ -isystem LibTpBoost/boost_1_67_0/
+FLAGSLibFgBase =  -Wall -Wextra -DBOOST_ALL_NO_LIB -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE -ILibFgBase/src/ -isystem LibTpEigen/ -isystem LibTpStb/stb/ -isystem LibTpBoost/boost_1_67_0/
 SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = $(BUILDIR)LibFgBase/
 $(shell mkdir -p $(ODIRLibFgBase))
-INCSLibFgBase := $(wildcard LibFgBase/src/*.hpp) $(wildcard LibTpEigen/Eigen/*.hpp) $(wildcard LibJpegIjg6b/*.hpp) $(wildcard LibTpStb/stb/*.hpp) $(wildcard LibTpBoost/boost_1_67_0/boost/*.hpp) 
-$(BUILDIR)LibFgBase.a: $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshFgmesh.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCluster.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgException.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGridTriangles.o $(ODIRLibFgBase)FgGui.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiBase.o $(ODIRLibFgBase)FgGuiApiButton.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHash.o $(ODIRLibFgBase)FgHex.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgImgJpeg.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgMetaFormat.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgOut.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgPath.o $(ODIRLibFgBase)FgPlatform.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRayCaster.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgStdio.o $(ODIRLibFgBase)FgStdStream.o $(ODIRLibFgBase)FgStdString.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgSyntax.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)jpeg_mem_dest.o $(ODIRLibFgBase)jpeg_mem_src.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)portable_binary_iarchive.o $(ODIRLibFgBase)portable_binary_oarchive.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgClusterNix.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemInfoNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o $(ODIRLibFgBase)nix_FgWinSpecificNix.o 
-	$(AR) rc $(BUILDIR)LibFgBase.a $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshFgmesh.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCluster.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgException.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGridTriangles.o $(ODIRLibFgBase)FgGui.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiBase.o $(ODIRLibFgBase)FgGuiApiButton.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHash.o $(ODIRLibFgBase)FgHex.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgImgJpeg.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgMetaFormat.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgOut.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgPath.o $(ODIRLibFgBase)FgPlatform.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRayCaster.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgStdio.o $(ODIRLibFgBase)FgStdStream.o $(ODIRLibFgBase)FgStdString.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgSyntax.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)jpeg_mem_dest.o $(ODIRLibFgBase)jpeg_mem_src.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)portable_binary_iarchive.o $(ODIRLibFgBase)portable_binary_oarchive.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgClusterNix.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemInfoNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o $(ODIRLibFgBase)nix_FgWinSpecificNix.o 
+INCSLibFgBase := $(wildcard LibFgBase/src/*.hpp) $(wildcard LibTpEigen/Eigen/*.hpp) $(wildcard LibTpStb/stb/*.hpp) $(wildcard LibTpBoost/boost_1_67_0/boost/*.hpp) 
+$(BUILDIR)LibFgBase.a: $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshFgmesh.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCluster.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgException.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGridTriangles.o $(ODIRLibFgBase)FgGui.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiBase.o $(ODIRLibFgBase)FgGuiApiButton.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHash.o $(ODIRLibFgBase)FgHex.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgMetaFormat.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgOut.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgPath.o $(ODIRLibFgBase)FgPlatform.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRayCaster.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgStdio.o $(ODIRLibFgBase)FgStdStream.o $(ODIRLibFgBase)FgStdString.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgSyntax.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)portable_binary_iarchive.o $(ODIRLibFgBase)portable_binary_oarchive.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgClusterNix.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemInfoNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o $(ODIRLibFgBase)nix_FgWinSpecificNix.o 
+	$(AR) rc $(BUILDIR)LibFgBase.a $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshFgmesh.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCluster.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgException.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGridTriangles.o $(ODIRLibFgBase)FgGui.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiBase.o $(ODIRLibFgBase)FgGuiApiButton.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHash.o $(ODIRLibFgBase)FgHex.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgMetaFormat.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgOut.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgPath.o $(ODIRLibFgBase)FgPlatform.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRayCaster.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgStdio.o $(ODIRLibFgBase)FgStdStream.o $(ODIRLibFgBase)FgStdString.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgSyntax.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)portable_binary_iarchive.o $(ODIRLibFgBase)portable_binary_oarchive.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgClusterNix.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemInfoNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o $(ODIRLibFgBase)nix_FgWinSpecificNix.o 
 	$(RANLIB) $(BUILDIR)LibFgBase.a
 $(ODIRLibFgBase)Fg3dCamera.o: $(SDIRLibFgBase)Fg3dCamera.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)Fg3dCamera.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dCamera.cpp
@@ -359,8 +233,6 @@ $(ODIRLibFgBase)FgImageTest.o: $(SDIRLibFgBase)FgImageTest.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgImageTest.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgImageTest.cpp
 $(ODIRLibFgBase)FgImgDisplay.o: $(SDIRLibFgBase)FgImgDisplay.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgImgDisplay.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgImgDisplay.cpp
-$(ODIRLibFgBase)FgImgJpeg.o: $(SDIRLibFgBase)FgImgJpeg.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgImgJpeg.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgImgJpeg.cpp
 $(ODIRLibFgBase)FgKdTree.o: $(SDIRLibFgBase)FgKdTree.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgKdTree.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgKdTree.cpp
 $(ODIRLibFgBase)FgLighting.o: $(SDIRLibFgBase)FgLighting.cpp $(INCSLibFgBase)
@@ -425,10 +297,6 @@ $(ODIRLibFgBase)FgTime.o: $(SDIRLibFgBase)FgTime.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgTime.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTime.cpp
 $(ODIRLibFgBase)FgTopology.o: $(SDIRLibFgBase)FgTopology.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgTopology.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTopology.cpp
-$(ODIRLibFgBase)jpeg_mem_dest.o: $(SDIRLibFgBase)jpeg_mem_dest.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)jpeg_mem_dest.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)jpeg_mem_dest.cpp
-$(ODIRLibFgBase)jpeg_mem_src.o: $(SDIRLibFgBase)jpeg_mem_src.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)jpeg_mem_src.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)jpeg_mem_src.cpp
 $(ODIRLibFgBase)MurmurHash2.o: $(SDIRLibFgBase)MurmurHash2.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)MurmurHash2.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)MurmurHash2.cpp
 $(ODIRLibFgBase)portable_binary_iarchive.o: $(SDIRLibFgBase)portable_binary_iarchive.cpp $(INCSLibFgBase)
@@ -458,8 +326,8 @@ SDIRfgbl = fgbl/
 ODIRfgbl = $(BUILDIR)fgbl/
 $(shell mkdir -p $(ODIRfgbl))
 INCSfgbl := $(wildcard LibFgBase/src/*.hpp) $(wildcard LibTpBoost/boost_1_67_0/boost/*.hpp) 
-$(BINDIR)fgbl: $(ODIRfgbl)fgbl.o $(BUILDIR)LibFgBase.a $(BUILDIR)LibJpegIjg6b.a $(BUILDIR)LibTpBoost.a 
-	$(LINK) $(LFLAGS) -o $(BINDIR)fgbl $(ODIRfgbl)fgbl.o $(BUILDIR)LibFgBase.a $(BUILDIR)LibJpegIjg6b.a $(BUILDIR)LibTpBoost.a 
+$(BINDIR)fgbl: $(ODIRfgbl)fgbl.o $(BUILDIR)LibFgBase.a $(BUILDIR)LibTpBoost.a 
+	$(LINK) $(LFLAGS) -o $(BINDIR)fgbl $(ODIRfgbl)fgbl.o $(BUILDIR)LibFgBase.a $(BUILDIR)LibTpBoost.a 
 $(ODIRfgbl)fgbl.o: $(SDIRfgbl)fgbl.cpp $(INCSfgbl)
 	$(CXX) -o $(ODIRfgbl)fgbl.o -c $(CXXFLAGS) $(FLAGSfgbl) $(SDIRfgbl)fgbl.cpp
 .PHONY: clean cleanObjs cleanTargs

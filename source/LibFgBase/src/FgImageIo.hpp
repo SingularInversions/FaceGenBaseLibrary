@@ -54,11 +54,10 @@ void                saveJfif(
     // Quality level 90 is high quality and visually comparable to the ImageMagick defaults previously used,
     // however STB encoding is about 25% larger:
     uint                quality=90);    // [1,100] where 100 saves with lossless compression
-// Encode to JFIF format blob (can be dumped to .jpg file):
-Uchars              encodeJpeg(ImgRgba8 const & img,int quality=100);
-// As above. Data must be 4 channel RGBA of size wid*hgt*4:
-Uchars              encodeJpeg(uint wid,uint hgt,uchar const * data,int quality);
-// Decode from JFIF format blob (can be read from JFIF format .jpg file):
+// Encode to JFIF format blob (can be dumped to .jpg file), data must be 4 channel RGBA of size wid*hgt*4:
+Uchars              encodeJpeg(uint wid,uint hgt,uchar const * data,int quality=90);
+Uchars              encodeJpeg(ImgRgba8 const & img,int quality=90);
+// Decode from JFIF format blob (ie. JFIF format .jpg contents)
 ImgRgba8            decodeJpeg(Uchars const & jfifBlob);
 
 }

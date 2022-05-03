@@ -48,7 +48,6 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES Intel)
 endif()
 
 add_subdirectory(LibTpBoost)
-add_subdirectory(LibJpegIjg6b)
 add_subdirectory(LibImageMagickCore)
 add_subdirectory(LibUTF-8)
 add_subdirectory(LibFgBase)

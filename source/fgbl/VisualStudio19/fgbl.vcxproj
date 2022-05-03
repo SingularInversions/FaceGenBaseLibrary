@@ -201,11 +201,6 @@
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\LibJpegIjg6b\VisualStudio19\LibJpegIjg6b.vcxproj">
-      <Project>{4AF91011-C9A9-6CA0-290D-FAB7104EDF4E}</Project>
-      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
-      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\LibTpBoost\VisualStudio19\LibTpBoost.vcxproj">
       <Project>{0F8FAE76-1CBC-C2CA-86E2-9D1CACEB2F97}</Project>
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
