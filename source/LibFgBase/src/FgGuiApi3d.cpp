@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApi.hpp"
+#include "FgGui.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgTopology.hpp"
 #include "FgAffine.hpp"
@@ -27,6 +27,29 @@ String8s            cAlbedoModeLabels()
     };
 }
 
+AffineEw2F          cD3psToRcs(Vec2UI viewportSize)
+{
+    // x: [-1,1] -> [-0.5,X-0.5]
+    // y: [1,-1] -> [-0.5,Y-0.5]  (reverses)
+    Mat22F              d3ps {-1,1,1,-1};
+    Mat22F              rcs {-0.5f,viewportSize[0]-0.5f,-0.5f,viewportSize[1]-0.5f};
+    return {d3ps,rcs};
+}
+
+namespace {
+
+struct      ProjPnt {
+    Vec2D           rcs {0};
+    double          invDepth {0};
+    bool            valid {false};
+
+    ProjPnt() {}
+    ProjPnt(Vec2F const & r,float i) : rcs{r}, invDepth{i}, valid{true} {}
+};
+typedef Svec<ProjPnt>   ProjPnts;
+
+}
+
 Opt<MeshesIntersect> intersectMeshes(
     Vec2UI              winSize,
     Vec2I               pos,
@@ -36,44 +59,47 @@ Opt<MeshesIntersect> intersectMeshes(
     MeshesIntersect     ret;
     Valid<float>        minDepth;
     Vec2D               pnt {pos};
-    Mat32F              d3ps {-1,1,1,-1,0,1};
-    Mat32F              rcs {-0.5f,winSize[0]-0.5f,-0.5f,winSize[1]-0.5f,0,1};
-    AffineEw3F          d3psToRcs {d3ps,rcs};
-    Mat44F              invXform = asHomogMat(d3psToRcs.asAffine()) * worldToD3ps;
+    AffineEw2F          d3psToRcs = cD3psToRcs(winSize);
     for (size_t mm=0; mm<rendMeshes.size(); ++mm) {
         RendMesh const &    rendMesh = rendMeshes[mm];
         Mesh const &        mesh = rendMesh.origMeshN.cref();
         Vec3Fs const &      verts = rendMesh.posedVertsN.cref();
-        Vec3Fs              pvs(verts.size());
-        for (size_t ii=0; ii<pvs.size(); ++ii) {
-            Vec4F               v = invXform * asHomogVec(verts[ii]);
-            pvs[ii] = v.subMatrix<3,1>(0,0) / v[3];
+        ProjPnts            pntss; pntss.reserve(verts.size());
+        for (Vec3F const & vert : verts) {
+            Vec4F               d3psH = worldToD3ps * append(vert,1.0f);
+            if (d3psH[3] == 0)
+                pntss.emplace_back();
+            else {
+                Vec3F               d3ps = projectHomog(d3psH);
+                pntss.emplace_back(d3psToRcs * Vec2F{d3ps[0],d3ps[1]},d3ps[2]);
+            }
         }
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             size_t              numTriEquivs = surf.numTriEquivs();
             for (size_t tt=0; tt<numTriEquivs; ++tt) {
-                Vec3UI          tri = surf.getTriEquivVertInds(tt);
-                Vec3F           t0 = pvs[tri[0]],
-                                t1 = pvs[tri[1]],
-                                t2 = pvs[tri[2]];
-                Vec2D           v0 = Vec2D(t0.subMatrix<2,1>(0,0)),
-                                v1 = Vec2D(t1.subMatrix<2,1>(0,0)),
-                                v2 = Vec2D(t2.subMatrix<2,1>(0,0));
-                if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
-                    Opt<Vec3D>      vbc = cBarycentricCoord(pnt,v0,v1,v2);
-                    if (vbc.valid()) {
-                        Vec3D           bc = vbc.val();
-                        // Depth value range for unclipped polys is [-1,1]. These correspond to the
-                        // negative inverse depth values of the frustum.
-                        // Only an approximation to the depth value but who cares:
-                        double          dep = cDot(bc,Vec3D(t0[2],t1[2],t2[2]));
-                        if (!minDepth.valid() || (dep < minDepth.val())) {    // OGL prj inverts depth
-                            minDepth = dep;
-                            ret.meshIdx = mm;
-                            ret.surfIdx = ss;
-                            ret.surfPnt.triEquivIdx = uint(tt);
-                            ret.surfPnt.weights = Vec3F(bc);
+                Vec3UI              tri = surf.getTriEquivVertInds(tt);
+                Arr<ProjPnt,3>      pnts {pntss[tri[0]],pntss[tri[1]],pntss[tri[2]]};
+                if (pnts[0].valid && pnts[0].valid && pnts[0].valid) {
+                    Vec2D           v0 = pnts[0].rcs,
+                                    v1 = pnts[1].rcs,
+                                    v2 = pnts[2].rcs;
+                    if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
+                        Opt<Vec3D>      vbc = cBarycentricCoord(pnt,v0,v1,v2);
+                        if (vbc.valid()) {
+                            Vec3D           bc = vbc.val();
+                            // Depth value range for unclipped polys is [-1,1]. These correspond to the
+                            // negative inverse depth values of the frustum.
+                            // Only an approximation to the depth value but who cares:
+                            Vec3D           invDepth {pnts[0].invDepth,pnts[1].invDepth,pnts[2].invDepth};
+                            double          dep = cDot(bc,invDepth);
+                            if (!minDepth.valid() || (dep < minDepth.val())) {    // OGL prj inverts depth
+                                minDepth = dep;
+                                ret.meshIdx = mm;
+                                ret.surfIdx = ss;
+                                ret.surfPnt.triEquivIdx = uint(tt);
+                                ret.surfPnt.weights = Vec3F(bc);
+                            }
                         }
                     }
                 }
@@ -266,7 +292,7 @@ void                Gui3d::ctlDrag(bool left, Vec2UI winSize,Vec2I delta,Mat44F 
         RendMeshes const &      rms = rendMeshesN.cref();
         Vec3Fs const &          verts = rms[lastCtlClick.meshIdx].posedVertsN.cref();
         Vec3F                   vertPos0Hcs = verts[lastCtlClick.vertIdx];
-        Vec4F                   vertPos0d3ps = worldToD3ps * asHomogVec(vertPos0Hcs);
+        Vec4F                   vertPos0d3ps = worldToD3ps * append(vertPos0Hcs,1.0f);
         // Convert delta to D3PS. Y inverted and Viewport aspect (compensated for in frustum)
         // is ratio to largest dimension:
         Vec2F                   delD3ps2 = 2.0f * Vec2F(delta) / float(cMaxElem(winSize));

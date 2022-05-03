@@ -55,7 +55,7 @@ void                resamp(CLArgs const &)
     Vec2D                   lo {94.3,37.8};
     for (uint lnSz = 5; lnSz < 10; ++lnSz) {
         uint                    sz = 2 << lnSz;
-        Img3F                   out = resampleAdaptive(in,lo,309.7,sz);
+        Img3F                   out = resampleAdaptive(in,lo,309.7f,sz);
         viewImageFixed(toRgba8(out));
     }
 }
@@ -132,6 +132,18 @@ void                testConvolve(CLArgs const &)
     FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));
 }
 
+void                testDecodeJpeg(CLArgs const &)
+{
+    String8             imgFile = dataDir() + "base/trees.jpg";
+    String              blob = loadRaw(imgFile);
+    Uchars              ub; ub.reserve(blob.size());
+    for (char ch : blob)
+        ub.push_back(scast<uchar>(ch));
+    ImgRgba8            tst = decodeJpeg(ub),           // uses IJG LibJpeg
+                        ref = loadImage(imgFile);       // uses STB
+    FGASSERT(isApproxEqual(tst,ref,3U));
+}
+
 void                testTransform(CLArgs const &)
 {
     AffineEw2F          identity;
@@ -168,6 +180,7 @@ void                testImage(CLArgs const & args)
         {testBlerp,"blerp","bilinear interpolation"},
         {testComposite,"composite"},
         {testConvolve,"conv"},
+        {testDecodeJpeg,"jpg"},
         {testTransform,"xf"},
     };
     doMenu(args,cmds,true,false,true);

@@ -70,7 +70,7 @@ RgbaF               sampleRecurse(
     Vec2F                   uc,             // Upper corner sample point (IUCS so not square)
     Mat<RgbaF,2,2>          bs,             // Bounds samples. No speedup at all from making this const ref
     float                   maxDiff,
-    // Invalid if first channel is floatMax(), othwerise gives sl/st from previous call.
+    // Invalid if first channel is lims<float>::max(), othwerise gives sl/st from previous call.
     // Returned values must be sr/sb resp. for use in raster order next calls.
     // This optimization only saved 5% on time (granted for very simple raycaster)
     // so likely not worth saving values across deeper recursion boundaries.
@@ -83,15 +83,15 @@ RgbaF               sampleRecurse(
                     hdelx {hdel[0],0.0f},
                     hdely {0.0f,hdel[1]};
     RgbaF           sc {sampleFn(centre)},
-                    sst {floatMax()},
-                    ssl {floatMax()},
-                    ssr {floatMax()},
-                    ssb {floatMax()};
+                    sst {lims<float>::max()},
+                    ssl {lims<float>::max()},
+                    ssr {lims<float>::max()},
+                    ssb {lims<float>::max()};
     if (valsDiffer(sc,bs,maxDiff)) {
         float           md2 = maxDiff * 2.0f;
-        RgbaF           sl = (slo[0] == floatMax()) ? sampleFn(centre-hdelx) : slo,
+        RgbaF           sl = (slo[0] == lims<float>::max()) ? sampleFn(centre-hdelx) : slo,
                         sr = sampleFn(centre+hdelx),
-                        st = (sto[0] == floatMax()) ? sampleFn(centre-hdely) : sto,
+                        st = (sto[0] == lims<float>::max()) ? sampleFn(centre-hdely) : sto,
                         sb = sampleFn(centre+hdely),
                         stl = sampleRecurse(sampleFn,lc,centre,{bs[0],st,sl,sc},md2,sst,ssl),
                         str = sampleRecurse(sampleFn,lc+hdelx,centre+hdelx,{st,bs[1],sc,sr},md2,sst,ssr),
@@ -102,8 +102,8 @@ RgbaF               sampleRecurse(
         return (stl+str+sbl+sbr) * 0.25f;
     }
     else {
-        slo[0] = floatMax();    // These invalidations are only needed at the top level, not in recursed calls
-        sto[0] = floatMax();
+        slo[0] = lims<float>::max();    // These invalidations are only needed at the top level, not in recursed calls
+        sto[0] = lims<float>::max();
         return (bs[0]+bs[1]+bs[2]+bs[3]) * 0.125f + sc * 0.5f;
     }
 }
@@ -126,7 +126,7 @@ ImgC4F              sampleAdaptiveF(
     ImgC4F          sampleLines {img.width()+1,2};
     for (uint xx=0; xx<sampleLines.width(); ++xx)
         sampleLines.xy(xx,0) = sampleFn(Vec2F(xx/widf,0));
-    RgbaFs          ssts(img.width(),RgbaF{floatMax()});
+    RgbaFs          ssts(img.width(),RgbaF{lims<float>::max()});
     for (uint yy=0; yy<img.height(); ++yy) {
         float           yyf0 = yy/hgtf,
                         yyf1 = (yy+1)/hgtf;
@@ -134,7 +134,7 @@ ImgC4F              sampleAdaptiveF(
                         sbit = 1-fbit;
         for (uint xx=0; xx<sampleLines.width(); ++xx)
             sampleLines.xy(xx,sbit) = sampleFn(Vec2F{xx/widf,yyf1});
-        RgbaF           ssl {floatMax()};
+        RgbaF           ssl {lims<float>::max()};
         for (uint xx=0; xx<img.width(); ++xx) {
             Vec2F           lc {xx/widf,yyf0},
                             uc {(xx+1)/widf,yyf1};

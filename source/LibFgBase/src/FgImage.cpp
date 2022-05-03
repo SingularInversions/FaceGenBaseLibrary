@@ -10,6 +10,7 @@
 #include "FgMath.hpp"
 #include "FgTime.hpp"
 #include "FgScaleTrans.hpp"
+#include "FgApproxEqual.hpp"
 
 using namespace std;
 
@@ -18,19 +19,10 @@ namespace Fg {
 std::ostream &      operator<<(std::ostream & os,ImgRgba8 const & img)
 {
     if (img.empty())
-        return os << "Empty image";
-    Mat<uchar,4,1>    init {img[0].m_c};
-    Mat<uchar,4,2>    bounds = catHoriz(init,init);
-    for (Iter2UI it(img.dims()); it.next(); it.valid()) {
-        Rgba8    pix = img[it()];
-        for (uint cc=0; cc<4; ++cc) {
-            updateMin_(bounds.rc(cc,0),pix[cc]);
-            updateMax_(bounds.rc(cc,1),pix[cc]);
-        }
-    }
-    return os <<
-        fgnl << "Dimensions: " << img.dims() <<
-        fgnl << "Channel bounds: " << Mat<uint,4,2>(bounds);
+        os << "Empty image";
+    else
+        os << "Dimensions: " << img.dims() << "Channel bounds: " << cBounds(img.m_data);
+    return os;
 }
 
 std::ostream &      operator<<(std::ostream & os,ImgC4F const & img)
@@ -213,6 +205,21 @@ bool                fgImgApproxEqual(ImgRgba8 const & img0,ImgRgba8 const & img1
             (sqr(delta[2]) > lim) ||
             (sqr(delta[3]) > lim))
             return false;
+    }
+    return true;
+}
+
+bool                isApproxEqual(ImgRgba8 const & l,ImgRgba8 const & r,uint maxDiff)
+{
+    if (l.dims() != r.dims())
+        return false;
+    int             mds = sqr(maxDiff);
+    for (size_t ii=0; ii<l.numPixels(); ++ii) {
+        Rgba8           lp = l.m_data[ii],
+                        rp = r.m_data[ii];
+        for (size_t jj=0; jj<4; ++jj)
+            if (sqr(scast<int>(lp[jj])-scast<int>(rp[jj])) > mds)
+                return false;
     }
     return true;
 }
@@ -525,12 +532,13 @@ ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC c
         RgbaF           b = sampleClipIucs(img1,iucs);
         float           w = sampleClipIucs(transition,iucs) / 255.0f;
         Arr4UC &        r = ret[it()].m_c;
-        for (uint cc=0; cc<4; ++cc) {
+        for (uint cc=0; cc<3; ++cc) {
             float           ac = a[cc],
                             bc = b[cc],
                             rc = (1-w) * ac + w * bc;
             r[cc] = rc;
         }
+        r[3] = 255;
     }
     return ret;
 }

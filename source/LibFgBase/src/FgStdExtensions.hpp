@@ -113,11 +113,7 @@ private:
     // vector requires copyable which atomic is not so use shared pointer to flags.
     Svec<Sptr<std::atomic<bool>>>   dones;      // 1-1 with above
 
-    void            worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done)
-    {
-        fn();
-        done->store(true);
-    }
+    void            worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done);
 };
 
 }

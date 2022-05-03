@@ -392,7 +392,7 @@ linkN(const Svec<IPT<In>> & ins,const Sfun<Out(const Svec<In> &)> & fn)
 
 template<class In,class Out>
 OPT<Out>
-link1(NPT<In> const & in,const Sfun<Out(const In &)> & fn)
+link1(NPT<In> const & in,Sfun<Out(const In &)> const & fn)
 {
     Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
     op->func = [fn](DfgNPtrs const & srcs,boost::any & snk)

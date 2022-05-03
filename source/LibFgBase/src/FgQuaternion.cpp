@@ -52,7 +52,7 @@ bool                isApproxEqual(QuaternionD const & l,QuaternionD const & r,do
 void                testQuaternion(CLArgs const &)
 {
     randSeedRepeatable();
-    double constexpr    prec = epsilonD()*8;
+    double constexpr    prec = lims<double>::epsilon()*8;
     QuaternionD const   id;
     // Axis rotations:
     for (size_t ii=0; ii<5; ++ii) {
@@ -72,7 +72,7 @@ void                testQuaternion(CLArgs const &)
         QuaternionD     q = QuaternionD::rand();
         Mat33D          m = q.asMatrix(),
                         del = m * m.transpose() - Mat33D::identity();
-        FGASSERT(cMax(mapAbs(del.m)) < epsilonD()*8);
+        FGASSERT(cMax(mapAbs(del.m)) < lims<double>::epsilon()*8);
     }
     // Composition:
     for (size_t ii=0; ii<5; ++ii) {
@@ -84,14 +84,14 @@ void                testQuaternion(CLArgs const &)
                         m2 = m1 * m0,
                         m2q = q2.asMatrix(),
                         del = m2q-m2;
-        FGASSERT(cMax(mapAbs(del.m)) < epsilonD()*8);
+        FGASSERT(cMax(mapAbs(del.m)) < lims<double>::epsilon()*8);
     }
     // Inverse:
     for (size_t ii=0; ii<5; ++ii) {
         QuaternionD     q0 = QuaternionD::rand(),
                         q1 = q0.inverse(),
                         q2 = q1 * q0;
-        FGASSERT(sqrt(tanDeltaMag(q2,id)) < epsilonD()*8);
+        FGASSERT(sqrt(tanDeltaMag(q2,id)) < lims<double>::epsilon()*8);
     }
     // multiplication keeps values normalized:
     for (size_t ii=0; ii<10; ++ii) {

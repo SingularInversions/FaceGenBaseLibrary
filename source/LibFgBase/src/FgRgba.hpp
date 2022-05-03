@@ -17,6 +17,7 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 #include "FgOut.hpp"
+#include "FgBounds.hpp"
 
 namespace Fg {
 
@@ -104,6 +105,22 @@ void                round_(Rgba<From> const & in,Rgba<To> & out) {round_(in.m_c,
 
 template<typename T>
 std::ostream &      operator<<(std::ostream & out,Rgba<T> p) {return out << p.m_c; }
+
+template<typename T>
+Mat<T,4,2>          cBounds(Svec<Rgba<T> > const & vals)    // If empty, return [max,lowest]
+{
+    Mat<T,4,2>              ret = catHoriz(
+        Mat<T,4,1>{std::numeric_limits<T>::max()},
+        Mat<T,4,1>{std::numeric_limits<T>::lowest()}
+    );
+    for (Rgba<T> const & v : vals) {
+        for (uint ii=0; ii<4; ++ii) {
+            updateMin_(ret.rc(ii,0),v[ii]);
+            updateMax_(ret.rc(ii,0),v[ii]);
+        }
+    }
+    return ret;
+}
 
 // Normal unweighted encoding:
 // r_c = f_c * f_a + b_c * b_a * (1-f_a)

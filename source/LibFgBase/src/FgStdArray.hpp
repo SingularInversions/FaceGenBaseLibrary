@@ -299,6 +299,15 @@ bool                contains(Arr<T,S> const & arr,U const & val)
             return true;
     return false;
 }
+// if not found, returns the size of the array:
+template<class T,size_t S,class U>
+size_t              findFirstIdx(Arr<T,S> const & arr,U const & val)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        if (arr[ii] == val)
+            return ii;
+    return S;
+}
 
 }
 

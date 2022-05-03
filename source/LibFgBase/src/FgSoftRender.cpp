@@ -132,8 +132,8 @@ static void         testSoftRender(CLArgs const &)
     regressTestApprox<ImgRgba8>(img,"t4.png",bind(fgImgApproxEqual,_1,_2,2U));
     surf.tris.vertInds.back() = {0,1,2};    // Restore
     // Place a triangle just in front to test occlusion of the surface point:
-    mesh.verts.push_back( {2,0,-3.9} );
-    surf.tris.vertInds.push_back( {0,1,3} );
+    mesh.verts.emplace_back(2,0,-3.9f);
+    surf.tris.vertInds.emplace_back(0,1,3);
     img = renderSoft(Vec2UI(64),meshes,modelview,itcsToIucs,ro);
     regressTestApprox<ImgRgba8>(img,"t3.png",bind(fgImgApproxEqual,_1,_2,2U));
 

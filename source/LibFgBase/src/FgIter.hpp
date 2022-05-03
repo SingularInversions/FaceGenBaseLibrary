@@ -6,9 +6,6 @@
 // * Multi-dimensional index iterator with offset and stride.
 // * Multi-dimensional inclusive upper bounds iterator.
 //
-// NOTES:
-//
-// It might be made faster by hard-coding 2D and 3D versions separately.
 
 #ifndef FGITER_HPP
 #define FGITER_HPP
@@ -18,8 +15,50 @@
 
 namespace Fg {
 
+// TODO: start migrating 2D iterations to this version
+struct      Iter2
+{
+    Vec2Z               m_begin,            // inclusive lower bound
+                        m_eub,              // exclusive upper bound. Must be > m_begin.
+                        m_idx {0};          // current index value
+    size_t              m_ystride {1};      // stride for outer dimension (X stride assumed 1)
+
+    explicit Iter2(size_t eub) : m_begin{0}, m_eub{eub} {FGASSERT(valid()); }   // begin zero, eub all same value
+    explicit Iter2(Vec2Z eub) : m_begin{0}, m_eub{eub} {FGASSERT(valid()); }    // begin zero
+    Iter2(Vec2Z begin,Vec2Z eub) : m_begin{begin}, m_eub{eub} {FGASSERT(valid()); }
+    Iter2(Vec2Z begin,Vec2Z eub,size_t ystride) : m_begin{begin}, m_eub{eub}, m_ystride{ystride}
+        {FGASSERT(valid()); }
+
+    bool                valid() const {return ((m_begin[0]<m_eub[0]) && (m_begin[0]<m_eub[1])); }
+    // must be in valid() state before this is called. Returns whether it's in valid state afterward:
+    bool                next()
+    {
+        ++m_idx[0];
+        if (m_idx[0] >= m_eub[0]) {
+            m_idx[0] = 0;
+            m_idx[1] += m_ystride;
+            if (m_idx[1] >= m_eub[1])
+                return false;
+            else
+                return true;
+        }
+        else
+            return true;
+    }
+    Vec2Z               operator()() const {return m_idx; }
+};
+
 template<typename T,uint dim>
-struct  Iter
+std::ostream &      operator<<(std::ostream & os,Iter2 const & it)
+{
+    return os << "begin: " << it.m_begin << " eub: " << it.m_eub
+        << " idx: " << it.m_idx
+        << " stride: " << it.m_ystride;
+}
+
+// TODO: replace this with 2D and 3D hard-coded versions:
+template<typename T,uint dim>
+struct      Iter
 {
     static_assert(std::is_integral<T>::value,"Iter only supports integral types");
     Mat<T,dim,1>        m_bndsLoIncl;   // Inclusive lower bounds
@@ -76,8 +115,7 @@ struct  Iter
         m_idx(0)
     {setValid(); }
 
-    bool
-    next()
+    bool                next()
     {
         FGASSERT(m_inBounds);
         for (uint dd=0; dd<dim; ++dd) {
@@ -91,19 +129,10 @@ struct  Iter
         return false;
     }
 
-    bool
-    valid() const
-    {return m_inBounds; }
-
-    Mat<T,dim,1> const &
-    operator()() const
-    {return m_idx; }
-
+    bool                valid() const {return m_inBounds; }
+    Mat<T,dim,1> const & operator()() const {return m_idx; }
     // Mirror the point around the centre in all axes:
-    Mat<T,dim,1>
-    mirror() const
-    {return (m_bndsHiExcl - m_idx - Mat<T,dim,1>(1)); }
-
+    Mat<T,dim,1>        mirror() const {return (m_bndsHiExcl - m_idx - Mat<T,dim,1>(1)); }
     // Mirror the point around the centre in the given axis:
     Mat<T,dim,1>
     mirror(uint axis) const
@@ -112,24 +141,11 @@ struct  Iter
         ret[axis] = m_bndsHiExcl[axis] - m_idx[axis] - 1;
         return ret;
     }
-
-    Mat<T,dim,1>
-    delta() const
-    {return m_idx - m_bndsLoIncl; }
-
-    Mat<T,dim,2>
-    inclusiveRange() const
-    {return catHoriz(m_bndsLoIncl,m_bndsHiExcl - Mat<T,dim,1>(1)); }
-
-    Mat<T,dim,1>
-    dims() const
-    {
-        return (m_bndsHiExcl - m_bndsLoIncl);
-    }
-
+    Mat<T,dim,1>        delta() const {return m_idx - m_bndsLoIncl; }
+    Mat<T,dim,2>        inclusiveRange() const {return catHoriz(m_bndsLoIncl,m_bndsHiExcl - Mat<T,dim,1>(1)); }
+    Mat<T,dim,1>        dims() const {return (m_bndsHiExcl - m_bndsLoIncl); }
     // Return clipped bounds of all supremum norm (L_inf) distance = 1 neighbours:
-    Mat<T,dim,2>
-    neighbourBounds() const
+    Mat<T,dim,2>        neighbourBounds() const
     {
         return 
             Mat<T,dim,2>(
@@ -141,17 +157,14 @@ struct  Iter
 
 private:
     // Return false if range is empty or negative (invalid):
-    bool
-    validRange()
+    bool                validRange()
     {
         for (uint dd=0; dd<dim; dd++)
             if (m_bndsHiExcl[dd] <= m_bndsLoIncl[dd])
                 return false;
         return true;
     }
-
-    void
-    setValid()
+    void                setValid()
     {
         FGASSERT(validRange());
         FGASSERT(m_strides.cmpntsProduct() > 0);
@@ -160,8 +173,7 @@ private:
 };
 
 template<typename T,uint dim>
-std::ostream &
-operator<<(std::ostream & os,const Iter<T,dim> & it)
+std::ostream &      operator<<(std::ostream & os,const Iter<T,dim> & it)
 {
     return os
         << "lo: " << it.m_bndsLoIncl
@@ -173,15 +185,12 @@ operator<<(std::ostream & os,const Iter<T,dim> & it)
 
 typedef Iter<int,2>         Iter2I;
 typedef Iter<uint,2>        Iter2UI;
-typedef Iter<uint64,2>      Iter2UL;
 
 typedef Iter<uint,3>        Iter3UI;
-typedef Iter<size_t,3>      Iter3SZ;
-typedef Iter<uint64,3>      Iter3UL;
 
 // Inclusive bounds iterator:
 template<typename T,uint dim>
-struct  IterIub
+struct      IterIub
 {
     static_assert(std::is_integral<T>::value,"IterIub only supports integral types");
     Mat<T,dim,1>  bndLo;          // Inclusive
@@ -195,8 +204,7 @@ struct  IterIub
         idx(inclusiveBounds.colVec(0))
     {init(); }
 
-    bool
-    next()
+    bool                next()
     {
         uint        dd = 0;
         for (; dd<dim-1; ++dd) {
@@ -207,18 +215,10 @@ struct  IterIub
         }
         return (++idx[dd] <= bndHi[dd]);    // Don't wrap-around the final dimension
     }
-
-    bool
-    valid() const
-    {return (idx[dim-1] <= bndHi[dim-1]); }
-
-    Mat<T,dim,1> const &
-    operator()() const
-    {return idx; }
-
+    bool                valid() const {return (idx[dim-1] <= bndHi[dim-1]); }
+    Mat<T,dim,1> const & operator()() const {return idx; }
     // Set iterator to invalid if the range is empty (or negative):
-    void
-    init()
+    void                init()
     {
         for (uint dd=0; dd<dim; ++dd)
             if (bndLo[dd] > bndHi[dd])

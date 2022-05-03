@@ -96,7 +96,7 @@ RayCaster::cast(Vec2F posIucs) const
                             norm = normalize(bc[0]*n0 + bc[1]*n1 + bc[2]*n2);
         RgbaF               albedo(230,230,230,255);
         Vec2Fs const &      uvs = *uvsPtrs[isct.triInd.meshIdx];
-        Vec2F               uv {floatMax()};
+        Vec2F               uv {lims<float>::max()};
         if ((!tris.uvInds.empty()) && (!uvs.empty()) && (material.albedoMap) &&
             (!material.albedoMap->empty()) && useMaps) {
             Vec3UI              uvInds = tris.uvInds[isct.triInd.triIdx];
@@ -113,7 +113,7 @@ RayCaster::cast(Vec2F posIucs) const
             if (fac > 0.0f) {
                 acc += mapMul(surfColour,lgt.colour) * fac;
                 float           shininess = material.shiny ? 1.0f : 0.0f;
-                if ((uv[0] != floatMax()) && material.specularMap && !material.specularMap->empty()) {
+                if ((uv[0] != lims<float>::max()) && material.specularMap && !material.specularMap->empty()) {
                     RgbaF           s = sampleClipIucs(*material.specularMap,uv);
                     shininess = scast<float>(s.red()) / 255.0f;
                 }

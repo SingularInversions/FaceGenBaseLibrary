@@ -14,8 +14,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-ThreadDispatcher::dispatch(function<void()> const & fn)
+void                ThreadDispatcher::dispatch(function<void()> const & fn)
 {
     // Add new tasks directly to new threads until full:
     if (threads.size() < thread::hardware_concurrency()) {
@@ -38,8 +37,7 @@ ThreadDispatcher::dispatch(function<void()> const & fn)
     }
 }
 
-void
-ThreadDispatcher::finish()
+void                ThreadDispatcher::finish()
 {
     for (thread & t : threads) {
         t.join();
@@ -48,8 +46,13 @@ ThreadDispatcher::finish()
     dones.clear();
 }
 
-void
-testStdVector(CLArgs const &)
+void                ThreadDispatcher::worker(Sfun<void()> const & fn,Sptr<std::atomic<bool> > done)
+{
+    fn();
+    done->store(true);
+}
+
+void                testStdVector(CLArgs const &)
 {
     Ints          v = { 1, 2, 3 };
     Intss         subs = cSubsets(v,0,4);

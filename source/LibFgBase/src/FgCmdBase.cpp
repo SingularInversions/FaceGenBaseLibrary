@@ -56,7 +56,7 @@ void testm3d(CLArgs const &);
 void fgClusterTest(CLArgs const &);
 void fgClusterTestm(CLArgs const &);
 void fgClusterDeployTestm(CLArgs const &);
-void fgCmdTestmCpp(CLArgs const &);
+void cmdTestmCpp(CLArgs const &);
 void fg3dReadWobjTest(CLArgs const &);
 void testmRandom(CLArgs const &);
 void testmGeometry(CLArgs const &);
@@ -71,7 +71,7 @@ static void         testmBase(CLArgs const & args)
         {fgClusterTest,"cluster"},
         {fgClusterTestm,"clusterm"},
         {fgClusterDeployTestm,"clusterDeploy"},
-        {fgCmdTestmCpp,"cpp","C++ behaviour tests"},
+        {cmdTestmCpp,"cpp","C++ behaviour tests"},
         {fg3dReadWobjTest,"readWobj"},
         {testmRandom,"random"},
         {testmGeometry,"geometry"},

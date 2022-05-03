@@ -41,6 +41,9 @@ char32_t constexpr  nativeDirSep32 =
 // ensure all directory separators are native separators:
 String              toNativeDirSep(String const & pathAscii);
 String8             toNativeDirSep(String8 const & pathUtf8);
+bool                isAllowedInFilename(char ascii);
+bool                isAllowedInFilename(char32_t utf32);    // only checks for bad ASCII vals; rest of UTF32 accepted.
+String32            removeNonFilenameChars(String32 const & name);      // can return empty
 
 // '.' and '..' are only handled relative to given path string, not 'current' path:
 struct      Path

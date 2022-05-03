@@ -18,20 +18,20 @@
 
 namespace Fg {
 
-void            randSeedRepeatable(uint64 seed=42);     // same seed gives same PRNG sequence
-void            randSeedTime(); // Seed with current time in milliseconds to ensure different results each time
-double          randUniform();                          // uniform random number in the range [0,1]
-uint32          randUint();
-uint            randUint(uint size);                    // uniform random uint in the range [0,size)
-uint64          randUint64();
-double          randUniform(double lo,double hi);       // From the uniformly distributed range [lo,hi)
-double          randNormal();                           // random number from standard normal distribution
-inline float    randNormalF() {return float(randNormal()); }
-Doubles         cRandNormals(size_t num,double mean=0.0,double stdev=1.0);
-Floats          randNormalFs(size_t num,float mean=0.0f,float stdev=1.0f);
+void                randSeedRepeatable(uint64 seed=42);     // same seed gives same PRNG sequence
+void                randSeedTime(); // Seed with current time in milliseconds to ensure different results each time
+double              randUniform();                          // uniform random number in the range [0,1]
+uint32              randUint();
+uint                randUint(uint size);                    // uniform random uint in the range [0,size)
+uint64              randUint64();
+double              randUniform(double lo,double hi);       // From the uniformly distributed range [lo,hi)
+double              randNormal();                           // random number from standard normal distribution
+inline float        randNormalF() {return float(randNormal()); }
+Doubles             cRandNormals(size_t num,double mean=0.0,double stdev=1.0);
+Floats              randNormalFs(size_t num,float mean=0.0f,float stdev=1.0f);
 
 template<size_t S>
-Arr<double,S>   randNormalArr(double mean=0.0,double stdev=1.0)
+Arr<double,S>       randNormalArr(double mean=0.0,double stdev=1.0)
 {
     Arr<double,S>       ret;
     for (size_t ii=0; ii<S; ++ii)
@@ -39,15 +39,14 @@ Arr<double,S>   randNormalArr(double mean=0.0,double stdev=1.0)
     return ret;
 }
 
-std::string     randString(uint numChars);          // alphanumerics only (including capitals):
-bool            randBool();
+std::string         randString(uint numChars);          // alphanumerics only (including capitals):
+bool                randBool();
 // Give random values near 1 or -1 with stdev 0.125 (avoids zero, handy for ACS testing):
-double          randNearUnit();
-Doubles         randNearUnits(size_t num);
+double              randNearUnit();
+Doubles             randNearUnits(size_t num);
 
 template<size_t S>
-Arr<double,S>
-randNearUnitsArr()
+Arr<double,S>       randNearUnitsArr()
 {
     Arr<double,S>       ret;
     for (size_t ss=0; ss<S; ++ss)

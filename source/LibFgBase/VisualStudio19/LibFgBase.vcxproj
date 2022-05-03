@@ -180,7 +180,6 @@
     <ClCompile Include="..\src\Fg3dMeshLwo.cpp" />
     <ClCompile Include="..\src\Fg3dMeshMa.cpp" />
     <ClCompile Include="..\src\Fg3dMeshObj.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshOps.cpp" />
     <ClCompile Include="..\src\Fg3dMeshPly.cpp" />
     <ClCompile Include="..\src\Fg3dMeshStl.cpp" />
     <ClCompile Include="..\src\Fg3dMeshTri.cpp" />
@@ -229,17 +228,14 @@
     <ClInclude Include="..\src\FgException.hpp" />
     <ClCompile Include="..\src\FgFileSystem.cpp" />
     <ClInclude Include="..\src\FgFileSystem.hpp" />
-    <ClCompile Include="..\src\FgFileSystemTest.cpp" />
-    <ClCompile Include="..\src\FgFileUtils.cpp" />
-    <ClInclude Include="..\src\FgFileUtils.hpp" />
     <ClCompile Include="..\src\FgGeometry.cpp" />
     <ClInclude Include="..\src\FgGeometry.hpp" />
     <ClCompile Include="..\src\FgGridIndex.cpp" />
     <ClInclude Include="..\src\FgGridIndex.hpp" />
     <ClCompile Include="..\src\FgGridTriangles.cpp" />
     <ClInclude Include="..\src\FgGridTriangles.hpp" />
-    <ClCompile Include="..\src\FgGuiApi.cpp" />
-    <ClInclude Include="..\src\FgGuiApi.hpp" />
+    <ClCompile Include="..\src\FgGui.cpp" />
+    <ClInclude Include="..\src\FgGui.hpp" />
     <ClCompile Include="..\src\FgGuiApi3d.cpp" />
     <ClInclude Include="..\src\FgGuiApi3d.hpp" />
     <ClCompile Include="..\src\FgGuiApiBase.cpp" />

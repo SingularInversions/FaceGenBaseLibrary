@@ -112,7 +112,7 @@ T                   sampleBlerpZero(Img<T> const & img,Vec2F ircs) {return Blerp
 // This approach of always having valid image indices for sampling doesn't work with empty images.
 struct      LerpClamp
 {
-    Vec2SZ          inds {0,0};     // both tap indices are within array bounds but can be the same (if clamped)
+    Vec2Z          inds {0,0};     // both tap indices are within array bounds but can be the same (if clamped)
     Arr2F           wgts;           // values always valid and sum to 1
 
     LerpClamp(float rcs,size_t dim);    // dim must be > 0
@@ -273,6 +273,8 @@ Img<Out>            mapCallT(Img<In0> const & in0,Img<In1> const & in1,Img<In2> 
     FGASSERT(in0.dims() == in1.dims() && in1.dims() == in2.dims());
     return Img<Out>{in0.dims(),mapCallT<Out,In0,In1,In2,Fn>(in0.m_data,in1.m_data,in2.m_data,fn)};
 }
+
+bool                isApproxEqual(ImgRgba8 const & l,ImgRgba8 const & r,uint maxDiff);
 
 // Interpolate between 2 images:
 template<class T>
@@ -718,7 +720,7 @@ Svec<Img<T>>        cMipmap(Img<T> const & img)
 
 // Blend images given a greyscale transition map [0,255] : 0 -> 'img0', 255 -> 'img1'
 // The returned image is the size of 'img0' and 'img1' and 'transition' are bilinearly sampled.
-// Any of the images can be empty:
+// Output alpha is set to 255. Any of the images can be empty:
 ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC const & transition);
 // Modulate the color channels of an image with a modulation map scaled such that identity (1.0) = 64.
 // Only the color channels of modulationMap are used. The input images may be different sizes but must
@@ -732,7 +734,7 @@ ImgRgba8            imgModulate(
 template<class T>
 Img<T>              outerProduct(Svec<T> const & x,Svec<T> const & y)
 {
-    Vec2UI          dims(Vec2SZ{x.size(),y.size()});
+    Vec2UI          dims(Vec2Z{x.size(),y.size()});
     Img<T>          ret(dims);
     for (Iter2UI it(dims); it.valid(); it.next())
         ret[it()] = x[it()[0]] * y[it()[1]];

@@ -246,10 +246,10 @@ loadWObj(String8 const & fname)
         srf.name = it->first;
         labelledSurfs.push_back(srf);
     }
-    // Important to remove domain info if present since this is not used in FaceGen code:
+    // Important to split tiles (if presenet) into separate surfaces since this convention is not used in FaceGen code:
     // WOBJs can actually use UV domains in combination with 'o', 'g', 's' or 'usemtl' elements (eg. Reallusion):
     for (Surf const & surf : labelledSurfs)
-        cat_(mesh.surfaces,splitByUvDomain_(surf,mesh.uvs));
+        cat_(mesh.surfaces,splitByUvTile_(surf,mesh.uvs));
     return mesh;
 }
 

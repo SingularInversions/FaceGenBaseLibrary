@@ -206,7 +206,7 @@ MatS3D              randMatSpd3D(double lnEigStdev)
     Mat33D          D = cDiagMat(mapExp(Vec3D::randNormal(lnEigStdev))),
                     R = QuaternionD::rand().asMatrix(),
                     M = R.transpose() * D * R;
-    // M will have precision-level asymmetry so manually construct return value from upper triangular values
+    // M will have precision-level asymmetry so construct return value from upper triangular values
     // (Eigen's QR decomp fails badly if symmetry is not precise):
     return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
 }
@@ -240,11 +240,6 @@ MatUT3D             MatUT3D::inverse() const
     ret.m[4] = -m[4]/(m[3]*m[5]);
     ret.m[5] = 1.0/m[5];
     return ret;
-}
-
-MatUT3D             MatUT3D::randNormal(double lnScaleStdev,double shearStdev)
-{
-    return MatUT3D {mapExp(randNormalArr<3>(0.0,lnScaleStdev)),randNormalArr<3>(0.0,shearStdev)};
 }
 
 std::ostream &      operator<<(std::ostream & os,MatUT3D const & ut)
@@ -288,8 +283,8 @@ void                testRotate(CLArgs const &)
         Mat33D          mat = matRotateAxis(angle,axis);
         double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
                         err2 = (mat * axis - axis).len();
-        FGASSERT(err < (epsilonD() * 10.0));
-        FGASSERT(err2 < (epsilonD() * 10.0));
+        FGASSERT(err < (lims<double>::epsilon() * 10.0));
+        FGASSERT(err2 < (lims<double>::epsilon() * 10.0));
         FGASSERT(cDeterminant(mat) > 0.0);      // Ensure SO(3) not just O(3)
     }
 }

@@ -24,14 +24,10 @@ inline Vec3D        cArea(Vec3D p0,Vec3D p1,Vec3D p2) {return crossProduct(p1-p0
 template<typename T>
 struct      VecMag
 {
-    Mat<T,3,1>  vec;
-    T           mag;    // Squared magnitude of vec. Initialized to invalid.
+    Mat<T,3,1>      vec;
+    T               mag {lims<T>::max()};
 
-    VecMag() : mag {std::numeric_limits<T>::max()} {}
-    VecMag(Mat<T,3,1> v,T m) : vec(v), mag(m) {}
-
-    bool valid() const
-    {return (mag != std::numeric_limits<T>::max()); }
+    bool            valid() const {return (mag != lims<T>::max()); }
 };
 typedef VecMag<float>   VecMagF;
 typedef VecMag<double>  VecMagD;

@@ -7,17 +7,17 @@
 //
 //                      Lbutton         Rbutton         Mbutton         LRButtons
 // --------------------------------------------------------------------------------
-// click                showSrfPnt
+// click                showSrfPnt                                      ---
 // drag                 rotate          scale           translate       rot_light
 //
-// shift-click                                          asgnPaintTris
+// shift-click                                          asgnPaintTris   ---
 // shift-drag           translate       asgnTri
 //
-// ctrl-click
+// ctrl-click                                                           ---
 // ctrl-drag            deformS         deformA
 //
-// ctrl-shift-click     surf_pnt        sel_vert
-// ctrl-shift-drag      bg_trans        bg_scale
+// ctrl-shift-click     surf_pnt        sel_vert                        ---
+// ctrl-shift-drag      bg_trans        bg_scale        deleteVerts
 //
 
 #ifndef FG3DDISPLAY_HPP
@@ -112,15 +112,13 @@ OPT<String8>        linkMeshStats(RendMeshes const &);
 // will be returned. Otherwise an empty mesh is returned:
 Mesh                viewMesh(
     Meshes const &      meshesOecs,         // Assign the 'name' field if desired for mesh selection
-    bool                compare=false);     // Radio button selects between meshes (if more than one)
+    // use radio button to select mesh (if more than 1) rather than checkboxes:
+    bool                compare=false,
+    String8 const &     saveName={});       // if given, offer option to save under this filename in edit
 inline Mesh         viewMesh(Mesh const & mesh) {return viewMesh({mesh},false); }
-// GUI queries user to place surface points for all labels which do not yet have a same-named surface point.
-// Prompts for each point separately and allows multiple tries per point.
-// Returns true if user enters points for all given labels not already present, false if user closes before that.
-bool                guiPlaceSurfPoints(Mesh & mesh,Strings labels);
-// GUI window guides user through placement of a surface 0 point for each of 'labels' which does not already
-// have an identically named surface point in 'mesh' surface 0. Mesh is modified and returns true if user completes
-// task, false if user cancels before then. Currently not set up to handle multi-surface meshes.
+// GUI window guides user through placement of a surface 0 point for each of 'labels', regardless of whether
+// one already exists. Mesh is modified and returns true if user completes task, false if user cancels before
+// then. Currently not set up to handle multi-surface meshes.
 bool                guiPlaceSurfPoints_(Strings const & labels,Mesh & mesh);
 
 }

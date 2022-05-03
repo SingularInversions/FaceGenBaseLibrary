@@ -125,9 +125,9 @@ T                   cDeterminant(Mat<T,4,4> const & M)
     });
     return M[0]*d0 - M[1]*d1 + M[2]*d2 - M[3]*d3;
 }
-// Concatenate an element onto a column Svec:
+// append an element onto a column vec:
 template<class T,uint dim>
-Mat<T,dim+1,1>      cat(Mat<T,dim,1> const & vec,T val)
+Mat<T,dim+1,1>      append(Mat<T,dim,1> const & vec,T val)
 {
     Mat<T,dim+1,1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -135,9 +135,9 @@ Mat<T,dim+1,1>      cat(Mat<T,dim,1> const & vec,T val)
     ret[dim] = val;
     return ret;
 }
-// Concatenate an element onto a row Svec:
+// append an element onto a row vec:
 template<class T,uint dim>
-Mat<T,1,dim+1>      cat(const Mat<T,1,dim> & vec,T val)
+Mat<T,1,dim+1>      append(const Mat<T,1,dim> & vec,T val)
 {
     Mat<T,1,dim+1>    ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -145,11 +145,24 @@ Mat<T,1,dim+1>      cat(const Mat<T,1,dim> & vec,T val)
     ret[dim] = val;
     return ret;
 }
-template<class T,uint R,uint C>
-void                cat_(Svec<T> & l,Mat<T,R,C> const & r)
+// Concatenate 2 column vectors:
+template<class T,uint D0,uint D1>
+Mat<T,D0+D1,1>      cat(Mat<T,D0,1> const & l,Mat<T,D1,1> const & r)
 {
-    for (uint ii=0; ii<R*C; ++ii)
-        l.push_back(r[ii]);
+    return Mat<T,D0+D1,1>{cat(l.m,r.m)};
+}
+// create block diagonal square matrix of 2 square matrices. Off diagonals set to 0.
+template<class T,uint D0,uint D1>
+Mat<T,D0+D1,D0+D1>  catDiagonal(Mat<T,D0,D0> const & l,Mat<T,D1,D1> const & r)
+{
+    Mat<T,D0+D1,D0+D1>      ret(0);
+    for (uint rr=0; rr<D0; ++rr)
+        for (uint cc=0; cc<D0; ++cc)
+            ret.rc(rr,cc) = l.rc(rr,cc);
+    for (uint rr=0; rr<D1; ++rr)
+        for (uint cc=0; cc<D1; ++cc)
+            ret.rc(D0+rr,D0+cc) = r.rc(rr,cc);
+    return ret;
 }
 // Flatten a Svec of matrices into a Svec of scalars:
 template<class T,uint R,uint C>
@@ -197,21 +210,13 @@ Doubles             toDoubles(const Svec<Svec<Mat<T,R,C>>> & mss)
                 ret.push_back(scast<double>(e));
     return ret;
 }
+// project a homogenous position vector back to euclidean representation:
 template<class T,uint dim>
-Mat<T,dim+1,1>      asHomogVec(Mat<T,dim,1> v)
-{
-    Mat<T,dim+1,1>    ret;
-    for (uint ii=0; ii<dim; ++ii)
-        ret[ii] = v[ii];
-    ret[dim] = T(1);
-    return ret;
-}
-template<class T,uint dim>
-Mat<T,dim-1,1>      fromHomogVec(Mat<T,dim,1> v)
+Mat<T,dim-1,1>      projectHomog(Mat<T,dim,1> v)
 {
     Mat<T,dim-1,1>    ret;
     T                 w = v[dim-1];
-    FGASSERT(w != T(0));
+    FGASSERT(w != T(0));                // cannot be a direction vector
     for (uint ii=0; ii<dim-1; ++ii)
         ret[ii] = v[ii] / w;
     return ret;
@@ -891,7 +896,7 @@ inline MatS3D       outerProductSelf(Vec3D v)
 {
     return          {{mapSqr(v.m)},{{v[0]*v[1],v[0]*v[2],v[1]*v[2]}}};
 }
-// Isotropic random symmetric positive definite matrix with given standard deviation of log eigenvalues:
+// isotropic random symmetric positive definite matrix with ln eigenvalues ~ N(0,lnEigStdev):
 MatS3D              randMatSpd3D(double lnEigStdev);
 
 // Symmetric 2x2 double matrix:
@@ -923,7 +928,6 @@ struct      MatUT3D
 
     static MatUT3D  identity()  {return MatUT3D(1,0,0,1,0,1); }
     static MatUT3D  diagonal(double v) {return MatUT3D{v,0,0,v,0,v}; }
-    static MatUT3D  randNormal(double lnEigsStdev,double shearsStdev);          // Isotropic positive definite
 
     MatUT3D         operator-(MatUT3D const & rhs) const {return MatUT3D(m-rhs.m); }
     MatUT3D         operator*(double s) const {return MatUT3D {m*s}; }

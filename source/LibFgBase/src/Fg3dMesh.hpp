@@ -288,16 +288,6 @@ Mesh                subdivide(Mesh const &,bool loop = true);   // If 'loop' not
 // Remove all tris that lie entirely outside the given bounds then remove all unused vertices:
 TriSurf             cullVolume(TriSurf surf,Mat32F const & bounds);
 
-struct IdxDelta
-{
-    uint        idx;            // index into a vertex list
-    Vec3F       delta;          // vertex delta from original vertex
-
-    IdxDelta() {}
-    IdxDelta(uint i,Vec3F d) : idx(i), delta(d) {}
-};
-typedef Svec<IdxDelta>      IdxDeltas;
-
 // Creates 2.5D surface from depth image:
 // * Vertex created for each pixel (RCS X to X, Y to Y and pixel value to Z)
 // * Vertices are re-scaled to fit bounding box [0,1]^3
@@ -309,15 +299,15 @@ Mesh            meshFromImage(const ImgD & img);
 
 // Create a grid of SxS squares filling XY in [-1,1] at Z=0:
 QuadSurf        cGrid(size_t squaresPerSide);
-Mesh            c3dCube(bool open=false);
-Mesh            cPyramid(bool open=false);
+TriSurf         cCubeTris(bool open=false);         // size 2 cube centred at origin
+TriSurf         cPyramid(bool open=false);
 // Regular tetrahedron, centre at origin, edges length 2*sqrt(2), CC winding.
 TriSurf         cTetrahedron(bool open=false);
 TriSurf         cOctahedron();                      // Size (max width) 2 centred around origin. CC winding.
 // Regular icosahedron, centre at origin, all vertices distance 1 from origin, CC winding:
 TriSurf         cIcosahedron();
 TriSurf         cIcosahedron(float scale,Vec3F const & centre); // as above but scaled then translated
-Mesh            cNTent(uint nn);
+TriSurf         cNTent(uint nn);
 // Create unit radius sphere centred at origin by subdividing a tetrahedron and renormalizing the 
 // vertex positions 'subdivision' times. Poor isotropy.
 TriSurf         cSphere4(size_t subdivisions);
@@ -329,6 +319,9 @@ Mesh            removeDuplicateFacets(Mesh const &);
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
 // Retains only those morphs which affect the remaining vertices:
 Mesh            removeUnusedVerts(Mesh const &);
+// Removes the given vertices (by index, can be specified in any order), along with any marked verts,
+// polys, surface points that depend on them. Morphs updated. Joint information discarded.
+Mesh            removeVerts(Mesh const & orig,Uints const & vertInds);
 Mesh            mergeSameNameSurfaces(Mesh const &);
 Mesh            fuseIdenticalVerts(Mesh const &);       // morphs and marked verts are discarded
 Mesh            fuseIdenticalUvs(Mesh const &);

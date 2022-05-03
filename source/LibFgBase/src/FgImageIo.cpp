@@ -19,10 +19,10 @@ namespace Fg {
 ImgFormatsInfo      getImgFormatsInfo()     // first is default for writing
 {
     static ImgFormatsInfo ret {
-        {ImgFormat::png,{"png"},        "PNG: lossless compression, medium file size"},
-        {ImgFormat::jpg,{"jpg","jpeg"}, "JPG: lossy compression small file size, no transparency"},
-        {ImgFormat::tga,{"tga"},        "TGA: lossless compression large file size"},
-        {ImgFormat::bmp,{"bmp"},        "BMP: Lossless compression medium file size, no transparency"},
+        {ImgFormat::png,{"png"},        "PNG: lossless, medium file size"},
+        {ImgFormat::jpg,{"jpg","jpeg"}, "JPG: good quality, small file size, no transparency"},
+        {ImgFormat::tga,{"tga"},        "TGA: lossless, large file size"},
+        {ImgFormat::bmp,{"bmp"},        "BMP: Lossless, medium file size, no transparency"},
     };
     return ret;
 }

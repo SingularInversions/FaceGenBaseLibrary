@@ -113,7 +113,7 @@ EigsRsmC<3>         cEigsRsm(Mat33D const & rsm)
     for (size_t rr=0; rr<3; ++rr) {
         for (size_t cc=rr; cc<3; ++cc) {
             double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(boost::math::isfinite(v));
+            FGASSERT(isfinite(v));
             mat(rr,cc) = v;
             mat(cc,rr) = v;
         }
@@ -137,7 +137,7 @@ EigsRsmC<4>         cEigsRsm(Mat44D const & rsm)
     for (size_t rr=0; rr<4; ++rr) {
         for (size_t cc=rr; cc<4; ++cc) {
             double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(boost::math::isfinite(v));
+            FGASSERT(isfinite(v));
             mat(rr,cc) = v;
             mat(cc,rr) = v;
         }
@@ -162,7 +162,7 @@ EigsC<dim>          fgEigsT(const Mat<double,dim,dim> & in)
     for (size_t rr=0; rr<dim; ++rr) {
         for (size_t cc=0; cc<dim; ++cc) {
             double          v = in.rc(rr,cc);
-            FGASSERT(boost::math::isfinite(v));
+            FGASSERT(isfinite(v));
             mat(rr,cc) = v;                 // MatrixXd takes (row,col) order
         }
     }

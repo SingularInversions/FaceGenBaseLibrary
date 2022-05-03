@@ -13,6 +13,8 @@
 #include "FgStdVector.hpp"
 #include "FgTime.hpp"
 #include "FgParse.hpp"
+#include "FgCommand.hpp"
+#include "FgMetaFormat.hpp"
 
 using namespace std;
 using namespace boost::filesystem;
@@ -374,6 +376,108 @@ Strings             findExts(String8 const & dirBase,Strings const & exts)
         if (fileExists(dirBase+"."+ext))
             ret.push_back(ext);
     return ret;
+}
+
+namespace {
+
+void                testCurrentDirectory(CLArgs const & args)
+{
+    FGTESTDIR
+    try
+    {
+        char32_t        ch = 0x00004EE5;            // A Chinese character
+        String8         chinese(ch);
+        String8         oldDir = getCurrentDir();
+        String8         dirName = chinese + nativeDirSep8;
+        createDirectory(dirName);
+        setCurrentDir(dirName);
+        String8         newDir = getCurrentDir();
+        String8         expected = oldDir + dirName;
+        setCurrentDir(oldDir);
+        String8         restored = getCurrentDir();
+        FGASSERT(removeDirectory(dirName));
+        fgout << fgnl << "Original directory:    " << oldDir.as_utf8_string();
+        fgout << fgnl << "New current directory: " << newDir.as_utf8_string();
+        fgout << fgnl << "Expected directory:    " << expected.as_utf8_string();
+        fgout << fgnl << "Restored directory:    " << restored.as_utf8_string();
+        FGASSERT(expected == newDir);
+    }
+    catch (FgExceptionNotImplemented const & e) 
+    {
+        fgout << e.tr_message();
+    }
+}
+
+void                testOfstreamUnicode(CLArgs const & args)
+{
+    FGTESTDIR
+    char32_t        cent = 0x000000A2;              // The cent sign
+    String8        test = String8(cent);
+    Ofstream      ofs(test);
+    FGASSERT(ofs);
+    ofs.close();
+    pathRemove(test);
+}
+
+void                testReadableFile(CLArgs const & args)
+{
+    FGTESTDIR
+    std::ofstream ofs("testReadableFile.txt");
+    FGASSERT(ofs);
+    ofs << "Hi";
+    ofs.close();
+    FGASSERT(fileReadable("testReadableFile.txt"));
+    FGASSERT(!fileReadable("This file does not exist"));
+}
+
+void                testDeleteDirectory(CLArgs const & args)
+{
+    FGTESTDIR
+    char32_t        ch = 0x000000A2;              // The cent sign
+    String8        cent = String8(ch)+"/";
+    String8        name = "testDeleteDirectory/";
+    createDirectory(name);
+    FGASSERT(pathExists(name));
+    createDirectory(name+cent);
+    saveBsaXml(name+cent+"a",42);
+    saveBsaXml(name+"b",21);
+    deleteDirectoryRecursive(name);
+    FGASSERT(!pathExists(name));
+}
+
+void                testRecursiveCopy(CLArgs const & args)
+{
+    FGTESTDIR
+    string          path = "silly-v3.4.7/subdir/";
+    createPath("tst1/"+path);
+    Ofstream      ofs("tst1/"+path+"file");
+    ofs << "hello";
+    ofs.close();
+    copyRecursive("tst1","tst2");
+    Ifstream      ifs("tst2/"+path+"file");
+    string          hello;
+    ifs >> hello;
+    FGASSERT(hello == "hello");
+}
+
+void                testExists(CLArgs const &)
+{
+    FGASSERT(!pathExists("//doesNotExists"));
+}
+
+}
+
+void                testFilesystem(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testCurrentDirectory,"curDir"},
+        {testOfstreamUnicode,"ofsUni"},
+        {testReadableFile,"readable"},
+        {testDeleteDirectory,"delDir"},
+        {testRecursiveCopy,"recurseCopy"},
+        {testExists,"exists"},
+    };
+    doMenu(args,cmds,true,true,true);
 }
 
 }

@@ -77,6 +77,7 @@ Cmp cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cmp::eq); }
 #define FG_EQ_M1(T,A) bool operator==(T const & r) const {return (A == r.A); }
 #define FG_EQ_M2(T,A,B) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B)); }
 #define FG_EQ_M3(T,A,B,C) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C)); }
+#define FG_EQ_M4(T,A,B,C,D) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C) && (D == r.D)); }
 
 }
 

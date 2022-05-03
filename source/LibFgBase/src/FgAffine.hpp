@@ -233,6 +233,7 @@ typedef AffineEw<float,2>       AffineEw2F;
 typedef AffineEw<double,2>      AffineEw2D;
 typedef AffineEw<float,3>       AffineEw3F;
 typedef AffineEw<double,3>      AffineEw3D;
+typedef AffineEw<float,4>       AffineEw4F;
 
 typedef Svec<AffineEw2F>        AffineEw2Fs;
 typedef Svec<AffineEw3F>        AffineEw3Fs;
@@ -245,14 +246,6 @@ inline std::ostream & operator<<(std::ostream & os,const AffineEw<T,dim> & v)
     return os;
 }
 
-template<uint dim>
-AffineEw<float,dim> fgD2F(const AffineEw<double,dim> & v)
-{
-    return AffineEw<float,dim>(
-        Mat<float,dim,1>(v.m_scales),
-        Mat<float,dim,1>(v.m_trans));
-}
-
 template<typename T,uint dim>
 Mat<T,dim+1,dim+1>  asHomogMat(AffineEw<T,dim> a)
 {
@@ -263,6 +256,13 @@ Mat<T,dim+1,dim+1>  asHomogMat(AffineEw<T,dim> a)
     }
     ret.rc(dim,dim) = T(1);
     return ret;
+}
+
+// concatenate (dimensionally) two affine transforms; it will operate on respectivaly concatenated vectors:
+template<class T,uint D0,uint D1>
+AffineEw<T,D0+D1>   cat(AffineEw<T,D0> const & l,AffineEw<T,D1> const & r)
+{
+    return {cat(l.m_scales,r.m_scales),cat(l.m_trans,r.m_trans)};
 }
 
 template<uint dim>

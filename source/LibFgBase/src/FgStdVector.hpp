@@ -462,6 +462,17 @@ size_t              findLastIdx(Svec<T> const & vec,const U & val)
             return ii-1;
     return vec.size();
 }
+template<class T>
+Svec<T>             filter(Svec<T> const & vals,Bools const & keepFlags)
+{
+    size_t              V = vals.size();
+    FGASSERT(keepFlags.size() == V);
+    Svec<T>             ret;
+    for (size_t vv=0; vv<V; ++vv)
+        if (keepFlags[vv])
+            ret.push_back(vals[vv]);
+    return ret;
+}
 // functional version of std::copy_if over entire vector (like a filter):
 template<class T,class P>
 Svec<T>             findAll(Svec<T> const & vals,P const & pred)    // pred() must take one T argument
@@ -918,17 +929,18 @@ Sizes               sortInds(Svec<T> const & v)
     std::sort(inds.begin(),inds.end(),[&](size_t l,size_t r){return (v[l]<v[r]); });
     return inds;
 }
-// Permute / select / reorder / re-order a list or subset thereof in the order of the given indices.
+// create a new list of values from 'vals' given by the order and indices in 'indices'
+// permute / reorder (re-order) is a special case when 'indices' is a 1-1 map with 'in'.
 template<class T,class U,
     // Can be uint or uint64, and on some platforms size_t is different from these:
     FG_ENABLE_IF(U,is_unsigned),
     FG_ENABLE_IF(U,is_integral)
 >
-Svec<T>             permute(Svec<T> const & v,Svec<U> const & inds)
+Svec<T>             select(Svec<T> const & vals,Svec<U> const & indices)
 {
-    Svec<T>             ret; ret.reserve(inds.size());
-    for (size_t ii=0; ii<inds.size(); ++ii)
-        ret.push_back(v[inds[ii]]);
+    Svec<T>             ret; ret.reserve(indices.size());
+    for (size_t ii=0; ii<indices.size(); ++ii)
+        ret.push_back(vals[indices[ii]]);
     return ret;
 }
 template<class T>

@@ -35,12 +35,9 @@ static RNG rng;
 
 }
 
-uint32
-randUint()
-{return uint32(rng.gen()); }
+uint32              randUint() {return uint32(rng.gen()); }
 
-uint
-randUint(uint size)
+uint                randUint(uint size)
 {
     FGASSERT(size>1);
     // Lightweight class, not a performance issue to construct each time:
@@ -48,34 +45,17 @@ randUint(uint size)
     return d(rng.gen);
 }
 
-uint64
-randUint64()
-{return rng.gen(); }
+uint64              randUint64() {return rng.gen(); }
 
-double
-randUniform()
-{
-    return double(randUint64()) / double(numeric_limits<uint64>::max());
-}
+double              randUniform() {return double(randUint64()) / double(numeric_limits<uint64>::max()); }
 
-void
-randSeedRepeatable(uint64 seed)
-{
-    rng.gen.seed(seed);
-}
+void                randSeedRepeatable(uint64 seed) {rng.gen.seed(seed); }
 
-void
-randSeedTime()
-{
-    rng.gen.seed(getTimeMs());
-}
+void                randSeedTime() {rng.gen.seed(getTimeMs()); }
 
-double
-randUniform(double lo,double hi) 
-{return (randUniform() * (hi-lo) + lo); }
+double              randUniform(double lo,double hi) {return (randUniform() * (hi-lo) + lo); }
 
-double
-randNormal()
+double              randNormal()
 {
     // Polar (Box-Muller) method; See Knuth v2, 3rd ed, p122.
     double  x, y, r2;
@@ -90,8 +70,7 @@ randNormal()
     return y * sqrt (-2.0 * log (r2) / r2);
 }
 
-Doubles
-cRandNormals(size_t num,double mean,double stdev)
+Doubles             cRandNormals(size_t num,double mean,double stdev)
 {
     Doubles      ret(num);
     for (size_t ii=0; ii<num; ++ii)
@@ -99,8 +78,7 @@ cRandNormals(size_t num,double mean,double stdev)
     return ret;
 }
 
-Floats
-randNormalFs(size_t num,float mean,float stdev)
+Floats              randNormalFs(size_t num,float mean,float stdev)
 {
     Floats      ret(num);
     for (size_t ii=0; ii<num; ++ii)
@@ -108,9 +86,7 @@ randNormalFs(size_t num,float mean,float stdev)
     return ret;
 }
 
-static
-char
-randChar()
+static char         randChar()
 {
     uint    val = randUint(26+26+10);
     if (val < 10)
@@ -123,8 +99,7 @@ randChar()
     return char(97+val);
 }
 
-string
-randString(uint numChars)
+string              randString(uint numChars)
 {
     string  ret;
     for (uint ii=0; ii<numChars; ++ii)
@@ -132,29 +107,22 @@ randString(uint numChars)
     return ret;
 }
 
-bool
-randBool()
-{
-    return (rng.gen() & 0x01ULL);
-}
+bool                randBool() {return (rng.gen() & 0x01ULL); }
 
-double
-randNearUnit()
+double              randNearUnit()
 {
     double              unit = randBool() ? 1.0 : -1.0;
     return unit + randNormal()*0.125;
 }
 
-Doubles
-randNearUnits(size_t num)
+Doubles             randNearUnits(size_t num)
 {
     return generateSvec<double>(num,[](size_t){return randNearUnit(); });
 }
 
 namespace {
 
-void
-normGraph(CLArgs const &)
+void                normGraph(CLArgs const &)
 {
     fgout << fgnl << "sizeof(RNG) = " << sizeof(RNG);
     // Create a histogram of normal samples:
@@ -192,8 +160,7 @@ normGraph(CLArgs const &)
     viewImage(img);
 }
 
-void
-normMoments(CLArgs const &)
+void                normMoments(CLArgs const &)
 {
     for (size_t vv=0; vv<3; ++vv) {
         double                  stdev = pow(2.0,vv);
@@ -208,8 +175,7 @@ normMoments(CLArgs const &)
 
 }
 
-void
-testmRandom(CLArgs const & args)
+void                testmRandom(CLArgs const & args)
 {
     Cmds                cmds {
         {normGraph,"graph","graph generated normals against gaussian"},

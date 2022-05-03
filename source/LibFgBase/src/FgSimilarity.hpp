@@ -50,9 +50,10 @@ inline Rigid3D      cRotateAround(Vec3D const & pnt,QuaternionD const & rot)
     // y = R(x-p)+p = Rx + (p-Rp)
     return Rigid3D{rot,pnt-rot*pnt};
 }
-
 // composition operator:
 inline Rigid3D      operator*(QuaternionD const & lhs,Rigid3D const & rhs) {return {lhs*rhs.rot,lhs*rhs.trans}; }
+
+struct  SimilarityRD;
 
 struct  SimilarityD
 {
@@ -69,6 +70,7 @@ struct  SimilarityD
     explicit SimilarityD(ScaleTrans3D const & s) : scale(s.scale), trans(s.trans) {}
     SimilarityD(double s,QuaternionD const & r,const Vec3D & t) : scale(s), rot(r), trans(t) {FGASSERT(scale > 0.0); }
     SimilarityD(Rigid3D const & r) : rot{r.rot}, trans{r.trans} {}
+    SimilarityD(SimilarityRD const &);
 
     Vec3D           operator*(Vec3D const & v) const {return rot * v * scale + trans; }
     Vec3F           operator*(Vec3F const & v) const {return Vec3F(operator*(Vec3D(v))); }
@@ -100,9 +102,9 @@ SimilarityD         interpolateAsModelview(SimilarityD s0,SimilarityD s1,double 
 // Also fewer operations and doesn't lose precision on 'trans' during 'inverse' operation.
 struct  SimilarityRD
 {
-    Vec3D           trans;          // Translation applied first
+    Vec3D           trans {0};          // Translation applied first
     QuaternionD     rot;
-    double          scale;          // Scale and rotation applied last
+    double          scale {1};          // Scale and rotation applied last
     FG_SER3(trans,rot,scale)
     FG_SERIALIZE3(trans,rot,scale);
 

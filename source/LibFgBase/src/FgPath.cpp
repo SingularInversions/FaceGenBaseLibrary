@@ -47,6 +47,36 @@ String8             toNativeDirSep(String8 const & path)
     return String8{ret};
 }
 
+bool                isAllowedInFilename(char ascii)
+{
+    uint            asciiu = scast<uint>(ascii);
+    if (asciiu < 32)            // control codes
+        return false;
+    char            bad[] = {'<','>',':','"','/','\\','|','?','*'};
+    size_t          sz = sizeof(bad);
+    for (size_t cc=0; cc<sz; ++cc)
+        if (ascii == bad[cc])
+            return false;
+    return asciiu < 127;        // DEL
+}
+
+bool                isAllowedInFilename(char32_t utf32)
+{
+    if (scast<uint32>(utf32) < 127)
+        return isAllowedInFilename(scast<char>(utf32));
+    else
+        return true;
+}
+
+String32            removeNonFilenameChars(String32 const & name)
+{
+    String32            ret;
+    for (char32_t ch : name)
+        if (isAllowedInFilename(ch))
+            ret.push_back(ch);
+    return ret;
+}
+
 // TODO: We don't handle double-delim paths such as //server/share/...
 Path::Path(String8 const & pathUtf8)
 : root(false)

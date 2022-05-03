@@ -85,7 +85,7 @@ int                 mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv
     }
     catch(FgException const & e)
     {
-        errStr += "\nERROR (FG exception)\n" + e.tr_message();
+        errStr += "\nERROR (FgException)\n" + e.tr_message();
         retval = -1;
     }
     catch(std::bad_alloc const &)
@@ -98,7 +98,7 @@ int                 mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv
     }
     catch(std::exception const & e)
     {
-        errStr += "\nERROR (std::exception)\n" + string(e.what());
+        errStr += "\nERROR (std::exception) " + string(e.what());
         retval = -2;
     }
     catch(...)

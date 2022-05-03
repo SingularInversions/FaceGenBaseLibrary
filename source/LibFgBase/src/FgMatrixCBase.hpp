@@ -310,7 +310,7 @@ typedef Mat<double,2,1>         Vec2D;
 typedef Mat<short,2,1>          Vec2S;
 typedef Mat<int,2,1>            Vec2I;
 typedef Mat<uint,2,1>           Vec2UI;
-typedef Mat<size_t,2,1>         Vec2SZ;
+typedef Mat<size_t,2,1>         Vec2Z;
 typedef Mat<bool,2,1>           Vec2B;
 
 typedef Mat<float,3,1>          Vec3F;
@@ -320,7 +320,7 @@ typedef Mat<uchar,3,1>          Vec3UC;
 typedef Mat<int16,3,1>          Vec3S;
 typedef Mat<int,3,1>            Vec3I;
 typedef Mat<uint,3,1>           Vec3UI;
-typedef Mat<size_t,3,1>         Vec3SZ;
+typedef Mat<size_t,3,1>         Vec3Z;
 typedef Mat<int64,3,1>          Vec3L;
 typedef Mat<uint64,3,1>         Vec3UL;
 
@@ -329,7 +329,9 @@ typedef Mat<double,4,1>         Vec4D;
 typedef Mat<int,4,1>            Vec4I;
 typedef Mat<uint,4,1>           Vec4UI;
 typedef Mat<uchar,4,1>          Vec4UC;
+
 typedef Mat<double,5,1>         Vec5D;
+typedef Mat<uint,5,1>           Vec5UI;
 
 typedef Mat<float,1,2>          VecF2;
 typedef Mat<float,1,3>          VecF3;
@@ -351,6 +353,7 @@ typedef Svec<Vec2Ds>            Vec2Dss;
 typedef Svec<Vec2Fs>            Vec2Fss;
 typedef Svec<Vec3Fs>            Vec3Fss;
 typedef Svec<Vec3Ds>            Vec3Dss;
+typedef Svec<Vec3UIs>           Vec3UIss;
 typedef Svec<Vec4UIs>           Vec4UIss;
 
 typedef Mat<float,2,2>          Mat22F;

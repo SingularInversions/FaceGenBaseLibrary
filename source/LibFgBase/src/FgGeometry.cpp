@@ -155,7 +155,7 @@ lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
     Plane               plane = cPlane(p0,v1-pnt,v2-pnt);
     Vec4D               isectH = linePlaneIntersect(dir,plane);
     if (isectH[3] != 0.0) {     // line can't be parallel to facet plane
-        Vec3D                isect = fromHomogVec(isectH);
+        Vec3D                isect = projectHomog(isectH);
         // Now calculate barycentric coords s,t (with axes v1-v0,v2-v0) of intersection point:
         Vec3D                u(v1-v0),
                                 v(v2-v0),
@@ -342,13 +342,13 @@ testLinePlaneIntersect(CLArgs const &)
                         r1 = rot * v1,
                         r2 = rot * v2;
         Mat33D          rot3 = matRotateAxis((randUniform()*0.5-0.25)*pi(),normalize(Vec3D::randNormal()));
-        Vec3D           p0 = rot3 * asHomogVec(r0),
-                        p1 = rot3 * asHomogVec(r1),
-                        p2 = rot3 * asHomogVec(r2),
-                        pt = rot3 * asHomogVec(zero + Vec2D::randUniform(-0.1,0.1));
+        Vec3D           p0 = rot3 * append(r0,1.0),
+                        p1 = rot3 * append(r1,1.0),
+                        p2 = rot3 * append(r2,1.0),
+                        pt = rot3 * append(zero + Vec2D::randUniform(-0.1,0.1),1.0);
         Plane           pln = cPlane(p0,p1,p2);
         Vec4D           is = linePlaneIntersect(pt*exp(randNormal()),pln);
-        FGASSERT(isApproxEqualRelMag(pt,fromHomogVec(is),30));
+        FGASSERT(isApproxEqualRelMag(pt,projectHomog(is),30));
     }
 }
 
@@ -375,7 +375,7 @@ testPointInTriangle(CLArgs const &)
     Vec2D    v0(0.0,0.0),
                 v1(1.0,0.0),
                 v2(0.0,1.0);
-    double      d = epsilonD() * 100,
+    double      d = lims<double>::epsilon() * 100,
                 d1 = 1.0 - d * 2.0;
     randSeedRepeatable();
     // In middle:

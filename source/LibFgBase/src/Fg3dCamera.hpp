@@ -44,7 +44,7 @@
 // ONDCS := OpenGL Normalized Device CS / Canonical Clipping Volume (LEFT-handed CS)
 //    X - left to right [-1,1]
 //    Y - bottom to top [-1,1]
-//    Z - near to far   [-1,1]
+//    Z - inverse depth (near to far)  [-1,1]
 //    The view volume (frustum) is transformed into (x,y,z) in the range [-1,1].
 //    Note that the Z values are inverted, so the most distant objects have the largest Z values
 //    and the values are non-linear (one over the distance from the camera). 

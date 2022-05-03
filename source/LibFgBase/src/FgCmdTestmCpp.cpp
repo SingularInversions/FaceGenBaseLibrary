@@ -18,6 +18,7 @@
 #include "FgBuild.hpp"
 #include "FgVersion.hpp"
 #include "FgTime.hpp"
+#include "FgMath.hpp"
 
 using namespace std;
 
@@ -25,136 +26,143 @@ namespace Fg {
 
 namespace {
 
-static size_t rvoCount;
-
-struct  TestmRvo
+struct      Rvo
 {
-    Doubles      data;
-    TestmRvo() {}
-    TestmRvo(double v) : data(1,v) {}
-    TestmRvo(TestmRvo const & rhs) : data(rhs.data) {++rvoCount; }
-    TestmRvo & operator=(TestmRvo const & rhs) = default;               // Must be explicit when CC is
+    Doubles             data;                                   // something with construction worth eliding
+
+    Rvo() {}
+    explicit Rvo(double v) : data(1,v) {}
+    explicit Rvo(Doubles const & vals) : data(vals) {}
+    Rvo(Rvo const & rhs) : data(rhs.data) { fgout << "CC "; }   // show copy constructor invocations
+    Rvo & operator=(Rvo const & rhs) = default;                 // must be explicit when CC is custom
 };
 
-TestmRvo
-testmRvo()
+void                testRvo(CLArgs const &)
 {
-    Doubles      t0(1,3.14159);
-    return TestmRvo(t0[0]);
-}
-
-TestmRvo
-testmRvoMr(bool sel)
-{
-    Doubles      t0(1,2.71828),
-                t1(1,3.14159);
-    if (sel)
-        return TestmRvo(t0[0]);
-    else
-        return TestmRvo(t1[0]);
-}
-
-TestmRvo
-testmNrvo(bool sel)
-{
-    Doubles      t0(1,2.71828),
-                t1(1,3.14159);
-    TestmRvo  ret;
-    if (sel)
-        ret = TestmRvo(t0[0]);
-    else
-        ret = TestmRvo(t1[0]);
-    return ret;
-}
-
-TestmRvo
-testmNrvoMr(bool sel)
-{
-    Doubles      t0(1,2.71828),
-                t1(1,3.14159);
-    TestmRvo  ret;
-    if (sel) {
-        ret = TestmRvo(t0[0]);
-        return ret;
+    Rvo             t;
+    {
+        PushIndent      pind{"construct at single return: "};
+        auto            fn = [](){return Rvo{3.14}; };
+        fn();
     }
-    else {
-        ret = TestmRvo(t1[0]);
-        return ret;
+    {
+        PushIndent      pind{"construct at multiple returns: "};
+        auto            fn = [](bool r)
+        {
+            if (r)
+                return Rvo{3.14};
+            else
+                return Rvo{2.72};
+        };
+        fn(true);
+        fn(false);
+    }
+    {
+        PushIndent      pind{"construct, modify, return: "};
+        auto            fn = [](){
+            Rvo             ret;
+            ret.data.push_back(3.14);
+            return ret;
+        };
+        fn();
+    }
+    {
+        PushIndent      pind{"construct, mutiple modify paths, single return: "};
+        auto            fn = [](bool r)
+        {
+            Rvo             ret;
+            if (r)
+                ret.data.push_back(3.14);
+            else
+                ret.data.push_back(2.72);
+            return ret;
+        };
+        fn(true);
+        fn(false);
+    }
+    {
+        PushIndent      pind{"construct, mutiple returns: "};
+        auto            fn = [](bool r)
+        {
+            Rvo             ret;
+            if (r) {
+                ret.data.push_back(3.14);
+                return ret;
+            }
+            else {
+                ret.data.push_back(2.72);
+                return ret;
+            }
+        };
+        fn(true);
+        fn(false);
+    }
+    {
+        // this works, but not sure how:
+        PushIndent      pind{"assign to self from pass by reference: "};
+        auto            fn = [](Rvo const & vals)
+        {
+            Rvo             ret;
+            for (double v : vals.data)
+                ret.data.push_back(2.72 * v);
+            return ret;
+        };
+        Doubles             vals = cRandNormals(256);
+        Rvo                 in {vals};
+        // I guess the return value constructed first then input to operator=() here
+        in = fn(in);
+        FGASSERT(in.data == mapMul(2.72,vals));
     }
 }
 
-void
-rvo(CLArgs const &)
+void                testExp(CLArgs const &)
 {
-    TestmRvo      t;
-    rvoCount = 0;
-    t = testmRvo();
-    fgout << fgnl << "RVO copies: " << rvoCount;
-    rvoCount = 0;
-    t = testmRvoMr(true);
-    t = testmRvoMr(false);
-    fgout << fgnl << "RVO with multiple returns (both paths) copies: " << rvoCount;
-    rvoCount = 0;
-    t = testmNrvo(true);
-    t = testmNrvo(false);
-    fgout << fgnl << "NRVO copies (both assignment paths): " << rvoCount;
-    rvoCount = 0;
-    t = testmNrvoMr(true);
-    t = testmNrvoMr(false);
-    fgout << fgnl << "NRVO with multiple returns (both paths) copies: " << rvoCount;
+    {
+        double      val = 0,
+                    inc = 2.718281828,
+                    mod = 3.141592653,
+                    acc = 0;
+        size_t      reps = 10000000;
+        Timer     tm;
+        for (size_t ii=0; ii<reps; ++ii) {
+            acc += exp(-val);
+            val += inc;
+            if (val > mod)
+                val -= mod;
+        }
+        fgout << fgnl << "exp() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
+    }
+    {
+        double      maxRel = 0,
+                    totRel = 0;
+        size_t      cnt = 0;
+        for (double dd=0; dd<5; dd+=0.001) {
+            double  baseline = exp(-dd),
+                    test = expFast(-dd),
+                    meanVal = (test+baseline) * 0.5,
+                    relDel = (test-baseline) / meanVal;
+            maxRel = cMax(maxRel,relDel);
+            totRel += relDel;
+            ++cnt;
+        }
+        fgout << "Max Rel Del: " << maxRel << " mean rel del: " << totRel / cnt;
+        double      val = 0,
+                    inc = 2.718281828,
+                    mod = 3.141592653,
+                    acc = 0;
+        size_t      reps = 10000000;
+        Timer     tm;
+        for (size_t ii=0; ii<reps; ++ii) {
+            acc += expFast(-val);
+            val += inc;
+            if (val > mod)
+                val -= mod;
+        }
+        fgout << fgnl << "expFast() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
+    }
 }
 
-void
-speedExp(CLArgs const &)
-{
-    double      val = 0,
-                inc = 2.718281828,
-                mod = 3.141592653,
-                acc = 0;
-    size_t      reps = 10000000;
-    Timer     tm;
-    for (size_t ii=0; ii<reps; ++ii) {
-        acc += exp(-val);
-        val += inc;
-        if (val > mod)
-            val -= mod;
-    }
-    fgout << fgnl << "exp() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
-}
-
-void
-fgexp(CLArgs const &)
-{
-    double      maxRel = 0,
-                totRel = 0;
-    size_t      cnt = 0;
-    for (double dd=0; dd<5; dd+=0.001) {
-        double  baseline = exp(-dd),
-                test = expFast(-dd),
-                meanVal = (test+baseline) * 0.5,
-                relDel = (test-baseline) / meanVal;
-        maxRel = cMax(maxRel,relDel);
-        totRel += relDel;
-        ++cnt;
-    }
-    fgout << "Max Rel Del: " << maxRel << " mean rel del: " << totRel / cnt;
-    double      val = 0,
-                inc = 2.718281828,
-                mod = 3.141592653,
-                acc = 0;
-    size_t      reps = 10000000;
-    Timer     tm;
-    for (size_t ii=0; ii<reps; ++ii) {
-        acc += expFast(-val);
-        val += inc;
-        if (val > mod)
-            val -= mod;
-    }
-    fgout << fgnl << "exp() time: " << 1000000.0 * tm.elapsedMilliseconds() / reps << " ns  (dummy val: " << acc << ")";
-}
-
-void
-any(CLArgs const &)
+void                testBoostAny(CLArgs const &)
 {
     boost::any      v0 = 42,
                     v1 = v0;
@@ -169,8 +177,7 @@ any(CLArgs const &)
     fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<Mat44D>(v1)[0];
 }
 
-void
-thash(CLArgs const &)
+void                testHash(CLArgs const &)
 {
     for (uint ii=0; ii<3; ++ii) {
         string              str = "Does this string give a consistent hash on subsequent runs ?";
@@ -187,8 +194,24 @@ thash(CLArgs const &)
     }
 }
 
-void
-parr(CLArgs const &)
+template<typename T>
+void                testmNLF(String type)
+{
+    fgout
+        << fgnl << type << " min: " << numeric_limits<T>::min()
+        << fgnl << type << " max: " << numeric_limits<T>::max()
+        << fgnl << type << " epsilon: " << numeric_limits<T>::epsilon()
+        << fgnl << type << " lowest: " << numeric_limits<T>::lowest();
+}
+
+void                testmNL(CLArgs const &)
+{
+    PushIndent          pind {"numeric limits"};
+    testmNLF<float>("float");
+    testmNLF<double>("double");
+}
+
+void                testArrSpeed(CLArgs const &)
 {
     // Generate data and put in both parallel and packed arrays:
     size_t          N = 100000,
@@ -275,40 +298,17 @@ parr(CLArgs const &)
     fgout << fgnl << "Packed array in, paral arrays out: " << time << "ms. (" << val << ")";
 }
 
-template<int(*F)(int)>
-Ints
-mapFunInt(Ints const & ints)
-{
-    Ints        ret;
-    ret.reserve(ints.size());
-    for (int i : ints)
-        ret.push_back(F(i));
-    return ret;
 }
 
-int addOne(int i) {return i+1; }
-
-void
-testFuncTemplate(CLArgs const &)
-{
-    Ints        ints {1,2,3,4},
-                tst = mapFunInt<addOne>(ints);
-    fgout << fgnl << tst;
-}
-
-}
-
-void
-fgCmdTestmCpp(CLArgs const & args)
+void                cmdTestmCpp(CLArgs const & args)
 {
     Cmds        cmds {
-        {any,"any","Test boost any copy semantics"},
-        {fgexp,"fgexp","Test and mesaure speed of internal optimized exp"},
-        {testFuncTemplate,"funcTemplate","function as template value argument"},
-        {thash,"hash","Test std::hash behaviour"},
-        {parr,"parr","Test speedup of switching from parallel to packed arrays"},
-        {rvo,"rvo","Return value optimization / copy elision"},
-        {speedExp,"exp","Measure the speed of library exp(double)"},
+        {testBoostAny,"any","Test boost any copy semantics"},
+        {testArrSpeed,"array","Test speedup of switching from parallel to packed arrays"},
+        {testExp,"exp","Measure the speed of library exp(double) and expFast"},
+        {testHash,"hash","Test std::hash behaviour"},
+        {testmNL,"num","view numeric limits"},
+        {testRvo,"rvo","Return value optimization / copy elision"},
     };
     doMenu(args,cmds);
 }

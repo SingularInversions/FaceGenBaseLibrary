@@ -17,8 +17,7 @@ using namespace std::placeholders;
 namespace Fg {
 
 // D3D projection from frustum:
-static Mat44F
-calcProjection(const Frustum & f)
+static Mat44F       calcProjection(const Frustum & f)
 {
     // Projects from D3VS to D3PS. ie. maps:
     // * Near plane to Z=0, far plane to Z=1
@@ -55,8 +54,7 @@ struct  Gui3dWin : public GuiBaseImpl
     // file dialogs leak mouse moves into the viewport (MS bug):
     Arr<bool,3>         buttonIsDownLMR = {{false,false,false}};
 
-    Gui3dWin(const Gui3d & api)
-    : m_api(api)
+    Gui3dWin(const Gui3d & api) : m_api(api)
     {
         // Including api.viewBounds, api.pan/tiltDegrees and api.logRelSize in the below caused a feedback
         // issue that broke updates of the other sliders:
@@ -64,8 +62,7 @@ struct  Gui3dWin : public GuiBaseImpl
         m_api.gpuInfo.set(cat(getGpusDescription(),"\n"));
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
@@ -75,22 +72,17 @@ struct  Gui3dWin : public GuiBaseImpl
         // Don't create D3D here this is parent context.
     }
 
-    virtual void
-    destroy()
+    virtual void    destroy()
     {
         // Don't release D3D here - this is parent context and isn't actually called.
         DestroyWindow(m_hwnd);
     }
 
-    virtual Vec2UI
-    getMinSize() const
-    {return Vec2UI(400,500); }
+    virtual Vec2UI  getMinSize() const {return Vec2UI(400,500); }
 
-    virtual Vec2B wantStretch() const
-    { return Vec2B(true, true); }
+    virtual Vec2B   wantStretch() const { return Vec2B(true, true); }
 
-    virtual void
-    updateIfChanged()   // Just always render
+    virtual void    updateIfChanged()   // Just always render
     {
         // This flips the dirty bit (QS_PAINT) for the render window but Windows will not
         // actually send a WM_PAINT message until the message queue is empty for a fraction
@@ -100,15 +92,14 @@ struct  Gui3dWin : public GuiBaseImpl
         UpdateWindow(m_hwnd);
     }
 
-    virtual void moveWindow(Vec2I lo, Vec2I sz)
-    {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
+    virtual void    moveWindow(Vec2I lo, Vec2I sz) {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
 
-    virtual void showWindow(bool s)
-    {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
+    virtual void    showWindow(bool s) {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT         wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
+        Arr<uint,3> const       wmButtonsUp   {WM_LBUTTONUP,WM_MBUTTONUP,WM_RBUTTONUP};
+        Arr<uint,3> const       wmButtonsDown {WM_LBUTTONDOWN,WM_MBUTTONDOWN,WM_RBUTTONDOWN};
         if (msg == WM_CREATE) {
             m_hwnd = hwnd;
             m_hdc = GetDC(hwnd);
@@ -185,18 +176,37 @@ struct  Gui3dWin : public GuiBaseImpl
                 winUpdateScreen();
             }
         }
-        else if (msg == WM_LBUTTONDOWN)
-            handleButtonPress(hwnd,wParam,lParam,0);
-        else if (msg == WM_MBUTTONDOWN)
-            handleButtonPress(hwnd,wParam,lParam,1);
-        else if (msg == WM_RBUTTONDOWN)
-            handleButtonPress(hwnd,wParam,lParam,2);
-        else if (msg == WM_LBUTTONUP)
-            handleButtonRelease(wParam,lParam,0);
-        else if (msg == WM_MBUTTONUP)
-            handleButtonRelease(wParam,lParam,1);
-        else if (msg == WM_RBUTTONUP)
-            handleButtonRelease(wParam,lParam,2);
+        else if (contains(wmButtonsDown,msg)) {
+            size_t              buttonIdx = findFirstIdx(wmButtonsDown,msg);
+            // Position below is always the same as m_lastPos (tested) since the mouse had to WM_MOUSEMOVE here first.
+            // But get 'pos' from params for clarity:
+            Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            buttonIsDownLMR[buttonIdx] = true;
+            lastButtonDownPosLMR[buttonIdx] = pos;
+            if ((wParam & MK_CONTROL) != 0)
+                m_api.ctlClick(m_size,pos,m_worldToD3ps);
+            captureCursor(hwnd);
+        }
+        else if (contains(wmButtonsUp,msg)) {
+            size_t              buttonIdx = findFirstIdx(wmButtonsUp,msg);
+            if (buttonIsDownLMR[buttonIdx]) {
+                buttonIsDownLMR[buttonIdx] = false;    // Before any possible throw
+                Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
+                                    delta = pos - lastButtonDownPosLMR[buttonIdx];
+                if (cDot(delta,delta) == 0) {       // This was a click not a drag
+                    size_t              ctrl = ((wParam & MK_CONTROL) == 0) ? 0 : 1,
+                                        shift = ((wParam & MK_SHIFT) == 0) ? 0 : 1;
+                    MouseAction const & action = m_api.clickActions.at(buttonIdx,shift,ctrl);
+                    if (action) {                   // If an action is defined for this combo
+                        action(m_size,pos,m_worldToD3ps);
+                        winUpdateScreen();
+                    }
+                }
+            }
+            // Release cursor if all buttons are up:
+            if ((wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) == 0)
+                ClipCursor(NULL);
+        }
         else if (msg == WM_MOUSEMOVE) {
             Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
             Vec2I    delta = pos-m_lastPos;
@@ -210,6 +220,11 @@ struct  Gui3dWin : public GuiBaseImpl
             }
             else if (wParam == MK_MBUTTON) {
                 m_api.translate(delta);
+                winUpdateScreen();
+            }
+            else if (wParam == (MK_MBUTTON | MK_SHIFT | MK_CONTROL)) {
+                if (m_api.shiftCtrlMiddleDragAction)
+                    m_api.shiftCtrlMiddleDragAction(m_size,pos,m_worldToD3ps);
                 winUpdateScreen();
             }
             else if (wParam == MK_RBUTTON) {
@@ -318,43 +333,7 @@ struct  Gui3dWin : public GuiBaseImpl
         return 0;
     }
 
-    void
-    handleButtonPress(HWND hwnd,WPARAM wParam,LPARAM lParam,size_t button)  // 0 - Left, 1 - Middle, 2 - Right
-    {
-        // Position below is always the same as m_lastPos (tested) since the mouse had to WM_MOUSEMOVE here first.
-        // But get 'pos' from params for clarity:
-        Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-        buttonIsDownLMR[button] = true;
-        lastButtonDownPosLMR[button] = pos;
-        if ((wParam & MK_CONTROL) != 0)
-            m_api.ctlClick(m_size,pos,m_worldToD3ps);
-        captureCursor(hwnd);
-    }
-
-    void
-    handleButtonRelease(WPARAM wParam,LPARAM lParam,size_t button)  // 0 - Left, 1 - Middle, 2 - Right
-    {
-        if (buttonIsDownLMR[button]) {
-            buttonIsDownLMR[button] = false;    // Before any possible throw
-            Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
-                                delta = pos - lastButtonDownPosLMR[button];
-            if (cDot(delta,delta) == 0) {       // This was a click not a drag
-                size_t              ctrl = ((wParam & MK_CONTROL) == 0) ? 0 : 1,
-                                    shift = ((wParam & MK_SHIFT) == 0) ? 0 : 1;
-                ClickAction const & action = m_api.clickActions.at(button,shift,ctrl);
-                if (action) {                   // If an action is defined for this combo
-                    action(m_size,pos,m_worldToD3ps);
-                    winUpdateScreen();
-                }
-            }
-        }
-        // Release cursor if all buttons are up:
-        if ((wParam & (MK_LBUTTON | MK_MBUTTON | MK_RBUTTON)) == 0)
-            ClipCursor(NULL);
-    }
-
-    void
-    captureCursor(HWND hwnd)
+    void            captureCursor(HWND hwnd)
     {
         POINT   point;
         point.x = 0;
@@ -368,7 +347,7 @@ struct  Gui3dWin : public GuiBaseImpl
         FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
     }
 
-    void renderBackBuffer(bool backgroundTransparent)
+    void            renderBackBuffer(bool backgroundTransparent)
     {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
@@ -394,15 +373,14 @@ struct  Gui3dWin : public GuiBaseImpl
             backgroundTransparent);
     }
 
-    void render()
+    void            render()
     {
         renderBackBuffer(false);
         m_d3d->showBackBuffer();
     }
 
     // This function is called by client so don't attempt to re-start GPU instance here, just return black image:
-    ImgRgba8
-    capture(Vec2UI dims,bool backgroundTransparent)
+    ImgRgba8        capture(Vec2UI dims,bool backgroundTransparent)
     {
         ImgRgba8             ret;
         try {
@@ -420,9 +398,7 @@ struct  Gui3dWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const Gui3d & def)
-{return GuiImplPtr(new Gui3dWin(def)); }
+GuiImplPtr          guiGetOsImpl(const Gui3d & def) {return GuiImplPtr(new Gui3dWin(def)); }
 
 }
 

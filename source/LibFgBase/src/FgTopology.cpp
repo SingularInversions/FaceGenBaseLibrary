@@ -408,7 +408,7 @@ SurfTopo::unusedVerts() const
 Floats
 SurfTopo::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 {
-    Floats       ret(verts.size(),floatMax());
+    Floats       ret(verts.size(),lims<float>::max());
     FGASSERT(vertIdx < verts.size());
     ret[vertIdx] = 0;
     edgeDistanceMap(verts,ret);
@@ -426,7 +426,7 @@ SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
         for (size_t vv=0; vv<vertDists.size(); ++vv) {
             // Important: check each vertex each time since the topology will often result in 
             // the first such assignment not being the optimal:
-            if (vertDists[vv] < floatMax()) {
+            if (vertDists[vv] < lims<float>::max()) {
                 Uints const &    edges = m_verts[vv].edgeInds;
                 for (size_t ee=0; ee<edges.size(); ++ee) {
                     uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));
@@ -519,12 +519,12 @@ testmEdgeDist(CLArgs const & args)
     Floats              edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
     float               distMax = 0;
     for (size_t ii=0; ii<edgeDists.size(); ++ii)
-        if (edgeDists[ii] < floatMax())
+        if (edgeDists[ii] < lims<float>::max())
             updateMax_(distMax,edgeDists[ii]);
     float               distToCol = 255.99f / distMax;
     Uchars              colVal(edgeDists.size(),255);
     for (size_t ii=0; ii<colVal.size(); ++ii)
-        if (edgeDists[ii] < floatMax())
+        if (edgeDists[ii] < lims<float>::max())
             colVal[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));

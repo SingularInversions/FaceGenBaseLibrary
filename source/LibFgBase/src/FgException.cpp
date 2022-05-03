@@ -26,10 +26,10 @@ string              FgException::tr_message() const
     for (Context const & ctxt : contexts) {
         ret += ctxt.msgEnglish;
         if (!ctxt.dataUtf8.empty())
-            ret += " :\n" + ctxt.dataUtf8;
+            ret += " : " + ctxt.dataUtf8;
         if (!ctxt.msgNative.empty())
-            ret += "\n\n" + ctxt.msgNative + " : " + ctxt.dataUtf8;
-        ret += "\n\n";
+            ret += "\n" + ctxt.msgNative + " : " + ctxt.dataUtf8;
+        ret += "\n";
     }
     return ret;
 }

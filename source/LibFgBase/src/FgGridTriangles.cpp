@@ -82,9 +82,9 @@ gridTriangles(Vec2Fs const & verts,Vec3UIs const & tris,float binsPerTri)
 {
     GridTriangles       ret;
     FGASSERT(tris.size() > 0);
-    Vec2F               domainLo(floatMax()),
-                        domainHi(-floatMax()),
-                        invalid(floatMax());
+    Vec2F               domainLo(lims<float>::max()),
+                        domainHi(-lims<float>::max()),
+                        invalid(lims<float>::max());
     size_t              numValid = 0;
     for (size_t ii=0; ii<verts.size(); ++ii) {
         Vec2F           v = verts[ii];

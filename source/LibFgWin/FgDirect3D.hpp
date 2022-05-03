@@ -33,22 +33,16 @@ struct      ExceptD3dDeviceRemoved : public FgException
     ExceptD3dDeviceRemoved() : FgException {"D3D Device Removed",""} {}
 };
 
-struct  D3dMap
+struct      D3dMap
 {
     WinPtr<ID3D11Texture2D>          map;        // Can be empty
     WinPtr<ID3D11ShaderResourceView> view;       // Empty iff above is empty
 
-    bool valid() const
-    {return bool(view); }
-
-    void reset()
-    {
-        view.reset();
-        map.reset();
-    }
+    bool                valid() const {return bool(view); }
+    void                reset() {view.reset(); map.reset(); }
 };
 
-struct  D3dSurf
+struct      D3dSurf
 {
     WinPtr<ID3D11Buffer>        triVerts;       // 3 Verts for each tri. Null if no facets for this surf.
     WinPtr<ID3D11Buffer>        lineVerts;      // 2 Verts for each edge. Null if no facets or computation delayed.
@@ -65,7 +59,7 @@ struct  D3dSurf
     {}
 };
 
-struct D3dMesh
+struct      D3dMesh
 {
     // Currently also flags changes in original mesh (ie. surf points & marked verts) since it's in the
     // same mesh node as base verts:
@@ -75,16 +69,16 @@ struct D3dMesh
     WinPtr<ID3D11Buffer>        allVerts;
 };
 
-struct  PipelineState
+struct      PipelineState
 {
     ComPtr<ID3D11VertexShader>      m_pVertexShader;
     ComPtr<ID3D11PixelShader>       m_pPixelShader;
     ComPtr<ID3D11InputLayout>       m_pInputLayout;
 
-    void        attachVertexShader(ComPtr<ID3D11Device> pDevice);
-    void        attachVertexShader2(ComPtr<ID3D11Device> pDevice);
-    void        attachPixelShader(ComPtr<ID3D11Device> pDevice,std::string const & fname);
-    void        apply(ComPtr<ID3D11DeviceContext> pContext);
+    void                attachVertexShader(ComPtr<ID3D11Device> pDevice);
+    void                attachVertexShader2(ComPtr<ID3D11Device> pDevice);
+    void                attachPixelShader(ComPtr<ID3D11Device> pDevice,std::string const & fname);
+    void                apply(ComPtr<ID3D11DeviceContext> pContext);
 };
 
 struct      D3d
@@ -95,8 +89,7 @@ struct      D3d
 
     ~D3d();
 
-    void
-    renderBackBuffer(
+    void                    renderBackBuffer(
         BackgroundImage const &     bgi,
         Lighting                    lighting,
         Mat44F                      worldToD3vs,    // modelview
@@ -105,10 +98,10 @@ struct      D3d
         RendOptions const &         rendOpts,
         bool                        backgroundTransparent=false);   // For screen grab option
 
-    void                            setBgImage(BackgroundImage const & bgi);
-    void                            resize(Vec2UI windowSize);
-    void                            showBackBuffer();
-    ImgRgba8                        capture(Vec2UI viewportSize);
+    void                    setBgImage(BackgroundImage const & bgi);
+    void                    resize(Vec2UI windowSize);
+    void                    showBackBuffer();
+    ImgRgba8                capture(Vec2UI viewportSize);
 
 private:
     uint                            maxMapSize = 4096;  // Play it safe
@@ -152,35 +145,33 @@ private:
     PipelineState                   transparentFirstPassPSO;
     PipelineState                   transparentSecondPassPSO;
 
-    void
-    initializeRenderTexture(Vec2UI windowSize);
+    void                    initializeRenderTexture(Vec2UI windowSize);
 
     // All member sizes must be multiples of 8 bytes (presumably for alignment).
     // HLSL uses column-major matrices so we need to transpose:
     struct Scene
     {
-        Mat44F      mvm;
-        Mat44F      projection;
-        Vec4F       ambient;            // RGBA [0,1]
-        Vec4F       lightDir[2];        // Normalized direction TO light in FCCS
-        Vec4F       lightColor[2];      // RGBA [0,1]
+        Mat44F              mvm;
+        Mat44F              projection;
+        Vec4F               ambient;            // RGBA [0,1]
+        Vec4F               lightDir[2];        // Normalized direction TO light in FCCS
+        Vec4F               lightColor[2];      // RGBA [0,1]
     };
 
     // Since D3D does not allow multiple indexing (one for vert pos, one for vert uv) we use the
     // simplest alternative; expand every vertex of every triangle in the list into its full values.
     // If optimization is needed in future we can pre-process meshes upon loading to give triangle
     // strips:
-    struct  Vert
+    struct      Vert
     {
-        Vec3F    pos;
-        Vec3F    norm;
-        Vec2F    uv;
+        Vec3F               pos;
+        Vec3F               norm;
+        Vec2F               uv;
     };
 
     typedef Svec<Vert>    Verts;
 
-    Verts
-    makeVertList(
+    Verts               makeVertList(
         RendMesh const &        rendMesh,
         Mesh const &            origMesh,
         size_t                  surfNum,

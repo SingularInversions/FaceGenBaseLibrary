@@ -318,4 +318,30 @@ String              toStr(SpatialUnit u)
     return "";
 }
 
+void testSave3ds(CLArgs const &);
+void testSaveLwo(CLArgs const &);
+void testSaveMa(CLArgs const &);
+void testSaveFbx(CLArgs const &);
+void testSaveDae(CLArgs const &);
+void testSaveObj(CLArgs const &);
+void testSavePly(CLArgs const &);
+void testSaveXsi(CLArgs const &);
+void testSaveVrml(CLArgs const &);
+
+void                test3dMeshIo(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testSave3ds,"3ds",".3DS file format export"},
+        {testSaveLwo,"lwo","Lightwve object file format export"},
+        {testSaveMa,"ma","Maya ASCII file format export"},
+        {testSaveFbx, "fbx", ".FBX file format export"},
+        {testSaveObj, "obj", "Wavefront OBJ ASCII file format export"},
+        {testSavePly, "ply", ".PLY file format export"},
+        {testSaveVrml,  "vrml", ".WRL file format export"},
+        {testSaveDae, "dae", "Collada DAE format export"},
+        {testSaveXsi, "xsi", ".XSI file format export"},
+    };
+    doMenu(args,cmds,true,false,true);
+}
+
 }

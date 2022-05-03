@@ -74,7 +74,7 @@ KdVal               findClst(Svec<KdTree::Node> const & tree,Vec3F query,KdVal b
 
 double              testClosest(Svec<KdTree::Node> const & tree,Vec3F query)
 {
-    float           ret = floatMax();
+    float           ret = lims<float>::max();
     for (KdTree::Node const & node : tree) {
         float           mag = cMag(query - node.vert);
         if (mag < ret)

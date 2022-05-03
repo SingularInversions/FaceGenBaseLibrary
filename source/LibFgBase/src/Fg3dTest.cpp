@@ -67,29 +67,14 @@ fgTextureImageMappingRenderTest(CLArgs const &)
     viewMesh(mesh);
 }
 
-void testSave3ds(CLArgs const &);
-void testSaveLwo(CLArgs const &);
-void testSaveMa(CLArgs const &);
-void testSaveFbx(CLArgs const &);
-void testSaveDae(CLArgs const &);
-void testSaveObj(CLArgs const &);
-void testSavePly(CLArgs const &);
-void testSaveXsi(CLArgs const &);
-void testSaveVrml(CLArgs const &);
+void                test3dMeshIo(CLArgs const &);
+void                test3dMesh(CLArgs const &);
 
-void
-test3d(CLArgs const & args)
+void                test3d(CLArgs const & args)
 {
     Cmds            cmds {
-        {testSave3ds,"3ds",".3DS file format export"},
-        {testSaveLwo,"lwo","Lightwve object file format export"},
-        {testSaveMa,"ma","Maya ASCII file format export"},
-        {testSaveFbx, "fbx", ".FBX file format export"},
-        {testSaveObj, "obj", "Wavefront OBJ ASCII file format export"},
-        {testSavePly, "ply", ".PLY file format export"},
-        {testSaveVrml,  "vrml", ".WRL file format export"},
-        {testSaveDae, "dae", "Collada DAE format export"},
-        {testSaveXsi, "xsi", ".XSI file format export"},
+        {test3dMeshIo, "io", "3D Mesh I/O"},
+        {test3dMesh, "mesh", "mesh operations"},
     };
     doMenu(args,cmds,true,false,true);
 }
@@ -107,8 +92,9 @@ void
 testmSubdShapes(CLArgs const &)
 {
     Meshes          meshes;
-    auto            addSubdivisions = [&](Mesh mesh,String const & name)
+    auto            addSubdivisions = [&](TriSurf const & ts,String const & name)
     {
+        Mesh            mesh {ts};
         mesh.name = name;
         meshes.push_back(mesh);
         for (uint ii=0; ii<5; ++ii) {
@@ -117,14 +103,14 @@ testmSubdShapes(CLArgs const &)
             meshes.push_back(mesh);
         }
     };
-    addSubdivisions(Mesh{cTetrahedron()},"Tetrahedron");
-    addSubdivisions(Mesh{cTetrahedron(true)},"TetrahedronOpen");
+    addSubdivisions(cTetrahedron(),"Tetrahedron");
+    addSubdivisions(cTetrahedron(true),"TetrahedronOpen");
     addSubdivisions(cPyramid(),"Pyramid");
     addSubdivisions(cPyramid(true),"PyramidOpen");
-    addSubdivisions(c3dCube(),"Cube");
-    addSubdivisions(c3dCube(true),"CubeOpen");
-    addSubdivisions(Mesh{cOctahedron()},"Octahedron");
-    addSubdivisions(Mesh{cIcosahedron()},"Icosahedron");
+    addSubdivisions(cCubeTris(),"Cube");
+    addSubdivisions(cCubeTris(true),"CubeOpen");
+    addSubdivisions(cOctahedron(),"Octahedron");
+    addSubdivisions(cIcosahedron(),"Icosahedron");
     addSubdivisions(cNTent(5),"5-Tent");
     addSubdivisions(cNTent(6),"6-Tent");
     addSubdivisions(cNTent(7),"7-Tent");

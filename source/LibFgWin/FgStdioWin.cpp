@@ -17,7 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-// some anti-virus programs hook into file creation and prevent creation of JPG files by
+// some antivirus programs hook into file creation and prevent creation of JPG files by
 // unknown programs (ie. this one) causing ERROR_ACCESS_DENIED. Detect this and inform user.
 // This has been confirmed for at least 2 customers. One was using Avast AV, other unknown.
 static bool         checkForAntivirus_(String8 const & fname,FgException & except)
@@ -32,14 +32,14 @@ static bool         checkForAntivirus_(String8 const & fname,FgException & excep
             String8             testFname = path.str();
             FILE *              fPtr2 = nullptr;
             errno_t             err2 = _wfopen_s(&fPtr2,testFname.as_wstring().c_str(),L"wb");
-            if (err2 == 0) {            // JPG creation is being blocked by anti-virus software
+            if (err2 == 0) {            // JPG creation is being blocked by antivirus software
                 fclose(fPtr2);
                 deleteFile(testFname);
                 except.addContext(
                     "Your antivirus software prevented JPG file creation. "
                     "Change your antivirus software settings to allow this program to write JPG files, "
-                    "or remove your third party antivirus software (Microsoft Windows Defender is "
-                    "included with Windows, and third party antivirus software does not help)."
+                    "or remove your third party antivirus software (Microsoft Windows Defender is better), "
+                    "or choose a different image file format."
                 );
                 return true;
             }
@@ -104,7 +104,7 @@ bool                Ifstream::open(String8 const & fname,bool throwOnFail)
     catch (...) {}
     if (!is_open() && throwOnFail) {
         DWORD           lastErr = GetLastError();
-        String          lastErrHex = "0x"+toHexString(uint32(lastErr)),
+        String          lastErrHex = "win32 code 0x"+toHexString(uint32(lastErr)),
                         english = getWinErrMsgEnglish(lastErr),
                         foreign = getWinErrMsgIfNotEnglish(lastErr);
         throw FgException {{

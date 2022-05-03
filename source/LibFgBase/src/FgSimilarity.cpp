@@ -22,6 +22,10 @@ ostream &           operator<<(ostream & os,Rigid3D const & r)
     return os << "rot: " << r.rot << " trans: " << r.trans;
 }
 
+// SimilarityRD: v' = sR(v + t) = sRv + sRt
+SimilarityD::SimilarityD(SimilarityRD const & s) : scale{s.scale}, rot{s.rot}, trans{s.rot*s.trans*s.scale}
+{}
+
 SimilarityD         SimilarityD::operator*(SimilarityD const & rhs) const
 {
     // Transform:   sRv+t
@@ -212,7 +216,7 @@ SimilarityD         rand()
 void                testStruct(CLArgs const &)
 {
     randSeedRepeatable();
-    double constexpr    prec = epsilonD() * 8;
+    double constexpr    prec = lims<double>::epsilon() * 8;
     for (size_t ii=0; ii<10; ++ii) {
         SimilarityD         sim = rand(),
                             inv = sim.inverse(),

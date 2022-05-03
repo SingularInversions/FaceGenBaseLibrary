@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "Fg3dDisplay.hpp"
-#include "FgGuiApi.hpp"
+#include "FgGui.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTestUtils.hpp"
 #include "Fg3dMeshIo.hpp"
@@ -295,20 +295,20 @@ GuiPtr              makeRendCtrls(
 
 namespace {
 
-void                assignTri2(      // Re-assign a tri (or quad) to a different surface if intersected
-    NPT<RendMeshes>         rendMeshesN,
-    NPT<size_t>             surfIdx,
-    Vec2UI               winSize,
-    Vec2I                pos,
-    Mat44F                toOics)
+void                assignTri(      // Re-assign a tri (or quad) to a different surface if intersected
+    NPT<RendMeshes>     rendMeshesN,
+    NPT<size_t>         surfIdx,
+    Vec2UI              winSize,
+    Vec2I               pos,
+    Mat44F              toOics)
 {
-    RendMeshes const &          rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
     if (vpt.valid()) {
-        MeshesIntersect       isct = vpt.val();
+        MeshesIntersect         isct = vpt.val();
         size_t                  dstSurfIdx = surfIdx.val();
-        RendMesh const &       rm = rms[isct.meshIdx];
-        Mesh *              meshPtr = rm.origMeshN.valPtr();
+        RendMesh const &        rm = rms[isct.meshIdx];
+        Mesh *                  meshPtr = rm.origMeshN.valPtr();
         if (meshPtr) {
             if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
                 Surf &           srcSurf = meshPtr->surfaces[isct.surfIdx];
@@ -353,15 +353,15 @@ void                assignTri2(      // Re-assign a tri (or quad) to a different
 }
 
 // Currently only works on tri facets:
-void                assignPaint2(
+void                assignPaint(
     NPT<RendMeshes>     rendMeshesN,
     NPT<size_t>         surfIdx,
     Vec2UI              winSize,
     Vec2I               pos,
-    Mat44F              toOics)
+    Mat44F              toD3ps)
 {
     RendMeshes const &      rms = rendMeshesN.cref();
-    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
+    Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toD3ps,rms);
     if (vpt.valid()) {
         MeshesIntersect         isct = vpt.val();
         size_t                  dstSurfIdx = surfIdx.val();
@@ -386,20 +386,6 @@ void                assignPaint2(
                 }
             }
         }
-    }
-}
-
-void                saveMesh2(string format,NPT<RendMeshes> rendMeshesN)
-{
-    RendMeshes const &      rms = rendMeshesN.cref();
-    if (rms.empty())
-        return;
-    Opt<String8>            fname = guiDialogFileSave("FaceGen",format);
-    if (fname.valid()) {
-        Meshes              meshes;
-        for (RendMesh const & rm : rms)
-            meshes.push_back(rm.origMeshN.cref());
-        saveMergeMesh(meshes,fname.val());
     }
 }
 
@@ -509,64 +495,159 @@ struct      MeshSurfsName
 };
 typedef Svec<MeshSurfsName>     MeshSurfsNames;
 
-// Modifies 'api' to add it's hooks:
-GuiPtr              makeEditPane(OPT<MeshSurfsNames> const & meshSurfsNamesN,Gui3d & api)
+GuiPtr              makeEditVertsMark(NPT<RendMeshes> const & rendMeshesN,Gui3d & api)
 {
-    NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
-    GuiPtr              pointsW = makeEditPoints(api),
-                        vertsW,facetsW;
+    IPT<size_t>         vertSelModeN(0);
+    api.clickActions.at(2,1,1) = bind(markMeshVertex,rendMeshesN,vertSelModeN,_1,_2,_3);
+    auto                markAllFn = [rendMeshesN]()
     {
-        IPT<size_t>         vertSelModeN(0);
-        api.clickActions.at(2,1,1) = bind(markMeshVertex,rendMeshesN,vertSelModeN,_1,_2,_3);
-        auto                markAllFn = [rendMeshesN]()
-        {
-            RendMeshes const &      rms = rendMeshesN.cref();
-            for (RendMesh const & rm : rms) {
-                Mesh *          meshPtr = rm.origMeshN.valPtr();
-                if (meshPtr) {
-                    SurfTopo        topo {meshPtr->verts.size(),meshPtr->getTriEquivs().vertInds};
-                    auto                boundaries = topo.boundaries();
-                    for (auto const & boundary : boundaries)
-                        for (auto const & be : boundary)
-                            if (!contains(meshPtr->markedVerts,be.vertIdx))
-                                meshPtr->markedVerts.emplace_back(be.vertIdx);
+        RendMeshes const &      rms = rendMeshesN.cref();
+        for (RendMesh const & rm : rms) {
+            Mesh *          meshPtr = rm.origMeshN.valPtr();
+            if (meshPtr) {
+                SurfTopo        topo {meshPtr->verts.size(),meshPtr->getTriEquivs().vertInds};
+                auto                boundaries = topo.boundaries();
+                for (auto const & boundary : boundaries)
+                    for (auto const & be : boundary)
+                        if (!contains(meshPtr->markedVerts,be.vertIdx))
+                            meshPtr->markedVerts.emplace_back(be.vertIdx);
+            }
+        }
+    };
+    auto                clearAllFn = [rendMeshesN]()
+    {
+        RendMeshes const & rms = rendMeshesN.cref();
+        for (RendMesh const & rm : rms) {
+            Mesh *          meshPtr = rm.origMeshN.valPtr();
+            if (meshPtr)
+                meshPtr->markedVerts.clear();
+        }
+    };
+    String8s            vsmrLabels {"Single","Edge Seam","Fold Seam","Fill"};
+    GuiPtr              vertSelModeW = guiRadio(vsmrLabels,vertSelModeN);
+    GuiPtrs             subWs {
+        guiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
+        guiGroupbox("Mode",vertSelModeW),
+        guiButtonTr("Mark all seam vertices",markAllFn),
+        guiButtonTr("Clear all marked vertices",clearAllFn),
+    };
+    return guiSplitV(subWs);
+}
+
+GuiPtr              makeEditVertsDelete(NPT<RendMeshes> const & rendMeshesN,Gui3d & api)
+{
+    IPT<bool>           delBackfacingN {true};
+    GuiPtr              delBackfacingW = guiCheckbox("Delete back-facing polys",delBackfacingN);
+    IPT<double>         delLnRadiusN {-4.0};
+    GuiPtr              delRadiusW = guiSlider(delLnRadiusN,"delete radius",{-6,-2},1);
+    auto                delVertsFn = [rendMeshesN,delLnRadiusN,delBackfacingN]
+                        (Vec2UI viewportSize,Vec2I posRcs,Mat44F toD3ps)
+    {
+        RendMeshes const &  rms = rendMeshesN.cref();
+        if (rms.size() == 1) {      // only support single mesh for now
+            double              radius = cMaxElem(viewportSize) * exp(delLnRadiusN.val());
+            AffineEw2F          d3psToRcs = cD3psToRcs(viewportSize);
+            Vec2F               userRcs {posRcs};
+            Uints               toRemove;
+            RendMesh const &    rm = rms[0];
+            Vec3Fs const &      verts = rm.posedVertsN.cref();
+            MeshNormals const & norms = rm.normalsN.cref();
+            for (size_t vv=0; vv<verts.size(); ++vv) {
+                Vec3F const &       vert = verts[vv];
+                Vec4F               d3psH = toD3ps * append(vert,1.0f);
+                if (d3psH[3] != 0.0f) {
+                    Vec3F           d3ps = projectHomog(d3psH);
+                    Vec2F           rcs = d3psToRcs * Vec2F{d3ps[0],d3ps[1]};
+                    if (cLen(rcs-userRcs) < radius) {
+                        Vec4F           normH = toD3ps * append(norms.vert[vv],0.0f);
+                        // A negative Z component is forward-facing.
+                        // Including zero lets us catch verts not part of any surface (zero norm vec):
+                        if ((normH[2] <= 0) || delBackfacingN.val())
+                            toRemove.push_back(scast<uint>(vv));
+                    }
                 }
             }
-        };
-        auto                clearAllFn = [rendMeshesN]()
-        {
-            RendMeshes const & rms = rendMeshesN.cref();
-            for (RendMesh const & rm : rms) {
-                Mesh *          meshPtr = rm.origMeshN.valPtr();
-                if (meshPtr)
-                    meshPtr->markedVerts.clear();
+            if (!toRemove.empty()) {
+                Mesh *              origMeshPtr = rm.origMeshN.valPtr();
+                if (origMeshPtr) {                      // if editing is possible
+                    Mesh                origMesh = *origMeshPtr;
+                    *origMeshPtr = removeVerts(origMesh,toRemove);
+                }
             }
-        };
-        String8s            vsmrLabels {"Single","Edge Seam","Fold Seam","Fill"};
-        GuiPtr              vertSelModeW = guiRadio(vsmrLabels,vertSelModeN);
-        GuiPtrs             subWs {
-            guiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
-            guiGroupbox("Vertex Selection Mode",vertSelModeW),
-            guiButtonTr("Mark all seam vertices",markAllFn),
-            guiButtonTr("Clear all marked vertices",clearAllFn),
-        };
-        vertsW = guiSplitV(subWs);
-    }
+        }
+    };
+    api.shiftCtrlMiddleDragAction = delVertsFn;
+    GuiPtr              delTextW =
+        guiText("Delete Vertices: ctrl-shift-middle-click and drag on surface near vertices");
+    return guiSplitV({delTextW,delBackfacingW,delRadiusW});
+}
+
+// Modifies 'api' to add it's hooks:
+GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName)
+{
+    NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
+    GuiPtr              facetsW;
     {
         IPT<size_t>         surfChoiceN(0);
-        api.shiftRightDragAction = bind(assignTri2,rendMeshesN,surfChoiceN,_1,_2,_3);
-        api.clickActions.at(1,1,0) = bind(assignPaint2,rendMeshesN,surfChoiceN,_1,_2,_3);
-        facetsW = guiDynamic(bind(makeEditFacets,rendMeshesN,surfChoiceN),makeUpdateFlag(meshSurfsNamesN));
+        api.shiftRightDragAction = bind(assignTri,rendMeshesN,surfChoiceN,_1,_2,_3);
+        api.clickActions.at(1,1,0) = bind(assignPaint,rendMeshesN,surfChoiceN,_1,_2,_3);
+        facetsW = guiDynamic(bind(makeEditFacets,rendMeshesN,surfChoiceN),makeUpdateFlag(api.rendMeshesN));
     }
+    GuiTabDefs          editVertsTabs {
+        {"Mark",true,makeEditVertsMark(rendMeshesN,api)},
+        {"Delete",true,makeEditVertsDelete(rendMeshesN,api)},
+    };
     GuiTabDefs          editTabs {
-        {"Points",true,pointsW},
-        {"Verts",true,vertsW},
+        {"Points",true,makeEditPoints(api)},
+        {"Verts",true,guiTabs(editVertsTabs)},
         {"Facets",true,facetsW},
     };
-    GuiPtr              saveButtonsW = guiSplitH({
-        guiButtonTr("TRI",bind(saveMesh2,string("tri"),rendMeshesN)),
-        guiButtonTr("FGMESH",bind(saveMesh2,string("fgmesh"),rendMeshesN))});
-    return guiSplitV({guiText("Save pre-morphed to file:"),saveButtonsW,guiTabs(editTabs)});
+    GuiPtr              saveAsW;
+    {
+        auto                saveFn = [=]()
+        {
+            RendMeshes const &      rms = rendMeshesN.cref();
+            if (rms.empty())
+                return;
+            Meshes              meshes;
+            for (RendMesh const & rm : rms)
+                meshes.push_back(rm.origMeshN.cref());
+            saveMergeMesh(meshes,saveName);
+        };
+        auto                saveAsFn = [=](string format)
+        {
+            RendMeshes const &      rms = rendMeshesN.cref();
+            if (rms.empty())
+                return;
+            Opt<String8>            fname = guiDialogFileSave("FaceGen",format);
+            if (fname.valid()) {
+                Meshes              meshes;
+                for (RendMesh const & rm : rms)
+                    meshes.push_back(rm.origMeshN.cref());
+                saveMergeMesh(meshes,fname.val());
+            }
+        };
+        auto                reloadFn = [=]()
+        {
+            RendMeshes const &      rms = rendMeshesN.cref();
+            if (rms.empty())
+                return;
+            Mesh                    *ptr = rms[0].origMeshN.valPtr();
+            if (ptr)
+                *ptr = loadMesh(saveName);
+        };
+        GuiPtrs             buttons {
+            guiText("Save pre-morphed as:"),
+            guiButtonTr("TRI",bind(saveAsFn,string("tri"))),
+            guiButtonTr("FGMESH",bind(saveAsFn,string("fgmesh"))),
+        };
+        if (!saveName.empty()) {
+            buttons.insert(buttons.begin(),guiButton("reload original mesh",reloadFn));
+            buttons.push_back(guiButton(saveName,saveFn));
+        }
+        saveAsW = guiSplitV(buttons);
+    }
+    return guiSplitV({guiTabs(editTabs),saveAsW});
 }
 
 }
@@ -931,14 +1012,17 @@ GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Cap
                         dimsRW = guiSplitV({guiSpacer(1,3),dimsRUW,guiSpacer(1,3),dimsRLW}),
                         dims3W = guiSplitH({dimsLW,dimsRW}),
                         dimsW = guiGroupbox("Pixel size",dims3W),
-                        bgTransW = guiCheckbox("Transparent Background (PNG or TARGA only)",bgTransN);
-    GuiVal<string>      capImgFormat = guiImageFormat("Image Format",store+"Format");
-    NPT<string>         formatN = capImgFormat.valN;
+                        bgTransW = guiCheckbox("Transparent Background (PNG or TGA only)",bgTransN);
+    ImgFormats          imgFormats = sliceMember(getImgFormatsInfo(),&ImgFormatInfo::format);   // support all fmts
+    GuiVal<ImgFormat>   imgFormat = guiImgFormatSelector(imgFormats,store+"ImgFormat");
+    NPT<ImgFormat>      imgFormatN = imgFormat.valN;
+    GuiPtr              imgFormatW = guiGroupbox("Image Format",imgFormat.win);
     auto                save = [=]()
     {
         if (capture->func) {
             Vec2UI          dims = szSelN.val() ? Vec2UI(widN.val(),hgtN.val()) : viewportDims.val();
-            Opt<String8>    fname = guiDialogFileSave("",formatN.cref());
+            String          imgExt = getImgFormatInfo(imgFormatN.cref()).extensions.at(0);
+            Opt<String8>    fname = guiDialogFileSave("",imgExt);
             if (fname.valid())
                 saveImage(fname.val(),capture->func(dims,bgTransN.val()));
         }
@@ -947,13 +1031,13 @@ GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Cap
         guiText("Save the current render image to a file"),
         dimsW,
         bgTransW,
-        capImgFormat.win,
+        imgFormatW,
         guiButton("Save",save)
     });
     return saveImageW;
 }
 
-Mesh                viewMesh(Meshes const & meshes,bool compare)
+Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & saveName)
 {
     FGASSERT(meshes.size() > 0);
     String8                 store = getDirUserAppDataLocalFaceGen({"SDK","viewMesh"});
@@ -963,7 +1047,6 @@ Mesh                viewMesh(Meshes const & meshes,bool compare)
     IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(cBounds(meshes)));
     GuiPosedMeshes          gpms;
     Svec<IPT<Mesh>>         meshNs;
-    Svec<IPT<MeshSurfsName>> meshSurfsNameNs;
     String8s                meshNames = sliceMember(meshes,&Mesh::name);
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         if (meshNames[mm].empty())                  // in case client didn't provide names (cmdViewMesh does)
@@ -971,7 +1054,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare)
         Mesh const &        mesh = meshes[mm];
         mesh.checkValidity();       // TODO: need to report actual problem rather than throw internal error
         IPT<Mesh>           meshN = makeIPT(mesh);
-        IPT<Vec3Fs>         allVertsN = makeIPT(mesh.allVerts());
+        OPT<Vec3Fs>         allVertsN = link1<Mesh,Vec3Fs>(meshN,[](Mesh const & m){return m.allVerts(); });
         ImgNs               albedoNs,
                             specularNs;
         IPT<ImgRgba8>       emptyImageN = makeIPT(ImgRgba8());
@@ -987,16 +1070,9 @@ Mesh                viewMesh(Meshes const & meshes,bool compare)
         }
         gpms.addMesh(meshN,allVertsN,albedoNs,specularNs);
         meshNs.push_back(meshN);
-        {
-            MeshSurfsName       msn;
-            msn.meshName = meshNames[mm];
-            msn.surfNames = sliceMember(mesh.surfaces,&Surf::name);
-            meshSurfsNameNs.push_back(makeIPT(msn));
-        }
     }
     IPT<RendMeshes>         rmsN {gpms.rendMeshes};
     NPT<RendMeshes>         rendMeshesN;
-    OPT<MeshSurfsNames>     meshSurfsNamesN = linkCollate<MeshSurfsName>(meshSurfsNameNs);
     GuiPtr                  meshSelect,
                             meshInfo;
     if (compare) {
@@ -1055,7 +1131,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare)
         guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View")),
         guiTab("Morphs",true,gpms.makePoseCtrls(true)),
         guiTab("Select",true,meshSelect),
-        guiTab("Edit",true,makeEditPane(meshSurfsNamesN,gui3d)),
+        guiTab("Edit",true,makeEditPane(gui3d,saveName)),
         guiTab("Info",true,guiSplitScroll({statsTextW})),
         guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
     };
@@ -1066,45 +1142,9 @@ Mesh                viewMesh(Meshes const & meshes,bool compare)
     return meshNs[0].cref();
 }
 
-bool                guiPlaceSurfPoints(Mesh & mesh,Strings labels)
-{
-    FGASSERT(!mesh.surfaces.empty());
-    for (Surf const & surf : mesh.surfaces) {
-        for (SurfPoint const & sp : surf.surfPoints) {
-            auto            it = find(labels.begin(),labels.end(),sp.label);
-            if (it != labels.end())
-                labels.erase(it);
-        }
-    }
-    if (labels.empty()) {
-        fgout << "All labels already present as surface points";
-        return false;
-    }
-    for (String const & label : labels) {
-        fgout
-            << fgnl << "Place the following surface point (ctrl-shift-left-click) then close the window."
-            << fgnl << "Only your last selection will be used:"
-            << fgnl << label;
-        Mesh                editMesh = viewMesh(mesh);
-
-        //if (editMesh.surfaces[0].surfPoints.size() > sps.size()) {
-        //    SurfPoint         sp(editMesh.surfaces[0].surfPoints.back());
-        //    sp.label = fidLabels[ii];
-        //    sps.push_back(sp);
-        //}
-        //else {
-        //    surf.material.albedoMap = imgOrig;
-        //    return false;
-        //}
-    }
-    return true;
-}
-
-bool                guiPlaceSurfPoints_(Strings const & labels,Mesh & mesh)
+bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
 {
     FGASSERT(mesh.surfaces.size() == 1);        // current limitation makes back button (undo) easier
-    Strings             existing = sliceMember(mesh.surfPointsAsNameVecs(),&NameVec3F::name),
-                        toPlace = setwiseSubtract(labels,existing);
     String8             store = getDirUserAppDataLocalFaceGen({"PlaceSurfPoints"});
     // the first 'toPlace.size()' steps are for placement, the last is review:
     IPT<size_t>         stepN = makeIPT(size_t(0));

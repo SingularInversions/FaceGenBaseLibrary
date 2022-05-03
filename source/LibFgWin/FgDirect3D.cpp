@@ -16,9 +16,9 @@
 //      Y - camera's up
 //      Z - camera direction
 // * D3PS - Direct3D Projection Space (LEFT handed coordinate system)
-//      X - image right, clip [-1,1]
-//      Y - image up, clip [-1,1]
-//      Z - depth (near to far) [0,1]
+//      X - image left to right, clip [-1,1]
+//      Y - image bottom to top, clip [-1,1]
+//      Z - inverse depth (near to far) [0,1]
 // * D3SS - Direct3D Screen Space
 //      Top left pixel (0,0) bottom right pixel (X-1,Y-1)
 // * D3TC = DirectD Texture Coordinates
@@ -52,8 +52,7 @@ using namespace std;
 
 namespace Fg {
 
-String8s
-getGpusDescription()
+String8s            getGpusDescription()
 {
     String8s                ret;
     IDXGIAdapter1 *         pAdapter; 
@@ -70,8 +69,7 @@ getGpusDescription()
     return ret;
 }
 
-String8
-getDefaultGpuDescription()
+String8             getDefaultGpuDescription()
 {
     String8s        gpus = getGpusDescription();
     if (gpus.empty())
@@ -80,8 +78,7 @@ getDefaultGpuDescription()
         return gpus[0];
 }
 
-void
-PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
+void                PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
 {
     string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_shared_VS.cso");
     HRESULT             hr;
@@ -109,8 +106,7 @@ PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
     FG_ASSERT_HR(hr);
 }
 
-void
-PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
+void                PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
 {
     string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_transparent_VS.cso");
     HRESULT             hr;
@@ -131,8 +127,7 @@ PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
     FG_ASSERT_HR(hr);
 }
 
-void
-PipelineState::attachPixelShader(ComPtr<ID3D11Device> pDevice,string const & fname)
+void                PipelineState::attachPixelShader(ComPtr<ID3D11Device> pDevice,string const & fname)
 {
     string              shaderIR = loadRaw(dataDir()+"base/shaders/"+fname);
     HRESULT             hr = pDevice->CreatePixelShader(shaderIR.data(),shaderIR.size(),
@@ -140,8 +135,7 @@ PipelineState::attachPixelShader(ComPtr<ID3D11Device> pDevice,string const & fna
     FG_ASSERT_HR(hr);
 }
 
-void
-PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
+void                PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
 {
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     pContext->IASetInputLayout(m_pInputLayout.Get());
@@ -153,7 +147,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
 {
     origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
     {
-        Mat32F      bounds {floatMax(),-floatMax(), floatMax(),-floatMax(), floatMax(),-floatMax()};
+        Mat32F      bounds {lims<float>::max(),-lims<float>::max(), lims<float>::max(),-lims<float>::max(), lims<float>::max(),-lims<float>::max()};
         for (RendMesh const & rm : rms) {
             Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
             bounds = cBoundsUnion(bounds,bnds);
@@ -322,8 +316,7 @@ D3d::~D3d()
     }
 }
 
-void
-D3d::initializeRenderTexture(Vec2UI windowSize)
+void                D3d::initializeRenderTexture(Vec2UI windowSize)
 {
     HRESULT         hr;
     {   // Create RTV from BackBuffer.
@@ -400,8 +393,7 @@ D3d::initializeRenderTexture(Vec2UI windowSize)
     }
 }
 
-void
-D3d::resize(Vec2UI windowSize)
+void                D3d::resize(Vec2UI windowSize)
 {
     if (pContext == nullptr)
         return;
@@ -414,8 +406,7 @@ D3d::resize(Vec2UI windowSize)
     pContext->RSSetViewports(1,&viewport);
 }
 
-WinPtr<ID3D11Buffer>
-D3d::makeConstBuff(const Scene & scene)
+WinPtr<ID3D11Buffer> D3d::makeConstBuff(const Scene & scene)
 {
     D3D11_BUFFER_DESC       bd = {};
     bd.Usage = D3D11_USAGE_DEFAULT;             // read/write by GPU only
@@ -429,8 +420,7 @@ D3d::makeConstBuff(const Scene & scene)
     return WinPtr<ID3D11Buffer>(ptr);
 }
 
-WinPtr<ID3D11Buffer>
-D3d::makeVertBuff(const Verts & verts)
+WinPtr<ID3D11Buffer> D3d::makeVertBuff(const Verts & verts)
 {
     if (verts.empty())
         return WinPtr<ID3D11Buffer>();  // D3D gives error for zero size buffer creation
@@ -448,8 +438,7 @@ D3d::makeVertBuff(const Verts & verts)
 }
 
 // Returns null pointer if no surf points:
-WinPtr<ID3D11Buffer>
-D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
+WinPtr<ID3D11Buffer> D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 {
     // This isn't quite right since it will recalc when anything in rendMeshesN changes ...
     // but it's not clear what the perfect solution would look like.
@@ -479,8 +468,7 @@ D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & origMesh)
 }
 
 // Returns null pointer if no marked verts:
-WinPtr<ID3D11Buffer>
-D3d::makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
+WinPtr<ID3D11Buffer> D3d::makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
 {
     Verts               verts;
     Vec3Fs const &      rendVerts = rendMesh.posedVertsN.cref();
@@ -494,8 +482,7 @@ D3d::makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
     return makeVertBuff(verts);
 }
 
-WinPtr<ID3D11Buffer>
-D3d::makeAllVerts(Vec3Fs const & verts)
+WinPtr<ID3D11Buffer> D3d::makeAllVerts(Vec3Fs const & verts)
 {
     Verts               avs;
     for (Vec3F pos : verts) {
@@ -543,8 +530,7 @@ D3d::Verts          D3d::makeVertList(
     return vertList;
 }
 
-D3d::Verts
-D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum) {
+D3d::Verts          D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum) {
     D3d::Verts              ret;
     Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
     Surf const &            origSurf = origMesh.surfaces[surfNum];
@@ -573,8 +559,7 @@ D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNu
     return ret;
 }
 
-WinPtr<ID3D11Texture2D>
-D3d::loadMap(ImgRgba8 const & map) {
+WinPtr<ID3D11Texture2D> D3d::loadMap(ImgRgba8 const & map) {
     FGASSERT(!map.empty());
     ImgRgba8s               mipmap;
     if (isPow2(map.dims()))
@@ -615,8 +600,7 @@ D3d::loadMap(ImgRgba8 const & map) {
     return WinPtr<ID3D11Texture2D>(ptr);
 }
 
-WinPtr<ID3D11ShaderResourceView>
-D3d::makeMapView(ID3D11Texture2D* mapPtr)
+WinPtr<ID3D11ShaderResourceView> D3d::makeMapView(ID3D11Texture2D* mapPtr)
 {
     D3D11_SHADER_RESOURCE_VIEW_DESC     SRVDesc = {};
     SRVDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -630,8 +614,7 @@ D3d::makeMapView(ID3D11Texture2D* mapPtr)
     return WinPtr<ID3D11ShaderResourceView>(ptr);
 }
 
-D3dMap
-D3d::makeMap(ImgRgba8 const & map)
+D3dMap              D3d::makeMap(ImgRgba8 const & map)
 {
     D3dMap             ret;
     ret.map = loadMap(map);
@@ -639,8 +622,7 @@ D3d::makeMap(ImgRgba8 const & map)
     return ret;
 }
 
-WinPtr<ID3D11SamplerState>
-D3d::makeSamplerState()
+WinPtr<ID3D11SamplerState> D3d::makeSamplerState()
 {
     D3D11_SAMPLER_DESC sampDesc = {};
     sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;      // Always use trilinear
@@ -656,8 +638,7 @@ D3d::makeSamplerState()
     return WinPtr<ID3D11SamplerState>(ptr);
 }
 
-WinPtr<ID3D11Buffer>
-D3d::setScene(Scene const & scene)
+WinPtr<ID3D11Buffer> D3d::setScene(Scene const & scene)
 {
     WinPtr<ID3D11Buffer>        sceneBuff = makeConstBuff(scene);
     {
@@ -668,33 +649,30 @@ D3d::setScene(Scene const & scene)
     return sceneBuff;
 }
 
-WinPtr<ID3D11Buffer>
-D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
+WinPtr<ID3D11Buffer> D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
 {
     lighting.lights.resize(2);                          // Ensure we have 2
     Scene                   scene;
     scene.mvm = worldToD3vs.transpose();                // D3D is column-major (of course)
     scene.projection = d3vsToD3ps.transpose();          // "
-    scene.ambient = asHomogVec(lighting.ambient);
+    scene.ambient = append(lighting.ambient,1.0f);
     for (uint ii=0; ii<2; ++ii) {
         Vec3F               d = lighting.lights[ii].direction;
-        scene.lightDir[ii] = asHomogVec(Vec3F{d[0],d[1],-d[2]});    // OECS to D3VS
-        scene.lightColor[ii] = asHomogVec(lighting.lights[ii].colour);
+        scene.lightDir[ii] = {d[0],d[1],-d[2],1.0f};    // OECS to D3VS homogenous position
+        scene.lightColor[ii] = append(lighting.lights[ii].colour,1.0f);
     }
     return setScene(scene);
 }
 
 // Ambient-only version:
-WinPtr<ID3D11Buffer>
-D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
+WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
 {
     Light             diffuseBlack(Vec3F(0),Vec3F(0,0,1));
     Lighting          lighting(ambient,svec(diffuseBlack,diffuseBlack));
     return makeScene(lighting,worldToD3vs,d3vsToD3ps);
 }
 
-void
-D3d::setBgImage(BackgroundImage const & bgi)
+void                D3d::setBgImage(BackgroundImage const & bgi)
 {
     bgImg.reset();
     ImgRgba8 const &     img = bgi.imgN.cref();
@@ -706,8 +684,7 @@ D3d::setBgImage(BackgroundImage const & bgi)
     bgImg = makeMap(map);
 }
 
-void
-D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass) {
+void                D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transparentPass) {
     WinPtr<ID3D11RasterizerState> rasterizer;
     {
         D3D11_RASTERIZER_DESC       rd = {};
@@ -772,8 +749,7 @@ D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewportSize, bool  transpa
     pContext->Draw(6,0);
 }
 
-D3dMesh &
-D3d::getD3dMesh(RendMesh const & rm) const
+D3dMesh &           D3d::getD3dMesh(RendMesh const & rm) const
 {
     Any &  gpuMesh = *rm.gpuData;
     if (!gpuMesh.valid())
@@ -781,8 +757,7 @@ D3d::getD3dMesh(RendMesh const & rm) const
     return gpuMesh.ref<D3dMesh>();
 }
 
-D3dSurf &
-D3d::getD3dSurf(RendSurf const & rs) const
+D3dSurf &           D3d::getD3dSurf(RendSurf const & rs) const
 {
     Any &  gpuSurf = *rs.gpuData;
     if (!gpuSurf.valid()) {
@@ -795,8 +770,7 @@ D3d::getD3dSurf(RendSurf const & rs) const
     return gpuSurf.ref<D3dSurf>();
 }
 
-void
-D3d::updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
+void                D3d::updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
 {
     if (flag->checkUpdate()) {
         out.reset();
@@ -808,8 +782,7 @@ D3d::updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
     }
 }
 
-void
-D3d::renderBackBuffer(
+void                D3d::renderBackBuffer(
     BackgroundImage const &     bgi,
     Lighting                    lighting,       // OECS
     Mat44F                      worldToD3vs,    // modelview
@@ -1040,8 +1013,7 @@ D3d::renderBackBuffer(
     pContext->OMSetRenderTargets(0,nullptr,nullptr);
 }
 
-void
-D3d::showBackBuffer()
+void                D3d::showBackBuffer()
 {
     // No render view during create - created by first resize:
     if (pRTV == nullptr)
@@ -1052,8 +1024,7 @@ D3d::showBackBuffer()
     FG_ASSERT_D3D(hr);
 }
 
-ImgRgba8
-D3d::capture(Vec2UI viewportSize)
+ImgRgba8            D3d::capture(Vec2UI viewportSize)
 {
     HRESULT                     hr;
     WinPtr<ID3D11Texture2D>     pBuffer;
@@ -1089,8 +1060,7 @@ D3d::capture(Vec2UI viewportSize)
     return ret;
 }
 
-void
-D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
+void                D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
 {
     UINT                stride[] = { sizeof(Vert) };
     UINT                offset[] = { 0 };
@@ -1099,16 +1069,14 @@ D3d::setVertexBuffer(ID3D11Buffer * vertBuff)
     pContext->IASetVertexBuffers(0,1,buffers,stride,offset);
 }
 
-size_t
-D3d::selectTintMap(size_t idx,size_t num) const
+size_t              D3d::selectTintMap(size_t idx,size_t num) const
 {
     // maximize color diffs, handle M=0 and M>tintTransMaps.size():
     size_t              colorStep = cMax(tintMaps.size()/cMax(num,size_t(1)),size_t(1));
     return (idx*colorStep) % tintMaps.size();
 }
 
-void
-D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass)
+void                D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass)
 {
     size_t              M = rendMeshes.size();
     for (size_t mm=0; mm<M; ++mm) {
@@ -1161,8 +1129,7 @@ D3d::renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool 
     }
 }
 
-void
-D3d::handleHResult(char const * fpath,uint lineNum,HRESULT hr)
+void                D3d::handleHResult(char const * fpath,uint lineNum,HRESULT hr)
 {
     if (hr == DXGI_ERROR_DEVICE_REMOVED) {
         HRESULT             hr2 = pDevice->GetDeviceRemovedReason();

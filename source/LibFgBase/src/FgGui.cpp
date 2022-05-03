@@ -5,7 +5,7 @@
 //
 
 #include "stdafx.h"
-#include "FgGuiApi.hpp"
+#include "FgGui.hpp"
 #include "FgCommand.hpp"
 #include "FgTime.hpp"
 #include "FgImageIo.hpp"
@@ -14,27 +14,29 @@ using namespace std;
 
 namespace Fg {
 
+GuiVal<ImgFormat>   guiImgFormatSelector(ImgFormats const & imgFormats,String8 const & store)
+{
+    ImgFormatsInfo      imgFormatInfo = getImgFormatsInfo();
+    String8s            imgFormatDescs;     // descriptions
+    for (ImgFormat fmt : imgFormats)
+        imgFormatDescs.push_back(findFirst(imgFormatInfo,fmt).description);
+    IPT<size_t>         imgFormatIdxN;      // user selection
+    if (store.empty())
+        imgFormatIdxN = makeIPT<size_t>(0);
+    else
+        imgFormatIdxN = makeSavedIPTEub<size_t>(0,store+"ImgFormat",imgFormats.size());
+    auto                imgFormatFn = [=](size_t const & idx){return imgFormats[idx]; };
+    OPT<ImgFormat>      imgFormatN = link1<size_t,ImgFormat>(imgFormatIdxN,imgFormatFn);
+    GuiPtr              imgFormatSelW = guiRadio(imgFormatDescs,imgFormatIdxN);
+    return {imgFormatN,imgFormatSelW};
+}
+
 void                testGuiDialogSplashScreen(CLArgs const &)
 {
     std::function<void(void)>     f = guiDialogSplashScreen();
     fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
     sleepSeconds(3);
     f();
-}
-
-GuiVal<String>      guiImageFormat(String const & label,String8 const & store)
-{
-    GuiVal<string>      ret;
-    String8s            labels;
-    Strings             exts;
-    for (ImgFormatInfo const & ifi : getImgFormatsInfo()) {
-        labels.push_back(ifi.description);
-        exts.push_back(ifi.extensions.at(0));
-    }
-    IPT<size_t>         idxN = (store.empty()) ? makeIPT<size_t>(0) : makeSavedIPTEub<size_t>(0,store,labels.size());
-    ret.win = guiGroupbox(label,guiRadio(labels,idxN));
-    ret.valN = link1<size_t,string>(idxN,[=](size_t const & idx){return exts.at(idx);});
-    return ret;
 }
 
 void                testGui2(CLArgs const &)

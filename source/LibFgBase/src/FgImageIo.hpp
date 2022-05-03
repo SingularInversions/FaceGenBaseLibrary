@@ -18,15 +18,20 @@ namespace Fg {
 // read/write image file formats, thanks to Sean Barrett. First is default for writing.
 enum struct     ImgFormat {png, jpg, tga, bmp};
 
+typedef Svec<ImgFormat>     ImgFormats;
+
 struct          ImgFormatInfo
 {
     ImgFormat       format;
     Strings         extensions;             // lower case, first is most common if more than one
     String          description;
+
+    bool            operator==(ImgFormat rhs) const {return (format==rhs); }
 };
 typedef Svec<ImgFormatInfo>     ImgFormatsInfo;
 
 ImgFormatsInfo      getImgFormatsInfo();    // first is default for writing
+inline ImgFormatInfo getImgFormatInfo(ImgFormat f) {return findFirst(getImgFormatsInfo(),f); }
 // List of supported image file format extensions in lower case, including synonyms:
 Strings             getImgExts();
 // true if the file extension is a read/write supported image file format:

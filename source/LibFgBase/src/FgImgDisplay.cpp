@@ -12,7 +12,7 @@
 #include "FgAffine.hpp"
 #include "FgBounds.hpp"
 #include "FgCommand.hpp"
-#include "FgGuiApi.hpp"
+#include "FgGui.hpp"
 
 using namespace std;
 

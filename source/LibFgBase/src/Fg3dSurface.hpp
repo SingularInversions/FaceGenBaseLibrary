@@ -12,6 +12,7 @@
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 #include "FgImage.hpp"
+#include "FgCmp.hpp"
 
 namespace Fg {
 
@@ -73,6 +74,7 @@ struct  NPolys
     explicit NPolys(Svec<Ind> const & vs) : vertInds (vs) {}
     NPolys(Svec<Ind> const & vtInds, const Svec<Ind> & uvIds) : vertInds(vtInds), uvInds(uvIds) {}
 
+    FG_EQ_M2(NPolys,vertInds,uvInds)
     bool            valid() const {return ((uvInds.size() == 0) || (uvInds.size() == vertInds.size())); }
     size_t          size() const {return vertInds.size(); }
     bool            empty() const {return vertInds.empty(); }
@@ -209,8 +211,8 @@ typedef Svec<Surfs>     Surfss;
 
 NameVec3Fs      surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & verts);
 // Only preserves name and polygons. Splits into <name>-## surfaces for each occupied UV domain and
-// modifies the UVs to be in [0,1]. If domains are not used, just returns the input surface:
-Surfs           splitByUvDomain_(Surf const & surf,Vec2Fs & uvs);
+// modifies the UVs to be in [0,1]. If UV tiles are not used, just returns the input surface:
+Surfs           splitByUvTile_(Surf const & surf,Vec2Fs & uvs);
 Surf            removeDuplicateFacets(Surf const &);
 Surf            mergeSurfaces(Surfs const & surfs);     // Retains name & material of first surface
 // Split a surface into its (one or more) discontiguous (by vertex index) surfaces:
@@ -278,11 +280,14 @@ struct  TriSurf
 
     bool            hasUnusedVerts() const {return Fg::hasUnusedVerts(tris,verts); }
 };
+typedef Svec<TriSurf>   TriSurfs;
+
 struct      TriSurfD
 {
     Vec3Ds                  shape;
     Vec3UIs                 tris;
 };
+typedef Svec<TriSurfD>  TriSurfDs;
 
 inline TriSurf      reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
 TriSurf             removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);

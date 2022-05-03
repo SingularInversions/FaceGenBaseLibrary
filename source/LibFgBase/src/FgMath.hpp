@@ -186,12 +186,6 @@ Arr<T,S>            mapAbs(const Arr<T,S> & a)
 inline uint64       cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
 inline uint64       cMin(uint a,uint64 b) {return std::min(uint64(a),b); }
 
-// Shorthand for limit values:
-uint constexpr      uintMax() {return std::numeric_limits<uint>::max(); };
-double constexpr    epsilonD() {return std::numeric_limits<double>::epsilon(); }
-double constexpr    doubleMax() {return std::numeric_limits<double>::max(); }
-float constexpr     floatMax() {return std::numeric_limits<float>::max(); }
-
 // 1D convolution with zero-value boundary handling (non-optimized):
 Doubles             convolve(
     Doubles const &         data,
@@ -208,8 +202,8 @@ Doubles             convolveGauss(
 // Limit values of +/- 2 for very different values.
 // 'minAbs' is used as the minimum scale for determining relative difference
 // (important when one value may be very small or zero).
-double              cRelDiff(double a,double b,double minAbs=epsilonD());
-Doubles             cRelDiff(Doubles const & a,Doubles const & b,double minAbs=epsilonD());
+double              cRelDiff(double a,double b,double minAbs=lims<double>::epsilon());
+Doubles             cRelDiff(Doubles const & a,Doubles const & b,double minAbs=lims<double>::epsilon());
 
 // Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
 template<class T>

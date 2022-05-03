@@ -17,24 +17,13 @@ using namespace std;
 
 namespace Fg {
 
-static bool
-isLetter(char c)
-{return (((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'))); }
+bool            isLetter(char ch) {return isalpha(scast<uchar>(ch)); }
+bool            isDigitLetterDashUnderscore(char c) {return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
+bool            isWhitespace(char c) {return (c < 0x21); }
+bool            isWhitespaceOrInvalid(char c) {return ((c < 0x21) || (c > 0x7E)); }
+bool            isCrLf32(char32_t ch) {return ((ch == 0x0A) || (ch == 0x0D)); }
 
-static bool
-isDigitLetterDashUnderscore(char c)
-{return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
-
-static bool
-isWhitespace(char c)
-{return (c < 0x21); }
-
-static bool
-isWhitespaceOrInvalid(char c)
-{return ((c < 0x21) || (c > 0x7E)); }
-
-bool
-containsOnlyDigits(String const & str)
+bool                containsOnlyDigits(String const & str)
 {
     for (char c : str)
         if (!isDigit(c))
@@ -42,8 +31,7 @@ containsOnlyDigits(String const & str)
     return true;
 }
 
-Strings
-tokenize(string const & str)
+Strings             tokenize(string const & str)
 {
     Strings      ret;
     string      acc;
@@ -73,28 +61,21 @@ tokenize(string const & str)
     return ret;
 }
 
-static
-bool
-isCrOrLf(char c)
-{
-    return ((c == 0x0A) || (c == 0x0D));    // LF or CR resp.
-}
 
-Strings
-splitLines(string const & src,char commentFlag)
+Strings             splitLines(String const & src,char commentFlag)
 {
-    Strings         ret;
-    string          acc;
-    for (size_t ii=0; ii<src.size(); ++ii) {
-        if (isCrOrLf(src[ii])) {
+    Strings             ret;
+    String              acc;
+    for (char ch : src) {
+        if (isCrLf(ch)) {
             if (!acc.empty()) {
-                if (acc[0] != commentFlag)
+                if ((commentFlag == 0) || (acc[0] != commentFlag))
                     ret.push_back(acc);
                 acc.clear();
             }
         }
         else
-            acc += src[ii];
+            acc += ch;
     }
     if (!acc.empty())
         if (acc[0] != commentFlag)
@@ -102,35 +83,37 @@ splitLines(string const & src,char commentFlag)
     return ret;
 }
 
-String32s
-splitLines(String32 const & src)
+String32s           splitLines(String32 const & src,char32_t commentFlag)
 {
-    String32s            ret;
-    size_t              base = 0;
-    for (size_t ii=0; ii<src.size(); ++ii) {
-        if ((src[ii] == 0x0A) || (src[ii] == 0x0D)) {   // LF or CR resp.
-            if (ii > base)
-                ret.push_back(String32(src.begin()+base,src.begin()+ii));
-            base = ii+1; } }
-    if (base < src.size())
-        ret.push_back(String32(src.begin()+base,src.end()));
+    String32s           ret;
+    String32            acc;
+    for (char32_t ch : src) {
+        if (isCrLf32(ch)) {
+            if (!acc.empty()) {
+                if ((commentFlag == 0) || (acc[0] != commentFlag))
+                    ret.push_back(acc);
+                acc.clear();
+            }
+        }
+        else
+            acc += ch;
+    }
+    if (!acc.empty())
+        if ((commentFlag == 0) || (acc[0] != commentFlag))
+            ret.push_back(acc);
     return ret;
 }
 
-String8s
-splitLinesUtf8(string const & utf8)
+String8s            splitLinesUtf8(String const & utf8,char commentFlag)
 {
-    String8s               ret;
-    String32s       res = splitLines(String8(utf8).as_utf32());
-    ret.resize(res.size());
-    for (size_t ii=0; ii<res.size(); ++ii)
-        ret[ii] = String8(res[ii]);
+    String32s           lines = splitLines(toUtf32(utf8),scast<char32_t>(commentFlag));
+    String8s            ret; ret.reserve(lines.size());
+    for (String32 const & line : lines)
+        ret.push_back(toUtf8(line));
     return ret;
 }
 
-static
-void
-consumeCrLf(String32 const & in,size_t & idx)    // Current idx must point to CR or LF
+static void         consumeCrLf(String32 const & in,size_t & idx)    // Current idx must point to CR or LF
 {
     char32_t        ch0 = in[idx++];
     if (idx == in.size())
@@ -141,9 +124,9 @@ consumeCrLf(String32 const & in,size_t & idx)    // Current idx must point to CR
     return;
 }
 
-static
-string
-csvGetField(String32 const & in,size_t & idx)    // idx must initially point to valid data but may point to end on return
+static String       csvGetField(
+    String32 const &        in,
+    size_t &                idx)    // idx must initially point to valid data but may point to end on return
 {
     string      ret;
     if (in[idx] == '"') {               // Quoted field
@@ -177,9 +160,7 @@ csvGetField(String32 const & in,size_t & idx)    // idx must initially point to 
     }
 }
 
-static
-Strings
-csvGetLine(
+static Strings      csvGetLine(
     String32 const & in,
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
@@ -205,8 +186,7 @@ csvGetLine(
     }
 }
 
-Stringss
-loadCsv(String8 const & fname,size_t fieldsPerLine)
+Stringss            loadCsv(String8 const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
     String32       data = toUtf32(loadRaw(fname));
@@ -222,8 +202,7 @@ loadCsv(String8 const & fname,size_t fieldsPerLine)
     return ret;
 }
 
-map<string,Strings>
-loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
+map<string,Strings> loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
 {
     FGASSERT((fieldsPerLine==0) || (keyIdx < fieldsPerLine));
     map<string,Strings> ret;
@@ -245,9 +224,7 @@ loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fieldsPerLine)
     return ret;
 }
 
-static
-string
-csvField(string const & data)
+static string       csvField(string const & data)
 {
     string          ret = "\"";
     String32       utf32 = toUtf32(data);
@@ -261,8 +238,7 @@ csvField(string const & data)
     return ret;
 }
 
-void
-saveCsv(String8 const & fname,const Stringss & csvLines)
+void                saveCsv(String8 const & fname,const Stringss & csvLines)
 {
     Ofstream      ofs(fname);
     for (Strings line : csvLines) {
@@ -276,11 +252,10 @@ saveCsv(String8 const & fname,const Stringss & csvLines)
     }
 }
 
-Strings
-splitChar(string const & str,char ch,bool ie)
+Strings             splitChar(String const & str,char ch,bool ie)
 {
     Strings         ret;
-    string          curr;
+    String          curr;
     for (size_t ii=0; ii<str.size(); ++ii) {
         if (str[ii] == ch) {
             if (!curr.empty() || ie) {
@@ -296,8 +271,7 @@ splitChar(string const & str,char ch,bool ie)
     return ret;
 }
 
-Strings
-splitWhitespace(string const & str)
+Strings             splitWhitespace(string const & str)
 {
     Strings  retval;
     bool            symbolFlag = false,
@@ -345,13 +319,12 @@ splitWhitespace(string const & str)
     return retval;
 }
 
-void
-fgTestmLoadCsv(CLArgs const & args)
+void                testmLoadCsv(CLArgs const & args)
 {
-    Syntax        syntax(args,"<file>.csv");
-    Stringss         data = loadCsv(syntax.next());
+    Syntax              syntax(args,"<file>.csv");
+    Stringss            data = loadCsv(syntax.next());
     for (size_t rr=0; rr<data.size(); ++rr) {
-        Strings const &  fields = data[rr];
+        Strings const &     fields = data[rr];
         fgout << fgnl << "Record " << rr << " with " << fields.size() << " fields: " << fgpush;
         for (size_t ff=0; ff<fields.size(); ++ff)
             fgout << fgnl << "Field " << ff << ": " << fields[ff];
@@ -359,10 +332,9 @@ fgTestmLoadCsv(CLArgs const & args)
     }
 }
 
-string
-asciify(string const & in)
+String              asciify(string const & in)
 {
-    string          ret;
+    String              ret;
     map<char32_t,char>  hg;     // homoglyph map
     hg[166] = ':';
     hg[167] = 'S';
@@ -406,13 +378,13 @@ asciify(string const & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    String32       utf32 = toUtf32(in);
+    String32            utf32 = toUtf32(in);
     for (char32_t ch32 : utf32) {
-        string  utf8 = toUtf8(ch32);
+        string              utf8 = toUtf8(ch32);
         if (utf8.size() == 1)
             ret.push_back(utf8[0]);
         else {
-            auto    it = hg.find(ch32);
+            auto            it = hg.find(ch32);
             if (it == hg.end())
                 ret.push_back('?');
             else
@@ -422,8 +394,7 @@ asciify(string const & in)
     return ret;
 }
 
-String32
-replaceAll(String32 const & str,char32_t a,char32_t b)
+String32            replaceAll(String32 const & str,char32_t a,char32_t b)
 {
     String32       ret;
     ret.reserve(str.size());
@@ -435,8 +406,7 @@ replaceAll(String32 const & str,char32_t a,char32_t b)
     return ret;
 }
 
-String
-noLeadingWhitespace(String const & str)
+String              noLeadingWhitespace(String const & str)
 {
     size_t              idx = 0;
     while (isWhitespace(str[idx]))

@@ -110,7 +110,7 @@ NOTES:
     }
     if (all.empty())
         syn.error("No meshes specified");
-    Mesh        ignoreModified = viewMesh(all,compare);
+    viewMesh(all,compare);
 }
 
 void                cmdViewImage(CLArgs const & args)

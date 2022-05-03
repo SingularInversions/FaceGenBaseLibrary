@@ -163,7 +163,7 @@ NameVec3Fs          surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & vert
         cat_(ret,surf.surfPointsAsNameVecs(verts));
     return ret;
 }
-Surfs               splitByUvDomain_(Surf const & surf,Vec2Fs & uvs)
+Surfs               splitByUvTile_(Surf const & surf,Vec2Fs & uvs)
 {
     set<Vec2I>              domains;
     map<Vec2I,Uints>        domainToQuadInds,
@@ -198,13 +198,13 @@ Surfs               splitByUvDomain_(Surf const & surf,Vec2Fs & uvs)
         fgout << domain << " ";
         Uints const &           triSels = domainToTriInds[domain];
         Tris                    tris {
-            permute(surf.tris.vertInds,triSels),
-            permute(surf.tris.uvInds,triSels),
+            select(surf.tris.vertInds,triSels),
+            select(surf.tris.uvInds,triSels),
         };
         Uints const &           quadSels = domainToQuadInds[domain];
         Quads                   quads {
-            permute(surf.quads.vertInds,quadSels),
-            permute(surf.quads.uvInds,quadSels),
+            select(surf.quads.vertInds,quadSels),
+            select(surf.quads.uvInds,quadSels),
         };
         String8                 name = surf.name +nameSep + toStrDigits(ret.size(),2);
         ret.emplace_back(name,tris,quads);

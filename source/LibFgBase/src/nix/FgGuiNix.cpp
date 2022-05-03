@@ -9,7 +9,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApi.hpp"
+#include "FgGui.hpp"
 #include "FgOut.hpp"
 
 using namespace std;

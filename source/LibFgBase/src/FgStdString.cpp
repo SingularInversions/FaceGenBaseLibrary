@@ -14,8 +14,7 @@ using namespace std;
 
 namespace Fg {
 
-String32
-toUtf32(string const & str)
+String32            toUtf32(String const & str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -30,8 +29,7 @@ toUtf32(string const & str)
 #endif
 }
 
-String32
-toUtf32(char const * str)
+String32            toUtf32(char const * str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -46,8 +44,7 @@ toUtf32(char const * str)
 #endif
 }
 
-string
-toUtf8(String32 const & in)
+string              toUtf8(String32 const & in)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
@@ -62,39 +59,34 @@ toUtf8(String32 const & in)
 #endif
 }
 
-string
-toUtf8(const char32_t & utf32_char)
-{return toUtf8(String32(1,utf32_char)); }
+string              toUtf8(const char32_t & utf32_char) {return toUtf8(String32(1,utf32_char)); }
 
-std::wstring
-toUtf16(const std::string & utf8)
+std::wstring        toUtf16(const std::string & utf8)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.from_bytes(utf8);
 }
 
-std::string
-toUtf8(const std::wstring & utf16)
+std::string         toUtf8(const std::wstring & utf16)
 {
     // codecvt_utf8_utf16 inherits from codecvt
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.to_bytes(utf16);
 }
 
-string
-toStrFixed(double val,uint fractionalDigits)
+string              toStrFixed(double val,uint fractionalDigits)
 {
     ostringstream   os;
     os << std::fixed << std::setprecision(fractionalDigits) << val;
     return os.str();
 }
 
-string
-toStrPercent(double val,uint fractionalDigits)
-{return toStrFixed(val*100.0,fractionalDigits) + "%"; }
+string              toStrPercent(double val,uint fractionalDigits)
+{
+    return toStrFixed(val*100.0,fractionalDigits) + "%";
+}
 
-std::string
-toLower(const std::string & s)
+std::string         toLower(const std::string & s)
 {
     string  retval;
     retval.reserve(s.size());
@@ -105,8 +97,7 @@ toLower(const std::string & s)
     return retval;
 }
 
-std::string
-toUpper(const std::string & s)
+std::string         toUpper(const std::string & s)
 {
     string  retval;
     retval.reserve(s.size());
@@ -117,8 +108,7 @@ toUpper(const std::string & s)
 	return retval;
 }
 
-std::vector<string>
-splitAtSeparators(
+std::vector<string> splitAtSeparators(
     const std::string & str,
     char                sep)
 {
@@ -141,8 +131,7 @@ splitAtSeparators(
     return ret;
 }
 
-std::string
-replaceAll(
+std::string         replaceAll(
     const std::string & str,
     char                orig,
     char                repl)
@@ -154,8 +143,7 @@ replaceAll(
     return ret;
 }
 
-string
-padToLen(string const & str,size_t len,char ch)
+string              padToLen(string const & str,size_t len,char ch)
 {
     string  ret = str;
     if (len > str.size())
@@ -163,8 +151,7 @@ padToLen(string const & str,size_t len,char ch)
     return ret;
 }
 
-string
-cat(Strings const & strings,string const & separator)
+string              cat(Strings const & strings,string const & separator)
 {
     string      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -175,8 +162,7 @@ cat(Strings const & strings,string const & separator)
     return ret;
 }
 
-string
-cat(set<string> const & strings,string const & separator)
+string              cat(set<string> const & strings,string const & separator)
 {
     auto                it = strings.begin();
     if (it == strings.end())
@@ -187,7 +173,7 @@ cat(set<string> const & strings,string const & separator)
     return ret;
 }
 
-String          catDeref(Ptrs<String> const & stringPtrs,String const & separator)
+String              catDeref(Ptrs<String> const & stringPtrs,String const & separator)
 {
     String              ret;
     size_t              sz = stringPtrs.size();
@@ -200,8 +186,7 @@ String          catDeref(Ptrs<String> const & stringPtrs,String const & separato
 }
 
 template<>
-Opt<int>
-fromStr(string const & str)
+Opt<int>            fromStr(string const & str)
 {
     Opt<int>              ret;
     if (str.empty())
@@ -229,8 +214,7 @@ fromStr(string const & str)
 }
 
 template<>
-Opt<uint>
-fromStr<uint>(string const & str)
+Opt<uint>           fromStr<uint>(string const & str)
 {
     Opt<uint>             ret;
     if (str.empty())
@@ -251,15 +235,13 @@ fromStr<uint>(string const & str)
     return ret;
 }
 
-String
-cRest(String const & str,size_t start)
+String              cRest(String const & str,size_t start)
 {
     FGASSERT1(start <= str.size(),str+"@"+toStr(start));      // Can be size zero
     return String{str.begin()+start,str.end()};
 }
 
-String32
-cRest(String32 const & str,size_t start)
+String32            cRest(String32 const & str,size_t start)
 {
     FGASSERT1(start <= str.size(),toUtf8(str)+"@"+toStr(start));
     return String32{str.begin()+start,str.end()};

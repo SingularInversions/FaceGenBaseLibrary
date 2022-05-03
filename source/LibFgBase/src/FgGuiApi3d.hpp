@@ -97,14 +97,12 @@ Opt<MeshesIntersect> intersectMeshes(
 
 // bool: is shift key down as well ? Vec2I: drag delta in pixels
 typedef Sfun<void(bool,Vec2I)>          BothButtonsDragAction;
-// Vec2UI: viewport size
-// Vec2I: final position
-// Mat44F: transform verts to OICS
-typedef Sfun<void(Vec2UI,Vec2I,Mat44F)> DragAction;
-// Vec2UI: viewport size
-// Vec2I: click position
-// Mat44F: transform verts to OICS
-typedef Sfun<void(Vec2UI,Vec2I,Mat44F)> ClickAction;
+// Vec2UI: viewport size in pixels (X,Y)
+// Vec2I: viewport position in raster coordinates (RCS) (at end of click or end of drag resp.)
+// Mat44F: transform verts from world to D3PS
+typedef Sfun<void(Vec2UI,Vec2I,Mat44F)> MouseAction;
+
+AffineEw2F          cD3psToRcs(Vec2UI viewportSize);    // for handling MouseAction and MouseAction params
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct      Gui3d;
@@ -148,8 +146,13 @@ struct      Gui3d : GuiBase
     // bool: is shift key down as well ?
     Sfun<void(bool,VertIdx,Vec3F)>  ctlDragAction;          // Can be empty
     BothButtonsDragAction           bothButtonsDragAction;
-    DragAction                      shiftRightDragAction;
-    Marr3<ClickAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
+    MouseAction                     shiftRightDragAction,
+                                    shiftCtrlMiddleDragAction;
+    // clickActions are called when the mouse button is released (otherwise they may yet be drag actions):
+    Marr3<MouseAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
+    // TODO: refactor to use this (problem is lastCtlClick also needs to track intersect from first click down):
+    // by L button down (no/yes), M button (no/yes), R button (no/yes), shift (no/yes), ctrl (no/yes):
+    // Marr5<MouseAction,2,2,2,2,2>    dragActions;
 
     // current design is to call 'makeViewControls' to complete setup of this object.
     // TODO: break that up into calls which are made first and results can be passed to a constructor:

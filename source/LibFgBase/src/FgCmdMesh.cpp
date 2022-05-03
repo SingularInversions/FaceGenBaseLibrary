@@ -72,15 +72,17 @@ OUTPUT:
         if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str)))
             saveMergeMesh(meshes,out.str());
         else {
-            size_t          cnt {0};
+            String8s        namesUsed {""};     // contains empty name to force appending a number
             for (Mesh const & mesh : meshes) {
-                String8         name = mesh.name;
-                if (name.empty())
-                    name = toStrDigits(cnt,2);
-                String8         fname = out.dirBase()+"-"+name+"."+out.ext;
+                String8         name = toUtf8(removeNonFilenameChars(mesh.name.as_utf32())),
+                                uniqueName = name;
+                size_t          cnt {1};
+                while (contains(namesUsed,uniqueName))
+                    uniqueName = name + toStr(cnt++);
+                namesUsed.push_back(uniqueName);
+                String8         fname = out.dirBase()+"-"+uniqueName+"."+out.ext;
                 saveMesh(mesh,fname);
                 fgout << fgnl << fname << " saved.";
-                ++cnt;
             }
         }
     }
@@ -146,9 +148,37 @@ NOTES:
     Vec3Fs              verts = loadMesh(syn.next()).verts;
     Mesh                mesh = loadMesh(syn.next());
     if (verts.size() != mesh.verts.size())
-        syn.error("<verts> and <mesh> vertex lists are different sizes",toStr(verts.size())+":"+toStr(mesh.verts.size()));
+        syn.error(
+            "<verts> and <mesh> vertex lists are different sizes",
+            toStr(verts.size())+":"+toStr(mesh.verts.size()));
     mesh.verts = verts;
     saveMesh(mesh,syn.next());
+}
+
+void                cmdEdit(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"((<mesh>.<ext> | <filenames>.txt)+
+    <mesh>.<ext>    - the mesh(es) to be sequentially viewed and edited
+    <filenames>.txt - must contain one <mesh>.<ext> as above per non-empty line
+    <ext>           - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <mesh>.<ext>    - changes are saved back to this file if the 'Edit' -> 'Save' button is clicked
+NOTES:
+    Editing controls are found under the 'Edit' tab.
+)"
+    };
+    String8s            filenames;
+    while (syn.more()) {
+        if (toLower(pathToExt(syn.peekNext())) == "txt")
+            cat_(filenames,splitLinesUtf8(loadRaw(syn.next()),'#'));
+        else
+            filenames.push_back(syn.next());
+    }
+    if (filenames.empty())
+        syn.error("no files to edit");
+    for (String8 const & filename : filenames)
+        viewMesh({loadMesh(filename)},false,filename);
 }
 
 void                cmdEmboss(CLArgs const & args)
@@ -460,7 +490,7 @@ void                cmdRetopo(CLArgs const & args)
                         threshMag = maxDim * 0.000001f;         // One part in 1M match threshold
     Uints               mapRI;
     for (Vec3F vr : meshRe.verts) {
-        float               bestMag = floatMax();
+        float               bestMag = lims<float>::max();
         uint                bestIdx;
         for (size_t vv=0; vv<meshIn.verts.size(); ++vv) {
             Vec3F const &       vi = meshIn.verts[vv];
@@ -473,12 +503,12 @@ void                cmdRetopo(CLArgs const & args)
         if (bestMag < threshMag)
             mapRI.push_back(bestIdx);
         else
-            mapRI.push_back(uintMax());
+            mapRI.push_back(lims<uint>::max());
     }
-    Uints               mapIR(meshIn.verts.size(),uintMax());
+    Uints               mapIR(meshIn.verts.size(),lims<uint>::max());
     for (size_t rr=0; rr<mapRI.size(); ++rr) {
         uint            ii = mapRI[rr];
-        if (ii != uintMax()) {
+        if (ii != lims<uint>::max()) {
             FGASSERT(ii < mapIR.size());
             mapIR[ii] = uint(rr);
         }
@@ -488,7 +518,7 @@ void                cmdRetopo(CLArgs const & args)
         DirectMorph               morphOut {morphIn.name};
         for (size_t vv=0; vv<meshRe.verts.size(); ++vv) {
             uint                idx = mapRI[vv];
-            if (idx == uintMax())
+            if (idx == lims<uint>::max())
                 morphOut.verts.push_back(Vec3F{0});
             else
                 morphOut.verts.push_back(morphIn.verts[idx]);
@@ -500,7 +530,7 @@ void                cmdRetopo(CLArgs const & args)
         for (size_t vv=0; vv<morphIn.ivs.size(); ++vv) {
             uint            idxI = morphIn.ivs[vv].idx,
                             idxR = mapIR[idxI];
-            if (idxR != uintMax())
+            if (idxR != lims<uint>::max())
                 morphOut.ivs.emplace_back(idxR,morphIn.ivs[vv].vec);
         }
         meshOut.targetMorphs.push_back(morphOut);
@@ -641,7 +671,7 @@ void                surfIso(CLArgs const & args)
             syn.error("Selected surface index out of range",toStr(idx));
         inds.push_back(idx);
     }
-    mesh.surfaces = permute(mesh.surfaces,inds);
+    mesh.surfaces = select(mesh.surfaces,inds);
     saveMesh(mesh,outName);
 }
 
@@ -747,7 +777,7 @@ OUTPUT:
 void                cmdSurfPointMark(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"([-c] (<mesh>.<ext> | <meshList>.txt) (<landmark> | <fidList>.txt)
+        R"([-c] (<mesh>.<ext> | <meshList>.txt) (<landmark>+ | <fidList>.txt)
     -c              - if there is an image file of the same base name use it as a color map
     <ext>           - (tri | fgmesh)
     <meshList>.txt  - contains one or more lines, each of the format <mesh>.<ext>
@@ -776,19 +806,26 @@ NOTES:
     Strings             lmNames;
     if (endsWith(syn.peekNext(),".txt"))
         lmNames = splitLines(loadRaw(syn.next()),'#');
-    else
-        lmNames.push_back(syn.next());
+    else {
+        do
+            lmNames.push_back(syn.next());
+        while (syn.more());
+    }
     for (String const & meshPath : meshPaths) {
         Mesh                mesh = loadMesh(meshPath);
-        if (useColor && !mesh.surfaces.empty()) {
-            String8             dirBase = pathToDirBase(meshPath);
-            Strings             imgExts = findExts(dirBase,getImgExts());
-            if (!imgExts.empty())
-                mesh.surfaces[0].setAlbedoMap(loadImage(dirBase+"."+imgExts[0]));
-        }
         PushIndent          pind {meshPath};
-        if (guiPlaceSurfPoints_(lmNames,mesh))
-            saveMesh(mesh,meshPath);
+        Strings             existing = sliceMember(mesh.surfPointsAsNameVecs(),&NameVec3F::name),
+                            toPlace = setwiseSubtract(lmNames,existing);
+        if (!toPlace.empty()) {
+            if (useColor && !mesh.surfaces.empty()) {
+                String8             dirBase = pathToDirBase(meshPath);
+                Strings             imgExts = findExts(dirBase,getImgExts());
+                if (!imgExts.empty())
+                    mesh.surfaces[0].setAlbedoMap(loadImage(dirBase+"."+imgExts[0]));
+            }
+            if (guiPlaceSurfPoints_(lmNames,mesh))
+                saveMesh(mesh,meshPath);
+        }
     }
 }
 
@@ -1187,6 +1224,7 @@ void                cmdMesh(CLArgs const & args)
         {cmdCombinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"},
         {cmdConvert,"convert","Convert a mesh to a different format"},
         {cmdCopyVerts,"copyv","Copy vertices from one mesh to another with same vertex count"},
+        {cmdEdit,"edit","GUI view and edit one or more meshes in sequence"},
         {cmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"},
         {cmdExport,"export","Convert multiple meshes and related color maps into another format"},
         {cmdInject,"inject","Inject updated vertex positions without otherwise modifying a mesh file"},
