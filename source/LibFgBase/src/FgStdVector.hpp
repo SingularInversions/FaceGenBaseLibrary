@@ -325,15 +325,14 @@ Svec<T>             prepend(T const & val,Svec<T> const & vec)
     ret.insert(ret.end(),vec.begin(),vec.end());
     return ret;
 }
-// Concatenation in several forms:
+// concatenation / append of std::vector :
 template<class T>
 inline void         cat_(Svec<T> & base,Svec<T> const & app) {base.insert(base.end(),app.begin(),app.end()); }
 // see 'flatten' instead of cat(Svec<Svec<T>>)
 template<class T>
 Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1)
 {
-    Svec<T>   ret;
-    ret.reserve(v0.size()+v1.size());
+    Svec<T>             ret; ret.reserve(v0.size()+v1.size());
     ret.insert(ret.end(),v0.begin(),v0.end());
     ret.insert(ret.end(),v1.begin(),v1.end());
     return ret;
@@ -341,22 +340,10 @@ Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1)
 template<class T>
 Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2)
 {
-    Svec<T>  ret;
-    ret.reserve(v0.size()+v1.size()+v2.size());
+    Svec<T>             ret; ret.reserve(v0.size()+v1.size()+v2.size());
     ret.insert(ret.end(),v0.begin(),v0.end());
     ret.insert(ret.end(),v1.begin(),v1.end());
     ret.insert(ret.end(),v2.begin(),v2.end());
-    return ret;
-}
-template<class T>
-Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2,Svec<T> const & v3)
-{
-    Svec<T>  ret;
-    ret.reserve(v0.size()+v1.size()+v2.size()+v3.size());
-    ret.insert(ret.end(),v0.begin(),v0.end());
-    ret.insert(ret.end(),v1.begin(),v1.end());
-    ret.insert(ret.end(),v2.begin(),v2.end());
-    ret.insert(ret.end(),v3.begin(),v3.end());
     return ret;
 }
 template<class T>
@@ -918,8 +905,8 @@ Svec<T>             cSort(Svec<T> const & v,P const & pred)
     std::sort(ret.begin(),ret.end(),pred);
     return ret;
 }
-// Return array of indices such that the input elements are sorted:
-// (ie. A mapping from the NEW order to the ORIGINAL order):
+// Return array of indices into the given array such that the input elements are sorted,
+// ie. A mapping from the SORTED order to the ORIGINAL order:
 template<class T>
 Sizes               sortInds(Svec<T> const & v)
 {

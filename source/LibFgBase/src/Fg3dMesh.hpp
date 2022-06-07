@@ -46,16 +46,23 @@ struct  DirectMorph
 };
 typedef Svec<DirectMorph>     DirectMorphs;
 
-struct  IdxVec3F
+template<class T>
+struct  IdxVec3
 {
     uint                idx;            // index into vertex list
     Vec3F               vec;            // delta or absolute position depending on use
-    IdxVec3F() : idx{0}, vec{0} {}
-    IdxVec3F(uint i,Vec3F const & v) : idx{i}, vec{v} {}
-    FG_EQ_M2(IdxVec3F,idx,vec);
+    IdxVec3() : idx{0}, vec{0} {}
+    IdxVec3(uint i,Vec3F const & v) : idx{i}, vec{v} {}
 };
+typedef IdxVec3<float>  IdxVec3F;
+typedef IdxVec3<double> IdxVec3D;
 typedef Svec<IdxVec3F>  IdxVec3Fs;
+typedef Svec<IdxVec3D>  IdxVec3Ds;
 
+IdxVec3Fs           cIndexedTargMorph(      // create indexed target morph from delta morph
+    Vec3Fs const &          base,
+    Vec3Fs const &          deltas,         // must be 1-1 with above
+    float                   diffMagThreshold=0);
 IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset);
 Vec3Fs              indexedToCorrMorph(IdxVec3Fs const & morph,size_t baseSize);
 
@@ -68,7 +75,6 @@ struct      IndexedMorph
     IndexedMorph(String8 const & n,IdxVec3Fs const & i) : name{n}, ivs{i} {}
 
     void                accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const;
-    bool                operator==(IndexedMorph const & rhs) const {return (ivs == rhs.ivs); }  // duplicate check
     bool                operator==(String8 const & n) const {return (name==n); }    // easy lookup by name
 };
 typedef Svec<IndexedMorph>  IndexedMorphs;
@@ -171,6 +177,7 @@ struct  Mesh
     Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs) {}
     Mesh(Vec3Fs const & v,Surfs const & s,DirectMorphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
     explicit Mesh(TriSurfLms const & tsf);
+    Mesh(String8 const & n,TriSurf const & ts) : name{n}, verts{ts.verts}, surfaces{Surf{ts.tris}} {}
 
     size_t              allVertsSize() const;               // size of below
     // Return base verts plus all target morph verts plus all animPart bones:

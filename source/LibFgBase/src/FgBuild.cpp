@@ -141,6 +141,7 @@ const vector<pair<Compiler,string> > & compilerStrs()
     {
         {Compiler::vs17,"vs17"},
         {Compiler::vs19,"vs19"},
+        {Compiler::vs22,"vs22"},
         {Compiler::gcc,"gcc"},
         {Compiler::clang,"clang"},
         {Compiler::icpc,"icpc"}
@@ -174,7 +175,7 @@ Compiler strToCompiler(string const & str)
 Compilers           getBuildCompilers(BuildOS os)
 {
     if (os == BuildOS::win)
-        return {Compiler::vs19,Compiler::vs17};
+        return {Compiler::vs19,Compiler::vs22,Compiler::vs17};
     else if (os == BuildOS::linux)
         return {Compiler::gcc,Compiler::clang,Compiler::icpc};
     else if (os == BuildOS::macos)
@@ -196,6 +197,8 @@ Compiler            getCurrentCompiler()
         return Compiler::vs17;
     #elif((_MSC_VER >= 1920) && (_MSC_VER < 1930))
         return Compiler::vs19;
+    #elif((_MSC_VER >= 1930) && (_MSC_VER < 1940))
+        return Compiler::vs22;
     #else
         define_new_visual_studio_version_here
     #endif
@@ -515,7 +518,7 @@ ConsSolution        getConsData(ConsType type)
 {
     ConsSolution  ret(type);
 
-    ConsProj      boost("LibTpBoost","boost_1_67_0/");
+    ConsProj      boost("LibTpBoost","boost_1_69_0/");
     boost.addSrcDir("libs/filesystem/src/");
     boost.addSrcDir("libs/serialization/src/");
     boost.addSrcDir("libs/system/src/");
@@ -564,7 +567,7 @@ ConsSolution        getConsData(ConsType type)
 }
 
 // Create Visual Studio 2015/17/19 solution & project files for given solution in current directory tree:
-bool                fgConsVs201x(ConsSolution const & sln);
+bool                writeVisualStudioSolutionFiles(ConsSolution const & sln);
 // Create native-build OS makefiles for given solution in current directory
 // Returns true if different from existing (useful for source control & CI):
 bool                fgConsNativeMakefiles(ConsSolution const & sln);
@@ -579,7 +582,7 @@ bool                constructBuildFiles(ConsSolution const & sln)
         pd.push("source");
     bool        changed = false;
     if (sln.type == ConsType::win)
-        changed = fgConsVs201x(sln);
+        changed = writeVisualStudioSolutionFiles(sln);
     else if (sln.type == ConsType::nix)
         changed = fgConsNativeMakefiles(sln);
     else if (sln.type == ConsType::cross)

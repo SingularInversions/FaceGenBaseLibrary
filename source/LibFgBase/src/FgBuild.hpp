@@ -31,7 +31,7 @@ Archs           getAllArchs();
 Archs           getBuildArchs(BuildOS os);
 
 // Supported compilers (based on platform):
-enum struct Compiler { vs17, vs19, gcc, clang, icpc };
+enum struct Compiler { vs17, vs19, vs22, gcc, clang, icpc };
 typedef Svec<Compiler>     Compilers;
 std::ostream & operator<<(std::ostream &,Compiler);
 Compiler        strToCompiler(String const &);
@@ -46,9 +46,9 @@ String          getCurrentBuildConfig();
 String          getCurrentBuildDescription();
 
 enum struct Debrel { debug, release };
-typedef Svec<Debrel>    Debrels;
-std::ostream & operator<<(std::ostream & os,Debrel d);
-inline Debrels  getDebrels() {return {Debrel::debug,Debrel::release}; }
+typedef Arr<Debrel,2>   Debrels;
+std::ostream &  operator<<(std::ostream & os,Debrel d);
+Debrels constexpr debrels {Debrel::debug,Debrel::release};
 
 // The primary configuration is used in development for testing exact equality on tests with floating
 // point results that can vary on different configs. It is currently win/x64/vs19/release:

@@ -13,7 +13,7 @@
 namespace Fg {
 
 template <typename T>
-inline T            sqr(T a) {return (a*a); }
+inline constexpr T  sqr(T a) {return (a*a); }
 template <typename T>
 inline T            cube(T a) {return (a*a*a); }
 // Euclidean length (L2 norm):

@@ -13,6 +13,7 @@ source/*/VisualStudio*/*.user
 source/*/VisualStudio*/*/*/*.log
 source/*/VisualStudio*/*/*/*.tlog
 source/*/VisualStudio*/*/*/*.idb
+source/*/VisualStudio*/*/*/*.ilk
 source/*/VisualStudio*/*/*/*.pdb
 source/*/VisualStudio*/*/*/*.pch
 source/*/VisualStudio*/*/*/*.obj

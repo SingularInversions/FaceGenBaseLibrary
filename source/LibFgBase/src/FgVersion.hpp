@@ -16,7 +16,7 @@ inline
 std::string
 getSdkVersion(const std::string & sep)
 {
-    return "3" + sep + "T" + sep + "0";
+    return "3" + sep + "T" + sep + "1";
 }
 
 }

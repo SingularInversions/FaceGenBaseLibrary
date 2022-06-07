@@ -19,8 +19,7 @@ using namespace std;
 
 namespace Fg {
 
-MatUT3D
-cCholesky(MatS3D S)
+MatUT3D             cCholesky(MatS3D S)
 {
     MatUT3D        U;
     FGASSERT(S.diag[0] > 0.0);
@@ -38,8 +37,7 @@ cCholesky(MatS3D S)
     return U;
 }
 
-void
-testCholesky(CLArgs const &)
+void                testCholesky(CLArgs const &)
 {
     randSeedRepeatable();
     double          resid1 = 0.0;
@@ -57,16 +55,14 @@ testCholesky(CLArgs const &)
     fgout << fgnl << "Cholesky unsafe RMS residual: " << sqrt(resid1/N);
 }
 
-Vec2D
-solveLinear(MatS2D fr,Vec2D b)
+Vec2D               solveLinear(MatS2D fr,Vec2D b)
 {
     double              det = fr.m00 * fr.m11 - sqr(fr.m01),    // will be non-zero for full rank matrix
                         n0 = fr.m11 * b[0] - fr.m01 * b[1],
                         n1 = fr.m00 * b[1] - fr.m01 * b[0];
     return {n0/det,n1/det};
 }
-void
-testSolveS2(CLArgs const &)
+void                testSolveS2(CLArgs const &)
 {
     for (size_t ii=0; ii<100; ++ii) {
         // TODO: currently just tests SPD but 'solve' should work for all full rank:
@@ -87,8 +83,7 @@ testSolveS2(CLArgs const &)
     }
 }
 
-Vec3D
-solveLinear(MatS3D A,Vec3D b)
+Vec3D               solveLinear(MatS3D A,Vec3D b)
 {
     MatUT3D             cd = cCholesky(A);
     MatUT3D             I = cd.inverse();
@@ -96,14 +91,12 @@ solveLinear(MatS3D A,Vec3D b)
     return I * c;
 }
 
-MatD
-RsmEigs::rsm() const
+MatD                RsmEigs::rsm() const
 {
     return mulTr(scaleColumns(vecs,vals),vecs);
 }
 
-MatD
-RsmEigs::mhlbsToWorld() const
+MatD                RsmEigs::mhlbsToWorld() const
 {
     Doubles                 stdevs; stdevs.reserve(vals.size());
     for (double variance : vals) {
@@ -113,8 +106,7 @@ RsmEigs::mhlbsToWorld() const
     return scaleColumns(vecs,stdevs);      // vecs * D(stdevs)
 }
 
-MatD
-RsmEigs::inverse() const
+MatD                RsmEigs::inverse() const
 {
     auto                invert = [](double v)
     {
@@ -125,16 +117,14 @@ RsmEigs::inverse() const
     return mulTr(scaleColumns(vecs,invVals),vecs);
 }
 
-ostream &
-operator<<(ostream & os,RsmEigs const & rsm)
+ostream &           operator<<(ostream & os,RsmEigs const & rsm)
 {
     return os << rsm.vals << rsm.vecs;
 }
 
 namespace {
 
-MatD
-randSymmMatrix(uint dim)
+MatD                randSymmMatrix(uint dim)
 {
     MatD  mat(dim,dim);
     for (uint ii=0; ii<dim; ii++) {
@@ -148,8 +138,7 @@ randSymmMatrix(uint dim)
 
 typedef function<void(MatD const &,Doubles &,MatD &)>  FnSolve;
 
-void
-testSymmEigenProblem(uint dim,FnSolve solve,bool print)
+void                testSymmEigenProblem(uint dim,FnSolve solve,bool print)
 {
     // Random symmetric matrix, uniform distribution:
     MatD           mat = randSymmMatrix(dim);
@@ -194,8 +183,7 @@ testSymmEigenProblem(uint dim,FnSolve solve,bool print)
     FGASSERT(residual < tol);
 }
 
-void
-testAsymEigs(CLArgs const &)
+void                testAsymEigs(CLArgs const &)
 {
     Mat33D          mat = matRotateAxis(1.0,normalize(Vec3D{1,1,1}));
     EigsC<3>        eigs = cEigs(mat);
@@ -208,8 +196,7 @@ testAsymEigs(CLArgs const &)
         << fgnl << "Residual: " << residual;
 }
 
-void
-testSymmEigenAuto(CLArgs const &)
+void                testSymmEigenAuto(CLArgs const &)
 {
     randSeedRepeatable();
     testSymmEigenProblem(10,cEigsRsm_,true);
@@ -230,8 +217,7 @@ testSymmEigenAuto(CLArgs const &)
 //      6       4.5m                       22.5s
 //      7       7.1m                       36s
 //
-void
-testEigsRsmTime(CLArgs const & args)
+void                testEigsRsmTime(CLArgs const & args)
 {
     if (isAutomated(args))
         return;
@@ -269,8 +255,7 @@ testEigsRsmTime(CLArgs const & args)
     FGASSERT(valsOnly == eigVals);
 }
 
-void
-testSymmEigen(CLArgs const & args)
+void                testSymmEigen(CLArgs const & args)
 {
     Cmds      cmds;
     cmds.push_back(Cmd(testSymmEigenAuto,"auto","Automated tests"));
@@ -280,8 +265,7 @@ testSymmEigen(CLArgs const & args)
 
 }
 
-void
-testMatrixSolver(CLArgs const & args)
+void                testMatrixSolver(CLArgs const & args)
 {
     Cmds        cmds {
         {testCholesky,"chol","Cholesky 3x3 decomposition"},

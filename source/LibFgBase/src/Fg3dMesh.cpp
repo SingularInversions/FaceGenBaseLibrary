@@ -30,6 +30,19 @@ void                IndexedMorph::accAsTarget_(Vec3Fs const & baseVerts,float co
     }
 }
 
+IdxVec3Fs           cIndexedTargMorph(Vec3Fs const & base,Vec3Fs const & deltas,float diffMagThreshold)
+{
+    size_t              V = base.size();
+    FGASSERT(deltas.size() == V);
+    IdxVec3Fs           ret;
+    for (size_t vv=0; vv<V; ++vv) {
+        Vec3F               del = deltas[vv];
+        if (cMag(del) > diffMagThreshold)
+            ret.emplace_back(scast<uint>(vv),base[vv]+del);
+    }
+    return ret;
+}
+
 IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset)
 {
     return mapCall(ivs,[=](IdxVec3F const & iv){return IdxVec3F{iv.idx+offset,iv.vec}; });

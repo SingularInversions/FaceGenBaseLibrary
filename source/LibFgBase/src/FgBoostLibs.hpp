@@ -14,6 +14,7 @@
 #ifndef FGBOOSTLIBS_HPP
 #define FGBOOSTLIBS_HPP
 
+#include <boost/predef/other/endian.h>
 #include <boost/archive/archive_exception.hpp>
 #include <boost/archive/basic_archive.hpp>
 #include <boost/archive/basic_binary_oprimitive.hpp>
@@ -38,6 +39,12 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/throw_exception.hpp>
 #include <boost/serialization/vector.hpp>
+
+#ifdef _MSC_VER
+// boost seems to turn these on:
+#  pragma warning(disable:4244)
+#  pragma warning(disable:4996)
+#endif
 
 #endif  // FGBOOSTLIBS_HPP
 

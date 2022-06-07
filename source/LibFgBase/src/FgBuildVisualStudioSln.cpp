@@ -24,11 +24,33 @@ namespace Fg {
 
 namespace {
 
-string
-getVsPreprocessorDefs(
+struct      VsInfo {
+    Compiler            compiler;
+    String              vsYearDigits2;
+    uint                vsMajorVersion;
+    // VS17 specifies exact, so give latest as of 2022.06. Later versions just use major.minor:
+    String              targetPlatformVersion;
+    String              platformToolset;
+    String              vsFullVersion;      // with latest updates as of 2022.05
+    String              vcProjectVersion;
+
+    bool                operator==(Compiler c) const {return (compiler==c); }
+};
+
+VsInfo                  getCompilerInfo(Compiler compiler)
+{
+    static vector<VsInfo>   ret {
+        {Compiler::vs17,"17",15,"10.0.19041.0","v141","15.0.28307.1972","15.0",},
+        {Compiler::vs19,"19",16,"10.0",        "v142","16.0.32510.428", "16.0",},
+        {Compiler::vs22,"22",17,"10.0",        "v143","17.2.32519.379", "16.0",},
+    };
+    return findFirst(ret,compiler);
+}
+
+string              getVsPreprocessorDefs(
     bool                release,
-    ConsProj const &  proj,
-    Strings const &      defs)
+    ConsProj const &    proj,
+    Strings const &     defs)
 {
     string  ret = "WIN32";
     if (release)
@@ -50,64 +72,64 @@ getVsPreprocessorDefs(
     return ret;
 }
 
-bool
-writeVcxproj(
-    ConsSolution const &      sln,            // Transitive lookups
-    ConsProj const &          proj,
+bool                writeVcxproj(
+    ConsSolution const &        sln,            // Transitive lookups
+    ConsProj const &            proj,
     const map<string,string> &  nameToGuid,     // Must contain all project names
-    uint                        vsver)          // 13 - VS2013, 15 = VS2015, 17 = VS2017, 19 = VS2019
+    Compiler                    compiler)
 {
-    Strings          includes = sln.getIncludes(proj.name,false),
-                    defines = sln.getDefs(proj.name),
-                    lnkDeps = sln.getLnkDeps(proj.name);
-    string          verStr = toStrDigits(vsver,2),
-                    projDir = proj.name + "/VisualStudio" + verStr + "/";
+    VsInfo                  vsinfo = getCompilerInfo(compiler);
+    Strings                 includes = sln.getIncludes(proj.name,false),
+                            defines = sln.getDefs(proj.name),
+                            lnkDeps = sln.getLnkDeps(proj.name);
+    string                  projDir = proj.name + "/VisualStudio" + vsinfo.vsYearDigits2 + "/";
     createDirectory(projDir);
-    string          projFile = projDir + proj.name + ".vcxproj";
-    ostringstream   ofs;
-    string          config[] = {"Debug","Release"};
-    string          bits[] = {"Win32","x64"};
-    string          toolsVersion = "4";
-	if (vsver == 13)
-		toolsVersion = "12";
-	else if (vsver == 15)
-		toolsVersion = "14";
-	else if ((vsver == 17) || (vsver == 19))
-		toolsVersion = "15";
-    else
-        fgThrow("writeVcxproj unhandled vsver",vsver);
+    string                  projFile = projDir + proj.name + ".vcxproj";
+    ostringstream           ofs;
+    string                  config[] = {"Debug","Release"};
+    string                  bits[] = {"Win32","x64"};
+    string                  toolsVersion = "15";
     ofs << 
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-        "<Project DefaultTargets=\"Build\" ToolsVersion=\""+toolsVersion+".0\" xmlns=\""
-            "http://schemas.microsoft.com/developer/msbuild/2003\">\n"
+        "<Project DefaultTargets=\"Build\" ";
+    if (compiler == Compiler::vs17)
+        // We don't care about this .NET framework selector, but just to match the default new library:
+        ofs << "ToolsVersion=\"15.0\" ";
+    ofs << 
+        "xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n"
         "  <ItemGroup Label=\"ProjectConfigurations\">\n";
-    for (uint cc=0; cc<2; ++cc)
-        for (uint bb=0; bb<2; ++bb)
+    struct              DRSel           // debrel-selected attributes
+    {
+        String          nameLower;
+        String          nameUpper;
+        String          useDebugLibs;
+        String          linkIncremental;
+    };
+    Arr<DRSel,2>        drSels {{
+        {"debug",  "Debug",  "true", "true",},
+        {"release","Release","false","false",},
+        }};
+    for (uint bb=0; bb<2; ++bb)
+        for (DRSel const & drSel : drSels)
             ofs <<
-                "    <ProjectConfiguration Include=\"" << config[cc] << "|" << bits[bb] << "\">\n"
-                "      <Configuration>" << config[cc] << "</Configuration>\n"
+                "    <ProjectConfiguration Include=\"" << drSel.nameUpper << "|" << bits[bb] << "\">\n"
+                "      <Configuration>" << drSel.nameUpper << "</Configuration>\n"
                 "      <Platform>" << bits[bb] << "</Platform>\n"
                 "    </ProjectConfiguration>\n";
-    string          winSdkVer;
-    if (vsver < 19)
-        winSdkVer = "10.0.18362.0";     // TODO: keep updating. No way to specify most recent.
-    else if (vsver == 19)
-        winSdkVer = "10.0";             // Automically uses most recent
-    else
-        fgThrow("vsver unhandled value for winSdkVer");
     ofs <<
         "  </ItemGroup>\n"
         "  <PropertyGroup Label=\"Globals\">\n"
+        "    <VCProjectVersion>" << vsinfo.vcProjectVersion << "</VCProjectVersion>\n"
+        "    <Keyword>Win32Proj</Keyword>\n"
         "    <ProjectGuid>" << nameToGuid.find(proj.name)->second << "</ProjectGuid>\n"
         "    <RootNamespace>" << proj.name << "</RootNamespace>\n"
-        "    <Keyword>Win32Proj</Keyword>\n"
-        "    <WindowsTargetPlatformVersion>" + winSdkVer + "</WindowsTargetPlatformVersion>\n"
+        "    <WindowsTargetPlatformVersion>" + vsinfo.targetPlatformVersion + "</WindowsTargetPlatformVersion>\n"
         "  </PropertyGroup>\n"
         "  <Import Project=\"$(VCTargetsPath)\\Microsoft.Cpp.Default.props\" />\n";
     for (uint bb=0; bb<2; ++bb) {
-        for (uint cc=0; cc<2; ++cc) {
+        for (DRSel const & drSel : drSels) {
             ofs <<
-                "  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
+                "  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='" << drSel.nameUpper
                     << "|" << bits[bb] << "'\" Label=\"Configuration\">\n"
                 "    <ConfigurationType>";
             if (proj.isExecutable())
@@ -117,19 +139,9 @@ writeVcxproj(
             else
                 ofs << "StaticLibrary";
             ofs <<
-                "</ConfigurationType>\n";
-            // PlatformToolset:
-            if (vsver == 13)
-                ofs << "    <PlatformToolset>v120</PlatformToolset>\n";
-            else if (vsver == 15)
-                ofs << "    <PlatformToolset>v140</PlatformToolset>\n";
-			else if (vsver == 17)
-				ofs << "    <PlatformToolset>v141</PlatformToolset>\n";
-            else if (vsver == 19)
-                ofs << "    <PlatformToolset>v142</PlatformToolset>\n";
-            else
-                fgThrow("writeVcxproj unhandled vsver",vsver);
-            ofs <<
+                "</ConfigurationType>\n"
+                "    <UseDebugLibraries>" << drSel.useDebugLibs << "</UseDebugLibraries>\n"
+				"    <PlatformToolset>" << vsinfo.platformToolset << "</PlatformToolset>\n"
                 "    <CharacterSet>Unicode</CharacterSet>\n"
                 "  </PropertyGroup>\n";
         }
@@ -139,10 +151,10 @@ writeVcxproj(
         "  <ImportGroup Label=\"ExtensionSettings\">\n"
         "  </ImportGroup>\n";
     for (uint bb=0; bb<2; ++bb)
-        for (uint cc=0; cc<2; ++cc)
+        for (DRSel const & drSel : drSels)
             ofs <<
-                "  <ImportGroup Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc] << "|"
-                    << bits[bb] << "'\" Label=\"PropertySheets\">\n"
+                "  <ImportGroup Label=\"PropertySheets\" Condition=\"'$(Configuration)|$(Platform)'=='" << drSel.nameUpper << "|"
+                    << bits[bb] << "'\">\n"
                 "    <Import Project=\"$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props\" Condition=\""
                     "exists('$(UserRootDir)\\Microsoft.Cpp.$(Platform).user.props')\" Label=\""
                     "LocalAppDataPlatform\" />\n"
@@ -153,25 +165,24 @@ writeVcxproj(
         "    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>\n";
 
     string      sourceToBinPath("..\\bin\\win\\");
-    for (uint cc=0; cc<2; ++cc) {
+    for (DRSel const & drSel : drSels) {
         for (uint bb=0; bb<2; ++bb) {
             ofs <<
-                "    <OutDir Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
+                "    <OutDir Condition=\"'$(Configuration)|$(Platform)'=='" << drSel.nameUpper
                     << "|" << bits[bb] << "'\">";
             if (proj.isLinked())
                 ofs << "..\\..\\" << sourceToBinPath
                     << ((bb == 0) ? "x86\\" : "x64\\")
-                    << "vs" << verStr << "\\"
-                    << ((cc == 0) ? "debug\\" : "release\\");
+                    << "vs" << vsinfo.vsYearDigits2 << "\\" << drSel.nameLower << "\\";
             else
                 ofs << "$(Platform)\\$(Configuration)\\";
             ofs << "</OutDir>\n"
-                "    <IntDir Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
+                "    <IntDir Condition=\"'$(Configuration)|$(Platform)'=='" << drSel.nameUpper
                     << "|" << bits[bb] << "'\">$(Platform)\\$(Configuration)\\</IntDir>\n";
             if (proj.isLinked())
                 ofs <<
-                    "    <LinkIncremental Condition=\"'$(Configuration)|$(Platform)'=='" << config[cc]
-                    << "|" << bits[bb] << "'\">" << ((cc == 0) ? "true" : "false") << "</LinkIncremental>\n";
+                    "    <LinkIncremental Condition=\"'$(Configuration)|$(Platform)'=='" << drSel.nameUpper
+                    << "|" << bits[bb] << "'\">" << drSel.linkIncremental << "</LinkIncremental>\n";
         }
     }
     ofs <<
@@ -224,19 +235,17 @@ writeVcxproj(
                 "      <WholeProgramOptimization>false</WholeProgramOptimization>\n"
                 // Note that MSVC fast floating point model is an extension to the standard and thus cannot
                 // be used in combination with: Disable Language Extensions (/Za)
-                "      <FloatingPointModel>Fast</FloatingPointModel>\n";
+                "      <FloatingPointModel>Fast</FloatingPointModel>\n"
                 // Don't support OpenMP in Visual Studio since:
                 // * It's a pain to get working cross platform
                 // * If used it requires VCOMP140.DLL which is not always present with Win7
                 // * direct use of threads is not hard
                 //"      <OpenMPSupport>true</OpenMPSupport>\n";
-            if (vsver >= 17)    // Improved error position indicator:
-                ofs <<
+                // Show the user the column of the error and put a caret under it:
                 "      <DiagnosticsFormat>Caret</DiagnosticsFormat>\n"
                 // ensure source code conforms to the language specification; this does not
                 // preclude non-conforming code generation (see /fpFast above)
-                "      <ConformanceMode>true</ConformanceMode>\n";
-            ofs <<
+                "      <ConformanceMode>true</ConformanceMode>\n"
                 "    </ClCompile>\n";
             if (proj.isLinked()) {
                 ofs <<
@@ -261,7 +270,7 @@ writeVcxproj(
                     << "</AdditionalLibraryDirectories>\n"
                        "      <OutputFile>$(SolutionDir)\\" << sourceToBinPath
                         << ((bb == 0) ? "x86\\" : "x64\\")
-                        << "vs" << verStr << "\\"
+                        << "vs" << vsinfo.vsYearDigits2 << "\\"
                         << ((cc == 0) ? "debug\\" : "release\\")
                         << "$(ProjectName)." << (proj.isExecutable() ? "exe" : "dll") << "</OutputFile>\n"
                     "    </Link>\n";
@@ -281,7 +290,7 @@ writeVcxproj(
             if (sln.contains(name))     // Only projects with source are referenced:
                 ofs <<
                     "    <ProjectReference Include=\"..\\..\\" << name << "\\VisualStudio"
-                        << verStr << "\\" << name << ".vcxproj\">\n"
+                        << vsinfo.vsYearDigits2 << "\\" << name << ".vcxproj\">\n"
                     "      <Project>" << nameToGuid.find(name)->second << "</Project>\n"
                     "      <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>\n"
                     "      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>\n"
@@ -378,43 +387,37 @@ writeVcxproj(
     return saveRaw(ofs.str(),projFile.c_str());
 }
 
-bool
-writeSln(
-    ConsSolution const &      sln,
+bool                writeSln(
+    ConsSolution const &        sln,
     string const &              merkle,         // Concatenation of project GUIDs
-    const map<string,string> &  nameToGuid,     // Must contain all project names
-    uint                        vsver)
+    map<string,string> const &  nameToGuid,     // Must contain all project names
+    Compiler                    compiler)
 {
     // Create solution file:
-    string          rootName("VisualStudio"),
-                    verStr = toStrDigits(vsver,2),
+    VsInfo                  vsinfo = getCompilerInfo(compiler);
+    String                  rootName("VisualStudio"),
     // Visual studio completely changes the SLN UUID if any project is added or removed.
     // It does not change either UUID if project properties are modified:
-                    slnGuid = createMicrosoftGuid(merkle+verStr);
-    ostringstream   ofs;
+                            slnGuid = createMicrosoftGuid(merkle+vsinfo.vsYearDigits2);
+    ostringstream           ofs;
     ofs <<
         "\n"
-        "Microsoft Visual Studio Solution File, Format Version "
-            << "12.00\n"
-        "# Visual Studio ";
-    if (vsver >= 17)
-        ofs << "15\n"       // VS17 writes version number instead of year
-            "VisualStudioVersion = 15.0.27703.2000\n"
-            "MinimumVisualStudioVersion = 10.0.40219.1\n";
-    else
-        ofs << "20" << verStr << "\n";
+        "Microsoft Visual Studio Solution File, Format Version 12.00\n"
+        "# Visual Studio Version " << vsinfo.vsMajorVersion << "\n"
+        "VisualStudioVersion = " << vsinfo.vsFullVersion << "\n"
+        "MinimumVisualStudioVersion = 10.0.40219.1\n";
     for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
             ofs <<
                 "Project(\"" + slnGuid + "\") = \""
-                << proj.name << "\", \"" << proj.name << "\\VisualStudio" << verStr << "\\"
+                << proj.name << "\", \"" << proj.name << "\\VisualStudio" << vsinfo.vsYearDigits2 << "\\"
                 << proj.name << ".vcxproj\", \"" << nameToGuid.find(proj.name)->second << "\"\n"
                 "EndProject\n";
         }
     }
     string      globalEndSections;
     // Add CMake and Unix folders if this is a VS17 dev instance:
-    if ((vsver >= 17) && pathExists("../data/_overwrite_baselines.flag")) {
+    if (pathExists("../data/_overwrite_baselines.flag")) {
         // This GUID is pre-defined to mean a solution folder:
         string                  uuidFolder = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
         if (pathExists("CMakeLists.txt")) {   // Add CMake files for easy viewing / searching
@@ -516,13 +519,12 @@ writeSln(
         "		SolutionGuid = {39B2BC3E-9FF2-4906-92AE-80DBB3FF9746}\n"
         "	EndGlobalSection\n"
         "EndGlobal\n";
-    return saveRaw(ofs.str(),rootName+verStr+".sln");
+    return saveRaw(ofs.str(),rootName+vsinfo.vsYearDigits2+".sln");
 }
 
 }
 
-bool
-fgConsVs201x(ConsSolution const & sln)
+bool                writeVisualStudioSolutionFiles(ConsSolution const & sln)
 {
     FGASSERT(sln.type == ConsType::win);
     map<string,string>  nameToGuid;
@@ -533,21 +535,22 @@ fgConsVs201x(ConsSolution const & sln)
             string          projGuid = createMicrosoftGuid(hashPrepend+proj.descriptor());
             auto            it = nameToGuid.find(proj.name);
             if (it != nameToGuid.end())
-                fgThrow("fgConsVs201x duplicate project name",proj.name);
+                fgThrow("writeVisualStudioSolutionFiles duplicate project name",proj.name);
             nameToGuid[proj.name] = projGuid;
             merkle += projGuid;
         }
     }
+    // This codebase uses C++14 which is only fully supported by VS 2017 and later:
+    Compilers           compilers {Compiler::vs17,Compiler::vs19,Compiler::vs22,};
     bool                changed = false;
     for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {
-            changed = writeVcxproj(sln,proj,nameToGuid,17) || changed;
-            changed = writeVcxproj(sln,proj,nameToGuid,19) || changed;
+            for (Compiler compiler : compilers)
+                changed = writeVcxproj(sln,proj,nameToGuid,compiler) || changed;
         }
     }
-    // This codebase uses C++14 which is only fully supported by VS 2017 and later:
-    changed = writeSln(sln,merkle,nameToGuid,17) || changed;
-    changed = writeSln(sln,merkle,nameToGuid,19) || changed;
+    for (Compiler compiler : compilers)
+        changed = writeSln(sln,merkle,nameToGuid,compiler) || changed;
     return changed;
 }
 

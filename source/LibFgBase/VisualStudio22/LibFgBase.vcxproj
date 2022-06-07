@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}</ProjectGuid>
+    <RootNamespace>LibFgBase</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\Fg3dCamera.cpp" />
+    <ClInclude Include="..\src\Fg3dCamera.hpp" />
+    <ClCompile Include="..\src\Fg3dDisplay.cpp" />
+    <ClInclude Include="..\src\Fg3dDisplay.hpp" />
+    <ClCompile Include="..\src\Fg3dMesh.cpp" />
+    <ClInclude Include="..\src\Fg3dMesh.hpp" />
+    <ClCompile Include="..\src\Fg3dMesh3ds.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshDae.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshFbx.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshFgmesh.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshIo.cpp" />
+    <ClInclude Include="..\src\Fg3dMeshIo.hpp" />
+    <ClCompile Include="..\src\Fg3dMeshLegacy.cpp" />
+    <ClInclude Include="..\src\Fg3dMeshLegacy.hpp" />
+    <ClCompile Include="..\src\Fg3dMeshLwo.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshMa.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshObj.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshPly.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshStl.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshTri.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshVrml.cpp" />
+    <ClCompile Include="..\src\Fg3dMeshXsi.cpp" />
+    <ClCompile Include="..\src\Fg3dSurface.cpp" />
+    <ClInclude Include="..\src\Fg3dSurface.hpp" />
+    <ClCompile Include="..\src\Fg3dTest.cpp" />
+    <ClCompile Include="..\src\FgAffine.cpp" />
+    <ClInclude Include="..\src\FgAffine.hpp" />
+    <ClInclude Include="..\src\FgAny.hpp" />
+    <ClInclude Include="..\src\FgApproxEqual.hpp" />
+    <ClCompile Include="..\src\FgApproxFunc.cpp" />
+    <ClInclude Include="..\src\FgApproxFunc.hpp" />
+    <ClInclude Include="..\src\FgArray.hpp" />
+    <ClInclude Include="..\src\FgBestN.hpp" />
+    <ClInclude Include="..\src\FgBoostLibs.hpp" />
+    <ClInclude Include="..\src\FgBounds.hpp" />
+    <ClCompile Include="..\src\FgBuild.cpp" />
+    <ClInclude Include="..\src\FgBuild.hpp" />
+    <ClCompile Include="..\src\FgBuildMakefiles.cpp" />
+    <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp" />
+    <ClCompile Include="..\src\FgCl.cpp" />
+    <ClInclude Include="..\src\FgCl.hpp" />
+    <ClCompile Include="..\src\FgCluster.cpp" />
+    <ClInclude Include="..\src\FgCluster.hpp" />
+    <ClInclude Include="..\src\FgClusterImpl.hpp" />
+    <ClInclude Include="..\src\FgCmd.hpp" />
+    <ClCompile Include="..\src\FgCmdBase.cpp" />
+    <ClCompile Include="..\src\FgCmdImage.cpp" />
+    <ClCompile Include="..\src\FgCmdMesh.cpp" />
+    <ClCompile Include="..\src\FgCmdMorph.cpp" />
+    <ClCompile Include="..\src\FgCmdRender.cpp" />
+    <ClCompile Include="..\src\FgCmdTestmCpp.cpp" />
+    <ClCompile Include="..\src\FgCmdView.cpp" />
+    <ClInclude Include="..\src\FgCmp.hpp" />
+    <ClCompile Include="..\src\FgCommand.cpp" />
+    <ClInclude Include="..\src\FgCommand.hpp" />
+    <ClInclude Include="..\src\FgConio.hpp" />
+    <ClCompile Include="..\src\FgDataflow.cpp" />
+    <ClInclude Include="..\src\FgDataflow.hpp" />
+    <ClCompile Include="..\src\FgDiagnostics.cpp" />
+    <ClInclude Include="..\src\FgDiagnostics.hpp" />
+    <ClInclude Include="..\src\FgDynLib.h" />
+    <ClCompile Include="..\src\FgException.cpp" />
+    <ClInclude Include="..\src\FgException.hpp" />
+    <ClCompile Include="..\src\FgFileSystem.cpp" />
+    <ClInclude Include="..\src\FgFileSystem.hpp" />
+    <ClCompile Include="..\src\FgGeometry.cpp" />
+    <ClInclude Include="..\src\FgGeometry.hpp" />
+    <ClCompile Include="..\src\FgGridIndex.cpp" />
+    <ClInclude Include="..\src\FgGridIndex.hpp" />
+    <ClCompile Include="..\src\FgGridTriangles.cpp" />
+    <ClInclude Include="..\src\FgGridTriangles.hpp" />
+    <ClCompile Include="..\src\FgGui.cpp" />
+    <ClInclude Include="..\src\FgGui.hpp" />
+    <ClCompile Include="..\src\FgGuiApi3d.cpp" />
+    <ClInclude Include="..\src\FgGuiApi3d.hpp" />
+    <ClCompile Include="..\src\FgGuiApiBase.cpp" />
+    <ClInclude Include="..\src\FgGuiApiBase.hpp" />
+    <ClCompile Include="..\src\FgGuiApiButton.cpp" />
+    <ClInclude Include="..\src\FgGuiApiButton.hpp" />
+    <ClCompile Include="..\src\FgGuiApiCheckbox.cpp" />
+    <ClInclude Include="..\src\FgGuiApiCheckbox.hpp" />
+    <ClCompile Include="..\src\FgGuiApiDialogs.cpp" />
+    <ClInclude Include="..\src\FgGuiApiDialogs.hpp" />
+    <ClInclude Include="..\src\FgGuiApiDynamic.hpp" />
+    <ClInclude Include="..\src\FgGuiApiGroupbox.hpp" />
+    <ClCompile Include="..\src\FgGuiApiImage.cpp" />
+    <ClInclude Include="..\src\FgGuiApiImage.hpp" />
+    <ClInclude Include="..\src\FgGuiApiMain.hpp" />
+    <ClCompile Include="..\src\FgGuiApiRadio.cpp" />
+    <ClInclude Include="..\src\FgGuiApiRadio.hpp" />
+    <ClInclude Include="..\src\FgGuiApiSelect.hpp" />
+    <ClCompile Include="..\src\FgGuiApiSlider.cpp" />
+    <ClInclude Include="..\src\FgGuiApiSlider.hpp" />
+    <ClInclude Include="..\src\FgGuiApiSpacer.hpp" />
+    <ClCompile Include="..\src\FgGuiApiSplit.cpp" />
+    <ClInclude Include="..\src\FgGuiApiSplit.hpp" />
+    <ClInclude Include="..\src\FgGuiApiTabs.hpp" />
+    <ClCompile Include="..\src\FgGuiApiText.cpp" />
+    <ClInclude Include="..\src\FgGuiApiText.hpp" />
+    <ClCompile Include="..\src\FgHash.cpp" />
+    <ClInclude Include="..\src\FgHash.hpp" />
+    <ClCompile Include="..\src\FgHex.cpp" />
+    <ClInclude Include="..\src\FgHex.hpp" />
+    <ClCompile Include="..\src\FgHistogram.cpp" />
+    <ClInclude Include="..\src\FgHistogram.hpp" />
+    <ClCompile Include="..\src\FgImage.cpp" />
+    <ClInclude Include="..\src\FgImage.hpp" />
+    <ClInclude Include="..\src\FgImageBase.hpp" />
+    <ClCompile Include="..\src\FgImageDraw.cpp" />
+    <ClInclude Include="..\src\FgImageDraw.hpp" />
+    <ClCompile Include="..\src\FgImageIo.cpp" />
+    <ClInclude Include="..\src\FgImageIo.hpp" />
+    <ClCompile Include="..\src\FgImageIoStb.cpp" />
+    <ClCompile Include="..\src\FgImageTest.cpp" />
+    <ClCompile Include="..\src\FgImgDisplay.cpp" />
+    <ClInclude Include="..\src\FgImgDisplay.hpp" />
+    <ClInclude Include="..\src\FgIter.hpp" />
+    <ClCompile Include="..\src\FgKdTree.cpp" />
+    <ClInclude Include="..\src\FgKdTree.hpp" />
+    <ClCompile Include="..\src\FgLighting.cpp" />
+    <ClInclude Include="..\src\FgLighting.hpp" />
+    <ClInclude Include="..\src\FgLinkGraph.hpp" />
+    <ClCompile Include="..\src\FgMain.cpp" />
+    <ClInclude Include="..\src\FgMain.hpp" />
+    <ClInclude Include="..\src\FgMap.hpp" />
+    <ClInclude Include="..\src\FgMarr.hpp" />
+    <ClCompile Include="..\src\FgMath.cpp" />
+    <ClInclude Include="..\src\FgMath.hpp" />
+    <ClCompile Include="..\src\FgMatrixC.cpp" />
+    <ClInclude Include="..\src\FgMatrixC.hpp" />
+    <ClInclude Include="..\src\FgMatrixCBase.hpp" />
+    <ClCompile Include="..\src\FgMatrixSolver.cpp" />
+    <ClInclude Include="..\src\FgMatrixSolver.hpp" />
+    <ClCompile Include="..\src\FgMatrixSolverEigen.cpp" />
+    <ClCompile Include="..\src\FgMatrixV.cpp" />
+    <ClInclude Include="..\src\FgMatrixV.hpp" />
+    <ClCompile Include="..\src\FgMetaFormat.cpp" />
+    <ClInclude Include="..\src\FgMetaFormat.hpp" />
+    <ClCompile Include="..\src\FgNc.cpp" />
+    <ClInclude Include="..\src\FgNc.hpp" />
+    <ClInclude Include="..\src\FgNormal.hpp" />
+    <ClInclude Include="..\src\FgOpt.hpp" />
+    <ClCompile Include="..\src\FgOut.cpp" />
+    <ClInclude Include="..\src\FgOut.hpp" />
+    <ClCompile Include="..\src\FgParse.cpp" />
+    <ClInclude Include="..\src\FgParse.hpp" />
+    <ClCompile Include="..\src\FgPath.cpp" />
+    <ClInclude Include="..\src\FgPath.hpp" />
+    <ClCompile Include="..\src\FgPlatform.cpp" />
+    <ClInclude Include="..\src\FgPlatform.hpp" />
+    <ClCompile Include="..\src\FgQuaternion.cpp" />
+    <ClInclude Include="..\src\FgQuaternion.hpp" />
+    <ClCompile Include="..\src\FgRandom.cpp" />
+    <ClInclude Include="..\src\FgRandom.hpp" />
+    <ClCompile Include="..\src\FgRayCaster.cpp" />
+    <ClInclude Include="..\src\FgRayCaster.hpp" />
+    <ClInclude Include="..\src\FgRgba.hpp" />
+    <ClCompile Include="..\src\FgSampler.cpp" />
+    <ClInclude Include="..\src\FgSampler.hpp" />
+    <ClInclude Include="..\src\FgScaleTrans.hpp" />
+    <ClInclude Include="..\src\FgScopeGuard.hpp" />
+    <ClCompile Include="..\src\FgSerial.cpp" />
+    <ClInclude Include="..\src\FgSerial.hpp" />
+    <ClInclude Include="..\src\FgSerialize.hpp" />
+    <ClInclude Include="..\src\FgSet.hpp" />
+    <ClCompile Include="..\src\FgSimilarity.cpp" />
+    <ClInclude Include="..\src\FgSimilarity.hpp" />
+    <ClCompile Include="..\src\FgSoftRender.cpp" />
+    <ClInclude Include="..\src\FgSoftRender.hpp" />
+    <ClInclude Include="..\src\FgStdArray.hpp" />
+    <ClCompile Include="..\src\FgStdExtensions.cpp" />
+    <ClInclude Include="..\src\FgStdExtensions.hpp" />
+    <ClCompile Include="..\src\FgStdio.cpp" />
+    <ClInclude Include="..\src\FgStdio.hpp" />
+    <ClInclude Include="..\src\FgStdLibs.hpp" />
+    <ClInclude Include="..\src\FgStdMap.hpp" />
+    <ClInclude Include="..\src\FgStdPair.hpp" />
+    <ClInclude Include="..\src\FgStdSet.hpp" />
+    <ClCompile Include="..\src\FgStdStream.cpp" />
+    <ClInclude Include="..\src\FgStdStream.hpp" />
+    <ClCompile Include="..\src\FgStdString.cpp" />
+    <ClInclude Include="..\src\FgStdString.hpp" />
+    <ClInclude Include="..\src\FgStdVector.hpp" />
+    <ClCompile Include="..\src\FgString.cpp" />
+    <ClInclude Include="..\src\FgString.hpp" />
+    <ClCompile Include="..\src\FgStringTest.cpp" />
+    <ClCompile Include="..\src\FgSyntax.cpp" />
+    <ClInclude Include="..\src\FgSyntax.hpp" />
+    <ClInclude Include="..\src\FgSystemInfo.hpp" />
+    <ClInclude Include="..\src\FgTcp.hpp" />
+    <ClCompile Include="..\src\FgTcpTest.cpp" />
+    <ClInclude Include="..\src\FgTensorV.hpp" />
+    <ClCompile Include="..\src\FgTestUtils.cpp" />
+    <ClInclude Include="..\src\FgTestUtils.hpp" />
+    <ClCompile Include="..\src\FgTime.cpp" />
+    <ClInclude Include="..\src\FgTime.hpp" />
+    <ClCompile Include="..\src\FgTopology.cpp" />
+    <ClInclude Include="..\src\FgTopology.hpp" />
+    <ClInclude Include="..\src\FgTypes.hpp" />
+    <ClInclude Include="..\src\FgVersion.hpp" />
+    <ClInclude Include="..\src\FgWinSpecific.hpp" />
+    <ClInclude Include="..\src\json.hpp" />
+    <ClCompile Include="..\src\MurmurHash2.cpp" />
+    <ClInclude Include="..\src\MurmurHash2.h" />
+    <ClInclude Include="..\src\portable_binary_archive.hpp" />
+    <ClCompile Include="..\src\portable_binary_iarchive.cpp" />
+    <ClInclude Include="..\src\portable_binary_iarchive.hpp" />
+    <ClCompile Include="..\src\portable_binary_oarchive.cpp" />
+    <ClInclude Include="..\src\portable_binary_oarchive.hpp" />
+    <ClCompile Include="..\src\stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClInclude Include="..\src\stdafx.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

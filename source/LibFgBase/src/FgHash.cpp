@@ -18,7 +18,7 @@ namespace Fg {
 uint64
 treeHash(Uint64s const & hashes)
 {
-    FGASSERT(hashes.size() < numeric_limits<int>::max() / 8);
+    FGASSERT(hashes.size() < scast<size_t>(lims<int>::max() / 8));
     int                     len = scast<int>(hashes.size() * 8);
     string                  msg; msg.reserve(len);
     for (uint64 hash : hashes)

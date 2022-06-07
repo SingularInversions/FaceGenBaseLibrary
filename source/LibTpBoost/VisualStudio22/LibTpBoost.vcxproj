@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{1D928747-C6EA-2FA9-26BC-3837246C8155}</ProjectGuid>
+    <RootNamespace>LibTpBoost</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level2</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level2</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level2</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level2</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Lib>
+      <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\codecvt_error_category.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\operations.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\path.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\path_traits.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\portability.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\unique_path.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\utf8_codecvt_facet.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\filesystem\src\windows_file_codecvt.cpp" />
+    <ClInclude Include="..\boost_1_69_0\libs\filesystem\src\windows_file_codecvt.hpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\archive_exception.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_archive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_iserializer.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_oserializer.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_pointer_iserializer.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_pointer_oserializer.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_serializer_map.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_text_iprimitive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_text_oprimitive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_text_wiprimitive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_text_woprimitive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\basic_xml_archive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\binary_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\binary_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\binary_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\binary_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\codecvt_null.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\extended_type_info.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\extended_type_info_no_rtti.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\extended_type_info_typeid.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_binary_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_binary_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_text_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_text_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_text_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_text_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_xml_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_xml_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_xml_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\polymorphic_xml_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\stl_port.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\text_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\text_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\text_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\text_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\utf8_codecvt_facet2.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\void_cast.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_archive_exception.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_grammar.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_iarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_oarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_wgrammar.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_wiarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\serialization\src\xml_woarchive.cpp" />
+    <ClCompile Include="..\boost_1_69_0\libs\system\src\error_code.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

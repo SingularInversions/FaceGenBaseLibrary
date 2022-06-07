@@ -543,7 +543,7 @@ fgConsNativeMakefiles(ConsSolution const & sln)
     bool            changed = false;
     string          fnameAll = "make_all.mk";
     changed = constIncludeFileNative(sln,fnameAll) || changed;
-    for (Debrel debrel : getDebrels()) {
+    for (Debrel debrel : debrels) {
         changed = consMakefileOsArch(BuildOS::linux,Compiler::clang,Arch::x64,debrel,fnameAll) || changed;
         changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::x64,debrel,fnameAll) || changed;
         changed = consMakefileOsArch(BuildOS::linux,Compiler::gcc,Arch::arm8_2,debrel,fnameAll) || changed;
