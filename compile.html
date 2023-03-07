@@ -35,24 +35,26 @@ h2 ~ *:not(h2) {
 <h1 style="font-size:200%"><span style="color:#CCCCCC"><span style="color:#4471AF">F</span>ace<span style="color:#4471AF">G</span>en</span> Base Library Manual </h1>
 
 <h2>Windows</h2>
-    <p>Visual Studio (2017 | 2019):</p>
+    <p>Visual Studio:</p>
     <p><code>
-    ~sdk/source/VisualStudio2017.sln<br/>
-    ~sdk/source/VisualStudio2019.sln
+    ~sdk/source/VisualStudio2019.sln<br/>
+    ~sdk/source/VisualStudio2022.sln
     </code></p>
 <h2>Linux</h2>
     <p> Make a copy of the appropriate file below as just 'Makefile'. Make any desired modifications
         (eg. specific architecture flags such as those for AVX or NEON) then 'make':</p>
     <p><code>
-        ~sdk/source/Makefile_linux_x64_clang_debug <br/>
-        ~sdk/source/Makefile_linux_x64_clang_release <br/>
-        ~sdk/source/Makefile_linux_x64_gcc_debug <br/>
-        ~sdk/source/Makefile_linux_x64_gcc_release <br/>
-        ~sdk/source/Makefile_linux_x64_icpc_debug <br/>
-        ~sdk/source/Makefile_linux_x64_icpc_release <br/>
+        ~sdk/source/Makefile_linux_arm8_clang_* <br/>
+        ~sdk/source/Makefile_linux_arm8_gcc_* <br/>
+        ~sdk/source/Makefile_linux_arm8_icpc_* <br/>
+        ~sdk/source/Makefile_linux_x64_clang_* <br/>
+        ~sdk/source/Makefile_linux_x64_gcc_* <br/>
+        ~sdk/source/Makefile_linux_x64_icpc_* <br/>
     </code></p>
 <h2>MacOS</h2>
-    <p>Enable <code> 'Xcode' -> 'Preferences' -> 'Command Line Tools' </code>
+    <p> Ensure Xcode Command Line Tools are installed.
+    <p> Make a copy of the appropriate file below as just 'Makefile'. Make any desired modifications
+        then 'make':</p>
     <p><code>
     ~sdk/source/Makefile_macos_x64_clang_debug<br/>
     ~sdk/source/Makefile_macos_x64_clang_release<br/>
@@ -63,85 +65,116 @@ h2 ~ *:not(h2) {
          ~sdk/source/CMakeLists.txt <br/> 
          ~sdk/source/*/CMakeLists.txt
     </code></p> 
-<h2>iOS</h2>
-    <p>Cross-compiled from MacOS.
-    <p>Enable <code> 'Xcode' -> 'Preferences' -> 'Command Line Tools' </code>
-    <p>Create 'fat' libraries with x86, armv7, arm64 and arm64e binaries in <code> ~sdk/build_ios/ </code>:
-    <p><code> $ cd ~sdk/source <br> $ make -f Makefile_ios </code>
-    <p>In your Xcode iOS app properties:
-    <ul>
-        <li><code> 'Build Phases' -> 'Link Binary With Libraries' -> '+' -> 'Add Other' </code>
-            Select all libraries: <code>~sdk/build_ios/*.a</code>
-        <li><code> 'Build Settings' -> 'Search Paths' -> 'Header Search Paths' </code> Within the
-            <code>~sdk/source/</code> directory, add each of the following (expand glob):
-            <code> LibFg* LibFgBase/src LibTpBoost/boost_1_67_0 </code>
-    </ul>
-    <p>Make a copy of the directory <code>~sdk/data/</code> containing only the data you need
-         and add that data into your app bundle
-        preserving the directory structure (one way to do this is to right-click on your application directory
-        in Xcode, select 'Add Files', select 'Create folder references', ensure 'Copy items if needed' is
-        de-selected, than select your copy of the <code>~sdk/data/</code> directory). </li> 
-    <p>FaceGen library functions can be called from Objective-C++ files (.mm file type).
-      The first function you should call is 'fgSetDataDir' (note that in practice you will want to bracket
-      FaceGen function calls with try / catch):<br>
-    <p><code>
-        #import &ltFgFileSystem.hpp&gt <br>
-        NSString *dd = [[NSBundle mainBundle] resourcePath]; <br>
-        std::string dataDir = std::string([dd UTF8String]) + "/data/"; <br>
-        fgSetDataDir(dataDir); <br>
-    </code></p>
 <h2>Android</h2>
-    <p>Cross-compiled from Linux.</p>
-    <p>Download and install Android Studio and Android NDK
-      (<a href="https://developer.android.com/ndk/downloads">
-        <code>https://developer.android.com/ndk/downloads</code></a>.)
-    <p>Make the FaceGen static libraries for Android:</p>
-    <p><code>$ cd ~sdk/source</br>
-      $ make -f Makefile_android -NDK_ROOT=&ltndkPath&gt [-API_VERSION=&ltver&gt] </code>
-    <p> Where <code>&ltndkPath&gt</code> is typically <code>/home/user/Android/Sdk/ndk-bundle</code>
-        and <code>&ltver&gt</code> defaults to 23.</p>
-    <p> To make an app that links to these libraries:
-      <code> Start a new Android Studio Project -> Native C++ </code>.
-       Select the same API level you compiled the library with. Select the C++14 toolchain.
-       Modify <code> ~app/app/src/main/cpp/CMakeLists.txt </code> to add the FaceGen static library
-       projects and include directories:</p>
-    <p><ul>
-      <li> <code> set(FG_DIR /path/to/FaceGenSdk) </code> </li>
-      <li> For each of the library files <code> ~sdk/build_android/x86/clang/release/*.a </code>
-          Define the static library: <br> <br>
-          <samp>
-          add_library(&ltname&gt STATIC IMPORTED) <br>
-          set_target_properties(&ltname&gt PROPERTIES <br>
-          &nbsp &nbsp &nbsp &nbsp IMPORTED_LOCATION ${FG_DIR}/build_android/${ANDROID_ABI}/clang/release/&ltname&gt.a)
-          </samp> <br> <br>
-      <li> Add the respective include directories to you app's native lib : <br>
-          <samp> <br>
-          target_include_directories(native-lib PRIVATE <br>
-          &nbsp &nbsp &nbsp &nbsp ... <br>
-          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/&ltname&gt <br>
-          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/LibFgBase/src <br>
-          &nbsp &nbsp &nbsp &nbsp ${FG_DIR}/source/LibTpBoost/boost_1_67_0 ) <br>
-          </samp> <br>
-      <li> Link your native lib to the respective libraries: <br> <br>
-          <samp>
-          target_link_libraries(native-lib <br>
-          &nbsp &nbsp &nbsp &nbsp ... <br>
-          &nbsp &nbsp &nbsp &nbsp &ltname&gt <br>
-          &nbsp &nbsp &nbsp &nbsp LibFgBase <br>
-          &nbsp &nbsp &nbsp &nbsp LibTpBoost ) <br>
-          </samp> <br>
-      <li> Create an assets folder for FaceGen data: <code> File -> New -> Folder -> Assets Folder </code>
-          and copy in the data you need  preserving the directory
-          structure.
-    </ul>
-    <p> In Android, asset files cannot be accessed via standard filesystem
-        calls. The simplest approach is to make a local filesystem copy of all bundled data you need with
-        FaceGen when your app first runs. You can then pass this location to <code> setDataDir() </code>.
+    <p> Using Android Studio, on any platform: </p>
+    <ol>
+      <li> Create a project <code>prj</code> with native C++ 14 (or greater) support </li>
+      <li> From a clean copy of the FaceGen SDK, copy each of the following library directories from
+        <code>~sdk/source/</code> </li>
+      <ul>
+        <li> <code> LibTpEigen </code> </li>
+        <li> <code> LibTpStb </code> </li>
+        <li> <code> LibFgBase </code> </li>
+        <li> <code> LibFg3Main </code> (main SDK) </li>
+        <li> <code> LibFg3Photofit </code> (full SDK) </li>
+        <li> <code> LibFg3Full </code> (full SDK) </li>
+      </ul>
+      <li> And paste into your Android project C++ directory:
+        <code> ~prj/app/src/main/cpp/ </code> </li>
+      <li> Edit <code> ~prj/app/src/main/cpp/CMakeLists.txt </code>
+        <ul>
+          <li> After <code> project(...) </code>, add the following line for each library directory above,
+               in the given order:
+            <ul>
+              <li> <code> add_subdirectory(LibXXX) </code> </li>
+            </ul>
+          </li>
+          <li> After <code> add_library(prj ...) </code>, add the line:
+            <ul>
+              <li> <code> target_include_directories(prj PUBLIC LibFgXXX) </code> </li>
+            </ul>
+          </li>
+          <li> Where <code>LibFgXXX </code> is one of:
+            <ul>
+              <li> <code> LibFgBase </code> (open source) </li>
+              <li> <code> LibFg3Main </code> (main SDK) </li>
+              <li> <code> LibFg3Full </code> (full SDK) </li>
+            </ul>
+          </li>
+          <li> Also add <code> LibFgXXX </code> to the list of <code> target_link_libraries(prj ...) </code>
+        </ul>
+      </li>
+      <li> Create an assets folder: <code> File -> New -> Folder -> Assets Folder -> main </code> </li>
+      <li> Within that directory (<code> ~prj/app/src/main/assets </code>) create a <code> facegen </code>
+          subdirectory. Into that, copy the data you need from <code> ~sdk/data </code>  preserving the subdirectory structure. </li>
+      <li> Since Android asset files cannot be accessed via standard filesystem calls,
+        make a local filesystem copy of this <code> facegen </code> subdirectory when your app first runs
+        (example code at <code> ~sdk/source/android/AssetLoaderKotlin.kt </code>).
+        This code returns the full path to the local filesystem copy of the FaceGen data.
+        Pass that path to <code> Fg::setDataDir() </code> before using the SDK (example code at
+        <code> ~sdk/source/android/native-lib.cpp </code>).
+      </li>
+      <li>
+        Since FaceGen uses C++ exceptions, you should bracket use of FaceGen with try / catch.
+      </li>
+    </ol>
+<h2>iOS</h2>
+    <p> Using Xcode: </p>
+    <ol>
+      <li> Create a new iOS App project <code>~prj</code> </li>
+      <li> Select the target (<code>~prj/prj</code>) and File -> 'Add Files to' to add each of the
+           following directories from <code>~sdk/source</code>, making sure to deselect all
+           'add to targets' checkboxes:
+        <ul>
+          <li> <code> LibTpEigen </code> </li>
+          <li> <code> LibTpStb </code> </li>
+          <li> <code> LibFgBase </code> </li>
+          <li> <code> LibFg3Main </code> (main SDK) </li>
+          <li> <code> LibFg3Photofit </code> (full SDK) </li>
+          <li> <code> LibFg3Full </code> (full SDK) </li>
+        </ul>
+      </li>
+      <li> For the <code>prj</code> target -> Build Settings -> Search Paths -> System Header Search Paths
+           add:
+        <ul>
+          <li> <code> ${SRCROOT}/prj/LibTpEigen/ </code> </li>
+          <li> <code> ${SRCROOT}/prj/LibTpStb/ </code> </li>
+          <li> <code> ${SRCROOT}/prj/LibFgBase/src/ </code> </li>
+          <li> <code> ${SRCROOT}/prj/LibFg3Main/ </code> (main SDK) </li>
+          <li> <code> ${SRCROOT}/prj/LibFg3Photofit/ </code> (full SDK) </li>
+          <li> <code> ${SRCROOT}/prj/LibFg3Full/ </code> (full SDK) </li>
+        </ul>
+      </li>
+      <li> For the <code>prj</code> target -> Build Phases -> Compile Sources, add from
+           <code>~prj/prj/</code> :
+        <ul>
+          <li> <code> LibFgBase/src/* </code> </li>
+          <li> <code> LibFgBase/src/nix/* </code> </li>
+          <li> <code> LibFg3Main/*.cpp *.hpp *.h </code> (main SDK) </li>
+          <li> <code> LibFg3Photofit/*.cpp *.hpp *.h </code> (full SDK) </li>
+          <li> <code> LibFg3Full/*.cpp *.hpp *.h </code> (full SDK) </li>
+        </ul>
+      </li>
+      <li> Right-click <code> ~prj/prj </code>, select <code> New Group </code> and add
+           <code> facegen </code>
+      </li>
+      <li> Right-click <code> ~prj/prj/facegen </code>, select <code> Add Files to </code>, and
+           select the data you need  from <code> ~sdk/data </code>,
+           preserving the directory structure. Make sure to de-select <code> Add to targets </code>.
+      </li>
+      <li> At runtime, make a copy of the above directory in the sandbox, and pass the path for that
+           sandbox directory to <code> Fg::setDataDir() </code>
+      </li>
+      <li>
+        Since FaceGen uses C++ exceptions, you should bracket FaceGen interfaces with try / catch.
+      </li>
+    </ol>
+
 
 </section>
 <footer style="text-align:center; background-color:#4471AF; color:#FFFFFF; width:100%">
 <div style="height:1px"></div>
-<p>&copy; Singular Inversions 2022
+<p>&copy; Singular Inversions 2023
 <div style="height:1px"></div>
 </footer>
 </body>
