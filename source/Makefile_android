@@ -1,9 +1,0 @@
-OUTDIR = ../build_android/
-.PHONY: all clean
-all:
-	$(MAKE) -j4 -f Makefile_android_x86_clang_release
-	$(MAKE) -j4 -f Makefile_android_x64_clang_release
-	$(MAKE) -j4 -f Makefile_android_armv7_clang_release
-	$(MAKE) -j4 -f Makefile_android_arm8_0_clang_release
-clean:
-	rm -r $(OUTDIR)

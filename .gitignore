@@ -1,40 +1,32 @@
 # git ignore is case INsensitive on windows
-# Shell glob rules with no partial matches, leading slash matches repo root
-# Note that /*/ only matches a single directory but you can use subdir .gitignore files
-build/
-/_log/
-/bin/
-/source/.vs
-/source/ipch
-/source/PredictedInputCache
-/source/*.db
-/source/*.dat
-source/*/VisualStudio*/*.user
-source/*/VisualStudio*/*/*/*.log
-source/*/VisualStudio*/*/*/*.tlog
-source/*/VisualStudio*/*/*/*.idb
-source/*/VisualStudio*/*/*/*.ilk
-source/*/VisualStudio*/*/*/*.pdb
-source/*/VisualStudio*/*/*/*.pch
-source/*/VisualStudio*/*/*/*.obj
-source/*/VisualStudio*/*/*/*.lib
-source/*/VisualStudio*/*/*/*.ico
-source/*/VisualStudio*/*/*/*.res
-source/*/VisualStudio*/*/*/*.tmp
-source/*/VisualStudio*/*/*/*.cache
-source/*/VisualStudio*/*/*/*.ib_tag
-source/*/VisualStudio*/*/*/*.recipe
-source/*/VisualStudio*/*/*/*pdb_index
-*.FileListAbsolute.txt
-# Android Studio:
-/android/*/.gradle
-/android/*/local.properties
-/android/*/.idea/caches
-/android/*/.idea/libraries
-/android/*/.idea/misc.xml
-/android/*/.idea/modules.xml
-/android/*/.idea/workspace.xml
-/android/*/captures
-.externalNativeBuild
-/android/*/gradlew*
-/android/*/gradle/wrapper/
+# Leading slash matches repo root
+# Text is full word match, use * for partial word match
+# Note that /*/ only matches a single directory
+# We do not make use of subdir .gitignore files
+
+# Output executables:
+/bin
+
+# Output build files and intermediate binaries:
+/build*
+
+# Install-specific files for development:
+/source/Makefile
+/data/_overwrite_baselines.flag
+
+# Output test files:
+/_log
+
+# Visual Studio solution output (leaving .sln for inclusion):
+/source/.vs/
+/source/PredictedInputCache*
+
+# Visual Studio project output (leaving .vcxproj and .ico for inclusion):
+/source/*/VisualStudio*/*.user
+/source/*/VisualStudio*/*.ico
+/source/*/VisualStudio*/x64/
+/source/*/VisualStudio*/Win32/
+
+# Doxygen output:
+/doc/apiref
+/source/Doxyfile_log.txt
