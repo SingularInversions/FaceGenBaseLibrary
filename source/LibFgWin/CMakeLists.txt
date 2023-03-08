@@ -4,7 +4,7 @@ project(LibFgWin)
 
 file(GLOB SOURCES *.cpp *.hpp *.c *.h)
 
-add_library(LibFgWin STATIC ${SOURCES})
+add_library(LibFgWin ${SOURCES})
 
 target_link_libraries(LibFgWin
 	PUBLIC LibFgBase

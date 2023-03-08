@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 #define FGGUIAPI3D_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgStdExtensions.hpp"
+#include "FgSerial.hpp"
 #include "Fg3dCamera.hpp"
 #include "FgLighting.hpp"
 #include "Fg3dMesh.hpp"
@@ -45,7 +45,7 @@ struct      MeshesIntersect
 {
     size_t              meshIdx;
     size_t              surfIdx;
-    BaryPoint           surfPnt;
+    SurfPoint           surfPnt;
 };
 
 struct      BackgroundImage
@@ -62,7 +62,7 @@ struct      BackgroundImage
 
     DfgNPtrs                deps() const
     {
-        return svec<DfgNPtr>(imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr);
+        return Svec<DfgNPtr>{imgN.ptr,offset.ptr,lnScale.ptr,foregroundTransparency.ptr};
     }
 };
 

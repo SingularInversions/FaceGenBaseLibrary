@@ -81,8 +81,8 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -92,6 +92,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -104,8 +105,8 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -115,6 +116,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -125,8 +127,8 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -137,6 +139,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -150,8 +153,8 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\;..\..\LibFgBase\src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -162,17 +165,18 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\FgClusterWin.cpp" />
     <ClCompile Include="..\FgConioWin.cpp" />
     <ClCompile Include="..\FgDirect3D.cpp" />
     <ClInclude Include="..\FgDirect3D.hpp" />
     <ClCompile Include="..\FgFileSystemWin.cpp" />
+    <ClCompile Include="..\FgFileWin.cpp" />
     <ClCompile Include="..\FgGui3dWin.cpp" />
     <ClCompile Include="..\FgGuiWin.cpp" />
     <ClInclude Include="..\FgGuiWin.hpp" />
@@ -192,7 +196,6 @@
     <ClCompile Include="..\FgGuiWinTabs.cpp" />
     <ClCompile Include="..\FgGuiWinText.cpp" />
     <ClCompile Include="..\FgGuiWinTextEdit.cpp" />
-    <ClCompile Include="..\FgStdioWin.cpp" />
     <ClCompile Include="..\FgSystemInfoWin.cpp" />
     <ClCompile Include="..\FgTcpWin.cpp" />
     <ClCompile Include="..\FgThrowWindows.cpp" />

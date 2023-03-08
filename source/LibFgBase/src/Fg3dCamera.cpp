@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,18 +16,32 @@ using namespace std;
 
 namespace Fg {
 
-AffineEw2D
-cItcsToIucs(Vec2D const & hfi)
+AffineEw2D          cOtcsToIpcs(Vec2UI dims)
 {
-    Mat22D          domain {
-        -hfi[0],    hfi[0],
-        -hfi[1],    hfi[1],
-    },
-                    range {
-        0,          1,
-        0,          1,
+    return {
+        {0,0},
+        {1,1},
+        {0,double(dims[1])},
+        {double(dims[0]),0}
     };
-    return AffineEw2D {domain,range};
+}
+AffineEw2D          cOtcsToIrcs(Vec2UI dims)
+{
+    return {
+        {0,0},
+        {1,1},
+        {0.5,dims[1]-0.5},
+        {dims[0]-0.5,0.5}
+    };
+}
+AffineEw2D          cItcsToIucs(Vec2D const & hfi)
+{
+    return {
+        hfi.m * -1.0,       // domain lo
+        hfi.m,              // domain hi
+        {0,0},
+        {1,1}
+    };
 }
 
 ostream &
@@ -43,14 +57,14 @@ operator<<(ostream & os,Frustum const & f)
 Mat44F
 Camera::projectIpcs(Vec2UI dims) const
 {
-    Mat44D        projection = projectOecsToItcs<double>();
-    AffineEw2D    iucsToIpcs(Mat22D(0,1,0,1),Mat22D(0,dims[0],0,dims[1])),
+    Mat44D          projection = projectOecsToItcs<double>();
+    AffineEw2D      iucsToIpcs {{0,0},{1,1},{0,0},mapCast<double>(dims.m)},
                     itcsToIpcs = iucsToIpcs * itcsToIucs;
-    Mat44D        itcsToIpcs4H(0);
-    itcsToIpcs4H.rc(0,0) = itcsToIpcs.m_scales[0];
-    itcsToIpcs4H.rc(1,1) = itcsToIpcs.m_scales[1];
-    itcsToIpcs4H.rc(0,3) = itcsToIpcs.m_trans[0];
-    itcsToIpcs4H.rc(1,3) = itcsToIpcs.m_trans[1];
+    Mat44D          itcsToIpcs4H(0);
+    itcsToIpcs4H.rc(0,0) = itcsToIpcs.affs[0].m_scale;
+    itcsToIpcs4H.rc(1,1) = itcsToIpcs.affs[1].m_scale;
+    itcsToIpcs4H.rc(0,3) = itcsToIpcs.affs[0].m_trans;
+    itcsToIpcs4H.rc(1,3) = itcsToIpcs.affs[1].m_trans;
     itcsToIpcs4H.rc(2,2) = 1;
     itcsToIpcs4H.rc(3,3) = 1;
     return Mat44F(itcsToIpcs4H * projection * asHomogMat(modelview));
@@ -98,9 +112,12 @@ CameraParams::camera(Vec2UI imgDims) const
     ret.frustum.nearDist = znear;
     ret.frustum.farDist = zfar;
     Vec2D        halfFovItcs = aspect * halfFovMaxItcs;
-    ret.itcsToIucs = AffineEw2D(
-        Mat22D(-halfFovItcs[0],halfFovItcs[0],-halfFovItcs[1],halfFovItcs[1]),
-        Mat22D(0,1,0,1));
+    ret.itcsToIucs = {
+        {halfFovItcs.m * -1.0},
+        {halfFovItcs.m},
+        {0,0},
+        {1,1}
+    };
     return ret;
 }
 

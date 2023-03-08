@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -51,7 +51,7 @@ void                convertRsm_(MatD const & rsm,MatrixXd & ret)
     for (size_t rr=0; rr<dim; ++rr) {
         for (size_t cc=rr; cc<dim; ++cc) {
             double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(boost::math::isfinite(v));
+            FGASSERT(isfinite(v));
             ret(rr,cc) = v;
             ret(cc,rr) = v;
         }
@@ -91,29 +91,43 @@ Doubles             cEigvalsRsm(MatD const & rsm)
 void                cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
 {
     size_t              dim = rsm.ncols;
-    MatrixXd            mat(dim,dim);
-    convertRsm_(rsm,mat);
-    // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
-    // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
-    SelfAdjointEigenSolver<MatrixXd>    es(mat);
-    const MatrixXd &    eigVecs = es.eigenvectors();
-    const VectorXd &    eigVals = es.eigenvalues();
-    vals.resize(dim);
-    vecs.resize(dim,dim);
-    for (size_t rr=0; rr<dim; ++rr)
-        vals[rr] = eigVals(rr);
-    for (size_t rr=0; rr<dim; ++rr)
-        for (size_t cc=0; cc<dim; ++cc)
-            vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
+    if (dim == 0) {
+        vals.clear();
+        vecs.clear();
+    }
+    else if (dim == 1) {
+        vals = rsm.m_data;
+        vecs = {1,1,1.0};
+    }
+    else {
+        MatrixXd            mat(dim,dim);
+        convertRsm_(rsm,mat);
+        // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
+        // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
+        SelfAdjointEigenSolver<MatrixXd>    es(mat);
+        const MatrixXd &    eigVecs = es.eigenvectors();
+        const VectorXd &    eigVals = es.eigenvalues();
+        vals.resize(dim);
+        vecs.resize(dim,dim);
+        for (size_t rr=0; rr<dim; ++rr)
+            vals[rr] = eigVals(rr);
+        for (size_t rr=0; rr<dim; ++rr)
+            for (size_t cc=0; cc<dim; ++cc)
+                vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
+    }
 }
 
-EigsRsmC<3>         cEigsRsm(Mat33D const & rsm)
+EigsRsm3            cEigsRsm(MatS3D const & rsm)
 {
+    for (double v : rsm.diag)
+        FGASSERT(isfinite(v));
+    for (double v : rsm.offd)
+        FGASSERT(isfinite(v));
     Matrix3d            mat;
     for (size_t rr=0; rr<3; ++rr) {
-        for (size_t cc=rr; cc<3; ++cc) {
-            double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(isfinite(v));
+        mat(rr,rr) = rsm.diag[rr];
+        for (size_t cc=rr+1; cc<3; ++cc) {
+            double          v = rsm.rc(rr,cc);
             mat(rr,cc) = v;
             mat(cc,rr) = v;
         }
@@ -122,7 +136,7 @@ EigsRsmC<3>         cEigsRsm(Mat33D const & rsm)
     SelfAdjointEigenSolver<Matrix3d>    es(mat);
     const Matrix3d &    eigVecs = es.eigenvectors();
     const Vector3d &    eigVals = es.eigenvalues();
-    EigsRsmC<3>       ret;
+    EigsRsm3            ret;
     for (size_t rr=0; rr<3; ++rr)
         ret.vals[rr] = eigVals(rr);
     for (size_t rr=0; rr<3; ++rr)
@@ -131,7 +145,20 @@ EigsRsmC<3>         cEigsRsm(Mat33D const & rsm)
     return ret;
 }
 
-EigsRsmC<4>         cEigsRsm(Mat44D const & rsm)
+EigsRsm3            cEigsRsm(Mat33D const & rsm)
+{
+    MatS3D              mat {
+        {rsm.rc(0,0),rsm.rc(1,1),rsm.rc(2,2),},
+        {
+            (rsm.rc(0,1)+rsm.rc(1,0)) * 0.5,
+            (rsm.rc(0,2)+rsm.rc(2,0)) * 0.5,
+            (rsm.rc(1,2)+rsm.rc(2,1)) * 0.5,
+        },
+    };
+    return cEigsRsm(mat);
+}
+
+EigsRsm4            cEigsRsm(Mat44D const & rsm)
 {
     Matrix4d            mat;
     for (size_t rr=0; rr<4; ++rr) {

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgFileSystem.hpp"
 #include "FgMetaFormat.hpp"
-#include "FgException.hpp"
+#include "FgSerial.hpp"
 #include "FgSyntax.hpp"
 #include "FgCommand.hpp"
 #include "FgImageIo.hpp"
@@ -51,7 +51,7 @@ Svec<pair<MeshFormat,String>> getMeshFormatExtMap()
         {MeshFormat::lwo,"lwo"},
         {MeshFormat::wrl,"wrl"},
         {MeshFormat::stl,"stl"},
-        {MeshFormat::_3ds,"3ds"},
+        {MeshFormat::a3ds,"3ds"},
         {MeshFormat::xsi,"xsi"},
     };
 }
@@ -76,7 +76,7 @@ bool                meshFormatSupportsMulti(MeshFormat mf)
         {MeshFormat::lwo,true},         // "
         {MeshFormat::wrl,true},
         {MeshFormat::stl,false},
-        {MeshFormat::_3ds,false},
+        {MeshFormat::a3ds,false},
         {MeshFormat::xsi,true},         // "
     };
     auto            it = mfs.find(mf);
@@ -101,7 +101,7 @@ String              getMeshFormatName(MeshFormat mf)
         {MeshFormat::lwo,"Lightwave Object"},
         {MeshFormat::wrl,"VRML 97"},
         {MeshFormat::stl,"3D Systems STL Binary"},
-        {MeshFormat::_3ds,"Autodesk 3DS"},
+        {MeshFormat::a3ds,"Autodesk 3DS"},
         {MeshFormat::xsi,"Softimage XSI"},
     };
     auto            it = mfs.find(mf);
@@ -123,7 +123,7 @@ MeshFormats         getMeshExportFormats()
         MeshFormat::wobj,
         MeshFormat::wrl,
         MeshFormat::stl,
-        MeshFormat::_3ds,
+        MeshFormat::a3ds,
         MeshFormat::ma,
         MeshFormat::lwo,
         MeshFormat::xsi,
@@ -256,7 +256,7 @@ void                saveMesh(Mesh const & mesh,String8 const & fname,String cons
         saveVrml(fname,{mesh},imgFmt);
     else if (fmt == MeshFormat::stl)
         saveStl(fname,{mesh});
-    else if (fmt == MeshFormat::_3ds)
+    else if (fmt == MeshFormat::a3ds)
         save3ds(fname,{mesh},imgFmt);
     else if (fmt == MeshFormat::xsi)
         saveXsi(fname,{mesh},imgFmt);
@@ -286,7 +286,7 @@ void                saveMergeMesh(Meshes const & meshes,String8 const & fname,St
         saveVrml(fname,meshes,imgFmt);
     else if (fmt == MeshFormat::stl)
         saveStl(fname,meshes);
-    else if (fmt == MeshFormat::_3ds)
+    else if (fmt == MeshFormat::a3ds)
         save3ds(fname,meshes,imgFmt);
     else if (fmt == MeshFormat::xsi)
         saveXsi(fname,meshes,imgFmt);
@@ -341,7 +341,7 @@ void                test3dMeshIo(CLArgs const & args)
         {testSaveDae, "dae", "Collada DAE format export"},
         {testSaveXsi, "xsi", ".XSI file format export"},
     };
-    doMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false);
 }
 
 }

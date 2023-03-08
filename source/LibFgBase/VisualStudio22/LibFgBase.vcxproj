@@ -81,8 +81,8 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -92,6 +92,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -104,8 +105,8 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -115,6 +116,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -125,8 +127,8 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -137,6 +139,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -150,8 +153,8 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\stb\;..\..\LibTpBoost\boost_1_69_0\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;BOOST_ALL_NO_LIB;BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -162,6 +165,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -195,13 +199,14 @@
     <ClCompile Include="..\src\Fg3dTest.cpp" />
     <ClCompile Include="..\src\FgAffine.cpp" />
     <ClInclude Include="..\src\FgAffine.hpp" />
+    <ClCompile Include="..\src\FgAnthropometry.cpp" />
+    <ClInclude Include="..\src\FgAnthropometry.hpp" />
     <ClInclude Include="..\src\FgAny.hpp" />
     <ClInclude Include="..\src\FgApproxEqual.hpp" />
     <ClCompile Include="..\src\FgApproxFunc.cpp" />
     <ClInclude Include="..\src\FgApproxFunc.hpp" />
     <ClInclude Include="..\src\FgArray.hpp" />
     <ClInclude Include="..\src\FgBestN.hpp" />
-    <ClInclude Include="..\src\FgBoostLibs.hpp" />
     <ClInclude Include="..\src\FgBounds.hpp" />
     <ClCompile Include="..\src\FgBuild.cpp" />
     <ClInclude Include="..\src\FgBuild.hpp" />
@@ -209,9 +214,6 @@
     <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp" />
     <ClCompile Include="..\src\FgCl.cpp" />
     <ClInclude Include="..\src\FgCl.hpp" />
-    <ClCompile Include="..\src\FgCluster.cpp" />
-    <ClInclude Include="..\src\FgCluster.hpp" />
-    <ClInclude Include="..\src\FgClusterImpl.hpp" />
     <ClInclude Include="..\src\FgCmd.hpp" />
     <ClCompile Include="..\src\FgCmdBase.cpp" />
     <ClCompile Include="..\src\FgCmdImage.cpp" />
@@ -220,7 +222,6 @@
     <ClCompile Include="..\src\FgCmdRender.cpp" />
     <ClCompile Include="..\src\FgCmdTestmCpp.cpp" />
     <ClCompile Include="..\src\FgCmdView.cpp" />
-    <ClInclude Include="..\src\FgCmp.hpp" />
     <ClCompile Include="..\src\FgCommand.cpp" />
     <ClInclude Include="..\src\FgCommand.hpp" />
     <ClInclude Include="..\src\FgConio.hpp" />
@@ -229,8 +230,8 @@
     <ClCompile Include="..\src\FgDiagnostics.cpp" />
     <ClInclude Include="..\src\FgDiagnostics.hpp" />
     <ClInclude Include="..\src\FgDynLib.h" />
-    <ClCompile Include="..\src\FgException.cpp" />
-    <ClInclude Include="..\src\FgException.hpp" />
+    <ClCompile Include="..\src\FgFile.cpp" />
+    <ClInclude Include="..\src\FgFile.hpp" />
     <ClCompile Include="..\src\FgFileSystem.cpp" />
     <ClInclude Include="..\src\FgFileSystem.hpp" />
     <ClCompile Include="..\src\FgGeometry.cpp" />
@@ -245,7 +246,6 @@
     <ClInclude Include="..\src\FgGuiApi3d.hpp" />
     <ClCompile Include="..\src\FgGuiApiBase.cpp" />
     <ClInclude Include="..\src\FgGuiApiBase.hpp" />
-    <ClCompile Include="..\src\FgGuiApiButton.cpp" />
     <ClInclude Include="..\src\FgGuiApiButton.hpp" />
     <ClCompile Include="..\src\FgGuiApiCheckbox.cpp" />
     <ClInclude Include="..\src\FgGuiApiCheckbox.hpp" />
@@ -267,8 +267,6 @@
     <ClInclude Include="..\src\FgGuiApiTabs.hpp" />
     <ClCompile Include="..\src\FgGuiApiText.cpp" />
     <ClInclude Include="..\src\FgGuiApiText.hpp" />
-    <ClCompile Include="..\src\FgHash.cpp" />
-    <ClInclude Include="..\src\FgHash.hpp" />
     <ClCompile Include="..\src\FgHex.cpp" />
     <ClInclude Include="..\src\FgHex.hpp" />
     <ClCompile Include="..\src\FgHistogram.cpp" />
@@ -289,7 +287,6 @@
     <ClInclude Include="..\src\FgKdTree.hpp" />
     <ClCompile Include="..\src\FgLighting.cpp" />
     <ClInclude Include="..\src\FgLighting.hpp" />
-    <ClInclude Include="..\src\FgLinkGraph.hpp" />
     <ClCompile Include="..\src\FgMain.cpp" />
     <ClInclude Include="..\src\FgMain.hpp" />
     <ClInclude Include="..\src\FgMap.hpp" />
@@ -308,22 +305,13 @@
     <ClInclude Include="..\src\FgMetaFormat.hpp" />
     <ClCompile Include="..\src\FgNc.cpp" />
     <ClInclude Include="..\src\FgNc.hpp" />
-    <ClInclude Include="..\src\FgNormal.hpp" />
     <ClInclude Include="..\src\FgOpt.hpp" />
-    <ClCompile Include="..\src\FgOut.cpp" />
-    <ClInclude Include="..\src\FgOut.hpp" />
     <ClCompile Include="..\src\FgParse.cpp" />
     <ClInclude Include="..\src\FgParse.hpp" />
-    <ClCompile Include="..\src\FgPath.cpp" />
-    <ClInclude Include="..\src\FgPath.hpp" />
-    <ClCompile Include="..\src\FgPlatform.cpp" />
-    <ClInclude Include="..\src\FgPlatform.hpp" />
     <ClCompile Include="..\src\FgQuaternion.cpp" />
     <ClInclude Include="..\src\FgQuaternion.hpp" />
     <ClCompile Include="..\src\FgRandom.cpp" />
     <ClInclude Include="..\src\FgRandom.hpp" />
-    <ClCompile Include="..\src\FgRayCaster.cpp" />
-    <ClInclude Include="..\src\FgRayCaster.hpp" />
     <ClInclude Include="..\src\FgRgba.hpp" />
     <ClCompile Include="..\src\FgSampler.cpp" />
     <ClInclude Include="..\src\FgSampler.hpp" />
@@ -331,26 +319,14 @@
     <ClInclude Include="..\src\FgScopeGuard.hpp" />
     <ClCompile Include="..\src\FgSerial.cpp" />
     <ClInclude Include="..\src\FgSerial.hpp" />
-    <ClInclude Include="..\src\FgSerialize.hpp" />
     <ClInclude Include="..\src\FgSet.hpp" />
     <ClCompile Include="..\src\FgSimilarity.cpp" />
     <ClInclude Include="..\src\FgSimilarity.hpp" />
     <ClCompile Include="..\src\FgSoftRender.cpp" />
     <ClInclude Include="..\src\FgSoftRender.hpp" />
-    <ClInclude Include="..\src\FgStdArray.hpp" />
     <ClCompile Include="..\src\FgStdExtensions.cpp" />
     <ClInclude Include="..\src\FgStdExtensions.hpp" />
-    <ClCompile Include="..\src\FgStdio.cpp" />
-    <ClInclude Include="..\src\FgStdio.hpp" />
     <ClInclude Include="..\src\FgStdLibs.hpp" />
-    <ClInclude Include="..\src\FgStdMap.hpp" />
-    <ClInclude Include="..\src\FgStdPair.hpp" />
-    <ClInclude Include="..\src\FgStdSet.hpp" />
-    <ClCompile Include="..\src\FgStdStream.cpp" />
-    <ClInclude Include="..\src\FgStdStream.hpp" />
-    <ClCompile Include="..\src\FgStdString.cpp" />
-    <ClInclude Include="..\src\FgStdString.hpp" />
-    <ClInclude Include="..\src\FgStdVector.hpp" />
     <ClCompile Include="..\src\FgString.cpp" />
     <ClInclude Include="..\src\FgString.hpp" />
     <ClCompile Include="..\src\FgStringTest.cpp" />
@@ -366,17 +342,12 @@
     <ClInclude Include="..\src\FgTime.hpp" />
     <ClCompile Include="..\src\FgTopology.cpp" />
     <ClInclude Include="..\src\FgTopology.hpp" />
+    <ClCompile Include="..\src\FgTypes.cpp" />
     <ClInclude Include="..\src\FgTypes.hpp" />
-    <ClInclude Include="..\src\FgVersion.hpp" />
     <ClInclude Include="..\src\FgWinSpecific.hpp" />
     <ClInclude Include="..\src\json.hpp" />
     <ClCompile Include="..\src\MurmurHash2.cpp" />
     <ClInclude Include="..\src\MurmurHash2.h" />
-    <ClInclude Include="..\src\portable_binary_archive.hpp" />
-    <ClCompile Include="..\src\portable_binary_iarchive.cpp" />
-    <ClInclude Include="..\src\portable_binary_iarchive.hpp" />
-    <ClCompile Include="..\src\portable_binary_oarchive.cpp" />
-    <ClInclude Include="..\src\portable_binary_oarchive.hpp" />
     <ClCompile Include="..\src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

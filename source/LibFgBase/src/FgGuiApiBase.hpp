@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -100,7 +100,7 @@ struct  GuiVal           // Combine a window and a related node
 void                guiStartImpl(
     NPT<String8>                titleN,
     GuiPtr                      gui,
-    String8 const &             store,          // Directory in which to store state
+    String8 const &             storeDir,           // directory [and prefix] in which to store state files
     GuiOptions const &          options=GuiOptions());
 
 // Send message to terminate GUI. Defined in OS-specific code. TODO: make it not global:

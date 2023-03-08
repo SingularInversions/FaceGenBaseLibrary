@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -38,8 +38,8 @@ struct  GuiButtonWin : public GuiBaseImpl
     {
         DestroyWindow(hwndThis);        // Automatically destroys children first
     }
-    virtual Vec2UI      getMinSize() const {return Vec2UI(100,24); }
-    virtual Vec2B       wantStretch() const {return Vec2B(false,false); }
+    virtual Vec2UI      getMinSize() const {return Vec2UI{100,24}; }
+    virtual Vec2B       wantStretch() const {return Vec2B{m_api.stretchX,false}; }
     virtual void        updateIfChanged()
     {
 //fgout << fgnl << "Button::updateIfChanged";

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,7 +13,6 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgTopology.hpp"
 #include "FgCommand.hpp"
-#include "FgStdSet.hpp"
 #include "FgBestN.hpp"
 #include "FgSyntax.hpp"
 
@@ -148,7 +147,7 @@ GuiPtr              makeLightingCtrls(
                 nodes.push_back(i.ptr);
             setInputsToDefault(nodes);
         };
-    return guiSplitScroll(svec(
+    return guiSplitScroll({
         guiGroupbox("Ambient",ambient.win),
         guiGroupbox("Light 1",guiSplitV({light1.clrSliders,light1.dirSliders})),
         guiGroupbox("Light 2",guiSplitV({light2.clrSliders,light2.dirSliders})),
@@ -156,7 +155,7 @@ GuiPtr              makeLightingCtrls(
             "Light 1: hold down left and right mouse buttons while dragging\n"
             "Light 2: As above but also hold down shift key"),
         guiButton("Reset Lighting",resetLighting)
-    ));
+    });
 }
 
 namespace {
@@ -315,7 +314,7 @@ void                assignTri(      // Re-assign a tri (or quad) to a different 
                 Surf &           dstSurf = meshPtr->surfaces[dstSurfIdx];
                 if (isct.surfPnt.triEquivIdx < srcSurf.tris.size()) {   // it's a tri
                     // Copy surface points on selected tri to destination surface:
-                    for (SurfPoint sp : srcSurf.surfPoints) {
+                    for (SurfPointName sp : srcSurf.surfPoints) {
                         if (sp.point.triEquivIdx == isct.surfPnt.triEquivIdx) {
                             sp.point.triEquivIdx = uint(dstSurf.tris.size());
                             dstSurf.surfPoints.push_back(sp);
@@ -331,7 +330,7 @@ void                assignTri(      // Re-assign a tri (or quad) to a different 
                 else {                                                  // It's a quad
                     // Copy surface points on selected quad to destination surface:
                     size_t                  quadIdx = (isct.surfPnt.triEquivIdx - srcSurf.tris.size())/2;
-                    for (SurfPoint sp : srcSurf.surfPoints) {
+                    for (SurfPointName sp : srcSurf.surfPoints) {
                         size_t              spQuadIdx2 = sp.point.triEquivIdx - srcSurf.tris.size(),
                                             spQuadIdx = spQuadIdx2 / 2,
                                             spQuadMod = spQuadIdx2 % 2;
@@ -375,7 +374,7 @@ void                assignPaint(
                     if (contains(surfs[ss].tris.vertInds,tri)) {
                         meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
                         surfs.erase(surfs.begin()+ss);
-                        Surf                tmp = mergeSurfaces(surfs);
+                        Surf                tmp = merge(surfs);
                         // Copy the merged structure and surf point list, preserving name and material:
                         Surf &              surf = meshPtr->surfaces[isct.surfIdx];
                         surf.quads = tmp.quads;
@@ -402,7 +401,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
         if (vpt.valid()) {
             // Perform all calculations in the original mesh coordinates:
             MeshesIntersect const & pt = vpt.val();
-            BaryPoint const &       sp = pt.surfPnt;
+            SurfPoint const &       sp = pt.surfPnt;
             FGASSERT(pt.meshIdx < rms.size());
             RendMesh const &        rm = rms[pt.meshIdx];
             Mesh const &            origMesh = rm.origMeshN.cref();
@@ -440,7 +439,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
         for (RendMesh const & rm : rms) {
             Mesh const &            mesh = rm.origMeshN.cref();
             for (Surf const & surf : mesh.surfaces)
-                for (SurfPoint const & sp : surf.surfPoints)
+                for (SurfPointName const & sp : surf.surfPoints)
                     labels.push_back(sp.label);
         }
         if (labels.empty())
@@ -455,7 +454,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
     GuiPtrs             subWs = {
         textW,
         guiSplitH({guiText("Name:"),guiTextEdit(pointLabelN)}),
-        guiButtonTr("Clear all surface points",clearPointsFn),
+        guiButton("Clear all surface points",clearPointsFn),
         guiGroupbox("Surface Points",listW),
     };
     return guiSplitV(subWs);
@@ -528,17 +527,20 @@ GuiPtr              makeEditVertsMark(NPT<RendMeshes> const & rendMeshesN,Gui3d 
     GuiPtrs             subWs {
         guiText("Mark Vertex: ctrl-shift-right-click on surface near vertex"),
         guiGroupbox("Mode",vertSelModeW),
-        guiButtonTr("Mark all seam vertices",markAllFn),
-        guiButtonTr("Clear all marked vertices",clearAllFn),
+        guiButton("Mark all seam vertices",markAllFn),
+        guiButton("Clear all marked vertices",clearAllFn),
     };
     return guiSplitV(subWs);
 }
 
-GuiPtr              makeEditVertsDelete(NPT<RendMeshes> const & rendMeshesN,Gui3d & api)
+GuiPtr              makeEditVertsDelete(
+    NPT<RendMeshes> const & rendMeshesN,
+    Gui3d &                 api,
+    String8 const &         store)
 {
     IPT<bool>           delBackfacingN {true};
     GuiPtr              delBackfacingW = guiCheckbox("Delete back-facing polys",delBackfacingN);
-    IPT<double>         delLnRadiusN {-4.0};
+    IPT<double>         delLnRadiusN = makeSavedIPT(-4.0,store+"delLnRadius");
     GuiPtr              delRadiusW = guiSlider(delLnRadiusN,"delete radius",{-6,-2},1);
     auto                delVertsFn = [rendMeshesN,delLnRadiusN,delBackfacingN]
                         (Vec2UI viewportSize,Vec2I posRcs,Mat44F toD3ps)
@@ -583,7 +585,7 @@ GuiPtr              makeEditVertsDelete(NPT<RendMeshes> const & rendMeshesN,Gui3
 }
 
 // Modifies 'api' to add it's hooks:
-GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName)
+GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 const & store)
 {
     NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
     GuiPtr              facetsW;
@@ -595,7 +597,7 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName)
     }
     GuiTabDefs          editVertsTabs {
         {"Mark",true,makeEditVertsMark(rendMeshesN,api)},
-        {"Delete",true,makeEditVertsDelete(rendMeshesN,api)},
+        {"Delete",true,makeEditVertsDelete(rendMeshesN,api,store+"VertsDel")},
     };
     GuiTabDefs          editTabs {
         {"Points",true,makeEditPoints(api)},
@@ -638,12 +640,12 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName)
         };
         GuiPtrs             buttons {
             guiText("Save pre-morphed as:"),
-            guiButtonTr("TRI",bind(saveAsFn,string("tri"))),
-            guiButtonTr("FGMESH",bind(saveAsFn,string("fgmesh"))),
+            guiButton("TRI",bind(saveAsFn,string("tri"))),
+            guiButton("FGMESH",bind(saveAsFn,string("fgmesh"))),
         };
         if (!saveName.empty()) {
             buttons.insert(buttons.begin(),guiButton("reload original mesh",reloadFn));
-            buttons.push_back(guiButton(saveName,saveFn));
+            buttons.push_back(guiButton(saveName,saveFn,true));
         }
         saveAsW = guiSplitV(buttons);
     }
@@ -763,7 +765,7 @@ GuiPtr              makeCameraCtrls(
         {api.logRelSize.ptr},
         {lensFovDeg.ptr},
     };
-    GuiPtr              viewCtlReset = guiButtonTr("Reset Camera",[resetDeps](){setInputsToDefault(resetDeps);});
+    GuiPtr              viewCtlReset = guiButton("Reset Camera",[resetDeps](){setInputsToDefault(resetDeps);});
     if (simple == 2)
         return guiSplitV({viewCtlText,viewCtlFov,viewCtlScale,viewCtlReset});
     else
@@ -841,12 +843,11 @@ void                GuiPosedMeshes::addMesh(
         rs.specularMapN = specularNs[ss];
         rm.rendSurfs.push_back(rs);
     }
-    rm.posedVertsN = link3_<Vec3Fs,Mesh,Vec3Fs,PoseVals>(meshN,allVertsN,poseValsN,
-        [=](Mesh const & mesh,Vec3Fs const & allVerts,PoseVals const & poseVals,Vec3Fs & verts)
-        {
-            verts = mesh.poseShape(allVerts,poseVals);
-        }
-    );
+    auto                poseVertsFn = [=](Mesh const & mesh,Vec3Fs const & allVerts,PoseVals const & poseVals)
+    {
+        return mesh.poseShape(allVerts,poseVals);
+    };
+    rm.posedVertsN = link3<Vec3Fs,Mesh,Vec3Fs,PoseVals>(meshN,allVertsN,poseValsN,poseVertsFn);
     rm.normalsN = linkNormals(meshN,rm.posedVertsN);
     rendMeshes.push_back(rm);
 }
@@ -876,26 +877,27 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         }),
         guiButton("Load File",[poseValsN]()
         {
-            Opt<String8>                fname = guiDialogFileLoad("FaceGen XML expression file",{"xml"});
+            Opt<String8>                fname = guiDialogFileLoad("TXT expression settings file",{"txt"});
             if (fname.valid()) {
-                Svec<pair<String8,float>>   data;       // Legacy format
-                loadBsaXml(fname.val(),data);
+                Svec<PoseVal>               data = dsrlzText<Svec<PoseVal>>(loadRawString(fname.val()));
                 PoseVals &                  pvs = poseValsN.ref();
                 // Do not alter the labels, only update values where labels exist:
-                for (pair<String8,float> const & d : data) {
-                    auto                    it = pvs.find(d.first);
+                for (PoseVal const & d : data) {
+                    auto                    it = pvs.find(d.name);
                     if (it != pvs.end())
-                        it->second = d.second;
+                        it->second = d.val;
                 }
             }
         }),
         guiButton("Save File",[poseValsN]()
         {
-            Opt<String8>                fname = guiDialogFileSave("FaceGen XML expression file",{"xml"});
+            Opt<String8>                fname = guiDialogFileSave("TXT expression settings file",{"txt"});
             if (fname.valid()) {
                 PoseVals const &            pvs = poseValsN.cref();
-                Svec<pair<String8,float>>   data(pvs.begin(),pvs.end());    // Legacy format
-                saveBsaXml(fname.val(),data);
+                Svec<PoseVal>               data;
+                for (auto const & pv : pvs)
+                    data.push_back(PoseVal{pv.first,pv.second});
+                saveRaw(srlzText(data),fname.val());
             }
         }),
     };
@@ -1044,7 +1046,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     Mat32F                  viewBounds = cBounds(meshes);
     if (!isFinite(viewBounds))
         fgThrow("viewMesh: Mesh vertices contain invalid floating point values");
-    IPT<Mat32D>             viewBoundsN = makeIPT(fgF2D(cBounds(meshes)));
+    IPT<Mat32D>             viewBoundsN = makeIPT(Mat32D{cBounds(meshes)});
     GuiPosedMeshes          gpms;
     Svec<IPT<Mesh>>         meshNs;
     String8s                meshNames = sliceMember(meshes,&Mesh::name);
@@ -1052,7 +1054,11 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
         if (meshNames[mm].empty())                  // in case client didn't provide names (cmdViewMesh does)
             meshNames[mm] = toStrDigits(mm,2);
         Mesh const &        mesh = meshes[mm];
-        mesh.checkValidity();       // TODO: need to report actual problem rather than throw internal error
+        try {mesh.validate(); }
+        catch (FgException & e) {
+            e.addContext("in mesh",mesh.name.m_str);
+            guiDialogMessage("Warning",e.tr_message());
+        }
         IPT<Mesh>           meshN = makeIPT(mesh);
         OPT<Vec3Fs>         allVertsN = link1<Mesh,Vec3Fs>(meshN,[](Mesh const & m){return m.allVerts(); });
         ImgNs               albedoNs,
@@ -1099,7 +1105,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     }
     else {
         NPT<Bools>              selsN;
-        Svec<IPT<bool>>         selectNs = generateSvec<IPT<bool>>(meshNames.size(),[](size_t){return makeIPT<bool>(true); });
+        Svec<IPT<bool>>         selectNs = genSvec<IPT<bool>>(meshNames.size(),[](size_t){return makeIPT<bool>(true); });
         auto                    flipFn = [selectNs]()
         {
             for (IPT<bool> const & selN : selectNs) {
@@ -1131,7 +1137,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
         guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View")),
         guiTab("Morphs",true,gpms.makePoseCtrls(true)),
         guiTab("Select",true,meshSelect),
-        guiTab("Edit",true,makeEditPane(gui3d,saveName)),
+        guiTab("Edit",true,makeEditPane(gui3d,saveName,store+"Edit")),
         guiTab("Info",true,guiSplitScroll({statsTextW})),
         guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
     };

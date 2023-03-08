@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,11 +18,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
 
 // C++ standard libraries:
 
 #include <algorithm>
+#include <any>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -30,6 +32,7 @@
 #include <complex>
 #include <condition_variable>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <future>

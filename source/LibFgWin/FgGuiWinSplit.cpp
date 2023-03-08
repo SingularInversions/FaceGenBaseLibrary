@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,20 +21,16 @@ namespace Fg {
 
 struct  GuiSplitWin : public GuiBaseImpl
 {
-    GuiSplit                m_api;
+    GuiSplit                m_api;      // can be empty
     Img<GuiImplPtr>         m_panes;    // 1-1 with m_api.panes
     String8                 m_store;
     HWND                    m_hwndParent;
     Vec2I                   m_base;     // client area
     Vec2I                   m_size;
 
-    explicit
-    GuiSplitWin(GuiSplit const & api) :
-        m_api(api)
-    {}
+    explicit GuiSplitWin(GuiSplit const & api) : m_api(api) {}
 
-    virtual void
-    create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
+    virtual void        create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
     {
 //fgout << fgnl << "GuiSplitWin::create" << fgpush;
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.
@@ -44,21 +40,19 @@ struct  GuiSplitWin : public GuiBaseImpl
         // WM_CREATE handler:
         m_panes.resize(m_api.panes.dims());
         for (size_t ii=0; ii<m_api.panes.numPixels(); ++ii) {
-            m_panes[ii] = m_api.panes[ii]->getInstance();
-            m_panes[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
+            m_panes.m_data[ii] = m_api.panes.m_data[ii]->getInstance();
+            m_panes.m_data[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
         }
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         for (GuiImplPtr const & ptr : m_panes.m_data)
             ptr->destroy();
     }
 
-    uint
-    calcPadBetween(Uints const & maxDims) const
+    uint                calcPadBetween(Uints const & maxDims) const
     {
         uint            maxMin(0);
         if (maxDims.size() > 0)
@@ -66,15 +60,14 @@ struct  GuiSplitWin : public GuiBaseImpl
         return cMin(8,uint(double(maxMin)*0.1));
     }
 
-    uint
-    calcPadTotal(uint numPanes,uint padBetween) const
+    uint                calcPadTotal(uint numPanes,uint padBetween) const
     {
         uint            gaps = cMax(numPanes,1U) - 1U;
         return padBetween * gaps;
     }
 
-    pair<Uints,Uints>       // Col and Row max lower limit pixel sizes
-    cMaxLlimPixCR() const
+    // Col and Row max lower limit pixel sizes:
+    pair<Uints,Uints>       cMaxLlimPixCR() const
     {
         Vec2UI              dims = m_panes.dims();
         Img<Vec2UI>         pixLlims {dims,
@@ -90,8 +83,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         return make_pair(colMaxWids,rowMaxHgts);
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
         if (m_panes.empty())        // When called before create()
             return Vec2UI(0);
@@ -106,8 +98,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         return minSize+padding;
     }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B       wantStretch() const
     {
         Vec2B           ret(false,false);
         for (GuiImplPtr const & ptr : m_panes.m_data)
@@ -115,15 +106,13 @@ struct  GuiSplitWin : public GuiBaseImpl
         return ret;
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
         for (GuiImplPtr const & ptr : m_panes.m_data)
             ptr->updateIfChanged();
     }
 
-    virtual void
-    moveWindow(Vec2I base,Vec2I size)
+    virtual void        moveWindow(Vec2I base,Vec2I size)
     {
 //fgout << fgnl << "GuiSplitWin::moveWindow " << base << " , " << size << fgpush;
         m_base = base;
@@ -132,15 +121,14 @@ struct  GuiSplitWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
         for (GuiImplPtr const & ptr : m_panes.m_data)
             ptr->showWindow(s);
     }
 
-    pair<Bools,Bools>       // ColWantStretches, RowWantStretches
-    cWantStrets() const
+    // ColWantStretches, RowWantStretches:
+    pair<Bools,Bools>   cWantStrets() const
     {
         Vec2UI              dims = m_panes.dims();
         Img<Vec2B>          wants {dims,
@@ -157,8 +145,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     }
 
     // Returns (offset,size) pairs for the subwindow sizes:
-    Vec2UIs
-    resizeDimension(Uints const & maxLlimPixs,Bools const & paneStrets,int pixSize)
+    Vec2UIs             resizeDimension(Uints const & maxLlimPixs,Bools const & paneStrets,int pixSize)
     {
         size_t              numPanes = maxLlimPixs.size();
         FGASSERT(paneStrets.size() == numPanes);
@@ -188,8 +175,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         return ret;
     }
 
-    void
-    resize()
+    void                resize()
     {
         if (m_size[0] * m_size[1] > 0) {
             pair<Uints,Uints>   maxLlimPixCR = cMaxLlimPixCR();
@@ -211,8 +197,6 @@ struct  GuiSplitWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(GuiSplit const & def)
-{return GuiImplPtr(new GuiSplitWin(def)); }
+GuiImplPtr          guiGetOsImpl(GuiSplit const & def) {return GuiImplPtr(new GuiSplitWin(def)); }
 
 }

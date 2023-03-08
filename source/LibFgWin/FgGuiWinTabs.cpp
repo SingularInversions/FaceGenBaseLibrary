@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -43,21 +43,25 @@ struct  GuiTabsWin : public GuiBaseImpl
 
     ~GuiTabsWin()
     {
-        if (!m_store.empty())   // Win32 instance was created
-            saveBsaXml(m_store+".xml",m_currPane,false);
+        if (!m_store.empty()) {
+            try {saveRaw(srlzText(m_currPane),m_store+"currPane.txt"); }
+            catch(...) {}
+        }
     }
 
     virtual void
     create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
-        if (m_store.empty()) {      // First creation this session so check for saved state
-            uint            cp;
-            if (loadBsaXml(store+".xml",cp,false))
+        m_store = store;
+        if (!m_store.empty()) {
+            try {
+                uint            cp = dsrlzText<uint>(loadRawString(m_store+"currPane.txt"));
                 if (cp < m_panes.size())
                     m_currPane = cp;
+            }
+            catch (...) {}
         }
-        m_store = store;
         WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;

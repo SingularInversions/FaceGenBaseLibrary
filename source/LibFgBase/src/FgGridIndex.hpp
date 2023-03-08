@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,7 +14,7 @@
 namespace Fg {
 
 template<typename T>
-struct  GridIndex
+struct      GridIndex
 {
     AffineEw2F          clientToGridIpcs;
     Img<Svec<T>>        grid;       // Bins of client objects (bins not exactly square)
@@ -35,8 +35,7 @@ struct  GridIndex
         grid.resize(gridSize);
     }
 
-    void
-    add(T const & val,Mat22F clientBounds)
+    void                add(T const & val,Mat22F clientBounds)
     {
         Mat22F          ipcsBounds = clientToGridIpcs * clientBounds;
         ipcsBounds[0] = cMax(ipcsBounds[0],0.0f);
@@ -52,8 +51,7 @@ struct  GridIndex
         }
     }
 
-    Svec<T> const &
-    operator[](Vec2F const & clientPos) const
+    Svec<T> const &     operator[](Vec2F const & clientPos) const
     {
         Vec2F           posIpcs = clientToGridIpcs*clientPos;
         if ((posIpcs[0] < 0.0f) || (posIpcs[1] < 0.0f))

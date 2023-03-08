@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 #include "stdafx.h"
 
 #include "FgTestUtils.hpp"
-#include "FgString.hpp"
+#include "FgSerial.hpp"
 #include "FgMain.hpp"
 
 using namespace std;
@@ -187,7 +187,7 @@ static void StartsWith()
 
 static void Convert()
 {
-    string      utf8 = loadRaw(dataDir()+"base/test/utf8_language_samples.txt"),
+    string      utf8 = loadRawString(dataDir()+"base/test/utf8_language_samples.txt"),
                 reg32 = toUtf8(toUtf32(utf8));
     FGASSERT(utf8 == reg32);
 #ifdef _WIN32

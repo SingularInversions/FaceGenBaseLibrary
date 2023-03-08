@@ -1,15 +1,15 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Makes use of boost::filesystem which requires native unicode representation arguments for unicode support
+// Makes use of std::filesystem which requires native unicode representation arguments for unicode support
 // ie. UTF-16 wstring on Windows, UTF-8 string on *nix.
 
 #ifndef FGFILESYSTEM_HPP
 #define FGFILESYSTEM_HPP
 
-#include "FgPath.hpp"
+#include "FgFile.hpp"
 
 // **************************************************************************************
 //                          SYSTEM DIRECTORIES
@@ -45,14 +45,15 @@ String8             getPublicDocsDir();
 // If 'throwIfNotFound' is false, check the return value for the empty string (failure):
 String8 const &     dataDir(bool throwIfNotFound=true);
 // Manually set data directory. Useful for sandboxed platforms and debugging apps on native
-// platforms:
+// platforms. Does not check for the FaceGen data dir flag, since that it only there to help find
+// the data dir, not validate it:
 void                setDataDir(String8 const & dirEndingWithSlash);
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
 // **************************************************************************************
 
-// We can't use boost::filesystem::is_directory inline here since it doesn't work on Windows 10 as of
+// We can't use std::filesystem::is_directory inline here since it doesn't work on Windows 10 as of
 // 18.04 update.
 bool                isDirectory(String8 const & path);   // Doesn't throw - returns false for invalid path
 // Both 'src' and 'dst' must be file paths; 'dst' should not be a directory.
@@ -65,7 +66,7 @@ bool                pathExists(String8 const & path);
 inline bool         fileExists(String8 const & fname) {return (!isDirectory(fname) && pathExists(fname)); }
 inline void         renameNode(String8 const & from,String8 const & to)
 {
-    return boost::filesystem::rename(from.ns(),to.ns());
+    return std::filesystem::rename(from.ns(),to.ns());
 }
 // Update last written time on existing file (will not create). Avoid large files as it current re-writes:
 void                fileTouch(String8 const & fname);
@@ -90,14 +91,16 @@ bool                setCurrentDirUp();  // returns true if successful
 // If 'anyPath' is relative, use the current directory to make it absolute:
 String8             toAbsolutePath(String8 const & anyPath);
 // Doesn't remove read-only files / dirs:
-inline void         pathRemove(String8 const & fname) {boost::filesystem::remove(fname.ns()); }
+inline void         pathRemove(String8 const & fname) {std::filesystem::remove(fname.ns()); }
 // Ignores read-only or hidden attribs on Windows (identical to pathRemove on nix):
 void                deleteFile(String8 const &);
 // Only works on empty dirs, return true if successful:
 bool                removeDirectory(String8 const & dirName,bool throwOnFail=false);
 // Delete all files in a directory (does not delete subdirectories):
 void                deleteDirectoryFiles(String8 const &);
-// Throws on failure:
+// Delete all files and subdirectories in a directory (does not delete the directory):
+void                deleteDirectoryContentsRecursive(String8 const &);
+// Delete a directory:
 void                deleteDirectoryRecursive(String8 const &);      // Full recursive delete
 // Accepts full or relative path, but only creates last delimited directory,
 // Returns false if the directory already exists, true otherwise:
@@ -108,30 +111,6 @@ void                createPath(String8 const &);
 String8             getExecutablePath();    // Return the full path of the executable
 // Return the full directory of the current application binary
 String8             getExecutableDirectory();
-// Returns true if the supplied filename is a file which can be read
-// by the calling process:
-bool                fileReadable(String8 const & filename);
-String              loadRaw(String8 const & filename);
-// Setting 'onlyIfChanged' to false will result in the file always being written,
-// regardless of whether the new data may be identical.
-// Leaving 'true' is useful to avoid triggering unwanted change detections.
-// Returns true if the file was written:
-bool                saveRaw(String const & data,String8 const & filename,bool onlyIfChanged=true);
-// Creates the file if it doesn't already exist:
-void                appendRaw(String8 const & filename,String const & data);
-// Returns true if identical:
-bool                equateFilesBinary(String8 const & file1,String8 const & file2);
-// Returns true if identical except for line endings (LF, CRLF or CR):
-// Need to use this for text file regression since some users may have their VCS configured (eg. git default)
-// to auto convert all text files to CRLF on Windows. UTF-8 aware.
-bool                equateFilesText(String8 const & fname0,String8 const & fname1);
-// Returns false if the given file or directory cannot be read.
-// On windows, sets time to 100 nanosecond intervals since 1601.01.01
-// On Unix, sets time in seconds since 1970.01.01
-// The returned time is NOT compatible with std raw time and will in fact crash getDateTimeString().
-// Some *nix systems don't support creation time.
-// WINE API bug returns last modification time.
-// Note that sub-second precision is basically random due to OS filesystem workings.
 bool                getCreationTimePrecise(String8 const & path,uint64 & time);
 // Works for both files and directories.
 // Value in seconds since filesystem resolution only gives about that anyway.
@@ -142,7 +121,7 @@ uint64              getCreationTime(String8 const & path);
 // Value in seconds since filesystem resolution only gives about that anyway.
 // On windows, returns time in seconds since 1601.01.01
 // On unix, returns time in seconds since 1970.01.01
-// Don't use boost::filesystem::last_write_time(); it doesn't work; returns create time on Win.
+// Don't use std::filesystem::last_write_time(); it doesn't work; returns create time on Win.
 uint64              getLastWriteTime(String8 const & node);
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
 // of if any of the sinks don't exist (an error results if any of the sources don't exist):
@@ -181,7 +160,7 @@ struct      PushDir
 };
 
 // All output to 'fgout' will also be logged to a file
-// This can't be in 'FgOut.hpp' due to String8 dependency
+// This can't be in 'FgSerial.hpp' due to String8 dependency
 struct      PushLogFile
 {
     explicit PushLogFile(String8 const & fname,bool append=false)

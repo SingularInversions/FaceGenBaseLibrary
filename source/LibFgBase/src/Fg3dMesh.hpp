@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -24,18 +24,18 @@
 #ifndef FG3DMESH_HPP
 #define FG3DMESH_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgSerial.hpp"
 #include "Fg3dSurface.hpp"
 #include "FgSimilarity.hpp"
-#include "FgCmp.hpp"
 
 namespace Fg {
 
 // Per-vertex morph, typically represented as deltas from base shape (aka blendshape):
-struct  DirectMorph
+struct      DirectMorph
 {
     String8             name;
     Vec3Fs              verts;      // 1-1 correspondence with base verts
+    FG_SER2(name,verts)
 
     DirectMorph() {}
     explicit DirectMorph(String8 const & n) : name(n) {}
@@ -44,53 +44,69 @@ struct  DirectMorph
     inline void         accAsDelta_(float val,Vec3Fs & accVerts) const {mapMulAcc_(verts,val,accVerts); }
     bool                operator==(String8 const & n) const {return (name==n); }    // easy lookup
 };
-typedef Svec<DirectMorph>     DirectMorphs;
+typedef Svec<DirectMorph>   DirectMorphs;
 
 template<class T>
-struct  IdxVec3
+struct      IdxVec3
 {
     uint                idx;            // index into vertex list
-    Vec3F               vec;            // delta or absolute position depending on use
+    Mat<T,3,1>          vec;            // delta or absolute position depending on use
+    FG_SER2(idx,vec)
+
     IdxVec3() : idx{0}, vec{0} {}
-    IdxVec3(uint i,Vec3F const & v) : idx{i}, vec{v} {}
+    IdxVec3(uint i,Mat<T,3,1> v) : idx{i}, vec{v} {}
 };
 typedef IdxVec3<float>  IdxVec3F;
 typedef IdxVec3<double> IdxVec3D;
 typedef Svec<IdxVec3F>  IdxVec3Fs;
 typedef Svec<IdxVec3D>  IdxVec3Ds;
 
-IdxVec3Fs           cIndexedTargMorph(      // create indexed target morph from delta morph
+template<class T>
+void                accTargMorph_(
+    Svec<Mat<T,3,1>> const &    baseVerts,      // size V
+    Svec<IdxVec3<T>> const &    targMorph,      // indices must all be < V
+    T                           coeff,
+    Svec<Mat<T,3,1>> &          acc)            // size V
+{
+    FGASSERT(baseVerts.size() == acc.size());
+    for (IdxVec3<T> const & iv : targMorph)
+        acc[iv.idx] += (iv.vec-baseVerts[iv.idx]) * coeff;
+}
+
+IdxVec3Fs           toIndexedTargMorph(      // create indexed target morph from delta morph
     Vec3Fs const &          base,
     Vec3Fs const &          deltas,         // must be 1-1 with above
     float                   diffMagThreshold=0);
 IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset);
-Vec3Fs              indexedToCorrMorph(IdxVec3Fs const & morph,size_t baseSize);
+Vec3Fs              toDirectDeltaMorph(IdxVec3Fs const & deltaMorph,size_t numVerts);
+IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & deltaMorph,float threshold=0);
 
 // Indexed vertices morph representation is advantageous when only a fraction of the vertices are affected:
 struct      IndexedMorph
 {
     String8             name;
     IdxVec3Fs           ivs;        // element for each vertex which moves with this morph
+    FG_SER2(name,ivs)
+
     IndexedMorph() {}
     IndexedMorph(String8 const & n,IdxVec3Fs const & i) : name{n}, ivs{i} {}
 
-    void                accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const;
+    inline void         accAsTarget_(Vec3Fs const & baseVerts,float coeff,Vec3Fs & accVerts) const
+                            {accTargMorph_(baseVerts,ivs,coeff,accVerts); }
     bool                operator==(String8 const & n) const {return (name==n); }    // easy lookup by name
 };
 typedef Svec<IndexedMorph>  IndexedMorphs;
 
-size_t              cNumVerts(IndexedMorphs const & ims);       // Number of target vertices in given indexed morphs
-IndexedMorph        deltaToIndexedMorph(DirectMorph const & morph,float diffMagThreshold=0);
-IndexedMorph        deltaToTargetMorph(Vec3Fs const & base,IndexedMorph const & morph);
+size_t              sumSizes(IndexedMorphs const & ims);       // Number of target vertices in given indexed morphs
 
-void                accDeltaMorphs(
+void                accDeltaMorphs_(
     DirectMorphs const &        deltaMorphs,
-    Floats const &              coord,
-    Vec3Fs &                    accVerts);      // MODIFIED: morphing delta accumualted here
+    Floats const &              coeffs,
+    Vec3Fs &                    acc);           // MODIFIED: delta morphs accumulated to these values
 
 // This version of target morph application is more suited to SSM dataflow, where the
 // target positions have been transformed as part of the 'allVerts' array:
-void                accTargetMorphs(
+void                accTargetMorphs_(
     Vec3Fs const &              allVerts,       // Base verts plus all target morph verts
     IndexedMorphs const &       targMorphs,     // Only 'baseInds' is used.
     Floats const &              coord,          // morph coefficient for each target morph
@@ -145,6 +161,7 @@ struct  MarkedVert
 {
     uint                idx;
     String              label;
+    FG_SER2(idx,label)
 
     MarkedVert() : idx {0} {}
     explicit MarkedVert(uint i) : idx(i) {}
@@ -160,37 +177,41 @@ struct  Mesh
 {
     String8                 name;           // Optional. Not loaded/saved to file. Useful when passing mesh as arg
     Vec3Fs                  verts;          // Base shape
-    Vec2Fs                  uvs;            // OTCS. Values outside [0,1) could mean wraparound but should be avoided
-    Surfs                   surfaces;
+    // UVs are in OpenGL Texture CS (OTCS): X left to right, Y bottom to top, [0,1) unless otherwise noted.
+    // Values outside [0,1) could mean texture atlas but should be avoided:
+    Vec2Fs                  uvs;
+    Surfs                   surfaces;       // All vert indices must be < verts.size() and all UV indices, if present, must be < uvs.size()
     DirectMorphs            deltaMorphs;
     IndexedMorphs           targetMorphs;
     MarkedVerts             markedVerts;
     Joints                  joints;
     JointDofs               jointDofs;
+    FG_SER6(verts,uvs,surfaces,deltaMorphs,targetMorphs,markedVerts)
 
     Mesh() {}
     explicit Mesh(Vec3Fs const & vts) : verts(vts) {}
-    explicit Mesh(TriSurf const & ts) : verts{ts.verts}, surfaces{{Surf{ts.tris}}} {}
-    explicit Mesh(QuadSurf const & qs) : verts{qs.verts}, surfaces{{Surf{qs.quads}}} {}
-    Mesh(Vec3Fs const & vts,Vec3UIs const & ts) : verts(vts), surfaces(svec(Surf(ts))) {}
-    Mesh(Vec3Fs const & vts,Vec4UIs const & quads) : verts(vts), surfaces{{Surf{quads}}} {}
-    Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs) {}
-    Mesh(Vec3Fs const & v,Surfs const & s,DirectMorphs const & m) : verts(v), surfaces(s), deltaMorphs(m) {}
     explicit Mesh(TriSurfLms const & tsf);
-    Mesh(String8 const & n,TriSurf const & ts) : name{n}, verts{ts.verts}, surfaces{Surf{ts.tris}} {}
+    Mesh(Vec3Fs const & v,Vec3UIs const & t,Vec4UIs const & q={}) : verts(v), surfaces{{t,q}} {}
+    Mesh(Vec3Fs const & vts,Surfs const & surfs);           // removes any UV indices in 'surfs'
+    Mesh(Vec3Fs const & v,Vec2Fs const & u,Surfs const & s,DirectMorphs const & m={},IndexedMorphs const & im={})
+        : verts(v), uvs(u), surfaces(s), deltaMorphs(m), targetMorphs{im} {}
+    Mesh(String8 const & n,Vec3Fs const & v,Vec2Fs const & u={},Surfs const & s={},DirectMorphs const & m={})
+        : name{n}, verts{v}, uvs{u}, surfaces{s}, deltaMorphs{m} {}
+    Mesh(String8 const & n,TriSurf const & ts) : name{n}, verts{ts.verts}, surfaces{{ts.tris,Vec4UIs{}}} {}
 
-    size_t              allVertsSize() const;               // size of below
+    void                validate() const;               // Throws a description of problem if the mesh is not valid
+    size_t              allVertsSize() const;           // size of below
     // Return base verts plus all target morph verts plus all animPart bones:
     Vec3Fs              allVerts() const;
-    void                updateAllVerts(Vec3Fs const &);     // Update verts / targetMorphs / joints
-    uint                numPolys() const;                  // tris plus quads over all surfaces
-    uint                numTriEquivs() const;               // tris plus 2*quads over all surfaces
+    void                updateAllVerts(Vec3Fs const &); // Update verts / targetMorphs / joints
+    uint                numPolys() const;               // tris plus quads over all surfaces
+    uint                numTriEquivs() const;           // tris plus 2*quads over all surfaces
     Vec3UI              getTriEquivVertInds(uint idx) const;
-    NPolys<3>           getTriEquivs() const;               // Over all surfaces
-    size_t              numTris() const;                    // Just the number of tris over all surfaces
-    size_t              numQuads() const;                   // Just the number of quads over all surfaces
+    NPolys<3>           getTriEquivs() const;           // Over all surfaces
+    size_t              numTris() const;                // Just the number of tris over all surfaces
+    size_t              numQuads() const;               // Just the number of quads over all surfaces
     Surf const &        surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
-    size_t              surfPointNum() const;              // Over all surfaces
+    size_t              surfPointNum() const;           // Over all surfaces
     Vec3F               surfPointPos(Vec3Fs const & verts,size_t num) const;
     Vec3F               surfPointPos(size_t num) const {return surfPointPos(verts,num); }
     Opt<Vec3F>          surfPointPos(String const & label) const;
@@ -198,7 +219,7 @@ struct  Mesh
     Vec3Fs              surfPointPositions(Strings const & labels) const;
     Vec3Fs              surfPointPositions() const;
     Vec3F               markedVertPos(String const & name_) const {return verts[findFirst(markedVerts,name_).idx]; }
-    Vec3Fs              markedVertPositions() const;        // Return positions of all marked verts
+    Vec3Fs              markedVertPositions() const;    // Return positions of all marked verts
     // Returns the marked verts with the given labels (including duplicates) in the given order:
     Vec3Fs              markedVertPositions(Strings const & labels) const;
     NameVec3Fs          markedVertsAsNameVecs() const;
@@ -271,12 +292,11 @@ struct  Mesh
     Vec3Fs              poseShape(Vec3Fs const & allVerts,std::map<String8,float> const & poseVals) const;
 
     // EDITING:
-    void                addSurfaces(Surfs const & s);
+    void                addSurface(TriSurf const &,String8 const & surfName="");
     void                transform_(Affine3F const &);     // Transform each data type appropriately
     void                transform_(SimilarityD const & sim) {transform_(Affine3F{sim.asAffine()}); }
     void                convertToTris();
     void                removeUVs();
-    void                checkValidity() const;          // Throws if the mesh is not valid
 };
 typedef Svec<Mesh>      Meshes;
 std::ostream &          operator<<(std::ostream &,Mesh const &);
@@ -321,6 +341,8 @@ TriSurf         cSphere4(size_t subdivisions);
 // Create unit radius sphere centred at origin by subdividing an icosahedron and renormalizing the
 // vertex positions 'subdivision' times (0 - 20 tris, 1 - 80 tris, 2 - 320 tris, 3 - 1280 tris):
 TriSurf         cSphere(size_t subdivisions);
+// Square in XY centred at zero forming prism starting at Z=0 with height 'len'
+TriSurf         cSquarePrism(float sideLen,float height);
 
 Mesh            removeDuplicateFacets(Mesh const &);
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
@@ -342,6 +364,15 @@ Mesh            mergeMeshes(Ptrs<Mesh> meshPtrs);
 inline Mesh     mergeMeshes(Meshes const & ms) {return mergeMeshes(mapAddr(ms)); }
 // Doesn't preserve uvs, surface points or marked verts:
 Mesh            fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask);
+// Use the UV layout to find the spatial position of the centre of each pixel in a map of given dims.
+// The returned pixel values have components set to lims<float>::max() if they are outside the UV cover.
+// The number of overlaps and the coverage are printed out.
+ImgV3F          pixelsToPositions(
+    Vec3Fs const &      verts,
+    Vec3UIs const &     vtIndss,        // vertex tri indss
+    Vec2Fs const &      uvs,
+    Vec3UIs const &     uvIndss,        // UV tri indss (must be 1-1 with vtIndss)
+    Vec2UI              dims);
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
 ImgUC           getUvCover(Mesh const & mesh,Vec2UI dims);
 // Wireframe image of UV layout for each surface:
@@ -377,9 +408,10 @@ Mesh            cMirrorX(Mesh const &);
 // points not ending in 'L' or 'R' have X value set to 0:
 NameVec3Fs      mirrorXFuse(NameVec3Fs const & nvs);
 // Mirrors geometry around X=0 plane, fused through vertices on that plane (X value exactly 0.0).
-// All input verts must have X>=0. Surface points not mirrored.
+// Mirrors UVs around X=0.5, fused through vertices on that plane.
 // Delta morphs are mirrored but they must be X=0 symmetry friendly or ugliness will result.
-// UVs, target morphs, etc. discarded.
+// Surface points are mirrored if they end in 'L' or 'R'.
+// Target morphs, etc. discarded.
 Mesh            mirrorXFuse(Mesh const & in);
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
 Mesh            copySurfaceStructure(Mesh const & from,Mesh const & to);

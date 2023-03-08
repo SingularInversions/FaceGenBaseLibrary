@@ -4,4 +4,4 @@ project(LibTpStb)
 
 add_library(LibTpStb INTERFACE)
 
-target_include_directories(LibTpStb INTERFACE stb)
+target_include_directories(LibTpStb INTERFACE  ${CMAKE_CURRENT_SOURCE_DIR})

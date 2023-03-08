@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -9,9 +9,7 @@
 #ifndef FGPARSE_HPP
 #define FGPARSE_HPP
 
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
-#include "FgString.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -24,7 +22,7 @@ bool                containsOnlyDigits(String const &);
 // tokens:
 Strings             tokenize(String const &);
 // Split a string into non-empty lines at CR/LF and remove all CR/LF characters.
-// Use this instead of useless std::getline which leaves in CR characters on Windows.
+// Use this instead of std::getline which leaves in CR characters on Windows.
 // If 'commentFlag' is non-null, then any line starting with that character will be discarded.
 Strings             splitLines(String const & src,char commentFlag=0);
 String32s           splitLines(String32 const & src,char32_t commentFlag=0);
@@ -46,7 +44,6 @@ std::map<std::string,Strings> loadCsvToMap(
 void                saveCsv(String8 const & fname,const Stringss & csvLines);
 // Split up a string based on a seperator.
 // Output does not include separators or (by default) empty strings.
-// More convenient than boost::split
 Strings             splitChar(String const & str,char sep=' ',bool includeEmptyStrings=false);
 // Breaks the given string into a vector of strings according to any whitespace, which is 
 // removed. Quotation marks can be used to enclose symbols containing whitespace.

@@ -15,7 +15,7 @@
 /data/_overwrite_baselines.flag
 
 # Output test files:
-/_log
+/test-output
 
 # Visual Studio solution output (leaving .sln for inclusion):
 /source/.vs/

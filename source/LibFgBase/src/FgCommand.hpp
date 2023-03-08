@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,6 @@ void                doMenu(
     Cmds const &        cmds,
     bool                optionAll=false,    // Give option to run all sub-commands in sequence
     bool                optionQuiet=false,  // Give option to silence console output
-    bool                optionKeep=false,   // Give option to keep test files
     String const &      notes=String{});    // Printed out below the list of commands under the title NOTES:
 
 // Creates a temporary directory with a name giving the CL args and date/time on construction,
@@ -53,14 +52,11 @@ struct      TestDir
 #define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(toLower(args[0]));
 
 // Set the root test directory. Useful for sandboxed platforms:
-void            fgSetRootTestDir(String8 const & dir);
+void            setRootTestDir(String8 const & dir);
 // Make a copy of a data file in current directory. Throws if file already exists.
 void            copyFileToCurrentDir(String const & nameRelativeToDataDir);
 // fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
 void            runCmd(CmdFunc const & func,String const & argStr);
-
-// Are we currently configured to keep temporary files ?
-bool fgKeepTempFiles();
 
 }
 

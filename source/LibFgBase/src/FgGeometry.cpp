@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgGeometry.hpp"
-#include "FgStdVector.hpp"
+#include "FgSerial.hpp"
 #include "FgMatrixSolver.hpp"
 #include "FgCommand.hpp"
 #include "FgKdTree.hpp"
@@ -26,14 +26,12 @@ using namespace std;
 
 namespace Fg {
 
-double
-cArea(Vec2D p0,Vec2D p1,Vec2D p2)
+double              cArea(Vec2D p0,Vec2D p1,Vec2D p2)
 {
     return (p1[0]-p0[0]) * (p2[1]-p0[1]) - (p1[1]-p0[1]) * (p2[0]-p0[0]);
 }
 
-VecMagD
-closestPointInSegment(Vec3D const & p0,Vec3D const & p1)
+VecMagD             closestPointInSegment(Vec3D const & p0,Vec3D const & p1)
 {
     VecMagD    ret;
     Vec3D    segment = p1-p0;
@@ -62,8 +60,7 @@ closestPointInSegment(Vec3D const & p0,Vec3D const & p1)
     return ret;
 }
 
-Opt<Vec3D>
-cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
+Opt<Vec3D>          cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
 {
     Opt<Vec3D>      ret;
     Vec2D           u0 = v0-point,
@@ -79,8 +76,7 @@ cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
     return ret;
 }
 
-Opt<Vec3D>
-cBarycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
+Opt<Vec3D>          cBarycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>      ret;
     // Transform into the coordinate system v0 = (0,0), v1 = (1,0), v2 = (0,1) by defining
@@ -106,25 +102,35 @@ cBarycentricCoord(Vec3D point,Vec3D v0,Vec3D v1,Vec3D v2)
     return Vec3D(1-bc[0]-bc[1],bc[0],bc[1]);
 }
 
-Plane
-cPlane(Vec3D p0,Vec3D p1,Vec3D p2)
+Plane               cPlane(Vec3D p0,Vec3D p1,Vec3D p2)
 {
-    Plane           ret;
-    ret.norm = crossProduct(p1-p0,p2-p0);    // Surface normal, not normalized
-    FGASSERT(ret.norm.mag() > 0.0);
-    ret.scalar = -cDot(ret.norm,p0);
-    return ret;
+    Vec3D               unorm = crossProduct(p1-p0,p2-p0);    // unnormalized surface direction (CC winding)
+    double              mag = cMag(unorm),
+                        // normalizing factor will be 0 if points are degenerate, giving invalid() Plane
+                        fac = (mag == 0.0) ? 0.0 : 1.0 / sqrt(mag);
+    Vec3D               norm = unorm * fac;
+    // desired plane equation is n . p + s = 0, hence s = - n . p
+    return {norm,-cDot(norm,p0)};
 }
 
-Vec4D
-linePlaneIntersect(Vec3D r,Plane p)
+Plane               cTangentPlane(Vec3D const & query,VecMagD const & delta)
 {
-    double  a = -p.scalar;
+                        // an invalid delta will result in an invalid Plane:
+    double              mag = delta.valid() ? delta.mag : 0.0,
+                        // and zero delta will also result in an invalid Plane:
+                        fac = (mag == 0.0) ? 0.0 : 1.0 / sqrt(mag);
+    Vec3D               norm = delta.vec * fac;
+    // desired plane equation is n . (q+d) + s = 0, hence s = - n . (q+d)
+    return {norm,-cDot(norm,query+delta.vec)};
+}
+
+Vec4D               linePlaneIntersect(Vec3D r,Plane p)
+{
+    double  a = -p.offset;
     return Vec4D(a*r[0],a*r[1],a*r[2],cDot(r,p.norm));
 }
 
-int
-pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2)
+int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2)
 {
     Vec2D    s0 = v1-v0,
                 s1 = v2-v1,
@@ -146,8 +152,7 @@ pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2)
     return 0;
 }
 
-Opt<Vec3D>
-lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
+Opt<Vec3D>          lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
 {
     Opt<Vec3D>         ret;
     // First calculate intersection with plane (in CS with 'pnt' as origin):
@@ -173,8 +178,7 @@ lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
     return ret;
 }
 
-static double
-xformErr(Vec3Fs const & verts,Affine3F const & mirror)
+static double       xformErr(Vec3Fs const & verts,Affine3F const & mirror)
 {
     KdTree              kdt(verts);
     double              err = 0.0;
@@ -183,8 +187,7 @@ xformErr(Vec3Fs const & verts,Affine3F const & mirror)
     return err;
 }
 
-double
-findSaggitalSymmetry(Vec3Fs const & verts,Affine3F & mirror)
+double              findSaggitalSymmetry(Vec3Fs const & verts,Affine3F & mirror)
 {
     Vec3F           centre = cMean(verts);
     Mat33F          mirrorX {-1,0,0, 0,1,0, 0,0,1};
@@ -208,39 +211,38 @@ findSaggitalSymmetry(Vec3Fs const & verts,Affine3F & mirror)
 
 namespace {
 
-void
-testClosestPointInSegment(CLArgs const &)
+void                testClosestPointInSegment(CLArgs const &)
 {
-    Vec3D    p0(1.0,0.0,0.0),
-                p1(0.0,1.0,0.0),
-                p2(2.0,-1.0,0.0);
-    Mat33D          rot = Mat33D::identity();
+    Vec3D               p0 {1,0,0},
+                        p1 {0,1,0},
+                        p2 {2,-1,0};
+    Mat33D              rot = Mat33D::identity();
+    VecMagD             delta;
+    FGASSERT(!delta.valid());           // test that operator==<double> works with current compile flags
     for (uint ii=0; ii<10; ++ii) {
-        Vec3D    r0 = rot * p0,
-                    r1 = rot * p1,
-                    r2 = rot * p2;
-        VecMagD    delta;
+        Vec3D               r0 = rot * p0,
+                            r1 = rot * p1,
+                            r2 = rot * p2;
         // Degenerate case:
         delta = closestPointInSegment(r0,r0);
         FGASSERT(isApproxEqualPrec(delta.mag,1.0));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{1,0,0},30));
         // edge closest point (both directions):
         delta = closestPointInSegment(r0,r1);
         FGASSERT(isApproxEqualPrec(delta.mag,0.5));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{0.5,0.5,0},30));
         delta = closestPointInSegment(r1,r2);
         FGASSERT(isApproxEqualPrec(delta.mag,0.5));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(0.5,0.5,0.0),30));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{0.5,0.5,0},30));
         // vertex closest point:
         delta = closestPointInSegment(r0,r2);
         FGASSERT(isApproxEqualPrec(delta.mag,1.0));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D(1.0,0.0,0.0),30));
+        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{1,0,0},30));
         rot = QuaternionD::rand().asMatrix();
     }
 }
 
-void
-testBarycentricCoord(CLArgs const &)
+void                testBarycentricCoord(CLArgs const &)
 {
     randSeedRepeatable();
     // Test points inside triangle:
@@ -285,8 +287,7 @@ testBarycentricCoord(CLArgs const &)
     }
 }
 
-void
-testBarycentricCoord3(CLArgs const &)
+void                testBarycentricCoord3(CLArgs const &)
 {
     randSeedRepeatable();
     fgout << fgnl << "Barycentric 3d: " << fgpush;
@@ -308,28 +309,39 @@ testBarycentricCoord3(CLArgs const &)
     fgout << fgpop;
 }
 
-void
-testPlane(CLArgs const &)
+void                testPlane(CLArgs const &)
 {
-    Vec3D       v0(0,0,0),
-                v1(1,0,0),
-                v2(0,1,0);
+    Vec3D           e0 {0,0,0},
+                    e1 {1,0,0},
+                    e2 {0,1,0},
+                    e3 {0,0,1};
+    {
+        Plane               p = cPlane(e0,e1,e2);       // i,j,k
+        FGASSERT((p.norm == e3) && (p.offset == 0.0));
+        p = cPlane(e1,e1*2,e1*3);                       // colinear
+        FGASSERT(p.invalid());
+        p = cPlane(e1,e2,e2);                           // degenerate
+        FGASSERT(p.invalid());
+    }
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
-        Affine3D  s = similarityRand().asAffine();
-        Plane       pln = cPlane(s*v0,s*v1,s*v2);
-        double      a = randUniform(),
-                    b = randUniform(),
-                    c = 1.0 - a - b;
-        Vec3D       pt = s * (v0*a + v1*b + v2*c);
-        double      r = cDot(pt,pln.norm),
-                    mag = sqrt(pln.norm.mag()+sqr(pln.scalar));
-        FGASSERT(isApproxEqualAbsPrec(-r,pln.scalar,mag));
+        SimilarityD         sim = similarityRand();
+        Affine3D            xf = sim.asAffine();
+        Plane               plane = cPlane(xf*e0,xf*e1,xf*e2);
+        double              a = randUniform(),
+                            b = randUniform(),
+                            c = 1.0 - a - b,                // a,b,c are trilinear coords
+                            d = randNormal();               // test *signed* distance
+        Vec3D               p0 = e0*a + e1*b + e2*c,        // on plane
+                            p1 = p0 + e3 * d,               // off plane
+                            query0 = xf * p0,
+                            query1 = xf * p1;
+        FGASSERT(isApproxEqual(plane.distance(query0),0.0,epsBits(30)));
+        FGASSERT(isApproxEqual(plane.distance(query1),d*sim.scale,epsBits(30)));
     }
 }
 
-void
-testLinePlaneIntersect(CLArgs const &)
+void                testLinePlaneIntersect(CLArgs const &)
 {
     Vec2D       v0(0,0),
                 v1(1,0),
@@ -352,25 +364,22 @@ testLinePlaneIntersect(CLArgs const &)
     }
 }
 
-void
-pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
+void                pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
     FGASSERT(pointInTriangle(pt,v0,v1,v2) == res);
     FGASSERT(pointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
 }
 
-void
-pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
+void                pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
     for (size_t ii=0; ii<5; ++ii) {
-        Mat22D     rot = matRotate(randUniform()*2.0*pi());
-        Vec2D        trn(randUniform(),randUniform());
-        Affine2D      s(rot,trn);
+        Mat22D          rot = matRotate(randUniform()*2.0*pi());
+        Vec2D           trn(randUniform(),randUniform());
+        Affine2D        s(rot,trn);
         pit0(s*pt,s*v0,s*v1,s*v2,res); }
 }
 
-void
-testPointInTriangle(CLArgs const &)
+void                testPointInTriangle(CLArgs const &)
 {
     Vec2D    v0(0.0,0.0),
                 v1(1.0,0.0),
@@ -397,8 +406,7 @@ testPointInTriangle(CLArgs const &)
     pit1(Vec2D(-d,-d),v0,v1,v2,0);
 }
 
-void
-testLineTriIntersect(CLArgs const &)
+void                testLineTriIntersect(CLArgs const &)
 {
     double          s = 0.1;
     Vec3D           v0(0,0,0),
@@ -418,8 +426,7 @@ testLineTriIntersect(CLArgs const &)
 }
 
 // Test levi-civita tensor-based parallelogram area formula:
-void
-testTensorArea(CLArgs const &)
+void                testTensorArea(CLArgs const &)
 {
     randSeedRepeatable();
     for (size_t tt=0; tt<10; ++tt) {
@@ -442,8 +449,7 @@ testTensorArea(CLArgs const &)
     }
 }
 
-void
-testmFindSaggitalSymmetry(CLArgs const &)
+void                testmFindSaggitalSymmetry(CLArgs const &)
 {
     Mesh                baseMesh = loadTri(dataDir() + "tools/internal/InternalBaseFace.tri");
     Affine3F            mirror;
@@ -453,17 +459,15 @@ testmFindSaggitalSymmetry(CLArgs const &)
     viewMesh({baseMesh,tmpMesh},true);
 }
 
-
 }   // namespace
 
-void
-testGeometry(CLArgs const & args)
+void                testGeometry(CLArgs const & args)
 {
     Cmds            cmds {
         {testClosestPointInSegment,"cps","closest point in segment"},
         {testBarycentricCoord,"ptb","point to barycentric coord"},
         {testBarycentricCoord3,"ptb3","point to barycentric coord 3D"},
-        {testPlane,"ptp","points to plane 3D"},
+        {testPlane,"plane","plane creation and closest point to plane in 3D"},
         {testLinePlaneIntersect,"lpi","line plane intersect"},
         {testPointInTriangle,"pit","point in triangle 2D"},
         {testLineTriIntersect,"lineTri","line triangle intersect"},
@@ -472,8 +476,7 @@ testGeometry(CLArgs const & args)
     doMenu(args,cmds,true);
 }
 
-void
-testmGeometry(CLArgs const & args)
+void                testmGeometry(CLArgs const & args)
 {
     Cmds            cmds = {
         {testmFindSaggitalSymmetry,"sagg","find saggital symmetry"},

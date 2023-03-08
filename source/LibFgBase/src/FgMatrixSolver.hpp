@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,14 +7,15 @@
 #ifndef FGMATRIXSOLVER_HPP
 #define FGMATRIXSOLVER_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgSerial.hpp"
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 
 namespace Fg {
 
 // Returns the U of the U^T * U Cholesky decomposition of a symmetric positive definite matrix,
-MatUT3D             cCholesky(MatS3D spd);      // spd cannot be singular
+MatUT2D             cCholesky(MatS2D spd);      // spd must be symmetric positive definite
+MatUT3D             cCholesky(MatS3D spd);      // "
 
 struct      UTUDecomp
 {
@@ -39,18 +40,47 @@ void                cEigsRsm_(
     Doubles &           vals,                   // RETURNED: Eigenvalues, smallest to largest
     MatD &              vecs);                  // RETURNED: Col vectors are respective eigenvectors
 
-// Real symmetric matrix represented by its eigen decomposition: H = vecs * Diag(vals) * vecs^T
+// Real symmetric matrix represented by its eigen decomposition: RSM = vecs * Diag(vals) * vecs^T
 struct      RsmEigs
 {
-    Doubles             vals;                   // Eigenvalues from largest to smallest
+    Doubles             vals;                   // Eigenvalues
     MatD                vecs;                   // Column vectors are the respective eigenvectors
+    FG_SER2(vals,vecs)
 
     MatD                rsm() const;            // Compute represented real symmetric matrix
-    MatD                mhlbsToWorld() const;   // Return vecs * D(vals^-0.5). Throws if there are eigenvals <= 0
-    // Return inverse of hessian defined by this eigenspectrum. Throws if any 0 eigenvalues:
-    MatD                inverse() const;
+    // turns a covariance matrix RsmEigs into a precision matrix and vice versa.
+    // throws if any of 'vals' are zero:
+    RsmEigs             inverse() const
+    {
+        return {
+            mapCall(vals,[](double v){FGASSERT(v!=0); return 1.0/v; }),
+            vecs
+        };
+    }
 };
 std::ostream & operator<<(std::ostream &,RsmEigs const &);
+
+// Real symmetric matrix represented by its square root eigen decomposition RSM = sqrt * sqrt^T
+// where: sqrt = vecs * Diag(vals)
+struct      RsmSqrt
+{
+    Doubles             vals;       // must all be > 0
+    MatD                vecs;
+    FG_SER2(vals,vecs)
+
+    // if the matrix represented is a covariance matrix, these are the Mahalanobis <-> world
+    // coordinate transforms:
+    Doubles             mhlbsToWorld(Doubles const & mhlbs) const {return vecs * mapMul(mhlbs,vals); }
+    Doubles             worldToMhlbs(Doubles const & world) const {return mapDiv(world,vals) * vecs; }
+};
+
+inline RsmSqrt      cRsmSqrt(RsmEigs const & re)        // throws if any eigenvalues are <= 0
+{
+    return {
+        mapCall(re.vals,[](double v){FGASSERT(v>0); return sqrt(v); }),
+        re.vecs
+    };
+}
 
 inline RsmEigs      cEigsRsm(MatD const & rsm)
 {
@@ -60,15 +90,17 @@ inline RsmEigs      cEigsRsm(MatD const & rsm)
 }
 
 // Real eigenvalues and eigenvectors of a real symmetric square const-size matrix:
-template<uint dim>
+template<uint D>
 struct      EigsRsmC
 {
-    Mat<double,dim,1>       vals;   // Eigenvalues
-    Mat<double,dim,dim>     vecs;   // Column vectors are the respective eigenvectors.
+    Mat<double,D,1>         vals;   // Eigenvalues
+    Mat<double,D,D>         vecs;   // Column vectors are the respective eigenvectors.
 };
+typedef EigsRsmC<3>         EigsRsm3;
+typedef EigsRsmC<4>         EigsRsm4;
 
-template<uint dim>
-std::ostream &      operator<<(std::ostream & os,EigsRsmC<dim> const & e)
+template<uint D>
+std::ostream &      operator<<(std::ostream & os,EigsRsmC<D> const & e)
 {
     return os
         << fgnl << "Eigenvalues: " << e.vals.transpose()
@@ -76,18 +108,19 @@ std::ostream &      operator<<(std::ostream & os,EigsRsmC<dim> const & e)
 }
 
 // Eigenvalues of a square real symmetric matrix, returned in order from smallest to largest eigval:
-EigsRsmC<3>         cEigsRsm(Mat33D const & rsm);
-EigsRsmC<4>         cEigsRsm(Mat44D const & rsm);
+EigsRsm3            cEigsRsm(Mat33D const & rsm);
+EigsRsm3            cEigsRsm(MatS3D const & rsm);
+EigsRsm4            cEigsRsm(Mat44D const & rsm);
 
-template<uint dim>
+template<uint D>
 struct      EigsC
 {
-    Mat<std::complex<double>,dim,1>   vals;
-    Mat<std::complex<double>,dim,dim> vecs;   // Column vectors are the respective eigenvectors.
+    Mat<std::complex<double>,D,1>       vals;
+    Mat<std::complex<double>,D,D>       vecs;   // Column vectors are the respective eigenvectors.
 };
 
-template<uint dim>
-std::ostream &      operator<<(std::ostream & os,const EigsC<dim> & e)
+template<uint D>
+std::ostream &      operator<<(std::ostream & os,const EigsC<D> & e)
 {
     return os
         << fgnl << "Eigenvalues: " << e.vals.transpose()

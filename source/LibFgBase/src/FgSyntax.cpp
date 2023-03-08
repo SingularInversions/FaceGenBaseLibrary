@@ -1,14 +1,12 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
-#include "FgStdVector.hpp"
-#include "FgStdString.hpp"
+
 #include "FgSyntax.hpp"
-#include "FgOut.hpp"
 #include "FgFileSystem.hpp"
 #include "FgParse.hpp"
 #include "FgConio.hpp"
@@ -36,7 +34,7 @@ Syntax::Syntax(CLArgs const & args,String const & syntax)
 Syntax::~Syntax()
 {
     size_t      unused = m_args.size() - m_idx - 1;
-    if ((unused > 0) && (!std::uncaught_exception()))
+    if ((unused > 0) && (uncaught_exceptions() == 0))
         fgout << fgnl << "WARNING: last " << unused
             << " argument(s) not used : " << cat(cTail(m_args,unused)," ");
 }

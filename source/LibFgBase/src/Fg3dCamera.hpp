@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -59,10 +59,6 @@
 //    Y - viewer’s up       [0,1]
 //    Z - Negative inverse of the depth in frustum, used for z-buffer.
 //
-// OTCS := OGL Texture CS
-//    X - viewer’s right    [0,1]
-//    Y - viewer’s up       [0,1]
-//
 
 #ifndef FG3DCAMERA_HPP
 #define FG3DCAMERA_HPP
@@ -73,16 +69,15 @@
 
 namespace Fg {
 
-inline AffineEw2D   cOtcsToIucs() {return AffineEw2D {Vec2D{1,-1},Vec2D{0,1}}; }
-inline AffineEw2D   cIucsToOtcs() {return AffineEw2D {Vec2D{1,-1},Vec2D{0,1}}; }
-inline AffineEw2D   cOtcsToIpcs(Vec2UI imgDims) {return AffineEw2D {Mat22D(0,1,1,0),Mat22D(0,imgDims[0],0,imgDims[1])}; }
-inline AffineEw2D   cOtcsToIrcs(Vec2UI dims) {return {Vec2D(dims[0],dims[1]*-1.0),Vec2D{-0.5,dims[1]-0.5}}; }
-inline QuaternionD  cOecsToFccs() {return QuaternionD(pi(),0); }      // Same as negating Y,Z
 AffineEw2D          cItcsToIucs(Vec2D const & halfFovItcs);     // Assuming principal point at centre of image
+inline AffineEw2D   cIucsToOtcs() {return {Vec2D{1,-1},Vec2D{0,1}}; }   // flip Y
+inline QuaternionD  cOecsToFccs() {return cRotateX(pi()); }     // Same as negating Y,Z
+AffineEw2D          cOtcsToIpcs(Vec2UI imgDims);
+AffineEw2D          cOtcsToIrcs(Vec2UI dims);
+inline AffineEw2D   cOtcsToIucs() {return {Vec2D{1,-1},Vec2D{0,1}}; }   // flip Y
 
 template<typename T>
-Mat<T,4,4>
-projectOecsToItcs()
+Mat<T,4,4>          projectOecsToItcs()
 {
     return Mat<T,4,4> {{{
         1, 0, 0, 0,
@@ -99,25 +94,19 @@ struct  Frustum
     double          nearHalfHeight;     // > 0
     double          nearDist;           // > 0
     double          farDist;            // > nearDist
-
-    FG_SERIALIZE4(nearHalfWidth,nearHalfHeight,nearDist,farDist);
 };
-std::ostream &
-operator<<(std::ostream &,Frustum const &);
+std::ostream &      operator<<(std::ostream &,Frustum const &);
 
-struct  Camera
+struct      Camera
 {
     SimilarityD     modelview;      // Transform world to OECS
     Frustum         frustum;        // Defines camera projection
     AffineEw2D      itcsToIucs;     // Defines projection for raycasting
-
-    FG_SERIALIZE3(modelview,frustum,itcsToIucs);
-
     // Projection from world to IPCS (and depth to inverse depth) for this camera (homogeneous representation):
     Mat44F          projectIpcs(Vec2UI dims) const;
 };
 
-struct  CameraParams
+struct      CameraParams
 {
     Mat32D          modelBounds;
     // Model rotation around centre of model bounds:

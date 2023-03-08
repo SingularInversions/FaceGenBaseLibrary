@@ -1,5 +1,5 @@
 //
-// Copyright (C); Singular Inversions Inc. (facegen.com) 2011
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,7 +11,6 @@
 
 namespace Fg {
 
-Cmd     getCmdMesh();
 void    cmdCons(CLArgs const &);
 Cmds    getViewCmds();
 Cmd     getCompileShadersCmd();

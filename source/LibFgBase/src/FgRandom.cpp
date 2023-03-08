@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgRandom.hpp"
-#include "FgDiagnostics.hpp"
+#include "FgSerial.hpp"
 #include "FgImage.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgMath.hpp"
@@ -39,7 +39,9 @@ uint32              randUint() {return uint32(rng.gen()); }
 
 uint                randUint(uint size)
 {
-    FGASSERT(size>1);
+    FGASSERT(size>0);
+    if (size == 1)
+        return 0;
     // Lightweight class, not a performance issue to construct each time:
     uniform_int_distribution<uint> d(0,size-1);     // Convert from inclusive to exclusive upper bound
     return d(rng.gen);
@@ -78,14 +80,6 @@ Doubles             cRandNormals(size_t num,double mean,double stdev)
     return ret;
 }
 
-Floats              randNormalFs(size_t num,float mean,float stdev)
-{
-    Floats      ret(num);
-    for (size_t ii=0; ii<num; ++ii)
-        ret[ii] = mean + stdev * randNormalF();
-    return ret;
-}
-
 static char         randChar()
 {
     uint    val = randUint(26+26+10);
@@ -117,7 +111,7 @@ double              randNearUnit()
 
 Doubles             randNearUnits(size_t num)
 {
-    return generateSvec<double>(num,[](size_t){return randNearUnit(); });
+    return genSvec<double>(num,[](size_t){return randNearUnit(); });
 }
 
 namespace {
@@ -132,7 +126,7 @@ void                normGraph(CLArgs const &)
                         S = 1000000,
                         sz = numStdevs * 2 * binsPerStdev;
     Sizes               histogram(sz,0);
-    Affine1D            randToHist(VecD2(-double(numStdevs),numStdevs),VecD2(0,sz));
+    Affine1D            randToHist {-double(numStdevs),double(numStdevs),0,double(sz)};
     for (size_t ii=0; ii<S; ++ii) {
         int                 rnd = round<int>(randToHist * randNormal());
         if ((rnd >= 0) && (rnd < int(sz)))

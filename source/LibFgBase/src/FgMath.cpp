@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -171,12 +171,12 @@ static void         testZorder()
     FGASSERT(r0 == r1);
 }
 
-double          logit(double f)
+double              logit(double f)
 {
     FGASSERT((f > 0.0) && (f < 1.0));
     return log(f / (1.0-f));
 }
-double          sigmoidqInv(double f)
+double              sigmoidqInv(double f)
 {
     double          ff = sqr(f);
     FGASSERT(ff < 1.0);

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -205,7 +205,7 @@ void                cmdGraph(CLArgs const & args)
         }
         if (pathToExt(syn.peekNext()) != "txt")
             break;
-        Strings             lines = splitLines(loadRaw(syn.next()));
+        Strings             lines = splitLines(loadRawString(syn.next()));
         Doubles             data;
         for (string const & line : lines) {
             Opt<double>         opt = fromStr<double>(line);

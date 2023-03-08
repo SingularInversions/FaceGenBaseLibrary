@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,10 +8,6 @@
 #ifndef FGMATRIXV_HPP
 #define FGMATRIXV_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgStdVector.hpp"
-#include "FgTypes.hpp"
-#include "FgDiagnostics.hpp"
 #include "FgMatrixCBase.hpp"    // Used to represent dimensions 
 #include "FgRandom.hpp"
 
@@ -20,21 +16,22 @@ namespace Fg {
 template <class T>
 struct  MatV
 {
-    uint            nrows = 0;      // changing these to size_t will break serialized data
+    // the dimensions can't be changed to 'size_t' without breaking existing serialized data
+    // having only one of the dimensions non-zero is valid and can used as a base case for incremental
+    // composition:
+    uint            nrows = 0;      // having only one of these non-zero *is* a valid state
     uint            ncols = 0;
     Svec<T>         m_data;         // invariant: m_data.size() == nrows*ncols
 
     FG_SER3(nrows,ncols,m_data)
-    FG_SERIALIZE3(nrows,ncols,m_data)
 
     MatV() {}
 
     MatV(size_t rows,size_t cols) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(rows*cols) {}
     MatV(size_t rows,size_t cols,T val) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(rows*cols,val) {}
-    MatV(size_t rows,size_t cols,T const *ptr) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(ptr,ptr+rows*cols) {}
     MatV(size_t rows,size_t cols,Svec<T> const & v) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(v)
         {FGASSERT(rows*cols == v.size()); }
-    explicit MatV(Vec2UI dims) : nrows(dims[1]), ncols(dims[0]) {m_data.resize(ncols*nrows); }
+    explicit MatV(Vec2UI colsRows) : nrows(colsRows[1]), ncols(colsRows[0]) {m_data.resize(ncols*nrows); }
     explicit MatV(Svec<Svec<T>> const & vecOfVecs)
     {
         if (!vecOfVecs.empty()) {
@@ -58,7 +55,7 @@ struct  MatV
     Vec2UI          dims() const {return Vec2UI{scast<uint>(nrows),scast<uint>(ncols)}; }
     size_t          numRows() const {return nrows; }
     size_t          numCols() const {return ncols; }
-    size_t          numElems() const {return nrows*ncols; }
+    size_t          numElems() const {return scast<size_t>(nrows)*scast<size_t>(ncols); }
     bool            empty() const {return m_data.empty(); }
     // Element access by (row,column):
     T &             rc(size_t row,size_t col)
@@ -82,35 +79,14 @@ struct  MatV
         FGASSERT_FAST((row < nrows) && (col < ncols));
         return m_data[row*ncols+col];
     }
+    T &             operator[](Vec2UI colRow) {return cr(colRow[0],colRow[1]); }
+    T const &       operator[](Vec2UI colRow) const {return cr(colRow[0],colRow[1]); }
+    // these 2 overloads are a bit dangerous but useful when the MatV is a vector (ie ncols==1 or nrows==1)
     T &             operator[](size_t ii) {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
     T const &       operator[](size_t ii) const {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
-    T &             operator[](Vec2UI coord) {return cr(coord[0],coord[1]); }
-    T const &       operator[](Vec2UI coord) const {return cr(coord[0],coord[1]); }
-    auto            rowBegin(size_t row) const
-    {
-        FGASSERT(row < nrows);
-        return m_data.cbegin() + row*ncols;
-    }
     T const *       dataPtr() const {FGASSERT(!m_data.empty()); return &m_data[0]; }
-    T const *       rowPtr(size_t row) const
-    {
-        FGASSERT(row < nrows);
-        return &m_data[row*ncols];
-    }
-    Svec<T> const & dataVec() const {return m_data; }
-    Svec<T>         rowData(size_t row) const
-    {
-        auto                it = rowBegin(row);
-        return Svec<T>(it,it+ncols);
-    }
-    Svec<T>         colData(size_t col) const
-    {
-        FGASSERT(col < ncols);
-        Svec<T>             ret; ret.reserve(nrows);
-        for (auto it=m_data.begin()+col; it!=m_data.end(); it+=ncols)
-            ret.push_back(*it);
-        return ret;
-    }
+    T const *       rowPtr(size_t row) const {FGASSERT(row < nrows); return &m_data[row*ncols]; }
+    T *             rowPtr(size_t row) {FGASSERT(row < nrows); return &m_data[row*ncols]; }
 
     // Operators
     bool            operator==(MatV const & rhs) const
@@ -154,22 +130,6 @@ struct  MatV
             for (size_t cc=0; cc<m.nrows; ++cc)
                 rc(row+rr,col+cc) = m.rc(cc,rr);
     }
-    // Accumulate in sub-matrix:
-    void            accSubMat(size_t row,size_t col,MatV const & m)
-    {
-        FGASSERT((m.nrows+row <= nrows) && (m.ncols+col <= ncols));
-        for (size_t rr=0; rr<m.nrows; ++rr)
-            for (size_t cc=0; cc<m.ncols; ++cc)
-                rc(row+rr,col+cc) += m.rc(rr,cc);
-    }
-    template<size_t mrows,size_t mcols>
-    void            accSubMat(size_t row,size_t col,Mat<T,mrows,mcols> m)
-    {
-        FGASSERT((mrows+row <= nrows) && (mcols+col <= ncols));
-        for (size_t rr=0; rr<mrows; ++rr)
-            for (size_t cc=0; cc<mcols; ++cc)
-                rc(row+rr,col+cc) += m.rc(rr,cc);
-    }
     void            setConst(T v)
     {
         for (size_t ii=0; ii<m_data.size(); ii++)
@@ -194,6 +154,15 @@ struct  MatV
     double          mag() const {return cMag(m_data); }
     double          len() const {return cLen(m_data); }
     bool            isVector() const {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
+    Svec<T>         sliceCol(size_t col) const
+    {
+        FGASSERT(col < ncols);
+        Svec<T>             ret; ret.reserve(nrows);
+        T const             *ptr = (nrows>0) ? &m_data[col] : nullptr;
+        for (size_t rr=0; rr<nrows; ++rr)
+            ret.push_back(ptr[rr*ncols]);
+        return ret;
+    }
     MatV            subMatrix(size_t firstRow,size_t firstCol,size_t numRows_,size_t numCols_) const
     {
         FGASSERT(((firstCol + numCols_) <= ncols) && 
@@ -206,10 +175,23 @@ struct  MatV
     }
     MatV            colVec(size_t n) const {return subMatrix(0,n,nrows,1); }
     MatV            rowVec(size_t n) const {return subMatrix(n,0,1,ncols); }
-    T               rowSum(size_t row) const
+    Svec<T>         getDiagonal() const
     {
-        auto                off = m_data.begin() + row*ncols;
-        return std::accumulate(off,off+ncols);
+        size_t          D = cMin(nrows,ncols);
+        Svec<T>         ret; ret.reserve(D);
+        for (size_t ii=0; ii<D; ++ii)
+            ret.push_back(m_data[ii*ncols+ii]);
+        return ret;
+    }
+    Svec<T>         sumCols() const         // sum values for each column
+    {
+        Svec<T>         ret (ncols,T{0});
+        for (size_t rr=0; rr<nrows; ++rr) {
+            T const         *ptr = (ncols>0) ? rowPtr(rr) : nullptr;
+            for (size_t cc=0; cc<ncols; ++cc)
+                ret[cc] += ptr[cc];
+        }
+        return ret;
     }
 
     static MatV     identity(size_t dim)
@@ -225,6 +207,15 @@ struct  MatV
     }
 };
 
+template<class T>
+struct Traits<MatV<T>>
+{
+    typedef typename Traits<T>::Scalar              Scalar;
+    typedef typename Traits<T>::Accumulator         Accumulator;
+    typedef typename Traits<T>::Floating            Floating;
+};
+
+typedef MatV<int>           MatI;
 typedef MatV<float>         MatF;
 typedef MatV<double>        MatD;
 typedef Svec<MatD>          MatDs;
@@ -235,6 +226,7 @@ MatV<T>             mapCast(MatV<U> const & m)
     return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)};
 }
 
+// scalar multiplication of a matrix (whose elements may not be scalars):
 template<typename T,typename U>
 MatV<T>             operator*(MatV<T> const & m,U v)
 {
@@ -356,42 +348,59 @@ MatV<T>             asColVec(Svec<T> const & v)
     FGASSERT(!v.empty());
     return MatV<T>(v.size(),1,v.data());
 }
-
 template<typename T>
 MatV<T>             asRowVec(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
     return MatV<T>(1,v.size(),&v[0]);
 }
-
-MatD &              operator/=(MatD & mat,double div);
-
-// MatV<> * Svec<> treats rhs side as a column vector and returns same:
 template<class T>
-Svec<T>             operator*(MatV<T> const & lhs,Svec<T> const & rhs)
+Svec<Svec<T>>       asVecOfVecs(MatV<T> const & m)
 {
-    Svec<T>       ret(lhs.nrows,T(0));
-    FGASSERT(lhs.ncols == rhs.size());
-    for (size_t rr=0; rr<lhs.nrows; ++rr)
-        for (size_t cc=0; cc<lhs.ncols; ++cc)
-            ret[rr] += lhs.rc(rr,cc) * rhs[cc];
+    size_t              R = m.numRows(),
+                        C = m.numCols();
+    Svec<Svec<T>>       ret; ret.reserve(m.numRows());
+    for (size_t rr=0; rr<R; ++rr) {
+        auto                it = m.m_data.begin() + rr*C;
+        ret.emplace_back(it,it+C);
+    }
     return ret;
 }
 
-// Svec<> * MatV<> treats lhs side as a row vector and returns same:
+// treat rhs as a column vector:
 template<class T>
-Svec<T>             operator*(Svec<T> const & lhs,MatV<T> const & rhs)
+Svec<T>             operator*(MatV<T> const & mat,Svec<T> const & vec)
 {
-    Svec<T>       ret(rhs.ncols,T(0));
-    FGASSERT(lhs.size() == rhs.nrows);
-    for (size_t rr=0; rr<rhs.nrows; ++rr)
-        for (size_t cc=0; cc<rhs.ncols; ++cc)
-            ret[cc] += lhs[rr] * rhs.rc(rr,cc);
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(vec.size() == C);
+    Svec<T>             ret; ret.reserve(R);
+    for (size_t rr=0; rr<R; ++rr) {
+        T                   acc {0};
+        T const *           rowPtr = mat.rowPtr(rr);
+        for (size_t cc=0; cc<C; ++cc)
+            acc += rowPtr[cc] * vec[cc];
+        ret.push_back(acc);
+    }
     return ret;
 }
 
+// treat lhs as row vector:
 template<class T>
-T                   cDot(MatV<T> const & lhs,MatV<T> const & rhs) {return cDot(lhs.m_data,rhs.m_data); }
+Svec<T>             operator*(Svec<T> const & vec,MatV<T> const & mat)
+{
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(vec.size() == R);
+    Svec<T>             ret (R,T{0});
+    for (size_t rr=0; rr<R; ++rr) {
+        T                   val = vec[rr];
+        T const *           rowPtr = mat.rowPtr(rr);
+        for (size_t cc=0; cc<C; ++cc)
+            ret[cc] += val * rowPtr[cc];
+    }
+    return ret;
+}
 
 template<class T>
 MatV<T>             cDiagMat(size_t dim,T const & val)
@@ -443,14 +452,53 @@ void                interpolate_(MatV<T> const & v0,MatV<T> const & v1,T val,Mat
     interpolate_(v0.m_data,v1.m_data,val,ret.m_data);
 }
 
-// Map 'abs':
 template<class T>
-MatV<T>             mapAbs(MatV<T> const & mat) {return MatV<T>(mat.nrows,mat.ncols,mapAbs(mat.m_data)); }
+inline MatV<T>      mapAbs(MatV<T> const & mat) {return MatV<T>(mat.nrows,mat.ncols,mapAbs(mat.m_data)); }
+
+template<class T>
+MatV<T>             appendCol(MatV<T> const & mat,Svec<T> const & col)
+{
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(col.size() == R);
+    return {
+        R,C+1,
+        [&,R,C](){
+            Svec<T>         ret; ret.reserve(R*(C+1));
+            for (size_t rr=0; rr<R; ++rr) {
+                auto            it = mat.m_data.cbegin() + rr*C;
+                ret.insert(ret.end(),it,it+C);
+                ret.push_back(col[rr]);
+            }
+            return ret;
+        }()
+    };
+}
+
+template<class T>
+MatV<T>             eraseCol(MatV<T> const & mat,size_t col)
+{
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(col < C);
+    return {
+        R,C-1,
+        [&mat,R,C,col]() {
+            Svec<T>             ret; ret.reserve(R*(C-1));
+            for (size_t rr=0; rr<R; ++rr) {
+                auto                it = mat.m_data.cbegin() + rr*C;
+                ret.insert(ret.end(),it,it+col);
+                ret.insert(ret.end(),it+col+1,it+C);
+            }
+            return ret;
+        }()
+    };
+}
 
 // Matrix join is the inverse of partition:
 // 2x2 block matrix join:
 template<class T>
-MatV<T>             fgJoin(MatV<T> const & ul,MatV<T> const & ur,MatV<T> const & ll,MatV<T> const & lr)
+MatV<T>             joinMat(MatV<T> const & ul,MatV<T> const & ur,MatV<T> const & ll,MatV<T> const & lr)
 {
     MatV<T>        ret(ul.nrows+ll.nrows,ul.ncols+ur.ncols);
     FGASSERT((ul.ncols == ll.ncols) && (ur.ncols == lr.ncols));
@@ -626,16 +674,6 @@ MatV<T>             cOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFac
 
 MatD                cRelDiff(MatD const & a,MatD const & b,double minAbs=0.0);
 
-// Return a std::vector of std::vectors for each row in a matrix:
-template<class T>
-Svec<Svec<T> >      toSvecOfSvec(MatV<T> const & v)
-{
-    Svec<Svec<T> >      ret(v.numRows());
-    for (size_t rr=0; rr<ret.size(); ++rr)
-        ret[rr] = v.rowData(rr);
-    return ret;
-}
-
 template<class T>
 T                   cMag(MatV<T> const & mat) {return mat.mag(); }
 
@@ -666,11 +704,11 @@ double              cOffDiagMag(MatV<T> const & mat)
 template<class T>
 double              cRowMag(MatV<T> const & mat,size_t row)
 {
+    FGASSERT(row < mat.numRows());
     double              ret {0};
-    auto                beg = mat.rowBegin(row),
-                        end = beg+mat.numCols();
-    for (auto it=beg; it!=end; ++it)
-        ret += cMag(*it);
+    size_t              off = row * mat.numCols();
+    for (size_t cc=off; cc<off+mat.numCols(); ++cc)
+        ret += cMag(mat.m_data[cc]);
     return ret;
 }
 
@@ -685,14 +723,15 @@ double              cRowDotProd(MatV<T> const & mat,size_t row0,size_t row1)
     return ret;
 }
 
-// row covariance of M == M * M^T using ignorance prior on mean and stdev:
+// row covariance of M == M * M^T using ignorance prior on mean and stdev.
+// if D<3, will still return matrices but they cannot reflect a proper prior:
 template<class T>
 MatD                cRowCovariance(MatV<T> const & mat)
 {
-    FGASSERT(mat.numCols() > 2);
     size_t                  R = mat.numRows();
     MatD                    ret {R,R};
-    double                  fac = 1.0 / (mat.numCols()-2);
+    double                  denom = cMax(1.0,scast<double>(mat.numCols())-2), // be robust for dimensions < 3
+                            fac = 1.0 / denom;
     for (size_t r0=0; r0<R; ++r0) {
         ret.rc(r0,r0) = cRowMag(mat,r0) * fac;
         for (size_t r1=0; r1<r0; ++r1) {
@@ -748,6 +787,15 @@ MatV<T>             scaleColumns(MatV<T> const & mat,Svec<T> const & vals)
         for (size_t cc=0; cc<mat.numCols(); ++cc)
             ret.rc(rr,cc) = mat.rc(rr,cc) * vals[cc];
     return ret;
+}
+
+template<class T>
+Vec2UI              cMaxIdx(MatV<T> const & m)      // returns (col,row)
+{
+    size_t              maxIdx = cMaxIdx(m.m_data),
+                        r = maxIdx / m.ncols,
+                        c = maxIdx % m.ncols;
+    return {scast<uint>(c),scast<uint>(r)};
 }
 
 // Random orthogonal matrix of given dimension

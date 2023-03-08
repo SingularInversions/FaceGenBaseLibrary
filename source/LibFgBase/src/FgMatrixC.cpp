@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -96,6 +96,15 @@ Vec4D               solveLinear(Mat44D const & M,Vec4D const & b)
     FGASSERT(qr.isInvertible());
     Eigen::Vector4d         sol = qr.solve(vec);
     return {sol(0),sol(1),sol(2),sol(3)};
+}
+
+MatS2D              MatS2D::randSpd(double lnEigStdev)
+{
+    Mat22D              D = cDiagMat(mapExp(Vec2D::randNormal(lnEigStdev)));
+    Vec2D               r = normalize(Vec2D::randNormal());
+    Mat22D              R {r[0],-r[1],r[1],r[0]},
+                        M = R.transpose() * D * R;      // will be symmetric within precision
+    return {M[0],M[3],M[1]};
 }
 
 Mat33D              MatS3D::operator+(Mat33D const & r) const
@@ -195,12 +204,7 @@ MatS3D              MatS3D::square() const
     };
 }
 
-ostream &           operator<<(ostream & os,MatS3D const & m)
-{
-    return os << m.asMatC();
-}
-
-MatS3D              randMatSpd3D(double lnEigStdev)
+MatS3D              MatS3D::randSpd(double lnEigStdev)
 {
     // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
     Mat33D          D = cDiagMat(mapExp(Vec3D::randNormal(lnEigStdev))),
@@ -209,6 +213,21 @@ MatS3D              randMatSpd3D(double lnEigStdev)
     // M will have precision-level asymmetry so construct return value from upper triangular values
     // (Eigen's QR decomp fails badly if symmetry is not precise):
     return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
+}
+
+ostream &           operator<<(ostream & os,MatS3D const & m)
+{
+    return os << m.asMatC();
+}
+
+MeanCov3            cMeanCov(Vec3Ds const & samps)
+{
+    Vec3D               mean = cMean(samps);
+    Vec3Ds              zms = mapSub(samps,mean);
+    MatS3D              acc {0};
+    for (Vec3D const & zm : zms)
+        acc += outerProductSelf(zm);
+    return {mean,acc*(1.0/samps.size())};
 }
 
 MatUT3D             MatUT3D::operator*(MatUT3D r) const
@@ -311,7 +330,7 @@ void                testMatS(CLArgs const &)
 {
     randSeedRepeatable();
     for (size_t ii=0; ii<10; ++ii) {
-        MatS3D              m0 = randMatSpd3D(1.0);
+        MatS3D              m0 = MatS3D::randSpd(1.0);
         {
             double              ref = cDeterminant(m0.asMatC()),
                                 tst = cDeterminant(m0);
@@ -333,7 +352,7 @@ void                testMatS(CLArgs const &)
                                 ref = m0.asMatC() * v;
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
-        MatS3D              m1 = randMatSpd3D(1);
+        MatS3D              m1 = MatS3D::randSpd(1);
         {
             Mat33D              tst = m0 * m1,
                                 ref = m0.asMatC() * m1.asMatC();

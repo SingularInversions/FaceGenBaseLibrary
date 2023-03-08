@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -72,8 +72,10 @@ struct  GuiSplitScroll : GuiBase
     virtual GuiImplPtr      getInstance() {return guiGetOsImpl(*this); }
 };
 
+// all of the below are vertical scrolls:
 GuiPtr              guiSplitScroll(GuiPtrs const & panes,uint spacing=0);
 GuiPtr              guiSplitScroll(Sfun<GuiPtrs(void)> const & getPanes);
+GuiPtr              guiSplitScroll(Img<GuiPtr> const & panes);
 
 GuiPtr
 guiSplitScroll(

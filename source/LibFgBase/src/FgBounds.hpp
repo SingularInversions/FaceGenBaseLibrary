@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -17,7 +17,7 @@
 #ifndef FGBOUNDS_HPP
 #define FGBOUNDS_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgSerial.hpp"
 #include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 
@@ -140,35 +140,35 @@ T                   cMedian(Arr<T,S> arr)       // Rounds up for even numbers of
     return arr[S/2];
 }
 
-template<typename T,uint nrows,uint ncols>
-inline T            cMaxElem(Mat<T,nrows,ncols> const & mat) {return cMax(mat.m); }
+template<typename T,uint R,uint C>
+inline T            cMaxElem(Mat<T,R,C> const & mat) {return cMax(mat.m); }
 
-template<typename T,uint nrows,uint ncols>
-inline T            cMinElem(Mat<T,nrows,ncols> const & mat) {return cMin(mat.m); }
+template<typename T,uint R,uint C>
+inline T            cMinElem(Mat<T,R,C> const & mat) {return cMin(mat.m); }
 
-template<typename T,uint nrows,uint ncols>
-inline size_t       cMaxIdx(Mat<T,nrows,ncols> const & mat) {return cMaxIdx(mat.m); }
+template<typename T,uint R,uint C>
+inline size_t       cMaxIdx(Mat<T,R,C> const & mat) {return cMaxIdx(mat.m); }
 
-template<typename T,uint nrows,uint ncols>
-inline size_t       cMinIdx(Mat<T,nrows,ncols> const & mat) {return cMinIdx(mat.m); }
+template<typename T,uint R,uint C>
+inline size_t       cMinIdx(Mat<T,R,C> const & mat) {return cMinIdx(mat.m); }
 
 // Element-wise max:
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>  cMax(Mat<T,nrows,ncols> const & m1,Mat<T,nrows,ncols> const & m2)
+template<class T,uint R,uint C>
+Mat<T,R,C>          cMax(Mat<T,R,C> const & m1,Mat<T,R,C> const & m2)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = cMax(m1[ii],m2[ii]);
     return ret;
 }
 
 template<typename T>
-inline T            cMaxElem(MatV<T> const & mat) {return cMax(mat.dataVec()); }
+inline T            cMaxElem(MatV<T> const & mat) {return cMax(mat.m_data); }
 
-template<typename T,uint nrows>
-Mat<T,nrows,1>      cDims(const Svec<Mat<T,nrows,1> > & vec)
+template<typename T,uint R>
+Mat<T,R,1>          cDims(const Svec<Mat<T,R,1> > & vec)
 {
-    Mat<T,nrows,2>    bounds = cBounds(vec);
+    Mat<T,R,2>          bounds = cBounds(vec);
     return (bounds.colVec(1)-bounds.colVec(0));
 }
 
@@ -260,11 +260,11 @@ Mat<T,dim,2>        cCubeBounds(const Svec<Mat<T,dim,1> > & verts,T padRatio=1)
 }
 
 // Convert bounds from inclusive upper to exclusive upper:
-template<class T,uint nrows>
-Mat<T,nrows,2>      iubToEub(Mat<T,nrows,2> boundsInclusiveUpper)
+template<class T,uint R>
+Mat<T,R,2>      iubToEub(Mat<T,R,2> boundsInclusiveUpper)
 {
-    Mat<T,nrows,2>    ret;
-    for (uint rr=0; rr<nrows; ++rr) {
+    Mat<T,R,2>    ret;
+    for (uint rr=0; rr<R; ++rr) {
         ret.rc(rr,0) = boundsInclusiveUpper.rc(rr,0);
         ret.rc(rr,1) = boundsInclusiveUpper.rc(rr,1) + T(1);
     }
@@ -283,18 +283,17 @@ inline T            clamp(T val,Mat<T,1,2> bounds)
     return val < bounds[0] ? bounds[0] : (val > bounds[1] ? bounds[1] : val);
 }
 
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>  mapClamp(Mat<T,nrows,ncols> const & mat,T lo,T hi)
+template<class T,uint R,uint C>
+Mat<T,R,C>          mapClamp(Mat<T,R,C> const & mat,T lo,T hi)
 {
-    Mat<T,nrows,ncols>      ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>      ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = clamp(mat[ii],lo,hi);
     return ret;
 }
 
 template<class T,uint dim>
-Mat<T,dim,1>
-mapClamp(Mat<T,dim,1> const & pos,Mat<T,dim,2> const & boundsInclusive)
+Mat<T,dim,1>        mapClamp(Mat<T,dim,1> const & pos,Mat<T,dim,2> const & boundsInclusive)
 {
     Mat<T,dim,1>  ret;
     for (uint ii=0; ii<dim; ++ii)
@@ -302,42 +301,42 @@ mapClamp(Mat<T,dim,1> const & pos,Mat<T,dim,2> const & boundsInclusive)
     return ret;
 }
 
-template<class T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>  mapClamp(Mat<T,nrows,ncols> const & mat,Mat<T,nrows,ncols> lo,Mat<T,nrows,ncols> hi)
+template<class T,uint R,uint C>
+Mat<T,R,C>          mapClamp(Mat<T,R,C> const & mat,Mat<T,R,C> lo,Mat<T,R,C> hi)
 {
-    Mat<T,nrows,ncols>      ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>      ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = clamp(mat[ii],lo[ii],hi[ii]);
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>  mapMax(Mat<T,nrows,ncols> m,T lo)
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMax(Mat<T,R,C> m,T lo)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = cMax(m[ii],lo);
     return ret;
 }
 
-template<typename T,uint nrows,uint ncols>
-Mat<T,nrows,ncols>  mapMin(Mat<T,nrows,ncols> m,T hi)
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMin(Mat<T,R,C> m,T hi)
 {
-    Mat<T,nrows,ncols>    ret;
-    for (uint ii=0; ii<nrows*ncols; ++ii)
+    Mat<T,R,C>    ret;
+    for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = cMin(m[ii],hi);
     return ret;
 }
 
 // Clip to [0,EUBs) with change from signed to unsigned:
-template<uint nrows,uint ncols>
-Mat<uint,nrows,ncols> clampZeroEub(Mat<int,nrows,ncols> mat,Mat<uint,nrows,1> exclusiveUpperBounds)
+template<uint R,uint C>
+Mat<uint,R,C>       clampZeroEub(Mat<int,R,C> mat,Mat<uint,R,1> exclusiveUpperBounds)
 {
-    Mat<uint,nrows,ncols>     ret;
-    for (uint rr=0; rr<nrows; ++rr) {
+    Mat<uint,R,C>     ret;
+    for (uint rr=0; rr<R; ++rr) {
         uint        eub = exclusiveUpperBounds[rr];
         FGASSERT(eub != 0);
-        for (uint cc=0; cc<ncols; ++cc) {
+        for (uint cc=0; cc<C; ++cc) {
             int         val = mat.rc(rr,cc);
             uint        valu = uint(val);
             ret.rc(rr,cc) = val < 0 ? 0U : (valu < eub ? valu : eub-1);

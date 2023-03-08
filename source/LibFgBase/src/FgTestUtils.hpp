@@ -1,16 +1,26 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// regression tests work as follows:
+// * the function to be tested generates the object <output>
+// * the reference object is loaded from the file <reference>
+// * the two are compared for regression:
+//   - where the output is expected to be exact, simple equality is used
+//   - otherwise, an approximate equality is used, to account for precision differences with different configurations
+//   - except when running on the primary development configuration (os-compiler-bits-debrel), where exact equality is still used
+// * if the equality fails:
+//   - an error is thrown
+//   - if this is the primary development config and also a developer system (~/data/_overwrite_baslines.flag)
+//     <output> overwrites <reference> so the differences can easily be viewed or updated in source control
+// * for easy viewing in source control, viewable formats are preferred for the <output>, eg. a mesh that contains
+//   <output> as just its vertices
 
 #ifndef INCLUDED_TEST_UTILS_HPP
 #define INCLUDED_TEST_UTILS_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgBoostLibs.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgOut.hpp"
+#include "FgSerial.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgCommand.hpp"
 #include "FgImageIo.hpp"
@@ -18,185 +28,109 @@
 
 namespace Fg {
 
-// Ensure that an expression throws a specific FgException by checking that the 
-// beginning of untranslated strings match. Don't use the full string as the state
-// information can vary even within a test (eg. thread race).
-#define FG_TEST_CHECK_THROW_1(expr,e1)                                  \
-    {                                                                   \
-        bool fg_test_check_threw = false;                               \
-        try                                                             \
-        {                                                               \
-            expr;                                                       \
-        }                                                               \
-        catch(FgException const &e)                                     \
-        {                                                               \
-            fgout << fgnl << e.tr_message();                         \
-            fgout << fgnl << e1;                                        \
-            FGASSERT(beginsWith(e.tr_message(),e1));               \
-            fg_test_check_threw = true;                                 \
-        }                                                               \
-        catch(...){fg_test_check_threw = true;}                         \
-        FGASSERT1(fg_test_check_threw,"An exception was expected but none was thrown"); \
-    }
-    
-
-// An easy way to throw an error with a format string:
-// \code
-//  if(!foo)
-//    TEST_THROW(runtime_error,"Foo is wrong: " << foo);
-// \endcode
-#define TEST_THROW(stream_expr)                 \
-    {                                           \
-        std::ostringstream str;                 \
-        str << stream_expr;                     \
-        throw std::runtime_error(str.str());  \
-    }
-
-void
-regressFail(
-    String8 const & testName,
-    String8 const & refName);
-
-// Returns corresponding regression baseline value:
-template<class T>
-T
-getRegressionBaseline(
-    T const &           val,
-    const std::string & path,
-    const std::string & name)
-{
-    if (fgKeepTempFiles())
-        saveBsaXml(name+"_baseline.xml",val);
-    T       base;
-    loadBsaXml(dataDir()+path+name+"_baseline.xml",base);
-    return base;
-}
-
-// Takes two filenames as input and returns true for regression passed and false for failure:
-typedef std::function<bool(String8 const &,String8 const &)> EquateFiles;
-
-// Calls the given regression check and deletes the query file if successful. If unsuccessful then:
-// '_overwrite_baselines.flag': overwrite base with regress and delete regress, otherwise:
-// leave the query file in place.
-void
-regressFile(
-    String8 const &         baselineRelPath,    // Relative (to data dir) path to regression baseline file
-    String8 const &         queryPath,          // Path to query file to be tested
-    EquateFiles const &     equateFiles = equateFilesBinary); // Defaults to binary equality test
-
-// As above when query and baseline have same name:
-inline
-void
-regressFileRel(
-    String8 const &         fname,      // Must exist relative to current dir (query) AND dataDir() + 'relDir' (base).
-    String8 const &         relDir,     // Relative path (within data dir) of the baseline file of the same name.
-    EquateFiles const &     equateFiles = equateFilesBinary)     // Defaults to binary equality test
-{regressFile(relDir+fname,fname,equateFiles); }
+void                regressFail(String8 const & testName,String8 const & refName);
 
 // As above but regression failure when max pixel diff greater than given:
-void
-regressImage(
-    const std::string & name,
-    const std::string & relDir,
-    uint                maxDelta=2);
+void                regressImage(String const & name,String const & relDir,uint maxDelta=2);
+
+template<class T> T regressLoad(String8 const & fname) {return dsrlzText<T>(loadRawString(fname)); }
+template<> ImgRgba8 regressLoad(String8 const &);
 
 template<class T>
-T
-regressLoad(String8 const & fname)
-{
-    T       ret;
-    loadBsaXml(fname,ret);
-    return ret;
-}
+inline void         regressSave(T const & val,String8 const & fname) {saveRaw(srlzText(val),fname); }
 template<>
-ImgRgba8
-regressLoad(String8 const &);
+inline void         regressSave(ImgRgba8 const & img,String8 const & path) {saveImage(path,img); }
 
-template<class T>
-void
-regressSave(String8 const & fname,T const & val)
-{saveBsaXml(fname,val); }
+// This flag should be set on a developer's machine (and ignored by source control) for easy regression test updates
+// and change visualation. It should NOT be set of automated build machines:
+inline bool         overwriteBaselines() {return pathExists(dataDir()+"_overwrite_baselines.flag"); }
 
-template<>
-inline void
-regressSave(String8 const & path,ImgRgba8 const & img)
-{saveImage(path,img); }
-
-// Developers with source control create this (empty) flag file locally:
-inline
-bool
-overwriteBaselines()
-{return pathExists(dataDir()+"_overwrite_baselines.flag"); }
+template<class T> bool isEqualSrlz(T const & l,T const & r) {return (srlz(l) == srlz(r)); }
 
 // Exact regression for all configurations:
 template<class T>
-void
-regressTest(
+void                testRegressExact(
     T const &           query,
-    String8 const &     baselinePath)
+    String8 const &     baselineRelPath)                // must be relative to ~/data/
 {
-    // This flag should be set on a developer's machine (and ignored by source control) for
-    // easy updates & change visualation. It should NOT be set of automated build machines:
-    bool                regressOverwrite = overwriteBaselines();
-    if (!pathExists(baselinePath)) {
-        if (regressOverwrite) {
-            regressSave(baselinePath,query);
-            fgout << fgnl << "New regression baseline saved: " << baselinePath;
+    bool                overwrite = overwriteBaselines();
+    if (!pathExists(baselineRelPath)) {
+        if (overwrite) {
+            regressSave(query,baselineRelPath);
+            fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works:
         }
         else
-            fgThrow("Regression baseline not found",baselinePath);
+            fgThrow("Regression baseline not found",baselineRelPath);
     }
-    T       baseline = regressLoad<T>(baselinePath);
+    T                   baseline = regressLoad<T>(baselineRelPath);
     if (!(query == baseline)) {
-        if (regressOverwrite)
-            regressSave(baselinePath,query);
-        fgThrow("Regression failure: ",baselinePath);
+        if (overwrite)
+            regressSave(query,baselineRelPath);
+        fgThrow("Regression failure: ",baselineRelPath);
     }
 }
 
-// Floating point optimizations for different configurations yield different (by a small amount) results:
+// throws if the test fails:
 template<class T>
-void
-regressTestApprox(
+void                testRegressApprox(
     T const &                       query,
-    String8 const &                 baselinePath,
-    Sfun<bool(T const &,T const &)> compare,
-    Sfun<T(String8 const &)>        load=regressLoad<T>,
-    Sfun<void(String8 const &,T const &)> save=regressSave<T>,
+    String const &                  baselineRelPath,        // must be relative to ~/data/
+    Sfun<bool(T const &,T const &)> compareFn,
+    Sfun<T(String8 const &)>        loadFn=regressLoad<T>,
+    Sfun<void(T const &,String8 const &)> saveFn=regressSave<T>,
     // Set equality if you want bitwise regression for primary configuration:
-    Sfun<bool(T const &,T const &)> equality=Sfun<bool(T const &,T const &)>())
+    Sfun<bool(T const &,T const &)> isEqualFn=isEqualSrlz<T>)
 {
-    bool                regressOverwrite = overwriteBaselines();
-    if (!pathExists(baselinePath)) {
-        if (regressOverwrite) {
-            save(baselinePath,query);
-            fgout << fgnl << "New regression baseline saved: " << baselinePath;
+    bool                overwrite = overwriteBaselines();
+    String8             baselineAbsPath = dataDir() + baselineRelPath;
+    if (!pathExists(baselineAbsPath)) {
+        if (overwrite) {
+            saveFn(query,baselineAbsPath);
+            fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works:
         }
         else
-            fgThrow("Regression baseline not found",baselinePath);
+            fgThrow("Regression baseline not found",baselineRelPath);
     }
-    T       baseline = load(baselinePath);
-    if (compare(query,baseline)) {  // Passed
-        // If this is a developer machine primary config, test for exact equality and update the
+    T                   baseline = loadFn(baselineAbsPath);
+    if (compareFn(query,baseline)) {  // Passed
+        // If this is a developer machine primary config, further test for exact equality and update the
         // regression file if not the case:
-        if (equality && regressOverwrite && isPrimaryConfig() && (!equality(query,baseline))) {
-            save(baselinePath,query);
-            fgout << fgnl << "Regression baseline updated: " << baselinePath;
+        if (isEqualFn && overwrite && isPrimaryConfig() && (!isEqualFn(query,baseline))) {
+            saveFn(query,baselineAbsPath);
+            fgout << fgnl << "Regression baseline updated: " << baselineRelPath;
         }
     }
     else {                          // Failed
-        if (regressOverwrite)
-            save(baselinePath,query);
-        fgThrow("Regression failure: ",baselinePath);
+        if (overwrite)
+            saveFn(query,baselineRelPath);
+        else {                      // store for retrieval if required:
+            Path                path {dataDir() + "../test-output/" + baselineRelPath};
+            createPath(path.dir());
+            saveFn(query,path.str());
+        }
+        fgThrow("Regression failure: ",baselineRelPath);
     }
 }
 
-// Regress a string against a data file. Throws if file is different.
-// For dev instances (_overwrite_baselines.flag), also overwrites file if different.
-void
-regressString(String const & data,String8 const & relPath);
+// Takes two filenames as input and returns true for regression passed and false for failure:
+typedef Sfun<bool(String8 const &,String8 const &)>     CmpFilesFn;
+
+// as above when query is created as a temp file:
+void                testRegressFile(
+    String8 const &         baselineRelPath,    // Relative (to data dir) path to regression baseline file
+    String8 const &         queryPath,          // Path to query file to be tested
+    CmpFilesFn const &      cmpFilesFn = equateFilesBinary); // Defaults to binary equality test
+
+// As above when query and baseline have same name:
+inline void         regressFileRel(
+    String8 const &         fname,      // Must exist relative to current dir (query) AND dataDir() + 'relDir' (base).
+    String8 const &         relDir,     // Relative path (within data dir) of the baseline file of the same name.
+    CmpFilesFn const &      cmpFilesFn = equateFilesBinary)     // Defaults to binary equality test
+{
+    testRegressFile(relDir+fname,fname,cmpFilesFn);
+}
 
 }
 

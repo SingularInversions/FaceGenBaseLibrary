@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,6 +12,7 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgTestUtils.hpp"
 #include "FgKdTree.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 
@@ -19,12 +20,7 @@ namespace Fg {
 
 namespace {
 
-/**
-   \ingroup Base_Commands
-   Apply morphs by name to meshes.
- */
-void
-anim(CLArgs const & args)
+void                anim(CLArgs const & args)
 {
     Syntax    syn(args,
         "<fileSuffix> (<mesh>.tri)+ (<morphName> <morphValue>)+\n"
@@ -65,10 +61,6 @@ anim(CLArgs const & args)
     }
 }
 
-/**
-   \ingroup Base_Commands
-   Apply morphs by index number to a mesh.
- */
 void                cmdMorphApply(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -128,12 +120,7 @@ COMMENTS:
     saveMesh(mesh,outFile);
 }
 
-/**
-   \ingroup Base_Commands
-   Clamp delta morph vertex deltas to zero for seam vertices
- */
-void
-clampMorphDeltas(CLArgs const & args)
+void                cmdMorphClampSeam(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.tri (v | m) <seam>.tri <out>.tri\n"
         "    v - All vertices in <seam>.tri will be used to define the seam.\n"
@@ -166,27 +153,16 @@ clampMorphDeltas(CLArgs const & args)
     saveTri(syn.next(),mesh);
 }
 
-/**
-   \ingroup Base_Commands
-   Remove all animation morphs in a mesh
- */
-void
-clear(CLArgs const & args)
+void                cmdMorphClear(CLArgs const & args)
 {
-    Syntax    syn(args,"<mesh>.tri");
-    string      name = syn.next();
-    Mesh    mesh = loadTri(name);
+    Syntax              syn {args,"<mesh>.(fgmesh|tri)"};
+    Mesh                mesh = loadMesh(syn.next());
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
-    saveTri(name,mesh);
+    saveMesh(mesh,syn.curr());
 }
 
-/**
-   \ingroup Base_Commands
-   Copy animation morphs between meshes with corresponding vertex lists
- */
-void
-copymorphs(CLArgs const & args)
+void                cmdMorphCopy(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.tri <meshOut>.tri ((d | t) <index>)*\n"
@@ -232,92 +208,106 @@ copymorphs(CLArgs const & args)
     saveTri(nameOut,meshOut);
 }
 
-/**
-   \ingroup Base_Commands
-   Create animation morphs for a mesh.
- */
-void
-create(CLArgs const & args)
+void                cmdMorphAdd(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<base>.tri <target>.<extIn> [-i] (d | t) <morphName>\n"
-        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <extOut> = " + getMeshSaveExtsCLDescription() + "\n"
-        "    -i         - Ignore very small morphs (ie. do not create)\n"
-        "    d          - Delta morph\n"
-        "    t          - Target morph\n"
-        );
-    string      baseName = syn.next();
-    Mesh    base = loadTri(baseName);
-    Mesh    target = loadMesh(syn.next());
-    if (base.verts.size() != target.verts.size())
-        fgThrow("Different number of vertices between base and target");
-    bool        ignoreSmall = false;
+    Syntax              syn {args,R"([-i] <base>.<ext0> (d | t) (<targets> | <targsFile>.txt)
+    -i              - ignore very small morphs (ie. do not create)
+    <base>          - add morph to this mesh
+    <ext0>          - (fgmesh | tri)
+    (d | t)         - specify delta (aka blendshape) or target morph (target shape follows shape changes)
+    <targets>       - (<targ>.<ext1> <morphName>)+
+    <targ>          - target shape mesh containing the same number of vertices as <base>
+    <ext1>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <targsFile>.txt - each line must be of the form <targ>.<ext1>, where the morph will be named <targ>
+OUTPUT:
+    <base>.<ext0> is saved with the new morph(s) added)"
+    };
+    bool                ignoreSmall = false;
     if (syn.peekNext() == "-i") {
         ignoreSmall = true;
         syn.next();
     }
-    float       baseSz = cMaxElem(cDims(base.verts)),
-                delSz = cMaxElem(cDims(target.verts-base.verts));
-    if ((delSz / baseSz) < 0.00001) {
-        if (ignoreSmall) {
-            fgout << "Very small or zero morph ignored";
-            return;
-        }
-        else
-            fgout << "WARNING: Very small or zero morph";
-    }
-    string      type = syn.next();
-    if (type == "d") {
-        DirectMorph    m;
-        m.name = syn.next();
-        m.verts = target.verts - base.verts;
-        base.deltaMorphs.push_back(m);
-    }
-    else if (type == "t")
-        base.addTargMorph(syn.next(),target.verts);
+    String              baseName = syn.next();
+    Mesh                base = loadMesh(baseName);
+    bool                asDeltaMorph = true;            // false == target morph
+    if (syn.next() == "d")
+        asDeltaMorph = true;
+    else if (syn.curr() == "t")
+        asDeltaMorph = false;
     else
-        syn.error("Unrecognized morph type",type);
-    saveTri(baseName,base);
+        syn.error("Unknown morph type selection",syn.curr());
+    Strings             morphFiles,
+                        morphNames;
+    if (endsWith(syn.peekNext(),".txt")) {
+        morphFiles = splitWhitespace(loadRawString(syn.next()));
+        morphNames = mapCall(morphFiles,[](String const & s){return pathToBase(String8{s}).m_str;});
+    }
+    else {
+        while (syn.more()) {
+            morphFiles.push_back(syn.next());
+            morphNames.push_back(syn.next());
+        }
+    }
+    float               baseSz = cMaxElem(cDims(base.verts)),
+                        epsilon = baseSz * epsBits(17);         // less than 1 in 100,000 relative to max dim
+    for (size_t mm=0; mm<morphFiles.size(); ++mm) {
+        PushIndent          pind {morphFiles[mm]};
+        Mesh                target = loadMesh(morphFiles[mm]);
+        if (base.verts.size() != target.verts.size())
+            fgThrow("Different number of vertices between base and target");
+        size_t              epsDiffs {0},
+                            sigDiffs {0};
+        for (size_t vv=0; vv<base.verts.size(); ++vv) {
+            float               del = cMaxElem(mapAbs(target.verts[vv] - base.verts[vv]));
+            if (del > epsilon)
+                ++sigDiffs;
+            else
+                ++epsDiffs;
+        }
+        fgout << fgnl << "Vertices that differed signficantly: " << sigDiffs
+            << fgnl << "Vertices that differed insignificantly: " << epsDiffs
+            << fgnl << "Total number of vertices: " << base.verts.size();
+        if (!ignoreSmall)
+            sigDiffs += epsDiffs;
+        if (sigDiffs == 0) {
+            fgout << fgnl << "No morph created";
+            continue;
+        }
+        if (asDeltaMorph)
+            base.deltaMorphs.emplace_back(morphNames[mm],target.verts-base.verts);
+        else
+            base.addTargMorph(morphNames[mm],target.verts);
+    }
+    saveMesh(base,baseName);
 }
 
-/**
-   \ingroup Base_Commands
-   Extract all morphs to named OBJ files
- */
-void
-extract(CLArgs const & args)
+void                cmdMorphExport(CLArgs const & args)
 {
-    Syntax    syn(args,"<mesh>.tri <ext> [<base>]\n"
-        "    <ext> - Output format " + getMeshSaveExtsCLDescription() + "\n"
-        "OUTPUTS:\n"
-        "    <mesh>_<name>.<ext> for each morph target, or\n"
-        "    <base>_<name>.<ext> if <base> is specified.\n"
-        "NOTES:\n"
-        "    ':', '(' and ')' characters are stripped from the morph names."
-    );
-    string      meshName = syn.next(),
-                ext = syn.next();
-    String8    baseName = pathToBase(meshName);
+    Syntax              syn {args,R"(<mesh>.(fgmesh | tri) <ext> [<base>]
+    <mesh>          - mesh from which to export all morphs
+    <ext>           - output format )" + getMeshSaveExtsCLDescription() + R"("
+    <base>          - base name for saved meshes. Defaults to <mesh> if not specified
+OUTPUTS:
+    <base>-<name>.<ext> is saved for each morph, where <name> is the name of the morph.
+NOTES:
+    ':', '(' and ')' characters are stripped from the morph names.)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    String8             base = pathToBase(syn.curr());
+    String              ext = syn.next();
     if (syn.more())
-        baseName = syn.next();
-    Mesh    base = loadTri(meshName),
-                out = base;
+        base = syn.next();
+    Mesh                out = mesh;
     out.deltaMorphs.clear();
     out.targetMorphs.clear();
-    for (size_t ii=0; ii<base.numMorphs(); ++ii) {
-        out.verts = base.morphSingle(ii);
-        String8    morphName = removeChars(base.morphName(ii),":()");
-        saveMesh(out,baseName+"_"+morphName+"."+ext);
+    for (size_t ii=0; ii<mesh.numMorphs(); ++ii) {
+        out.verts = mesh.morphSingle(ii);
+        String8             morphName = removeChars(mesh.morphName(ii),":()");
+        saveMesh(out,base+"-"+morphName+"."+ext);
     }
 }
 
-/**
-   \ingroup Base_Commands
-   Filter out morphs that do nothing
- */
-void
-cmdFilter(CLArgs const & args)
+void                cmdMorphFilter(CLArgs const & args)
 {
     Syntax    syn(args,"<in>.tri <out>.tri\n"
         "NOTES:\n"
@@ -334,12 +324,7 @@ cmdFilter(CLArgs const & args)
     saveTri(syn.next(),out);
 }
 
-/**
-   \ingroup Base_Commands
-   List animation morphs in a mesh.
- */
-void
-morphList(CLArgs const & args)
+void                cmdMorphList(CLArgs const & args)
 {
     Syntax                  syn(args,
         "<mesh>.(tri|fgmesh)\n"
@@ -359,12 +344,7 @@ morphList(CLArgs const & args)
     fgout << fgpop << fgnl;
 }
 
-/**
-   \ingroup Base_Commands
-   Remove brackets from animation morph names (some mesh formats do not support them).
- */
-void
-removebrackets(CLArgs const & args)
+void                removebrackets(CLArgs const & args)
 {
     Syntax    syn(args,
         "<meshIn>.tri <meshOut>.tri\n"
@@ -379,63 +359,45 @@ removebrackets(CLArgs const & args)
     saveMesh(mesh,syn.next());
 }
 
-/**
-   \ingroup Base_Commands
-   Remove animation morphs from a mesh.
- */
-void
-removemorphs(CLArgs const & args)
+void                cmdMorphRemove(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<meshIn>.tri <meshOut>.tri ((d | t) <index>)+\n"
-        "    d          - Delta morph\n"
-        "    t          - Target morph\n"
-        "    <index>    - morph index number (see 'morph list' command)"
-        );
-
-    string      inFile = syn.next(),
-                outFile = syn.next();
-    if (!checkExt(inFile,"tri"))
-        syn.error("Not a TRI file",inFile);
-    if (!checkExt(outFile,"tri"))
-        syn.error("Not a TRI file",outFile);
-    Mesh    mesh = loadTri(inFile);
-    vector<FatBool>  deltas(mesh.deltaMorphs.size(),true),
-                    targets(mesh.targetMorphs.size(),true);
-    while (syn.more()) {
-        String8    arg = syn.nextLower();
-        uint        idx = syn.nextAs<uint>();
-        if (arg == "d") {
-            if (idx >= deltas.size())
+    Syntax              syn {args,R"(<in>.<ext> <out>.<ext> ((d | t) <index>)+
+    <ext>       - (fgmesh | tri)
+    d           - delta morph
+    t           - target morph
+    <index>     - morph index number (see 'morph list' command)
+OUTPUT:
+    <out>.<ext> - identical to <in>.<ext> except with the specified morph removed)"
+    };
+    Mesh                in = loadMesh(syn.next());
+    String              outName = syn.next();
+    Bools               delts (in.deltaMorphs.size(),true),
+                        targs (in.targetMorphs.size(),true);
+    do {
+        String              type = syn.next();
+        uint                idx = syn.nextAs<uint>();
+        if (type == "d") {
+            if (idx < delts.size())
+                delts[idx] = false;
+            else
                 fgThrow("Delta morph index out of bounds",toStr(idx));
-            deltas[idx] = false;
         }
-        else if (arg == "t") {
-            if (idx >= targets.size())
+        else if (type == "t") {
+            if (idx < targs.size())
+                targs[idx] = false;
+            else
                 fgThrow("Target morph index out of bounds",toStr(idx));
-            targets[idx] = false;
         }
         else
-            syn.error("Invalid morph type",arg);
-    }
-    Mesh                meshOut = mesh;
-    meshOut.deltaMorphs.clear();
-    meshOut.targetMorphs.clear();
-    for (size_t ii=0; ii<deltas.size(); ++ii)
-        if (deltas[ii])
-            meshOut.deltaMorphs.push_back(mesh.deltaMorphs[ii]);
-    for (size_t ii=0; ii<targets.size(); ++ii)
-        if (targets[ii])
-            meshOut.targetMorphs.push_back(mesh.targetMorphs[ii]);
-    saveMesh(meshOut,outFile);
+            syn.error("Invalid morph type",type);
+    } while (syn.more());
+    Mesh                out = in;
+    out.deltaMorphs = filter(in.deltaMorphs,delts);
+    out.targetMorphs = filter(in.targetMorphs,targs);
+    saveMesh(out,outName);
 }
 
-/**
-   \ingroup Base_Commands
-   Rename an animation morph in a mesh.
- */
-void
-renameMorph(CLArgs const & args)
+void                cmdMorphRename(CLArgs const & args)
 {
     Syntax    syn(args,
         "<mesh>.tri (d | t) <index> <name>\n"
@@ -464,39 +426,90 @@ renameMorph(CLArgs const & args)
     saveTri(fname,mesh);
 }
 
-void
-morph(CLArgs const & args)
+void                cmdMorphSquelch(CLArgs const & args)
 {
-    Cmds   cmds {
+    Syntax              syn {args,R"(<in>.<ext> <out>.<ext> [<bitDepth>]
+    <ext>           - ( fgmesh | tri )
+    <bitDepth>      - [10,20] bits of precision to consider as significant. Defaults to 16.
+OUTPUT:
+    <out>.<ext>     - identical mesh with morphs squelched at given <bitDepth>
+NOTES:
+    removes all vertex changes which are smaller than the given relative threshold with respect to
+    the maximum dimension of the vertex list boundaries. With 16 bits precision, vertices that move less
+    than 1/2^16 ~ 1/65536 of the max boundary size (at morph coefficient 1) will be set to zero change.
+    All morphs are affected.)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    String              outName = syn.next();
+    uint                bitDepth = 16;
+    if (syn.more())
+        bitDepth = syn.nextAs<uint>();
+    if ((bitDepth<10)||(bitDepth>20))
+        syn.error("invalid value for <bitDepth>",syn.curr());
+    float               maxDim = cMaxElem(cDims(mesh.verts)),
+                        maxDel = maxDim * epsBits(bitDepth);
+    for (DirectMorph & dm : mesh.deltaMorphs) {
+        size_t              cntDel {0};
+        for (Vec3F & delta : dm.verts) {
+            float           delmax = cMaxElem(mapAbs(delta));
+            if ((delmax > 0) && (delmax < maxDel)) {
+                delta = Vec3F{0};
+                ++cntDel;
+            }
+        }
+        if (cntDel > 0)
+            fgout << fgnl << dm.name << " : " << cntDel << " deltas set to zero.";
+    }
+    for (IndexedMorph & im : mesh.targetMorphs) {
+        IdxVec3Fs           ivs;
+        for (IdxVec3F const & iv : im.ivs) {
+            Vec3F               delta = iv.vec - mesh.verts[iv.idx];
+            float               delmax = cMaxElem(mapAbs(delta));
+            if (delmax >= maxDel)
+                ivs.push_back(iv);
+        }
+        if (ivs.size() < im.ivs.size()) {
+            fgout << fgnl << im.name << " : " << im.ivs.size()-ivs.size() << " deltas set to zero.";
+            im.ivs = ivs;
+        }
+    }
+    saveMesh(mesh,outName);
+}
+
+}
+
+void                cmdMorph(CLArgs const & args)
+{
+    Cmds                cmds {
+        {cmdMorphAdd,"add","Add morph target(s) to a mesh"},
         {anim,"anim","Apply morphs by name to multiple meshes"},
         {cmdMorphApply,"apply","Apply morphs by index number in a single mesh"},
-        {clampMorphDeltas,"clampMorphDeltas","Clamp delta morphs to zero on seam vertices"},
-        {clear,"clear","Clear all morphs from a mesh"},
-        {copymorphs,"copy","Copy a morph between meshes with corresponding vertex lists"},
-        {create,"create","Create morphs for a mesh"},
-        {extract,"extract","Extract all morphs to named files"},
-        {cmdFilter,"filter","Filter out delta morphs that do nothing"},
-        {morphList,"list","List available morphs in a mesh"},
-        {removemorphs,"remove","Remove morphs from a mesh"},
+        {cmdMorphClampSeam,"clampseam","Clamp delta morphs to zero on seam vertices"},
+        {cmdMorphClear,"clear","Clear all morphs from a mesh"},
+        {cmdMorphCopy,"copy","Copy a morph between meshes with corresponding vertex lists"},
+        {cmdMorphExport,"export","Export all morphs to mesh files"},
+        {cmdMorphFilter,"filter","Filter out delta morphs that do nothing"},
+        {cmdMorphList,"list","List available morphs in a mesh"},
+        {cmdMorphRemove,"remove","Remove morphs from a mesh"},
         {removebrackets,"removebrackets","Removes brackets from morphs names (for Maya)"},
-        {renameMorph,"rename","Rename a morph in a mesh"}
+        {cmdMorphRename,"rename","Rename a morph in a mesh"},
+        {cmdMorphSquelch,"squelch","Remove insignificant deltas from morphs"},
     };
     doMenu(args,cmds);
 }
 
-}
-
-Cmd
-getCmdMorph()
-{return Cmd(morph,"morph","List, apply or create animation morphs for 3D meshes"); }
-
-void
-testMorph(CLArgs const & args)
+void                testMorph(CLArgs const & args)
 {
     FGTESTDIR
     copyFileToCurrentDir("base/Jane.tri");
     runCmd(cmdMorphApply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
-    regressFile("base/test/JaneMorphBaseline.tri","tmp.tri");
+    testRegressApprox<Mesh>(
+        loadTri("tmp.tri"),
+        "base/test/JaneMorphBaseline.tri",
+        [](Mesh const & l,Mesh const & r){return isApproxEqual(l.verts,r.verts,epsBits(12)); },
+        [](String8 const & fn){return loadMesh(fn); },
+        [](Mesh const & m,String8 const & fn){saveMesh(m,fn); });
+
 }
 
 }

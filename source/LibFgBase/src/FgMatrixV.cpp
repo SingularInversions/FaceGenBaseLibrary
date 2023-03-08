@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 
 #include "FgMatrixV.hpp"
 #include "FgMath.hpp"
-#include "FgOut.hpp"
+#include "FgSerial.hpp"
 #include "FgApproxEqual.hpp"
 #include "FgSyntax.hpp"
 #include "FgTime.hpp"
@@ -18,7 +18,7 @@
     #pragma warning(push,0)     // Eigen triggers lots of warnings
 #endif
 
-#define EIGEN_MPL2_ONLY     // Only use permissive licensed source files from Eigen
+#define EIGEN_MPL2_ONLY         // Only use permissive licensed source files from Eigen
 #include "Eigen/Dense"
 #include "Eigen/Core"
 
@@ -33,8 +33,7 @@ using namespace Eigen;
 namespace Fg {
 
 template<>
-MatF
-operator*(const MatF & lhs,const MatF & rhs)
+MatF                operator*(const MatF & lhs,const MatF & rhs)
 {
     if (lhs.ncols < 100)
         return matMul(lhs,rhs);
@@ -56,8 +55,7 @@ operator*(const MatF & lhs,const MatF & rhs)
 }
 
 template<>
-MatD
-operator*(MatD const & lhs,MatD const & rhs)
+MatD                operator*(MatD const & lhs,MatD const & rhs)
 {
     if (lhs.ncols < 100)
         return matMul(lhs,rhs);
@@ -78,15 +76,7 @@ operator*(MatD const & lhs,MatD const & rhs)
     return ret;
 }
 
-struct    StackElem
-{
-    StackElem() : acc(0.0), overflow(false) {}
-    double        acc;
-    bool        overflow;
-};
-
-MatD
-cRelDiff(MatD const & a,MatD const & b,double minAbs)
+MatD                cRelDiff(MatD const & a,MatD const & b,double minAbs)
 {
     MatD   ret;
     FGASSERT(a.dims() == b.dims());
@@ -95,8 +85,7 @@ cRelDiff(MatD const & a,MatD const & b,double minAbs)
     return ret;
 }
 
-Mat<MatD,2,2>
-cPartition(MatD const & m,size_t loSize)
+Mat<MatD,2,2>       cPartition(MatD const & m,size_t loSize)
 {
     Mat<MatD,2,2>    ret;
     FGASSERT(m.nrows == m.ncols);
@@ -109,8 +98,7 @@ cPartition(MatD const & m,size_t loSize)
 }
 
 // Uses simple Gram-Schmidt; probably not very accurate for large 'dim':
-MatD
-cRandOrthogonal(size_t dim)
+MatD                cRandOrthogonal(size_t dim)
 {
     FGASSERT(dim > 1);
     MatD            ret(dim,dim);
@@ -118,15 +106,14 @@ cRandOrthogonal(size_t dim)
         MatD            vec = MatD::randNormal(1,dim);
         for (uint rr=0; rr<row; ++rr) {
             MatD            axis = ret.rowVec(rr);
-            vec -=  axis * cDot(vec,axis);
+            vec -=  axis * cDot(vec.m_data,axis.m_data);
         }
         ret.setSubMat(row,0,normalize(vec));
     }
     return ret;
 }
 
-MatD
-cRandMahalanobis(size_t dim,double logScaleStdev)
+MatD                cRandMahalanobis(size_t dim,double logScaleStdev)
 {
     Doubles             scales;
     for (size_t ii=0; ii<dim; ++ii)
@@ -135,8 +122,7 @@ cRandMahalanobis(size_t dim,double logScaleStdev)
     return cDiagMat(scales) * R;
 }
 
-MatD
-cRandSPD(size_t dim,double logScaleStdev)
+MatD                cRandSPD(size_t dim,double logScaleStdev)
 {
     MatD                M = cRandMahalanobis(dim,logScaleStdev);
     return M.transpose() * M;
@@ -144,17 +130,35 @@ cRandSPD(size_t dim,double logScaleStdev)
 
 namespace {
 
-void
-testCorrect(CLArgs const &)
+void                testMatMul(CLArgs const & args)
 {
-    MatD            M = {2,2,{1,2,3,5}},
-                    N = M * M,
-                    R = {2,2,{7,12,18,31}};
-    FGASSERT(N == R);
+    {   // built-in version:
+        MatD            M = {2,2,{1,2,3,5}},
+                        N = M * M,
+                        R = {2,2,{7,12,18,31}};
+        FGASSERT(N == R);
+    }
+    {   // eigen version:
+        if (isAutomated(args))
+            return;
+        Syntax            syn(args,"<size>");
+        size_t              sz = fromStr<size_t>(syn.next()).val();
+        MatrixXd            l(sz,sz),
+                            r(sz,sz);
+        for (size_t rr=0; rr<sz; ++rr) {
+            for (size_t cc=0; cc<sz; ++cc) {
+                l(rr,cc) = randUniform();
+                r(rr,cc) = randUniform();
+            }
+        }
+        {
+            PushTimer     ts("Eigen mat mul " + toStr(sz));
+            MatrixXd        m = l * r;
+        }
+    }
 }
 
-MatD
-tt0(MatD const & lhs,MatD const & rhs)
+MatD                tt0(MatD const & lhs,MatD const & rhs)
 {
     MatD                mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
@@ -171,8 +175,7 @@ tt0(MatD const & lhs,MatD const & rhs)
     return mat;
 }
 
-MatD
-tt1(MatD const & lhs,MatD const & rhs)
+MatD                tt1(MatD const & lhs,MatD const & rhs)
 {
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
     FGASSERT(lhs.ncols == rhs.nrows);
@@ -193,8 +196,7 @@ tt1(MatD const & lhs,MatD const & rhs)
     return mat;
 }
 
-MatD
-tt2(MatD const & lhs,MatD const & rhs)
+MatD                tt2(MatD const & lhs,MatD const & rhs)
 {
     size_t const        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
@@ -223,8 +225,7 @@ tt2(MatD const & lhs,MatD const & rhs)
     return mat;
 }
 
-MatD
-tt3(MatD const & lhs,MatD const & rhs)
+MatD                tt3(MatD const & lhs,MatD const & rhs)
 {
     size_t const        CN = 64 / sizeof(double);    // Number of elements that fit in L1 Cache (est)
     MatD           mat(lhs.nrows,rhs.ncols,0.0);
@@ -266,76 +267,61 @@ tt3(MatD const & lhs,MatD const & rhs)
     return mat;
 }
 
-void
-showMul(function<MatD(MatD const &,MatD const &)> fn,MatD const & l,MatD const & r,string const & desc)
-{
-    fgout << fgnl << desc << " : ";
-    Timer         timer;
-    MatD       m3 = fn(l,r);
-    size_t          elapsed = timer.elapsedMilliseconds();
-    fgout << elapsed << " ms";
-}
-
-void
-testMul(CLArgs const & args)
+void                testMatMulSpeed(CLArgs const & args)
 {
     if (isAutomated(args))
         return;
-    Syntax        syn(args,"<size>");
-    size_t          sz = fromStr<size_t>(syn.next()).val();
-    MatD       m0 = MatD::randNormal(sz,sz),
-                    m1 = MatD::randNormal(sz,sz);
-    Timer         timer;
-    MatD       m2 = m0 * m1;
-    size_t          time = timer.elapsedMilliseconds();
+    Syntax              syn {args,"<size>"};
+    size_t              sz = fromStr<size_t>(syn.next()).val();
+    MatD                m0 = MatD::randNormal(sz,sz),
+                        m1 = MatD::randNormal(sz,sz);
+    Timer               timer;
+    MatD                m2 = m0 * m1;
+    size_t              time = timer.elapsedMilliseconds();
     fgout << sz << ": " << time << "ms";
 }
 
-void
-loopStructTime(CLArgs const & args)
+void                testMatMulStruct(CLArgs const & args)
 {
     if (isAutomated(args))
         return;
-    uint            dim = 1024;     // Must divide 8 for non-generalized tests
-    MatD       m1 = MatD::randNormal(dim,dim),
-                    m2 = MatD::randNormal(dim,dim);
-    showMul(tt0,m1,m2,"1 sub-loop");
-    showMul(tt1,m1,m2,"3 sub-loops");
-    showMul(tt2,m1,m2,"1 sub-loop generalized");
-    showMul(tt3,m1,m2,"3 sub-loops generalized");
-}
-
-void
-eigenTest(CLArgs const & args)
-{
-    if (isAutomated(args))
-        return;
-    Syntax            syn(args,"<size>");
-    size_t              sz = fromStr<size_t>(syn.next()).val();
-    MatrixXd            l(sz,sz),
-                        r(sz,sz);
-    for (size_t rr=0; rr<sz; ++rr) {
-        for (size_t cc=0; cc<sz; ++cc) {
-            l(rr,cc) = randUniform();
-            r(rr,cc) = randUniform();
-        }
-    }
+    uint                dim = 1024;     // Must divide 8 for non-generalized tests
+    MatD                m1 = MatD::randNormal(dim,dim),
+                        m2 = MatD::randNormal(dim,dim);
+    auto                showMul = [&](Sfun<MatD(MatD const &,MatD const &)> fn,String const & desc)
     {
-        PushTimer     ts("Eigen mat mul " + toStr(sz));
-        MatrixXd        m = l * r;
-    }
+        fgout << fgnl << desc << " : ";
+        Timer               timer;
+        MatD                m3 = fn(m1,m2);
+        size_t              elapsed = timer.elapsedMilliseconds();
+        fgout << elapsed << " ms";
+    };
+    showMul(tt0,"1 sub-loop");
+    showMul(tt1,"3 sub-loops");
+    showMul(tt2,"1 sub-loop generalized");
+    showMul(tt3,"3 sub-loops generalized");
 }
 
-}
-
-void
-testMatrixV(CLArgs const & args)
+void                testMatCol(CLArgs const &)
 {
-    Cmds   cmds;
-    cmds.push_back(Cmd(testCorrect,"correct"));
-    cmds.push_back(Cmd(eigenTest,"tem","Time eigen mat mul"));
-    cmds.push_back(Cmd(testMul,"tlm","Time loop mat mul"));
-    cmds.push_back(Cmd(loopStructTime,"lst","Loop structure timing experiment"));
+    MatI                M {2,2, {1,2, 3,4,}},
+                        N {2,0, {}};
+    if (appendCol(M,{5,6}) != MatI{2,3,{1,2,5, 3,4,6,}}) FGASSERT_FALSE;   // macros can't contain {}
+    if (appendCol(N,{5,6}) != MatI{2,1,{5,6}}) FGASSERT_FALSE;
+    if (eraseCol(M,0) != MatI{2,1, {2,4}}) FGASSERT_FALSE;
+    if (eraseCol(M,1) != MatI{2,1, {1,3}}) FGASSERT_FALSE;
+}
+
+}
+
+void                testMatrixV(CLArgs const & args)
+{
+    Cmds                cmds {
+        {testMatCol,"col","matrix column-wide editing functions"},
+        {testMatMul,"mul","matrix multiplication correctness"},
+        {testMatMulSpeed,"mult","matrix multiplication timing"},
+        {testMatMulStruct,"muls","matrix multiplcation loop structure"},
+    };
     doMenu(args,cmds,true);
 }
 

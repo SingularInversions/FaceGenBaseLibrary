@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -44,7 +44,7 @@ GuiWinStatics s_guiWin;
 struct      GuiWinMain : GuiMainBase
 {
     NPTF<String8>           titleNF;
-    String8                 m_store;            // Base filename for state storage
+    String8                 m_store;            // directory [and prefix] for state storage
     GuiImplPtr              m_win;
     Vec2UI                  m_size;             // Current size of client area (including maximization)
     Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
@@ -101,18 +101,19 @@ struct      GuiWinMain : GuiMainBase
         // x - right, y - down, origin - upper left corner of MAIN screen.
         // CW_USEDEFAULT doesn't pick the centre of the screen(s) because Microsoft.
         // TODO: use GetSystemMetrics(SM_CXSCREEN) to figure out screen size ... but multi-screens ...
-        Mat22I          posDims {CW_USEDEFAULT,defaultSize[0],CW_USEDEFAULT,defaultSize[1]},
-                        pdTmp;
-        // Retrieve previously saved window state if present and valid:
-        if (loadBsaXml(m_store+"Dims.xml",pdTmp,false)) {
-            Vec2I    pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
-            Vec2I    pdMin = Vec2I(m_win->getMinSize());
+        Mat22I          posDims {CW_USEDEFAULT,defaultSize[0],CW_USEDEFAULT,defaultSize[1]};
+        // Retrieve previously saved main window position if file present and valid:
+        try {
+            Mat22I          pdTmp = dsrlzText<Mat22I>(loadRawString(m_store+"main-dims.txt"));
+            Vec2I           pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
+            Vec2I           pdMin = Vec2I(m_win->getMinSize());
             if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
                 (pdAbs[1] < 32000) &&
                 (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
                 (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
                 posDims = pdTmp;
         }
+        catch (...) {}
         // TODO: Testing to see if the remembered window position is visible in a multi-monitor
         // setup is possible but I can't test it right now. Here are functions:
         // Get raw pixel area of primary screen not including taskbar or application toolbars:
@@ -172,9 +173,11 @@ struct      GuiWinMain : GuiMainBase
 //fgout << fgnl << "ShowWindow";
         // Retrieve Win32 maximization state:
         bool                maximized = false;
-        bool                maxTmp;
-        if (loadBsaXml(m_store+"Maximized.xml",maxTmp,false))
+        try {
+            bool                maxTmp = dsrlzText<bool>(loadRawString(m_store+"main-maximized.txt"));
             maximized = maxTmp;
+        }
+        catch (...) {}
         // Set the currently selected windows to show, which also causes the WM_SIZE message
         // to be sent (and for the builtin controls, WM_PAINT):
         int             showState = maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
@@ -283,9 +286,12 @@ struct      GuiWinMain : GuiMainBase
             FGASSERTWIN(GetWindowPlacement(hwnd,&wp));  // Gets the non-maximezed window rect
             RECT const &        r = wp.rcNormalPosition;
             Mat22I              dimsNorm {r.left,r.right-r.left,r.top,r.bottom-r.top};
-            saveBsaXml(m_store+"Dims.xml",dimsNorm,false);
             bool                maximized = dimsCurr != dimsNorm;
-            saveBsaXml(m_store+"Maximized.xml",maximized,false);
+            try {
+                saveRaw(srlzText(dimsNorm),m_store+"main-dims.txt");
+                saveRaw(srlzText(maximized),m_store+"main-maximized.txt");
+            }
+            catch (...) {}
             PostQuitMessage(0);     // Sends WM_QUIT which ends msg loop
         }
         //else if (msg == WM_MOUSEWHEEL) {
@@ -310,7 +316,7 @@ struct      GuiWinMain : GuiMainBase
 void                guiStartImpl(
     NPT<String8>                titleN,
     GuiPtr                      gui,
-    String8 const &             store,
+    String8 const &             storeDir,
     GuiOptions const &          options)
 {
     s_guiWin.hinst = GetModuleHandle(NULL);
@@ -324,7 +330,7 @@ void                guiStartImpl(
     HRESULT             hr = CoInitializeEx(NULL,COINIT_APARTMENTTHREADED);
     FGASSERTWIN((hr==S_OK)||(hr==S_FALSE));     // Repeat initialization is OK, even though it should not happen here
     ScopeGuard          sg {[](){CoUninitialize();}};
-    GuiWinMain          win {titleN,store+"Win",gui->getInstance()};
+    GuiWinMain          win {titleN,storeDir+"Win",gui->getInstance()};
     for (GuiEvent const & event : options.events) {
         win.eventHandles.push_back(event.handle);
         win.eventHandlers.push_back(event.handler);
@@ -369,7 +375,7 @@ LRESULT             winCallCatch(std::function<LRESULT(void)> func,string const 
     {
         msg = "OUT OF MEMORY";
 #ifndef FG_64
-        if (fg64bitOS())
+        if (is64bitOS())
             msg += " (install 64-bit version if possible)";
 #endif
         msg += "\n\n";

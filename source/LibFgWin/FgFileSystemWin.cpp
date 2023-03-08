@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,10 +7,9 @@
 
 #include "stdafx.h"
 
-#include "FgTypes.hpp"
+#include "FgSerial.hpp"
 #include "FgFileSystem.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgStdString.hpp"
+#include "FgSerial.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgTime.hpp"
 
@@ -27,7 +26,7 @@ bool                isDirectory(String8 const & name)
     return (attr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-// Can't use boost::filesystem as is_directory doesn't wok on Win 10 as of 18.04 update:
+// Can't use std::filesystem as is_directory doesn't work on Win 10 as of 18.04 update:
 DirContents         getDirContents(String8 const & dirName,bool includeDot)
 {
     Path                dir(asDirectory(dirName));
@@ -61,7 +60,7 @@ String8             getCurrentDir()
     return ps;
 }
 
-// We use OS-specific APIs for this one since boost::filesystem::current_directory
+// We use OS-specific APIs for this one since std::filesystem::current_directory
 // doesn't return a success flag:
 bool                setCurrentDir(String8 const & dir,bool throwOnFail)
 {
@@ -330,7 +329,7 @@ uint64              getCreationTime(String8 const & path)
 
 uint64              getLastWriteTime(String8 const & fname)
 {
-    // Do NOT replace with boost::filesystem::last_write_time() which actually returns create time on Win.
+    // Do NOT replace with std::filesystem::last_write_time() which actually returns create time on Win.
     HANDLE          hndl =
         CreateFile(
             fname.as_wstring().c_str(),

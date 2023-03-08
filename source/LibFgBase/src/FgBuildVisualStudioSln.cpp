@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,11 +11,8 @@
 #include "stdafx.h"
 
 #include "FgBuild.hpp"
-#include "FgOut.hpp"
-#include "FgException.hpp"
 #include "FgFileSystem.hpp"
 #include "FgBuild.hpp"
-#include "FgString.hpp"
 #include "FgTestUtils.hpp"
 
 using namespace std;
@@ -28,7 +25,6 @@ struct      VsInfo {
     Compiler            compiler;
     String              vsYearDigits2;
     uint                vsMajorVersion;
-    // VS17 specifies exact, so give latest as of 2022.06. Later versions just use major.minor:
     String              targetPlatformVersion;
     String              platformToolset;
     String              vsFullVersion;      // with latest updates as of 2022.05
@@ -40,7 +36,6 @@ struct      VsInfo {
 VsInfo                  getCompilerInfo(Compiler compiler)
 {
     static vector<VsInfo>   ret {
-        {Compiler::vs17,"17",15,"10.0.19041.0","v141","15.0.28307.1972","15.0",},
         {Compiler::vs19,"19",16,"10.0",        "v142","16.0.32510.428", "16.0",},
         {Compiler::vs22,"22",17,"10.0",        "v143","17.2.32519.379", "16.0",},
     };
@@ -91,12 +86,7 @@ bool                writeVcxproj(
     string                  toolsVersion = "15";
     ofs << 
         "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-        "<Project DefaultTargets=\"Build\" ";
-    if (compiler == Compiler::vs17)
-        // We don't care about this .NET framework selector, but just to match the default new library:
-        ofs << "ToolsVersion=\"15.0\" ";
-    ofs << 
-        "xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n"
+        "<Project DefaultTargets=\"Build\" xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\">\n"
         "  <ItemGroup Label=\"ProjectConfigurations\">\n";
     struct              DRSel           // debrel-selected attributes
     {
@@ -246,6 +236,8 @@ bool                writeVcxproj(
                 // ensure source code conforms to the language specification; this does not
                 // preclude non-conforming code generation (see /fpFast above)
                 "      <ConformanceMode>true</ConformanceMode>\n"
+                // standard C++17
+                "      <LanguageStandard>stdcpp17</LanguageStandard>\n"
                 "    </ClCompile>\n";
             if (proj.isLinked()) {
                 ofs <<
@@ -416,7 +408,7 @@ bool                writeSln(
         }
     }
     string      globalEndSections;
-    // Add CMake and Unix folders if this is a VS17 dev instance:
+    // Add CMake and Unix folders if this is a VS dev instance:
     if (pathExists("../data/_overwrite_baselines.flag")) {
         // This GUID is pre-defined to mean a solution folder:
         string                  uuidFolder = "{2150E333-8FDC-42A3-9474-1A3956D46DE8}";
@@ -540,8 +532,8 @@ bool                writeVisualStudioSolutionFiles(ConsSolution const & sln)
             merkle += projGuid;
         }
     }
-    // This codebase uses C++14 which is only fully supported by VS 2017 and later:
-    Compilers           compilers {Compiler::vs17,Compiler::vs19,Compiler::vs22,};
+    // This codebase uses C++17 which is only supported by VS 2019 and later:
+    Compilers           compilers {Compiler::vs19,Compiler::vs22,};
     bool                changed = false;
     for (ConsProj const & proj : sln.projects) {
         if (!proj.srcGroups.empty()) {

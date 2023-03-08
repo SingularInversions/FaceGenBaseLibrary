@@ -1,16 +1,14 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Stack-based variable-size array with fixed max size.
-// Less verbose than boost::static_vector.
+// Stack-based variable-size array with fixed max size similar to boost::static_vector.
 
 #ifndef FGARRAY_HPP
 #define FGARRAY_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgDiagnostics.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 

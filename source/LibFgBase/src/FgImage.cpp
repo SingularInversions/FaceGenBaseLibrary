@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,7 +21,8 @@ std::ostream &      operator<<(std::ostream & os,ImgRgba8 const & img)
     if (img.empty())
         os << "Empty image";
     else
-        os << "Dimensions: " << img.dims() << "Channel bounds: " << cBounds(img.m_data);
+        os << "Dimensions: " << img.dims() << fgnl
+            << "Channel bounds: " << cBounds(img.m_data);
     return os;
 }
 
@@ -29,7 +30,7 @@ std::ostream &      operator<<(std::ostream & os,ImgC4F const & img)
 {
     if (img.empty())
         return os << "Empty image";
-    Mat<float,4,1>    init {img[0].m_c};
+    Mat<float,4,1>    init {img.xy(0,0).m_c};
     Mat<float,4,2>    bounds = catHoriz(init,init);
     for (Iter2UI it(img.dims()); it.next(); it.valid()) {
         RgbaF         pix = img[it()];
@@ -43,15 +44,60 @@ std::ostream &      operator<<(std::ostream & os,ImgC4F const & img)
         fgnl << "Channel bounds: " << bounds;
 }
 
-AffineEw2D          cIpcsToIucsXf(Vec2UI dims) {return {Mat22D(0,dims[0],0,dims[1]),Mat22D(0,1,0,1)}; }
-AffineEw2D          cIrcsToIucsXf(Vec2UI imageDims) {return {Mat22D{-0.5,imageDims[0]-0.5,-0.5,imageDims[1]-0.5},Mat22D{0,1,0,1}}; }
-AffineEw2F          cIucsToIpcsXf(Vec2UI dims) {return AffineEw2F(Mat22F(0,1,0,1),Mat22F(0,dims[0],0,dims[1])); }
-AffineEw2F          cIucsToIrcsXf(Vec2UI ircsDims)
+AffineEw2D          cIpcsToIucs(Vec2UI dims)
 {
-    return {Mat22F{0,1,0,1},Mat22F{-0.5f,ircsDims[0]-0.5f,-0.5f,ircsDims[1]-0.5f}};
+    return {
+        {0,0},                      // domain lo
+        {double(dims[0]),double(dims[1])},  // domain hi
+        {0,0},                      // map lo
+        {1,1}                       // map hi
+    };
 }
-
-AffineEw2F          cOicsToIucsXf() {return AffineEw2F(Mat22F(-1,1,-1,1),Mat22F(0,1,1,0)); }
+AffineEw2D          cIrcsToIucs(Vec2UI dims)
+{
+    return {
+        {-0.5,-0.5},                // domain lo
+        {dims[0]-0.5,dims[1]-0.5},  // domain hi
+        {0,0},                      // map lo
+        {1,1}                       // map hi
+    };
+}
+AffineEw2D          cIrcsToOtcs(Vec2UI dims)
+{
+    return {
+        {-0.5,-0.5},                // domain lo
+        {dims[0]-0.5,dims[1]-0.5},  // domain hi
+        {0,1},                      // map lo
+        {1,0}                       // map hi
+    };
+}
+AffineEw2D          cIucsToIrcsXf(Vec2UI dims)
+{
+    return {
+        {0,0},                      // domain lo
+        {1,1},                      // domain hi
+        {-0.5,-0.5},                // map lo
+        {dims[0]-0.5,dims[1]-0.5}   // map hi
+    };
+}
+AffineEw2D          cIucsToIpcsXf(Vec2UI dims)
+{
+    return {
+        {0,0},                      // domain lo
+        {1,1},                      // domain hi
+        {0,0},                      // map lo
+        {double(dims[0]),double(dims[1])}   // map hi
+    };
+}
+AffineEw2D          cOicsToIucsXf()
+{
+    return {
+        {-1,-1},                    // domain lo
+        {1,1},                      // domain hi
+        {0,1},                      // map lo
+        {1,0}                       // map hi
+    };
+}
 
 Lerp::Lerp(float rcs,size_t dim)
 {
@@ -193,35 +239,20 @@ Img3F               resampleAdaptive(Img3F in,Vec2D posIpcs,float inSize,uint ou
     return resampleSimple(in,Vec2UI{outSize},AffineEw2D{Vec2D{inSize/outSize},posIpcs});
 }
 
-bool                fgImgApproxEqual(ImgRgba8 const & img0,ImgRgba8 const & img1,uint maxDelta)
+ImgC4F              mapGamma(ImgC4F const & img,float gamma)
 {
-    if (img0.dims() != img1.dims())
-        return false;
-    int             lim = int(maxDelta * maxDelta);
-    for (Iter2UI it(img0.dims()); it.valid(); it.next()) {
-        Arr4I       delta = mapCast<int>(img0[it()].m_c) - mapCast<int>(img1[it()].m_c);
-        if ((sqr(delta[0]) > lim) ||
-            (sqr(delta[1]) > lim) ||
-            (sqr(delta[2]) > lim) ||
-            (sqr(delta[3]) > lim))
-            return false;
-    }
-    return true;
-}
-
-bool                isApproxEqual(ImgRgba8 const & l,ImgRgba8 const & r,uint maxDiff)
-{
-    if (l.dims() != r.dims())
-        return false;
-    int             mds = sqr(maxDiff);
-    for (size_t ii=0; ii<l.numPixels(); ++ii) {
-        Rgba8           lp = l.m_data[ii],
-                        rp = r.m_data[ii];
-        for (size_t jj=0; jj<4; ++jj)
-            if (sqr(scast<int>(lp[jj])-scast<int>(rp[jj])) > mds)
-                return false;
-    }
-    return true;
+    auto                fn = [gamma](RgbaF const & p)
+    {
+        RgbaF               ret {0,0,0,0};
+        float               alpha = p[3];
+        if (alpha > 0) {
+            for (size_t ii=0; ii<3; ++ii)
+                ret[ii] = pow(p[ii]/alpha,gamma) * alpha;
+            ret[3] = alpha;
+        }
+        return ret;
+    };
+    return mapCall(img,fn);
 }
 
 void                shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
@@ -235,11 +266,11 @@ void                shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
         for (uint xd=0; xd<dst.width(); xd++) {
             uint        xs1 = xd * 2,
                         xs2 = xs1 + 1;
-            RgbaUS      acc = RgbaUS(srcPtr1[xs1]) +
-                              RgbaUS(srcPtr1[xs2]) +
-                              RgbaUS(srcPtr2[xs1]) +
-                              RgbaUS(srcPtr2[xs2]) +
-                              RgbaUS(1,1,1,1);        // Account for rounding bias
+            Rgba16      acc = Rgba16(srcPtr1[xs1]) +
+                              Rgba16(srcPtr1[xs2]) +
+                              Rgba16(srcPtr2[xs1]) +
+                              Rgba16(srcPtr2[xs2]) +
+                              Rgba16(1,1,1,1);        // Account for rounding bias
             dstPtr[xd] = Rgba8(acc/4);
         }
         dstPtr += dst.width();
@@ -268,12 +299,12 @@ ImgRgba8            expand2(ImgRgba8 const & src)
             sxh = (sxh > srcMax[0] ? srcMax[0] : sxh);
             uint    wxl = 1 + 2 * (xx & 1),
                     wxh = 4 - wxl;
-            RgbaUS    acc =
-                RgbaUS(src.xy(sxl,syl)) * wxl * wyl +
-                RgbaUS(src.xy(sxh,syl)) * wxh * wyl +
-                RgbaUS(src.xy(sxl,syh)) * wxl * wyh +
-                RgbaUS(src.xy(sxh,syh)) * wxh * wyh +
-                RgbaUS(7,7,7,7);      // Account for rounding bias
+            Rgba16    acc =
+                Rgba16(src.xy(sxl,syl)) * wxl * wyl +
+                Rgba16(src.xy(sxh,syl)) * wxh * wyl +
+                Rgba16(src.xy(sxl,syh)) * wxl * wyh +
+                Rgba16(src.xy(sxh,syh)) * wxh * wyh +
+                Rgba16(7,7,7,7);      // Account for rounding bias
             dst.xy(xx,yy) = Rgba8(acc / 16);
         }
     }
@@ -296,80 +327,75 @@ ImgUC               shrink2Fixed(const ImgUC & img)
 // To ensure that floating point value 1 can round-trip to 255 and back we need to sacrifice that value
 // from the 8-bit range. Any other method will not round-trip between 1 and 255 which is often important
 // for background processing etc:
-Svec<Arr<float,3>>  toUnit3F(Svec<Rgba8> const & data)
-{
-    float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
-    Svec<Arr<float,3>>          ret; ret.reserve(data.size());
-    for (Rgba8 d : data)
-        ret.push_back(Arr<float,3>{d[0]/f,d[1]/f,d[2]/f});          // emplace doesn't work for some reason
-    return ret;
-}
 Img3F               toUnit3F(ImgRgba8 const & in)
 {
-    return Img3F {in.dims(),toUnit3F(in.m_data)};
+    auto                fn = [](Rgba8 p)
+    {
+        // if we define each uchar value v as representing the bin of real values in [v,v+1)
+        // then we want to use a factor just under 256 then round down:
+        float constexpr         f = 256.0f - 1/1024.0f;
+        return Arr3F{p[0]/f,p[1]/f,p[2]/f};
+    };
+    return mapCallT<Arr3F>(in,fn);
 }
 
-Svec<Arr<float,4>>  toUnit4F(Svec<Rgba8> const & data)
-{
-    float constexpr             f = 255.0f;                         // Ensure that highest value maps back to 1
-    Svec<Arr<float,4>>          ret; ret.reserve(data.size());
-    for (Rgba8 d : data)
-        ret.push_back(Arr<float,4>{d[0]/f,d[1]/f,d[2]/f,d[3]/f});   // emplace doesn't work for some reason
-    return ret;
-}
 Img4F               toUnit4F(ImgRgba8 const & in)
 {
-    return Img4F {in.dims(),toUnit4F(in.m_data)};
+    auto                fn = [](Rgba8 p)
+    {
+        float constexpr         f = 256.0f - 1/1024.0f;
+        return Arr4F{p[0]/f,p[1]/f,p[2]/f,p[3]/f};
+    };
+    return mapCallT<Arr4F>(in,fn);
 }
 
-Svec<Rgba8>         toRgba8(Svec<Arr<float,3>> const & data,float maxVal)
+
+ImgC4F              toUnitC4F(ImgRgba8 const & in)
 {
-    float                       f = 255.0f / maxVal;                // Ensure we can round-trip 1.0f <-> 255U
-    Svec<Rgba8>                 ret; ret.reserve(data.size());
-    for (Arr<float,3> const & d : data)
-        ret.emplace_back(uchar(d[0]*f),uchar(d[1]*f),uchar(d[2]*f),255);
-    return ret;
+    auto                fn = [](Rgba8 p)
+    {
+        float constexpr     f = 256.0f - 1/1024.0f;
+        return RgbaF {p[0]/f,p[1]/f,p[2]/f,p[3]/f};
+    };
+    return mapCallT<RgbaF>(in,fn);
 }
+
 ImgRgba8            toRgba8(Img3F const & in,float maxVal)
 {
-    return ImgRgba8 {in.dims(),toRgba8(in.m_data,maxVal)};
+    auto                fn = [maxVal](Arr3F p)
+    {
+        float constexpr         uf = 256.0f - 1/1024.0f;
+        float                   f = uf / maxVal;
+        return Rgba8{uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),255};
+    };
+    return mapCallT<Rgba8>(in,fn);
 }
 
-Svec<Rgba8>         toRgba8(Svec<RgbaF> const & data)
-{
-    float constexpr             f = 255.0f;                         // Ensure we can round-trip 1.0f <-> 255U
-    Svec<Rgba8>                ret; ret.reserve(data.size());
-    for (RgbaF const & p : data)
-        ret.emplace_back(uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),uchar(p[3]*f));
-    return ret;
-}
 ImgRgba8            toRgba8(ImgC4F const & img)
 {
-    return ImgRgba8 {img.dims(),toRgba8(img.m_data)};
+    auto                fn = [](RgbaF p)
+    {
+        // if we define each uchar value v as representing the bin of real values in [v,v+1)
+        // then we want to use a factor just under 256 then round down:
+        float constexpr         f = 256.0f - 1/1024.0f;
+        return Rgba8{uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),uchar(p[3]*f)};
+    };
+    return mapCallT<Rgba8>(img,fn);
 }
 
 ImgUC               toUC(ImgRgba8 const & in)
 {
-    struct C {
-        uchar operator()(Rgba8 rgba) const {return rgba.rec709(); }
-    };
-    return mapCallT<uchar,Rgba8,C>(in,C{});
+    return mapCallT<uchar>(in,[](Rgba8 p){return p.rec709();});
 }
 
 ImgF                toFloat(ImgRgba8 const & in)
 {
-    struct C {
-        float operator()(Rgba8 rgba) const {return RgbaF(rgba).rec709(); }
-    };
-    return mapCallT<float,Rgba8,C>(in,C{});
+    return mapCallT<float>(in,[](Rgba8 p){return p.rec709();});
 }
 
 ImgRgba8            toRgba8(ImgUC const & in)
 {
-    struct C {
-        Rgba8 operator()(uchar v) const {return {v,v,v,255}; }
-    };
-    return mapCallT<Rgba8,uchar,C>(in,C{});
+    return mapCallT<Rgba8>(in,[](uchar p){return Rgba8{p,p,p,255};});
 }
 
 void                imgResize(ImgRgba8 const & src,ImgRgba8 & dst)
@@ -433,7 +459,7 @@ void                imgResize(ImgRgba8 const & src,ImgRgba8 & dst)
 						xfac -= xblo - (float)xblob;
 					if (xx == xbhib)
 						xfac -= (float)(xbhib+1) - xbhi;
-					deepCast_(srcPtr[yy*srcStep + xx],fpix);
+					mapCast_(srcPtr[yy*srcStep + xx],fpix);
 					acc += fpix * xfac * yfac;
 				}
 			}
@@ -445,7 +471,7 @@ void                imgResize(ImgRgba8 const & src,ImgRgba8 & dst)
 	}
 }
 
-ImgRgba8            fgImgApplyTransparencyPow2(ImgRgba8 const & colour,ImgRgba8 const & transparency)
+ImgRgba8            applyTransparencyPow2(ImgRgba8 const & colour,ImgRgba8 const & transparency)
 {
     FGASSERT(!colour.empty() && !transparency.empty());
     Vec2UI       dims = mapPow2Ceil(cMax(colour.dims(),transparency.dims()));
@@ -500,18 +526,47 @@ void                paintCrosshair(ImgRgba8 & img,Vec2I ircs)
     }
 }
 
-void                paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC c,uint radius)
+void                paintDot(ImgRgba8 & img,Vec2I ircs,Rgba8 clr,uint radius)
 {
-    Rgba8    clr(c[0],c[1],c[2],c[3]);
-    int         rad = int(radius);
+    int                 rad = int(radius);
     for (int yy=-rad; yy<=rad; ++yy)
         for (int xx=-rad; xx<=rad; ++xx)
             img.paint(ircs+Vec2I(xx,yy),clr);
 }
 
-void                paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC c,uint radius)
+void                paintDot(ImgRgba8 & img,Vec2F ipcs,Rgba8 clr,uint radius)
 {
-    paintDot(img,Vec2I(mapFloor(ipcs)),c,radius);
+    paintDot(img,Vec2I(mapFloor(ipcs)),clr,radius);
+}
+
+ImgRgba8            extrapolateForMipmap(ImgRgba8 const & img)
+{
+    // lift to accumulator type and scale up to avoid losing precision due to alpha-weighting:
+    struct Lift {Rgba16 operator()(Rgba8 c) const {return Rgba16{c}*16; } };
+    ImgRgba16s          mipmap = cMipmapA(mapCallT<Rgba16>(img,Lift{}));
+    Rgba16 const        off {8};
+    ImgRgba8            ret {img.dims()};
+    for (Iter2UI it{img.dims()}; it.valid(); it.next()) {
+        Vec2UI              crd = it();
+        for (ImgRgba16 const & map : mipmap) {
+            // if the input image is not a power of 2 then just halving and rounding down can still
+            // fall outside lower mipmap bounds, so must clamp:
+            crd = mapMin(crd,map.dims()-Vec2UI{1});
+            Rgba16              pix = map[crd];
+            if (pix.alpha() > 0) {
+                Arr3UC              clr;
+                for (size_t cc=0; cc<3; ++cc) {
+                    // have to cast up to uint to renormalize alpha:
+                    uint                c16 = (uint(pix[cc]) * 255*16) / pix.alpha();
+                    clr[cc] = uchar((c16+8)/16);
+                }
+                ret[it()] = {clr[0],clr[1],clr[2],255};
+                break;
+            }
+            crd = crd/2;
+        }
+    }
+    return ret;
 }
 
 ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC const & transition)
@@ -525,7 +580,7 @@ ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC c
     // Choose the larger image for output dimensions:
     Vec2UI              dims = (np0 > np1) ? img0.dims() : img1.dims();
     ImgRgba8             ret(dims);
-    AffineEw2F          ircsToIucs = cIrcsToIucsXf(dims);
+    AffineEw2F          ircsToIucs = cIrcsToIucs(dims);
     for (Iter2UI it(dims); it.valid(); it.next()) {
         Vec2F           iucs = ircsToIucs * Vec2F(it());
         RgbaF           a = sampleClipIucs(img0,iucs);
@@ -548,7 +603,7 @@ ImgRgba8            composite(ImgRgba8 const & foreground,ImgRgba8 const & backg
     FGASSERT(foreground.dims() == background.dims());
     ImgRgba8                 ret(foreground.dims());
     for (size_t ii=0; ii<ret.numPixels(); ++ii)
-        ret[ii] = compositeFragmentUnweighted(foreground[ii],background[ii]);
+        ret.m_data[ii] = compositeFragmentUnweighted(foreground.m_data[ii],background.m_data[ii]);
     return ret;
 }
 
@@ -563,7 +618,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
     }
     int             mod = int(modFac*256.0f + 0.5f);
     if (imgMod.width() > imgIn.width()) {
-        AffineEw2F      ircsToIucs = cIrcsToIucsXf(imgMod.dims());
+        AffineEw2F      ircsToIucs = cIrcsToIucs(imgMod.dims());
         auto            fn = [&imgIn,&imgMod,mod,ircsToIucs](size_t xx,size_t yy)
         {
             Rgba8           td = imgMod.xy(xx,yy),
@@ -582,7 +637,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
         ret = generateImg<Rgba8>(imgMod.dims(),fn,true);
     }
     else {
-        AffineEw2F      ircsToIucs = cIrcsToIucsXf(imgIn.dims());
+        AffineEw2F      ircsToIucs = cIrcsToIucs(imgIn.dims());
         auto            fn = [&imgIn,&imgMod,mod,ircsToIucs](size_t xx,size_t yy)
         {
             RgbaF           td = sampleClipIucs(imgMod,ircsToIucs*Vec2F(xx,yy));
@@ -603,7 +658,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
     return ret;
 }
 
-void                smoothUint1D(
+void                smoothUint1D_(
     uchar const         *srcPtr,
     uint                *dstPtr,
     uint                num,
@@ -619,13 +674,13 @@ void                smoothUint_(ImgUC const & src,ImgUC & dst,uchar borderPolicy
     FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.width(),src.height());
-    Img<uint>   acc(src.width(),3);
+    Img<uint>   acc(src.width(),3,0);
     uchar       *dstPtr = dst.rowPtr(0);
     uint        *accPtr0,
                 *accPtr1 = acc.rowPtr(0),
                 *accPtr2 = acc.rowPtr(1);
-    smoothUint1D(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
-    smoothUint1D(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
+    smoothUint1D_(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
+    smoothUint1D_(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
     for (uint xx=0; xx<src.width(); xx++) {
         // Add 7 to minimize rounding bias. Adding 8 would bias the other way so we have to
         // settle for a small amount of downward rounding bias unless we want to pseudo-randomize:
@@ -637,7 +692,7 @@ void                smoothUint_(ImgUC const & src,ImgUC & dst,uchar borderPolicy
         accPtr0 = acc.rowPtr((yy-1)%3),
         accPtr1 = acc.rowPtr(yy%3),
         accPtr2 = acc.rowPtr((yy+1)%3);
-        smoothUint1D(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
+        smoothUint1D_(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
         for (uint xx=0; xx<src.width(); ++xx)
             dstPtr[xx] = uchar((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + 7U) / 16);
     }
@@ -652,36 +707,29 @@ ImgUC               smoothUint(ImgUC const & src,uchar borderPolicy)
     return ret;
 }
 
-void                smoothUint1D(
-    Rgba8 const        *srcPtr,
-    RgbaUS              *dstPtr,
-    uint                num,
-    uchar               borderPolicy)               // See below
+void                smoothUint1D_(Rgba8 const *srcPtr,Rgba16 *dstPtr,uint num,uchar borderPolicy)
 {
-    dstPtr[0] = RgbaUS(srcPtr[0])*(2+borderPolicy) + RgbaUS(srcPtr[1]);
+    dstPtr[0] = Rgba16(srcPtr[0])*(2+borderPolicy) + Rgba16(srcPtr[1]);
     for (uint ii=1; ii<num-1; ++ii)
-        dstPtr[ii] = RgbaUS(srcPtr[ii-1]) + RgbaUS(srcPtr[ii])*2 + RgbaUS(srcPtr[ii+1]);
-    dstPtr[num-1] = RgbaUS(srcPtr[num-2]) + RgbaUS(srcPtr[num-1])*(2+borderPolicy);
+        dstPtr[ii] = Rgba16(srcPtr[ii-1]) + Rgba16(srcPtr[ii])*2 + Rgba16(srcPtr[ii+1]);
+    dstPtr[num-1] = Rgba16(srcPtr[num-2]) + Rgba16(srcPtr[num-1])*(2+borderPolicy);
 }
-void                smoothUint_(
-    ImgRgba8 const &     src,
-    ImgRgba8 &           dst,
-    uchar               borderPolicy)
+void                smoothUint_(ImgRgba8 const & src,ImgRgba8 & dst,uchar borderPolicy)
 {
-    FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
+    FGASSERT((src.width() > 1) && (src.height() > 1));      // Algorithm not designed for dim < 2
     FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
     dst.resize(src.width(),src.height());
-    Img<RgbaUS> acc(src.width(),3);                  // Accumulator image
-    Rgba8           *dstPtr = dst.rowPtr(0);
-    RgbaUS         *accPtr0,
-                *accPtr1 = acc.rowPtr(0),
-                *accPtr2 = acc.rowPtr(1);
-    smoothUint1D(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
-    smoothUint1D(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
+    Img<Rgba16>         acc(src.width(),3,Rgba16(0));                 // Accumulator image
+    Rgba8               *dstPtr = dst.rowPtr(0);
+    Rgba16              *accPtr0,
+                        *accPtr1 = acc.rowPtr(0),
+                        *accPtr2 = acc.rowPtr(1);
+    smoothUint1D_(src.rowPtr(0),accPtr1,src.width(),borderPolicy);
+    smoothUint1D_(src.rowPtr(1),accPtr2,src.width(),borderPolicy);
     for (uint xx=0; xx<src.width(); xx++) {
         // Add 7 to minimize rounding bias. Adding 8 would bias the other way so we have to
         // settle for a small amount of downward rounding bias unless we want to pseudo-randomize:
-        RgbaUS        tmp = accPtr1[xx]*(2+borderPolicy) + accPtr2[xx] + RgbaUS(7);
+        Rgba16              tmp = accPtr1[xx]*(2+borderPolicy) + accPtr2[xx] + Rgba16(7);
         dstPtr[xx] = Rgba8(tmp / 16);
     }
     for (uint yy=1; yy<src.height()-1; ++yy) {
@@ -689,13 +737,13 @@ void                smoothUint_(
         accPtr0 = acc.rowPtr((yy-1)%3),
         accPtr1 = acc.rowPtr(yy%3),
         accPtr2 = acc.rowPtr((yy+1)%3);
-        smoothUint1D(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
+        smoothUint1D_(src.rowPtr(yy+1),accPtr2,src.width(),borderPolicy);
         for (uint xx=0; xx<src.width(); ++xx)
-            dstPtr[xx] = Rgba8((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + RgbaUS(7)) / 16);
+            dstPtr[xx] = Rgba8((accPtr0[xx] + accPtr1[xx]*2 + accPtr2[xx] + Rgba16(7)) / 16);
     }
     dstPtr = dst.rowPtr(dst.height()-1);
     for (uint xx=0; xx<dst.width(); ++xx)
-        dstPtr[xx] = Rgba8((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + RgbaUS(7)) / 16);
+        dstPtr[xx] = Rgba8((accPtr1[xx] + accPtr2[xx]*(2+borderPolicy) + Rgba16(7)) / 16);
 }
 ImgRgba8            smoothUint(ImgRgba8 const & src,uchar borderPolicy)
 {

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,9 +15,7 @@
 #ifndef FGOPT_HPP
 #define FGOPT_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgSerialize.hpp"
-#include "FgDiagnostics.hpp"
+#include "FgStdExtensions.hpp"
 
 namespace Fg {
 
@@ -91,8 +89,6 @@ struct Valid
     // You're on your own if you use this one, NO CHECKING, since it may be used to set the val,
     // so do a manual check using valid() if you need one along with non-const pointer access:
     T *             ptr() {return &m_val; }
-
-    FG_SERIALIZE1(m_val)
 };
 
 template<typename T>

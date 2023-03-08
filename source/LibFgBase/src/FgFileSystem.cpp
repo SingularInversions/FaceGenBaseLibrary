@@ -1,23 +1,20 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgDiagnostics.hpp"
 #include "FgFileSystem.hpp"
-#include "FgStdStream.hpp"
-#include "FgStdString.hpp"
-#include "FgStdVector.hpp"
 #include "FgTime.hpp"
 #include "FgParse.hpp"
 #include "FgCommand.hpp"
 #include "FgMetaFormat.hpp"
+#include "FgRandom.hpp"
 
 using namespace std;
-using namespace boost::filesystem;
+using namespace std::filesystem;
 
 namespace Fg {
 
@@ -28,7 +25,7 @@ void                fileCopy(String8 const & src,String8 const & dst,bool overwr
             // 'copy_option::overwrite_if_exists' leaves file of size max(size(src),size(dst)) but
             // explicit removal is not always reflected quickly in filesystem leading to an error if we
             // don't use it, and possibly an error even if we do (attempt to overwrite non-existing file):
-            copy_file(src.ns(),dst.ns(),copy_option::overwrite_if_exists);
+            copy_file(src.ns(),dst.ns(),copy_options::overwrite_existing);
         }
         else
             fgThrow("Attempt to copy over existing file",dst);
@@ -41,7 +38,7 @@ void                fileCopy(String8 const & src,String8 const & dst,bool overwr
 
 void                fileMove(String8 const & src,String8 const & dst,bool overwrite)
 {
-    // We use copy and delete since boost::filesystem::rename will fail if the target
+    // We use copy and delete since std::filesystem::rename will fail if the target
     // is on a different volume:
     fileCopy(src,dst,overwrite);
     deleteFile(src);
@@ -49,11 +46,11 @@ void                fileMove(String8 const & src,String8 const & dst,bool overwr
 
 bool                pathExists(String8 const & fname)
 {
-    // boost::filesytem::exists can throw when it is unable to obtain the status of a path.
+    // std::filesytem::exists can throw when it is unable to obtain the status of a path.
     // We don't want that - consider it just not there:
     bool    ret;
     try {
-        ret = boost::filesystem::exists(fname.ns());
+        ret = std::filesystem::exists(fname.ns());
     }
     catch (...) {
         ret = false;
@@ -65,7 +62,7 @@ bool                pathExists(String8 const & fname)
 void                fileTouch(String8 const & fname)
 {
     // Just opening the file for write on Windows doesn't actually change the modify date ... WTF
-    String      tmp = loadRaw(fname);
+    String      tmp = loadRawString(fname);
     saveRaw(tmp,fname,false);
 }
 
@@ -93,15 +90,20 @@ void                deleteDirectoryFiles(String8 const & dirname)
         deleteFile(dirname+"/"+dc.filenames[ii]);
 }
 
+void                deleteDirectoryContentsRecursive(String8 const & dirname)
+{
+    // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
+    DirContents         dc = getDirContents(dirname);
+    for (String8 const & dir : dc.dirnames)
+        deleteDirectoryRecursive(dirname+"/"+dir);
+    for (String8 const & file : dc.filenames)
+        deleteFile(dirname+"/"+file);
+}
+
 void                deleteDirectoryRecursive(String8 const & dirname)
 {
 #ifdef _WIN32
-    // Manually recurse deletion of the directory tree to get around Windows filesystem bug:
-    DirContents     dc = getDirContents(dirname);
-    for (size_t ii=0; ii<dc.dirnames.size(); ii++)
-        deleteDirectoryRecursive(dirname+"/"+dc.dirnames[ii]);
-    for (size_t ii=0; ii<dc.filenames.size(); ii++)
-        deleteFile(dirname+"/"+dc.filenames[ii]);
+    deleteDirectoryContentsRecursive(dirname);
     // Get around windows filesystem recursive folder delete bug by trying a second time
     // after a pause for the filesystem to catch up:
     if (removeDirectory(dirname))
@@ -109,7 +111,7 @@ void                deleteDirectoryRecursive(String8 const & dirname)
     sleepSeconds(1);
     removeDirectory(dirname,true);
 #else
-    boost::filesystem::remove_all(dirname.m_str);
+    std::filesystem::remove_all(dirname.m_str);
 #endif
 }
 
@@ -134,13 +136,6 @@ String8             getExecutableDirectory()
     return p.dir();
 }
 
-bool                fileReadable(String8 const & filename)
-{
-    Ifstream ifs(filename,false);
-    if (!ifs.is_open()) return false;
-    return true;
-}
-
 String8             getDirUserAppDataLocal(Strings const & subPath)
 {
     String8         ret = getDirUserAppDataLocal();
@@ -157,47 +152,7 @@ String8             getDirUserAppDataLocalFaceGen(Strings const & subDirs)
     return getDirUserAppDataLocal(prepend(String{"FaceGen"},subDirs));
 }
 
-string              loadRaw(String8 const & filename)
-{
-    Ifstream          ifs(filename);
-    ostringstream       ss;
-    ss << ifs.rdbuf();
-    return ss.str();
-}
-
-bool                saveRaw(String const & data,String8 const & filename,bool onlyIfChanged)
-{
-    if (onlyIfChanged && pathExists(filename)) {
-        string      fileData = loadRaw(filename);
-        if (data == fileData)
-            return false;
-    }
-    Ofstream            ofs(filename);
-    ofs << data;
-    return true;
-}
-
-void                appendRaw(String8 const & filename,String const & data)
-{
-    Ofstream            ofs {filename,true};
-    ofs << data;
-}
-
-bool                equateFilesBinary(
-    String8 const & file1,
-    String8 const & file2)
-{
-    string contents1(loadRaw(file1));
-    string contents2(loadRaw(file2));
-    return contents1 == contents2;
-}
-
-bool                equateFilesText(String8 const & fname0,String8 const & fname1)
-{
-    return (splitLinesUtf8(loadRaw(fname0)) == splitLinesUtf8(loadRaw(fname1)));
-}
-
-String8             getDataDir(bool throwIfNotFound)
+static String8  getDataDirFromExe(bool throwIfNotFound)
 {
     // Typical locations relative to executable:
     //  ./data                  (applications & remote execution)
@@ -231,14 +186,12 @@ static String8      s_fgDataDir;
 String8 const &     dataDir(bool throwIfNotFound)
 {
     if (s_fgDataDir.empty())
-        s_fgDataDir = getDataDir(throwIfNotFound);
+        s_fgDataDir = getDataDirFromExe(throwIfNotFound);
     return s_fgDataDir;
 }
 
 void                setDataDir(String8 const & dir)
 {
-    if (!pathExists(dir+"_facegen_data_dir.flag"))
-        fgThrow("setDataDir FaceGen data flag not found",dir);
     s_fgDataDir = dir;
 }
 
@@ -439,8 +392,8 @@ void                testDeleteDirectory(CLArgs const & args)
     createDirectory(name);
     FGASSERT(pathExists(name));
     createDirectory(name+cent);
-    saveBsaXml(name+cent+"a",42);
-    saveBsaXml(name+"b",21);
+    saveRaw("42",name+cent+"a");
+    saveRaw("21",name+"b");
     deleteDirectoryRecursive(name);
     FGASSERT(!pathExists(name));
 }
@@ -465,6 +418,19 @@ void                testExists(CLArgs const &)
     FGASSERT(!pathExists("//doesNotExists"));
 }
 
+void                testRaw(CLArgs const & args)
+{
+    FGTESTDIR
+    Bytes               data;
+    for (size_t ii=0; ii<2000; ++ii)
+        data.push_back(scast<byte>(randUint(256)));
+    String8             fname {"raw"};
+    saveRaw(data,fname,false);
+    Bytes               dataCopy = loadRaw(fname);
+    FGASSERT(data == dataCopy);
+    FGASSERT(saveRaw(data,fname) == false);     // no overwrite when identical
+}
+
 }
 
 void                testFilesystem(CLArgs const & args)
@@ -476,8 +442,9 @@ void                testFilesystem(CLArgs const & args)
         {testDeleteDirectory,"delDir"},
         {testRecursiveCopy,"recurseCopy"},
         {testExists,"exists"},
+        {testRaw,"raw","read and write entire file as Bytes"},
     };
-    doMenu(args,cmds,true,true,true);
+    doMenu(args,cmds,true,true);
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "Fg3dMeshIo.hpp"
-#include "FgStdStream.hpp"
+#include "FgFile.hpp"
 #include "FgFileSystem.hpp"
 #include "FgParse.hpp"
 #include "FgMain.hpp"

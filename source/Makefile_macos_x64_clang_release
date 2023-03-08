@@ -5,7 +5,7 @@ AR = ar
 RANLIB = ranlib
 CFLAGS = -m64 -DNDEBUG -fno-common -Ofast
 CCFLAGS = $(CFLAGS)
-CXXFLAGS = $(CFLAGS) -std=c++14 -ftemplate-depth=4096
+CXXFLAGS = $(CFLAGS) -std=c++17 -ftemplate-depth=4096
 LFLAGS = -framework Carbon
 DLLEXT = .dylib
 DLLARG = -dynamiclib -Wl,-install_name,@executable_path/

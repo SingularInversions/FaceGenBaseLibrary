@@ -1,0 +1,83 @@
+
+{ 
+  models: [ 
+    { 
+      meshFilename: "Jane.tri"
+      imgFilenames: [ "Jane.jpg" ]
+      shiny: false
+    } ]
+  roll: 0
+  tilt: 0
+  pan: 0
+  modelview:
+  
+  { 
+    scale: 1
+    rot: 
+    { 
+      real: 1
+      imag: 
+      { 
+        m: [ 0 0 0 ]
+      }
+    }
+    trans: 
+    { 
+      m: [ -0.19660568237304688 13.716480255126953 -1034.7376101125942 ]
+    }
+  }
+  itcsToIucs:
+  
+  { 
+    affs:
+    [ 
+      { 
+        m_scale: 3.3455781191587044
+        m_trans: 0.5
+      }
+    
+      { 
+        m_scale: 3.3455781191587044
+        m_trans: 0.5
+      }
+    ]
+  }
+  imagePixelSize: 
+  { 
+    m: [ 512 512 ]
+  }
+  options:
+  
+  { 
+    lighting:
+    
+    { 
+      ambient: 
+      { 
+        m: [ 0.40000000596046448 0.40000000596046448 0.40000000596046448 ]
+      }
+      lights:
+      [ 
+        { 
+          colour:
+          
+          { 
+            m: [ 0.60000002384185791 0.60000002384185791 0.60000002384185791 ]
+          }
+          direction: 
+          { 
+            m: [ 0 0 1 ]
+          }
+        }
+      ]
+    }
+    backgroundColor: 
+    { 
+      m_c: [ 0 0 0 0 ]
+    }
+    antiAliasBitDepth: 3
+    renderSurfPoints: 0
+    useMaps: true
+    allShiny: false
+  }
+}

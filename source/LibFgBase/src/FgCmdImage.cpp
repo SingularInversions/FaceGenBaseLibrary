@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,6 +35,19 @@ void                cmdAlpha(CLArgs const & args)
         rgb.m_data[ii].alpha() = alpha.m_data[ii].rec709();
     saveImage(syn.next(),rgb);
 }
+
+void                cmdCompare(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<img0>.<ext> <img1>.<ext>
+    <ext>       - )" + clOptionsStr(getImgExts())
+    };
+    Img3F               img0 = toUnit3F(loadImage(syn.next())),
+                        img1 = toUnit3F(loadImage(syn.next()));
+    if (img0.dims() != img1.dims())
+        syn.error("Images not of equal pixel dimensions");
+    compareImages(img0,img1);
+}
+
 void                cmdComposite(CLArgs const & args)
 {
     Syntax              syn(args,
@@ -48,35 +61,21 @@ void                cmdComposite(CLArgs const & args)
         syn.error("The images must have identical pixel dimensions");
     saveImage(syn.next(),composite(overlay,base));
 }
-void                cmdConst(CLArgs const & args)
-{
-    Syntax              syn {args,
-        R"(<X size> <Y size> <R> <G> <B> <A> <out>.<ext>
-    <X,Y size>      - in pixels
-    <R,G,B>         - [0,255]
-    <ext>           - )" + clOptionsStr(getImgExts())
-    };
-    uint                X = syn.nextAs<uint>(),
-                        Y = syn.nextAs<uint>();
-    Rgba8              rgba;
-    for (uint ii=0; ii<4; ++ii) {
-        uint                v = syn.nextAs<uint>();
-        if (v > 255)
-            syn.error("RGBA values must be <= 255",toStr(v));
-        rgba[ii] = scast<uchar>(v);
-    }
-    saveImage(syn.next(),ImgRgba8{X,Y,rgba});
-}
+
 void                cmdConvert(CLArgs const & args)
 {
-    Syntax              syn(args,
-        "<in>.<ext> <out>.<ext>\n"
-        "    <ext>      - " + clOptionsStr(getImgExts())
-        );
+    String              desc;
+    for (ImgFormatInfo const & ifi : getImgFormatsInfo())
+        desc += "\n    " + ifi.description ;
+    Syntax              syn {args,R"(<in>.<ext> <out>.<ext>
+    <ext>      - )" + clOptionsStr(getImgExts()) + R"(
+NOTES:)" + desc
+    };
     ImgRgba8            img = loadImage(syn.next());
     saveImage(syn.next(),img);
 }
-void                cmdCreate(CLArgs const & args)
+
+void                cmdCreateCheckerboard(CLArgs const & args)
 {
     Syntax              syn {args,
         R"(<num> <size> <out>.<ext>
@@ -103,35 +102,42 @@ NOTES:
     }
     saveImage(syn.next(),img);
 }
-void                cmdShrink(CLArgs const & args)
+
+void                cmdCreateConst(CLArgs const & args)
 {
-    Syntax              syn(args,
-        "<in>.<ext> <out>.<ext>\n"
-        "    <ext>      - " + clOptionsStr(getImgExts())
-        );
-    ImgRgba8            img = loadImage(syn.next());
-    img = shrink2(img);
-    saveImage(syn.next(),img);
-}
-void                cmdFormats(CLArgs const &)
-{
-    Strings             fs = getImgExts();
-    fgout << fgnl << fs.size() << " cmdFormats supported:" << fgpush;
-    char                previous = 'Z';
-    for (string const & f : fs) {
-        if (f[0] != previous) {
-            previous = f[0];
-            fgout << fgnl;
-        }
-        fgout << f << ", ";
+    Syntax              syn {args,
+        R"(<X size> <Y size> <R> <G> <B> <A> <out>.<ext>
+    <X,Y size>      - in pixels
+    <R,G,B>         - [0,255]
+    <ext>           - )" + clOptionsStr(getImgExts())
+    };
+    uint                X = syn.nextAs<uint>(),
+                        Y = syn.nextAs<uint>();
+    Rgba8              rgba;
+    for (uint ii=0; ii<4; ++ii) {
+        uint                v = syn.nextAs<uint>();
+        if (v > 255)
+            syn.error("RGBA values must be <= 255",toStr(v));
+        rgba[ii] = scast<uchar>(v);
     }
-    fgout << fgpop;
+    saveImage(syn.next(),ImgRgba8{X,Y,rgba});
 }
+
+void                cmdCreate(CLArgs const & args)
+{
+    Cmds            cmds {
+        {cmdCreateConst,"const","Create a constant-valued image"},
+        {cmdCreateCheckerboard,"create","create checkerboard images"},
+    };
+    doMenu(args,cmds);
+}
+
 void                cmdMark(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"([-b] <landmarks> <images>
+        R"([-b] [-o] <landmarks> <images>
     -b              - brighten the image with gamma correction for easier viewing of dark areas
+    -o              - overwrite existing landmarks of the same name
     <landmarks>     - ( <list>.txt | (<landmarkName>)+ )
     <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
     <list>.txt      - must contain a whitespace-separated list
@@ -145,32 +151,44 @@ NOTES:
     * the .lms.txt format is one landmark per line each line consisting of <name> <X> <Y>
       where <X> and <y> are the raster positions (floating point permitted).
       Lines beginning with # are ignored (comments).
-    * landmarks already existing in <fileName>.lms.txt will not be prompted for update)"
+    * landmarks already existing in <fileName>.lms.txt will not be prompted for update,
+      unless '-o' has been selected)"
     };
-    bool                brighten = false;
+    bool                brighten = false,
+                        overwrite = false;
     if (beginsWith(syn.peekNext(),"-")) {
-        if (syn.next() == "-b")
+        String              option = syn.next();
+        if (option == "-b")
             brighten = true;
+        else if (option == "-o")
+            overwrite = true;
         else
-            syn.error("Unknown flag",syn.curr());
+            syn.error("Unknown flag",option);
     }
     Strings             lmNames;
     Strings             imgFiles;
     if (endsWith(syn.peekNext(),".txt"))
-        lmNames = splitWhitespace(loadRaw(syn.next()));
+        lmNames = splitWhitespace(loadRawString(syn.next()));
     else {
         do
             lmNames.push_back(syn.next());
         while (!contains(syn.peekNext(),'.'));
     }
+    if (lmNames.empty())
+        syn.error("no landmarks to place");
     if (endsWith(syn.peekNext(),".txt"))
-        imgFiles = splitWhitespace(loadRaw(syn.next()));
+        imgFiles = splitWhitespace(loadRawString(syn.next()));
     else {
         do
             imgFiles.push_back(syn.next());
         while (syn.more());
     }
+    if (containsDuplicates(cSort(lmNames)))
+        fgout << "WARNING: There are landmark name duplicates";
+    if (containsDuplicates(cSort(imgFiles)))
+        fgout << "WARNING: There are file name duplicates";
     for (String const & imgFile : imgFiles) {
+        PushIndent          pind {imgFile+": "};
         ImgRgba8            img = loadImage(imgFile);
         if (brighten)
             for (Rgba8 & rgba : img.m_data)
@@ -179,27 +197,55 @@ NOTES:
         NameVec2Fs          lms;
         String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
         if (fileExists(lmsFile))
-            lms = loadImageLandmarks(lmsFile);
+            lms = loadLandmarks(lmsFile);
+        if (overwrite)          // remove any existing LMs we want to overwrite:
+            lms = findAll(lms,[&](NameVec2F const & l){return !contains(lmNames,l.name); });
+        Strings             lmsDefined = sliceMember(lms,&NameVec2F::name);
+        if (containsAll(lmsDefined,lmNames)) {
+            fgout << "All LMs already defined";
+            continue;
+        }
         NameVec2Fs          lmsNew = markImage(img,lms,lmNames);
         if (lmsNew == lms)
-            fgout << fgnl << "No landmarks placed, nothing saved";
+            fgout << "No landmarks placed, nothing saved";
         else {
-            saveImageLandmarks(lmsNew,lmsFile);
-            fgout << fgnl << lmsNew.size() << " landmarks saved in " << lmsFile;
+            saveLandmarks(lmsNew,lmsFile);
+            fgout << lmsNew.size() << " landmarks saved in " << lmsFile;
         }
     }
 }
+
+void                cmdShrink(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<gamma> <count> <in>.<ext> <out>.<ext>
+    <ext>           - )" + clOptionsStr(getImgExts()) + R"(
+    <gamma>         - [1,2] the gamma-correction built into <in> for gamma-correct resizing (use 2 if not sure)
+    <count>         - Shrink the image <count> times by a factor of 2
+NOTES:
+    * The image is 2x2 block subsampled <count> times in linear brightness space (given by <gamma>))"
+    };
+    float               gamma = syn.nextAs<float>();
+    if ((gamma < 1) || (gamma > 3))
+        syn.error("invalid value for <gamma>");
+    size_t              count = syn.nextAs<uint>();
+    if (count < 1)
+        syn.error("invalid value for <count>");
+    ImgC4F              lin = mapGamma(toUnitC4F(loadImage(syn.next())),gamma);
+    for (size_t ii=0; ii<count; ++ii)
+        lin = shrink2(lin);
+    saveImage(syn.next(),toRgba8(mapGamma(lin,1.0f/gamma)));
+}
+
 void                cmdImgops(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
+        {cmdCompare,"comp","compare two images of equal pixel dimensions"},
         {cmdComposite,"composite","Composite an image with transparency over another"},
-        {cmdConst,"const","Create a constant-valued image"},
-        {cmdConvert,"convert","Convert images between different cmdFormats"},
-        {cmdCreate,"create","create checkerboard images"},
-        {cmdFormats,"formats","List all supported formats by file extension"},
+        {cmdConvert,"convert","Convert images between different formats"},
+        {cmdCreate,"create","create simple agorithmic images"},
         {cmdMark,"mark","Place landmark points on an image"},
-        {cmdShrink,"shrink2","Shrink images by a factor of 2"},
+        {cmdShrink,"shrink","Shrink images by factors of 2"},
     };
     doMenu(args,cmds);
 }

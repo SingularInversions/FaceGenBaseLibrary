@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,7 +15,7 @@
 #define FGGUIAPIDYNAMIC_HPP
 
 #include "FgGuiApiBase.hpp"
-#include "FgStdVector.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 

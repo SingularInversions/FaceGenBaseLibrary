@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,39 +21,29 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <time.h>
+
 #include "FgTcp.hpp"
-#include "FgException.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgStdString.hpp"
 #include "FgScopeGuard.hpp"
-#include "FgOut.hpp"
 #include "FgFileSystem.hpp"
 
 // Do NOT use std namespace to avoid collision with posix 'bind'
 
 namespace Fg {
 
-bool
-runTcpClient_(
-    std::string const &     hostname,
+bool                runTcpClient_(
+    String const &          hostname,
     uint16                  port,
-    std::string const &     data,
-    std::string *           responsePtr)
+    Bytes const &           data,
+    Bytes *                 responsePtr)
 {
     int                     clientSock = socket(
-                            AF_INET,            // IPv4 protocol family
-                            SOCK_STREAM,        // "stream socket"
-                            IPPROTO_TCP         // TCP transport protocol
+        AF_INET,            // IPv4 protocol family
+        SOCK_STREAM,        // "stream socket"
+        IPPROTO_TCP         // TCP transport protocol
     );
-    FGASSERT(clientSock >= 0);
+    if (clientSock < 0)
+        fgThrow("nix socket() error",strerror(errno));
     ScopeGuard              closeSocket(std::bind(close,clientSock));
-    // timeout values only affect how long the connection waits for more data packets and has no effect
-    // on the initial connection timeout which is controlled by the kernel, so no point in using:
-    //timeval                 timeout;
-    //timeout.tv_sec = timeoutSeconds;
-    //timeout.tv_usec = 0;
-    //if (setsockopt(clientSock,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
-    //    FGASSERT_FALSE;
     struct hostent *        remoteHost = gethostbyname(hostname.c_str());
     if (remoteHost == NULL) {
         //fgout << fgnl << "Unable to resolve " << hostname;
@@ -71,7 +61,8 @@ runTcpClient_(
     }
     //fgout << fgnl << "Sending data ... " << std::flush;
     // write() is same as send() with flag=0:
-    int nBytes = write(clientSock,data.data(),int(data.size()));
+    int                     nBytes =
+        write(clientSock,reinterpret_cast<std::byte const *>(data.data()),int(data.size()));
     if (nBytes < int(data.size()))
         FGASSERT_FALSE1(toStr(nBytes));
     //fgout << "done" << std::flush;
@@ -89,7 +80,7 @@ runTcpClient_(
             nBytes = read(clientSock,buff,sizeof(buff));
             FGASSERT(nBytes >= 0);
             if (nBytes > 0)
-                *responsePtr += std::string(buff,nBytes);
+                append_(*responsePtr,reinterpret_cast<std::byte const *>(buff),nBytes);
         }
         while (nBytes > 0);
         FGASSERT(nBytes == 0);
@@ -97,28 +88,22 @@ runTcpClient_(
     return true;
 }
 
-void sigchld_handler(int)
+void                sigchld_handler(int)
 {
     while(waitpid(-1, NULL, WNOHANG) > 0)
     {}      // Avoid warning vs. just a semicolon
 }
 
 // get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
+void                *get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
     }
-
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-void
-runTcpServer(
-    uint16                  port,
-    bool                    respond,
-    TcpHandlerFunc          handler,
-    size_t                  maxRecvBytes)
+void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler,size_t maxRecvBytes)
 {
     struct sockaddr_storage clientAddress;
     int                     listenSockFd = -1;  // Avoid uninitialized warning
@@ -132,8 +117,9 @@ runTcpServer(
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-    int rv = getaddrinfo(NULL,toStr(port).c_str(),&hints,&servinfo);
-    FGASSERT1(rv == 0,std::string(gai_strerror(rv)));
+    int                     rv = getaddrinfo(NULL,toStr(port).c_str(),&hints,&servinfo);
+    if (rv != 0)
+        fgThrow("nix getaddrinfo() error",gai_strerror(rv));
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((listenSockFd = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1) {
@@ -141,7 +127,7 @@ runTcpServer(
             continue;
         }
         if (setsockopt(listenSockFd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes)) == -1)
-            FGASSERT_FALSE;
+            fgThrow("nix setsockopt(SO_REUSEADDR) error",strerror(errno));
         if (bind(listenSockFd,p->ai_addr,p->ai_addrlen) == -1) {
             close(listenSockFd);
             fgout << fgnl << "server_failed_bind_call " << std::flush;
@@ -153,52 +139,52 @@ runTcpServer(
     freeaddrinfo(servinfo);
     // Set the socket to listen and queue up to 10 incoming connections:
     if (listen(listenSockFd,10) == -1)
-        FGASSERT_FALSE;
+        fgThrow("nix listen() error",strerror(errno));
     sa.sa_handler = sigchld_handler; // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1)
-        FGASSERT_FALSE;
+        fgThrow("nix sigaction error",strerror(errno));
     // Listen for client:
-    int                         dataSockFd;
     bool                        handlerRetval;
     do {
         fgout << fgnl << "TCP server waiting ..." << std::flush;
-        socklen_t                   sz = sizeof(clientAddress);
+        socklen_t               sz = sizeof(clientAddress);
         // Get incoming message socketFd. Will block until a message arrives since the
         // listen socket does not have the O_NONBLOCK option set.
         // The data socket is unique to the client IP:PORT, so multiple TCP connections can
         // take place simultaneously (not made use of here):
-        dataSockFd = accept(listenSockFd,(struct sockaddr *)&clientAddress,&sz);
-        FGASSERT(dataSockFd >= 0);
+        int                     dataSockFd = accept(listenSockFd,(struct sockaddr *)&clientAddress,&sz);
+        if (dataSockFd < 0)
+            fgThrow("nix accept() error",strerror(errno));
         fgout << " receiving " << std::flush;
-        // Set the timeout. Very important since the default is to never time out so in some
-        // cases a broken connection causes 'recv' below to block forever:
-        timeval                     timeout;
+        // Set the data receive timeout. This is only for receiving a data pack, not for the connection itself,
+        // so not be necessary if the a timeout on the entire connection can be set:
+        timeval                 timeout;
         timeout.tv_sec = 3;
         timeout.tv_usec = 0;
         if (setsockopt(dataSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
-            FGASSERT_FALSE;
+            fgout << fgnl << "nix setsockopt(SO_RCVTIMEO) failed: " << strerror(errno) << " ";
         // Convert IP address to string:
-        char                        sbuf[INET6_ADDRSTRLEN];
+        char                    sbuf[INET6_ADDRSTRLEN];
         inet_ntop(
             clientAddress.ss_family,
             get_in_addr((struct sockaddr *)&clientAddress),
             sbuf,
             sizeof sbuf);
-        std::string                 ipAddr = std::string(sbuf);
+        String                  ipAddr (sbuf);
         // Read incoming message:
-        std::string 	            dataBuff;
-        int         	            bytesRecvd;
+        Bytes                   dataBuff;
+        int         	        bytesRecvd;
         do {
-            char                        buffer[1024];
+            char                    buffer[1024];
             // read() will return when either it has filled the buffer, copied over everything
             // from the socket input buffer (only if non-empty), or when the the connection
             // is closed by the client. Otherwise it will block (ie if input buffer empty).
             bytesRecvd = read(dataSockFd,buffer,sizeof(buffer));
             fgout << ".";
             if (bytesRecvd > 0)
-                dataBuff += std::string(buffer,bytesRecvd);
+                append_(dataBuff,reinterpret_cast<std::byte const *>(buffer),bytesRecvd);
         }
         while ((bytesRecvd > 0) && (dataBuff.size() <= maxRecvBytes));
         fgout << " " << dataBuff.size() << "B";
@@ -211,26 +197,27 @@ runTcpServer(
         }
         if (!respond)   // Handler can take arbitrarily long in this case so must close immediately:
             close(dataSockFd);
-        String8                     currDir = getCurrentDir();
-        std::string                 response;
-        fgout << " executing ..." << fgpush;
+        String8                 currDir = getCurrentDir();
+        Bytes                   response;
+        fgout << " ... executing: " << fgpush;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
         catch(FgException const & e) {
-            fgout << "Handler exception (FG exception): " << e.tr_message();
+            fgout << fgnl << "Handler exception (FG exception): " << e.tr_message();
         }
         catch(std::exception const & e) {
-            fgout << "Handler exception (std::exception): " << e.what();
+            fgout << fgnl << "Handler exception (std::exception): " << e.what();
         }
         catch(...) {
-            fgout << "Handler exception (unknown type)";
+            fgout << fgnl << "Handler exception (unknown type)";
         }
         fgout << fgpop;
         if (respond) {
             if (!response.empty()) {
                 fgout << fgnl << "Responding ..." << std::flush;
-                int                     bytesSent = write(dataSockFd,response.data(),response.size());
+                int                 bytesSent =
+                    write(dataSockFd,reinterpret_cast<std::byte const *>(response.data()),response.size());
                 if (bytesSent != int(response.size()))
                     fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << "). ";
             }

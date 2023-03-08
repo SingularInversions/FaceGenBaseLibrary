@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,14 +18,19 @@ GuiImplPtr          guiGetOsImpl(GuiButton const & guiApi);
 
 struct      GuiButton : GuiBase
 {
-    String8                label;
-    Sfun<void()>           action;
+    String8                 label;
+    Sfun<void()>            action;
+    bool                    stretchX;
 
-    virtual GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    GuiButton(String8 const & l,Sfun<void()> const & a,bool s) : label{l}, action{a}, stretchX{s} {}
+
+    virtual GuiImplPtr      getInstance() {return guiGetOsImpl(*this); }
 };
 
-GuiPtr              guiButton(String8 const & label,Sfun<void()> const & action);
-GuiPtr              guiButtonTr(const std::string & label,Sfun<void()> const & action);
+inline GuiPtr       guiButton(String8 const & label,Sfun<void()> const & action,bool stretchX=false)
+{
+    return std::make_shared<GuiButton>(label,action,stretchX);
+}
 
 }
 

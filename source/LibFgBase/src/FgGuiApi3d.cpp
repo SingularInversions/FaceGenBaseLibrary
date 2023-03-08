@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -190,7 +190,7 @@ void                markSurfacePoint(
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,viewportPos,worldToD3ps,rms);
     if (vpt.valid() && pointLabelN.ptr) {
         MeshesIntersect         pt = vpt.val();
-        BaryPoint const &       sp = pt.surfPnt;
+        SurfPoint const &       sp = pt.surfPnt;
         FGASSERT(pt.meshIdx < rms.size());
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
@@ -199,8 +199,8 @@ void                markSurfacePoint(
         Vec3F                   pos = surf.surfPointPos(origMeshPtr->verts,sp);
         fgout << fgnl << "Surf point placed on surf " << pt.surfIdx << " at coord: " << pos;
         if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
-            SurfPoints &            surfPoints =  surf.surfPoints;
-            String                     label = pointLabelN.cref().as_ascii();
+            SurfPointNames &        surfPoints =  surf.surfPoints;
+            String                  label = pointLabelN.cref().as_ascii();
             if (!label.empty()) {
                 for (size_t ii=0; ii<surfPoints.size(); ++ii) {
                     if (surfPoints[ii].label == label) {            // Replace SPs of same name:

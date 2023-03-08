@@ -1,14 +1,13 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgStdStream.hpp"
-#include "FgTypes.hpp"
-#include "FgException.hpp"
+#include "FgFile.hpp"
+#include "FgSerial.hpp"
 #include "FgParse.hpp"
 #include "FgFileSystem.hpp"
 #include "FgSyntax.hpp"
@@ -31,29 +30,20 @@ bool                containsOnlyDigits(String const & str)
     return true;
 }
 
-Strings             tokenize(string const & str)
+Strings             tokenize(String const & str)
 {
-    Strings      ret;
-    string      acc;
+    Strings             ret;
+    String              acc;
     for (char c : str) {
-        if (isWhitespaceOrInvalid(c)) {
+        if (isDigitLetterDashUnderscore(c))
+            acc.push_back(c);
+        else {                                  // either whitespace or single-character token:
             if (!acc.empty()) {
                 ret.push_back(acc);
                 acc.clear();
             }
-        }
-        else if (isDigitLetterDashUnderscore(c)) {
-            if (acc.empty())
-                acc.push_back(c);
-            else {
-                if (isDigitLetterDashUnderscore(acc.back()))
-                    acc.push_back(c);
-                else {
-                    ret.push_back(acc);
-                    acc.clear();
-                    acc.push_back(c);
-                }
-            }
+            if (!isWhitespaceOrInvalid(c))      // must be single-character token
+                ret.push_back(String{c});
         }
     }
     if (!acc.empty())
@@ -189,7 +179,7 @@ static Strings      csvGetLine(
 Stringss            loadCsv(String8 const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    String32       data = toUtf32(loadRaw(fname));
+    String32       data = toUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -206,7 +196,7 @@ map<string,Strings> loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fiel
 {
     FGASSERT((fieldsPerLine==0) || (keyIdx < fieldsPerLine));
     map<string,Strings> ret;
-    String32            data = toUtf32(loadRaw(fname));
+    String32            data = toUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings             line = csvGetLine(data,idx);
@@ -271,12 +261,12 @@ Strings             splitChar(String const & str,char ch,bool ie)
     return ret;
 }
 
-Strings             splitWhitespace(string const & str)
+Strings             splitWhitespace(String const & str)
 {
-    Strings  retval;
-    bool            symbolFlag = false,
-                    quoteFlag = false;
-    string          currSymbol;
+    Strings             retval;
+    bool                symbolFlag = false,
+                        quoteFlag = false;
+    String              currSymbol;
     for (size_t ii=0; ii<str.size(); ++ii)
     {
         if (quoteFlag)

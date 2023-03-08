@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,6 +18,16 @@
 using namespace std;
 
 namespace Fg {
+
+MatUT2D             cCholesky(MatS2D s)
+{
+    FGASSERT(s.m00 > 0.0);
+    double          r00 = sqrt(s.m00),
+                    r01 = s.m01 / r00,
+                    tmp = s.m11 - sqr(r01);
+    FGASSERT(tmp > 0.0);
+    return {r00,sqrt(tmp),r01};
+}
 
 MatUT3D             cCholesky(MatS3D S)
 {
@@ -40,19 +50,22 @@ MatUT3D             cCholesky(MatS3D S)
 void                testCholesky(CLArgs const &)
 {
     randSeedRepeatable();
-    double          resid1 = 0.0;
     size_t          N = 1000;
     for (size_t ii=0; ii<N; ++ii) {
-        MatS3D          spds = randMatSpd3D(3.0);
+        MatS2D          spds = MatS2D::randSpd(3.0);
+        MatUT2D         ch = cCholesky(spds);
+        MatS2D          lu = ch.luProduct();
+        FGASSERT(isApproxEqual(spds.m00,lu.m00,epsBits(30)));
+        FGASSERT(isApproxEqual(spds.m01,lu.m01,epsBits(30)));
+        FGASSERT(isApproxEqual(spds.m11,lu.m11,epsBits(30)));
+    }
+    for (size_t ii=0; ii<N; ++ii) {
+        MatS3D          spds = MatS3D::randSpd(3.0);
         MatUT3D         ch = cCholesky(spds);
         MatS3D          lu = ch.luProduct();
-        Mat33D          out = lu.asMatC(),
-                        spd = spds.asMatC(),
-                        del = out - spd;
-        resid1 += cMag(del.m) / cMag(spd.m);
-        FGASSERT(isApproxEqualPrec(out,spd));
+        FGASSERT(isApproxEqual(spds.diag,lu.diag,epsBits(30)));
+        FGASSERT(isApproxEqual(spds.offd,lu.offd,epsBits(30)));
     }
-    fgout << fgnl << "Cholesky unsafe RMS residual: " << sqrt(resid1/N);
 }
 
 Vec2D               solveLinear(MatS2D fr,Vec2D b)
@@ -94,27 +107,6 @@ Vec3D               solveLinear(MatS3D A,Vec3D b)
 MatD                RsmEigs::rsm() const
 {
     return mulTr(scaleColumns(vecs,vals),vecs);
-}
-
-MatD                RsmEigs::mhlbsToWorld() const
-{
-    Doubles                 stdevs; stdevs.reserve(vals.size());
-    for (double variance : vals) {
-        FGASSERT(variance > 0.0);
-        stdevs.push_back(sqrt(variance));
-    }
-    return scaleColumns(vecs,stdevs);      // vecs * D(stdevs)
-}
-
-MatD                RsmEigs::inverse() const
-{
-    auto                invert = [](double v)
-    {
-        FGASSERT(v != 0.0);
-        return 1.0/v;
-    };
-    Doubles             invVals = mapCall(vals,invert);
-    return mulTr(scaleColumns(vecs,invVals),vecs);
 }
 
 ostream &           operator<<(ostream & os,RsmEigs const & rsm)

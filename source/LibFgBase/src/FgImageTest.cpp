@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -21,25 +21,6 @@ namespace Fg {
 
 namespace {
 
-void                testmCompare(CLArgs const &)
-{
-    String8             dd = dataDir();
-    Img3F               img0 = toUnit3F(loadImage(dd+"base/Mandrill512.png")),
-                        img1 = toUnit3F(loadImage(dd+"base/test/imgops/composite.png"));
-    compareImages(img0,img1);
-}
-
-void                testmDisplay(CLArgs const &)
-{
-    String8     dd = dataDir();
-    string      testorig_jpg("base/test/testorig.jpg");
-    ImgRgba8     img = loadImage(dd+testorig_jpg);
-    viewImage(img);
-    string      testorig_bmp("base/test/testorig.bmp");
-    loadImage_(dd+testorig_bmp,img);
-    viewImage(img);
-}
-
 void                testmResize(CLArgs const &)
 {
     string          fname("base/test/testorig.jpg");
@@ -56,7 +37,7 @@ void                resamp(CLArgs const &)
     for (uint lnSz = 5; lnSz < 10; ++lnSz) {
         uint                    sz = 2 << lnSz;
         Img3F                   out = resampleAdaptive(in,lo,309.7f,sz);
-        viewImageFixed(toRgba8(out));
+        viewImage(toRgba8(out));
     }
 }
 
@@ -116,32 +97,97 @@ void                testComposite(CLArgs const &)
     String8             dd = dataDir();
     ImgRgba8            overlay = loadImage(dd+"base/Teeth512.png"),
                         base = loadImage(dd+"base/Mandrill512.png");
-    regressTest(composite(overlay,base),dd+"base/test/imgops/composite.png");
-}
-
-void                testConvolve(CLArgs const &)
-{
-    randSeedRepeatable();
-    ImgF          tst(16,16);
-    for (size_t ii=0; ii<tst.numPixels(); ++ii)
-        tst[ii] = float(randUniform());
-    ImgF          i0,i1;
-    smoothFloat_(tst,i0,1);
-    fgConvolveFloat(tst,Mat33F(1,2,1,2,4,2,1,2,1)/16.0f,i1,1);
-    //fgout << fgnl << i0.m_data << fgnl << i1.m_data;
-    FGASSERT(isApproxEqualRelMag(i0.m_data,i1.m_data));
+    testRegressExact(composite(overlay,base),dd+"base/test/imgops/composite.png");
 }
 
 void                testDecodeJpeg(CLArgs const &)
 {
     String8             imgFile = dataDir() + "base/trees.jpg";
-    String              blob = loadRaw(imgFile);
+    String              blob = loadRawString(imgFile);
     Uchars              ub; ub.reserve(blob.size());
     for (char ch : blob)
         ub.push_back(scast<uchar>(ch));
     ImgRgba8            tst = decodeJpeg(ub),
                         ref = loadImage(imgFile);
     FGASSERT(isApproxEqual(tst,ref,3U));
+}
+
+void                testShrink(CLArgs const &)
+{
+    ImgUI               in {4,3,
+        {
+            3,  4,  5,  9,
+            6,  7,  8, 10,
+            9, 10, 11,  13
+        }
+    },
+                        ref {2,1,{5,8}},
+                        out = shrink2Acc(in);
+    FGASSERT(out == ref);
+}
+
+void                testSmooth(CLArgs const &)
+{
+    {
+        Uints               in {3,5,7},
+                            out {0,0,0},
+                            refZ {11,20,19},
+                            refM {14,20,26};
+        smoothAcc1D_<BorderPolicy::zero>(in.data(),out.data(),in.size());
+        FGASSERT(out == refZ);
+        smoothAcc1D_<BorderPolicy::mirror>(in.data(),out.data(),in.size());
+        FGASSERT(out == refM);
+    }
+    {
+        ImgUI               in {3,3,
+            {
+                3,  4,  5,
+                6,  7,  8,
+                9, 10,  11
+            }
+        },
+                            out,
+                            refZ {3,3,
+            {
+                39, 60, 51,
+                76, 112,92,
+                75, 108,87
+            }
+        },
+                            refM {3,3,
+            {
+                64, 76, 88,
+                100,112,124,
+                136,148,160
+            }
+        };
+        // cancel out the divide in the smooth for more accurate test:
+        for (uint & p : in.m_data) p *= 16;
+        smoothAcc_<BorderPolicy::zero>(in,out);
+        FGASSERT(out == refZ);
+        smoothAcc_<BorderPolicy::mirror>(in,out);
+        FGASSERT(out == refM);
+    }
+    {
+        Rgba8 const         z {0},
+                            c {32,64,128,255};
+        ImgRgba8            in {3,3,
+            {   // put value in lower corner since 3rd row/col will be ignored by mipmap:
+                c,  z,  z,
+                z,  z,  z,
+                z,  z,  z
+            }
+        },
+            ref {3,3,
+            {
+                c,  c,  c,
+                c,  c,  c,
+                c,  c,  c,
+            }
+        },
+                            out = extrapolateForMipmap(in);
+        FGASSERT(out == ref);
+    }
 }
 
 void                testTransform(CLArgs const &)
@@ -152,7 +198,7 @@ void                testTransform(CLArgs const &)
     for (Vec2UI dims : dimss) {
         AffineEw2F          xf0 = cIucsToIrcsXf(dims),
                             xf0i = xf0.inverse(),
-                            xf1 = cIrcsToIucsXf(dims),
+                            xf1 = cIrcsToIucs(dims),
                             xf1i = xf1.inverse();
         FGASSERT(isApproxEqual(xf0*xf0i,identity,maxDiff));
         FGASSERT(isApproxEqual(xf0*xf1,identity,maxDiff));
@@ -165,8 +211,6 @@ void                testTransform(CLArgs const &)
 void                testmImage(CLArgs const & args)
 {
     Cmds                cmds {
-        {testmCompare,"comp","view to compare images"},
-        {testmDisplay,"disp","display a single image"},
         {resamp,"resamp","resample adaptive"},
         {testmResize,"resize","change image pixel size by resampling"},
         {testmSfs,"sfs","smoothFloat speed"},
@@ -181,12 +225,13 @@ void                testImage(CLArgs const & args)
     Cmds                cmds {
         {testBlerp,"blerp","bilinear interpolation"},
         {testComposite,"composite"},
-        {testConvolve,"conv"},
         {testDecodeJfif,"jfif"},
         {testDecodeJpeg,"jpg"},
+        {testShrink,"shrink"},
+        {testSmooth,"smooth"},
         {testTransform,"xf"},
     };
-    doMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false);
 }
 
 }

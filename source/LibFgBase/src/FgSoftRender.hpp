@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,6 +18,17 @@
 namespace Fg {
 
 enum class RenderSurfPoints { never, whenVisible, always };
+inline std::any     getReflect(RenderSurfPoints r) {return static_cast<double>(r); }
+inline void         setReflect(std::any const & a,RenderSurfPoints & r)
+{
+    r = scast<RenderSurfPoints>(std::any_cast<double>(a));
+}
+template<> struct TypeSig<RenderSurfPoints> {static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+inline void         srlz_(RenderSurfPoints r,Bytes & b) {srlzRaw_(static_cast<uint>(r),b); }
+inline void         dsrlz_(Bytes const & b,size_t & p,RenderSurfPoints & r)
+{
+    r = scast<RenderSurfPoints>(dsrlzT_<uint>(b,p));
+}
 
 struct  ProjectedSurfPoint
 {
@@ -31,9 +42,8 @@ struct  RenderOptions
 {
     Lighting            lighting;   // In OECS (not transformed)
     // Values in range [0,255]. Alpha = 0 is transparent and all color values must be alpha-weighted:
-    RgbaF               backgroundColor=RgbaF(0);
-    // Values in range [1,8]. Higher is slower:
-    uint                antiAliasBitDepth=3;
+    RgbaF               backgroundColor {0};
+    uint                antiAliasBitDepth {3};      // range [1,16]. Higher is slower.
     // Composite marked surface points  as small circles on image:
     RenderSurfPoints    renderSurfPoints=RenderSurfPoints::never;
     RgbaF               surfPointColor {0,1,0,1};           // Values in [0,1], default green
@@ -42,8 +52,7 @@ struct  RenderOptions
     Sptr<ProjectedSurfPoints> projSurfPoints;
     bool                useMaps = true;     // Turn off to see raw geometry
     bool                allShiny = false;
-
-    FG_SERIALIZE6(lighting,backgroundColor,antiAliasBitDepth,renderSurfPoints,useMaps,allShiny);
+    FG_SER6(lighting,backgroundColor,antiAliasBitDepth,renderSurfPoints,useMaps,allShiny)
 };
 
 struct  RenderXform
@@ -93,8 +102,19 @@ inline ImgRgba8     renderSoft(
 // Render with default camera:
 ImgRgba8            renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor);
 
-#endif
+struct  TriIdxSM
+{
+    uint32          triIdx;
+    uint16          surfIdx = 0;
+    uint16          meshIdx = 0;
+
+    TriIdxSM() {}
+    TriIdxSM(size_t t,size_t s,size_t m) : triIdx(uint32(t)), surfIdx(uint16(s)), meshIdx(uint16(m)) {}
+};
+typedef Svec<TriIdxSM>  TriIdxSMs;
 
 }
+
+#endif
 
 // */

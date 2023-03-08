@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,30 +8,27 @@
 #define FGGUIAPISLIDER_HPP
 
 #include "FgGuiApiBase.hpp"
+#include "FgGuiApiSplit.hpp"
 #include "FgMatrixC.hpp"
 
 namespace Fg {
 
-struct  GuiTickLabel
+struct      GuiTickLabel
 {
-    double              pos;
-    String8             label;
+    double          pos;
+    String8         label;
 
-    GuiTickLabel()
-    {}
-
-    GuiTickLabel(double p,String8 l)
-    : pos(p), label(l)
-    {}
+    GuiTickLabel() {}
+    GuiTickLabel(double p,String8 l) : pos(p), label(l) {}
 };
 
 typedef Svec<GuiTickLabel> GuiTickLabels;
 
 // This function must be defined in the corresponding OS-specific implementation:
-struct  GuiSlider;
-GuiImplPtr guiGetOsImpl(GuiSlider const & guiApi);
+struct      GuiSlider;
+GuiImplPtr          guiGetOsImpl(GuiSlider const & guiApi);
 
-struct GuiSlider : GuiBase
+struct      GuiSlider : GuiBase
 {
     DfgFPtr             updateFlag;
     // getInput is required 1. to allow for restoring from serialization and 2. to allow
@@ -47,13 +44,11 @@ struct GuiSlider : GuiBase
     // Set this to larger values if your tick / tock labels overflow the edges:
     uint                edgePadding = 5;
 
-    virtual
-    GuiImplPtr getInstance() {return guiGetOsImpl(*this); }
+    virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
 typedef Svec<GuiSlider> GuiSliders;
 
-GuiPtr
-guiSlider(
+GuiPtr              guiSlider(
     IPT<double>         valN,
     String8             label,               // Can be empty
     VecD2               range,
@@ -63,25 +58,28 @@ guiSlider(
     uint                edgePadding=5,
     bool                editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
 
-// Array of panes with labels on left, sliders on right:
-GuiPtr
-guiSliderBank(
+// vertical array of windows with labels on left, sliders on right:
+Img<GuiPtr>         guiSliders(
     Svec<IPT<double> > const & valNs,
     String8s const &        labels,     // Must be same size as valNs
     VecD2                   range,
     double                  tickSpacing,
     GuiTickLabels const &   tickLabels=GuiTickLabels{});
 
+// Array of panes with labels on left, sliders on right:
+inline GuiPtr       guiSliderBank(
+    Svec<IPT<double> > const & valNs,
+    String8s const &        labels,     // Must be same size as valNs
+    VecD2                   range,
+    double                  tickSpacing,
+    GuiTickLabels const &   tickLabels=GuiTickLabels{})
+{return guiSplit(guiSliders(valNs,labels,range,tickSpacing,tickLabels)); }
+
 // Use to auto create labels for above. Labels will have numbers appended:
-String8s
-numberedLabels(String8 const & baseLabel,size_t num);
+String8s            numberedLabels(String8 const & baseLabel,size_t num);
 
 // Generate equispaced tick labels:
-GuiTickLabels
-guiTickLabels(
-    VecD2           range,
-    double          spacing,
-    double          basePos);
+GuiTickLabels       guiTickLabels(VecD2 range,double spacing,double basePos);
 
 }
 

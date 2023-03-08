@@ -1,12 +1,12 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgOut.hpp"
+#include "FgSerial.hpp"
 #include "FgTcp.hpp"
 #include "FgNc.hpp"
 #include "FgMain.hpp"
@@ -18,13 +18,13 @@ namespace Fg {
 static
 bool
 handler(
-    string const &  ipAddr,
-    string const &  dataIn,
-    string &        response)
+    String const &      ipAddr,
+    Bytes const &       dataIn,
+    Bytes &             response)
 {
-    fgout << fgnl << "Message received from " << ipAddr << " : " << dataIn;
-    if (dataIn == "Please respond") {
-        response = "Here is the response";
+    fgout << fgnl << "Message received from " << ipAddr << " : " << bytesToString(dataIn);
+    if (dataIn == stringToBytes("Please respond")) {
+        response = stringToBytes("Here is the response");
         return true; }
     return false;
 }
@@ -40,11 +40,11 @@ void
 fgTcpClientTest(CLArgs const &)
 {
     fgout.setDefOut(true);
-    string          message = "Please respond",
+    Bytes           message = stringToBytes("Please respond"),
                     response;
     runTcpClient_("peano",getNcServerPort(),message,response);
-    fgout << fgnl << "Response received: " << response;
-    message = "My god, it's full of stars";
+    fgout << fgnl << "Response received: " << bytesToString(response);
+    message = stringToBytes("My god, it's full of stars");
     runTcpClient("peano",getNcServerPort(),message);
 }
 

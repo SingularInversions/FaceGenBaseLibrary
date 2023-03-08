@@ -3,13 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{1AE5250A-4825-987C-BB68-139D462D6605}") = "LibTpBoost", "LibTpBoost\VisualStudio22\LibTpBoost.vcxproj", "{1D928747-C6EA-2FA9-26BC-3837246C8155}"
+Project("{2D05BC5A-29C4-0039-6EC3-7D423CEB40CA}") = "LibFgBase", "LibFgBase\VisualStudio22\LibFgBase.vcxproj", "{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}"
 EndProject
-Project("{1AE5250A-4825-987C-BB68-139D462D6605}") = "LibFgBase", "LibFgBase\VisualStudio22\LibFgBase.vcxproj", "{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}"
+Project("{2D05BC5A-29C4-0039-6EC3-7D423CEB40CA}") = "LibFgWin", "LibFgWin\VisualStudio22\LibFgWin.vcxproj", "{6904AE47-51E0-BEED-2B13-288A79237C3D}"
 EndProject
-Project("{1AE5250A-4825-987C-BB68-139D462D6605}") = "LibFgWin", "LibFgWin\VisualStudio22\LibFgWin.vcxproj", "{6904AE47-51E0-BEED-2B13-288A79237C3D}"
-EndProject
-Project("{1AE5250A-4825-987C-BB68-139D462D6605}") = "fgbl", "fgbl\VisualStudio22\fgbl.vcxproj", "{C0396080-BA25-1481-65B9-66191E5914D1}"
+Project("{2D05BC5A-29C4-0039-6EC3-7D423CEB40CA}") = "fgbl", "fgbl\VisualStudio22\fgbl.vcxproj", "{C0396080-BA25-1481-65B9-66191E5914D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,14 +17,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Debug|Win32.ActiveCfg = Debug|Win32
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Debug|Win32.Build.0 = Debug|Win32
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Debug|x64.ActiveCfg = Debug|x64
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Debug|x64.Build.0 = Debug|x64
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Release|Win32.ActiveCfg = Release|Win32
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Release|Win32.Build.0 = Release|Win32
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Release|x64.ActiveCfg = Release|x64
-		{1D928747-C6EA-2FA9-26BC-3837246C8155}.Release|x64.Build.0 = Release|x64
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|Win32.Build.0 = Debug|Win32
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|x64.ActiveCfg = Debug|x64

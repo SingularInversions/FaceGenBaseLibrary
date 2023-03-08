@@ -1,15 +1,13 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 
 #include "stdafx.h"
+
 #include "FgMain.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgOut.hpp"
-#include "FgStdString.hpp"
 #include "FgSyntax.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"

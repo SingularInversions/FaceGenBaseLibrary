@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ using namespace std;
 
 namespace Fg {
 
-ImgFormatsInfo      getImgFormatsInfo()     // first is default for writing
+ImgFormatsInfo const &  getImgFormatsInfo()     // first is default for writing
 {
     static ImgFormatsInfo ret {
         {ImgFormat::png,{"png"},        "PNG: lossless, medium file size"},
@@ -41,9 +41,9 @@ bool                hasImgFileExt(String8 const & fname)
     return contains(getImgExts(),ext);
 }
 
-NameVec2Fs          loadImageLandmarks(String8 const & fname)
+NameVec2Fs          loadLandmarks(String8 const & fname)
 {
-    Strings             lines = splitLines(loadRaw(fname),'#');     // removes empty lines
+    Strings             lines = splitLines(loadRawString(fname),'#');     // removes empty lines
     NameVec2Fs          ret;
     for (String const & line : lines) {
         Strings             objs = splitWhitespace(line);
@@ -69,7 +69,7 @@ NameVec2Fs          loadImageLandmarks(String8 const & fname)
     return ret;
 }
 
-void                saveImageLandmarks(NameVec2Fs const & lmsIrcs,String8 const & fname)
+void                saveLandmarks(NameVec2Fs const & lmsIrcs,String8 const & fname)
 {
     Ofstream            ofs {fname};
     ofs

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,8 +13,7 @@
 #ifndef FGRANDOM_HPP
 #define FGRANDOM_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgStdExtensions.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -26,9 +25,7 @@ uint                randUint(uint size);                    // uniform random ui
 uint64              randUint64();
 double              randUniform(double lo,double hi);       // From the uniformly distributed range [lo,hi)
 double              randNormal();                           // random number from standard normal distribution
-inline float        randNormalF() {return float(randNormal()); }
 Doubles             cRandNormals(size_t num,double mean=0.0,double stdev=1.0);
-Floats              randNormalFs(size_t num,float mean=0.0f,float stdev=1.0f);
 
 template<size_t S>
 Arr<double,S>       randNormalArr(double mean=0.0,double stdev=1.0)

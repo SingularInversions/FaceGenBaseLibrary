@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,11 +16,10 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-GuiTickLabels
-guiTickLabels(
-    VecD2        range,
-    double          spacing,
-    double          basePos)
+GuiTickLabels       guiTickLabels(
+    VecD2               range,
+    double              spacing,
+    double              basePos)
 {
     FGASSERT((basePos >= range[0]) && (basePos <= range[1]));
     double              pos = basePos - std::floor((basePos - range[0])/spacing) * spacing;
@@ -36,8 +35,7 @@ guiTickLabels(
     return ret;
 }
 
-String8s
-numberedLabels(String8 const & baseLabel,size_t num)
+String8s            numberedLabels(String8 const & baseLabel,size_t num)
 {
     String8s       ret;
     ret.reserve(num);
@@ -50,16 +48,15 @@ numberedLabels(String8 const & baseLabel,size_t num)
     return ret;
 }
 
-GuiPtr
-guiSlider(
-    IPT<double>     valN,
-    String8        label,
-    VecD2        range,
-    double          tickSpacing,
+GuiPtr              guiSlider(
+    IPT<double>         valN,
+    String8             label,
+    VecD2               range,
+    double              tickSpacing,
     GuiTickLabels const & tl,
     GuiTickLabels const & ul,
-    uint            edgePadding,
-    bool            editBox)
+    uint                edgePadding,
+    bool                editBox)
 {
     GuiSlider sldr;
     sldr.updateFlag = makeUpdateFlag(valN);
@@ -77,8 +74,7 @@ guiSlider(
     return ret;
 }
 
-GuiPtr
-guiSliderBank(
+Img<GuiPtr>             guiSliders(
     Svec<IPT<double> > const & valNs,
     String8s const &        labels,
     VecD2                   range,
@@ -95,7 +91,7 @@ guiSliderBank(
         else
             grid.xy(1,ii) = guiSlider(valNs[ii],"",range,tickSpacing);
     }
-    return guiSplit(grid);
+    return grid;
 }
 
 }

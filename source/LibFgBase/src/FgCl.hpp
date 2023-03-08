@@ -8,8 +8,7 @@
 #ifndef FGCL_HPP
 #define FGCL_HPP
 
-#include "FgStdExtensions.hpp"
-#include "FgOpt.hpp"
+#include "FgSerial.hpp"
 
 #ifndef FG_SANDBOX
 

@@ -3,9 +3,9 @@ CXX = icpc
 LINK = icpc
 AR = ar
 RANLIB = ranlib
-CFLAGS = -m64 -DNDEBUG -diag-disable=11074,11076 -Ofast -xavx -fPIC
+CFLAGS = -m64 -DNDEBUG -diag-disable=11074,11076 -Ofast -fPIC
 CCFLAGS = $(CFLAGS)
-CXXFLAGS = $(CFLAGS) -std=c++14
+CXXFLAGS = $(CFLAGS) -std=c++17
 LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
 DLLEXT = .so
 DLLARG = -shared -Wl,-soname,

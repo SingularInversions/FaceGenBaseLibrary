@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -25,19 +25,19 @@ namespace Fg {
 
 namespace {
 
-void                cmdCombinesurfs(CLArgs const & args)
+void                cmdSurfCombine(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "(<mesh>.<extIn>)+ <out>.<extOut>\n"
-        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <extOut> = " + getMeshSaveExtsCLDescription() + "\n"
-        "    All input meshes must have identical vertex lists.\n"
-        );
-    Mesh    mesh = loadMesh(syn.next());
+    Syntax              syn {args,R"((<mesh>.<extIn>)+ <out>.<extOut>
+    <extIn> = )" + getMeshLoadExtsCLDescription() + R"(
+    <extOut> = )" + getMeshSaveExtsCLDescription() + R"(
+NOTES:
+    All input meshes must have identical vertex lists)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
     while (syn.more()) {
-        string  name = syn.next();
+        string              name = syn.next();
         if (syn.more()) {
-            Mesh    next = loadMesh(name);
+            Mesh                next = loadMesh(name);
             cat_(mesh.surfaces,next.surfaces);
         }
         else
@@ -92,67 +92,76 @@ OUTPUT:
 
 void                copyUvList(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.<ext0> <out>.<ext1>\n"
-        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <ext1> = " + getMeshSaveExtsCLDescription()
-        );
-    Mesh        in = loadMesh(syn.next());
-    Mesh        out = loadMesh(syn.next());
+    Syntax          syn {args,R"(<in>.<ext0> <out>.<ext1>
+    <ext0> = )" + getMeshLoadExtsCLDescription() + R"(
+    <ext1> = )" + getMeshSaveExtsCLDescription()
+    };
+    Mesh            in = loadMesh(syn.next());
+    Mesh            out = loadMesh(syn.next());
     if (in.uvs.size() != out.uvs.size())
         syn.error("Incompatible UV list sizes");
     out.uvs = in.uvs;
     saveMesh(out,syn.curr());
-    return;
 }
 
-void                copyUvs(CLArgs const & args)
+void                copyUvsInds(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<from>.<ext0> <to>.<ext1>\n"
-        "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <ext1> = " + getMeshSaveExtsCLDescription()
-        );
-    Mesh        in = loadMesh(syn.next());
-    Mesh        out = loadMesh(syn.next());
+    Syntax          syn {args,R"(<from>.<ext0> <to>.<ext1>
+    <ext0> = )" + getMeshLoadExtsCLDescription() + R"(
+    <ext1> = )" + getMeshSaveExtsCLDescription() + R"(
+    OUTPUT
+        <to>.<ext1> - polygon UV indices in this mesh are updated to match <from>.<ext1> and the uv list is copied.
+    NOTES
+        The surface structures of <to> must match that of <from>)"
+    };
+    Mesh            in = loadMesh(syn.next());
+    Mesh            out = loadMesh(syn.next());
     out.uvs = in.uvs;
     if (in.surfaces.size() != out.surfaces.size())
-        fgThrow("Incompatible number of surfaces");
+        syn.error("Incompatible number of surfaces");
     for (size_t ss=0; ss<in.surfaces.size(); ++ss) {
         Surf const &     sin = in.surfaces[ss];
         Surf &           sout = out.surfaces[ss];
         if ((sin.tris.size() != sout.tris.size()) ||
             (sin.quads.size() != sout.quads.size()))
-            fgThrow("Incompatible facet counts");
+            syn.error("Incompatible poly count for surface "+toStr(ss));
         sout.tris.uvInds = sin.tris.uvInds;
         sout.quads.uvInds = sin.quads.uvInds;
     }
     saveMesh(out,syn.curr());
-    return;
 }
 
-void                cmdCopyVerts(CLArgs const & args)
+void                copyUvsImv(CLArgs const & args)
 {
-    Syntax              syn {args,
-        R"(<verts>.<exti> <mesh>.<exti> <out>.<exto>
-    <verts>         - the mesh from which to take the vertices
-    <mesh>          - the mesh whose vertices will be replaced
-    <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
-    <exto>          - )" + getMeshSaveExtsCLDescription() + R"(
-OUTPUT:
-    <out>.<exto>    - <mesh> but with vertices from <verts>
-NOTES:
-    <verts> must have the same vertex count as <mesh>
-)"
+    Syntax              syn {args,R"(<from>.<ext0> <to>.<ext1>
+    <ext0> = )" + getMeshLoadExtsCLDescription() + R"(
+    <ext1> = )" + getMeshSaveExtsCLDescription() + R"(
+    OUTPUT
+        <to>.<ext1> - tri UV indices in this mesh are updated to from the tri with matching vertex indices in <from>.<ext1> and the uv list is copied
+    NOTES
+        All tris in <to> must correspond to a tri in <from> with an identical list of vertex indices)"
     };
-    Vec3Fs              verts = loadMesh(syn.next()).verts;
-    Mesh                mesh = loadMesh(syn.next());
-    if (verts.size() != mesh.verts.size())
-        syn.error(
-            "<verts> and <mesh> vertex lists are different sizes",
-            toStr(verts.size())+":"+toStr(mesh.verts.size()));
-    mesh.verts = verts;
-    saveMesh(mesh,syn.next());
+    Mesh                in = loadMesh(syn.next());
+    Mesh                out = loadMesh(syn.next());
+    out.uvs = in.uvs;
+    map<Vec3UI,Vec3UI>  vertIndsToUvInds;
+    for (Surf const & inSurf : in.surfaces) {
+        NPolys<3> const &   tris = inSurf.tris;
+        if (tris.vertInds.size() == tris.uvInds.size())
+            for (size_t tt=0; tt<tris.vertInds.size(); ++tt)
+                vertIndsToUvInds[tris.vertInds[tt]] = tris.uvInds[tt];
+    }
+    for (Surf & outSurf : out.surfaces) {
+        NPolys<3> &         tris = outSurf.tris;
+        tris.uvInds.clear();
+        for (size_t tt=0; tt<tris.vertInds.size(); ++tt) {
+            auto                it = vertIndsToUvInds.find(tris.vertInds[tt]);
+            if (it == vertIndsToUvInds.end())
+                syn.error("<to> contains a tri which has no identical list of vertex indices in <from>");
+            tris.uvInds.push_back(it->second);
+        }
+    }
+    saveMesh(out,syn.curr());
 }
 
 void                cmdEdit(CLArgs const & args)
@@ -171,7 +180,7 @@ NOTES:
     String8s            filenames;
     while (syn.more()) {
         if (toLower(pathToExt(syn.peekNext())) == "txt")
-            cat_(filenames,splitLinesUtf8(loadRaw(syn.next()),'#'));
+            cat_(filenames,splitLinesUtf8(loadRawString(syn.next()),'#'));
         else
             filenames.push_back(syn.next());
     }
@@ -328,11 +337,11 @@ NOTES:
 
 void                cmdMark(CLArgs const & args)
 {
-    Cmds            cmds {
+    Cmds                cmds {
         {cmdMarkLabel,"label","label a marked vertex"},
         {cmdMarkList,"list","list all marked vertices"},
     };
-    doMenu(args,cmds,false,false,false,"Use 'view mesh' to interactively create marked vertices");
+    doMenu(args,cmds,false,false,"Use 'view mesh' to interactively create marked vertices");
 }
 
 void                cmdMergeMeshes(CLArgs const & args)
@@ -370,6 +379,24 @@ NOTES:
     saveMesh(cMirrorX(mesh),syn.next());
 }
 
+void                cmdMeshMirrorFuse(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<in>.<exti> <out>.<exto>
+    <exti>      - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>      - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>
+NOTES:
+    * all vertex coordinates will be mirrored around X=0
+    * windings will be reversed (to preserve surface orientation)
+    * any point labels ending in 'L' or 'R' will be reversed
+    * the mesh will be fused with the mirrored one)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    saveMesh(mirrorXFuse(mesh),syn.next());
+}
+
 void                mergesurfs(CLArgs const & args)
 {
     Syntax      syn(args,
@@ -381,7 +408,7 @@ void                mergesurfs(CLArgs const & args)
     if (mesh.surfaces.size() < 2)
         fgout << "WARNING: No extra surfaces to merge.";
     else
-        mesh.surfaces = {mergeSurfaces(mesh.surfaces)};
+        mesh.surfaces = {merge(mesh.surfaces)};
     saveMesh(mesh,syn.next());
 }
 
@@ -789,7 +816,8 @@ NOTES:
     * Requires a GUI; Windows only.
     * Repeated point placement will update the position of the current point.
     * Close the GUI window to select each point placement. It will re-open for the next point.
-    * The list files can contain comment lines beginning with the '#' character.)"
+    * The list files can contain comment lines beginning with the '#' character.
+    * The 'fgbl view mesh' command can be used to mark surface points on a single mesh (from 'Edit' tab))"
     };
     bool                useColor = false;
     if (syn.peekNext()[0] == '-') {
@@ -800,12 +828,12 @@ NOTES:
     }
     Strings             meshPaths;
     if (endsWith(syn.peekNext(),".txt"))
-        meshPaths = splitLines(loadRaw(syn.next()),'#');
+        meshPaths = splitLines(loadRawString(syn.next()),'#');
     else
         meshPaths.emplace_back(syn.next());
     Strings             lmNames;
     if (endsWith(syn.peekNext(),".txt"))
-        lmNames = splitLines(loadRaw(syn.next()),'#');
+        lmNames = splitLines(loadRawString(syn.next()),'#');
     else {
         do
             lmNames.push_back(syn.next());
@@ -887,7 +915,7 @@ void                cmdFuseUvs(CLArgs const & args)
     saveMesh(out,syn.next());
 }
 
-void                cmdFuseVerts(CLArgs const & args)
+void                cmdVertsFuse(CLArgs const & args)
 {
     Syntax          syn {args,
         R"(<in>.<extIn> <out>.<extOut>
@@ -1006,51 +1034,49 @@ void                cmdUvunwrap(CLArgs const & args)
 void                cmdXformApply(CLArgs const & args)
 {
     Syntax              syn(args,
-        "<similarity>.xml <in>.<ext0> <out>.<ext1>\n"
+        "<similarity>.txt <in>.<ext0> <out>.<ext1>\n"
         "    <ext0> = " + getMeshLoadExtsCLDescription() + "\n"
         "    <ext1> = " + getMeshSaveExtsCLDescription()
         );
-    SimilarityD         cmdXform;
-    loadBsaXml(syn.next(),cmdXform);
-    Mesh            in = loadMesh(syn.next()),
-                    out = transform(in,cmdXform);
+    SimilarityD         cmdXform = dsrlzText<SimilarityD>(loadRawString(syn.next()));
+    Mesh                in = loadMesh(syn.next()),
+                        out = transform(in,cmdXform);
     saveMesh(out,syn.next());
 }
 
 void                cmdXformCreateIdentity(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<output>.xml \n"
+    Syntax              syn(args,
+        "<output>.txt \n"
         "    Edit the values in this file or apply subsequent transforms with other commands"
         );
-    string      simFname = syn.next();
-    saveBsaXml(simFname,SimilarityD::identity());
+    saveRaw(srlzText(SimilarityD::identity()),syn.next());
 }
 
 void                cmdXformCreateMeshes(CLArgs const & args)
 {
     Syntax    syn(args,
-        "<similarity>.xml <base>.<ex> <transformed>.<ex>\n"
+        "<similarity>.txt <base>.<ex> <transformed>.<ex>\n"
         "    <ex> = " + getMeshLoadExtsCLDescription()
         );
-    string      simFname = syn.next();
-    Mesh    base = loadMesh(syn.next());
-    Mesh    targ = loadMesh(syn.next());
+    string              simFname = syn.next();
+    Mesh                base = loadMesh(syn.next());
+    Mesh                targ = loadMesh(syn.next());
     if (base.verts.size() != targ.verts.size())
         fgThrow("Base and target mesh vertex counts are different");
-    Vec3Ds              bv = deepCast<double>(base.verts),
-                        tv = deepCast<double>(targ.verts);
+    Vec3Ds              bv = mapCast<Vec3D>(base.verts),
+                        tv = mapCast<Vec3D>(targ.verts);
     SimilarityD         sim = solveSimilarity(bv,tv);
     double              ssd = cSsd(mapMul(sim.asAffine(),bv),tv),
                         sz = cMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
-    saveBsaXml(simFname,sim);
+    saveRaw(srlzText(sim),simFname);
 }
 
 void                cmdXformCreateRotate(CLArgs const & args)
 {
     Syntax          syn(args,
-        "<output>.xml <axis> <degrees> <point> [<input>.xml]\n"
+        "<output>.txt <axis> <degrees> <point> [<input>.txt]\n"
         "    <output>   - Save here\n"
         "    <axis>     - (x | y | z)  Right-hand-rule axis of rotation\n"
         "    <point>    - <x> <y> <z>  Point around which rotation is applied\n"
@@ -1073,37 +1099,39 @@ void                cmdXformCreateRotate(CLArgs const & args)
     point[2] = syn.nextAs<double>();
     SimilarityD     xf = SimilarityD{point} * SimilarityD{rot} * SimilarityD{-point};
     if (syn.more())
-        xf = xf * loadBsaXml<SimilarityD>(syn.next());
-    saveBsaXml(outName,xf);
+        xf = xf * dsrlzText<SimilarityD>(loadRawString(syn.next()));
+    saveRaw(srlzText(xf),outName);
 }
 
 void                cmdXformCreateScale(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<similarity>.xml <scale>"
+    Syntax    syn(args,"<similarity>.txt <scale>"
         );
     string          simFname = syn.next();
     SimilarityD    sim;
     if (pathExists(simFname))
-        loadBsaXml(simFname,sim);
+        sim = dsrlzText<SimilarityD>(loadRawString(simFname));
     double          scale = syn.nextAs<double>();
-    saveBsaXml(simFname,SimilarityD(scale)*sim);
+    saveRaw(srlzText(SimilarityD(scale)*sim),simFname);
 }
 
 void                cmdXformCreateTrans(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<similarity>.xml <X> <Y> <Z>"
-        );
-    string          simFname = syn.next();
-    SimilarityD    sim;
+    Syntax              syn {args,R"(<similarity>.txt <X> <Y> <Z>
+    OUTPUT:
+        <similarity>.xml will be saved with the post-applied transalation <X>,<Y>,<Z>
+    NOTES:
+        * If <similarity>.xml does not exist, it will be initialized to the identity transform)"
+    };
+    String              simFname = syn.next();
+    SimilarityD         sim;
     if (pathExists(simFname))
-        loadBsaXml(simFname,sim);
-    Vec3D    trans;
+        sim = dsrlzText<SimilarityD>(loadRawString(simFname));
+    Vec3D               trans;
     trans[0] = syn.nextAs<double>();
     trans[1] = syn.nextAs<double>();
     trans[2] = syn.nextAs<double>();
-    saveBsaXml(simFname,SimilarityD(trans)*sim);
+    saveRaw(srlzText(SimilarityD(trans)*sim),simFname);
 }
 
 void                cmdXformCreate(CLArgs const & args)
@@ -1159,13 +1187,89 @@ NOTES:
     saveRaw(content,outName);
 }
 
+void                cmdVertsCopy(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<mesh>.<exti> <verts>.<exti> <out>.<exto> [<inds>.txt]
+    <mesh>          - the mesh whose vertices will be replaced
+    <verts>         - the mesh from which to take the updated vertex positions
+    <inds>.txt      - whitespace-separated list of the indices to be copied (all verts copied if not specified)
+    <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>          - )" + getMeshSaveExtsCLDescription() + R"(
+OUTPUT:
+    <out>.<exto>    - <mesh> but with selected vertices from <verts>
+NOTES:
+    <verts> must have the same vertex count as <mesh>)"
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    size_t              V = mesh.verts.size();
+    Vec3Fs              verts = loadMesh(syn.next()).verts;
+    if (verts.size() != V)
+        fgThrow("<mesh> and <verts> vertex lists are different sizes",toStr(V)+"!="+toStr(verts.size()));
+    String              outFname = syn.next();
+    Uints               inds;
+    if (syn.more()) {
+        Strings             tinds = splitWhitespace(loadRawString(syn.next()));
+        inds = mapCallT<uint>(tinds,[](String const & s){return fromStr<uint>(s).val(); });
+    }
+    if (cMax(inds) >= V)
+        fgThrow("index values in <inds>.txt exceed vertex count");
+    if (inds.empty())
+        mesh.verts = verts;
+    else 
+        for (uint idx : inds)
+            mesh.verts[idx] = verts[idx];
+    saveMesh(mesh,outFname);
+    fgout << fgnl << (inds.empty() ? V : inds.size()) << " vertices updated to " << outFname;
+}
+
+void                cmdVertsSeld(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<mesh0>.<ext> <mesh1>.<ext> <out>.txt [<epsBits>]
+    <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
+OUTPUT:
+    <out>.txt       - list of indices of all vertices that differ between <mesh0> and <mesh1>
+    <epsBits>       - [2,22] the bit depth, relative to the <mesh> vertex bounds max dimension, at which a
+                      difference in vertex position is considered significant.
+                      If not specified, all non-identical vertices will be selected.)"
+    };
+    Mesh                mesh0 = loadMesh(syn.next()),
+                        mesh1 = loadMesh(syn.next());
+    size_t              V = mesh0.verts.size();
+    if (mesh1.verts.size() != V)
+        fgThrow("mesh vertex sizes are different",toStr(V)+"!="+toStr(mesh1.verts.size()));
+    String              outFile = syn.next();
+    float               maxDel {0};
+    if (syn.more()) {
+        size_t              bits = syn.nextAs<size_t>();
+        if (bits < 2)
+            fgThrow("<epsBits> too small; changes will be ignored");
+        if (bits > 22)
+            fgThrow("<epsBits> too large; float mantissa is only 23 bits");
+        float               maxDim = cMaxElem(cDims(mesh0.verts));
+        maxDel = epsBits(bits) * maxDim;
+    }
+    Uints               inds;
+    for (size_t ii=0; ii<V; ++ii) {
+        float               del = cMaxElem(mapAbs(mesh1.verts[ii]-mesh0.verts[ii]));
+        if (del > maxDel)
+            inds.push_back(uint(ii));
+    }
+    String              out;
+    for (uint idx : inds)
+        out += toStr(idx) + "\n";
+    saveRaw(out,outFile);
+    fgout << fgnl << inds.size() << " of " << V << " vertices selected.";
+}
+
 void                cmdSurfPoint(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdSurfPointCopy,"copy","copy surf points between meshes with identical surface topology"},
         {cmdSurfPointDel,"del","delete a surface point"},
         {cmdSurfPointList,"list","list surface points in each surface"},
-        {cmdSurfPointMark,"mark","mark surface points on meshes"},
+        {cmdSurfPointMark,"mark","mark lists of surface points on lists of meshes"},
         {cmdSurfPointRen,"ren","rename a surface point"},
         {cmdSurfPointToVert,"vert","convert surface points to marked vertices"},
     };
@@ -1176,6 +1280,7 @@ void                cmdSurf(CLArgs const & args)
 {
     Cmds            cmds {
         {surfAdd,"add","Add an empty surface to a mesh"},
+        {cmdSurfCombine,"combine","Combine surfaces from meshes with identical vertex lists"},
         {surfCopy,"copy","Copy surface structure between aligned meshes"},
         {surfDel,"del","Delete specified surfaces"},
         {surfIso,"isolate","Delete all surfaces other than specified ones"},
@@ -1194,8 +1299,9 @@ void                cmdSurf(CLArgs const & args)
 void                cmdUvs(CLArgs const & args)
 {
     Cmds            cmds {
-        {copyUvList,"copy","Copy UV list from one mesh to another with same UV count"},
-        {copyUvs,"copyf","Copy UVs from one mesh to another with identical facet structure"},
+        {copyUvList,"copylist","Copy the UV list from one mesh to another with same UV count"},
+        {copyUvsInds,"copyinds","Copy UV poly indices from one mesh to another with identical poly structure"},
+        {copyUvsImv,"copyimv","Copy UV poly indices from one mesh to another with by matching polys based on vertex list indices"},
         {cmdUvsSplitContig,"splitcon","Split surfaces by contiguous UV mappings"},
         {cmdFuseUvs,"fuse","fuse identical UV coordinates"},
         {cmdUvclamp,"clamp","Clamp UV coords to the range [0,1]"},
@@ -1207,9 +1313,19 @@ void                cmdUvs(CLArgs const & args)
     doMenu(args,cmds);
 }
 
+void                cmdVerts(CLArgs const & args)
+{
+    Cmds                cmds {
+        {cmdVertsCopy,"copy","Copy vertices from one mesh to another with same vertex count"},
+        {cmdVertsFuse,"fuse","fuse identical vertices"},
+        {cmdVertsSeld,"seld","select vertices which differ between two meshes with identical vertex lists"},
+    };
+    doMenu(args,cmds);
+}
+
 void                cmdXform(CLArgs const & args)
 {
-    Cmds            cmds {
+    Cmds                cmds {
         {cmdXformApply,"apply","Apply a simiarlity transform (from XML file) to a mesh"},
         {cmdXformCreate,"create","Create a similarity transform XML file"},
         {cmdMeshMirror,"mirror","Mirror the mesh around the X=0 plane"},
@@ -1217,19 +1333,20 @@ void                cmdXform(CLArgs const & args)
     doMenu(args,cmds);
 }
 
+}
+
 void                cmdMesh(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdBoundEdges,"edges","extract each boundary edge of a manifold mesh as a copy with edge verts marked"},
-        {cmdCombinesurfs,"combinesurfs","Combine surfaces from meshes with identical vertex lists"},
         {cmdConvert,"convert","Convert a mesh to a different format"},
-        {cmdCopyVerts,"copyv","Copy vertices from one mesh to another with same vertex count"},
         {cmdEdit,"edit","GUI view and edit one or more meshes in sequence"},
         {cmdEmboss,"emboss","Emboss a mesh based on greyscale values of a UV image"},
         {cmdExport,"export","Convert multiple meshes and related color maps into another format"},
         {cmdInject,"inject","Inject updated vertex positions without otherwise modifying a mesh file"},
         {cmdMark,"mark","List and label marked vertices"},
         {cmdMergeMeshes,"merge","Merge multiple meshes into one. No optimization is done"},
+        {cmdMeshMirrorFuse,"mirFuse","Mirror the mesh around the X=0 plane and fuse with mirrored"},
         {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
         {cmdRetopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
         {cmdRtris,"rtris","Remove specific tris from a mesh"},
@@ -1237,18 +1354,11 @@ void                cmdMesh(CLArgs const & args)
         {cmdRevWind,"rwind","Reverse facet winding of a mesh"},
         {cmdSurf,"surf","Operations on mesh surface structure"},
         {cmdToTris,"toTris","Convert all facets to tris"},
-        {cmdFuseVerts,"fuse","fuse identical vertices"},
         {cmdUvs,"uvs","UV-specific commands"},
+        {cmdVerts,"verts","vertex-specific commands"},
         {cmdXform,"xform","Create / apply similarity transforms from / to meshes"},
     };
     doMenu(args,cmds);
-}
-
-}
-
-Cmd                 getCmdMesh()
-{
-    return Cmd(cmdMesh,"mesh","3D Mesh IO and manipulation tools");
 }
 
 }

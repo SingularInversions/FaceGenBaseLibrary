@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -18,69 +18,34 @@ using namespace std;
 
 namespace Fg {
 
-void
-viewImageFixed(ImgRgba8 const & img)
+void                viewImage(ImgRgba8 const & img,Vec2Fs const & pts)
 {
-    guiStartImpl(
-        makeIPT<String8>("FaceGen SDK viewImageFixed"),
-        guiImage(makeIPT(img)),
-        getDirUserAppDataLocalFaceGen({"SDK","viewImageFixed"}));
+    IPT<String8>        title {"FaceGen SDK viewImage"};
+    String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImage"});
+    GuiPtr              win = guiImageCtrls(makeIPT(img),makeIPT(pts),true).win;
+    guiStartImpl(title,win,saveDir);
 }
 
-void
-viewImage(ImgRgba8 const & img,Vec2Fs const & pts,String const & name)
+void                viewImages(AnnotatedImgs const & ais)
 {
-    if (!name.empty())
-        fgout << name << ": " << fgpush << img << fgpop;
-    guiStartImpl(
-        makeIPT<String8>("FaceGen SDK DisplayImage"),
-        guiImageCtrls(makeIPT(img),makeIPT(pts),true).win,
-        getDirUserAppDataLocalFaceGen({"SDK","DisplayImage"}));
+    FGASSERT(!ais.empty());
+    IPT<String8>        title {"FaceGen SDK viewImages"};
+    String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImages"});
+    GuiPtrs             imgWs;
+    for (AnnotatedImg const & ai : ais)
+        imgWs.push_back(guiImageCtrls(makeIPT(ai.img),makeIPT(ai.ptsIucs),true).win);
+    IPT<size_t>         selN = makeSavedIPTEub<size_t>(0,saveDir+"sel",ais.size());
+    GuiPtr              selW = guiRadio(sliceMember(ais,&AnnotatedImg::name),selN),
+                        imgW = guiSelect(selN,imgWs),
+                        mainW = guiSplitH({imgW,selW});
+    guiStartImpl(title,mainW,saveDir);
 }
 
-void
-viewImage(const Img<ushort> & img)
+void                viewImages(ImgRgba8s const & imgs)
 {
-    Affine1F      aff(VecF2(cBounds(img.dataVec())),VecF2(0,255));
-    ImgRgba8     di(img.dims());
-    for (size_t ii=0; ii<img.numPixels(); ++ii)
-        di[ii] = Rgba8(aff * img[ii]);
-    viewImage(di);
-}
-
-void
-viewImage(const ImgF & img)
-{
-    Affine1F          aff(cBounds(img.m_data),VecF2(0,255));
-    ImgRgba8         dispImg(img.dims());
-    for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = Rgba8(uchar(aff * img.m_data[ii]));
-    viewImage(dispImg);
-}
-
-void
-viewImage(const ImgD & img)
-{
-    Affine1D          aff(cBounds(img.m_data),VecD2(0,255));
-    ImgRgba8         dispImg(img.dims());
-    for (size_t ii=0; ii<img.m_data.size(); ++ii)
-        dispImg.m_data[ii] = Rgba8(uchar(aff * img.m_data[ii]));
-    viewImage(dispImg);
-}
-
-void
-viewImage(const ImgV3F & img)
-{
-    VecF2               bounds = cBounds(cBounds(img.dataVec()).m);
-    AffineEw3F          xform(Vec3F(-bounds[0]),Vec3F(255.0f/(bounds[1]-bounds[0])));
-    ImgV3F               tmp = ImgV3F(img.dims(),mapMul(xform,img.dataVec()));
-    ImgRgba8             disp(tmp.dims());
-    for (size_t ii=0; ii<disp.numPixels(); ++ii) {
-        Vec3UC          clr = mapRound<uchar>(tmp[ii]);
-        disp[ii] = Rgba8(clr[0],clr[1],clr[2],uchar(255));
-    }
-    fgout << fgnl << disp;
-    viewImage(disp);
+    size_t              idx {0};
+    auto                fn = [&](ImgRgba8 const & img){return AnnotatedImg{img,{},toStr(idx++)}; };
+    viewImages(mapCallT<AnnotatedImg>(imgs,fn));
 }
 
 NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,Strings const & newLabels)
@@ -133,30 +98,12 @@ NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,S
     return ret;
 }
 
-void
-testmGuiImage(CLArgs const &)
+void                testmGuiImage(CLArgs const &)
 {
     viewImage(loadImage(dataDir()+"base/trees.jpg"));
 }
 
-void
-viewImages(ImgRgba8s const & images,String8s names)
-{
-    String8                 store = getDirUserAppDataLocalFaceGen({"SDK","ViewImages"});
-    while (names.size() < images.size())
-        names.push_back("Unnamed-"+toStr(names.size()));
-    FGASSERT(images.size() == names.size());
-    IPT<size_t>             selN {0};
-    OPT<ImgRgba8>           imgN = link1<size_t,ImgRgba8>(selN,[&](size_t idx){return images.at(idx); });
-    GuiPtr                  imgW = guiImage(imgN),
-                            selW = guiRadio(names,selN),
-                            mainW = guiSplitH({imgW,selW});
-    IPT<String8>            title {"View Images"};
-    guiStartImpl(title,mainW,store);
-}
-
-void
-compareImages(Img3F const & image0,Img3F const & image1)
+void                compareImages(Img3F const & image0,Img3F const & image1)
 {
     FGASSERT(image0.dims() == image1.dims());
     Mat32F              bnds0 = cBounds(image0.m_data),

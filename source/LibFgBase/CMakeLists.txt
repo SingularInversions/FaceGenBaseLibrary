@@ -10,10 +10,9 @@ if(UNIX)
     file(GLOB UNIXSOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/nix/*.cpp)
 endif()
 
-add_library(LibFgBase STATIC ${SOURCES} ${UNIXSOURCES})
+add_library(LibFgBase ${SOURCES} ${UNIXSOURCES})
 
 target_link_libraries(LibFgBase
-	PUBLIC LibTpBoost
 	PRIVATE LibTpStb
 	PRIVATE LibTpEigen)
 

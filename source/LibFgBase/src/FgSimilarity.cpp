@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -100,7 +100,7 @@ SimilarityD         solveSimilarity(Vec3Ds const & domain,Vec3Ds const & range)
 }
 SimilarityD         solveSimilarity(Vec3Fs const & d,Vec3Fs const & r)
 {
-    return solveSimilarity(deepCast<double>(d),deepCast<double>(r));
+    return solveSimilarity(mapCast<Vec3D>(d),mapCast<Vec3D>(r));
 }
 
 // as above but for count-weighted samples:
@@ -243,7 +243,7 @@ void                testSolve(CLArgs const &)
                 FGASSERT(isApproxEqual(simTst,simRef,prec));
             }
             if (V > 3) {       // weighted can have low precision with only 3 points:
-                Doubles             weights = generateSvec<double>(V,[](size_t){return sqr(randNormal()); });
+                Doubles             weights = genSvec<double>(V,[](size_t){return sqr(randNormal()); });
                 SimilarityD         simTst = solveSimilarity(domain,range,weights);
                 FGASSERT(isApproxEqual(simTst,simRef,prec));
             }
@@ -263,7 +263,7 @@ void                testSolve(CLArgs const &)
             FGASSERT(isApproxEqual(simTst,simRef,prec));
         }
         {   // weighted:
-            Doubles             weights = generateSvec<double>(V,[](size_t){return sqr(randNormal()); });
+            Doubles             weights = genSvec<double>(V,[](size_t){return sqr(randNormal()); });
             SimilarityD         simTst = solveSimilarity(domain,range,weights);
             FGASSERT(isApproxEqual(simTst,simRef,prec));
         }

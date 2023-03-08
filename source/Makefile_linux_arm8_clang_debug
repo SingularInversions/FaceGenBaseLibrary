@@ -1,0 +1,15 @@
+CC = clang
+CXX = clang++
+LINK = clang++
+AR = ar
+RANLIB = ranlib
+CFLAGS = -march=armv8-a -g -O1 -D_DEBUG -fno-common -fsanitize=address -fPIC
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++17 -ftemplate-depth=4096
+LFLAGS = -fsanitize=address -pthread -z origin -Wl,-rpath='$$ORIGIN'
+DLLEXT = .so
+DLLARG = -shared -Wl,-soname,
+BINDIR = ../bin/linux/arm8/clang/debug/
+BBINDIR = ../bin/linux/arm8/
+BUILDIR = ../build_linux/arm8/clang/debug/
+include make_all.mk

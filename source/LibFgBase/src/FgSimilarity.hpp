@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,7 +15,7 @@
 
 #include "FgQuaternion.hpp"
 #include "FgAffine.hpp"
-#include "FgStdStream.hpp"
+#include "FgFile.hpp"
 #include "FgScaleTrans.hpp"
 
 namespace Fg {
@@ -61,7 +61,6 @@ struct  SimilarityD
     QuaternionD         rot;
     Vec3D               trans {0};      // Translation applied last
     FG_SER3(scale,rot,trans)
-    FG_SERIALIZE3(scale,rot,trans);
 
     SimilarityD() {}
     explicit SimilarityD(double s) : scale(s) {}
@@ -106,7 +105,6 @@ struct  SimilarityRD
     QuaternionD     rot;
     double          scale {1};          // Scale and rotation applied last
     FG_SER3(trans,rot,scale)
-    FG_SERIALIZE3(trans,rot,scale);
 
     SimilarityRD() {}
     SimilarityRD(Vec3D const & t,QuaternionD const & r,double s) : trans {t}, rot {r}, scale {s} {FGASSERT(s > 0.0); }

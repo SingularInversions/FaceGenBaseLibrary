@@ -8,8 +8,7 @@
 #ifndef FGWINSPECIFIC
 #define FGWINSPECIFIC
 
-#include "FgString.hpp"
-#include "FgOpt.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 

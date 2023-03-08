@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -23,100 +23,293 @@
 #ifndef FGSERIAL_HPP
 #define FGSERIAL_HPP
 
-#include "FgStdExtensions.hpp"
-#include "FgHash.hpp"
+#include "FgString.hpp"
 
 namespace Fg {
 
+// Concatenates the arguments into a message then computes a deterministic 64 bit hash of the message which:
+// * Always gives the same result on any platform
+// * Is not cryptographically secure
+uint64          treeHash(Uint64s const & hashes);
+
+// SERIALIZE / DESERIALIZE TO REFLECTION TREE
+// which can also be used for text & json serialization / deserialization
+
+struct      RflMember
+{
+    String          name;
+    std::any        object;
+};
+struct      RflStruct
+{
+    Svec<RflMember> members;
+};
+struct      RflArray
+{
+    Svec<std::any>  elems;
+};
+
+// classes redirect to member function 'cReflect' defined by FG_RFL macros:
+template<class T,FG_ENABLE_IF(T,is_class)>
+inline std::any     getReflect(T const & strct) {return strct.cReflect(); }
+// like json, represent all numbers by 'double':
+template<class T,FG_ENABLE_IF(T,is_integral)>
+inline std::any     getReflect(T val) {return scast<double>(val); }
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+inline std::any     getReflect(T val) {return scast<double>(val); }
+template<class T> inline std::any getReflect(Svec<T> const &);      // declare for Arr<Svec<...>...> case
+template<class T,size_t S>
+std::any            getReflect(Arr<T,S> const & a)
+{
+    RflArray            ret; ret.elems.reserve(S);
+    for (T const & e : a)
+        ret.elems.push_back(getReflect(e));
+    return ret;
+}
+template<class T>
+std::any            getReflect(Svec<T> const & v)
+{
+    RflArray            ret; ret.elems.reserve(v.size());
+    for (T const & e : v)
+        ret.elems.push_back(getReflect(e));
+    return ret;
+}
+template<> inline std::any  getReflect(String const & v) {return v; }
+template<> inline std::any  getReflect(String8 const & v) {return v.m_str; }
+template<> inline std::any  getReflect(bool v) {return v; }
+
+String              reflectToText(std::any const & reflectTree);
+template<class T>
+String              srlzText(T const & v) {return reflectToText(getReflect(v)); }
+
+#define FG_RFL_BEG                  std::any cReflect() const {RflStruct ret;
+#define FG_RFL_M1(A)                ret.members.push_back(RflMember{#A,getReflect(A)});
+#define FG_RFL_M2(A,B)              FG_RFL_M1(A) FG_RFL_M1(B)
+#define FG_RFL_M4(A,B,C,D)          FG_RFL_M2(A,B) FG_RFL_M2(C,D)
+#define FG_RFL_END                  return ret; }
+
+#define FG_RFL_1(A)                 FG_RFL_BEG FG_RFL_M1(A) FG_RFL_END
+#define FG_RFL_2(A,B)               FG_RFL_BEG FG_RFL_M2(A,B) FG_RFL_END
+#define FG_RFL_3(A,B,C)             FG_RFL_BEG FG_RFL_M2(A,B) FG_RFL_M1(C) FG_RFL_END
+#define FG_RFL_4(A,B,C,D)           FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_END
+#define FG_RFL_5(A,B,C,D,E)         FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M1(E) FG_RFL_END
+#define FG_RFL_6(A,B,C,D,E,F)       FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M2(E,F) FG_RFL_END
+#define FG_RFL_7(A,B,C,D,E,F,G)     FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M2(E,F) FG_RFL_M1(G) FG_RFL_END
+#define FG_RFL_8(A,B,C,D,E,F,G,H)   FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M4(E,F,G,H) FG_RFL_END
+
+template<class T,FG_ENABLE_IF(T,is_class)>
+inline void         setReflect(std::any const & node,T & strct) {strct.setRflct(node); }
+template<class T,FG_ENABLE_IF(T,is_integral)>
+inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
+template<class T,size_t S>
+void                setReflect(std::any const & node,Arr<T,S> & val)
+{
+    RflArray            arr = std::any_cast<RflArray>(node);
+    FGASSERT(arr.elems.size() == S);
+    for (size_t ii=0; ii<S; ++ii)
+        setReflect(arr.elems[ii],val[ii]);
+}
+template<class T>
+void                setReflect(std::any const & node,Svec<T> & val)
+{
+    RflArray            arr = std::any_cast<RflArray>(node);
+    size_t              S = arr.elems.size();
+    val.resize(S);
+    for (size_t ii=0; ii<S; ++ii)
+        setReflect(arr.elems[ii],val[ii]);
+}
+template<> inline void setReflect(std::any const & node,String & str) {str = std::any_cast<String>(node); }
+template<> inline void setReflect(std::any const & node,String8 & str) {str = std::any_cast<String>(node); }
+template<> inline void setReflect(std::any const & node,bool & val) {val = std::any_cast<bool>(node); }
+
+std::any            textToReflect(String const & txt);
+template<class T>
+T                   dsrlzText(String const & txt)
+{
+    T                   ret;
+    setReflect(textToReflect(txt),ret);
+    return ret;
+}
+
+#define FG_DRF_BEG                  void setRflct(std::any const & node) {RflStruct strct = std::any_cast<RflStruct>(node); size_t cnt {0};
+#define FG_DRF_M1(A)                setReflect(strct.members[cnt++].object,A);
+#define FG_DRF_M2(A,B)              FG_DRF_M1(A) FG_DRF_M1(B)
+#define FG_DRF_M4(A,B,C,D)          FG_DRF_M2(A,B) FG_DRF_M2(C,D)
+#define FG_DRF_END                  }
+
+#define FG_DRF_1(A)                 FG_DRF_BEG FG_DRF_M1(A) FG_DRF_END
+#define FG_DRF_2(A,B)               FG_DRF_BEG FG_DRF_M2(A,B) FG_DRF_END
+#define FG_DRF_3(A,B,C)             FG_DRF_BEG FG_DRF_M2(A,B) FG_DRF_M1(C) FG_DRF_END
+#define FG_DRF_4(A,B,C,D)           FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_END
+#define FG_DRF_5(A,B,C,D,E)         FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M1(E) FG_DRF_END
+#define FG_DRF_6(A,B,C,D,E,F)       FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M2(E,F) FG_DRF_END
+#define FG_DRF_7(A,B,C,D,E,F,G)     FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M2(E,F) FG_DRF_M1(G) FG_DRF_END
+#define FG_DRF_8(A,B,C,D,E,F,G,H)   FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M4(E,F,G,H) FG_DRF_END
+
+// COMPARISONS:
+
+enum struct Cmp { lt=-1, eq=0, gt=1 };
+
+// Default for compound types is to redirect to member operation:
+template<typename T,FG_ENABLE_IF(T,is_compound)>
+inline Cmp          cmp(T const & l,T const & r) {return l.cmp(r); }
+
+// Base cases include all scalars:
+template<typename T,FG_ENABLE_IF(T,is_scalar)>
+Cmp                 cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cmp::eq); }
+
+#define FG_CMP_M1(T,A)                                                                      \
+    bool cmp(T const & r) const {return cmp(A,r.A); }
+
+#define FG_LTE_M1(T,A)                                                                                  \
+    bool operator<(T const & r) const {return (A < r.A); }                                              \
+    bool operator==(T const & r) const {return (A == r.A); }
+
+#define FG_LTE_M2(T,A,B)                                                                                \
+    bool operator<(T const & r) const {                                                                 \
+        if (A < r.A) return true; else if (r.A < A) return false; \
+        else return (B < r.B); } \
+    bool operator==(T const & r) const {return ((A == r.A) && (B == r.B)); }
+
+#define FG_LTE_M3(T,A,B,C)                                        \
+    bool operator<(T const & r) const {                           \
+        if (A < r.A) return true; else if (r.A < A) return false; \
+        if (B < r.B) return true; else if (r.B < B) return false; \
+        else return (C < r.C); }                                                                             \
+    bool operator==(T const & r) const                                                                  \
+        {return ((A == r.A) && (B == r.B) && (C == r.C)); }
+
+#define FG_LTE_M4(T,A,B,C,D)                                                                           \
+    bool operator<(T const & r) const {                                                                 \
+        if (A < r.A) return true; else if (r.A < A) return false; \
+        else if (B < r.B) return true; else if (r.B < B) return false; \
+        else if (C < r.C) return true; else if (r.C < C) return false; \
+        else return (D < r.D); }                                                                             \
+    bool operator==(T const & r) const                                                                  \
+        {return ((A == r.A) && (B == r.B) && (C == r.C) && (D == r.D)); }
+
+// When only equality is needed.
+// As far as I can tell, 'decltype' can't infer T in the signature so must be explicit:
+#define FG_EQ_M1(T,A) bool operator==(T const & r) const {return (A == r.A); }
+#define FG_EQ_M2(T,A,B) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B)); }
+#define FG_EQ_M3(T,A,B,C) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C)); }
+#define FG_EQ_M4(T,A,B,C,D) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C) && (D == r.D)); }
+
+// BINARY SERIALIZATION / DESERIALIATION helper functions:
+// Raw binary serialization (just copy the bytes). T must be fundamental type:
+template<class T>
+void                srlzRaw_(T val,Bytes & bytes)
+{
+    // S is small so an inline [compiler-unrolled] loop is faster than calling memcpy:
+    size_t constexpr    S = sizeof(val);
+    std::byte const     *vPtr = reinterpret_cast<std::byte const *>(&val);
+    bytes.reserve(bytes.size()+S);
+    for (size_t ii=0; ii<S; ++ii)                           
+        bytes.push_back(vPtr[ii]);
+}
+inline void         srlzSizet_(size_t val,Bytes & bytes) {srlzRaw_(scast<uint64>(val),bytes); }
+template<class T>
+void                srlzRawOverwrite_(T val,Bytes & bytes,size_t pos)  // random access overwrite version
+{
+    size_t constexpr    S = sizeof(val);
+    FGASSERT(pos+S <= bytes.size());
+    std::byte const     *vPtr = reinterpret_cast<std::byte const *>(&val);
+    for (size_t ii=0; ii<S; ++ii)
+        bytes[pos+ii] = vPtr[ii];
+}
+template<class T>
+void                dsrlzRaw_(Bytes const & bytes,size_t & pos,T & val)
+{
+    size_t constexpr    S = sizeof(val);
+    if (pos+S > bytes.size())
+        fgThrow("deserialze past end of data for type",typeid(T).name());
+    val = *reinterpret_cast<T const *>(&bytes[pos]);
+    pos += S;
+}
+void                dsrlzSizet_(Bytes const & bytes,size_t & pos,size_t & val);
+Bytes               stringToBytes(String const &);
+String              bytesToString(Bytes const &);
+
+// BINARY SERIALIZATION:
 // Default case redirects serialization to class member serialization, which has a different name
 // to avoid confusing errors (ie. when global can't be resolved it tries to call itself but has
 // wrong number of arguments):
 template<class T>
-void                srlz_(T const & v,String & s) {v.srlzm_(s); }
-template<class T>
-void                dsrlz_(String const & s,size_t & p,T & v) {v.dsrlzm_(s,p); }
-
-// Direct binary serialization (no transformation). T must be simple type
-template<class T>
-void                srlzRaw_(T v,String & s) {s.append(reinterpret_cast<char const *>(&v),sizeof(v)); }
-template<class T>
-void                srlzRaw_(Svec<T> const & v,String & s)
-{
-    if (!v.empty())
-        s.append(reinterpret_cast<char const *>(&v[0]),sizeof(T)*v.size());
-}
-template<class T>
-void                srlzRawOverwrite_(T v,String & s,size_t pos)  // random access overwrite version
-{
-    size_t          len = sizeof(v);
-    FGASSERT(pos+len <= s.size());
-    char const *    src = reinterpret_cast<char const *>(&v);
-    for (size_t ii=0; ii<len; ++ii)
-        s[pos+ii] = src[ii];
-}
-template<class T>
-void                dsrlzRaw_(String const & s,size_t & p,T & v)
-{
-    size_t          sz = sizeof(v);
-    FGASSERT(p+sz <= s.size());
-    v = *reinterpret_cast<T const *>(&s[p]);
-    p += sz;
-}
-
-// Base cases for builtins:
-void            srlz_(bool v,String & s);                                       // Store as uchar
-inline void     srlz_(uchar v,String & s) {srlzRaw_(v,s); }                     // Assume always 8bit
-inline void     srlz_(int v,String & s) {srlzRaw_(v,s); }                       // Assume always 32bit
-inline void     srlz_(uint v,String & s) {srlzRaw_(v,s); }                      // "
-inline void     srlz_(long v,String & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
-inline void     srlz_(unsigned long v,String & s) {srlzRaw_(uint64(v),s); }     // "
-inline void     srlz_(long long v,String & s) {srlzRaw_(v,s); }                 // Assume always 64bit
-inline void     srlz_(unsigned long long v,String & s) {srlzRaw_(v,s); }        // "
-inline void     srlz_(float v,String & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
-inline void     srlz_(double v,String & s) {srlzRaw_(v,s); }                    // "
-
-void            dsrlz_(String const & s,size_t & p,bool & v);
-inline void     dsrlz_(String const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
-inline void     dsrlz_(String const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
-inline void     dsrlz_(String const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
-void            dsrlz_(String const & s,size_t & p,long & v);                   // interop w/ bounds checks
-void            dsrlz_(String const & s,size_t & p,unsigned long & v);          // "
-inline void     dsrlz_(String const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
-inline void     dsrlz_(String const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
-inline void     dsrlz_(String const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
-inline void     dsrlz_(String const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
-
-// Base cases for std lib classes:
+void                srlz_(T const & v,Bytes & s) {v.srlzm_(s); }
+// full specializations for builtins and string:
+void                srlz_(bool v,Bytes & s);                                       // Store as uchar
+inline void         srlz_(uchar v,Bytes & s) {srlzRaw_(v,s); }                     // Assume always 8bit
+inline void         srlz_(int v,Bytes & s) {srlzRaw_(v,s); }                       // Assume always 32bit
+inline void         srlz_(uint v,Bytes & s) {srlzRaw_(v,s); }                      // "
+inline void         srlz_(long v,Bytes & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
+inline void         srlz_(unsigned long v,Bytes & s) {srlzRaw_(uint64(v),s); }     // "
+inline void         srlz_(long long v,Bytes & s) {srlzRaw_(v,s); }                 // Assume always 64bit
+inline void         srlz_(unsigned long long v,Bytes & s) {srlzRaw_(v,s); }        // "
+inline void         srlz_(float v,Bytes & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
+inline void         srlz_(double v,Bytes & s) {srlzRaw_(v,s); }                    // "
+void                srlz_(String const & v,Bytes & s);
+// can't be handled by base case above since String8 is defined BEFORE serialization:
+inline void         srlz_(String8 const & s,Bytes & b) {srlz_(s.m_str,b); }
+// partial specializations for std::array and std::vector:
+template<typename T> void srlz_(Svec<T> const &,Bytes &);      // declaration for Arr<Svec<...>...>
 template<typename T,size_t S>
-void                srlz_(Arr<T,S> const & v,String & s)
+void                srlz_(Arr<T,S> const & v,Bytes & s)
 {
     for (T const & e : v)
         srlz_(e,s);
 }
-template<typename T,size_t S>
-void                dsrlz_(String const & s,size_t & p,Arr<T,S> & v)
-{
-    for (T & e : v)
-        dsrlz_(s,p,e);
-}
-void                srlz_(String const & v,String & s);
-void                dsrlz_(String const & s,size_t & p,String & v);
 template<typename T>
-void                srlz_(Svec<T> const & v,String &s)
+void                srlz_(Svec<T> const & v,Bytes & s)
 {
     srlz_(uint64(v.size()),s);
     for (T const & e : v)
         srlz_(e,s);
 }
+
+// BINARY DESERIALIZATION:
+template<class T>
+void                dsrlz_(Bytes const & s,size_t & p,T & v) {v.dsrlzm_(s,p); }
+// full specializations:
+void                dsrlz_(Bytes const & s,size_t & p,bool & v);
+inline void         dsrlz_(Bytes const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
+void                dsrlz_(Bytes const & s,size_t & p,long & v);                   // interop w/ bounds checks
+void                dsrlz_(Bytes const & s,size_t & p,unsigned long & v);          // "
+inline void         dsrlz_(Bytes const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
+void                dsrlz_(Bytes const & s,size_t & p,String & v);
+// can't be handled by base case above since String8 is defined BEFORE serialization:
+inline void         dsrlz_(Bytes const & b,size_t & p,String8 & s) {dsrlz_(b,p,s.m_str); }
+// partial specializations for std::array and std::vector:
+template<typename T> void dsrlz_(Bytes const &,size_t &,Svec<T> &);    // declare for Arr<Svec<...>...>
+template<typename T,size_t S>
+void                dsrlz_(Bytes const & s,size_t & p,Arr<T,S> & v)
+{
+    for (T & e : v)
+        dsrlz_(s,p,e);
+}
 template<typename T>
-void                dsrlz_(String const & s,size_t & p,Svec<T> & v)
+void                dsrlz_(Bytes const & s,size_t & p,Svec<T> & v)
 {
     uint64              sz;
     dsrlz_(s,p,sz);
-    FGASSERT(sz <= std::numeric_limits<size_t>::max());
-    v.resize(size_t(sz));
+    uint64              memSz = sz * sizeof(T);
+    if (memSz > lims<uint32>::max())            // 4GB limit on total size can be increased later if required
+        fgThrow("deserialize vector<> would require >4GB");
+    v.resize(scast<size_t>(sz));
     for (T & e : v)
         dsrlz_(s,p,e);
+}
+template<class T> T dsrlzT_(Bytes const & bytes,size_t & pos)
+{
+    T                   ret;
+    dsrlz_(bytes,pos,ret);
+    return ret;
 }
 
 // The type signature is uint64 value defined only on simple types, which is unique
@@ -131,21 +324,18 @@ void                dsrlz_(String const & s,size_t & p,Svec<T> & v)
 // specialization which means we cannot support standard library partial template specializations:
 
 // Base case handles struct with macro-defined static function 'typeSig()':
-template<class T>
-struct TypeSig
-{
-    static uint64 typeSig() {return T::typeSig(); }
-};
-
+template<class T> struct TypeSig    {static uint64 typeSig() {return T::typeSig(); } };
 // Builtin type (full) specializations (signatures chosen randomly):
-template<> struct TypeSig<int>    { static uint64 typeSig() {return 0x6E78D0CA3F3EE2EAULL; } };
-template<> struct TypeSig<uint>   { static uint64 typeSig() {return 0x10609B64EE938647ULL; } };
-template<> struct TypeSig<int64>  { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
-template<> struct TypeSig<uint64> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
-template<> struct TypeSig<float>  { static uint64 typeSig() {return 0x2692A71030495B97ULL; } };
-template<> struct TypeSig<double> { static uint64 typeSig() {return 0x75629296874859D5ULL; } };
-template<> struct TypeSig<bool>   { static uint64 typeSig() {return 0xCF7ECE5FAEA76F77ULL; } };
-
+template<> struct TypeSig<uchar>    { static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+template<> struct TypeSig<int>      { static uint64 typeSig() {return 0x6E78D0CA3F3EE2EAULL; } };
+template<> struct TypeSig<uint>     { static uint64 typeSig() {return 0x10609B64EE938647ULL; } };
+template<> struct TypeSig<long>     { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
+template<> struct TypeSig<unsigned long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
+template<> struct TypeSig<long long> { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
+template<> struct TypeSig<unsigned long long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
+template<> struct TypeSig<float>    { static uint64 typeSig() {return 0x2692A71030495B97ULL; } };
+template<> struct TypeSig<double>   { static uint64 typeSig() {return 0x75629296874859D5ULL; } };
+template<> struct TypeSig<bool>     { static uint64 typeSig() {return 0xCF7ECE5FAEA76F77ULL; } };
 // Library type (partial & full) specializations:
 template<class T,size_t S> struct TypeSig<Arr<T,S>>
 {
@@ -156,202 +346,78 @@ template<class T> struct TypeSig<Svec<T>>
     static uint64 typeSig() {return treeHash({TypeSig<T>::typeSig(),0xC9D2B190616B768AULL}); }
 };
 template<> struct TypeSig<String> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };
+template<> struct TypeSig<String8> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };    // String/String8 same typesig
 
 // Binary serialization macros:
-#define FG_SER_S_BEG void srlzm_(String & s) const {
-#define FG_SER_S1(A) srlz_(A,s);
-#define FG_SER_S2(A,B) FG_SER_S1(A) FG_SER_S1(B)
-#define FG_SER_S4(A,B,C,D) FG_SER_S2(A,B) FG_SER_S2(C,D)
+#define FG_SER_BEG                  void srlzm_(Bytes & s) const {
+#define FG_SER_M1(A)                srlz_(A,s);
+#define FG_SER_M2(A,B)              FG_SER_M1(A) FG_SER_M1(B)
+#define FG_SER_M4(A,B,C,D)          FG_SER_M2(A,B) FG_SER_M2(C,D)
+
+#define FG_SER_1(A)                 FG_SER_BEG FG_SER_M1(A) }
+#define FG_SER_2(A,B)               FG_SER_BEG FG_SER_M2(A,B) }
+#define FG_SER_3(A,B,C)             FG_SER_BEG FG_SER_M2(A,B) FG_SER_M1(C) }
+#define FG_SER_4(A,B,C,D)           FG_SER_BEG FG_SER_M4(A,B,C,D) }
+#define FG_SER_5(A,B,C,D,E)         FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M1(E) }
+#define FG_SER_6(A,B,C,D,E,F)       FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M2(E,F) }
+#define FG_SER_7(A,B,C,D,E,F,G)     FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M2(E,F) FG_SER_M1(G) }
+#define FG_SER_8(A,B,C,D,E,F,G,H)   FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M4(E,F,G,H) }
 
 // Binary deserialization macros:
-#define FG_SER_D_BEG void dsrlzm_(String const & s,size_t & p) {
-#define FG_SER_D1(A) dsrlz_(s,p,A);
-#define FG_SER_D2(A,B) FG_SER_D1(A) FG_SER_D1(B)
-#define FG_SER_D4(A,B,C,D) FG_SER_D2(A,B) FG_SER_D2(C,D)
+#define FG_DSR_BEG                  void dsrlzm_(Bytes const & s,size_t & p) {
+#define FG_DSR_M1(A)                dsrlz_(s,p,A);
+#define FG_DSR_M2(A,B)              FG_DSR_M1(A) FG_DSR_M1(B)
+#define FG_DSR_M4(A,B,C,D)          FG_DSR_M2(A,B) FG_DSR_M2(C,D)
 
-// Type signature macros:
-#define FG_SER_T_BEG static uint64 typeSig() { return treeHash({
-#define FG_SER_T_END }); }
-#define FG_SER_T1(A) TypeSig<decltype(A)>::typeSig(),
-#define FG_SER_T2(A,B) FG_SER_T1(A) FG_SER_T1(B)
-#define FG_SER_T4(A,B,C,D) FG_SER_T2(A,B) FG_SER_T2(C,D)
+#define FG_DSR_1(A)                 FG_DSR_BEG FG_DSR_M1(A) }
+#define FG_DSR_2(A,B)               FG_DSR_BEG FG_DSR_M2(A,B) }
+#define FG_DSR_3(A,B,C)             FG_DSR_BEG FG_DSR_M2(A,B) FG_DSR_M1(C) }
+#define FG_DSR_4(A,B,C,D)           FG_DSR_BEG FG_DSR_M4(A,B,C,D) }
+#define FG_DSR_5(A,B,C,D,E)         FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M1(E) }
+#define FG_DSR_6(A,B,C,D,E,F)       FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M2(E,F) }
+#define FG_DSR_7(A,B,C,D,E,F,G)     FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M2(E,F) FG_DSR_M1(G) }
+#define FG_DSR_8(A,B,C,D,E,F,G,H)   FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M4(E,F,G,H) }
 
-// Text tree serialization
-struct                  SerNode
-{
-    virtual                 ~SerNode() {}
-    virtual void            print(std::ostream &) const = 0;
-    virtual bool            fitsInLine() const = 0;
-};
-typedef Sptr<SerNode>   SerPtr;
-typedef Svec<SerPtr>    SerPtrs;
-struct                  SerNodeVal : SerNode
-{
-    String                  textVal;                        // text serialized value (for builtins)
-    explicit SerNodeVal(String const & s) : textVal{s} {}   // make_shared cannot use default agg ctr
-    virtual void            print(std::ostream & os) const {os << textVal; }
-    virtual bool            fitsInLine() const {return true; }
-};
-struct                  SerMember
-{
-    String                  name;
-    SerPtr                  value;
-};
-typedef Svec<SerMember> SerMembers;
-struct                  SerNodeStruct : SerNode
-{
-    SerMembers              membs;
-    explicit SerNodeStruct(SerMembers const & s) : membs{s} {}
-    virtual void            print(std::ostream & os) const
-    {
-        for (SerMember const & m : membs) {
-            os << fgnl << m.name << ": ";
-            if (!m.value->fitsInLine())
-                os << fgpush;
-            m.value->print(os);
-            if (!m.value->fitsInLine())
-                os << fgpop;
-        }
-    }
-    virtual bool            fitsInLine() const {return false; }
-};
-struct                  SerNodeArr : SerNode
-{
-    SerPtrs                 vals;
-    explicit SerNodeArr(SerPtrs const & s) : vals(s) {}
-    virtual void            print(std::ostream & os) const
-    {
-        os << "[";
-        if (fitsInLine()) {
-            for (SerPtr const & v : vals) {
-                v->print(os);
-                os << " ";
-            }
-        }
-        else {
-            for (size_t ii=0; ii<vals.size(); ++ii) {
-                SerPtr const &      v = vals[ii];
-                os << fgnl << ii << ": ";
-                if (!v->fitsInLine())
-                    os << fgpush;
-                v->print(os);
-                if (!v->fitsInLine())
-                    os << fgpop;
-            }
-            os << fgnl;
-        }
-        os << "]";
-    }
-    virtual bool            fitsInLine() const
-    {
-        if (vals.empty())
-            return true;
-        return ((vals.size() < 8) && vals[0]->fitsInLine());
-    }
-};
-inline std::ostream & operator<<(std::ostream & os,SerPtr const & sp) {sp->print(os); return os; }
-inline SerPtr       cSerVal(String const & v) {return std::make_shared<SerNodeVal>(v); }
+// Type hash signature macros:
+#define FG_THS_BEG                  static uint64 typeSig() { return treeHash({
+#define FG_THS_M1(A)                TypeSig<decltype(A)>::typeSig(),
+#define FG_THS_M2(A,B)              FG_THS_M1(A) FG_THS_M1(B)
+#define FG_THS_M4(A,B,C,D)          FG_THS_M2(A,B) FG_THS_M2(C,D)
+#define FG_THS_END                  }); }
+
+#define FG_THS_1(A)                 FG_THS_BEG FG_THS_M1(A) FG_THS_END
+#define FG_THS_2(A,B)               FG_THS_BEG FG_THS_M2(A,B) FG_THS_END
+#define FG_THS_3(A,B,C)             FG_THS_BEG FG_THS_M2(A,B) FG_THS_M1(C) FG_THS_END
+#define FG_THS_4(A,B,C,D)           FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_END
+#define FG_THS_5(A,B,C,D,E)         FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M1(E) FG_THS_END
+#define FG_THS_6(A,B,C,D,E,F)       FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M2(E,F) FG_THS_END
+#define FG_THS_7(A,B,C,D,E,F,G)     FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M2(E,F) FG_THS_M1(G) FG_THS_END
+#define FG_THS_8(A,B,C,D,E,F,G,H)   FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M4(E,F,G,H) FG_THS_END
+
+// COMBINED MACROS:
+
+#define FG_SER1(A)  FG_SER_1(A) FG_DSR_1(A) FG_THS_1(A) FG_RFL_1(A) FG_DRF_1(A)
+#define FG_SER2(A,B) FG_SER_2(A,B) FG_DSR_2(A,B) FG_THS_2(A,B) FG_RFL_2(A,B) FG_DRF_2(A,B)
+#define FG_SER3(A,B,C) FG_SER_3(A,B,C) FG_DSR_3(A,B,C) FG_THS_3(A,B,C) FG_RFL_3(A,B,C) FG_DRF_3(A,B,C)
+#define FG_SER4(A,B,C,D) FG_SER_4(A,B,C,D) FG_DSR_4(A,B,C,D) FG_THS_4(A,B,C,D) FG_RFL_4(A,B,C,D) FG_DRF_4(A,B,C,D)
+#define FG_SER5(A,B,C,D,E) FG_SER_5(A,B,C,D,E) FG_DSR_5(A,B,C,D,E) FG_THS_5(A,B,C,D,E) FG_RFL_5(A,B,C,D,E) FG_DRF_5(A,B,C,D,E)
+#define FG_SER6(A,B,C,D,E,F) FG_SER_6(A,B,C,D,E,F) FG_DSR_6(A,B,C,D,E,F) FG_THS_6(A,B,C,D,E,F) FG_RFL_6(A,B,C,D,E,F) \
+FG_DRF_6(A,B,C,D,E,F)
+#define FG_SER7(A,B,C,D,E,F,G) FG_SER_7(A,B,C,D,E,F,G) FG_DSR_7(A,B,C,D,E,F,G) FG_THS_7(A,B,C,D,E,F,G) FG_RFL_7(A,B,C,D,E,F,G) \
+FG_DRF_7(A,B,C,D,E,F,G)
+#define FG_SER8(A,B,C,D,E,F,G,H) FG_SER_8(A,B,C,D,E,F,G,H) FG_DSR_8(A,B,C,D,E,F,G,H) FG_THS_8(A,B,C,D,E,F,G,H) FG_RFL_8(A,B,C,D,E,F,G,H) \
+FG_DRF_8(A,B,C,D,E,F,G,H)
+
+// Client direct usage of binary serialization (no message packaging):
 template<class T>
-SerPtr              tsrlz(T const & v) {return v.tsrlzm(); }        // base case redirects to member
-inline SerPtr       tsrlz(bool v) {return cSerVal(v ? "true" : "false"); }
-inline SerPtr       tsrlz(char v) {return cSerVal(String{v}); }
-inline SerPtr       tsrlz(uchar v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(int16 v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(uint16 v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(int v) {return cSerVal(toStr(v)); }       // overloads for builtin & lib types
-inline SerPtr       tsrlz(uint v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(int64 v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(uint64 v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(float v) {return cSerVal(toStr(v)); }
-inline SerPtr       tsrlz(double v) {return cSerVal(toStrDigits(v,6)); }
-inline SerPtr       tsrlz(String const & s) {return cSerVal(s); }
-#ifdef _WIN32       // wstring == String32 on nix:
-inline SerPtr       tsrlz(std::wstring const & s) {return cSerVal(toUtf8(s)); }
-#endif
-inline SerPtr       tsrlz(String32 const & s) {return cSerVal(toUtf8(s)); }
-template<class T,size_t S>
-SerPtr              tsrlz(std::array<T,S> const & v)
+Bytes               srlz(T const & v)
 {
-    SerPtrs                 ret; ret.reserve(S);
-    for (T const & e : v)
-        ret.push_back(tsrlz(e));
-    return std::make_shared<SerNodeArr>(ret);
-}
-template<class T>
-SerPtr              tsrlz(std::vector<T> const & v)
-{
-    SerPtrs                 ret; ret.reserve(v.size());
-    for (T const & e : v)
-        ret.push_back(tsrlz(e));
-    return std::make_shared<SerNodeArr>(ret);
-}
-
-#define FG_SER_O_BEG SerPtr tsrlzm() const { return std::make_shared<SerNodeStruct>(SerMembers{
-#define FG_SER_O_END }); }
-#define FG_SER_O1(A) { #A , tsrlz(A) },
-#define FG_SER_O2(A,B) FG_SER_O1(A) FG_SER_O1(B)
-#define FG_SER_O4(A,B,C,D) FG_SER_O2(A,B) FG_SER_O2(C,D)
-
-// Combined macros:
-
-#define FG_SER1(A)                                                                  \
-FG_SER_S_BEG FG_SER_S1(A) }                                                         \
-FG_SER_D_BEG FG_SER_D1(A) }                                                         \
-FG_SER_O_BEG FG_SER_O1(A) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T1(A) FG_SER_T_END
-
-#define FG_SER2(A,B)                                                                \
-FG_SER_S_BEG FG_SER_S2(A,B) }                                                       \
-FG_SER_D_BEG FG_SER_D2(A,B) }                                                       \
-FG_SER_O_BEG FG_SER_O2(A,B) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T2(A,B) FG_SER_T_END
-
-#define FG_SER3(A,B,C)                                                              \
-FG_SER_S_BEG FG_SER_S2(A,B) FG_SER_S1(C) }                                          \
-FG_SER_D_BEG FG_SER_D2(A,B) FG_SER_D1(C) }                                          \
-FG_SER_O_BEG FG_SER_O2(A,B) FG_SER_O1(C) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T2(A,B) FG_SER_T1(C) FG_SER_T_END
-
-#define FG_SER4(A,B,C,D)                                                            \
-FG_SER_S_BEG FG_SER_S4(A,B,C,D) }                                                   \
-FG_SER_D_BEG FG_SER_D4(A,B,C,D) }                                                   \
-FG_SER_O_BEG FG_SER_O4(A,B,C,D) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T_END
-
-#define FG_SER5(A,B,C,D,E)                                                          \
-FG_SER_S_BEG FG_SER_S4(A,B,C,D) FG_SER_S1(E) }                                      \
-FG_SER_D_BEG FG_SER_D4(A,B,C,D) FG_SER_D1(E) }                                      \
-FG_SER_O_BEG FG_SER_O4(A,B,C,D) FG_SER_O1(E) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T1(E) FG_SER_T_END
-
-#define FG_SER6(A,B,C,D,E,F)                                                        \
-FG_SER_S_BEG FG_SER_S4(A,B,C,D) FG_SER_S2(E,F) }                                    \
-FG_SER_D_BEG FG_SER_D4(A,B,C,D) FG_SER_D2(E,F) }                                    \
-FG_SER_O_BEG FG_SER_O4(A,B,C,D) FG_SER_O2(E,F) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T2(E,F) FG_SER_T_END
-
-#define FG_SER7(A,B,C,D,E,F,G)                                                      \
-FG_SER_S_BEG FG_SER_S4(A,B,C,D) FG_SER_S2(E,F) FG_SER_S1(G) }                       \
-FG_SER_D_BEG FG_SER_D4(A,B,C,D) FG_SER_D2(E,F) FG_SER_D1(G) }                       \
-FG_SER_O_BEG FG_SER_O4(A,B,C,D) FG_SER_O2(E,F) FG_SER_O1(G) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T2(E,F) FG_SER_T1(G) FG_SER_T_END
-
-#define FG_SER8(A,B,C,D,E,F,G,H)                                                    \
-FG_SER_S_BEG FG_SER_S4(A,B,C,D) FG_SER_S4(E,F,G,H) }                                \
-FG_SER_D_BEG FG_SER_D4(A,B,C,D) FG_SER_D4(E,F,G,H) }                                \
-FG_SER_O_BEG FG_SER_O4(A,B,C,D) FG_SER_O4(E,F,G,H) FG_SER_O_END \
-FG_SER_T_BEG FG_SER_T4(A,B,C,D) FG_SER_T4(E,F,G,H) FG_SER_T_END
-
-// Client direct usage of serialization (no message packaging):
-template<class T>
-String              srlz(T const & v)
-{
-    String          ret;
+    Bytes               ret;
     srlz_(v,ret);
     return ret;
 }
 template<class T>
-T                   dsrlz(String const & s)
+T                   dsrlz(Bytes const & s)
 {
     T               ret;
     size_t          p = 0;
@@ -360,21 +426,21 @@ T                   dsrlz(String const & s)
 }
 // A message is a uint64 type signature followed by a binary serialized simple object:
 template<class T>
-String              toMessage(T const & v,uint64 typeSig)
+Bytes               toMessage(T const & v,uint64 typeSig)
 {
-    String          msg;
+    Bytes               msg;
     srlz_(typeSig,msg);
     srlz_(v,msg);
     return msg;
 }
 // Serialize to message using the default-defined tree hash type signature:
 template<class T>
-inline String       toMessage(T const & v) {return toMessage(v,T::typeSig()); }
+inline Bytes        toMessage(T const & v) {return toMessage(v,TypeSig<T>::typeSig()); }
 // Serialize to message using the type signature manually-defined by T::typeID()
 template<class T>
-inline String       toMessageExplicit(T const & v) {return toMessage(v,T::typeID()); }
+inline Bytes        toMessageExplicit(T const & v) {return toMessage(v,T::typeID()); }
 template<class T>
-void                fromMessage_(String const & msg,uint64 typeSig,T & v)
+void                fromMessage_(Bytes const & msg,uint64 typeSig,T & v)
 {
     size_t          p {0};
     uint64          msgID {0};
@@ -385,9 +451,9 @@ void                fromMessage_(String const & msg,uint64 typeSig,T & v)
 }
 // Deserialize from message validating the default tree hash type signature:
 template<class T>
-inline void         fromMessage_(String const & msg,T & v) {fromMessage_(msg,T::typeSig(),v); }
+inline void         fromMessage_(Bytes const & msg,T & v) {fromMessage_(msg,TypeSig<T>::typeSig(),v); }
 template<class T>
-T                   fromMessage(String const & s)
+T                   fromMessage(Bytes const & s)
 {
     T               ret;
     fromMessage_(s,ret);
@@ -395,9 +461,9 @@ T                   fromMessage(String const & s)
 }
 // Deserialize from message validating the type signature manually defined by T::typeID()
 template<class T>
-inline void         fromMessageExplicit_(String const & msg,T & v) {fromMessage_(msg,T::typeID(),v); }
+inline void         fromMessageExplicit_(Bytes const & msg,T & v) {fromMessage_(msg,T::typeID(),v); }
 template<class T>
-T                   fromMessageExplicit(String const & s)
+T                   fromMessageExplicit(Bytes const & s)
 {
     T               ret;
     fromMessageExplicit_(s,ret);
@@ -415,23 +481,6 @@ void                typeNames_(Strings & str,T const & v,Ts... vs)
     str.push_back(typeid(v).name());
     typeNames_(str,vs...);
 }
-// Used in macros to enable struct name reflection; default used for all external code
-// and complete specializations made for each reflected struct:
-template<class T>
-void                reflectNames_(Strings &) {}
-
-#define FG_REFLECT_SIG(S) template<> inline void reflectNames_<S>(Strings & s)
-#define FG_REFLECT_1(A) s.push_back(#A);
-#define FG_REFLECT_2(A,B) FG_REFLECT_1(A) FG_REFLECT_1(B)
-#define FG_REFLECT_4(A,B,C,D) FG_REFLECT_2(A,B) FG_REFLECT_2(C,D)
-
-#define FG_TRAVERSE_SIG(S) template<typename Op> void traverseMembers_(Op & op,S & s)
-#define FG_TRAVERSE_1(A) traverseMembers_(op,s.A);
-#define FG_TRAVERSE_2(A,B) FG_TRAVERSE_1(A) FG_TRAVERSE_1(B)
-#define FG_TRAVERSE_4(A,B,C,D) FG_TRAVERSE_2(A,B) FG_TRAVERSE_2(C,D)
-
-#define FG_SERIAL_1(S,A) FG_REFLECT_SIG(S) { FG_REFLECT_1(A) } FG_TRAVERSE_SIG(S) { FG_TRAVERSE_1(A) }
-#define FG_SERIAL_2(S,A,B) FG_REFLECT_SIG(S) { FG_REFLECT_2(A,B) } FG_TRAVERSE_SIG(S) { FG_TRAVERSE_2(A,B) }
 
 }
 

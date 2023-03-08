@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,8 @@
 #include "stdafx.h"
 
 #include "Fg3dMesh.hpp"
-#include "FgException.hpp"
-#include "FgStdStream.hpp"
+#include "FgSerial.hpp"
+#include "FgFile.hpp"
 #include "FgBounds.hpp"
 #include "FgFileSystem.hpp"
 
@@ -23,7 +23,7 @@ string
 readString(istream & istr,bool wchar)
 {
     uint        size;
-    readb(istr,size);
+    readBinRaw_(istr,size);
     string      str;
     if (size == 0)
         return str;
@@ -31,7 +31,7 @@ readString(istream & istr,bool wchar)
     for (uint ii=0; ii<size; ++ii) {
         if (wchar) {
             wchar_t     wch;
-            readb(istr,wch);
+            readBinRaw_(istr,wch);
             str[ii] = char(wch);
         }
         else
@@ -63,16 +63,16 @@ loadTri(istream & istr)
                 numStatMorph,
                 numStatMorphVerts;
     char        buff[16];
-    readb(istr,numVerts);
-    readb(istr,numTris);
-    readb(istr,numQuads);
-    readb(istr,numLabVerts);
-    readb(istr,numSurfPts);
-    readb(istr,numUvs);
-    readb(istr,texExt);
-    readb(istr,numDiffMorph);
-    readb(istr,numStatMorph);
-    readb(istr,numStatMorphVerts);
+    readBinRaw_(istr,numVerts);
+    readBinRaw_(istr,numTris);
+    readBinRaw_(istr,numQuads);
+    readBinRaw_(istr,numLabVerts);
+    readBinRaw_(istr,numSurfPts);
+    readBinRaw_(istr,numUvs);
+    readBinRaw_(istr,texExt);
+    readBinRaw_(istr,numDiffMorph);
+    readBinRaw_(istr,numStatMorph);
+    readBinRaw_(istr,numStatMorphVerts);
     istr.read(buff,16);
     bool    texs = ((texExt & 0x01) != 0),
             wchar = ((texExt & 0x02) != 0);
@@ -108,9 +108,9 @@ loadTri(istream & istr)
     }
     // Surface points:
     for (uint ii=0; ii<numSurfPts; ii++) {
-        SurfPoint     sp;
-        sp.point.triEquivIdx = fgReadt<uint32>(istr);
-        readb(istr,sp.point.weights);
+        SurfPointName     sp;
+        sp.point.triEquivIdx = readBinRaw<uint32>(istr);
+        readBinRaw_(istr,sp.point.weights);
         sp.label = readString(istr,wchar);
         surf.surfPoints.push_back(sp);
     }
@@ -143,10 +143,10 @@ loadTri(istream & istr)
         mesh.deltaMorphs[mm].name = readString(istr,wchar);
         mesh.deltaMorphs[mm].verts.resize(numVerts);
         float       scale;
-        readb(istr,scale);
+        readBinRaw_(istr,scale);
         for (uint vv=0; vv<numVerts; vv++) {
             Vec3S    sval;
-            readb(istr,sval);
+            readBinRaw_(istr,sval);
             mesh.deltaMorphs[mm].verts[vv] = Vec3F(sval) * scale;
         }
     }
@@ -157,7 +157,7 @@ loadTri(istream & istr)
         IndexedMorph       tm;
         tm.name = readString(istr,wchar);
         uint32                      numTargVerts;
-        readb(istr,numTargVerts);
+        readBinRaw_(istr,numTargVerts);
         if (numTargVerts > 0) {         // For some reason this is not the case in v2.0 eyes
             tm.ivs.resize(numTargVerts);
             size_t          cnt {0};
@@ -193,72 +193,72 @@ void
 writeLabel(ostream & ostr,string const & str)
 {
     // The spec requires writing a null terminator after the string:
-    fgWriteb(ostr,uint32(str.size()+1));
+    writeBinRaw_(ostr,uint32(str.size()+1));
     ostr.write(str.c_str(),str.size()+1);
 }
 
 void        saveTri(String8 const & fname,Mesh const & mesh)
 {
-    Surf const          surf = mergeSurfaces(mesh.surfaces);
+    Surf const          surf = merge(mesh.surfaces);
     // Mesh must have both of these for valid UVs:
     bool                hasUvs = (surf.hasUvIndices() && !mesh.uvs.empty());
-    SurfPoints const &  surfPoints = surf.surfPoints;
-    size_t              numTargetMorphVerts = cNumVerts(mesh.targetMorphs),
+    SurfPointNames const & surfPoints = surf.surfPoints;
+    size_t              numTargetMorphVerts = sumSizes(mesh.targetMorphs),
                         numBaseVerts = mesh.verts.size();
     Ofstream            ff(fname);
     ff.write(triIdent.data(),8);
-    fgWriteb(ff,int32(numBaseVerts));               // V
-    fgWriteb(ff,int32(surf.numTris()));             // T
-    fgWriteb(ff,int32(surf.numQuads()));            // Q
-    fgWriteb(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
-    fgWriteb(ff,int32(surfPoints.size()));          // numSurfPts (LS)
+    writeBinRaw_(ff,int32(numBaseVerts));               // V
+    writeBinRaw_(ff,int32(surf.numTris()));             // T
+    writeBinRaw_(ff,int32(surf.numQuads()));            // Q
+    writeBinRaw_(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
+    writeBinRaw_(ff,int32(surfPoints.size()));          // numSurfPts (LS)
     int32               numUvs = hasUvs ? int32(mesh.uvs.size()) : 0;   // In case mesh is inconsistent
-    fgWriteb(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
+    writeBinRaw_(ff,int32(numUvs));                     // numUvs (X > 0 -> per-facet texture coordinates)
     if (hasUvs)
-        fgWriteb(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
+        writeBinRaw_(ff,int32(0x01));                   // <ext>: 0x01 -> texture coordinates
     else
-        fgWriteb(ff,int32(0));
-    fgWriteb(ff,int32(mesh.deltaMorphs.size()));    // numDiffMorph
-    fgWriteb(ff,int32(mesh.targetMorphs.size()));   // numStatMorph
-    fgWriteb(ff,int32(numTargetMorphVerts));        // numStatMorphVerts
-    fgWriteb(ff,int32(0));
-    fgWriteb(ff,int32(0));
-    fgWriteb(ff,int32(0));
-    fgWriteb(ff,int32(0));
+        writeBinRaw_(ff,int32(0));
+    writeBinRaw_(ff,int32(mesh.deltaMorphs.size()));    // numDiffMorph
+    writeBinRaw_(ff,int32(mesh.targetMorphs.size()));   // numStatMorph
+    writeBinRaw_(ff,int32(numTargetMorphVerts));        // numStatMorphVerts
+    writeBinRaw_(ff,int32(0));
+    writeBinRaw_(ff,int32(0));
+    writeBinRaw_(ff,int32(0));
+    writeBinRaw_(ff,int32(0));
     // Verts:
     for (uint ii=0; ii<mesh.verts.size(); ++ii)
-        fgWriteb(ff,mesh.verts[ii]);
+        writeBinRaw_(ff,mesh.verts[ii]);
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const IndexedMorph &   tm = mesh.targetMorphs[ii];
         for (IdxVec3F const & iv : tm.ivs)
-            fgWriteb(ff,iv.vec);
+            writeBinRaw_(ff,iv.vec);
     }
     // Facets:
     for (uint ii=0; ii<surf.numTris(); ++ii)
-        fgWriteb(ff,surf.tris.vertInds[ii]);
+        writeBinRaw_(ff,surf.tris.vertInds[ii]);
     for (uint ii=0; ii<surf.numQuads(); ++ii)
-        fgWriteb(ff,surf.quads.vertInds[ii]);
+        writeBinRaw_(ff,surf.quads.vertInds[ii]);
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
-        fgWriteb(ff,uint32(mesh.markedVerts[ii].idx));
+        writeBinRaw_(ff,uint32(mesh.markedVerts[ii].idx));
         writeLabel(ff,mesh.markedVerts[ii].label);
     }
     // Surface Points:
     for (size_t ii=0; ii<surfPoints.size(); ii++) {
-        SurfPoint const &   sp = surfPoints[ii];
-        fgWriteb(ff,uint32(sp.point.triEquivIdx));
-        fgWriteb(ff,sp.point.weights);
+        SurfPointName const &   sp = surfPoints[ii];
+        writeBinRaw_(ff,uint32(sp.point.triEquivIdx));
+        writeBinRaw_(ff,sp.point.weights);
         writeLabel(ff,sp.label);
     }
     // UV list and per-facet UV indices if present:
     if (surf.hasUvIndices())
     {
         for(size_t ii=0; ii < mesh.uvs.size(); ++ii)
-            fgWriteb(ff,mesh.uvs[ii]);
+            writeBinRaw_(ff,mesh.uvs[ii]);
         for(size_t ii=0; ii < surf.tris.uvInds.size(); ++ii)
-            fgWriteb(ff,surf.tris.uvInds[ii]);
+            writeBinRaw_(ff,surf.tris.uvInds[ii]);
         for(uint ii=0; ii < surf.quads.uvInds.size(); ++ii)
-            fgWriteb(ff,surf.quads.uvInds[ii]);
+            writeBinRaw_(ff,surf.quads.uvInds[ii]);
     }
     // Delta morphs:
     for (size_t ii=0; ii<mesh.deltaMorphs.size(); ++ii) {   
@@ -266,18 +266,18 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
         float           scale = float(numeric_limits<short>::max()-1) / cMaxElem(mapAbs(cBounds(morph.verts)));
-        fgWriteb(ff,1.0f/scale);
+        writeBinRaw_(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)
-                fgWriteb(ff,short(std::floor(morph.verts[jj][kk]*scale)+0.5f));
+                writeBinRaw_(ff,short(std::floor(morph.verts[jj][kk]*scale)+0.5f));
     }
     // Target morphs:
     for (size_t ii=0; ii<mesh.targetMorphs.size(); ++ii) {
         const IndexedMorph &   morph = mesh.targetMorphs[ii];
         writeLabel(ff,morph.name.as_ascii());
-        fgWriteb(ff,uint32(morph.ivs.size()));
+        writeBinRaw_(ff,uint32(morph.ivs.size()));
         for (size_t jj=0; jj<morph.ivs.size(); ++jj)
-            fgWriteb(ff,uint32(morph.ivs[jj].idx));
+            writeBinRaw_(ff,uint32(morph.ivs[jj].idx));
     }
 }
 

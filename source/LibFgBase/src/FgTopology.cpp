@@ -1,15 +1,12 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgStdSet.hpp"
 #include "FgTopology.hpp"
-#include "FgOpt.hpp"
-#include "FgStdVector.hpp"
 #include "FgCommand.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "Fg3dDisplay.hpp"
@@ -513,7 +510,7 @@ void
 testmEdgeDist(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
-    Surf                surf = mergeSurfaces(mesh.surfaces).convertToTris();
+    Surf                surf = merge(mesh.surfaces).convertToTris();
     SurfTopo            topo {mesh.verts.size(),surf.tris.vertInds};
     size_t              vertIdx = 0;    // Randomly choose the first
     Floats              edgeDists = topo.edgeDistanceMap(mesh.verts,vertIdx);
@@ -546,7 +543,7 @@ void
 testmBoundVertFlags(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
-    Tris const &        tris = mesh.surfaces[0].tris;
+    TriInds const &        tris = mesh.surfaces[0].tris;
     SurfTopo            topo {mesh.verts.size(),tris.vertInds};
     Bools               boundVertFlags = topo.boundaryVertFlags();
     Vec2UI              sz {64};

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,7 @@
 #ifndef FGBESTN_HPP
 #define FGBESTN_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgOpt.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -48,11 +47,13 @@ struct      BestN
 template<class Key,class Val,class Cmp=std::less<Key> >
 struct      BestV
 {
-    size_t                      maxNum;
+    size_t                      maxNum;     // max value for 'best.size()'
     Svec<std::pair<Key,Val> >   best;
 
     BestV(size_t maxNum_) : maxNum(maxNum_) {}
 
+    bool                full() const {return best.size() == maxNum; }
+    size_t              size() const {return best.size(); }
     bool                update(Key key,Val const & val)
     {
         for (uint ii=0; ii<best.size(); ++ii) {

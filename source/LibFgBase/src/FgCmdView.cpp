@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,10 +16,105 @@
 #include "FgImageDraw.hpp"
 #include "FgAffine.hpp"
 #include "FgBuild.hpp"
+#include "FgApproxEqual.hpp"
 
 using namespace std;
 
 namespace Fg {
+
+namespace {
+
+void                cmdViewImage(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"((<image>.<ext> [<points>.txt])+
+    <ext>      - ()" + cat(getImgExts(),",") + R"()
+    <points>   - optional points annotation file in simple YOLO format
+OUTPUT:
+    displays the image(s) [and landmarks] in a window, allowing for zoom
+NOTES:
+    if the file <image>.lms.txt exists (and no <points> is specified),
+    it will be automatically used to load landmarks.)"
+    };
+    AnnotatedImgs       ais;
+    do {
+        AnnotatedImg        ai;
+        String8             imgFname = syn.next(),
+                            lmsFname = pathToDirBase(imgFname)+".lms.txt";
+        ai.name = pathToBase(imgFname);
+        ai.img = loadImage(imgFname);
+        NameVec2Fs          lmsIrcs;
+        if (syn.more() && (toLower(pathToExt(syn.peekNext())) == "txt"))
+            lmsIrcs = loadLandmarks(syn.next());
+        else if (fileExists(lmsFname))
+            lmsIrcs = loadLandmarks(lmsFname);
+        if (!lmsIrcs.empty()) {
+            PushIndent          pind {imgFname.m_str+" Landmarks:"};
+            AffineEw2F          xf = cIrcsToIucs(ai.img.dims());
+            Mat22F              bnds {0,1,0,1};
+            for (NameVec2F const & lm : lmsIrcs) {
+                fgout << fgnl << lm.name << ": " << lm.vec;
+                Vec2F               iucs = xf * lm.vec;
+                if (!isInBounds(bnds,iucs))
+                    fgout << " WARNING point not within image boundaries";
+                ai.ptsIucs.push_back(iucs);
+            }
+        }
+        ais.push_back(ai);
+    } while (syn.more());
+    if (ais.size() == 1)
+        viewImage(ais[0].img,ais[0].ptsIucs);
+    else
+        viewImages(ais);
+}
+
+void                cmdViewDeltas(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<base>.<ext> <targ>.<ext> [<epsBits>]
+    <base>          - base shape mesh and vertex list. Must have UVs.
+    <targ>          - comparison vertex list. Must be same size as base.
+    <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
+    <epsBits>       - bit depth relative to max verts spread axis to consider the delta insignificant.
+                      defaults to 17 (ie. 1 part in 131,072).
+NOTES:
+    * Displays the mesh with significantly modified vertices (position) in red
+    * TRIS ONLY !)"
+    };
+    Mesh                base = loadMesh(syn.next()),
+                        targ = loadMesh(syn.next());
+    size_t              bits = 17;
+    if (syn.more())
+        bits = syn.nextAs<size_t>();
+    size_t              V = base.verts.size();
+    if (targ.verts.size() != V)
+        fgThrow("<base> and <targ> vertex lists are different sizes");
+    float               maxDim = cMaxElem(cDims(base.verts)),
+                        thresh = epsBits(bits) * maxDim;
+    TriInds             triInds = merge(sliceMember(base.surfaces,&Surf::tris));
+    ImgRgba8            map {1024,1024,Rgba8{200,200,200,255}};
+    Rgba8               color {255,0,0,255};
+    size_t              sigDels {0},
+                        epsDels {0},
+                        exacts {0};
+    for (size_t vv=0; vv<V; ++vv) {
+        float               del = cMaxElem(mapAbs(targ.verts[vv]-base.verts[vv]));
+        if (del == 0.0f)
+            ++exacts;
+        else if (del < thresh)
+            ++epsDels;
+        else {
+            ++sigDels;
+            markVertOnMap(base.uvs,triInds,vv,color,map);
+        }
+    }
+    for (Surf & surf : base.surfaces)
+        surf.setAlbedoMap(map);
+    fgout
+        << fgnl << "Identical vertices:     " << exacts
+        << fgnl << "Approx identical verts: " << epsDels
+        << fgnl << "Changed verts:          " << sigDels;
+    viewMesh(base);
+}
 
 void                cmdViewMesh(CLArgs const & args)
 {
@@ -82,7 +177,7 @@ NOTES:
                     if(syn.next() == "-t") {
                         ImgRgba8         trans = loadImage(syn.next());
                         fgout << fgnl << syn.curr() << fgpush << trans << fgpop;
-                        albedo = fgImgApplyTransparencyPow2(albedo,trans);
+                        albedo = applyTransparencyPow2(albedo,trans);
                     }
                     else if (syn.curr() == "-s") {
                         loadImage_(syn.next(),specular);
@@ -113,43 +208,6 @@ NOTES:
     viewMesh(all,compare);
 }
 
-void                cmdViewImage(CLArgs const & args)
-{
-    Syntax              syn {args,
-        R"(<image>.<ext> [<points>.txt]
-    <ext>      - ()" + cat(getImgExts(),",") + R"()
-    <points>   - optional points annotation file in simple YOLO format
-OUTPUT:
-    displays the image [and landmarks] in a window, allowing for zoom
-NOTES:
-    if the file <image>.lms.txt exists (and no <points> is specified),
-    it will be automatically used to load landmarks.)"
-    };
-    String8             imgFname = syn.next(),
-                        lmsFname = pathToDirBase(imgFname)+".lms.txt";
-    ImgRgba8            img = loadImage(imgFname);
-    fgout << img;
-    NameVec2Fs          lmsIrcs;
-    if (syn.more())
-        lmsIrcs = loadImageLandmarks(syn.next());
-    else if (fileExists(lmsFname))
-        lmsIrcs = loadImageLandmarks(lmsFname);
-    Vec2Fs              pts;
-    if (!lmsIrcs.empty()) {
-        PushIndent          pind {"Landmarks"};
-        AffineEw2F          xf = cIrcsToIucsXf(img.dims());
-        Mat22F              bnds {0,1,0,1};
-        for (NameVec2F const & lm : lmsIrcs) {
-            fgout << fgnl << lm.name << ": " << lm.vec;
-            Vec2F               iucs = xf * lm.vec;
-            if (!isInBounds(bnds,iucs))
-                fgout << " WARNING point not within image boundaries";
-            pts.push_back(iucs);
-        }
-    }
-    viewImage(img,pts);
-}
-
 void                cmdViewUvs(CLArgs const & args)
 {
     Syntax              syn {args,
@@ -158,7 +216,7 @@ void                cmdViewUvs(CLArgs const & args)
     };
     Meshes              meshes = loadMeshes(syn.next());
     String8s            names;
-    ImgRgba8s           images;
+    AnnotatedImgs       ais;
     Rgba8               color {0,255,0,255};
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
@@ -175,21 +233,24 @@ void                cmdViewUvs(CLArgs const & args)
             Surf const &        surf = mesh.surfaces[ss];
             String              surfName = surf.name.empty() ? toStrDigits(ss,2) : surf.name.m_str;
             ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,color);
-            names.push_back(meshName + " - " + surfName);
+            String8             name = meshName + " - " + surfName;
             if (syn.more())
-                images.push_back(composite(wi,loadImage(syn.next())));
+                ais.push_back({composite(wi,loadImage(syn.next())),Vec2Fs{},name});
             else
-                images.push_back(wi);
+                ais.push_back({wi,Vec2Fs{},name});
         }
     }
-    viewImages(images,names);
+    viewImages(ais);
+}
+
 }
 
 Cmds                getViewCmds()
 {
     Cmds            cmds {
-        {cmdViewMesh,"mesh","Interactively view 3D meshes"},
+        {cmdViewDeltas,"deltas","View vertex deltas between meshes with 1-1 vertices"},
         {cmdViewImage,"image","Basic image viewer"},
+        {cmdViewMesh,"mesh","Interactively view 3D meshes"},
         {cmdViewUvs,"uvs","View the UV layout of a 3D mesh"},
     };
     return cmds;

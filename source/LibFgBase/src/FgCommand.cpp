@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgStdString.hpp"
-#include "FgStdVector.hpp"
+#include "FgSerial.hpp"
 #include "FgCommand.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
@@ -22,9 +21,7 @@ using namespace std;
 
 namespace Fg {
 
-static string       s_breadcrumb;
-static string       s_annotateTestDir;
-static bool         s_keepTempFiles = false;
+static Strings      s_breadcrumbs;
 
 static string       cmdStr(Cmd const & cmd)
 {
@@ -42,18 +39,13 @@ void                doMenu(
     Cmds const &        cmdsUnsorted,
     bool                optionAll,
     bool                optionQuiet,
-    bool                optionKeep,
     String const &      notes)
 {
-    s_breadcrumb += toLower(pathToBase(args[0]).m_str) + "_";
+    s_breadcrumbs.push_back(toLower(pathToBase(args[0]).m_str));
     string              cl,desc;
     if (optionQuiet) {
         cl +=   "[-s] ";
         desc += "    -s              - Suppress standard output except for errors.\n";
-    }
-    if (optionKeep) {
-        cl +=   "[-k[<desc>]] ";
-        desc += "    -k[<desc>]      - Keep test files in dated test directory [suffixed with <desc>].\n";
     }
     if (optionAll) {
         cl +=   "(<command> | all)\n";
@@ -73,39 +65,29 @@ void                doMenu(
         string              opt = syn.next();
         if ((opt == "-s") && optionQuiet)
             fgout.setDefOut(false);
-        else if ((opt.substr(0,2) == "-k") && optionKeep) {
-            s_keepTempFiles = true;
-            if (opt.size() > 2)
-                s_annotateTestDir = opt.substr(2);
-        }
         else
             syn.error("Invalid option");
     }
-    string              cmd = syn.next(),
-                        cmdl = toLower(cmd);
-    if (optionAll) {
-        if (cmdl == "all") {
-            fgout << fgnl << "Testing: " << fgpush;
-            for (size_t ii=0; ii<cmds.size(); ++ii) {
-                fgout << fgnl << cmds[ii].name << ": " << fgpush;
-                cmds[ii].func(svec(cmds[ii].name,cmdl));      // Pass on the 'all'
-                fgout << fgpop;
+    string              arg = syn.next(),
+                        argl = toLower(arg);
+    if (optionAll && (argl == "all")) {
+        if (syn.more())
+            syn.error("no further arguments permitted after 'all'");
+        for (Cmd const & cmd : cmds) {
+            PushIndent      pind {cmd.name};
+            cmd.func({cmd.name,argl});          // Pass on the 'all'
+        }
+    }
+    else {
+        for (Cmd const & cmd : cmds) {
+            if (argl == toLower(cmd.name)) {
+                cmd.func(syn.rest());
+                return;
             }
-            fgout << fgpop << fgnl << "All Passed.";
-            return;
         }
+        syn.error("command not found",arg);
     }
-    for (size_t ii=0; ii<cmds.size(); ++ii) {
-        if (cmdl == toLower(cmds[ii].name)) {
-            cmds[ii].func(syn.rest());
-            if (optionAll && (cmdl == "all"))
-                fgout << fgpop << fgnl << "Passed.";
-            return;
-        }
-    }
-    if (optionAll && (cmdl == "all"))
-        fgout << fgpop;
-    syn.error("Invalid command",cmd);
+    s_breadcrumbs.pop_back();
 }
 
 static String8 s_rootTestDir;
@@ -115,36 +97,25 @@ TestDir::TestDir(String const & name)
     FGASSERT(!name.empty());
     if (s_rootTestDir.empty()) {
         path = Path(dataDir());
-        path.dirs.back() = "_log";      // replace 'data' with 'log'
+        path.dirs.back() = "test-output";      // replace 'data'
     }
     else
         path = s_rootTestDir;
-    path.dirs.push_back(s_breadcrumb+name);
-    string          dt = getDateTimeFilename();
-    if (s_annotateTestDir.size() > 0)
-        dt += " " + s_annotateTestDir;
-    path.dirs.push_back(dt);
+    path.dirs.push_back(cat(s_breadcrumbs,"-")+"-"+name);
     createPath(path.dir());
     pd.push(path.str());
-    if (s_keepTempFiles)
-        fgout.logFile("_log.txt");
+    // remove any previous output for clean test:
+    deleteDirectoryContentsRecursive(path.str());
 }
 
 TestDir::~TestDir()
 {
     if (!pd.orig.empty()) {
         pd.pop();
-        if (!s_keepTempFiles) {
-            // Recursively delete the directory for this test:
-            deleteDirectoryRecursive(path.str());
-            // Remove the test name directory if empty:
-            path.dirs.resize(path.dirs.size()-1);
-            removeDirectory(path.str());
-        }
     }
 }
 
-void                fgSetRootTestDir(String8 const & dir) { s_rootTestDir = dir; }
+void                setRootTestDir(String8 const & dir) { s_rootTestDir = dir; }
 
 void                copyFileToCurrentDir(String const & relPath)
 {
@@ -161,7 +132,5 @@ void                runCmd(CmdFunc const & func,String const & argStr)
     func(splitChar(argStr));
     fgout << fgpop;
 }
-
-bool                fgKeepTempFiles() {return s_keepTempFiles; }
 
 }

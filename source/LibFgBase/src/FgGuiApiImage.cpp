@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,7 +40,7 @@ guiImage(NPT<ImgRgba8> const & imageN,Sfun<void(Vec2F)> const & onClick)
     gi.minSizeN = link1<ImgRgba8,Vec2UI>(imageN,[](ImgRgba8 const & img){return img.dims();});
     auto                    clickFn = [imageN,onClick](Vec2I pos)
     {
-        Vec2D           iucs = cIrcsToIucsXf(imageN.cref().dims()) * Vec2D(pos);
+        Vec2D           iucs = cIrcsToIucs(imageN.cref().dims()) * Vec2D(pos);
         onClick(Vec2F(iucs));
     };
     gi.clickLeft = clickFn;

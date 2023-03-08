@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -45,7 +45,7 @@ BuildOS             strToBuildOS(string const & str)
     for (const pair<BuildOS,string> & l : lst)
         if (l.second == str)
             return l.first;
-    fgThrow("strToBuildOS unhandled string",str);
+    fgThrow("Not a recognized Build OS name",str);
     FG_UNREACHABLE_RETURN(BuildOS::win);
 }
 
@@ -74,6 +74,8 @@ BuildOS             getCurrentBuildOS()
     #else
         return BuildOS::macos;
     #endif
+#elif defined __ANDROID__
+    return BuildOS::android;
 #else
     return BuildOS::linux;
 #endif
@@ -84,10 +86,8 @@ Svec<pair<Arch,string> > getArchStrs()
     return {
         {Arch::x86,"x86"},
         {Arch::x64,"x64"},
-        {Arch::armv7,"armv7"},
-        {Arch::arm8_0,"arm8_0"},
-        {Arch::arm8_2,"arm8_2"},
-        {Arch::arm8_3,"arm8_3"}
+        {Arch::arm7,"arm7"},
+        {Arch::arm8,"arm8"},
     };
 }
 
@@ -116,30 +116,44 @@ Archs               getBuildArchs(BuildOS os)
     if (os == BuildOS::win)
         return { Arch::x86, Arch::x64 };
     else if (os == BuildOS::linux)
-        return { Arch::x64, Arch::arm8_2 };
+        return { Arch::x64, Arch::arm8 };
     else if (os == BuildOS::macos)
         return { Arch::x64 };
     else if (os == BuildOS::ios)
         // iOS required architectures (plus x64 for simulator):
-        return { Arch::x64, Arch::armv7, Arch::arm8_0, Arch::arm8_3};
+        return { Arch::x64, Arch::arm7, Arch::arm8 };
     else if (os == BuildOS::android)
         // Android runs all all kids of devices:
-        return { Arch::x86, Arch::x64, Arch::armv7, Arch::arm8_0 };
+        return { Arch::x86, Arch::x64, Arch::arm7, Arch::arm8 };
     else
         fgThrow("getBuildArchs unhandled OS",toStr(os));
     FG_UNREACHABLE_RETURN(Archs());
 }
 
+Arch                getCurrentArch()
+{
+#if defined (__x86_64__) || defined(_M_X64)     // nix , win
+    return Arch::x64;
+#elif defined (i386) || defined(__i386__) || defined(__i386) || defined(_M_IX86)    // nix*3 , win
+    return Arch::x86;
+#elif defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__) || (__ARM_ARCH_7R__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7S__)  || defined(__ARM_ARCH_7M__)  || defined(__ARM_ARCH_7S__)
+    return Arch::arm7;
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    return Arch::arm8;
+#else
+    current architecture not detected by pre-defined macros
+#endif
+}
+
 Archs               getAllArchs()
 {
-    return { Arch::x86, Arch::x64, Arch::armv7, Arch::arm8_0, Arch::arm8_2, Arch::arm8_3 };
+    return { Arch::x86, Arch::x64, Arch::arm7, Arch::arm8 };
 }
 
 const vector<pair<Compiler,string> > & compilerStrs()
 {
     static vector<pair<Compiler,string> >  ret =
     {
-        {Compiler::vs17,"vs17"},
         {Compiler::vs19,"vs19"},
         {Compiler::vs22,"vs22"},
         {Compiler::gcc,"gcc"},
@@ -169,13 +183,13 @@ Compiler strToCompiler(string const & str)
         if (l.second == str)
             return l.first;
     fgThrow("strToCompiler unhandled string",str);
-    FG_UNREACHABLE_RETURN(Compiler::vs17);
+    FG_UNREACHABLE_RETURN(Compiler::vs19);
 }
 
 Compilers           getBuildCompilers(BuildOS os)
 {
     if (os == BuildOS::win)
-        return {Compiler::vs19,Compiler::vs22,Compiler::vs17};
+        return { Compiler::vs22,Compiler::vs19};
     else if (os == BuildOS::linux)
         return {Compiler::gcc,Compiler::clang,Compiler::icpc};
     else if (os == BuildOS::macos)
@@ -193,14 +207,14 @@ Compilers           getBuildCompilers() {return getBuildCompilers(getCurrentBuil
 Compiler            getCurrentCompiler()
 {
 #if defined _MSC_VER
-    #if((_MSC_VER >= 1910) && (_MSC_VER < 1920))
-        return Compiler::vs17;
-    #elif((_MSC_VER >= 1920) && (_MSC_VER < 1930))
+    #if(_MSC_VER < 1920)
+        visual_studio_2017_and_earlier_not_supprted;
+    #elif(_MSC_VER < 1930)
         return Compiler::vs19;
-    #elif((_MSC_VER >= 1930) && (_MSC_VER < 1940))
+    #elif(_MSC_VER < 1940)
         return Compiler::vs22;
     #else
-        define_new_visual_studio_version_here
+        visual_studio_version_not_yet_supported;
     #endif
 #elif defined __INTEL_COMPILER
     return Compiler::icpc;
@@ -226,8 +240,9 @@ string              getCurrentBuildDescription()
 {
     return 
         toStr(getCurrentBuildOS()) + " " +
+        toStr(getCurrentArch()) + " " +
         toStr(getCurrentCompiler()) + " " +
-        cBitsString() + " " + getCurrentBuildConfig();
+        getCurrentBuildConfig();
 }
 
 ostream &           operator<<(ostream & os,Debrel d)
@@ -518,24 +533,11 @@ ConsSolution        getConsData(ConsType type)
 {
     ConsSolution  ret(type);
 
-    ConsProj      boost("LibTpBoost","boost_1_69_0/");
-    boost.addSrcDir("libs/filesystem/src/");
-    boost.addSrcDir("libs/serialization/src/");
-    boost.addSrcDir("libs/system/src/");
-    boost.addIncDir("","boost/",true);
-    // This stops boost from automatically flagging the compiler to link to it's default library names.
-    // Without this you'll see link errors looking for libs like libboost_filesystem-vc90-mt-gd-1_48.lib:
-    boost.defs.push_back(ConsDef("BOOST_ALL_NO_LIB",true));
-    // Suppress command-line warning if the compiler version is more recent than this boost version recognizes:
-    boost.defs.push_back(ConsDef("BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE",true));
-    boost.warn = 2;
-    ret.projects.push_back(boost);
-
     ConsProj      eigen("LibTpEigen","");
     eigen.addIncDir("","Eigen/",true);
     ret.projects.push_back(eigen);
 
-    ConsProj      stb("LibTpStb","stb/");
+    ConsProj      stb("LibTpStb","");
     stb.addIncDir("",true);
     ret.projects.push_back(stb);
 
@@ -544,7 +546,6 @@ ConsSolution        getConsData(ConsType type)
     base.addIncDir("",true);
     if (type != ConsType::win)
         base.addSrcDir("nix/");
-    base.addDep(boost.name,true);
     base.addDep(stb.name,false);
     base.addDep(eigen.name,false);
     ret.projects.push_back(base);
@@ -570,10 +571,10 @@ ConsSolution        getConsData(ConsType type)
 bool                writeVisualStudioSolutionFiles(ConsSolution const & sln);
 // Create native-build OS makefiles for given solution in current directory
 // Returns true if different from existing (useful for source control & CI):
-bool                fgConsNativeMakefiles(ConsSolution const & sln);
+bool                consNativeMakefiles(ConsSolution const & sln);
 // Create cross-compile-build OS makefiles for given solution in current directory
 // Returns true if different from existing (useful for source control & CI):
-bool                fgConsCrossMakefiles(ConsSolution const & sln);
+//bool                consCrossMakefiles(ConsSolution const & sln);
 
 bool                constructBuildFiles(ConsSolution const & sln)
 {
@@ -584,9 +585,9 @@ bool                constructBuildFiles(ConsSolution const & sln)
     if (sln.type == ConsType::win)
         changed = writeVisualStudioSolutionFiles(sln);
     else if (sln.type == ConsType::nix)
-        changed = fgConsNativeMakefiles(sln);
-    else if (sln.type == ConsType::cross)
-        changed = fgConsCrossMakefiles(sln);
+        changed = consNativeMakefiles(sln);
+    //else if (sln.type == ConsType::cross)
+    //    changed = consCrossMakefiles(sln);
     else
         fgThrow("constructBuildFiles unhandled OS build family",sln.type);
     return changed;
@@ -599,7 +600,7 @@ void                constructBuildFiles()
         pd.push("source");
     constructBuildFiles(getConsData(ConsType::win));
     constructBuildFiles(getConsData(ConsType::nix));
-    constructBuildFiles(getConsData(ConsType::cross));
+    //constructBuildFiles(getConsData(ConsType::cross));
 }
 
 void                cmdCons(CLArgs const & args)
@@ -617,7 +618,7 @@ void                cmdCons(CLArgs const & args)
         constructBuildFiles(getConsData(ConsType::win));
     else if (type == "make") {
         constructBuildFiles(getConsData(ConsType::nix));
-        constructBuildFiles(getConsData(ConsType::cross));
+        //constructBuildFiles(getConsData(ConsType::cross));
     }
     else
         syntax.error("Invalid option",type);

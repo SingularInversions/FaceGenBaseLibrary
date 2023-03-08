@@ -1,24 +1,21 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 
 #include "stdafx.h"
+
 #include "FgTime.hpp"
-#include "FgString.hpp"
-#include "FgOut.hpp"
-#include "FgStdString.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-std::string
-getDateTimeString(time_t rawTime)
+String              getDateTimeString(time_t rawTime)
 {
-    struct tm   *fmtTime = gmtime(&rawTime);
+    struct tm       *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
     oss << fmtTime->tm_year+1900 << "."
         << setw(2) << setfill('0') 
@@ -34,18 +31,16 @@ getDateTimeString(time_t rawTime)
     return oss.str();
 }
 
-std::string
-getDateTimeString()
+String              getDateTimeString()
 {
     time_t          rawTime;
     time(&rawTime);
     return getDateTimeString(rawTime);
 }
 
-std::string
-getDateString(time_t rawTime)
+String              getDateString(time_t rawTime)
 {
-    struct tm   *fmtTime = gmtime(&rawTime);
+    struct tm       *fmtTime = gmtime(&rawTime);
     ostringstream   oss;
     oss << setw(2) << setfill('0') 
         << fmtTime->tm_year-100 << "."
@@ -56,8 +51,7 @@ getDateString(time_t rawTime)
     return oss.str();
 }
 
-std::string
-getDateTimeFilename()
+String              getDateTimeFilename()
 {
     time_t          rawtime;
     time(&rawtime);
@@ -68,8 +62,7 @@ getDateTimeFilename()
     return string(buffer);
 }
 
-String
-cYearString()
+String              cYearString()
 {
     time_t          rawTime;
     time(&rawTime);
@@ -79,10 +72,9 @@ cYearString()
     return oss.str();
 }
 
-String
-toPrettyTime(double durationSeconds)
+String              toPrettyTime(double durationSeconds)
 {
-    double                      d = abs(durationSeconds);   // In case of negative duration
+    double                  d = abs(durationSeconds);   // In case of negative duration
     Svec<pair<double,String> > const units {
         {3600.0,"hours"},
         {60.0,"minutes"},
@@ -90,28 +82,20 @@ toPrettyTime(double durationSeconds)
         {0.001,"milliseconds"},
         {0.000001,"microseconds"},
     };
-    size_t                      choice = 0;
+    size_t                  choice = 0;
     while ((d < units[choice].first) && (choice+1 < units.size()))
         ++choice;
     pair<double,String> const & unit = units[choice];
     return toStrPrec(durationSeconds/unit.first,4) + " " + unit.second;
 }
 
-std::ostream &
-operator<<(std::ostream & os,const Timer & t)
+std::ostream &      operator<<(std::ostream & os,const Timer & t)
 {
-    double      et = t.elapsedSeconds();
+    double          et = t.elapsedSeconds();
     return os << "Elapsed time: " << toStrPrec(et,4) << " s";
 }
 
-void
-Timer::start()
-{
-    startTime = std::chrono::steady_clock::now();
-}
-
-double
-Timer::elapsedSeconds() const
+double              Timer::elapsedSeconds() const
 {
     TimerPoint          stopTime = std::chrono::steady_clock::now();
     // The subtraction below returns a duration which with MSVC is duration<long long,std::nano>
@@ -120,8 +104,7 @@ Timer::elapsedSeconds() const
     return std::chrono::duration<double>{stopTime - startTime}.count();
 }
 
-uint64
-Timer::elapsedMilliseconds() const
+uint64              Timer::elapsedMilliseconds() const
 {
     TimerPoint              stopTime = std::chrono::steady_clock::now();
     auto                    delta = stopTime - startTime;   // duration<long long,std::nano> w/ MSVC
@@ -131,13 +114,11 @@ Timer::elapsedMilliseconds() const
     return uint64(deltaMs);     // Can't be negative
 }
 
-void
-Timer::report(String const & label)
+void                Timer::report(String const & label)
 {
     fgout << fgnl << label << ": " << toPrettyTime(elapsedSeconds());
     start();
 }
-
 
 PushTimer::PushTimer(String const & msg)
 {
@@ -152,8 +133,7 @@ PushTimer::~PushTimer()
     fgout << fgpop << fgnl << "Completed in " << toPrettyTime(deltaSeconds);
 }
 
-bool
-secondPassedSinceLast()
+bool                secondPassedSinceLast()
 {
     static Timer  timer;
     if (timer.elapsedSeconds() > 1.0) {

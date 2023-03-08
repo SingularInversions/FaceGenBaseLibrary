@@ -1,0 +1,15 @@
+CC = icc
+CXX = icpc
+LINK = icpc
+AR = ar
+RANLIB = ranlib
+CFLAGS = -march=armv8-a -g -O1 -D_DEBUG -diag-disable=11074,11076 -fPIC
+CCFLAGS = $(CFLAGS)
+CXXFLAGS = $(CFLAGS) -std=c++17
+LFLAGS = -pthread -z origin -Wl,-rpath='$$ORIGIN'
+DLLEXT = .so
+DLLARG = -shared -Wl,-soname,
+BINDIR = ../bin/linux/arm8/icpc/debug/
+BBINDIR = ../bin/linux/arm8/
+BUILDIR = ../build_linux/arm8/icpc/debug/
+include make_all.mk

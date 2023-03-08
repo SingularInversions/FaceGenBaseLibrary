@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,14 +8,14 @@
 
 #include "FgImageIo.hpp"
 #include "FgFileSystem.hpp"
-#include "FgStdio.hpp"
+#include "FgFile.hpp"
 #include "FgCommand.hpp"
 #include "FgImgDisplay.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include "stb/stb_image_write.h"
 
 using namespace std;
 
@@ -161,13 +161,13 @@ String              zlibInflate(String const & compressed,size_t sz)
 void                testDecodeJfif(CLArgs const &)
 {
     String8             pathBase = dataDir() + "base/Mandrill512";
-    String              blob = loadRaw(pathBase+".jpg");
+    String              blob = loadRawString(pathBase+".jpg");
     Uchars              ub; ub.reserve(blob.size());
     for (char ch : blob)
         ub.push_back(scast<uchar>(ch));
     ImgRgba8            tst = decodeJpeg(ub),
                         ref = loadImage(pathBase+"-jpeg.png");  // baseline jpg encoding using STB on windows
-    FGASSERT(isApproxEqual(tst,ref,3U));
+    FGASSERT(isApproxEqual(tst,ref,uchar(3)));
 }
 
 }

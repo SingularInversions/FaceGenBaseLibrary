@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,8 +8,7 @@
 #ifndef FGTCP_HPP
 #define FGTCP_HPP
 
-#include "FgStdString.hpp"
-#include "FgTypes.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -17,24 +16,24 @@ namespace Fg {
 bool            runTcpClient_(
     String const &      hostname,       // DNS or IP
     uint16              port,
-    String const &      data,
-    String *            response);      // no response expected if nullptr
+    Bytes const &       data,
+    Bytes *             response);      // no response expected if nullptr
 
-inline bool     runTcpClient(String const & hostname,uint16 port,String const & data)
+inline bool     runTcpClient(String const & hostname,uint16 port,Bytes const & data)
 {
     return runTcpClient_(hostname,port,data,nullptr);
 }
 
-inline bool     runTcpClient_(String const & hostname,uint16 port,String const & data,String & response)
+inline bool     runTcpClient_(String const & hostname,uint16 port,Bytes const & data,Bytes & response)
 {
     return runTcpClient_(hostname,port,data,&response);
 }
 
-typedef std::function<bool        // Return false to terminate server
+typedef std::function<bool          // Return false to terminate server
     (String const &,                // IP Address of the client
-     String const &,                // Data from the client
+     Bytes const &,                 // Data from the client
      // Data to be returned to client (ignored if server not supposed to respond). If empty, connection closed:
-     String &)>
+     Bytes &)>
      TcpHandlerFunc;
 
 void            runTcpServer(

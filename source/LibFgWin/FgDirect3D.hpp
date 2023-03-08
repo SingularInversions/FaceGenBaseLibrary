@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,7 @@
 #ifndef FGDIRECT3D_HPP
 #define FGDIRECT3D_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgBoostLibs.hpp"
+#include "FgSerial.hpp"
 #include "FgWindows.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgGuiApi3d.hpp"

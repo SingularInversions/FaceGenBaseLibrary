@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -116,21 +116,25 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 
     ~GuiSplitAdjWin()
     {
-        if (!m_store.empty())
-            saveBsaXml(m_store+".xml",m_relSize,false);
+        if (!m_store.empty()) {
+            try {saveRaw(srlzText(m_relSize),m_store+"split.txt"); }
+            catch(...) {}
+        }
     }
 
     virtual void
     create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
+        m_store = store;
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
-        if (m_store.empty()) {      // First creation this session so check for saved state
-            double          rs;
-            if (loadBsaXml(store+".xml",rs,false))
+        if (!m_store.empty()) {
+            try {
+                double              rs = dsrlzText<double>(loadRawString(m_store+"split.txt"));
                 if ((rs > 0.0) && (rs < 1.0))
                     m_relSize = rs;
+            }
+            catch (...) {}
         }
-        m_store = store;
         WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;

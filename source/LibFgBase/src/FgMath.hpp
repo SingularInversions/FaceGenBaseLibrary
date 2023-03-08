@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,7 @@
 #ifndef FGMATH_HPP
 #define FGMATH_HPP
 
-#include "FgStdVector.hpp"
-#include "FgStdArray.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -204,29 +203,6 @@ Doubles             convolveGauss(
 // (important when one value may be very small or zero).
 double              cRelDiff(double a,double b,double minAbs=lims<double>::epsilon());
 Doubles             cRelDiff(Doubles const & a,Doubles const & b,double minAbs=lims<double>::epsilon());
-
-// Return all subsets of elements of v in the given set size range. Retains order. Assumes all elements of v are different.
-template<class T>
-Svec<Svec<T> >      cSubsets(Svec<T> const & v,size_t min,size_t max)
-{
-    Svec<Svec<T> >      ret;
-    if (!v.empty() && (max>=min)) {
-        FGASSERT(v.size() < 30);                            // Sanity check
-        uint32              sv = uint32(v.size());
-        uint32              sz = 1UL << sv;                 // EUB for bit field
-        for (uint32 ii=0; ii<sz; ++ii) {
-            uint32          nzb = numNonzeroBits32(ii);
-            if ((nzb >= min) && (nzb <= max)) {
-                Svec<T>       r;
-                for (uint32 jj=0; jj<sv; ++jj)
-                    if (ii & (1 << jj))
-                        r.push_back(v[jj]);
-                ret.push_back(r);
-            }
-        }
-    }
-    return ret;
-}
 
 Doubles             solveCubicReal(double c0,double c1,double c2);
 // Z-order curve aka Lebesgue curve aka Morton number

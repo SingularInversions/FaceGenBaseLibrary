@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -10,7 +10,7 @@
 //
 
 #include "stdafx.h"
-#include "FgStdStream.hpp"
+#include "FgFile.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshIo.hpp"
@@ -154,7 +154,7 @@ loadWObj(String8 const & fname)
 {
     Mesh                mesh;
     map<String,Surf>    surfMap;
-    Strings             lines = splitLines(loadRaw(fname));   // Removes empty lines
+    Strings             lines = splitLines(loadRawString(fname));   // Removes empty lines
     Surf                currSurf;
     String              currName;
     size_t              numNgons = 0;
@@ -237,8 +237,8 @@ loadWObj(String8 const & fname)
     mesh.name = pathToBase(fname);
     Surfs               labelledSurfs;
     for (map<String,Surf>::iterator it = surfMap.begin(); it != surfMap.end(); ++it) {
-        Surf &   srf = it->second;
-        if (!srf.tris.valid() || !srf.quads.valid()) {
+        Surf &              srf = it->second;
+        if (!srf.tris.validSize() || !srf.quads.validSize()) {
             srf.tris.uvInds.clear();
             srf.quads.uvInds.clear();
             fgout << fgnl << "WARNING: Partial UV indices ignored in " << fname << " surface " << it->first;
@@ -398,7 +398,7 @@ void    saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat
 
 void    injectVertsWObj(String8 const & inName,Vec3Fs const & verts,String8 const & outName)
 {
-    Strings             lines = splitLines(loadRaw(inName));
+    Strings             lines = splitLines(loadRawString(inName));
     size_t              cnt {0};
     for (String & line : lines) {
         if (beginsWith(line,"v ")) {

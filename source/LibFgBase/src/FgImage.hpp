@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,14 +30,35 @@ std::ostream &      operator<<(std::ostream & os,Img<T> const & img)
 std::ostream &      operator<<(std::ostream &,ImgRgba8 const &);
 std::ostream &      operator<<(std::ostream &,ImgC4F const &);
 
-// COORDINATES
+// COORDINATE SYSTEMS:
+//
+// IPCS := Image Pixel CS
+//    Origin at top left corner of image, units in pixels.
+//    X - viewer’s right
+//    Y - viewer’s down 
+//
+// IRCS := Image Raster CS
+//    Origin at centre of first pixel in memory (top left), units are pixels, storage ordered by:
+//    X - viewer’s right
+//    Y - viewer’s down 
+//
+// IUCS := Image Unit CS
+//    Origin at top left corner of image, (1,1) at bottom right corner.
+//    X - viewer’s right
+//    Y - viewer’s down 
+//
+// OTCS := OGL Texture CS
+//    Origin at bottom left corner of image, (1,1) at top right
+//    X - viewer’s right    [0,1]
+//    Y - viewer’s up       [0,1]
+//
+AffineEw2D          cIpcsToIucs(Vec2UI imgDims);
+AffineEw2D          cIrcsToIucs(Vec2UI imgDims);
+AffineEw2D          cIrcsToOtcs(Vec2UI imgDims);
+AffineEw2D          cIucsToIpcsXf(Vec2UI imgDims);
+AffineEw2D          cIucsToIrcsXf(Vec2UI imgDims);
+AffineEw2D          cOicsToIucsXf();
 
-AffineEw2D          cIpcsToIucsXf(Vec2UI dims);
-AffineEw2D          cIrcsToIucsXf(Vec2UI imageDims);
-AffineEw2F          cIucsToIrcsXf(Vec2UI imageDims);
-AffineEw2F          cIucsToIpcsXf(Vec2UI dims);
-AffineEw2F          cOicsToIucsXf();
-inline Vec2F        cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord) {return (mapMul(iucsCoord,Vec2F(ircsDims)) - Vec2F(0.5)); }
 
 // SAMPLING / INTERPOLATION:
  
@@ -45,7 +66,7 @@ inline Vec2F        cIucsToIrcs(Vec2UI ircsDims,Vec2F iucsCoord) {return (mapMul
 struct      Lerp
 {
     int             lo;             // lower tap coord, may be out of bounds is wgts[0] == 0. Upper tap is lo+1.
-    Arr2F           wgts {0,0};     // Only non-zero for in-bounds taps
+    Arr2F           wgts {{0,0}};   // Only non-zero for in-bounds taps
 
     Lerp(float rcs,size_t dim);
 
@@ -187,6 +208,7 @@ typename Traits<T>::Floating sampleClipIrcs(Img<T> const & img,Vec2D coordIrcs)
 // This is done to allow preservation of max value in round-trip conversions:
 Img3F               toUnit3F(ImgRgba8 const &);         // [0,255] -> [0,1], ignores input alpha channel
 Img4F               toUnit4F(ImgRgba8 const &);         // [0,255] -> [0,1]
+ImgC4F              toUnitC4F(ImgRgba8 const &);        // [0,255] -> [0,1]
 ImgRgba8            toRgba8(Img3F const &,float maxVal=1.0);    // [0,maxVal] -> [0,255], alpha set to 255
 ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255]
 ImgUC               toUC(ImgRgba8 const &);             // rec. 709 RGB -> greyscale
@@ -274,7 +296,20 @@ Img<Out>            mapCallT(Img<In0> const & in0,Img<In1> const & in1,Img<In2> 
     return Img<Out>{in0.dims(),mapCallT<Out,In0,In1,In2,Fn>(in0.m_data,in1.m_data,in2.m_data,fn)};
 }
 
-bool                isApproxEqual(ImgRgba8 const & l,ImgRgba8 const & r,uint maxDiff);
+template<class T,class U>
+inline Img<U>       mapMul(T op,Img<U> const & img) {return Img<U>{img.dims(),mapMul(op,img.m_data)}; }
+
+template<class T,class F>
+inline Img<T>       mapCast(Img<F> const & img) {return Img<T>{img.dims(),mapCast<T,F>(img.m_data)}; }
+
+ImgC4F              mapGamma(ImgC4F const & img,float gamma);
+
+template<class T>
+bool                isApproxEqual(Img<T> const & l,Img<T> const & r,typename Traits<T>::Scalar maxDiff)
+{
+    FGASSERT(l.dims() == r.dims());
+    return isApproxEqual(l.m_data,r.m_data,maxDiff);
+}
 
 // Interpolate between 2 images:
 template<class T>
@@ -295,6 +330,27 @@ Img<T>              interpolate(Img<T> const & i0,Img<T> const & i1,float ratio)
 
 // Subsample image 2x with 2x2 box filter, rounding down the image size when odd.
 // Channels must be linear (eg. alpha-weighted if alpha exists):
+
+// accumulator image version; channel values must be at least 4x smaller than type max:
+template<class T,FG_ENABLE_IF(typename Traits<T>::Scalar,is_integral)>
+Img<T>              shrink2Acc(Img<T> const & img)
+{
+    size_t              X = img.width()/2,
+                        Y = img.height()/2;
+    FGASSERT(X*Y>0);
+    Img<T>              ret {X,Y};
+    for (size_t yy=0; yy<Y; ++yy) {
+        T const             *imgPtr0 = img.rowPtr(yy*2),
+                            *imgPtr1 = img.rowPtr(yy*2+1);
+        T                   *retPtr = ret.rowPtr(yy);
+        for (size_t xx=0; xx<X; ++xx) {
+            size_t              xxi = xx*2;
+            T                   acc = imgPtr0[xxi] + imgPtr0[xxi+1] + imgPtr1[xxi] + imgPtr1[xxi+1];
+            retPtr[xx] = (acc + T(2)) / 4;
+        }
+    }
+    return ret;
+}
 
 // RGBA version:
 void                shrink2_(ImgRgba8 const & src,ImgRgba8 & dst);
@@ -357,7 +413,7 @@ void                imgResize(
     ImgRgba8 const & src,
     ImgRgba8 &       dst);   // MODIFIED
 
-ImgRgba8            fgImgApplyTransparencyPow2(
+ImgRgba8            applyTransparencyPow2(
     ImgRgba8 const & colour,
     ImgRgba8 const & transparency);
 
@@ -387,9 +443,71 @@ Img<T>              flipHoriz(Img<T> const & img)
     return ret;
 }
 
-// Applies a [1 2 1] outer product 2D kernel smoothing using border replication to an
-// UNISGNED INTEGER channel image in a preicsion-friendly, cache-friendly way.
-// The Source and desination images can be the same, for in-place convolution:
+// Beyond image border, use zero values or mirror border values for convolution ?
+enum struct         BorderPolicy {zero,mirror};
+template<BorderPolicy B> inline uchar borderFac();
+template<> inline uchar borderFac<BorderPolicy::zero>() {return 0; }
+template<> inline uchar borderFac<BorderPolicy::mirror>() {return 1; }
+
+// 1D smooth on accumulator type (T must be larger than values by a factor of at least 4).
+// Does not renormalize 4x filter sum.
+template<BorderPolicy B,class T,
+    FG_ENABLE_IF(typename Traits<T>::Scalar,is_integral)>
+void                smoothAcc1D_(T const *srcPtr,T *dstPtr,size_t sz)
+{
+    FGASSERT(sz > 1);
+    dstPtr[0] = srcPtr[0] * (2+borderFac<B>()) + srcPtr[1];
+    for (size_t ii=1; ii<sz-1; ++ii)
+        dstPtr[ii] = srcPtr[ii-1] + srcPtr[ii] * 2 + srcPtr[ii+1];
+    dstPtr[sz-1] = srcPtr[sz-2] + srcPtr[sz-1] * (2+borderFac<B>());
+}
+// Image smooth applies a [1 2 1] outer product 2D kernel to an integer channel image in a
+// cache-friendly way. The channel type must be an accumulator type; it must accomodate
+// values at least 16x larger than the maximum.
+// The Source and destination images can be the same, for in-place convolution.
+// Image dimensions must be at least 2.
+template<BorderPolicy B,class T,
+    FG_ENABLE_IF(typename Traits<T>::Scalar,is_integral)>
+void                smoothAcc_(Img<T> const & src,Img<T> & dst)
+{
+    size_t              X = src.width(),
+                        Y = src.height();
+    FGASSERT((X>1) && (Y>1));
+    dst.resize(src.dims());
+    Img<T>              acc {X,3};                  // no need to zero-initialize, not used
+    T                   *acc0 = acc.rowPtr(0),
+                        *acc1 = acc.rowPtr(1),
+                        *acc2 = acc.rowPtr(2);
+    smoothAcc1D_<B,T>(src.rowPtr(0),acc0,X);
+    smoothAcc1D_<B,T>(src.rowPtr(1),acc1,X);
+    T                   *dstPtr = dst.rowPtr(0);
+    for (size_t xx=0; xx<X; ++xx)
+        dstPtr[xx] = (acc0[xx]*(2+borderFac<B>()) + acc1[xx] + T(7)) / 16;
+    for (size_t yy=1; yy+1<Y; ++yy) {
+        acc0 = acc.rowPtr((yy+2)%3),
+        acc1 = acc.rowPtr(yy%3),
+        acc2 = acc.rowPtr((yy+1)%3);
+        smoothAcc1D_<B,T>(src.rowPtr(yy+1),acc2,X);
+        dstPtr = dst.rowPtr(yy);
+        for (size_t xx=0; xx<X; ++xx)
+            // round by adding 7 before divide / truncate (downward bias but 8 would be upward):
+            dstPtr[xx] = (acc0[xx] + acc1[xx]*2 + acc2[xx] + T(7)) / 16;
+    }
+    dstPtr = dst.rowPtr(Y-1);
+    for (size_t xx=0; xx<X; ++xx)
+        dstPtr[xx] = (acc2[xx]*(2+borderFac<B>()) + acc1[xx] + T(7)) / 16;
+}
+// Functional version of above:
+template<BorderPolicy B,class T,
+    FG_ENABLE_IF(typename Traits<T>::Scalar,is_integral)>
+Img<T>              smoothAcc(Img<T> const & img)
+{
+    Img<T>              ret;
+    smoothAcc_<B,T>(img,ret);
+    return ret;
+}
+
+// DEPRECATED: smoothing should be done on accumulator channel type images:
 void                smoothUint_(ImgUC const & src,ImgUC & dst,uchar borderPolicy=1);
 ImgUC               smoothUint(ImgUC const & src,uchar borderPolicy=1);
 void                smoothUint_(ImgRgba8 const & src,ImgRgba8 & dst,uchar borderPolicy=1);
@@ -458,67 +576,6 @@ void                smoothFloat_(
     smoothFloat2D_(src.dataPtr(),dst.dataPtr(),src.width(),src.height(),borderPolicy);
 }
 
-// Applies a 3x3 non-separable kernel to a floating-point channel image. (technically a correlation
-// rather than a convolution since we don't mirror the kernel but client can do that).
-// No normalization of the kernel is done, that's up to the client.
-template<class Pixel>
-void                fgConvolveFloatHoriz(
-    const Pixel *       srcPtrs[3],
-    const Mat33F & krn,
-    Pixel *             dstPtr,
-    uint                sz,
-    uchar               borderPolicy)               // See below
-{
-    dstPtr[0] = Pixel(0);
-    for (uint jj=0; jj<3; ++jj)
-        dstPtr[0] += srcPtrs[jj][0] * (krn.rc(jj,0)*borderPolicy + krn.rc(jj,1)) +
-                     srcPtrs[jj][1] * krn.rc(jj,2);
-    for (uint ii=1; ii<sz-1; ++ii) {
-        dstPtr[ii] = Pixel(0);
-        for (uint jj=0; jj<3; ++jj)
-            dstPtr[ii] += srcPtrs[jj][ii-1] * krn.rc(jj,0) +
-                          srcPtrs[jj][ii]   * krn.rc(jj,1) +
-                          srcPtrs[jj][ii+1] * krn.rc(jj,2);
-    }
-    dstPtr[sz-1] = Pixel(0);
-    for (uint jj=0; jj<3; ++jj)
-        dstPtr[sz-1] += srcPtrs[jj][sz-2] * krn.rc(jj,0) +
-                        srcPtrs[jj][sz-1] * (krn.rc(jj,1)+krn.rc(jj,2)*borderPolicy);
-}
-template<class Pixel>
-void                fgConvolveFloat(
-    const Img<Pixel> &  src,
-    const Mat33F &     krn,                // The kernel to be correlated
-    Img<Pixel> &        dst,                // Must be different from src
-    uchar                   borderPolicy)       // 0 - zero border policy, 1 - replication border policy
-{
-    FGASSERT((src.width() > 1) && (src.height() > 1));  // Algorithm not designed for dim < 2
-    FGASSERT((borderPolicy == 0) || (borderPolicy == 1));
-    dst.resize(src.dims());
-    FGASSERT(src.dataPtr() != dst.dataPtr());
-    uint                    wid = src.width();
-    Svec<Pixel>           boundaryRow(wid,Pixel(0));
-    const Pixel *           srcPtrs[3];
-    if (borderPolicy == 0)
-        srcPtrs[0] = &boundaryRow[0];
-    else
-        srcPtrs[0] = src.rowPtr(0);
-    srcPtrs[1] = src.rowPtr(0);
-    srcPtrs[2] = src.rowPtr(1);
-    fgConvolveFloatHoriz(srcPtrs,krn,dst.rowPtr(0),wid,borderPolicy);
-    for (uint yy=1; yy<dst.height()-1; ++yy) {
-        srcPtrs[0] = srcPtrs[1];
-        srcPtrs[1] = srcPtrs[2];
-        srcPtrs[2] = src.rowPtr(yy+1);
-        fgConvolveFloatHoriz(srcPtrs,krn,dst.rowPtr(yy),wid,borderPolicy);
-    }
-    srcPtrs[0] = srcPtrs[1];
-    srcPtrs[1] = srcPtrs[2];
-    if (borderPolicy == 0)
-        srcPtrs[2] = &boundaryRow[0];
-    fgConvolveFloatHoriz(srcPtrs,krn,dst.rowPtr(dst.height()-1),wid,borderPolicy);
-}
-
 // Preserves intrinsic aspect ratio, scales to minimally cover output dimensions.
 // Returns transform from output image IRCS to input image IRCS (ie. inverse transform for resampling):
 AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims);
@@ -528,7 +585,7 @@ AffineEw2D          imgScaleToFit(Vec2UI inDims,Vec2UI outDims);
 
 // Resample an image to the given size with the given inverse transform with boundary clip policy:
 template<class T>
-Img<T>              resample(Img<T> const & in,Vec2UI outDims,AffineEw2D outToInIrcs)
+Img<T>              affineResample(Img<T> const & in,Vec2UI outDims,AffineEw2D outToInIrcs)
 {
     Img<T>              ret {outDims};
     if (outDims.cmpntsProduct() == 0)
@@ -543,9 +600,9 @@ Img<T>              resample(Img<T> const & in,Vec2UI outDims,AffineEw2D outToIn
 
 // Note that the image will be distorted if aspect ratio changes:
 template<class T>
-Img<T>              resampleToFit(Img<T> const & in,Vec2UI dims)
+Img<T>              scaleResample(Img<T> const & in,Vec2UI dims)
 {
-    return resample(in,dims,imgScaleToFit(in.dims(),dims));
+    return affineResample(in,dims,imgScaleToFit(in.dims(),dims));
 }
 
 // Resamples a square area of an input image into the given pixel size.
@@ -556,8 +613,6 @@ Img3F               resampleAdaptive(
     Vec2D                   posIpcs,        // top left corner of output image area
     float                   inSize,         // pixel size of square input domain
     uint                    outSize);       // pixel size of square output image
-
-bool                fgImgApproxEqual(ImgRgba8 const & img0,ImgRgba8 const & img1,uint maxDelta=0);
 
 template<class T>
 Img<T>              catHoriz(Img<T> const & left,Img<T> const & right)
@@ -689,14 +744,11 @@ void                rotate90(bool clockwise,Img<T> const & in,Img<T> & out)
 
 // Does any pixel contain an alpha value less than 254 ? (returns false if empty)
 bool                usesAlpha(ImgRgba8 const &,uchar minVal=254);
-inline Vec4UC       fgRed() {return Vec4UC(255,0,0,255); }
-inline Vec4UC       fgGreen() {return Vec4UC(255,0,0,255); }
-inline Vec4UC       fgBlue() {return Vec4UC(255,0,0,255); }
 
 // Thickness must be an odd number:
 void                paintCrosshair(ImgRgba8 & img,Vec2I ircs);
-void                paintDot(ImgRgba8 & img,Vec2I ircs,Vec4UC color=fgRed(),uint radius=3);
-void                paintDot(ImgRgba8 & img,Vec2F ipcs,Vec4UC color=fgRed(),uint radius=3);
+void                paintDot(ImgRgba8 & img,Vec2I ircs,Rgba8 color={255,0,0,255},uint radius=3);
+void                paintDot(ImgRgba8 & img,Vec2F ipcs,Rgba8 color={255,0,0,255},uint radius=3);
 
 // Create a mipmap (2-box-filtered 2-subsamples image pyrmamid), in which:
 // * The first element is the original image
@@ -710,13 +762,33 @@ Svec<Img<T>>        cMipmap(Img<T> const & img)
     uint                    minDim = cMinElem(img.dims());
     if (minDim == 0)
         return ret;
-    uint                    sz = log2Floor(minDim) + 1;
-    ret.reserve(sz);
+    ret.reserve(log2Floor(minDim) + 1);
     ret.push_back(img);
     while (cMinElem(ret.back().dims()) > 1)
         ret.push_back(shrink2(ret.back()));
     return ret;
 }
+// integral accumulator channel type version:
+template<class T,FG_ENABLE_IF(typename Traits<T>::Scalar,is_integral)>
+Svec<Img<T>>        cMipmapA(Img<T> const & img)
+{
+    Svec<Img<T>>            ret;
+    uint                    minDim = cMinElem(img.dims());
+    if (minDim == 0)
+        return ret;
+    ret.reserve(log2Floor(minDim) + 1);
+    ret.push_back(img);
+    while (cMinElem(ret.back().dims()) > 1)
+        ret.push_back(shrink2Acc(ret.back()));
+    return ret;
+}
+
+// extrapolates useful values for undefined pixels (alpha=0) to minimize UV seam visibility.
+// Useful for auto-generated maps in which pixel values are not defined outside the UV layout.
+// Defined pixels must have alpha=255 and undefined alpha=0. Color values must be alpha-weighted.
+// The returned image will have all alpha=255.
+// Uses fast, crude approach of taking first non-zero mipmap level and renormalizing alpha:
+ImgRgba8            extrapolateForMipmap(ImgRgba8 const &);
 
 // Blend images given a greyscale transition map [0,255] : 0 -> 'img0', 255 -> 'img1'
 // The returned image is the size of 'img0' and 'img1' and 'transition' are bilinearly sampled.

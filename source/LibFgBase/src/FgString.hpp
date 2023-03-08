@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,13 +8,90 @@
 #ifndef INCLUDED_FGSTRING_HPP
 #define INCLUDED_FGSTRING_HPP
 
-#include "FgStdLibs.hpp"
-#include "FgException.hpp"
-#include "FgStdString.hpp"
-#include "FgTypes.hpp"
-#include "FgSerialize.hpp"
+#include "FgOpt.hpp"
 
 namespace Fg {
+
+String32            toUtf32(String const & utf8);
+String32            toUtf32(char const * utf8);
+String              toUtf8(const char32_t & utf32_char);
+String              toUtf8(String32 const & utf32);
+// The following 2 functions are only needed by Windows and don't work on *nix due to
+// different sizeof(wchar_t):
+#ifdef _WIN32
+std::wstring        toUtf16(String const & utf8);
+String              toUtf8(std::wstring const & utf16);
+#endif
+
+// Default uses standard stream input "lexical conversions".
+// Only valid strings for the given type are accepted, extra characters including whitespace are errors
+// Define fully specialized versions where this behaviour is not desired:
+template<class T>
+Opt<T>              fromStr(String const & str)
+{
+    T                   val;
+    std::istringstream  iss {str};
+    iss >> val;
+    if (iss.fail())
+        return Opt<T>{};
+    return Opt<T>{val};
+}
+// Only valid integer representations within the range of int32 will return a valid value.
+// Whitespace returns invalid:
+template<> Opt<int> fromStr<int>(String const &);
+template<> Opt<uint> fromStr<uint>(String const &);
+
+// Use this version to throw an informative error if the String cannot be converted to the type.
+// require explicit type template:
+template<class T>
+T                   strTo(String const & str)
+{
+    Opt<T>              oval = fromStr<T>(str);
+    if (!oval.valid())
+        throw FgException("Unable to convert string to type",str+":"+typeid(T).name());
+    return oval.val();
+}
+
+// Ensures a minimum number of digits are printed:
+template<class T>
+String              toStrDigits(T val,uint minDigits)
+{
+    std::ostringstream   oss;
+    oss << std::setw(minDigits) << std::setfill('0') << val;
+    return oss.str();
+}
+
+// Sets the desired total number of digits (precision):
+template<class T>
+String              toStrPrec(T val,uint numDigits)
+{
+    std::ostringstream   oss;
+    oss.precision(numDigits);
+    oss << val;
+    return oss.str();
+}
+
+// Set the number of digits beyond fixed point:
+String              toStrFixed(double val,uint fractionalDigits=0);
+// Multiply by 100 and put a percent sign after:
+String              toStrPercent(double val,uint fractionalDigits=0);
+String              toLower(String const & s);
+String              toUpper(String const & s);
+// Returned list of strings does NOT include separators but DOES include empty
+// strings where there are consecutive separators:
+Strings             splitAtSeparators(String const & str,char sep);
+String              replaceAll(String const & str,char orig,char repl);
+// Pad a String to desired len (does not truncate of longer):
+String              padToLen(String const & str,size_t len,char ch=' ');
+// concatenate strings with a separator between them (but not at beginning or end) like Python join():
+String              cat(Strings const & strings,String const & separator);
+String              catDeref(Ptrs<String> const & stringPtrs,String const & separator);
+
+String              cRest(String const & str,size_t start);         // start must be <= str.length()
+String32            cRest(String32 const & str,size_t start);       // "
+
+// Returns the strings <prefix># from 0 through num-1, all with the same number of digits (as required):
+Strings             numberedStrings(String const & prefix,size_t num);
 
 struct  String8
 {
@@ -79,8 +156,6 @@ struct  String8
     bool            beginsWith(String8 const & s) const;
     bool            endsWith(String8 const & str) const;
     String8         toLower() const;        // Member func avoids ambiguity with toLower on string literals
-
-    FG_SERIALIZE1(m_str)
 };
 typedef Svec<String8>   String8s;
 typedef Svec<String8s>  String8ss;
@@ -90,9 +165,9 @@ String8s            toUstrings(Strings const & strs);
 template<>
 inline String       toStr(String8 const & str) {return str.m_str; }
 template<class T>
-void                fgThrow(String const & msg,T const & data)  {throw FgException(msg,toStr(data));  }
+inline void         fgThrow(String const & msg,T const & data)  {throw FgException(msg,toStr(data));  }
 template<class T,class U>
-void                fgThrow(String const & msg,T const data0,const U & data1) 
+inline void         fgThrow(String const & msg,T const data0,const U & data1) 
 {
     throw FgException(msg,toStr(data0)+","+toStr(data1));
 }

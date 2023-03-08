@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -80,7 +80,7 @@ String8             getDefaultGpuDescription()
 
 void                PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevice)
 {
-    string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_shared_VS.cso");
+    string              shaderIR = loadRawString(dataDir()+"base/shaders/dx11_shared_VS.cso");
     HRESULT             hr;
     hr = pDevice->CreateVertexShader(shaderIR.data(),shaderIR.size(),nullptr,m_pVertexShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -108,7 +108,7 @@ void                PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevi
 
 void                PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDevice)
 {
-    string              shaderIR = loadRaw(dataDir()+"base/shaders/dx11_transparent_VS.cso");
+    string              shaderIR = loadRawString(dataDir()+"base/shaders/dx11_transparent_VS.cso");
     HRESULT             hr;
     hr = pDevice->CreateVertexShader(shaderIR.data(),shaderIR.size(),nullptr,m_pVertexShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -129,7 +129,7 @@ void                PipelineState::attachVertexShader2(ComPtr<ID3D11Device> pDev
 
 void                PipelineState::attachPixelShader(ComPtr<ID3D11Device> pDevice,string const & fname)
 {
-    string              shaderIR = loadRaw(dataDir()+"base/shaders/"+fname);
+    string              shaderIR = loadRawString(dataDir()+"base/shaders/"+fname);
     HRESULT             hr = pDevice->CreatePixelShader(shaderIR.data(),shaderIR.size(),
         nullptr, m_pPixelShader.GetAddressOf());
     FG_ASSERT_HR(hr);
@@ -451,7 +451,7 @@ WinPtr<ID3D11Buffer> D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & 
     Verts                   verts;
     Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
     for (Surf const & origSurf : origMesh.surfaces) {
-        for (SurfPoint const & sp : origSurf.surfPoints) {
+        for (SurfPointName const & sp : origSurf.surfPoints) {
             Vec3F               pos = origSurf.surfPointPos(rendVerts,sp.point);
             for (Vec3UI tri : icosahedron.tris) {
                 for (uint idx : tri.m) {
@@ -566,7 +566,7 @@ WinPtr<ID3D11Texture2D> D3d::loadMap(ImgRgba8 const & map) {
         mipmap = cMipmap(map);
     else {                  // power of 2 images are strongly preferred by GPUs so make it so:
         // TODO: resampling is a slow way to do this and gives noticable lag for large images.
-        ImgRgba8            p2 = resampleToFit(map,mapPow2Ceil(map.dims()));
+        ImgRgba8            p2 = scaleResample(map,mapPow2Ceil(map.dims()));
         mipmap = cMipmap(p2);
     }
     uint                    numMips = cMin(uint(mipmap.size()),8);
@@ -668,7 +668,7 @@ WinPtr<ID3D11Buffer> D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F 
 WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
 {
     Light             diffuseBlack(Vec3F(0),Vec3F(0,0,1));
-    Lighting          lighting(ambient,svec(diffuseBlack,diffuseBlack));
+    Lighting          lighting(ambient,{diffuseBlack,diffuseBlack});
     return makeScene(lighting,worldToD3vs,d3vsToD3ps);
 }
 

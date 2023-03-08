@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,7 @@ struct      ModelFile
     String              meshFilename;
     Strings             imgFilenames;
     bool                shiny = false;
-    FG_SERIALIZE3(meshFilename,imgFilenames,shiny)
+    FG_SER3(meshFilename,imgFilenames,shiny)
 };
 typedef Svec<ModelFile>     ModelFiles;
 
@@ -48,8 +48,7 @@ struct      RenderArgs
     AffineEw2D              itcsToIucs;
     Vec2UI                  imagePixelSize = Vec2UI(512,512);
     RenderOptions           options;
-
-    FG_SERIALIZE8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options);
+    FG_SER8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options)
 };
 
 Meshes              loadMeshes(ModelFiles const & mfs)
@@ -72,41 +71,41 @@ Meshes              loadMeshes(ModelFiles const & mfs)
 void                cmdRenderSetup(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<name>.xml (-<option> <value>)* (<mesh>.<ext> [<albedo>.<img>])*
+        R"(<name>.txt (-<option> <value>)* (<mesh>.<ext> [<albedo>.<img>])*
     <option>        - (roll | tilt | pan) - specify object pose, with <value> given in degrees
     <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
     <img>           - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
-    <name>.xml      - render configuration file
+    <name>.txt      - render configuration file
 NOTES:
     * creates default rendering parameters for the given models
-    * fields in <name>.xml can be modified as long as the XML structure remains valid
-    <name>.xml description:
-        <models>
+    * fields in <name>.txt can be modified as long as the XML structure remains valid
+    <name>.txt description:
+        models:
             The list of mesh and related albedo map files to be rendered.
-        <roll>,<tilt>,<pan>
+        roll:,tilt:,pan:
             Euler angle rotations in radians applied to the models, in this order, before
             application of <modelview> below. Can be used to orient your meshes for proper viewing
             (FG head coordinate system is X - head's left, Y - head's up, Z - head's forward),
             or to orient the head as desired. Defaults are 0.
-        <modelview>
+        modelview:
             The similarity transform from mesh coordinates to openGL eye coordinates,
             consisting of scale, rotation (as a quaternion) and translation, applied in that order.
             Default places subject at a viewing distance from the camera to mostly fill the frame.
-        <itcsToIucs>
+        itcsToIucs:
             The 2D transform from projected coordinates ("image tangent CS") to the
             "image unit CS" in which x,y are in [0,1] with origin at top left of image.
-        <imagePixelSize>
+        imagePixelSize:
             Pixel width, height
-        <options>
-            <lighting> all color component values below are in the range [0,1]:
-                <ambient> light coming from all directions.
-                <lights>
-                    <colour> RGB order
-                    <direction> in order of X,Y,Z in OpenGL Eye Coordinates.
-            <backgroundColor> RGBA order, values in [0,1].
-            <antiAliasBitDepth> 3 is high quality (equivalent to 8x FSAA) without running too slowly
-            <renderSurfPoints> 0 - don't, 1 - when visible, 2 - always.
+        options:
+            lighting: all color component values below are in the range [0,1]:
+                ambient: light coming from all directions.
+                lights:
+                    colour: RGB order
+                    direction: in order of X,Y,Z in OpenGL Eye Coordinates.
+            backgroundColor: RGBA order, values in [0,1].
+            antiAliasBitDepth: 3 is high quality (equivalent to 8x FSAA) without running too slowly
+            renderSurfPoints: 0 - don't, 1 - when visible, 2 - always.
                 They are rendered as single-pixel green dots over the image.)"
     };
     string              name = syn.next();
@@ -132,22 +131,18 @@ NOTES:
     // Load data from files to validate and set modelview:
     Meshes              meshes = loadMeshes(rend.models);
     Mat32F              bounds = cBounds(meshes);
-    CameraParams        cps {fgF2D(bounds)};
+    CameraParams        cps {Mat32D{bounds}};
     cps.logRelScale = std::log(0.9);
     cps.fovMaxDeg = 17.0;
     Camera              cam = cps.camera(rend.imagePixelSize);
     rend.modelview = cam.modelview;
     rend.itcsToIucs = cam.itcsToIucs;
-    saveBsaXml(name,rend);
+    saveRaw(srlzText(rend),name);
 }
 
 void                renderRun(String const & rendFile,String const & outName)
 {
-    RenderArgs          rend;
-    // boost 1.58 introduced an XML deserialization bug on older compilers whereby std::vector
-    // is appended rather than overwritten, so we must clear first:
-    rend.options.lighting.lights.clear();
-    loadBsaXml(rendFile,rend);
+    RenderArgs          rend = dsrlzText<RenderArgs>(loadRawString(rendFile));
     Meshes              meshes = loadMeshes(rend.models);
     // Receive surf point projection data:
     rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();
@@ -159,18 +154,18 @@ void                renderRun(String const & rendFile,String const & outName)
     for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
         ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
     Camera              cam {mvm,{},rend.itcsToIucs};
-    saveBsaXml(outBase+"-matrix.xml",cam.projectIpcs(rend.imagePixelSize));
+    saveRaw(srlzText(cam.projectIpcs(rend.imagePixelSize)),outBase+"-matrix.txt");
 }
 
 void                cmdRenderRun(CLArgs const & args)
 {
     Syntax              syn {args,
-        R"(<in>.xml <out>.<img>
-    <in>.xml    - the render configuration file created using 'fgbl render setup'
+        R"(<in>.txt <out>.<img>
+    <in>.txt    - the render configuration file created using 'fgbl render setup'
     <img>       - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
     <out>.<img>         -   the rendered image
-    <out>-matrix.xml    -   the homogeneous combined projection*modelview matrix resulting from the camera model
+    <out>-matrix.txt    -   the homogeneous combined projection*modelview matrix resulting from the camera model
     <out>-landmarks.csv -   label, image position (IUCS) and visibility of projected surface points,
                             ordered by mesh then surface then point. Surface points can be interactively placed
                             on a mesh (Windoows only) using 'fgbl view mesh' on a single mesh,
@@ -190,13 +185,13 @@ void                cmdRenderBatch(CLArgs const & args)
 OUTPUT:
     for each render parameter file <name>.xml listed in <files>.txt, the following files are created:
     <name>.<img>             the rendered image
-    <name>-matrix.xml        the homogeneous combined projection*modelview matrix resulting from the camera model
+    <name>-matrix.txt        the homogeneous combined projection*modelview matrix resulting from the camera model
     <name>-landmarks.csv     label, image position (IUCS) and visibility of projected surface points,
                              ordered by mesh then surface then point.
 NOTES:
     renders are done in parallel using all physical cores on the current machine)"
     };
-    Strings             rendFiles = splitWhitespace(loadRaw(syn.next()));
+    Strings             rendFiles = splitWhitespace(loadRawString(syn.next()));
     String              imgExt = syn.next();
     if (!contains(getImgExts(),toLower(imgExt)))
         syn.error("Unrecognized image format",imgExt);
@@ -219,7 +214,7 @@ bool                imgApproxEqual(String8 const & file0,String8 const & file1)
 {
     ImgRgba8        img0 = loadImage(file0),
                     img1 = loadImage(file1);
-    return fgImgApproxEqual(img0,img1,2);
+    return isApproxEqual(img0,img1,2);
 }
 
 }   // namespace
@@ -239,9 +234,9 @@ void                testRenderCmd(CLArgs const & args)
     FGTESTDIR
     copyFileToCurrentDir("base/Jane.tri");
     copyFileToCurrentDir("base/Jane.jpg");
-    copyFileToCurrentDir("base/test/cmd-render.xml");
-    RenderArgs          rend = loadBsaXml<RenderArgs>("cmd-render.xml");
-    cmdRenderRun(splitChar("run cmd-render.xml cmd-render.png"));
+    copyFileToCurrentDir("base/test/cmd-render.txt");
+    RenderArgs          rend = dsrlzText<RenderArgs>(loadRawString("cmd-render.txt"));
+    cmdRenderRun(splitChar("run cmd-render.txt cmd-render.png"));
     regressFileRel("cmd-render.png","base/test/",imgApproxEqual);
 }
 

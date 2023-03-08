@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,8 +20,7 @@ using namespace std;
 
 namespace Fg {
 
-void
-fg3dReadWobjTest(CLArgs const &)
+void                fg3dReadWobjTest(CLArgs const &)
 {
     TestDir   tmp("readObj");
     ofstream    ofs("square.obj");
@@ -43,8 +42,7 @@ fg3dReadWobjTest(CLArgs const &)
     viewMesh(mesh);
 }
 
-void
-fgTextureImageMappingRenderTest(CLArgs const &)
+void                fgTextureImageMappingRenderTest(CLArgs const &)
 {
     ofstream    ofs("square.obj");
     ofs << 
@@ -76,11 +74,10 @@ void                test3d(CLArgs const & args)
         {test3dMeshIo, "io", "3D Mesh I/O"},
         {test3dMesh, "mesh", "mesh operations"},
     };
-    doMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false);
 }
 
-void
-testmSubdFace(CLArgs const &)
+void                testmSubdFace(CLArgs const &)
 {
     Mesh            base = loadMeshMaps(dataDir()+"base/Jane");
     base.surfaces[0] = base.surfaces[0].convertToTris();
@@ -88,14 +85,12 @@ testmSubdFace(CLArgs const &)
     viewMesh({base,subd},true);
 }
 
-void
-testmSubdShapes(CLArgs const &)
+void                testmSubdShapes(CLArgs const &)
 {
     Meshes          meshes;
     auto            addSubdivisions = [&](TriSurf const & ts,String const & name)
     {
-        Mesh            mesh {ts};
-        mesh.name = name;
+        Mesh            mesh {name,ts};
         meshes.push_back(mesh);
         for (uint ii=0; ii<5; ++ii) {
             mesh = subdivide(mesh);
@@ -118,34 +113,37 @@ testmSubdShapes(CLArgs const &)
     viewMesh(meshes,true);
 }
 
-void
-testmSphere4(CLArgs const &)
+void                testmSphere4(CLArgs const &)
 {
     Meshes          meshes;
     for (size_t ii=0; ii<5; ++ii)
-        meshes.emplace_back(cSphere4(ii));
+        meshes.emplace_back("TetrahedronSphere",cSphere4(ii));
     viewMesh(meshes,true);
 }
 
-void
-testmSphere(CLArgs const &)
+void                testmSphere(CLArgs const &)
 {
     Meshes          meshes;
     for (size_t ii=0; ii<4; ++ii)
-        meshes.emplace_back(cSphere(ii));
+        meshes.emplace_back("Sphere",cSphere(ii));
     viewMesh(meshes,true);
 }
 
-void
-testm3d(CLArgs const & args)
+void                testmSquarePrism(CLArgs const &)
+{
+    viewMesh(Mesh{"SquarePrism",cSquarePrism(1,4)});
+}
+
+void                testm3d(CLArgs const & args)
 {
     Cmds            cmds {
         {testmSubdShapes,"subd0","Loop subdivsion of simple shapes"},
         {testmSubdFace,"subd1","Loop subdivision of textured face"},
         {testmSphere4,"sphere4","Spheres created from tetrahedon"},
         {testmSphere,"sphere","Spheres created from icosahedron"},
+        {testmSquarePrism,"prism","Square prism"},
     };
-    doMenu(args,cmds,true,false,true);
+    doMenu(args,cmds,true,false);
 }
 
 }

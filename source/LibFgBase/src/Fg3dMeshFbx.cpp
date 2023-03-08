@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,7 +13,7 @@
 
 
 #include "stdafx.h"
-#include "FgStdStream.hpp"
+#include "FgFile.hpp"
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMesh.hpp"
@@ -358,16 +358,16 @@ namespace {
 template<typename T>
 Any                 readBin(Ifstream & ifs)
 {
-    T           v = ifs.readb<T>();
+    T           v = ifs.readBinRaw_<T>();
     //fgout << v << " ";
     return Any{v};
 }
 template<typename T>
 Any                 readBinArray(Ifstream & ifs)
 {
-    size_t          arrayLen = ifs.readb<int32>(),
-                    encoding = ifs.readb<int32>(),
-                    compressedLen = ifs.readb<int32>(),
+    size_t          arrayLen = ifs.readBinRaw_<int32>(),
+                    encoding = ifs.readBinRaw_<int32>(),
+                    compressedLen = ifs.readBinRaw_<int32>(),
                     byteLen = arrayLen * sizeof(T);
     //fgout << arrayLen << " ";
     if (arrayLen == 0)              // just in case
@@ -384,7 +384,7 @@ Any                 readBinArray(Ifstream & ifs)
     return Any{arr};
 }
 template<typename T>
-void                writeBinArray_(Any const & in,String & out)
+void                writeBinArray_(Any const & in,Bytes & out)
 {
     Svec<T> const &     arr = in.as<Svec<T>>();
     srlzRaw_(uint32(arr.size()),out);
@@ -444,16 +444,16 @@ Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
     uint64              endOffset, numProperties, propertyListLen;
     // read in the data shared by sentinel & actual records:
     if (use64) {
-        endOffset = ifs.readb<uint64>();
-        numProperties = ifs.readb<uint64>();
-        propertyListLen = ifs.readb<uint64>();
+        endOffset = ifs.readBinRaw_<uint64>();
+        numProperties = ifs.readBinRaw_<uint64>();
+        propertyListLen = ifs.readBinRaw_<uint64>();
     }
     else {
-        endOffset = ifs.readb<uint32>();
-        numProperties = ifs.readb<uint32>();
-        propertyListLen = ifs.readb<uint32>();
+        endOffset = ifs.readBinRaw_<uint32>();
+        numProperties = ifs.readBinRaw_<uint32>();
+        propertyListLen = ifs.readBinRaw_<uint32>();
     }
-    size_t              nameLen = ifs.readb<uchar>();
+    size_t              nameLen = ifs.readBinRaw_<uchar>();
     if (endOffset == 0)          // sentinel record, no property list or subs, end of current list.
         return ret;
     // actual record:
@@ -489,13 +489,13 @@ Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
         else if (type == 'b')
             data = readBinArray<uchar>(ifs);
         else if (type == 'S') {
-            size_t          len = ifs.readb<uint32>();      // can be empty
+            size_t          len = ifs.readBinRaw_<uint32>();      // can be empty
             String          str = ifs.readChars(len);
             FG_DIAG(fgout << str << " ";)
             data = str;
         }
         else if (type == 'R') {
-            size_t          len = ifs.readb<uint32>();
+            size_t          len = ifs.readBinRaw_<uint32>();
             FG_DIAG(fgout << len << " ";)
             data = ifs.readChars(len);
         }
@@ -507,7 +507,7 @@ Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
         fgThrow("FBX invalid property list length",ret->name+":"+toStr(propertyListLen));
     FG_DIAG(PushIndent          pind;)
     // while there is space not accounted for by the 13 terminating nulls (sentinel record):
-    while (scast<uint64>(ifs.tellg())+13U < endOffset) {
+    while (static_cast<uint64>(ifs.tellg())+13U < endOffset) {
         Sptr<RecordRaw>         rec = readBinRecord(ifs,use64);
         // as of v7.5 these can be null records (endOffset 0):
         if (rec)
@@ -518,12 +518,12 @@ Sptr<RecordRaw>     readBinRecord(Ifstream & ifs,bool use64)
     ifs.seekg(endOffset);
     return ret;
 }
-void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,bool use64,String & out)
+void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,bool use64,Bytes & out)
 {
-    String const        sentinel = use64 ? String(25,'\0') : String(13,'\0');
+    Bytes const         sentinel = stringToBytes(use64 ? String(25,'\0') : String(13,'\0'));
     RecordRaw const &   rec = *recPtr;
     size_t              offsetIdx = out.size();
-    String              plOut;
+    Bytes               plOut;
     for (Property const & prop : rec.propertyList) {
         char                type = prop.typeChar;
         srlzRaw_(type,plOut);
@@ -552,12 +552,12 @@ void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,bool use64,St
         else if (type == 'S') {
             String const &  str = prop.data.as<String>();       // can be empty
             srlzRaw_(uint32(str.size()),plOut);
-            plOut += prop.data.as<String>();
+            cat_(plOut,stringToBytes(prop.data.as<String>()));
         }
         else if (type == 'R') {
             String const &  str = prop.data.as<String>();
             srlzRaw_(uint32(str.size()),plOut);
-            plOut += prop.data.as<String>();
+            cat_(plOut,stringToBytes(prop.data.as<String>()));
         }
         else
             FGASSERT_FALSE;
@@ -573,14 +573,14 @@ void                writeBinRecord_(Sptr<RecordRaw> const & recPtr,bool use64,St
         srlzRaw_(scast<uint32>(plOut.size()),out);
     }
     srlzRaw_(uchar(rec.name.size()),out);
-    out += rec.name;
-    out += plOut;
+    cat_(out,stringToBytes(rec.name));
+    cat_(out,plOut);
     for (auto const & record : rec.subs)
         writeBinRecord_(record,use64,out);
     // sentinels only for non-empty record lists (although some implementations occasionally
     // insert a sentinel for an empty list, I think just at the first sub-level):
     if (!rec.subs.empty())
-        out += sentinel;
+        cat_(out,sentinel);
     // reach back and update the absolute next record position:
     srlzRawOverwrite_(uint32(out.size()),out,offsetIdx);
 }
@@ -740,13 +740,13 @@ FbxBin              loadFbxBinRaw(String8 const & filename)
     ret.header = ifs.readChars(23);
     if (!beginsWith(ret.header,"Kaydara FBX Binary"))
         fgThrow("file is not a Kaydara FBX binary",filename);
-    ret.version = ifs.readb<uint32>();
+    ret.version = ifs.readBinRaw_<uint32>();
     FG_DIAG(fgout << fgnl << "Version: " << ret.version;)
     // the top level is just a NestedList of records with no header:
     while(Sptr<RecordRaw> rp = readBinRecord(ifs,ret.use64())) // will return null ptr for terminating null record
         ret.records.push_back(rp);
     for (;;) {
-        char        ch = ifs.readb<char>();
+        char        ch = ifs.readBinRaw_<char>();
         if (ifs.eof())                                  // flag gets set after reading past end
             break;
         ret.footer.append(1,ch);
@@ -757,12 +757,12 @@ FbxBin              loadFbxBinRaw(String8 const & filename)
 
 void                saveFbxBinRaw(String8 const & filename,FbxBin const & fbx)
 {
-    String              blob = fbx.header;
+    Bytes               blob = stringToBytes(fbx.header);
     srlzRaw_(fbx.version,blob);
     for (auto const & record : fbx.records)
         writeBinRecord_(record,fbx.use64(),blob);
-    blob += fbx.sentinel();
-    blob += fbx.footer;
+    cat_(blob,stringToBytes(fbx.sentinel()));
+    cat_(blob,stringToBytes(fbx.footer));
     saveRaw(blob,filename,false);
 }
 

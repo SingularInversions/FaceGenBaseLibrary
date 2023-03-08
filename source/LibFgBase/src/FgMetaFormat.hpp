@@ -1,194 +1,82 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Handy way to serialize to/from files using boost serialization / archive
-//
 // * Terminology: load/save is used for whole files, read/write is used for streams.
-// * All serialization formats can change between boost versions breaking application back-compatibility.
-// * Binary (non-portable) serialization formats differ between 32/64 bit even when bit size of contents
-//   is explicitly specified.
 
 #ifndef FGMETAFORMAT_HPP
 #define FGMETAFORMAT_HPP
 
 #include "FgSerial.hpp"
+#include "FgFile.hpp"
 #include "FgFileSystem.hpp"
 
 namespace Fg {
 
 template<class T>
-void
-saveMessage(T const & val,String8 const & filename)
+void                saveMessage(T const & val,String8 const & filename)
 {
     saveRaw(toMessage(val),filename);
 }
 template<class T>
-T
-loadMessage(String8 const & filename)
+void                loadMessage_(String8 const & filename,T & val)
 {
-    return fromMessage<T>(loadRaw(filename));
+    try {
+        fromMessage_(loadRaw(filename),val);
+    }
+    catch (FgException & e) {
+        e.addContext("while loading file",filename.m_str);
+        throw;
+    }
+    catch (std::exception const & e) {
+        throw FgException {{
+            {e.what(),""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+    catch (...) {
+        throw FgException {{
+            {"UNKNOWN",""},
+            {"while loading file",filename.m_str},
+        }};
+    }
 }
 template<class T>
-void
-saveMessageExplicit(T const & val,String8 const & filename)
+T                   loadMessage(String8 const & filename)
+{
+    T                   ret;
+    loadMessage_(filename,ret);
+    return ret;
+}
+template<class T>
+void                saveMessageExplicit(T const & val,String8 const & filename)
 {
     saveRaw(toMessageExplicit(val),filename);
 }
 template<class T>
-T
-loadMessageExplicit(String8 const & filename)
+T                   loadMessageExplicit(String8 const & filename)
 {
-    return fromMessageExplicit<T>(loadRaw(filename));
+    try {
+        return fromMessageExplicit<T>(loadRaw(filename));
+    }
+    catch (FgException & e) {
+        e.addContext("while loading file",filename.m_str);
+        throw;
+    }
+    catch (std::exception const & e) {
+        throw FgException {{
+            {e.what(),""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+    catch (...) {
+        throw FgException {{
+            {"UNKNOWN",""},
+            {"while loading file",filename.m_str},
+        }};
+    }
 }
-
-// DEPRECATED:
-
-template<class Archive>     String fgArchiveString();
-template<> inline           String fgArchiveString<boost::archive::text_iarchive>() {return "Text"; }
-template<> inline           String fgArchiveString<boost::archive::xml_iarchive>() {return "XML"; }
-template<> inline           String fgArchiveString<boost::archive::binary_iarchive>() {return "Binary"; }
-template<> inline           String fgArchiveString<portable_binary_iarchive>() {return "PBin"; }
-
-// Returns true unless throwOnFail==false and failure occured:
-template<class Archive,class T>
-bool
-loadBsa(
-    String8 const &     filename,
-    T &                 val,
-    bool                throwOnFail)
-{
-    // If client doesn't want exceptions and the file doesn't exist, avoid an internal exception
-    // polluting the debug log:
-    if (!throwOnFail && !pathExists(filename))
-        return false;
-    try
-    {
-        Ifstream        ifs(filename);
-        Archive         ia(ifs);
-        ia >> BOOST_SERIALIZATION_NVP(val);
-    }
-    catch(FgException &)
-    {
-        if (throwOnFail)
-            throw;
-        else
-            return false;
-    }
-    catch(...)
-    {
-        if (throwOnFail)
-            fgThrow("Error while deserializing "+String(typeid(T).name())+" from "+fgArchiveString<Archive>()+" file",filename);
-        else
-            return false;
-    }
-    return true;
-}
-
-template<class T>
-inline bool
-loadBsaText(String8 const & filename,T & val,bool throwOnFail=true)
-{return loadBsa<boost::archive::text_iarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-loadBsaXml(String8 const & filename,T & val,bool throwOnFail=true)
-{return loadBsa<boost::archive::xml_iarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-loadBsaBin(String8 const & filename,T & val,bool throwOnFail=true)
-{return loadBsa<boost::archive::binary_iarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-loadBsaPBin(String8 const & filename,T & val,bool throwOnFail=true)
-{return loadBsa<portable_binary_iarchive>(filename,val,throwOnFail); }
-
-template<class T>
-T
-loadBsaXml(String8 const & filename)
-{
-    T           ret;
-    loadBsaXml(filename,ret,true);
-    return ret;
-}
-
-template<class T>
-T
-loadBsaBin(String8 const & fname)
-{
-    T       ret;
-    loadBsaBin(fname,ret,true);
-    return ret;
-}
-
-template<class T>
-T
-loadBsaPBin(String8 const & fname)
-{
-    T       ret;
-    loadBsaPBin(fname,ret,true);
-    return ret;
-}
-
-template<class Archive,class T>
-bool
-saveBsa(
-    String8 const &     filename,
-    T const &           val,
-    bool                throwOnFail)
-{
-    try
-    {
-        Ofstream        ofs(filename);
-        Archive         oa(ofs);
-        oa << BOOST_SERIALIZATION_NVP(val);
-    }
-    catch(FgException & e)
-    {
-        if (throwOnFail)
-            throw;
-        fgout << fgnl << "ERROR (FG exception): " << e.tr_message();
-        return false;
-    }
-    catch(std::exception & e)
-    {
-        if (throwOnFail)
-            throw;
-        fgout << fgnl << "ERROR (std::exception): " << e.what();
-        return false;
-    }
-    catch(...)
-    {
-        if (throwOnFail)
-            fgThrow("Error while serializing to file",filename);
-        fgout << fgnl << "ERROR (unknown exception)";
-        return false;
-    }
-    return true;
-}
-
-template<class T>
-inline bool
-saveBsaText(String8 const & filename,T const & val,bool throwOnFail=true)
-{return saveBsa<boost::archive::text_oarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-saveBsaXml(String8 const & filename,T const & val,bool throwOnFail=true)
-{return saveBsa<boost::archive::xml_oarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-saveBsaBin(String8 const & filename,T const & val,bool throwOnFail=true)
-{return saveBsa<boost::archive::binary_oarchive>(filename,val,throwOnFail); }
-
-template<class T>
-inline bool
-saveBsaPBin(String8 const & filename,T const & val,bool throwOnFail=true)
-{return saveBsa<portable_binary_oarchive>(filename,val,throwOnFail); }
 
 }
 

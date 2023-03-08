@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -66,12 +66,12 @@ void                testGui2(CLArgs const &)
                     t2 = guiTextEdit(makeIPT(String8("Edit me"))),
                     t3 = guiTextEditFixed(makeIPT(3.14),VecD2(-9.0,9.0)),
                     t4 = guiTextEditFloat(makeIPT(2.73),VecD2(-9.0,9.0),6);
-        txt = guiSplitV(svec(t1,t2,t3,t4));
+        txt = guiSplitV({t1,t2,t3,t4});
     }
     GuiPtr    sliders;
     {
         String8s            labs = {"Slider 1","Slider 2"};
-        Svec<IPT<double> >  valNs = generateSvec<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
+        Svec<IPT<double> >  valNs = genSvec<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
         sliders = guiSliderBank(valNs,labs,VecD2(-1,1),0.1);
     }
     GuiPtr        scroll;

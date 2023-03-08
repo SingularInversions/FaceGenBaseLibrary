@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #ifndef FGSCALETRANS_HPP
 #define FGSCALETRANS_HPP
 
-#include "FgStdLibs.hpp"
+#include "FgSerial.hpp"
 #include "FgAffine.hpp"
 
 namespace Fg {
@@ -19,12 +19,16 @@ struct  ScaleTrans
     Mat<T,dim,1>    trans {0};          // applied second
 
     ScaleTrans() {}
-    explicit ScaleTrans(double s) : scale(s) {}
+    explicit ScaleTrans(T s) : scale(s) {}
     explicit ScaleTrans(Mat<T,dim,1> t) : trans(t) {}
-    ScaleTrans(double s,Mat<T,dim,1> t) : scale(s), trans(t) {}
+    ScaleTrans(T s,Mat<T,dim,1> t) : scale(s), trans(t) {}
+    // construct as if given translation was done first, then scale applied
+    // y = S(x + t) = Sx + St
+    ScaleTrans(Mat<T,dim,1> t,T s) : scale{s}, trans{t*s} {}
 
     // explicitly enable default constructor to avoid disabling by conversion constructor:
     ScaleTrans(ScaleTrans const &) = default;
+    ScaleTrans &        operator=(ScaleTrans const &) = default;
 
     // Conversion constructor
     template<typename U>
@@ -54,7 +58,7 @@ typedef ScaleTrans<double,2>    ScaleTrans2D;
 typedef ScaleTrans<float,3>     ScaleTrans3F;
 typedef ScaleTrans<double,3>    ScaleTrans3D;
 
-// least squares scale and translation relative to means, for 1-1 corresponding vertex lists:
+// least squares scale and translation relative to means, for 1-1 corresponding points:
 template<typename T,uint D>
 ScaleTrans<T,D>     solveScaleTrans(Svec<Mat<T,D,1>> const & src,Svec<Mat<T,D,1>> const & dst)
 {

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #ifndef FG3DMESHIO_HPP
 #define FG3DMESHIO_HPP
 
-#include "FgString.hpp"
+#include "FgSerial.hpp"
 #include "Fg3dMesh.hpp"
 
 namespace Fg {
@@ -24,7 +24,7 @@ enum struct     MeshFormat
     lwo,        // Lightwave object
     wrl,        // VRML
     stl,        // 3D Systems stereolithography
-    _3ds,       // Autodesk 3D Studio
+    a3ds,       // Autodesk 3D Studio
     xsi,        // Softimage ASCII
 };
 typedef Svec<MeshFormat>    MeshFormats;

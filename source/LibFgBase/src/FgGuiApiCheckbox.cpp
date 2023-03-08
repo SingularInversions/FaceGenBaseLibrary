@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,8 +13,7 @@ using namespace std;
 
 namespace Fg {
 
-GuiPtr
-guiCheckbox(String8 const & label,IPT<bool> const & node)
+GuiPtr              guiCheckbox(String8 const & label,IPT<bool> const & node)
 {
     GuiCheckbox         cb;
     cb.label = label;
@@ -27,8 +26,7 @@ guiCheckbox(String8 const & label,IPT<bool> const & node)
     return make_shared<GuiCheckbox>(cb);
 }
 
-GuiPtr
-guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs)
+GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs)
 {
     FGASSERT(!labels.empty());
     FGASSERT(selNs.size() == labels.size());

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,10 +14,9 @@ using namespace std;
 
 namespace Fg {
 
-String
-cSignature(boost::any const & data)
+String              cSignature(any const & data)
 {
-    String              ret = boost::core::demangled_name(data.type());
+    String              ret = data.type().name();
     if (beginsWith(ret,"struct "))
         return cRest(ret,7);
     else if (beginsWith(ret,"class "))
@@ -30,27 +29,23 @@ DfgInput::~DfgInput()
 {
     // boost serialization doesn't work properly in an exception and we shouldn't call another
     // function that could throw (ie. the file save) in this context anyway:
-    if (!uncaught_exception()) {
-        if (!data.empty() && onDestruct) {
+    if (uncaught_exceptions() == 0) {
+        if (data.has_value() && onDestruct) {
             try {onDestruct(data);}
             catch (...) {}      // Destructors cannot throw
         }
     }
 }
 
-boost::any const &
-DfgInput::getDataCref() const
+any const &         DfgInput::getDataCref() const
 {
     // Don't check if data is initialized here since client needs to be able to check:
     return data;
 }
 
-void
-DfgInput::addSink(const DfgDPtr & snk)
-{sinks.push_back(snk); }
+void                DfgInput::addSink(const DfgDPtr & snk) {sinks.push_back(snk); }
 
-void
-DfgInput::makeDirty() const
+void                DfgInput::makeDirty() const
 {
 //fgout << fgnl << "Dirty DfgInput: " << cSignature(data) << fgpush;
     for (const DfgDPtr & snk : sinks)
@@ -60,37 +55,38 @@ DfgInput::makeDirty() const
 //fgout << fgpop;
 }
 
-boost::any &
-DfgInput::getDataRef() const
+any &               DfgInput::getDataRef() const
 {
     makeDirty();
     return data;
 }
 
-void
-DfgInput::setToDefault() const
+void                DfgInput::setToDefault() const
 {
-    if (!dataDefault.empty()) {
+    if (dataDefault.has_value()) {
         data = dataDefault;     // Might re-allocate but what can you do
         makeDirty();
     }
 }
 
+bool                 DfgOutput::printTime = false;
+
 DfgOutput::~DfgOutput()
 {
-    // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions
-    if ((timeUsedMs > 1) && (isConsoleProgram())) {   // Cannot throw
-        string      sig;
-        for (DfgNPtr const & source : sources)
-            sig += cSignature(source->getDataCref()) + " ";
-        fgout << fgnl << timeUsedMs << " : " << sig ;
+    if (printTime) {
+        // Printing times doesn't take much CPU but might expose non-console users to unecessary exceptions
+        if ((timeUsedMs > 1) && (isConsoleProgram())) {   // Cannot throw
+            string      sig;
+            for (DfgNPtr const & source : sources)
+                sig += cSignature(source->getDataCref()) + " ";
+            fgout << fgnl << timeUsedMs << " : " << sig ;
+        }
     }
 }
 
 // The update algorithm does not need to track visited nodes to avoid exponential re-visiting
 // for highly connected graphs because the dirty bit already handles that:
-void
-DfgOutput::update() const
+void                DfgOutput::update() const
 {
     if (!dirty)
         return;
@@ -122,8 +118,7 @@ DfgOutput::update() const
         fgThrow("Unknown exception executing DfgOutput link",cSignature(data));
     }
 }
-void
-DfgOutput::markDirty() const
+void                DfgOutput::markDirty() const
 {
     // If an DfgOutput is dirty, all of its dependents must be dirty too since markDirty() marks all
     // dependents and update() on any one of them would have forced an update on this one:
@@ -138,31 +133,27 @@ DfgOutput::markDirty() const
 //fgout << fgpop;
 }
 
-boost::any const &
-DfgOutput::getDataCref() const
+any const &         DfgOutput::getDataCref() const
 {
     update();
     return data;
 }
-void
-DfgOutput::clearSources()
+void                DfgOutput::clearSources()
 {
     sources.clear();
     markDirty();
 }
-void
-DfgOutput::addSource(const DfgNPtr & src)
+void                DfgOutput::addSource(const DfgNPtr & src)
 {
     sources.push_back(src);
     markDirty();
 }
-void
-DfgOutput::addSink(const DfgDPtr & snk)
+void                DfgOutput::addSink(const DfgDPtr & snk)
 {
     sinks.push_back(snk);
 }
 
-void DfgReceptor::update() const
+void                DfgReceptor::update() const
 {
     FGASSERT(src);
     if (!dirty)
@@ -172,7 +163,7 @@ void DfgReceptor::update() const
     src->update();
 //fgout << fgpop;
 }
-void DfgReceptor::markDirty() const
+void                DfgReceptor::markDirty() const
 {
     if (dirty)
         return;
@@ -183,32 +174,25 @@ void DfgReceptor::markDirty() const
             snk.lock()->markDirty();
 //fgout << fgpop;
 }
-boost::any const &
-DfgReceptor::getDataCref() const
+any const &         DfgReceptor::getDataCref() const
 {
     update();
     return src->getDataCref();
 }
-void DfgReceptor::addSink(const DfgDPtr & snk)
+void                DfgReceptor::addSink(const DfgDPtr & snk)
 {
     sinks.push_back(snk);
 }
-
-void DfgReceptor::setSource(DfgNPtr const & nptr)
+void                DfgReceptor::setSource(DfgNPtr const & nptr)
 {
     FGASSERT(!src);
     src = nptr;
     markDirty();
 }
 
-void
-DirtyFlag::markDirty() const
-{
-//fgout << fgnl << "Dirty Flag";
-    dirty = true;
-}
-bool
-DirtyFlag::checkUpdate() const
+void                DirtyFlag::markDirty() const {dirty = true; }
+
+bool                DirtyFlag::checkUpdate() const
 {
     if (dirty) {
 //fgout << fgnl << "Update Flag:" << fgpush;
@@ -223,15 +207,13 @@ DirtyFlag::checkUpdate() const
         return false;
 }
 
-void
-addLink(const DfgNPtr & src,const DfgOPtr & snk)
+void                addLink(const DfgNPtr & src,const DfgOPtr & snk)
 {
     src->addSink(snk);
     snk->addSource(src);
 }
 
-DfgFPtr
-makeUpdateFlag(DfgNPtrs const & nptrs)
+DfgFPtr             makeUpdateFlag(DfgNPtrs const & nptrs)
 {
     DfgFPtr        ret = std::make_shared<DirtyFlag>(nptrs);
     for (const DfgNPtr & nptr : nptrs)
@@ -239,7 +221,7 @@ makeUpdateFlag(DfgNPtrs const & nptrs)
     return ret;
 }
 
-void setInputsToDefault(DfgNPtrs const & nptrs)
+void                setInputsToDefault(DfgNPtrs const & nptrs)
 {
     for (const DfgNPtr & nptr : nptrs) {
         if (const DfgInput * iptr = dynamic_cast<const DfgInput*>(nptr.get()))
@@ -253,8 +235,7 @@ void setInputsToDefault(DfgNPtrs const & nptrs)
     }
 }
 
-void
-testDataflow(CLArgs const &)
+void                testDataflow(CLArgs const &)
 {
     IPT<int>        n0 = makeIPT(5),
                     n1 = makeIPT(6);

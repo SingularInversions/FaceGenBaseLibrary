@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -10,7 +10,7 @@
 #ifndef FGITER_HPP
 #define FGITER_HPP
 
-#include "FgStdStream.hpp"
+#include "FgFile.hpp"
 #include "FgBounds.hpp"
 
 namespace Fg {
@@ -168,7 +168,10 @@ private:
     {
         FGASSERT(validRange());
         FGASSERT(m_strides.cmpntsProduct() > 0);
-        m_inBounds = fgLt(m_idx,m_bndsHiExcl);
+        m_inBounds = true;
+        for (uint ii=0; ii<dim; ++ii)
+            if (!(m_idx[ii] < m_bndsHiExcl[ii]))
+                m_inBounds = false;
     }
 };
 

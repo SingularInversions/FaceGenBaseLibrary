@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,7 +27,9 @@ struct  GuiSliderWin : public GuiBaseImpl
 
     GuiSliderWin(const GuiSlider & apiSlider)
         : m_api(apiSlider)
-    {m_apiToWin = Affine1D(m_api.range,VecD2(0.0,double(numTicks))); }
+    {
+        m_apiToWin = Affine1D {m_api.range.m[0],m_api.range.m[1],0,double(numTicks)};
+    }
 
     virtual void
     create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
@@ -74,7 +76,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     {
         if (m_api.updateFlag->checkUpdate()) {
             double      newVal = m_api.getInput(),
-                        oldVal = m_apiToWin.invXform(m_lastVal);
+                        oldVal = m_apiToWin.invert(m_lastVal);
             // This message does not need to be sent to the slider than initiated this update as
             // Windows has already updated it, along with its graphic. Also of course no update
             // necessary for sliders than haven't changed. This optimization did little but we leave
@@ -140,7 +142,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             LRESULT     winPos = SendMessage(htb,TBM_GETPOS,0,0);
             if (winPos != m_lastVal) {
                 m_lastVal = winPos;
-                double  newVal = m_apiToWin.invXform(winPos);
+                double  newVal = m_apiToWin.invert(winPos);
                 m_api.setOutput(newVal);
                 winUpdateScreen();
             }
@@ -163,8 +165,12 @@ struct  GuiSliderWin : public GuiBaseImpl
                     &rect,
                     DT_LEFT | DT_VCENTER | DT_WORDBREAK);
             }
-            Affine1D      apiToPix(m_api.range,
-                VecD2(m_api.edgePadding + firstTickPad,m_client[0] - m_api.edgePadding - firstTickPad));
+            Affine1D            apiToPix {
+                m_api.range.m[0],
+                m_api.range.m[1],
+                double(m_api.edgePadding + firstTickPad),
+                double(m_client[0] - m_api.edgePadding - firstTickPad)
+            };
             // Write the tock labels:
             if (!m_api.tockLabels.empty()) {
                 rect.top = 0;

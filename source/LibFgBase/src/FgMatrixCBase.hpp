@@ -1,9 +1,9 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Constant size (stack based) matrix / vector
+// Constant size stack based matrix / vector
 //
 //      USE:
 //
@@ -29,13 +29,8 @@
 #ifndef FGMATRIXCBASE_HPP
 #define FGMATRIXCBASE_HPP
 
-#include "FgStdExtensions.hpp"
-#include "FgTypes.hpp"
 #include "FgMath.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgSerialize.hpp"
-#include "FgSerial.hpp"
-#include "FgOut.hpp"
+#include "FgFile.hpp"
 
 namespace Fg {
 
@@ -48,16 +43,11 @@ template <typename T,uint R,uint C>
 struct      Mat
 {
     Arr<T,R*C>          m;
-    FG_SERIALIZE1(m)
     FG_SER1(m)
 
     // Auto-initialization of builtins to zero is deprecated, avoid depending on it by using
     // constant-value initialization constructor below:
-    Mat()
-    {
-        for (uint ii=0; ii<R*C; ++ii)
-            initializeBuiltinsToZero(m[ii]);
-    }
+    Mat() : m{} {}
     explicit Mat(Arr<T,R*C> const & data) : m(data) {}
 
     // Constant-value initialization constructor:
@@ -65,33 +55,29 @@ struct      Mat
     // to the below which is widely used. Use 'cMat' below instead)
     explicit Mat(T v)
     {
-        for (uint ii=0; ii<R*C; ii++)
+        for (size_t ii=0; ii<R*C; ii++)
             m[ii] = v;
     }
     // Value-set constructors; # args must agree with # elements:
-    Mat(T x,T y) {
-        static_assert(R*C == 2,"Number of arguments does not match elements");
-        m[0] = x; m[1] = y; }                               //-V557 (for PVS-Studio)
-    Mat(T x,T y,T z) {
-        static_assert(R*C == 3,"Number of arguments does not match elements");
-        m[0] = x; m[1] = y; m[2] = z; }                     //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d) {
-        static_assert(R*C == 4,"Number of arguments does not match elements");
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; }                   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e) {
-        static_assert(R*C == 5,"Number of arguments does not match elements");
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; }           //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e,T f) {
-        static_assert(R*C == 6,"Number of arguments does not match elements");
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; }   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) {
-        static_assert(R*C == 9,"Number of arguments does not match elements");
-        m[0]=a; m[1]=b; m[2]=c; m[3]=d; m[4]=e; m[5]=f; m[6]=g; m[7]=h; m[8]=i; } //-V557 (for PVS-Studio)
+    Mat(T x,T y) : m {{x,y}}
+    {static_assert(R*C == 2,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    Mat(T x,T y,T z) : m {{x,y,z}}
+    {static_assert(R*C == 3,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    Mat(T a,T b,T c,T d) : m {{a,b,c,d}}
+    {static_assert(R*C == 4,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    Mat(T a,T b,T c,T d,T e) : m {{a,b,c,d,e}}
+    {static_assert(R*C == 5,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    Mat(T a,T b,T c,T d,T e,T f) : m {{a,b,c,d,e,f}}
+    {static_assert(R*C == 6,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m {{a,b,c,d,e,f,g,h,i}}
+    {static_assert(R*C == 9,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
 
-    // CC explicit definition required to differentiate from conversion constructors below:
-    Mat(const Mat & mat) = default;
+    // default copy constructor (and thus assignment operator) must be explicitly defined to
+    // differentiate from (explicit) conversion constructors below:
+    Mat(Mat const &) = default;
+    Mat &       operator=(Mat const &) = default;
 
-    // Type conversion constructor. Use 'round<int>' if float->fixed rounding desired:
+    // Type conversion constructor very handy for float <-> double:
     template<class U>
     explicit Mat(Mat<U,R,C> const & mat) {
         for (uint ii=0; ii<R*C; ++ii)
@@ -293,9 +279,6 @@ struct      Mat
     static Mat      randUniform(T lo,T hi);
     static Mat      randNormal(T stdev=T(1));
 };
-// Specialize text tree serialization to avoid a separate node for member 'm':
-template<class T,size_t R,size_t C>
-inline SerPtr       tsrlz(Mat<T,R,C> const & m) {return tsrlz(m.m); }
 
 template<class T,uint R,uint C>
 struct      Traits<Mat<T,R,C>>
@@ -386,35 +369,11 @@ template<typename To,typename From,uint R,uint C>
 inline Mat<To,R,C>  mapCast(Mat<From,R,C> const & mat)
 {return Mat<To,R,C>(mapCast<To,From,R*C>(mat.m)); }
 
-template<typename To,typename From,uint R,uint C,
-    FG_ENABLE_IF(To,is_fundamental),
-    FG_ENABLE_IF(From,is_fundamental)
->
-Svec<Mat<To,R,C>>   deepCast(Svec<Mat<From,R,C>> const & vm)
-{
-    Svec<Mat<To,R,C>>      ret;
-    ret.reserve(vm.size());
-    for (auto const & m : vm)
-        ret.push_back(mapCast<To,From,R,C>(m));
-    return ret;
-}
-
-template<typename To,typename From,uint R,uint C,
-    FG_ENABLE_IF(To,is_fundamental),
-    FG_ENABLE_IF(From,is_fundamental)
->
-Svec<Svec<Mat<To,R,C>>> deepCast(Svec<Svec<Mat<From,R,C>>> const & vvm)
-{
-    Svec<Svec<Mat<To,R,C>>>   ret;
-    ret.reserve(vvm.size());
-    for (auto const & vm : vvm)
-        ret.push_back(deepCast<To,From,R,C>(vm));
-    return ret;
-}
-
 template <class T,uint R,uint C>
-std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mm)
+std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mmIn)
 {
+    typedef typename Traits<T>::Printable   P;
+    Mat<P,R,C>              mm {mmIn};
     std::ios::fmtflags
         oldFlag = ss.setf(
             std::ios::fixed |
@@ -444,16 +403,16 @@ std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mm)
 }
 
 template<class T,uint R,uint C>
-void                fgReadp(std::istream & is,Mat<T,R,C> & m)
+void                readBin_(std::istream & is,Mat<T,R,C> & mat)
 {
     for (uint ii=0; ii<R*C; ++ii)
-        fgReadp(is,m[ii]);
+        readBin_(is,mat[ii]);
 }
 template<class T,uint R,uint C>
-void                fgWritep(std::ostream & os,Mat<T,R,C> const & m)
+void                writeBin_(std::ostream & os,Mat<T,R,C> const & mat)
 {
     for (uint ii=0; ii<R*C; ++ii)
-        fgWritep(os,m[ii]);
+        writeBin_(os,mat[ii]);
 }
 
 // function 'constructors':
@@ -478,10 +437,10 @@ Mat<T,R,C>          cMat(Svec<T> const & v)
 }
 
 template<class T,uint R,uint C>
-bool                isFinite(Mat<T,R,C> const & m)
+bool                isFinite(Mat<T,R,C> const & mat)
 {
     for (uint ii=0; ii<R*C; ++ii)
-        if (!std::isfinite(m[ii]))
+        if (!std::isfinite(mat[ii]))
             return false;
     return true;
 }

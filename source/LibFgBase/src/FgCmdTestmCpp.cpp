@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,15 +8,12 @@
 
 #include "stdafx.h"
 
-#include <boost/any.hpp>
-
 #include "FgCmd.hpp"
 #include "FgSyntax.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"
-#include "FgVersion.hpp"
 #include "FgTime.hpp"
 #include "FgMath.hpp"
 
@@ -162,22 +159,38 @@ void                testExp(CLArgs const &)
     }
 }
 
-void                testBoostAny(CLArgs const &)
+void                testAny(CLArgs const &)
 {
-    boost::any      v0 = 42,
-                    v1 = v0;
-    int *           v0Ptr = boost::any_cast<int>(&v0);
-    *v0Ptr = 7;
-    fgout << fgnl << "Original small value: " << *v0Ptr << " but copy remains at " << boost::any_cast<int>(v1);
-    // Now try with a heavy object that is not subject to small value optimization (16 bytes) onto the stack:
-    v0 = Mat44D(42);
-    v1 = v0;
-    Mat44D *      v0_ptr = boost::any_cast<Mat44D>(&v0);
-    (*v0_ptr)[0] = 7;
-    fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << boost::any_cast<Mat44D>(v1)[0];
+    {   // test copy semantics:
+        any             v0 = 42,
+                        v1 = v0;
+        int *           v0Ptr = any_cast<int>(&v0);
+        *v0Ptr = 7;
+        fgout << fgnl << "Original small value: " << *v0Ptr << " but copy remains at " << any_cast<int>(v1);
+        // Now try with a heavy object that is not subject to small value optimization (16 bytes) onto the stack:
+        v0 = Mat44D(42);
+        v1 = v0;
+        Mat44D *      v0_ptr = any_cast<Mat44D>(&v0);
+        (*v0_ptr)[0] = 7;
+        fgout << fgnl << "Original big value: " << (*v0_ptr)[0] << " but copy remains at " << any_cast<Mat44D>(v1)[0];
+    }
+    {   // error message for empty any_cast 
+        any             vint;
+        try {cout << any_cast<uint>(vint); }
+        catch (std::exception const & e) {
+            fgout << fgnl << "std::any_cast on empty: " << e.what();
+        }
+    }
+    {   // error message for wrong type any_cast
+        any             vint = 42;
+        try {cout << any_cast<uint>(vint); }
+        catch (std::exception const & e) {
+            fgout << fgnl << "std::any_cast on differing types: " << e.what();
+        }
+    }
 }
 
-void                testHash(CLArgs const &)
+void                testStdHash(CLArgs const &)
 {
     for (uint ii=0; ii<3; ++ii) {
         string              str = "Does this string give a consistent hash on subsequent runs ?";
@@ -303,10 +316,10 @@ void                testArrSpeed(CLArgs const &)
 void                cmdTestmCpp(CLArgs const & args)
 {
     Cmds        cmds {
-        {testBoostAny,"any","Test boost any copy semantics"},
+        {testAny,"any","Test std::any copy semantics"},
         {testArrSpeed,"array","Test speedup of switching from parallel to packed arrays"},
         {testExp,"exp","Measure the speed of library exp(double) and expFast"},
-        {testHash,"hash","Test std::hash behaviour"},
+        {testStdHash,"hash","Test std::hash behaviour"},
         {testmNL,"num","view numeric limits"},
         {testRvo,"rvo","Return value optimization / copy elision"},
     };

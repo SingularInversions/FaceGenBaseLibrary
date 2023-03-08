@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -9,23 +9,6 @@
 //
 // m_data.size() == m_dims[0] * m_dims[1];
 //
-// COORDINATE SYSTEMS:
-//
-// IPCS := Image Pixel CS
-//    Origin at top left corner of image, units in pixels.
-//    X - viewer’s right
-//    Y - viewer’s down 
-//
-// IRCS := Image Raster CS
-//    Origin at centre of first pixel in memory (top left), units are pixels, storage ordered by:
-//    X - viewer’s right
-//    Y - viewer’s down 
-//
-// IUCS := Image Unit CS
-//    Origin at top left corner of image, (1,1) at bottom right corner.
-//    X - viewer’s right
-//    Y - viewer’s down 
-//
 // USAGE NOTES:
 //
 // * posIrcs = posIpcs - 0.5 (thus floor(posIpcs) rounds to nearest int posIpcs)
@@ -34,7 +17,7 @@
 #ifndef FGIMGBASE_HPP
 #define FGIMGBASE_HPP
 
-#include "FgStdExtensions.hpp"
+#include "FgSerial.hpp"
 #include "FgRgba.hpp"
 
 namespace Fg {
@@ -44,8 +27,7 @@ struct  Img
 {
     Vec2UI          m_dims;         // [width,height]
     Svec<T>         m_data;         // Pixels stored left to right, top to bottom. size() == m_dims[0]*m_dims[1]
-
-    FG_SERIALIZE2(m_dims,m_data);
+    FG_SER2(m_dims,m_data)
 
     typedef T PixelType;
 
@@ -85,14 +67,12 @@ struct  Img
     }
     T &             operator[](Vec2UI ircsPos) {return xy(ircsPos[0],ircsPos[1]); }
     T const &       operator[](Vec2UI ircsPos) const {return xy(ircsPos[0],ircsPos[1]); }
-    T &             operator[](size_t idx) {return m_data[idx]; }
-    T const &       operator[](size_t idx) const {return m_data[idx]; }
 
-    T const *       dataPtr() const {return (!m_data.empty() ? &m_data[0] : NULL); }
-    T *             dataPtr() {return (!m_data.empty() ? &m_data[0] : NULL); }
+    T const *       dataPtr() const {return (!m_data.empty() ? &m_data[0] : nullptr); }
+    T *             dataPtr() {return (!m_data.empty() ? &m_data[0] : nullptr); }
     Svec<T> const & dataVec() const {return m_data; }
-    T *             rowPtr(uint row) {return &m_data[row*m_dims[0]]; }
-    T const *       rowPtr(uint row) const {return &m_data[row*m_dims[0]]; }
+    T *             rowPtr(size_t row) {return &m_data[row*m_dims[0]]; }
+    T const *       rowPtr(size_t row) const {return &m_data[row*m_dims[0]]; }
 
     bool            operator==(Img const & rhs) const {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
     Img             operator+(Img const & r) const {FGASSERT(m_dims==r.m_dims); return Img{m_dims,m_data+r.m_data}; }
@@ -112,41 +92,41 @@ struct  Img
     }
 };
 
-typedef Img<uchar>      ImgUC;
-typedef Img<float>      ImgF;
-typedef Img<double>     ImgD;
+typedef Img<uchar>          ImgUC;
+typedef Img<ushort>         ImgUS;
+typedef Img<uint>           ImgUI;
+typedef Img<float>          ImgF;
+typedef Img<double>         ImgD;
 
-typedef Img<Vec2F>      Img2F;
+typedef Img<Vec2F>          Img2F;
 
-typedef Img<Arr3SC>     Img3SC;
-typedef Img<Arr3I>      Img3I;
-typedef Img<Arr3F>      Img3F;
-typedef Svec<Img3F>     Img3Fs;
-typedef Img<Vec3F>      ImgV3F;      // RGB [0,1] unless otherwise noted
-typedef Svec<ImgV3F>    ImgV3Fs;
+typedef Img<Arr3SC>         Img3SC;
+typedef Img<Arr3I>          Img3I;
+typedef Img<Arr3F>          Img3F;
+typedef Svec<Img3F>         Img3Fs;
+typedef Img<Vec3F>          ImgV3F;      // RGB [0,1] unless otherwise noted
+typedef Svec<ImgV3F>        ImgV3Fs;
 
-typedef Img<Arr4UC>     Img4UC;
-typedef Svec<Img4UC>    Img4UCs;
-typedef Img<Arr4F>      Img4F;
-typedef Img<Vec4F>      ImgV4F;
+typedef Img<Arr4UC>         Img4UC;
+typedef Svec<Img4UC>        Img4UCs;
+typedef Img<Arr4F>          Img4F;
+typedef Img<Vec4F>          ImgV4F;
 
-typedef Img<Rgba8>     ImgRgba8;
-typedef Svec<ImgRgba8>  ImgRgba8s;
-typedef Svec<ImgRgba8s> ImgRgba8ss;
-typedef Img<RgbaF>      ImgC4F;
-
-template<typename To,typename From>
-Img<To>             mapCast(Img<From> const & img)
-{
-    return Img<To>(img.dims(),mapCast<To>(img.m_data));
-}
+typedef Img<Rgba8>          ImgRgba8;
+typedef Svec<ImgRgba8>      ImgRgba8s;
+typedef Svec<ImgRgba8s>     ImgRgba8ss;
+typedef Img<Rgba16>         ImgRgba16;
+typedef Svec<ImgRgba16>     ImgRgba16s;
+typedef Img<RgbaF>          ImgC4F;
 
 template<typename To,typename From>
-void                deepCast_(Img<To> const & from,Img<From> & to)
+void                scast_(Img<To> const & from,Img<From> & to)
 {
     to.resize(from.dims());
-    deepCast_(from.m_data,to.m_data);
+    scast_(from.m_data,to.m_data);
 }
+
+inline size_t   cNumElems(Vec2UI dims) {return scast<size_t>(dims[0]) * scast<size_t>(dims[1]); }
 
 }
 

@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,15 +7,14 @@
 
 #include "stdafx.h"
 
-#include "FgStdString.hpp"
-#include "FgString.hpp"
+#include "FgSerial.hpp"
+#include "FgSerial.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-bool
-fg64bitOS()
+bool                is64bitOS()
 {
 #ifdef FG_64
     return true;
@@ -26,8 +25,7 @@ fg64bitOS()
 #endif
 }
 
-string
-osDescription()
+string              osDescription()
 {
     // Note that GetVersionEx, VerifyVersionInfo and IsWindows10OrGreater will all report Windows 8,
     // Unless your program manifest *requires* a version of Windows higher than that, in which case
@@ -50,15 +48,14 @@ osDescription()
         ret += "Vista/XP";
     if (IsWindowsServer())
         ret += " Server";
-    if (fg64bitOS())
+    if (is64bitOS())
         ret += " 64bit ";
     else
         ret += " 32bit ";
     return ret;
 }
 
-String8
-fgComputerName()
+String8             fgComputerName()
 {
     TCHAR       buff[512];
     DWORD       len = 512;

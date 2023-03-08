@@ -1,5 +1,5 @@
 //
-// Coypright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,9 +8,8 @@
 #include "stdafx.h"
 #include "FgTcp.hpp"
 #include "FgThrowWindows.hpp"
-#include "FgStdString.hpp"
-#include "FgDiagnostics.hpp"
-#include "FgOut.hpp"
+#include "FgSerial.hpp"
+#include "FgSerial.hpp"
 #include "FgFileSystem.hpp"
 
 // Tell compiler to link to these libs:
@@ -47,8 +46,8 @@ static void initWinsock() {static  FgWinsockDll  wsd; }
 bool            runTcpClient_(
     String const &      hostname,
     uint16              port,
-    String const &      data,
-    String *            responsePtr)
+    Bytes const &       data,
+    Bytes *             responsePtr)
 {
     initWinsock();
     SOCKET              socketHandle = INVALID_SOCKET;
@@ -102,7 +101,7 @@ bool            runTcpClient_(
         return false;               // Unable to connect, server not listening ?
     // 'send' will block for buffering since we've created a blocking socket, so the
     // value returned is always either the data size or an error:
-    itmp = send(socketHandle,data.data(),int(data.size()),0);
+    itmp = send(socketHandle,reinterpret_cast<char const *>(data.data()),int(data.size()),0);
     FGASSERT1(itmp != SOCKET_ERROR,toStr(WSAGetLastError()));
     // close socket for sending to cause server's recv/read to return a zero
     // size data packet if server is waiting for more (ie to flush the stream).
@@ -111,7 +110,7 @@ bool            runTcpClient_(
     if (responsePtr != nullptr) {
         responsePtr->clear();
         do {
-            char    buff[1024];
+            char            buff[1024];
             // If server doesn't respond and closes connection we'll immediately get
             // a value of zero here and nothing will be placed in buff. Otherwise
             // we'll continue to receive data until server closes connection causing
@@ -124,7 +123,8 @@ bool            runTcpClient_(
                 return false;
             }
             if (itmp > 0)
-                *responsePtr += String(buff,itmp);
+                // Windows also defines 'byte' so use 'std::byte' here:
+                append_(*responsePtr,reinterpret_cast<std::byte const *>(buff),itmp);
         }
         while (itmp > 0);
         FGASSERT(itmp == 0);
@@ -193,7 +193,7 @@ void            runTcpServer(
 		char *              clientStringPtr = inet_ntoa(sa.sin_addr);
         FGASSERT(clientStringPtr != nullptr);
         String              ipAddr {clientStringPtr};
-        String              dataBuff;
+        Bytes               dataBuff;
         int                 retVal = 0;
         do {
             char                recvbuf[1024];
@@ -203,7 +203,7 @@ void            runTcpServer(
             retVal = recv(sockClient,recvbuf,sizeof(recvbuf),0);
             fgout << ".";
             if (retVal > 0)
-                dataBuff += String(recvbuf,retVal);
+                append_(dataBuff,reinterpret_cast<std::byte const *>(recvbuf),retVal);
         }
         while ((retVal > 0) && (dataBuff.size() <= maxRecvBytes));
         fgout << " " << dataBuff.size() << "B";
@@ -218,8 +218,8 @@ void            runTcpServer(
         if (!respond)   // Avoid timeout errors on the data socket for long handlers that don't respond:
             closesocket(sockClient);
         String8             currDir = getCurrentDir();  // In case 'handler' changes it
-        String              response;
-        fgout << " executing ..." << fgpush;
+        Bytes               response;
+        fgout << " ... executing: " << fgpush;
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
@@ -236,7 +236,8 @@ void            runTcpServer(
         if (respond) {
             if (!response.empty()) {
                 fgout << fgnl << "Responding ..." << std::flush;
-                int             bytesSent = send(sockClient,response.data(),int(response.size()),0);
+                int             bytesSent = send(
+                    sockClient,reinterpret_cast<char const *>(response.data()),int(response.size()),0);
                 shutdown(sockClient,SD_SEND);
                 if (bytesSent != int(response.size()))
                     fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << ").";
