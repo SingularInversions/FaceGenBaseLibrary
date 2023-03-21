@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -183,7 +183,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
         int                 offset = (int(winDim) - int(imgDim)) / 2,       // centre image in window
                             offShift = offset;
         if (winDim < imgDim) {                                              // room to shift image
-            int                 shift = round<int>(shiftIucs * imgDim),
+            int                 shift = roundT<int>(shiftIucs * imgDim),
                                 lo = int(winDim) - int(imgDim),
                                 hi = 0;
             offShift = clamp(offset+shift,lo,hi);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,6 +40,10 @@ String8             getDirUserAppDataLocalFaceGen(Strings const & subDirs);     
 String8             getUserDocsDir(bool throwOnFail=true);
 // This has not been known to fail on Windows:
 String8             getPublicDocsDir();
+
+// **************************************************************************************
+//                          FACEGEN DIRECTORIES
+// **************************************************************************************
 // Find FaceGen data directory from path of current executable, searching up one directory
 // at a time for a directory named 'data' containing the file '_facegen_data_dir.flag'.
 // If 'throwIfNotFound' is false, check the return value for the empty string (failure):
@@ -48,6 +52,8 @@ String8 const &     dataDir(bool throwIfNotFound=true);
 // platforms. Does not check for the FaceGen data dir flag, since that it only there to help find
 // the data dir, not validate it:
 void                setDataDir(String8 const & dirEndingWithSlash);
+String8 const &     getTestDir();                   // defaults to dataDir()/../test-output/
+void                setTestDir(String8 const &);    // for customizing where tests store temp data
 
 // **************************************************************************************
 //                          OPERATIONS ON THE FILESYSTEM
@@ -58,7 +64,14 @@ void                setDataDir(String8 const & dirEndingWithSlash);
 bool                isDirectory(String8 const & path);   // Doesn't throw - returns false for invalid path
 // Both 'src' and 'dst' must be file paths; 'dst' should not be a directory.
 // Note that both the creation time and last modification time are preserved on the copy !
-void                fileCopy(String8 const & srcFilePath,String8 const & dstFilePath,bool overwrite = false);
+void                copyFile(String8 const & srcFilePath,String8 const & dstFilePath,bool overwrite = false);
+// copy multiple files from one directory to another. 'dstDir' must exist. Overwrite will cause an error:
+void                copyFiles(String8 const & srcDir,String8 const & dstDir,String8s const & fnames);
+// copy file to current directory:
+inline void         copyFileToCurr(String8 const & filePath) {copyFile(filePath,pathToName(filePath)); }
+// copy of a data file (ie. given by path relative to ~sdk/data) to current directory:
+inline void         copyDataFileToCurr(String const & relPath) {copyFileToCurr(dataDir()+relPath); }
+
 // Copy then delete original (safer than rename which doesn't work across volumes):
 void                fileMove(String8 const & srcFilePath,String8 const & dstFilePath,bool overwrite = false);
 // Will not throw, returns false for any kind of failure on 'fname':
@@ -130,33 +143,28 @@ inline bool         fileNewer(String8 const & src,String8 const & dst) {return f
 // Usually only need to include the one last output of a code chunk as 'dst':
 inline bool         fileNewer(String8s const & sources,String8 const & dst) {return fileNewer(sources,svec(dst)); }
 
-struct      PushDir
+struct      PushDir         // set process current directory and keep previous ones in a stack
 {
-    String8s    orig;
+    String8s            orig;
 
-    // Often need to create in different scope from 'push':
     PushDir() {}
     explicit PushDir(String8 const & dir) {push(dir); }
 
-    ~PushDir()
-    {
-        if (!orig.empty())
-            setCurrentDir(orig[0]);
-    }
+    ~PushDir() {if (!orig.empty()) setCurrentDir(orig[0]); }
 
-    void            push(String8 const & dir)
+    void                push(String8 const & dir)
     {
         orig.push_back(getCurrentDir());
         setCurrentDir(dir);
     }
-    void            pop()
+    void                pop()
     {
         if (orig.empty())
             return;
         setCurrentDir(orig.back());
         orig.resize(orig.size()-1);
     }
-    void            change(String8 const & dir) {setCurrentDir(dir); }
+    void                change(String8 const & dir) {setCurrentDir(dir); }
 };
 
 // All output to 'fgout' will also be logged to a file
@@ -172,8 +180,7 @@ struct      PushLogFile
 
 // Operations on multiple files and searching for files:
 // 
-// Very simple glob - only matches '*' at beginning or end of file base name (but not both
-// unless whole name is '*') and/or extension.
+// Very simple glob - only matches '*' at beginning or end of file base name (but not both unless whole name is '*') and/or extension.
 // A single '*' does not glob with base and extension.
 // Does not glob on input directory name.
 // RETURNS: Matching filenames without directory:
@@ -187,8 +194,6 @@ DirContents         globNodeStartsWith(Path const & path);
 String8s            globBaseVariants(const String8 & pathBaseExt);
 // Returns true if there were any files in 'toDir' with the same name as a 'fromDir' file. 'toDir' must exist.
 bool                fgCopyAllFiles(String8 const & fromDir,String8 const & toDir,bool overwrite=false);
-// Throws an exception if the filename already exists in the current directory:
-void                fgCopyToCurrentDir(Path const & file);
 // WARNING: Does not check if dirs are sym/hard links so be careful.
 // The tip of 'toDir' will be created.
 // Will throw on overwrite of any file or directory:

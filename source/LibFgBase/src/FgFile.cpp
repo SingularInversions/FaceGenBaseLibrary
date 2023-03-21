@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -9,6 +9,7 @@
 #include "FgFile.hpp"
 #include "FgParse.hpp"
 #include "FgCommand.hpp"
+#include "FgTestUtils.hpp"
 
 using namespace std;
 
@@ -455,7 +456,7 @@ String              Ifstream::readChars(size_t num)
     return ret;
 }
 
-void                testFopen(CLArgs const & args)
+void                testOpenFile(CLArgs const & args)
 {
     FGTESTDIR;
     char32_t        ch = 0x00004EE5;            // A Chinese character

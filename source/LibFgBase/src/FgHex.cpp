@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -86,10 +86,11 @@ static Valid<uint>  get16(istringstream & iss)
     uint            val = 0;
     uint            cnt = 0;
     for (;;) {
-        char                ch = iss.get();
+        int                 chi = iss.get();
+        FGASSERT(chi < 256);
         if (iss.eof())
             return Valid<uint>();
-        Valid<uint>       chVal = get4(ch);
+        Valid<uint>       chVal = get4(scast<char>(chi));
         if (chVal.valid()) {
             val = (val << 4) + chVal.val();
             if (++cnt == 4)

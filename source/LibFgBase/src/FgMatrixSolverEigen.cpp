@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,7 +20,7 @@
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
 #include "FgApproxEqual.hpp"
-#include "FgSyntax.hpp"
+
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -321,7 +321,7 @@ Img<T>              interpolate(Img<T> const & i0,Img<T> const & i1,float ratio)
     float           omv = 1.0f - ratio;
     for (size_t ii=0; ii<ret.numPixels(); ++ii) {
         auto        v = mapCast<float>(i0.m_data[ii]) * omv + mapCast<float>(i1.m_data[ii]) * ratio;
-        round_(v,ret.m_data[ii]);
+        mapRound_(v,ret.m_data[ii]);
     }
     return ret;
 }
@@ -593,7 +593,7 @@ Img<T>              affineResample(Img<T> const & in,Vec2UI outDims,AffineEw2D o
     FGASSERT(in.dims().cmpntsProduct() > 0);
     for (Iter2UI it(outDims); it.valid(); it.next()) {
         Vec2D           inIrcs = outToInIrcs * Vec2D{it()};
-        round_(sampleClipIrcs(in,inIrcs),ret[it()]);
+        mapRound_(sampleClipIrcs(in,inIrcs),ret[it()]);
     }
     return ret;
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,9 +19,20 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-void                regressFail(String8 const & testName,String8 const & refName)
+TestDir::TestDir(String const & name) : path {getTestDir()}
 {
-    fgThrow("Regression failure",testName + " != " + refName);
+    FGASSERT(!name.empty());
+    path.dirs.push_back(name);
+    createPath(path.dir());                         // create if it doesn't already exist
+    pd.push(path.dir());                            // make current
+    deleteDirectoryContentsRecursive(path.str());   // remove any previous output for clean test
+}
+
+TestDir::~TestDir()
+{
+    if (!pd.orig.empty()) {
+        pd.pop();
+    }
 }
 
 void                testRegressFile(String8 const & baselineRelPath,String8 const & queryPath,CmpFilesFn const & fnEqual)
@@ -32,7 +43,7 @@ void                testRegressFile(String8 const & baselineRelPath,String8 cons
     String8             baselinePath = dataDir() + baselineRelPath;
     if (!pathExists(baselinePath)) {
         if (regressOverwrite) {
-            fileCopy(queryPath,baselinePath);
+            copyFile(queryPath,baselinePath);
             fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works.
         }
@@ -43,7 +54,7 @@ void                testRegressFile(String8 const & baselineRelPath,String8 cons
         deleteFile(queryPath);        // Passed test
     else {                              // Failed test
         if (regressOverwrite) {
-            fileCopy(queryPath,baselinePath,true);
+            copyFile(queryPath,baselinePath,true);
             deleteFile(queryPath);
         }
         fgThrow("Regression failure",queryPath+" != "+baselineRelPath);

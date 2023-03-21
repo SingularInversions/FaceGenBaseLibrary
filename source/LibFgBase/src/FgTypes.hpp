@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -56,9 +56,7 @@
 
 #ifdef _MSC_VER
 // Too many false positives (avoid unnmaed objects with custom construction or destruction):
-#  pragma warning(disable:26444)
-#  pragma warning(disable:4244)
-#  pragma warning(disable:4996)
+#pragma warning(disable:4244)
 #endif
 
 namespace Fg {
@@ -284,40 +282,6 @@ struct Traits<Svec<T>>
 };
 
 #define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
-
-// 'round' for static cast which does proper rounding when necessary:
-// No bounds checking is done by these 'round' functions:
-template<class T,class F,FG_ENABLE_IF(T,is_signed),FG_ENABLE_IF(T,is_integral)>
-inline T            round(F v)
-{
-    static_assert(std::is_floating_point<F>::value,"round only from floating point");
-    return static_cast<T>(std::floor(v+F(0.5)));
-}
-template<class T,class F,FG_ENABLE_IF(T,is_unsigned),FG_ENABLE_IF(T,is_integral)>
-inline T            round(F v)
-{
-    static_assert(std::is_floating_point<F>::value,"round only from floating point");
-    return static_cast<T>(v+F(0.5));
-}
-template<class T,class F,FG_ENABLE_IF(T,is_floating_point)>
-inline T            round(F v)
-{
-    static_assert(std::is_floating_point<F>::value,"round only from floating point");
-    return static_cast<T>(v);
-}
-template<class T,class F>
-void                round_(F from,T & to) {to = round<T,F>(from); }
-
-template<class T,FG_ENABLE_IF(T,is_arithmetic)>
-T                   interpolate(T v0,T v1,float val)   // returns v0 when val==0, v1 when val==1
-{
-    float       v = static_cast<float>(v0) * (1.0f-val) + static_cast<float>(v1) * val;
-    return round<T,float>(v);
-}
-
-// Squared magnitude function base cases (function always returns double):
-inline double       cMag(double v) {return v*v; }
-inline double       cMag(std::complex<double> v) {return std::norm(v); }
 
 }
 

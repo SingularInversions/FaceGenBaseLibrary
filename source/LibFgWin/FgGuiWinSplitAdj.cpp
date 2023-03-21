@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -277,7 +277,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         double      sized = sizei;
         Vec2I    lo(0),sz(0);
         sz[nd] = m_client[nd];
-        sz[sd] = round<int>(m_relSize*sized);
+        sz[sd] = roundT<int>(m_relSize*sized);
         // Adjust relative sizing if window resize hits one of the mins:
         int         min0 = m_minSizes[0][sd],
                     min1 = m_minSizes[1][sd];

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -15,16 +15,15 @@ using namespace std;
 
 namespace Fg {
 
-uint64
-getTimeMs()
+uint64              getTimeMs()
 {
     struct  __timeb64   timeptr;
-    _ftime64(&timeptr);
+    errno_t             err = _ftime64_s(&timeptr);
+    FGASSERT(err==0);
     return timeptr.time * 1000ULL + uint64(timeptr.millitm);
 }
 
-void
-sleepSeconds(uint seconds)
+void                sleepSeconds(uint seconds)
 {
     Sleep(seconds * 1000);
 }

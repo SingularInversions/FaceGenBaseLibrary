@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -157,11 +157,8 @@ struct  FffMultiObjectC
         std::string     getModelName(int objId=0) const
         {
             FGASSERT(size_t(objId) < m_objs.size());
-            char str[48];
-            sprintf(str,"Object%d",objId);
-            std::string modelName(str);
-            if (m_objs[objId].modelName.size() != 0 &&
-                m_objs[objId].modelName != "")
+            String          modelName = "Object" + toStr(objId);
+            if (m_objs[objId].modelName.size() != 0 && m_objs[objId].modelName != "")
                 modelName = m_objs[objId].modelName;
             return modelName;
         }

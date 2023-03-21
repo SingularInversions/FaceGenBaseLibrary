@@ -295,7 +295,6 @@
     <ClInclude Include="..\src\FgMath.hpp" />
     <ClCompile Include="..\src\FgMatrixC.cpp" />
     <ClInclude Include="..\src\FgMatrixC.hpp" />
-    <ClInclude Include="..\src\FgMatrixCBase.hpp" />
     <ClCompile Include="..\src\FgMatrixSolver.cpp" />
     <ClInclude Include="..\src\FgMatrixSolver.hpp" />
     <ClCompile Include="..\src\FgMatrixSolverEigen.cpp" />
@@ -330,8 +329,6 @@
     <ClCompile Include="..\src\FgString.cpp" />
     <ClInclude Include="..\src\FgString.hpp" />
     <ClCompile Include="..\src\FgStringTest.cpp" />
-    <ClCompile Include="..\src\FgSyntax.cpp" />
-    <ClInclude Include="..\src\FgSyntax.hpp" />
     <ClInclude Include="..\src\FgSystemInfo.hpp" />
     <ClInclude Include="..\src\FgTcp.hpp" />
     <ClCompile Include="..\src\FgTcpTest.cpp" />

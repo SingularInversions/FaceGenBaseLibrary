@@ -1,5 +1,5 @@
 //
-// Copyright (C) Singular Inversions Inc. 2018
+// Copyright (c) Singular Inversions Inc. 2018
 //
 //
 
@@ -7,7 +7,7 @@
 
 #include "FgWinSpecific.hpp"
 #include "FgCommand.hpp"
-#include "FgSyntax.hpp"
+
 #include "FgThrowWindows.hpp"
 
 #pragma comment (lib, "AdvApi32.lib")   // Link to DLL with registry API

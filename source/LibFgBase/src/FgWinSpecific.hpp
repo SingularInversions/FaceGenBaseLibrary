@@ -1,5 +1,5 @@
 //
-// Copyright (C) Singular Inversions Inc. 2018
+// Copyright (c) Singular Inversions Inc. 2018
 //
 // Windows-specific functionality
 //

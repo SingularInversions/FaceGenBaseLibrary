@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 #ifndef FGMATRIXV_HPP
 #define FGMATRIXV_HPP
 
-#include "FgMatrixCBase.hpp"    // Used to represent dimensions 
+#include "FgMatrixC.hpp"    // Used to represent dimensions 
 #include "FgRandom.hpp"
 
 namespace Fg {
@@ -440,16 +440,6 @@ T                   cTrace(MatV<T> const & m)
     for (size_t ii=0; ii<dim; ++ii)
         ret += m.rc(ii,ii);
     return ret;
-}
-
-// Linear interpolation between matrices of equal dimensions:
-template<class T>
-void                interpolate_(MatV<T> const & v0,MatV<T> const & v1,T val,MatV<T> & ret)
-{
-    Vec2UI              dims = v0.dims();
-    FGASSERT(v1.dims() == dims);
-    ret.resize(dims);
-    interpolate_(v0.m_data,v1.m_data,val,ret.m_data);
 }
 
 template<class T>

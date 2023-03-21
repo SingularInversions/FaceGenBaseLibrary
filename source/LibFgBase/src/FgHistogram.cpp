@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -34,7 +34,7 @@ FgHistogram::FgHistogram(
     binCounts.resize(numBins,0);
     double      fac = double(numBins) / (bounds[1]-bounds[0]);
     for (uint ii=0; ii<samples.size(); ++ii) {
-        int     bin = round<int>((samples[ii]-bounds[0])*fac);
+        int     bin = roundT<int>((samples[ii]-bounds[0])*fac);
         if ((bin >= 0) && (bin < int(numBins)))
             ++(binCounts[bin]);
     }
@@ -44,7 +44,7 @@ bool
 FgHistogram::addSample(double val)
 {
     double      fac = double(binCounts.size()) / (bounds[1]-bounds[0]);
-    int         bin = round<int>((val-bounds[0]) * fac);
+    int         bin = roundT<int>((val-bounds[0]) * fac);
     if ((bin >= 0) && (bin < int(binCounts.size()))) {
         ++(binCounts[bin]);
         return true;

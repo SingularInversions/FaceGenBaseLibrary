@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -57,7 +57,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         uint            maxMin(0);
         if (maxDims.size() > 0)
             maxMin = cMax(maxDims);
-        return cMin(8,uint(double(maxMin)*0.1));
+        return cMin(8U,scast<uint>(maxMin*0.1));
     }
 
     uint                calcPadTotal(uint numPanes,uint padBetween) const
@@ -168,7 +168,7 @@ struct  GuiSplitWin : public GuiBaseImpl
             if (!paneStrets[ii])
                 hi = lo + maxLlimPixs[ii];
             else
-                hi = lo + round<int>(double(maxLlimPixs[ii]) / double(adjust) * stretSize);
+                hi = lo + roundT<int>(double(maxLlimPixs[ii]) / double(adjust) * stretSize);
             ret.push_back(Vec2UI(lo,hi-lo));
             lo = hi + padBetween;
         }

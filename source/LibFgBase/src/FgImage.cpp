@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -465,7 +465,7 @@ void                imgResize(ImgRgba8 const & src,ImgRgba8 & dst)
 			}
             // Divide by the area of the back-project and convert
             // back to fixed point.
-            round_(acc * invArea,dstPtr[xDstRcs]);
+            mapRound_(acc * invArea,dstPtr[xDstRcs]);
 		}
 		dstPtr += dstStep;
 	}
@@ -596,6 +596,22 @@ ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC c
         r[3] = 255;
     }
     return ret;
+}
+
+// Normal unweighted encoding:
+// r_c = f_c * f_a + b_c * b_a * (1-f_a)
+// r_a = f_a + b_a * (1-f_a)
+Rgba8               compositeFragmentUnweighted(Rgba8 foreground,Rgba8 background)
+{
+    uint        f_a = foreground.alpha(),
+                b_a = background.alpha(),
+                omfa = 255 - f_a,
+                tmp = (b_a * omfa + 127U) / 255U;
+    Arr3UI      f_c = mapCast<uint>(cHead<3>(foreground.m_c)),
+                b_c = mapCast<uint>(cHead<3>(background.m_c)),
+                acc = f_c * f_a + b_c * tmp,
+                r_c = (acc + cArr<uint,3>(127)) / 255U;
+    return      Rgba8(r_c[0],r_c[1],r_c[2],f_a+tmp);
 }
 
 ImgRgba8            composite(ImgRgba8 const & foreground,ImgRgba8 const & background)

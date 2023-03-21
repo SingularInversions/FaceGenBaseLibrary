@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -78,6 +78,43 @@ static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexc
 
 // FUNCTIONAL-STYLE (NOT ITERATOR) ALGORITHMS ON STD CONTAINERS:
 
+// combine rounding with conversion to integer types. No bounds checking:
+template<class T,class F,FG_ENABLE_IF(T,is_signed),FG_ENABLE_IF(T,is_integral),FG_ENABLE_IF(F,is_floating_point)>
+inline T            roundT(F v) {return scast<T>(std::round(v)); }
+template<class T,class F,FG_ENABLE_IF(T,is_unsigned),FG_ENABLE_IF(T,is_integral),FG_ENABLE_IF(F,is_floating_point)>
+inline T            roundT(F v) {return scast<T>(v+F(0.5)); }
+template<class T,class F,FG_ENABLE_IF(T,is_floating_point)>
+inline T            roundT(F v) {return scast<T>(v); }
+template<class T,class F>
+void                mapRound_(F from,T & to) {to = roundT<T,F>(from); }
+
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+T                   interpolate(T v0,T v1,T val)    // returns v0 when val==0, v1 when val==1
+{
+    return v0 * (1-val) + v1 * val;
+}
+
+// cMag: Squared magnitude. Always returns double:
+inline double       cMag(double v) {return v*v; }
+inline double       cMag(std::complex<double> v) {return std::norm(v); }
+template<class T> double  cMag(Svec<T> const & v);          // forward declare to handle Arr<Svec<...>>
+template<class T,size_t S>
+double              cMag(Arr<T,S> const & arr)
+{
+    double          acc {0};
+    for (T const & e : arr)
+        acc += cMag(e);
+    return acc;
+}
+template<class T>
+double              cMag(Svec<T> const & arr)
+{
+    double          acc {0};
+    for (T const & e : arr)
+        acc += cMag(e);
+    return acc;
+}
+
 template<class T,size_t S,size_t R>
 Arr<T,S+R>          cat(Arr<T,S> const & lhs,Arr<T,R> const & rhs)
 {
@@ -127,11 +164,16 @@ Arr<T,S>            mapCall(Arr<T,S> const & lhs,T rhs,C call)
     return ret;
 }
 
+// forward declarations to handle arr<svec<T>>:
+template<class T> Svec<T> operator+(Svec<T> const &  l,Svec<T> const &  r);
+template<class T> Svec<T> operator-(Svec<T> const &  l,Svec<T> const &  r);
+
 // addition and subtraction operators between 2 arrays are by convention element-wise
+// note that we can't use std::plus / std::minus since these do not support overloads of operator+/-:
 template<class T,size_t S>
-Arr<T,S>        operator+(Arr<T,S> const & l,Arr<T,S> const & r) {return mapCall(l,r,std::plus<T>{}); }
+Arr<T,S>        operator+(Arr<T,S> const & l,Arr<T,S> const & r) {return mapCall(l,r,[](T const & l,T const & r){return l+r; }); }
 template<class T,size_t S>
-Arr<T,S>        operator-(Arr<T,S> const & l,Arr<T,S> const & r) {return mapCall(l,r,std::minus<T>{}); }
+Arr<T,S>        operator-(Arr<T,S> const & l,Arr<T,S> const & r) {return mapCall(l,r,[](T const & l,T const & r){return l-r; }); }
 
 // addition and subtraction between an array and an element is explicit, not operator-overloaded
 template<class T,size_t S>
@@ -193,37 +235,20 @@ void            mapCast_(Arr<F,S> const & from,Arr<T,S> & to)
         to[ii] = scast<T>(from[ii]);
 }
 template<class T,size_t S>
-Arr<T,S>        mapSqr(Arr<T,S> const & arr)
-{
-    struct C {T operator()(T v){return v*v;} };
-    return mapCall(arr,C{});
-}
+Arr<T,S>        mapSqr(Arr<T,S> const & arr) {return mapCall(arr,[](T v){return v*v;}); }
 template<class To,class From,size_t S>
-void            round_(Arr<From,S> const & from,Arr<To,S> & to)
+void            mapRound_(Arr<From,S> const & from,Arr<To,S> & to)
 {
     for (size_t ii=0; ii<S; ++ii)
-        round_(from[ii],to[ii]);
+        mapRound_(from[ii],to[ii]);
 }
 template<class T,size_t S>
-Arr<T,S>        cFloor(Arr<T,S> const & arr)
-{
-    struct C {T operator()(T v){return std::floor(v); } };
-    return mapCall(arr,C{});
-}
-template<class T,size_t S>
-T               cSum(Arr<T,S> const & a) {return std::accumulate(cbegin(a)+1,cend(a),a[0]); }
+T               cSum(Arr<T,S> const & a) {return std::accumulate(cbegin(a),cend(a),T{0}); }
 template<class T,size_t S>
 T               cMean(Arr<T,S> const & a) {return cSum(a)/a.size(); }
 template<class T,size_t S>
 T               cProd(Arr<T,S> const & a) {return std::accumulate(cbegin(a)+1,cend(a),a[0],std::multiplies<T>{}); }
-template<class T,size_t S>
-double          cMag(Arr<T,S> const & arr)
-{
-    double          acc {0};
-    for (T const & e : arr)
-        acc += cMag(e);
-    return acc;
-}
+
 template<class T,size_t S>
 T               cDot(Arr<T,S> const & lhs,Arr<T,S> const & rhs)
 {
@@ -442,14 +467,10 @@ Svec<To>            mapConvert(const Svec<From> & in)
 }
 // Linear interpolation between vectors of equal lengths:
 template<class T>
-void                interpolate_(Svec<T> const & v0,Svec<T> const & v1,float val,Svec<T> & ret)
+Svec<T>             interpolate(Svec<T> const & v0,Svec<T> const & v1,T val)
 {
-    size_t              sz = v0.size();
-    FGASSERT(v1.size() == sz);
-    ret.resize(sz);
-    float               omv = 1.0f - val;
-    for (size_t ii=0; ii<sz; ++ii)
-        ret[ii] = round<T>(scast<float>(v0[ii]) * omv + scast<float>(v1[ii]) * val);
+    T                   omv = 1 - val;
+    return mapCall(v0,v1,[val,omv](T l,T r){return l*omv + r*val; });
 }
 // Returns a vector one larger in size than 'vec', where each element is the integral of all elements of 'vec'
 // up to but not including the current one:
@@ -548,6 +569,16 @@ Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2
     ret.insert(ret.end(),v0.begin(),v0.end());
     ret.insert(ret.end(),v1.begin(),v1.end());
     ret.insert(ret.end(),v2.begin(),v2.end());
+    return ret;
+}
+template<class T>
+Svec<T>             cat(Svec<T> const & v0,Svec<T> const & v1,Svec<T> const & v2,Svec<T> const & v3)
+{
+    Svec<T>             ret; ret.reserve(v0.size()+v1.size()+v2.size()+v3.size());
+    ret.insert(ret.end(),v0.begin(),v0.end());
+    ret.insert(ret.end(),v1.begin(),v1.end());
+    ret.insert(ret.end(),v2.begin(),v2.end());
+    ret.insert(ret.end(),v3.begin(),v3.end());
     return ret;
 }
 template<class T>
@@ -876,14 +907,6 @@ T                   cMean(Svec<T> const & v)
 {
     typedef typename Traits<T>::Scalar    S;
     return cSum(v) / static_cast<S>(v.size());
-}
-template<class T>
-double              cMag(Svec<T> const & v)              // Sum of squared magnitude values:
-{
-    double      ret(0);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret += cMag(v[ii]);
-    return ret;
 }
 template<class T>
 double              cLen(Svec<T> const & v) {return std::sqrt(cMag(v)); }

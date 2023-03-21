@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,9 +12,14 @@
 #include "FgCommand.hpp"
 #include "FgImgDisplay.hpp"
 
+#ifdef _MSC_VER
+#define STBI_MSC_SECURE_CRT             // STB use MS fopen_s instead of fopen
+#endif
+
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+
+#include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
 using namespace std;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -574,7 +574,7 @@ Vec3F               cQuadNorm(Vec4UI const & quad,Vec3Fs const & verts)
     if (crossMag == 0.0)
         return Vec3F{0};
     else
-        return cross * (1.0 / sqrt(crossMag));
+        return cross * scast<float>(1.0 / sqrt(crossMag));
 }
 // calculate facet norm, accumulate it weighted by subtended angle to each vertex, return facet norm:
 template<typename T>

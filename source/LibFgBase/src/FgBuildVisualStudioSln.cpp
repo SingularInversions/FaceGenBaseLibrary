@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -320,7 +320,7 @@ bool                writeVcxproj(
     ofs <<
         "  </ItemGroup>\n";
     if (pathExists(proj.name+"/icon.ico")) {
-        fileCopy(proj.name+"/icon.ico",projDir+"icon1.ico",true);
+        copyFile(proj.name+"/icon.ico",projDir+"icon1.ico",true);
         ofs <<
             "  <ItemGroup>\n"
             "    <ClInclude Include=\"resource.h\" />\n"

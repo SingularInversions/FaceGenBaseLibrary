@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,20 @@
 
 namespace Fg {
 
-void                regressFail(String8 const & testName,String8 const & refName);
+struct      TestDir
+{
+    PushDir         pd;
+    Path            path;
+
+    TestDir() {}
+    // creates directory ~sdk/test-output/name/ if not already present, empties it, and sets it to current dir:
+    explicit TestDir(String const & name);
+    ~TestDir();
+};
+
+// Creates a test directory with a name formed from the breadcrumb of commands, changes the
+// current directory to that, then reverts to the initial directory when it goes out of scope:
+#define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(toLower(args[0]));
 
 // As above but regression failure when max pixel diff greater than given:
 void                regressImage(String const & name,String const & relDir,uint maxDelta=2);
@@ -71,7 +84,7 @@ void                testRegressExact(
     }
 }
 
-// throws if the test fails:
+// throws if the test fails. Strangely, it can't infer the type from the first argument ...
 template<class T>
 void                testRegressApprox(
     T const &                       query,
@@ -104,7 +117,7 @@ void                testRegressApprox(
     }
     else {                          // Failed
         if (overwrite)
-            saveFn(query,baselineRelPath);
+            saveFn(query,baselineAbsPath);
         else {                      // store for retrieval if required:
             Path                path {dataDir() + "../test-output/" + baselineRelPath};
             createPath(path.dir());

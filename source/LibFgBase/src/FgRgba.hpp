@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -102,7 +102,7 @@ Rgba<T>             operator*(Rgba<T> lhs, T rhs)
 }
 
 template<typename To,typename From>
-void                round_(Rgba<From> const & in,Rgba<To> & out) {round_(in.m_c,out.m_c); }
+void                mapRound_(Rgba<From> const & in,Rgba<To> & out) {mapRound_(in.m_c,out.m_c); }
 
 template<typename T>
 std::ostream &      operator<<(std::ostream & out,Rgba<T> p) {return out << p.m_c; }
@@ -122,25 +122,6 @@ Mat<T,4,2>          cBounds(Svec<Rgba<T>> const & vals)    // If empty, returns 
     }
     return ret;
 }
-
-// Normal unweighted encoding:
-// r_c = f_c * f_a + b_c * b_a * (1-f_a)
-// r_a = f_a + b_a * (1-f_a)
-inline Rgba8        compositeFragmentUnweighted(Rgba8 foreground,Rgba8 background)
-{
-    uint        f_a = foreground.alpha(),
-                b_a = background.alpha(),
-                omfa = 255 - f_a,
-                tmp = (b_a * omfa + 127U) / 255U;
-    Arr3UI      f_c = mapCast<uint>(cHead<3>(foreground.m_c)),
-                b_c = mapCast<uint>(cHead<3>(background.m_c)),
-                acc = f_c * f_a + b_c * tmp,
-                r_c = (acc + cArr<uint,3>(127)) / 255U;
-    return      Rgba8(r_c[0],r_c[1],r_c[2],f_a+tmp);
-}
-
-template<typename To,typename From>
-Rgba<To>            round(Rgba<From> const & v) {return Rgba<To>(round<To>(v.m_c)); }
 
 template<class To,class From>
 Rgba<To>            mapCast(Rgba<From> const & from) {return Rgba<To>{mapCast<To,From>(from.m_c)}; }

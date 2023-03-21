@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,7 +13,6 @@
 namespace Fg {
 
 String32            toUtf32(String const & utf8);
-String32            toUtf32(char const * utf8);
 String              toUtf8(const char32_t & utf32_char);
 String              toUtf8(String32 const & utf32);
 // The following 2 functions are only needed by Windows and don't work on *nix due to

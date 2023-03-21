@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,7 @@
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
 #include "FgImageIo.hpp"
+#include "FgScopeGuard.hpp"
 
 using namespace std;
 
@@ -58,9 +59,8 @@ static string fffMdlNameTo3dsName(string const & mdlName,Strings & nameList)
             }
             if (ii != nameList.size()) {
                 ++doAgainCount;
-                char numStr[5];
-                sprintf(numStr,"%d",doAgainCount);
-                size_t len = strlen(numStr);
+                String          numStr = toStr(doAgainCount);
+                size_t          len = numStr.size();
                 name = name.substr(0,10-len) + string(numStr);
             }
             else
@@ -430,24 +430,16 @@ static
 bool
 fffSave3dsFile(String8 const &name, const FffMultiObjectC &model)
 {
-    Path      path(name);
+    Path            path(name);
     path.ext = "3ds";
-    String8    fname = path.str();
-#ifdef _WIN32
-    FILE *fptr = _wfopen(fname.as_wstring().c_str(),L"wb,ccs=UNICODE");
-#else
-    FILE *fptr = fopen(fname.m_str.c_str(),"wb");
-#endif
-    if (!fptr) {
-        return false;
-    }
+    FILE *          fptr = openFile(path.str(),true);
+    ScopeGuard      SG {[fptr](){fclose(fptr); }};
+
     unsigned short id = 0x4D4D;     // 3DS magic number
     int chunkSize = sizeof(unsigned short) + sizeof(int);
     int chunkStartPos = ftell(fptr);
-    if (!fffWriteChunkHeader_local(fptr,id,chunkSize)) {
-        fclose(fptr);
+    if (!fffWriteChunkHeader_local(fptr,id,chunkSize))
         return false;
-    }
     {
         id = M3D_VERSION;
         int version = 3;
@@ -455,27 +447,20 @@ fffSave3dsFile(String8 const &name, const FffMultiObjectC &model)
                           + sizeof(int);
         if (!fffWriteChunkHeader_local(fptr,id,verChunkSize))
         {
-            fclose(fptr);
             return false;
         }
         if (fwrite(&version,sizeof(int),1,fptr) != 1)
         {
-            fclose(fptr);
             return false;
         }
         chunkSize += verChunkSize;
     }
     int mdataChunkSize=0;
-    if (!fffWriteMdataChunk_local(fptr,mdataChunkSize,model)) {
-        fclose(fptr);
+    if (!fffWriteMdataChunk_local(fptr,mdataChunkSize,model))
         return false;
-    }
     chunkSize += mdataChunkSize;
-    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos)) {
-        fclose(fptr);
+    if (!fffUpdateChunkSizeInfo_local(fptr,chunkSize,chunkStartPos))
         return false;
-    }
-    fclose(fptr);
     return true;
 }
 
@@ -488,7 +473,8 @@ void            save3ds(String8 const & fname,Meshes meshes,String imgFormat)
     // 3DS internal filenames have 8 chars max so leave 1 for tex number:
     FgMeshLegacy    ml = fgMeshLegacy(meshes,fname,imgFormat,7);
     ml.forcePerVertexTextCoord();
-    fffSave3dsFile(fname,ml.base);
+    if (!fffSave3dsFile(fname,ml.base))
+        fgThrow("Error while writing to 3DS file",fname);
 }
 
 void

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -35,28 +35,74 @@ void                doMenu(
     bool                optionQuiet=false,  // Give option to silence console output
     String const &      notes=String{});    // Printed out below the list of commands under the title NOTES:
 
-// Creates a temporary directory with a name giving the CL args and date/time on construction,
-// and removes the directory on destruction (unless the 'keep temp files' option has been selected):
-struct      TestDir
-{
-    PushDir         pd;
-    Path            path;
 
-    TestDir() {}
-    TestDir(String const & name);
-    ~TestDir();
-};
-
-// Creates a test directory with a name formed from the breadcrumb of commands, changes the
-// current directory to that, then reverts to the initial directory when it goes out of scope:
-#define FGTESTDIR FGASSERT(!args.empty()); TestDir fgTestDir(toLower(args[0]));
-
-// Set the root test directory. Useful for sandboxed platforms:
-void            setRootTestDir(String8 const & dir);
-// Make a copy of a data file in current directory. Throws if file already exists.
-void            copyFileToCurrentDir(String const & nameRelativeToDataDir);
 // fgout the desired command, parse 'argStr' into an CLArgs, and run with indent:
 void            runCmd(CmdFunc const & func,String const & argStr);
+
+struct      FgExceptionCommandSyntax {};
+
+struct      Syntax
+{
+    Syntax(
+        CLArgs const &  args,   // Accepts UTF-8 here
+        // Wraparound for console width is aplied to this text. Any occurence of " - "
+        // sets the indent level for wraparound:
+        String const &  syntax);
+
+    ~Syntax();
+
+    String const &      next()
+    {
+        if (m_idx+1 == m_args.size())
+            error("Expected another argument after",m_args[m_idx]);
+        return m_args[++m_idx];
+    }
+    template<typename T>
+    T                   nextAs()
+    {
+        Opt<T>    ret = fromStr<T>(next());
+        if (!ret.valid())
+            error("Unable to convert string to "+String(typeid(T).name()),curr());
+        return ret.val();
+    }
+    String8             nextLower()             // As above but lower case
+    {
+        return toLower(String8(next()));
+    }
+    String const &      curr() const
+    {
+        return m_args[m_idx];
+    }
+    bool                more() const
+    {
+        return (m_idx+1 < m_args.size());
+    }
+    String const &      peekNext();
+    CLArgs              rest();             // Starting with current
+    void                error() {throwSyntax(); }
+    void                error(String const & errMsg);
+    void                error(String const & errMsg,String8 const & data);
+    void                incorrectNumArgs();
+    // Throws appropriate syntax error:
+    void                checkExtension(String8 const & fname,String const & ext);
+    void                checkExtension(String const & fname,Strings const & exts);
+    // Throws appropriate syntax error if different:
+    void                numArgsMustBe(uint numArgsNotIncludingCommand);
+    // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
+    // referencing 'argDescription':
+    uint                nextSelectionIndex(Strings const & validValues,String const & argDescription);
+    void                noMoreArgsExpected();       // Throws is the user has supplied more arguments
+
+private:
+    String              m_syntax;
+    Strings             m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
+    size_t              m_idx;
+
+    void                throwSyntax();
+};
+
+// Return a string of the form "( e0 | e1 | ... | )":
+String              clOptionsStr(Strings const & options);
 
 }
 

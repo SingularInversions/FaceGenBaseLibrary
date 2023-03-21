@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -103,6 +103,8 @@ template<class T,FG_ENABLE_IF(T,is_integral)>
 inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
 template<class T,FG_ENABLE_IF(T,is_floating_point)>
 inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
+// forward declaration to handle Arr<Svec<...>>:
+template<class T> void setReflect(std::any const & node,Svec<T> & val);
 template<class T,size_t S>
 void                setReflect(std::any const & node,Arr<T,S> & val)
 {

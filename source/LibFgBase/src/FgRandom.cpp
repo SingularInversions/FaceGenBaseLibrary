@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -128,7 +128,7 @@ void                normGraph(CLArgs const &)
     Sizes               histogram(sz,0);
     Affine1D            randToHist {-double(numStdevs),double(numStdevs),0,double(sz)};
     for (size_t ii=0; ii<S; ++ii) {
-        int                 rnd = round<int>(randToHist * randNormal());
+        int                 rnd = roundT<int>(randToHist * randNormal());
         if ((rnd >= 0) && (rnd < int(sz)))
             ++histogram[rnd];
     }
@@ -138,7 +138,7 @@ void                normGraph(CLArgs const &)
                         hgtRatio = 0.9;
     ImgRgba8             img {sz,sz,Rgba8{0}};
     for (size_t xx=0; xx<sz; ++xx) {
-        size_t              hgt = round<int>(histogram[xx] * sz * hgtRatio / binScale);
+        size_t              hgt = roundT<int>(histogram[xx] * sz * hgtRatio / binScale);
         for (size_t yy=0; yy<hgt; ++yy)
             img.xy(xx,yy) = Rgba8{255};
     }
@@ -146,7 +146,7 @@ void                normGraph(CLArgs const &)
     Affine1D            histToRand = randToHist.inverse();
     for (size_t xx=0; xx<sz; ++xx) {
         double              val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
-        size_t              hgt = round<int>(val * sz * hgtRatio);
+        size_t              hgt = roundT<int>(val * sz * hgtRatio);
         img.xy(xx,hgt) = Rgba8(255,0,0,255);
     }
     // Display:

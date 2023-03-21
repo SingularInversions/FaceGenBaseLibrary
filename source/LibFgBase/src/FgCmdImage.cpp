@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
-#include "FgSyntax.hpp"
+
 #include "FgMetaFormat.hpp"
 #include "FgImageIo.hpp"
 #include "FgParse.hpp"
@@ -34,6 +34,38 @@ void                cmdAlpha(CLArgs const & args)
     for (size_t ii=0; ii<rgb.m_data.size(); ++ii)
         rgb.m_data[ii].alpha() = alpha.m_data[ii].rec709();
     saveImage(syn.next(),rgb);
+}
+
+void                cmdAnnotate(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<images>
+    <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
+    <list>.txt      - must contain a whitespace-separated list of <fileName>.<ext>
+OUTPUT:
+    <fileName>.lms.<ext> - for each <filename>.<ext> with associated landmarks (file name <filename>.lms.txt);
+    the image annotated with landmarks as green crosses.)"
+    };
+    Strings             imgFiles;
+    if (endsWith(syn.peekNext(),".txt"))
+        imgFiles = splitWhitespace(loadRawString(syn.next()));
+    else while (syn.more())
+        imgFiles.push_back(syn.next());
+    if (imgFiles.empty())
+        syn.error("no images to annotate");
+    for (String const & imgFile : imgFiles) {
+        String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
+        if (fileExists(lmsFile)) {
+            NameVec2Fs          lms = loadLandmarks(lmsFile);
+            ImgRgba8            img = loadImage(imgFile);
+            for (auto lm : lms)
+                paintCrosshair(img,mapRound<int>(lm.vec));
+            Path                path {imgFile};
+            String8             outFile = path.dirBase() + ".lms." + path.ext;
+            saveImage(outFile,img);
+        }
+        else
+            fgout << fgnl << imgFile << ": no corresponding landmarks file found";
+    }
 }
 
 void                cmdCompare(CLArgs const & args)
@@ -240,6 +272,7 @@ void                cmdImgops(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
+        {cmdAnnotate,"anno","Paint landmark points as green crosses on an image"},
         {cmdCompare,"comp","compare two images of equal pixel dimensions"},
         {cmdComposite,"composite","Composite an image with transparency over another"},
         {cmdConvert,"convert","Convert images between different formats"},

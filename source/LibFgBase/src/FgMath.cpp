@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 
 #include "FgMath.hpp"
 #include "FgRandom.hpp"
-#include "FgSyntax.hpp"
+#include "FgCommand.hpp"
 
 using namespace std;
 
@@ -112,7 +112,7 @@ Doubles             convolveGauss(Doubles const & in,double stdev)
 {
     FGASSERT(stdev > 0.0);
     // Create kernel w/ 6 stdevs on each side for double since this is 2 parts in 1B:
-    size_t          ksize = round<uint>(stdev * 6);
+    size_t          ksize = roundT<uint>(stdev * 6);
     if (ksize == 0)
         return in;
     vector<double>  kernel(ksize*2+1);

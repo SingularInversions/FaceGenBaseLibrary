@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,6 +8,10 @@
 #include "stdafx.h"
 
 #include "FgString.hpp"
+
+#ifdef _MSC_VER
+#pragma warning(disable:4996)   // C11 UTF 8-16-32 conversion functions are deprecated but there is no replacement, so keep using them !
+#endif
 
 using namespace std;
 
@@ -19,21 +23,6 @@ String32            toUtf32(String const & str)
 #ifdef _MSC_VER
     if (str.empty())
         return String32();
-    wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
-    auto            asInt = convert.from_bytes(str);
-    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
-#else
-    wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
-    return convert.from_bytes(str);
-#endif
-}
-
-String32            toUtf32(char const * str)
-{
-    // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
-#ifdef _MSC_VER
-    if (str[0] == 0)
-        return String32{};
     wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
     auto            asInt = convert.from_bytes(str);
     return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());

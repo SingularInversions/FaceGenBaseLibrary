@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,7 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
+#include "FgScopeGuard.hpp"
 
 using namespace std;
 
@@ -96,7 +97,6 @@ static bool saveLwoLwsFile(String8 const &fname,
 static bool searchVtxTexMap(unsigned long vtxId, Vec2F tex,
                 const vector<unsigned long> &vtxList,
                 const Vec2Fs &texCoord);
-static bool errorFcloseExit(FILE *fptr, String8 const &fname);
 static Vec3F toLwoCoord(Vec3F vec) { vec[2]=-vec[2]; return vec; }
 static bool swap4BytesWrite(FILE *fptr, const void *ptr);
 static bool swap2BytesWrite(FILE *fptr, const void *ptr);
@@ -220,29 +220,22 @@ static bool saveLwoLwsFile(
     const vector<FffMultiObjectC>   *targets,       // Only use the vertices.
     Strings const            *names)
 {
-    Path          path(fname);
-    String8        lwsName = path.dirBase() + ".lws";
-    String8        lwoName = path.base + ".lwo";
-    String8        fullLwoName = path.dirBase() + ".lwo";
-#ifdef _WIN32
-    FILE *fptr = _wfopen(fullLwoName.as_wstring().c_str(),L"wb,ccs=UNICODE");
-#else
-    FILE *fptr = fopen(fullLwoName.m_str.c_str(),"wb");
-#endif
-    if (!fptr) {
-        fgThrow("Unable to write to LWO file",fullLwoName);
-        return false;
-    }
+    Path            path {fname};
+    String8         lwsName = path.dirBase() + ".lws";
+    String8         lwoName = path.base + ".lwo";
+    String8         fullLwoName = path.dirBase() + ".lwo";
+    FILE            *fptr = openFile(fullLwoName,true);
+    ScopeGuard      SG {[fptr](){fclose(fptr); }};
 
     // Write the FORM file chunk header
     long fileChunkStartPos = ftell(fptr);
     unsigned long fileChunkSize = 0;
     if (!writeChunkHdr(fptr,ID_FORM,fileChunkSize))
-        return errorFcloseExit(fptr,fname);
+        return false;
 
     // Write the LWO2 file chunk header
     if (!writeId(fptr,ID_LWO2))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += 4;
 
     //
@@ -253,7 +246,7 @@ static bool saveLwoLwsFile(
     unsigned long tagChunkSize = 0;
     Strings tagNameList;
     if (!writeTagsChunk(fptr,tagChunkSize,model,tagNameList))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += tagChunkSize;
 
     // LAYR chunk
@@ -261,13 +254,13 @@ static bool saveLwoLwsFile(
     Vec3F pivot(0.0f,0.0f,0.0f);
     unsigned long layrChunkSize = 0;
     if (!writeLayrChunk(fptr,layrChunkSize,0,layerName,pivot))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += layrChunkSize;
 
     // PNTS chunk
     unsigned long pntsChunkSize = 0;
     if (!writePntsChunks(fptr,pntsChunkSize,model,-1))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += pntsChunkSize;
 
     // BBOX chunk
@@ -275,7 +268,7 @@ static bool saveLwoLwsFile(
     Vec3F maxVect(0.0f,0.0f,0.0f);
     unsigned long bboxChunkSize = 0;
     if (!writeBboxChunks(fptr,bboxChunkSize,model,minVect,maxVect,-1))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += bboxChunkSize;
 
     // VMAP (MORF) chunk
@@ -288,7 +281,7 @@ static bool saveLwoLwsFile(
                 unsigned long morfChunkSize = 0;
                 if (!writeVmapMorfChunks(fptr,morfChunkSize,
                         (*targets)[ii],(*names)[ii],model,-1))
-                    return errorFcloseExit(fptr,fname);
+                    return false;
                 fileChunkSize += morfChunkSize;
             }
         }
@@ -300,20 +293,17 @@ static bool saveLwoLwsFile(
     unsigned long obj;
     for (obj=0; obj<model.numObjs(); ++obj)
     {
-        char numStr[12];
-        sprintf(numStr,"%02d",int(obj));
-        string uvTexName = string("UV Texture");
-        if (model.numObjs() > 1) uvTexName += string(" ") + string(numStr);
-
+        String              uvTexName = string("UV Texture");
+        if (model.numObjs() > 1)
+            uvTexName += " " + toStrDigits(obj,2);
         texInfo.push_back(LwoTextureInfoS());
-
         unsigned long txuvChunkSize = 0;
         if (!writeVmapTxuvChunks(fptr,txuvChunkSize,
                 texInfo[obj].texVtxList,
                 texInfo[obj].texTxtCoord,
                 uvTexName,model,obj,
                 true))
-            return errorFcloseExit(fptr,fname);
+            return false;
         fileChunkSize += txuvChunkSize;
         if (texInfo[obj].texVtxList.size() == 0)
             uvTexName = string("");
@@ -324,13 +314,13 @@ static bool saveLwoLwsFile(
     // POLS chunk
     unsigned long polsChunkSize = 0;
     if (!writePolsChunks(fptr,polsChunkSize,model,-1))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += polsChunkSize;
 
     // PTAG chunk (specify which facet belongs to which surface)
     unsigned long ptagChunkSize = 0;
     if (!writePtagChunks(fptr,ptagChunkSize,model,-1))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += ptagChunkSize;
 
     // VMAD chunks (for per-facet textures)
@@ -343,7 +333,7 @@ static bool saveLwoLwsFile(
                 texInfo[obj].uvTexName,
                 model,obj,
                 true))
-            return errorFcloseExit(fptr,fname);
+            return false;
         fileChunkSize += vmadChunkSize;
     }
 
@@ -351,7 +341,7 @@ static bool saveLwoLwsFile(
     vector<unsigned long> clipIdList;
     unsigned long clipChunkSize = 0;
     if (!writeClipChunks(fptr,clipChunkSize,clipIdList,model))
-        return errorFcloseExit(fptr,fname);
+        return false;
     fileChunkSize += clipChunkSize;
 
     // SURF chunks
@@ -362,21 +352,19 @@ static bool saveLwoLwsFile(
                 tagNameList[ii], "",
                 texInfo[ii].uvTexName, 
                 clipIdList[ii]))
-            return errorFcloseExit(fptr,fname);
+            return false;
         fileChunkSize += surfChunkSize;
     }
 
     // Now update the file chunk size info
     if (!updateChunkSize(fptr,fileChunkSize,fileChunkStartPos+4))
-        return errorFcloseExit(fptr,fname);
+        return false;
 
     if (fileChunkSize % 2 != 0)
     {
         if (!padByte(fptr))
-            return errorFcloseExit(fptr,fname);
+            return false;
     }
-
-    fclose(fptr);
 
     // If morph data exists, save a LWS file as well.
     if (names)
@@ -385,9 +373,7 @@ static bool saveLwoLwsFile(
     }
     else
     {
-        writeLwsFile(lwsName,lwoName,minVect,maxVect,
-                     1,
-                     0,0);
+        writeLwsFile(lwsName,lwoName,minVect,maxVect,1,0,0);
     }
 
     return true;
@@ -422,20 +408,6 @@ static bool searchVtxTexMap(
     return found;
 }
 
-
-//****************************************************************************
-//                              errorFcloseExit
-//****************************************************************************
-static bool errorFcloseExit(FILE *fptr, String8 const &)
-{
-    fclose(fptr);
-    return false;
-}
-
-
-//****************************************************************************
-//                              swap4BytesWrite
-//****************************************************************************
 static bool swap4BytesWrite(FILE *fptr, const void *ptr)
 {
     char *pp = (char*)ptr;
@@ -2369,10 +2341,13 @@ void
 saveLwo(String8 const & fname,Meshes const & meshes,String imgFormat)
 {
     FgMeshLegacy            leg = fgMeshLegacy(meshes,fname,imgFormat);
-    if (leg.morphs.empty())
-        fffSaveLwoLwsFile(fname,leg.base);
+    if (leg.morphs.empty()) {
+        if (!fffSaveLwoLwsFile(fname,leg.base))
+            fgThrow("Error while writing LWO file",fname);
+    }
     else {
-        fffSaveLwoLwsFile(fname,leg.base,leg.morphs,leg.morphNames);
+        if (!fffSaveLwoLwsFile(fname,leg.base,leg.morphs,leg.morphNames))
+            fgThrow("Error while writing LWO file",fname);
     }
 }
 

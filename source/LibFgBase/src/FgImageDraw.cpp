@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,7 +11,7 @@
 #include "FgBounds.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgMain.hpp"
-#include "FgSyntax.hpp"
+
 #include "FgCommand.hpp"
 #include "FgParse.hpp"
 
@@ -94,7 +94,7 @@ ImgRgba8            cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpac
                 Rgba8              clr {0,0,0,255};
                 clr[cIdx] = 255;
                 double              v = data[ss];
-                uint                hgt = round<uint>((P-1) * v / maxVal);
+                uint                hgt = roundT<uint>((P-1) * v / maxVal);
                 Vec2UI              posIrcs {uint(xx),img.height()-hgt-1},
                                     sz {pixPerBar,hgt};
                 drawSolidRectangle_(img,posIrcs,sz,clr);
@@ -126,7 +126,7 @@ void                drawFunction(
     Vec2I           lastPoint {0};
     for (int xx=0; xx<wid; xx++) {
         double      abscissa = (double(xx) + 0.5) * fac + bounds[0];
-        int         val = round<uint>(func(abscissa)*vscale);
+        int         val = roundT<uint>(func(abscissa)*vscale);
         Vec2I    point(xx,hgt-1-val);
         if (xx > 0)
             drawLineIrcs(img,lastPoint,point,colour);   // Ignores out of bounds points
@@ -147,17 +147,17 @@ void                drawFunctions(
     for (uint jj=0; jj<num; ++jj) {
         double      dtmp = clrCode;
         if (dtmp < 1.0) {
-            colour[jj].red() = uchar(255-round<uint>(dtmp * 255.0));
+            colour[jj].red() = uchar(255-roundT<uint>(dtmp * 255.0));
             colour[jj].green() = 255 - colour[jj].red();
         }
         else if (dtmp < 2.0) {
             dtmp -= 1.0;
-            colour[jj].green() = uchar(255-round<uint>(dtmp * 255.0));
+            colour[jj].green() = uchar(255-roundT<uint>(dtmp * 255.0));
             colour[jj].blue() = 255 - colour[jj].green();
         }
         else {
             dtmp -= 2.0;
-            colour[jj].blue() = uchar(255-round<uint>(dtmp * 255.0));
+            colour[jj].blue() = uchar(255-roundT<uint>(dtmp * 255.0));
             colour[jj].red() = 255 - colour[jj].blue();
         }
         colour[jj].alpha() = 255;
@@ -172,11 +172,11 @@ void                drawFunctions(
         fscale[jj] = double(dim) * 0.96 / (fbounds[jj][1] - fbounds[jj][0]);
     }
     ImgRgba8             img(dim,dim,Rgba8(0,0,0,255));
-    uint                margin = round<uint>(double(dim)*0.02)+1;
+    uint                margin = roundT<uint>(double(dim)*0.02)+1;
     for (uint ii=0; ii<dim; ++ii) {
         for (uint jj=0; jj<num; ++jj) {
             double          hgt = (funcs.rc(ii,jj) - fbounds[jj][0]) * fscale[jj];
-            img.xy(ii,dim-margin-round<uint>(hgt)) = colour[jj];
+            img.xy(ii,dim-margin-roundT<uint>(hgt)) = colour[jj];
         }
     }
     viewImage(img);

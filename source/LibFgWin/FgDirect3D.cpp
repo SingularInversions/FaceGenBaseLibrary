@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -569,7 +569,7 @@ WinPtr<ID3D11Texture2D> D3d::loadMap(ImgRgba8 const & map) {
         ImgRgba8            p2 = scaleResample(map,mapPow2Ceil(map.dims()));
         mipmap = cMipmap(p2);
     }
-    uint                    numMips = cMin(uint(mipmap.size()),8);
+    uint                    numMips = cMin(scast<uint>(mipmap.size()),8U);
     D3D11_SUBRESOURCE_DATA  initData[8] = {};
     for (size_t mm=0; mm<numMips; ++mm) {
         initData[mm].pSysMem = mipmap[mm].dataPtr();
@@ -699,7 +699,7 @@ void                D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewpor
     {   // Background image polys:
         Vec2F        im = Vec2F(bgi.origDimsN.val()),
                         xr(im[0]*viewportSize[1],im[1]*viewportSize[0]);
-        Vec2F        sz = Vec2F(xr) / cMaxElem(xr) * exp(bgi.lnScale.val()),
+        Vec2F        sz = Vec2F(xr) / cMaxElem(xr) * scast<float>(exp(bgi.lnScale.val())),
                         off = bgi.offset.val();
         float           xo = off[0] * 2.0f,
                         yo = -off[1] * 2.0f,

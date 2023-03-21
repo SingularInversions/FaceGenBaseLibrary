@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgCmd.hpp"
-#include "FgSyntax.hpp"
+
 #include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
@@ -238,7 +238,7 @@ R"(
 void    test3d(CLArgs const &);
 void    testDataflow(CLArgs const &);
 void    testFilesystem(CLArgs const &);
-void    testFopen(CLArgs const &);
+void    testOpenFile(CLArgs const &);
 void    testGeometry(CLArgs const &);
 void    testGridTriangles(CLArgs const &);
 void    testHash(CLArgs const &);
@@ -265,7 +265,7 @@ void                testBase(CLArgs const & args)
         {test3d,"3d"},
         {testDataflow,"dataflow"},
         {testFilesystem,"filesystem"},
-        {testFopen,"fopen"},
+        {testOpenFile,"open"},
         {testGeometry,"geometry"},
         {testGridTriangles,"gridTriangles"},
         {testHash,"hash"},
@@ -373,31 +373,6 @@ void                cmdRename(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-/**
-   \ingroup Main_Commands
-   Command to substitute strings for automated paramter setting in .xml parameter files.
- */
-void                cmdSubstitute(CLArgs const & args)
-{
-    Syntax        syntax(args,
-        "<inFile> <outFile> (<stringIn> <stringOut>)+\n"
-        "    Substitute first occurence of each <stringIn> with respective <stringOut>");
-    Ifstream      ifs(syntax.next());
-    Ofstream      ofs(syntax.next());
-    string          body(
-        (istreambuf_iterator<char>(ifs)),   // Construct from beginning, brackets for parser
-        istreambuf_iterator<char>());       // Default constructor is end of stream
-    while (syntax.more()) {
-        string      findStr(syntax.next()),
-                    replStr(syntax.next());
-        FGASSERT(!findStr.empty());
-        size_t      pos;
-        if ((pos = body.find(findStr)) != string::npos)
-            body.replace(pos,findStr.size(),replStr);
-    }
-    ofs << body;
-}
-
 Cmd                 getCmdImage();
 void                cmdMesh(CLArgs const &);
 void                cmdMorph(CLArgs const &);
@@ -413,7 +388,6 @@ Cmds                getFgblCmds()
         {cmdMorph,"morph","List, apply or create animation morphs for 3D meshes"},
         {cmdRender,"render","Render meshes with color & specular maps to an image file"},
         {cmdCons,"cons","Construct makefiles / solution file / project files"},
-        {cmdSubstitute,"substitute","Substitute first instance of exact strings in a text file"},
         {cmdRename,"rename","rename files according to a pattern"},
         {sysinfo,"sys","Show system info"},
         {testBase,"test","Automated tests"},

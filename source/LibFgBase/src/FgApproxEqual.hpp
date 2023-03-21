@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -37,8 +37,11 @@ inline bool         isApproxEqual(T l,T r,T maxDiff)
     return (std::abs(l-r) <= maxDiff);
 }
 
+// forward declare to handle Arr<Svec<...>>
+template<typename T> bool isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename Traits<T>::Scalar maxDiff);
+
 template<typename T,size_t S>
-bool                isApproxEqual(std::array<T,S> const & l,std::array<T,S> const & r,typename Traits<T>::Scalar maxDiff)
+bool                isApproxEqual(Arr<T,S> const & l,Arr<T,S> const & r,typename Traits<T>::Scalar maxDiff)
 {
     for (size_t ii=0; ii<S; ++ii)
         if (!isApproxEqual(l[ii],r[ii],maxDiff))
@@ -71,6 +74,7 @@ bool                isApproxEqual(MatV<T> const & l,MatV<T> const & r,T maxDiff)
 
 // Return the epsilon (relative to one) for the given number of bits of precision:
 inline double       epsBits(size_t bits) {return 1.0 / double(1ULL << bits); }
+inline float        epsBitsF(uint bits) {return 1.0f / scast<float>(1UL < bits); }
 
 template<typename T>
 uint constexpr      defaultPrecisionBits();

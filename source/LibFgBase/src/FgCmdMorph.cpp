@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,7 +8,7 @@
 
 #include "FgCommand.hpp"
 #include "FgFileSystem.hpp"
-#include "FgSyntax.hpp"
+
 #include "Fg3dMeshIo.hpp"
 #include "FgTestUtils.hpp"
 #include "FgKdTree.hpp"
@@ -20,44 +20,45 @@ namespace Fg {
 
 namespace {
 
-void                anim(CLArgs const & args)
+void                cmdMorphAnim(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<fileSuffix> (<mesh>.tri)+ (<morphName> <morphValue>)+\n"
-        "    <fileSuffix> - Will be added to the mesh name for the respective output file.\n"
-        "    <morphName>  - Exact name of morph to be applied. Need not exist on all meshes.\n"
-        "    <morphValue> - Any floating point number (0 no application, 1 full application).\n"
-        "COMMENTS:\n"
-        "    - The output mesh will have no morphs defined as application of the morphs\n"
-        "      to the vertex list necessarily invalidates the morph data."
-        );
-    string                          suffix = syn.next();
-    vector<pair<string,Mesh> >  meshes;
-    while (endsWith(syn.peekNext(),".tri")) {
-        string                      name = syn.next();
-        meshes.push_back(make_pair(name,loadTri(name)));
+    Syntax              syn {args,R"(<suffix> (<mesh>.(tri|fgmesh) )+ (<morphName> <morphValue>)
+    <suffix>     - Will be added to the mesh name for the respective output file.
+    <mesh>       - The meshes with morphs
+    <morphName>  - Exact name of morph to be applied. Need not exist on all meshes.
+    <morphValue> - Any floating point number (0 no application, 1 full application).
+OUTPUT:
+    <mesh><suffix>.(tri|fgmesh) will be created for each specified <mesh>
+COMMENTS:
+    * The output mesh(es) will have no morphs defined)"
+    };
+    String              suffix = syn.next();
+    Meshes              meshes;
+    while (endsWith(syn.peekNext(),".tri") || endsWith(syn.peekNext(),".fgmesh")) {
+        meshes.push_back(loadMesh(syn.next()));
+        meshes.back().name = syn.curr();
     }
-    vector<pair<string,float> >     morphs;
+    Svec<pair<String,float>>    morphs;
     while (syn.more()) {
-        string                      name = syn.next();
+        String                      name = syn.next();
         morphs.push_back(make_pair(name,syn.nextAs<float>()));
     }
-    for (auto & mp : meshes) {
-        Floats              coord(mp.second.numMorphs(),0);
-        for (auto const & rp : morphs) {
-            Valid<size_t>     idx = mp.second.findMorph(rp.first);
+    for (auto & mesh : meshes) {
+        Floats              coord (mesh.numMorphs(),0);
+        for (auto const & nv : morphs) {
+            Valid<size_t>       idx = mesh.findMorph(nv.first);
             if (idx.valid())
-                coord[idx.val()] = rp.second;
+                coord[idx.val()] = nv.second;
         }
-        Vec3Fs         out;
-        mp.second.morph(coord,out);
-        mp.second.verts = out;
+        Vec3Fs          out;
+        mesh.morph(coord,out);
+        mesh.verts = out;
         // The morphs are invalidated once the base verts are changed:
-        mp.second.deltaMorphs.clear();
-        mp.second.targetMorphs.clear();
-        Path          path(mp.first);
+        mesh.deltaMorphs.clear();
+        mesh.targetMorphs.clear();
+        Path          path (mesh.name);
         path.base += suffix;
-        saveTri(path.str(),mp.second);
+        saveMesh(mesh,path.str());
     }
 }
 
@@ -482,7 +483,7 @@ void                cmdMorph(CLArgs const & args)
 {
     Cmds                cmds {
         {cmdMorphAdd,"add","Add morph target(s) to a mesh"},
-        {anim,"anim","Apply morphs by name to multiple meshes"},
+        {cmdMorphAnim,"anim","Apply morphs by name to multiple meshes"},
         {cmdMorphApply,"apply","Apply morphs by index number in a single mesh"},
         {cmdMorphClampSeam,"clampseam","Clamp delta morphs to zero on seam vertices"},
         {cmdMorphClear,"clear","Clear all morphs from a mesh"},
@@ -501,7 +502,7 @@ void                cmdMorph(CLArgs const & args)
 void                testMorph(CLArgs const & args)
 {
     FGTESTDIR
-    copyFileToCurrentDir("base/Jane.tri");
+    copyDataFileToCurr("base/Jane.tri");
     runCmd(cmdMorphApply,"apply Jane.tri tmp.tri d 0 1 t 0 1");
     testRegressApprox<Mesh>(
         loadTri("tmp.tri"),

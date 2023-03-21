@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -20,7 +20,7 @@ struct  GuiSliderWin : public GuiBaseImpl
 {
     GuiSlider           m_api;
     Affine1D            m_apiToWin;
-    LRESULT             m_lastVal;      // Cache the last val returned by windows
+    LPARAM              m_lastVal;      // Cache the last val returned by windows
     HWND                hwndSlider,
                         hwndThis;
     Vec2UI              m_client;
@@ -64,7 +64,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     void
     setPos(double newVal)
     {
-        LPARAM          val = std::floor(m_apiToWin * newVal + 0.5);
+        LPARAM          val = roundT<LPARAM>(m_apiToWin * newVal + 0.5);
         SendMessage(hwndSlider,TBM_SETPOS,
             TRUE,   // Must be true or slider graphics will not be updated.
             val);
@@ -76,7 +76,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     {
         if (m_api.updateFlag->checkUpdate()) {
             double      newVal = m_api.getInput(),
-                        oldVal = m_apiToWin.invert(m_lastVal);
+                        oldVal = m_apiToWin.invert(scast<double>(m_lastVal));
             // This message does not need to be sent to the slider than initiated this update as
             // Windows has already updated it, along with its graphic. Also of course no update
             // necessary for sliders than haven't changed. This optimization did little but we leave
@@ -119,7 +119,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             SendMessage(hwndSlider,TBM_SETPAGESIZE,0,numTicks/10);
             VecD2    rn = m_api.range;
             double      rts = m_api.tickSpacing / (rn[1]-rn[0]);
-            uint        ts = round<uint>(rts * numTicks);
+            uint        ts = roundT<uint>(rts * numTicks);
             SendMessage(hwndSlider,TBM_SETTICFREQ,ts,0);
             setPos(m_api.getInput());
         }
@@ -142,7 +142,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             LRESULT     winPos = SendMessage(htb,TBM_GETPOS,0,0);
             if (winPos != m_lastVal) {
                 m_lastVal = winPos;
-                double  newVal = m_apiToWin.invert(winPos);
+                double  newVal = m_apiToWin.invert(scast<double>(winPos));
                 m_api.setOutput(newVal);
                 winUpdateScreen();
             }
@@ -177,7 +177,7 @@ struct  GuiSliderWin : public GuiBaseImpl
                 rect.bottom = topSpace();
                 GuiTickLabels const & ul = m_api.tockLabels;
                 for (size_t ii=0; ii<ul.size(); ++ii) {
-                    rect.left = round<int>(apiToPix * ul[ii].pos - 0.5 * tockLabelWidth);
+                    rect.left = roundT<int>(apiToPix * ul[ii].pos - 0.5 * tockLabelWidth);
                     rect.right = rect.left + tockLabelWidth;
                     DrawText(hdc,
                         ul[ii].label.as_wstring().c_str(),
@@ -192,7 +192,7 @@ struct  GuiSliderWin : public GuiBaseImpl
                 rect.bottom = rect.top + botSpace();
                 GuiTickLabels const & tl = m_api.tickLabels;
                 for (size_t ii=0; ii<tl.size(); ++ii) {
-                    rect.left = round<int>(apiToPix * tl[ii].pos - 0.5 * tickLabelWidth);
+                    rect.left = roundT<int>(apiToPix * tl[ii].pos - 0.5 * tickLabelWidth);
                     rect.right = rect.left + tickLabelWidth;
                     DrawText(hdc,
                         tl[ii].label.as_wstring().c_str(),

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,13 +12,14 @@
 #include "FgCommand.hpp"
 #include "FgMetaFormat.hpp"
 #include "FgRandom.hpp"
+#include "FgTestUtils.hpp"
 
 using namespace std;
 using namespace std::filesystem;
 
 namespace Fg {
 
-void                fileCopy(String8 const & src,String8 const & dst,bool overwrite)
+void                copyFile(String8 const & src,String8 const & dst,bool overwrite)
 {
     if (pathExists(dst)) {
         if (overwrite) {
@@ -36,11 +37,17 @@ void                fileCopy(String8 const & src,String8 const & dst,bool overwr
         copy_file(src.ns(),dst.ns());
 }
 
+void                copyFiles(String8 const & srcDir,String8 const & dstDir,String8s const & fnames)
+{
+    for (String8 const & fname : fnames)
+        copyFile(srcDir+fname,dstDir+fname,false);
+}
+
 void                fileMove(String8 const & src,String8 const & dst,bool overwrite)
 {
     // We use copy and delete since std::filesystem::rename will fail if the target
     // is on a different volume:
-    fileCopy(src,dst,overwrite);
+    copyFile(src,dst,overwrite);
     deleteFile(src);
 }
 
@@ -195,6 +202,23 @@ void                setDataDir(String8 const & dir)
     s_fgDataDir = dir;
 }
 
+static String8      s_testDir;
+
+String8 const &     getTestDir()
+{
+    if (s_testDir.empty()) {
+        Path            path {dataDir()};
+        path.dirs.back() = "test-output";      // replace 'data'
+        s_testDir = path.dir();
+    }
+    return s_testDir;
+}
+
+void                setTestDir(String8 const & path)
+{
+    s_testDir = Path{path}.dir();
+}
+
 bool                fileNewer(String8s const & sources,String8s const & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
@@ -273,16 +297,9 @@ bool                fgCopyAllFiles(String8 const & fromDir_,String8 const & toDi
             if (!overwrite)
                 continue;
         }
-        fileCopy(fromDir+fn,toDir+fn,overwrite);
+        copyFile(fromDir+fn,toDir+fn,overwrite);
     }
     return ret;
-}
-
-void                fgCopyToCurrentDir(Path const & file)
-{
-    if (pathExists(file.baseExt()))
-        fgThrow("Attempt to copy to current directory which already contains",file.baseExt());
-    fileCopy(file.str(),file.baseExt());
 }
 
 void                copyRecursive(String8 const & fromDir,String8 const & toDir)
@@ -297,7 +314,7 @@ void                copyRecursive(String8 const & fromDir,String8 const & toDir)
     DirContents     dc = getDirContents(fromDir);
     for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
         String8 &          fn = dc.filenames[ii];
-        fileCopy(from+fn,to+fn);
+        copyFile(from+fn,to+fn);
     }
     for (size_t ii=0; ii<dc.dirnames.size(); ++ii) {
         String8 const &    dn = dc.dirnames[ii];
@@ -319,7 +336,7 @@ void                mirrorFile(Path const & src,Path const & dst)
             createDirectory(dir);
     }
     if (fileNewer(src.str(),dst.str()))
-        fileCopy(src.str(),dst.str(),true);
+        copyFile(src.str(),dst.str(),true);
 }
 
 Strings             findExts(String8 const & dirBase,Strings const & exts)

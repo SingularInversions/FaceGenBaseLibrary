@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,7 +14,7 @@
 #include "Fg3dCamera.hpp"
 #include "FgSoftRender.hpp"
 #include "FgTime.hpp"
-#include "FgSyntax.hpp"
+
 #include "FgMetaFormat.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgParse.hpp"
@@ -232,9 +232,9 @@ void                cmdRender(CLArgs const & args)
 void                testRenderCmd(CLArgs const & args)
 {
     FGTESTDIR
-    copyFileToCurrentDir("base/Jane.tri");
-    copyFileToCurrentDir("base/Jane.jpg");
-    copyFileToCurrentDir("base/test/cmd-render.txt");
+    copyDataFileToCurr("base/Jane.tri");
+    copyDataFileToCurr("base/Jane.jpg");
+    copyDataFileToCurr("base/test/cmd-render.txt");
     RenderArgs          rend = dsrlzText<RenderArgs>(loadRawString("cmd-render.txt"));
     cmdRenderRun(splitChar("run cmd-render.txt cmd-render.png"));
     regressFileRel("cmd-render.png","base/test/",imgApproxEqual);

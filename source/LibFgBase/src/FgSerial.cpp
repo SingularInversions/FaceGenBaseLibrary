@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -102,8 +102,7 @@ String              reflectToText(std::any const & node)
 std::any            stringsToReflect(Strings const & tokens,size_t & cnt)
 {
     FGASSERT(!tokens.empty());
-    String const &      tok = tokens[cnt++];
-    FGASSERT(tok.size() > 0);
+    String const &      tok = tokens[cnt++];        // can be empty if it's a string
     if (tok == "[") {
         RflArray            arr;
         while (tokens[cnt] != "]")
