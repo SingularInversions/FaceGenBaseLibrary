@@ -7,8 +7,6 @@
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
-
-#include "FgMetaFormat.hpp"
 #include "FgImageIo.hpp"
 #include "FgParse.hpp"
 #include "FgImgDisplay.hpp"

@@ -200,8 +200,8 @@ struct  RayCaster
                                 u2(v2[0],v2[1]);
             // TODO: make a float version of fgBarycentriCoords:
             Opt<Vec3D>          bco = cBarycentricCoord(Vec2D(posIucs),u0,u1,u2);
-            if (bco.valid()) {       // TODO: filter out degenerate projected tris during cache setup
-                Vec3D               bc = bco.val();
+            if (bco.has_value()) {       // TODO: filter out degenerate projected tris during cache setup
+                Vec3D               bc = bco.value();
                 // TODO: Use a consistent intersection policy to ensure only 1 tri of an edge-connected pair
                 // is ever intersected:
                 if ((bc[0] >= 0) && (bc[1] >= 0) && (bc[2] >= 0)) {     // Point landed on triangle:

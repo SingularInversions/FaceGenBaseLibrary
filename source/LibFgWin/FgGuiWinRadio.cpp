@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiRadio.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgBounds.hpp"
@@ -144,9 +144,6 @@ struct  GuiRadioWin : public GuiBaseImpl
                             sel = 0;
 //fgout << " val: " << sel << " m_api.selection " << m_api.selection;
                         m_api.setFn(sel);
-//fgout << fgnl << "Update screen: " << flush << fgpush;
-                        winUpdateScreen();
-//fgout << fgpop << fgnl << "Updated " << flush;
                     }
                     return 0;
                 }

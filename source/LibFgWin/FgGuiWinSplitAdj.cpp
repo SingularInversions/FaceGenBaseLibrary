@@ -7,12 +7,11 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSplit.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 
 using namespace std;
 
@@ -110,6 +109,8 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         m_api(api),
         m_relSize(0.5)  // Default must be fixed since we can't yet call getMinSize of subwindows.
     {
+        FGASSERT(api.pane0);
+        FGASSERT(api.pane1);
         m_pane0 = api.pane0->getInstance();
         m_pane1 = api.pane1->getInstance();
     }

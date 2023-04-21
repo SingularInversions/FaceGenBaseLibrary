@@ -8,7 +8,6 @@
 
 #include "FgSerial.hpp"
 #include "MurmurHash2.h"
-#include "FgHex.hpp"
 #include "FgCommand.hpp"
 #include "FgParse.hpp"
 #include "FgMath.hpp"
@@ -127,8 +126,8 @@ std::any            stringsToReflect(Strings const & tokens,size_t & cnt)
     if (tok == "false")
         return false;
     Opt<double>             od = fromStr<double>(tok);
-    if (od.valid())
-        return od.val();
+    if (od.has_value())
+        return od.value();
     // must be a string. Note that 'spliteWhitespace' has removed the quotes around the string:
     return tok;
 }
@@ -140,15 +139,37 @@ std::any            textToReflect(String const & txt)
     return stringsToReflect(splitWhitespace(txt),cnt);
 }
 
-void                dsrlzSizet_(Bytes const & bytes,size_t & pos,size_t & val)
+void                srlzSizet_(size_t val,Bytes & ser)
 {
-    uint64              sz;
-    dsrlzRaw_(bytes,pos,sz);
-#ifndef FG_64
-    FGASSERT(sz <= lims<size_t>::max());
+    if (g_useSize64)
+        srlz_(scast<uint64>(val),ser);
+    else {
+#ifdef FG_64
+        FGASSERT(val <= lims<uint32>::max());
 #endif
-    val = scast<size_t>(sz);
+        srlz_(scast<uint32>(val),ser);
+    }
 }
+
+void                dsrlzSizet_(Bytes const & ser,size_t & pos,size_t & val)
+{
+    if (g_useSize64) {
+        uint64              sz;
+        dsrlzRaw_(ser,pos,sz);
+#ifndef FG_64
+        FGASSERT(sz <= lims<size_t>::max());
+#endif
+        val = scast<size_t>(sz);
+    }
+    else {
+        uint32              sz;
+        dsrlzRaw_(ser,pos,sz);
+        val = scast<size_t>(sz);
+    }
+    
+}
+
+bool                g_useSize64 = true;
 
 Bytes               stringToBytes(String const & str)
 {
@@ -158,11 +179,11 @@ Bytes               stringToBytes(String const & str)
     return ret;
 }
 
-String              bytesToString(Bytes const & bytes)
+String              bytesToString(Bytes const & ser)
 {
-    size_t              S = bytes.size();
+    size_t              S = ser.size();
     String              ret; ret.resize(S);
-    memcpy(&ret[0],&bytes[0],S);
+    memcpy(&ret[0],&ser[0],S);
     return ret;
 }
 
@@ -193,24 +214,24 @@ void                dsrlz_(Bytes const & s,size_t & p,unsigned long & v)
     FGASSERT(t <= std::numeric_limits<unsigned long>::max());
     v = static_cast<unsigned long>(t);
 }
-void                srlz_(String const & str,Bytes & bytes)
+void                srlz_(String const & str,Bytes & ser)
 {
     size_t              S = str.size();
-    srlzSizet_(S,bytes);
+    srlzSizet_(S,ser);
     if (S > 0) {
-        size_t              B = bytes.size();
-        bytes.resize(B+S);
-        memcpy(&bytes[B],&str[0],S);
+        size_t              B = ser.size();
+        ser.resize(B+S);
+        memcpy(&ser[B],&str[0],S);
     }
 }
-void                dsrlz_(Bytes const & bytes,size_t & off,String & str)
+void                dsrlz_(Bytes const & ser,size_t & off,String & str)
 {
     size_t              S;
-    dsrlzSizet_(bytes,off,S);
+    dsrlzSizet_(ser,off,S);
     str.resize(S);
     if (S > 0) {
-        FGASSERT(off+S <= bytes.size());
-        memcpy(&str[0],&bytes[off],S);
+        FGASSERT(off+S <= ser.size());
+        memcpy(&str[0],&ser[off],S);
         off += S;
     }
 }
@@ -264,15 +285,15 @@ void                testReflect(CLArgs const &)
         {"John",42,12.7,{6,2,1}},
         {"Mary",27,23.4,{5,1,2}},
     };
-    any                 node = getReflect(data);
+    any                 node = toReflect(data);
     String              text = reflectToText(node);
     fgout << fgnl << text;
     Svec<A>             test0;
-    setReflect(node,test0);
+    fromReflect_(node,test0);
     FGASSERT(test0 == data);
     Svec<A>             test1;
-    setReflect(textToReflect(text),test1);
-    fgout << fgnl << reflectToText(getReflect(test1));
+    fromReflect_(textToReflect(text),test1);
+    fgout << fgnl << reflectToText(toReflect(test1));
     FGASSERT(test1 == data);
 #endif
 }

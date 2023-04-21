@@ -81,7 +81,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpDlib\;..\..\LibTpStb\;..\..\LibTpEigen\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -105,7 +105,7 @@
     <ClCompile>
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpDlib\;..\..\LibTpStb\;..\..\LibTpEigen\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -127,7 +127,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpDlib\;..\..\LibTpStb\;..\..\LibTpEigen\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -153,7 +153,7 @@
       <AdditionalOptions>/Zm200 /bigobj %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\src\;..\..\LibTpEigen\;..\..\LibTpStb\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\src\;..\..\LibTpDlib\;..\..\LibTpStb\;..\..\LibTpEigen\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -181,7 +181,6 @@
     <ClCompile Include="..\src\Fg3dMesh3ds.cpp" />
     <ClCompile Include="..\src\Fg3dMeshDae.cpp" />
     <ClCompile Include="..\src\Fg3dMeshFbx.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshFgmesh.cpp" />
     <ClCompile Include="..\src\Fg3dMeshIo.cpp" />
     <ClInclude Include="..\src\Fg3dMeshIo.hpp" />
     <ClCompile Include="..\src\Fg3dMeshLegacy.cpp" />
@@ -240,40 +239,22 @@
     <ClInclude Include="..\src\FgGridIndex.hpp" />
     <ClCompile Include="..\src\FgGridTriangles.cpp" />
     <ClInclude Include="..\src\FgGridTriangles.hpp" />
-    <ClCompile Include="..\src\FgGui.cpp" />
-    <ClInclude Include="..\src\FgGui.hpp" />
+    <ClCompile Include="..\src\FgGuiApi.cpp" />
+    <ClInclude Include="..\src\FgGuiApi.hpp" />
     <ClCompile Include="..\src\FgGuiApi3d.cpp" />
     <ClInclude Include="..\src\FgGuiApi3d.hpp" />
-    <ClCompile Include="..\src\FgGuiApiBase.cpp" />
-    <ClInclude Include="..\src\FgGuiApiBase.hpp" />
-    <ClInclude Include="..\src\FgGuiApiButton.hpp" />
     <ClCompile Include="..\src\FgGuiApiCheckbox.cpp" />
-    <ClInclude Include="..\src\FgGuiApiCheckbox.hpp" />
     <ClCompile Include="..\src\FgGuiApiDialogs.cpp" />
-    <ClInclude Include="..\src\FgGuiApiDialogs.hpp" />
-    <ClInclude Include="..\src\FgGuiApiDynamic.hpp" />
-    <ClInclude Include="..\src\FgGuiApiGroupbox.hpp" />
     <ClCompile Include="..\src\FgGuiApiImage.cpp" />
-    <ClInclude Include="..\src\FgGuiApiImage.hpp" />
     <ClInclude Include="..\src\FgGuiApiMain.hpp" />
     <ClCompile Include="..\src\FgGuiApiRadio.cpp" />
-    <ClInclude Include="..\src\FgGuiApiRadio.hpp" />
-    <ClInclude Include="..\src\FgGuiApiSelect.hpp" />
     <ClCompile Include="..\src\FgGuiApiSlider.cpp" />
-    <ClInclude Include="..\src\FgGuiApiSlider.hpp" />
-    <ClInclude Include="..\src\FgGuiApiSpacer.hpp" />
     <ClCompile Include="..\src\FgGuiApiSplit.cpp" />
-    <ClInclude Include="..\src\FgGuiApiSplit.hpp" />
-    <ClInclude Include="..\src\FgGuiApiTabs.hpp" />
     <ClCompile Include="..\src\FgGuiApiText.cpp" />
-    <ClInclude Include="..\src\FgGuiApiText.hpp" />
-    <ClCompile Include="..\src\FgHex.cpp" />
-    <ClInclude Include="..\src\FgHex.hpp" />
     <ClCompile Include="..\src\FgHistogram.cpp" />
     <ClInclude Include="..\src\FgHistogram.hpp" />
     <ClCompile Include="..\src\FgImage.cpp" />
     <ClInclude Include="..\src\FgImage.hpp" />
-    <ClInclude Include="..\src\FgImageBase.hpp" />
     <ClCompile Include="..\src\FgImageDraw.cpp" />
     <ClInclude Include="..\src\FgImageDraw.hpp" />
     <ClCompile Include="..\src\FgImageIo.cpp" />
@@ -300,11 +281,8 @@
     <ClCompile Include="..\src\FgMatrixSolverEigen.cpp" />
     <ClCompile Include="..\src\FgMatrixV.cpp" />
     <ClInclude Include="..\src\FgMatrixV.hpp" />
-    <ClCompile Include="..\src\FgMetaFormat.cpp" />
-    <ClInclude Include="..\src\FgMetaFormat.hpp" />
     <ClCompile Include="..\src\FgNc.cpp" />
     <ClInclude Include="..\src\FgNc.hpp" />
-    <ClInclude Include="..\src\FgOpt.hpp" />
     <ClCompile Include="..\src\FgParse.cpp" />
     <ClInclude Include="..\src\FgParse.hpp" />
     <ClCompile Include="..\src\FgQuaternion.cpp" />
@@ -329,7 +307,7 @@
     <ClCompile Include="..\src\FgString.cpp" />
     <ClInclude Include="..\src\FgString.hpp" />
     <ClCompile Include="..\src\FgStringTest.cpp" />
-    <ClInclude Include="..\src\FgSystemInfo.hpp" />
+    <ClInclude Include="..\src\FgSystem.hpp" />
     <ClInclude Include="..\src\FgTcp.hpp" />
     <ClCompile Include="..\src\FgTcpTest.cpp" />
     <ClInclude Include="..\src\FgTensorV.hpp" />
@@ -341,7 +319,6 @@
     <ClInclude Include="..\src\FgTopology.hpp" />
     <ClCompile Include="..\src\FgTypes.cpp" />
     <ClInclude Include="..\src\FgTypes.hpp" />
-    <ClInclude Include="..\src\FgWinSpecific.hpp" />
     <ClInclude Include="..\src\json.hpp" />
     <ClCompile Include="..\src\MurmurHash2.cpp" />
     <ClInclude Include="..\src\MurmurHash2.h" />

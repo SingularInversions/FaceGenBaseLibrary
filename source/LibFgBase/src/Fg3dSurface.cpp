@@ -534,7 +534,7 @@ Surf                reverseWinding(Surf const & in)
         in.material,
     };
 }
-TriSurf             removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris)
+TriSurf             removeUnused(Vec3Fs const & verts,Vec3UIs const & tris)
 {
     TriSurf             ret;
     Uints               remap = removeUnusedVertsRemap(tris,verts);

@@ -7,12 +7,11 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSpacer.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 
 using namespace std;
 

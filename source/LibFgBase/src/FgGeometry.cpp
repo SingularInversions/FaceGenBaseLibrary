@@ -257,7 +257,7 @@ void                testBarycentricCoord(CLArgs const &)
                         c1 = randUniform() * (1.0 - c0),
                         c2 = 1.0 - c1 - c0;
             Vec2D    pnt = v0*c0 + v1*c1 + v2*c2;
-            Vec3D    res = cBarycentricCoord(pnt,v0,v1,v2).val();
+            Vec3D    res = cBarycentricCoord(pnt,v0,v1,v2).value();
             FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D    chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
@@ -278,7 +278,7 @@ void                testBarycentricCoord(CLArgs const &)
                         c[2] = 1.0f - c[1] - c[0];
             c = permuteAxes<double>(ii%3) * c;
             Vec2D        pnt = v0*c[0] + v1*c[1] + v2*c[2];
-            Vec3D        res = cBarycentricCoord(pnt,v0,v1,v2).val();
+            Vec3D        res = cBarycentricCoord(pnt,v0,v1,v2).value();
             FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D        chk = v0*res[0] + v1*res[1] + v2*res[2];
             FGASSERT(isApproxEqualRelMag(pnt,chk,30));
@@ -299,8 +299,8 @@ void                testBarycentricCoord3(CLArgs const &)
         bc /= bc[0] + bc[1] + bc[2];
         Vec3D    pt = bc[0]*v0 + bc[1]*v1 + bc[2]*v2;
         Opt<Vec3D>    ret = cBarycentricCoord(pt,v0,v1,v2);
-        if (ret.valid()) {
-            Vec3D        res = ret.val(),
+        if (ret.has_value()) {
+            Vec3D        res = ret.value(),
                             delta = res-bc;
             //fgout << fgnl << bc << " -> " << res << " delta: " << res-bc;
             FGASSERT(delta.mag() < sqr(0.000001));
@@ -414,15 +414,15 @@ void                testLineTriIntersect(CLArgs const &)
                     v2(0,1,0);
     Opt<Vec3D>      ret;
     ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,-1),v0,v1,v2);
-    FGASSERT(ret.val() == Vec3D(s,s,0));
+    FGASSERT(ret.value() == Vec3D(s,s,0));
     ret = lineTriIntersect(Vec3D(s,s,1),Vec3D(0,0,1),v0,v1,v2);
-    FGASSERT(ret.val() == Vec3D(s,s,0));
+    FGASSERT(ret.value() == Vec3D(s,s,0));
     ret = lineTriIntersect(Vec3D(-s,-s,1),Vec3D(0,0,1),v0,v1,v2);
-    FGASSERT(!ret.valid());
+    FGASSERT(!ret.has_value());
     ret = lineTriIntersect(Vec3D(0,0,1),Vec3D(-s,-s,-1),v0,v1,v2);
-    FGASSERT(!ret.valid());
+    FGASSERT(!ret.has_value());
     ret = lineTriIntersect(Vec3D(0,0,1),Vec3D(s,s,-1),v0,v1,v2);
-    FGASSERT(ret.val() == Vec3D(s,s,0));
+    FGASSERT(ret.value() == Vec3D(s,s,0));
 }
 
 // Test levi-civita tensor-based parallelogram area formula:

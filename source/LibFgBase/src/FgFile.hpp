@@ -112,34 +112,6 @@ void                writeBinRaw_(std::ostream & os,T const & val)    // Only use
     os.write(reinterpret_cast<char const*>(&val),sizeof(val));
 }
 
-// Handle builtins:
-inline void         writeBin_(std::ostream & os,int32 val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,uint32 val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,int64 val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,uint64 val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,float val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,double val) {writeBinRaw_(os,val); }
-inline void         writeBin_(std::ostream & os,bool val) {writeBinRaw_(os,uchar(val)); }
-
-inline void         writeBin_(std::ostream & os,String const & str)
-{
-    writeBin_(os,uint32(str.size()));
-    if (!str.empty())
-        os.write(&str[0],str.size());
-}
-
-// Has to be here since FgFile.hpp depends on FgSerial.hpp
-inline void         writeBin_(std::ostream & os,String8 const & s) {writeBin_(os,s.m_str); }
-
-template<class T>
-void                writeBin_(std::ostream & os,Svec<T> const & vec)
-{
-    writeBin_(os,uint32(vec.size()));        // Always store size_t as 32 bit for 32/64 portability
-    if (!vec.empty())
-        for (size_t ii=0; ii<vec.size(); ++ii)
-            writeBin_(os,vec[ii]);
-}
-
 struct  Ifstream : public std::ifstream
 {
     Ifstream() {}
@@ -168,47 +140,6 @@ T                   readBinRaw(std::istream & is)
 {
     T                   ret;
     readBinRaw_(is,ret);
-    return ret;
-}
-
-// Handle builtins:
-inline void         readBin_(std::istream & is,int32 & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,uint32 & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,int64 & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,uint64 & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,float & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,double & val) {readBinRaw_(is,val); }
-inline void         readBin_(std::istream & is,bool & val) {val = bool(readBinRaw<uchar>(is)); }
-// MSVC and Android do not consider size_t to be its own type but others do:
-#ifdef _MSC_VER
-#elif defined(__ANDROID__)
-#else
-inline void writeBin_(std::ostream & os,size_t val) {writeBinRaw_(os,uint64(val)); }
-inline void readBin_(std::istream & is,size_t & val) {uint64 tmp; readBinRaw_(is,tmp); val = size_t(tmp); }
-#endif
-
-inline void         readBin_(std::istream & is,String & str)
-{
-    str.resize(readBinRaw<uint32>(is));
-    if (!str.empty())
-        is.read(&str[0],str.size());
-}
-
-inline void         readBin_(std::istream & is,String8 & str) {readBin_(is,str.m_str); }
-
-template<class T>
-void                readBin_(std::istream & is,Svec<T> & vec)
-{
-    vec.resize(readBinRaw<uint32>(is));
-    for (size_t ii=0; ii<vec.size(); ++ii)
-        readBin_(is,vec[ii]);
-}
-
-template<class T>
-T                   fgReadpT(std::istream & is)
-{
-    T       ret;
-    readBin_(is,ret);
     return ret;
 }
 
@@ -242,6 +173,71 @@ bool                equateFilesText(String8 const & fname0,String8 const & fname
 // Some *nix systems don't support creation time.
 // WINE API bug returns last modification time.
 // Note that sub-second precision is basically random due to OS filesystem workings.
+
+// Combine serialization with file load/save (load/save is used for whole files, read/write is used for streaming/serialization):
+template<class T>
+void                saveMessage(T const & val,String8 const & filename)
+{
+    saveRaw(toMessage(val),filename);
+}
+template<class T>
+void                loadMessage_(String8 const & filename,T & val)
+{
+    try {
+        fromMessage_(loadRaw(filename),val);
+    }
+    catch (FgException & e) {
+        e.addContext("while loading file",filename.m_str);
+        throw;
+    }
+    catch (std::exception const & e) {
+        throw FgException {{
+            {e.what(),""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+    catch (...) {
+        throw FgException {{
+            {"UNKNOWN",""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+}
+template<class T>
+T                   loadMessage(String8 const & filename)
+{
+    T                   ret;
+    loadMessage_(filename,ret);
+    return ret;
+}
+template<class T>
+void                saveMessageExplicit(T const & val,String8 const & filename)
+{
+    saveRaw(toMessageExplicit(val),filename);
+}
+template<class T>
+T                   loadMessageExplicit(String8 const & filename)
+{
+    try {
+        return fromMessageExplicit<T>(loadRaw(filename));
+    }
+    catch (FgException & e) {
+        e.addContext("while loading file",filename.m_str);
+        throw;
+    }
+    catch (std::exception const & e) {
+        throw FgException {{
+            {e.what(),""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+    catch (...) {
+        throw FgException {{
+            {"UNKNOWN",""},
+            {"while loading file",filename.m_str},
+        }};
+    }
+}
 
 }
 

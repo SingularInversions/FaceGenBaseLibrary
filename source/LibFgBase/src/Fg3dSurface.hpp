@@ -178,14 +178,15 @@ typedef Svec<Materials>         Materialss;
 // A grouping of facets (tri and quad) sharing material properties:
 struct  Surf
 {
-    String8                     name;           // not saved with mesh
+    String8                     name;
     TriInds                     tris;
     QuadInds                    quads;
     SurfPointNames              surfPoints;
     Material                    material;       // Not saved with mesh - set dynamically
-    FG_SER3(tris,quads,surfPoints)
+    FG_SER4(name,tris,quads,surfPoints)
 
     Surf() {}
+    explicit Surf(String const & n) : name{n} {}
     Surf(Vec3UIs const & t,Vec4UIs const & q) : tris{t}, quads{q} {}        // no UVs
     Surf(TriInds const & t,QuadInds const & q) : tris{t}, quads{q} {}
     Surf(String8 const & n,TriInds const & t,QuadInds const & q,SurfPointNames const & s={},Material const & m={})
@@ -330,8 +331,8 @@ struct      TriSurfD
 typedef Svec<TriSurfD>  TriSurfDs;
 
 inline TriSurf      reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
-TriSurf             removeUnusedVerts(Vec3Fs const & verts,Vec3UIs const & tris);
-inline TriSurf      removeUnusedVerts(TriSurf const & ts) {return removeUnusedVerts(ts.verts,ts.tris); }
+TriSurf             removeUnused(Vec3Fs const & verts,Vec3UIs const & tris);
+inline TriSurf      removeUnused(TriSurf const & ts) {return removeUnused(ts.verts,ts.tris); }
 MeshNormals         cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 struct      TriSurfLms

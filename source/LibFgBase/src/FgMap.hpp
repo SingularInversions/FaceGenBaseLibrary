@@ -22,10 +22,9 @@ namespace Fg {
 template<typename K,typename V>
 struct  Map
 {
-    Svec<std::pair<K,V> >    map;
+    Svec<std::pair<K,V>>    map;
 
-    const V &
-    operator[](const K & k) const       // No implicit insertion - throws if key not found
+    const V &           operator[](const K & k) const       // No implicit insertion - throws if key not found
     {
         for (const std::pair<K,V> & p : map)
             if (p.first == k)
@@ -34,17 +33,15 @@ struct  Map
         return map[0].second;       // Avoid warning
     }
 
-    Opt<V>
-    find(const K & k) const
+    Opt<V>              find(const K & k) const
     {
         for (size_t ii=0; ii<map.size(); ++ii)
             if (map[ii].first == k)
-                return Opt<V>(map[ii].second);
-        return Opt<V>();
+                return map[ii].second;
+        return {};
     }
 
-    void
-    insert(const K & k,const V & v)     // Throws if key already in use
+    void                insert(const K & k,const V & v)     // Throws if key already in use
     {
         for (const std::pair<K,V> & p : map)
             FGASSERT(!(k == p.first));
@@ -53,8 +50,7 @@ struct  Map
 };
 
 template<typename K,typename V>
-bool
-contains(const Map<K,V> & map,const K & key)
+bool                contains(const Map<K,V> & map,const K & key)
 {
     for (const std::pair<K,V> & p : map.map)
         if (p.first == key)

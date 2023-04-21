@@ -43,7 +43,6 @@
 #include "FgDirect3D.hpp"
 #include "FgGuiWin.hpp"
 #include "FgFileSystem.hpp"
-#include "FgHex.hpp"
 #include "Fg3dMesh.hpp"
 
 #define FG_ASSERT_D3D(hr) handleHResult(__FILE__,__LINE__,hr)
@@ -680,7 +679,7 @@ void                D3d::setBgImage(BackgroundImage const & bgi)
         return;
     Vec2UI              p2dims = mapMin(mapPow2Ceil(img.dims()),maxMapSize);
     ImgRgba8             map(p2dims);
-    imgResize(img,map);
+    imgResize_(img,map);
     bgImg = makeMap(map);
 }
 

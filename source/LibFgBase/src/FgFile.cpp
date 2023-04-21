@@ -474,6 +474,15 @@ void                testOpenFile(CLArgs const & args)
     FGASSERT(test == data);
 }
 
+void                testMetaFormat(CLArgs const &)
+{
+    TestDir             td("MetaFormat");
+    int                 a = 42;
+    saveMessage(a,"test.fgbin");
+    int                 b;
+    loadMessage_("test.fgbin",b);
+    FGASSERT(a == b);
+}
 
 }
 

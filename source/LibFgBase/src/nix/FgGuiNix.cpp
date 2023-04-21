@@ -9,7 +9,9 @@
 
 #include "stdafx.h"
 
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
+#include "FgGuiApi3d.hpp"
+#include "FgGuiApiMain.hpp"
 #include "FgSerial.hpp"
 
 using namespace std;
@@ -66,7 +68,6 @@ std::function<void(void)> guiDialogSplashScreen()
     return std::function<void(void)>();
 }
 void                guiQuit() {}
-void                winUpdateScreen() {}
 void                guiBusyCursor() {}
 
 }

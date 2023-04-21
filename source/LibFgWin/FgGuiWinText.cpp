@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 #include "RichEdit.h"
-#include "FgGuiApiText.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgParse.hpp"
@@ -43,8 +43,7 @@ struct  GuiTextWin : public GuiBaseImpl
         m_updateFlag = makeUpdateFlag(m_api.content);
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiTextWin::create" << fgpush;
         WinCreateChild   cc;
@@ -54,42 +53,41 @@ struct  GuiTextWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void    destroy()
     {
         // Automatically destroys children (ie hwndText) first:
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI  getMinSize() const
     {
         FGASSERT(m_minSize.cmpntsProduct() > 0);   // This shouldn't be called before it's been assigned.
         return m_minSize;
     }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B   wantStretch() const
     {
         bool        horiz = (m_api.wantStretch[0] || (m_minSize[0] > m_maxMinWid));
         return Vec2B(horiz,m_api.wantStretch[1]);
     }
     
-    void
-    updateText()
+    void            updateText()
     {
-        SetWindowTextW(hwndText,m_content.c_str());     // Update text in window
+        BOOL            success = SetWindowTextW(hwndText,m_content.c_str());     // Update text in window
+        FGASSERTWIN(success);
         if (m_content.empty())      // Reserve a min lines of max min width:
             m_minSize = Vec2UI(m_maxMinWid,m_minHgt*m_api.minHeight);
         else {                      // Calculate updated text dimensions:
             // Get single line height (16 on my PC):
             RECT        rs = {0,0,0,0};
-            DrawText(GetDC(hwndText),L" ",1,&rs,DT_CALCRECT);
+            int         height = DrawText(GetDC(hwndText),L" ",1,&rs,DT_CALCRECT);
+            FGASSERTWIN(height != 0);
             uint        singleLineHeight = uint(rs.bottom-rs.top);
             // Get the size without wraparound (but respecting CRLF).
             // If the width of this is less than m_maxMinWid then we can safely reduce with minimum width:
             RECT        r = {0,0,0,0};
-            DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT);
+            height = DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT);
+            FGASSERTWIN(height != 0);
             // Just a guess but without this the calculated size is not quite large enough for the edit
             // box to actually render the text without wraparound:
             const uint  richEditBorder = 2;
@@ -97,7 +95,8 @@ struct  GuiTextWin : public GuiBaseImpl
             m_minSize[1] = uint(r.bottom - r.top) + richEditBorder;
             if (m_minSize[0] > m_maxMinWid) {   // Wraparound required for max min size:
                 r.right = m_maxMinWid;
-                DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT | DT_WORDBREAK);
+                height = DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT | DT_WORDBREAK);
+                FGASSERTWIN(height != 0);
                 m_minSize[0] = m_maxMinWid + richEditBorder;
                 m_minSize[1] = r.bottom - r.top + richEditBorder;
             }
@@ -111,8 +110,7 @@ struct  GuiTextWin : public GuiBaseImpl
         }
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void    updateIfChanged()
     {
         if (m_updateFlag->checkUpdate()) {
             String8 const &        text = m_api.content.cref();
@@ -124,16 +122,10 @@ struct  GuiTextWin : public GuiBaseImpl
         }
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
-    {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE); }
+    virtual void    moveWindow(Vec2I lo,Vec2I sz) {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE); }
+    virtual void    showWindow(bool s) {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
 
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
-
-    LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    LRESULT         wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
     {
         switch (message)
         {
@@ -199,8 +191,6 @@ struct  GuiTextWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiText & def)
-{return GuiImplPtr(new GuiTextWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiText & def) {return GuiImplPtr(new GuiTextWin(def)); }
 
 }

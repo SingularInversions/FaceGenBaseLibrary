@@ -28,7 +28,7 @@
 #ifndef FGDATAFLOW_HPP
 #define FGDATAFLOW_HPP
 
-#include "FgMetaFormat.hpp"
+#include "FgFile.hpp"
 
 namespace Fg {
 

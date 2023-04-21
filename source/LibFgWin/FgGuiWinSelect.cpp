@@ -7,11 +7,10 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSelect.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 
 using namespace std;
 
@@ -32,8 +31,10 @@ struct  GuiSelectWin : public GuiBaseImpl
     {
         FGASSERT(api.wins.size() > 0);
         m_panes.resize(api.wins.size());
-        for (size_t ii=0; ii<m_panes.size(); ++ii)
+        for (size_t ii=0; ii<m_panes.size(); ++ii) {
+            FGASSERT(api.wins[ii]);
             m_panes[ii] = api.wins[ii]->getInstance();
+        }
     }
 
     virtual void

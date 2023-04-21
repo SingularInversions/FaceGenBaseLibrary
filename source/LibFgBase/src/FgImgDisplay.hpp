@@ -16,14 +16,12 @@
 namespace Fg {
 
 // Interactive image view with controls:
-void                viewImage(
-    ImgRgba8 const &    img,
-    Vec2Fs const &      ptsIucs=Vec2Fs{});      // Points to be displayed as red dots
+void                viewImage(ImgRgba8 const & img,Vec2Fs const & ptsIrcs={});
 
 struct      AnnotatedImg
 {
     ImgRgba8            img;
-    Vec2Fs              ptsIucs;
+    Vec2Fs              ptsIrcs;
     String8             name;
 };
 typedef Svec<AnnotatedImg>  AnnotatedImgs;

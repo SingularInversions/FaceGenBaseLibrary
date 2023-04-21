@@ -7,10 +7,9 @@
 
 #include "stdafx.h"
 
-#include "FgFile.hpp"
-#include "FgHex.hpp"
+#include "FgFileSystem.hpp"
 #include "FgTime.hpp"
-#include "FgGuiApiBase.hpp"
+#include "FgGuiApi.hpp"
 #include "FgThrowWindows.hpp"
 
 using namespace std;

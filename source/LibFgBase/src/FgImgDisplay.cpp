@@ -7,22 +7,24 @@
 #include "stdafx.h"
 
 #include "FgImgDisplay.hpp"
-#include "FgGuiApiImage.hpp"
+#include "FgGuiApi.hpp"
 #include "FgFileSystem.hpp"
 #include "FgAffine.hpp"
 #include "FgBounds.hpp"
 #include "FgCommand.hpp"
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 
 namespace Fg {
 
-void                viewImage(ImgRgba8 const & img,Vec2Fs const & pts)
+void                viewImage(ImgRgba8 const & img,Vec2Fs const & ptsIrcs)
 {
     IPT<String8>        title {"FaceGen SDK viewImage"};
     String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImage"});
-    GuiPtr              win = guiImageCtrls(makeIPT(img),makeIPT(pts),true).win;
+    Affine2F            xf {cIrcsToIucs(img.dims()).asAffine()};
+    Vec2Fs              ptsIucs = mapMul(xf,ptsIrcs);
+    GuiPtr              win = guiImageCtrls(makeIPT(img),makeIPT(ptsIucs),true).win;
     guiStartImpl(title,win,saveDir);
 }
 
@@ -32,8 +34,11 @@ void                viewImages(AnnotatedImgs const & ais)
     IPT<String8>        title {"FaceGen SDK viewImages"};
     String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImages"});
     GuiPtrs             imgWs;
-    for (AnnotatedImg const & ai : ais)
-        imgWs.push_back(guiImageCtrls(makeIPT(ai.img),makeIPT(ai.ptsIucs),true).win);
+    for (AnnotatedImg const & ai : ais) {
+        Affine2F            xf {cIrcsToIucs(ai.img.dims()).asAffine()};
+        Vec2Fs              ptsIucs = mapMul(xf,ai.ptsIrcs);
+        imgWs.push_back(guiImageCtrls(makeIPT(ai.img),makeIPT(ptsIucs),true).win);
+    }
     IPT<size_t>         selN = makeSavedIPTEub<size_t>(0,saveDir+"sel",ais.size());
     GuiPtr              selW = guiRadio(sliceMember(ais,&AnnotatedImg::name),selN),
                         imgW = guiSelect(selN,imgWs),
@@ -100,7 +105,10 @@ NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,S
 
 void                testmGuiImage(CLArgs const &)
 {
-    viewImage(loadImage(dataDir()+"base/trees.jpg"));
+    NameVec2Fs          pts {
+        {"test point",{420.0f,840.0f}},
+    };
+    markImage(loadImage(dataDir()+"base/Jane.jpg"),pts,{String{"Label"}});
 }
 
 void                compareImages(Img3F const & image0,Img3F const & image1)
@@ -137,13 +145,13 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
     // Image relative view scale is 2^zoom display pixels per image pixel:
     IPT<int>            zoomN = makeSavedIPT(0,store+"zoom");
     IPT<int>            dragAccN {0};
-    auto                dragRightFn = [=](Vec2I delta)
+    auto                dragRightFn = [=](Vec2I,Vec2I delta)
     {
         int constexpr       dragThresh = 40;
         int &               dragAcc = dragAccN.ref();
         dragAcc += delta[1];
         if (abs(dragAcc) <= dragThresh)
-            return;
+            return GuiCursor::arrow;
         int                 zoom = zoomN.val();
         if ((dragAcc < -dragThresh) && (zoom > -3))
             --zoom;
@@ -152,9 +160,10 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
         if (zoom != zoomN.val())                // don't trigger background redraw (flicker) unless zoom changed
             zoomN.set(zoom);
         dragAcc = 0;
+        return GuiCursor::arrow;
     };
     IPT<Vec2F>          shiftIucsN {Vec2F{0}};   // image centre relative to display centre
-    auto                dragLeftFn = [=](Vec2I delta)
+    auto                dragLeftFn = [=](Vec2I,Vec2I delta)
     {
         int                 zoom = zoomN.val();
         Img3Fs const &      pyr = pyramidN.cref();
@@ -164,6 +173,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
         else
             imgDims = pyr[0].dims() * (1 << zoom);
         shiftIucsN.ref() += mapDiv(Vec2F(delta),Vec2F(imgDims));
+        return GuiCursor::arrow;
     };
     auto                dispImgFn = [](Img3Fs const & pyr,int const & zoom)
     {
@@ -209,8 +219,8 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
     gi.minSizeN = makeIPT(Vec2UI{128});
     gi.updateFlag = makeUpdateFlag(zoomN);
     gi.updateNofill = makeUpdateFlag(dispImgN,shiftIucsN);
-    gi.dragRight = dragRightFn;
-    gi.dragLeft = dragLeftFn;
+    gi.mouseMoveFns[1] = dragLeftFn;
+    gi.mouseMoveFns[4] = dragRightFn;
     GuiPtr              imgW = guiMakePtr(gi);
     String8s            labels {"A","B","A-B","B-A","|B-A|",};
     GuiPtr              selW = guiRadio(labels,selN),

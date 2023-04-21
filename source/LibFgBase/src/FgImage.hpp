@@ -3,8 +3,17 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// NOTES:
+// Simple left-to-right, top-to-bottom (row major), tightly-packed, unaligned image templated by pixel type.
 // 
+// INVARIANTS:
+//
+// m_data.size() == m_dims[0] * m_dims[1];
+//
+// NOTES:
+//
+// * pixel count above 2^32 not supported
+// * posIrcs = posIpcs - 0.5 (thus floor(posIpcs) rounds to nearest int posIpcs)
+// * posIpcs = mapMul(posIucs,image.dims())
 // * All pixel averaging / resampling operations on images with an alpha-channel require the color
 //   channels to be alpha-weighted for correct results. Alpha weighting does not commute with linear
 //   composition, and only the pre-weighted order corresponds to meaningful results.
@@ -12,13 +21,118 @@
 #ifndef FGIMAGE_HPP
 #define FGIMAGE_HPP
 
-#include "FgImageBase.hpp"
-#include "FgImageIo.hpp"
+#include "FgRgba.hpp"
 #include "FgIter.hpp"
 #include "FgAffine.hpp"
 #include "FgArray.hpp"
 
 namespace Fg {
+
+template<typename T>
+struct      Img
+{
+    Vec2UI          m_dims;         // [width,height]
+    Svec<T>         m_data;         // Pixels stored left to right, top to bottom. size() == m_dims[0]*m_dims[1]
+    FG_SER2(m_dims,m_data)
+
+    typedef T PixelType;
+
+    Img() : m_dims(0) {}
+    explicit Img(Vec2UI dims) : m_dims{dims}, m_data(dims[0]*dims[1]) {}
+    Img(size_t wid,size_t hgt) : m_dims{uint(wid),uint(hgt)}, m_data(wid*hgt) {}
+    Img(size_t wid,size_t hgt,T fill) : m_dims{uint(wid),uint(hgt)}, m_data(wid*hgt,fill) {}
+    Img(size_t wid,size_t hgt,Svec<T> const & data) : m_dims{uint(wid),uint(hgt)}, m_data(data)
+        {FGASSERT(data.size() == m_dims.cmpntsProduct()); }
+    Img(Vec2UI dims,T fillVal) : m_dims{dims}, m_data(dims.cmpntsProduct(),fillVal) {}
+    Img(Vec2UI dims,Svec<T> const & imgData) : m_dims{dims}, m_data{imgData}
+        {FGASSERT(m_data.size() == m_dims.cmpntsProduct()); }
+    Img(Vec2UI dims,T const * pixels) : m_dims{dims}, m_data(pixels,pixels+dims.cmpntsProduct()) {}
+
+    uint            width() const {return m_dims[0]; }
+    uint            height() const {return m_dims[1]; }
+    Vec2UI          dims() const {return m_dims; }
+    size_t          numPixels() const {return m_data.size(); }
+    bool            empty() const {return (m_data.empty()); }
+
+    void            clear() {m_data.clear(); m_dims = Vec2UI{0}; }
+    // WARNING: This does not adjust any existing image data, just allocated dimensions and memory:
+    void            resize(uint wid,uint hgt) {m_dims = Vec2UI{wid,hgt}; m_data.resize(wid*hgt); }
+    void            resize(Vec2UI dims) {m_dims = dims; m_data.resize(dims[0]*dims[1]); }
+    void            resize(Vec2UI dims,T fillVal) {resize(dims); std::fill(m_data.begin(),m_data.end(),fillVal); }
+
+    // Element access by (X,Y) / (column,row):
+    T &             xy(size_t ircs_x,size_t ircs_y)
+    {
+        FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
+        return m_data[ircs_y*m_dims[0]+ircs_x];
+    }
+    T const &       xy(size_t ircs_x,size_t ircs_y) const
+    {
+        FGASSERT_FAST((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]));
+        return m_data[ircs_y*m_dims[0]+ircs_x];
+    }
+    T &             operator[](Vec2UI ircsPos) {return xy(ircsPos[0],ircsPos[1]); }
+    T const &       operator[](Vec2UI ircsPos) const {return xy(ircsPos[0],ircsPos[1]); }
+
+    T const *       dataPtr() const {return (!m_data.empty() ? &m_data[0] : nullptr); }
+    T *             dataPtr() {return (!m_data.empty() ? &m_data[0] : nullptr); }
+    Svec<T> const & dataVec() const {return m_data; }
+    T *             rowPtr(size_t row) {return &m_data[row*m_dims[0]]; }
+    T const *       rowPtr(size_t row) const {return &m_data[row*m_dims[0]]; }
+
+    bool            operator==(Img const & rhs) const {return ((m_dims == rhs.m_dims) && (m_data == rhs.m_data)); }
+    Img             operator+(Img const & r) const {FGASSERT(m_dims==r.m_dims); return Img{m_dims,m_data+r.m_data}; }
+    Img             operator-(Img const & r) const {FGASSERT(m_dims==r.m_dims); return Img{m_dims,m_data-r.m_data}; }
+
+    // 'paint' access is bounds checked and out of bounds paints are ignored:
+    void            paint(uint ircs_x,uint ircs_y,T val)
+    {
+        if ((ircs_x < m_dims[0]) && (ircs_y < m_dims[1]))
+            m_data[ircs_y*m_dims[0]+ircs_x] = val;
+    }
+    void            paint(Vec2UI ircs,T val) {paint(ircs[0],ircs[1],val); }
+    void            paint(Vec2I ircs,T val)
+    {
+        if ((ircs[0] >= 0) && (ircs[1] >= 0))
+            paint(ircs[0],ircs[1],val);
+    }
+};
+
+typedef Img<uchar>          ImgUC;
+typedef Img<ushort>         ImgUS;
+typedef Img<uint>           ImgUI;
+typedef Img<float>          ImgF;
+typedef Img<double>         ImgD;
+
+typedef Img<Vec2F>          Img2F;
+
+typedef Img<Arr3SC>         Img3SC;
+typedef Img<Arr3I>          Img3I;
+typedef Img<Arr3F>          Img3F;
+typedef Svec<Img3F>         Img3Fs;
+typedef Img<Vec3F>          ImgV3F;      // RGB [0,1] unless otherwise noted
+typedef Svec<ImgV3F>        ImgV3Fs;
+
+typedef Img<Arr4UC>         Img4UC;
+typedef Svec<Img4UC>        Img4UCs;
+typedef Img<Arr4F>          Img4F;
+typedef Img<Vec4F>          ImgV4F;
+
+typedef Img<Rgba8>          ImgRgba8;
+typedef Svec<ImgRgba8>      ImgRgba8s;
+typedef Svec<ImgRgba8s>     ImgRgba8ss;
+typedef Img<Rgba16>         ImgRgba16;
+typedef Svec<ImgRgba16>     ImgRgba16s;
+typedef Img<RgbaF>          ImgC4F;
+
+template<typename To,typename From>
+void                scast_(Img<To> const & from,Img<From> & to)
+{
+    to.resize(from.dims());
+    scast_(from.m_data,to.m_data);
+}
+
+inline size_t   cNumElems(Vec2UI dims) {return scast<size_t>(dims[0]) * scast<size_t>(dims[1]); }
 
 template<class T>
 std::ostream &      operator<<(std::ostream & os,Img<T> const & img)
@@ -60,7 +174,7 @@ AffineEw2D          cIucsToIrcsXf(Vec2UI imgDims);
 AffineEw2D          cOicsToIucsXf();
 
 
-// SAMPLING / INTERPOLATION:
+// SAMPLING & INTERPOLATION:
  
 // linear interpolation of equispaced values with bounds checking and bounds-aware weighting
 struct      Lerp
@@ -107,7 +221,7 @@ struct      Blerp
         }
         return {acc,wgt};
     }
-    // specialized version of above where we don't want sampling weight. equivalent to assuming all
+    // version of above where we don't want sampling weight. equivalent to assuming all
     // pixels outside the image are 0. (or if we know we'll never have taps outside the image).
     template<typename T>
     T               sampleZero(Img<T> const & img) const
@@ -121,6 +235,21 @@ struct      Blerp
             }
         }
         return acc;
+    }
+    // fixed-point version of above:
+    template<typename T>
+    T               sampleZeroFixed(Img<T> const & img) const
+    {
+        typedef typename Traits<T>::Floating F;
+        F                   acc {0};
+        for (int yy=0; yy<2; ++yy) {
+            for (int xx=0; xx<2; ++xx) {
+                float           w = xl.wgts[xx] * yl.wgts[yy];
+                if (w > 0)
+                    acc += F(img.xy(xl.lo+xx,yl.lo+yy)) * w;
+            }
+        }
+        return T(acc);
     }
 };
 
@@ -172,12 +301,12 @@ struct      CoordWgt
     float       wgt;        // Respective weight
 };
 
-// Bilinear interpolation coordinates and co-efficients with coordinates clamped to image.
-// Returned matrix weights sum to 1. Cols are X Lo,Hi and rows are Y Lo,Hi.
-Mat<CoordWgt,2,2>   getBlerpClipIrcs(Vec2UI dims,Vec2D coordIrcs);
-Mat<CoordWgt,2,2>   getBlerpClipIucs(Vec2UI dims,Vec2F coordIucs);
+// Calcualte bilinear interpolation coefficients and coordinates clamped within image boundaries.
+// Returned matrix weights sum to 1. Cols are X [lo,hi] and rows are Y [lo,hi].
+Mat<CoordWgt,2,2>   cBlerpClipIrcs(Vec2UI dims,Vec2D coordIrcs);
+Mat<CoordWgt,2,2>   cBlerpClipIucs(Vec2UI dims,Vec2F coordIucs);
 
-// Sample an image with given matrix of coordinates (must be in image bounds) and weights:
+// Sample an image with given matrix of coordinates (must be in image bounds) and weights
 template<typename T>
 typename Traits<T>::Floating sampleClip(Img<T> const & img,Mat<CoordWgt,2,2> const & cws)
 {
@@ -192,14 +321,14 @@ typename Traits<T>::Floating sampleClip(Img<T> const & img,Mat<CoordWgt,2,2> con
 template<typename T>
 typename Traits<T>::Floating sampleClipIucs(Img<T> const & img,Vec2F coordIucs)
 {
-    return sampleClip(img,getBlerpClipIucs(img.dims(),coordIucs));
+    return sampleClip(img,cBlerpClipIucs(img.dims(),coordIucs));
 }
 
 // Bilinear image sample clamped to image bounds:
 template<typename T>
 typename Traits<T>::Floating sampleClipIrcs(Img<T> const & img,Vec2D coordIrcs)
 {
-    return sampleClip(img,getBlerpClipIrcs(img.dims(),coordIrcs));
+    return sampleClip(img,cBlerpClipIrcs(img.dims(),coordIrcs));
 }
 
 // ELEMENT-WISE OPERATIONS:
@@ -210,7 +339,7 @@ Img3F               toUnit3F(ImgRgba8 const &);         // [0,255] -> [0,1], ign
 Img4F               toUnit4F(ImgRgba8 const &);         // [0,255] -> [0,1]
 ImgC4F              toUnitC4F(ImgRgba8 const &);        // [0,255] -> [0,1]
 ImgRgba8            toRgba8(Img3F const &,float maxVal=1.0);    // [0,maxVal] -> [0,255], alpha set to 255
-ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255]
+ImgRgba8            toRgba8(ImgC4F const &);            // [0,1] -> [0,255] with clamping
 ImgUC               toUC(ImgRgba8 const &);             // rec. 709 RGB -> greyscale
 ImgF                toFloat(ImgRgba8 const &);          // rec. 709 RGB -> greyscale [0,255]
 ImgRgba8            toRgba8(ImgUC const &);             // replicate to RGB, set alpha to 255
@@ -409,9 +538,7 @@ Img<T>              magnify(Img<T> const & img,uint fac)
 // Samples the exact proportional amount of the source image covered by the destination image
 // pixel for shrinking dimensions, which effectively uses bilinear interpolation for dilating
 // dimensions:
-void                imgResize(
-    ImgRgba8 const & src,
-    ImgRgba8 &       dst);   // MODIFIED
+void                imgResize_(ImgRgba8 const & src,ImgRgba8 & dst);
 
 ImgRgba8            applyTransparencyPow2(
     ImgRgba8 const & colour,
@@ -579,13 +706,10 @@ void                smoothFloat_(
 // Preserves intrinsic aspect ratio, scales to minimally cover output dimensions.
 // Returns transform from output image IRCS to input image IRCS (ie. inverse transform for resampling):
 AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims);
-// Intrinsic aspect ratio is warped for an exact fit:
-// Returns transform from output image IRCS to input image IRCS (ie. inverse transform for resampling):
-AffineEw2D          imgScaleToFit(Vec2UI inDims,Vec2UI outDims);
 
 // Resample an image to the given size with the given inverse transform with boundary clip policy:
 template<class T>
-Img<T>              affineResample(Img<T> const & in,Vec2UI outDims,AffineEw2D outToInIrcs)
+Img<T>              resampleClip(Img<T> const & in,Vec2UI outDims,AffineEw2D outToInIrcs)
 {
     Img<T>              ret {outDims};
     if (outDims.cmpntsProduct() == 0)
@@ -602,17 +726,26 @@ Img<T>              affineResample(Img<T> const & in,Vec2UI outDims,AffineEw2D o
 template<class T>
 Img<T>              scaleResample(Img<T> const & in,Vec2UI dims)
 {
-    return affineResample(in,dims,imgScaleToFit(in.dims(),dims));
+    Mat22D          inBounds {
+                        -0.5, scast<double>(in.dims()[0])-0.5,
+                        -0.5, scast<double>(in.dims()[1])-0.5
+                    },
+                    outBounds {
+                        -0.5, scast<double>(dims[0])-0.5,
+                        -0.5, scast<double>(dims[1])-0.5
+                    };
+    return resampleClip(in,dims,AffineEw2D{outBounds,inBounds});
 }
 
 // Resamples a square area of an input image into the given pixel size.
-// Uses simple resampling but shrinks input image first if necessary to avoid undersampling.
+// If necessary, filters first to avoid aliasing.
 // Out of bounds samples clamped to boundary values:
-Img3F               resampleAdaptive(
+Img3F               filterResample(
     Img3F                   in,
     Vec2D                   posIpcs,        // top left corner of output image area
     float                   inSize,         // pixel size of square input domain
     uint                    outSize);       // pixel size of square output image
+ImgRgba8            filterResample(ImgRgba8 in,Vec2F loIpcs,float inSize,uint outSize);
 
 template<class T>
 Img<T>              catHoriz(Img<T> const & left,Img<T> const & right)

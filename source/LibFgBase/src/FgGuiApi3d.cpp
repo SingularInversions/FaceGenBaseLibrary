@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgGui.hpp"
+#include "FgGuiApi3d.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgTopology.hpp"
 #include "FgAffine.hpp"
@@ -86,8 +86,8 @@ Opt<MeshesIntersect> intersectMeshes(
                                     v2 = pnts[2].rcs;
                     if (pointInTriangle(pnt,v0,v1,v2) == -1) {     // CC winding
                         Opt<Vec3D>      vbc = cBarycentricCoord(pnt,v0,v1,v2);
-                        if (vbc.valid()) {
-                            Vec3D           bc = vbc.val();
+                        if (vbc.has_value()) {
+                            Vec3D           bc = vbc.value();
                             // Depth value range for unclipped polys is [-1,1]. These correspond to the
                             // negative inverse depth values of the frustum.
                             // Only an approximation to the depth value but who cares:
@@ -188,8 +188,8 @@ void                markSurfacePoint(
 {
     RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,viewportPos,worldToD3ps,rms);
-    if (vpt.valid() && pointLabelN.ptr) {
-        MeshesIntersect         pt = vpt.val();
+    if (vpt.has_value() && pointLabelN.ptr) {
+        MeshesIntersect         pt = vpt.value();
         SurfPoint const &       sp = pt.surfPnt;
         FGASSERT(pt.meshIdx < rms.size());
         RendMesh const &        rm = rms[pt.meshIdx];
@@ -224,8 +224,8 @@ void                markMeshVertex(
 {
     RendMeshes const &          rms = rendMeshesN.cref();
     Opt<MeshesIntersect>        vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
-    if (vpt.valid() && vertMarkModeN.ptr) {
-        MeshesIntersect         pt = vpt.val();
+    if (vpt.has_value() && vertMarkModeN.ptr) {
+        MeshesIntersect         pt = vpt.value();
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
         if (origMeshPtr) {
@@ -268,8 +268,8 @@ void                Gui3d::ctlClick(Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
 {
     RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
-    if (vpt.valid()) {
-        MeshesIntersect         pt = vpt.val();
+    if (vpt.has_value()) {
+        MeshesIntersect         pt = vpt.value();
         size_t                  mi = cMaxIdx(pt.surfPnt.weights);
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh const &            mesh = rm.origMeshN.cref();

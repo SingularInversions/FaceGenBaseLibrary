@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 

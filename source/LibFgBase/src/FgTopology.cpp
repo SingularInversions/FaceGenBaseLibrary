@@ -354,8 +354,7 @@ SurfTopo::traceFold(
     return ret;
 }
 
-uint
-SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
+uint                SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
 {
     Vec3UI       tri = m_tris[triIdx].vertInds;
     Vec2UI       vertInds = m_edges[edgeIdx].vertInds;
@@ -366,8 +365,7 @@ SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
     return 0;
 }
 
-Vec3UI
-SurfTopo::isManifold() const
+Vec3UI              SurfTopo::isManifold() const
 {
     Vec3UI   ret(0);
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
@@ -392,8 +390,7 @@ SurfTopo::isManifold() const
     return ret;
 }
 
-size_t
-SurfTopo::unusedVerts() const
+size_t              SurfTopo::unusedVerts() const
 {
     size_t      ret = 0;
     for (size_t ii=0; ii<m_verts.size(); ++ii)
@@ -402,8 +399,7 @@ SurfTopo::unusedVerts() const
     return ret;
 }
 
-Floats
-SurfTopo::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
+Floats              SurfTopo::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
 {
     Floats       ret(verts.size(),lims<float>::max());
     FGASSERT(vertIdx < verts.size());
@@ -412,8 +408,7 @@ SurfTopo::edgeDistanceMap(Vec3Fs const & verts,size_t vertIdx) const
     return ret;
 }
 
-void
-SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
+void                SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
 {
     FGASSERT(verts.size() == m_verts.size());
     FGASSERT(vertDists.size() == verts.size());
@@ -438,8 +433,7 @@ SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vertDists) const
     }
 }
 
-Vec3Ds
-SurfTopo::boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) const
+Vec3Ds              SurfTopo::boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) const
 {
     Vec3Ds              edgeNorms; edgeNorms.reserve(boundary.size());
     Vec3D               v0 = verts[boundary.back().vertIdx];
@@ -461,8 +455,7 @@ SurfTopo::boundaryVertNormals(BoundEdges const & boundary,Vec3Ds const & verts) 
     return vertNorms;
 }
 
-set<uint>
-cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & topo,uint seedIdx)
+set<uint>           cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & topo,uint seedIdx)
 {
     FGASSERT(seedIdx < topo.m_verts.size());
     set<uint>           ret;
@@ -484,8 +477,7 @@ cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & topo,uint seedIdx)
     return ret;
 }
 
-void
-testmSurfTopo(CLArgs const & args)
+void                testmSurfTopo(CLArgs const & args)
 {
     // Test boundary vert normals by adding marked verts along normals and viewing:
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
@@ -506,8 +498,7 @@ testmSurfTopo(CLArgs const & args)
         viewMesh(mesh);
 }
 
-void
-testmEdgeDist(CLArgs const & args)
+void                testmEdgeDist(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
     Surf                surf = merge(mesh.surfaces).convertToTris();
@@ -519,10 +510,10 @@ testmEdgeDist(CLArgs const & args)
         if (edgeDists[ii] < lims<float>::max())
             updateMax_(distMax,edgeDists[ii]);
     float               distToCol = 255.99f / distMax;
-    Uchars              colVal(edgeDists.size(),255);
-    for (size_t ii=0; ii<colVal.size(); ++ii)
+    Uchars              colVals (edgeDists.size(),255);
+    for (size_t ii=0; ii<colVals.size(); ++ii)
         if (edgeDists[ii] < lims<float>::max())
-            colVal[ii] = uint(distToCol * edgeDists[ii]);
+            colVals[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
     AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
@@ -530,7 +521,7 @@ testmEdgeDist(CLArgs const & args)
         Vec3UI              uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {
             Rgba8           col(255);
-            col.red() = colVal[vertInds[ii]];
+            col.red() = colVals[vertInds[ii]];
             col.green() = 255 - col.red();
             mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
         }
@@ -539,8 +530,7 @@ testmEdgeDist(CLArgs const & args)
         viewMesh(mesh);
 }
 
-void
-testmBoundVertFlags(CLArgs const & args)
+void                testmBoundVertFlags(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
     TriInds const &        tris = mesh.surfaces[0].tris;
@@ -568,8 +558,7 @@ testmBoundVertFlags(CLArgs const & args)
         viewMesh(mesh);
 }
 
-void
-testSurfTopo(CLArgs const & args)
+void                testSurfTopo(CLArgs const & args)
 {
     Cmds                cmds {
         {testmSurfTopo,"bnorm","view boundary vertex normals"},

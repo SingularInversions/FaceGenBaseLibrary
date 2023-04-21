@@ -9,8 +9,6 @@
 #include "stdafx.h"
 
 #include "FgCmd.hpp"
-
-#include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"

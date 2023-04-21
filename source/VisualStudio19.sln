@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.32510.428
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F79DB35A-29B9-F638-5F9D-E1519C622D5A}") = "LibFgBase", "LibFgBase\VisualStudio19\LibFgBase.vcxproj", "{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}"
+Project("{E169D9D4-9040-7CFD-03DA-560243CB6B54}") = "LibTpDlib", "LibTpDlib\VisualStudio19\LibTpDlib.vcxproj", "{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}"
 EndProject
-Project("{F79DB35A-29B9-F638-5F9D-E1519C622D5A}") = "LibFgWin", "LibFgWin\VisualStudio19\LibFgWin.vcxproj", "{6904AE47-51E0-BEED-2B13-288A79237C3D}"
+Project("{E169D9D4-9040-7CFD-03DA-560243CB6B54}") = "LibFgBase", "LibFgBase\VisualStudio19\LibFgBase.vcxproj", "{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}"
 EndProject
-Project("{F79DB35A-29B9-F638-5F9D-E1519C622D5A}") = "fgbl", "fgbl\VisualStudio19\fgbl.vcxproj", "{C0396080-BA25-1481-65B9-66191E5914D1}"
+Project("{E169D9D4-9040-7CFD-03DA-560243CB6B54}") = "LibFgWin", "LibFgWin\VisualStudio19\LibFgWin.vcxproj", "{6904AE47-51E0-BEED-2B13-288A79237C3D}"
+EndProject
+Project("{E169D9D4-9040-7CFD-03DA-560243CB6B54}") = "fgbl", "fgbl\VisualStudio19\fgbl.vcxproj", "{C0396080-BA25-1481-65B9-66191E5914D1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,6 +19,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Debug|Win32.Build.0 = Debug|Win32
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Debug|x64.ActiveCfg = Debug|x64
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Debug|x64.Build.0 = Debug|x64
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Release|Win32.ActiveCfg = Release|Win32
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Release|Win32.Build.0 = Release|Win32
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Release|x64.ActiveCfg = Release|x64
+		{A361A3A9-29AA-3997-8FAA-2BD32B4E328E}.Release|x64.Build.0 = Release|x64
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|Win32.ActiveCfg = Debug|Win32
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|Win32.Build.0 = Debug|Win32
 		{7B67CF7F-FDE5-5FF8-3ACA-55632253209B}.Debug|x64.ActiveCfg = Debug|x64

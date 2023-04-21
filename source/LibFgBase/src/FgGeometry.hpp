@@ -8,10 +8,28 @@
 #define FGGEOMETRY_HPP
 
 #include "FgSerial.hpp"
-#include "FgQuaternion.hpp"
 #include "FgAffine.hpp"
 
 namespace Fg {
+
+template<class T>
+struct      Square
+{
+    Mat<T,2,1>          loPos;      // lower-valued coordinate corner position
+    T                   size;       // typically > 0
+    FG_SER2(loPos,size);
+};
+typedef Square<float>   SquareF;
+typedef Square<double>  SquareD;
+
+template<class T>
+struct      Rect
+{
+    Mat<T,2,1>          loPos;      // Lower-valued coordinate corner position
+    Mat<T,2,1>          dims;       // typically > 0
+    FG_SER2(loPos,dims)
+};
+typedef Rect<int>       RectI;
 
 // Returns the signed area of the parallelogram defined by the points (RHR)
 // which is twice the signed area of the triangle defined by the points (CC winding):

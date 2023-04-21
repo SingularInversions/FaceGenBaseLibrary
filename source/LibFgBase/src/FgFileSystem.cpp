@@ -10,7 +10,6 @@
 #include "FgTime.hpp"
 #include "FgParse.hpp"
 #include "FgCommand.hpp"
-#include "FgMetaFormat.hpp"
 #include "FgRandom.hpp"
 #include "FgTestUtils.hpp"
 

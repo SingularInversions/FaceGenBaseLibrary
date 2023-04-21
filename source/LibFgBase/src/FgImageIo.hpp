@@ -9,10 +9,7 @@
 #ifndef FGIMAGEIO_HPP
 #define FGIMAGEIO_HPP
 
-#include "FgSerial.hpp"
-#include "FgFile.hpp"
 #include "FgImage.hpp"
-#include "FgMatrixV.hpp"
 
 namespace Fg {
 
@@ -41,6 +38,7 @@ bool                    hasImgFileExt(String8 const & fname);
 void                    loadImage_(String8 const & fname,ImgRgba8 & img);
 ImgRgba8                loadImage(String8 const & fname);
 // Save image to any supported format:
+// WARNING: some formats do not support alpha, and some (PNG) will zero all color channels if alpha is zero:
 void                    saveImage(String8 const & fname,ImgRgba8 const & img);
 // load / save image landmarks to a simple text format with 1 point per line of the form: <name> <X> <Y>
 // where <X> and <Y> are in raster coordinates (origin at center of top left pixel) and can be signed
@@ -57,10 +55,10 @@ void                    saveJfif(
     // however STB encoding is about 25% larger:
     uint                quality=90);    // [1,100] where 100 saves with lossless compression
 // Encode to JFIF format blob (can be dumped to .jpg file), data must be 4 channel RGBA of size wid*hgt*4:
-Uchars                  encodeJpeg(uint wid,uint hgt,uchar const * data,int quality=90);
-Uchars                  encodeJpeg(ImgRgba8 const & img,int quality=90);
+Bytes                  encodeJpeg(uint wid,uint hgt,uchar const * data,int quality=90);
+Bytes                  encodeJpeg(ImgRgba8 const & img,int quality=90);
 // Decode from JFIF format blob (ie. JFIF format .jpg contents)
-ImgRgba8                decodeJpeg(Uchars const & jfifBlob);
+ImgRgba8                decodeJpeg(Bytes const & jfifBlob);
 
 }
 

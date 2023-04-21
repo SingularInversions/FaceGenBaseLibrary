@@ -18,8 +18,8 @@
 namespace Fg {
 
 enum class RenderSurfPoints { never, whenVisible, always };
-inline std::any     getReflect(RenderSurfPoints r) {return static_cast<double>(r); }
-inline void         setReflect(std::any const & a,RenderSurfPoints & r)
+inline std::any     toReflect(RenderSurfPoints r) {return static_cast<double>(r); }
+inline void         fromReflect_(std::any const & a,RenderSurfPoints & r)
 {
     r = scast<RenderSurfPoints>(std::any_cast<double>(a));
 }

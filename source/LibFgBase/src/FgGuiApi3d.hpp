@@ -7,7 +7,7 @@
 #ifndef FGGUIAPI3D_HPP
 #define FGGUIAPI3D_HPP
 
-#include "FgGuiApiBase.hpp"
+#include "FgGuiApi.hpp"
 #include "FgSerial.hpp"
 #include "Fg3dCamera.hpp"
 #include "FgLighting.hpp"

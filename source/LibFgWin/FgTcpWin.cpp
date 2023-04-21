@@ -134,11 +134,7 @@ bool            runTcpClient_(
     return true;
 }
 
-void            runTcpServer(
-    uint16              port,
-    bool                respond,
-    TcpHandlerFunc      handler,
-    size_t              maxRecvBytes)
+void            runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler,size_t maxRecvBytes)
 {
     initWinsock();
     SOCKET              sockListen = INVALID_SOCKET;
@@ -176,7 +172,7 @@ void            runTcpServer(
     SOCKET              sockClient;
     bool                handlerRetval = true;
     do {
-        fgout << fgnl << "TCP server waiting ..." << std::flush;
+        fgout << fgnl << "TCP server waiting. ";
         sockaddr_in         sa;
         sa.sin_family = AF_INET;
         socklen_t           sz = sizeof(sa);
@@ -185,7 +181,7 @@ void            runTcpServer(
             closesocket(sockListen);
             FGASSERT_FALSE1(toStr(WSAGetLastError()));
         }
-        fgout << fgnl << " receiving " << std::flush;
+        fgout << "receiving ";
         // Set the timeout. Very important since the default is to never time out so in some
         // cases a broken connection causes 'recv' below to block forever:
         DWORD               timeout = 3000;     // 3 seconds
@@ -206,45 +202,45 @@ void            runTcpServer(
                 append_(dataBuff,reinterpret_cast<std::byte const *>(recvbuf),retVal);
         }
         while ((retVal > 0) && (dataBuff.size() <= maxRecvBytes));
-        fgout << " " << dataBuff.size() << "B";
+        fgout << " " << dataBuff.size() << "B ";
         if (retVal != 0) {
             closesocket(sockClient);
             if (retVal < 0)
-                fgout << " RECEIVE ERROR: " << retVal;
+                fgout << "RECEIVE ERROR: " << retVal;
             else if (retVal > 0)
-                fgout << " OVERSIZE MESSAGE IGNORED";
+                fgout << "OVERSIZE MESSAGE IGNORED.";
             continue;
         }
         if (!respond)   // Avoid timeout errors on the data socket for long handlers that don't respond:
             closesocket(sockClient);
         String8             currDir = getCurrentDir();  // In case 'handler' changes it
         Bytes               response;
-        fgout << " ... executing: " << fgpush;
+        fgout << " Executing: ";
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
         catch(FgException const & e) {
-            fgout << "Handler exception (FG exception): " << e.tr_message();
+            fgout << fgnl << "Handler exception (FG exception): " << e.tr_message();
         }
         catch(std::exception const & e) {
-            fgout << "Handler exception (std::exception): " << e.what();
+            fgout << fgnl << "Handler exception (std::exception): " << e.what();
         }
         catch(...) {
-            fgout << "Handler exception (unknown type)";
+            fgout << fgnl << "Handler exception (unknown type)";
         }
-        fgout << fgpop;
         if (respond) {
             if (!response.empty()) {
-                fgout << fgnl << "Responding ..." << std::flush;
+                fgout << fgnl << "Responding. ";
                 int             bytesSent = send(
                     sockClient,reinterpret_cast<char const *>(response.data()),int(response.size()),0);
                 shutdown(sockClient,SD_SEND);
                 if (bytesSent != int(response.size()))
-                    fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << ").";
+                    fgout << "SEND ERROR: " << bytesSent << " (of " << response.size() << ").";
             }
             closesocket(sockClient);
         }
-        setCurrentDir(currDir);                         // In case 'handler' changed it
+        fgout << std::flush;            // must flush here as it may be a long time until next packet arrives
+        setCurrentDir(currDir);         // In case 'handler' changed it
     } while (handlerRetval == true);
     closesocket(sockListen);
 }

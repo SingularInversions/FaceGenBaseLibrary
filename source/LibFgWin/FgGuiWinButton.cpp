@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiButton.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
@@ -88,7 +88,6 @@ struct  GuiButtonWin : public GuiBaseImpl
             if (code == 0) {
                 FGASSERT(ident == 0);
                 m_api.action();
-                winUpdateScreen();
             }
         }
 //case WM_PAINT:

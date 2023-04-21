@@ -11,6 +11,7 @@
 #include "FgFile.hpp"
 #include "FgBounds.hpp"
 #include "FgFileSystem.hpp"
+#include "FgImageIo.hpp"
 
 using namespace std;
 

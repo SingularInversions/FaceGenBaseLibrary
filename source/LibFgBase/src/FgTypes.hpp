@@ -80,6 +80,11 @@ typedef std::uint16_t   uint16;
 typedef std::int32_t    int32;
 typedef std::uint32_t   uint32;
 
+// shorthand for static_cast along with an in-place version. Note that 'using' doesn't work here since
+// 'static_cast' is not a normal function:
+template<class T,class F> inline T      scast(F val) {return static_cast<T>(val); }
+template<class T,class F> inline void   scast_(F from,T & to) {to = static_cast<T>(from); }
+
 template<class T> using lims = std::numeric_limits<T>;
 
 // SHORTER ALIASES FOR STANDARD LIBRARY TYPES
@@ -140,15 +145,12 @@ typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
 typedef Svec<String32>          String32s;
 
-// shorthand for static_cast along with an in-place version:
-template<class T,class F> inline T      scast(F val) {return static_cast<T>(val); }
-template<class T,class F> inline void   scast_(F from,T & to) {to = static_cast<T>(from); }
-
 // shorthand for some std:: containers:
 template<class T> using         Sfun = std::function<T>;
 template<class T> using         Sptr = std::shared_ptr<T>;
 template<class T> using         Uptr = std::unique_ptr<T>;
 template<class T,class U> using Pair = std::pair<T,U>;
+template<class T> using         Opt = std::optional<T>;
 
 // CROSS-PLATFORM ARCHITECTURE INFORMATION:
 // handy for avoiding ugly macros when things compile cross-platform but we want conditional behaviour:

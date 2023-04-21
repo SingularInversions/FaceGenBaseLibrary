@@ -20,7 +20,6 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgCommand.hpp"
 #include "FgTestUtils.hpp"
-#include "FgHex.hpp"
 #include "FgAny.hpp"
 #include "FgParse.hpp"
 

@@ -6,9 +6,9 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSlider.hpp"
-#include "FgGuiApiSplit.hpp"
-#include "FgGuiApiText.hpp"
+#include "FgGuiApi.hpp"
+#include "FgGuiApi.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 using namespace std::placeholders;

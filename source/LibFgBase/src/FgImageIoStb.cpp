@@ -115,35 +115,35 @@ void                saveJfif(ImgRgba8 const & img,String8 const & fname,uint qua
 
 static void         writeToMem(void * context,void * data,int size)
 {
-    Uchars *            buffPtr = reinterpret_cast<Uchars*>(context);
-    Uchars &            buff = *buffPtr;
+    Bytes *            buffPtr = reinterpret_cast<Bytes*>(context);
+    Bytes &            buff = *buffPtr;
     size_t              off = buff.size();
     buff.resize(off+size);
     memcpy(&buff[off],data,size);
 };
 
-Uchars              encodeJpeg(uint w,uint h,uchar const * data,int quality)
+Bytes              encodeJpeg(uint w,uint h,uchar const * data,int quality)
 {
     int                 wid = w,
                         hgt = h;
-    Uchars              ret;
+    Bytes              ret;
     int                 stbRet = stbi_write_jpg_to_func(writeToMem,&ret,wid,hgt,4,data,quality);
     if (stbRet == 0)
         fgThrow("STB jpeg encoding error");
     return ret;
 }
 
-Uchars              encodeJpeg(ImgRgba8 const & img,int quality)
+Bytes              encodeJpeg(ImgRgba8 const & img,int quality)
 {
     return encodeJpeg(img.width(),img.height(),&img.m_data[0].m_c[0],quality);
 }
 
-ImgRgba8            decodeJpeg(Uchars const & jfifBlob)
+ImgRgba8            decodeJpeg(Bytes const & jfifBlob)
 {
     int                 width,height,channels;
     uchar *             data = nullptr;
     // require 4 channels:
-    data = stbi_load_from_memory(&jfifBlob[0],scast<int>(jfifBlob.size()),&width,&height,&channels,4);
+    data = stbi_load_from_memory(reinterpret_cast<uchar const*>(&jfifBlob[0]),scast<int>(jfifBlob.size()),&width,&height,&channels,4);
     if (data == nullptr) {
         string          reason(stbi__g_failure_reason);
         fgThrow("STB unable to decode JFIF blob",reason);
@@ -166,11 +166,8 @@ String              zlibInflate(String const & compressed,size_t sz)
 void                testDecodeJfif(CLArgs const &)
 {
     String8             pathBase = dataDir() + "base/Mandrill512";
-    String              blob = loadRawString(pathBase+".jpg");
-    Uchars              ub; ub.reserve(blob.size());
-    for (char ch : blob)
-        ub.push_back(scast<uchar>(ch));
-    ImgRgba8            tst = decodeJpeg(ub),
+    Bytes               blob = loadRaw(pathBase+".jpg");
+    ImgRgba8            tst = decodeJpeg(blob),
                         ref = loadImage(pathBase+"-jpeg.png");  // baseline jpg encoding using STB on windows
     FGASSERT(isApproxEqual(tst,ref,uchar(3)));
 }

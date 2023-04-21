@@ -6,7 +6,8 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiImage.hpp"
+#include "FgGuiApi.hpp"
+#include "FgGuiApi.hpp"
 #include "FgImage.hpp"
 
 using namespace std;
@@ -14,46 +15,31 @@ using namespace std;
 
 namespace Fg {
 
-GuiPtr
-guiImage(NPT<ImgRgba8> imageN)
+GuiImage::GuiImage(NPT<ImgRgba8> imageN) :
+    updateFlag {makeUpdateFlag(imageN)}
 {
-    GuiImage                gi;
-    gi.updateFlag = makeUpdateFlag(imageN);
-    gi.updateNofill = gi.updateFlag;
-    gi.wantStretch = Vec2B{false,false};
-    gi.minSizeN = link1<ImgRgba8,Vec2UI>(imageN,[](ImgRgba8 const & img){return img.dims();});
-    auto                    getImgFn = [imageN](Vec2UI)
+    updateNofill = updateFlag;
+    wantStretch = Vec2B{false,false};
+    minSizeN = link1<ImgRgba8,Vec2UI>(imageN,[](ImgRgba8 const & img){return img.dims();});
+    getImgFn = [imageN](Vec2UI)
     {
         return GuiImage::Disp {&imageN.cref(),Vec2I{0}};
     };
-    gi.getImgFn = getImgFn;
-    return guiMakePtr(gi);
 }
 
-GuiPtr
-guiImage(NPT<ImgRgba8> const & imageN,Sfun<void(Vec2F)> const & onClick)
+GuiPtr              guiImage(NPT<ImgRgba8> imageN,Sfun<void(Vec2F)> onClick)
 {
-    GuiImage                gi;
-    gi.updateFlag = makeUpdateFlag(imageN);
-    gi.updateNofill = gi.updateFlag;
-    gi.wantStretch = Vec2B{false,false};
-    gi.minSizeN = link1<ImgRgba8,Vec2UI>(imageN,[](ImgRgba8 const & img){return img.dims();});
+    GuiImage                gi {imageN};
     auto                    clickFn = [imageN,onClick](Vec2I pos)
     {
         Vec2D           iucs = cIrcsToIucs(imageN.cref().dims()) * Vec2D(pos);
         onClick(Vec2F(iucs));
     };
-    gi.clickLeft = clickFn;
-    auto                    getImgFn = [imageN](Vec2UI)
-    {
-        return GuiImage::Disp {&imageN.cref(),Vec2I{0}};
-    };
-    gi.getImgFn = getImgFn;
-    return guiMakePtr(gi);
+    gi.clickActionFns[0] = clickFn;
+    return make_shared<GuiImage>(gi);
 }
 
-ImgRgba8s
-cMagmip(ImgRgba8 const & img,uint log2mag)
+ImgRgba8s           cMagmip(ImgRgba8 const & img,uint log2mag)
 {
     ImgRgba8s               ret;
     uint                    minDim = cMinElem(img.dims());
@@ -69,12 +55,11 @@ cMagmip(ImgRgba8 const & img,uint log2mag)
     return ret;
 }
 
-GuiImg
-guiImageCtrls(
+GuiImg              guiImageCtrls(
     NPT<ImgRgba8> const &       imageN,
     IPT<Vec2Fs> const &         ptsIucsN,
     bool                        expertMode,
-    Sfun<void(Vec2F,Vec2UI)> const & onClick)
+    Sfun<void(Vec2F,Vec2UI)> const & onCtrlClick)
 {
     auto                    mipmapFn = [=](ImgRgba8 const & img)
     {
@@ -86,6 +71,8 @@ guiImageCtrls(
             return cMagmip(img,xprt);
         else if (img.numPixels() > (1<<22))         // > 4M pix (eg. 2Kx2K) = 16MB
             return cMagmip(img,xprt+1);
+        else if (img.empty())
+            return ImgRgba8s{};
         return cMagmip(img,xprt+2);
     };
     OPT<ImgRgba8s>          mipmapN = link1<ImgRgba8,ImgRgba8s>(imageN,mipmapFn);
@@ -156,31 +143,72 @@ guiImageCtrls(
         ++mipmapIdxN.ref();     // gets clamped by display function
     };
     IPT<int>                zoomAccN {0};
-    auto                    dragRightFn = [=](Vec2I delta)
+    IPT<Valid<uint>>        draggingLmN;
+    auto                    dragNoneFn = [=](Vec2I winPosIrcs,Vec2I)
     {
-        int                 zoomAcc = zoomAccN.val() + delta[1];
-        if (abs(zoomAcc) > 40) {
-            if (zoomAcc > 0)
-                zoomInFn();
-            else
-                zoomOutFn();
-            zoomAcc = 0;
+        Vec2F                   imgDims {mipmapN.cref()[mipmapIdxN.val()].dims()};
+        Vec2I                   topleft = topleftN.val();
+        Vec2Fs const &          ptsIucs = ptsIucsN.cref();
+        for (uint ii=0; ii<ptsIucs.size(); ++ii) {
+            Vec2F               iucs = ptsIucs[ii];
+            Vec2F               ipcs = mapMul(iucs,imgDims);
+            Vec2I               winIrcs = mapCast<int>(ipcs) + topleft;
+            if (cMag(winIrcs-winPosIrcs) < 17) {
+                draggingLmN.ref() = ii;
+                return GuiCursor::grab;
+            }
         }
-        zoomAccN.set(zoomAcc);
+        draggingLmN.ref().invalidate();
+        return GuiCursor::arrow;
     };
-    auto                    dragLeftFn = [=](Vec2I winDelta)
+    auto                    dragRightFn = [=](Vec2I,Vec2I delta)
     {
-        offsetN.ref() += winDelta;
+        Vec2F               imgDims {imageN.cref().dims()};
+        Vec2F               delIucs = mapDiv(Vec2F{delta},imgDims);
+        Vec2Fs &            lms = ptsIucsN.ref();
+        for (Vec2F & lm : lms)
+            lm += delIucs;
+        return GuiCursor::arrow;
     };
-    auto                    clickLeftFn = [=](Vec2I winIrcs)
+    auto                    shiftDragRightFn = [=](Vec2I,Vec2I delta)
+    {
+        float               scale = exp(delta[1]/256.0f);
+        Vec2Fs &            lms = ptsIucsN.ref();
+        Vec2F               mean = cMean(lms);
+        for (Vec2F & lm : lms)
+            lm = mean + (lm-mean) * scale;
+        return GuiCursor::arrow;
+    };
+    auto                    clickDownLFn = [=](Vec2I)
+    {
+        if (draggingLmN.cref().valid())
+            return GuiCursor::grab;
+        else
+            return GuiCursor::translate;
+    };
+    auto                    dragLeftFn = [=](Vec2I,Vec2I winDelta)
+    {
+        Valid<uint>             draggingLm = draggingLmN.val();
+        if (draggingLm.valid()) {
+            Vec2F               imgDims {mipmapN.cref()[mipmapIdxN.val()].dims()};
+            Vec2F               deltaIucs = mapDiv(Vec2F{winDelta},imgDims);
+            Vec2Fs &            ptsIucs = ptsIucsN.ref();
+            ptsIucs[draggingLm.val()] += deltaIucs;
+        }
+        else {
+            offsetN.ref() += winDelta;
+        }
+        return GuiCursor::arrow;
+    };
+    auto                    ctrlClickActionLFn = [=](Vec2I winPosIrcs)
     {
         Vec2I               topleft = topleftN.val(),
-                            imgIrcs = winIrcs - topleft;
+                            imgPosIrcs = winPosIrcs - topleft;
         Vec2UI              imgDims = mipmapN.cref()[mipmapIdxN.val()].dims();
-        Vec2F               imgIpcs = Vec2F{imgIrcs} + Vec2F{0.5f},
-                            imgIucs = mapDiv(imgIpcs,Vec2F{imgDims});
-        if ((cMinElem(imgIucs)>0) && (cMaxElem(imgIucs)<1))
-            onClick(imgIucs,imgDims);
+        Vec2F               imgPosIpcs = Vec2F{imgPosIrcs} + Vec2F{0.5f},
+                            imgPosIucs = mapDiv(imgPosIpcs,Vec2F{imgDims});
+        if ((cMinElem(imgPosIucs)>0) && (cMaxElem(imgPosIucs)<1))
+            onCtrlClick(imgPosIucs,imgDims);
     };
     GuiImage                gi;
     gi.getImgFn = imgDispFn;
@@ -188,11 +216,33 @@ guiImageCtrls(
     gi.minSizeN = makeIPT(Vec2UI{100});
     gi.updateFlag = makeUpdateFlag(imageN,mipmapIdxN);
     gi.updateNofill = makeUpdateFlag(ptsIucsN,offsetN);
-    gi.dragLeft = dragLeftFn;
-    gi.dragRight = dragRightFn;
-    if (onClick)
-        gi.clickLeft = clickLeftFn;
-    return {guiMakePtr(gi),zoomInFn,zoomOutFn};
+    gi.clickDownFns[1] = clickDownLFn;
+    gi.clickDownFns[4] = [](Vec2I){return GuiCursor::crosshair; };      // right click
+    gi.clickDownFns[12] = [](Vec2I){return GuiCursor::scale; };         // shift right click
+    gi.mouseMoveFns[0] = dragNoneFn;
+    gi.mouseMoveFns[1] = dragLeftFn;
+    gi.mouseMoveFns[4] = dragRightFn;
+    gi.mouseMoveFns[12] = shiftDragRightFn;
+    if (onCtrlClick)
+        gi.clickActionFns[6] = ctrlClickActionLFn;
+    return {make_shared<GuiImage>(gi),zoomInFn,zoomOutFn};
+}
+
+GuiVal<ImgFormat>   guiImgFormatSelector(ImgFormats const & imgFormats,String8 const & store)
+{
+    ImgFormatsInfo      imgFormatInfo = getImgFormatsInfo();
+    String8s            imgFormatDescs;     // descriptions
+    for (ImgFormat fmt : imgFormats)
+        imgFormatDescs.push_back(findFirst(imgFormatInfo,fmt).description);
+    IPT<size_t>         imgFormatIdxN;      // user selection
+    if (store.empty())
+        imgFormatIdxN = makeIPT<size_t>(0);
+    else
+        imgFormatIdxN = makeSavedIPTEub<size_t>(0,store+"ImgFormat",imgFormats.size());
+    auto                imgFormatFn = [=](size_t const & idx){return imgFormats[idx]; };
+    OPT<ImgFormat>      imgFormatN = link1<size_t,ImgFormat>(imgFormatIdxN,imgFormatFn);
+    GuiPtr              imgFormatSelW = guiRadio(imgFormatDescs,imgFormatIdxN);
+    return {imgFormatN,imgFormatSelW};
 }
 
 }

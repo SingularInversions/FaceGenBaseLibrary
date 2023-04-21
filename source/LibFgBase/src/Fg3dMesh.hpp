@@ -119,6 +119,7 @@ struct      SkinWeight
 {
     uint                vertIdx;
     float               weight;
+    FG_SER2(vertIdx,weight)
 };
 typedef Svec<SkinWeight>    SkinWeights;
 
@@ -132,6 +133,9 @@ struct      Joint
     // Don't keep this as idx into verts since it doesn't morph like verts:
     Vec3F               pos;
     SkinWeights         skin;               // If empty, applies to entire mesh
+    FG_SER4(name,parentIdx,pos,skin)
+
+    bool                operator==(String const & n) const {return (n==name); }
 };
 typedef Svec<Joint>      Joints;
 
@@ -186,7 +190,7 @@ struct  Mesh
     MarkedVerts             markedVerts;
     Joints                  joints;
     JointDofs               jointDofs;
-    FG_SER6(verts,uvs,surfaces,deltaMorphs,targetMorphs,markedVerts)
+    FG_SER7(verts,uvs,surfaces,deltaMorphs,targetMorphs,markedVerts,joints)
 
     Mesh() {}
     explicit Mesh(Vec3Fs const & vts) : verts(vts) {}
@@ -228,6 +232,7 @@ struct  Mesh
         markedVerts.push_back(MarkedVert(uint(verts.size()),label));
         verts.push_back(pos);
     }
+    void                addMarkedVerts(NameVec3Fs const &);     // create marked verts as new vertices
     Svec<Sptr<ImgRgba8>> albedoMaps() const
     {
         Svec<Sptr<ImgRgba8>>         ret;
@@ -347,7 +352,7 @@ TriSurf         cSquarePrism(float sideLen,float height);
 Mesh            removeDuplicateFacets(Mesh const &);
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
 // Retains only those morphs which affect the remaining vertices:
-Mesh            removeUnusedVerts(Mesh const &);
+Mesh            removeUnused(Mesh const &);
 // Removes the given vertices (by index, can be specified in any order), along with any marked verts,
 // polys, surface points that depend on them. Morphs updated. Joint information discarded.
 Mesh            removeVerts(Mesh const & orig,Uints const & vertInds);
@@ -355,6 +360,7 @@ Mesh            mergeSameNameSurfaces(Mesh const &);
 Mesh            fuseIdenticalVerts(Mesh const &);       // morphs and marked verts are discarded
 Mesh            fuseIdenticalUvs(Mesh const &);
 Mesh            splitSurfsByUvContiguous(Mesh const &);
+Mesh            selectSurfs(Mesh const & mesh,Strings const & surfNames);   // Returns the same mesh with only the specified surfaces
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:
 Mesh            mergeMeshSurfaces(Mesh const & m0,Mesh const & m1);
@@ -394,9 +400,6 @@ typedef Svec<MorphVal>  MorphVals;
 
 // Only applies those morphs which mesh supports, ignores the rest:
 Vec3Fs          poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
-// Cannot be functional since marked verts are stored as indices into the vertex array, which must
-// be updated in sync:
-void            surfPointsToMarkedVerts_(Mesh const & in,Mesh & out);
 Vec3Fs          cMirrorX(Vec3Fs const & verts);             // reflect verts in X=0 plane
 inline TriSurf  cMirrorX(TriSurf const & ts) {return {cMirrorX(ts.verts),reverseWinding(ts.tris)}; }
 Surf            cMirrorX(Surf const & surf);        // same as reverseWinding but also modifies surface point names

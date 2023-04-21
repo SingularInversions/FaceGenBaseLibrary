@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiGroupbox.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
@@ -29,7 +29,10 @@ struct  GuiGroupboxWin : public GuiBaseImpl
 
     GuiGroupboxWin(const GuiGroupbox & api)
     : m_api(api)
-    {m_contents = m_api.contents->getInstance(); }
+    {
+        FGASSERT(m_api.contents);
+        m_contents = m_api.contents->getInstance();
+    }
 
     virtual void
     create(HWND parentHwnd,int,String8 const & store,DWORD extStyle,bool visible)

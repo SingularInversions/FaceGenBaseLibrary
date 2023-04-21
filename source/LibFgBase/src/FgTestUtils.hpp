@@ -21,7 +21,6 @@
 #define INCLUDED_TEST_UTILS_HPP
 
 #include "FgSerial.hpp"
-#include "FgMetaFormat.hpp"
 #include "FgCommand.hpp"
 #include "FgImageIo.hpp"
 #include "FgBuild.hpp"
@@ -60,26 +59,30 @@ inline bool         overwriteBaselines() {return pathExists(dataDir()+"_overwrit
 
 template<class T> bool isEqualSrlz(T const & l,T const & r) {return (srlz(l) == srlz(r)); }
 
+template<class T> bool  isEqual(T const & l,T const & r) {return (l==r); }
+
 // Exact regression for all configurations:
 template<class T>
 void                testRegressExact(
     T const &           query,
-    String8 const &     baselineRelPath)                // must be relative to ~/data/
+    String const &      baselineRelPath,    // Relative to ~/data/  will be stored in TXT serialization.
+    Sfun<bool(T const &,T const &)> const & eqFn = isEqual<T>)
 {
     bool                overwrite = overwriteBaselines();
-    if (!pathExists(baselineRelPath)) {
+    String8             baselineAbsPath = dataDir() + baselineRelPath;
+    if (!pathExists(baselineAbsPath)) {
         if (overwrite) {
-            regressSave(query,baselineRelPath);
+            regressSave(query,baselineAbsPath);
             fgout << fgnl << "New regression baseline saved: " << baselineRelPath;
             // Don't return here, run the test to be sure it works:
         }
         else
             fgThrow("Regression baseline not found",baselineRelPath);
     }
-    T                   baseline = regressLoad<T>(baselineRelPath);
-    if (!(query == baseline)) {
+    T                   baseline = regressLoad<T>(baselineAbsPath);
+    if (!eqFn(query,baseline)) {
         if (overwrite)
-            regressSave(query,baselineRelPath);
+            regressSave(query,baselineAbsPath);
         fgThrow("Regression failure: ",baselineRelPath);
     }
 }

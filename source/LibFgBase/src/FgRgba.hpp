@@ -10,9 +10,7 @@
 #ifndef FGRGBA_HPP
 #define FGRGBA_HPP
 
-#include "FgSerial.hpp"
 #include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
 #include "FgBounds.hpp"
 #include "FgApproxEqual.hpp"
 

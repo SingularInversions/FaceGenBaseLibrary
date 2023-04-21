@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiDialogs.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 
@@ -23,8 +23,8 @@ GuiPtr              guiLoadButton(
     auto                fnLoadFile = [=]()
     {
         Opt<String8>     fname = guiDialogFileLoad(fileTypesDescription,extensions,storeID);
-        if (fname.valid())
-            selection.set(fname.val());
+        if (fname.has_value())
+            selection.set(fname.value());
     };
     return guiButton(buttonText,fnLoadFile);
 }

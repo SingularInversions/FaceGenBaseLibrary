@@ -226,6 +226,13 @@ MatV<T>             mapCast(MatV<U> const & m)
     return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)};
 }
 
+template<class T,class F>
+void inline         dcast_(MatV<F> const & f,MatV<T> & t)
+{
+    t.resize(f.dims());
+    dcast_(f.m_data,t.m_data);
+}
+
 // scalar multiplication of a matrix (whose elements may not be scalars):
 template<typename T,typename U>
 MatV<T>             operator*(MatV<T> const & m,U v)

@@ -151,7 +151,7 @@ Img<FatBool>        mapAnd(const Img<FatBool> & lhs,const Img<FatBool> & rhs)
     return ret;
 }
 
-Mat<CoordWgt,2,2>   getBlerpClipIrcs(Vec2UI dims,Vec2D ircs)
+Mat<CoordWgt,2,2>   cBlerpClipIrcs(Vec2UI dims,Vec2D ircs)
 {
     Mat<CoordWgt,2,2>   ret;
     Vec2I               loXY = Vec2I(mapFloor(ircs)),
@@ -172,10 +172,10 @@ Mat<CoordWgt,2,2>   getBlerpClipIrcs(Vec2UI dims,Vec2D ircs)
     ret[3].coordIrcs = Vec2UI(hiXY);
     return ret;
 }
-Mat<CoordWgt,2,2>   getBlerpClipIucs(Vec2UI dims,Vec2F iucs)
+Mat<CoordWgt,2,2>   cBlerpClipIucs(Vec2UI dims,Vec2F iucs)
 {
     Vec2D               ircs = mapMul(Vec2D{iucs},Vec2D{dims}) - Vec2D{0.5f};
-    return getBlerpClipIrcs(dims,ircs);
+    return cBlerpClipIrcs(dims,ircs);
 }
 
 AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims)
@@ -191,25 +191,12 @@ AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims)
     return outToInIrcs.asAffineEw();
 }
 
-AffineEw2D          imgScaleToFit(Vec2UI inDims,Vec2UI outDims)
-{
-    Mat22D          inBoundsIrcs{
-                        -0.5, scast<double>(inDims[0])-0.5,
-                        -0.5, scast<double>(inDims[1])-0.5
-                    },
-                    outBoundsIrcs{
-                        -0.5, scast<double>(outDims[0])-0.5,
-                        -0.5, scast<double>(outDims[1])-0.5
-                    };
-    return AffineEw2D{outBoundsIrcs,inBoundsIrcs};
-}
-
 Img3F               resampleSimple(Img3F const & in,Vec2UI dims,AffineEw2D const & outToInIrcs)
 {
     Img3F               ret {dims};
     for (Iter2UI it {dims}; it.valid(); it.next()) {
         Vec2D               inIrcs = outToInIrcs * Vec2D(it());
-        auto                lerp = getBlerpClipIrcs(in.dims(),inIrcs);
+        auto                lerp = cBlerpClipIrcs(in.dims(),inIrcs);
         Arr3F               p {0,0,0};
         for (uint ii=0; ii<4; ++ii) {
             CoordWgt const &    cw = lerp[ii];
@@ -219,12 +206,25 @@ Img3F               resampleSimple(Img3F const & in,Vec2UI dims,AffineEw2D const
     }
     return ret;
 }
+ImgRgba8            resampleSimple(ImgRgba8 const & in,Vec2UI dims,AffineEw2F const & outToInIrcs)
+{
+    ImgRgba8            ret {dims};
+    for (Iter2UI it {dims}; it.valid(); it.next()) {
+        Blerp               blerp {outToInIrcs * Vec2F(it()),in.dims()};
+        ret[it()] = blerp.sampleZeroFixed(in);
+    }
+    return ret;
+}
 
-Img3F               resampleAdaptive(Img3F in,Vec2D posIpcs,float inSize,uint outSize)
+Img3F               filterResample(Img3F in,Vec2D posIpcs,float inSize,uint outSize)
 {
     FGASSERT(!in.empty());
     FGASSERT(inSize > 0);
     FGASSERT(outSize > 0);
+    for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
+        FGASSERT(posIpcs[dd] < in.dims()[dd]);
+        FGASSERT(posIpcs[dd]+inSize > 0.0f);
+    }
     // Reduce the input image to avoid undersampling. 1 1/3 undersampling gives minimum contribution of 2/3
     // pixel value (max always 1). 1 1/2 undersampling gives minimum representation of 1/2:
     while (inSize / outSize > 1.3333f) {
@@ -232,11 +232,25 @@ Img3F               resampleAdaptive(Img3F in,Vec2D posIpcs,float inSize,uint ou
         posIpcs *= 0.5f;
         inSize *= 0.5f;
     }
-    for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
-        FGASSERT(posIpcs[dd] < in.dims()[dd]);
-        FGASSERT(posIpcs[dd]+inSize > 0.0f);
-    }
     return resampleSimple(in,Vec2UI{outSize},AffineEw2D{Vec2D{inSize/outSize},posIpcs});
+}
+ImgRgba8            filterResample(ImgRgba8 in,Vec2F loIpcs,float inSize,uint outSize)
+{
+    FGASSERT(!in.empty());
+    FGASSERT(inSize > 0);
+    FGASSERT(outSize > 0);
+    for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
+        FGASSERT(loIpcs[dd] < in.dims()[dd]);
+        FGASSERT(loIpcs[dd]+inSize > 0.0f);
+    }
+    // Reduce the input image to avoid aliasing. 1 1/3 undersampling gives minimum contribution of 2/3
+    // pixel value (max always 1). 1 1/2 undersampling gives minimum representation of 1/2:
+    while (inSize / outSize > 1.3333f) {
+        in = shrink2(in);
+        loIpcs *= 0.5f;
+        inSize *= 0.5f;
+    }
+    return resampleSimple(in,Vec2UI{outSize},AffineEw2F{Vec2F{inSize/outSize},loIpcs});
 }
 
 ImgC4F              mapGamma(ImgC4F const & img,float gamma)
@@ -375,10 +389,10 @@ ImgRgba8            toRgba8(ImgC4F const & img)
 {
     auto                fn = [](RgbaF p)
     {
-        // if we define each uchar value v as representing the bin of real values in [v,v+1)
-        // then we want to use a factor just under 256 then round down:
-        float constexpr         f = 256.0f - 1/1024.0f;
-        return Rgba8{uchar(p[0]*f),uchar(p[1]*f),uchar(p[2]*f),uchar(p[3]*f)};
+        Rgba8               ret;
+        for (uint ii=0; ii<4; ++ii)
+            ret[ii] = scast<uchar>(clamp<float>(p[ii]*256,0,255));
+        return ret;
     };
     return mapCallT<Rgba8>(img,fn);
 }
@@ -398,7 +412,7 @@ ImgRgba8            toRgba8(ImgUC const & in)
     return mapCallT<Rgba8>(in,[](uchar p){return Rgba8{p,p,p,255};});
 }
 
-void                imgResize(ImgRgba8 const & src,ImgRgba8 & dst)
+void                imgResize_(ImgRgba8 const & src,ImgRgba8 & dst)
 {
     FGASSERT(!src.empty());
     FGASSERT(!dst.empty());
@@ -477,8 +491,8 @@ ImgRgba8            applyTransparencyPow2(ImgRgba8 const & colour,ImgRgba8 const
     Vec2UI       dims = mapPow2Ceil(cMax(colour.dims(),transparency.dims()));
     ImgRgba8     ctmp(dims),
                     ttmp(dims);
-    imgResize(colour,ctmp);
-    imgResize(transparency,ttmp);
+    imgResize_(colour,ctmp);
+    imgResize_(transparency,ttmp);
 
     for (Iter2UI it(dims); it.valid(); it.next())
         ctmp[it()].alpha() = ttmp[it()].rec709();

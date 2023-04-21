@@ -27,7 +27,6 @@
 #define FGMATRIXC_HPP
 
 #include "FgMath.hpp"
-#include "FgFile.hpp"
 #include "FgRandom.hpp"
 
 namespace Fg {
@@ -363,6 +362,9 @@ typedef Mat<int64,3,2>          Mat32L;
 typedef Mat<uint,3,2>           Mat32UI;
 typedef Mat<double,3,4>         Mat34D;
 
+template<class T,class F,uint R,uint C>
+void inline         dcast_(Mat<F,R,C> const & f,Mat<T,R,C> & t) {dcast_(f.m,t.m); }
+
 template<typename To,typename From,uint R,uint C>
 inline Mat<To,R,C>  mapCast(Mat<From,R,C> const & mat)
 {return Mat<To,R,C>(mapCast<To,From,R*C>(mat.m)); }
@@ -398,19 +400,6 @@ std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mmIn)
     ss.flags(oldFlag);
     ss.precision(oldPrec);
     return ss;
-}
-
-template<class T,uint R,uint C>
-void                readBin_(std::istream & is,Mat<T,R,C> & mat)
-{
-    for (uint ii=0; ii<R*C; ++ii)
-        readBin_(is,mat[ii]);
-}
-template<class T,uint R,uint C>
-void                writeBin_(std::ostream & os,Mat<T,R,C> const & mat)
-{
-    for (uint ii=0; ii<R*C; ++ii)
-        writeBin_(os,mat[ii]);
 }
 
 // function 'constructors':
@@ -607,9 +596,9 @@ Svec<T>             flatten(Svec<Mat<T,R,C>> const & ms)
     return ret;
 }
 
-Doubles             toDoubles(Floatss const & v);
+Doubles             flattenD(Floatss const & v);
 template<class T,uint R,uint C>
-Doubles             toDoubles(Mat<T,R,C> const & mat)
+Doubles             flattenD(Mat<T,R,C> const & mat)
 {
     Doubles         ret;
     ret.reserve(mat.numElems());
@@ -618,7 +607,7 @@ Doubles             toDoubles(Mat<T,R,C> const & mat)
     return ret;
 }
 template<class T,uint R,uint C>
-Doubles             toDoubles(Svec<Mat<T,R,C>> const & ms)
+Doubles             flattenD(Svec<Mat<T,R,C>> const & ms)
 {
     Doubles         ret;
     ret.reserve(ms.size()*R*C);
@@ -628,7 +617,7 @@ Doubles             toDoubles(Svec<Mat<T,R,C>> const & ms)
     return ret;
 }
 template<class T,uint R,uint C>
-Doubles             toDoubles(const Svec<Svec<Mat<T,R,C>>> & mss)
+Doubles             flattenD(const Svec<Svec<Mat<T,R,C>>> & mss)
 {
     size_t          sz = 0;
     for (Svec<Mat<T,R,C>> const & ms : mss)

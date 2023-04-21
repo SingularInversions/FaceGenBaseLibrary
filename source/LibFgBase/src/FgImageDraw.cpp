@@ -209,8 +209,8 @@ void                cmdGraph(CLArgs const & args)
         Doubles             data;
         for (string const & line : lines) {
             Opt<double>         opt = fromStr<double>(line);
-            FGASSERT1(opt.valid(),"Invalid line in text file "+syn.curr()+" : "+line);
-            data.push_back(opt.val());
+            FGASSERT1(opt.has_value(),"Invalid line in text file "+syn.curr()+" : "+line);
+            data.push_back(opt.value());
         }
         if (data.empty())
             syn.error("Data file is empty",syn.curr());

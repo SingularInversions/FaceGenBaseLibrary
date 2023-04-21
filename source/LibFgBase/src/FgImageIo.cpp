@@ -56,12 +56,12 @@ NameVec2Fs          loadLandmarks(String8 const & fname)
         bool                coordsValid = true;
         for (size_t ii=0; ii<2; ++ii) {
             Opt<float>      vo = fromStr<float>(objs[ii+1]);
-            if (!vo.valid()) {
+            if (!vo.has_value()) {
                 fgout << fgnl << "WARNING invalid number for point " << nv.name << ": " << objs[ii+1];
                 coordsValid = false;
             }
             else
-                nv.vec[ii] = vo.val();
+                nv.vec[ii] = vo.value();
         }
         if (coordsValid)
             ret.push_back(nv);

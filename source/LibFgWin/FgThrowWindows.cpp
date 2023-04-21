@@ -8,7 +8,6 @@
 
 #include "FgThrowWindows.hpp"
 #include "FgSerial.hpp"
-#include "FgHex.hpp"
 #include "FgDirect3D.hpp"
 
 using namespace std;

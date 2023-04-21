@@ -239,9 +239,9 @@ Vec3Fs              Mesh::surfPointPositions(Strings const & labels) const
     ret.reserve(labels.size());
     for (size_t ss=0; ss<labels.size(); ++ss) {
         Opt<Vec3F>     pos = surfPointPos(labels[ss]);
-        if (!pos.valid())
+        if (!pos.has_value())
             fgThrow("Surface point not found",labels[ss]);
-        ret.push_back(pos.val());
+        ret.push_back(pos.value());
     }
     return ret;
 }
@@ -280,6 +280,14 @@ NameVec3Fs          Mesh::markedVertsAsNameVecs() const
     for (MarkedVert const & mv : markedVerts)
         ret.emplace_back(mv.label,verts[mv.idx]);
     return ret;
+}
+
+void                Mesh::addMarkedVerts(NameVec3Fs const & nvs)
+{
+    for (NameVec3F const & nv : nvs) {
+        markedVerts.emplace_back(scast<uint>(verts.size()),nv.name);
+        verts.push_back(nv.vec);
+    }
 }
 
 TriSurf             Mesh::asTriSurf() const
@@ -879,7 +887,7 @@ TriSurf             cullVolume(TriSurf triSurf,Mat32F const & bounds)
     for (size_t tt=0; tt<triSurf.tris.size(); ++tt)
         if (triInBounds[tt])
             nTris.push_back(triSurf.tris[tt]);
-    return removeUnusedVerts(triSurf.verts,nTris);
+    return removeUnused(triSurf.verts,nTris);
 }
 
 
@@ -1016,7 +1024,7 @@ Mesh                removeDuplicateFacets(Mesh const & mesh)
     return ret;
 }
 
-Mesh                removeUnusedVerts(Mesh const & mesh)
+Mesh                removeUnused(Mesh const & mesh)
 {
     Mesh            ret;
     ret.name = mesh.name;
@@ -1547,6 +1555,16 @@ Mesh                splitSurfsByUvContiguous(Mesh const & in)
     return ret;
 }
 
+Mesh                selectSurfs(Mesh const & mesh,Strings const & surfNames)
+{
+    Mesh                ret = mesh;
+    Surfs               surfs; surfs.reserve(surfNames.size());
+    for (String const & name : surfNames)
+        surfs.push_back(findFirst(mesh.surfaces,name));
+    ret.surfaces = surfs;
+    return ret;
+}
+
 Mesh                mergeMeshes(Ptrs<Mesh> meshPtrs)
 {
     Mesh                ret;
@@ -1640,7 +1658,7 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
         nsurfs.push_back(nsurf);
     }
     // Remove unused vertices:
-    return removeUnusedVerts(Mesh(mesh.verts,nsurfs));
+    return removeUnused(Mesh(mesh.verts,nsurfs));
 }
 
 ImgV3F          pixelsToPositions(
@@ -1749,17 +1767,6 @@ Vec3Fs              poseMesh(Mesh const & mesh,MorphVals const & expression)
     }
     mesh.morph(coord,ret);
     return ret;
-}
-
-void                surfPointsToMarkedVerts_(Mesh const & in,Mesh & out)
-{
-    for (size_t ii=0; ii<in.surfaces.size(); ++ii) {
-        Surf const &     surf = in.surfaces[ii];
-        for (size_t jj=0; jj<surf.surfPoints.size(); ++jj) {
-            Vec3F        pos = surf.surfPointPos(in.verts,jj);
-            out.addMarkedVert(pos,surf.surfPoints[jj].label);
-        }
-    }
 }
 
 Vec3Fs              cMirrorX(Vec3Fs const & verts)

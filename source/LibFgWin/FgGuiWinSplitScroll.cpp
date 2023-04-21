@@ -7,12 +7,11 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSplit.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 
 using namespace std;
 
@@ -102,6 +101,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
             m_panes.resize(panes.size());
             m_panesVisible.resize(panes.size());
             for (size_t ii=0; ii<m_panes.size(); ++ii) {
+                FGASSERT(m_panes[ii]);
                 m_panes[ii] = panes[ii]->getInstance();
                 m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toStr(ii),0UL,false);
                 m_panesVisible[ii] = false;

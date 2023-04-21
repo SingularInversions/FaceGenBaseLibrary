@@ -25,13 +25,10 @@
 #include "stdafx.h"
 
 #include "FgMatrixC.hpp"
-#include "FgGuiApiBase.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
-#include "FgMetaFormat.hpp"
-#include "FgHex.hpp"
-#include "FgSystemInfo.hpp"
-#include "FgGuiApiDialogs.hpp"
+#include "FgSystem.hpp"
 #include "FgTime.hpp"
 #include "FgScopeGuard.hpp"
 
@@ -47,8 +44,6 @@ struct      GuiWinMain : GuiMainBase
     String8                 m_store;            // directory [and prefix] for state storage
     GuiImplPtr              m_win;
     Vec2UI                  m_size;             // Current size of client area (including maximization)
-    Svec<HANDLE>            eventHandles;       // Client event handles to trigger message loop
-    Svec<Sfun<void()>>      eventHandlers;      // Respective event handlers
     Svec<GuiKeyHandle>      keyHandlers;
     function<void()>        onUpdate;           // Run on each screen update
 
@@ -85,136 +80,6 @@ struct      GuiWinMain : GuiMainBase
         SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
     //    LRESULT     ret = SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
     //fgout << fgnl << "SendMessage returned: " << ret << flush;
-    }
-
-    void                start(Vec2I defaultSize)
-    {
-        // startTime = getTimeMs();
-        // Load common controls DLL:
-        INITCOMMONCONTROLSEX    icc;
-        icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
-        icc.dwICC = ICC_BAR_CLASSES;
-        InitCommonControlsEx(&icc);
-
-        // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
-        // col vec 1 is size. Windows screen coordinates:
-        // x - right, y - down, origin - upper left corner of MAIN screen.
-        // CW_USEDEFAULT doesn't pick the centre of the screen(s) because Microsoft.
-        // TODO: use GetSystemMetrics(SM_CXSCREEN) to figure out screen size ... but multi-screens ...
-        Mat22I          posDims {CW_USEDEFAULT,defaultSize[0],CW_USEDEFAULT,defaultSize[1]};
-        // Retrieve previously saved main window position if file present and valid:
-        try {
-            Mat22I          pdTmp = dsrlzText<Mat22I>(loadRawString(m_store+"main-dims.txt"));
-            Vec2I           pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
-            Vec2I           pdMin = Vec2I(m_win->getMinSize());
-            if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
-                (pdAbs[1] < 32000) &&
-                (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
-                (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
-                posDims = pdTmp;
-        }
-        catch (...) {}
-        // TODO: Testing to see if the remembered window position is visible in a multi-monitor
-        // setup is possible but I can't test it right now. Here are functions:
-        // Get raw pixel area of primary screen not including taskbar or application toolbars:
-        //RECT            screenArea;
-        //SystemParametersInfoW(SPI_GETWORKAREA,0,&screenArea,0);
-        // FG_HI4(screenArea.left,screenArea.right,screenArea.top,screenArea.bottom);
-        // GetMonitorInfoW() for virtual screen coords of all monitors
-        // https://stackoverflow.com/questions/18112616/how-do-i-get-the-dimensions-rect-of-all-the-screens-in-win32-api
-        wchar_t constexpr   className[] = L"GuiWinMain";
-        // The following will give us a handle to the current instance aka 'module',
-        // which corresponds to the binary file in which this code is compiled
-        // (ie. EXE or a DLL):
-        WNDCLASSEX  wcl;
-        wcl.cbSize = sizeof(wcl);
-        if (GetClassInfoEx(s_guiWin.hinst,className,&wcl) == 0) {
-            // 101 is the fgb-generated resource number of the icon images (if provided):
-            HICON   icon = LoadIcon(s_guiWin.hinst,MAKEINTRESOURCE(101));
-            if (icon == NULL)
-                icon = LoadIcon(NULL,IDI_APPLICATION);
-            // Redraw entire window if width or height is changed. This forces a background paint even when
-            // hbrBackground is NULL, using the default brush:
-            wcl.style = CS_HREDRAW | CS_VREDRAW;
-            wcl.lpfnWndProc = &statWndProc<GuiWinMain>;
-            wcl.cbClsExtra = 0;
-            wcl.cbWndExtra = sizeof(void *);
-            wcl.hInstance = s_guiWin.hinst;
-            wcl.hIcon = icon;
-            wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
-            wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
-            wcl.lpszMenuName = NULL;
-            wcl.lpszClassName = className;
-            wcl.hIconSm = NULL;
-            FGASSERTWIN(RegisterClassEx(&wcl));
-        }
-
-//fgout << fgnl << "CreateWindowEx" << fgpush;
-        // CreateWindowEx sends WM_CREATE and certain other messages before returning.
-        // This is done so that the caller can send messages to the child window immediately
-        // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
-        // after creation, so that dynamic windows can be created and setting can be udpated:
-        String8 const &     title = titleNF.cref();
-        s_guiWin.hwndMain =
-            CreateWindowEx(0,
-                className,
-                title.as_wstring().c_str(),
-                WS_OVERLAPPEDWINDOW,
-                posDims[0],posDims[2],
-                posDims[1],posDims[3],
-                NULL,NULL,
-                // Contrary to MSDN docs, this is used on all WinOSes to disambiguate
-                // the class name over different modules [Raymond Chen]:
-                s_guiWin.hinst,
-                this);      // Value to be sent as argument with WM_NCCREATE message
-        FGASSERTWIN(s_guiWin.hwndMain);
-//fgout << fgpop;
-
-//fgout << fgnl << "ShowWindow";
-        // Retrieve Win32 maximization state:
-        bool                maximized = false;
-        try {
-            bool                maxTmp = dsrlzText<bool>(loadRawString(m_store+"main-maximized.txt"));
-            maximized = maxTmp;
-        }
-        catch (...) {}
-        // Set the currently selected windows to show, which also causes the WM_SIZE message
-        // to be sent (and for the builtin controls, WM_PAINT):
-        int             showState = maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
-        ShowWindow(s_guiWin.hwndMain,showState);
-        // The first draw doesn't work properly without this; for some reason the initial
-        // window isn't fully invalidated, especially within windows using win32 controls:
-        InvalidateRect(s_guiWin.hwndMain,NULL,TRUE);
-        MSG         msg;
-        HANDLE      dummyEvent = INVALID_HANDLE_VALUE;
-        HANDLE      *eventsPtr = (eventHandles.empty() ? &dummyEvent : &eventHandles[0]);
-        for (;;) {
-            BOOL        ret = MsgWaitForMultipleObjects(DWORD(eventHandles.size()),eventsPtr,FALSE,INFINITE,QS_ALLEVENTS);
-            if (ret == WAIT_FAILED) {
-                DWORD   err = GetLastError();
-                fgout << fgnl << "MsgWaitForMultipleObjects failed with last error: " << err;
-            }
-            int         idx = int(ret) - int(WAIT_OBJECT_0);
-//fgout << fgnl << "Event Handling: " << idx;
-            if ((idx >= 0) && (idx < int(eventHandles.size()))) {
-                eventHandlers[idx]();
-//fgout << fgnl << "SendMessage WM_USER" << fgpush;
-                winUpdateScreen();
-//fgout << fgpop;
-            }
-            // Get all messages here since MsgWaitForMultipleObjects waits for NEW messages:
-            while (PeekMessageW(&msg,NULL,0,0,PM_REMOVE)) {
-                // WM_QUIT is only sent to main message loop after WM_DESTROY has been
-                // sent and processed by all sub-windows:
-                if (msg.message == WM_QUIT)
-                    return;
-                // Translates multi-key combos into appropriate unicode. Intercept application-wide
-                // special combos before calling this:
-                TranslateMessage(&msg);
-//fgout << fgnl << "Message Dispatch: " << toHexString(msg.message);
-                DispatchMessage(&msg);
-            }
-        }
     }
 
     LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
@@ -319,6 +184,7 @@ void                guiStartImpl(
     String8 const &             storeDir,
     GuiOptions const &          options)
 {
+    FGASSERT(gui);
     s_guiWin.hinst = GetModuleHandle(NULL);
     // Initialize COM. This wasn't necessary on my computer but on some computers the call to CoCreateInstance
     // (for dialog box creation) failed with CO_E_NOTINITIALIZED (0x800401F0). I initially tried with the
@@ -331,15 +197,140 @@ void                guiStartImpl(
     FGASSERTWIN((hr==S_OK)||(hr==S_FALSE));     // Repeat initialization is OK, even though it should not happen here
     ScopeGuard          sg {[](){CoUninitialize();}};
     GuiWinMain          win {titleN,storeDir+"Win",gui->getInstance()};
-    for (GuiEvent const & event : options.events) {
-        win.eventHandles.push_back(event.handle);
-        win.eventHandlers.push_back(event.handler);
-    }
     win.keyHandlers = options.keyHandlers;
     win.onUpdate = options.onUpdate;
     s_guiWin.guiMainPtr = &win;
-    win.start(options.defaultSize);
-    s_guiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
+    // startTime = getTimeMs();
+    // Load common controls DLL:
+    INITCOMMONCONTROLSEX    icc;
+    icc.dwSize = sizeof(INITCOMMONCONTROLSEX);
+    icc.dwICC = ICC_BAR_CLASSES;
+    InitCommonControlsEx(&icc);
+
+    // posDims: col vec 0 is position (upper left corner in  windows screen coordinates),
+    // col vec 1 is size. Windows screen coordinates:
+    // x - right, y - down, origin - upper left corner of MAIN screen.
+    // CW_USEDEFAULT doesn't pick the centre of the screen(s) because Microsoft.
+    // TODO: use GetSystemMetrics(SM_CXSCREEN) to figure out screen size ... but multi-screens ...
+    Mat22I          posDims {CW_USEDEFAULT,options.defaultSize[0],CW_USEDEFAULT,options.defaultSize[1]};
+    // Retrieve previously saved main window position if file present and valid:
+    try {
+        Mat22I          pdTmp = dsrlzText<Mat22I>(loadRawString(win.m_store+"main-dims.txt"));
+        Vec2I           pdAbs = mapAbs(pdTmp.subMatrix<2,1>(0,0));
+        Vec2I           pdMin = Vec2I(win.m_win->getMinSize());
+        if ((pdAbs[0] < 32000) &&   // Windows internal representation limits
+            (pdAbs[1] < 32000) &&
+            (pdTmp[1] >= pdMin[0]) && (pdTmp[1] < 32000) &&
+            (pdTmp[3] >= pdMin[1]) && (pdTmp[3] < 32000))
+            posDims = pdTmp;
+    }
+    catch (...) {}
+    // TODO: Testing to see if the remembered window position is visible in a multi-monitor
+    // setup is possible but I can't test it right now. Here are functions:
+    // Get raw pixel area of primary screen not including taskbar or application toolbars:
+    //RECT            screenArea;
+    //SystemParametersInfoW(SPI_GETWORKAREA,0,&screenArea,0);
+    // FG_HI4(screenArea.left,screenArea.right,screenArea.top,screenArea.bottom);
+    // GetMonitorInfoW() for virtual screen coords of all monitors
+    // https://stackoverflow.com/questions/18112616/how-do-i-get-the-dimensions-rect-of-all-the-screens-in-win32-api
+    wchar_t constexpr   className[] = L"GuiWinMain";
+    // The following will give us a handle to the current instance aka 'module',
+    // which corresponds to the binary file in which this code is compiled
+    // (ie. EXE or a DLL):
+    WNDCLASSEX  wcl;
+    wcl.cbSize = sizeof(wcl);
+    if (GetClassInfoEx(s_guiWin.hinst,className,&wcl) == 0) {
+        // 101 is the fgb-generated resource number of the icon images (if provided):
+        HICON   icon = LoadIcon(s_guiWin.hinst,MAKEINTRESOURCE(101));
+        if (icon == NULL)
+            icon = LoadIcon(NULL,IDI_APPLICATION);
+        // Redraw entire window if width or height is changed. This forces a background paint even when
+        // hbrBackground is NULL, using the default brush:
+        wcl.style = CS_HREDRAW | CS_VREDRAW;
+        wcl.lpfnWndProc = &statWndProc<GuiWinMain>;
+        wcl.cbClsExtra = 0;
+        wcl.cbWndExtra = sizeof(void *);
+        wcl.hInstance = s_guiWin.hinst;
+        wcl.hIcon = icon;
+        wcl.hCursor = LoadCursor(NULL,IDC_ARROW);
+        wcl.hbrBackground = GetSysColorBrush(COLOR_BTNFACE);
+        wcl.lpszMenuName = NULL;
+        wcl.lpszClassName = className;
+        wcl.hIconSm = NULL;
+        FGASSERTWIN(RegisterClassEx(&wcl));
+    }
+//fgout << fgnl << "CreateWindowEx" << fgpush;
+    // CreateWindowEx sends WM_CREATE and certain other messages before returning.
+    // This is done so that the caller can send messages to the child window immediately
+    // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
+    // after creation, so that dynamic windows can be created and setting can be udpated:
+    String8 const &     title = win.titleNF.cref();
+    s_guiWin.hwndMain =
+        CreateWindowEx(0,
+            className,
+            title.as_wstring().c_str(),
+            WS_OVERLAPPEDWINDOW,
+            posDims[0],posDims[2],
+            posDims[1],posDims[3],
+            NULL,NULL,
+            // Contrary to MSDN docs, this is used on all WinOSes to disambiguate
+            // the class name over different modules [Raymond Chen]:
+            s_guiWin.hinst,
+            &win);      // Value to be sent as argument with WM_NCCREATE message
+    FGASSERTWIN(s_guiWin.hwndMain);
+//fgout << fgpop;
+
+//fgout << fgnl << "ShowWindow";
+    // Retrieve Win32 maximization state:
+    bool                maximized = false;
+    try {
+        bool                maxTmp = dsrlzText<bool>(loadRawString(win.m_store+"main-maximized.txt"));
+        maximized = maxTmp;
+    }
+    catch (...) {}
+    // Set the currently selected windows to show, which also causes the WM_SIZE message
+    // to be sent (and for the builtin controls, WM_PAINT):
+    int             showState = maximized ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL;
+    ShowWindow(s_guiWin.hwndMain,showState);
+    // The first draw doesn't work properly without this; for some reason the initial
+    // window isn't fully invalidated, especially within windows using win32 controls:
+    InvalidateRect(s_guiWin.hwndMain,NULL,TRUE);
+    MSG         msg;
+    HANDLE      dummyEvent = INVALID_HANDLE_VALUE;
+    HANDLE const *eventsPtr = (options.events.empty() ? &dummyEvent : &options.events[0].handle);
+    for (;;) {
+        BOOL        ret = MsgWaitForMultipleObjects(DWORD(options.events.size()),eventsPtr,FALSE,INFINITE,QS_ALLEVENTS);
+        if (ret == WAIT_FAILED) {
+            DWORD   err = GetLastError();
+            fgout << fgnl << "MsgWaitForMultipleObjects failed with last error: " << err;
+        }
+        int         idx = int(ret) - int(WAIT_OBJECT_0);
+//fgout << fgnl << "Event Handling: " << idx;
+        if ((idx >= 0) && (idx < int(options.events.size()))) {
+            options.events[idx].handler();
+        }
+        // Get all messages here since MsgWaitForMultipleObjects waits for NEW messages:
+        while (PeekMessageW(&msg,NULL,0,0,PM_REMOVE)) {
+            // WM_QUIT is only sent to main message loop after WM_DESTROY has been
+            // sent and processed by all sub-windows:
+            if (msg.message == WM_QUIT) {
+                s_guiWin.hwndMain = 0;    // This value may be sent to dialog boxes as owner hwnd.
+                return;
+            }
+            // Translates multi-key combos into appropriate unicode. Intercept application-wide key combos
+            // before calling this:
+            TranslateMessage(&msg);
+//fgout << fgnl << "Msg: " << toHexString(uint16(msg.message));
+            // this call takes all of the time in this loop:
+            DispatchMessage(&msg);
+        }
+        // it's very important that we check for changes (to trigger WM_PAINTs) after message handling here,
+        // and NOT inside the windows procedures, since the latter somehow causes 'DispatchMessage' to slow to
+        // a crawl, to the point where WM_PAINT message don't even get received any more. There is no advantage
+        // to it in any case, since we often can't know what's changed after using callbacks so have to do a full
+        // check anyway:
+        win.updateGui();
+    }
 }
 
 Vec2I               winScreenPos(HWND hwnd,LPARAM lParam)
@@ -366,9 +357,9 @@ Vec2UI              winNcSize(HWND hwnd)
             (rectW.bottom-rectW.top)-(rectC.bottom-rectC.top));
 }
 
-LRESULT             winCallCatch(std::function<LRESULT(void)> func,string const & className)
+LRESULT             winCallCatch(Sfun<LRESULT(void)> func,string const & className)
 {
-    String8         msg;
+    String8             msg;
     try {return func(); }
     catch(FgException const & e) {msg = e.tr_message(); }   // ends with two CRLFs
     catch(std::bad_alloc const &)
@@ -383,23 +374,44 @@ LRESULT             winCallCatch(std::function<LRESULT(void)> func,string const 
     catch(std::exception const & e) {msg = String8(e.what()) + "\n\n"; }
     catch(...) { msg = "Unknown exception\n\n"; }
     msg += "While running winCallCatch for " + className;
-    auto            diagnosticFn = [&]()
+    auto                diagnosticFn = [&]()
     {
         if (g_guiDiagHandler.reportError) {
             try {g_guiDiagHandler.reportError(msg); }
             catch(...) {}
         }
     };
-    thread          diagThread {diagnosticFn};
-    String8         caption = "ERROR in " + g_guiDiagHandler.appNameVerBits;
+    thread              diagThread {diagnosticFn};
+    String8             caption = "ERROR in " + g_guiDiagHandler.appNameVerBits;
     guiDialogMessage(caption,msg);
     diagThread.join();
     return LRESULT(0);
 }
 
-void                winUpdateScreen()
+void                setCursor(GuiCursor cursor)
 {
-    s_guiWin.guiMainPtr->updateGui();
+    static Svec<pair<GuiCursor,LPWSTR>> toHandle {
+        {GuiCursor::arrow,IDC_ARROW},
+        {GuiCursor::wait,IDC_WAIT},
+        {GuiCursor::translate,IDC_SIZEALL},
+        {GuiCursor::grab,IDC_HAND},
+        {GuiCursor::scale,IDC_SIZENS},
+        {GuiCursor::rotate,IDC_NO},
+        {GuiCursor::crosshair,IDC_CROSS},
+    };
+    LPWSTR          ch = lookupFirstL(toHandle,cursor);
+    SetCursor(LoadCursorW(NULL,ch));
+}
+
+GuiClickState       clickStateFromWParam(WPARAM wp)
+{
+    return {
+        (wp & MK_LBUTTON) != 0,
+        (wp & MK_MBUTTON) != 0,
+        (wp & MK_RBUTTON) != 0,
+        (wp & MK_SHIFT)   != 0,
+        (wp & MK_CONTROL) != 0,
+    };
 }
 
 void                guiQuit()

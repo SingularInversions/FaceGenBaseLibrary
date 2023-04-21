@@ -7,17 +7,15 @@
 #include "stdafx.h"
 
 #include "FgCmd.hpp"
-
-#include "FgMetaFormat.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"
-#include "FgSystemInfo.hpp"
+#include "FgSystem.hpp"
 #include "FgCl.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "FgParse.hpp"
 #include "Fg3dDisplay.hpp"
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 using json = nlohmann::json;
@@ -116,25 +114,13 @@ void                cmd3dmm(CLArgs const & args)
 
 Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
 
-void testmGuiImage(CLArgs const &);
-void testGui2(CLArgs const &);
-void testGuiDialogSplashScreen(CLArgs const &);
-
-static void         testmGui(CLArgs const & args)
-{
-    Cmds            cmds {
-        {testmGuiImage,"image"},
-        {testGui2,"gui2"},
-        {testGuiDialogSplashScreen,"splash"}
-    };
-    doMenu(args,cmds);
-}
+void         testmGui(CLArgs const & args);
 
 static void         sysinfo(CLArgs const &)
 {
     fgout
-        << fgnl << "Computer name: " << fgComputerName()
-        << fgnl << "OS: " << osDescription()
+        << fgnl << "Computer name: " << getComputerName()
+        << fgnl << "OS: " << getOSString()
         << fgnl << "CPU hardware threads: " << std::thread::hardware_concurrency()
         << fgnl << "Executable:" << fgpush
 #ifdef __APPLE__

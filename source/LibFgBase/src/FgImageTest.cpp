@@ -26,18 +26,29 @@ void                testmResize(CLArgs const &)
     string          fname("base/test/testorig.jpg");
     ImgRgba8         img = loadImage(dataDir()+fname);
     ImgRgba8         out(img.width()/2+1,img.height()+1);
-    imgResize(img,out);
+    imgResize_(img,out);
     viewImage(out);
 }
 
-void                resamp(CLArgs const &)
+void                testResamp(CLArgs const &)
 {
     Img3F                   in = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
     Vec2D                   lo {94.3,37.8};
     for (uint lnSz = 5; lnSz < 10; ++lnSz) {
         uint                    sz = 2 << lnSz;
-        Img3F                   out = resampleAdaptive(in,lo,309.7f,sz);
+        Img3F                   out = filterResample(in,lo,309.7f,sz);
         viewImage(toRgba8(out));
+    }
+}
+
+void                testResampRgba8(CLArgs const &)
+{
+    ImgRgba8                in = loadImage(dataDir()+"base/Mandrill512.png");
+    Vec2F                   lo {94.3,37.8};
+    for (uint lnSz=5; lnSz<10; ++lnSz) {
+        uint                    sz = 2 << lnSz;
+        ImgRgba8                out = filterResample(in,lo,309.7f,sz);
+        viewImage(out);
     }
 }
 
@@ -97,17 +108,14 @@ void                testComposite(CLArgs const &)
     String8             dd = dataDir();
     ImgRgba8            overlay = loadImage(dd+"base/Teeth512.png"),
                         base = loadImage(dd+"base/Mandrill512.png");
-    testRegressExact(composite(overlay,base),dd+"base/test/imgops/composite.png");
+    testRegressExact(composite(overlay,base),"base/test/imgops/composite.png");
 }
 
 void                testDecodeJpeg(CLArgs const &)
 {
     String8             imgFile = dataDir() + "base/trees.jpg";
-    String              blob = loadRawString(imgFile);
-    Uchars              ub; ub.reserve(blob.size());
-    for (char ch : blob)
-        ub.push_back(scast<uchar>(ch));
-    ImgRgba8            tst = decodeJpeg(ub),
+    Bytes               blob = loadRaw(imgFile);
+    ImgRgba8            tst = decodeJpeg(blob),
                         ref = loadImage(imgFile);
     FGASSERT(isApproxEqual(tst,ref,3U));
 }
@@ -211,7 +219,8 @@ void                testTransform(CLArgs const &)
 void                testmImage(CLArgs const & args)
 {
     Cmds                cmds {
-        {resamp,"resamp","resample adaptive"},
+        {testResamp,"resamp","filter resample RGBF"},
+        {testResampRgba8,"resamp2","filter resample RGBA8"},
         {testmResize,"resize","change image pixel size by resampling"},
         {testmSfs,"sfs","smoothFloat speed"},
     };

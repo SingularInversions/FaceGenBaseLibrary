@@ -61,9 +61,9 @@ struct      Syntax
     T                   nextAs()
     {
         Opt<T>    ret = fromStr<T>(next());
-        if (!ret.valid())
+        if (!ret.has_value())
             error("Unable to convert string to "+String(typeid(T).name()),curr());
-        return ret.val();
+        return ret.value();
     }
     String8             nextLower()             // As above but lower case
     {

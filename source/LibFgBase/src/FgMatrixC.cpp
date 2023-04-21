@@ -42,7 +42,7 @@ Mat33D              matRotateAxis(double radians,Vec3D const & ax)
     };
 }
 
-Doubles             toDoubles(Floatss const & v)
+Doubles             flattenD(Floatss const & v)
 {
     size_t          sz = 0;
     for (Floats const & fs : v)

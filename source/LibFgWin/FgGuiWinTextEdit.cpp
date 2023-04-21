@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiText.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 
@@ -144,8 +144,6 @@ struct  GuiTextEditWin : public GuiBaseImpl
 //fgout << fgnl << "MODIFY TXT: " << txt  << " CURR: " << m_currText << flush;
                     m_currText = txt;
                     m_api.setOutput(txt);
-                    if (m_keyboardFocus)        // In this case the change is due to user interaction
-                        winUpdateScreen();      // Won't affect this text edit box while focus is on
                 }
             }
             else if (nc == EN_SETFOCUS) {

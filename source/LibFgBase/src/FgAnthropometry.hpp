@@ -1,14 +1,13 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc.
-//
-// Authors:     Andrew Beatty
-// Created:     Dec 27, 2012
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Use, modification and distribution is subject to the MIT License,
+// see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #ifndef FGANTHROPOMETRY_HPP
 #define FGANTHROPOMETRY_HPP
 
-#include "FgMatrixC.hpp"
+#include "FgGeometry.hpp"
 
 namespace Fg {
 
@@ -57,28 +56,55 @@ typedef Svec<FaceLm>    FaceLms;
 std::ostream &      operator<<(std::ostream &,FaceLm);
 template<> Opt<FaceLm>  fromStr<FaceLm>(String const &);
 
-struct      FaceLm2D                // landmark in an image
+struct      FaceLmAtt
 {
-    Vec2F               pos;        // position in image in image raster coordinate system (IRCS)
-    FaceLm              lm;
+    FaceLm              type;
+    String              label;
 
-    FaceLm2D() {}
-    FaceLm2D(Vec2F p,FaceLm l) : pos{p}, lm{l} {}
+    bool                operator==(FaceLm t) const {return (type == t); }
+    bool                operator==(String const & s) const {return (label == s); }
+};
+typedef Svec<FaceLmAtt> FaceLmAtts;
+
+FaceLmAtts const &  getFaceLmAtts();
+
+template<uint D>
+struct      FaceLmPos                // landmark in an image
+{
+    FaceLm              lm;
+    Mat<float,D,1>      pos;        // only positions make sense for landmark label
+
+    FaceLmPos() {}
+    FaceLmPos(FaceLm l,Mat<float,D,1> p) : lm{l}, pos{p} {}
 
     bool                operator==(FaceLm flm) const {return (flm==lm); }
 };
-typedef Svec<FaceLm2D>  FaceLms2D;
+typedef FaceLmPos<2>        FaceLmPos2F;    // 'pos' is in image raster coordinate system (IRCS)
+typedef FaceLmPos<3>        FaceLmPos3F;
+typedef Svec<FaceLmPos2F>   FaceLmPos2Fs;
+typedef Svec<FaceLmPos3F>   FaceLmPos3Fs;
 
-FaceLms                 getLmsEyelid();         // 4 per eye; canthii plus upper and lower centres
-FaceLms                 getLmsEyelidExt();      // 8 per eye; above plus inner/outer lower/upper half points
-FaceLms                 getLmsMouth();          // 6; corners, cristaPhiltris, superius and inferius
-FaceLms                 getEyeGuideLms(Sagg LR);    // L/R lid LMS except for endocanthion
+template<uint D>
+Svec<FaceLmPos<D>>  nameVecsToFaceLmPos(Svec<NameVec<float,D>> const & nvs)
+{
+    FaceLmAtts const &      atts = getFaceLmAtts();
+    Svec<FaceLmPos<D>>      ret; ret.reserve(nvs.size());
+    for (NameVec<float,D> const & nv : nvs)
+        ret.emplace_back(findFirst(atts,nv.name).type,nv.vec);
+    return ret;
+}
 
-Strings                 toLabels(FaceLms const &);  // preserves order
-
-Strings                 getLmStrsEyelid();      // 8 per eye; canthii plus 3 upper and lower lid points
-Strings                 getLmStrsMouth();       // 6 = 2 corners + 3 upper & 1 lower. In clockwise order.
-Strings                 getLmStrsNose();           // 4 = tip, base, outer alar L & R 
+FaceLms             getLmsEyelid();         // 4 per eye; canthii plus upper and lower centres
+FaceLms             getLmsEyelidExt();      // 8 per eye; above plus inner/outer lower/upper half points
+FaceLms             getLmsMouth();          // 6; corners, cristaPhiltris, superius and inferius
+FaceLms             getEyeGuideLms(Sagg LR);    // L/R lid LMS except for endocanthion
+Strings             toLabels(FaceLms const &);  // preserves order
+Strings             getLmStrsEyelid();      // 8 per eye; canthii plus 3 upper and lower lid points
+Strings             getLmStrsMouth();       // 6 = 2 corners + 3 upper & 1 lower. In clockwise order.
+Strings             getLmStrsNose();           // 4 = tip, base, outer alar L & R 
+SquareF             cFaceRegionFrontal11(Vec2Fs const & lmsFrontal11);
+SquareF             cFaceRegionProfileL9(Vec2Fs const & lmsProfileL9);
+SquareF             cFaceRegionProfileR9(Vec2Fs const & lmsProfileR9);
 
 }
 

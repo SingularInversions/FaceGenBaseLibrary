@@ -234,7 +234,9 @@ HWND                winCreateDialog(
 Vec2I               winScreenPos(HWND hwnd,LPARAM lParam);
 Vec2UI              winNcSize(HWND hwnd);
 // Send WM_USER to main hwnd. TODO: make this NOT rely on a global !
-void                winUpdateScreen();
+void                setCursor(GuiCursor);
+
+GuiClickState       clickStateFromWParam(WPARAM);
 
 }
 

@@ -148,7 +148,7 @@ void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler
     // Listen for client:
     bool                        handlerRetval;
     do {
-        fgout << fgnl << "TCP server waiting ..." << std::flush;
+        fgout << fgnl << "TCP server waiting. ";
         socklen_t               sz = sizeof(clientAddress);
         // Get incoming message socketFd. Will block until a message arrives since the
         // listen socket does not have the O_NONBLOCK option set.
@@ -157,14 +157,14 @@ void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler
         int                     dataSockFd = accept(listenSockFd,(struct sockaddr *)&clientAddress,&sz);
         if (dataSockFd < 0)
             fgThrow("nix accept() error",strerror(errno));
-        fgout << " receiving " << std::flush;
+        fgout << " receiving. ";
         // Set the data receive timeout. This is only for receiving a data pack, not for the connection itself,
         // so not be necessary if the a timeout on the entire connection can be set:
         timeval                 timeout;
         timeout.tv_sec = 3;
         timeout.tv_usec = 0;
         if (setsockopt(dataSockFd,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout)) == -1)
-            fgout << fgnl << "nix setsockopt(SO_RCVTIMEO) failed: " << strerror(errno) << " ";
+            fgout << "nix setsockopt(SO_RCVTIMEO) failed: " << strerror(errno) << " ";
         // Convert IP address to string:
         char                    sbuf[INET6_ADDRSTRLEN];
         inet_ntop(
@@ -187,19 +187,19 @@ void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler
                 append_(dataBuff,reinterpret_cast<std::byte const *>(buffer),bytesRecvd);
         }
         while ((bytesRecvd > 0) && (dataBuff.size() <= maxRecvBytes));
-        fgout << " " << dataBuff.size() << "B";
+        fgout << " " << dataBuff.size() << "B ";
         if (bytesRecvd != 0) {
-            fgout << " RECEIVE ERROR: " << bytesRecvd;
+            fgout << "RECEIVE ERROR: " << bytesRecvd;
             close(dataSockFd);
             if (bytesRecvd > 0)
-                fgout << " OVERSIZE MESSAGE IGNORED";
+                fgout << "OVERSIZE MESSAGE IGNORED ";
             continue;
         }
         if (!respond)   // Handler can take arbitrarily long in this case so must close immediately:
             close(dataSockFd);
         String8                 currDir = getCurrentDir();
         Bytes                   response;
-        fgout << " ... executing: " << fgpush;
+        fgout << "Executing. ";
         try {
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
@@ -212,17 +212,17 @@ void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler
         catch(...) {
             fgout << fgnl << "Handler exception (unknown type)";
         }
-        fgout << fgpop;
         if (respond) {
             if (!response.empty()) {
-                fgout << fgnl << "Responding ..." << std::flush;
+                fgout << fgnl << "Responding. ";
                 int                 bytesSent =
                     write(dataSockFd,reinterpret_cast<std::byte const *>(response.data()),response.size());
                 if (bytesSent != int(response.size()))
-                    fgout << " SEND ERROR: " << bytesSent << " (of " << response.size() << "). ";
+                    fgout << "SEND ERROR: " << bytesSent << " (of " << response.size() << "). ";
             }
             close(dataSockFd);
         }
+        fgout << std::flush;                // must flush here since it may be a long time until next packet arrives
         setCurrentDir(currDir);             // In case handler changed it
     } while (handlerRetval == true);
     if (listenSockFd >= 0)

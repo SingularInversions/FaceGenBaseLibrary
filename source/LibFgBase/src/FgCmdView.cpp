@@ -50,20 +50,18 @@ NOTES:
             lmsIrcs = loadLandmarks(lmsFname);
         if (!lmsIrcs.empty()) {
             PushIndent          pind {imgFname.m_str+" Landmarks:"};
-            AffineEw2F          xf = cIrcsToIucs(ai.img.dims());
-            Mat22F              bnds {0,1,0,1};
+            Mat22F              bnds {0,scast<float>(ai.img.width()),0,scast<float>(ai.img.height())};
             for (NameVec2F const & lm : lmsIrcs) {
                 fgout << fgnl << lm.name << ": " << lm.vec;
-                Vec2F               iucs = xf * lm.vec;
-                if (!isInBounds(bnds,iucs))
+                if (!isInBounds(bnds,lm.vec))
                     fgout << " WARNING point not within image boundaries";
-                ai.ptsIucs.push_back(iucs);
+                ai.ptsIrcs.push_back(lm.vec);
             }
         }
         ais.push_back(ai);
     } while (syn.more());
     if (ais.size() == 1)
-        viewImage(ais[0].img,ais[0].ptsIucs);
+        viewImage(ais[0].img,ais[0].ptsIrcs);
     else
         viewImages(ais);
 }
@@ -133,12 +131,12 @@ NOTES:
       marked vertices, along with a Save option.)"
     };
     bool            compare = false,
-                    removeUnused = false;
+                    ruFlag = false;
     while (syn.peekNext()[0] == '-') {
         if (syn.next() == "-c")
             compare = true;
         else if (syn.curr() == "-r")
-            removeUnused = true;
+            ruFlag = true;
         else
             syn.error("Unrecognized option: ",syn.curr());
     }
@@ -155,9 +153,9 @@ NOTES:
                 else
                     mesh.name = path.base;
             }
-            if (removeUnused) {
+            if (ruFlag) {
                 size_t          origVerts = mesh.verts.size();
-                mesh = removeUnusedVerts(mesh);
+                mesh = removeUnused(mesh);
                 if (mesh.verts.size() < origVerts)
                     fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
             }
@@ -222,8 +220,10 @@ void                cmdViewUvs(CLArgs const & args)
         Mesh const &        mesh = meshes[mm];
         String              meshName = mesh.name.empty() ? toStrDigits(mm,2) : mesh.name.m_str;
         PushIndent          pind {"Mesh "+meshName};
-        if (mesh.uvs.empty())
-            fgout << fgnl << "WARNING: mesh has no UVs";
+        if (mesh.uvs.empty()) {
+            fgout << fgnl << "Mesh has no UVs";
+            return;         // errors will result otherwise
+        }
         Mat22F              bounds = cBounds(mesh.uvs);
         fgout << fgnl << syn.curr() << " UV Bounds: " << bounds;
         if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))

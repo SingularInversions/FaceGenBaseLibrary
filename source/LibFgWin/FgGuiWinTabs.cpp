@@ -10,12 +10,11 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiTabs.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 
 using namespace std;
 
@@ -36,8 +35,10 @@ struct  GuiTabsWin : public GuiBaseImpl
         : m_api(api)
     {
         FGASSERT(m_api.tabs.size()>0);
-        for (size_t ii=0; ii<m_api.tabs.size(); ++ii)
+        for (size_t ii=0; ii<m_api.tabs.size(); ++ii) {
+            FGASSERT(api.tabs[ii].win);
             m_panes.push_back(api.tabs[ii].win->getInstance());
+        }
         m_currPane = 0;
     }
 

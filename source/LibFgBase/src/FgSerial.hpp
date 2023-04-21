@@ -16,9 +16,11 @@
 //   2. portable binary serialization is not directly supported but relies on an example file
 //   3. class or field name changes can break compatibility
 //
-// USE:
+// NOTES:
 // 
 // * Will NOT work for size_t due to its changing nature so handle any size_t members manually
+// * manually writing out the builtin versions of each function is required since enable_if results in
+//   strange ambiguous template errors with Bytes.
 
 #ifndef FGSERIAL_HPP
 #define FGSERIAL_HPP
@@ -31,6 +33,9 @@ namespace Fg {
 // * Always gives the same result on any platform
 // * Is not cryptographically secure
 uint64          treeHash(Uint64s const & hashes);
+
+Bytes               stringToBytes(String const &);
+String              bytesToString(Bytes const &);
 
 // SERIALIZE / DESERIALIZE TO REFLECTION TREE
 // which can also be used for text & json serialization / deserialization
@@ -50,40 +55,46 @@ struct      RflArray
 };
 
 // classes redirect to member function 'cReflect' defined by FG_RFL macros:
-template<class T,FG_ENABLE_IF(T,is_class)>
-inline std::any     getReflect(T const & strct) {return strct.cReflect(); }
+template<class T>
+inline std::any     toReflect(T const & strct) {return strct.cReflect(); }
 // like json, represent all numbers by 'double':
-template<class T,FG_ENABLE_IF(T,is_integral)>
-inline std::any     getReflect(T val) {return scast<double>(val); }
-template<class T,FG_ENABLE_IF(T,is_floating_point)>
-inline std::any     getReflect(T val) {return scast<double>(val); }
-template<class T> inline std::any getReflect(Svec<T> const &);      // declare for Arr<Svec<...>...> case
+inline std::any     toReflect(bool v) {return v; }
+inline std::any     toReflect(uchar val) {return scast<double>(val); }
+inline std::any     toReflect(int val) {return scast<double>(val); }
+inline std::any     toReflect(uint val) {return scast<double>(val); }
+inline std::any     toReflect(long val) {return scast<double>(val); }
+inline std::any     toReflect(unsigned long val) {return scast<double>(val); }
+inline std::any     toReflect(long long val) {return scast<double>(val); }
+inline std::any     toReflect(unsigned long long val) {return scast<double>(val); }
+inline std::any     toReflect(float val) {return scast<double>(val); }
+inline std::any     toReflect(double val) {return scast<double>(val); }
+inline std::any     toReflect(String const & v) {return v; }
+inline std::any     toReflect(String8 const & v) {return v.m_str; }
+template<class T> std::any toReflect(Svec<T> const &);        // declare for Arr<Svec<...>...> case
 template<class T,size_t S>
-std::any            getReflect(Arr<T,S> const & a)
+std::any            toReflect(Arr<T,S> const & a)
 {
     RflArray            ret; ret.elems.reserve(S);
     for (T const & e : a)
-        ret.elems.push_back(getReflect(e));
+        ret.elems.push_back(toReflect(e));
     return ret;
 }
 template<class T>
-std::any            getReflect(Svec<T> const & v)
+std::any            toReflect(Svec<T> const & v)
 {
     RflArray            ret; ret.elems.reserve(v.size());
     for (T const & e : v)
-        ret.elems.push_back(getReflect(e));
+        ret.elems.push_back(toReflect(e));
     return ret;
 }
-template<> inline std::any  getReflect(String const & v) {return v; }
-template<> inline std::any  getReflect(String8 const & v) {return v.m_str; }
-template<> inline std::any  getReflect(bool v) {return v; }
+template<> inline std::any  toReflect(Bytes const & b) {return bytesToString(b); }
 
 String              reflectToText(std::any const & reflectTree);
 template<class T>
-String              srlzText(T const & v) {return reflectToText(getReflect(v)); }
+String              srlzText(T const & v) {return reflectToText(toReflect(v)); }
 
 #define FG_RFL_BEG                  std::any cReflect() const {RflStruct ret;
-#define FG_RFL_M1(A)                ret.members.push_back(RflMember{#A,getReflect(A)});
+#define FG_RFL_M1(A)                ret.members.push_back(RflMember{#A,toReflect(A)});
 #define FG_RFL_M2(A,B)              FG_RFL_M1(A) FG_RFL_M1(B)
 #define FG_RFL_M4(A,B,C,D)          FG_RFL_M2(A,B) FG_RFL_M2(C,D)
 #define FG_RFL_END                  return ret; }
@@ -97,46 +108,52 @@ String              srlzText(T const & v) {return reflectToText(getReflect(v)); 
 #define FG_RFL_7(A,B,C,D,E,F,G)     FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M2(E,F) FG_RFL_M1(G) FG_RFL_END
 #define FG_RFL_8(A,B,C,D,E,F,G,H)   FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M4(E,F,G,H) FG_RFL_END
 
-template<class T,FG_ENABLE_IF(T,is_class)>
-inline void         setReflect(std::any const & node,T & strct) {strct.setRflct(node); }
-template<class T,FG_ENABLE_IF(T,is_integral)>
-inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
-template<class T,FG_ENABLE_IF(T,is_floating_point)>
-inline void         setReflect(std::any const & node,T & val) {val = scast<T>(std::any_cast<double>(node)); }
+template<class T>
+inline void         fromReflect_(std::any const & node,T & strct) {strct.setRflct(node); }
+inline void         fromReflect_(std::any const & node,bool & val) {val = std::any_cast<bool>(node); }
+inline void         fromReflect_(std::any const & node,uchar & val) {val = scast<uchar>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,int & val) {val = scast<int>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,uint & val) {val = scast<uint>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,long & val) {val = scast<long>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,unsigned long & val) {val = scast<unsigned long>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,long long & val) {val = scast<long long>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,unsigned long long & val) {val = scast<unsigned long long>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,float & val) {val = scast<float>(std::any_cast<double>(node)); }
+inline void         fromReflect_(std::any const & node,double & val) {val = std::any_cast<double>(node); }
+inline void         fromReflect_(std::any const & node,String & str) {str = std::any_cast<String>(node); }
+inline void         fromReflect_(std::any const & node,String8 & str) {str = std::any_cast<String>(node); }
 // forward declaration to handle Arr<Svec<...>>:
-template<class T> void setReflect(std::any const & node,Svec<T> & val);
+template<class T> void fromReflect_(std::any const & node,Svec<T> & val);
 template<class T,size_t S>
-void                setReflect(std::any const & node,Arr<T,S> & val)
+void                fromReflect_(std::any const & node,Arr<T,S> & val)
 {
     RflArray            arr = std::any_cast<RflArray>(node);
     FGASSERT(arr.elems.size() == S);
     for (size_t ii=0; ii<S; ++ii)
-        setReflect(arr.elems[ii],val[ii]);
+        fromReflect_(arr.elems[ii],val[ii]);
 }
 template<class T>
-void                setReflect(std::any const & node,Svec<T> & val)
+void                fromReflect_(std::any const & node,Svec<T> & val)
 {
     RflArray            arr = std::any_cast<RflArray>(node);
     size_t              S = arr.elems.size();
     val.resize(S);
     for (size_t ii=0; ii<S; ++ii)
-        setReflect(arr.elems[ii],val[ii]);
+        fromReflect_(arr.elems[ii],val[ii]);
 }
-template<> inline void setReflect(std::any const & node,String & str) {str = std::any_cast<String>(node); }
-template<> inline void setReflect(std::any const & node,String8 & str) {str = std::any_cast<String>(node); }
-template<> inline void setReflect(std::any const & node,bool & val) {val = std::any_cast<bool>(node); }
+template<> inline void fromReflect_(std::any const & node,Bytes & val) {val = stringToBytes(std::any_cast<String>(node)); }
 
 std::any            textToReflect(String const & txt);
 template<class T>
 T                   dsrlzText(String const & txt)
 {
     T                   ret;
-    setReflect(textToReflect(txt),ret);
+    fromReflect_(textToReflect(txt),ret);
     return ret;
 }
 
 #define FG_DRF_BEG                  void setRflct(std::any const & node) {RflStruct strct = std::any_cast<RflStruct>(node); size_t cnt {0};
-#define FG_DRF_M1(A)                setReflect(strct.members[cnt++].object,A);
+#define FG_DRF_M1(A)                fromReflect_(strct.members[cnt++].object,A);
 #define FG_DRF_M2(A,B)              FG_DRF_M1(A) FG_DRF_M1(B)
 #define FG_DRF_M4(A,B,C,D)          FG_DRF_M2(A,B) FG_DRF_M2(C,D)
 #define FG_DRF_END                  }
@@ -198,41 +215,44 @@ Cmp                 cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cm
 #define FG_EQ_M2(T,A,B) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B)); }
 #define FG_EQ_M3(T,A,B,C) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C)); }
 #define FG_EQ_M4(T,A,B,C,D) bool operator==(T const & r) const {return ((A == r.A) && (B == r.B) && (C == r.C) && (D == r.D)); }
+#define FG_EQ_M5(T,A,B,C,D,E) bool operator==(T const & r) const {return ((A==r.A)&&(B==r.B)&&(C==r.C)&&(D==r.D)&&(E==r.E)); }
 
 // BINARY SERIALIZATION / DESERIALIATION helper functions:
+
+// determines whether size_t is serialized to uint32 or uint64. Default true (uint64). Not threadsafe.
+extern bool         g_useSize64;        // Never change this without a ScopeGuard to ensure it's reset to default
+
 // Raw binary serialization (just copy the bytes). T must be fundamental type:
 template<class T>
-void                srlzRaw_(T val,Bytes & bytes)
+void                srlzRaw_(T val,Bytes & ser)
 {
     // S is small so an inline [compiler-unrolled] loop is faster than calling memcpy:
     size_t constexpr    S = sizeof(val);
     std::byte const     *vPtr = reinterpret_cast<std::byte const *>(&val);
-    bytes.reserve(bytes.size()+S);
+    // do NOT call ser.reserve() here ... pathological slow-down results in MSVC
     for (size_t ii=0; ii<S; ++ii)                           
-        bytes.push_back(vPtr[ii]);
+        ser.push_back(vPtr[ii]);
 }
-inline void         srlzSizet_(size_t val,Bytes & bytes) {srlzRaw_(scast<uint64>(val),bytes); }
+void                srlzSizet_(size_t val,Bytes & ser);
 template<class T>
-void                srlzRawOverwrite_(T val,Bytes & bytes,size_t pos)  // random access overwrite version
+void                srlzRawOverwrite_(T val,Bytes & ser,size_t pos)  // random access overwrite version
 {
     size_t constexpr    S = sizeof(val);
-    FGASSERT(pos+S <= bytes.size());
+    FGASSERT(pos+S <= ser.size());
     std::byte const     *vPtr = reinterpret_cast<std::byte const *>(&val);
     for (size_t ii=0; ii<S; ++ii)
-        bytes[pos+ii] = vPtr[ii];
+        ser[pos+ii] = vPtr[ii];
 }
 template<class T>
-void                dsrlzRaw_(Bytes const & bytes,size_t & pos,T & val)
+void                dsrlzRaw_(Bytes const & ser,size_t & pos,T & val)
 {
     size_t constexpr    S = sizeof(val);
-    if (pos+S > bytes.size())
+    if (pos+S > ser.size())
         fgThrow("deserialze past end of data for type",typeid(T).name());
-    val = *reinterpret_cast<T const *>(&bytes[pos]);
+    val = *reinterpret_cast<T const *>(&ser[pos]);
     pos += S;
 }
-void                dsrlzSizet_(Bytes const & bytes,size_t & pos,size_t & val);
-Bytes               stringToBytes(String const &);
-String              bytesToString(Bytes const &);
+void                dsrlzSizet_(Bytes const & ser,size_t & pos,size_t & val);
 
 // BINARY SERIALIZATION:
 // Default case redirects serialization to class member serialization, which has a different name
@@ -265,9 +285,14 @@ void                srlz_(Arr<T,S> const & v,Bytes & s)
 template<typename T>
 void                srlz_(Svec<T> const & v,Bytes & s)
 {
-    srlz_(uint64(v.size()),s);
+    srlzSizet_(v.size(),s);
     for (T const & e : v)
         srlz_(e,s);
+}
+template<> inline void srlz_(Bytes const & v,Bytes & s)
+{
+    srlz_(uint64(v.size()),s);
+    cat_(s,v);
 }
 
 // BINARY DESERIALIZATION:
@@ -298,14 +323,18 @@ void                dsrlz_(Bytes const & s,size_t & p,Arr<T,S> & v)
 template<typename T>
 void                dsrlz_(Bytes const & s,size_t & p,Svec<T> & v)
 {
-    uint64              sz;
-    dsrlz_(s,p,sz);
-    uint64              memSz = sz * sizeof(T);
-    if (memSz > lims<uint32>::max())            // 4GB limit on total size can be increased later if required
-        fgThrow("deserialize vector<> would require >4GB");
-    v.resize(scast<size_t>(sz));
+    size_t              sz;
+    dsrlzSizet_(s,p,sz);
+    v.resize(sz);
     for (T & e : v)
         dsrlz_(s,p,e);
+}
+template<> inline void dsrlz_(Bytes const & s,size_t & p,Bytes & v)
+{
+    uint64              sz;
+    dsrlz_(s,p,sz);
+    v = cSubvec(s,p,sz);
+    p += sz;
 }
 template<class T> T dsrlzT_(Bytes const & bytes,size_t & pos)
 {
@@ -328,7 +357,8 @@ template<class T> T dsrlzT_(Bytes const & bytes,size_t & pos)
 // Base case handles struct with macro-defined static function 'typeSig()':
 template<class T> struct TypeSig    {static uint64 typeSig() {return T::typeSig(); } };
 // Builtin type (full) specializations (signatures chosen randomly):
-template<> struct TypeSig<uchar>    { static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+template<> struct TypeSig<std::byte>{ static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+template<> struct TypeSig<uchar>    { static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };   // equivalent to above
 template<> struct TypeSig<int>      { static uint64 typeSig() {return 0x6E78D0CA3F3EE2EAULL; } };
 template<> struct TypeSig<uint>     { static uint64 typeSig() {return 0x10609B64EE938647ULL; } };
 template<> struct TypeSig<long>     { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };

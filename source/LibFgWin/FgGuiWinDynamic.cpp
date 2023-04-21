@@ -3,11 +3,10 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-//
 
 #include "stdafx.h"
 
-#include "FgGuiApiDynamic.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
@@ -37,9 +36,12 @@ struct  GuiDynamicWin : public GuiBaseImpl
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.
         m_store = store;
         m_hwndParent = parentHwnd;
+        FGASSERT(m_api.makePane);
+        GuiPtr          panePtr = m_api.makePane();
+        FGASSERT(panePtr);
+        m_win = panePtr->getInstance();
         // Since this is not a win32 window, we create the sub-windows here within the parent
         // WM_CREATE handler:
-        m_win = m_api.makePane()->getInstance();
         m_win->create(parentHwnd,0,store,NULL,visible);
         m_api.updateFlag->checkUpdate();    // Avoid destroying and re-creating on startup
 //fgout << fgpop;

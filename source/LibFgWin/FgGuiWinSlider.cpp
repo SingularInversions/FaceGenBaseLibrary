@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSlider.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgAffine.hpp"
@@ -144,7 +144,6 @@ struct  GuiSliderWin : public GuiBaseImpl
                 m_lastVal = winPos;
                 double  newVal = m_apiToWin.invert(scast<double>(winPos));
                 m_api.setOutput(newVal);
-                winUpdateScreen();
             }
         }
         else if (msg == WM_PAINT) {

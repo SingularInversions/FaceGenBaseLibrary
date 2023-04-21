@@ -7,12 +7,11 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSplit.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
 #include "FgBounds.hpp"
-#include "FgMetaFormat.hpp"
 #include "FgIter.hpp"
 
 using namespace std;
@@ -40,6 +39,7 @@ struct  GuiSplitWin : public GuiBaseImpl
         // WM_CREATE handler:
         m_panes.resize(m_api.panes.dims());
         for (size_t ii=0; ii<m_api.panes.numPixels(); ++ii) {
+            FGASSERT(m_api.panes.m_data[ii]);
             m_panes.m_data[ii] = m_api.panes.m_data[ii]->getInstance();
             m_panes.m_data[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
         }

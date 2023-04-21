@@ -1,8 +1,7 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc.
-//
-// Authors:     Andrew Beatty
-// Created:     Feb 27, 2012
+// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Use, modification and distribution is subject to the MIT License,
+// see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
@@ -25,16 +24,6 @@ ostream &           operator<<(ostream & os,FaceView fv)
         FGASSERT_FALSE;
     return os;
 }
-
-struct      FaceLmAtt
-{
-    FaceLm              type;
-    String              label;
-
-    bool                operator==(FaceLm t) const {return (type == t); }
-    bool                operator==(String const & s) const {return (label == s); }
-};
-typedef Svec<FaceLmAtt> FaceLmAtts;
 
 FaceLmAtts const &  getFaceLmAtts()
 {
@@ -62,6 +51,39 @@ FaceLmAtts const &  getFaceLmAtts()
         {FaceLm::chinBottom,"ChinBottom"},                  // Gnathion
     };
     return ret;
+}
+
+Svec<Pair<Gender,char>> cGenderCharList()
+{
+    return {
+        {Gender::female,'f'},
+        {Gender::male,'m'},
+    };
+}
+
+Svec<Pair<RaceGroup,char>> cRaceCharList()
+{
+    return {
+        {RaceGroup::african,'a'},
+        {RaceGroup::caucasian,'c'},
+        {RaceGroup::eAsian,'e'},
+        {RaceGroup::sAsian,'s'},
+        {RaceGroup::other,'o'},
+    };
+}
+
+ostream &           operator<<(std::ostream & os,FaceLm fl)
+{
+    return os << findFirst(getFaceLmAtts(),fl).label;
+}
+
+template<>
+Opt<FaceLm>         fromStr<FaceLm>(String const & s)
+{
+    for (FaceLmAtt const & fla : getFaceLmAtts())
+        if (s == fla.label)
+            return fla.type;
+    return {};
 }
 
 FaceLms             getLmsEyelid()
@@ -167,39 +189,30 @@ Strings             getLmStrsNose()
     };
 }
 
-Svec<Pair<Gender,char>> cGenderCharList()
+static SquareF      cFaceRegion(Vec2Fs const & lms,Vec2F relShift,float relSize)
 {
-    return {
-        {Gender::female,'f'},
-        {Gender::male,'m'},
-    };
+    Mat22F              bnds = cBounds(lms);
+    Vec2F               lo = bnds.colVec(0),
+                        hi = bnds.colVec(1),
+                        centre = (lo+hi) * 0.5f;
+    float               sz = hi[1]-lo[1];
+    return {centre-relShift*sz,relSize*sz};
 }
-
-Svec<Pair<RaceGroup,char>> cRaceCharList()
+SquareF             cFaceRegionFrontal11(Vec2Fs const & lms)
 {
-    return {
-        {RaceGroup::african,'a'},
-        {RaceGroup::caucasian,'c'},
-        {RaceGroup::eAsian,'e'},
-        {RaceGroup::sAsian,'s'},
-        {RaceGroup::other,'o'},
-    };
+    FGASSERT(lms.size() == 11);
+    return cFaceRegion(lms,{0.8f,0.9f},1.6f);
 }
-
-ostream &           operator<<(std::ostream & os,FaceLm fl)
+SquareF             cFaceRegionProfileL9(Vec2Fs const & lms)
 {
-    return os << findFirst(getFaceLmAtts(),fl).label;
+    FGASSERT(lms.size() == 9);
+    return cFaceRegion(lms,{0.6f,0.8f},1.5f);
 }
-
-template<>
-Opt<FaceLm>         fromStr<FaceLm>(String const & s)
+SquareF             cFaceRegionProfileR9(Vec2Fs const & lms)
 {
-    for (FaceLmAtt const & fla : getFaceLmAtts())
-        if (s == fla.label)
-            return fla.type;
-    return {};
+    FGASSERT(lms.size() == 9);
+    return cFaceRegion(lms,{0.9f,0.8f},1.5f);
 }
-
 
 }
 

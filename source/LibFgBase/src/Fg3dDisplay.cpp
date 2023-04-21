@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "Fg3dDisplay.hpp"
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTestUtils.hpp"
 #include "Fg3dMeshIo.hpp"
@@ -163,13 +163,13 @@ namespace {
 void                bgImageLoad2(BackgroundImage bgi)
 {
     Opt<String8>     fname = guiDialogFileLoad(clOptionsStr(getImgExts()),getImgExts());
-    if (!fname.valid())
+    if (!fname.has_value())
         return;
-    if (fname.val().empty())
+    if (fname.value().empty())
         return;
     ImgRgba8 &       img = bgi.imgN.ref();
     try {
-        loadImage_(fname.val(),img);
+        loadImage_(fname.value(),img);
     }
     catch (const FgException & e) {
         guiDialogMessage("Unable to load background image",e.tr_message());
@@ -303,8 +303,8 @@ void                assignTri(      // Re-assign a tri (or quad) to a different 
 {
     RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
-    if (vpt.valid()) {
-        MeshesIntersect         isct = vpt.val();
+    if (vpt.has_value()) {
+        MeshesIntersect         isct = vpt.value();
         size_t                  dstSurfIdx = surfIdx.val();
         RendMesh const &        rm = rms[isct.meshIdx];
         Mesh *                  meshPtr = rm.origMeshN.valPtr();
@@ -361,8 +361,8 @@ void                assignPaint(
 {
     RendMeshes const &      rms = rendMeshesN.cref();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toD3ps,rms);
-    if (vpt.valid()) {
-        MeshesIntersect         isct = vpt.val();
+    if (vpt.has_value()) {
+        MeshesIntersect         isct = vpt.value();
         size_t                  dstSurfIdx = surfIdx.val();
         RendMesh const &        rm = rms[isct.meshIdx];
         Mesh *                  meshPtr = rm.origMeshN.valPtr();
@@ -398,9 +398,9 @@ GuiPtr              makeEditPoints(Gui3d & api)
     {
         RendMeshes const &      rms = rendMeshesN.cref();
         Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,screenPos,worldToD3ps,rms);
-        if (vpt.valid()) {
+        if (vpt.has_value()) {
             // Perform all calculations in the original mesh coordinates:
-            MeshesIntersect const & pt = vpt.val();
+            MeshesIntersect const & pt = vpt.value();
             SurfPoint const &       sp = pt.surfPnt;
             FGASSERT(pt.meshIdx < rms.size());
             RendMesh const &        rm = rms[pt.meshIdx];
@@ -622,11 +622,11 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 co
             if (rms.empty())
                 return;
             Opt<String8>            fname = guiDialogFileSave("FaceGen",format);
-            if (fname.valid()) {
+            if (fname.has_value()) {
                 Meshes              meshes;
                 for (RendMesh const & rm : rms)
                     meshes.push_back(rm.origMeshN.cref());
-                saveMergeMesh(meshes,fname.val());
+                saveMergeMesh(meshes,fname.value());
             }
         };
         auto                reloadFn = [=]()
@@ -878,8 +878,8 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         guiButton("Load File",[poseValsN]()
         {
             Opt<String8>                fname = guiDialogFileLoad("TXT expression settings file",{"txt"});
-            if (fname.valid()) {
-                Svec<PoseVal>               data = dsrlzText<Svec<PoseVal>>(loadRawString(fname.val()));
+            if (fname.has_value()) {
+                Svec<PoseVal>               data = dsrlzText<Svec<PoseVal>>(loadRawString(fname.value()));
                 PoseVals &                  pvs = poseValsN.ref();
                 // Do not alter the labels, only update values where labels exist:
                 for (PoseVal const & d : data) {
@@ -892,12 +892,12 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         guiButton("Save File",[poseValsN]()
         {
             Opt<String8>                fname = guiDialogFileSave("TXT expression settings file",{"txt"});
-            if (fname.valid()) {
+            if (fname.has_value()) {
                 PoseVals const &            pvs = poseValsN.cref();
                 Svec<PoseVal>               data;
                 for (auto const & pv : pvs)
                     data.push_back(PoseVal{pv.first,pv.second});
-                saveRaw(srlzText(data),fname.val());
+                saveRaw(srlzText(data),fname.value());
             }
         }),
     };
@@ -942,8 +942,8 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         return guiSplitV({buttonsW,guiSplitScroll(sliderFacsWs)});
     // Two tabs of expressions:
     GuiTabDefs      sliderTs {
-        guiTab("FACS",true,guiSplitScroll(sliderFacsWs)),
-        guiTab("Composite",true,guiSplitScroll(sliderCompWs)),
+        {"FACS",true,guiSplitScroll(sliderFacsWs)},
+        {"Composite",true,guiSplitScroll(sliderCompWs)},
     };
     return guiSplitV({buttonsW,guiTabs(sliderTs)});
 }
@@ -991,10 +991,10 @@ GuiPtr              makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 
                     renderOptsW = makeRendCtrls(gui3d.renderOptions,gui3d.bgImg,store+"RendOpts",true,true,true),
                     lightingW = makeLightingCtrls(gui3d.light,gui3d.bothButtonsDragAction,store+"Light");
     GuiTabDefs      viewTabs = {
-                        guiTab("Camera",true,cameraW),
-                        guiTab("Render",true,renderOptsW),
-                        guiTab("Lighting",true,lightingW)
-                    };
+        {"Camera",true,cameraW},
+        {"Render",true,renderOptsW},
+        {"Lighting",true,lightingW},
+    };
     return guiTabs(viewTabs);
 }
 
@@ -1025,8 +1025,8 @@ GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Cap
             Vec2UI          dims = szSelN.val() ? Vec2UI(widN.val(),hgtN.val()) : viewportDims.val();
             String          imgExt = getImgFormatInfo(imgFormatN.cref()).extensions.at(0);
             Opt<String8>    fname = guiDialogFileSave("",imgExt);
-            if (fname.valid())
-                saveImage(fname.val(),capture->func(dims,bgTransN.val()));
+            if (fname.has_value())
+                saveImage(fname.value(),capture->func(dims,bgTransN.val()));
         }
     };
     GuiPtr              saveImageW = guiSplitV({
@@ -1134,12 +1134,12 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     });
     GuiPtr              statsTextW = guiText(statsTextN);
     GuiTabDefs          mainTabs = {
-        guiTab("View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View")),
-        guiTab("Morphs",true,gpms.makePoseCtrls(true)),
-        guiTab("Select",true,meshSelect),
-        guiTab("Edit",true,makeEditPane(gui3d,saveName,store+"Edit")),
-        guiTab("Info",true,guiSplitScroll({statsTextW})),
-        guiTab("System",true,guiTextLines(gui3d.gpuInfo,16,true))
+        {"View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View")},
+        {"Morphs",true,gpms.makePoseCtrls(true)},
+        {"Select",true,meshSelect},
+        {"Edit",true,makeEditPane(gui3d,saveName,store+"Edit")},
+        {"Info",true,guiSplitScroll({statsTextW})},
+        {"System",true,guiTextLines(gui3d.gpuInfo,16,true)},
     };
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK viewMesh"),
@@ -1203,8 +1203,8 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
             if (step < toPlace.size()) {
                 RendMeshes const &      rms = rendMeshesN.cref();
                 Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
-                if (vpt.valid()) {
-                    MeshesIntersect         pt = vpt.val();
+                if (vpt.has_value()) {
+                    MeshesIntersect         pt = vpt.value();
                     FGASSERT(pt.meshIdx < rms.size());
                     RendMesh const &        rm = rms[pt.meshIdx];
                     Mesh *                  origMeshPtr = rm.origMeshN.valPtr();

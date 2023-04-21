@@ -85,9 +85,9 @@ Opt<TriPoint>       GridTriangles::nearestIntersect(
                             v1 = verts[tri[1]],
                             v2 = verts[tri[2]];
         Opt<Vec3D>          vbc = cBarycentricCoord(pos,v0,v1,v2);
-        if (vbc.valid() && (cMinElem(vbc.val()) >= 0)) {       // We intersect:
+        if (vbc.has_value() && (cMinElem(vbc.value()) >= 0)) {       // We intersect:
             Vec3F               ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
-                                bc = Vec3F(vbc.val());
+                                bc = Vec3F(vbc.value());
             float               invDepth = cDot(bc,ids);        // Interpolation in projected values is harmonic
             if (invDepth > bestInvDepth) {                      // Closer on same ray
                 bestInvDepth = invDepth;
@@ -123,8 +123,8 @@ void                GridTriangles::intersects_(
                             p1 = verts[tp.vertInds[1]],
                             p2 = verts[tp.vertInds[2]];
         vbc = cBarycentricCoord(pos,p0,p1,p2);
-        if (vbc.valid()) {
-            tp.baryCoord = Vec3F(vbc.val());
+        if (vbc.has_value()) {
+            tp.baryCoord = Vec3F(vbc.value());
             if (cMinElem(tp.baryCoord) >= 0.0f)
                 ret.push_back(tp);
         }

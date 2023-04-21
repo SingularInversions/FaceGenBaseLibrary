@@ -9,7 +9,6 @@
 #include "FgGuiApi3d.hpp"
 #include "FgDirect3D.hpp"
 #include "FgGuiWin.hpp"
-#include "FgHex.hpp"
 
 using namespace std;
 using namespace std::placeholders;
@@ -86,10 +85,10 @@ struct  Gui3dWin : public GuiBaseImpl
     {
         // This flips the dirty bit (QS_PAINT) for the render window but Windows will not
         // actually send a WM_PAINT message until the message queue is empty for a fraction
-        // of a second (regardless of background paint flag):
+        // of a second (regardless of background paint flag). We don't want to call UpdateWindow
+        // however, since that immediately sends the paint message bypassing the message loop,
+        // which can cause a lag of several frames as updates are rendered which are already out of date:
         InvalidateRect(m_hwnd,NULL,FALSE);
-        // So tell the system we want this updated immediately, for fluid interactive display:
-        UpdateWindow(m_hwnd);
     }
 
     virtual void    moveWindow(Vec2I lo, Vec2I sz) {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
@@ -148,7 +147,6 @@ struct  Gui3dWin : public GuiBaseImpl
                         m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
                         m_d3d->resize(m_size);          // Assume it works this time
                     }
-                    winUpdateScreen();      // Consumers of m_api.viewportSize need this
                 }
             }
         }
@@ -173,7 +171,6 @@ struct  Gui3dWin : public GuiBaseImpl
             if (restartGpu) {
                 m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
                 m_d3d->resize(m_size);          // Assume it works this time
-                winUpdateScreen();
             }
         }
         else if (contains(wmButtonsDown,msg)) {
@@ -199,7 +196,6 @@ struct  Gui3dWin : public GuiBaseImpl
                     MouseAction const & action = m_api.clickActions.at(buttonIdx,shift,ctrl);
                     if (action) {                   // If an action is defined for this combo
                         action(m_size,pos,m_worldToD3ps);
-                        winUpdateScreen();
                     }
                 }
             }
@@ -212,62 +208,50 @@ struct  Gui3dWin : public GuiBaseImpl
             Vec2I    delta = pos-m_lastPos;
             if ((wParam == MK_LBUTTON) && buttonIsDownLMR[0]) {
                 m_api.panTilt(delta);
-                winUpdateScreen();
             }
             else if (wParam == (MK_LBUTTON | MK_SHIFT)) {
                 m_api.translate(delta);
-                winUpdateScreen();
             }
             else if (wParam == MK_MBUTTON) {
                 m_api.translate(delta);
-                winUpdateScreen();
             }
             else if (wParam == (MK_MBUTTON | MK_SHIFT | MK_CONTROL)) {
                 if (m_api.shiftCtrlMiddleDragAction)
                     m_api.shiftCtrlMiddleDragAction(m_size,pos,m_worldToD3ps);
-                winUpdateScreen();
             }
             else if (wParam == MK_RBUTTON) {
                 m_api.scale(delta[1]);
-                winUpdateScreen();
             }
             else if (wParam == (MK_RBUTTON | MK_SHIFT)) {
                 if (m_api.shiftRightDragAction) {
                     m_api.shiftRightDragAction(m_size,pos,m_worldToD3ps);
-                    winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_CONTROL)) {
                 if (m_api.ctlDragAction) {
                     m_api.ctlDrag(true,m_size,delta,m_worldToD3ps);
-                    winUpdateScreen();
                 }
             }
             else if (wParam == (MK_RBUTTON | MK_CONTROL)) {
                 if (m_api.ctlDragAction) {
                     m_api.ctlDrag(false,m_size,delta,m_worldToD3ps);
-                    winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_RBUTTON)) {
                 if (m_api.bothButtonsDragAction) {
                     m_api.bothButtonsDragAction(false,delta);
-                    winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_RBUTTON | MK_SHIFT)) {
                 if (m_api.bothButtonsDragAction) {
                     m_api.bothButtonsDragAction(true,delta);
-                    winUpdateScreen();
                 }
             }
             else if (wParam == (MK_LBUTTON | MK_SHIFT | MK_CONTROL)) {
                 m_api.translateBgImage(m_size,delta);
-                winUpdateScreen();
             }
             else if (wParam == (MK_RBUTTON | MK_SHIFT | MK_CONTROL)) {
                 m_api.scaleBgImage(m_size,delta);
-                winUpdateScreen();
             }
             m_lastPos = pos;
         }
@@ -297,7 +281,6 @@ struct  Gui3dWin : public GuiBaseImpl
                 else if (gi.dwID == GID_ZOOM) {     // Enabled by default
                     if (m_lastGestureVal > 0) {
                         m_api.scale(int(gi.ullArguments)-int(m_lastGestureVal));
-                        winUpdateScreen();
                     }
                     m_lastGestureVal = gi.ullArguments;
                     return 0;
@@ -305,7 +288,6 @@ struct  Gui3dWin : public GuiBaseImpl
                 else if (gi.dwID == GID_ROTATE) {   // Enabled in WM_CREATE
                     if (m_lastGestureVal > 0) {
                         m_api.roll((int(gi.ullArguments)-int(m_lastGestureVal)) / 32);  // by experiment
-                        winUpdateScreen();
                     }
                     m_lastGestureVal = gi.ullArguments;
                     return 0;
@@ -325,7 +307,6 @@ struct  Gui3dWin : public GuiBaseImpl
                     m_api.fileDragDrop(filePath);
                 }
                 DragFinish(hDrop);      // Windows releases paths memory
-                winUpdateScreen();
             }
         }
         else

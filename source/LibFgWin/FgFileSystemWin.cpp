@@ -30,12 +30,12 @@ bool                isDirectory(String8 const & name)
 DirContents         getDirContents(String8 const & dirName,bool includeDot)
 {
     Path                dir(asDirectory(dirName));
-    DirContents   ret;
+    DirContents         ret;
     WIN32_FIND_DATAW	finddata;
     String8             spec = dir.str() + "*";
     HANDLE hFind = FindFirstFileW(spec.as_wstring().c_str(),&finddata);
     if (hFind == INVALID_HANDLE_VALUE)
-        return ret;
+        fgThrow("Unable to open directory",dirName);
     do {
         wstring         name(finddata.cFileName);
         if ((name[0] != '.') || includeDot) {

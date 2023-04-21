@@ -8,7 +8,7 @@
 #ifndef INCLUDED_FGSTRING_HPP
 #define INCLUDED_FGSTRING_HPP
 
-#include "FgOpt.hpp"
+#include "FgStdExtensions.hpp"
 
 namespace Fg {
 
@@ -46,9 +46,9 @@ template<class T>
 T                   strTo(String const & str)
 {
     Opt<T>              oval = fromStr<T>(str);
-    if (!oval.valid())
+    if (!oval.has_value())
         throw FgException("Unable to convert string to type",str+":"+typeid(T).name());
-    return oval.val();
+    return oval.value();
 }
 
 // Ensures a minimum number of digits are printed:
@@ -164,7 +164,10 @@ String8s            toUstrings(Strings const & strs);
 template<>
 inline String       toStr(String8 const & str) {return str.m_str; }
 template<class T>
-inline void         fgThrow(String const & msg,T const & data)  {throw FgException(msg,toStr(data));  }
+inline void         fgThrow(String const & msg,T const & data)
+{
+    throw FgException(msg,toStr(data));
+}
 template<class T,class U>
 inline void         fgThrow(String const & msg,T const data0,const U & data1) 
 {
@@ -198,6 +201,29 @@ String              fgToVariableName(String8 const & str);
 String8             replaceCharWithString(String8 const & in,char32_t from,String8 const to);
 // Print a title and indented list of items one per line:
 void                printList(String const & title,Strings const & items,bool numbered);
+
+// Hex functions useful to create strings directly rather than going through ostringstream with 'std::hex'
+// and 'std::uppercase' and uint-casting for uchar.
+// Big-endian (ie highest order digits printed first)
+// Signed and unsigned are treated identically (hex representation of bit pattern)
+// Returns hex encoding in string of length 2:
+String              toHexString(uchar c);
+// Returns hex encoding in string of length 4:
+String              toHexString(uint16 val);
+inline String       toHexString(int16 val) {return toHexString(scast<uint16>(val)); }
+// Returns hex encoding in string of length 8
+String              toHexString(uint32 val);
+inline String       toHexString(int32 val) {return toHexString(scast<uint32>(val)); }
+// Returns hex encoding in string of length 16:
+String              toHexString(uint64 val);
+inline String       toHexString(int64 val) {return toHexString(scast<uint64>(val)); }
+String              bytesToHexString(const uchar *arr,uint numBytes);
+// from hex to value (ignores non-hex characters and accepts letters O and I as 0 and 1 resp.:
+uint64              fromHex64(String const & hex);
+// Separate into 4 digit (16 bit word) chunks separated by dashes, and add a 4 digit CRC at end:
+String              toHex64Crc(uint64 serialNum);
+// Returns 0 if not a valid hex string or the CRC doesn't match:
+uint64              fromHex64Crc(String const & serialString);
 
 }
 

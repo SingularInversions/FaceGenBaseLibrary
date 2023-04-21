@@ -66,7 +66,7 @@ struct  SimilarityD
     explicit SimilarityD(double s) : scale(s) {}
     explicit SimilarityD(Vec3D const & t) : trans(t) {}
     explicit SimilarityD(QuaternionD const & r) : rot(r) {}
-    explicit SimilarityD(ScaleTrans3D const & s) : scale(s.scale), trans(s.trans) {}
+    SimilarityD(ScaleTrans3D const & s) : scale(s.scale), trans(s.trans) {}
     SimilarityD(double s,QuaternionD const & r,const Vec3D & t) : scale(s), rot(r), trans(t) {FGASSERT(scale > 0.0); }
     SimilarityD(Rigid3D const & r) : rot{r.rot}, trans{r.trans} {}
     SimilarityD(SimilarityRD const &);

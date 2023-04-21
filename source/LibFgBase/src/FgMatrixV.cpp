@@ -142,7 +142,7 @@ void                testMatMul(CLArgs const & args)
         if (isAutomated(args))
             return;
         Syntax            syn(args,"<size>");
-        size_t              sz = fromStr<size_t>(syn.next()).val();
+        size_t              sz = fromStr<size_t>(syn.next()).value();
         MatrixXd            l(sz,sz),
                             r(sz,sz);
         for (size_t rr=0; rr<sz; ++rr) {
@@ -272,7 +272,7 @@ void                testMatMulSpeed(CLArgs const & args)
     if (isAutomated(args))
         return;
     Syntax              syn {args,"<size>"};
-    size_t              sz = fromStr<size_t>(syn.next()).val();
+    size_t              sz = fromStr<size_t>(syn.next()).value();
     MatD                m0 = MatD::randNormal(sz,sz),
                         m1 = MatD::randNormal(sz,sz);
     Timer               timer;

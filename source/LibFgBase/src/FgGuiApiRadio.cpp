@@ -6,8 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiRadio.hpp"
-#include "FgGui.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 using namespace std::placeholders;

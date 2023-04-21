@@ -16,8 +16,7 @@ namespace Fg {
 
 #ifndef FG_SANDBOX
 
-bool
-clRun(string const & cmd,bool throwIfError,int rvalMask)
+bool                clRun(string const & cmd,bool throwIfError,int rvalMask)
 {
     fgout << fgnl << cmd << "\n";   // DOS output lines will always start in zero'th column anyway
     int             retval = 0;
@@ -42,8 +41,7 @@ clRun(string const & cmd,bool throwIfError,int rvalMask)
     return true;
 }
 
-Opt<String>
-clPopen(const String & cmd)
+String              clPopen(const String & cmd)
 {
     size_t constexpr    sz = 1024;
     char                buff[sz] {};
@@ -56,7 +54,7 @@ clPopen(const String & cmd)
     fp = popen(cp,mp);
 #endif
     if (fp == nullptr)
-        return Opt<String>{};
+        fgThrow("popen() failure with command",cmd);
 #ifdef _WIN32
     ScopeGuard          sg {[fp](){_pclose(fp);} };
 #else
@@ -65,42 +63,35 @@ clPopen(const String & cmd)
     String              ret;
     while (fgets(buff,sz,fp) != nullptr)        // fgets always adds a NULL to the end of the copied data
         ret += String(buff);
-    return Opt<String>{ret};
+    return ret;
 }
 
-void        testPopen(CLArgs const &)
+void                testPopen(CLArgs const &)
 {
-    Opt<String>     out = clPopen("dir");
-    if (out.valid())
-        fgout << fgnl << "Command 'dir' output " << out.val().size() << " characters:\n" << out.val();
-    else
-        fgout << fgnl << "Command 'dir' failed";
+    String              out = clPopen("dir");
+    fgout << fgnl << "Command 'dir' output " << out.size() << " characters:\n" << out;
 }
 
 #ifdef _WIN32
 
-void
-clUnzip(string const & fname)
+void                    clUnzip(string const & fname)
 {
     clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" x "+fname+" >> log.txt");
 }
 
-void
-clZip(String const & dirName,String const & zipFileName)
+void                    clZip(String const & dirName,String const & zipFileName)
 {
     clRun("\"C:\\Program Files\\7-Zip\\7z.exe\" a " + zipFileName + " " + dirName + " >> log.txt");
 }
 
 #else
 
-void
-unzip(string const &)
+void                    unzip(string const &)
 {
     throw FgExceptionNotImplemented();
 }
 
-void
-zip(string const & ,string const & )
+void                    zip(string const & ,string const & )
 {
     throw FgExceptionNotImplemented();
 }

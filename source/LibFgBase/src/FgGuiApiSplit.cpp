@@ -6,8 +6,8 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiSplit.hpp"
-#include "FgGuiApiSpacer.hpp"
+#include "FgGuiApi.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 

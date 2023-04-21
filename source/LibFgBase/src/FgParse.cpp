@@ -16,12 +16,6 @@ using namespace std;
 
 namespace Fg {
 
-bool            isLetter(char ch) {return isalpha(scast<uchar>(ch)); }
-bool            isDigitLetterDashUnderscore(char c) {return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
-bool            isWhitespace(char c) {return (c < 0x21); }
-bool            isWhitespaceOrInvalid(char c) {return ((c < 0x21) || (c > 0x7E)); }
-bool            isCrLf32(char32_t ch) {return ((ch == 0x0A) || (ch == 0x0D)); }
-
 bool                containsOnlyDigits(String const & str)
 {
     for (char c : str)

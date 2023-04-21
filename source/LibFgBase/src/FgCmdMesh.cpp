@@ -7,11 +7,9 @@
 #include "stdafx.h"
 
 #include "FgCommand.hpp"
-
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dMesh.hpp"
+#include "FgImageIo.hpp"
 #include "FgGeometry.hpp"
-#include "FgMetaFormat.hpp"
 #include "FgSimilarity.hpp"
 #include "FgTopology.hpp"
 #include "Fg3dDisplay.hpp"
@@ -479,7 +477,7 @@ void                cmdRuv(CLArgs const & args)
         "    <extOut> = " + getMeshSaveExtsCLDescription()
         );
     Mesh    mesh = loadMesh(syn.next());
-    mesh = removeUnusedVerts(mesh);
+    mesh = removeUnused(mesh);
     saveMesh(mesh,syn.next());
 }
 
@@ -795,8 +793,10 @@ OUTPUT:
             fgout << "no surface points";
         else {
             PushIndent          pind;
-            for (size_t ii=0; ii<surf.surfPoints.size(); ++ii)
-                fgout << fgnl << ii << " : " << surf.surfPoints[ii].label;
+            for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
+                SurfPointName const &   spn = surf.surfPoints[ii];
+                fgout << fgnl << ii << " : " << spn.label << " " << surf.surfPointPos(mesh.verts,spn.point);
+            }
         }
     }
 }
@@ -880,14 +880,14 @@ void                cmdSurfPointRen(CLArgs const & args)
 
 void                cmdSurfPointToVert(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.tri <out>.tri\n"
-        "    <out>.tri will be appended with the new marked vertices."
-        );
-    Mesh    in = loadTri(syn.next());
-    Mesh    out = loadTri(syn.next());
-    surfPointsToMarkedVerts_(in,out);
-    saveTri(syn.curr(),out);
+    Syntax              syn {args,R"(<in>.(fgmesh | tri) <out>.fgmesh
+OUTPUT:
+    <out>.fgmesh will be appended with the new marked vertices.)"
+    };
+    Mesh                in = loadMesh(syn.next());
+    Mesh                out = loadMesh(syn.next());
+    out.addMarkedVerts(in.surfPointsAsNameVecs());
+    saveMesh(out,syn.curr());
 }
 
 void                cmdToTris(CLArgs const & args)
@@ -1210,7 +1210,7 @@ NOTES:
     Uints               inds;
     if (syn.more()) {
         Strings             tinds = splitWhitespace(loadRawString(syn.next()));
-        inds = mapCallT<uint>(tinds,[](String const & s){return fromStr<uint>(s).val(); });
+        inds = mapCallT<uint>(tinds,[](String const & s){return fromStr<uint>(s).value(); });
     }
     if (cMax(inds) >= V)
         fgThrow("index values in <inds>.txt exceed vertex count");

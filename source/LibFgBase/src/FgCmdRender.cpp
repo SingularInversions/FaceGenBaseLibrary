@@ -14,8 +14,6 @@
 #include "Fg3dCamera.hpp"
 #include "FgSoftRender.hpp"
 #include "FgTime.hpp"
-
-#include "FgMetaFormat.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgParse.hpp"
 #include "FgTestUtils.hpp"

@@ -64,40 +64,33 @@ void                fgWarn(char const * fname,int line,string const & msg)
     fgout << "\nWARNING: " <<  msg << " (" << toFilePosString(fname,line) << ")";
 }
 
-// Keep this here to avoid excess header dependencies:
-static Ofstream   s_ofs;
-
+static Ofstream     s_ofs;
 // Only this single global instance should ever be instantiated.
-// Note that 'fgout' can't be used in global variable constructors since it's
-// not guaranteed to be constructed yet itself:
+// Note that 'fgout' can't be used in global variable constructors since it's not guaranteed to be constructed yet itself:
 FgOut               fgout;
 
-ostream &
-fgnl(ostream & ss)
+ostream &           fgnl(ostream & ss)
 {
     ss << '\n';
-    uint    il = fgout.indentLevel();
+    uint                il = fgout.indentLevel();
     for (uint ii=0; ii<il; ii++)
         ss << "|   ";
     return ss;
 }
 
-ostream &
-fgpush(ostream & ss)
+ostream &           fgpush(ostream & ss)
 {
     fgout.push();
     return ss;
 }
 
-ostream &
-fgpop(ostream & ss)
+ostream &           fgpop(ostream & ss)
 {
     fgout.pop();
     return ss;
 }
 
-ostream &
-fgreset(ostream & ss)
+ostream &           fgreset(ostream & ss)
 {
     fgout.reset();
     return ss << '\n';
@@ -115,8 +108,7 @@ FgOut::~FgOut()
         s_ofs.close();
 }
 
-bool
-FgOut::setDefOut(bool b)
+bool                FgOut::setDefOut(bool b)
 {
     for (auto it=m_streams.begin(); it!=m_streams.end(); ++it) {
         if (it->pOStr == defOut()) {
@@ -130,8 +122,7 @@ FgOut::setDefOut(bool b)
     return false;
 }
 
-bool
-FgOut::defOutEnabled()
+bool                FgOut::defOutEnabled()
 {
     for (auto it=m_streams.begin(); it!=m_streams.end(); ++it)
         if (it->pOStr == defOut())
@@ -139,8 +130,7 @@ FgOut::defOutEnabled()
     return false;
 }
 
-void
-FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
+void                FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
 {
     if (s_ofs.is_open())
         s_ofs.close();
@@ -153,8 +143,7 @@ FgOut::logFile(const std::string & fnameUtf8,bool appendFile,bool prependDate)
         m_streams.push_back(OStr{&s_ofs});
 }
 
-void
-FgOut::logFileClose()
+void                FgOut::logFileClose()
 {
     if (s_ofs.is_open())
         s_ofs.close();
@@ -163,23 +152,20 @@ FgOut::logFileClose()
         m_streams.erase(it);
 }
 
-void
-FgOut::setIndentLevel(uint l)
+void                FgOut::setIndentLevel(uint l)
 {
     for (OStr & o : m_streams)
         o.indent = l;
 }
 
-FgOut &
-FgOut::flush()
+FgOut &             FgOut::flush()
 {
     for (auto & s : m_streams)
         (*s.pOStr) << std::flush;
     return *this;
 }
 
-FgOut &
-FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
+FgOut &             FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
 {
     // Handle the case of fgpush and fgpop explicitly since otherwise they
     // may be passed on to both streams and double called resulting in twice
@@ -207,17 +193,15 @@ FgOut::operator<<(std::ostream& (*manip)(std::ostream&))
     return *this;
 }
 
-void
-FgOut::addStream(ostream * os,size_t indentLevel)
+void                FgOut::addStream(ostream * os,size_t indentLevel)
 {
     for (OStr ostr : m_streams)
         if (ostr.pOStr == os)
             return;
     m_streams.emplace_back(os,indentLevel);
 }
-size_t
 
-FgOut::delStream(ostream * os)
+size_t              FgOut::delStream(ostream * os)
 {
     for (auto it=m_streams.begin(); it!=m_streams.end(); ++it) {
         if (it->pOStr == os) {
@@ -229,8 +213,7 @@ FgOut::delStream(ostream * os)
     return 0;
 }
 
-std::ostream *
-FgOut::defOut()
+std::ostream *      FgOut::defOut()
 {
 #ifdef __ANDROID__
     // std::cout not supported by Android (supposed to pipe to /dev/null but in fact crashes with invalid pointer)

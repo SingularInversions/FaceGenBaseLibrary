@@ -47,13 +47,21 @@ std::ostream &      operator<<(std::ostream & ss,std::shared_ptr<T> const & p)
     else
         return ss << "NULL";
 }
-
 template<class T,class U>
-std::ostream &
-operator<<(std::ostream & ss,Pair<T,U> const & pp)
+std::ostream &      operator<<(std::ostream & ss,Pair<T,U> const & pp)
 {
     return ss << "(" << pp.first << "," << pp.second << ")";
 }
+template<typename T>
+std::ostream &      operator<<(std::ostream & os,Opt<T> const & v)
+{
+    if (v.has_value())
+        os << v.value();
+    else
+        os << "no_value";
+    return os;
+}
+
 
 // STD CONTAINTER CONSTRUCTION FUNCTIONS:
 
@@ -75,8 +83,35 @@ template <class _Elem>
 static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
 {return _Ilist.begin(); }
 
+// deep cast allows changing underlying type if nested containers. Cannot be defined in functional style since we
+// cannot do partial specialization on the return type:
+template<class T,class F,FG_ENABLE_IF(T,is_arithmetic),FG_ENABLE_IF(F,is_arithmetic)>
+inline void         dcast_(F f,T & t) {t = static_cast<T>(f); }
 
-// FUNCTIONAL-STYLE (NOT ITERATOR) ALGORITHMS ON STD CONTAINERS:
+template<class T,class F> void dcast_(Svec<F> const & f,Svec<T> & t);   // forward declare for nested containers
+
+template<class T,class F,size_t S>
+void                dcast_(Arr<F,S> const & f,Arr<T,S> & t)
+{
+    for (size_t ii=0; ii<S; ++ii)
+        dcast_(f[ii],t[ii]);
+}
+
+template<class T,class F>
+void                dcast_(Svec<F> const & f,Svec<T> & t)
+{
+    t.resize(f.size());
+    for (size_t ii=0; ii<f.size(); ++ii)
+        dcast_(f[ii],t[ii]);
+}
+
+template<class T,class F>
+inline T            dcast(F const & f)
+{
+    T                   t;
+    dcast_(f,t);
+    return t;
+}
 
 // combine rounding with conversion to integer types. No bounds checking:
 template<class T,class F,FG_ENABLE_IF(T,is_signed),FG_ENABLE_IF(T,is_integral),FG_ENABLE_IF(F,is_floating_point)>
@@ -493,8 +528,9 @@ Svec<T>             integrate(Svec<T> const & vec)
 template<class T>
 Svec<T>             cSubvec(Svec<T> const & vec,size_t start,size_t size)
 {
-    FGASSERT(start+size <= vec.size());
-    return  Svec<T>(vec.begin()+start,vec.begin()+start+size);
+    FGASSERT(start <= vec.size());      // allow for boundary case empty result but not beyond
+    size_t              sz = std::min(size,vec.size()-start);
+    return Svec<T>(vec.begin()+start,vec.begin()+start+sz);
 }
 // Truncate after the first elements of 'vec' up to 'size', if present:
 template<class T>
@@ -1853,6 +1889,37 @@ void                mapAccWeight_(std::map<T,W> & lhs,const std::map<T,W> & rhs)
 {
     for (auto const & it : rhs)
         mapAccWeight_(lhs,it.first,it.second);
+}
+
+template<typename T>
+struct      Valid       // like std::optional but overloads a value:
+{
+    T               m_val;      // = numeric_limits<T>::max() if not valid
+
+    Valid() : m_val(lims<T>::max()) {}
+    explicit Valid(T const & v) : m_val(v) {}
+
+    Valid &         operator=(T const & v) {m_val = v; return *this; }
+    bool            valid() const {return (m_val != std::numeric_limits<T>::max()); }
+    void            invalidate() {m_val = std::numeric_limits<T>::max(); }
+    // Implicit conversion caused inexplicable errors with gcc and explicit conversion
+    // is required in many cases anyway:
+    T               val() const {FGASSERT(valid()); return m_val; }
+    // The constPtr() and ptr() functions below couldn't be overloads of operator&() since
+    // this doesn't play nice with standard library containers:
+    T const *       constPtr() const {FGASSERT(valid()); return &m_val; }
+    // You're on your own if you use this one, NO CHECKING, since it may be used to set the val,
+    // so do a manual check using valid() if you need one along with non-const pointer access:
+    T *             ptr() {return &m_val; }
+};
+
+template<typename T>
+std::ostream &      operator<<(std::ostream & os,const Valid<T> & v)
+{
+    if (v.valid())
+        return (os << v.val());
+    else
+        return (os << "invalid");
 }
 
 }

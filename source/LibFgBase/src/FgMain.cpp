@@ -11,8 +11,7 @@
 #include "FgCommand.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
-#include "FgGuiApiDialogs.hpp"
-#include "FgGuiApiBase.hpp"
+#include "FgGuiApi.hpp"
 
 using namespace std;
 

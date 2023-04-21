@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiCheckbox.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgMatrixC.hpp"
@@ -104,7 +104,6 @@ struct  GuiCheckboxWin : public GuiBaseImpl
             if (code == 0) {            // checkbox clicked
                 FGASSERT(ident == 0);
                 m_api.clickFn();
-                winUpdateScreen();
             }
         }
         else 

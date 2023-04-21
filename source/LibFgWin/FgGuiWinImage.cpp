@@ -7,7 +7,7 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiImage.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
 #include "FgBounds.hpp"
@@ -21,36 +21,32 @@ struct  GuiImageWin : public GuiBaseImpl
     HWND                m_hwnd;
     GuiImage            m_api;
     Vec2UI              m_size;
-    Vec2I               m_posWhenLButtonClicked;
-    Vec2I               m_lastPos;                  // Last mouse position in CC
-    bool                dragging;
+    Vec2I               m_lastPos;                  // Last mouse position in CC (move or click)
+    GuiCursor           cursorState = GuiCursor::arrow;
+    GuiCursor           noDragCursorState = GuiCursor::arrow;
+    // shows the click index of the last single click down. This is invalid if no button is down, or if
+    // any combination of buttons are hit at the same time, since click actions are not defined when other buttons are down:
+    Opt<size_t>         lastSingleClick;
+    GuiClickState       lastClickState;
+    bool                noMovementSinceClick = false;
 
-    GuiImageWin(const GuiImage & api)
-    : m_api(api), dragging(false)
-    {}
+    GuiImageWin(GuiImage const & api) : m_api(api) {}
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
         winCreateChild(parentHwnd,ident,this,cc);
     }
-
-    virtual void
-    destroy()
+    virtual void    destroy()
     {
-        // Automatically destroys children first:
-        DestroyWindow(m_hwnd);
+        DestroyWindow(m_hwnd);      // Automatically destroys children first
     }
+    virtual Vec2UI  getMinSize() const {return m_api.minSizeN.val(); }
+    virtual Vec2B   wantStretch() const {return m_api.wantStretch; }
 
-    virtual Vec2UI getMinSize() const {return m_api.minSizeN.val(); }
-
-    virtual Vec2B wantStretch() const {return m_api.wantStretch; }
-
-    virtual void
-    updateIfChanged()
+    virtual void    updateIfChanged()
     {
         // Avoid flickering due to background repaint if image size hasn't changed:
         if (m_api.updateFlag->checkUpdate()) {
@@ -60,24 +56,20 @@ struct  GuiImageWin : public GuiBaseImpl
         else if (m_api.updateNofill->checkUpdate())
             InvalidateRect(m_hwnd,NULL,FALSE);      // only repaint image
     }
-
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
-    {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
-
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
-
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    virtual void    moveWindow(Vec2I lo,Vec2I sz)
     {
-        if (msg == WM_CREATE) {
+        MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE);
+    }
+    virtual void    showWindow(bool s)
+    {
+        ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE);
+    }
+    LRESULT         wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    {
+        if (msg == WM_CREATE)
             m_hwnd = hwnd;
-        }
-        else if (msg == WM_SIZE) {
+        else if (msg == WM_SIZE)
             m_size = Vec2UI(LOWORD(lParam),HIWORD(lParam));
-        }
         else if (msg == WM_PAINT) {
             HDC         hdc;
             PAINTSTRUCT ps;
@@ -92,7 +84,7 @@ struct  GuiImageWin : public GuiBaseImpl
                 DWORD               blueMask;
             };
             GuiImage::Disp          imgd = m_api.getImgFn(m_size);
-            ImgRgba8 const &         img = *imgd.imgPtr;
+            ImgRgba8 const &        img = *imgd.imgPtr;
             FGBMI                   bmi;
             memset(&bmi,0,sizeof(bmi));
             BITMAPINFOHEADER &      bmih = bmi.bmiHeader;
@@ -117,54 +109,73 @@ struct  GuiImageWin : public GuiBaseImpl
                 DIB_RGB_COLORS);
             EndPaint(hwnd,&ps);
         }
-        else if (msg == WM_LBUTTONDOWN) {
-            m_posWhenLButtonClicked = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            m_lastPos = m_posWhenLButtonClicked;
-            POINT   point;
-            point.x = 0;
-            point.y = 0;
+        else if ((msg == WM_LBUTTONDOWN) || (msg == WM_MBUTTONDOWN) || (msg == WM_RBUTTONDOWN)) {
+            GuiClickState       gcs  = clickStateFromWParam(wParam);
+            Vec2I               pos (GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            POINT               point {0,0};
             FGASSERTWIN(ClientToScreen(hwnd,&point));
-            RECT    rect;
+            RECT                rect;
             rect.left = point.x;
             rect.top = point.y;
             rect.right = point.x + m_size[0];
             rect.bottom = point.y + m_size[1];
             FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
+            // there is no need to call TrackMouseEvent and handle WM_MOUSELEAVE to reset the cursor shape
+            // since ClipCursor ensures that the WM_LBUTTONUP must happen within the client area:
+            auto const &        callback = m_api.clickDownFns[gcs.toDragIndex()];
+            if (callback)
+                cursorState = callback(pos);
+            if (gcs.onlyOneButton())
+                lastSingleClick = gcs.getActionIndex();
+            else
+                lastSingleClick.reset();        // click actions not defined if more than one button is used
+            noMovementSinceClick = true;
+            lastClickState = gcs;
         }
-        else if (msg == WM_LBUTTONUP) {
+        else if ((msg == WM_LBUTTONUP) || (msg == WM_MBUTTONUP) || (msg == WM_RBUTTONUP)) {
+            GuiClickState       gcs  = clickStateFromWParam(wParam);
+            if (!gcs.allButtonsUp())    // clicking is only defined for one button at a time
+                return 0;
             ClipCursor(NULL);
-            Vec2I           posIrcs = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            if (!dragging) {
-                if (m_api.clickLeft) {
-                    m_api.clickLeft(posIrcs);
-                    winUpdateScreen();
+            Vec2I               posIrcs = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            size_t              buttonIdx = (msg==WM_LBUTTONUP) ? 0 : (msg==WM_MBUTTONUP ? 1 : 2),
+                                keyIdx = gcs.getKeyIndex(),
+                                actionIdx = keyIdx*3 + buttonIdx;
+            // click actions not defined if more than one button involved, and only triggered if no movement (drag) occured:
+            if ((lastSingleClick == actionIdx) && noMovementSinceClick) {
+                if (m_api.clickActionFns[actionIdx]) {
+                    m_api.clickActionFns[actionIdx](posIrcs);
                 }
             }
-            dragging = false;
+            cursorState = noDragCursorState;
+            lastClickState = gcs;
+        }
+        // WM_SETCURSOR is sent before each WM_MOUSEMOVE (despite being triggered by it, according to MS docs).
+        // The distinction is unclear, other than WM_SETCURSOR gives no position and I guess is where the
+        // cursor should be set. Windows automatically handles changing the cursor back and forth if the user
+        // leaves the client area then returns:
+        else if (msg == WM_SETCURSOR) {
+            setCursor(cursorState);
+            return TRUE;    // required for this to work. Tells windows that the cursor has been set.
         }
         else if (msg == WM_MOUSEMOVE) {
-            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            Vec2I    delta = pos-m_lastPos;
-            m_lastPos = pos;
-            if (wParam == MK_LBUTTON) {
-                if (!dragging) {
-                    // Add hysteresis to avoid annoying missed clicks due to very slight movement:
-                    if (cMaxElem(mapAbs(pos-m_posWhenLButtonClicked)) > 1)
-                        dragging = true;
-                }
-                if (dragging) {
-                    if (m_api.dragLeft) {
-                        m_api.dragLeft(delta);
-                        winUpdateScreen();
+            Vec2I               pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
+                                delta = pos-m_lastPos;
+            // windows can send zero size mousemove messages, I think due to ClipCursor calls in button up/down handler:
+            if (cMag(delta) > 0) {
+                GuiClickState       gcs  = clickStateFromWParam(wParam);
+                if (gcs == lastClickState) {       // need to check here as well since a key state may have changed
+                    size_t              idx = gcs.toDragIndex();
+                    if (m_api.mouseMoveFns[idx]) {
+                        noDragCursorState = m_api.mouseMoveFns[idx](pos,delta);
+                        if (idx == 0)
+                            cursorState = noDragCursorState;
                     }
                 }
+                lastClickState = gcs;
+                noMovementSinceClick = false;
             }
-            else if (wParam == MK_RBUTTON) {
-                if (m_api.dragRight) {
-                    m_api.dragRight(delta);
-                    winUpdateScreen();
-                }
-            }
+            m_lastPos = pos;    // only needs to be set here since other messages are redundant wrt mouse movement
         }
         else
             return DefWindowProc(hwnd,msg,wParam,lParam);
@@ -172,9 +183,7 @@ struct  GuiImageWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiImage & def)
-{return GuiImplPtr(new GuiImageWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiImage & def) {return GuiImplPtr(new GuiImageWin(def)); }
 
 }
 

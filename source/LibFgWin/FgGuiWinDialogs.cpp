@@ -7,10 +7,10 @@
 
 #include "stdafx.h"
 
-#include "FgGuiApiDialogs.hpp"
+#include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgScopeGuard.hpp"
-#include "FgSystemInfo.hpp"
+#include "FgSystem.hpp"
 
 using namespace std;
 using namespace std::placeholders;

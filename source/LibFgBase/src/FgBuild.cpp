@@ -9,7 +9,6 @@
 #include "FgBuild.hpp"
 #include "FgFileSystem.hpp"
 #include "FgRandom.hpp"
-#include "FgHex.hpp"
 #include "FgCommand.hpp"
 
 using namespace std;
@@ -531,27 +530,33 @@ Strings             ConsSolution::getAllDeps(Strings const & projNames,bool dllS
 
 ConsSolution        getConsData(ConsType type)
 {
-    ConsSolution  ret(type);
+    ConsSolution        ret(type);
 
-    ConsProj      eigen("LibTpEigen","");
+    ConsProj            eigen("LibTpEigen","");
     eigen.addIncDir("","Eigen/",true);
     ret.projects.push_back(eigen);
 
-    ConsProj      stb("LibTpStb","");
+    ConsProj            stb("LibTpStb","");
     stb.addIncDir("",true);
     ret.projects.push_back(stb);
 
-    ConsProj      base("LibFgBase","src/");
+    ConsProj            dlib {"LibTpDlib",""};
+    dlib.addIncDir("",true);
+    dlib.addSrcDir("dlib/all/");
+    dlib.warn = 0;
+    dlib.defs.emplace_back("DLIB_ISO_CPP_ONLY",false);    // don't build stuff we won't use
+    ret.projects.push_back(dlib);
+
+    ConsProj            base("LibFgBase","src/");
     base.addSrcDir("");
     base.addIncDir("",true);
     if (type != ConsType::win)
         base.addSrcDir("nix/");
-    base.addDep(stb.name,false);
     base.addDep(eigen.name,false);
+    base.addDep(stb.name,false);
+    base.addDep(dlib.name,true);
     ret.projects.push_back(base);
-
-    string          depName = base.name;
-
+    string              depName = base.name;
     if (type == ConsType::win) {
         ConsProj      basewin("LibFgWin","");
         basewin.addSrcDir("");
@@ -578,10 +583,10 @@ bool                consNativeMakefiles(ConsSolution const & sln);
 
 bool                constructBuildFiles(ConsSolution const & sln)
 {
-    PushDir       pd;
+    PushDir             pd;
     if (pathExists("source"))
         pd.push("source");
-    bool        changed = false;
+    bool                changed = false;
     if (sln.type == ConsType::win)
         changed = writeVisualStudioSolutionFiles(sln);
     else if (sln.type == ConsType::nix)
@@ -595,7 +600,7 @@ bool                constructBuildFiles(ConsSolution const & sln)
 
 void                constructBuildFiles()
 {
-    PushDir       pd;
+    PushDir             pd;
     if (pathExists("source"))
         pd.push("source");
     constructBuildFiles(getConsData(ConsType::win));
@@ -605,15 +610,15 @@ void                constructBuildFiles()
 
 void                cmdCons(CLArgs const & args)
 {
-    Syntax        syntax(args,
+    Syntax              syn(args,
         "(sln | make) <option>*\n"
         "    sln  - Visual Studio SLN and VCXPROJ files.\n"
         "    make - Makefiles (all non-windows platforms).\n"
     );
-    string          type = syntax.next();
-    set<string>     options;
-    while (syntax.more())
-        options.insert(syntax.next());
+    string              type = syn.next();
+    set<string>         options;
+    while (syn.more())
+        options.insert(syn.next());
     if (type == "sln")
         constructBuildFiles(getConsData(ConsType::win));
     else if (type == "make") {
@@ -621,7 +626,7 @@ void                cmdCons(CLArgs const & args)
         //constructBuildFiles(getConsData(ConsType::cross));
     }
     else
-        syntax.error("Invalid option",type);
+        syn.error("Invalid option",type);
 }
 
 }

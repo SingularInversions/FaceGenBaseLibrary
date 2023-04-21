@@ -15,6 +15,12 @@ namespace Fg {
 
 inline bool         isDigit(char ch) {return std::isdigit(scast<uchar>(ch)); }
 inline bool         isCrLf(uint ch) {return ((ch == '\r') || (ch == '\n')); }
+inline bool         isWhitespace(char c) {return (c < 0x21); }
+inline bool         isLetter(char ch) {return isalpha(scast<uchar>(ch)); }
+inline bool         isDigitLetterDashUnderscore(char c) {return isDigit(c) || isLetter(c) || (c == '-') || (c == '_'); }
+inline bool         isWhitespaceOrInvalid(char c) {return ((c < 0x21) || (c > 0x7E)); }
+inline bool         isCrLf32(char32_t ch) {return ((ch == 0x0A) || (ch == 0x0D)); }
+
 // Returns true if empty:
 bool                containsOnlyDigits(String const &);
 // Returns a vector of tokens, treating all control codes and extended codes (high bit set) as whitespace,
