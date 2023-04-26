@@ -23,12 +23,9 @@ struct  GuiCheckboxWin : public GuiBaseImpl
     HWND                hwndCheckbox,
                         hwndThis;
 
-    GuiCheckboxWin(GuiCheckbox const & api)
-    : m_api(api), currVal(api.getFn())
-    {}
+    GuiCheckboxWin(GuiCheckbox const & api) : m_api(api), currVal(api.getFn()) {}
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiCheckboxWin::create " << m_api.label << fgpush;
         WinCreateChild   cc;
@@ -38,41 +35,32 @@ struct  GuiCheckboxWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         // Automatically destroys children first:
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI
-    getMinSize() const
-    {return Vec2UI(150,24); }
+    virtual Vec2UI      getMinSize() const {return Vec2UI(150,24); }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B       wantStretch() const
     {return Vec2B(true,false); }        // Need X stretch for checkboxes with longer text descriptions
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
         if (m_api.getFn() != currVal)
             updateCheckbox();
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "GuiCheckboxWin::moveWindow " << lo << " , " << sz;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
     }
 
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
+    virtual void        showWindow(bool s) {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
 //fgout << fgnl << "GuiCheckboxWin::WM_CREATE " << m_api.label;
@@ -111,16 +99,13 @@ struct  GuiCheckboxWin : public GuiBaseImpl
         return 0;
     }
 
-    void
-    updateCheckbox()
+    void                updateCheckbox()
     {
         currVal = m_api.getFn();
         SendMessage(hwndCheckbox,BM_SETCHECK,currVal ? 1 : 0,0);
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiCheckbox & def)
-{return GuiImplPtr(new GuiCheckboxWin(def)); }
+GuiImplPtr              guiGetOsImpl(const GuiCheckbox & def) {return GuiImplPtr(new GuiCheckboxWin(def)); }
 
 }

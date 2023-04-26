@@ -152,16 +152,6 @@ inline size_t       cMaxIdx(Mat<T,R,C> const & mat) {return cMaxIdx(mat.m); }
 template<typename T,uint R,uint C>
 inline size_t       cMinIdx(Mat<T,R,C> const & mat) {return cMinIdx(mat.m); }
 
-// Element-wise max:
-template<class T,uint R,uint C>
-Mat<T,R,C>          cMax(Mat<T,R,C> const & m1,Mat<T,R,C> const & m2)
-{
-    Mat<T,R,C>    ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = cMax(m1[ii],m2[ii]);
-    return ret;
-}
-
 template<typename T>
 inline T            cMaxElem(MatV<T> const & mat) {return cMax(mat.m_data); }
 
@@ -171,6 +161,12 @@ Mat<T,R,1>          cDims(const Svec<Mat<T,R,1> > & vec)
     Mat<T,R,2>          bounds = cBounds(vec);
     return (bounds.colVec(1)-bounds.colVec(0));
 }
+
+// A lo/hi threshold is just a max/min against a constant value:
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapThreshLo(Mat<T,R,C> m,T lo) {return mapCall(m,[=](T e){return cMax(e,lo); }); }
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapThreshHi(Mat<T,R,C> m,T hi) {return mapCall(m,[=](T e){return cMin(e,hi); }); }
 
 // The returned bounds will have negative volume if the bounds do not intersect.
 // Bounds must both be EUB or both be IUB:
@@ -271,8 +267,8 @@ Mat<T,R,2>      iubToEub(Mat<T,R,2> boundsInclusiveUpper)
     return ret;
 }
 
-// Clamp (aka clip) functions below are all inclusive bounds since exclusive bounds
-// do not explicitly provide the value to clip to:
+// Clamp (aka clip) is a two-sided threshold.
+// Functions below are all inclusive bounds since exclusive bounds do not explicitly provide the value to clamp to:
 
 template<typename T>
 inline T            clamp(T val,T lo,T hi) {return val < lo ? lo : (val > hi ? hi : val); }
@@ -307,24 +303,6 @@ Mat<T,R,C>          mapClamp(Mat<T,R,C> const & mat,Mat<T,R,C> lo,Mat<T,R,C> hi)
     Mat<T,R,C>      ret;
     for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = clamp(mat[ii],lo[ii],hi[ii]);
-    return ret;
-}
-
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapMax(Mat<T,R,C> m,T lo)
-{
-    Mat<T,R,C>    ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = cMax(m[ii],lo);
-    return ret;
-}
-
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapMin(Mat<T,R,C> m,T hi)
-{
-    Mat<T,R,C>    ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = cMin(m[ii],hi);
     return ret;
 }
 

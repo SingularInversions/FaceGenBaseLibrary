@@ -143,35 +143,6 @@ double              cRms(Svec<T> const & v) {return std::sqrt(cMag(v) / v.size()
 template<class T,size_t S>
 double              cRms(Arr<T,S> const & a) {return cMag(a) / double(S); }
 
-// Useful for recursive template stub, 3-arg min/max, and when windows.h is included (has min/max macros):
-template<class T>
-T                   cMax(T x1,T x2) {return std::max(x1,x2); }
-template<class T> 
-T                   cMax(T x1,T x2,T x3) {return std::max(std::max(x1,x2),x3); }
-template<class T> 
-T                   cMax(T x1,T x2,T x3,T x4) {return std::max(std::max(x1,x2),std::max(x3,x4)); }
-template<class T>
-T                   cMin(T x1,T x2) {return std::min(x1,x2); }
-template<class T>
-T                   cMin(T x1,T x2,T x3) {return std::min(std::min(x1,x2),x3); }
-
-template<class T,size_t S>
-T                   cMax(const Arr<T,S> & a) {return *std::max_element(a.begin(),a.end()); }
-template<class T,size_t S>
-T                   cMin(const Arr<T,S> & a) {return *std::min_element(a.begin(),a.end()); }
-template<typename T>
-T                   cMin(Svec<T> const & v)
-{
-    FGASSERT(!v.empty());
-    return *std::min_element(v.begin(),v.end());
-}
-template<class T>
-T                   cMax(Svec<T> const & v)
-{
-    FGASSERT(!v.empty());
-    return *std::max_element(v.begin(),v.end());
-}
-
 template<class T,size_t S>
 Arr<T,S>            mapAbs(const Arr<T,S> & a)
 {

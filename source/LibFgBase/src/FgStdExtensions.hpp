@@ -83,6 +83,32 @@ template <class _Elem>
 static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
 {return _Ilist.begin(); }
 
+// Alias for min/max to allow overloading and avoid collisions (eg. when windows.h is included with its min/max macros):
+template<class T>
+inline T            cMin(T x1,T x2) {return std::min(x1,x2); }
+template<class T>
+inline T            cMin(T x1,T x2,T x3) {return cMin(cMin(x1,x2),x3); }
+template<class T>
+inline T            cMax(T x1,T x2) {return std::max(x1,x2); }
+template<class T> 
+inline T            cMax(T x1,T x2,T x3) {return cMax(cMax(x1,x2),x3); }
+template<class T,size_t S>
+inline T            cMin(Arr<T,S> const & a) {return *std::min_element(a.begin(),a.end()); }
+template<class T,size_t S>
+inline T            cMax(Arr<T,S> const & a) {return *std::max_element(a.begin(),a.end()); }
+template<typename T>
+T                   cMin(Svec<T> const & v)
+{
+    FGASSERT(!v.empty());
+    return *std::min_element(v.begin(),v.end());
+}
+template<class T>
+T                   cMax(Svec<T> const & v)
+{
+    FGASSERT(!v.empty());
+    return *std::max_element(v.begin(),v.end());
+}
+
 // deep cast allows changing underlying type if nested containers. Cannot be defined in functional style since we
 // cannot do partial specialization on the return type:
 template<class T,class F,FG_ENABLE_IF(T,is_arithmetic),FG_ENABLE_IF(F,is_arithmetic)>

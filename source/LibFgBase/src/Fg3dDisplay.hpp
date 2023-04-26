@@ -43,9 +43,10 @@ GuiPtr              makeRendCtrls(
     RPT<RendOptions>    rendOptionsR,
     BackgroundImage     bgImg,
     String8 const &     store,
-    bool                structureOptions,       // color by mesh, wire, flat, allverts, facets
+    bool                structureOptions,           // color by mesh, wire, flat, allverts, facets
     bool                twoSidedOption,
-    bool                pointOptions);          // surf points, marked verts
+    bool                pointOptions,               // surf points, marked verts
+    IPT<bool> *         supportTransparencyNPtr=nullptr);
 
 GuiPtr              makeLightingCtrls(
     RPT<Lighting>           lightingR,                  // Assigned

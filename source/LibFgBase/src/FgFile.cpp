@@ -199,11 +199,8 @@ Path                pathFromDir(String8 const & directory)
 }
 
 String8             pathToBase(String8 const & f) {return Path(f).base; }
-
 String8             pathToDirBase(String8 const & p) {return Path(p).dirBase(); }
-
 String8             pathToExt(String8 const & p) {return Path(p).ext; }
-
 String              pathToExt(String const & p) {return pathToExt(String8(p)).m_str; }
 
 bool                checkExt(String8 const & path,String const & ext)

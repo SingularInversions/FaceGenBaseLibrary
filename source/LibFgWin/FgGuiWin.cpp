@@ -102,7 +102,7 @@ struct      GuiWinMain : GuiMainBase
             pnt.y = min[1];
             mmi->ptMinTrackSize = pnt;
         }
-        else if (msg == WM_SIZE) {  // Doesn't send 0 size like sub-windows get at creation.
+        else if (msg == WM_SIZE) {
             m_size[0] = LOWORD(lParam);
             m_size[1] = HIWORD(lParam);
             // Size zero is sent when window is minimized, which for unknown reasons causes windows
@@ -329,7 +329,7 @@ void                guiStartImpl(
         // a crawl, to the point where WM_PAINT message don't even get received any more. There is no advantage
         // to it in any case, since we often can't know what's changed after using callbacks so have to do a full
         // check anyway:
-        win.updateGui();
+        win.updateGui();        // only triggers another WM_PAINT if something has changed
     }
 }
 

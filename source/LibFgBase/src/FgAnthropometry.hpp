@@ -44,6 +44,7 @@ enum struct     FaceLm {
     alarOuterL,         alarOuterR,
     noseTip,
     subNasale,
+    jawOuterL,          jawOuterR,
     mouthCornerL,       mouthCornerR,
     cristaPhiltriL,     cristaPhiltriR,
     labialeSuperius,
@@ -60,6 +61,7 @@ struct      FaceLmAtt
 {
     FaceLm              type;
     String              label;
+    FaceLmAtt(FaceLm t,String const & l) : type{t}, label{l} {}
 
     bool                operator==(FaceLm t) const {return (type == t); }
     bool                operator==(String const & s) const {return (label == s); }

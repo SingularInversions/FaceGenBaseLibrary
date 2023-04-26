@@ -34,11 +34,12 @@ GuiPtr              guiTextLines(NPT<String8> node,uint minHeight,bool wantStret
     return std::make_shared<GuiText>(gt);
 }
 
-GuiPtr              guiText(String8 txt,uint minWidth)
+GuiPtr              guiText(String8 txt,uint minWidth,bool rich)
 {
     GuiText             gt;
     gt.content = makeIPT(txt);
     gt.minWidth = minWidth;
+    gt.rich = rich;
     return std::make_shared<GuiText>(gt);
 }
 

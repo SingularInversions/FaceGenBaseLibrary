@@ -52,6 +52,7 @@ struct  Gui3dWin : public GuiBaseImpl
     // Need to track this to avoid random object motion when mouse is dragged into viewport, and also when
     // file dialogs leak mouse moves into the viewport (MS bug):
     Arr<bool,3>         buttonIsDownLMR = {{false,false,false}};
+    bool                m_resetD3d = false;
 
     Gui3dWin(const Gui3d & api) : m_api(api)
     {
@@ -83,6 +84,12 @@ struct  Gui3dWin : public GuiBaseImpl
 
     virtual void    updateIfChanged()   // Just always render
     {
+            if (m_resetD3d) {
+                m_d3d.reset(new D3d{m_hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
+                m_d3d->resize(m_size);
+                m_resetD3d = false;
+            }
+
         // This flips the dirty bit (QS_PAINT) for the render window but Windows will not
         // actually send a WM_PAINT message until the message queue is empty for a fraction
         // of a second (regardless of background paint flag). We don't want to call UpdateWindow
@@ -116,7 +123,8 @@ struct  Gui3dWin : public GuiBaseImpl
             FGASSERTWIN(format != 0);
             FGASSERTWIN(SetPixelFormat(m_hdc,format,&pfd));
             FGASSERTWIN(DescribePixelFormat(m_hdc,format,pfd.nSize,&pfd));
-            m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
+            m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
+            m_resetD3d = false;
             m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
             // The pinch-to-zoom gesture is enabled by default but not the rotate gesture, which we
             // must explicitly enable:
@@ -139,14 +147,8 @@ struct  Gui3dWin : public GuiBaseImpl
                 if (newSize != m_size) {
                     m_size = newSize;
                     m_api.viewportDims.set(m_size);
-                    try {
-                        m_d3d->resize(m_size);
-                    }
-                    // This has happened to customers (ie. D3D ResizeBuffers can and does return it):
-                    catch (ExceptD3dDeviceRemoved const &) {
-                        m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
-                        m_d3d->resize(m_size);          // Assume it works this time
-                    }
+                    try {m_d3d->resize(m_size); }       // This has failed for customers
+                    catch (ExceptD3dDeviceRemoved const &) {m_resetD3d = true; }
                 }
             }
         }
@@ -156,22 +158,9 @@ struct  Gui3dWin : public GuiBaseImpl
             // but swapBuffers not required.
             // Validates the invalid region. Doesn't erase background in this case since brush is NULL.
             BeginPaint(hwnd,&ps);
-            bool                restartGpu = false;
-            try {
-                render();
-            }
-            catch (ExceptD3dDeviceRemoved const &) {
-                restartGpu = true;
-            }
-            // One user had a Windows termination ('the program has stopped working and will now close' -
-            // Win 10 Pro, NVIDIA GeForce GTX 760) here, even though 'm_hdc' was valid and a face was already
-            // displayed on the screen (just once, when the program first started). Turned out to be a buggy
-            // video driver (perhaps OpenGL specific).
+            try {render(); }
+            catch (ExceptD3dDeviceRemoved const &) {m_resetD3d = true; }
             EndPaint(hwnd,&ps);
-            if (restartGpu) {
-                m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize});
-                m_d3d->resize(m_size);          // Assume it works this time
-            }
         }
         else if (contains(wmButtonsDown,msg)) {
             size_t              buttonIdx = findFirstIdx(wmButtonsDown,msg);

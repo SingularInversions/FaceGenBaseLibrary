@@ -29,7 +29,7 @@ struct      GridIndex
         double          scaleToBins = std::sqrt(double(approxNumBins)/double(clientSz.cmpntsProduct()));
         Vec2F           gridSizef = clientSz * float(scaleToBins);
         Vec2UI          gridSize = Vec2UI(gridSizef + Vec2F(0.5f));
-        gridSize = mapMax(gridSize,1U);
+        gridSize = mapThreshLo(gridSize,1U);
         Mat22F          ipcsBounds(0,gridSize[0],0,gridSize[1]);
         clientToGridIpcs = AffineEw2F(clientBounds,ipcsBounds);
         grid.resize(gridSize);

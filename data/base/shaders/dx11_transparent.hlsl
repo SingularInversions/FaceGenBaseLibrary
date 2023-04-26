@@ -39,7 +39,7 @@ float4
 PSTransparentPass1(Frag frag) : SV_TARGET0
 {
     float4      albedo = albedoMap.Sample(sstate,frag.uv);
-    if (albedo.a > 0.01f) {     // Discard mostly transparent (value varies continuously due to sampling)
+    if (albedo.a > 0.03f) {     // Discard mostly transparent (value varies continuously due to sampling)
         uint        nodeIdx = LinkedListUAV.IncrementCounter();     // atomic index counter
         uint        prevHead;
         // Atomically set pixel to 'nodeIdx' and get back 'prevHead':

@@ -126,6 +126,7 @@ struct      Gui3d : GuiBase
     Sptr<Capture> const         capture = std::make_shared<Capture>();
     // If defined, will be called with the filename when the user drops it on the 3D window:
     Sfun<void(String8 const &)> fileDragDrop;
+    bool                        tryForTransparency = true;  // set to false to force D3D 11.0
 
     // Modified (by mouse/keyboard commands processed by viewport):
     IPT<double>                 panDegrees;
@@ -156,7 +157,7 @@ struct      Gui3d : GuiBase
 
     // current design is to call 'makeViewControls' to complete setup of this object.
     // TODO: break that up into calls which are made first and results can be passed to a constructor:
-    Gui3d(NPT<RendMeshes> const & rmN) : rendMeshesN{rmN} {}
+    Gui3d(NPT<RendMeshes> rmN,bool tft=true) : rendMeshesN{rmN}, tryForTransparency{tft} {}
 
     virtual GuiImplPtr      getInstance() {return guiGetOsImpl(*this); }
     // Implementation:

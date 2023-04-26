@@ -39,7 +39,7 @@ GridTriangles::GridTriangles(Vec2Fs const & vs,Vec3UIs const & ts,float binsPerT
     float               numBins = numValid * binsPerTri;
     Vec2F               rangeSizef = domainSz * sqrt(numBins/domainSz.cmpntsProduct());
     Vec2UI              rangeSize = Vec2UI(rangeSizef + Vec2F(0.5f));
-    rangeSize = mapMax(rangeSize,1U);
+    rangeSize = mapThreshLo(rangeSize,1U);
     Mat22F              range(0,rangeSize[0],0,rangeSize[1]);
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're

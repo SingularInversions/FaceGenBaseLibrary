@@ -212,7 +212,7 @@ bool                imgApproxEqual(String8 const & file0,String8 const & file1)
 {
     ImgRgba8        img0 = loadImage(file0),
                     img1 = loadImage(file1);
-    return isApproxEqual(img0,img1,2);
+    return isApproxEqual(img0,img1,3);
 }
 
 }   // namespace

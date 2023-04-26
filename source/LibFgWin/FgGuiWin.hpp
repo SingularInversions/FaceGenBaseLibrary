@@ -3,6 +3,7 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// NOTES:
 //
 // GuiBaseImpl child objects may or may not be win32 windows. This is important for avoiding
 // excessive depth in the tree as win64 can choke on as little as 7 levels. Due to this,
@@ -16,6 +17,9 @@
 //
 // Possible todo: switch to idiom of creating all child windows without visible flag, then
 // calling ShowWindow after creation. Might avoid all the WM_SIZE(0,0) messages.
+//
+// SIZE: As of Win10 the default is now 200% for text and Win32 widget rendering so the effective screen
+// size as seen by the program can be as small as 1920x1080 / 2 = 960x540 !
 //
 
 #ifndef FGGUIWIN_HPP

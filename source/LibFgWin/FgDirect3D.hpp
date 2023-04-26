@@ -84,7 +84,8 @@ struct      D3d
 {
     D3d(HWND                hwnd,
         NPT<RendMeshes>     rms,
-        NPT<double>         logRelSizeN);       // For scaling the surface point markers
+        NPT<double>         logRelSizeN,            // For scaling the surface point markers
+        bool                try_11_1);              // try to get D3D 11.1 before reverting to 11.0
 
     ~D3d();
 

@@ -593,7 +593,7 @@ struct  GuiText : GuiBase
 // Assumes dynamic text and sets 'wantStretch' to true:
 GuiPtr              guiText(NPT<String8> node,uint minWidth=0,bool rich=true);
 GuiPtr              guiTextLines(NPT<String8> node,uint minHeight,bool wantStretchVert=false);
-GuiPtr              guiText(String8 text,uint minWidth=0);
+GuiPtr              guiText(String8 text,uint minWidth=0,bool rich=true);
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiTextEdit;

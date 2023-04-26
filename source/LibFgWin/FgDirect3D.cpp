@@ -142,7 +142,7 @@ void                PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
     pContext->PSSetShader(m_pPixelShader.Get(),nullptr,0);
 }
 
-D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, logRelSize{lrsN}
+D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMeshesN{rmsN}, logRelSize{lrsN}
 {
     origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
     {
@@ -175,33 +175,39 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN) : rendMeshesN{rmsN}, l
 #ifdef _DEBUG
         createFlag |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
+        struct      Config {
+            D3D_FEATURE_LEVEL   featureLevel;
+            D3D_DRIVER_TYPE     driverType;
+            DXGI_SWAP_EFFECT    swapEffect;
+        };
         // We must attempt multiple setup calls until we find the best available driver.
         // Software driver for 11.1 with OIT didn't work (Win7SP1) so don't go there.
-        Svec<tuple<D3D_FEATURE_LEVEL,D3D_DRIVER_TYPE,DXGI_SWAP_EFFECT> >  configs = {
+        Svec<Config>        configs;
+        if (try_11_1) {
             // FLIP_DISCARD only supported by Win 10 but must be used in that case as some systems
             // with fail to consistently display buffer without it:
-            {D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_FLIP_DISCARD},
-            {D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD},
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD},
+            configs.push_back({D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_FLIP_DISCARD});
+            configs.push_back({D3D_FEATURE_LEVEL_11_1,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD});
+        }
+        configs.push_back({D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_HARDWARE,DXGI_SWAP_EFFECT_DISCARD});
             // Warp driver is very fast:
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_WARP,DXGI_SWAP_EFFECT_DISCARD},
-            {D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_REFERENCE,DXGI_SWAP_EFFECT_DISCARD}
-        };
-        string      failString;
+        configs.push_back({D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_WARP,DXGI_SWAP_EFFECT_DISCARD});
+        configs.push_back({D3D_FEATURE_LEVEL_11_0,D3D_DRIVER_TYPE_REFERENCE,DXGI_SWAP_EFFECT_DISCARD});
+        string              failString;
         for (auto config : configs) {
-            supports11_1 = (get<0>(config) == D3D_FEATURE_LEVEL_11_1);
-            supportsFlip = (get<2>(config) == DXGI_SWAP_EFFECT_FLIP_DISCARD);
-            desc.SwapEffect = get<2>(config);
+            supports11_1 = (config.featureLevel == D3D_FEATURE_LEVEL_11_1);
+            supportsFlip = (config.swapEffect == DXGI_SWAP_EFFECT_FLIP_DISCARD);
+            desc.SwapEffect = config.swapEffect;
             // If a system doesn't support 11.1 this returns E_INVALIDARG (0x80070057)
             // If a system doesn't support 11.0 this returns DXGI_ERROR_UNSUPPORTED (0x887A0004)
             // E_FAIL (0x80004005) "debug layer enabled but not installed" happens quite a bit ...
             // DXGI_ERROR_SDK_COMPONENT_MISSING (0x887A002D) SDK needed for debug layer ? only seen once
             hr = D3D11CreateDeviceAndSwapChain(     // Creates an immediate mode rendering context
                 nullptr,                // Use first video adapter (card/driver) if more than one of this type
-                get<1>(config),         // Driver type
+                config.driverType,
                 nullptr,                // No software rasterizer DLL handle
                 createFlag,
-                &get<0>(config),1,      // Feature level
+                &config.featureLevel,1,
                 D3D11_SDK_VERSION,
                 &desc,
                 pSwapChain.GetAddressOf(),  // Returned
@@ -674,11 +680,11 @@ WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vs
 void                D3d::setBgImage(BackgroundImage const & bgi)
 {
     bgImg.reset();
-    ImgRgba8 const &     img = bgi.imgN.cref();
+    ImgRgba8 const &    img = bgi.imgN.cref();
     if (img.empty())
         return;
-    Vec2UI              p2dims = mapMin(mapPow2Ceil(img.dims()),maxMapSize);
-    ImgRgba8             map(p2dims);
+    Vec2UI              p2dims = mapThreshHi(mapPow2Ceil(img.dims()),maxMapSize);
+    ImgRgba8            map(p2dims);
     imgResize_(img,map);
     bgImg = makeMap(map);
 }

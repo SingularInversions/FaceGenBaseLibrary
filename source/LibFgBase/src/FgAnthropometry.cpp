@@ -42,6 +42,7 @@ FaceLmAtts const &  getFaceLmAtts()
         {FaceLm::alarOuterL,"AlaOuterL"},                   {FaceLm::alarOuterR,"AlaOuterR"},
         {FaceLm::noseTip,"NoseTip"},                        // Pronasale
         {FaceLm::subNasale,"SubNasale"},
+        {FaceLm::jawOuterL,"JawOuterL"},                    {FaceLm::jawOuterR,"JawOuterR"},
         {FaceLm::mouthCornerL,"MouthCornerL"},              {FaceLm::mouthCornerR,"MouthCornerR"},
         {FaceLm::cristaPhiltriL,"CristaPhiltriL"},          {FaceLm::cristaPhiltriR,"CristaPhiltriR"},
         {FaceLm::labialeSuperius,"LabialeSuperius"},

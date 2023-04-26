@@ -210,7 +210,8 @@ GuiPtr              makeRendCtrls(
     String8 const &     store,
     bool                structureOptions,
     bool                twoSidedOption,
-    bool                pointOptions)
+    bool                pointOptions,
+    IPT<bool> *         supportTransparencyNPtr)
 {
     vector<OptInit>         opts = {
         {false,"Shiny","Shiny"},                            // 0
@@ -260,10 +261,7 @@ GuiPtr              makeRendCtrls(
         optWs[0]
     };
     if (structureOptions) {
-        enabledOptWs.push_back(optWs[1]);
-        enabledOptWs.push_back(optWs[2]);
-        enabledOptWs.push_back(optWs[3]);
-        enabledOptWs.push_back(optWs[6]);
+        enabledOptWs.insert(enabledOptWs.end(),{optWs[1],optWs[2],optWs[3],optWs[6],});
     }
     if (twoSidedOption)
         enabledOptWs.push_back(optWs[7]);
@@ -286,10 +284,23 @@ GuiPtr              makeRendCtrls(
         renderCtls = guiSplitV({colsW,optWs[8]});
     else
         renderCtls = colsW;
-    GuiPtr          viewCtlRender = guiGroupboxTr("Render",renderCtls),
-                    viewCtlColor = guiGroupboxTr("Background Color",bgColor.win),
-                    bgImageCtrls = backgroundCtrls(bgImg,store+"BgImage");
-    return guiSplitV({viewCtlRender,viewCtlColor,bgImageCtrls});
+    GuiPtrs         renderGroups {
+        guiGroupboxTr("Render",renderCtls),
+        guiGroupboxTr("Background Color",bgColor.win),
+        backgroundCtrls(bgImg,store+"BgImage"),
+    };
+    if (supportTransparencyNPtr!=nullptr) {
+        IPT<bool>       stN = *supportTransparencyNPtr;     // lambda captures must store this, not the pointer to it
+        GuiRadio        radio;
+        radio.labels = {
+            "Direct3D 11.1 (transparency; only works if supported)",
+            "Direct3D 11.0 (no transparency; use if hair is not rendering)"
+        };
+        radio.getFn = [=](){return stN.val() ? 0U : 1U; };
+        radio.setFn = [=](uint sel){stN.set(sel==0); };
+        renderGroups.push_back(guiGroupbox("GPU Feature Level - restart program after selection",make_shared<GuiRadio>(radio)));
+    }
+    return guiSplitV(renderGroups);
 }
 
 namespace {

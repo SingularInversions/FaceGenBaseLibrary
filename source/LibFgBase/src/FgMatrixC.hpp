@@ -741,13 +741,21 @@ Mat<T,R,C>          outerProduct(Mat<T,R,1> const & lhs,Mat<T,C,1> const & rhs)
 
 // UNARY & BINARY MAP OPERATIONS:
 
-// Type-preserving binary callable:
+// type-preserving unary and binary map call:
+template<typename T,uint R,uint C,class F>
+Mat<T,R,C>          mapCall(Mat<T,R,C> const & mat,F const & func)
+{
+    Mat<T,R,C>          ret;
+    for (uint ii=0; ii<R*C; ++ii)
+        ret[ii] = func(mat[ii]);
+    return ret;
+}
 template<class T,uint R,uint C,class F>
 Mat<T,R,C>          mapCall(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs,F func)
 {
     Mat<T,R,C>          ret;
     for (size_t ii=0; ii<R*C; ++ii)
-        ret[ii] = func(lhs,rhs);
+        ret[ii] = func(lhs[ii],rhs[ii]);
     return ret;
 }
 // Subtract same value from each element:
@@ -778,14 +786,6 @@ Mat<T,R,C>          mapDiv(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
     Mat<T,R,C>            ret;
     for (uint ii=0; ii<R*C; ++ii)
         ret[ii] = lhs[ii] / rhs[ii];
-    return ret;
-}
-template<typename T,uint R,uint C,class F>
-Mat<T,R,C>          mapCall(Mat<T,R,C> const & mat,F const & func)
-{
-    Mat<T,R,C>          ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = func(mat[ii]);
     return ret;
 }
 template<class T,uint R,uint C>
@@ -843,14 +843,16 @@ Mat<uint,R,C>       mapPow2Ceil(Mat<uint,R,C> const & mat)
     return ret;
 }
 
-#define FG_MATRIXC_MAP_BINARY(mapName)                                      \
-template<class T,uint R,uint C>                                             \
-Mat<T,R,C>          mapName(Mat<T,R,C> const & l,Mat<T,R,C> const & r)      \
-{return Mat<T,R,C>{mapName(l.m,r.m)}; }
-
-FG_MATRIXC_MAP_BINARY(mapMin)
-FG_MATRIXC_MAP_BINARY(mapMax)
-
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMin(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
+{
+    return mapCall(ml,mr,[](T l,T r){return cMin(l,r); });
+}
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMax(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
+{
+    return mapCall(ml,mr,[](T l,T r){return cMax(l,r); });
+}
 
 #define FG_MATRIXC_ELEMWISE(matFunc,elemFunc)               \
     template<class T,uint R,uint C>                 \
