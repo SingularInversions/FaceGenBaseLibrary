@@ -317,25 +317,31 @@ void                testmCreateMicrosoftGuid(CLArgs const &)
 }
 
 
-static Strings      glob(String const & dir)
+// glob c++ source files (cpp,hpp,c,h) and ignore files starting with underscore:
+static Strings      globCppFiles(String const & topDir,String const & subDir,bool recurse)
 {
-    Strings      ret;
-    DirContents dc = getDirContents(dir);
-    for (size_t ii=0; ii<dc.filenames.size(); ++ii) {
-        string      fn = dc.filenames[ii].as_utf8_string();
-        Path      p(fn);
-        string      ext = p.ext.ascii(),
-                    base = p.base.ascii();
+    Strings             ret;
+    DirContents         dc = getDirContents(topDir+subDir);
+    for (String8 const & filename : dc.filenames) {
+        String              fname = filename.ascii();
+        Path                path {fname};
+        String              ext = path.ext.ascii(),
+                            base = path.base.ascii();
         if (((ext == "cpp") || (ext == "c") || (ext == "hpp") || (ext == "h")) &&
             (base[0] != '_'))
-            ret.push_back(fn);
+            ret.push_back(subDir + fname);
+    }
+    if (recurse) {
+        for (String8 const & subd : dc.dirnames)
+            cat_(ret,globCppFiles(topDir,subDir+subd.ascii() + '/',true));
     }
     return ret;
 }
 
-ConsSrcDir::ConsSrcDir(String const & baseDir,String const & relDir)
-    : dir(relDir), files(glob(baseDir+relDir))
-    {}
+ConsSrcDir::ConsSrcDir(String const & baseDir,String const & relDir,bool recurse) :
+    dir(relDir),
+    files(globCppFiles(baseDir+relDir,"",recurse))
+{}
 
 String              ConsProj::descriptor() const
 {

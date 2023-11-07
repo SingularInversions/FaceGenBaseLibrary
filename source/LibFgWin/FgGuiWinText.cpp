@@ -21,25 +21,13 @@ struct  GuiTextWin : public GuiBaseImpl
     GuiText             m_api;
     HWND                hwndText;
     HWND                hwndThis;
-    // Cache text in UTF-16 format for Windows (UCS2 was only used prior to Windows2000):
-    wstring             m_content;
     DfgFPtr             m_updateFlag;   // Track changes in above
-    // Assigned in WM_CREATE and updated in updateIfChanged(). The min height is calculated using
-    // m_maxMinWid below, regardless of actual width, to avoid the complexity of adjusting
-    // Y-min dynamically with window width:
-    Vec2UI              m_minSize;
-    // Long text will have a minimum width of at least the following:
-    static const uint   m_maxMinWid = 350;
-    static const uint   m_minHgt = 16;
 
-    GuiTextWin(const GuiText & api) :
-        m_api(api),
-        // Default to something before we've had a chance to work out real vals:
-        m_minSize(m_maxMinWid,m_minHgt)
+    GuiTextWin(const GuiText & api) : m_api(api)
     {
+        FGASSERT(m_api.minWidth > 0);
+        FGASSERT(m_api.minHeight > 0);
         static HMODULE hmRichEdit = LoadLibrary(L"RichEd20.dll");
-        String8 const &        text = m_api.content.cref();
-        m_content = text.as_wstring();
         m_updateFlag = makeUpdateFlag(m_api.content);
     }
 
@@ -61,65 +49,46 @@ struct  GuiTextWin : public GuiBaseImpl
 
     virtual Vec2UI  getMinSize() const
     {
-        FGASSERT(m_minSize.cmpntsProduct() > 0);   // This shouldn't be called before it's been assigned.
-        return m_minSize;
+        return {
+            // text border size is 2px in each dimension:
+            m_api.minWidth*8 + 3,   // 8px is a bit larger than average char width, and add 1 for starting capital letter which is >8px
+            m_api.minHeight*16 + 1, // lines on my PC are 16px (see commented code below)
+        };
+
     }
 
-    virtual Vec2B   wantStretch() const
-    {
-        bool        horiz = (m_api.wantStretch[0] || (m_minSize[0] > m_maxMinWid));
-        return Vec2B(horiz,m_api.wantStretch[1]);
-    }
+    virtual Vec2B   wantStretch() const {return m_api.wantStretch; }
     
     void            updateText()
     {
-        BOOL            success = SetWindowTextW(hwndText,m_content.c_str());     // Update text in window
+        wstring         content = m_api.content.cref().as_wstring();
+        BOOL            success = SetWindowTextW(hwndText,content.c_str());     // Update text in window
         FGASSERTWIN(success);
-        if (m_content.empty())      // Reserve a min lines of max min width:
-            m_minSize = Vec2UI(m_maxMinWid,m_minHgt*m_api.minHeight);
-        else {                      // Calculate updated text dimensions:
-            // Get single line height (16 on my PC):
-            RECT        rs = {0,0,0,0};
-            int         height = DrawText(GetDC(hwndText),L" ",1,&rs,DT_CALCRECT);
-            FGASSERTWIN(height != 0);
-            uint        singleLineHeight = uint(rs.bottom-rs.top);
-            // Get the size without wraparound (but respecting CRLF).
-            // If the width of this is less than m_maxMinWid then we can safely reduce with minimum width:
-            RECT        r = {0,0,0,0};
-            height = DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT);
-            FGASSERTWIN(height != 0);
-            // Just a guess but without this the calculated size is not quite large enough for the edit
-            // box to actually render the text without wraparound:
-            const uint  richEditBorder = 2;
-            m_minSize[0] = uint(r.right - r.left) + richEditBorder;
-            m_minSize[1] = uint(r.bottom - r.top) + richEditBorder;
-            if (m_minSize[0] > m_maxMinWid) {   // Wraparound required for max min size:
-                r.right = m_maxMinWid;
-                height = DrawText(GetDC(hwndText),m_content.c_str(),uint(m_content.size()),&r,DT_CALCRECT | DT_WORDBREAK);
-                FGASSERTWIN(height != 0);
-                m_minSize[0] = m_maxMinWid + richEditBorder;
-                m_minSize[1] = r.bottom - r.top + richEditBorder;
-            }
-            if (m_minSize[0] < m_api.minWidth)
-                m_minSize[0] = m_api.minWidth;
-            if (singleLineHeight > 0) {         // Shouldn't happen but just in case
-                uint        heightInLines = m_minSize[1] / singleLineHeight;
-                if (heightInLines < m_api.minHeight)
-                    m_minSize[1] = m_api.minHeight * singleLineHeight;
-            }
-        }
+        // Get single line height (16 on my PC):
+        RECT            rs = {0,0,0,0};
+        int             height = DrawText(GetDC(hwndText),L" ",1,&rs,DT_CALCRECT);
+        FGASSERTWIN(height != 0);
+        //uint            singleLineHeight = uint(rs.bottom-rs.top);
+        // Draw and get the size with wraparound (and CRLF):
+        RECT            r = {0,0,0,0};
+        height = DrawText(GetDC(hwndText),content.c_str(),uint(content.size()),&r,DT_CALCRECT | DT_WORDBREAK);
+        FGASSERTWIN(height != 0);
+        // Just a guess but without this the calculated size is not quite large enough for the edit
+        // box to actually render the text without wraparound:
+        //const uint      richEditBorder = 2;
+        // minSize[0] = uint(r.right - r.left) + richEditBorder;
+        // minSize[1] = uint(r.bottom - r.top) + richEditBorder;
+        //if (singleLineHeight > 0) {         // Shouldn't happen but just in case
+        //    uint            heightInLines = minSize[1] / singleLineHeight;
+        //    if (heightInLines < m_api.minHeight)
+        //        minSize[1] = m_api.minHeight * singleLineHeight;
+        //}
     }
 
     virtual void    updateIfChanged()
     {
-        if (m_updateFlag->checkUpdate()) {
-            String8 const &        text = m_api.content.cref();
-            m_content = text.as_wstring(); 
+        if (m_updateFlag->checkUpdate())
             updateText();
-            // TODO: if updateText() changes m_minSize we need to return a value (recursively)
-            // so that main loop can call a resize on the whole window (which is potentially
-            // affected).
-        }
     }
 
     virtual void    moveWindow(Vec2I lo,Vec2I sz) {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE); }

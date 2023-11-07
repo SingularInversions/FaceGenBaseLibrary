@@ -88,7 +88,7 @@ double              testClosest(Svec<KdTree::Node> const & tree,Vec3F query)
 KdTree::KdTree(Vec3Fs const & pnts)
 {
     FGASSERT(!pnts.empty());
-    Vec3Fs          noDups = getUniqueSorted(cSort(pnts));
+    Vec3Fs          noDups = cUnique(sortAll(pnts));
     m_tree.reserve(noDups.size());
     createNode(m_tree,noDups,0);
 }

@@ -107,12 +107,28 @@ void                testGuiCombo(CLArgs const &)
 
 void                testmGuiImage(CLArgs const &);
 
+void                testmGuiDialogFilesLoad(CLArgs const &)
+{
+    // can't call 'guiDialogFilesLoad' directly since COM needs to be initialized:
+    auto                selFilesFn = []()
+    {
+        String8s            strs = guiDialogFilesLoad("Test selecting txt filenames",{"txt"});
+        for (String8 const & str : strs)
+            fgout << fgnl << str;
+    };
+    guiStartImpl(
+        IPT<String8>("test multi-file select"),
+        guiButton("Select text files",selFilesFn),
+        getDirUserAppDataLocalFaceGen({"testm","files"}));
+}
+
 void                testmGui(CLArgs const & args)
 {
     Cmds            cmds {
         {testmGuiImage,"image"},
         {testGuiCombo,"combo"},
-        {testGuiDialogSplashScreen,"splash"}
+        {testGuiDialogSplashScreen,"splash"},
+        {testmGuiDialogFilesLoad,"files","files select dialog"}
     };
     doMenu(args,cmds);
 }

@@ -9,8 +9,7 @@
 #include "FgImage.hpp"
 #include "FgMath.hpp"
 #include "FgTime.hpp"
-#include "FgScaleTrans.hpp"
-#include "FgApproxEqual.hpp"
+#include "FgAffine.hpp"
 
 using namespace std;
 
@@ -44,7 +43,7 @@ std::ostream &      operator<<(std::ostream & os,ImgC4F const & img)
         fgnl << "Channel bounds: " << bounds;
 }
 
-AffineEw2D          cIpcsToIucs(Vec2UI dims)
+AffineEw2D          cPacsToIucs(Vec2UI dims)
 {
     return {
         {0,0},                      // domain lo
@@ -80,7 +79,7 @@ AffineEw2D          cIucsToIrcsXf(Vec2UI dims)
         {dims[0]-0.5,dims[1]-0.5}   // map hi
     };
 }
-AffineEw2D          cIucsToIpcsXf(Vec2UI dims)
+AffineEw2D          cIucsToPacsXf(Vec2UI dims)
 {
     return {
         {0,0},                      // domain lo
@@ -99,46 +98,26 @@ AffineEw2D          cOicsToIucsXf()
     };
 }
 
-Lerp::Lerp(float rcs,size_t dim)
+Lerp::Lerp(float ircs,size_t numPix)
 {
-    float           lof = floor(rcs);
-    lo = int(lof);
+    FGASSERT(numPix > 0);
+    float               loF = floor(ircs);
+    lo = int(loF);
     if (lo < -1)                        // 0 taps (below data)
         return;
-    // very important to cast dim to int as otherwise int is cast to size_t in comparisons:
-    int             dimi = scast<int>(dim);
-    if (lo >= dimi)                     // 0 taps (above data)
+    // very important to cast numPix to int as otherwise int is cast to size_t in comparisons:
+    int                 numPixI = scast<int>(numPix);
+    if (lo >= numPixI)                  // 0 taps (above data)
         return;
-    float           whi = rcs - lof;
+    float               wgtHi = ircs - loF;
     if (lo == -1)                       // 1 tap (below data)
-        wgts[1] = whi;
-    else if (lo+1 == dimi)              // 1 tap (above data)
-        wgts[0] = 1.0f - whi;
+        wgts[1] = wgtHi;
+    else if (lo+1 == numPixI)           // 1 tap (above data)
+        wgts[0] = 1 - wgtHi;
     else                                // 2 taps
     {
-        wgts[0] = 1.0f - whi;
-        wgts[1] = whi;
-    }
-}
-
-LerpClamp::LerpClamp(float rcs,size_t dim)
-{
-    FGASSERT(dim > 0);          // approach of clamping to valid pixels doesn't work for empty image
-    float           lof = floor(rcs),
-                    whi = rcs - lof;
-    wgts[0] = 1.0f - whi;
-    wgts[1] = whi;
-    int             loi (lof);
-    if (loi < 0)                    // low clamp
-        inds = {0,0};
-    else {
-        size_t          loz (loi),      // we know it's >= 0
-                        hiz = loz+1,
-                        maxz = dim-1;
-        if (hiz > maxz)                 // high clamp
-            inds = {maxz,maxz};
-        else
-            inds = {loz,hiz};
+        wgts[0] = 1 - wgtHi;
+        wgts[1] = wgtHi;
     }
 }
 
@@ -151,7 +130,7 @@ Img<FatBool>        mapAnd(const Img<FatBool> & lhs,const Img<FatBool> & rhs)
     return ret;
 }
 
-Mat<CoordWgt,2,2>   cBlerpClipIrcs(Vec2UI dims,Vec2D ircs)
+Mat<CoordWgt,2,2>   cBlerpClampIrcs(Vec2UI dims,Vec2D ircs)
 {
     Mat<CoordWgt,2,2>   ret;
     Vec2I               loXY = Vec2I(mapFloor(ircs)),
@@ -172,10 +151,11 @@ Mat<CoordWgt,2,2>   cBlerpClipIrcs(Vec2UI dims,Vec2D ircs)
     ret[3].coordIrcs = Vec2UI(hiXY);
     return ret;
 }
-Mat<CoordWgt,2,2>   cBlerpClipIucs(Vec2UI dims,Vec2F iucs)
+
+Mat<CoordWgt,2,2>   cBlerpClampIucs(Vec2UI dims,Vec2D iucs)
 {
-    Vec2D               ircs = mapMul(Vec2D{iucs},Vec2D{dims}) - Vec2D{0.5f};
-    return cBlerpClipIrcs(dims,ircs);
+    Vec2D               ircs = mapMul(iucs,Vec2D{dims}) - Vec2D{0.5f};
+    return cBlerpClampIrcs(dims,ircs);
 }
 
 AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims)
@@ -188,15 +168,29 @@ AffineEw2D          imgScaleToCover(Vec2UI inDims,Vec2UI outDims)
     Vec2D           outMargin = (inDimsD * scale - outDimsD) * 0.5;
     ScaleTrans2D    outToInIrcs =
         ScaleTrans2D{Vec2D{0.5}} * ScaleTrans2D{1.0/scale} * ScaleTrans2D{Vec2D{-0.5}-outMargin};
-    return outToInIrcs.asAffineEw();
+    return AffineEw2D{outToInIrcs};
 }
 
-Img3F               resampleSimple(Img3F const & in,Vec2UI dims,AffineEw2D const & outToInIrcs)
+Img4F               resample(Img4F const & src,SquareF regionPacs,uint dstSize,bool mt)
+{
+    FGASSERT(regionPacs.size > 0);
+    FGASSERT(dstSize > 0);
+    ScaleTrans2F        dstToSrcPacs {regionPacs.size/dstSize,regionPacs.loPos},
+                        dstToSrcIrcs = cPacsToIrcs() * dstToSrcPacs * cIrcsToPacs();
+    auto                fn = [&src,dstToSrcIrcs](size_t xx,size_t yy)
+    {
+        Vec2F               srcIrcs = dstToSrcIrcs * Vec2F{scast<float>(xx),scast<float>(yy)};
+        return sampleBlerpZero(src,srcIrcs);
+    };
+    return generateImg<Arr4F>(Vec2UI{dstSize},fn,mt);
+}
+
+Img3F               resampleAffine(Img3F const & in,Vec2UI dims,AffineEw2D const & outToInIrcs)
 {
     Img3F               ret {dims};
     for (Iter2UI it {dims}; it.valid(); it.next()) {
         Vec2D               inIrcs = outToInIrcs * Vec2D(it());
-        auto                lerp = cBlerpClipIrcs(in.dims(),inIrcs);
+        auto                lerp = cBlerpClampIrcs(in.dims(),inIrcs);
         Arr3F               p {0,0,0};
         for (uint ii=0; ii<4; ++ii) {
             CoordWgt const &    cw = lerp[ii];
@@ -206,7 +200,7 @@ Img3F               resampleSimple(Img3F const & in,Vec2UI dims,AffineEw2D const
     }
     return ret;
 }
-ImgRgba8            resampleSimple(ImgRgba8 const & in,Vec2UI dims,AffineEw2F const & outToInIrcs)
+ImgRgba8            resampleAffine(ImgRgba8 const & in,Vec2UI dims,AffineEw2F const & outToInIrcs)
 {
     ImgRgba8            ret {dims};
     for (Iter2UI it {dims}; it.valid(); it.next()) {
@@ -216,54 +210,135 @@ ImgRgba8            resampleSimple(ImgRgba8 const & in,Vec2UI dims,AffineEw2F co
     return ret;
 }
 
-Img3F               filterResample(Img3F in,Vec2D posIpcs,float inSize,uint outSize)
+Img3F               filterResample(Img3F in,Vec2D posPacs,float inSize,uint outSize)
 {
     FGASSERT(!in.empty());
     FGASSERT(inSize > 0);
     FGASSERT(outSize > 0);
     for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
-        FGASSERT(posIpcs[dd] < in.dims()[dd]);
-        FGASSERT(posIpcs[dd]+inSize > 0.0f);
+        FGASSERT(posPacs[dd] < in.dims()[dd]);
+        FGASSERT(posPacs[dd]+inSize > 0.0f);
     }
     // Reduce the input image to avoid undersampling. 1 1/3 undersampling gives minimum contribution of 2/3
     // pixel value (max always 1). 1 1/2 undersampling gives minimum representation of 1/2:
     while (inSize / outSize > 1.3333f) {
         in = shrink2(in);
-        posIpcs *= 0.5f;
+        posPacs *= 0.5f;
         inSize *= 0.5f;
     }
-    return resampleSimple(in,Vec2UI{outSize},AffineEw2D{Vec2D{inSize/outSize},posIpcs});
+    return resampleAffine(in,Vec2UI{outSize},AffineEw2D{Vec2D{inSize/outSize},posPacs});
 }
-ImgRgba8            filterResample(ImgRgba8 in,Vec2F loIpcs,float inSize,uint outSize)
+ImgRgba8            filterResample(ImgRgba8 in,Vec2F loPacs,float inSize,uint outSize)
 {
     FGASSERT(!in.empty());
     FGASSERT(inSize > 0);
     FGASSERT(outSize > 0);
     for (uint dd=0; dd<2; ++dd) {                   // Ensure overlap between 'in' and selected region:
-        FGASSERT(loIpcs[dd] < in.dims()[dd]);
-        FGASSERT(loIpcs[dd]+inSize > 0.0f);
+        FGASSERT(loPacs[dd] < in.dims()[dd]);
+        FGASSERT(loPacs[dd]+inSize > 0.0f);
     }
     // Reduce the input image to avoid aliasing. 1 1/3 undersampling gives minimum contribution of 2/3
     // pixel value (max always 1). 1 1/2 undersampling gives minimum representation of 1/2:
     while (inSize / outSize > 1.3333f) {
         in = shrink2(in);
-        loIpcs *= 0.5f;
+        loPacs *= 0.5f;
         inSize *= 0.5f;
     }
-    return resampleSimple(in,Vec2UI{outSize},AffineEw2F{Vec2F{inSize/outSize},loIpcs});
+    return resampleAffine(in,Vec2UI{outSize},AffineEw2F{Vec2F{inSize/outSize},loPacs});
 }
 
+// not optimized at all:
+Img4F               blockResample(Img4F const & src,SquareF regionPacs,uint retSize,bool mt)
+{
+    FGASSERT(!src.empty());
+    FGASSERT(regionPacs.size > 0);
+    FGASSERT(retSize > 0);
+    Vec2I               srcDims = mapCast<int>(src.dims());
+    float               invScale = regionPacs.size / retSize;
+    FGASSERT(invScale > 1);         // otherwise use blerp resample
+    auto                boundsFn = [invScale](size_t dstIrcs,float srcLo)
+    {
+        float               lo = invScale * scast<float>(dstIrcs) + srcLo;
+        return Vec2F{lo,lo+invScale};
+    };
+    // returns the coverage weight of the given bounds (with associated floors) over the given raster bin,
+    // where a weight of 1 corresponds to full coverage:
+    auto                weightFn = [](int rasterBin,Vec2F boundsPacs,Vec2I boundFloors)
+    {
+        if (rasterBin == boundFloors[0])
+            return scast<float>(boundFloors[0]+1) - boundsPacs[0];  // since bounds separated by > 1
+        else if (rasterBin == boundFloors[1])
+            return boundsPacs[1] - scast<float>(boundFloors[1]);
+        else
+            return 1.0f;
+    };
+    auto                fn = [&,srcDims](size_t X,size_t Y)
+    {
+        Vec2F               boundsPacsX = boundsFn(X,regionPacs.loPos[0]),
+                            boundsPacsY = boundsFn(Y,regionPacs.loPos[1]);
+        Vec2I               boundFloorsX {mapFloor(boundsPacsX)},
+                            boundFloorsY {mapFloor(boundsPacsY)};
+        Arr4F               acc {0};
+        float               accW {0};
+        for (int yy=boundFloorsY[0]; yy<=boundFloorsY[1]; ++yy) {
+            float               weightY = weightFn(yy,boundsPacsY,boundFloorsY);
+            for (int xx=boundFloorsX[0]; xx<=boundFloorsX[1]; ++xx) {
+                float               weightX = weightFn(xx,boundsPacsX,boundFloorsX),
+                                    currWgt = weightX * weightY;
+                accW += currWgt;
+                if ( (xx>=0) && (xx<srcDims[0]) && (yy>=0) && (yy<srcDims[1]) )     // implicit zero value outside this region
+                    acc += src.xy(xx,yy) * currWgt;
+            }
+        }
+        // weighted mean channel values over block of source image, with pixels outside source implicitly zero:
+        return acc / accW;      // accW is guaranteed to be > 1
+    };
+    return generateImg<Arr4F>(Vec2UI{retSize},fn,mt);
+}
+
+void                mapGamma_(Img3F & img,float gamma)
+{
+    for (Arr3F & p : img.m_data)
+        for (size_t ii=0; ii<3; ++ii)
+            p[ii] = pow(p[ii],gamma);
+}
+void                mapGamma_(Img4F & imgApm,float gamma)
+{
+    for (Arr4F & p : imgApm.m_data) {
+        float               alpha = p[3],
+                            alpha1mg = pow(alpha,1-gamma);
+        for (size_t ii=0; ii<3; ++ii)
+            // (p/a)^g * a = p^g * a^(1-g)  is more numerically stable and handles alpha=0
+            p[ii] = pow(p[ii],gamma) * alpha1mg;
+    }
+}
 ImgC4F              mapGamma(ImgC4F const & img,float gamma)
 {
     auto                fn = [gamma](RgbaF const & p)
     {
-        RgbaF               ret {0,0,0,0};
-        float               alpha = p[3];
-        if (alpha > 0) {
-            for (size_t ii=0; ii<3; ++ii)
-                ret[ii] = pow(p[ii]/alpha,gamma) * alpha;
-            ret[3] = alpha;
-        }
+        float               alpha = p[3],
+                            alpha1mg = pow(alpha,1-gamma);
+        RgbaF               ret;
+        for (size_t ii=0; ii<3; ++ii)
+            // (p/a)^g * a = p^g * a^(1-g)  is more numerically stable and handles alpha=0
+            ret[ii] = pow(p[ii],gamma) * alpha1mg;
+        ret[3] = alpha;
+        return ret;
+    };
+    return mapCall(img,fn);
+}
+
+Img4F               mapGamma(Img4F const & img,float gamma)
+{
+    auto                fn = [gamma](Arr4F const & p)
+    {
+        float               alpha = p[3],
+                            alpha1mg = pow(alpha,1-gamma);
+        Arr4F               ret;
+        for (size_t ii=0; ii<3; ++ii)
+            // (p/a)^g * a = p^g * a^(1-g)  is more numerically stable and handles alpha=0
+            ret[ii] = pow(p[ii],gamma) * alpha1mg;
+        ret[3] = alpha;
         return ret;
     };
     return mapCall(img,fn);
@@ -357,8 +432,8 @@ Img4F               toUnit4F(ImgRgba8 const & in)
 {
     auto                fn = [](Rgba8 p)
     {
-        float constexpr         f = 256.0f - 1/1024.0f;
-        return Arr4F{p[0]/f,p[1]/f,p[2]/f,p[3]/f};
+        float constexpr         f = 255.0f;         // can't stretch out the values since alpha 255 must be 1
+        return Arr4F{p[0]/f,p[1]/f,p[2]/f,p[3]/f};  // use division to ensure exact values of 1
     };
     return mapCallT<Arr4F>(in,fn);
 }
@@ -397,6 +472,18 @@ ImgRgba8            toRgba8(ImgC4F const & img)
     return mapCallT<Rgba8>(img,fn);
 }
 
+ImgRgba8            toRgba8(Img4F const & in)
+{
+    auto                fn = [](Arr4F p)
+    {
+        Rgba8               ret;
+        for (uint ii=0; ii<4; ++ii)
+            ret[ii] = scast<uchar>(clamp<float>(p[ii]*256,0,255));
+        return ret;
+    };
+    return mapCallT<Rgba8>(in,fn);
+}
+
 ImgUC               toUC(ImgRgba8 const & in)
 {
     return mapCallT<uchar>(in,[](Rgba8 p){return p.rec709();});
@@ -410,6 +497,16 @@ ImgF                toFloat(ImgRgba8 const & in)
 ImgRgba8            toRgba8(ImgUC const & in)
 {
     return mapCallT<Rgba8>(in,[](uchar p){return Rgba8{p,p,p,255};});
+}
+
+Img4F               toApm(Img4F const & in)
+{
+    auto                fn = [](Arr4F p)
+    {
+        float               a = p[3];
+        return Arr4F{p[0]*a,p[1]*a,p[2]*a,a};
+    };
+    return mapCall(in,fn);
 }
 
 void                imgResize_(ImgRgba8 const & src,ImgRgba8 & dst)
@@ -488,29 +585,42 @@ void                imgResize_(ImgRgba8 const & src,ImgRgba8 & dst)
 ImgRgba8            applyTransparencyPow2(ImgRgba8 const & colour,ImgRgba8 const & transparency)
 {
     FGASSERT(!colour.empty() && !transparency.empty());
-    Vec2UI       dims = mapPow2Ceil(cMax(colour.dims(),transparency.dims()));
-    ImgRgba8     ctmp(dims),
-                    ttmp(dims);
+    Vec2UI              dims = mapPow2Ceil(mapMax(colour.dims(),transparency.dims()));
+    ImgRgba8            ctmp(dims),
+                        ttmp(dims);
     imgResize_(colour,ctmp);
     imgResize_(transparency,ttmp);
-
     for (Iter2UI it(dims); it.valid(); it.next())
         ctmp[it()].alpha() = ttmp[it()].rec709();
     return ctmp;
 }
 
-ImgRgba8            fgResample(Img2F const & map,ImgRgba8 const & src)
+ImgRgba8            resampleMap(Img2F const & map,ImgRgba8 const & src)
 {
-    ImgRgba8             ret {map.dims(),Rgba8{0}};
-    Vec2F               noVal {-1,-1};
-    for (Iter2UI it(ret.dims()); it.valid(); it.next()) {
-        if (map[it()] != noVal) {
-            Vec2F           pos = map[it()];
-            pos[1] = 1.0f - pos[1];         // OTCS to UICS
-            ret[it()] = Rgba8(sampleClipIucs(src,pos) + RgbaF{0.5});
+    auto                fn = [&](Vec2F crd)
+    {
+        if ((crd[0] == -1) && (crd[1] == -1))
+            return Rgba8{0};
+        else {
+            Vec2F               iucs {crd[0],1-crd[1]};     // OTCS to IUCS
+            return Rgba8{sampleClampIucs(src,iucs) + RgbaF{0.5}};
         }
-    }
-    return ret;
+    };
+    return mapCallT<Rgba8>(map,fn);
+}
+
+ImgUC               resampleMap(Img2F const & map,ImgUC const & src)
+{
+    auto                fn = [&](Vec2F crd)
+    {
+        if ((crd[0] == -1) && (crd[1] == -1))
+            return uchar{0};
+        else {
+            Vec2F               iucs {crd[0],1-crd[1]};     // OTCS to IUCS
+            return scast<uchar>(sampleClampIucs(src,iucs) + 0.5f);
+        }
+    };
+    return mapCallT<uchar>(map,fn);
 }
 
 bool                usesAlpha(ImgRgba8 const & img,uchar minVal)
@@ -548,9 +658,9 @@ void                paintDot(ImgRgba8 & img,Vec2I ircs,Rgba8 clr,uint radius)
             img.paint(ircs+Vec2I(xx,yy),clr);
 }
 
-void                paintDot(ImgRgba8 & img,Vec2F ipcs,Rgba8 clr,uint radius)
+void                paintDot(ImgRgba8 & img,Vec2F pacs,Rgba8 clr,uint radius)
 {
-    paintDot(img,Vec2I(mapFloor(ipcs)),clr,radius);
+    paintDot(img,Vec2I(mapFloor(pacs)),clr,radius);
 }
 
 ImgRgba8            extrapolateForMipmap(ImgRgba8 const & img)
@@ -597,9 +707,9 @@ ImgRgba8            imgBlend(ImgRgba8 const & img0,ImgRgba8 const & img1,ImgUC c
     AffineEw2F          ircsToIucs = cIrcsToIucs(dims);
     for (Iter2UI it(dims); it.valid(); it.next()) {
         Vec2F           iucs = ircsToIucs * Vec2F(it());
-        RgbaF           a = sampleClipIucs(img0,iucs);
-        RgbaF           b = sampleClipIucs(img1,iucs);
-        float           w = sampleClipIucs(transition,iucs) / 255.0f;
+        RgbaF           a = sampleClampIucs(img0,iucs);
+        RgbaF           b = sampleClampIucs(img1,iucs);
+        float           w = sampleClampIucs(transition,iucs) / 255.0f;
         Arr4UC &        r = ret[it()].m_c;
         for (uint cc=0; cc<3; ++cc) {
             float           ac = a[cc],
@@ -642,7 +752,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
     if (imgMod.empty())
         return imgIn;
     ImgRgba8          ret;
-    if (cDeterminant(imgIn.dims(),imgMod.dims()) != 0) {
+    if (!areColinear(imgIn.dims(),imgMod.dims())) {
         string      info = toStr(imgIn.dims())+" !~ "+toStr(imgMod.dims());
         fgThrow("Aspect ratio mismatch between imgIn and modulation maps",info);
     }
@@ -653,7 +763,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
         {
             Rgba8           td = imgMod.xy(xx,yy),
                             out(0,0,0,255);
-            RgbaF           pd = sampleClipIucs(imgIn,ircsToIucs*Vec2F(xx,yy));
+            RgbaF           pd = sampleClampIucs(imgIn,ircsToIucs*Vec2F(xx,yy));
             for (uint cc=0; cc<3; ++cc) {
                 int             gamMod = (((int(td[cc]) - 64) * mod) / 256) + 64;
                 gamMod = (gamMod < 0) ? 0 : gamMod;
@@ -670,7 +780,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
         AffineEw2F      ircsToIucs = cIrcsToIucs(imgIn.dims());
         auto            fn = [&imgIn,&imgMod,mod,ircsToIucs](size_t xx,size_t yy)
         {
-            RgbaF           td = sampleClipIucs(imgMod,ircsToIucs*Vec2F(xx,yy));
+            RgbaF           td = sampleClampIucs(imgMod,ircsToIucs*Vec2F(xx,yy));
             Rgba8           out(0,0,0,255),
                             pd = imgIn.xy(xx,yy);
             for (uint cc=0; cc<3; ++cc) {

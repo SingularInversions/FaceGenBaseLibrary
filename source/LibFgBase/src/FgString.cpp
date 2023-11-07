@@ -17,27 +17,27 @@ using namespace std;
 
 namespace Fg {
 
-String32            toUtf32(String const & str)
+Str32            toUtf32(String const & str)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
     if (str.empty())
-        return String32();
+        return Str32();
     wstring_convert<codecvt_utf8<int32_t>,int32_t>  convert;
     auto            asInt = convert.from_bytes(str);
-    return String32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
+    return Str32(reinterpret_cast<char32_t const *>(asInt.data()),asInt.size());
 #else
     wstring_convert<codecvt_utf8<char32_t>,char32_t> convert;
     return convert.from_bytes(str);
 #endif
 }
 
-string              toUtf8(String32 const & in)
+String              toUtf8(Str32 const & in)
 {
     // https://stackoverflow.com/questions/38688417/utf-conversion-functions-in-c11
 #ifdef _MSC_VER
     if (in.empty())
-        return string();
+        return {};
     wstring_convert<codecvt_utf8<int32_t>,int32_t>    convert;
     auto            ptr = reinterpret_cast<const int32_t *>(in.data());
     return convert.to_bytes(ptr,ptr+in.size());
@@ -47,36 +47,36 @@ string              toUtf8(String32 const & in)
 #endif
 }
 
-string              toUtf8(const char32_t & utf32_char) {return toUtf8(String32(1,utf32_char)); }
+String              toUtf8(char32_t utf32_char) {return toUtf8(Str32(1,utf32_char)); }
 
-std::wstring        toUtf16(const std::string & utf8)
+wstring             toUtf16(String const & utf8)
 {
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.from_bytes(utf8);
 }
 
-std::string         toUtf8(const std::wstring & utf16)
+String              toUtf8(wstring const & utf16)
 {
     // codecvt_utf8_utf16 inherits from codecvt
     wstring_convert<codecvt_utf8_utf16<wchar_t> >   converter;
     return converter.to_bytes(utf16);
 }
 
-string              toStrFixed(double val,uint fractionalDigits)
+String              toStrFixed(double val,uint fractionalDigits)
 {
     ostringstream   os;
     os << std::fixed << std::setprecision(fractionalDigits) << val;
     return os.str();
 }
 
-string              toStrPercent(double val,uint fractionalDigits)
+String              toStrPercent(double val,uint fractionalDigits)
 {
     return toStrFixed(val*100.0,fractionalDigits) + "%";
 }
 
-std::string         toLower(const std::string & s)
+String              toLower(const String & s)
 {
-    string  retval;
+    String  retval;
     retval.reserve(s.size());
 	// Can't use std::transform since 'tolower' causes warning by converting int->char
     // std::transform(s.begin(),s.end(),retval.begin(),::tolower);
@@ -85,9 +85,9 @@ std::string         toLower(const std::string & s)
     return retval;
 }
 
-std::string         toUpper(const std::string & s)
+String              toUpper(const String & s)
 {
-    string  retval;
+    String  retval;
     retval.reserve(s.size());
 	// Can't use std::transform since 'tolower' causes warning by converting int->char
 	// std::transform(s.begin(),s.end(),retval.begin(),::toupper);
@@ -96,17 +96,13 @@ std::string         toUpper(const std::string & s)
 	return retval;
 }
 
-std::vector<string> splitAtSeparators(
-    const std::string & str,
-    char                sep)
+Strings             splitAtSeparators(String const & str,char sep)
 {
-    vector<string>  ret;
-    string          tmp;
-    string::const_iterator  it = str.begin();
-    while (it != str.end())
-    {
-        if (*it == sep)
-        {
+    Strings             ret;
+    String              tmp;
+    auto                it = str.begin();
+    while (it != str.end()) {
+        if (*it == sep) {
             ret.push_back(tmp);
             tmp.clear();
             it++;
@@ -119,29 +115,29 @@ std::vector<string> splitAtSeparators(
     return ret;
 }
 
-std::string         replaceAll(
-    const std::string & str,
-    char                orig,
-    char                repl)
+String              replaceAll(String const & str,char orig,char repl)
 {
-    std::string     ret = str;
-    for (size_t ii=0; ii<ret.size(); ++ii)
-        if (ret[ii] == orig)
-            ret[ii] = repl;
+    String              ret; ret.reserve(str.size());
+    for (char ch : str) {
+        if (ch == orig)
+            ret.push_back(repl);
+        else
+            ret.push_back(ch);
+    }
     return ret;
 }
 
-string              padToLen(string const & str,size_t len,char ch)
+String              padToLen(String const & str,size_t len,char ch)
 {
-    string  ret = str;
+    String  ret = str;
     if (len > str.size())
         ret.resize(len,ch);
     return ret;
 }
 
-string              cat(Strings const & strings,string const & separator)
+String              cat(Strings const & strings,String const & separator)
 {
-    string      ret;
+    String      ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
         ret += strings[ii];
         if (ii < strings.size()-1)
@@ -150,12 +146,12 @@ string              cat(Strings const & strings,string const & separator)
     return ret;
 }
 
-string              cat(set<string> const & strings,string const & separator)
+String              cat(set<String> const & strings,String const & separator)
 {
     auto                it = strings.begin();
     if (it == strings.end())
-        return string{};
-    string              ret {*it};
+        return String{};
+    String              ret {*it};
     while (++it != strings.end())
         ret += separator + *it;
     return ret;
@@ -174,13 +170,13 @@ String              catDeref(Ptrs<String> const & stringPtrs,String const & sepa
 }
 
 template<>
-Opt<int>            fromStr<int>(string const & str)
+Opt<int>            fromStr<int>(String const & str)
 {
     Opt<int>              ret;
     if (str.empty())
         return ret;
     bool                    neg = false;
-    string::const_iterator  it = str.begin();
+    String::const_iterator  it = str.begin();
     if (*it == '-') {
         neg = true;
         ++it;
@@ -202,12 +198,12 @@ Opt<int>            fromStr<int>(string const & str)
 }
 
 template<>
-Opt<uint>           fromStr<uint>(string const & str)
+Opt<uint>           fromStr<uint>(String const & str)
 {
     Opt<uint>             ret;
     if (str.empty())
         return ret;
-    string::const_iterator  it = str.begin();
+    String::const_iterator  it = str.begin();
     if (*it == '+')
         ++it;
     uint64                  acc = 0;
@@ -229,10 +225,10 @@ String              cRest(String const & str,size_t start)
     return String{str.begin()+start,str.end()};
 }
 
-String32            cRest(String32 const & str,size_t start)
+Str32            cRest(Str32 const & str,size_t start)
 {
     FGASSERT1(start <= str.size(),toUtf8(str)+"@"+toStr(start));
-    return String32{str.begin()+start,str.end()};
+    return Str32{str.begin()+start,str.end()};
 }
 
 Strings             numberedStrings(String const & prefix,size_t const num)
@@ -253,17 +249,10 @@ Strings             numberedStrings(String const & prefix,size_t const num)
 // different sizeof(wchar_t):
 #ifdef _WIN32
 
-String8::String8(const wchar_t * s) : m_str(toUtf8(wstring(s)))
-{}
+String8::String8(const wchar_t * s) : m_str(toUtf8(wstring(s))) {}
+String8::String8(const wstring & s) : m_str(toUtf8(s)) {}
 
-String8::String8(const wstring & s) : m_str(toUtf8(s))
-{}
-
-wstring
-String8::as_wstring() const
-{
-    return toUtf16(m_str);
-}
+wstring             String8::as_wstring() const {return toUtf16(m_str); }
 
 #endif
 
@@ -275,40 +264,25 @@ String8 &           String8::operator+=(String8 const & rhs)
 
 String8 &           String8::operator+=(char rhs)
 {
-    FGASSERT(uint(rhs) < 128U);     // must be ASCII
     m_str += rhs;
     return *this;
 }
 
-String8
-String8::operator+(String8 const& s) const
-{
-    return String8(m_str+s.m_str);
-}
+String8             String8::operator+(String8 const& s) const {return String8(m_str+s.m_str); }
 
-String8
-String8::operator+(char c) const
+String8             String8::operator+(char c) const
 {
-    string      ret = m_str;
+    String      ret = m_str;
     FGASSERT(uchar(c) < 128);
     ret.push_back(c);
     return ret;
 }
 
-uint32
-String8::operator[](size_t idx) const
-{
-    return uint32(toUtf32(m_str).at(idx));
-}
+uint32              String8::operator[](size_t idx) const {return uint32(toUtf32(m_str).at(idx)); }
 
-size_t
-String8::size() const
-{
-    return toUtf32(m_str).size();
-}
+size_t              String8::size() const {return toUtf32(m_str).size(); }
 
-bool
-String8::is_ascii() const
+bool                String8::is_ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
@@ -316,30 +290,27 @@ String8::is_ascii() const
     return true;
 }
 
-string const &
-String8::ascii() const
+String const &      String8::ascii() const
 {
     for (size_t ii=0; ii<m_str.size(); ++ii)
         if ((m_str[ii] & 0x80) != 0)
-            fgThrow("Attempt to convert non-ascii utf-8 string to ascii",m_str);
+            fgThrow("Attempt to convert non-ascii utf-8 String to ascii",m_str);
     return m_str;
 }
 
-string
-String8::as_ascii() const
+String              String8::as_ascii() const
 {
-    String32       str(as_utf32());
-    string          ret;
+    Str32       str(as_utf32());
+    String          ret;
     for (size_t ii=0; ii<str.size(); ++ii)
         ret += char(str[ii] & 0x7F);
     return ret;
 }
 
-String8
-String8::replace(char a, char b) const
+String8             String8::replace(char a, char b) const
 {
     FGASSERT((uchar(a) < 128) && (uchar(b) < 128));
-    String32           str = toUtf32(m_str);
+    Str32           str = toUtf32(m_str);
     char32_t            a32 = a,
                         b32 = b;
     for (char32_t & c : str)
@@ -348,19 +319,17 @@ String8::replace(char a, char b) const
     return String8(str);
 }
 
-String8s
-String8::split(char ch) const
+String8s            String8::split(char ch) const
 {
-    String32s            strs = splitAtChar(toUtf32(m_str),char32_t(ch));
+    Str32s            strs = splitAtChar(toUtf32(m_str),char32_t(ch));
     String8s           ret;
     ret.reserve(strs.size());
-    for (String32 const & str : strs)
+    for (Str32 const & str : strs)
         ret.push_back(String8(str));
     return ret;
 }
 
-bool
-String8::beginsWith(String8 const & s) const
+bool                String8::beginsWith(String8 const & s) const
 {
     if(s.m_str.size() > m_str.size())
         return false;
@@ -368,14 +337,11 @@ String8::beginsWith(String8 const & s) const
 }
 
 // Can't put this inline without include file recursive dependency:
-bool
-String8::endsWith(String8 const & str) const
-{return Fg::endsWith(as_utf32(),str.as_utf32()); }
+bool                String8::endsWith(String8 const & str) const {return Fg::endsWith(as_utf32(),str.as_utf32()); }
 
-String8
-String8::toLower() const
+String8             String8::toLower() const
 {
-    String32       tmp = as_utf32();
+    Str32       tmp = as_utf32();
     for (size_t ii=0; ii<tmp.size(); ++ii) {
         char32_t    ch = tmp[ii];
         if ((ch > 64) && (ch < 91))
@@ -384,20 +350,11 @@ String8::toLower() const
     return String8(tmp);
 }
 
-std::ostream& 
-operator<<(std::ostream & os, String8 const & s)
-{
-    return os << s.m_str;
-}
+std::ostream &      operator<<(std::ostream & os, String8 const & s) {return os << s.m_str; }
 
-std::istream&
-operator>>(std::istream & is, String8 & s)
-{
-    return is >> s.m_str;
-}
+std::istream &      operator>>(std::istream & is, String8 & s) {return is >> s.m_str; }
 
-String8s
-toUstrings(Strings const & strs)
+String8s            toUstrings(Strings const & strs)
 {
     String8s        ret;
     ret.reserve(strs.size());
@@ -406,18 +363,12 @@ toUstrings(Strings const & strs)
     return ret;
 }
 
-String8
-fgTr(string const & msg)
-{
-    // Just a stub for now:
-    return msg;
-}
+String8             fgTr(String const & msg) {return msg; } // Just a stub for now
 
-String8
-removeChars(String8 const & str,uchar chr)
+String8             removeChars(String8 const & str,uchar chr)
 {
     FGASSERT(chr < 128);
-    String32       s32 = str.as_utf32(),
+    Str32       s32 = str.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
         if (s32[ii] != chr)
@@ -425,10 +376,9 @@ removeChars(String8 const & str,uchar chr)
     return String8(r32);
 }
 
-String8
-removeChars(String8 const & str,String8 chrs)
+String8             removeChars(String8 const & str,String8 chrs)
 {
-    String32       s32 = str.as_utf32(),
+    Str32       s32 = str.as_utf32(),
                     c32 = chrs.as_utf32(),
                     r32;
     for (size_t ii=0; ii<s32.size(); ++ii)
@@ -437,14 +387,13 @@ removeChars(String8 const & str,String8 chrs)
     return String8(r32);
 }
 
-bool
-isGlobMatch(String8 const & globStr,String8 const & str)
+bool                isGlobMatch(String8 const & globStr,String8 const & str)
 {
     if (globStr.empty())
         return str.empty();
     if (globStr == "*")
         return true;
-    String32           gs = globStr.as_utf32(),
+    Str32           gs = globStr.as_utf32(),
                         ts = str.as_utf32();
     if (gs[0] == '*')
         return endsWith(ts,cRest(gs,1));
@@ -453,28 +402,25 @@ isGlobMatch(String8 const & globStr,String8 const & str)
     return (str == globStr);
 }
 
-String8
-cSubstr8(String8 const & str,size_t start,size_t size)
+String8             cSubstr8(String8 const & str,size_t start,size_t size)
 {
     String8        ret;
-    String32       s = str.as_utf32();
+    Str32       s = str.as_utf32();
     s = cSubstr(s,start,size);
     ret = String8(s);
     return ret;
 }
 
-String8
-cRest(String8 const & str,size_t start)
+String8             cRest(String8 const & str,size_t start)
 {
     String8        ret;
-    String32       s = str.as_utf32();
+    Str32       s = str.as_utf32();
     s = cRest(s,start);
     ret = String8(s);
     return ret;
 }
 
-String8
-cat(String8s const & strings,String8 const & separator)
+String8             cat(String8s const & strings,String8 const & separator)
 {
     String8        ret;
     for (size_t ii=0; ii<strings.size(); ++ii) {
@@ -484,7 +430,7 @@ cat(String8s const & strings,String8 const & separator)
     }
     return ret;
 }
-String8         catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator)
+String8             catDeref(Ptrs<String8> const & stringPtrs,String8 const & separator)
 {
     String8             ret;
     size_t              sz = stringPtrs.size();
@@ -496,11 +442,10 @@ String8         catDeref(Ptrs<String8> const & stringPtrs,String8 const & separa
     return ret;
 }
 
-string
-fgToVariableName(String8 const & str)
+String              fgToVariableName(String8 const & str)
 {
-    string          ret;
-    String32    str32 = str.as_utf32();
+    String          ret;
+    Str32    str32 = str.as_utf32();
     // First character must be alphabetical or underscore:
     if (isalpha(char(str32[0])))
         ret += char(str32[0]);
@@ -515,10 +460,9 @@ fgToVariableName(String8 const & str)
     return ret;
 }
 
-String8
-replaceCharWithString(String8 const & in,char32_t from,String8 const to)
+String8             replaceCharWithString(String8 const & in,char32_t from,String8 const to)
 {
-    String32       in32 = in.as_utf32(),
+    Str32       in32 = in.as_utf32(),
                     to32 = to.as_utf32(),
                     out;
     for (char32_t ch : in32) {
@@ -530,8 +474,7 @@ replaceCharWithString(String8 const & in,char32_t from,String8 const to)
     return String8(out);
 }
 
-void
-printList(String const & title,Strings const & items,bool numbered)
+void                printList(String const & title,Strings const & items,bool numbered)
 {
     PushIndent      pi {title};
     for (size_t ii=0; ii<items.size(); ++ii) {
@@ -549,45 +492,45 @@ static char         toHexChar(uchar c4)
     static char const * digits = "0123456789ABCDEF";
     return digits[c4];
 }
-string              toHexString(uchar c)
+String              toHexString(uchar c)
 {
     return
-        string(1,toHexChar(c >> 4)) +
-        string(1,toHexChar(c & 0xF));
+        String(1,toHexChar(c >> 4)) +
+        String(1,toHexChar(c & 0xF));
 }
-string              toHexString(uint16 val)
+String              toHexString(uint16 val)
 {
     return
         toHexString(uchar(val >> 8)) +
         toHexString(uchar(val & 0xFF));
 }
-string              toHexString(uint32 val)
+String              toHexString(uint32 val)
 {
     return
         toHexString(uint16(val >> 16)) +
         toHexString(uint16(val & 0xFFFF));
 }
-string              toHexString(uint64 val)
+String              toHexString(uint64 val)
 {
     return
         toHexString(uint32(val >> 32)) +
         toHexString(uint32(val & 0xFFFFFFFF));
 }
-string              bytesToHexString(const uchar *arr,uint numBytes)
+String              bytesToHexString(const uchar *arr,uint numBytes)
 {
-    string  ret;
+    String  ret;
     for (uint ii=0; ii<numBytes; ++ii)
         ret += toHexString(*arr++);
     return ret;
 }
-string              toHex64Crc(uint64 id)
+String              toHex64Crc(uint64 id)
 {
     uint16          parts[4];
     parts[0] = uint16((id >> 48) & 0xFFFF);
     parts[1] = uint16((id >> 32) & 0xFFFF);
     parts[2] = uint16((id >> 16) & 0xFFFF);
     parts[3] = uint16(id & 0xFFFF);
-    string          ret;
+    String          ret;
     uint16          crc = 0;
     for (uint ii=0; ii<4; ++ii) {
         ret += toHexString(parts[ii]) + "-";
@@ -596,7 +539,7 @@ string              toHex64Crc(uint64 id)
     ret += toHexString(crc);
     return  ret;
 }
-static Valid<uint>  get4(char ch)
+Valid<uint>         fromHex4(char ch)
 {
     Valid<uint>       ret;
     if ((ch >= '0') && (ch <= '9'))
@@ -620,7 +563,7 @@ static Valid<uint>  get16(istringstream & iss)
         FGASSERT(chi < 256);
         if (iss.eof())
             return Valid<uint>();
-        Valid<uint>       chVal = get4(scast<char>(chi));
+        Valid<uint>       chVal = fromHex4(scast<char>(chi));
         if (chVal.valid()) {
             val = (val << 4) + chVal.val();
             if (++cnt == 4)

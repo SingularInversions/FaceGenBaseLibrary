@@ -240,7 +240,7 @@ void                guiStartImpl(
     WNDCLASSEX  wcl;
     wcl.cbSize = sizeof(wcl);
     if (GetClassInfoEx(s_guiWin.hinst,className,&wcl) == 0) {
-        // 101 is the fgb-generated resource number of the icon images (if provided):
+        // 101 is the generated resource number of the icon images (if provided):
         HICON   icon = LoadIcon(s_guiWin.hinst,MAKEINTRESOURCE(101));
         if (icon == NULL)
             icon = LoadIcon(NULL,IDI_APPLICATION);
@@ -324,12 +324,16 @@ void                guiStartImpl(
             // this call takes all of the time in this loop:
             DispatchMessage(&msg);
         }
-        // it's very important that we check for changes (to trigger WM_PAINTs) after message handling here,
+        // Update the GUI for any changes (triggers WM_PAINT) after message handling here,
         // and NOT inside the windows procedures, since the latter somehow causes 'DispatchMessage' to slow to
         // a crawl, to the point where WM_PAINT message don't even get received any more. There is no advantage
         // to it in any case, since we often can't know what's changed after using callbacks so have to do a full
-        // check anyway:
-        win.updateGui();        // only triggers another WM_PAINT if something has changed
+        // check anyway.
+        // Since the renderer just renders regardless rather than checking for a dirty flag (too many inputs to bother),
+        // it's very important to NOT update the GUI when we get the paint message, since this will generate another
+        // paint message from the renderer causing constant full GPU usage:
+        if (msg.message != WM_PAINT)
+            win.updateGui();
     }
 }
 
@@ -359,9 +363,12 @@ Vec2UI              winNcSize(HWND hwnd)
 
 LRESULT             winCallCatch(Sfun<LRESULT(void)> func,string const & className)
 {
-    String8             msg;
+    String8             msg,msgNative;
     try {return func(); }
-    catch(FgException const & e) {msg = e.tr_message(); }   // ends with two CRLFs
+    catch(FgException const & e) {
+        msg = e.englishMessage();   // ends with two CRLFs
+        msgNative = e.nativeMessage();
+    }
     catch(std::bad_alloc const &)
     {
         msg = "OUT OF MEMORY";
@@ -374,10 +381,14 @@ LRESULT             winCallCatch(Sfun<LRESULT(void)> func,string const & classNa
     catch(std::exception const & e) {msg = String8(e.what()) + "\n\n"; }
     catch(...) { msg = "Unknown exception\n\n"; }
     msg += "While running winCallCatch for " + className;
+    if (msgNative.empty())
+        msgNative = msg;
+    else
+        msgNative += "While running winCallCatch for " + className;
     auto                diagnosticFn = [&]()
     {
         if (g_guiDiagHandler.reportError) {
-            try {g_guiDiagHandler.reportError(msg); }
+            try {g_guiDiagHandler.reportError(msgNative); }
             catch(...) {}
         }
     };

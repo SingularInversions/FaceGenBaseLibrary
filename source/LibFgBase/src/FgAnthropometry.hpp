@@ -42,6 +42,7 @@ enum struct     FaceLm {
     sellion,
     cheekboneL,         cheekboneR,
     alarOuterL,         alarOuterR,
+    noseBridgeMiddle,
     noseTip,
     subNasale,
     jawOuterL,          jawOuterR,
@@ -49,9 +50,13 @@ enum struct     FaceLm {
     cristaPhiltriL,     cristaPhiltriR,
     labialeSuperius,
     labialeInferius,
+    lipUpperFront,      // used in photo profile; anywhere between labialeSuperius and forward centre of upper lip
+    lipLowerFront,      // used in photo profile; anywhere between labialeInferius and forward centre of lower lip
     mouthCentre,
     supramentale,
+    chinFront,
     chinBottom,
+    jawBottom,
 };
 typedef Svec<FaceLm>    FaceLms;
 std::ostream &      operator<<(std::ostream &,FaceLm);
@@ -81,18 +86,36 @@ struct      FaceLmPos                // landmark in an image
 
     bool                operator==(FaceLm flm) const {return (flm==lm); }
 };
+template<uint D>
+std::ostream &      operator<<(std::ostream & os,FaceLmPos<D> flp)
+{
+    return os << fgnl << flp.lm << " : " << flp.pos;
+}
 typedef FaceLmPos<2>        FaceLmPos2F;    // 'pos' is in image raster coordinate system (IRCS)
 typedef FaceLmPos<3>        FaceLmPos3F;
 typedef Svec<FaceLmPos2F>   FaceLmPos2Fs;
 typedef Svec<FaceLmPos3F>   FaceLmPos3Fs;
 
+// converts string names to FaceLm enum values, preserving order:
 template<uint D>
 Svec<FaceLmPos<D>>  nameVecsToFaceLmPos(Svec<NameVec<float,D>> const & nvs)
 {
-    FaceLmAtts const &      atts = getFaceLmAtts();
     Svec<FaceLmPos<D>>      ret; ret.reserve(nvs.size());
-    for (NameVec<float,D> const & nv : nvs)
-        ret.emplace_back(findFirst(atts,nv.name).type,nv.vec);
+    for (NameVec<float,D> const & nv : nvs) {
+        FaceLm              lm = findFirst(getFaceLmAtts(),nv.name).type;
+        ret.emplace_back(lm,nv.vec);
+    }
+    return ret;
+}
+
+template<uint D>
+Svec<NameVec<float,D>>  toNameVecs(Svec<FaceLmPos<D>> const & faceLmPoss)
+{
+    Svec<NameVec<float,D>>  ret; ret.reserve(faceLmPoss.size());
+    for (FaceLmPos<D> const & flp : faceLmPoss) {
+        String              name = findFirst(getFaceLmAtts(),flp.lm).label;
+        ret.emplace_back(name,flp.pos);
+    }
     return ret;
 }
 
@@ -107,6 +130,23 @@ Strings             getLmStrsNose();           // 4 = tip, base, outer alar L & 
 SquareF             cFaceRegionFrontal11(Vec2Fs const & lmsFrontal11);
 SquareF             cFaceRegionProfileL9(Vec2Fs const & lmsProfileL9);
 SquareF             cFaceRegionProfileR9(Vec2Fs const & lmsProfileR9);
+
+struct      LmQF
+{
+    FaceLm          lm;
+    MatUT2D         qf;     // quadratic form UT choleksy of lm error distribution (units vary):
+
+    bool            operator==(FaceLm l) const {return l == lm; }
+};
+typedef Svec<LmQF>  LmQFs;
+
+struct      FaceLmsV3
+{
+    FaceView            view;
+    FaceLmPos2Fs        lms;
+};
+
+FaceLmsV3           parseLmsV3(Vec2Fs const & pacs);
 
 }
 

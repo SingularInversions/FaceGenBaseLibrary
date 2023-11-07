@@ -107,12 +107,12 @@ static void Encoding()
         char            ch8[] = "\xC5\xA1";
         String8         str {ch8};
         FGASSERT(ch32 == str[0]);
-        String32        s32 = toUtf32(ch8);
+        Str32        s32 = toUtf32(ch8);
         FGASSERT(str == toUtf8(s32));
     }
     {
         String          s8 {"hello"};
-        String32        s32 = toUtf32("hello");
+        Str32        s32 = toUtf32("hello");
         FGASSERT(toUtf8(s32) == s8);
         FGASSERT(s32 == toUtf32(s8));
     }

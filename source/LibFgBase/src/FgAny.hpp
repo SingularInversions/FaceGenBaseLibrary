@@ -16,7 +16,7 @@
 
 namespace Fg {
 
-struct AnyPolyBase
+struct      AnyPolyBase
 {
     std::type_info const *  typeInfoPtr;    // get type info without dynamic cast
 
@@ -34,23 +34,22 @@ struct AnyPolyBase
 };
 
 template<class T>
-struct AnyPoly : AnyPolyBase
+struct      AnyPoly : AnyPolyBase
 {
-    T           object;
+    T                   object;
 
     explicit AnyPoly(T const & val) : AnyPolyBase{&typeid(T)}, object{val} {}
     explicit AnyPoly(T && val) :  AnyPolyBase{&typeid(T)}, object(std::forward<T>(val)) {}
 };
 
-struct  AnyWeak
+struct      AnyWeak
 {
     std::weak_ptr<AnyPolyBase>    objPtr;
 
     AnyWeak() {}      // Need this for vector storage
     explicit AnyWeak(const std::shared_ptr<AnyPolyBase> & v) : objPtr(v) {}
 
-    std::shared_ptr<AnyPolyBase>
-    asShared() const
+    Sptr<AnyPolyBase>   asShared() const
     {
         if (objPtr.expired())
             fgThrow("AnyWeak expired dereference");
@@ -60,9 +59,9 @@ struct  AnyWeak
 
 typedef Svec<AnyWeak>      AnyWeaks;
 
-class Any
+class       Any
 {
-    std::shared_ptr<AnyPolyBase>   objPtr;
+    Sptr<AnyPolyBase>       objPtr;
 
 public:
     Any() {}
@@ -78,8 +77,7 @@ public:
     void                    operator=(Any const & var) {objPtr = var.objPtr; }
 
     template<class T>
-    bool
-    is() const
+    bool                    is() const
     {
         if (!objPtr)
             fgThrow("Any.is() null dereference",typeid(T).name());
@@ -87,12 +85,11 @@ public:
     }
 
     template<class T>
-    T const &
-    as() const
+    T const &               as() const
     {
         if (!objPtr)
             fgThrow("Any.as() null dereference",typeid(T).name());
-        AnyPoly<T> const *  ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
+        AnyPoly<T> const *      ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
         if (ptr == nullptr)
             fgThrow("Any.as() incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;
@@ -100,12 +97,11 @@ public:
 
     // Follows the idiom of returning a null pointer if the type differs:
     template<class T>
-    T const *
-    asp() const
+    T const *               asp() const
     {
         if (!objPtr)
             return nullptr;
-        const AnyPoly<T> * ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
+        const AnyPoly<T> *      ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
         if (ptr == nullptr)
             return nullptr;
         return &ptr->object;
@@ -113,12 +109,11 @@ public:
 
     // Use at your own risk as this violates copy semantics:
     template<class T>
-    T &
-    ref()
+    T &                     ref()
     {
         if (!objPtr)
             fgThrow("Any.ref() null dereference",typeid(T).name());
-        AnyPoly<T> *      ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
+        AnyPoly<T> *            ptr = dynamic_cast<AnyPoly<T>*>(objPtr.get());
         if (ptr == nullptr)
             fgThrow("Any.ref() incompatible type dereference",objPtr->typeName()+"->"+typeid(T).name());
         return ptr->object;

@@ -55,17 +55,13 @@ GuiPtr              makeLightingCtrls(
 
 // View controls with all option selectors enabled:
 GuiPtr              makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 const & storePath);
-// Returns an image save dialog window to save from the given render capture function:
-GuiPtr              guiCaptureSaveImage(
-    NPT<Vec2UI>                 viewportDims,
-    Sptr<Gui3d::Capture> const & capture,
-    String8 const &             store);
+// Returns sub-wins of image save dialog window to save from the given render capture function:
+GuiPtrs             cGuiFileImageWs(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture> const & capture,String8 const & store);
 
 OPT<Vec3Fs>         linkAllVerts(NPT<Mesh>);
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
 OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN);   // Empty filename -> empty mesh
 OPT<MeshNormals>    linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
-OPT<ImgRgba8>       linkLoadImage(NPT<String8> filenameN);  // Empty filename -> empty image
 
 typedef Svec<NPT<ImgRgba8>>  ImgNs;
 

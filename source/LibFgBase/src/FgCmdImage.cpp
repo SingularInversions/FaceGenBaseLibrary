@@ -31,7 +31,7 @@ void                cmdAlpha(CLArgs const & args)
         fgThrow("<rgb> and <alpha> images have different pixel dimensions");
     for (size_t ii=0; ii<rgb.m_data.size(); ++ii)
         rgb.m_data[ii].alpha() = alpha.m_data[ii].rec709();
-    saveImage(syn.next(),rgb);
+    saveImage(rgb,syn.next());
 }
 
 void                cmdAnnotate(CLArgs const & args)
@@ -59,7 +59,7 @@ OUTPUT:
                 paintCrosshair(img,mapRound<int>(lm.vec));
             Path                path {imgFile};
             String8             outFile = path.dirBase() + ".lms." + path.ext;
-            saveImage(outFile,img);
+            saveImage(img,outFile);
         }
         else
             fgout << fgnl << imgFile << ": no corresponding landmarks file found";
@@ -89,7 +89,7 @@ void                cmdComposite(CLArgs const & args)
                         overlay = loadImage(syn.next());
     if (base.dims() != overlay.dims())
         syn.error("The images must have identical pixel dimensions");
-    saveImage(syn.next(),composite(overlay,base));
+    saveImage(composite(overlay,base),syn.next());
 }
 
 void                cmdConvert(CLArgs const & args)
@@ -102,7 +102,7 @@ void                cmdConvert(CLArgs const & args)
 NOTES:)" + desc
     };
     ImgRgba8            img = loadImage(syn.next());
-    saveImage(syn.next(),img);
+    saveImage(img,syn.next());
 }
 
 void                cmdCreateCheckerboard(CLArgs const & args)
@@ -130,7 +130,7 @@ NOTES:
             col = ~col;
         }
     }
-    saveImage(syn.next(),img);
+    saveImage(img,syn.next());
 }
 
 void                cmdCreateConst(CLArgs const & args)
@@ -150,7 +150,7 @@ void                cmdCreateConst(CLArgs const & args)
             syn.error("RGBA values must be <= 255",toStr(v));
         rgba[ii] = scast<uchar>(v);
     }
-    saveImage(syn.next(),ImgRgba8{X,Y,rgba});
+    saveImage(ImgRgba8{X,Y,rgba},syn.next());
 }
 
 void                cmdCreate(CLArgs const & args)
@@ -213,9 +213,9 @@ NOTES:
             imgFiles.push_back(syn.next());
         while (syn.more());
     }
-    if (containsDuplicates(cSort(lmNames)))
+    if (containsDuplicates(sortAll(lmNames)))
         fgout << "WARNING: There are landmark name duplicates";
-    if (containsDuplicates(cSort(imgFiles)))
+    if (containsDuplicates(sortAll(imgFiles)))
         fgout << "WARNING: There are file name duplicates";
     for (String const & imgFile : imgFiles) {
         PushIndent          pind {imgFile+": "};
@@ -263,7 +263,9 @@ NOTES:
     ImgC4F              lin = mapGamma(toUnitC4F(loadImage(syn.next())),gamma);
     for (size_t ii=0; ii<count; ++ii)
         lin = shrink2(lin);
-    saveImage(syn.next(),toRgba8(mapGamma(lin,1.0f/gamma)));
+    saveImage(toRgba8(mapGamma(lin,1.0f/gamma)),syn.next());
+}
+
 }
 
 void                cmdImgops(CLArgs const & args)
@@ -280,10 +282,6 @@ void                cmdImgops(CLArgs const & args)
     };
     doMenu(args,cmds);
 }
-
-}
-
-Cmd                 getCmdImage() {return Cmd{cmdImgops,"image","Image operations"}; }
 
 }
 

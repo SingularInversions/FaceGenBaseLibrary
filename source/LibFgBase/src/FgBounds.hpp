@@ -3,30 +3,68 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// min/max bounds of n-D data structures, and operations on bounds,
-// for both fixed and floating point values.
+// min/max bounds of n-D data structures, and operations on bounds, for both fixed and floating point values.
 //
 // * Bounds matrices always have 2 columns: [min,max]
 // * min values are always treated as inclusive
 // * max values are documented as either inclusive upper bounds (IUB) or exclusive upper bounds (EUB)
-//   where EUB means 1 greater than the highest value instance.
-// * Floating point values should use IUB
-// * Integer values should use EUB
 //
 
 #ifndef FGBOUNDS_HPP
 #define FGBOUNDS_HPP
 
-#include "FgSerial.hpp"
-#include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
 
 namespace Fg {
+
+template<class T>
+struct      ValRange
+{
+    T                   loPos;      // low end of range (high end if size is negative)
+    T                   size;       // size of range. Can be -ve. (other end of range implicitly = low + size)
+};
+typedef ValRange<float>        RangeF;
+typedef ValRange<double>       RangeD;
+
+template<class T,uint D>
+struct      PosSize
+{
+    Mat<T,D,1>          loPos;      // lower-valued coordinate corner position
+    T                   size;       // typically > 0
+    FG_SER2(loPos,size);
+};
+typedef PosSize<float,2>    SquareF;
+typedef PosSize<double,2>   SquareD;
+
+template<class T,uint D>
+struct      Rect
+{
+    Mat<T,D,1>          loPos;      // Lower-valued coordinate corner position
+    Mat<T,D,1>          dims;       // typically > 0
+    FG_SER2(loPos,dims)
+
+    inline T            volume() const {return dims.cmpntsProduct(); }
+    Mat<T,D,1>          hiPos() const {return loPos + dims; }
+    ValRange<T>         asRange(uint dd) const {return {loPos[dd],dims[dd]}; }
+};
+typedef Rect<int,2>     Rect2I;
+typedef Rect<float,2>   Rect2F;
+typedef Rect<double,2>  Rect2D;
 
 template<typename T>
 inline void         updateMax_(T & maxVal,T nextVal) {maxVal = (nextVal > maxVal) ? nextVal : maxVal; }
 template<typename T>
 inline void         updateMin_(T & minVal,T nextVal) {minVal = (nextVal < minVal) ? nextVal : minVal; }
+
+// the bounds measure is area in 2D, volume in 3D, etc. Negative values result from invalid bounds:
+template<typename T,uint D>
+T                   boundsMeasure(Mat<T,D,2> boundsEub)
+{
+    T                   ret {1};
+    for (uint dd=0; dd<D; ++dd)
+        ret *= (boundsEub.rc(dd,1)-boundsEub.rc(dd,0));
+    return ret;
+}
 
 template<typename T,uint Dim,size_t D>      // type must match declaration ...
 inline void         updateBounds_(Mat<T,Dim,2> & boundsIub,Arr<T,D> const & arr)
@@ -141,10 +179,10 @@ T                   cMedian(Arr<T,S> arr)       // Rounds up for even numbers of
 }
 
 template<typename T,uint R,uint C>
-inline T            cMaxElem(Mat<T,R,C> const & mat) {return cMax(mat.m); }
+inline T            cMaxElem(Mat<T,R,C> const & mat) {return cMaxElem(mat.m); }
 
 template<typename T,uint R,uint C>
-inline T            cMinElem(Mat<T,R,C> const & mat) {return cMin(mat.m); }
+inline T            cMinElem(Mat<T,R,C> const & mat) {return cMinElem(mat.m); }
 
 template<typename T,uint R,uint C>
 inline size_t       cMaxIdx(Mat<T,R,C> const & mat) {return cMaxIdx(mat.m); }
@@ -153,20 +191,25 @@ template<typename T,uint R,uint C>
 inline size_t       cMinIdx(Mat<T,R,C> const & mat) {return cMinIdx(mat.m); }
 
 template<typename T>
-inline T            cMaxElem(MatV<T> const & mat) {return cMax(mat.m_data); }
+inline T            cMaxElem(MatV<T> const & mat) {return cMaxElem(mat.m_data); }
 
-template<typename T,uint R>
-Mat<T,R,1>          cDims(const Svec<Mat<T,R,1> > & vec)
+template<typename T,uint R,uint C>
+T                   cMaxElem(Svec<Mat<T,R,C>> const & v)
 {
-    Mat<T,R,2>          bounds = cBounds(vec);
-    return (bounds.colVec(1)-bounds.colVec(0));
+    T               ret {lims<T>::min()};
+    for (Mat<T,R,C> const & a : v)
+        for (T e : a.m)
+            updateMax_(ret,e);
+    return ret;
 }
 
-// A lo/hi threshold is just a max/min against a constant value:
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapThreshLo(Mat<T,R,C> m,T lo) {return mapCall(m,[=](T e){return cMax(e,lo); }); }
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapThreshHi(Mat<T,R,C> m,T hi) {return mapCall(m,[=](T e){return cMin(e,hi); }); }
+// calculate the rectangular dimensions (size) of the axial-aligned bounding box of the given points:
+template<typename T,uint R>
+Mat<T,R,1>          cDims(const Svec<Mat<T,R,1> > & pts)
+{
+    Mat<T,R,2>          bounds = cBounds(pts);
+    return (bounds.colVec(1)-bounds.colVec(0));
+}
 
 // The returned bounds will have negative volume if the bounds do not intersect.
 // Bounds must both be EUB or both be IUB:
@@ -319,6 +362,18 @@ Mat<uint,R,C>       clampZeroEub(Mat<int,R,C> mat,Mat<uint,R,1> exclusiveUpperBo
             uint        valu = uint(val);
             ret.rc(rr,cc) = val < 0 ? 0U : (valu < eub ? valu : eub-1);
         }
+    }
+    return ret;
+}
+
+template<class T,uint D>
+Rect<T,D>           boundsToRect(Mat<T,D,2> const & bounds)
+{
+    Rect<T,D>           ret;
+    for (uint dd=0; dd<D; ++dd) {
+        T                   lo = bounds.rc(dd,0);
+        ret.loPos[dd] = lo;
+        ret.dims[dd] = bounds.rc(dd,1) - lo;
     }
     return ret;
 }

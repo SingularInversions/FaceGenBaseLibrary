@@ -134,14 +134,41 @@ void                testmSquarePrism(CLArgs const &)
     viewMesh(Mesh{"SquarePrism",cSquarePrism(1,4)});
 }
 
+void                testmInterp(CLArgs const &)
+{
+    // interpolate colors at every discrete step between two pixel centres
+    ImgRgba8            clrMap {2,1,{{0,255,0,255},{255,0,0,255}}};
+    Vec3Fs              verts {{0,0,0},{0,32,0}};
+    Vec2Fs              uvs;
+    Vec3UIs             vinds;
+    Vec3UIs             tinds;
+    for (uint ii=0; ii<256; ++ii) {
+        verts.emplace_back(ii+1,0,0);
+        verts.emplace_back(ii+1,32,0);
+        uint                i2 = 2*ii;
+        vinds.emplace_back(i2,i2+2,i2+1);
+        vinds.emplace_back(i2+1,i2+2,i2+3);
+        uvs.emplace_back(ii/255.0f,0.5f);
+        tinds.emplace_back(ii);
+        tinds.emplace_back(ii);
+    }
+    Surf                surf {TriInds{vinds,tinds},{}};
+    surf.setAlbedoMap(clrMap);
+    Mesh                mesh {"Interpolated color gradient",verts,uvs,{surf}};
+    viewMesh(mesh);
+}
+
+
+
 void                testm3d(CLArgs const & args)
 {
     Cmds            cmds {
+        {testmInterp,"interp","interpolation of color maps"},
+        {testmSquarePrism,"prism","Square prism"},
         {testmSubdShapes,"subd0","Loop subdivsion of simple shapes"},
         {testmSubdFace,"subd1","Loop subdivision of textured face"},
         {testmSphere4,"sphere4","Spheres created from tetrahedon"},
         {testmSphere,"sphere","Spheres created from icosahedron"},
-        {testmSquarePrism,"prism","Square prism"},
     };
     doMenu(args,cmds,true,false);
 }

@@ -610,15 +610,17 @@ NOTES:
     }
 }
 
-void                cmdUvsSplitContig(CLArgs const & args)
+void                cmdUvsSplit(CLArgs const & args)
 {
     Syntax              syn {args,
         "<in>.<extIn> <out>.fgmesh\n"
         "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
         "Each UV-contiguous patch is given a separate surface."
     };
-    Mesh                mesh = loadMesh(syn.next());
-    saveMesh(splitSurfsByUvContiguous(mesh),syn.next());
+    Mesh                in = loadMesh(syn.next()),
+                        out = splitSurfsContiguousUvs(in);
+    fgout << fgnl << out.surfaces.size() << " UV-contiguous (or unused) surfaces created";
+    saveMesh(out,syn.next());
 }
 
 void                cmdSplitContigVerts(CLArgs const & args)
@@ -965,7 +967,7 @@ void                cmdUvSolidImage(CLArgs const & args)
     ImgUC         img = getUvCover(mesh,Vec2UI(sz*4));
     img = shrink2Fixed(img);
     img = shrink2Fixed(img);
-    saveImage(syn.next(),toRgba8(img));
+    saveImage(toRgba8(img),syn.next());
 }
 
 void                cmdUvWireframe(CLArgs const & args)
@@ -1105,13 +1107,12 @@ void                cmdXformCreateRotate(CLArgs const & args)
 
 void                cmdXformCreateScale(CLArgs const & args)
 {
-    Syntax    syn(args,"<similarity>.txt <scale>"
-        );
-    string          simFname = syn.next();
-    SimilarityD    sim;
+    Syntax              syn {args,"<similarity>.txt <scale>"};
+    String              simFname = syn.next();
+    SimilarityD         sim;
     if (pathExists(simFname))
         sim = dsrlzText<SimilarityD>(loadRawString(simFname));
-    double          scale = syn.nextAs<double>();
+    double              scale = syn.nextAs<double>();
     saveRaw(srlzText(SimilarityD(scale)*sim),simFname);
 }
 
@@ -1119,9 +1120,9 @@ void                cmdXformCreateTrans(CLArgs const & args)
 {
     Syntax              syn {args,R"(<similarity>.txt <X> <Y> <Z>
     OUTPUT:
-        <similarity>.xml will be saved with the post-applied transalation <X>,<Y>,<Z>
+        <similarity>.txt will be saved with the post-applied transalation <X>,<Y>,<Z>
     NOTES:
-        * If <similarity>.xml does not exist, it will be initialized to the identity transform)"
+        * If <similarity>.txt does not exist, it will be initialized to the identity transform)"
     };
     String              simFname = syn.next();
     SimilarityD         sim;
@@ -1137,11 +1138,11 @@ void                cmdXformCreateTrans(CLArgs const & args)
 void                cmdXformCreate(CLArgs const & args)
 {
     Cmds            cmds {
-        {cmdXformCreateIdentity,"identity","Create identity similarity transform XML file for editing"},
+        {cmdXformCreateIdentity,"identity","Create identity similarity transform file for editing"},
         {cmdXformCreateMeshes,"meshes","Create similarity transform from base and transformed meshes with matching vertex lists"},
-        {cmdXformCreateRotate,"rotate","Combine a rotation with a similarity transform XML file"},
-        {cmdXformCreateScale,"scale","Combine a scaling with a similarity transform XML file"},
-        {cmdXformCreateTrans,"translate","Combine a translation with a similarity transform XML file"}
+        {cmdXformCreateRotate,"rotate","Combine a rotation with a similarity transform file"},
+        {cmdXformCreateScale,"scale","Combine a scaling with a similarity transform file"},
+        {cmdXformCreateTrans,"translate","Combine a translation with a similarity transform file"}
     };
     doMenu(args,cmds);
 }
@@ -1212,7 +1213,7 @@ NOTES:
         Strings             tinds = splitWhitespace(loadRawString(syn.next()));
         inds = mapCallT<uint>(tinds,[](String const & s){return fromStr<uint>(s).value(); });
     }
-    if (cMax(inds) >= V)
+    if (cMaxElem(inds) >= V)
         fgThrow("index values in <inds>.txt exceed vertex count");
     if (inds.empty())
         mesh.verts = verts;
@@ -1302,7 +1303,7 @@ void                cmdUvs(CLArgs const & args)
         {copyUvList,"copylist","Copy the UV list from one mesh to another with same UV count"},
         {copyUvsInds,"copyinds","Copy UV poly indices from one mesh to another with identical poly structure"},
         {copyUvsImv,"copyimv","Copy UV poly indices from one mesh to another with by matching polys based on vertex list indices"},
-        {cmdUvsSplitContig,"splitcon","Split surfaces by contiguous UV mappings"},
+        {cmdUvsSplit,"split","Split surfaces by contiguous UV mappings"},
         {cmdFuseUvs,"fuse","fuse identical UV coordinates"},
         {cmdUvclamp,"clamp","Clamp UV coords to the range [0,1]"},
         {cmdUvWireframe,"wireImg","Create a wireframe image of meshes UV map(s)"},

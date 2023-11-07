@@ -104,13 +104,13 @@ void                DfgOutput::update() const
     }
     catch(FgException & e)
     {
-        e.addContext("Executing DfgOutput link",cSignature(data));
+        e.contexts.emplace_back("Executing DfgOutput link",cSignature(data));
         throw;
     }
     catch(std::exception const & e)
     {
         FgException     ex("std::exception",e.what());
-        ex.addContext("Executing DfgOutput link",cSignature(data));
+        ex.contexts.emplace_back("Executing DfgOutput link",cSignature(data));
         throw ex;
     }
     catch(...)

@@ -146,7 +146,11 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMe
 {
     origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
     {
-        Mat32F      bounds {lims<float>::max(),-lims<float>::max(), lims<float>::max(),-lims<float>::max(), lims<float>::max(),-lims<float>::max()};
+        Mat32F      bounds {
+            lims<float>::max(),-lims<float>::max(),
+            lims<float>::max(),-lims<float>::max(),
+            lims<float>::max(),-lims<float>::max()
+        };
         for (RendMesh const & rm : rms) {
             Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
             bounds = cBoundsUnion(bounds,bnds);
@@ -654,7 +658,7 @@ WinPtr<ID3D11Buffer> D3d::setScene(Scene const & scene)
     return sceneBuff;
 }
 
-WinPtr<ID3D11Buffer> D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
+WinPtr<ID3D11Buffer> D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps,float detModStrength)
 {
     lighting.lights.resize(2);                          // Ensure we have 2
     Scene                   scene;
@@ -666,15 +670,16 @@ WinPtr<ID3D11Buffer> D3d::makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F 
         scene.lightDir[ii] = {d[0],d[1],-d[2],1.0f};    // OECS to D3VS homogenous position
         scene.lightColor[ii] = append(lighting.lights[ii].colour,1.0f);
     }
+    scene.detTexMod = {detModStrength,0,0,0};
     return setScene(scene);
 }
 
 // Ambient-only version:
-WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps)
+WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps,float detModStrength)
 {
     Light             diffuseBlack(Vec3F(0),Vec3F(0,0,1));
     Lighting          lighting(ambient,{diffuseBlack,diffuseBlack});
-    return makeScene(lighting,worldToD3vs,d3vsToD3ps);
+    return makeScene(lighting,worldToD3vs,d3vsToD3ps,detModStrength);
 }
 
 void                D3d::setBgImage(BackgroundImage const & bgi)
@@ -683,7 +688,7 @@ void                D3d::setBgImage(BackgroundImage const & bgi)
     ImgRgba8 const &    img = bgi.imgN.cref();
     if (img.empty())
         return;
-    Vec2UI              p2dims = mapThreshHi(mapPow2Ceil(img.dims()),maxMapSize);
+    Vec2UI              p2dims = mapMin(mapPow2Ceil(img.dims()),maxMapSize);
     ImgRgba8            map(p2dims);
     imgResize_(img,map);
     bgImg = makeMap(map);
@@ -743,8 +748,8 @@ void                D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewpor
     mapViews[2] = noModulationMap.view.get();
     pContext->PSSetShaderResources(0,3,mapViews);
     Scene                       scene;
-    scene.mvm = Mat44F::identity();
-    scene.projection = Mat44F::identity();
+    scene.mvm = cDiagMat<float,4>(1);
+    scene.projection = cDiagMat<float,4>(1);
     scene.ambient = Vec4F(1);
     if (transparentPass) {
         double                      ft = clamp(bgi.foregroundTransparency.val(),0.0,1.0);
@@ -756,7 +761,7 @@ void                D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewpor
 
 D3dMesh &           D3d::getD3dMesh(RendMesh const & rm) const
 {
-    Any &  gpuMesh = *rm.gpuData;
+    Any &               gpuMesh = *rm.gpuData;
     if (!gpuMesh.valid())
         gpuMesh.reset(D3dMesh{makeUpdateFlag(rm.posedVertsN)});
     return gpuMesh.ref<D3dMesh>();
@@ -764,7 +769,7 @@ D3dMesh &           D3d::getD3dMesh(RendMesh const & rm) const
 
 D3dSurf &           D3d::getD3dSurf(RendSurf const & rs) const
 {
-    Any &  gpuSurf = *rs.gpuData;
+    Any &               gpuSurf = *rs.gpuData;
     if (!gpuSurf.valid()) {
         gpuSurf.reset(D3dSurf{
             rs.smoothMapN,
@@ -794,6 +799,7 @@ void                D3d::renderBackBuffer(
     Mat44F                      d3vsToD3ps,     // projection
     Vec2UI                      viewportSize,
     RendOptions const &         rendOpts,
+    float                       texModStrength,
     bool                        backgroundTransparent)
 {
     // No render view during create - created by first resize:
@@ -869,7 +875,7 @@ void                D3d::renderBackBuffer(
     pContext->OMSetDepthStencilState(pDepthStencilStateDefault.Get(),0);
     if (rendOpts.facets) {
         pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        sceneBuff = makeScene(lighting,worldToD3vs,d3vsToD3ps);
+        sceneBuff = makeScene(lighting,worldToD3vs,d3vsToD3ps,texModStrength);
         WinPtr<ID3D11RasterizerState>   rasterizer;
         {
             D3D11_RASTERIZER_DESC       rd = {};

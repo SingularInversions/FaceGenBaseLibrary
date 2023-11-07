@@ -295,7 +295,7 @@ saveDae(String8 const & filename,Meshes const & meshes,String imgFormat,SpatialU
                 if (contains(imagesSaved,imgPtr))
                     imgFile = imagesSaved[imgPtr];
                 else {
-                    saveImage(fpath.dir()+imgFile,*surf.material.albedoMap);
+                    saveImage(*surf.material.albedoMap,fpath.dir()+imgFile);
                     imagesSaved[imgPtr] = imgFile;
                 }
                 images += R"(

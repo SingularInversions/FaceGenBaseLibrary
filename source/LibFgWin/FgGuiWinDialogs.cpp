@@ -87,6 +87,74 @@ Opt<String8>        guiDialogFileLoad(
     return ret;
 }
 
+String8s            guiDialogFilesLoad(
+    String8 const &         description,
+    Strings const &         extensions,
+    string const &          storeID)
+{
+    FGASSERT(!extensions.empty());
+    String8s                ret;
+    HRESULT                 hr;
+    IFileOpenDialog *       pfdPtr = NULL;
+    hr = CoCreateInstance(CLSID_FileOpenDialog,NULL,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&pfdPtr));
+    FGASSERTWINOK(hr);
+    WinPtr<IFileOpenDialog> pfd(pfdPtr);
+    // Giving each dialog a GUID based on it's description will allow Windows to remember
+    // previously chosen directories for each dialog (with a different description):
+    GUID                    guid;
+    size_t                  hashVal = hash<string>{}(description.m_str+storeID);
+    guid.Data1 = ulong(hashVal);
+    guid.Data2 = ushort(0x7708U);       // Randomly chosen for this function
+    guid.Data3 = ushort(0x20DAU);       // "
+    for (uint ii=0; ii<8; ++ii)
+        guid.Data4[ii] = 0;             // Ensure consistent
+    hr = pfd->SetClientGuid(guid);
+    FGASSERTWINOK(hr);
+    // Get existing (default) options to avoid overwrite:
+    DWORD                   dwFlags;
+    hr = pfd->GetOptions(&dwFlags);
+    FGASSERTWINOK(hr);
+    // Only want filesystem items; don't support other shell items. Allow multiple selections:
+    hr = pfd->SetOptions(dwFlags | FOS_FORCEFILESYSTEM | FOS_ALLOWMULTISELECT);
+    FGASSERTWINOK(hr);
+    wstring                 desc = description.as_wstring(),
+                            exts = L"*." + String8(extensions[0]).as_wstring();
+    for (size_t ii=1; ii<extensions.size(); ++ii)
+        exts += L";*." + String8(extensions[ii]).as_wstring();
+    COMDLG_FILTERSPEC       fs;
+    fs.pszName = desc.c_str();
+    fs.pszSpec = exts.c_str();
+    hr = pfd->SetFileTypes(1,&fs);
+    FGASSERTWINOK(hr);
+    // Set the selected file type index (starts at 1):
+    hr = pfd->SetFileTypeIndex(1);
+    FGASSERTWINOK(hr);
+    hr = pfd->Show(s_guiWin.hwndMain);    // Blocking call to display dialog
+    if (hr == S_OK) {                       // A filename was selected
+        IShellItemArray *       psiResult;
+        hr = pfd->GetResults(&psiResult);
+        if (hr == S_OK) {
+            DWORD               numItems;
+            hr = psiResult->GetCount(&numItems);
+            if (hr == S_OK) {
+                for (DWORD ii=0; ii<numItems; ++ii) {
+                    IShellItem*         itemPtr;
+                    hr = psiResult->GetItemAt(ii,&itemPtr);
+                    if (hr == S_OK) {
+                        LPWSTR              itemNamePtr;
+                        hr = itemPtr->GetDisplayName(SIGDN_FILESYSPATH,&itemNamePtr);
+                        if (hr == S_OK) {
+                            ret.emplace_back(itemNamePtr);
+                            CoTaskMemFree(itemNamePtr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return ret;
+}
+
 Opt<String8>        guiDialogFileSave(String8 const & description,string const & extension)
 {
     FGASSERT(!extension.empty());
@@ -260,8 +328,8 @@ bool                guiDialogProgress(String8 const & title,uint progressSteps,W
     {
         try {workerFn(callbackFn); }
         catch (FgException const & e) {except = e; }    // copy from thread stack to main stack
-        catch (std::exception const & e) {except.addContext("std::exception",e.what()); }
-        catch (...) {except.addContext("unknown exception"); }
+        catch (std::exception const & e) {except.contexts.emplace_back("std::exception",e.what()); }
+        catch (...) {except.contexts.emplace_back("unknown exception"); }
         EnableWindow(s_guiWin.hwndMain,TRUE);
         PostMessage(hwndDialog,WM_CLOSE,0,0);
     };

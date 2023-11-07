@@ -51,7 +51,7 @@ template<> ImgRgba8 regressLoad(String8 const &);
 template<class T>
 inline void         regressSave(T const & val,String8 const & fname) {saveRaw(srlzText(val),fname); }
 template<>
-inline void         regressSave(ImgRgba8 const & img,String8 const & path) {saveImage(path,img); }
+inline void         regressSave(ImgRgba8 const & img,String8 const & path) {saveImage(img,path); }
 
 // This flag should be set on a developer's machine (and ignored by source control) for easy regression test updates
 // and change visualation. It should NOT be set of automated build machines:
@@ -87,12 +87,17 @@ void                testRegressExact(
     }
 }
 
+template<class T>
+bool                regressCompare(T const & lhs,T const & rhs);
+
+template<> inline bool regressCompare(ImgRgba8 const & lhs,ImgRgba8 const & rhs) {return isApproxEqual(lhs,rhs,3); }
+
 // throws if the test fails. Strangely, it can't infer the type from the first argument ...
 template<class T>
 void                testRegressApprox(
     T const &                       query,
     String const &                  baselineRelPath,        // must be relative to ~/data/
-    Sfun<bool(T const &,T const &)> compareFn,
+    Sfun<bool(T const &,T const &)> compareFn = regressCompare<T>,
     Sfun<T(String8 const &)>        loadFn=regressLoad<T>,
     Sfun<void(T const &,String8 const &)> saveFn=regressSave<T>,
     // Set equality if you want bitwise regression for primary configuration:

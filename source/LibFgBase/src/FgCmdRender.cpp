@@ -18,7 +18,7 @@
 #include "FgParse.hpp"
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"
-#include "FgGridTriangles.hpp"
+#include "FgGridIndex.hpp"
 
 using namespace std;
 
@@ -146,13 +146,13 @@ void                renderRun(String const & rendFile,String const & outName)
     rend.options.projSurfPoints = std::make_shared<ProjectedSurfPoints>();
     SimilarityD         mvm = rend.modelview * cRotateY(rend.pan) * cRotateX(rend.tilt) * cRotateZ(rend.roll);
     ImgRgba8            image = renderSoft(rend.imagePixelSize,meshes,mvm,rend.itcsToIucs,rend.options);
-    saveImage(outName,image);
+    saveImage(image,outName);
     String8             outBase = pathToBase(outName);
     Ofstream            ofs {outBase+"-landmarks.csv"};
     for (ProjectedSurfPoint const & psp : *rend.options.projSurfPoints)
         ofs << psp.label << "," << psp.posIucs << "," << (psp.visible ? "true" : "false") << "\n";
     Camera              cam {mvm,{},rend.itcsToIucs};
-    saveRaw(srlzText(cam.projectIpcs(rend.imagePixelSize)),outBase+"-matrix.txt");
+    saveRaw(srlzText(cam.projectPacs(rend.imagePixelSize)),outBase+"-matrix.txt");
 }
 
 void                cmdRenderRun(CLArgs const & args)
@@ -181,7 +181,7 @@ void                cmdRenderBatch(CLArgs const & args)
         R"(<files>.txt <img>
     <img>       - )" + clOptionsStr(getImgExts()) + R"(
 OUTPUT:
-    for each render parameter file <name>.xml listed in <files>.txt, the following files are created:
+    for each render parameter file <name>.txt listed in <files>.txt, the following files are created:
     <name>.<img>             the rendered image
     <name>-matrix.txt        the homogeneous combined projection*modelview matrix resulting from the camera model
     <name>-landmarks.csv     label, image position (IUCS) and visibility of projected surface points,
@@ -196,7 +196,7 @@ NOTES:
     auto                runFn = [](String const & rendFile,String const & imgFile)
     {
         try { renderRun(rendFile,imgFile); }
-        catch (FgException & e) {fgout << "ERROR: " << rendFile << ": " << e.tr_message(); }
+        catch (FgException & e) {fgout << "ERROR: " << rendFile << ": " << e.englishMessage(); }
         catch (std::exception & e) { fgout << "ERROR: " << rendFile << ": " << e.what(); }
     };
     PushTimer           pt {"Dispatching renders "};

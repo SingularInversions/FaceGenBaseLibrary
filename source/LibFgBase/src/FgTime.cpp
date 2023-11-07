@@ -126,7 +126,7 @@ void                Timer::report(String const & label)
 
 PushTimer::PushTimer(String const & msg)
 {
-    fgout << fgnl << "Beginning " << msg << ": " << fgpush;
+    fgout << fgnl << "Beginning " << msg << ": " << fgpush << flush;
     startTime = std::chrono::steady_clock::now();
 }
 

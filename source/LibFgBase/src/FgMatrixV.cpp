@@ -101,16 +101,14 @@ Mat<MatD,2,2>       cPartition(MatD const & m,size_t loSize)
 MatD                cRandOrthogonal(size_t dim)
 {
     FGASSERT(dim > 1);
-    MatD            ret(dim,dim);
+    Doubless            vecs;
     for (uint row=0; row<dim; ++row) {
-        MatD            vec = MatD::randNormal(1,dim);
-        for (uint rr=0; rr<row; ++rr) {
-            MatD            axis = ret.rowVec(rr);
-            vec -=  axis * cDot(vec.m_data,axis.m_data);
-        }
-        ret.setSubMat(row,0,normalize(vec));
+        Doubles             vec = cRandNormals(dim);
+        for (Doubles const & axis : vecs)
+            vec -=  axis * cDot(vec,axis);
+        vecs.push_back(normalize(vec));
     }
-    return ret;
+    return MatD{vecs};
 }
 
 MatD                cRandMahalanobis(size_t dim,double logScaleStdev)
@@ -125,7 +123,7 @@ MatD                cRandMahalanobis(size_t dim,double logScaleStdev)
 MatD                cRandSPD(size_t dim,double logScaleStdev)
 {
     MatD                M = cRandMahalanobis(dim,logScaleStdev);
-    return M.transpose() * M;
+    return transpose(M) * M;
 }
 
 namespace {

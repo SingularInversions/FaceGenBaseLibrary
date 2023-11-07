@@ -7,10 +7,6 @@
 #ifndef FGAPPROXEQUAL_HPP
 #define FGAPPROXEQUAL_HPP
 
-#include "FgSerial.hpp"
-#include "FgMath.hpp"
-#include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
 #include "FgBounds.hpp"
 
 namespace Fg {
@@ -137,7 +133,7 @@ bool                isApproxEqualPrec(
     size_t                      precisionBits=defaultPrecisionBits<T>())
 {
     FGASSERT(lhs.size() == rhs.size());
-    T                   scale = cMax(mapAbs(lhs)) + cMax(mapAbs(rhs));
+    T                   scale = cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs));
     if (scale == 0)
         return true;
     T                   maxDiff = scale / T(2ULL << precisionBits);     // 2 gives extra 1/2 factor for 'scale' sum

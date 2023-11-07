@@ -3,24 +3,23 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Multidimensional (>2) static-size array
+// Multidimensional static-size array
 //
 
 #ifndef FGMARR_HPP
 #define FGMARR_HPP
 
-#include "FgMath.hpp"
 #include "FgMatrixC.hpp"
 
 namespace Fg {
 
 template <typename T,size_t Z,size_t Y,size_t X>
-struct      Marr3
+struct      D3Arr
 {
     Arr<T,Z*Y*X>            data;
 
-    Marr3() {}
-    explicit Marr3(Arr<T,Z*Y*X> const & d) : data(d) {}
+    D3Arr() {}
+    explicit D3Arr(Arr<T,Z*Y*X> const & d) : data(d) {}
 
     Vec3UI                  dims() const {return {Z,Y,X}; }
     size_t                  numElems() const {return Z*Y*X; }
@@ -37,12 +36,12 @@ struct      Marr3
 };
 
 template <typename T,size_t A,size_t Z,size_t Y,size_t X>
-struct      Marr4
+struct      D4Arr
 {
     Arr<T,A*Z*Y*X>          data;
 
-    Marr4() {}
-    explicit Marr4(Arr<T,A*Z*Y*X> const & d) : data(d) {}
+    D4Arr() {}
+    explicit D4Arr(Arr<T,A*Z*Y*X> const & d) : data(d) {}
 
     Vec4UI                  dims() const {return {A,Z,Y,X}; }
     size_t                  numElems() const {return A*Z*Y*X; }
@@ -59,12 +58,12 @@ struct      Marr4
 };
 
 template <typename T,size_t B,size_t A,size_t Z,size_t Y,size_t X>
-struct      Marr5
+struct      D5Arr
 {
     Arr<T,B*A*Z*Y*X>        data;
 
-    Marr5() {}
-    explicit Marr5(Arr<T,B*A*Z*Y*X> const & d) : data(d) {}
+    D5Arr() {}
+    explicit D5Arr(Arr<T,B*A*Z*Y*X> const & d) : data(d) {}
 
     Vec5UI                  dims() const {return {B,A,Z,Y,X}; }
     size_t                  numElems() const {return B*A*Z*Y*X; }

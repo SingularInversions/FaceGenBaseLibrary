@@ -39,9 +39,11 @@ char32_t constexpr  nativeDirSep32 =
 // ensure all directory separators are native separators:
 String              toNativeDirSep(String const & pathAscii);
 String8             toNativeDirSep(String8 const & pathUtf8);
-bool                isAllowedInFilename(char ascii);
-bool                isAllowedInFilename(char32_t utf32);    // only checks for bad ASCII vals; rest of UTF32 accepted.
-String32            removeNonFilenameChars(String32 const & name);      // can return empty
+bool                isAllowedInNodeName(char ascii);
+bool                isAllowedInNodeName(char32_t utf32);    // only checks for bad ASCII vals; rest of UTF32 accepted.
+bool                isValidNodeName(Str32 const & fname);   // uses above to check all characters. Will NOT accept delimiters.
+inline bool         isValidNodeName(String8 const & name) {return isValidNodeName(toUtf32(name.m_str));}
+Str32               removeNonFilenameChars(Str32 const & name);      // can return empty
 
 // '.' and '..' are only handled relative to given path string, not 'current' path:
 struct      Path
@@ -187,7 +189,7 @@ void                loadMessage_(String8 const & filename,T & val)
         fromMessage_(loadRaw(filename),val);
     }
     catch (FgException & e) {
-        e.addContext("while loading file",filename.m_str);
+        e.contexts.emplace_back("while loading file",filename.m_str);
         throw;
     }
     catch (std::exception const & e) {
@@ -222,7 +224,7 @@ T                   loadMessageExplicit(String8 const & filename)
         return fromMessageExplicit<T>(loadRaw(filename));
     }
     catch (FgException & e) {
-        e.addContext("while loading file",filename.m_str);
+        e.contexts.emplace_back("while loading file",filename.m_str);
         throw;
     }
     catch (std::exception const & e) {

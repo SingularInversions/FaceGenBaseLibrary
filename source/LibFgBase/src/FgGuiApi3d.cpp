@@ -79,8 +79,8 @@ Opt<MeshesIntersect> intersectMeshes(
             size_t              numTriEquivs = surf.numTriEquivs();
             for (size_t tt=0; tt<numTriEquivs; ++tt) {
                 Vec3UI              tri = surf.getTriEquivVertInds(tt);
-                Arr<ProjPnt,3>      pnts {pntss[tri[0]],pntss[tri[1]],pntss[tri[2]]};
-                if (pnts[0].valid && pnts[0].valid && pnts[0].valid) {
+                Arr<ProjPnt,3>      pnts = mapIndex(tri.m,pntss);
+                if (pnts[0].valid && pnts[1].valid && pnts[2].valid) {
                     Vec2D           v0 = pnts[0].rcs,
                                     v1 = pnts[1].rcs,
                                     v2 = pnts[2].rcs;

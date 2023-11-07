@@ -93,14 +93,19 @@ String              createMicrosoftGuid(
 
 struct      ConsSrcDir
 {
-    String              dir;        // Relative to 'name/baseDir/' below. Can be empty.
-    // Both compile targets and include files are listed below but the latter are only used
-    // for display in IDEs:
-    Strings             files;      // Bare filename relative to dir above.
+    // top level source directory relative to 'name/baseDir/'. Must include final deliimiter or be empty.
+    // this directory will be in the include path:
+    String              dir;
+    // file paths relative to 'dir' above. Can include directories in the case of source trees but these
+    // directories do NOT become include paths (of course a given .cpp can always include from current directory
+    // using quotes). Both compilation units (CPP) and include files can be listed below but the latter are only
+    // for includsion in IDEs, inclusion is not required for compilation:
+    Strings             files;
 
     ConsSrcDir() {}
-    ConsSrcDir(String const & d,Strings const & f) : dir(d), files(f) {}
-    ConsSrcDir(String const & baseDir,String const & relDir);
+    ConsSrcDir(String const & d,Strings const & f) : dir{d}, files(f) {}
+    // globs all c++ files (optionally recursively) in the given directory:
+    ConsSrcDir(String const & baseDir,String const & relDir,bool recurse=false);
 };
 typedef Svec<ConsSrcDir>    ConsSrcDirs;
 
@@ -120,14 +125,6 @@ struct      IncDir
 };
 typedef Svec<IncDir>        IncDirs;
 
-inline IncDirs      fgIncDirs(Strings const & dirs)
-{
-    IncDirs   ret;
-    for (String const & d : dirs)
-        ret.push_back(IncDir(d,true));
-    return ret;
-}
-
 struct      ConsDef
 {
     String      name;
@@ -137,14 +134,6 @@ struct      ConsDef
     ConsDef(String const & n,bool t) : name(n), transitive(t) {}
 };
 typedef Svec<ConsDef>   ConsDefs;
-
-inline ConsDefs     fgConsDefs(Strings const & defs)
-{
-    ConsDefs  ret;
-    for (String const & d : defs)
-        ret.push_back(ConsDef(d,true));
-    return ret;
-}
 
 struct      ProjDep
 {
@@ -160,10 +149,13 @@ typedef Svec<ProjDep>   ProjDeps;
 
 struct      ConsProj
 {
-    String              name;
-    String              baseDir;        // Relative to 'name' dir. Can be empty. Otherwise includes trailing '/'
+    String              name;           // The FaceGen library name, eg. 'LibTpXXXX'
+    // the base source files directory within 'name'; empty or 'src' for FaceGen libs, third party's package
+    // directory name for third party libs. If non-empty, must include trailing delimeter:
+    String              baseDir;
+    // include directories will be listed first in any include path lists. Specify relative to 'name/baseDir/':
+    IncDirs             incDirs;
     ConsSrcDirs         srcGroups;      // Can be empty for header-only libs (no library will be created)
-    IncDirs             incDirs;        // Relative to 'name/baseDir/'
     ConsDefs            defs;
     // Projects on which this project directly depends, ie. directly uses include files from.
     // When those projects have outputs, they will be linked to. Indirect dependencies (either
@@ -190,7 +182,11 @@ struct      ConsProj
     bool                isLinked() const {return (isExecutable() || isDynamicLib()); }
     void                addSrcDir(String const & relDir)
     {
-        srcGroups.push_back(ConsSrcDir(name+'/'+baseDir,relDir));
+        srcGroups.emplace_back(name+'/'+baseDir,relDir);
+    }
+    void                addSrcDirRecursive(String const & relDir)
+    {
+        srcGroups.emplace_back(name+'/'+baseDir,relDir,true);
     }
     void                addIncDir(String const & relDir,bool transitive)
     {

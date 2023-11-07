@@ -20,6 +20,9 @@
 //
 // SIZE: As of Win10 the default is now 200% for text and Win32 widget rendering so the effective screen
 // size as seen by the program can be as small as 1920x1080 / 2 = 960x540 !
+// Further, while the title bar text is appropriately rendered, all windows contents (D3D and Win32 text & widgets)
+// are BLOCK upscaled. Once DPI detection & scalability is added we can tell Windows the applicate is DPI-aware and this
+// automatic rescaling can be avoided.
 //
 
 #ifndef FGGUIWIN_HPP

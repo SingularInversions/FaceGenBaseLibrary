@@ -9,9 +9,6 @@
 #ifndef FG3TOPOLOGY_HPP
 #define FG3TOPOLOGY_HPP
 
-#include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
-#include "FgSerial.hpp"
 #include "Fg3dMesh.hpp"
 
 namespace Fg {
@@ -45,6 +42,7 @@ struct SurfTopo
     Svec<Edge>          m_edges;
     Svec<Vert>          m_verts;
 
+    SurfTopo() {}
     explicit SurfTopo(Vec3UIs const & tris);
     SurfTopo(size_t numVerts,Vec3UIs const & tris);     // checks for out of bounds vertex indices
 

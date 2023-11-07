@@ -48,6 +48,11 @@ Opt<String8>        guiDialogFileLoad(String8 const &,const vector<std::string> 
     throw FgExceptionNotImplemented();
     return Opt<String8>();
 }
+String8s            guiDialogFilesLoad(String8 const &,Strings const &,String const &)
+{
+    throw FgExceptionNotImplemented();
+    return {};
+}
 Opt<String8>        guiDialogFileSave(String8 const &,const std::string &)
 {
     throw FgExceptionNotImplemented();

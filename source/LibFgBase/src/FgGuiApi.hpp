@@ -79,7 +79,8 @@ struct      GuiOptions
     Svec<GuiEvent>      events;
     Svec<GuiKeyHandle>  keyHandlers;
     Sfun<void()>        onUpdate;       // Used to store to undo stack
-    Vec2I               defaultSize = {1400,900};
+    // start just big enough to avoid unnecessary scroll bars; oversampled laptop displays can shrink as necessary:
+    Vec2I               defaultSize = {1200,750};
 };
 
 template<class T>
@@ -190,11 +191,18 @@ GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool>> const 
 
 void                guiDialogMessage(String8 const & caption,String8 const & message);
 
+// Returns absolute path of selected file:
 // NB Windows:
 // * Will sometimes return UNC path (eg. Windows Server) for network drive, rather than LFS drive letter.
 // * Although only extension-matching files are shown, users can (and will) type in filenames with non-matching
 //   which dialog will then accept.
 Opt<String8>        guiDialogFileLoad(
+    String8 const &             description,        // eg. "Image" or "Comma separated values"
+    Strings const &             extensions,         // list of (usually lower-case) extensions
+    // Used in combination with 'description' to create a hash index for saving/loading last directory as default:
+    String const &              storeID=String());
+// Retuns absolute paths of all selected files:
+String8s            guiDialogFilesLoad(
     String8 const &             description,        // eg. "Image" or "Comma separated values"
     Strings const &             extensions,         // list of (usually lower-case) extensions
     // Used in combination with 'description' to create a hash index for saving/loading last directory as default:
@@ -446,10 +454,9 @@ struct      GuiSplitScroll : GuiBase
     // This function must not depend on the same guigraph node depended on by its children or
     // the windows will be destroyed and recreated with each child update and thus not work:
     Sfun<GuiPtrs(void)>     getPanes;
-    Vec2UI                  minSize;        // Of client area (not including scroll bar)
     uint                    spacing;        // Insert this spacing above each sub-win
 
-    GuiSplitScroll() : minSize(300,300), spacing(0) {}
+    GuiSplitScroll() : spacing(0) {}
 
     virtual GuiImplPtr      getInstance() {return guiGetOsImpl(*this); }
 };
@@ -481,12 +488,11 @@ GuiImplPtr          guiGetOsImpl(GuiSlider const & guiApi);
 
 struct      GuiSlider : GuiBase
 {
+    // get/set interface allows for values to be get/set from any type of collection:
+    Sfun<double(void)>  getValFn;
+    Sfun<void(double)>  setValFn;
+    // client must provide a private dirty flag for this slider based on above collection:
     DfgFPtr             updateFlag;
-    // getInput is required 1. to allow for restoring from serialization and 2. to allow
-    // for dependent sliders (eg. FaceGen linear controls). It is also then used for the
-    // initialization value:
-    Sfun<double(void)>  getInput;
-    Sfun<void(double)>  setOutput;
     String8             label;          // Can be empty
     VecD2               range;
     double              tickSpacing;
@@ -511,7 +517,7 @@ GuiPtr              guiSlider(
 
 // vertical array of windows with labels on left, sliders on right:
 Img<GuiPtr>         guiSliders(
-    Svec<IPT<double> > const & valNs,
+    Svec<IPT<double>> const & valNs,
     String8s const &        labels,     // Must be same size as valNs
     VecD2                   range,
     double                  tickSpacing,
@@ -519,12 +525,12 @@ Img<GuiPtr>         guiSliders(
 
 // Array of panes with labels on left, sliders on right:
 inline GuiPtr       guiSliderBank(
-    Svec<IPT<double> > const & valNs,
+    Svec<IPT<double>> const & valNs,
     String8s const &        labels,     // Must be same size as valNs
     VecD2                   range,
     double                  tickSpacing,
     GuiTickLabels const &   tickLabels=GuiTickLabels{})
-{return guiSplit(guiSliders(valNs,labels,range,tickSpacing,tickLabels)); }
+{return guiSplitScroll(guiSliders(valNs,labels,range,tickSpacing,tickLabels)); }
 
 // Use to auto create labels for above. Labels will have numbers appended:
 String8s            numberedLabels(String8 const & baseLabel,size_t num);
@@ -536,18 +542,20 @@ struct  GuiTabDef
 {
     String8         label;
     GuiPtr          win;
-    uint            padLeft;        // pixels ...
-    uint            padRight;
-    uint            padTop;
-    uint            padBottom;
+    uint            padLeft=0;          // in pixels
+    uint            padRight=0;
+    uint            padTop=0;
+    uint            padBottom=0;
 
-    GuiTabDef() : padLeft(1), padRight(1), padTop(1), padBottom(1) {}
-    GuiTabDef(String8 const & l,GuiPtr w) : label(l), win(w), padLeft(1), padRight(1), padTop(1), padBottom(1) {}
-    GuiTabDef(String8 const & l,bool spacer,GuiPtr w)
-    :   label(l), win(w),
-        padLeft(spacer ? 5 : 1), padRight(spacer ? 5 : 1),
-        padTop(spacer ? 10 : 1), padBottom(1)
-    {}
+    GuiTabDef() {}
+    GuiTabDef(String8 const & l,GuiPtr w,bool spacer=false) : label(l), win(w)
+    {
+        if (spacer) {
+            padLeft = 5;
+            padRight = 5;
+            padTop = 10;
+        }
+    }
 };
 typedef Svec<GuiTabDef>  GuiTabDefs;
 
@@ -576,24 +584,24 @@ GuiImplPtr guiGetOsImpl(GuiText const & guiApi);
 struct  GuiText : GuiBase
 {
     NPT<String8>        content;
-    // Usually set to true for dynamic text:
-    Vec2B               wantStretch = Vec2B(false);
-    // Used to specify a fixed min width for 2D layouts (eg. label - slider lists). Zero ignores.
-    uint                minWidth = 0;
+    Vec2B               wantStretch = {false,false};
+    // Used to specify a fixed min width for 2D layouts (eg. label - slider lists)
+    uint                minWidth = 12;      // in characters
     // Given in lines. When you expect overflow from one line, reserve more:
     uint                minHeight = 1;
     // Set this to false to avoid bug in Win10 RichEdit that causes copy operations from this richedit
     // to hang on paste (in any other context) until this main window regains focus. Note that
-    // newlines and hyptertext links are not supported with RichEdit:
+    // newlines and hyptertext links are not supported without RichEdit:
     bool                rich = true;
 
     virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
 
-// Assumes dynamic text and sets 'wantStretch' to true:
-GuiPtr              guiText(NPT<String8> node,uint minWidth=0,bool rich=true);
-GuiPtr              guiTextLines(NPT<String8> node,uint minHeight,bool wantStretchVert=false);
-GuiPtr              guiText(String8 text,uint minWidth=0,bool rich=true);
+// Uses the initial text to determine the min width and min height:
+GuiPtr              guiText(NPT<String8> node,Vec2B wantStretch={false,false},bool rich=true);
+// If initial text is not indicative use this one to reserve min width and height:
+GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Vec2B wantStretch={false,false});
+inline GuiPtr       guiText(String8 text) {return guiText(makeIPT(text),{false,false}); }
 
 // This function must be defined in the corresponding OS-specific implementation:
 struct  GuiTextEdit;

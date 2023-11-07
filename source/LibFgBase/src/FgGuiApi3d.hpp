@@ -47,6 +47,7 @@ struct      MeshesIntersect
     size_t              surfIdx;
     SurfPoint           surfPnt;
 };
+typedef Svec<MeshesIntersect>   MeshesIntersects;
 
 struct      BackgroundImage
 {
@@ -116,6 +117,7 @@ struct      Gui3d : GuiBase
     RPT<Lighting>               light;
     NPT<Camera>                 xform;
     RPT<RendOptions>            renderOptions;
+    NPT<double>                 texModStrengthN = makeIPT(1.0);     // defaults to an input
     bool                        panTiltLimits = false;  // Limit pan and tilt to +/- 90 degrees (default false)
     BackgroundImage             bgImg;
     struct      Capture {       // Put in struct for easier syntax to call a std::function
@@ -150,10 +152,10 @@ struct      Gui3d : GuiBase
     MouseAction                     shiftRightDragAction,
                                     shiftCtrlMiddleDragAction;
     // clickActions are called when the mouse button is released (otherwise they may yet be drag actions):
-    Marr3<MouseAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
+    D3Arr<MouseAction,3,2,2>        clickActions;           // by button (LMR), shift (no/yes), ctrl (no/yes)
     // TODO: refactor to use this (problem is lastCtlClick also needs to track intersect from first click down):
     // by L button down (no/yes), M button (no/yes), R button (no/yes), shift (no/yes), ctrl (no/yes):
-    // Marr5<MouseAction,2,2,2,2,2>    dragActions;
+    // D5Arr<MouseAction,2,2,2,2,2>    dragActions;
 
     // current design is to call 'makeViewControls' to complete setup of this object.
     // TODO: break that up into calls which are made first and results can be passed to a constructor:

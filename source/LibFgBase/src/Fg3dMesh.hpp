@@ -24,7 +24,6 @@
 #ifndef FG3DMESH_HPP
 #define FG3DMESH_HPP
 
-#include "FgSerial.hpp"
 #include "Fg3dSurface.hpp"
 #include "FgSimilarity.hpp"
 
@@ -73,13 +72,14 @@ void                accTargMorph_(
         acc[iv.idx] += (iv.vec-baseVerts[iv.idx]) * coeff;
 }
 
-IdxVec3Fs           toIndexedTargMorph(      // create indexed target morph from delta morph
-    Vec3Fs const &          base,
-    Vec3Fs const &          deltas,         // must be 1-1 with above
+IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & directDeltaMorph,float distanceThreshold=0);
+IdxVec3Fs           toIndexedTargMorph(
+    Vec3Fs const &          baseShape,
+    Vec3Fs const &          directDeltaMorph,       // must be 1-1 with above
     float                   diffMagThreshold=0);
 IdxVec3Fs           offsetIndices(IdxVec3Fs const & ivs,uint offset);
 Vec3Fs              toDirectDeltaMorph(IdxVec3Fs const & deltaMorph,size_t numVerts);
-IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & deltaMorph,float threshold=0);
+void                accDeltaMorph_(IdxVec3Fs const & deltaMorph,Vec3Fs & verts);
 
 // Indexed vertices morph representation is advantageous when only a fraction of the vertices are affected:
 struct      IndexedMorph
@@ -157,6 +157,8 @@ struct      PoseDef
     PoseDef() {}
     PoseDef(String8 const & n,Vec2F const & b,float u) : name(n), bounds(b), neutral(u) {}
 
+    bool                operator==(PoseDef const & rhs) const {return name == rhs.name; }
+    bool                operator<(PoseDef const & rhs) const {return name < rhs.name; }
     bool                operator==(String8 const & rhsName) const {return (name == rhsName); }
 };
 typedef Svec<PoseDef>          PoseDefs;
@@ -195,7 +197,7 @@ struct  Mesh
     Mesh() {}
     explicit Mesh(Vec3Fs const & vts) : verts(vts) {}
     explicit Mesh(TriSurfLms const & tsf);
-    Mesh(Vec3Fs const & v,Vec3UIs const & t,Vec4UIs const & q={}) : verts(v), surfaces{{t,q}} {}
+    Mesh(Vec3Fs const & vts,Surf const & surf);             // removes any UV indices in 'surfs'
     Mesh(Vec3Fs const & vts,Surfs const & surfs);           // removes any UV indices in 'surfs'
     Mesh(Vec3Fs const & v,Vec2Fs const & u,Surfs const & s,DirectMorphs const & m={},IndexedMorphs const & im={})
         : verts(v), uvs(u), surfaces(s), deltaMorphs(m), targetMorphs{im} {}
@@ -348,6 +350,8 @@ TriSurf         cSphere4(size_t subdivisions);
 TriSurf         cSphere(size_t subdivisions);
 // Square in XY centred at zero forming prism starting at Z=0 with height 'len'
 TriSurf         cSquarePrism(float sideLen,float height);
+// multiple colored spheres:
+Mesh            cSpheres(Vec3Ds const & poss,double radius,Rgba8 color);
 
 Mesh            removeDuplicateFacets(Mesh const &);
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
@@ -359,7 +363,7 @@ Mesh            removeVerts(Mesh const & orig,Uints const & vertInds);
 Mesh            mergeSameNameSurfaces(Mesh const &);
 Mesh            fuseIdenticalVerts(Mesh const &);       // morphs and marked verts are discarded
 Mesh            fuseIdenticalUvs(Mesh const &);
-Mesh            splitSurfsByUvContiguous(Mesh const &);
+Mesh            splitSurfsContiguousUvs(Mesh);
 Mesh            selectSurfs(Mesh const & mesh,Strings const & surfNames);   // Returns the same mesh with only the specified surfaces
 // Merge surfaces in meshes with identically sized vertex lists,
 // keeping the vertex list of the first mesh:

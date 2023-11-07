@@ -34,12 +34,14 @@ inline ImgFormatInfo    getImgFormatInfo(ImgFormat f) {return findFirst(getImgFo
 Strings                 getImgExts();
 // true if the file extension is a read/write supported image file format:
 bool                    hasImgFileExt(String8 const & fname);
-// Load an image from any supported format based on filename extension:
+// Load an image from any supported format based on filename extension.
+// If the image file contains alpha values note that color channels will NOT be premultiplied (explicit for PNG).
+// If the image file does not contain alpha values they will all be set to 255:
 void                    loadImage_(String8 const & fname,ImgRgba8 & img);
 ImgRgba8                loadImage(String8 const & fname);
 // Save image to any supported format:
 // WARNING: some formats do not support alpha, and some (PNG) will zero all color channels if alpha is zero:
-void                    saveImage(String8 const & fname,ImgRgba8 const & img);
+void                    saveImage(ImgRgba8 const & img,String8 const & fname);
 // load / save image landmarks to a simple text format with 1 point per line of the form: <name> <X> <Y>
 // where <X> and <Y> are in raster coordinates (origin at center of top left pixel) and can be signed
 // floating point values. (aka "YOLO" format).

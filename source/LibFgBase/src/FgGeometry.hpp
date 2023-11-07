@@ -7,51 +7,90 @@
 #ifndef FGGEOMETRY_HPP
 #define FGGEOMETRY_HPP
 
-#include "FgSerial.hpp"
 #include "FgAffine.hpp"
 
 namespace Fg {
 
-template<class T>
-struct      Square
-{
-    Mat<T,2,1>          loPos;      // lower-valued coordinate corner position
-    T                   size;       // typically > 0
-    FG_SER2(loPos,size);
-};
-typedef Square<float>   SquareF;
-typedef Square<double>  SquareD;
-
-template<class T>
-struct      Rect
-{
-    Mat<T,2,1>          loPos;      // Lower-valued coordinate corner position
-    Mat<T,2,1>          dims;       // typically > 0
-    FG_SER2(loPos,dims)
-};
-typedef Rect<int>       RectI;
-
 // Returns the signed area of the parallelogram defined by the points (RHR)
 // which is twice the signed area of the triangle defined by the points (CC winding):
 double              cArea(Vec2D p0,Vec2D p1,Vec2D p2);
+inline double       cArea(Arr<Vec2D,3> const & t) {return cArea(t[0],t[1],t[2]); }
 
 // Returns the vector area of the parallelogram defined by the points (RHR)
 // which is twice the vector area of the triangle defined by the points (CC winding):
 inline Vec3D        cArea(Vec3D p0,Vec3D p1,Vec3D p2) {return crossProduct(p1-p0,p2-p0); }
 
-template<typename T>
+// hold a vector along with its magnitude
+template<typename T,uint D>
 struct      VecMag
 {
-    Mat<T,3,1>      vec;
-    T               mag {lims<T>::max()};
+    Mat<T,D,1>      vec;
+    T               mag {lims<T>::max()};       // invalid value if not set
+    VecMag() {}
+    explicit VecMag(Mat<T,D,1> const & v) : vec{v}, mag{cMag(v)} {}
+    VecMag(Mat<T,D,1> const & v,T m) : vec{v}, mag{m} {}                // trust passed values
 
     bool            valid() const {return (mag != lims<T>::max()); }
 };
-typedef VecMag<float>   VecMagF;
-typedef VecMag<double>  VecMagD;
+typedef VecMag<float,3>     Vec3FMag;
+typedef VecMag<double,3>    Vec3DMag;
 
-// Returns closest point in given line segment from origin:
-VecMagD             closestPointInSegment(Vec3D const & p0,Vec3D const & p1);
+// closest point to origin on given line segment:
+template<typename T,uint D>
+Mat<T,D,1>          closestPointOnSegment(Mat<T,D,1> const & begin,Mat<T,D,1> const & end)
+{
+    Mat<T,D,1>          segment = end - begin;
+    T                   lenSqr = cMag(segment);
+    if (lenSqr == 0)
+        return begin;
+    // the solution below is obtained by defining alpha [0,1] along the segment and minimizing distance:
+    T                   alpha = -cDot(begin,segment) / lenSqr;
+    if (alpha < 0) alpha = 0;
+    if (alpha > 1) alpha = 1;
+    return begin + alpha*segment;
+}
+// closest point to origin on contiguous series of line segments defined by points
+// (just returns point if segments.size()==1):
+template<typename T,uint D>
+VecMag<T,D>         closestPointOnSegments(Svec<Mat<T,D,1>> const & points)
+{
+    FGASSERT(!points.empty());
+    VecMag<T,D>         ret {points[0]};
+    for (size_t ii=1; ii<points.size(); ++ii) {
+        VecMag<T,D>         vm {closestPointOnSegment(points[ii-1],points[ii])};
+        if (vm.mag < ret.mag)
+            ret = vm;
+    }
+    return ret;
+}
+
+// oriented line to point comparison. For RHR coordinate system (eg. X increases right and Y increases up).
+// Reverse for LHR coordinate system (eg. X increases right and Y increases down).
+// returns false if 'begin' == 'end' (ie. degenerate line specification).
+bool                isPointLeftOfLine(
+    Vec2D               begin,      // arbitrary point on the line
+    Vec2D               end,        // different arbitrary point on the line in the oriented direction
+    Vec2D               pnt,
+    // tolerance for rejecting the point as on the line in same units as above. Zero if to machine precision
+    // (not including precisely on the line). Negative values allow for a tolerance on the other side of the line.
+    double              tol);
+
+// can handle degenerate tris, in which case it will return false.
+inline bool         isPointInTri(
+    Vec2D               pnt,
+    Arr<Vec2D,3> const & tri,       // must be CC winding in RHR coordinate system, OR CW winding in LHR CS
+    double              tol)        // point must be this far inside the tri in same units as above. >=0
+{
+    return
+        isPointLeftOfLine(tri[0],tri[1],pnt,tol) &&
+        isPointLeftOfLine(tri[1],tri[2],pnt,tol) &&
+        isPointLeftOfLine(tri[2],tri[0],pnt,tol);
+}
+
+// Returns: 0: point not in triangle or degenerate triangle.
+//           1: point in triangle, CC winding
+//          -1: point in triangle, CW winding
+int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2);
 
 // Returns the barycentric coord of point relative to triangle.
 // If no valid value, triangle is degenerate.
@@ -87,7 +126,7 @@ Plane               cPlane(Vec3D p0,Vec3D p1,Vec3D p2);
 // tangent surface from query point-to-surface result, oriented in -ve 'delta' direction:
 // (there is no absolute orientation as the surface normal is just the delta and there is no explicit surface)
 // if delta is not valid, or if delta is zero, the resulting Plane is not valid:
-Plane               cTangentPlane(Vec3D const & query,VecMagD const & deltaToSurface);
+Plane               cTangentPlane(Vec3D const & query,Vec3DMag const & deltaToSurface);
 
 // Returns the homogeneous coordinate of the intersection of a line through the origin with a plane.
 // The homogeneous component will be zero if there is no intersection. Otherwise, the dot product
@@ -95,11 +134,6 @@ Plane               cTangentPlane(Vec3D const & query,VecMagD const & deltaToSur
 Vec4D               linePlaneIntersect(
     Vec3D           ray,        // Direction of ray emanating from origin. Does not need to be normalized
     Plane           plane);
-
-// Returns: 0: point not in triangle or degenerate triangle.
-//           1: point in triangle, CC winding
-//          -1: point in triangle, CW winding
-int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2);
 
 // Returns the intersection point of a line and a triangle, if it exists, in either direction:
 Opt<Vec3D>          lineTriIntersect(
@@ -119,21 +153,60 @@ inline double       pointToPlaneDistSqr(Vec3D pnt,Vec4D planeH)
 // Returns RMS vertex deltas to nearest mirrored vertex as a ratio of bounding box diagonal.
 double              findSaggitalSymmetry(
     Vec3Fs const &      verts,
-    Affine3F &          mirror); // RETURNED: mirror transform
+    Affine3F &          mirror);    // RETURNED: mirror transform
 
-struct      Quadratic2D     // positive definite 2D quadratic in vertex form
+struct      QuadPd2D                // positive definite 2D quadratic in vertex form (ie no linear terms)
 {
     Vec2D           centre;
     MatUT2D         qfcut;          // quadratic form cholesky upper triangular
 
-    Quadratic2D() : centre{0,0}, qfcut{0,0,0} {}                // default init to zero quadratic
-    Quadratic2D(Vec2D c,MatUT2D q) : centre{c}, qfcut{q} {}
+    QuadPd2D() : centre{0,0}, qfcut{0,0,0} {}                // default init to zero quadratic
+    QuadPd2D(Vec2D c,MatUT2D q) : centre{c}, qfcut{q} {}
 
     // note that we do not have a 1/2 factor here, so that should be added as required:
     inline double   operator()(Vec2D p) const {return cMag(qfcut*(p-centre)); }
     inline bool     valid() const {return (qfcut.determinant() != 0.0); }
 };
-typedef Svec<Quadratic2D>   Quadratic2Ds;
+typedef Svec<QuadPd2D>   QuadPd2Ds;
+typedef Svec<QuadPd2Ds>  QuadPd2Dss;
+
+struct      Quad2D                  // quadratic in vertex form (ie. no linear terms)
+{
+    Vec2D           centre;
+    MatS2D          qform;          // quadratic form matrix
+
+    Quad2D(Vec2D const & c,MatS2D const & q) : centre{c}, qform{q} {}
+
+    // note that we do not have a 1/2 factor here, so that should be added as required:
+    double          operator()(Vec2D const & p) const
+    {
+        Vec2D           d = p - centre;
+        return cDot(d,qform*d);
+    }
+};
+typedef Svec<Quad2D>    Quad2Ds;
+
+struct      Quad3D                  // quadratic in vertex form (ie. no linear terms)
+{
+    Vec3D           centre;
+    MatS3D          qform;          // quadratic form matrix
+
+    Quad3D(Vec3D const & c,MatS3D const & q) : centre{c}, qform{q} {}
+
+    // note that we do not have a 1/2 factor here, so that should be added as required:
+    double          operator()(Vec3D const & p) const
+    {
+        Vec3D           d = p - centre;
+        return cDot(d,qform*d);
+    }
+};
+typedef Svec<Quad3D>    Quad3Ds;
+
+// map evaluation of quadratics at positions:
+inline Doubles      mapQuad(Quad3Ds const & quads,Vec3Ds const & poss)
+{
+    return mapCallT<double>(quads,poss,[](Quad3D const & q,Vec3D const & p){return q(p); });
+}
 
 }
 

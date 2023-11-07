@@ -22,7 +22,7 @@
 #include "FgTestUtils.hpp"
 #include "FgAny.hpp"
 #include "FgParse.hpp"
-
+#include "FgArray.hpp"
 
 using namespace std;
 
@@ -275,7 +275,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
                 "    }\n";
             String8    texBaseExt = path.base + toStr(mm) + "_" + toStr(tt) + "." + imgFormat;
             if (mesh.surfaces[tt].material.albedoMap)
-                saveImage(path.dir() + texBaseExt,*mesh.surfaces[tt].material.albedoMap);
+                saveImage(*mesh.surfaces[tt].material.albedoMap,path.dir() + texBaseExt);
             ofs <<
                 "    Texture: " << idTexture(mm,tt) << ", \"Texture::Texture" << mm << "_" << tt << "\", \"TextureVideoClip\" {\n"
                 "        Type: \"TextureVideoClip\"\n"
@@ -649,7 +649,7 @@ Mesh                parseBinMesh(Sptr<RecordRaw> const & rp1)
             }
         }
     }
-    if (cMax(polySizes) > 4)
+    if (cMaxElem(polySizes) > 4)
         fgout << fgnl << "WARNING: N-gons with N>4 ignored";
     auto                readPolysFn = [&](Ints const & inds)
     {
@@ -684,7 +684,7 @@ Mesh                parseBinMesh(Sptr<RecordRaw> const & rp1)
             fgout << fgnl << "WARNING: material indices size != poly size: " << materialInds.size() << " != " << posInds.size();
         // RCC export is structured for only one poly list per vertex list but there is also
         // a per-poly material index. These material indices are typically just 0,1,2,..,N
-        Ints            materials = cSort(getUniqueUnsorted(materialInds));
+        Ints            materials = sortAll(cUniqueUnsorted(materialInds));
         auto            splitByMatFn = [&](VArrayUI4s const & polys)
         {
             Svec<VArrayUI4s>    ret (materials.size());
@@ -838,7 +838,7 @@ Meshes              loadFbx(String8 const & filename)
                         if (cnt < geom.surfaces.size())
                             geom.surfaces[cnt++].name = matIdName.second;
                         else
-                            fgout << "WARNING: more Materials defined than material indices: " << geom.name;
+                            fgout << fgnl << "WARNING: more Materials defined than material indices: " << geom.name;
                     }
                 }
             }

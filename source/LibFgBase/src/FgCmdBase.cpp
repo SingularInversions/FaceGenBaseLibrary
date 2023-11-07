@@ -18,7 +18,6 @@
 #include "FgGuiApi.hpp"
 
 using namespace std;
-using json = nlohmann::json;
 
 namespace Fg {
 
@@ -93,9 +92,9 @@ void                cmd3dmmView(CLArgs const & args)
     IPT<Mat32D>             viewBoundsN {Mat32D(bounds)};
     Gui3d                   gui3d {makeIPT(gpms.rendMeshes)};
     GuiTabDefs              tabs = {
-        {"Expression",true,gpms.makePoseCtrls(true)},
+        {"Expression",gpms.makePoseCtrls(true),true},
         {"Basis",guiSplitV({randW,slidersW})},
-        {"View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View") },
+        {"View",makeViewCtrls(gui3d,viewBoundsN,store+"View") },
     };
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK 3dmm view"),
@@ -155,95 +154,30 @@ static void         testmBase(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-// Test nlohmann/json library
-// * this is a very large include file with loads of templated operator overloads
-// * it is over-complex and hard to debug but well supported
-// * do not use brace initializers with these objects; you will get gcc errors
-void                testNlohmannJson(CLArgs const &)
-{
-    String          str {
-R"(
-{
-    "InstanceStatuses": [
-        {
-            "AvailabilityZone": "us-east",
-            "InstanceId": "i-12345",
-            "InstanceState": {
-                "Code": 16,
-                "Name": "running"
-            },
-            "InstanceStatus": {
-                "Details": [
-                    {
-                        "Name": "reachability",
-                        "Status": "passed"
-                    }
-                ],
-                "Status": "ok"
-            }
-        },
-        {
-            "AvailabilityZone": "us-west",
-            "InstanceId": "i-67890",
-            "InstanceState": {
-                "Code": 16,
-                "Name": "running"
-            },
-            "InstanceStatus": {
-                "Details": [
-                    {
-                        "Name": "reachability",
-                        "Status": "passed"
-                    }
-                ],
-                "Status": "ok"
-            }
-        }
-    ]
-})"
-    };
-    // The call to 'parse' is required:
-    json                    j0 = nlohmann::json::parse(str),
-                            j1 = j0.at("InstanceStatuses");
-    size_t                  idx {0};
-    // Arrays iterate in given order:
-    for (auto const & it1 : j1.items()) {
-        PushIndent              pi {toStr(idx++)};
-        json                    j2 = it1.value();
-        // Containers iterate in key-alphabetical order:
-        for (auto const & it2 : j2.items())
-            fgout << fgnl << it2.key() << " : " << it2.value();
-        // But we don't need to iterate we can just find:
-        auto                    itf = j2.find("InstanceId");
-        json                    id = itf.value();
-        String                  idStr = id.get<String>();
-        fgout << fgnl << "InstanceId: " << idStr;
-    }
-}
-
-void    test3d(CLArgs const &);
-void    testDataflow(CLArgs const &);
-void    testFilesystem(CLArgs const &);
-void    testOpenFile(CLArgs const &);
-void    testGeometry(CLArgs const &);
-void    testGridTriangles(CLArgs const &);
-void    testHash(CLArgs const &);
-void    testImage(CLArgs const &);
-void    testKdTree(CLArgs const &);
-void    testMatrixSolver(CLArgs const &);
-void    testMath(CLArgs const &);
-void    testMatrixC(CLArgs const &);
-void    testMatrixV(CLArgs const &);
-void    testMetaFormat(CLArgs const &);
-void    testMorph(CLArgs const &);
-void    testPath(CLArgs const &);
-void    testQuaternion(CLArgs const &);
-void    testRenderCmd(CLArgs const &);
-void    testSampler(CLArgs const &);
-void    testSerial(CLArgs const &);
-void    testSimilarity(CLArgs const &);
-void    testSurfTopo(CLArgs const &);
-void    testString(CLArgs const &);
+void                test3d(CLArgs const &);
+void                testDataflow(CLArgs const &);
+void                testFilesystem(CLArgs const &);
+void                testOpenFile(CLArgs const &);
+void                testGeometry(CLArgs const &);
+void                testGridTriangles(CLArgs const &);
+void                testHash(CLArgs const &);
+void                testImage(CLArgs const &);
+void                testKdTree(CLArgs const &);
+void                testMatrixSolver(CLArgs const &);
+void                testMath(CLArgs const &);
+void                testMatrixC(CLArgs const &);
+void                testMatrixV(CLArgs const &);
+void                testMetaFormat(CLArgs const &);
+void                testMorph(CLArgs const &);
+void                testParse(CLArgs const &);
+void                testPath(CLArgs const &);
+void                testQuaternion(CLArgs const &);
+void                testRenderCmd(CLArgs const &);
+void                testSampler(CLArgs const &);
+void                testSerial(CLArgs const &);
+void                testSimilarity(CLArgs const &);
+void                testSurfTopo(CLArgs const &);
+void                testString(CLArgs const &);
 
 void                testBase(CLArgs const & args)
 {
@@ -256,7 +190,6 @@ void                testBase(CLArgs const & args)
         {testGridTriangles,"gridTriangles"},
         {testHash,"hash"},
         {testImage,"image"},
-        {testNlohmannJson,"json"},
         {testKdTree,"kd"},
         {testMatrixSolver,"matSol","Matrix Solver"},
         {testMath,"math"},
@@ -264,6 +197,7 @@ void                testBase(CLArgs const & args)
         {testMatrixV,"matV","MatrixV"},
         {testMetaFormat,"metaFormat"},
         {testMorph,"morph"},
+        {testParse,"parse"},
         {testPath,"path"},
         {testQuaternion,"quaternion"},
         {testRenderCmd,"rendc","render command"},
@@ -278,8 +212,6 @@ void                testBase(CLArgs const & args)
 }
 
 void                view(CLArgs const & args) {doMenu(args,getViewCmds()); }
-
-Cmd                 getCmdGraph();
 
 void                cmdRenExt(CLArgs const & args)
 {
@@ -359,7 +291,8 @@ void                cmdRename(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-Cmd                 getCmdImage();
+void                cmdGraph(CLArgs const &);
+void                cmdImgops(CLArgs const &);
 void                cmdMesh(CLArgs const &);
 void                cmdMorph(CLArgs const &);
 void                cmdRender(CLArgs const &);
@@ -368,8 +301,8 @@ Cmds                getFgblCmds()
 {
     Cmds        cmds {
         {cmd3dmm,"3dmm","3D morphable model commands"},
-        {getCmdGraph()},
-        {getCmdImage()},
+        {cmdGraph,"graph","Create simple bar graphs from text data"},
+        {cmdImgops,"image","Image operations"},
         {cmdMesh,"mesh","3D Mesh IO and manipulation tools"},
         {cmdMorph,"morph","List, apply or create animation morphs for 3D meshes"},
         {cmdRender,"render","Render meshes with color & specular maps to an image file"},

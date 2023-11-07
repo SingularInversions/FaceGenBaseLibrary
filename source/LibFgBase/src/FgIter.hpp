@@ -10,7 +10,6 @@
 #ifndef FGITER_HPP
 #define FGITER_HPP
 
-#include "FgFile.hpp"
 #include "FgBounds.hpp"
 
 namespace Fg {

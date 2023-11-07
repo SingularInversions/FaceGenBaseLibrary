@@ -12,9 +12,9 @@
 
 namespace Fg {
 
-String32            toUtf32(String const & utf8);
-String              toUtf8(const char32_t & utf32_char);
-String              toUtf8(String32 const & utf32);
+Str32               toUtf32(String const & utf8);
+String              toUtf8(char32_t utf32_char);
+String              toUtf8(Str32 const & utf32);
 // The following 2 functions are only needed by Windows and don't work on *nix due to
 // different sizeof(wchar_t):
 #ifdef _WIN32
@@ -87,7 +87,7 @@ String              cat(Strings const & strings,String const & separator);
 String              catDeref(Ptrs<String> const & stringPtrs,String const & separator);
 
 String              cRest(String const & str,size_t start);         // start must be <= str.length()
-String32            cRest(String32 const & str,size_t start);       // "
+Str32               cRest(Str32 const & str,size_t start);       // "
 
 // Returns the strings <prefix># from 0 through num-1, all with the same number of digits (as required):
 Strings             numberedStrings(String const & prefix,size_t num);
@@ -100,10 +100,10 @@ struct  String8
     String8(char const * utf8_c_string) : m_str(utf8_c_string) {};
     String8(String const & utf8_string) : m_str(utf8_string) {};
     explicit String8(char32_t utf32_char) : m_str(toUtf8(utf32_char)) {}
-    explicit String8(String32 const & utf32) : m_str(toUtf8(utf32)) {}
+    explicit String8(Str32 const & utf32) : m_str(toUtf8(utf32)) {}
 
     String8 &       operator+=(String8 const & rhs);
-    String8 &       operator+=(char rhs);               // checks that 'rhs' is ASCII
+    String8 &       operator+=(char rhs);
     String8         operator+(String8 const&) const;
     String8         operator+(char const * utf8_c_str) {return String8(m_str + utf8_c_str); }
     String8         operator+(char c) const;
@@ -124,7 +124,7 @@ struct  String8
     friend          std::istream& operator>>(std::istream&, String8 &);
 
     String const &  as_utf8_string() const {return m_str; }
-    String32        as_utf32() const {return toUtf32(m_str); }
+    Str32        as_utf32() const {return toUtf32(m_str); }
 
     // Return native unicode string (UTF-16 for Win, UTF-8 for Nix):
 #ifdef _WIN32
@@ -219,6 +219,7 @@ String              toHexString(uint64 val);
 inline String       toHexString(int64 val) {return toHexString(scast<uint64>(val)); }
 String              bytesToHexString(const uchar *arr,uint numBytes);
 // from hex to value (ignores non-hex characters and accepts letters O and I as 0 and 1 resp.:
+Valid<uint>         fromHex4(char ch);              // other characters than above yield invalid
 uint64              fromHex64(String const & hex);
 // Separate into 4 digit (16 bit word) chunks separated by dashes, and add a 4 digit CRC at end:
 String              toHex64Crc(uint64 serialNum);

@@ -96,6 +96,7 @@ struct      D3d
         Mat44F                      d3vsToD3ps,     // projection
         Vec2UI                      viewportSize,
         RendOptions const &         rendOpts,
+        float                       texModStrength,
         bool                        backgroundTransparent=false);   // For screen grab option
 
     void                    setBgImage(BackgroundImage const & bgi);
@@ -147,7 +148,7 @@ private:
 
     void                    initializeRenderTexture(Vec2UI windowSize);
 
-    // All member sizes must be multiples of 8 bytes (presumably for alignment).
+    // All member sizes must be multiples of 16 bytes (presumably for alignment).
     // HLSL uses column-major matrices so we need to transpose:
     struct Scene
     {
@@ -156,6 +157,7 @@ private:
         Vec4F               ambient;            // RGBA [0,1]
         Vec4F               lightDir[2];        // Normalized direction TO light in FCCS
         Vec4F               lightColor[2];      // RGBA [0,1]
+        Vec4F               detTexMod;          // strength of detail texture modulation (if present). Only first element is used.
     };
 
     // Since D3D does not allow multiple indexing (one for vert pos, one for vert uv) we use the
@@ -190,9 +192,9 @@ private:
     D3dMap                      makeMap(ImgRgba8 const & map);
     WinPtr<ID3D11SamplerState>  makeSamplerState();
     WinPtr<ID3D11Buffer>        setScene(Scene const & scene);
-    WinPtr<ID3D11Buffer>        makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
+    WinPtr<ID3D11Buffer>        makeScene(Lighting lighting,Mat44F worldToD3vs,Mat44F d3vsToD3ps,float detModStrength=1.0f);
     // Ambient-only version:
-    WinPtr<ID3D11Buffer>        makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps);
+    WinPtr<ID3D11Buffer>        makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vsToD3ps,float detModStrength=1.0f);
     void                        renderBgImg(BackgroundImage const & bgi,Vec2UI viewportSize,bool transparentPass);
     D3dMesh &                   getD3dMesh(RendMesh const & rm) const;
     D3dSurf &                   getD3dSurf(RendSurf const & rs) const;

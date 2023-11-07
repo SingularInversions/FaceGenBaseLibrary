@@ -431,7 +431,7 @@ OPT<Out>            link1(NPT<In> const & in,Sfun<Out(const In &)> const & fn)
     return OPT<Out>(op);
 }
 
-template<class In,class Out>
+template<class Out,class In>
 OPT<Out>            link1_(NPT<In> const & in,const Sfun<void(const In &,Out &)> & fn)
 {
     Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();

@@ -121,11 +121,11 @@ void                deleteDirectoryRecursive(String8 const & dirname)
 #endif
 }
 
-void                createPath(String8 const & path)
+void                createPath(String8 const & pathStr)
 {
-    Path          p(asDirectory(path));
+    Path                p {pathStr};
     for (size_t ii=0; ii<p.dirs.size(); ++ii) {
-        String8    dir = p.dir(ii+1);
+        String8             dir = p.dir(ii+1);
         if (pathExists(dir)) {
             if (!isDirectory(dir))
                 fgThrow("Not a directory (unable to create)",dir);
@@ -373,7 +373,7 @@ void                testCurrentDirectory(CLArgs const & args)
     }
     catch (FgExceptionNotImplemented const & e) 
     {
-        fgout << e.tr_message();
+        fgout << e.englishMessage();
     }
 }
 

@@ -3,7 +3,6 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-//
 
 #include "stdafx.h"
 
@@ -16,8 +15,7 @@
 using namespace std;
 
 // Debug:
-ostream &
-operator<<(ostream & os,const SCROLLINFO & si)
+ostream &           operator<<(ostream & os,const SCROLLINFO & si)
 {
     return os << "min: " << si.nMin
         << " max: " << si.nMax
@@ -28,28 +26,39 @@ operator<<(ostream & os,const SCROLLINFO & si)
 
 namespace Fg {
 
-struct  GuiSplitScrollWin : public GuiBaseImpl
+struct      GuiSplitScrollWin : public GuiBaseImpl
 {
-    GuiSplitScroll              m_api;
-    HWND                        hwndThis;
-    GuiImplPtrs                 m_panes;
+    GuiSplitScroll          m_api;
+    HWND                    hwndThis;
+    GuiImplPtrs             m_panes;
     // Cache current visibility of panes to avoid excessive update calls:
-    vector<FatBool>              m_panesVisible;
-    Vec2I                    m_client;   // doesn't include slider
-    String8                    m_store;
-    SCROLLINFO                  m_si;
+    Bools                   m_panesVisible;
+    Vec2I                   m_client;   // doesn't include slider
+    String8                 m_store;
+    SCROLLINFO              m_si;
 
-    GuiSplitScrollWin(const GuiSplitScroll & api) :
-        m_api(api), hwndThis(0)
+    void                initPanes()
     {
+        GuiPtrs             panes = m_api.getPanes();
+        m_panes.clear();
+        m_panesVisible.clear();
+        for (GuiPtr const & pane : panes) {
+            FGASSERT(pane);
+            m_panes.push_back(pane->getInstance());
+            m_panesVisible.push_back(false);
+        }
+    }
+
+    GuiSplitScrollWin(const GuiSplitScroll & api) : m_api(api), hwndThis(0)
+    {
+        initPanes();
         m_si.cbSize = sizeof(m_si);     // Never changes
         m_si.nMin = 0;                  // Never changes
         m_si.nPos = 0;                  // Initial value
         m_si.nTrackPos = 0;             // This value is always the same as the above value.
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "SplitScroll::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         m_store = store;
@@ -61,26 +70,24 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         // Automatically destroys children first:
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
-        // Set the minimum scrollable size as the smaller of the maximum element
-        // and a fixed maximum min:
-        Vec2UI   ret = m_api.minSize;
+        uint                maxMinWidth = 0;
+        for (GuiImplPtr const & pane : m_panes)
+            updateMax_(maxMinWidth,pane->getMinSize()[0]);
+        Vec2UI              ret {maxMinWidth,256};
         // Add scroll bar width:
         ret[0] += GetSystemMetrics(SM_CXVSCROLL);
         return ret;
     }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B       wantStretch() const
     {
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             if (m_panes[ii]->wantStretch()[0])
@@ -88,8 +95,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
         return Vec2B(false,true);
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
 //fgout << fgnl << "SplitScroll::updateIfChanged";
         if (m_api.updateFlag->checkUpdate()) {
@@ -97,15 +103,9 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
             // call DestroyWindow in all created sub-windows:
             for (size_t ii=0; ii<m_panes.size(); ++ii)
                 m_panes[ii]->destroy();
-            GuiPtrs            panes = m_api.getPanes();
-            m_panes.resize(panes.size());
-            m_panesVisible.resize(panes.size());
-            for (size_t ii=0; ii<m_panes.size(); ++ii) {
-                FGASSERT(m_panes[ii]);
-                m_panes[ii] = panes[ii]->getInstance();
+            initPanes();
+            for (size_t ii=0; ii<m_panes.size(); ++ii)
                 m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toStr(ii),0UL,false);
-                m_panesVisible[ii] = false;
-            }
             resize();   // New windows must be sent a size
 //fgout << fgpop;
         }
@@ -114,36 +114,28 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
                 m_panes[ii]->updateIfChanged();
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "SplitScroll::moveWindow: " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
 //fgout << fgpop;
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
 //fgout << fgnl << "SplitScroll::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
     }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitScroll::WM_CREATE" << fgpush;
             hwndThis = hwnd;
-            GuiPtrs   panes = m_api.getPanes();
-            m_panes.resize(panes.size());
-            m_panesVisible.resize(panes.size());
-            for (size_t ii=0; ii<m_panes.size(); ++ii) {
-                m_panes[ii] = panes[ii]->getInstance();
+            initPanes();
+            for (size_t ii=0; ii<m_panes.size(); ++ii)
                 m_panes[ii]->create(hwndThis,int(ii),m_store+"_"+toStr(ii),0UL,false);
-                m_panesVisible[ii] = false;
-            }
             m_api.updateFlag->checkUpdate();
 //fgout << fgpop;
         }
@@ -200,8 +192,7 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
         return 0;
     }
 
-    void
-    resize()
+    void                resize()
     {
         // No point in doing this before we have the client size (ie at first construction):
         if (m_client[1] > 0) {
@@ -242,8 +233,6 @@ struct  GuiSplitScrollWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiSplitScroll & def)
-{return GuiImplPtr(new GuiSplitScrollWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiSplitScroll & def) {return GuiImplPtr(new GuiSplitScrollWin(def)); }
 
 }

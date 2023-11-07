@@ -31,7 +31,7 @@ string              getWinErrMsg(DWORD errCode,DWORD language)
         return string{};
     wstring         msgRaw {static_cast<wchar_t*>(lpMsgBuf)};
     LocalFree(lpMsgBuf);
-    String32       msg32 = toUtf32(toUtf8(msgRaw));
+    Str32       msg32 = toUtf32(toUtf8(msgRaw));
     // Windows often adds a trailing CR/LF which is not helpful to us:
     while ((msg32.back() == '\r') || (msg32.back() == '\n'))
         msg32.pop_back();
@@ -62,15 +62,23 @@ String              getWinErrMsgIfNotEnglish(DWORD errCode)
         return getWinErrMsg(errCode,localID);
 }
 
-void                throwWindows(String const & msg,String8 const & data)
+void                throwWindows(DWORD errCode,String const & msg,String8 const & data)
 {
-    DWORD               errCode = GetLastError();
-    String              errStr = "0x"+toHexString(uint32(errCode)),
-                        english = getWinErrMsgEnglish(errCode),
-                        foreign = getWinErrMsgIfNotEnglish(errCode);
+    String              errStr,
+                        english,
+                        foreign;
+    if (errCode == 0)
+        english = "Unexpected Winodws zero error code";
+    else {
+        errStr = "0x"+toHexString(uint32(errCode));
+        english = getWinErrMsgEnglish(errCode);
+        foreign = getWinErrMsgIfNotEnglish(errCode);
+    }
+    if (foreign == english)             // different sub-langauge resulting in same message (eg. ENGLISH_US / ENGLISH_CAN)
+        foreign.clear();
     throw FgException {{
-        {msg,"",data.m_str},
-        {english,foreign,errStr},
+        {english,foreign,errStr},       // the windows error is deeper in the stack
+        {msg,{},data.m_str},
     }};
 }
 

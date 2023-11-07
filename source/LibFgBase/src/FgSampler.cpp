@@ -28,10 +28,10 @@ bool                valsDiffer(
 {
     // Tried cMag(corner-centre) > sqr(maxDiff)*2 but it yielded worse discontinuities (and *4 much worse)
     return (
-        (cMax(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
-        (cMax(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
-        (cMax(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
-        (cMax(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
+        (cMaxElem(mapAbs(corners[0].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[1].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[2].m_c - centre.m_c)) > maxDiff) ||
+        (cMaxElem(mapAbs(corners[3].m_c - centre.m_c)) > maxDiff));
 }
 
 RgbaF               sampleRecurse(
@@ -125,9 +125,9 @@ void                testHalfMoon(CLArgs const & args)
     size_t const        dim = 128,
                         hd = dim/2,
                         td = dim/3;
-    auto                sampFn = [=](Vec2F ipcs)
+    auto                sampFn = [=](Vec2F pacs)
     {
-        if ((ipcs[1] > hd) && ((ipcs-Vec2F(hd,hd)).len() < td))
+        if ((pacs[1] > hd) && ((pacs-Vec2F(hd,hd)).len() < td))
             return RgbaF{1,1,1,1};
         else
             return RgbaF{0,0,0,1};
@@ -140,10 +140,10 @@ void                testHalfMoon(CLArgs const & args)
 void                testMandelbrot(CLArgs const & args)
 {
     size_t const        dim = 1024;
-    auto                sampFn = [](Vec2F ipcs)
+    auto                sampFn = [](Vec2F pacs)
     {
         complex<double>     z {0,0},
-                            c {(ipcs[0]-750.0)/512.0,(ipcs[1]-512.0)/512.0};
+                            c {(pacs[0]-750.0)/512.0,(pacs[1]-512.0)/512.0};
         size_t              ii {0};
         for (; ii<255; ++ii) {
             z = z*z + c;

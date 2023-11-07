@@ -11,7 +11,7 @@
 #include "FgSampler.hpp"
 #include "Fg3dMesh.hpp"
 #include "FgAffine.hpp"
-#include "FgGridTriangles.hpp"
+#include "FgGridIndex.hpp"
 #include "FgMath.hpp"
 #include "FgTestUtils.hpp"
 #include "Fg3dMeshIo.hpp"
@@ -58,7 +58,7 @@ struct  RayCaster
         itcsToIucs(itcsToIucs_),
         // TODO: set up grid only after seeing how many verts fall in frustum, possibly use smaller grid size,
         // and what their bounding box is for setting client to grid transform:
-        grid {Mat22F{0,1,0,1},cNumTriEquivs(meshes)},
+        grid {Rect2F{{0,0},{1,1}},cNumTriEquivs(meshes)},
         lighting(lighting_),
         background(background_),
         imgDims {dims},
@@ -110,9 +110,9 @@ struct  RayCaster
     }
 
     // Values in [0,1] within precision:
-    RgbaF               cast(Vec2F ipcs) const
+    RgbaF               cast(Vec2F pacs) const
     {
-        Vec2F               posIucs {ipcs[0]/imgDims[0],ipcs[1]/imgDims[1]};
+        Vec2F               posIucs {pacs[0]/imgDims[0],pacs[1]/imgDims[1]};
         BestN<float,Intersect,8> best = closestIntersects(posIucs);
         // Compute ray color:
         RgbaF               color = background;
@@ -136,7 +136,7 @@ struct  RayCaster
                 Vec3UI              uvInds = tris.uvInds[isct.triInd.triIdx];
                 uv = bc[0]*uvs[uvInds[0]] + bc[1]*uvs[uvInds[1]] + bc[2]*uvs[uvInds[2]];
                 uv[1] = 1.0f - uv[1];   // OTCS to IUCS
-                albedo = RgbaF(sampleClipIucs(*material.albedoMap,uv)/255.0f);
+                albedo = RgbaF(sampleClampIucs(*material.albedoMap,uv)/255.0f);
             }
             Vec3F               acc(0.0f);
 	        float	            aw = albedo.alpha();
@@ -148,7 +148,7 @@ struct  RayCaster
                     acc += mapMul(surfColour,lgt.colour) * fac;
                     float               shininess = material.shiny ? 1.0f : 0.0f;
                     if ((uv[0] != lims<float>::max()) && material.specularMap && !material.specularMap->empty()) {
-                        RgbaF           s = sampleClipIucs(*material.specularMap,uv);
+                        RgbaF           s = sampleClampIucs(*material.specularMap,uv);
                         shininess = scast<float>(s.red()) / 255.0f;
                     }
                     if (allShiny)

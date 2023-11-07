@@ -25,37 +25,34 @@ struct  GuiDynamicWin : public GuiBaseImpl
     Vec2I                   m_lastMoveLo;
     Vec2I                   m_lastMoveSz;
 
-    GuiDynamicWin(const GuiDynamic & api) :
-        m_api(api)
-    {}
+    GuiDynamicWin(const GuiDynamic & api) : m_api{api}
+    {
+        GuiPtr              panePtr = m_api.makePane();
+        FGASSERT(panePtr);
+        m_win = panePtr->getInstance();
+    }
 
-    virtual void
-    create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
+    virtual void        create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
     {
 //fgout << fgnl << "GuiDynamicWin::create" << fgpush;
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.
         m_store = store;
         m_hwndParent = parentHwnd;
         FGASSERT(m_api.makePane);
-        GuiPtr          panePtr = m_api.makePane();
-        FGASSERT(panePtr);
-        m_win = panePtr->getInstance();
         // Since this is not a win32 window, we create the sub-windows here within the parent
         // WM_CREATE handler:
         m_win->create(parentHwnd,0,store,NULL,visible);
-        m_api.updateFlag->checkUpdate();    // Avoid destroying and re-creating on startup
+        // Do NOT call m_api.updateFlag->checkUpdate() here as it will prevent change detection below (tested).
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         if (m_win)
             m_win->destroy();
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
         if (m_win)
             return m_win->getMinSize();
@@ -63,8 +60,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
             return Vec2UI(64);
     }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B       wantStretch() const
     {
         if (m_win)
             return m_win->wantStretch();
@@ -72,8 +68,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
             return Vec2B(false);
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
         FGASSERT(m_win);
         if (m_api.updateFlag->checkUpdate()) {
@@ -87,8 +82,7 @@ struct  GuiDynamicWin : public GuiBaseImpl
         m_win->updateIfChanged();
     }
 
-    virtual void
-    moveWindow(Vec2I base,Vec2I size)
+    virtual void        moveWindow(Vec2I base,Vec2I size)
     {
 //fgout << fgnl << "GuiDynamicWin::moveWindow " << base << " , " << size << fgpush;
         FGASSERT(m_win);
@@ -98,16 +92,13 @@ struct  GuiDynamicWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
         FGASSERT(m_win);
         m_win->showWindow(s);
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiDynamic & def)
-{return GuiImplPtr(new GuiDynamicWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiDynamic & def) {return GuiImplPtr(new GuiDynamicWin(def)); }
 
 }

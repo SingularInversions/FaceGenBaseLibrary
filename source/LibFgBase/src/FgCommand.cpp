@@ -67,16 +67,25 @@ void                doMenu(
     }
     string              arg = syn.next(),
                         argl = toLower(arg);
+    static bool         runningAll = false;     // are we recursively running all ?
     if (optionAll && (argl == "all")) {
         if (syn.more())
             syn.error("no further arguments permitted after 'all'");
-        PushIndent      pi0 {"Running all tests"};
-        for (Cmd const & cmd : cmds) {
-            PushIndent      pind {cmd.name};
-            cmd.func({cmd.name,argl});          // Pass on the 'all'
+        if (runningAll) {
+            for (Cmd const & cmd : cmds) {
+                    PushIndent          pind {cmd.name};
+                    cmd.func({cmd.name,argl});
+            }
         }
-        pi0.pop();
-        fgout << fgnl << "All tests passed";
+        else {                                  // top level run all needs to output text and indent:
+            PushIndent          pi0 {"Running all tests","All tests passed"};
+            runningAll = true;
+            for (Cmd const & cmd : cmds) {
+                    PushIndent          pind {cmd.name};
+                    cmd.func({cmd.name,argl});
+            }
+            runningAll = false;
+        }
     }
     else {
         for (Cmd const & cmd : cmds) {
@@ -158,6 +167,15 @@ CLArgs              Syntax::rest()
 {
     CLArgs  ret(m_args.begin()+m_idx,m_args.end());
     m_idx = m_args.size()-1;
+    return ret;
+}
+CLArgs              Syntax::nextRest()
+{
+    CLArgs              ret;
+    while (m_idx+1 < m_args.size()) {
+        ++m_idx;
+        ret.push_back(m_args[m_idx]);
+    }
     return ret;
 }
 static void         removeEndline(String & line)

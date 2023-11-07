@@ -16,7 +16,7 @@ using namespace std;
 
 namespace Fg {
 
-AffineEw2D          cOtcsToIpcs(Vec2UI dims)
+AffineEw2D          cOtcsToPacs(Vec2UI dims)
 {
     return {
         {0,0},
@@ -55,19 +55,19 @@ operator<<(ostream & os,Frustum const & f)
 }
 
 Mat44F
-Camera::projectIpcs(Vec2UI dims) const
+Camera::projectPacs(Vec2UI dims) const
 {
     Mat44D          projection = projectOecsToItcs<double>();
-    AffineEw2D      iucsToIpcs {{0,0},{1,1},{0,0},mapCast<double>(dims.m)},
-                    itcsToIpcs = iucsToIpcs * itcsToIucs;
-    Mat44D          itcsToIpcs4H(0);
-    itcsToIpcs4H.rc(0,0) = itcsToIpcs.affs[0].m_scale;
-    itcsToIpcs4H.rc(1,1) = itcsToIpcs.affs[1].m_scale;
-    itcsToIpcs4H.rc(0,3) = itcsToIpcs.affs[0].m_trans;
-    itcsToIpcs4H.rc(1,3) = itcsToIpcs.affs[1].m_trans;
-    itcsToIpcs4H.rc(2,2) = 1;
-    itcsToIpcs4H.rc(3,3) = 1;
-    return Mat44F(itcsToIpcs4H * projection * asHomogMat(modelview));
+    AffineEw2D      iucsToPacs {{0,0},{1,1},{0,0},mapCast<double>(dims.m)},
+                    itcsToPacs = iucsToPacs * itcsToIucs;
+    Mat44D          itcsToPacs4H(0);
+    itcsToPacs4H.rc(0,0) = itcsToPacs.affs[0].m_scale;
+    itcsToPacs4H.rc(1,1) = itcsToPacs.affs[1].m_scale;
+    itcsToPacs4H.rc(0,3) = itcsToPacs.affs[0].m_trans;
+    itcsToPacs4H.rc(1,3) = itcsToPacs.affs[1].m_trans;
+    itcsToPacs4H.rc(2,2) = 1;
+    itcsToPacs4H.rc(3,3) = 1;
+    return Mat44F(itcsToPacs4H * projection * asHomogMat(modelview));
 }
 
 Camera

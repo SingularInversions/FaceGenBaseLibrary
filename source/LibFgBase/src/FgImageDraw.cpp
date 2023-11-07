@@ -82,11 +82,11 @@ ImgRgba8            cBarGraph(Doubless const & datas,uint pixPerBar,uint pixSpac
 {
     FGASSERT(!datas.empty());
     size_t              D = datas.size(),                   // data per sample (not all may be valid)
-                        S = cMax(cSizes(datas)),            // samples
+                        S = cMaxElem(cSizes(datas)),        // samples
                         P = D*S*pixPerBar + S*pixSpacing,   // pixel size of image
                         xx {0};                             // image x coord counter (pixels)
     ImgRgba8             img {P,P,Rgba8{0,0,0,255}};
-    double              maxVal = cMax(flatten(datas));
+    double              maxVal = cMaxElem(flatten(datas));
     for (size_t ss=0; ss<S; ++ss) {
         size_t              cIdx {0};
         for (Doubles const & data : datas) {
@@ -168,7 +168,7 @@ void                drawFunctions(
     VecD2s              fbounds(num);
     Doubles             fscale(num);
     for (uint jj=0; jj<num; ++jj) {
-        fbounds[jj] = cBounds(funcs.colVec(jj).m_data);
+        fbounds[jj] = cBounds(funcs.colVals(jj));
         fscale[jj] = double(dim) * 0.96 / (fbounds[jj][1] - fbounds[jj][0]);
     }
     ImgRgba8             img(dim,dim,Rgba8(0,0,0,255));
@@ -219,11 +219,6 @@ void                cmdGraph(CLArgs const & args)
     if (datas.empty())
         syn.error("No data files given");
     viewImage(cBarGraph(datas,barThick,gapThick));
-}
-
-Cmd                 getCmdGraph()
-{
-    return Cmd{cmdGraph,"graph","Create simple bar graphs from text data"};
 }
 
 }

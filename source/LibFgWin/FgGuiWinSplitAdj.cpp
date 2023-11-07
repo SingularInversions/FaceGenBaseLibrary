@@ -22,15 +22,14 @@ static const int borderThickness = 2;
 
 struct  GuiSplitWinDivider
 {
-    bool        drag=false;     // Is the user dragging this window ?
+    bool                drag=false;     // Is the user dragging this window ?
     // Last mouse pos in screen coords (since this window is moving !)
     // Only valid when drag == true:
-    Vec2I    lastPos;
-    Vec2UI   parentCursorLo;
-    Vec2UI   parentCursorHi;
+    Vec2I               lastPos;
+    Vec2UI              parentCursorLo;
+    Vec2UI              parentCursorHi;
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         // We need to track this because we don't want to adjust if the user
         // initiated the drag in another window. Also it's an easier way of
@@ -87,7 +86,7 @@ struct  GuiSplitWinDivider
     }
 };
 
-struct  GuiSplitAdjWin : public GuiBaseImpl
+struct      GuiSplitAdjWin : public GuiBaseImpl
 {
     GuiSplitAdj                 m_api;
     HWND                        hwndThis;   // Must receive user messages from divider
@@ -102,8 +101,6 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
     Div                         m_div;
     Vec2I                       m_client;
     String8                     m_store;
-    // Cache border-padded pane min sizes to avoid exponentially repeated calls:
-    mutable Vec2UI              m_minSizes[2];  
 
     GuiSplitAdjWin(const GuiSplitAdj & api) :
         m_api(api),
@@ -123,8 +120,7 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         }
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
         m_store = store;
 //fgout << fgnl << "SplitAdj::create: visible: " << visible << " extStyle: " << extStyle << fgpush;
@@ -146,40 +142,36 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         // Automatically destroys children first:
         DestroyWindow(hwndThis);
     }
 
-    void
-    minSizes() const
+    Arr<Vec2UI,2>       getMinSizes() const
     {
-        m_minSizes[0] = m_pane0->getMinSize() + Vec2UI(2*borderThickness);
-        m_minSizes[1] = m_pane1->getMinSize() + Vec2UI(2*borderThickness);
+        return {
+            m_pane0->getMinSize() + Vec2UI(2*borderThickness),
+            m_pane1->getMinSize() + Vec2UI(2*borderThickness),
+        };
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
-        minSizes();     // Upadate cache of subwindow sizes
-        uint        sd = splitDim(),
-                    nd = 1 - sd;
-        Vec2UI   max = cMax(m_minSizes[0],m_minSizes[1]),
-                    sum = m_minSizes[0] + m_minSizes[1],
-                    ret;
-        ret[sd] = sum[sd] + dividerThickness;
-        ret[nd] = max[nd];
+        Arr<Vec2UI,2>       minSizes = getMinSizes();
+        uint                sd = getSplitDimIdx(),
+                            nd = 1 - sd,
+                            maxMin = cMax(minSizes[0][nd],minSizes[1][nd]),
+                            sumMin = minSizes[0][sd] + minSizes[1][sd];
+        Vec2UI              ret;
+        ret[sd] = sumMin + dividerThickness;
+        ret[nd] = maxMin;
         return ret;
     }
 
-    virtual Vec2B
-    wantStretch() const
-    {return mapOr(m_pane0->wantStretch(),m_pane1->wantStretch()); }
+    virtual Vec2B       wantStretch() const {return mapOr(m_pane0->wantStretch(),m_pane1->wantStretch()); }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
 //fgout << fgnl << "SplitAdj::updateIfChanged" << fgpush;
         m_pane0->updateIfChanged();
@@ -187,24 +179,21 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "SplitAdj::moveWindow: " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
 //fgout << fgpop;
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
 //fgout << fgnl << "SplitAdj::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
     }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
 //fgout << fgnl << "SplitAdj::WM_CREATE" << fgpush;
@@ -218,31 +207,30 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
 //fgout << fgpop;
         }
         else if (msg == WM_SIZE) {      // Sends new size of client area:
-            minSizes();     // Upadate cache of subwindow sizes
+            Arr<Vec2UI,2>       minSizes = getMinSizes();
             m_client = Vec2I(LOWORD(lParam),HIWORD(lParam));
             if (m_client[0] * m_client[1] == 0)
                 return 0;
 //fgout << fgnl << "SplitAdj::WM_SIZE: " << m_client << fgpush;
             // Set the adjustment cursor bounds:
-            uint        sd = splitDim(),
+            uint        sd = getSplitDimIdx(),
                         nd = 1-sd;
             m_div.win.parentCursorLo[nd] = borderThickness;
-            m_div.win.parentCursorLo[sd] = m_minSizes[0][sd];
+            m_div.win.parentCursorLo[sd] = minSizes[0][sd];
             m_div.win.parentCursorHi[nd] = m_client[nd] - borderThickness;
-            m_div.win.parentCursorHi[sd] = m_client[sd] - m_minSizes[1][sd];
-            resizePanes();
+            m_div.win.parentCursorHi[sd] = m_client[sd] - minSizes[1][sd];
+            resizePanes(minSizes);
 //fgout << fgpop;
         }
         else if (msg == WM_USER) {      // Divider has been moved:
-            minSizes();     // Upadate cache of subwindow sizes
-            Vec2I    delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            uint        sd = splitDim();
+            Vec2I               delta(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            uint                sd = getSplitDimIdx();
             if (delta[sd] != 0)
             {
                 int     sizet = m_client[sd] - dividerThickness;
                 double  reld = double(delta[sd]) / double(sizet);
                 m_relSize += reld;
-                resizePanes();
+                resizePanes(getMinSizes());
                 InvalidateRect(hwndThis,NULL,TRUE);
             }
         }
@@ -253,26 +241,24 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         return 0;
     }
 
-    uint
-    splitDim() const
-    {return m_api.horiz ? 0 : 1; }
+    uint                getSplitDimIdx() const {return m_api.horiz ? 0 : 1; }
 
-    struct  Pos
+    struct      Pos
     {
         Vec2I    lo;
         Vec2I    sz;
     };
-    struct  Layout
+    struct      Layout
     {
         Pos         pane0;
         Pos         divider;
         Pos         pane1;
     };
-    Layout
-    layout()
+
+    Layout              layout(Arr<Vec2UI,2> minSizes)
     {
         Layout      ret;
-        uint        sd = splitDim(),
+        uint        sd = getSplitDimIdx(),
                     nd = 1-sd;
         int         sizei = m_client[sd]-dividerThickness;
         double      sized = sizei;
@@ -280,8 +266,8 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         sz[nd] = m_client[nd];
         sz[sd] = roundT<int>(m_relSize*sized);
         // Adjust relative sizing if window resize hits one of the mins:
-        int         min0 = m_minSizes[0][sd],
-                    min1 = m_minSizes[1][sd];
+        int         min0 = minSizes[0][sd],
+                    min1 = minSizes[1][sd];
         if (sz[sd] < min0)
             sz[sd] = min0;
         if (sizei-sz[sd] < min1)
@@ -300,18 +286,15 @@ struct  GuiSplitAdjWin : public GuiBaseImpl
         return ret;
     }
 
-    void
-    resizePanes()
+    void                resizePanes(Arr<Vec2UI,2> minSizes)
     {
-        Layout      lt = layout();
+        Layout      lt = layout(minSizes);
         m_pane0->moveWindow(lt.pane0.lo,lt.pane0.sz);
         MoveWindow(m_div.hwnd,lt.divider.lo[0],lt.divider.lo[1],lt.divider.sz[0],lt.divider.sz[1],TRUE);
         m_pane1->moveWindow(lt.pane1.lo,lt.pane1.sz);
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiSplitAdj & def)
-{return GuiImplPtr(new GuiSplitAdjWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiSplitAdj & def) {return GuiImplPtr(new GuiSplitAdjWin(def)); }
 
 }

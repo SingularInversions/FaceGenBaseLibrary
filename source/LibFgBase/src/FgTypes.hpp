@@ -55,7 +55,7 @@
 #endif
 
 #ifdef _MSC_VER
-// Too many false positives (avoid unnmaed objects with custom construction or destruction):
+// Too many false positives (avoid unnamed objects with custom construction or destruction):
 #pragma warning(disable:4244)
 #endif
 
@@ -103,6 +103,7 @@ typedef Arr<schar,3>            Arr3SC;
 typedef Arr<ushort,3>           Arr3US;
 typedef Arr<int,3>              Arr3I;
 typedef Arr<uint,3>             Arr3UI;
+typedef Arr<uint64,3>           Arr3UL;
 typedef Arr<float,3>            Arr3F;
 typedef Arr<double,3>           Arr3D;
 typedef std::vector<Arr3F>      Arr3Fs;
@@ -139,11 +140,11 @@ typedef Svec<Uints>             Uintss;
 typedef Svec<Sizes>             Sizess;
 
 typedef std::string             String;
-typedef std::u16string          String16;
-typedef std::u32string          String32;       // Always assume UTF-32
+typedef std::u16string          Str16;
+typedef std::u32string          Str32;       // Always assume UTF-32
 typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
-typedef Svec<String32>          String32s;
+typedef Svec<Str32>             Str32s;
 
 // shorthand for some std:: containers:
 template<class T> using         Sfun = std::function<T>;
@@ -184,12 +185,12 @@ bool constexpr      isRelease() {return !isDebug(); }
 // Returns "32" if the current executable is 32-bit, "64" if 64-bit:
 std::string         cBitsString();
 
-// NUMERIC TYPE TRAITS:
-
+// numeric aggregate type traits includes scalar base case so that arbitrary depths of type nesting of numeric
+// aggregates can be automatically handled in template code:
 template<class T> struct Traits;
-// Scalar - the underlying scalar type of a vector/matrix/array etc.
-// Accumulator - same structure with larger related type if available
-// Floating - same structure with appropriate size floating type for fractional operations (not accumulation)
+// Scalar - the underlying scalar type of, eg., a std::array of std::vector of Fg::MatrixC
+// Accumulator - same nested type except that Scalar is replaced with an accumulator type
+// Floating - same nested type except that Scalar is replace with 'float'
 // Printable - only affect structures of uchar/schar which don't print numbers with std::ostream
 template<> struct Traits<uchar>
 {
@@ -269,16 +270,16 @@ template<> struct Traits<std::complex<double>>
     typedef std::complex<double>    Printable;
 };
 template<class T,size_t S>
-struct  Traits<Arr<T,S> >
+struct  Traits<Arr<T,S>>
 {
-    typedef typename Traits<T>::Scalar                  Scalar;
-    typedef Arr<typename Traits<T>::Accumulator,S>      Accumulator;
-    typedef Arr<typename Traits<T>::Floating,S>         Floating;
+    typedef typename Traits<T>::Scalar              Scalar;
+    typedef Arr<typename Traits<T>::Accumulator,S>  Accumulator;
+    typedef Arr<typename Traits<T>::Floating,S>     Floating;
 };
 template<class T>
 struct Traits<Svec<T>>
 {
-    typedef typename Traits<T>::Scalar                Scalar;
+    typedef typename Traits<T>::Scalar              Scalar;
     typedef Svec<typename Traits<T>::Accumulator>   Accumulator;
     typedef Svec<typename Traits<T>::Floating>      Floating;
 };

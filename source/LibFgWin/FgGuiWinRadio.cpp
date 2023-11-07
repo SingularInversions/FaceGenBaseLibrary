@@ -16,9 +16,9 @@ using namespace std;
 
 namespace Fg {
 
-static Vec2UI    s_pad(40,12);
+static Vec2UI       s_pad(40,12);
 
-struct  GuiRadioWin : public GuiBaseImpl
+struct      GuiRadioWin : public GuiBaseImpl
 {
     GuiRadio            m_api;
     uint                currVal;
@@ -26,12 +26,9 @@ struct  GuiRadioWin : public GuiBaseImpl
     vector<HWND>        m_hwnds;
     vector<Vec2UI>      m_sizes;
 
-    GuiRadioWin(const GuiRadio & api)
-        : m_api{api}, currVal{m_api.getFn()}
-    {}
+    GuiRadioWin(const GuiRadio & api) : m_api{api}, currVal{m_api.getFn()} {}
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiRadioWin::create " << m_api.labels[0];
         WinCreateChild   cc;
@@ -40,15 +37,9 @@ struct  GuiRadioWin : public GuiBaseImpl
         winCreateChild(parentHwnd,ident,this,cc);
     }
 
-    virtual void
-    destroy()
-    {
-        // Automatically destroys children first:
-        DestroyWindow(hwndThis);
-    }
+    virtual void        destroy() {DestroyWindow(hwndThis); }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
         Vec2UI   sz;
         for (size_t ii=0; ii<m_sizes.size(); ++ii) {
@@ -59,30 +50,23 @@ struct  GuiRadioWin : public GuiBaseImpl
         return sz;
     }
 
-    virtual Vec2B
-    wantStretch() const
-    {return Vec2B(false,false); }
+    virtual Vec2B       wantStretch() const {return Vec2B(false,false); }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
         if (currVal != m_api.getFn())
             updateRadio();
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "GuiRadioWin::moveWindow " << lo << " , " << sz;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
     }
 
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
+    virtual void        showWindow(bool s) {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT message,WPARAM wParam,LPARAM lParam)
     {
         switch (message)
         {
@@ -151,8 +135,7 @@ struct  GuiRadioWin : public GuiBaseImpl
         return DefWindowProc(hwnd,message,wParam,lParam);
     }
 
-    void
-    updateRadio()
+    void                updateRadio()
     {
         currVal = m_api.getFn();
         for (size_t ii=0; ii<m_hwnds.size(); ++ii) {
@@ -164,8 +147,6 @@ struct  GuiRadioWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiRadio & def)
-{return GuiImplPtr(new GuiRadioWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiRadio & def) {return GuiImplPtr(new GuiRadioWin(def)); }
 
 }

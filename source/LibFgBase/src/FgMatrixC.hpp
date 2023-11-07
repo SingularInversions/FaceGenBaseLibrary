@@ -196,11 +196,18 @@ struct      Mat
             for (uint cc=0; cc<scols; cc++)
                 rc(rr+row,cc+col) = sub.rc(rr,cc);
     }
-    double          mag() const         // Squared magnitude
+    T               ssv() const         // sum of square values == L2 norm if elements are scalars
+    {
+        T               ret {0};
+        for (T v : m)
+            ret += v*v;
+        return ret;
+    }
+    double          mag() const         // recursive squared magnitude, accumulates in double type
     {
         double      ret = 0.0;
         for (uint ii=0; ii<R*C; ++ii)
-            ret += cMag(m[ii]);    // T can be non-scalar (eg. complex)
+            ret += cMag(m[ii]);         // T can be non-scalar (eg. complex)
         return ret;
     }
     double          len() const {return sqrt(mag()); }
@@ -245,34 +252,8 @@ struct      Mat
         }
         return false;
     }
-    // Preserves row major ordering:
-    Svec<T>         asStdVector() const
-    {
-        Svec<T>   ret;
-        ret.reserve(size());
-        for (size_t ii=0; ii<R*C; ++ii)
-            ret.push_back(m[ii]);
-        return ret;
-    }
 
-    // Static creation functions:
-
-    static Mat      identity()
-    {
-        static_assert(R == C,"Identity matrix must be square");
-        Mat               ret(T(0));
-        for (uint ii=0; ii<R; ++ii)
-            ret.rc(ii,ii) = T(1);
-        return ret;
-    }
-    static Mat      diagonal(T v)
-    {
-        static_assert(R == C,"Diagonal matrix must be square");
-        Mat               ret(T(0));
-        for (uint ii=0; ii<R; ++ii)
-            ret.rc(ii,ii) = v;
-        return ret;
-    }
+    // Static creation functions are handy because you can use the type abbreviations below:
     static Mat      randUniform(T lo,T hi);
     static Mat      randNormal(T stdev=T(1));
 };
@@ -423,6 +404,40 @@ Mat<T,R,C>          cMat(Svec<T> const & v)
     return ret;
 }
 
+template<class T,uint D>
+Mat<T,D,D>          cDiagMat(T val)         // diagonal matrix of one value. Template arguments required
+{
+    Mat<T,D,D>          ret {scast<T>(0)};  // cast required to prevent ambiguity due to implicit conversion to std::complex
+    for (uint ii=0; ii<D; ++ii)
+        ret.rc(ii,ii) = val;
+    return ret;
+}
+template<class T,uint D>
+Mat<T,D,D>          cDiagMat(Mat<T,D,1> vec)
+{
+    Mat<T,D,D>          ret {scast<T>(0)};
+    for (uint ii=0; ii<D; ++ii)
+        ret.rc(ii,ii) = vec[ii];
+    return ret;
+}
+template<class T>
+Mat<T,2,2>          cDiagMat(T v0,T v1)
+{
+    Mat<T,2,2>    ret(static_cast<T>(0));
+    ret[0] = v0;
+    ret[3] = v1;
+    return ret;
+}
+template<class T>
+Mat<T,3,3>          cDiagMat(T v0,T v1,T v2)
+{
+    Mat<T,3,3>    ret(static_cast<T>(0));
+    ret[0] = v0;
+    ret[4] = v1;
+    ret[8] = v2;
+    return ret;
+}
+
 template<class T,uint R,uint C>
 bool                isFinite(Mat<T,R,C> const & mat)
 {
@@ -502,12 +517,6 @@ Mat<T,3,1>          cMirrorX(Mat<T,3,1> const & m) {return {-m[0],m[1],m[2]}; }
 
 template<class T>
 T                   cDeterminant(const Mat<T,2,2> & mat) {return (mat[0]*mat[3] - mat[1]*mat[2]); }
-// Useful for finding if aspect ratios match, or sine of angle between normalized vectors:
-template<class T>
-T                   cDeterminant(const Mat<T,2,1> & col0,const Mat<T,2,1> & col1)
-{
-    return col0[0]*col1[1] - col0[1]*col1[0];
-}
 template<class T>
 T                   cDeterminant(Mat<T,3,3> const & M)
 {
@@ -669,7 +678,7 @@ Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,dims> const & linear)
 template<class T, uint dims>
 Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,1> const & translation)
 {
-    auto            ret = Mat<T,dims+1,dims+1>::identity();
+    auto            ret = cDiagMat<T,dims+1>(1);
     for (uint rr=0; rr<dims; rr++)
         ret.rc(rr,dims) = translation[rr];
     return ret;
@@ -712,6 +721,11 @@ Mat<T,3,3>          cInverse(Mat<T,3,3> const & i)
 }
 template <class T,uint R,uint C>
 T                   cDot(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs) {return cDot(lhs.m,rhs.m); }
+// the 'perp dot product' is the dot product of a 2D vector's perpendicular with another 2D vector, and is equivalent
+// to the signed area of the parallegram they form, the determinant of the matrix formed by the two vectors as columns,
+// and the cross product Z component of the corresponding 3D vectors with Z=0:
+template <class T,uint D>
+T                   cPerpDot(Mat<T,D,1> const & lhs,Mat<T,D,1> const & rhs) {return lhs[0]*rhs[1] -  lhs[1]*rhs[0]; }
 template <class T,uint R,uint C>
 double              cCos(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
 {
@@ -738,6 +752,13 @@ Mat<T,R,C>          outerProduct(Mat<T,R,1> const & lhs,Mat<T,C,1> const & rhs)
             ret.rc(rr,cc) = lhs[rr] * rhs[cc];
     return ret;
 }
+
+// Maps over Svec<Mat<>>:
+
+template<class T,uint R,uint C>
+Doubles             mapMag(Svec<Mat<T,R,C>> const & v) {return mapCallT<double>(v,[](Mat<T,R,C> const & e){return cMag(e); }); }
+template<class T,uint R,uint C>
+Doubles             mapLen(Svec<Mat<T,R,C>> const & v) {return mapCallT<double>(v,[](Mat<T,R,C> const & e){return cLen(e); }); }
 
 // UNARY & BINARY MAP OPERATIONS:
 
@@ -789,14 +810,6 @@ Mat<T,R,C>          mapDiv(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
     return ret;
 }
 template<class T,uint R,uint C>
-Svec<T>             mapMag(Svec<Mat<T,R,C>> const & v)
-{
-    Svec<T>   ret(v.size());
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret[ii] = cMag(v[ii]);
-    return ret;
-}
-template<class T,uint R,uint C>
 Mat<T,R,C>          mapSqr(Mat<T,R,C> mat)
 {
     Mat<T,R,C>    r;
@@ -844,14 +857,24 @@ Mat<uint,R,C>       mapPow2Ceil(Mat<uint,R,C> const & mat)
 }
 
 template<typename T,uint R,uint C>
-Mat<T,R,C>          mapMin(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
+Mat<T,R,C>          mapMax(Mat<T,R,C> const & lhs,T rhs)
 {
-    return mapCall(ml,mr,[](T l,T r){return cMin(l,r); });
+    return mapCall(lhs,[rhs](T l){return cMax(l,rhs); });
 }
 template<typename T,uint R,uint C>
 Mat<T,R,C>          mapMax(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
 {
     return mapCall(ml,mr,[](T l,T r){return cMax(l,r); });
+}
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMin(Mat<T,R,C> const & lhs,T rhs)
+{
+    return mapCall(lhs,[rhs](T l){return cMin(l,rhs); });
+}
+template<typename T,uint R,uint C>
+Mat<T,R,C>          mapMin(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
+{
+    return mapCall(ml,mr,[](T l,T r){return cMin(l,r); });
 }
 
 #define FG_MATRIXC_ELEMWISE(matFunc,elemFunc)               \
@@ -1001,10 +1024,10 @@ double              cDot(Svec<Mat<T,R,C>> const & v0,Svec<Mat<T,R,C>> const & v1
 }
 // Weighted dot product:
 template<class T,uint R,uint C>
-double              fgDotWgt(
-    Svec<Mat<T,R,C>> const & v0,
-    Svec<Mat<T,R,C>> const & v1,
-    Svec<T> const &                         w)    // Weight to apply to each dot product
+double              reduceDotWgt(
+    Svec<Mat<T,R,C>> const &    v0,
+    Svec<Mat<T,R,C>> const &    v1,
+    Svec<T> const &             w)    // Weight to apply to each dot product
 {
     FGASSERT(v0.size() == v1.size());
     FGASSERT(v0.size() == w.size());
@@ -1024,7 +1047,7 @@ T                   cTrace(const Mat<T,dim,dim> & mat)
 }
 // For Mat/Vec use linear interpolation
 template<uint R,uint C>
-Mat<double,R,C>     interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val [0,1]
+Mat<double,R,C>     interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val 0: m0, 1: m1
 {
     return m0*(1.0-val) + m1*(val);
 }
@@ -1032,44 +1055,19 @@ Mat<double,R,C>     interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val
 template<class T,uint R,uint C>
 inline T            cSumElems(Mat<T,R,C> const & mat) {return cSum(mat.m); }
 
-template<class T,uint sz>
-Mat<T,sz,sz>        cDiagMat(Mat<T,sz,1> vec)
-{
-    Mat<T,sz,sz>      ret(static_cast<T>(0));
-    for (uint ii=0; ii<sz; ++ii)
-        ret.rc(ii,ii) = vec[ii];
-    return ret;
-}
-template<class T>
-Mat<T,2,2>          cDiagMat(T v0,T v1)
-{
-    Mat<T,2,2>    ret(static_cast<T>(0));
-    ret[0] = v0;
-    ret[3] = v1;
-    return ret;
-}
-template<class T>
-Mat<T,3,3>          cDiagMat(T v0,T v1,T v2)
-{
-    Mat<T,3,3>    ret(static_cast<T>(0));
-    ret[0] = v0;
-    ret[4] = v1;
-    ret[8] = v2;
-    return ret;
-}
 template<typename T,uint R,uint C>
 void                normalize_(Mat<T,R,C> & mat)
 {
-    T       len = mat.len();
+    double              len = mat.len();
     FGASSERT(len > 0);
-    mat.m /= len;
+    mat.m /= scast<T>(len);
 }
 template<typename T,uint R,uint C>
 Mat<T,R,C>          normalize(Mat<T,R,C> mat)
 {
-    T       len = mat.len();
+    double              len = mat.len();
     FGASSERT(len > 0);
-    return mat / len;
+    return mat / scast<T>(len);
 }
 // Find first index of an element in a Svec. Return 'size' if not found:
 template<typename T,uint R>
@@ -1228,6 +1226,14 @@ struct      MatS3D
         else
             return offd[row+col-1];
     }
+    double &            rc(size_t row,size_t col)
+    {
+        FGASSERT((row<3)&&(col<3));
+        if (row==col)
+            return diag[row];
+        else
+            return offd[row+col-1];
+    }
     Mat33D              asMatC() const
     {
         return Mat33D {diag[0],offd[0],offd[1], offd[0],diag[1],offd[2], offd[1],offd[2],diag[2]};
@@ -1250,11 +1256,15 @@ struct      MatS3D
     double              determinant() const;
     MatS3D              inverse() const;
     MatS3D              square() const;     // the square of a symmetric matrix is also symmetric
+    // returns M^T * S * M, so that the action on vectors x^T * S * x acts as if the vectors have been transformed to x' = M * x.
+    MatS3D              transform(Mat33D const & M) const;
 
     static MatS3D       identity() {return { {{1,1,1}} , {{0,0,0}} }; }
     // isotropic random symmetric positive definite matrix with ln eigenvalues ~ N(0,lnEigStdev):
     static MatS3D       randSpd(double lnEigStdev);
 };
+typedef Svec<MatS3D>    MatS3Ds;
+
 std::ostream &      operator<<(std::ostream & os,MatS3D const & mat);
 inline double       cMag(MatS3D const & mat) {return mat.mag(); }
 inline double       cSum(MatS3D const & mat) {return mat.sumElems(); }

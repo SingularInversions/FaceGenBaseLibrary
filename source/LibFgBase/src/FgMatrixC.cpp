@@ -204,6 +204,22 @@ MatS3D              MatS3D::square() const
     };
 }
 
+MatS3D              MatS3D::transform(Mat33D const & M) const
+{
+    MatS3D              ret;
+    for (size_t rr=0; rr<3; ++rr) {
+        for (size_t cc=rr; cc<3; ++cc) {
+            double              acc {0};
+            for (size_t ii=0; ii<3; ++ii)
+                for (size_t jj=0; jj<3; ++jj)
+                    acc += rc(ii,jj) * M.rc(ii,rr) * M.rc(jj,cc);
+            ret.rc(rr,cc) = acc;
+            ret.rc(cc,rr) = acc;
+        }
+    }
+    return ret;
+}
+
 MatS3D              MatS3D::randSpd(double lnEigStdev)
 {
     // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
@@ -288,7 +304,7 @@ void                testInverseT()
     while
         (cDeterminant(mat) < 0.01);
     Mat<double,S,S>     inv = cInverse(mat),
-                        ident = Mat<double,S,S>::identity();
+                        ident = cDiagMat<double,S>(1);
     FGASSERT(isApproxEqualPrec(inv*mat,ident,40));
 }
 
@@ -300,7 +316,7 @@ void                testRotate(CLArgs const &)
         double          angle = randUniform(-pi(),pi());
         Vec3D           axis = normalize(Vec3D::randNormal());
         Mat33D          mat = matRotateAxis(angle,axis);
-        double          err = (mat * mat.transpose() - Mat33D::identity()).len(),
+        double          err = (mat * mat.transpose() - cDiagMat<double,3>(1)).len(),
                         err2 = (mat * axis - axis).len();
         FGASSERT(err < (lims<double>::epsilon() * 10.0));
         FGASSERT(err2 < (lims<double>::epsilon() * 10.0));
@@ -330,38 +346,47 @@ void                testMatS(CLArgs const &)
 {
     randSeedRepeatable();
     for (size_t ii=0; ii<10; ++ii) {
-        MatS3D              m0 = MatS3D::randSpd(1.0);
+        MatS3D              S = MatS3D::randSpd(1.0);
         {
-            double              ref = cDeterminant(m0.asMatC()),
-                                tst = cDeterminant(m0);
+            double              ref = cDeterminant(S.asMatC()),
+                                tst = cDeterminant(S);
             FGASSERT(isApproxEqualRel(ref,tst,epsBits(40)));
         }
         {
-            Mat33D              tst = cInverse(m0).asMatC(),
-                                ref = cInverse(m0.asMatC());
+            Mat33D              tst = cInverse(S).asMatC(),
+                                ref = cInverse(S.asMatC());
             FGASSERT(isApproxEqualPrec(tst,ref,40));
         }
         {
-            Mat33D              tst = m0.square().asMatC(),
-                                ref = m0.asMatC() * m0.asMatC();
+            Mat33D              tst = S.square().asMatC(),
+                                ref = S.asMatC() * S.asMatC();
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
         {
             Vec3D               v = Vec3D::randNormal(),
-                                tst = m0 * v,
-                                ref = m0.asMatC() * v;
+                                tst = S * v,
+                                ref = S.asMatC() * v;
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
         MatS3D              m1 = MatS3D::randSpd(1);
         {
-            Mat33D              tst = m0 * m1,
-                                ref = m0.asMatC() * m1.asMatC();
+            Mat33D              tst = S * m1,
+                                ref = S.asMatC() * m1.asMatC();
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
         {
             Mat33D              m2 = Mat33D::randNormal(1),
-                                tst = m0 * m2,
-                                ref = m0.asMatC() * m2;
+                                tst = S * m2,
+                                ref = S.asMatC() * m2;
+            FGASSERT(isApproxEqualPrec(tst,ref,30));
+        }
+        {
+            Mat33D              T = Mat33D::randNormal();
+            Vec3D               x = Vec3D::randNormal(),
+                                Tx = T * x;
+            double              ref = cDot(Tx,S*Tx);
+            MatS3D              TS = S.transform(T);
+            double              tst = cDot(x,TS*x);
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
     }

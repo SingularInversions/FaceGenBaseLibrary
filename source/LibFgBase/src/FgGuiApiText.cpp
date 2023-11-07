@@ -8,38 +8,33 @@
 
 #include "FgGuiApi.hpp"
 #include "FgBounds.hpp"
+#include "FgParse.hpp"
 
 using namespace std;
 using namespace std::placeholders;
 
 namespace Fg {
 
-GuiPtr              guiText(NPT<String8> node,uint minWidth,bool rich)
+GuiPtr              guiText(NPT<String8> node,Vec2B wantStretch,bool rich)
 {
+    Str32s              lines = splitLines(toUtf32(node.cref().m_str),0,true);
+    size_t              maxWid = clamp<size_t>(cMaxElem(cSizes(lines)),12,90);
     GuiText             gt;
     gt.content = node;
-    gt.wantStretch[0] = true;
-    gt.minWidth = minWidth;
+    gt.wantStretch = wantStretch;
+    gt.minWidth = cMax(scast<uint>(maxWid),1U);     // min 1 in case of empty line(s)
+    gt.minHeight = scast<uint>(lines.size());
     gt.rich = rich;
     return std::make_shared<GuiText>(gt);
 }
 
-GuiPtr              guiTextLines(NPT<String8> node,uint minHeight,bool wantStretchVert)
+GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Vec2B wantStretch)
 {
     GuiText             gt;
     gt.content = node;
-    gt.wantStretch[0] = true;
-    gt.wantStretch[1] = wantStretchVert;
+    gt.wantStretch = wantStretch;
+    gt.minWidth = minWidth;
     gt.minHeight = minHeight;
-    return std::make_shared<GuiText>(gt);
-}
-
-GuiPtr              guiText(String8 txt,uint minWidth,bool rich)
-{
-    GuiText             gt;
-    gt.content = makeIPT(txt);
-    gt.minWidth = minWidth;
-    gt.rich = rich;
     return std::make_shared<GuiText>(gt);
 }
 

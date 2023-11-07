@@ -17,21 +17,21 @@ using namespace std;
 
 namespace Fg {
 
-void            savePly(String8 const & fname,Meshes const & meshes,String imgFormat)
+void                savePly(String8 const & fname,Meshes const & meshes,String imgFormat)
 {
-    Mesh    mesh = mergeMeshes(meshes);
-    Path      path(fname);
+    Mesh                mesh = mergeMeshes(meshes);
+    Path                path {fname};
     path.ext = "ply";
-    Ofstream  ofs(path.str());
+    Ofstream            ofs {path.str()};
     ofs <<
         "ply\n"
         "format ascii 1.0\n"
         "comment created by FaceGen\n";
-    size_t      imgCnt = 0;
+    size_t              imgCnt = 0;
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         if (mesh.surfaces[ii].material.albedoMap) {
             String8    texFile = path.base + toStr(ii) + "." + imgFormat;
-            saveImage(path.dir()+texFile,*mesh.surfaces[ii].material.albedoMap);
+            saveImage(*mesh.surfaces[ii].material.albedoMap,path.dir()+texFile);
             ofs << "comment TextureFile " << texFile << "\n";
         }
     }
@@ -49,13 +49,12 @@ void            savePly(String8 const & fname,Meshes const & meshes,String imgFo
         "end_header\n";
     MeshNormals         norms = cNormals(mesh);
     for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
-        Vec3F    pos = mesh.verts[vv],
-                    nrm = norms.vert[vv];
+        Vec3F               pos = mesh.verts[vv],
+                            nrm = norms.vert[vv];
         ofs << pos[0] << " " << pos[1] << " " << pos[2] << " " << nrm[0] << " " << nrm[1] << " " << nrm[2] << "\n";
     }
     imgCnt = 0;
-    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        Surf const &     surf = mesh.surfaces[ss];
+    for (Surf const & surf : mesh.surfaces) {
         NPolys<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
             Vec3UI           vinds = tris.vertInds[ii];
@@ -71,20 +70,19 @@ void            savePly(String8 const & fname,Meshes const & meshes,String imgFo
             }
             ofs << imgCnt << "\n";
         }
-        if (mesh.surfaces[ss].material.albedoMap)
+        if (surf.material.albedoMap)
             ++imgCnt;
     }
 }
 
-void
-testSavePly(CLArgs const & args)
+void                testSavePly(CLArgs const & args)
 {
     FGTESTDIR
-    String8            dd = dataDir();
+    String8             dd = dataDir();
     string              rd = "base/";
-    Mesh            mouth = loadTri(dd+rd+"Mouth.tri");
+    Mesh                mouth = loadTri(dd+rd+"Mouth.tri");
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
-    Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
+    Mesh                glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     savePly("meshExportPly",svec(mouth,glasses));
     if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise

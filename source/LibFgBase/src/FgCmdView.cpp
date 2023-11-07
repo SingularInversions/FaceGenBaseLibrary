@@ -43,6 +43,7 @@ NOTES:
                             lmsFname = pathToDirBase(imgFname)+".lms.txt";
         ai.name = pathToBase(imgFname);
         ai.img = loadImage(imgFname);
+        fgout << fgnl << imgFname << fgpush << ai.img << fgpop;
         NameVec2Fs          lmsIrcs;
         if (syn.more() && (toLower(pathToExt(syn.peekNext())) == "txt"))
             lmsIrcs = loadLandmarks(syn.next());
@@ -219,16 +220,18 @@ void                cmdViewUvs(CLArgs const & args)
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
         String              meshName = mesh.name.empty() ? toStrDigits(mm,2) : mesh.name.m_str;
+        if (meshes.size() == 1)
+            meshName += " (" + syn.curr() + ")";
         PushIndent          pind {"Mesh "+meshName};
         if (mesh.uvs.empty()) {
             fgout << fgnl << "Mesh has no UVs";
             return;         // errors will result otherwise
         }
         Mat22F              bounds = cBounds(mesh.uvs);
-        fgout << fgnl << syn.curr() << " UV Bounds: " << bounds;
+        fgout << fgnl << "UV Bounds (" << mesh.uvs.size() << " uvs):" << bounds;
         if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))
             fgout << fgnl << "WARNING: UVs outside [0,1] were not drawn";
-        fgout << fgnl << "Surfaces: " << mesh.surfaces.size();
+        fgout << fgnl << "Surfaces: " << mesh.surfaces.size() << fgpush;
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const &        surf = mesh.surfaces[ss];
             String              surfName = surf.name.empty() ? toStrDigits(ss,2) : surf.name.m_str;
@@ -238,7 +241,9 @@ void                cmdViewUvs(CLArgs const & args)
                 ais.push_back({composite(wi,loadImage(syn.next())),Vec2Fs{},name});
             else
                 ais.push_back({wi,Vec2Fs{},name});
+            fgout << fgnl << surfName << ": tris: " << surf.tris.uvInds.size() << " quads: " << surf.quads.uvInds.size();
         }
+        fgout << fgpop;
     }
     viewImages(ais);
 }

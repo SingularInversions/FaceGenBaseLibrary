@@ -483,7 +483,7 @@ void                testmSurfTopo(CLArgs const & args)
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
     TriSurf             triSurf = mesh.asTriSurf();
     Vec3Ds              verts = mapCast<Vec3D>(triSurf.verts);
-    double              scale = cMax(cDims(verts).m) * 0.01;        // Extend norms 1% of max dim
+    double              scale = cMaxElem(cDims(verts)) * 0.01;        // Extend norms 1% of max dim
     SurfTopo            topo {triSurf.verts.size(),triSurf.tris};
     Svec<SurfTopo::BoundEdges> boundaries = topo.boundaries();
     for (auto const & boundary : boundaries) {
@@ -515,7 +515,7 @@ void                testmEdgeDist(CLArgs const & args)
         if (edgeDists[ii] < lims<float>::max())
             colVals[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
-    AffineEw2F          otcsToIpcs = cOtcsToIpcs(Vec2UI(128));
+    AffineEw2F          otcsToPacs = cOtcsToPacs(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
         Vec3UI              vertInds = surf.tris.vertInds[tt];
         Vec3UI              uvInds = surf.tris.uvInds[tt];
@@ -523,7 +523,7 @@ void                testmEdgeDist(CLArgs const & args)
             Rgba8           col(255);
             col.red() = colVals[vertInds[ii]];
             col.green() = 255 - col.red();
-            mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToIpcs*mesh.uvs[uvInds[ii]]),col);
+            mesh.surfaces[0].material.albedoMap->paint(Vec2UI(otcsToPacs*mesh.uvs[uvInds[ii]]),col);
         }
     }
     if (!isAutomated(args))
@@ -538,11 +538,11 @@ void                testmBoundVertFlags(CLArgs const & args)
     Bools               boundVertFlags = topo.boundaryVertFlags();
     Vec2UI              sz {64};
     ImgRgba8            map {sz,Rgba8{255}};
-    AffineEw2F          otcsToIpcs = cOtcsToIpcs(sz);
+    AffineEw2F          otcsToPacs = cOtcsToPacs(sz);
     auto                paintFn = [&](uint uvIdx)
     {
         Vec2F           otcs = mesh.uvs[uvIdx];
-        Vec2UI          ircs = Vec2UI(otcsToIpcs * otcs);
+        Vec2UI          ircs = Vec2UI(otcsToPacs * otcs);
         map.paint(ircs,{255,0,0,255});
     };
     for (size_t tt=0; tt<tris.size(); ++tt) {

@@ -42,24 +42,34 @@ namespace Fg {
 //    ofs.close();
 //}
 
-static
-float
-parseFloat(String const & str)
+namespace {
+
+float               parseFloat(String const & str)
 {
-    istringstream   iss(str);
-    float           ret;
+    istringstream       iss {str};
+    float               ret;
     iss >> ret;
+    if (iss.fail())
+        fgThrow("Not a valid floating point number",str);
     return ret;
 }
 
-static
-Vec3F
-parseVert(
-    String const &  str,
-    bool &          homogeneous, // Set to true if there is a homogeneous coord (which is ignored)
-    bool &          vertColors) // Set to true if there is a vertex color specified (which is ignored)
+int                 parseInt(String const & str)
 {
-    Strings         nums = splitChar(str,' ');
+    istringstream       iss {str};
+    int                 ret;
+    iss >> ret;
+    if (iss.fail())
+        fgThrow("Not a valid integer",str);
+    return ret;
+}
+
+Vec3F               parseVert(
+    String const &      str,
+    bool &              homogeneous, // Set to true if there is a homogeneous coord (which is ignored)
+    bool &              vertColors) // Set to true if there is a vertex color specified (which is ignored)
+{
+    Strings             nums = splitChar(str,' ');
     if (nums.size() < 3)
         fgThrow("Too few values specifying vertex");
     else if (nums.size() == 4)
@@ -70,87 +80,86 @@ parseVert(
         vertColors = true;
     else if (nums.size() != 3)
         fgThrow("Invalid number of arguments for vertex");
-    Vec3F           ret;
+    Vec3F               ret;
     for (uint ii=0; ii<3; ++ii)
         ret[ii] = parseFloat(nums[ii]);
     return ret;
 }
 
-static
-Vec2F
-parseUv(String const & str)
+Vec2F               parseUv(String const & str)
 {
-    Strings  nums = splitChar(str,' ');
+    Strings             nums = splitChar(str,' ');
     // A third homogeneous coord value can also be specified but is only used for rational
     // cureves so we ignore:
     FGASSERT((nums.size() > 1) && (nums.size() < 4));
-    Vec2F        ret;
+    Vec2F               ret;
     for (uint ii=0; ii<2; ++ii)
         ret[ii] = parseFloat(nums[ii]);
     return ret;
 }
 
-static
-bool
-parseFacet(
-    String const &      str,
+bool                parseFacet_(
+    String const &      line,
     size_t              numVerts,
     size_t              numUvs,
-    NPolys<3> &    tris,
-    NPolys<4> &    quads)
+    NPolys<3> &         tris,
+    NPolys<4> &         quads)
 {
-    bool            ret = false;
-    Strings  strs = splitChar(str,' ');
-    FGASSERT(strs.size() > 2);
-    vector<Uints >   nums;
-    for (size_t ii=0; ii<strs.size(); ++ii) {
-        Strings  ns = splitChar(strs[ii],'/',true);
-        size_t          sz = cMin(ns.size(),size_t(2));    // Ignore normal indices
-        Uints    nms;
+    bool                ret = false;
+    Strings             chunks = splitChar(line,' ');
+    // each facet must have 3 or more chunks, corresponding to a tri, quad, or N-gon:
+    if (chunks.size() < 3)
+        fgThrow("facet definition must contain at least 3 vertices");
+    Uintss                  facet;
+    for (auto const & chunk : chunks) {
+        // all chunks must be the same form which can be one of:
+        //      vertIdx
+        //      vertIdx / uvIdx
+        //      vertIdx / uvIdx / normIdx
+        Strings             numStrs = splitChar(chunk,'/',true);
+        size_t              sz = cMin(numStrs.size(),size_t(2));    // Ignore normal indices
+        Uints               indices;
         for (size_t jj=0; jj<sz; ++jj) {
-            size_t      numLim = ((jj == 0) ? numVerts : numUvs);
-            if (!ns[jj].empty()) {
-                istringstream   iss(ns[jj]);
-                int             num;
-                iss >> num;
-                --num;                              // WOBJ indexing starts at 1
+            int                 numLim = scast<int>((jj == 0) ? numVerts : numUvs);
+            if (!numStrs[jj].empty()) {
+                int                 num = parseInt(numStrs[jj]) - 1;    // WOBJ indexing starts at 1
                 FGASSERT(num < int(numLim));
                 // Indices can be negative in which case -1 refers to last index and so on backward:
-                if (num < 0) {
-                    FGASSERT(size_t(-num) <= numLim);
-                    nms.push_back(uint(int(numLim)+num));
-                }
-                else
-                    nms.push_back(uint(num));
+                if (num < 0)
+                    num += numLim;
+                if ((num<0) || (num>=numLim))
+                    fgThrow("index out of bounds",toStr(numStrs[jj]));
+                indices.push_back(scast<uint>(num));
             }
         }
-        nums.push_back(nms);
+        facet.push_back(indices);
     }
-    for (size_t ii=1; ii<nums.size(); ++ii)
-        FGASSERT(nums[ii].size() == nums[ii-1].size());
-    if (nums.size() == 3) {
-        tris.vertInds.push_back(Vec3UI(nums[0][0],nums[1][0],nums[2][0]));
-        if (nums[0].size() > 1)
-            tris.uvInds.push_back(Vec3UI(nums[0][1],nums[1][1],nums[2][1]));
+    for (size_t ii=1; ii<facet.size(); ++ii)
+        FGASSERT(facet[ii].size() == facet[ii-1].size());
+    if (facet.size() == 3) {        // TRI
+        tris.vertInds.emplace_back(facet[0][0],facet[1][0],facet[2][0]);
+        if (facet[0].size() > 1)
+            tris.uvInds.emplace_back(facet[0][1],facet[1][1],facet[2][1]);
     }
-    if (nums.size() == 4) {
-        quads.vertInds.push_back(Vec4UI(nums[0][0],nums[1][0],nums[2][0],nums[3][0]));
-        if (nums[0].size() > 1)
-            quads.uvInds.push_back(Vec4UI(nums[0][1],nums[1][1],nums[2][1],nums[3][1]));
+    if (facet.size() == 4) {        // QUAD
+        quads.vertInds.emplace_back(facet[0][0],facet[1][0],facet[2][0],facet[3][0]);
+        if (facet[0].size() > 1)
+            quads.uvInds.emplace_back(facet[0][1],facet[1][1],facet[2][1],facet[3][1]);
     }
-    if (nums.size() > 4) {          // N-gon
-        for (size_t ii=0; ii<nums.size()-2; ++ii) {
-            tris.vertInds.push_back(Vec3UI(nums[0][0],nums[ii+1][0],nums[ii+2][0]));
-            if (nums[ii].size() > 1)
-                tris.uvInds.push_back(Vec3UI(nums[0][1],nums[ii+1][1],nums[ii+2][1]));
+    if (facet.size() > 4) {          // N-GON: break into tris in simplest possible way:
+        for (size_t ii=0; ii<facet.size()-2; ++ii) {
+            tris.vertInds.emplace_back(facet[0][0],facet[ii+1][0],facet[ii+2][0]);
+            if (facet[ii].size() > 1)
+                tris.uvInds.emplace_back(facet[0][1],facet[ii+1][1],facet[ii+2][1]);
         }
         ret = true;
     }
     return ret;
 }
 
-Mesh
-loadWObj(String8 const & fname)
+}
+
+Mesh                loadWObj(String8 const & fname)
 {
     Mesh                mesh;
     map<String,Surf>    surfMap;
@@ -190,7 +199,7 @@ loadWObj(String8 const & fname)
             else if (beginsWith(line,"vt "))
                 mesh.uvs.push_back(parseUv(line.substr(3)));
             else if (beginsWith(line,"f ")) {
-                if (parseFacet(line.substr(2),mesh.verts.size(),mesh.uvs.size(),currSurf.tris,currSurf.quads))
+                if (parseFacet_(line.substr(2),mesh.verts.size(),mesh.uvs.size(),currSurf.tris,currSurf.quads))
                     ++numNgons;
             }
             else if (beginsWith(line,"g ")) {
@@ -216,7 +225,7 @@ loadWObj(String8 const & fname)
             }
         }
         catch(const FgException & e) {
-            fgout << fgnl << "WARNING: Error in line " << ii+1 << " of " << fname << ": " << e.tr_message() << fgpush
+            fgout << fgnl << "WARNING: Error in line " << ii+1 << " of " << fname << ": " << e.englishMessage() << fgpush
                 << fgnl << lines[ii] << fgpop;
         }
     }
@@ -253,31 +262,30 @@ loadWObj(String8 const & fname)
     return mesh;
 }
 
-struct  Offsets
-{
-    uint    vert;
-    uint    uv;
-    uint    mat;
+namespace {
 
-    Offsets(uint v,uint u,uint m)
-    : vert(v), uv(u), mat(m)
-    {}
+struct      Offsets
+{
+    uint        vert;
+    uint        uv;
+    uint        mat;
+
+    Offsets(uint v,uint u,uint m) : vert(v), uv(u), mat(m) {}
 };
 
 template<uint dim>
-void
-writeFacets(
-    Ofstream &    ofs,
+void                writeFacets(
+    Ofstream &          ofs,
     const vector<Mat<uint,dim,1> > &  vertInds,
     const vector<Mat<uint,dim,1> > &  uvInds,
-    Offsets         offsets)
+    Offsets             offsets)
 {
     if (uvInds.size() == 0) {
         for (uint jj=0; jj<vertInds.size(); ++jj) {
-            Mat<uint,dim,1>   vert = vertInds[jj];
+            Mat<uint,dim,1>     vert = vertInds[jj];
             ofs << "f ";
             for (uint kk=0; kk<dim; ++kk) {
-                uint        vi = vert[kk]+offsets.vert;
+                uint                vi = vert[kk]+offsets.vert;
                 ofs << vi << "//" << vi << " ";
             }
             ofs << "\n";
@@ -286,8 +294,8 @@ writeFacets(
     else {
         FGASSERT(vertInds.size() == uvInds.size());
         for (uint jj=0; jj<vertInds.size(); ++jj) {
-            Mat<uint,dim,1>   vert = vertInds[jj];
-            Mat<uint,dim,1>   uv = uvInds[jj];
+            Mat<uint,dim,1>     vert = vertInds[jj];
+            Mat<uint,dim,1>     uv = uvInds[jj];
             ofs << "f ";
             for (uint kk=0; kk<dim; ++kk) {
                 uint        vi = vert[kk]+offsets.vert;
@@ -298,10 +306,7 @@ writeFacets(
     }
 }
 
-static void
-writeMtlBase(
-    Ofstream &    ofs,
-    uint            idx)
+void                writeMtlBase(Ofstream & ofs,uint idx)
 {
     ofs << "newmtl " << "Texture" << toStr(idx) << "\n"
         "    illum 0\n"
@@ -310,9 +315,7 @@ writeMtlBase(
         "    Ka 0 0 0\n";
 }
 
-static
-Offsets
-writeMesh(
+Offsets             writeMesh(
     Ofstream &          ofs,
     Ofstream &          ofsMtl,
     Mesh const &        mesh,
@@ -325,24 +328,24 @@ writeMesh(
         fgout << "\n" << "WARNING: OBJ format does not support morphs";
 
     for (uint ii=0; ii<mesh.verts.size(); ++ii) {
-        Vec3F    vert = mesh.verts[ii];
+        Vec3F               vert = mesh.verts[ii];
         ofs << "v " << vert[0] << " " << vert[1] << " " << vert[2] << "\n";
     }
     for (size_t ii=0; ii<mesh.uvs.size(); ++ii) {
-        Vec2F    uv = mesh.uvs[ii];
+        Vec2F               uv = mesh.uvs[ii];
         ofs << "vt " << uv[0] << " " << uv[1] << "\n";
     }
     MeshNormals         norms = cNormals(mesh.surfaces,mesh.verts);
     for (size_t ii=0; ii<norms.vert.size(); ++ii) {
-        Vec3F    n = norms.vert[ii];
+        Vec3F               n = norms.vert[ii];
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << "\n";
     }
     for (uint tt=0; tt<mesh.surfaces.size(); ++tt) {
         if (mesh.surfaces[tt].material.albedoMap) {
-            String  idxString = toStr(offsets.mat+tt);
+            String              idxString = toStr(offsets.mat+tt);
             // Some OBJ parsers (Meshlab) can't handle spaces in filename:
-            String8        imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
-            saveImage(fpath.dir()+imgName,*mesh.surfaces[tt].material.albedoMap);
+            String8             imgName = fpath.base.replace(' ','_')+idxString+"."+imgFormat;
+            saveImage(*mesh.surfaces[tt].material.albedoMap,fpath.dir()+imgName);
             if (ofsMtl) {
                 writeMtlBase(ofsMtl,offsets.mat+tt);
                 ofsMtl << "    map_Kd " << imgName << "\n";
@@ -350,8 +353,8 @@ writeMesh(
         }
     }
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
-        Surf const & surf = mesh.surfaces[ii];
-        String8    name = (surf.name.empty() ? String8("Surf")+toStr(ii) : surf.name);
+        Surf const &        surf = mesh.surfaces[ii];
+        String8             name = (surf.name.empty() ? String8("Surf")+toStr(ii) : surf.name);
         ofs << "g " << name << "\n";
         if (mtlFile)    // Meshlab can't handle 'usemtl' if there is no MTL file:
             ofs << "usemtl Texture" << toStr(offsets.mat+ii) << "\n";
@@ -362,6 +365,8 @@ writeMesh(
     offsets.uv += uint(mesh.uvs.size());
     offsets.mat += uint(mesh.surfaces.size());
     return offsets;
+}
+
 }
 
 void    saveWObj(String8 const & filename,Meshes const & meshes,String imgFormat)

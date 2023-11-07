@@ -26,6 +26,7 @@ enum struct     MeshFormat
     stl,        // 3D Systems stereolithography
     a3ds,       // Autodesk 3D Studio
     xsi,        // Softimage ASCII
+    ply,        // Polygon File Format
 };
 typedef Svec<MeshFormat>    MeshFormats;
 
@@ -42,6 +43,7 @@ Strings             meshExportFormatsWithMorphs();
 std::string         getMeshSaveExtsCLDescription();
 
 Mesh                loadMesh(String8 const & fname);
+// use to load meshes properly from multi-mesh formats (single mesh formats will return a list of only 1 mesh):
 Meshes              loadMeshes(String8 const & fname);              // includes multi-mesh formats
 // If a loadable mesh extension for the given base name can be found the mesh will be loaded and
 // the function will return true. False otherwise:

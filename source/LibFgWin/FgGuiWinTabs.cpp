@@ -22,47 +22,52 @@ namespace Fg {
 
 struct  GuiTabsWin : public GuiBaseImpl
 {
-    GuiTabs                     m_api;
-    HWND                        m_tabHwnd;
-    HWND                        hwndThis;
-    GuiImplPtrs                 m_panes;
-    uint                        m_currPane;
-    Vec2I                       m_client;
-    RECT                        m_dispArea;
-    String8                     m_store;
+    GuiTabs             m_api;
+    HWND                m_tabHwnd;
+    HWND                hwndThis;
+    GuiImplPtrs         m_panes;
+    uint                m_currPane;
+    Vec2I               m_client;
+    RECT                m_dispArea;
+    String8             m_store;
 
-    GuiTabsWin(const GuiTabs & api)
-        : m_api(api)
+    GuiTabsWin(GuiTabs const & api) : m_api{api}
     {
-        FGASSERT(m_api.tabs.size()>0);
-        for (size_t ii=0; ii<m_api.tabs.size(); ++ii) {
-            FGASSERT(api.tabs[ii].win);
-            m_panes.push_back(api.tabs[ii].win->getInstance());
+        FGASSERT(!m_api.tabs.empty());
+        for (GuiTabDef const & tabDef : m_api.tabs) {
+//fgout << fgnl << tabDef.label << fgpush;
+            FGASSERT(tabDef.win);
+            m_panes.push_back(tabDef.win->getInstance());
+//fgout << fgpop;
         }
         m_currPane = 0;
     }
 
     ~GuiTabsWin()
     {
+        // only save when program closes, not when tab is destroyed (which happens every tab change):
         if (!m_store.empty()) {
             try {saveRaw(srlzText(m_currPane),m_store+"currPane.txt"); }
             catch(...) {}
         }
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Tabs::create visible: " << visible << " extStyle: " << extStyle << fgpush;
-        m_store = store;
-        if (!m_store.empty()) {
-            try {
-                uint            cp = dsrlzText<uint>(loadRawString(m_store+"currPane.txt"));
-                if (cp < m_panes.size())
-                    m_currPane = cp;
+        // only want to load from file the first time this window is created, then we just remember the user's setting.
+        // can't do this in ctor since we don't yet have 'store':
+        if (m_store.empty()) {
+            if (!store.empty()) {
+                try {
+                    uint            cp = dsrlzText<uint>(loadRawString(store+"currPane.txt"));
+                    if (cp < m_panes.size())
+                        m_currPane = cp;
+                }
+                catch (...) {}
             }
-            catch (...) {}
         }
+        m_store = store;
         WinCreateChild      cc;
         cc.extStyle = extStyle;
         cc.visible = visible;
@@ -72,27 +77,29 @@ struct  GuiTabsWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         // Automatically destroys children first:
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI      getMinSize() const
     {
-        Vec2UI   max(0);
+        Vec2UI              max {0};
+        FGASSERT(m_panes.size() == m_api.tabs.size());
         for (size_t ii=0; ii<m_panes.size(); ++ii) {
-            const GuiTabDef &    tab = m_api.tabs[ii];
-            Vec2UI           pad(tab.padLeft+tab.padRight,tab.padTop+tab.padBottom);
-            max = cMax(max,m_panes[ii]->getMinSize()+pad);
+            GuiTabDef const &   tab = m_api.tabs[ii];
+//fgout << fgpush;
+            Vec2UI              pad {tab.padLeft+tab.padRight,tab.padTop+tab.padBottom},
+                                min = m_panes[ii]->getMinSize();
+//fgout << fgpop;
+//fgout << fgnl << tab.label << " " << min;
+            max = mapMax(max,min+pad);
         }
-        return max + Vec2UI(0,37);
+        return max + Vec2UI{0,37};
     }
 
-    virtual Vec2B
-    wantStretch() const
+    virtual Vec2B       wantStretch() const
     {
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             if (m_panes[ii]->wantStretch()[0])
@@ -100,32 +107,28 @@ struct  GuiTabsWin : public GuiBaseImpl
         return Vec2B(false,true);
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void        updateIfChanged()
     {
 //fgout << fgnl << "Tabs::updateIfChanged" << fgpush;
         m_panes[m_currPane]->updateIfChanged();
 //fgout << fgpop;
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "Tabs::moveWindow " << lo << "," << sz << fgpush;
         MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],FALSE);
 //fgout << fgpop;
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
 //fgout << fgnl << "Tabs::showWindow: " << s << fgpush;
         ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE);
 //fgout << fgpop;
     }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
 //fgout << fgnl << "Tabs::WM_CREATE" << fgpush;
@@ -200,8 +203,7 @@ struct  GuiTabsWin : public GuiBaseImpl
         return DefWindowProc(hwnd,msg,wParam,lParam);
     }
 
-    void
-    resizeCurrPane()
+    void                resizeCurrPane()
     {
         GuiTabDef const &   tab = m_api.tabs[m_currPane];
         Vec2I               lo (m_dispArea.left + tab.padLeft, m_dispArea.top + tab.padTop),
@@ -210,8 +212,7 @@ struct  GuiTabsWin : public GuiBaseImpl
         m_panes[m_currPane]->moveWindow(lo,sz);
     }
 
-    void
-    resize(HWND)
+    void                resize(HWND)
     {
         // The repaint TRUE argument is only necessary when going from maximized to normal window size,
         // for some reason the tabs are repainted anyway in other situations:
@@ -228,8 +229,6 @@ struct  GuiTabsWin : public GuiBaseImpl
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiTabs & api)
-{return GuiImplPtr(new GuiTabsWin(api)); }
+GuiImplPtr          guiGetOsImpl(const GuiTabs & api) {return GuiImplPtr(new GuiTabsWin(api)); }
 
 }

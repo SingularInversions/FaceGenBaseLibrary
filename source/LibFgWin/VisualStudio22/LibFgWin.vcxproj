@@ -172,43 +172,69 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\FgConioWin.cpp" />
-    <ClCompile Include="..\FgDirect3D.cpp" />
-    <ClInclude Include="..\FgDirect3D.hpp" />
-    <ClCompile Include="..\FgFileSystemWin.cpp" />
-    <ClCompile Include="..\FgFileWin.cpp" />
-    <ClCompile Include="..\FgGui3dWin.cpp" />
-    <ClCompile Include="..\FgGuiWin.cpp" />
-    <ClInclude Include="..\FgGuiWin.hpp" />
-    <ClCompile Include="..\FgGuiWinButton.cpp" />
-    <ClCompile Include="..\FgGuiWinCheckbox.cpp" />
-    <ClCompile Include="..\FgGuiWinDialogs.cpp" />
-    <ClCompile Include="..\FgGuiWinDynamic.cpp" />
-    <ClCompile Include="..\FgGuiWinGroupbox.cpp" />
-    <ClCompile Include="..\FgGuiWinImage.cpp" />
-    <ClCompile Include="..\FgGuiWinRadio.cpp" />
-    <ClCompile Include="..\FgGuiWinSelect.cpp" />
-    <ClCompile Include="..\FgGuiWinSlider.cpp" />
-    <ClCompile Include="..\FgGuiWinSpacer.cpp" />
-    <ClCompile Include="..\FgGuiWinSplit.cpp" />
-    <ClCompile Include="..\FgGuiWinSplitAdj.cpp" />
-    <ClCompile Include="..\FgGuiWinSplitScroll.cpp" />
-    <ClCompile Include="..\FgGuiWinTabs.cpp" />
-    <ClCompile Include="..\FgGuiWinText.cpp" />
-    <ClCompile Include="..\FgGuiWinTextEdit.cpp" />
-    <ClCompile Include="..\FgSystemWin.cpp" />
-    <ClCompile Include="..\FgTcpWin.cpp" />
-    <ClCompile Include="..\FgThrowWindows.cpp" />
-    <ClInclude Include="..\FgThrowWindows.hpp" />
-    <ClCompile Include="..\FgTimeWin.cpp" />
-    <ClInclude Include="..\FgWindows.hpp" />
+    <ClCompile Include="..\FgConioWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgDirect3D.cpp">
+    </ClCompile>
+    <ClInclude Include="..\FgDirect3D.hpp"  />
+    <ClCompile Include="..\FgFileSystemWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgFileWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGui3dWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWin.cpp">
+    </ClCompile>
+    <ClInclude Include="..\FgGuiWin.hpp"  />
+    <ClCompile Include="..\FgGuiWinButton.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinCheckbox.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinDialogs.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinDynamic.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinGroupbox.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinImage.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinRadio.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSelect.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSlider.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSpacer.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSplit.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSplitAdj.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinSplitScroll.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinTabs.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinText.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgGuiWinTextEdit.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgSystemWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgTcpWin.cpp">
+    </ClCompile>
+    <ClCompile Include="..\FgThrowWindows.cpp">
+    </ClCompile>
+    <ClInclude Include="..\FgThrowWindows.hpp"  />
+    <ClCompile Include="..\FgTimeWin.cpp">
+    </ClCompile>
+    <ClInclude Include="..\FgWindows.hpp"  />
     <ClCompile Include="..\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClInclude Include="..\stdafx.h" />
+    <ClInclude Include="..\stdafx.h"  />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

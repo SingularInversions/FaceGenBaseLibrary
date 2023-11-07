@@ -292,29 +292,38 @@ bool                writeVcxproj(
     }
     ofs << "  <ItemGroup>\n";
     for (const ConsSrcDir & grp : proj.srcGroups) {
-        for (size_t ff=0; ff<grp.files.size(); ++ff) {
-            string path = replaceAll(proj.baseDir+grp.dir+grp.files[ff],'/','\\');
-            if (endsWith(grp.files[ff],".cpp") || endsWith(grp.files[ff],".c"))
+        for (String const & fname : grp.files) {
+            String              path = replaceAll(proj.baseDir+grp.dir+fname,'/','\\');
+            if (endsWith(fname,".cpp") || endsWith(fname,".c")) {
                 ofs << "    <ClCompile Include=\"..\\" << path << "\"";
-            else if (endsWith(grp.files[ff],".hpp") || endsWith(grp.files[ff],".h"))
-                ofs << "    <ClInclude Include=\"..\\" << path << "\"";
-            else
-                fgThrow("Unrecognized source file type",grp.files[ff]);
-            // WARNING: MSVC cannot mix pure C files with pre-comiled headers unless you also individually
-            // mark them for pre-compilation which we do NOT do here:
-            if (grp.files[ff] == "stdafx.cpp") {
                 ofs << ">\n";
-                for (uint cc=0; cc<2; ++cc)
-                    for (uint bb=0; bb<2; ++bb)
-                        ofs <<
-                            "      <PrecompiledHeader Condition=\"'$(Configuration)|$(Platform)'=='"
-                            << config[cc] << "|" << bits[bb] << "'\">"
-                            << ((grp.files[ff]=="stdafx.cpp") ? "Create" : "")
-                            << "</PrecompiledHeader>\n";
+                // WARNING: MSVC cannot mix pure C files with pre-compiled headers unless you also individually
+                // mark them for pre-compilation which we do NOT do here:
+                if (fname == "stdafx.cpp") {
+                    for (uint cc=0; cc<2; ++cc)
+                        for (uint bb=0; bb<2; ++bb)
+                            ofs <<
+                                "      <PrecompiledHeader Condition=\"'$(Configuration)|$(Platform)'=='"
+                                << config[cc] << "|" << bits[bb] << "'\">"
+                                << ((fname=="stdafx.cpp") ? "Create" : "")
+                                << "</PrecompiledHeader>\n";
+                }
+                else {      // cannot use output tree structure for stdafx.obj:
+                    // ensure no obj filename collision by mirroring tree structure:
+                    Path                fpath {fname};
+                    // only specify output tree when necessary since it breaks parallel builds with Incredibuild:
+                    if (!fpath.dirs.empty()) {
+                        String8             objPath = grp.dir + fpath.dirBase() + ".obj";
+                        ofs << "      <ObjectFileName>$(IntDir)/" << objPath + ".obj</ObjectFileName>\n";
+                    }
+                }
                 ofs << "    </ClCompile>\n";
             }
+            else if (endsWith(fname,".hpp") || endsWith(fname,".h")) {
+                ofs << "    <ClInclude Include=\"..\\" << path << "\"  />\n";
+            }
             else
-                ofs << " />\n";
+                fgThrow("Unrecognized source file type",fname);
         }
     }
     ofs <<

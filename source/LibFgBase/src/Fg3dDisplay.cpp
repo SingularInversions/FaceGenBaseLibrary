@@ -33,8 +33,8 @@ Arr<GuiPtr,3>       makeSliderBank3(
     for (size_t ss=0; ss<3; ++ss) {
         GuiSlider        s;
         s.updateFlag = makeUpdateFlag(valN);
-        s.getInput = [valN,ss](){return valN.cref()[ss]; };
-        s.setOutput = [valN,ss](double v){valN.ref()[ss] = v; };
+        s.getValFn = [valN,ss](){return valN.cref()[ss]; };
+        s.setValFn = [valN,ss](double v){valN.ref()[ss] = v; };
         s.label = labels[ss];
         s.range = range;
         s.tickSpacing = tickSpacing;
@@ -49,13 +49,12 @@ GuiVal<Vec3F>       makeColorSliders(String8 const & store,double init,double ti
     IPT<Vec3F>          valN = makeSavedIPT(Vec3F(init),store);
     array<GuiPtr,3>     sliders = makeSliderBank3(valN,array<String8,3>(),VecD2(0,1),tickSpacing);
     array<String8,3>    labels {{"Red","Green","Blue"}};
-    GuiPtrs             wins;
+    Img<GuiPtr>         wins {2,3};
     for (uint ii=0; ii<3; ++ii) {
-        wins.push_back(guiSplitH({
-            guiText(labels[ii],45),       // Fixed width larger than all colors to align sliders
-            sliders[ii]}));
+        wins.xy(0,ii) = guiText(labels[ii]);
+        wins.xy(1,ii) = sliders[ii];
     }
-    return GuiVal<Vec3F>(valN,guiSplitV(wins));
+    return GuiVal<Vec3F>(valN,guiSplit(wins));
 }
 
 GuiVal<Vec3F>       makeDirectionSliders(array<IPT<double>,3> inputNs,String8 const & store)
@@ -172,7 +171,7 @@ void                bgImageLoad2(BackgroundImage bgi)
         loadImage_(fname.value(),img);
     }
     catch (const FgException & e) {
-        guiDialogMessage("Unable to load background image",e.tr_message());
+        guiDialogMessage("Unable to load background image",e.nativeMessage());
         return;
     }
     bgi.origDimsN.set(img.dims());
@@ -461,12 +460,13 @@ GuiPtr              makeEditPoints(Gui3d & api)
     GuiPtr              textW = guiText(
             "Mark Surface Point: ctrl-shift-left-click on surface.\n"
             "A point with an identical non-null name will be overwritten"),
-                        listW = guiDynamic(makeListFn,makeUpdateFlag(rendMeshesN));
+                        listW = guiDynamic(makeListFn,makeUpdateFlag(rendMeshesN)),
+                        listWS = guiSplitScroll(Img<GuiPtr>{{1,1},{listW}});    // there can be many surface points
     GuiPtrs             subWs = {
         textW,
         guiSplitH({guiText("Name:"),guiTextEdit(pointLabelN)}),
         guiButton("Clear all surface points",clearPointsFn),
-        guiGroupbox("Surface Points",listW),
+        guiGroupbox("Surface Points",listWS),
     };
     return guiSplitV(subWs);
 }
@@ -607,13 +607,13 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 co
         facetsW = guiDynamic(bind(makeEditFacets,rendMeshesN,surfChoiceN),makeUpdateFlag(api.rendMeshesN));
     }
     GuiTabDefs          editVertsTabs {
-        {"Mark",true,makeEditVertsMark(rendMeshesN,api)},
-        {"Delete",true,makeEditVertsDelete(rendMeshesN,api,store+"VertsDel")},
+        {"Mark",makeEditVertsMark(rendMeshesN,api),true},
+        {"Delete",makeEditVertsDelete(rendMeshesN,api,store+"VertsDel"),true},
     };
     GuiTabDefs          editTabs {
-        {"Points",true,makeEditPoints(api)},
-        {"Verts",true,guiTabs(editVertsTabs)},
-        {"Facets",true,facetsW},
+        {"Points",makeEditPoints(api),true},
+        {"Verts",guiTabs(editVertsTabs),true},
+        {"Facets",facetsW,true},
     };
     GuiPtr              saveAsW;
     {
@@ -809,22 +809,11 @@ OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN)
     return link1<String8,Mesh>(pathBaseN,loadFn);
 }
 
-OPT<ImgRgba8>       linkLoadImage(NPT<String8> filenameN)
-{
-    return link1_<String8,ImgRgba8>(filenameN,
-        [](String8 const & fn,ImgRgba8 & img)
-        {
-            img.clear();        // Ensure cleared in case load fails.
-            if (!fn.empty())
-                loadImage_(fn,img);
-        });
-}
-
 GuiPosedMeshes::GuiPosedMeshes() :
-    poseDefsN(linkN<Mesh,PoseDefs>(Svec<NPT<Mesh>>(),[](Meshes const & m){return cPoseDefs(m);})),
+    poseDefsN {linkN<Mesh,PoseDefs>(Svec<NPT<Mesh>>(),[](Meshes const & m){return cPoseDefs(m);})},
     // Don't save pose state as it is confusing, even to experienced users for instance when only a small
     // morph is left from a previous session so it appears to be mesh/identity issue:
-    poseValsN(makeIPT(PoseVals{}))
+    poseValsN {}
 {}
 
 void                GuiPosedMeshes::addMesh(
@@ -927,8 +916,8 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         auto                setFn = [=](double v){poseValsN.ref()[name] = float(v); };
         GuiSlider           slider;
         slider.updateFlag = makeUpdateFlag(poseValsN);
-        slider.getInput = getFn;
-        slider.setOutput = setFn;
+        slider.getValFn = getFn;
+        slider.setValFn = setFn;
         slider.label = pose.name;
         slider.range[0] = pose.bounds[0];
         slider.range[1] = pose.bounds[1];
@@ -949,19 +938,19 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
     }
     if (sliderFacsWs.empty())
         return guiSplitV({buttonsW,guiSplitScroll(sliderCompWs)});
-    else if (sliderCompWs.empty())
+    if (sliderCompWs.empty())
         return guiSplitV({buttonsW,guiSplitScroll(sliderFacsWs)});
     // Two tabs of expressions:
-    GuiTabDefs      sliderTs {
-        {"FACS",true,guiSplitScroll(sliderFacsWs)},
-        {"Composite",true,guiSplitScroll(sliderCompWs)},
+    GuiTabDefs          sliderTs {
+        {"FACS",guiSplitScroll(sliderFacsWs),true},
+        {"Composite",guiSplitScroll(sliderCompWs),true},
     };
     return guiSplitV({buttonsW,guiTabs(sliderTs)});
 }
 
 GuiPtr              GuiPosedMeshes::makePoseCtrls(bool editBoxes) const
 {
-    auto        makeSliders =  bind(cPoseControlW,poseDefsN,poseValsN,editBoxes);
+    auto                makeSliders =  bind(cPoseControlW,poseDefsN,poseValsN,editBoxes);
     return guiDynamic(makeSliders,makeUpdateFlag(poseDefsN));
 }
 
@@ -1002,14 +991,14 @@ GuiPtr              makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 
                     renderOptsW = makeRendCtrls(gui3d.renderOptions,gui3d.bgImg,store+"RendOpts",true,true,true),
                     lightingW = makeLightingCtrls(gui3d.light,gui3d.bothButtonsDragAction,store+"Light");
     GuiTabDefs      viewTabs = {
-        {"Camera",true,cameraW},
-        {"Render",true,renderOptsW},
-        {"Lighting",true,lightingW},
+        {"Camera",cameraW,true},
+        {"Render",renderOptsW,true},
+        {"Lighting",lightingW,true},
     };
     return guiTabs(viewTabs);
 }
 
-GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture> const & capture,String8 const & store)
+GuiPtrs             cGuiFileImageWs(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture> const & capture,String8 const & store)
 {
     IPT<double>         widN = makeSavedIPT(1024.0,store+"Width"),
                         hgtN = makeSavedIPT(1024.0,store+"Height");
@@ -1023,13 +1012,10 @@ GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Cap
                         dimsRUW = guiText(vpDimsN),
                         dimsRLW = guiSplitH({guiText("Width"),widW,guiText("Height"),hgtW}),
                         dimsRW = guiSplitV({guiSpacer(1,3),dimsRUW,guiSpacer(1,3),dimsRLW}),
-                        dims3W = guiSplitH({dimsLW,dimsRW}),
-                        dimsW = guiGroupbox("Pixel size",dims3W),
-                        bgTransW = guiCheckbox("Transparent Background (PNG or TGA only)",bgTransN);
+                        dims3W = guiSplitH({dimsLW,dimsRW});
     ImgFormats          imgFormats = sliceMember(getImgFormatsInfo(),&ImgFormatInfo::format);   // support all fmts
     GuiVal<ImgFormat>   imgFormat = guiImgFormatSelector(imgFormats,store+"ImgFormat");
     NPT<ImgFormat>      imgFormatN = imgFormat.valN;
-    GuiPtr              imgFormatW = guiGroupbox("Image Format",imgFormat.win);
     auto                save = [=]()
     {
         if (capture->func) {
@@ -1037,17 +1023,15 @@ GuiPtr              guiCaptureSaveImage(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Cap
             String          imgExt = getImgFormatInfo(imgFormatN.cref()).extensions.at(0);
             Opt<String8>    fname = guiDialogFileSave("",imgExt);
             if (fname.has_value())
-                saveImage(fname.value(),capture->func(dims,bgTransN.val()));
+                saveImage(capture->func(dims,bgTransN.val()),fname.value());
         }
     };
-    GuiPtr              saveImageW = guiSplitV({
-        guiText("Save the current render image to a file"),
-        dimsW,
-        bgTransW,
-        imgFormatW,
-        guiButton("Save",save)
-    });
-    return saveImageW;
+    return {
+        guiGroupbox("Pixel size",dims3W),
+        guiCheckbox("Transparent Background (PNG or TGA only)",bgTransN),
+        guiGroupbox("Image Format",imgFormat.win),
+        guiButton("Save render image to file",save),
+    };
 }
 
 Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & saveName)
@@ -1067,8 +1051,8 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
         Mesh const &        mesh = meshes[mm];
         try {mesh.validate(); }
         catch (FgException & e) {
-            e.addContext("in mesh",mesh.name.m_str);
-            guiDialogMessage("Warning",e.tr_message());
+            e.contexts.emplace_back("in mesh",mesh.name.m_str);
+            guiDialogMessage("Warning",e.nativeMessage());
         }
         IPT<Mesh>           meshN = makeIPT(mesh);
         OPT<Vec3Fs>         allVertsN = link1<Mesh,Vec3Fs>(meshN,[](Mesh const & m){return m.allVerts(); });
@@ -1145,12 +1129,12 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     });
     GuiPtr              statsTextW = guiText(statsTextN);
     GuiTabDefs          mainTabs = {
-        {"View",false,makeViewCtrls(gui3d,viewBoundsN,store+"View")},
-        {"Morphs",true,gpms.makePoseCtrls(true)},
-        {"Select",true,meshSelect},
-        {"Edit",true,makeEditPane(gui3d,saveName,store+"Edit")},
-        {"Info",true,guiSplitScroll({statsTextW})},
-        {"System",true,guiTextLines(gui3d.gpuInfo,16,true)},
+        {"View",makeViewCtrls(gui3d,viewBoundsN,store+"View")},
+        {"Morphs",gpms.makePoseCtrls(true),true},
+        {"Select",meshSelect,true},
+        {"Edit",makeEditPane(gui3d,saveName,store+"Edit"),true},
+        {"Info",guiSplitScroll({statsTextW}),true},
+        {"System",guiTextLines(gui3d.gpuInfo,40,40,{true,true}),true},
     };
     guiStartImpl(
         makeIPT<String8>("FaceGen SDK viewMesh"),
@@ -1161,19 +1145,19 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
 
 bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
 {
-    FGASSERT(mesh.surfaces.size() == 1);        // current limitation makes back button (undo) easier
     String8             store = getDirUserAppDataLocalFaceGen({"PlaceSurfPoints"});
     // the first 'toPlace.size()' steps are for placement, the last is review:
-    IPT<size_t>         stepN = makeIPT(size_t(0));
     IPT<Mesh>           meshN = makeIPT(mesh);
+    IPT<MeshesIntersects> placedN;
+    OPT<size_t>         stepN = link1<MeshesIntersects,size_t>(placedN,[](MeshesIntersects const & mis){return mis.size(); });
     GuiPtr              promptW,viewport;
     {
-        auto                backFn = [stepN,meshN]()
+        auto                backFn = [meshN,placedN]()
         {
-            size_t &            step = stepN.ref();
-            if (step > 0) {
-                meshN.ref().surfaces[0].surfPoints.pop_back();
-                --step;
+            MeshesIntersects &  mis = placedN.ref();
+            if (!mis.empty()) {
+                meshN.ref().surfaces[mis.back().surfIdx].surfPoints.pop_back();
+                mis.pop_back();
             }
         };
         GuiPtrs             promptWs;
@@ -1208,10 +1192,10 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
         Gui3d               gui3d {makeIPT(gpms.rendMeshes)};
         makeViewCtrls(gui3d,boundsN,store+"View");      // discard GUI but we need the setup for 'gui3d'
         NPT<RendMeshes>     rendMeshesN = gui3d.rendMeshesN;
-        auto                clickFn = [meshN,toPlace,rendMeshesN,stepN](Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
+        auto                clickFn = [meshN,placedN,toPlace,rendMeshesN](Vec2UI winSize,Vec2I pos,Mat44F worldToD3ps)
         {
-            size_t &            step = stepN.ref();
-            if (step < toPlace.size()) {
+            MeshesIntersects &  mis = placedN.ref();
+            if (mis.size() < toPlace.size()) {
                 RendMeshes const &      rms = rendMeshesN.cref();
                 Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
                 if (vpt.has_value()) {
@@ -1221,8 +1205,8 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
                     Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
                     FGASSERT(pt.surfIdx < origMeshPtr->surfaces.size());
                     Surf &                  surf = origMeshPtr->surfaces[pt.surfIdx];
-                    surf.surfPoints.emplace_back(pt.surfPnt,toPlace[step]);
-                    ++step;
+                    surf.surfPoints.emplace_back(pt.surfPnt,toPlace[mis.size()]);
+                    mis.push_back(pt);
                 }
             }
         };

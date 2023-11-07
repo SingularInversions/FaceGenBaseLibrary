@@ -10,6 +10,7 @@
 #include "Fg3dSurface.hpp"
 #include "FgBounds.hpp"
 #include "FgImageDraw.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
@@ -34,7 +35,13 @@ Vec3UI              getTriEquivalent(size_t tt,Vec3UIs const & tris,Vec4UIs cons
 Vec3F               SurfPoint::pos(Vec3UIs const & tris,Vec4UIs const & quads,Vec3Fs const & verts) const
 {
     Vec3UI              tri = getTriEquivalent(triEquivIdx,tris,quads);
-    return interpolate(tri,weights,verts);
+    return indexInterp(tri,weights,verts);
+}
+
+Vec3D               SurfPoint::pos(Vec3UIs const & tris,Vec4UIs const & quads,Vec3Ds const & verts) const
+{
+    Vec3UI              tri = getTriEquivalent(triEquivIdx,tris,quads);
+    return indexInterp(tri,weights,verts);
 }
 
 NameVec3Fs          toNameVecs(
@@ -105,7 +112,7 @@ set<uint>           Surf::vertsUsed() const
 Vec3F               Surf::surfPointPos(Vec3Fs const & verts,SurfPoint const & bp) const
 {
     Vec3UI              tri = getTriEquivVertInds(bp.triEquivIdx);
-    return interpolate(tri,bp.weights,verts);
+    return indexInterp(tri,bp.weights,verts);
 }
 Vec3F               Surf::surfPointPos(Vec3Fs const & verts,size_t surfPointIdx) const
 {
@@ -171,6 +178,22 @@ ostream &           operator<<(ostream & os,Surf const & surf)
         os << fgpop;
     return os;
 }
+
+Vec3UIs         asTriVertInds(Surf const & surf)
+{
+    return cat(surf.tris.vertInds,asTris(surf.quads.vertInds));
+}
+
+Vec3UIs         asTriVertInds(Surfs const & surfs)
+{
+    Vec3UIs             ret;
+    for (Surf const & surf : surfs) {
+        cat_(ret,surf.tris.vertInds);
+        cat_(ret,asTris(surf.quads.vertInds));
+    }
+    return ret;
+}
+
 NameVec3Fs          surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & verts)
 {
     NameVec3Fs          ret;
@@ -178,6 +201,22 @@ NameVec3Fs          surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & vert
         cat_(ret,surf.surfPointsAsNameVecs(verts));
     return ret;
 }
+
+Vec3D           surfPointPos(Surfs const & surfs,Vec3Ds const & verts,String const & name)
+{
+    for (Surf const & surf : surfs)
+        for (auto const & spn : surf.surfPoints)
+            if (spn.label == name)
+                return spn.point.pos(surf.tris.vertInds,surf.quads.vertInds,verts);
+    FGASSERT_FALSE;
+    return {};
+}
+
+Vec3Ds          surfPointPoss(Surfs const & surfs,Vec3Ds const & verts,Strings const & names)
+{
+    return mapCallT<Vec3D>(names,[&](String const & name){return surfPointPos(surfs,verts,name); });
+}
+
 Surfs               splitByUvTile_(Surf const & surf,Vec2Fs & uvs)
 {
     set<Vec2I>              domains;
@@ -228,6 +267,75 @@ Surfs               splitByUvTile_(Surf const & surf,Vec2Fs & uvs)
         uv -= mapFloor(uv);
     return ret;
 }
+
+Surfs               splitSurf(Surf const & surf,Uints const & triIdxToSurf,Uints const & quadIdxToSurf)
+{
+    FGASSERT(triIdxToSurf.size() == surf.tris.vertInds.size());
+    FGASSERT(quadIdxToSurf.size() == surf.quads.vertInds.size());
+    uint                numSurfs = cMax(cMaxElem(triIdxToSurf),cMaxElem(quadIdxToSurf)) + 1;
+    Uints               oldToNewTriIdx,
+                        oldToNewQuadIdx;
+    Surfs               ret (numSurfs);
+    for (size_t tt=0; tt<surf.tris.vertInds.size(); ++tt) {
+        size_t              surfIdx = triIdxToSurf[tt];
+        oldToNewTriIdx.push_back(scast<uint>(ret[surfIdx].tris.vertInds.size()));
+        ret[surfIdx].tris.vertInds.push_back(surf.tris.vertInds[tt]);
+        if (!surf.tris.uvInds.empty())
+            ret[surfIdx].tris.uvInds.push_back(surf.tris.uvInds[tt]);
+    }
+    for (size_t qq=0; qq<surf.quads.vertInds.size(); ++qq) {
+        size_t              surfIdx = quadIdxToSurf[qq];
+        oldToNewQuadIdx.push_back(scast<uint>(ret[surfIdx].quads.vertInds.size()));
+        ret[surfIdx].quads.vertInds.push_back(surf.quads.vertInds[qq]);
+        if (!surf.quads.uvInds.empty())
+            ret[surfIdx].quads.uvInds.push_back(surf.quads.uvInds[qq]);
+    }
+    for (SurfPointName const & spn : surf.surfPoints) {
+        uint                teIdx = spn.point.triEquivIdx,
+                            surfIdx;
+        SurfPoint           sp = spn.point;
+        if (teIdx < surf.tris.vertInds.size()) {
+            surfIdx = triIdxToSurf[teIdx];
+            sp.triEquivIdx = oldToNewTriIdx[teIdx];
+        }
+        else {
+            surfIdx = quadIdxToSurf[(teIdx-surf.tris.size())/2];
+            uint                quadTeIdx = teIdx - scast<uint>(surf.tris.vertInds.size()),
+                                quadIdx = quadTeIdx / 2,
+                                remaind = quadTeIdx % 2;
+            sp.triEquivIdx = scast<uint>(ret[surfIdx].tris.size()) + oldToNewQuadIdx[quadIdx]*2 + remaind;
+        }
+        ret[surfIdx].surfPoints.emplace_back(sp,spn.label);
+    }
+    return ret;
+}
+
+Surfs               splitSurfContiguousUvs(Surf const & surf)
+{
+    FGASSERT(surf.hasUvIndices());
+    Uints               uvIdxToSurf = cContiguousMap(surf.tris.uvInds,surf.quads.uvInds);
+    Uints               triIdxToSurf; triIdxToSurf.reserve(surf.tris.size());
+    Uints               quadIdxToSurf; quadIdxToSurf.reserve(surf.quads.size());
+    for (Vec3UI tri : surf.tris.uvInds)
+        triIdxToSurf.push_back(uvIdxToSurf[tri[0]]);        // all uvs used by facet will have the same map since contiguous
+    for (Vec4UI quad : surf.quads.uvInds)
+        quadIdxToSurf.push_back(uvIdxToSurf[quad[0]]);      // "
+    return splitSurf(surf,triIdxToSurf,quadIdxToSurf);
+}
+
+Surfs               splitSurfContiguousVerts(Surf const & surf)
+{
+    FGASSERT(!surf.empty());
+    Uints               vertIdxToSurf = cContiguousMap(surf.tris.vertInds,surf.quads.vertInds);
+    Uints               triIdxToSurf; triIdxToSurf.reserve(surf.tris.size());
+    Uints               quadIdxToSurf; quadIdxToSurf.reserve(surf.quads.size());
+    for (Vec3UI tri : surf.tris.vertInds)
+        triIdxToSurf.push_back(vertIdxToSurf[tri[0]]);        // all verts used by facet will have the same map since contiguous
+    for (Vec4UI quad : surf.quads.vertInds)
+        quadIdxToSurf.push_back(vertIdxToSurf[quad[0]]);      // "
+    return splitSurf(surf,triIdxToSurf,quadIdxToSurf);
+}
+
 static inline void  swapLt(uint & a,uint & b)
 {
     if (b < a)
@@ -340,6 +448,52 @@ Surf                merge(Surfs const & surfs)
         ret.merge(surfs[ii]);
     return ret;
 }
+
+template<uint R>
+bool                sweepContig_(Svec<Mat<uint,R,1>> const & inds,uint & nextGroup,Uints & idxToLabel)
+{
+    bool            changed = false;
+    for (Mat<uint,R,1> tinds : inds) {
+        uint            idx0 = tinds[0]; 
+        uint            label = idxToLabel[idx0];
+        if (label == 0) {
+            label = nextGroup++;
+            idxToLabel[idx0] = label;
+            changed = true;
+        }
+        for (uint ii=1; ii<R; ++ii) {
+            uint            idx = tinds[ii];
+            uint            lab = idxToLabel[idx];
+            if (lab != label) {
+                if (lab == 0)
+                    idxToLabel[idx] = label;
+                else
+                    replaceAll_(idxToLabel,lab,label);
+                changed = true;
+            }
+        }
+    }
+    return changed;
+}
+
+Uints               cContiguousMap(Vec3UIs const & triInds,Vec4UIs const & quadInds)
+{
+    size_t              maxIdx = cMax(cMaxElem(triInds),cMaxElem(quadInds));
+    Uints               idxToLabel (maxIdx+1,0);
+    uint                nextGroup = 1;
+    bool                changed = false;
+    do {
+        bool                c0 = sweepContig_(triInds,nextGroup,idxToLabel),
+                            c1 = sweepContig_(quadInds,nextGroup,idxToLabel);
+        changed = (c0 || c1);
+    } while (changed);
+    Uints               labels = cUnique(sortAll(idxToLabel));
+    Uints               ret;  ret.reserve(idxToLabel.size());
+    for (uint label : idxToLabel)
+        ret.push_back(scast<uint>(findFirstIdx(labels,label)));
+    return ret;
+}
+
 Surfs               splitByContiguous(Surf const & surf)
 {
     Surfs           ret;
@@ -407,6 +561,7 @@ Surfs               splitByContiguous(Surf const & surf)
     }
     return ret;
 }
+
 void                Surf::removeTri(size_t triIdx)
 {
     SurfPointNames      nsps;
@@ -576,18 +731,20 @@ Vec3F               cQuadNorm(Vec4UI const & quad,Vec3Fs const & verts)
     else
         return cross * scast<float>(1.0 / sqrt(crossMag));
 }
+
 // calculate facet norm, accumulate it weighted by subtended angle to each vertex, return facet norm:
-template<typename T>
-Mat<T,3,1>          accNorm_(Svec<Mat<T,3,1>> const & verts,Vec3UI tri,Svec<Mat<T,3,1>> & acc)
+template<class T,class U>
+Mat<T,3,1>          accNorm_(
+    Svec<Mat<T,3,1>> const & verts, // double precision useful here due to tri edge vectors being small reltive to abs pos
+    Vec3UI                  tri,
+    Svec<Mat<U,3,1>> &      acc)    // typically don't need double precision for the resulting normals for rendering
 {
-    Mat<T,3,1>      v0 = verts[tri[0]],
-                    v1 = verts[tri[1]],
-                    v2 = verts[tri[2]],
-                    v01 = v1-v0,
-                    v12 = v2-v1,
-                    v20 = v0-v2,
-                    cross = crossProduct(v01,-v20);         // CC winding
-    T               crossMag = cMag(cross);
+    Arr<Mat<T,3,1>,3>   vs = mapIndex(tri.m,verts);
+    Mat<T,3,1>          v01 = vs[1]-vs[0],
+                        v12 = vs[2]-vs[1],
+                        v20 = vs[0]-vs[2],
+                        cross = crossProduct(v01,-v20);     // CC winding
+    T                   crossMag = cMag(cross);
     if (crossMag > 0) {                                     // non-degenerate
         // This methods weights the contribution of each tri norm to the vertex norm by the angle
         // subtended by that tri. This may give a more reasonable value than averaging (according
@@ -600,16 +757,16 @@ Mat<T,3,1>          accNorm_(Svec<Mat<T,3,1>> const & verts,Vec3UI tri,Svec<Mat<
                         wgt0 = acos(-cDot(v01,v20)/(len01*len20)),
                         wgt1 = acos(-cDot(v12,v01)/(len12*len01)),
                         wgt2 = acos(-cDot(v20,v12)/(len20*len12));
-        acc[tri[0]] += norm * wgt0;
-        acc[tri[1]] += norm * wgt1;
-        acc[tri[2]] += norm * wgt2;
+        acc[tri[0]] += Mat<U,3,1>{norm * wgt0};
+        acc[tri[1]] += Mat<U,3,1>{norm * wgt1};
+        acc[tri[2]] += Mat<U,3,1>{norm * wgt2};
         return norm;
     }
     return {0,0,1};     // arbitrary for degenerate tri
 }
 Vec3Ds              cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
 {
-    Vec3Ds          ret (verts.size(),Vec3D{0});
+    Vec3Ds              ret (verts.size(),Vec3D{0});
     for (Vec3UI const & tri : tris)
         accNorm_(verts,tri,ret);
     for (Vec3D & norm : ret) {
@@ -617,10 +774,27 @@ Vec3Ds              cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris)
         if(len > 0.0)
             norm /= len;
         else
-            norm = Vec3D{0,0,1};        // arbitrary when not part of a non-denerate surface
+            norm = Vec3D{0,0,1};        // arbitrary when not part of a non-degenerate surface
     }
     return ret;
 }
+
+TriNorms            cTriNorms(Vec3UIs const & triInds,Vec3Ds const & verts)
+{
+    TriNorms            ret {Vec3Fs{},Vec3Fs(verts.size(),Vec3F{0})};
+    ret.faceNorms.reserve(triInds.size());
+    for (Vec3UI const & tri : triInds)
+        ret.faceNorms.emplace_back(accNorm_(verts,tri,ret.vertNorms));
+    for (Vec3F & norm : ret.vertNorms) {
+        double              len = cLen(norm);
+        if(len > 0)
+            norm /= len;
+        else
+            norm = Vec3F{0,0,1};        // arbitrary when not part of a non-degenerate surface
+    }
+    return ret;
+}
+
 MeshNormals         cNormals(Surfs const & surfs,Vec3Fs const & verts)
 {
     MeshNormals         norms;
@@ -656,13 +830,13 @@ MeshNormals         cNormals(Surfs const & surfs,Vec3Fs const & verts)
 ImgRgba8            cUvWireframeImage(Vec2Fs const & uvs,Vec3UIs const & tris,Vec4UIs const & quads,Rgba8 color)
 {
     uint constexpr      dim {2048};
-    // Domain is (0,1,1,0) because we have to invert Y to go from OTCS to IPCS:
+    // Domain is (0,1,1,0) because we have to invert Y to go from OTCS to PACS:
     Mat22F              domain {0,1,1,0},
                         range (0,dim,0,dim);
     AffineEw2F          xf {domain,range};
     Vec2Is              uvsIrcs; uvsIrcs.reserve(uvs.size());
     for (Vec2F const & uv : uvs)
-        uvsIrcs.push_back(Vec2I{mapFloor(xf*uv)});      // floor(IPCS) == IRCS
+        uvsIrcs.push_back(Vec2I{mapFloor(xf*uv)});      // floor(PACS) == IRCS
     ImgRgba8            img {dim,dim,Rgba8{0,0,0,0}};
     for (Vec3UI tri : tris)
         for (uint vv=0; vv<3; ++vv)

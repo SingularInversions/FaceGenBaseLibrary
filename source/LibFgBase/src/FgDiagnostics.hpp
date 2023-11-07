@@ -38,7 +38,7 @@
 namespace Fg {
 
 // code base version:
-inline String       getSdkVersion(String const & sep) {return "3" + sep + "V" + sep + "0"; }
+inline String       getSdkVersion(String const & sep) {return "3" + sep + "V" + sep + "2"; }
 
 //! The FaceGen API exception type.
 //! All exceptions raised by FG code are of this type, inherit from this type,
@@ -47,20 +47,15 @@ struct  FgException
 {
     struct  Context
     {
-        // error messages are compile-time-known strings in english and translations can be looked up in language data files:
-        String         msgEnglish;     // error message in english (ASCII)
-        String         msgNative;      // error message in looked up local language (UTF8) (can be same as above)
-        String         dataUtf8;       // Non-translatable UTF-8 data (eg. file names)
+        String         english;         // compile-time-fixed error description in english (ASCII) can be used for translation lookup
+        String         native;          // if empty, look up translation. Only non-empty if OS reports non-english error description
+        String         dataUtf8;        // Non-translatable UTF-8 data associated with error (eg. file name, OS error code)
 
-        Context(String const & m,String const & d) :
-            msgEnglish(m), dataUtf8(d)
-        {
-            //TODO: look up msgNative from msgEnglish (if found) using application message dictionary
-        }
-        Context(String const & e,String const & n,String const & d) :
-            msgEnglish(e), msgNative(n), dataUtf8(d) {}
+        explicit Context(String const & msg) : english{msg} {}
+        Context(String const & msg,String const & data) : english{msg}, dataUtf8{data} {}
+        Context(String const & msg,String const & n,String const & data) : english{msg}, native{n}, dataUtf8{data} {}
     };
-    Svec<Context>    contexts;       // From lowest stack level to to highest stack level context
+    Svec<Context>       contexts;       // From deepest stack level to highest
 
     FgException() {}
     explicit FgException(Svec<Context> const & c) : contexts{c} {}
@@ -69,14 +64,8 @@ struct  FgException
     virtual ~FgException() {}
 
     bool                empty() const {return contexts.empty(); }
-    //! add context to err when translated message needs to be looked up (if current lang not english):
-    void                addContext(String const & english,String const & data = String());
-    //! add context to err when translated message is already known (or empty if none needed):
-    void                addContext(String const & english,String const & foreign,String const data)
-    {
-        contexts.emplace_back(english,foreign,data);
-    }
-    String             tr_message() const;
+    String              englishMessage() const;
+    String              nativeMessage() const;      // currently prints english if native not given by OS but will in future translate
 };
 
 // Should be caught in an end-user context as a failed operation, rather than reported
@@ -226,33 +215,31 @@ extern FgOut      fgout;
 
 struct  PushIndent
 {
-    size_t              depth = 1;
+    String              endMessage;
 
-    explicit PushIndent(String const & label = String{})
+    explicit PushIndent(String const & label={},String const & endMsg={}) : endMessage{endMsg}
     {
-        if (label.empty())
-            fgout << fgpush;
-        else
-            fgout << fgnl << label << std::flush << fgpush;
+        if (!label.empty())
+            fgout << fgnl << label << std::flush;
+        fgout << fgpush;
     }
 
     ~PushIndent() {pop(); }
 
-    void                next(const String & nextLabel) const
+    void                next(String const & label) const
     {
-        if (depth > 0)
-            fgout << fgpop;
-        fgout << fgnl << nextLabel << std::flush;
-        if (depth > 0)
-            fgout << fgpush;
+        if (!label.empty()) {   // can't throw an error yet ... FGASSERT not defined
+            pop();
+            fgout << fgnl << label << std::flush << fgpush;
+        }
     }
 
-    void                pop()
+private:
+    void                pop() const
     {
-        if (depth > 0) {
-            fgout << fgpop;
-            --depth;
-        }
+        fgout << fgpop;
+        if (!endMessage.empty())
+            fgout << fgnl << endMessage << std::flush;
     }
 };
 

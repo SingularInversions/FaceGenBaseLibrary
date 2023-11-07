@@ -45,7 +45,6 @@ Strings             tokenize(String const & str)
     return ret;
 }
 
-
 Strings             splitLines(String const & src,char commentFlag)
 {
     Strings             ret;
@@ -67,13 +66,13 @@ Strings             splitLines(String const & src,char commentFlag)
     return ret;
 }
 
-String32s           splitLines(String32 const & src,char32_t commentFlag)
+Str32s           splitLines(Str32 const & src,char32_t commentFlag,bool ie)
 {
-    String32s           ret;
-    String32            acc;
+    Str32s           ret;
+    Str32            acc;
     for (char32_t ch : src) {
         if (isCrLf32(ch)) {
-            if (!acc.empty()) {
+            if (!acc.empty() || ie) {
                 if ((commentFlag == 0) || (acc[0] != commentFlag))
                     ret.push_back(acc);
                 acc.clear();
@@ -82,7 +81,7 @@ String32s           splitLines(String32 const & src,char32_t commentFlag)
         else
             acc += ch;
     }
-    if (!acc.empty())
+    if (!acc.empty() || ie)
         if ((commentFlag == 0) || (acc[0] != commentFlag))
             ret.push_back(acc);
     return ret;
@@ -90,14 +89,14 @@ String32s           splitLines(String32 const & src,char32_t commentFlag)
 
 String8s            splitLinesUtf8(String const & utf8,char commentFlag)
 {
-    String32s           lines = splitLines(toUtf32(utf8),scast<char32_t>(commentFlag));
+    Str32s           lines = splitLines(toUtf32(utf8),scast<char32_t>(commentFlag));
     String8s            ret; ret.reserve(lines.size());
-    for (String32 const & line : lines)
+    for (Str32 const & line : lines)
         ret.push_back(toUtf8(line));
     return ret;
 }
 
-static void         consumeCrLf(String32 const & in,size_t & idx)    // Current idx must point to CR or LF
+static void         consumeCrLf(Str32 const & in,size_t & idx)    // Current idx must point to CR or LF
 {
     char32_t        ch0 = in[idx++];
     if (idx == in.size())
@@ -109,7 +108,7 @@ static void         consumeCrLf(String32 const & in,size_t & idx)    // Current 
 }
 
 static String       csvGetField(
-    String32 const &        in,
+    Str32 const &        in,
     size_t &                idx)    // idx must initially point to valid data but may point to end on return
 {
     string      ret;
@@ -145,7 +144,7 @@ static String       csvGetField(
 }
 
 static Strings      csvGetLine(
-    String32 const & in,
+    Str32 const & in,
     size_t &        idx)    // idx must initially point to valid data but may point to end on return
 {
     Strings      ret;
@@ -173,7 +172,7 @@ static Strings      csvGetLine(
 Stringss            loadCsv(String8 const & fname,size_t fieldsPerLine)
 {
     Stringss         ret;
-    String32       data = toUtf32(loadRawString(fname));
+    Str32       data = toUtf32(loadRawString(fname));
     size_t          idx = 0;
     while (idx < data.size()) {
         Strings      line = csvGetLine(data,idx);
@@ -190,7 +189,7 @@ map<string,Strings> loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fiel
 {
     FGASSERT((fieldsPerLine==0) || (keyIdx < fieldsPerLine));
     map<string,Strings> ret;
-    String32            data = toUtf32(loadRawString(fname));
+    Str32            data = toUtf32(loadRawString(fname));
     size_t              idx = 0;
     while (idx < data.size()) {
         Strings             line = csvGetLine(data,idx);
@@ -211,7 +210,7 @@ map<string,Strings> loadCsvToMap(String8 const & fname,size_t keyIdx,size_t fiel
 static string       csvField(string const & data)
 {
     string          ret = "\"";
-    String32       utf32 = toUtf32(data);
+    Str32       utf32 = toUtf32(data);
     for (char32_t ch32 : utf32) {
         if (ch32 == char32_t('"'))      // VS2013 doesn't support char32_t literal U
             ret += "\"\"";
@@ -251,6 +250,25 @@ Strings             splitChar(String const & str,char ch,bool ie)
             curr += (str[ii]);
     }
     if (!curr.empty() || ie)
+        ret.push_back(curr);
+    return ret;
+}
+
+Str32s              splitChar(Str32 const & str,char32_t token,bool ies)
+{
+    Str32s              ret;
+    Str32               curr;
+    for (char32_t ch : str) {
+        if (ch == token) {
+            if (!curr.empty() || ies) {
+                ret.push_back(curr);
+                curr.clear();
+            }
+        }
+        else
+            curr += ch;
+    }
+    if (!curr.empty() || ies)
         ret.push_back(curr);
     return ret;
 }
@@ -362,7 +380,7 @@ String              asciify(string const & in)
     hg[8221] = '"';
     hg[8230] = '-';
     hg[65381] = '\'';
-    String32            utf32 = toUtf32(in);
+    Str32            utf32 = toUtf32(in);
     for (char32_t ch32 : utf32) {
         string              utf8 = toUtf8(ch32);
         if (utf8.size() == 1)
@@ -378,9 +396,9 @@ String              asciify(string const & in)
     return ret;
 }
 
-String32            replaceAll(String32 const & str,char32_t a,char32_t b)
+Str32            replaceAll(Str32 const & str,char32_t a,char32_t b)
 {
-    String32       ret;
+    Str32       ret;
     ret.reserve(str.size());
     for (const char32_t & c : str)
         if (c == a)
@@ -397,5 +415,283 @@ String              noLeadingWhitespace(String const & str)
         ++idx;
     return str.substr(idx);
 }
+
+String                  encodeUrl(String8 const & str)
+{
+    String                  ret;
+    for (char ch : str.m_str) {
+        if (ch == ' ')
+            ret += "%20";
+        else if (ch == '"')
+            ret += "%22";
+        else if (ch == '%')
+            ret += "%25";
+        else if (ch == ':')
+            ret += "%3A";
+        else if (ch & 0x80)     // non-ASCII
+            ret += "%" + toHexString(scast<uchar>(ch));
+        else
+            ret += ch;
+    }
+    return ret;
+}
+
+String8             decodeUrl(String const & str)
+{
+    String8                 ret;
+    size_t                  idx {0};
+    auto                    getHexDigit = [&]()
+    {
+        Valid<uint>         val = fromHex4(str[idx++]);
+        if (!val.valid())
+            fgThrow("decodeUrl invalid hex digit",str[idx-1]);
+        return val.val();
+    };
+    while (idx < str.size()) {
+        char                ch = str[idx++];
+        if (ch != '%')
+            ret.m_str += ch;
+        else {
+            if (idx+2 >= str.size())
+                fgThrow("decodeUrl truncated control code",toStr(idx));
+            uint                val = getHexDigit() * 16;
+            val += getHexDigit();
+            FGASSERT(val < 256);
+            ret.m_str += scast<char>(val);
+        }
+    }
+    return ret;
+}
+
+Any                 parseJson_(String const & json,size_t & pos)
+{
+    size_t              line {0};
+    auto                isWhite = [](char ch)   // commas are whitespace
+    {
+        return (isWhitespace(ch) || (ch==','));
+    };
+    auto                skipWhitespace = [&]()
+    {
+        while ((pos < json.size()) && isWhite(json[pos])) {
+            if (json[pos] == '\n')
+                ++line;
+            ++pos;
+        }
+    };
+    auto                readToken = [&]()
+    {
+        String              tok;
+        while (!isWhite(json.at(pos)))
+            tok += json[pos++];
+        return tok;
+    };
+    auto                readString = [&]()
+    {
+        FGASSERT(json.at(pos++) == '"');
+        String              name;
+        while (json.at(pos) != '"')
+            name += json[pos++];
+        ++pos;                          // eat closing quote
+        return name;
+    };
+    while (pos < json.size()) {
+        skipWhitespace();
+        char                ch = json.at(pos);
+        if (ch == '{') {                        // property array
+            ++pos;                              // eat opening brace
+            skipWhitespace();
+            JsonObject          object;
+            while (json.at(pos) != '}') {
+                skipWhitespace();
+                if (json[pos] != '"')
+                    fgThrow("Property name must be enclosed in quotes on line",toStr(line));
+                String              name = readString();
+                skipWhitespace();
+                if (json[pos++] != ':')
+                    fgThrow("Property name must be followed by a colon on line",toStr(line));
+                object.emplace_back(name,parseJson_(json,pos));
+                skipWhitespace();
+            }
+            ++pos;                              // eat closing brace
+            return Any{object};
+        }
+        else if (ch == '[') {                   // array
+            ++pos;                              // eat opening brace
+            skipWhitespace();
+            Anys                elements;
+            while (json.at(pos) != ']') {
+                elements.push_back(parseJson_(json,pos));
+                skipWhitespace();
+            }
+            ++pos;                              // eat closing brace
+            return Any{elements};
+        }
+        else if (ch == '"')
+            return Any{readString()};
+        else if (isDigit(ch) || (ch=='-'))
+            return Any{fromStr<double>(readToken()).value()};
+        else {
+            String              tok = readToken();
+            if (tok == "true")
+                return Any{true};
+            if (tok == "false")
+                return Any{false};
+            if (tok == "null")
+                return Any{JsonNull{}};
+            fgThrow("parseJson unrecognized token",tok);
+        }
+    }
+    return {};
+}
+
+void                writeJson_(Any const & node,bool contLine,size_t indent,String & str)
+{
+    auto                isAtomic = [](Any const & n)
+    {
+        return ((n.is<double>()) || (n.is<String>()) || (n.is<bool>()) || (n.is<JsonNull>()));
+    };
+    String              indStr (indent,'\t');
+    if (node.is<JsonObject>()) {
+        JsonObject const &      obj = node.as<JsonObject>();
+        if (!contLine)
+            str += "\n" + indStr;
+        str += "{";
+        for (size_t ii=0; ii<obj.size(); ++ii) {
+            str += "\n" + indStr + "\t\"" + obj[ii].name + "\" : ";
+            writeJson_(obj[ii].val,true,indent+1,str);
+            if (ii+1 < obj.size())
+                str += ",";
+        }
+        str += "\n" + indStr + "}";
+    }
+    else if (node.is<Anys>()) {
+        Anys const &            arr = node.as<Anys>();
+        if (!contLine)
+            str += "\n" + indStr;
+        str += "[";
+        if (arr.empty())
+            str += " ]";
+        else if (isAtomic(arr[0])) {                    // single-line array (assume all are atomic if first is)
+            for (size_t ii=0; ii<arr.size(); ++ii) {
+                str += " ";
+                writeJson_(arr[ii],true,indent,str);
+                if (ii+1 < arr.size())
+                    str += ",";
+            }
+            str += " ]";
+        }
+        else {                                          // per-line array
+            for (size_t ii=0; ii<arr.size(); ++ii) {
+                writeJson_(arr[ii],false,indent+1,str);
+                if (ii+1 < arr.size())
+                    str += ",";
+            }
+            str += "\n" + indStr + "]";
+        }
+    }
+    else {                                              // atomic
+        String                  atom;
+        if (node.is<double>())
+            atom = toStrPrec(node.as<double>(),7);
+        else if (node.is<String>())
+            atom = "\"" + node.as<String>() + "\"";
+        else if (node.is<bool>())
+            atom = node.as<bool>() ? "true" : "false";
+        else if (node.is<JsonNull>())
+            atom = "null";
+        else
+            fgThrow("writeJson node unrecognized type",node.typeName());
+        if (contLine)
+            str += atom;
+        else
+            str += "\n" + indStr + atom;
+    }
+}
+
+String              writeJson(Any const & node)
+{
+    String              ret;
+    writeJson_(node,true,0,ret);
+    return ret;
+}
+
+namespace {
+
+void                testUrl(CLArgs const &)
+{
+    String8             str = "C:/A Path/";         // colon and space must be encoded
+    str += scast<char>(0xE4);                       // add UTF-8 chinese character 
+    str += scast<char>(0xB8);
+    str += scast<char>(0xAD);
+    str += "/File.txt";
+    FGASSERT(decodeUrl(encodeUrl(str)) == str);
+}
+
+void                testJson(CLArgs const &)
+{
+    String              json {R"(
+{
+    "name2": "stringVal",
+    "name3": true,
+    "name4": {
+        "name4-1": 16,
+        "Name4-2": 42.25
+    },
+    "name5": [
+        {
+            "name5-1-1": null,
+            "name5-1-2": false
+        },
+        {
+            "name5-1-3": [],
+            "name5-1-4": [ 1,2,3,4 ]
+        }
+    ]
+})"
+    };
+    auto                testFn = [](Any const & node0)
+    {
+        JsonObject          obj0 = node0.as<JsonObject>();
+        FGASSERT(obj0[0].name == "name2");
+        FGASSERT(obj0[0].val.as<String>() == "stringVal");
+        FGASSERT(obj0[1].name == "name3");
+        FGASSERT(obj0[1].val.as<bool>() == true);       // on purpose, Joel Spolsky !
+        FGASSERT(obj0[2].name == "name4");
+        JsonObject          obj1 = obj0[2].val.as<JsonObject>();
+        FGASSERT(obj1[0].name == "name4-1");
+        FGASSERT(obj1[0].val.as<double>() == 16);
+        FGASSERT(obj1[1].name == "Name4-2");
+        FGASSERT(obj1[1].val.as<double>() == 42.25);
+        FGASSERT(obj0[3].name == "name5");
+        Anys                arr = obj0[3].val.as<Anys>();
+        JsonObject          obj30 = arr[0].as<JsonObject>();
+        FGASSERT(obj30[0].name == "name5-1-1");
+        FGASSERT(obj30[0].val.is<JsonNull>());
+        FGASSERT(obj30[1].name == "name5-1-2");
+        FGASSERT(obj30[1].val.as<bool>() == false);
+        JsonObject          obj31 = arr[1].as<JsonObject>();
+        FGASSERT(obj31[0].name == "name5-1-3");
+        FGASSERT(obj31[0].val.as<Anys>().empty());
+        FGASSERT(obj31[1].name == "name5-1-4");
+        FGASSERT(obj31[1].val.as<Anys>().size() == 4);
+    };
+    Any                 node0 = parseJson(json);
+    testFn(node0);
+    String              json2 = writeJson(node0);
+    testFn(parseJson(json2));
+}
+
+}
+
+void                testParse(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testJson,"json","JSON to text and vice versa"},
+        {testUrl,"url","URL encoding and decoding"},
+    };
+    doMenu(args,cmds,true);
+}
+
+
 
 }

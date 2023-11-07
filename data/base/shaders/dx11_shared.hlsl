@@ -11,6 +11,8 @@ cbuffer ConstantFrameBuffer : register(b0)
         float4              ambientColor;
         float4              lightDir[2]; 
         float4              lightColor[2];
+        // only the first value is used:
+        float4              detTexMod;
     } Scene;
 }
 

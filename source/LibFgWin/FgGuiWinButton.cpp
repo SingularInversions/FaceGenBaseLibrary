@@ -38,7 +38,7 @@ struct  GuiButtonWin : public GuiBaseImpl
     {
         DestroyWindow(hwndThis);        // Automatically destroys children first
     }
-    virtual Vec2UI      getMinSize() const {return Vec2UI{100,24}; }
+    virtual Vec2UI      getMinSize() const {return Vec2UI{90,24}; }
     virtual Vec2B       wantStretch() const {return Vec2B{m_api.stretchX,false}; }
     virtual void        updateIfChanged()
     {

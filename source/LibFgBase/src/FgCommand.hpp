@@ -78,7 +78,8 @@ struct      Syntax
         return (m_idx+1 < m_args.size());
     }
     String const &      peekNext();
-    CLArgs              rest();             // Starting with current
+    CLArgs              rest();             // starting with *current*
+    CLArgs              nextRest();         // starting with *next*
     void                error() {throwSyntax(); }
     void                error(String const & errMsg);
     void                error(String const & errMsg,String8 const & data);
@@ -96,7 +97,7 @@ struct      Syntax
 private:
     String              m_syntax;
     Strings             m_args;      // NB: can contain UTF-8, stored as std::string due to legacy
-    size_t              m_idx;
+    size_t              m_idx;      // to current argument being processed (initially the current command selection)
 
     void                throwSyntax();
 };

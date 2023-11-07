@@ -71,8 +71,8 @@ void                testQuaternion(CLArgs const &)
     for (size_t ii=0; ii<5; ++ii) {
         QuaternionD     q = QuaternionD::rand();
         Mat33D          m = q.asMatrix(),
-                        del = m * m.transpose() - Mat33D::identity();
-        FGASSERT(cMax(mapAbs(del.m)) < lims<double>::epsilon()*8);
+                        del = m * m.transpose() - cDiagMat<double,3>(1);
+        FGASSERT(cMaxElem(mapAbs(del.m)) < lims<double>::epsilon()*8);
     }
     // Composition:
     for (size_t ii=0; ii<5; ++ii) {
@@ -84,7 +84,7 @@ void                testQuaternion(CLArgs const &)
                         m2 = m1 * m0,
                         m2q = q2.asMatrix(),
                         del = m2q-m2;
-        FGASSERT(cMax(mapAbs(del.m)) < lims<double>::epsilon()*8);
+        FGASSERT(cMaxElem(mapAbs(del.m)) < lims<double>::epsilon()*8);
     }
     // Inverse:
     for (size_t ii=0; ii<5; ++ii) {

@@ -220,7 +220,7 @@ void            runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler,siz
             handlerRetval = handler(ipAddr,dataBuff,response);
         }
         catch(FgException const & e) {
-            fgout << fgnl << "Handler exception (FG exception): " << e.tr_message();
+            fgout << fgnl << "Handler exception (FG exception): " << e.englishMessage();
         }
         catch(std::exception const & e) {
             fgout << fgnl << "Handler exception (std::exception): " << e.what();

@@ -172,163 +172,243 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Fg3dCamera.cpp" />
-    <ClInclude Include="..\src\Fg3dCamera.hpp" />
-    <ClCompile Include="..\src\Fg3dDisplay.cpp" />
-    <ClInclude Include="..\src\Fg3dDisplay.hpp" />
-    <ClCompile Include="..\src\Fg3dMesh.cpp" />
-    <ClInclude Include="..\src\Fg3dMesh.hpp" />
-    <ClCompile Include="..\src\Fg3dMesh3ds.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshDae.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshFbx.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshIo.cpp" />
-    <ClInclude Include="..\src\Fg3dMeshIo.hpp" />
-    <ClCompile Include="..\src\Fg3dMeshLegacy.cpp" />
-    <ClInclude Include="..\src\Fg3dMeshLegacy.hpp" />
-    <ClCompile Include="..\src\Fg3dMeshLwo.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshMa.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshObj.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshPly.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshStl.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshTri.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshVrml.cpp" />
-    <ClCompile Include="..\src\Fg3dMeshXsi.cpp" />
-    <ClCompile Include="..\src\Fg3dSurface.cpp" />
-    <ClInclude Include="..\src\Fg3dSurface.hpp" />
-    <ClCompile Include="..\src\Fg3dTest.cpp" />
-    <ClCompile Include="..\src\FgAffine.cpp" />
-    <ClInclude Include="..\src\FgAffine.hpp" />
-    <ClCompile Include="..\src\FgAnthropometry.cpp" />
-    <ClInclude Include="..\src\FgAnthropometry.hpp" />
-    <ClInclude Include="..\src\FgAny.hpp" />
-    <ClInclude Include="..\src\FgApproxEqual.hpp" />
-    <ClCompile Include="..\src\FgApproxFunc.cpp" />
-    <ClInclude Include="..\src\FgApproxFunc.hpp" />
-    <ClInclude Include="..\src\FgArray.hpp" />
-    <ClInclude Include="..\src\FgBestN.hpp" />
-    <ClInclude Include="..\src\FgBounds.hpp" />
-    <ClCompile Include="..\src\FgBuild.cpp" />
-    <ClInclude Include="..\src\FgBuild.hpp" />
-    <ClCompile Include="..\src\FgBuildMakefiles.cpp" />
-    <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp" />
-    <ClCompile Include="..\src\FgCl.cpp" />
-    <ClInclude Include="..\src\FgCl.hpp" />
-    <ClInclude Include="..\src\FgCmd.hpp" />
-    <ClCompile Include="..\src\FgCmdBase.cpp" />
-    <ClCompile Include="..\src\FgCmdImage.cpp" />
-    <ClCompile Include="..\src\FgCmdMesh.cpp" />
-    <ClCompile Include="..\src\FgCmdMorph.cpp" />
-    <ClCompile Include="..\src\FgCmdRender.cpp" />
-    <ClCompile Include="..\src\FgCmdTestmCpp.cpp" />
-    <ClCompile Include="..\src\FgCmdView.cpp" />
-    <ClCompile Include="..\src\FgCommand.cpp" />
-    <ClInclude Include="..\src\FgCommand.hpp" />
-    <ClInclude Include="..\src\FgConio.hpp" />
-    <ClCompile Include="..\src\FgDataflow.cpp" />
-    <ClInclude Include="..\src\FgDataflow.hpp" />
-    <ClCompile Include="..\src\FgDiagnostics.cpp" />
-    <ClInclude Include="..\src\FgDiagnostics.hpp" />
-    <ClInclude Include="..\src\FgDynLib.h" />
-    <ClCompile Include="..\src\FgFile.cpp" />
-    <ClInclude Include="..\src\FgFile.hpp" />
-    <ClCompile Include="..\src\FgFileSystem.cpp" />
-    <ClInclude Include="..\src\FgFileSystem.hpp" />
-    <ClCompile Include="..\src\FgGeometry.cpp" />
-    <ClInclude Include="..\src\FgGeometry.hpp" />
-    <ClCompile Include="..\src\FgGridIndex.cpp" />
-    <ClInclude Include="..\src\FgGridIndex.hpp" />
-    <ClCompile Include="..\src\FgGridTriangles.cpp" />
-    <ClInclude Include="..\src\FgGridTriangles.hpp" />
-    <ClCompile Include="..\src\FgGuiApi.cpp" />
-    <ClInclude Include="..\src\FgGuiApi.hpp" />
-    <ClCompile Include="..\src\FgGuiApi3d.cpp" />
-    <ClInclude Include="..\src\FgGuiApi3d.hpp" />
-    <ClCompile Include="..\src\FgGuiApiCheckbox.cpp" />
-    <ClCompile Include="..\src\FgGuiApiDialogs.cpp" />
-    <ClCompile Include="..\src\FgGuiApiImage.cpp" />
-    <ClInclude Include="..\src\FgGuiApiMain.hpp" />
-    <ClCompile Include="..\src\FgGuiApiRadio.cpp" />
-    <ClCompile Include="..\src\FgGuiApiSlider.cpp" />
-    <ClCompile Include="..\src\FgGuiApiSplit.cpp" />
-    <ClCompile Include="..\src\FgGuiApiText.cpp" />
-    <ClCompile Include="..\src\FgHistogram.cpp" />
-    <ClInclude Include="..\src\FgHistogram.hpp" />
-    <ClCompile Include="..\src\FgImage.cpp" />
-    <ClInclude Include="..\src\FgImage.hpp" />
-    <ClCompile Include="..\src\FgImageDraw.cpp" />
-    <ClInclude Include="..\src\FgImageDraw.hpp" />
-    <ClCompile Include="..\src\FgImageIo.cpp" />
-    <ClInclude Include="..\src\FgImageIo.hpp" />
-    <ClCompile Include="..\src\FgImageIoStb.cpp" />
-    <ClCompile Include="..\src\FgImageTest.cpp" />
-    <ClCompile Include="..\src\FgImgDisplay.cpp" />
-    <ClInclude Include="..\src\FgImgDisplay.hpp" />
-    <ClInclude Include="..\src\FgIter.hpp" />
-    <ClCompile Include="..\src\FgKdTree.cpp" />
-    <ClInclude Include="..\src\FgKdTree.hpp" />
-    <ClCompile Include="..\src\FgLighting.cpp" />
-    <ClInclude Include="..\src\FgLighting.hpp" />
-    <ClCompile Include="..\src\FgMain.cpp" />
-    <ClInclude Include="..\src\FgMain.hpp" />
-    <ClInclude Include="..\src\FgMap.hpp" />
-    <ClInclude Include="..\src\FgMarr.hpp" />
-    <ClCompile Include="..\src\FgMath.cpp" />
-    <ClInclude Include="..\src\FgMath.hpp" />
-    <ClCompile Include="..\src\FgMatrixC.cpp" />
-    <ClInclude Include="..\src\FgMatrixC.hpp" />
-    <ClCompile Include="..\src\FgMatrixSolver.cpp" />
-    <ClInclude Include="..\src\FgMatrixSolver.hpp" />
-    <ClCompile Include="..\src\FgMatrixSolverEigen.cpp" />
-    <ClCompile Include="..\src\FgMatrixV.cpp" />
-    <ClInclude Include="..\src\FgMatrixV.hpp" />
-    <ClCompile Include="..\src\FgNc.cpp" />
-    <ClInclude Include="..\src\FgNc.hpp" />
-    <ClCompile Include="..\src\FgParse.cpp" />
-    <ClInclude Include="..\src\FgParse.hpp" />
-    <ClCompile Include="..\src\FgQuaternion.cpp" />
-    <ClInclude Include="..\src\FgQuaternion.hpp" />
-    <ClCompile Include="..\src\FgRandom.cpp" />
-    <ClInclude Include="..\src\FgRandom.hpp" />
-    <ClInclude Include="..\src\FgRgba.hpp" />
-    <ClCompile Include="..\src\FgSampler.cpp" />
-    <ClInclude Include="..\src\FgSampler.hpp" />
-    <ClInclude Include="..\src\FgScaleTrans.hpp" />
-    <ClInclude Include="..\src\FgScopeGuard.hpp" />
-    <ClCompile Include="..\src\FgSerial.cpp" />
-    <ClInclude Include="..\src\FgSerial.hpp" />
-    <ClInclude Include="..\src\FgSet.hpp" />
-    <ClCompile Include="..\src\FgSimilarity.cpp" />
-    <ClInclude Include="..\src\FgSimilarity.hpp" />
-    <ClCompile Include="..\src\FgSoftRender.cpp" />
-    <ClInclude Include="..\src\FgSoftRender.hpp" />
-    <ClCompile Include="..\src\FgStdExtensions.cpp" />
-    <ClInclude Include="..\src\FgStdExtensions.hpp" />
-    <ClInclude Include="..\src\FgStdLibs.hpp" />
-    <ClCompile Include="..\src\FgString.cpp" />
-    <ClInclude Include="..\src\FgString.hpp" />
-    <ClCompile Include="..\src\FgStringTest.cpp" />
-    <ClInclude Include="..\src\FgSystem.hpp" />
-    <ClInclude Include="..\src\FgTcp.hpp" />
-    <ClCompile Include="..\src\FgTcpTest.cpp" />
-    <ClInclude Include="..\src\FgTensorV.hpp" />
-    <ClCompile Include="..\src\FgTestUtils.cpp" />
-    <ClInclude Include="..\src\FgTestUtils.hpp" />
-    <ClCompile Include="..\src\FgTime.cpp" />
-    <ClInclude Include="..\src\FgTime.hpp" />
-    <ClCompile Include="..\src\FgTopology.cpp" />
-    <ClInclude Include="..\src\FgTopology.hpp" />
-    <ClCompile Include="..\src\FgTypes.cpp" />
-    <ClInclude Include="..\src\FgTypes.hpp" />
-    <ClInclude Include="..\src\json.hpp" />
-    <ClCompile Include="..\src\MurmurHash2.cpp" />
-    <ClInclude Include="..\src\MurmurHash2.h" />
+    <ClCompile Include="..\src\Fg3dCamera.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dCamera.hpp"  />
+    <ClCompile Include="..\src\Fg3dDisplay.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dDisplay.hpp"  />
+    <ClCompile Include="..\src\Fg3dMesh.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dMesh.hpp"  />
+    <ClCompile Include="..\src\Fg3dMesh3ds.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshDae.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshFbx.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshIo.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dMeshIo.hpp"  />
+    <ClCompile Include="..\src\Fg3dMeshLegacy.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dMeshLegacy.hpp"  />
+    <ClCompile Include="..\src\Fg3dMeshLwo.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshMa.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshObj.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshPly.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshStl.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshTri.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshVrml.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshXsi.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dSurface.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\Fg3dSurface.hpp"  />
+    <ClCompile Include="..\src\Fg3dTest.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgAffine.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgAffine.hpp"  />
+    <ClCompile Include="..\src\FgAnthropometry.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgAnthropometry.hpp"  />
+    <ClInclude Include="..\src\FgAny.hpp"  />
+    <ClInclude Include="..\src\FgApproxEqual.hpp"  />
+    <ClCompile Include="..\src\FgApproxFunc.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgApproxFunc.hpp"  />
+    <ClInclude Include="..\src\FgArray.hpp"  />
+    <ClInclude Include="..\src\FgBestN.hpp"  />
+    <ClInclude Include="..\src\FgBounds.hpp"  />
+    <ClCompile Include="..\src\FgBuild.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgBuild.hpp"  />
+    <ClCompile Include="..\src\FgBuildMakefiles.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCl.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgCl.hpp"  />
+    <ClInclude Include="..\src\FgCmd.hpp"  />
+    <ClCompile Include="..\src\FgCmdBase.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdImage.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdMesh.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdMorph.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdRender.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdTestmCpp.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCmdView.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgCommand.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgCommand.hpp"  />
+    <ClInclude Include="..\src\FgConio.hpp"  />
+    <ClCompile Include="..\src\FgDataflow.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgDataflow.hpp"  />
+    <ClCompile Include="..\src\FgDiagnostics.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgDiagnostics.hpp"  />
+    <ClInclude Include="..\src\FgDynLib.h"  />
+    <ClCompile Include="..\src\FgFile.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgFile.hpp"  />
+    <ClCompile Include="..\src\FgFileSystem.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgFileSystem.hpp"  />
+    <ClCompile Include="..\src\FgGeometry.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgGeometry.hpp"  />
+    <ClCompile Include="..\src\FgGridIndex.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgGridIndex.hpp"  />
+    <ClCompile Include="..\src\FgGuiApi.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgGuiApi.hpp"  />
+    <ClCompile Include="..\src\FgGuiApi3d.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgGuiApi3d.hpp"  />
+    <ClCompile Include="..\src\FgGuiApiCheckbox.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgGuiApiDialogs.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgGuiApiImage.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgGuiApiMain.hpp"  />
+    <ClCompile Include="..\src\FgGuiApiRadio.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgGuiApiSlider.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgGuiApiSplit.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgGuiApiText.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgHistogram.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgHistogram.hpp"  />
+    <ClCompile Include="..\src\FgImage.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgImage.hpp"  />
+    <ClCompile Include="..\src\FgImageDraw.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgImageDraw.hpp"  />
+    <ClCompile Include="..\src\FgImageIo.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgImageIo.hpp"  />
+    <ClCompile Include="..\src\FgImageIoStb.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgImageTest.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgImgDisplay.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgImgDisplay.hpp"  />
+    <ClInclude Include="..\src\FgIter.hpp"  />
+    <ClCompile Include="..\src\FgKdTree.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgKdTree.hpp"  />
+    <ClCompile Include="..\src\FgLighting.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgLighting.hpp"  />
+    <ClCompile Include="..\src\FgMain.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgMain.hpp"  />
+    <ClInclude Include="..\src\FgMap.hpp"  />
+    <ClInclude Include="..\src\FgMarr.hpp"  />
+    <ClCompile Include="..\src\FgMath.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgMath.hpp"  />
+    <ClCompile Include="..\src\FgMatrixC.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgMatrixC.hpp"  />
+    <ClCompile Include="..\src\FgMatrixSolver.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgMatrixSolver.hpp"  />
+    <ClCompile Include="..\src\FgMatrixSolverEigen.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\FgMatrixV.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgMatrixV.hpp"  />
+    <ClCompile Include="..\src\FgNc.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgNc.hpp"  />
+    <ClCompile Include="..\src\FgParse.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgParse.hpp"  />
+    <ClCompile Include="..\src\FgQuaternion.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgQuaternion.hpp"  />
+    <ClCompile Include="..\src\FgRandom.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgRandom.hpp"  />
+    <ClInclude Include="..\src\FgRgba.hpp"  />
+    <ClCompile Include="..\src\FgSampler.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgSampler.hpp"  />
+    <ClInclude Include="..\src\FgScaleTrans.hpp"  />
+    <ClInclude Include="..\src\FgScopeGuard.hpp"  />
+    <ClCompile Include="..\src\FgSerial.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgSerial.hpp"  />
+    <ClInclude Include="..\src\FgSet.hpp"  />
+    <ClCompile Include="..\src\FgSimilarity.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgSimilarity.hpp"  />
+    <ClCompile Include="..\src\FgSoftRender.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgSoftRender.hpp"  />
+    <ClCompile Include="..\src\FgStdExtensions.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgStdExtensions.hpp"  />
+    <ClInclude Include="..\src\FgStdLibs.hpp"  />
+    <ClCompile Include="..\src\FgString.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgString.hpp"  />
+    <ClCompile Include="..\src\FgStringTest.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgSystem.hpp"  />
+    <ClInclude Include="..\src\FgTcp.hpp"  />
+    <ClCompile Include="..\src\FgTcpTest.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTensorV.hpp"  />
+    <ClCompile Include="..\src\FgTestUtils.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTestUtils.hpp"  />
+    <ClCompile Include="..\src\FgTime.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTime.hpp"  />
+    <ClCompile Include="..\src\FgTopology.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTopology.hpp"  />
+    <ClCompile Include="..\src\FgTypes.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTypes.hpp"  />
+    <ClCompile Include="..\src\FgVolume.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgVolume.hpp"  />
+    <ClCompile Include="..\src\MurmurHash2.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\MurmurHash2.h"  />
     <ClCompile Include="..\src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClInclude Include="..\src\stdafx.h" />
+    <ClInclude Include="..\src\stdafx.h"  />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -18,9 +18,17 @@ inline T            cube(T a) {return (a*a*a); }
 // Euclidean length (L2 norm):
 template<typename T,size_t S>
 double              cLen(std::array<T,S> const a) {return std::sqrt(cMag(a)); }
-// Dot product function base case:
-inline double       cDot(double a,double b) {return a*b; }
-
+// Dot product is defined here as a recursive multiply-accumulate reduction on binary arguments
+// of the same type that returns a (double) scalar:
+inline double       cDot(double a,double b) {return a*b; }  // adding a float signature results in ambiguity
+template<class T,size_t S>
+T               cDot(Arr<T,S> const & lhs,Arr<T,S> const & rhs)
+{
+    double          ret {0};
+    for (size_t ii=0; ii<S; ++ii)
+        ret += cDot(lhs[ii],rhs[ii]);
+    return ret;
+}
 template<class T>
 double              cDot(Svec<T> const & v0,Svec<T> const & v1)
 {

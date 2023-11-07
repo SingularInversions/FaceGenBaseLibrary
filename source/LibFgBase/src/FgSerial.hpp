@@ -263,6 +263,8 @@ void                srlz_(T const & v,Bytes & s) {v.srlzm_(s); }
 // full specializations for builtins and string:
 void                srlz_(bool v,Bytes & s);                                       // Store as uchar
 inline void         srlz_(uchar v,Bytes & s) {srlzRaw_(v,s); }                     // Assume always 8bit
+inline void         srlz_(int16 v,Bytes & s) {srlzRaw_(v,s); }
+inline void         srlz_(uint16 v,Bytes & s) {srlzRaw_(v,s); }
 inline void         srlz_(int v,Bytes & s) {srlzRaw_(v,s); }                       // Assume always 32bit
 inline void         srlz_(uint v,Bytes & s) {srlzRaw_(v,s); }                      // "
 inline void         srlz_(long v,Bytes & s) {srlzRaw_(int64(v),s); }               // LP64 / LLP64 interop
@@ -301,6 +303,8 @@ void                dsrlz_(Bytes const & s,size_t & p,T & v) {v.dsrlzm_(s,p); }
 // full specializations:
 void                dsrlz_(Bytes const & s,size_t & p,bool & v);
 inline void         dsrlz_(Bytes const & s,size_t & p,uchar & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,int16 & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,uint16 & v) {dsrlzRaw_(s,p,v); }
 inline void         dsrlz_(Bytes const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v); }
 inline void         dsrlz_(Bytes const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
 void                dsrlz_(Bytes const & s,size_t & p,long & v);                   // interop w/ bounds checks

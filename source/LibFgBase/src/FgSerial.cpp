@@ -287,13 +287,13 @@ void                testReflect(CLArgs const &)
     };
     any                 node = toReflect(data);
     String              text = reflectToText(node);
-    fgout << fgnl << text;
+    fgout << fgnl << splitLines(text);
     Svec<A>             test0;
     fromReflect_(node,test0);
     FGASSERT(test0 == data);
     Svec<A>             test1;
     fromReflect_(textToReflect(text),test1);
-    fgout << fgnl << reflectToText(toReflect(test1));
+    fgout << fgnl << splitLines(reflectToText(toReflect(test1)));
     FGASSERT(test1 == data);
 #endif
 }

@@ -156,11 +156,11 @@ void                cmdMorphClampSeam(CLArgs const & args)
 
 void                cmdMorphClear(CLArgs const & args)
 {
-    Syntax              syn {args,"<mesh>.(fgmesh|tri)"};
+    Syntax              syn {args,"<in>.(fgmesh|tri) <out>.<ext>"};
     Mesh                mesh = loadMesh(syn.next());
     mesh.deltaMorphs.clear();
     mesh.targetMorphs.clear();
-    saveMesh(mesh,syn.curr());
+    saveMesh(mesh,syn.next());
 }
 
 void                cmdMorphCopy(CLArgs const & args)
@@ -284,27 +284,36 @@ OUTPUT:
 
 void                cmdMorphExport(CLArgs const & args)
 {
-    Syntax              syn {args,R"(<mesh>.(fgmesh | tri) <ext> [<base>]
+    Syntax              syn {args,R"(<mesh>.(fgmesh | tri) <ext> [<base>] [-t]
     <mesh>          - mesh from which to export all morphs
     <ext>           - output format )" + getMeshSaveExtsCLDescription() + R"("
     <base>          - base name for saved meshes. Defaults to <mesh> if not specified
+    -t              - add a trailing underscore to target morph names
 OUTPUTS:
-    <base>-<name>.<ext> is saved for each morph, where <name> is the name of the morph.
+    <base>_<name>.<ext> is saved for each morph, where <name> is the name of the morph.
 NOTES:
     ':', '(' and ')' characters are stripped from the morph names.)"
     };
     Mesh                mesh = loadMesh(syn.next());
     String8             base = pathToBase(syn.curr());
-    String              ext = syn.next();
-    if (syn.more())
-        base = syn.next();
+    String              ext = "." + syn.next();
+    bool                markTarget = false;
+    while (syn.more()) {
+        String              opt = syn.next();
+        if (opt == "-t")
+            markTarget = true;
+        else
+            base = opt;
+    }
     Mesh                out = mesh;
     out.deltaMorphs.clear();
     out.targetMorphs.clear();
     for (size_t ii=0; ii<mesh.numMorphs(); ++ii) {
         out.verts = mesh.morphSingle(ii);
         String8             morphName = removeChars(mesh.morphName(ii),":()");
-        saveMesh(out,base+"-"+morphName+"."+ext);
+        if (markTarget && ii >= mesh.deltaMorphs.size())
+            morphName += "_";
+        saveMesh(out,base+"_"+morphName+ext);
     }
 }
 
@@ -320,7 +329,7 @@ void                cmdMorphFilter(CLArgs const & args)
     float           dim = cMaxElem(cDims(in.verts)),
                     minDelta = dim * 0.001;
     for (DirectMorph const & morph : in.deltaMorphs)
-        if (cMaxElem(cMax(morph.verts)) > minDelta)
+        if (cMaxElem(mapLen(morph.verts)) > minDelta)
             out.deltaMorphs.push_back(morph);
     saveTri(syn.next(),out);
 }

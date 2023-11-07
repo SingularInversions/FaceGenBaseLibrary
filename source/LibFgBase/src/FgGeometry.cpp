@@ -31,33 +31,124 @@ double              cArea(Vec2D p0,Vec2D p1,Vec2D p2)
     return (p1[0]-p0[0]) * (p2[1]-p0[1]) - (p1[1]-p0[1]) * (p2[0]-p0[0]);
 }
 
-VecMagD             closestPointInSegment(Vec3D const & p0,Vec3D const & p1)
+bool                isPointLeftOfLine(Vec2D begin,Vec2D end,Vec2D pnt,double tol)
 {
-    VecMagD    ret;
-    Vec3D    segment = p1-p0;
-    double      lenSqr = segment.mag();
-    if (lenSqr == 0.0) {
-        ret.vec = p0;
-        ret.mag = p0.mag();
-        return ret;
+    Vec2D               del = end-begin;
+    double              mag = cMag(del);
+    if (mag == 0)
+        return false;
+    Vec2D               deln = del / sqrt(mag);     // required for 'tol' units to be respected
+    Vec2D               norm {-deln[1],deln[0]};    // level set function increases in this direction
+    double              c = -cDot(norm,begin);      // line signed distance from origin (at closest point on line)
+    return (cDot(pnt,norm)+c > tol);
+}
+void                testIsPointLeftOfLine(CLArgs const &)
+{
+    double constexpr    eps = 1.0/(1<<20);
+    double constexpr    tol = eps/2;
+    Arr<Vec2D,2>        line {{{0,0},{1,0},}};
+    Vec2Ds              left  {{-eps,eps},{0,eps},{0.5,eps},{1,eps},{2,eps},},
+                        right {{-eps,-eps},{0,-eps},{0.5,-eps},{1,-eps},{2,-eps},};
+    for (Vec2D l : left)
+        FGASSERT(isPointLeftOfLine(line[0],line[1],l,tol));
+    for (Vec2D r : right)
+        FGASSERT(!isPointLeftOfLine(line[0],line[1],r,tol));
+    for (size_t ii=0; ii<100; ++ii) {
+        double              scale = exp(randNormal());
+        Mat22D              rot = matRotate(randUniform(0,2*pi())) * scale;
+        Vec2D               trans = Vec2D::randNormal() * scale;
+        Affine2D            xf {rot,trans};
+        Arr<Vec2D,2>        lineXf = mapMul(xf,line);
+        for (Vec2D l : left)
+            FGASSERT(isPointLeftOfLine(lineXf[0],lineXf[1],xf*l,tol*scale));
+        for (Vec2D r : right)
+            FGASSERT(!isPointLeftOfLine(lineXf[0],lineXf[1],xf*r,tol*scale));
     }
-    double      b0 = cDot(segment,p0),
-                b1 = cDot(segment,p1);
-    if (b0*b1 <= 0.0) {
-        ret.vec = p0 - (b0*segment)/lenSqr;
-        ret.mag = ret.vec.mag();
-        return ret;
+}
+
+void                testIsPointInTri(CLArgs const &)
+{
+    double constexpr    eps = 1.0/(1<<20);
+    double constexpr    tol = eps/2;
+    Arr<Vec2D,3>        tri {{{-1,1},{-1,-1},{1,0},}};
+    Vec2Ds              inside {{eps-1,0},{eps-1,1-2*eps},{0,0.5-2*eps},{0,0},},
+                        border {{-1,0},{-1,1},{0,0.5},{1,0},};
+    for (size_t ii=0; ii<100; ++ii) {
+        double              scale = exp(randNormal());
+        Mat22D              rot = matRotate(randUniform(0,2*pi())) * scale;
+        if (ii > 50)
+            rot = rot * Mat22D{-1,0,0,1};       // switch to LHR CS
+        Vec2D               trans = Vec2D::randNormal() * scale;
+        Affine2D            xf {rot,trans};
+        Arr<Vec2D,3>        triXf = mapMul(xf,tri);
+        if (ii > 50)
+            swap(triXf[1],triXf[2]);            // switch to CW winding for LHR CS
+        for (Vec2D p : inside)
+            FGASSERT(isPointInTri(xf*p,triXf,tol*scale));
+        for (Vec2D p : border)
+            FGASSERT(!isPointInTri(xf*p,triXf,tol*scale));
     }
-    double      l0 = p0.mag(),
-                l1 = p1.mag();
-    if (l0 < l1) {
-        ret.vec = p0;
-        ret.mag = l0;
-        return ret;
-    }
-    ret.vec = p1;
-    ret.mag = l1;
-    return ret;
+}
+
+int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2)
+{
+    Vec2D    s0 = v1-v0,
+                s1 = v2-v1,
+                s2 = v0-v2,
+                p0 = pt-v0,
+                p1 = pt-v1,
+                p2 = pt-v2,
+                zero;
+    double      d0 = s0[0]*p0[1]-s0[1]*p0[0],
+                d1 = s1[0]*p1[1]-s1[1]*p1[0],
+                d2 = s2[0]*p2[1]-s2[1]*p2[0];
+    // Degenerate triangle check necessary or any point will appear as in triangle:
+    if (s0 == zero || s1 == zero || s2 == zero)
+        return 0;
+    if (d0 >= 0 && d1 >= 0 && d2 >= 0)
+        return 1;
+    if (d0 <= 0 && d1 <= 0 && d2 <= 0)
+        return -1;
+    return 0;
+}
+void                pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
+{
+    FGASSERT(pointInTriangle(pt,v0,v1,v2) == res);
+    FGASSERT(pointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
+}
+void                pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
+{
+    for (size_t ii=0; ii<5; ++ii) {
+        Mat22D          rot = matRotate(randUniform()*2.0*pi());
+        Vec2D           trn(randUniform(),randUniform());
+        Affine2D        s(rot,trn);
+        pit0(s*pt,s*v0,s*v1,s*v2,res); }
+}
+void                testPointInTriangle(CLArgs const &)
+{
+    Vec2D    v0(0.0,0.0),
+                v1(1.0,0.0),
+                v2(0.0,1.0);
+    double      d = lims<double>::epsilon() * 100,
+                d1 = 1.0 - d * 2.0;
+    randSeedRepeatable();
+    // In middle:
+    pit1(Vec2D(0.25,0.25),v0,v1,v2,1);
+    // Near vertices:
+    pit1(Vec2D(d,d),v0,v1,v2,1);
+    pit1(Vec2D(d1,d),v0,v1,v2,1);
+    pit1(Vec2D(d,d1),v0,v1,v2,1);
+    // Near edges:
+    pit1(Vec2D(0.5,d),v0,v1,v2,1);
+    pit1(Vec2D(d,0.5),v0,v1,v2,1);
+    pit1(Vec2D(0.5-d,0.5-d),v0,v1,v2,1);
+    // Miss cases:
+    pit1(Vec2D(0.5+d,0.5+d),v0,v1,v2,0);
+    pit1(Vec2D(1.0+d,0.0),v0,v1,v2,0);
+    pit1(Vec2D(0.0,1.0+d),v0,v1,v2,0);
+    pit1(Vec2D(-d,0.5),v0,v1,v2,0);
+    pit1(Vec2D(0.5,-d),v0,v1,v2,0);
+    pit1(Vec2D(-d,-d),v0,v1,v2,0);
 }
 
 Opt<Vec3D>          cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2)
@@ -113,7 +204,7 @@ Plane               cPlane(Vec3D p0,Vec3D p1,Vec3D p2)
     return {norm,-cDot(norm,p0)};
 }
 
-Plane               cTangentPlane(Vec3D const & query,VecMagD const & delta)
+Plane               cTangentPlane(Vec3D const & query,Vec3DMag const & delta)
 {
                         // an invalid delta will result in an invalid Plane:
     double              mag = delta.valid() ? delta.mag : 0.0,
@@ -128,28 +219,6 @@ Vec4D               linePlaneIntersect(Vec3D r,Plane p)
 {
     double  a = -p.offset;
     return Vec4D(a*r[0],a*r[1],a*r[2],cDot(r,p.norm));
-}
-
-int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2)
-{
-    Vec2D    s0 = v1-v0,
-                s1 = v2-v1,
-                s2 = v0-v2,
-                p0 = pt-v0,
-                p1 = pt-v1,
-                p2 = pt-v2,
-                zero;
-    double      d0 = s0[0]*p0[1]-s0[1]*p0[0],
-                d1 = s1[0]*p1[1]-s1[1]*p1[0],
-                d2 = s2[0]*p2[1]-s2[1]*p2[0];
-    // Degenerate triangle check necessary or any point will appear as in triangle:
-    if (s0 == zero || s1 == zero || s2 == zero)
-        return 0;
-    if (d0 >= 0 && d1 >= 0 && d2 >= 0)
-        return 1;
-    if (d0 <= 0 && d1 <= 0 && d2 <= 0)
-        return -1;
-    return 0;
 }
 
 Opt<Vec3D>          lineTriIntersect(Vec3D pnt,Vec3D dir,Vec3D v0,Vec3D v1,Vec3D v2)
@@ -213,33 +282,20 @@ namespace {
 
 void                testClosestPointInSegment(CLArgs const &)
 {
-    Vec3D               p0 {1,0,0},
-                        p1 {0,1,0},
-                        p2 {2,-1,0};
-    Mat33D              rot = Mat33D::identity();
-    VecMagD             delta;
-    FGASSERT(!delta.valid());           // test that operator==<double> works with current compile flags
-    for (uint ii=0; ii<10; ++ii) {
-        Vec3D               r0 = rot * p0,
-                            r1 = rot * p1,
-                            r2 = rot * p2;
-        // Degenerate case:
-        delta = closestPointInSegment(r0,r0);
-        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{1,0,0},30));
-        // edge closest point (both directions):
-        delta = closestPointInSegment(r0,r1);
-        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{0.5,0.5,0},30));
-        delta = closestPointInSegment(r1,r2);
-        FGASSERT(isApproxEqualPrec(delta.mag,0.5));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{0.5,0.5,0},30));
-        // vertex closest point:
-        delta = closestPointInSegment(r0,r2);
-        FGASSERT(isApproxEqualPrec(delta.mag,1.0));
-        FGASSERT(isApproxEqualRelMag(delta.vec,rot * Vec3D{1,0,0},30));
-        rot = QuaternionD::rand().asMatrix();
-    }
+    double              eps = epsBits(30);
+    Vec2D               pB1 {-2,1},
+                        pA1 {-1,1},
+                        p01 {0,1},
+                        p11 {1,1},
+                        p21 {1,1};
+    FGASSERT(cMag(closestPointOnSegment(p01,p01)) == 1.0);
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(pB1,pA1)),2.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(pA1,p01)),1.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(p01,p11)),1.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(p11,p21)),2.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(pA1,p11)),1.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(pB1,p11)),1.0,eps));
+    FGASSERT(isApproxEqual(cMag(closestPointOnSegment(pA1,p21)),1.0,eps));
 }
 
 void                testBarycentricCoord(CLArgs const &)
@@ -364,48 +420,6 @@ void                testLinePlaneIntersect(CLArgs const &)
     }
 }
 
-void                pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
-{
-    FGASSERT(pointInTriangle(pt,v0,v1,v2) == res);
-    FGASSERT(pointInTriangle(pt,v0,v2,v1) == res*-1);     //-V764 (PVS Studio)
-}
-
-void                pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
-{
-    for (size_t ii=0; ii<5; ++ii) {
-        Mat22D          rot = matRotate(randUniform()*2.0*pi());
-        Vec2D           trn(randUniform(),randUniform());
-        Affine2D        s(rot,trn);
-        pit0(s*pt,s*v0,s*v1,s*v2,res); }
-}
-
-void                testPointInTriangle(CLArgs const &)
-{
-    Vec2D    v0(0.0,0.0),
-                v1(1.0,0.0),
-                v2(0.0,1.0);
-    double      d = lims<double>::epsilon() * 100,
-                d1 = 1.0 - d * 2.0;
-    randSeedRepeatable();
-    // In middle:
-    pit1(Vec2D(0.25,0.25),v0,v1,v2,1);
-    // Near vertices:
-    pit1(Vec2D(d,d),v0,v1,v2,1);
-    pit1(Vec2D(d1,d),v0,v1,v2,1);
-    pit1(Vec2D(d,d1),v0,v1,v2,1);
-    // Near edges:
-    pit1(Vec2D(0.5,d),v0,v1,v2,1);
-    pit1(Vec2D(d,0.5),v0,v1,v2,1);
-    pit1(Vec2D(0.5-d,0.5-d),v0,v1,v2,1);
-    // Miss cases:
-    pit1(Vec2D(0.5+d,0.5+d),v0,v1,v2,0);
-    pit1(Vec2D(1.0+d,0.0),v0,v1,v2,0);
-    pit1(Vec2D(0.0,1.0+d),v0,v1,v2,0);
-    pit1(Vec2D(-d,0.5),v0,v1,v2,0);
-    pit1(Vec2D(0.5,-d),v0,v1,v2,0);
-    pit1(Vec2D(-d,-d),v0,v1,v2,0);
-}
-
 void                testLineTriIntersect(CLArgs const &)
 {
     double          s = 0.1;
@@ -464,13 +478,15 @@ void                testmFindSaggitalSymmetry(CLArgs const &)
 void                testGeometry(CLArgs const & args)
 {
     Cmds            cmds {
-        {testClosestPointInSegment,"cps","closest point in segment"},
+        {testClosestPointInSegment,"cps","closet point in line segment"},
+        {testLineTriIntersect,"lineTri","line triangle intersect"},
+        {testLinePlaneIntersect,"lpi","line plane intersect"},
+        {testIsPointLeftOfLine,"pll","point left of oriented line"},
         {testBarycentricCoord,"ptb","point to barycentric coord"},
         {testBarycentricCoord3,"ptb3","point to barycentric coord 3D"},
         {testPlane,"plane","plane creation and closest point to plane in 3D"},
-        {testLinePlaneIntersect,"lpi","line plane intersect"},
-        {testPointInTriangle,"pit","point in triangle 2D"},
-        {testLineTriIntersect,"lineTri","line triangle intersect"},
+        {testPointInTriangle,"pit","point in triangle"},
+        {testIsPointInTri,"pitt","point in triangle with tolerance"},
         {testTensorArea,"tensor","levi-civita tensor area formula"},
     };
     doMenu(args,cmds,true);

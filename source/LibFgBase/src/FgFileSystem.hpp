@@ -118,8 +118,7 @@ void                deleteDirectoryRecursive(String8 const &);      // Full recu
 // Accepts full or relative path, but only creates last delimited directory,
 // Returns false if the directory already exists, true otherwise:
 bool                createDirectory(String8 const &);
-// Create all non-existing directories in given path.
-// An undelimited name will be created as a directory:
+// Create all non-existing directories in given path. If the last name does not end with a delimiter it will be ignored:
 void                createPath(String8 const &);
 String8             getExecutablePath();    // Return the full path of the executable
 // Return the full directory of the current application binary

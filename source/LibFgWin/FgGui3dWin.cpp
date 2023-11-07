@@ -52,7 +52,6 @@ struct  Gui3dWin : public GuiBaseImpl
     // Need to track this to avoid random object motion when mouse is dragged into viewport, and also when
     // file dialogs leak mouse moves into the viewport (MS bug):
     Arr<bool,3>         buttonIsDownLMR = {{false,false,false}};
-    bool                m_resetD3d = false;
 
     Gui3dWin(const Gui3d & api) : m_api(api)
     {
@@ -60,9 +59,10 @@ struct  Gui3dWin : public GuiBaseImpl
         // issue that broke updates of the other sliders:
         m_updateBgImg = makeUpdateFlag(api.bgImg.imgN);
         m_api.gpuInfo.set(cat(getGpusDescription(),"\n"));
+        m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
     }
 
-    virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
         WinCreateChild   cc;
         cc.extStyle = extStyle;
@@ -72,24 +72,18 @@ struct  Gui3dWin : public GuiBaseImpl
         // Don't create D3D here this is parent context.
     }
 
-    virtual void    destroy()
+    virtual void        destroy()
     {
         // Don't release D3D here - this is parent context and isn't actually called.
         DestroyWindow(m_hwnd);
     }
 
-    virtual Vec2UI  getMinSize() const {return Vec2UI(400,500); }
+    virtual Vec2UI      getMinSize() const {return {256,256}; }
 
-    virtual Vec2B   wantStretch() const { return Vec2B(true, true); }
+    virtual Vec2B       wantStretch() const {return {true,true}; }
 
-    virtual void    updateIfChanged()   // Just always render
+    virtual void        updateIfChanged()   // Just always render
     {
-            if (m_resetD3d) {
-                m_d3d.reset(new D3d{m_hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
-                m_d3d->resize(m_size);
-                m_resetD3d = false;
-            }
-
         // This flips the dirty bit (QS_PAINT) for the render window but Windows will not
         // actually send a WM_PAINT message until the message queue is empty for a fraction
         // of a second (regardless of background paint flag). We don't want to call UpdateWindow
@@ -98,11 +92,11 @@ struct  Gui3dWin : public GuiBaseImpl
         InvalidateRect(m_hwnd,NULL,FALSE);
     }
 
-    virtual void    moveWindow(Vec2I lo, Vec2I sz) {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
+    virtual void        moveWindow(Vec2I lo, Vec2I sz) {MoveWindow(m_hwnd,lo[0],lo[1],sz[0],sz[1],TRUE); }
 
-    virtual void    showWindow(bool s) {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
+    virtual void        showWindow(bool s) {ShowWindow(m_hwnd,s ? SW_SHOW : SW_HIDE); }
 
-    LRESULT         wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT             wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         Arr<uint,3> const       wmButtonsUp   {WM_LBUTTONUP,WM_MBUTTONUP,WM_RBUTTONUP};
         Arr<uint,3> const       wmButtonsDown {WM_LBUTTONDOWN,WM_MBUTTONDOWN,WM_RBUTTONDOWN};
@@ -124,8 +118,6 @@ struct  Gui3dWin : public GuiBaseImpl
             FGASSERTWIN(SetPixelFormat(m_hdc,format,&pfd));
             FGASSERTWIN(DescribePixelFormat(m_hdc,format,pfd.nSize,&pfd));
             m_d3d.reset(new D3d{hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
-            m_resetD3d = false;
-            m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
             // The pinch-to-zoom gesture is enabled by default but not the rotate gesture, which we
             // must explicitly enable:
             GESTURECONFIG   config = {0};
@@ -143,12 +135,12 @@ struct  Gui3dWin : public GuiBaseImpl
                         hgt = HIWORD(lParam);
             // In case 0 size sent at creation or minimize:
             if (wid*hgt > 0) {
-                Vec2UI          newSize{wid,hgt};
-                if (newSize != m_size) {
-                    m_size = newSize;
-                    m_api.viewportDims.set(m_size);
-                    try {m_d3d->resize(m_size); }       // This has failed for customers
-                    catch (ExceptD3dDeviceRemoved const &) {m_resetD3d = true; }
+                m_size = {wid,hgt};
+                m_api.viewportDims.set(m_size);
+                try {m_d3d->resize(m_size); }       // This has failed for customers
+                catch (ExceptD3dDeviceRemoved const &) {
+                    m_d3d.reset(new D3d{m_hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
+                    m_d3d->resize(m_size);
                 }
             }
         }
@@ -159,7 +151,10 @@ struct  Gui3dWin : public GuiBaseImpl
             // Validates the invalid region. Doesn't erase background in this case since brush is NULL.
             BeginPaint(hwnd,&ps);
             try {render(); }
-            catch (ExceptD3dDeviceRemoved const &) {m_resetD3d = true; }
+            catch (ExceptD3dDeviceRemoved const &) {
+                m_d3d.reset(new D3d{m_hwnd,m_api.rendMeshesN,m_api.logRelSize,m_api.tryForTransparency});
+                m_d3d->resize(m_size);
+            }
             EndPaint(hwnd,&ps);
         }
         else if (contains(wmButtonsDown,msg)) {
@@ -250,7 +245,6 @@ struct  Gui3dWin : public GuiBaseImpl
         else if (msg == WM_DESTROY) {
             // Release GPU resources for render objects. Not strictly necessary since API releases automatically
             // and will ignore later Release() calls but better to be explicit:
-            m_api.rendMeshesN = makeIPT(RendMeshes());
             m_d3d.reset();
             if (m_hdc) {
                 ReleaseDC(hwnd,m_hdc);
@@ -303,7 +297,7 @@ struct  Gui3dWin : public GuiBaseImpl
         return 0;
     }
 
-    void            captureCursor(HWND hwnd)
+    void                captureCursor(HWND hwnd)
     {
         POINT   point;
         point.x = 0;
@@ -317,7 +311,7 @@ struct  Gui3dWin : public GuiBaseImpl
         FGASSERTWIN(ClipCursor(&rect));     // Prevent mouse from moving outside this window
     }
 
-    void            renderBackBuffer(bool backgroundTransparent)
+    void                renderBackBuffer(bool backgroundTransparent)
     {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
@@ -340,17 +334,18 @@ struct  Gui3dWin : public GuiBaseImpl
             d3vsToD3ps,
             m_size,
             options,
+            scast<float>(m_api.texModStrengthN.val()),
             backgroundTransparent);
     }
 
-    void            render()
+    void                render()
     {
         renderBackBuffer(false);
         m_d3d->showBackBuffer();
     }
 
     // This function is called by client so don't attempt to re-start GPU instance here, just return black image:
-    ImgRgba8        capture(Vec2UI dims,bool backgroundTransparent)
+    ImgRgba8            capture(Vec2UI dims,bool backgroundTransparent)
     {
         ImgRgba8             ret;
         try {

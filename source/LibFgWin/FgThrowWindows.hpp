@@ -20,8 +20,11 @@ String              errCodeToMsg(
 String              getWinErrMsgEnglish(DWORD errCode);
 String              getWinErrMsgIfNotEnglish(DWORD errCode);
 
-// Appends the information from Windows' "GetLastError" into the exception message:
-void                throwWindows(String const & msg,String8 const & data=String8());
+// Prepends the information from Windows' "GetLastError" into the exception context:
+// If you called GetLastError earlier and did some other stuff that may invalidate it, pass on the code:
+void                throwWindows(DWORD errCode,String const & msg,String8 const & data);
+// Otherwise this will do it for you:
+inline void         throwWindows(String const & msg,String8 const & data=String8()) {throwWindows(GetLastError(),msg,data); }
 inline void         throwWindows(String const & msg,String const & data) {throwWindows(msg,String8(data)); }
 template<class T>
 void                throwWindows(String const & msg,T const & data) {return throwWindows(msg,String8(toStr(data))); }

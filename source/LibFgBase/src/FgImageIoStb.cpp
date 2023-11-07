@@ -37,17 +37,17 @@ void                loadImage_(String8 const & fname,ImgRgba8 & img)
 {
     int                 width,height,channels;
     uchar *             data = nullptr;
-    FILE *              fPtr = openFile(fname,false);     // Throws if unable to open, never return nullptr
+    FILE *              fPtr = openFile(fname,false);               // Throws if unable to open, never returns nullptr
     FGASSERT(fPtr != nullptr);
     data = stbi_load_from_file(fPtr,&width,&height,&channels,4);    // request 4 channels. Can't throw.
     fclose(fPtr);
     if (data == nullptr) {
         string          reason(stbi__g_failure_reason);
-        fgThrow("Unable to decode image",reason,fname.m_str);
+        fgThrow("STB unable to decode image",reason,fname.m_str);
     }
-    StbiFree            sf(data);           // Can't use ScopeGuard since 'stbi_image_free' is extern C
+    StbiFree            sf {data};                  // Can't use ScopeGuard since 'stbi_image_free' is extern C
     if (width*height <= 0)
-        fgThrow("Invalid image dimensions",Vec2I(width,height));
+        fgThrow("STB invalid image dimensions",Vec2I(width,height));
     img = ImgRgba8{Vec2UI(width,height),reinterpret_cast<Rgba8*>(data)};
 }
 
@@ -64,7 +64,7 @@ static void         writeToFile(void *context,void * data,int size)
     ofs.write(reinterpret_cast<char*>(data),size);
 }
 
-void                saveImage(String8 const & fname,ImgRgba8 const & img)
+void                saveImage(ImgRgba8 const & img,String8 const & fname)
 {
     if (img.numPixels() == 0)
         fgThrow("Cannot save empty image to file",fname);

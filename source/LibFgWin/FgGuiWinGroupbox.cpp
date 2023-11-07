@@ -16,26 +16,24 @@ using namespace std;
 
 namespace Fg {
 
-const uint padHorz = 8;
-const uint padTop = 20;
-const uint padBot = 5;
+constexpr uint      padHorz = 8;
+constexpr uint      padTop = 20;
+constexpr uint      padBot = 5;
 
-struct  GuiGroupboxWin : public GuiBaseImpl
+struct      GuiGroupboxWin : public GuiBaseImpl
 {
-    GuiGroupbox             m_api;
-    GuiImplPtr              m_contents;
-    HWND                    m_hwndGb;
-    String8                m_store;
+    GuiGroupbox         m_api;
+    GuiImplPtr          m_contents;
+    HWND                m_hwndGb;
+    String8             m_store;
 
-    GuiGroupboxWin(const GuiGroupbox & api)
-    : m_api(api)
+    GuiGroupboxWin(const GuiGroupbox & api) : m_api(api)
     {
         FGASSERT(m_api.contents);
         m_contents = m_api.contents->getInstance();
     }
 
-    virtual void
-    create(HWND parentHwnd,int,String8 const & store,DWORD extStyle,bool visible)
+    virtual void        create(HWND parentHwnd,int,String8 const & store,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "GuiGroupboxWin::create " << m_api.label << fgpush;
         m_store = store;
@@ -57,27 +55,19 @@ struct  GuiGroupboxWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void        destroy()
     {
         DestroyWindow(m_hwndGb);
         m_contents->destroy();
     }
 
-    virtual Vec2UI
-    getMinSize() const
-    {return (m_contents->getMinSize() + Vec2UI(2*padHorz,padTop+padBot)); }
+    virtual Vec2UI      getMinSize() const {return (m_contents->getMinSize() + Vec2UI(2*padHorz,padTop+padBot)); }
 
-    virtual Vec2B
-    wantStretch() const
-    {return m_contents->wantStretch(); }
+    virtual Vec2B       wantStretch() const {return m_contents->wantStretch(); }
 
-    virtual void
-    updateIfChanged()
-    {m_contents->updateIfChanged(); }
+    virtual void        updateIfChanged() {m_contents->updateIfChanged(); }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
+    virtual void        moveWindow(Vec2I lo,Vec2I sz)
     {
 //fgout << fgnl << "GuiGroupboxWin::moveWindow " << lo << " , " << sz;
         if (sz[0]*sz[1] > 0) {
@@ -88,16 +78,13 @@ struct  GuiGroupboxWin : public GuiBaseImpl
         }
     }
 
-    virtual void
-    showWindow(bool s)
+    virtual void        showWindow(bool s)
     {
         ShowWindow(m_hwndGb,s ? SW_SHOW : SW_HIDE);
         m_contents->showWindow(s);
     }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiGroupbox & def)
-{return GuiImplPtr(new GuiGroupboxWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiGroupbox & def) {return GuiImplPtr(new GuiGroupboxWin(def)); }
 
 }

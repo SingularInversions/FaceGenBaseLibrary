@@ -15,8 +15,7 @@ using namespace std;
 
 namespace Fg {
 
-GuiImage::GuiImage(NPT<ImgRgba8> imageN) :
-    updateFlag {makeUpdateFlag(imageN)}
+GuiImage::GuiImage(NPT<ImgRgba8> imageN) : updateFlag {makeUpdateFlag(imageN)}
 {
     updateNofill = updateFlag;
     wantStretch = Vec2B{false,false};
@@ -151,8 +150,8 @@ GuiImg              guiImageCtrls(
         Vec2Fs const &          ptsIucs = ptsIucsN.cref();
         for (uint ii=0; ii<ptsIucs.size(); ++ii) {
             Vec2F               iucs = ptsIucs[ii];
-            Vec2F               ipcs = mapMul(iucs,imgDims);
-            Vec2I               winIrcs = mapCast<int>(ipcs) + topleft;
+            Vec2F               pacs = mapMul(iucs,imgDims);
+            Vec2I               winIrcs = mapCast<int>(pacs) + topleft;
             if (cMag(winIrcs-winPosIrcs) < 17) {
                 draggingLmN.ref() = ii;
                 return GuiCursor::grab;
@@ -205,8 +204,8 @@ GuiImg              guiImageCtrls(
         Vec2I               topleft = topleftN.val(),
                             imgPosIrcs = winPosIrcs - topleft;
         Vec2UI              imgDims = mipmapN.cref()[mipmapIdxN.val()].dims();
-        Vec2F               imgPosIpcs = Vec2F{imgPosIrcs} + Vec2F{0.5f},
-                            imgPosIucs = mapDiv(imgPosIpcs,Vec2F{imgDims});
+        Vec2F               imgPosPacs = Vec2F{imgPosIrcs} + Vec2F{0.5f},
+                            imgPosIucs = mapDiv(imgPosPacs,Vec2F{imgDims});
         if ((cMinElem(imgPosIucs)>0) && (cMaxElem(imgPosIucs)<1))
             onCtrlClick(imgPosIucs,imgDims);
     };

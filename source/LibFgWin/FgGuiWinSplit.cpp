@@ -27,22 +27,25 @@ struct  GuiSplitWin : public GuiBaseImpl
     Vec2I                   m_base;     // client area
     Vec2I                   m_size;
 
-    explicit GuiSplitWin(GuiSplit const & api) : m_api(api) {}
+    explicit GuiSplitWin(GuiSplit const & api) : m_api(api)
+    {
+        auto                    fn = [](GuiPtr const & gp)
+        {
+            FGASSERT(gp);
+            return gp->getInstance();
+        };
+        m_panes = mapCallT<GuiImplPtr>(api.panes,fn);
+    }
 
     virtual void        create(HWND parentHwnd,int,String8 const & store,DWORD /*extStyle*/,bool visible)
     {
 //fgout << fgnl << "GuiSplitWin::create" << fgpush;
+        // Since this is not a win32 window, we create the sub-windows here within the parent WM_CREATE handler.
         // Ignore extStyle since this isn't a win32 window and it's not recursively passed.
         m_store = store;
         m_hwndParent = parentHwnd;
-        // Since this is not a win32 window, we create the sub-windows here within the parent
-        // WM_CREATE handler:
-        m_panes.resize(m_api.panes.dims());
-        for (size_t ii=0; ii<m_api.panes.numPixels(); ++ii) {
-            FGASSERT(m_api.panes.m_data[ii]);
-            m_panes.m_data[ii] = m_api.panes.m_data[ii]->getInstance();
+        for (size_t ii=0; ii<m_panes.m_data.size(); ++ii)
             m_panes.m_data[ii]->create(m_hwndParent,int(ii),m_store+"_"+toStr(ii),NULL,visible);
-        }
 //fgout << fgpop;
     }
 
@@ -56,7 +59,7 @@ struct  GuiSplitWin : public GuiBaseImpl
     {
         uint            maxMin(0);
         if (maxDims.size() > 0)
-            maxMin = cMax(maxDims);
+            maxMin = cMaxElem(maxDims);
         return cMin(8U,scast<uint>(maxMin*0.1));
     }
 

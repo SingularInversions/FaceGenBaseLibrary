@@ -15,8 +15,6 @@
 
 #include "FgQuaternion.hpp"
 #include "FgAffine.hpp"
-#include "FgFile.hpp"
-#include "FgScaleTrans.hpp"
 
 namespace Fg {
 
@@ -76,6 +74,7 @@ struct  SimilarityD
     // More efficient if applying the transform to many vectors:
     Affine3D        asAffine() const {return Affine3D {rot.asMatrix() * scale,trans}; }
     Mat33D          linearComponent() const {return rot.asMatrix() * scale; }
+    Rigid3D         rigidComponent() const {return {rot,trans}; }
     // operator* in this context means composition:
     SimilarityD     operator*(SimilarityD const & rhs) const;
     SimilarityD     operator*(QuaternionD const & rhs) const {return {scale,rot*rhs,trans}; }
@@ -116,8 +115,7 @@ struct  SimilarityRD
     SimilarityRD            inverse() const;
     Mat33D                  linearComponent() const {return rot.asMatrix() * scale; }
     // SimilarityR: v' = sR(v + t) = sRv + sRt
-    SimilarityD             asSimilarityD() const
-    {return SimilarityD{scale,rot,scale*(rot*trans)}; }
+    SimilarityD             asSimilarityD() const {return SimilarityD{scale,rot,scale*(rot*trans)}; }
 
     static SimilarityRD     identity() {return SimilarityRD {Vec3D(0),QuaternionD{},1}; }
     static size_t constexpr dof() {return 7; }
@@ -125,6 +123,8 @@ struct  SimilarityRD
 typedef Svec<SimilarityRD>   SimilarityRDs;
 
 std::ostream &      operator<<(std::ostream & os,SimilarityRD const & v);
+
+inline Vec3Ds       transform(SimilarityD const & sim,Vec3Ds const & poss) {return mapMul(sim.asAffine(),poss); }
 
 }
 

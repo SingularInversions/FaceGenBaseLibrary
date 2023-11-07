@@ -11,12 +11,7 @@
 #ifndef FGQUATERNION_HPP
 #define FGQUATERNION_HPP
 
-#include "FgSerial.hpp"
-
-#include "FgMath.hpp"
-#include "FgMatrixC.hpp"
 #include "FgMatrixV.hpp"
-#include "FgRandom.hpp"
 
 namespace Fg {
 
@@ -105,11 +100,11 @@ inline QuaternionD  cRotateZ(double radians) {return {radians,2}; }
 // Useful for rotation prior.
 double              tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
 
-// Approx exponential map interpolation. 'val' must be [0,1]:
+// Approximates exponential map interpolation
 QuaternionD         interpolate(
     QuaternionD         q0,         // Must be normalized
     QuaternionD         q1,         // Must be normalized
-    double              val);       // Must be [0,1]
+    double              val);       // 0: q0, 1: q1
 
 bool                isApproxEqual(QuaternionD const & l,QuaternionD const & r,double prec);
 

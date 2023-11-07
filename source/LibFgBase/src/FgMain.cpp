@@ -82,7 +82,7 @@ int                 mainConsole(CmdFunc func,int argc,NativeUtfChar const * argv
     }
     catch(FgException const & e)
     {
-        errStr += "\nERROR (FgException)\n" + e.tr_message();
+        errStr += "\nERROR (FgException)\n" + e.englishMessage();
         retval = -1;
     }
     catch(std::bad_alloc const &)

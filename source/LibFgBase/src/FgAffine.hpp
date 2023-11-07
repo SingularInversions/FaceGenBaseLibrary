@@ -3,21 +3,83 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Affine1: 1D affine
-// AffineEw: element-wise affine
-// Affine: constant dimension affine transform of the form: f(x) = Mx + b
-// * Note that composition of operators with Affine is NOT commutative.
-// 
+// Stack-based (fixed dimension) transformations in the affine group and its sub-groups
+// that include translation.
+//
+// operator*(transform,vector) is overloaded to application of the transform; v' = T(v)
+// operator*(transform,transform) is overloaded to composition of transforms st C(x) := L(R(x))
+// Note that composition of affine transformations is not commutative.
+//
 
 #ifndef FGAFFINEC_HPP
 #define FGAFFINEC_HPP
 
-#include "FgSerial.hpp"
-#include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
 #include "FgApproxEqual.hpp"
 
 namespace Fg {
+
+template<typename T,uint D>
+struct  ScaleTrans
+{
+    T               scale {1};          // applied first
+    Mat<T,D,1>      trans {0};          // applied second
+
+    ScaleTrans() {}
+    explicit ScaleTrans(T s) : scale(s) {}
+    explicit ScaleTrans(Mat<T,D,1> t) : trans(t) {}
+    ScaleTrans(T s,Mat<T,D,1> t) : scale(s), trans(t) {}
+    // construct as if given translation was done first, then scale applied
+    // y = S(x + t) = Sx + St
+    ScaleTrans(Mat<T,D,1> t,T s) : scale{s}, trans{t*s} {}
+
+    // explicitly enable default constructor to avoid disabling by conversion constructor:
+    ScaleTrans(ScaleTrans const &) = default;
+    ScaleTrans &        operator=(ScaleTrans const &) = default;
+
+    // Conversion constructor
+    template<typename U>
+    explicit ScaleTrans(ScaleTrans<U,D> const & v) : scale(v.scale), trans(v.trans) {}
+
+    // Operator application:
+    Mat<T,D,1>          operator*(Mat<T,D,1> rhs) const {return rhs * scale + trans; }
+    // Operator composition:
+    ScaleTrans          operator*(ScaleTrans rhs) const
+    {
+        // RHS: y = Sx+t
+        // LHS: z = S'y+t' = S'(Sx+t)+t' = S'Sx + (S't+t')
+        return ScaleTrans{scale*rhs.scale,scale*rhs.trans+trans};
+    }
+    ScaleTrans          inverse() const
+    {
+        // y = Sx + t, x = (y-t)/S = y/S - t/S
+        FGASSERT(scale != 0);
+        T           invScale = 1 / scale;
+        return ScaleTrans{invScale,-invScale*trans};
+    }
+};
+typedef ScaleTrans<float,2>     ScaleTrans2F;
+typedef ScaleTrans<double,2>    ScaleTrans2D;
+typedef ScaleTrans<float,3>     ScaleTrans3F;
+typedef ScaleTrans<double,3>    ScaleTrans3D;
+
+template<class T,uint D>
+PosSize<T,D>        operator*(ScaleTrans<T,D> lhs,PosSize<T,D> rhs) {return {lhs*rhs.loPos,lhs.scale*rhs.size}; }
+
+// least squares scale and translation relative to means, for 1-1 corresponding points:
+template<typename T,uint D>
+ScaleTrans<T,D>     solveScaleTrans(Svec<Mat<T,D,1>> const & src,Svec<Mat<T,D,1>> const & dst)
+{
+    size_t              S = src.size();
+    FGASSERT(S > 1);
+    FGASSERT(dst.size() == S);
+    Mat<T,D,1>          meanS = cMean(src),
+                        meanD = cMean(dst),
+                        trans = meanD-meanS;
+    Svec<Mat<T,D,1>>    srcMC = mapSub(src,meanS),
+                        dstMC = mapSub(dst,meanD);
+    T                   scale = cDot(srcMC,dstMC) / cMag(srcMC);
+    return ScaleTrans<T,D>{meanS} * ScaleTrans<T,D>{scale,trans} * ScaleTrans<T,D>{-meanS};
+}
 
 // 1D version with scalar members; scale (can be negative) and translate transform: x' = sx + t
 template <class T>
@@ -29,19 +91,22 @@ struct      Affine1
 
     Affine1() : m_scale{1}, m_trans{0} {}
     Affine1(T scale,T trans) : m_scale{scale}, m_trans{trans} {FGASSERT(m_scale != 0); }
-    // Construct from domain bounds mapping - conceptually easier and much less likely to
-    // make a mistake (but somewhat redundant, you could use any 2 domain points instead of the limits)
-    // r0 = d0*s+t
-    // r1 = d1*s+t
-    // (r1-r0) = s(d1-d0), s = (r1-r0)/(d1-d0)
-    // t = r0 - d0 * s
-    Affine1(
-        T               domainLo,       // domain lower limit
-        T               domainHi,       // domain upper limit
-        // map values are not the same as range since they can reversed !
-        T               mapLo,          // domain lower limit maps to this value
-        T               mapHi)          // domain upper limit maps to this value
-    {set(domainLo,domainHi,mapLo,mapHi); }
+    // Construct from a domain and its map; conceptually easier and less likely to make a mistake,
+    // but somewhat redundant; you could use any non-zero domain within the intented usage.
+    // Note that the map must be the mapped values of the chosen domain which is not necessarily a
+    // range, for instance if the transform reverses the values:
+    // s = r.s / d.s
+    // s * r.l + t = d.l -> t = d.l - s * r.l
+    Affine1(ValRange<T> domain,ValRange<T> dmap)
+    {
+        FGASSERT(domain.size * dmap.size != 0);
+        m_scale = dmap.size / domain.size;
+        m_trans = dmap.loPos - domain.loPos*m_scale;
+    }
+    // Deprecated; use above:
+    Affine1(T domainLo,T domainHi,T dmapLo,T dmapHi)
+        : Affine1{ValRange<T>{domainLo,domainHi-domainLo},ValRange<T>{dmapLo,dmapHi-dmapLo}}
+    {}
     // Don't let conversion constructor override defaults:
     Affine1(Affine1 const &) = default;
     Affine1 &       operator=(Affine1 const &) = default;
@@ -49,14 +114,6 @@ struct      Affine1
     template<class U>
     Affine1(Affine1<U> aff) : m_scale{T(aff.m_scale)}, m_trans{T(aff.m_trans)} {}
 
-    void            set(T domainLo,T domainHi,T mapLo,T mapHi)
-    {
-        T           domainDelta = domainHi - domainLo,
-                    rangeDelta = mapHi - mapLo;
-        FGASSERT(domainDelta*rangeDelta != 0);
-        m_scale = rangeDelta / domainDelta;
-        m_trans = mapLo - domainLo * m_scale;
-    }
     T               operator*(T domainVal) const {return (m_scale * domainVal + m_trans); }
     // multiplication of Affine1s is function composition:
     // y = Sx + t
@@ -81,7 +138,7 @@ std::ostream &      operator<<(std::ostream & os,const Affine1<T> & v)
 }
 
 template<class T>
-Affine1<T>          interpolate(Affine1<T> lhs,Affine1<T> rhs,T val)
+Affine1<T>          interpolate(Affine1<T> lhs,Affine1<T> rhs,T val)    // val 0: lhs, 1: rhs
 {
     return {
         std::exp(interpolate(std::log(lhs.m_scale),std::log(rhs.m_scale),val)),
@@ -105,15 +162,16 @@ struct      Affine
     Mat<T,D,1>          translation;      // Applied second
     FG_SER2(linear,translation)
 
-    Affine() : linear {Mat<T,D,D>::identity()} {}
+    Affine() : linear {cDiagMat<T,D>(1)} {}
     // Construct from translation: f(x) = x + b
-    explicit Affine(Mat<T,D,1> const & trans) : linear {Mat<T,D,D>::identity()}, translation(trans) {}
-    // Construct from linear transform: f(x) = Mx
+    explicit Affine(Mat<T,D,1> const & trans) : linear {cDiagMat<T,D>(1)}, translation(trans) {}
     explicit Affine(const Mat<T,D,D> & lin) : linear(lin) {}
+    explicit Affine(ScaleTrans<T,D> const & st) : linear{cDiagMat<T,D>(st.scale)}, translation{st.trans} {}
     // Construct from native form: f(x) = Mx + b
     Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) : linear(lin), translation(trans) {}
     // Construct from opposite order form: f(x) = M(x+b) = Mx + Mb
     Affine(Mat<T,D,1> const & trans,const Mat<T,D,D> & lin) : linear(lin), translation(lin * trans) {}
+
     // Don't let conversion constructor override default copy constructor:
     Affine(Affine const &) = default;
     Affine &            operator=(Affine const &) = default;
@@ -194,6 +252,11 @@ struct      AffineEw
     FG_SER1(affs)
 
     AffineEw() {}
+    explicit AffineEw(ScaleTrans<T,D> const & st)
+    {
+        for (uint dd=0; dd<D; ++dd)
+            affs[dd] = {st.scale,st.trans[dd]};
+    }
     AffineEw(Mat<T,D,1> const &  scales,Mat<T,D,1> const &  trans)
     {
         for (uint dd=0; dd<D; ++dd)
@@ -210,6 +273,11 @@ struct      AffineEw
             affs[dd] = Affine1<T>{r.affs[dd]};
     }
     // Construct from domain bounds and the points they map to (see Affine1 for details):
+    AffineEw(Rect<T,D> const & domain,Rect<T,D> const & dmap)
+    {
+        for (uint dd=0; dd<D; ++dd)
+            affs[dd] = {domain.asRange(dd),dmap.asRange(dd)};
+    }
     AffineEw(Arr<T,D> domainLo,Arr<T,D> domainHi,Arr<T,D> mapLo,Arr<T,D> mapHi)
     {
         for (uint dd=0; dd<D; ++dd)

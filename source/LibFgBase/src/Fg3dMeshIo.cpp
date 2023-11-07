@@ -5,6 +5,7 @@
 //
 
 #include "stdafx.h"
+
 #include "Fg3dMeshIo.hpp"
 #include "FgFileSystem.hpp"
 #include "FgSerial.hpp"
@@ -17,96 +18,67 @@ using namespace std;
 
 namespace Fg {
 
-//typedef Sfun<Mesh(String8 const &,
+// TODO: abstracting the load/save functions gets complicated:
+// * some formats support multi mesh vs single mesh
+// * some formats write map filesnames (eg. WOBJ)
+// * some formats have ASCII / binary variants (eg. FBX)
+//typedef Sfun<Mesh(String8 const &)>                 LoadMeshFn;         // for formats that support only 1 mesh without map names
+//typedef Sfun<void(Mesh const &,String8 const &)>    SaveMeshFn;         // "
+//typedef Sfun<Meshes(String8 const &)>               LoadMeshesFn;       // for formats that support multiple meshes without map names
+//typedef Sfun<void(Meshes const &,String8 const &)>  SaveMeshesFn;       // "
 
-//struct      MeshFormatInfo
-//{
-//    MeshFormat          format;
-//    Strings             exts;           // if more than 1, first is the most common
-//    String              description;    // descriptive name of format
-//    String              usage;          // single line summary of format usage considerations
-//    Sfun<Mesh(String8 
-//    bool                multiMesh;      // if true, formats supports multiple separate vertex lists
-//};
-//typedef Svec<MeshFormatInfo>    MeshFormatsInfo;
-//
-//MeshFormatsInfo         getMeshFormatsInfo()
-//{
-//    return MeshFormatsInfo {
-//        {MeshFormat::tri,"tri","FaceGen TRI",},
-//    };
-//}
-
-Svec<pair<MeshFormat,String>> getMeshFormatExtMap()
+struct      MeshFormatInfo
 {
-    return Svec<pair<MeshFormat,String>> {
-        {MeshFormat::tri,"tri"},
-        {MeshFormat::fgmesh,"fgmesh"},
-        {MeshFormat::wobj,"obj"},       // both 'obj' and 'wobj' exts map to same format
-        {MeshFormat::wobj,"wobj"},
-        {MeshFormat::dae,"dae"},
-        {MeshFormat::fbxA,"fbx"},       // first format with same ext is default for save
-        {MeshFormat::fbxB,"fbx"},
-        {MeshFormat::ma,"ma"},
-        {MeshFormat::lwo,"lwo"},
-        {MeshFormat::wrl,"wrl"},
-        {MeshFormat::stl,"stl"},
-        {MeshFormat::a3ds,"3ds"},
-        {MeshFormat::xsi,"xsi"},
+    MeshFormat          format;
+    Strings             exts;           // lower case. If more than 1, first is the most common
+    String              description;    // descriptive name of format
+    bool                multi;          // supports single or multi meshes per file ?
+
+    bool                operator==(MeshFormat f) const {return (f == format); }
+};
+typedef Svec<MeshFormatInfo>    MeshFormatsInfo;
+
+MeshFormatsInfo const & getMeshFormatsInfo()
+{
+    static MeshFormatsInfo  ret {
+        {MeshFormat::fgmesh,{"fgmesh"},"FaceGen fgmesh",false},
+        {MeshFormat::tri,{"tri"},"FaceGen TRI",false},
+        {MeshFormat::wobj,{"obj","wobj"},"Wavefront OBJ",false},
+        {MeshFormat::dae,{"dae"},"Collada",true},
+        {MeshFormat::fbxA,{"fbx"},"Filmbox ASCII",true},
+        {MeshFormat::fbxB,{"fbx"},"Filmbox binary",true},
+        {MeshFormat::ma,{"ma"},"Maya ASCII",true},              // not sure if JL merged meshes or if supported by format
+        {MeshFormat::lwo,{"lwo"},"Lightwave Object",true},      // "
+        {MeshFormat::wrl,{"wrl"},"VRML 97",true},
+        {MeshFormat::stl,{"stl"},"3D Systems STL binary",false},
+        {MeshFormat::a3ds,{"3ds"},"Autodesk 3DS",false},
+        {MeshFormat::xsi,{"xsi"},"Softimage XSI",true},         // "
+        {MeshFormat::ply,{"ply"},"Polygon File Format",false},
     };
+    return ret;
 }
+
 MeshFormat          getMeshFormat(String const & ext)
 {
-    String          extl = toLower(ext);
-    MeshFormats     formats = lookupRs(getMeshFormatExtMap(),extl);
-    if (formats.empty())
-        fgThrow("No mesh file format found for extension",extl);
-    return formats[0];                  // preferred format listed first
+    String              extl = toLower(ext);
+    for (MeshFormatInfo const & mfi : getMeshFormatsInfo()) {
+        if (contains(mfi.exts,extl))
+            return mfi.format;
+    }
+    fgThrow("No 3D mesh file format known for extension",extl);
+    return MeshFormat::tri;
 }
 bool                meshFormatSupportsMulti(MeshFormat mf)
 {
-    static map<MeshFormat,bool>   mfs = {
-        {MeshFormat::tri,false},
-        {MeshFormat::fgmesh,false},
-        {MeshFormat::wobj,false},
-        {MeshFormat::dae,true},
-        {MeshFormat::fbxA,true},
-        {MeshFormat::fbxB,true},
-        {MeshFormat::ma,true},          // but who knows how JL implemented
-        {MeshFormat::lwo,true},         // "
-        {MeshFormat::wrl,true},
-        {MeshFormat::stl,false},
-        {MeshFormat::a3ds,false},
-        {MeshFormat::xsi,true},         // "
-    };
-    auto            it = mfs.find(mf);
-    FGASSERT(it != mfs.end());
-    return it->second;
+    return findFirst(getMeshFormatsInfo(),mf).multi;
 }
 String              getMeshFormatExt(MeshFormat mf)
 {
-    Svec<pair<MeshFormat,String>> mfs = getMeshFormatExtMap();
-    return lookupFirstL(mfs,mf);
+    return findFirst(getMeshFormatsInfo(),mf).exts.at(0);
 }
 String              getMeshFormatName(MeshFormat mf)
 {
-    static map<MeshFormat,String>   mfs = {
-        {MeshFormat::tri,"FaceGen TRI"},
-        {MeshFormat::fgmesh,"FaceGen mesh"},
-        {MeshFormat::wobj,"Wavefront OBJ"},
-        {MeshFormat::dae,"Collada"},
-        {MeshFormat::fbxA,"Filmbox ASCII"},
-        {MeshFormat::fbxB,"Filmbox binary"},
-        {MeshFormat::ma,"Maya ASCII"},
-        {MeshFormat::lwo,"Lightwave Object"},
-        {MeshFormat::wrl,"VRML 97"},
-        {MeshFormat::stl,"3D Systems STL Binary"},
-        {MeshFormat::a3ds,"Autodesk 3DS"},
-        {MeshFormat::xsi,"Softimage XSI"},
-    };
-    auto            it = mfs.find(mf);
-    FGASSERT(it != mfs.end());
-    return it->second;
+    return findFirst(getMeshFormatsInfo(),mf).description;
 }
 MeshFormats         getMeshNativeFormats()
 {
@@ -127,6 +99,7 @@ MeshFormats         getMeshExportFormats()
         MeshFormat::ma,
         MeshFormat::lwo,
         MeshFormat::xsi,
+        MeshFormat::ply,
     };
 }
 String              getClOptionsString(MeshFormats const & formats)
@@ -141,21 +114,6 @@ String              getClOptionsString(MeshFormats const & formats)
 String              getMeshLoadExtsCLDescription()
 {
     return String("(fgmesh | [w]obj | tri)");
-}
-Svec<pair<String,String> > const & meshExportFormatExtDescs()
-{
-    static Svec<pair<String,String> > ret = {
-        {"dae","Collada"},
-        {"fbx","Filmbox ASCII"},
-        {"obj","Wavefront OBJ"},
-        {"wrl","VRML 97"},
-        {"stl","3DSystems STL"},
-        {"3ds","3D Studio"},
-        {"ma","Maya ASCII"},
-        {"lwo","Lightwave Object"},
-        {"xsi","Softimage"},
-    };
-    return ret;
 }
 String              getMeshSaveExtsCLDescription()
 {
@@ -260,6 +218,8 @@ void                saveMesh(Mesh const & mesh,String8 const & fname,String cons
         save3ds(fname,{mesh},imgFmt);
     else if (fmt == MeshFormat::xsi)
         saveXsi(fname,{mesh},imgFmt);
+    else if (fmt == MeshFormat::ply)
+        savePly(fname,{mesh},imgFmt);
     else
         fgThrow("saveMesh: unimplemented mesh format");
 }
@@ -290,6 +250,8 @@ void                saveMergeMesh(Meshes const & meshes,String8 const & fname,St
         save3ds(fname,meshes,imgFmt);
     else if (fmt == MeshFormat::xsi)
         saveXsi(fname,meshes,imgFmt);
+    else if (fmt == MeshFormat::ply)
+        savePly(fname,meshes,imgFmt);
     else
         fgThrow("saveMergeMesh: unimplemented mesh format");
 }
@@ -341,7 +303,7 @@ Mesh                loadFgmesh(String8 const & fname)
             if (pos<ser.size())                 // ver 1.1
                 dsrlz_(ser,pos,ret.joints);
         }
-        catch (FgException & e) {e.addContext("invalid .fgmesh V01 file",fname.m_str); }
+        catch (FgException & e) {e.contexts.emplace_back("invalid .fgmesh V01 file",fname.m_str); }
         catch (exception const & e) {fgThrow("invalid .fgmesh V01 file",fname.m_str,e.what()); }
     }
     else

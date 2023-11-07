@@ -140,7 +140,7 @@ void                testSymmEigenProblem(uint dim,FnSolve solve,bool print)
     solve(mat,eigVals,eigVecs);
     size_t              time = timer.elapsedMilliseconds();
     // What is the pre-diagonalization speedup:
-    MatD           innerHess = eigVecs.transpose() * mat * eigVecs,
+    MatD           innerHess = transpose(eigVecs) * mat * eigVecs,
                         innerEigvecs;
     Doubles              innerEigVals;
     timer.start();
@@ -150,7 +150,7 @@ void                testSymmEigenProblem(uint dim,FnSolve solve,bool print)
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
         eigValMat.rc(ii,ii) = eigVals[ii];
-    MatD       recon = eigVecs * eigValMat * eigVecs.transpose();
+    MatD       recon = eigVecs * eigValMat * transpose(eigVecs);
     double          residual = 0.0;
     for (uint ii=0; ii<dim; ii++)
         for (uint jj=ii; jj<dim; jj++)
@@ -169,7 +169,7 @@ void                testSymmEigenProblem(uint dim,FnSolve solve,bool print)
         FGOUT1(eigVecs);
         FGOUT1(innerEigVals);
         FGOUT1(innerEigvecs);
-        FGOUT1(eigVecs.transpose() * eigVecs);
+        FGOUT1(transpose(eigVecs) * eigVecs);
     }
     fgout << fgpop;
     FGASSERT(residual < tol);
@@ -228,7 +228,7 @@ void                testEigsRsmTime(CLArgs const & args)
     eigValMat.setZero();
     for (uint ii=0; ii<dim; ii++)
         eigValMat.rc(ii,ii) = eigVals[ii];
-    MatD                recon = eigVecs * eigValMat * eigVecs.transpose();
+    MatD                recon = eigVecs * eigValMat * transpose(eigVecs);
     double              residual = 0.0;
     for (uint ii=0; ii<dim; ii++)
         for (uint jj=ii; jj<dim; jj++)

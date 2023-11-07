@@ -41,10 +41,14 @@ struct  GuiCheckboxWin : public GuiBaseImpl
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI      getMinSize() const {return Vec2UI(150,24); }
+    virtual Vec2UI      getMinSize() const
+    {
+        size_t              numChars = toUtf32(m_api.label.m_str).size(),
+                            width = numChars*8+22;      // box with padding ~18px plus 1px for capital letter
+        return {scast<uint>(width),24U};
+    }
 
-    virtual Vec2B       wantStretch() const
-    {return Vec2B(true,false); }        // Need X stretch for checkboxes with longer text descriptions
+    virtual Vec2B       wantStretch() const {return Vec2B(false,false); }
 
     virtual void        updateIfChanged()
     {

@@ -13,21 +13,28 @@ using namespace std;
 
 namespace Fg {
 
-void                FgException::addContext(std::string const & english,std::string const & data)
+String              FgException::englishMessage() const
 {
-    // TODO: if current language is not english, look up translation for context:
-    contexts.emplace_back(english,"",data);
-}
-
-string              FgException::tr_message() const
-{
-    string          ret;
+    String              ret;
     for (Context const & ctxt : contexts) {
-        ret += ctxt.msgEnglish;
+        ret += ctxt.english;
         if (!ctxt.dataUtf8.empty())
             ret += " : " + ctxt.dataUtf8;
-        if (!ctxt.msgNative.empty())
-            ret += "\n" + ctxt.msgNative + " : " + ctxt.dataUtf8;
+        ret += "\n";
+    }
+    return ret;
+}
+
+String              FgException::nativeMessage() const
+{
+    String              ret;
+    for (Context const & ctxt : contexts) {
+        if (ctxt.native.empty())        // TODO: translate the english language text into native local language
+            ret += ctxt.english;
+        else
+            ret += ctxt.native;
+        if (!ctxt.dataUtf8.empty())
+            ret += " : " + ctxt.dataUtf8;
         ret += "\n";
     }
     return ret;

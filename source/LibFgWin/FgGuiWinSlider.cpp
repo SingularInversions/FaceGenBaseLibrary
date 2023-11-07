@@ -75,7 +75,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     updateIfChanged()
     {
         if (m_api.updateFlag->checkUpdate()) {
-            double      newVal = m_api.getInput(),
+            double      newVal = m_api.getValFn(),
                         oldVal = m_apiToWin.invert(scast<double>(m_lastVal));
             // This message does not need to be sent to the slider than initiated this update as
             // Windows has already updated it, along with its graphic. Also of course no update
@@ -121,7 +121,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             double      rts = m_api.tickSpacing / (rn[1]-rn[0]);
             uint        ts = roundT<uint>(rts * numTicks);
             SendMessage(hwndSlider,TBM_SETTICFREQ,ts,0);
-            setPos(m_api.getInput());
+            setPos(m_api.getValFn());
         }
         else if (msg == WM_SIZE) {          // Sends new size of client area.
             m_client = Vec2UI(LOWORD(lParam),HIWORD(lParam));
@@ -143,7 +143,7 @@ struct  GuiSliderWin : public GuiBaseImpl
             if (winPos != m_lastVal) {
                 m_lastVal = winPos;
                 double  newVal = m_apiToWin.invert(scast<double>(winPos));
-                m_api.setOutput(newVal);
+                m_api.setValFn(newVal);
             }
         }
         else if (msg == WM_PAINT) {

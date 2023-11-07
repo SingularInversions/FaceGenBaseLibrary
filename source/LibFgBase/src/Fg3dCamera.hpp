@@ -72,9 +72,8 @@ namespace Fg {
 AffineEw2D          cItcsToIucs(Vec2D const & halfFovItcs);     // Assuming principal point at centre of image
 inline AffineEw2D   cIucsToOtcs() {return {Vec2D{1,-1},Vec2D{0,1}}; }   // flip Y
 inline QuaternionD  cOecsToFccs() {return cRotateX(pi()); }     // Same as negating Y,Z
-AffineEw2D          cOtcsToIpcs(Vec2UI imgDims);
+AffineEw2D          cOtcsToPacs(Vec2UI imgDims);
 AffineEw2D          cOtcsToIrcs(Vec2UI dims);
-inline AffineEw2D   cOtcsToIucs() {return {Vec2D{1,-1},Vec2D{0,1}}; }   // flip Y
 
 template<typename T>
 Mat<T,4,4>          projectOecsToItcs()
@@ -102,8 +101,8 @@ struct      Camera
     SimilarityD     modelview;      // Transform world to OECS
     Frustum         frustum;        // Defines camera projection
     AffineEw2D      itcsToIucs;     // Defines projection for raycasting
-    // Projection from world to IPCS (and depth to inverse depth) for this camera (homogeneous representation):
-    Mat44F          projectIpcs(Vec2UI dims) const;
+    // Projection from world to PACS (and depth to inverse depth) for this camera (homogeneous representation):
+    Mat44F          projectPacs(Vec2UI dims) const;
 };
 
 struct      CameraParams

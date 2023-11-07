@@ -39,14 +39,14 @@ String              toNativeDirSep(String const & path)
 
 String8             toNativeDirSep(String8 const & path)
 {
-    String32            ret = path.as_utf32();
+    Str32            ret = path.as_utf32();
     for (char32_t & ch : ret)
         if (ch == otherDirSep32)
             ch = nativeDirSep32;
     return String8{ret};
 }
 
-bool                isAllowedInFilename(char ascii)
+bool                isAllowedInNodeName(char ascii)
 {
     uint            asciiu = scast<uint>(ascii);
     if (asciiu < 32)            // control codes
@@ -59,40 +59,51 @@ bool                isAllowedInFilename(char ascii)
     return asciiu < 127;        // DEL
 }
 
-bool                isAllowedInFilename(char32_t utf32)
+bool                isAllowedInNodeName(char32_t utf32)
 {
     if (scast<uint32>(utf32) < 127)
-        return isAllowedInFilename(scast<char>(utf32));
+        return isAllowedInNodeName(scast<char>(utf32));
     else
         return true;
 }
 
-String32            removeNonFilenameChars(String32 const & name)
+bool                isValidNodeName(Str32 const & fn32)
 {
-    String32            ret;
+    if (fn32.empty())
+        return false;
+    for (char32_t ch : fn32)
+        if (!isAllowedInNodeName(ch))
+            return false;
+    if (fn32.back() == '.')
+        return false;
+    return true;
+}
+
+Str32               removeNonFilenameChars(Str32 const & name)
+{
+    Str32            ret;
     for (char32_t ch : name)
-        if (isAllowedInFilename(ch))
+        if (isAllowedInNodeName(ch))
             ret.push_back(ch);
     return ret;
 }
 
 // TODO: We don't handle double-delim paths such as //server/share/...
-Path::Path(String8 const & pathUtf8)
-: root(false)
+Path::Path(String8 const & pathUtf8) : root(false)
 {
     if (pathUtf8.empty())
         return;
-    String32       path = pathUtf8.as_utf32();
+    Str32            path = pathUtf8.as_utf32();
     path = replaceAll(path,char32_t('\\'),char32_t('/'));  // VS2013 doesn't support char32_t literal U
     if (path.size() > 1) {
         if ((path[0] == '/') && (path[1] == '/')) {
             root = true;
-            auto        it = find(path.begin()+2,path.end(),uint('/'));
+            auto                it = find(path.begin()+2,path.end(),uint('/'));
             if (it == path.end()) {
                 drive = String8(path);
                 return;
             }
-            size_t      slashPos = it-path.begin();
+            size_t              slashPos = it-path.begin();
             drive = String8(cHead(path,slashPos));
             path = cRest(path,slashPos);
         }
@@ -111,9 +122,9 @@ Path::Path(String8 const & pathUtf8)
     if (path.empty())
         return;
     if (contains(path,char32_t('/'))) {
-        String32s        s = splitAtChar(path,char32_t('/'));
+        Str32s           s = splitAtChar(path,char32_t('/'));
         for (size_t ii=0; ii<s.size()-1; ++ii) {
-            String8    str(s[ii]);
+            String8             str(s[ii]);
             if ((str == "..") && (!dirs.empty())) {
                 if (String8(dirs.back()) == str)
                     dirs.push_back(str);            // '..' does not back up over '..' !
@@ -130,8 +141,8 @@ Path::Path(String8 const & pathUtf8)
     }
     if (path.empty())
         return;
-    size_t          dotIdx = path.find_last_of('.');
-    if (dotIdx == String32::npos)
+    size_t              dotIdx = path.find_last_of('.');
+    if (dotIdx == Str32::npos)
         base = String8(path);
     else {
         base = String8(path.substr(0,dotIdx));
@@ -223,7 +234,7 @@ String8             asDirectory(String8 const & path)
     String8        ret = path;
     if (path.empty())
         return ret;
-    String32       str = path.as_utf32();
+    Str32       str = path.as_utf32();
     if (str.back() == '/')
         return ret;
     if (str.back() == '\\')
@@ -253,17 +264,20 @@ String              loadRawString(String8 const & filename)
 
 Bytes               loadRaw(String8 const & filename)
 {
-    // files can be appended while being read, so ifstream offers no way of giving the
-    // file size (tellg() is NOT guaranteed to work), so you just read chunks until it ends,
-    // or you can just assume the size won't change between getting it from filesystem and
-    // reading it, as we do here:
-    uintmax_t           S = filesystem::file_size(filename.m_str.c_str());
-    FGASSERT(S <= lims<size_t>::max());
-    Ifstream            ifs {filename};
-    Bytes               ret; ret.resize(scast<size_t>(S));
-    ifs.read(reinterpret_cast<char*>(&ret[0]),scast<streamsize>(S));
-    if (ifs.fail())
-        fgThrow("loadRaw error reading file",filename);
+    // * Files can be appended while being read so ifstream offers no way to get file size (tellg() is NOT guaranteed to work).
+    // * Tried using std::filesystem::file_size() but on Windows this doesn't get updated quickly so recently downloaded files were
+    //    corrupted.
+    // * Seems the only simple and reliable solution is to read until you can read no more:
+    size_t constexpr    S = 4096;               // read block size. Arbitrary, hasn't been optimized
+    Bytes               ret;
+    Ifstream            ifs {filename};         // throws on fail
+    do {
+        size_t              P = ret.size();
+        ret.resize(P + S);
+        ifs.read(reinterpret_cast<char*>(&ret[P]),scast<streamsize>(S));
+    }
+    while (ifs.gcount() == S);                      // returns the actual number of bytes read
+    ret.resize((ret.size() + ifs.gcount()) - S);    // size to the remainder
     return ret;
 }
 

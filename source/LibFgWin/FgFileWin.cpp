@@ -34,11 +34,10 @@ static bool         checkForAntivirus_(String8 const & fname,FgException & excep
             if (err2 == 0) {            // JPG creation is being blocked by antivirus software
                 fclose(fPtr2);
                 deleteFile(testFname);
-                except.addContext(
+                except.contexts.emplace_back(
                     "Your antivirus software prevented JPG file creation. "
                     "Change your antivirus software settings to allow this program to write JPG files, "
-                    "or remove your third party antivirus software (Microsoft Windows Defender is better), "
-                    "or choose a different image file format."
+                    "or remove your third party antivirus software (Microsoft Windows Defender is better)."
                 );
                 return true;
             }
@@ -58,15 +57,13 @@ FILE *              openFile(String8 const & fname,bool write)
     errno_t             err = _wfopen_s(&fPtr,fname.as_wstring().c_str(),mode);
     if (err != 0) {
         DWORD               lastErr = GetLastError();
-        FgException         except {"Unable to write file (ofstream::open)",fname.m_str};
+        String              msg = write ? "Unable to write file" : "Unable to read file";
+        msg += " (openFile)";
+        FgException         except {msg,fname.m_str};
         if (write && (lastErr == ERROR_ACCESS_DENIED))
             if (checkForAntivirus_(fname,except))
                 throw except;
-        String          lastErrHex = toHexString(uint32(lastErr)),
-                        english = getWinErrMsgEnglish(lastErr),
-                        foreign = getWinErrMsgIfNotEnglish(lastErr);
-        except.addContext(english,foreign,lastErrHex);
-        throw except;
+        throwWindows(lastErr,msg,fname.m_str);
     }
     FGASSERT(fPtr != nullptr);
     return fPtr;
@@ -83,15 +80,12 @@ bool                Ofstream::open(String8 const & fname,bool appendFile,bool th
     catch (...) {}
     if (!is_open() && throwOnFail) {
         DWORD               lastErr = GetLastError();
-        FgException         except {"Unable to write file (ofstream::open)",fname.m_str};
+        String              msg = "Unable to write file (ofstream::open)";
+        FgException         except {msg,fname.m_str};
         if (lastErr == ERROR_ACCESS_DENIED)
             if (checkForAntivirus_(fname,except))
                 throw except;
-        String          lastErrHex = "0x"+toHexString(uint32(lastErr)),
-                        english = getWinErrMsgEnglish(lastErr),
-                        foreign = getWinErrMsgIfNotEnglish(lastErr);
-        except.addContext(english,foreign,lastErrHex);
-        throw except;
+        throwWindows(lastErr,msg,fname.m_str);
     }
     return is_open();
 }

@@ -4,14 +4,12 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Static checking for RGBA channel definitions & ordering.
-// All operators assume color channels are pre-weighted by alpha.
+// All operators assume color channels are alpha-pre-weighted.
 //
 
 #ifndef FGRGBA_HPP
 #define FGRGBA_HPP
 
-#include "FgMatrixC.hpp"
-#include "FgBounds.hpp"
 #include "FgApproxEqual.hpp"
 
 namespace Fg {

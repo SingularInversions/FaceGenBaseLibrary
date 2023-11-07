@@ -7,20 +7,18 @@
 #ifndef FG3DSURFACE_HPP
 #define FG3DSURFACE_HPP
 
-#include "FgMatrixC.hpp"
-#include "FgMatrixV.hpp"
 #include "FgImage.hpp"
 
 namespace Fg {
 
 // interpolate a 3D barycentric coordinate of arbitrary type given 3 indices into an array of the type:
 template<typename T,typename F,FG_ENABLE_IF(F,is_floating_point)>
-T                   interpolate(        // barycentric coordinate interpolation
+inline T            indexInterp(        // barycentric coordinate interpolation
     Vec3UI              tri,            // triangle vertex indices into 'vals'
     Mat<F,3,1> const &  baryCoord,      // respective weights should sum to 1 (barycentric); not checked
     Svec<T> const &     vals)           // values to be interpolated
 {
-    return vals[tri[0]]*baryCoord[0] + vals[tri[1]]*baryCoord[1] + vals[tri[2]]*baryCoord[2];
+    return multAcc(mapIndex(tri.m,vals),baryCoord.m);
 }
 
 // index into 'tris', then beyond that each quad is implicitly 2 tris; [012] and [230]
@@ -37,6 +35,8 @@ struct  SurfPoint
 
     Vec3F           pos(Vec3UIs const & tris,Vec4UIs const & quads,Vec3Fs const & verts) const;
     Vec3F           pos(Vec3UIs const & tris,Vec3Fs const & verts) const {return pos(tris,{},verts); }
+    Vec3D           pos(Vec3UIs const & tris,Vec4UIs const & quads,Vec3Ds const & verts) const;
+    Vec3D           pos(Vec3UIs const & tris,Vec3Ds const & verts) const {return pos(tris,{},verts); }
 };
 typedef Svec<SurfPoint> SurfPoints;
 
@@ -63,6 +63,10 @@ NameVec3Fs          toNameVecs(
     Vec4UIs const &     quads,
     Vec3Fs const &      verts);
 
+// returns a mapping from index to (contiguous) group number, [0,N) where N is the number of groups,
+// including the group of unused index values.
+Uints               cContiguousMap(Vec3UIs const & triInds,Vec4UIs const & quadInds);
+
 template<uint N>
 struct  NPolys
 {
@@ -70,12 +74,18 @@ struct  NPolys
     Svec<Ind>                   vertInds;
     Svec<Ind>                   uvInds;     // must be empty or same size as 'vertInds'
     FG_SER2(vertInds,uvInds)
+    FG_EQ_M2(NPolys,vertInds,uvInds)
 
     NPolys() {}
     explicit NPolys(Svec<Ind> const & vs) : vertInds (vs) {}
     NPolys(Svec<Ind> const & vtInds,Svec<Ind> const & uvIds) : vertInds(vtInds), uvInds(uvIds) {}
 
-    FG_EQ_M2(NPolys,vertInds,uvInds)
+    void            reserve(size_t numFacets)
+    {
+        vertInds.reserve(numFacets);
+        uvInds.reserve(numFacets);
+    }
+
     void            validate(uint numVerts,uint numUvs) const       // throws description if not valid
     {
         if (!uvInds.empty() && (uvInds.size() != vertInds.size()))
@@ -171,6 +181,8 @@ struct  Material
     bool                        shiny = false;  // Ignored if 'specularMap' below is non-empty
     Sptr<ImgRgba8>              albedoMap;      // Can be nullptr but should not be the empty image
     Sptr<ImgRgba8>              specularMap;    // TODO: Change to greyscale
+    Material() {}
+    Material(bool s,Sptr<ImgRgba8> const & a) : shiny{s}, albedoMap{a} {}
 };
 typedef Svec<Material>          Materials;
 typedef Svec<Materials>         Materialss;
@@ -187,8 +199,10 @@ struct  Surf
 
     Surf() {}
     explicit Surf(String const & n) : name{n} {}
+    explicit Surf(Vec3UIs const & t) : tris{t} {}                           // tris only, no UVs
     Surf(Vec3UIs const & t,Vec4UIs const & q) : tris{t}, quads{q} {}        // no UVs
-    Surf(TriInds const & t,QuadInds const & q) : tris{t}, quads{q} {}
+    Surf(TriInds const & t,QuadInds const & q={},SurfPointNames const & s={},Material const & m={})
+        : tris{t}, quads{q}, surfPoints{s}, material{m} {}
     Surf(String8 const & n,TriInds const & t,QuadInds const & q,SurfPointNames const & s={},Material const & m={})
         : name(n), tris(t), quads(q), surfPoints(s), material(m) {}
 
@@ -241,15 +255,19 @@ std::ostream& operator<<(std::ostream&,Surf const&);
 typedef Svec<Surf>      Surfs;
 typedef Svec<Surfs>     Surfss;
 
+Vec3UIs         asTriVertInds(Surf const &);
+Vec3UIs         asTriVertInds(Surfs const &);
 NameVec3Fs      surfPointsToNameVecs(Surfs const & surfs,Vec3Fs const & verts);
+Vec3D           surfPointPos(Surfs const & surfs,Vec3Ds const & verts,String const & name);
+Vec3Ds          surfPointPoss(Surfs const & surfs,Vec3Ds const & verts,Strings const & names);
 // Only preserves name and polygons. Splits into <name>-## surfaces for each occupied UV domain and
 // modifies the UVs to be in [0,1]. If UV tiles are not used, just returns the input surface:
 Surfs           splitByUvTile_(Surf const & surf,Vec2Fs & uvs);
+Surfs           splitSurfContiguousUvs(Surf const &);       // surf points not yet working properly
+Surfs           splitSurfContiguousVerts(Surf const &);     // "
 Surf            removeDuplicateFacets(Surf const &);
 Surf            merge(Surfs const & surfs);     // Retains name & material of first surface
-// Split a surface into its (one or more) discontiguous (by vertex index) surfaces:
 Surfs           splitByContiguous(Surf const & surf);
-
 Vec3Fs          cVertsUsed(Vec3UIs const & tris,Vec3Fs const & verts);
 Vec3Ds          cVertsUsed(Vec3UIs const & tris,Vec3Ds const & verts);
 bool            hasUnusedVerts(Vec3UIs const & tris,Vec3Fs const & verts);
@@ -293,26 +311,29 @@ struct  FacetNormals
 };
 typedef Svec<FacetNormals>      FacetNormalss;
 
-struct  MeshNormals
-{
-    FacetNormalss       facet;       // Facet normals for each surface
-    Vec3Fs              vert;        // Vertex normals.
-};
-typedef Svec<MeshNormals>       MeshNormalss;
-
-// CC winding. Norm is 0 for degenerate tris:
-template<typename T>
+// Returns normalized tri surface normal (CC winding), or {0,0,0} for degenerate tris:
+template<class T>
 Mat<T,3,1>      cTriNorm(Vec3UI const & tri,Svec<Mat<T,3,1>> const & verts)
 {
-    Mat<T,3,1>          v0 = verts[tri[0]],
-                        v1 = verts[tri[1]],
-                        v2 = verts[tri[2]],
-                        cross = crossProduct(v1-v0,v2-v0);      // CC winding
-    double              mag = cMag(cross);
-    return (mag == 0.0) ? Mat<T,3,1>{0} : cross * (1.0 / sqrt(mag));
+    Arr<Mat<T,3,1>,3>   vs = mapIndex(tri.m,verts);
+    Mat<T,3,1>          cross = crossProduct(vs[1]-vs[0],vs[2]-vs[0]);
+    T                   ssv = cross.ssv();
+    return (ssv == 0) ? Mat<T,3,1>{0} : cross / sqrt(ssv);
+}
+template<class T>
+Svec<Mat<T,3,1>>    cTriNorms(Vec3UIs const & tris,Svec<Mat<T,3,1>> const & verts)
+{
+    auto                fn = [&verts](Vec3UI tri){return cTriNorm(tri,verts); };
+    return mapCallT<Mat<T,3,1>>(tris,fn);
 }
 Vec3F           cQuadNorm(Vec4UI const & quad,Vec3Fs const & verts);    // least squares surface fit normal
 Vec3Ds          cVertNorms(Vec3Ds const & verts,Vec3UIs const & tris);
+struct      TriNorms
+{
+    Vec3Fs          faceNorms;      // one for each tri face. {0,0,0} if degenerate.
+    Vec3Fs          vertNorms;      // one for each vertex. {0,0,0} if degenerate.
+};
+TriNorms            cTriNorms(Vec3UIs const & triInds,Vec3Ds const & verts);
 
 struct  TriSurf
 {
@@ -333,6 +354,14 @@ typedef Svec<TriSurfD>  TriSurfDs;
 inline TriSurf      reverseWinding(TriSurf const & ts) {return {ts.verts,reverseWinding(ts.tris)}; }
 TriSurf             removeUnused(Vec3Fs const & verts,Vec3UIs const & tris);
 inline TriSurf      removeUnused(TriSurf const & ts) {return removeUnused(ts.verts,ts.tris); }
+
+struct      MeshNormals
+{
+    FacetNormalss       facet;       // Facet normals for each surface
+    Vec3Fs              vert;        // Vertex normals.
+};
+typedef Svec<MeshNormals>       MeshNormalss;
+
 MeshNormals         cNormals(Surfs const & surfs,Vec3Fs const & verts);
 
 struct      TriSurfLms

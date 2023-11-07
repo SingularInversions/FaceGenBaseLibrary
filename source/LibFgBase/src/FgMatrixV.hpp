@@ -9,7 +9,6 @@
 #define FGMATRIXV_HPP
 
 #include "FgMatrixC.hpp"    // Used to represent dimensions 
-#include "FgRandom.hpp"
 
 namespace Fg {
 
@@ -143,14 +142,6 @@ struct  MatV
         for (size_t ii=0; ii<nn; ii++)
             this->rc(ii,ii) = T(1);
     }
-    MatV            transpose() const
-    {
-        MatV<T> tMat(ncols,nrows);
-        for (size_t ii=0; ii<nrows; ii++)
-            for (size_t jj=0; jj<ncols; jj++)
-                tMat.rc(jj,ii) = rc(ii,jj);
-        return tMat;
-    }
     double          mag() const {return cMag(m_data); }
     double          len() const {return cLen(m_data); }
     bool            isVector() const {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
@@ -173,8 +164,20 @@ struct  MatV
                 retval.rc(ii,jj) = this->rc(ii+firstRow,jj+firstCol);
         return retval;
     }
-    MatV            colVec(size_t n) const {return subMatrix(0,n,nrows,1); }
-    MatV            rowVec(size_t n) const {return subMatrix(n,0,1,ncols); }
+    Svec<T>         colVals(size_t col) const
+    {
+        FGASSERT(col < ncols);
+        Svec<T>             ret; ret.reserve(nrows);
+        for (size_t rr=0; rr<nrows; ++rr)
+            ret.push_back(m_data[rr*ncols + col]);
+        return ret;
+    }
+    Svec<T>         rowVals(size_t row) const
+    {
+        FGASSERT(row < nrows);
+        auto                it = m_data.cbegin() + row*ncols;
+        return Svec<T>(it,it+ncols);
+    }
     Svec<T>         getDiagonal() const
     {
         size_t          D = cMin(nrows,ncols);
@@ -221,16 +224,25 @@ typedef MatV<double>        MatD;
 typedef Svec<MatD>          MatDs;
 
 template<class T,class U>
-MatV<T>             mapCast(MatV<U> const & m)
-{
-    return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)};
-}
+MatV<T>             mapCast(MatV<U> const & m) {return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)}; }
 
 template<class T,class F>
 void inline         dcast_(MatV<F> const & f,MatV<T> & t)
 {
     t.resize(f.dims());
     dcast_(f.m_data,t.m_data);
+}
+
+template<class T>
+MatV<T>             transpose(MatV<T> const & m)
+{
+    size_t              R = m.numRows(),
+                        C = m.numCols();
+    Svec<T>             ret; ret.reserve(R*C);
+    for (size_t cc=0; cc<C; ++cc)
+        for (size_t rr=0; rr<R; ++rr)
+            ret.push_back(m.rc(rr,cc));
+    return {C,R,ret};
 }
 
 // scalar multiplication of a matrix (whose elements may not be scalars):
@@ -323,6 +335,24 @@ MatV<T>             matMul(MatV<T> const & lhs,MatV<T> const & rhs)
 
 template<class T>
 MatV<T>             operator*(MatV<T> const & lhs,MatV<T> const & rhs) {return matMul(lhs,rhs); }
+
+// treat RHS as a column vector (and assume output type is same as matrix type):
+template<class T,class U>
+Svec<T>             operator*(MatV<T> const & lhs,Svec<U> const & rhs)
+{
+    size_t              R = lhs.numRows(),
+                        C = lhs.numCols();
+    FGASSERT(rhs.size() == C);
+    Svec<T>             ret; ret.reserve(R);
+    for (size_t rr=0; rr<R; ++rr) {
+        T                   acc {0};
+        T const             *lhsPtr = &lhs.rc(rr,0);
+        for (size_t cc=0; cc<C; ++cc)
+            acc += lhsPtr[cc] * rhs[cc];
+        ret.push_back(acc);
+    }
+    return ret;
+}
 
 // Specializations for float and double use Eigen library when matrix is large enough to be worth
 // copying over:
@@ -425,17 +455,6 @@ MatV<T>             cDiagMat(Svec<T> const & diagVals)
     MatV<T>             ret {D,D,T(0)};
     for (size_t ii=0; ii<D; ++ii)
         ret.rc(ii,ii) = diagVals[ii];
-    return ret;
-}
-
-template<class T>
-MatV<T>             cDiagMat(MatV<T> const & vec)
-{
-    FGASSERT((vec.numRows() == 1) || (vec.numCols() == 1));
-    size_t            dim = vec.numRows() * vec.numCols();
-    MatV<T>         ret(dim,dim,T(0));
-    for (size_t ii=0; ii<dim; ++ii)
-        ret.rc(ii,ii) = vec[ii];
     return ret;
 }
 
@@ -800,6 +819,50 @@ MatD        cRandOrthogonal(size_t dim);
 // Mahalanobis transform formed by D*R where R is random orthogonal, and
 // D is a diagonal matrix of scales whose logarithms are distributed as N(0,logScaleStdev):
 MatD        cRandMahalanobis(size_t dims,double logScaleStdev);
+
+template<class T>
+struct      MatSV                   // symmetric variable-size matrix
+{
+    size_t              dim;        // matrix must be square
+    Svec<T>             data;       // only UT elements are stored, in row major order
+    FG_SER2(dim,data);
+
+    MatSV() : dim{0} {}
+    explicit MatSV(size_t s) : dim{s}, data(s*(s+1)/2) {}
+    MatSV(size_t s,Svec<T> const & d) : dim{s}, data{d} {FGASSERT(d.size() == s*(s+1)/2); }
+
+    inline size_t       cIdx(size_t row,size_t col) const
+    {
+        if (col < row) std::swap(row,col);
+        return row * dim - row*(row-1)/2 + col;
+    }
+    T const &           rc(size_t row,size_t col) const
+    {
+        FGASSERT_FAST((row<dim) && (col<dim));
+        return data[cIdx(row,col)];
+    }
+    T &                 rc(size_t row,size_t col)
+    {
+        FGASSERT_FAST((row<dim) && (col<dim));
+        return data[cIdx(row,col)];
+    }
+
+    MatV<T>             asMatV() const
+    {
+        MatV<T>             ret {dim,dim};
+        size_t              idx {0};
+        for (size_t rr=0; rr<dim; ++rr) {
+            ret.rc(rr,rr) = data[idx++];
+            for (size_t cc=rr+1; cc<dim; ++cc) {
+                T const &           e = data[idx++];
+                ret.rc(rr,cc) = e;
+                ret.rc(cc,rr) = e;
+            }
+        }
+        return ret;
+    }
+};
+
 // Random symmetric positive definite matrix with eigenvalue square roots (scales) whose
 // logarithms are distributed as N(0,logScaleStdev):
 MatD        cRandSPD(size_t dims,double logScaleStdev);

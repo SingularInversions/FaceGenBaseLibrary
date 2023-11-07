@@ -8,7 +8,7 @@
 
 #include "Fg3dMesh.hpp"
 #include "Fg3dCamera.hpp"
-#include "FgGridTriangles.hpp"
+#include "FgGridIndex.hpp"
 #include "FgBestN.hpp"
 #include "FgSerial.hpp"
 #include "FgBounds.hpp"
@@ -20,6 +20,18 @@
 using namespace std;
 
 namespace Fg {
+
+IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & deltas,float distanceThreshold)
+{
+    IdxVec3Fs           ret;
+    float               magThresh = sqr(distanceThreshold);
+    for (size_t vv=0; vv<deltas.size(); ++vv) {
+        Vec3F const &       delta = deltas[vv];
+        if (cMag(delta) > magThresh)
+            ret.emplace_back(scast<uint>(vv),delta);
+    }
+    return ret;
+}
 
 IdxVec3Fs           toIndexedTargMorph(Vec3Fs const & base,Vec3Fs const & deltas,float diffMagThreshold)
 {
@@ -49,16 +61,13 @@ Vec3Fs              toDirectDeltaMorph(IdxVec3Fs const & ivs,size_t baseSize)
     return ret;
 }
 
-IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & deltas,float threshold)
+void                accDeltaMorph_(IdxVec3Fs const & deltaMorph,Vec3Fs & verts)
 {
-    float               magThresh = sqr(threshold);
-    IdxVec3Fs           ret;
-    for (size_t ii=0; ii<deltas.size(); ++ii) {
-        Vec3F               del = deltas[ii];
-        if (cMag(del) > magThresh)
-            ret.emplace_back(scast<uint>(ii),del);
+    size_t              V = verts.size();
+    for (IdxVec3F const & iv : deltaMorph) {
+        FGASSERT(iv.idx < V);
+        verts[iv.idx] += iv.vec;
     }
-    return ret;
 }
 
 size_t              sumSizes(IndexedMorphs const & ims)
@@ -97,6 +106,12 @@ void                accTargetMorphs_(
             accVerts[baseIdx] += del * coord[ii];
         }
     }
+}
+
+Mesh::Mesh(Vec3Fs const & vts,Surf const & surf) : verts(vts), surfaces{surf}
+{
+    surfaces[0].tris.uvInds.clear();
+    surfaces[0].quads.uvInds.clear();
 }
 
 Mesh::Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs)
@@ -399,19 +414,16 @@ Vec3Fs              Mesh::morphSingle(size_t idx,float val) const
 
 IndexedMorph        Mesh::getMorphAsIndexedDelta(size_t idx) const
 {
-    float               tol = sqr(cMaxElem(cDims(verts)) * 0.0001);
     IndexedMorph        ret;
-    if (idx < deltaMorphs.size()) {
-        DirectMorph const & dm = deltaMorphs[idx];
-        ret.name = dm.name;
-        for (size_t ii=0; ii<dm.verts.size(); ++ii)
-            if (dm.verts[ii].mag() > tol)
-                ret.ivs.emplace_back(uint(ii),dm.verts[ii]);
+    float               thresh = cMaxElem(cDims(verts)) * epsBits(15);
+    if (idx < deltaMorphs.size()) {         // input is a per-vertx delta morph
+        DirectMorph const &     dm = deltaMorphs[idx];
+        ret = {dm.name,toIndexedDeltaMorph(dm.verts,thresh)};
     }
-    else {
+    else {                                  // input is an indexed target morph
         idx -= deltaMorphs.size();
         FGASSERT(idx < targetMorphs.size());
-        const IndexedMorph &  tm = targetMorphs[idx];
+        IndexedMorph const &    tm = targetMorphs[idx];
         ret.name = tm.name;
         ret.ivs = tm.ivs;
         for (size_t ii=0; ii<ret.ivs.size(); ++ii)
@@ -441,7 +453,7 @@ void                Mesh::addDeltaMorphFromTarget(String8 const & name_,Vec3Fs c
 
 void                Mesh::addTargMorph(const IndexedMorph & morph)
 {
-    FGASSERT(cMax(sliceMember(morph.ivs,&IdxVec3F::idx)) < verts.size());
+    FGASSERT(cMaxElem(sliceMember(morph.ivs,&IdxVec3F::idx)) < verts.size());
     Valid<size_t>     idx = findTargMorph(morph.name);
     if (idx.valid()) {
         fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
@@ -592,7 +604,7 @@ std::set<String8>   getMorphNames(Meshes const & meshes)
 
 PoseDefs            cPoseDefs(Mesh const & mesh)
 {
-    PoseDefs         ret;
+    PoseDefs            ret;
     for (DirectMorph const & morph : mesh.deltaMorphs)
         ret.emplace_back(morph.name,Vec2F{0,1},0);
     for (IndexedMorph const & morph : mesh.targetMorphs)
@@ -604,15 +616,10 @@ PoseDefs            cPoseDefs(Mesh const & mesh)
 
 PoseDefs            cPoseDefs(Meshes const & meshes)
 {
-    unordered_set<String>   names;
-    PoseDefs                ret;
-    for (Mesh const & mesh : meshes) {
-        PoseDefs            poseDefs = cPoseDefs(mesh);
-        for (PoseDef const & pd : poseDefs)
-            if (!contains(names,pd.name.m_str))
-                ret.push_back(pd);
-    }
-    return ret;
+    PoseDefs                poseDefs;
+    for (Mesh const & mesh : meshes)
+        cat_(poseDefs,cPoseDefs(mesh));
+    return cUnique(sortAll(poseDefs));
 }
 
 Mesh                transform(Mesh const & mesh,SimilarityD const & sim)
@@ -629,13 +636,13 @@ std::ostream &      operator<<(std::ostream & os,Mesh const & m)
     if (allVerts.size() != m.verts.size())
         os << fgnl << "AllVerts: " << allVerts.size() << " with bounds: " << cBounds(allVerts);
     os  << fgnl << "Verts: " << m.verts.size();
-    size_t              numUniqueVerts = getUniqueSorted(cSort(m.verts)).size();
+    size_t              numUniqueVerts = cUnique(sortAll(m.verts)).size();
     if (numUniqueVerts < m.verts.size())
-        fgout << " unique: " << numUniqueVerts;
+        os << " unique: " << numUniqueVerts;
     os  << " with bounds: " << cBounds(m.verts)
         << fgnl << "UVs: " << m.uvs.size();
     if (!m.uvs.empty()) {
-        size_t          numUnique = getUniqueSorted(cSort(m.uvs)).size();
+        size_t          numUnique = cUnique(sortAll(m.uvs)).size();
         if (numUnique < m.uvs.size())
             os << " unique: " << numUnique;
         os << " with bounds: " << cBounds(m.uvs);
@@ -1015,9 +1022,28 @@ TriSurf         cSquarePrism(float sideLen,float height)
     return {verts,cat(base,top,sides)};
 }
 
+Mesh            cSpheres(Vec3Ds const & poss,double radius,Rgba8 color)
+{
+    Vec3Fs              verts;
+    Vec3UIs             vinds;
+    Vec2Fs              uvs {{0.5f,0.5f}};
+    Vec3UIs             tinds;
+    for (Vec3D const & pos : poss) {
+        ScaleTrans3F        st {ScaleTrans3D{radius,pos}};
+        TriSurf             ts = cIcosahedron();
+        cat_(vinds,mapAdd(ts.tris,Vec3UI{scast<uint>(verts.size())}));
+        cat_(verts,mapMul(st,ts.verts));
+        cat_(tinds,Vec3UIs(ts.tris.size(),Vec3UI{0}));
+    }
+    ImgRgba8            clrMap {2,2,color};
+    Material            mtrl {false,make_shared<ImgRgba8>(clrMap)};
+    Surf                surf {TriInds{vinds,tinds},{},{},mtrl};
+    return {verts,uvs,{surf}};
+}
+
 Mesh                removeDuplicateFacets(Mesh const & mesh)
 {
-    Mesh    ret = mesh;
+    Mesh                ret = mesh;
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss) {
         ret.surfaces[ss] = removeDuplicateFacets(ret.surfaces[ss]);
     }
@@ -1502,57 +1528,10 @@ Mesh                fuseIdenticalUvs(Mesh const & in)
     return ret;
 }
 
-// Warning: This function will yield stack overflow for large meshes unless you
-// increase your stack size:
-static void         traverse(
-    const vector<Uints > &   uvToQuadsIndex,
-    Uints &              colourMap,
-    const vector<Vec4UI> &   uvInds,
-    uint                        colour,
-    uint                        quadIdx)
+Mesh                splitSurfsContiguousUvs(Mesh mesh)
 {
-    FGASSERT(colour > 0);
-    colourMap[quadIdx] = colour;
-    for (uint ii=0; ii<4; ++ii) {
-        uint                    uvIdx = uvInds[quadIdx][ii];
-        const Uints &    quadInds = uvToQuadsIndex[uvIdx];
-        for (size_t jj=0; jj<quadInds.size(); ++jj)
-            if (colourMap[quadInds[jj]] == 0)
-                traverse(uvToQuadsIndex,colourMap,uvInds,colour,quadInds[jj]);
-    }
-}
-
-Mesh                splitSurfsByUvContiguous(Mesh const & in)
-{
-    Mesh                ret,
-                        mesh = in;
-    mesh.surfaces = {merge(mesh.surfaces)};
-    Surf const &        surf = mesh.surfaces[0];
-    if (!surf.tris.uvInds.empty())
-        fgThrow("Tris not currently supported for this operation (quads only)");
-    Vec4UIs const     & uvInds = surf.quads.uvInds,
-                      & quadInds = surf.quads.vertInds;
-    Uintss              uvToQuadsIndex(mesh.uvs.size());
-    for (size_t ii=0; ii<uvInds.size(); ++ii)
-        for (uint jj=0; jj<4; ++jj)
-            uvToQuadsIndex[uvInds[ii][jj]].push_back(uint(ii));
-    Uints               colourMap(uvInds.size(),0);
-    uint                numColours = 0;
-    for (size_t ii=0; ii<colourMap.size(); ++ii)
-        if (colourMap[ii] == 0)
-            traverse(uvToQuadsIndex,colourMap,uvInds,++numColours,uint(ii));
-    Vec4UIss            newVertInds(numColours),
-                        newUvInds(numColours);
-    for (size_t ii=0; ii<colourMap.size(); ++ii) {
-        newVertInds[colourMap[ii]-1].push_back(quadInds[ii]);
-        newUvInds[colourMap[ii]-1].push_back(uvInds[ii]);
-    }
-    ret.verts = mesh.verts;
-    ret.uvs = mesh.uvs;
-    for (size_t ii=0; ii<numColours; ++ii)
-        ret.surfaces.emplace_back(TriInds{},QuadInds{newVertInds[ii],newUvInds[ii]});
-    fgout << fgnl << numColours << " separate UV-contiguous surfaces created";
-    return ret;
+    mesh.surfaces = splitSurfContiguousUvs(merge(mesh.surfaces));
+    return mesh;
 }
 
 Mesh                selectSurfs(Mesh const & mesh,Strings const & surfNames)
@@ -1625,7 +1604,7 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
 {
     // Make a list of which vertices have UVs that only fall in the excluded regions:
     vector<FatBool>     keep(mesh.verts.size(),false);
-    AffineEw2F          otcsToIpcs = cOtcsToIpcs(mask.dims());
+    AffineEw2F          otcsToPacs = cOtcsToPacs(mask.dims());
     Mat22UI             clampVal(0,mask.width()-1,0,mask.height()-1);
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         Surf const & surf = mesh.surfaces[ii];
@@ -1637,7 +1616,7 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
             Vec3UI   uvInd = surf.tris.uvInds[jj];
             Vec3UI   vtInd = surf.tris.vertInds[jj];
             for (uint kk=0; kk<3; ++kk) {
-                bool    valid = mask[mapClamp(Vec2UI(otcsToIpcs * mesh.uvs[uvInd[kk]]),clampVal)];
+                bool    valid = mask[mapClamp(Vec2UI(otcsToPacs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
             }
         }
@@ -1684,7 +1663,7 @@ ImgV3F          pixelsToPositions(
                 ++overlaps;
             TriPoint const &    tp = tps[0];
             Vec3UI              vtInds = vtIndss[tp.triInd];
-            ret[it()] = interpolate(vtInds,tp.baryCoord,verts);
+            ret[it()] = indexInterp(vtInds,tp.baryCoord,verts);
         }
     }
     double              numPix = Vec2D{dims}.cmpntsProduct();
@@ -1715,41 +1694,41 @@ ImgRgba8s           cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
 
 Vec3Fs              embossMesh(Mesh const & mesh,const ImgUC & logoImg,double val)
 {
-    Vec3Fs         ret;
+    FGASSERT(!mesh.uvs.empty());
+    Vec3Fs              ret;
     // Don't check for UV seams, just let the emboss value be the last one traversed:
-    Vec3Fs         deltas(mesh.verts.size());
-    vector<size_t>  embossedVertInds;
-    MeshNormals     norms = cNormals(mesh);
-    for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
-        Surf const &     surf = mesh.surfaces[ss];
-        for (size_t ii=0; ii<surf.numTris(); ++ii) {
-            Vec3UI   uvInds = surf.tris.uvInds[ii],
-                        vtInds = surf.tris.vertInds[ii];
+    Vec3Fs              deltas(mesh.verts.size());
+    Sizes               embossedVertInds;
+    MeshNormals         norms = cNormals(mesh);
+    for (Surf const & surf : mesh.surfaces) {
+        for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii) {
+            Vec3UI              uvInds = surf.tris.uvInds[ii],
+                                vtInds = surf.tris.vertInds[ii];
             for (uint jj=0; jj<3; ++jj) {
-                Vec2F           uv = mesh.uvs[uvInds[jj]];
+                Vec2F               uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = sampleClipIucs(logoImg,uv) / 255.0f;
-                uint            vtIdx = vtInds[jj];
+                float               imgSamp = sampleClampIucs(logoImg,uv) / 255.0f;
+                uint                vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
                     embossedVertInds.push_back(vtIdx);
             }
         }
-        for (size_t ii=0; ii<surf.numQuads(); ++ii) {
-            Vec4UI   uvInds = surf.quads.uvInds[ii],
-                        vtInds = surf.quads.vertInds[ii];
+        for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii) {
+            Vec4UI              uvInds = surf.quads.uvInds[ii],
+                                vtInds = surf.quads.vertInds[ii];
             for (uint jj=0; jj<4; ++jj) {
-                Vec2F           uv = mesh.uvs[uvInds[jj]];
+                Vec2F               uv = mesh.uvs[uvInds[jj]];
                 uv[1] = 1.0f - uv[1];       // Convert from OTCS to IUCS
-                float           imgSamp = sampleClipIucs(logoImg,uv) / 255.0f;
-                uint            vtIdx = vtInds[jj];
+                float               imgSamp = sampleClampIucs(logoImg,uv) / 255.0f;
+                uint                vtIdx = vtInds[jj];
                 deltas[vtIdx] = norms.vert[vtIdx] * imgSamp;
                 if (imgSamp > 0)
                     embossedVertInds.push_back(vtIdx);
             }
         }
     }
-    float       fac = cMaxElem(cDims(select(mesh.verts,embossedVertInds))) * val;
+    float               fac = cMaxElem(cDims(select(mesh.verts,embossedVertInds))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
@@ -1976,7 +1955,7 @@ void                testRemoveVerts(CLArgs const &)
             {1,2,3},
             {3,4,0},
         };
-        Mesh                orig {origVerts,origTris},
+        Mesh                orig {origVerts,Surf{origTris}},
                             test = removeVerts(orig,{2});
         Vec3Fs              refVerts {
             {0,0,0},
@@ -1988,7 +1967,7 @@ void                testRemoveVerts(CLArgs const &)
             {0,1,2},
             {2,3,0},
         };
-        Mesh                ref {refVerts,refTris};
+        Mesh                ref {refVerts,Surf{refTris}};
         FGASSERT(test.verts == ref.verts);
         FGASSERT(test.surfaces[0].tris == ref.surfaces[0].tris);
     }
@@ -2008,7 +1987,7 @@ void                testRemoveVerts(CLArgs const &)
             {1,2,3},
             {3,4,5},
         };
-        Mesh                orig {origVerts,origTris},
+        Mesh                orig {origVerts,Surf{origTris}},
                             test = removeVerts(orig,{2});
         Vec3Fs              refVerts {
             {0,0,0},
@@ -2023,7 +2002,7 @@ void                testRemoveVerts(CLArgs const &)
         Vec3UIs             refTris {
             {2,3,4},
         };
-        Mesh                ref {refVerts,refTris};
+        Mesh                ref {refVerts,Surf{refTris}};
         FGASSERT(test.verts == ref.verts);
         FGASSERT(test.surfaces[0].tris == ref.surfaces[0].tris);
     }

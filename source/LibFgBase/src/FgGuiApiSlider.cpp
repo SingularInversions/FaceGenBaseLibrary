@@ -7,8 +7,6 @@
 #include "stdafx.h"
 
 #include "FgGuiApi.hpp"
-#include "FgGuiApi.hpp"
-#include "FgGuiApi.hpp"
 
 using namespace std;
 using namespace std::placeholders;
@@ -16,16 +14,13 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-GuiTickLabels       guiTickLabels(
-    VecD2               range,
-    double              spacing,
-    double              basePos)
+GuiTickLabels       guiTickLabels(VecD2 range,double spacing,double basePos)
 {
     FGASSERT((basePos >= range[0]) && (basePos <= range[1]));
     double              pos = basePos - std::floor((basePos - range[0])/spacing) * spacing;
-    GuiTickLabels  ret;
+    GuiTickLabels       ret;
     do {
-        GuiTickLabel   t;
+        GuiTickLabel        t;
         t.pos = pos;
         t.label = toStrPrec(pos,3);
         ret.push_back(t);
@@ -37,10 +32,10 @@ GuiTickLabels       guiTickLabels(
 
 String8s            numberedLabels(String8 const & baseLabel,size_t num)
 {
-    String8s       ret;
+    String8s            ret;
     ret.reserve(num);
-    uint            numDigits = 1;
-    size_t          tmp = num;
+    uint                numDigits = 1;
+    size_t              tmp = num;
     while ((tmp/=10) > 9)
         ++numDigits;
     for (size_t ii=0; ii<num; ++ii)
@@ -60,8 +55,8 @@ GuiPtr              guiSlider(
 {
     GuiSlider sldr;
     sldr.updateFlag = makeUpdateFlag(valN);
-    sldr.getInput = [valN](){return valN.val(); };
-    sldr.setOutput = [valN](double v){valN.set(v); };
+    sldr.getValFn = [valN](){return valN.val(); };
+    sldr.setValFn = [valN](double v){valN.set(v); };
     sldr.label = label;
     sldr.range = range;
     sldr.tickSpacing = tickSpacing;

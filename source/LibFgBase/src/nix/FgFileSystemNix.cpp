@@ -9,6 +9,12 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
+
+#if defined(__APPLE__)
+#include <CoreFoundation/CFBundle.h>
+#include <CoreFoundation/CFURL.h>
+#endif
+
 #include "FgFileSystem.hpp"
 #include "FgSerial.hpp"
 
@@ -149,9 +155,6 @@ uint64              getLastWriteTime(String8 const &)
 }
 
 #if defined(__APPLE__)
-
-#include <CoreFoundation/CFBundle.h>
-#include <CoreFoundation/CFURL.h>
 
 String8             getExecutablePath()
 {
