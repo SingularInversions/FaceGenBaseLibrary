@@ -137,10 +137,9 @@ uint64              getCreationTime(String8 const & path);
 uint64              getLastWriteTime(String8 const & node);
 // Return true if any of the sources have a 'last write time' newer than any of the sinks,
 // of if any of the sinks don't exist (an error results if any of the sources don't exist):
-bool                fileNewer(String8s const & sources,String8s const & sinks);
-inline bool         fileNewer(String8 const & src,String8 const & dst) {return fileNewer(svec(src),svec(dst)); }
+bool                filesNewer(String8s const & sources,String8s const & sinks);
 // Usually only need to include the one last output of a code chunk as 'dst':
-inline bool         fileNewer(String8s const & sources,String8 const & dst) {return fileNewer(sources,svec(dst)); }
+inline bool         fileNewer(String8s const & sources,String8 const & dst) {return filesNewer(sources,{dst}); }
 
 struct      PushDir         // set process current directory and keep previous ones in a stack
 {

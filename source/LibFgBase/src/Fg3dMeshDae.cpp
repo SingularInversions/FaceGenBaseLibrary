@@ -147,7 +147,7 @@ cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
         ofs << " </vcount>\n"
             "          <p>";
         for (size_t ii=0; ii<surf.tris.vertInds.size(); ++ii) {
-            Vec3UI       tri = surf.tris.vertInds[ii];
+            Arr3UI       tri = surf.tris.vertInds[ii];
             for (size_t jj=0; jj<3; ++jj) {
                 ofs << " " << tri[jj];      // vertex index
                 ofs << " " << tri[jj];      // normal index
@@ -156,7 +156,7 @@ cGeometrySurfs(Surfs const & surfs,string const & id,size_t mm)
             }
         }
         for (size_t ii=0; ii<surf.quads.vertInds.size(); ++ii) {
-            Vec4UI       quad = surf.quads.vertInds[ii];
+            Arr4UI       quad = surf.quads.vertInds[ii];
             for (size_t jj=0; jj<4; ++jj) {
                 ofs << " " << quad[jj];     // vertex index
                 ofs << " " << quad[jj];     // normal index
@@ -351,7 +351,7 @@ testSaveDae(CLArgs const & args)
     face.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(dd+"JaneLoresFace.jpg"));
     mouth.surfaces[0].material.albedoMap = make_shared<ImgRgba8>(loadImage(dd+"MouthSmall.png"));
     saveDae("meshExportDae",{face,mouth});
-    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+    if (is64Bit() && (getCurrentCompiler()==Compiler::vs22))      // precision differences otherwise
         regressFileRel("meshExportDae.dae","base/test/");
     regressFileRel("meshExportDae0_0.png","base/test/");
     regressFileRel("meshExportDae1_0.png","base/test/");

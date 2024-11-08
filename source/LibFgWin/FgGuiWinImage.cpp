@@ -20,8 +20,8 @@ struct  GuiImageWin : public GuiBaseImpl
 {
     HWND                m_hwnd;
     GuiImage            m_api;
-    Vec2UI              m_size;
-    Vec2I               m_lastPos;                  // Last mouse position in CC (move or click)
+    Vec2UI              m_size{0};
+    Vec2I               m_lastPos{0};                  // Last mouse position in CC (move or click)
     GuiCursor           cursorState = GuiCursor::arrow;
     GuiCursor           noDragCursorState = GuiCursor::arrow;
     // shows the click index of the last single click down. This is invalid if no button is down, or if
@@ -44,7 +44,7 @@ struct  GuiImageWin : public GuiBaseImpl
         DestroyWindow(m_hwnd);      // Automatically destroys children first
     }
     virtual Vec2UI  getMinSize() const {return m_api.minSizeN.val(); }
-    virtual Vec2B   wantStretch() const {return m_api.wantStretch; }
+    virtual Arr2B   wantStretch() const {return m_api.wantStretch; }
 
     virtual void    updateIfChanged()
     {
@@ -162,7 +162,7 @@ struct  GuiImageWin : public GuiBaseImpl
             Vec2I               pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
                                 delta = pos-m_lastPos;
             // windows can send zero size mousemove messages, I think due to ClipCursor calls in button up/down handler:
-            if (cMag(delta) > 0) {
+            if (cMagD(delta) > 0) {
                 GuiClickState       gcs  = clickStateFromWParam(wParam);
                 if (gcs == lastClickState) {       // need to check here as well since a key state may have changed
                     size_t              idx = gcs.toDragIndex();

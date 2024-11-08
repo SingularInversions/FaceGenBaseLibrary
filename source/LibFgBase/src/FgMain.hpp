@@ -4,7 +4,6 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
-
 #ifndef FGMAIN_HPP
 #define FGMAIN_HPP
 

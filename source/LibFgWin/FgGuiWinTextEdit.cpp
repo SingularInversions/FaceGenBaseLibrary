@@ -20,7 +20,7 @@ struct  GuiTextEditWin : public GuiBaseImpl
     HWND                hwndText = nullptr;
     HWND                hwndThis = nullptr;
     GuiTextEdit         m_api;
-    Vec2UI              m_fontDims;
+    Vec2UI              m_fontDims{0};
     // Track when keyboard focus is on this edit box so we don't overwrite the user:
     bool                m_keyboardFocus;
     // We have to cache the current text contents to know when a user change has occurred:
@@ -54,9 +54,9 @@ struct  GuiTextEditWin : public GuiBaseImpl
     getMinSize() const
     {return Vec2UI(m_api.minWidth,totalHeight()); }
 
-    virtual Vec2B
+    virtual Arr2B
     wantStretch() const
-    {return Vec2B(m_api.wantStretch,false); }
+    {return Arr2B(m_api.wantStretch,false); }
 
     virtual void
     updateIfChanged()

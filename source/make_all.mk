@@ -16,11 +16,9 @@ SDIRLibFgBase = LibFgBase/src/
 ODIRLibFgBase = $(BUILDIR)LibFgBase/
 $(shell mkdir -p $(ODIRLibFgBase))
 INCSLibFgBase := $(wildcard LibFgBase/src/*.hpp) $(wildcard LibTpDlib/*.hpp) $(wildcard LibTpStb/*.hpp) $(wildcard LibTpEigen/Eigen/*.hpp) 
-$(BUILDIR)LibFgBase.a: $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgAnthropometry.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgFile.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGuiApi.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)FgTypes.o $(ODIRLibFgBase)FgVolume.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o 
-	$(AR) rc $(BUILDIR)LibFgBase.a $(ODIRLibFgBase)Fg3dCamera.o $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)Fg3dTest.o $(ODIRLibFgBase)FgAffine.o $(ODIRLibFgBase)FgAnthropometry.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTestmCpp.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgFile.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGuiApi.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgHistogram.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgLighting.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgQuaternion.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgSampler.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgSimilarity.o $(ODIRLibFgBase)FgSoftRender.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)FgTypes.o $(ODIRLibFgBase)FgVolume.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o 
+$(BUILDIR)LibFgBase.a: $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)FgAnthropometry.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCamera.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTest.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgFile.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGuiApi.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRender.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)FgTransform.o $(ODIRLibFgBase)FgTypes.o $(ODIRLibFgBase)FgVolume.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o 
+	$(AR) rc $(BUILDIR)LibFgBase.a $(ODIRLibFgBase)Fg3dDisplay.o $(ODIRLibFgBase)Fg3dMesh.o $(ODIRLibFgBase)Fg3dMesh3ds.o $(ODIRLibFgBase)Fg3dMeshDae.o $(ODIRLibFgBase)Fg3dMeshFbx.o $(ODIRLibFgBase)Fg3dMeshIo.o $(ODIRLibFgBase)Fg3dMeshLegacy.o $(ODIRLibFgBase)Fg3dMeshLwo.o $(ODIRLibFgBase)Fg3dMeshMa.o $(ODIRLibFgBase)Fg3dMeshObj.o $(ODIRLibFgBase)Fg3dMeshPly.o $(ODIRLibFgBase)Fg3dMeshStl.o $(ODIRLibFgBase)Fg3dMeshTri.o $(ODIRLibFgBase)Fg3dMeshVrml.o $(ODIRLibFgBase)Fg3dMeshXsi.o $(ODIRLibFgBase)Fg3dSurface.o $(ODIRLibFgBase)FgAnthropometry.o $(ODIRLibFgBase)FgApproxFunc.o $(ODIRLibFgBase)FgBuild.o $(ODIRLibFgBase)FgBuildMakefiles.o $(ODIRLibFgBase)FgBuildVisualStudioSln.o $(ODIRLibFgBase)FgCamera.o $(ODIRLibFgBase)FgCl.o $(ODIRLibFgBase)FgCmdBase.o $(ODIRLibFgBase)FgCmdImage.o $(ODIRLibFgBase)FgCmdMesh.o $(ODIRLibFgBase)FgCmdMorph.o $(ODIRLibFgBase)FgCmdRender.o $(ODIRLibFgBase)FgCmdTest.o $(ODIRLibFgBase)FgCmdView.o $(ODIRLibFgBase)FgCommand.o $(ODIRLibFgBase)FgDataflow.o $(ODIRLibFgBase)FgDiagnostics.o $(ODIRLibFgBase)FgFile.o $(ODIRLibFgBase)FgFileSystem.o $(ODIRLibFgBase)FgGeometry.o $(ODIRLibFgBase)FgGridIndex.o $(ODIRLibFgBase)FgGuiApi.o $(ODIRLibFgBase)FgGuiApi3d.o $(ODIRLibFgBase)FgGuiApiCheckbox.o $(ODIRLibFgBase)FgGuiApiDialogs.o $(ODIRLibFgBase)FgGuiApiImage.o $(ODIRLibFgBase)FgGuiApiRadio.o $(ODIRLibFgBase)FgGuiApiSlider.o $(ODIRLibFgBase)FgGuiApiSplit.o $(ODIRLibFgBase)FgGuiApiText.o $(ODIRLibFgBase)FgImage.o $(ODIRLibFgBase)FgImageDraw.o $(ODIRLibFgBase)FgImageIo.o $(ODIRLibFgBase)FgImageIoStb.o $(ODIRLibFgBase)FgImageTest.o $(ODIRLibFgBase)FgImgDisplay.o $(ODIRLibFgBase)FgKdTree.o $(ODIRLibFgBase)FgMain.o $(ODIRLibFgBase)FgMath.o $(ODIRLibFgBase)FgMatrixC.o $(ODIRLibFgBase)FgMatrixSolver.o $(ODIRLibFgBase)FgMatrixSolverEigen.o $(ODIRLibFgBase)FgMatrixV.o $(ODIRLibFgBase)FgNc.o $(ODIRLibFgBase)FgParse.o $(ODIRLibFgBase)FgRandom.o $(ODIRLibFgBase)FgRender.o $(ODIRLibFgBase)FgSerial.o $(ODIRLibFgBase)FgStdExtensions.o $(ODIRLibFgBase)FgString.o $(ODIRLibFgBase)FgStringTest.o $(ODIRLibFgBase)FgTcpTest.o $(ODIRLibFgBase)FgTestUtils.o $(ODIRLibFgBase)FgTime.o $(ODIRLibFgBase)FgTopology.o $(ODIRLibFgBase)FgTransform.o $(ODIRLibFgBase)FgTypes.o $(ODIRLibFgBase)FgVolume.o $(ODIRLibFgBase)MurmurHash2.o $(ODIRLibFgBase)stdafx.o $(ODIRLibFgBase)nix_FgConioNix.o $(ODIRLibFgBase)nix_FgFileSystemNix.o $(ODIRLibFgBase)nix_FgGuiNix.o $(ODIRLibFgBase)nix_FgSystemNix.o $(ODIRLibFgBase)nix_FgTcpNix.o $(ODIRLibFgBase)nix_FgTimeNix.o 
 	$(RANLIB) $(BUILDIR)LibFgBase.a
-$(ODIRLibFgBase)Fg3dCamera.o: $(SDIRLibFgBase)Fg3dCamera.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)Fg3dCamera.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dCamera.cpp
 $(ODIRLibFgBase)Fg3dDisplay.o: $(SDIRLibFgBase)Fg3dDisplay.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)Fg3dDisplay.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dDisplay.cpp
 $(ODIRLibFgBase)Fg3dMesh.o: $(SDIRLibFgBase)Fg3dMesh.cpp $(INCSLibFgBase)
@@ -53,10 +51,6 @@ $(ODIRLibFgBase)Fg3dMeshXsi.o: $(SDIRLibFgBase)Fg3dMeshXsi.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)Fg3dMeshXsi.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dMeshXsi.cpp
 $(ODIRLibFgBase)Fg3dSurface.o: $(SDIRLibFgBase)Fg3dSurface.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)Fg3dSurface.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dSurface.cpp
-$(ODIRLibFgBase)Fg3dTest.o: $(SDIRLibFgBase)Fg3dTest.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)Fg3dTest.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)Fg3dTest.cpp
-$(ODIRLibFgBase)FgAffine.o: $(SDIRLibFgBase)FgAffine.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgAffine.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgAffine.cpp
 $(ODIRLibFgBase)FgAnthropometry.o: $(SDIRLibFgBase)FgAnthropometry.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgAnthropometry.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgAnthropometry.cpp
 $(ODIRLibFgBase)FgApproxFunc.o: $(SDIRLibFgBase)FgApproxFunc.cpp $(INCSLibFgBase)
@@ -67,6 +61,8 @@ $(ODIRLibFgBase)FgBuildMakefiles.o: $(SDIRLibFgBase)FgBuildMakefiles.cpp $(INCSL
 	$(CXX) -o $(ODIRLibFgBase)FgBuildMakefiles.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgBuildMakefiles.cpp
 $(ODIRLibFgBase)FgBuildVisualStudioSln.o: $(SDIRLibFgBase)FgBuildVisualStudioSln.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgBuildVisualStudioSln.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgBuildVisualStudioSln.cpp
+$(ODIRLibFgBase)FgCamera.o: $(SDIRLibFgBase)FgCamera.cpp $(INCSLibFgBase)
+	$(CXX) -o $(ODIRLibFgBase)FgCamera.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCamera.cpp
 $(ODIRLibFgBase)FgCl.o: $(SDIRLibFgBase)FgCl.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgCl.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCl.cpp
 $(ODIRLibFgBase)FgCmdBase.o: $(SDIRLibFgBase)FgCmdBase.cpp $(INCSLibFgBase)
@@ -79,8 +75,8 @@ $(ODIRLibFgBase)FgCmdMorph.o: $(SDIRLibFgBase)FgCmdMorph.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgCmdMorph.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCmdMorph.cpp
 $(ODIRLibFgBase)FgCmdRender.o: $(SDIRLibFgBase)FgCmdRender.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgCmdRender.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCmdRender.cpp
-$(ODIRLibFgBase)FgCmdTestmCpp.o: $(SDIRLibFgBase)FgCmdTestmCpp.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgCmdTestmCpp.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCmdTestmCpp.cpp
+$(ODIRLibFgBase)FgCmdTest.o: $(SDIRLibFgBase)FgCmdTest.cpp $(INCSLibFgBase)
+	$(CXX) -o $(ODIRLibFgBase)FgCmdTest.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCmdTest.cpp
 $(ODIRLibFgBase)FgCmdView.o: $(SDIRLibFgBase)FgCmdView.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgCmdView.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgCmdView.cpp
 $(ODIRLibFgBase)FgCommand.o: $(SDIRLibFgBase)FgCommand.cpp $(INCSLibFgBase)
@@ -115,8 +111,6 @@ $(ODIRLibFgBase)FgGuiApiSplit.o: $(SDIRLibFgBase)FgGuiApiSplit.cpp $(INCSLibFgBa
 	$(CXX) -o $(ODIRLibFgBase)FgGuiApiSplit.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiSplit.cpp
 $(ODIRLibFgBase)FgGuiApiText.o: $(SDIRLibFgBase)FgGuiApiText.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgGuiApiText.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgGuiApiText.cpp
-$(ODIRLibFgBase)FgHistogram.o: $(SDIRLibFgBase)FgHistogram.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgHistogram.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgHistogram.cpp
 $(ODIRLibFgBase)FgImage.o: $(SDIRLibFgBase)FgImage.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgImage.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgImage.cpp
 $(ODIRLibFgBase)FgImageDraw.o: $(SDIRLibFgBase)FgImageDraw.cpp $(INCSLibFgBase)
@@ -131,8 +125,6 @@ $(ODIRLibFgBase)FgImgDisplay.o: $(SDIRLibFgBase)FgImgDisplay.cpp $(INCSLibFgBase
 	$(CXX) -o $(ODIRLibFgBase)FgImgDisplay.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgImgDisplay.cpp
 $(ODIRLibFgBase)FgKdTree.o: $(SDIRLibFgBase)FgKdTree.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgKdTree.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgKdTree.cpp
-$(ODIRLibFgBase)FgLighting.o: $(SDIRLibFgBase)FgLighting.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgLighting.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgLighting.cpp
 $(ODIRLibFgBase)FgMain.o: $(SDIRLibFgBase)FgMain.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgMain.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgMain.cpp
 $(ODIRLibFgBase)FgMath.o: $(SDIRLibFgBase)FgMath.cpp $(INCSLibFgBase)
@@ -149,18 +141,12 @@ $(ODIRLibFgBase)FgNc.o: $(SDIRLibFgBase)FgNc.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgNc.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgNc.cpp
 $(ODIRLibFgBase)FgParse.o: $(SDIRLibFgBase)FgParse.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgParse.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgParse.cpp
-$(ODIRLibFgBase)FgQuaternion.o: $(SDIRLibFgBase)FgQuaternion.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgQuaternion.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgQuaternion.cpp
 $(ODIRLibFgBase)FgRandom.o: $(SDIRLibFgBase)FgRandom.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgRandom.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgRandom.cpp
-$(ODIRLibFgBase)FgSampler.o: $(SDIRLibFgBase)FgSampler.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgSampler.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgSampler.cpp
+$(ODIRLibFgBase)FgRender.o: $(SDIRLibFgBase)FgRender.cpp $(INCSLibFgBase)
+	$(CXX) -o $(ODIRLibFgBase)FgRender.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgRender.cpp
 $(ODIRLibFgBase)FgSerial.o: $(SDIRLibFgBase)FgSerial.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgSerial.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgSerial.cpp
-$(ODIRLibFgBase)FgSimilarity.o: $(SDIRLibFgBase)FgSimilarity.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgSimilarity.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgSimilarity.cpp
-$(ODIRLibFgBase)FgSoftRender.o: $(SDIRLibFgBase)FgSoftRender.cpp $(INCSLibFgBase)
-	$(CXX) -o $(ODIRLibFgBase)FgSoftRender.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgSoftRender.cpp
 $(ODIRLibFgBase)FgStdExtensions.o: $(SDIRLibFgBase)FgStdExtensions.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgStdExtensions.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgStdExtensions.cpp
 $(ODIRLibFgBase)FgString.o: $(SDIRLibFgBase)FgString.cpp $(INCSLibFgBase)
@@ -175,6 +161,8 @@ $(ODIRLibFgBase)FgTime.o: $(SDIRLibFgBase)FgTime.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgTime.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTime.cpp
 $(ODIRLibFgBase)FgTopology.o: $(SDIRLibFgBase)FgTopology.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgTopology.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTopology.cpp
+$(ODIRLibFgBase)FgTransform.o: $(SDIRLibFgBase)FgTransform.cpp $(INCSLibFgBase)
+	$(CXX) -o $(ODIRLibFgBase)FgTransform.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTransform.cpp
 $(ODIRLibFgBase)FgTypes.o: $(SDIRLibFgBase)FgTypes.cpp $(INCSLibFgBase)
 	$(CXX) -o $(ODIRLibFgBase)FgTypes.o -c $(CXXFLAGS) $(FLAGSLibFgBase) $(SDIRLibFgBase)FgTypes.cpp
 $(ODIRLibFgBase)FgVolume.o: $(SDIRLibFgBase)FgVolume.cpp $(INCSLibFgBase)

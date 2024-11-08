@@ -95,10 +95,10 @@ bool                writeVcxproj(
         String          useDebugLibs;
         String          linkIncremental;
     };
-    Arr<DRSel,2>        drSels {{
+    Arr<DRSel,2>        drSels {
         {"debug",  "Debug",  "true", "true",},
         {"release","Release","false","false",},
-        }};
+    };
     for (uint bb=0; bb<2; ++bb)
         for (DRSel const & drSel : drSels)
             ofs <<

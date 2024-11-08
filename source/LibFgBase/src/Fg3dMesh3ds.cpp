@@ -138,16 +138,16 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             if (model.numPoints(objId) == model.numTxtCoord(objId)) {
                 bool identical = true;
                 // Check if the facet lists are identical
-                Vec3UIs const &triList = 
+                Arr3UIs const &triList = 
                         model.getTriList(objId);
-                Vec3UIs const &txtTriList = 
+                Arr3UIs const &txtTriList = 
                         model.getTexTriList(objId);
                 for (unsigned int tri=0; identical && tri<model.numTxtTris(objId); ++tri) {
                     if (triList[tri] != txtTriList[tri])
                         identical = false;
                 }
-                const vector<Vec4UI> &quadList =  model.getQuadList(objId);
-                const vector<Vec4UI> &txtQuadList = model.getTexQuadList(objId);
+                const vector<Arr4UI> &quadList =  model.getQuadList(objId);
+                const vector<Arr4UI> &txtQuadList = model.getTexQuadList(objId);
                 for (unsigned int quad=0; identical && quad<model.numTxtQuads(objId); ++quad) {
                     if (quadList[quad] != txtQuadList[quad])
                         identical = false;
@@ -193,7 +193,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             return false;
         if (fwrite(&totalTris,sizeof(unsigned short),1,fptr) != 1)
             return false;
-        Vec3UIs const &triList = model.getTriList(objId);
+        Arr3UIs const &triList = model.getTriList(objId);
         for (unsigned short ii=0; ii<numTris; ++ii) {
             unsigned short idx1 = (unsigned short) triList[ii][0];
             unsigned short idx2 = (unsigned short) triList[ii][1];
@@ -207,7 +207,7 @@ static bool fffWriteTriObjectChunk_local(FILE *fptr,int &chunkSize,const map<str
             if (fwrite(&fourthNum,sizeof(unsigned short),1,fptr) != 1)
                 return false;
         }
-        const vector<Vec4UI> &quadList = model.getQuadList(objId);
+        const vector<Arr4UI> &quadList = model.getQuadList(objId);
         ushort ii;
         for (ii=0; ii<numQuads; ++ii) {
             for (int xx=0; xx<2; ++xx) {
@@ -487,7 +487,7 @@ testSave3ds(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    save3ds("mshX3ds",svec(mouth,glasses));
+    save3ds("mshX3ds",{mouth,glasses});
     regressFileRel("mshX3ds.3ds","base/test/");
     regressFileRel("mshX3ds0.png","base/test/");
     regressFileRel("mshX3ds1.png","base/test/");

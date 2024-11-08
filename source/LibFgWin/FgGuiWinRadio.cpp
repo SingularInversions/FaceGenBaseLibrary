@@ -16,7 +16,8 @@ using namespace std;
 
 namespace Fg {
 
-static Vec2UI       s_pad(40,12);
+uint constexpr      padHoriz = 40;
+uint constexpr      padVertical = 12;
 
 struct      GuiRadioWin : public GuiBaseImpl
 {
@@ -41,16 +42,16 @@ struct      GuiRadioWin : public GuiBaseImpl
 
     virtual Vec2UI      getMinSize() const
     {
-        Vec2UI   sz;
+        Vec2UI              sz {0};
         for (size_t ii=0; ii<m_sizes.size(); ++ii) {
             updateMax_(sz[0],m_sizes[ii][0]);
-            sz[1] += m_sizes[ii][1] + s_pad[1];
+            sz[1] += m_sizes[ii][1] + padVertical;
         }
-        sz[0] += s_pad[0];
+        sz[0] += padHoriz;
         return sz;
     }
 
-    virtual Vec2B       wantStretch() const {return Vec2B(false,false); }
+    virtual Arr2B       wantStretch() const {return Arr2B(false,false); }
 
     virtual void        updateIfChanged()
     {
@@ -107,11 +108,11 @@ struct      GuiRadioWin : public GuiBaseImpl
                     // but we still need to ignore Windows' initial zero-size message:
                     if (LOWORD(lParam) * HIWORD(lParam) == 0)
                         return 0;
-                    Vec2UI       szTot = getMinSize(),
-                                    pos,sz;
-                    sz[0] = szTot[0];
+                    Vec2UI          szTot = getMinSize(),
+                                    pos {0},
+                                    sz {szTot[0],0};
                     for (uint ii=0; ii<m_hwnds.size(); ++ii) {
-                        sz[1] = m_sizes[ii][1] + s_pad[1];
+                        sz[1] = m_sizes[ii][1] + padVertical;
                         MoveWindow(m_hwnds[ii],pos[0],pos[1],sz[0],sz[1],TRUE);
                         pos[1] += sz[1];
                     }

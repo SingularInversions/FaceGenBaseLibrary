@@ -9,8 +9,7 @@
 #include "FgImgDisplay.hpp"
 #include "FgGuiApi.hpp"
 #include "FgFileSystem.hpp"
-#include "FgAffine.hpp"
-#include "FgBounds.hpp"
+#include "FgTransform.hpp"
 #include "FgCommand.hpp"
 #include "FgGuiApi.hpp"
 
@@ -18,97 +17,161 @@ using namespace std;
 
 namespace Fg {
 
-void                viewImage(ImgRgba8 const & img,Vec2Fs const & ptsIrcs)
+ImageLmsName::ImageLmsName(String8 const & imgFname) :
+    img {loadImage(imgFname)},
+    name {pathToBase(imgFname)}
+{
+    String8             lmsFname = pathToDirBase(imgFname) + ".lms.txt";
+    if (fileExists(lmsFname))
+        lmsIrcs = loadLandmarks(lmsFname);
+}
+
+ImageLmsName::ImageLmsName(String8 const & imgFname,String8 const & lmsFname) :
+    img {loadImage(imgFname)},
+    lmsIrcs {loadLandmarks(lmsFname)},
+    name {pathToBase(imgFname)}
+{}
+
+ostream &           operator<<(ostream & os,ImageLmsName const & iln)
+{
+    os << iln.name << fgpush << iln.img << fgpop;
+    if (!iln.lmsIrcs.empty()) {
+        Mat22F              bnds {
+            -0.5f,  scast<float>(iln.img.width())-0.5f,
+            -0.5,   scast<float>(iln.img.height())-0.5f};
+        os << "Landmarks:" << fgpush;
+        for (NameVec2F const & lm : iln.lmsIrcs) {
+            os << fgnl << lm;
+            if (!isInBounds(bnds,lm.vec))
+                fgout << " WARNING point not within image boundaries";
+        }
+        os << fgpop;
+    }
+    return os;
+}
+
+void                viewImage(ImgRgba8 const & img,Vec2Fs const & lmsIrcs)
 {
     IPT<String8>        title {"FaceGen SDK viewImage"};
     String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImage"});
-    Affine2F            xf {cIrcsToIucs(img.dims()).asAffine()};
-    Vec2Fs              ptsIucs = mapMul(xf,ptsIrcs);
+    Affine2F            xf {cIrcsToIucs<float>(img.dims())};
+    NameVec2Fs          ptsIucs = mapCall(lmsIrcs,[xf](Vec2F l){return NameVec2F{xf*l}; });
     GuiPtr              win = guiImageCtrls(makeIPT(img),makeIPT(ptsIucs),true).win;
     guiStartImpl(title,win,saveDir);
 }
 
-void                viewImages(AnnotatedImgs const & ais)
+void                viewImages(ImageLmsNames const & ais)
 {
     FGASSERT(!ais.empty());
     IPT<String8>        title {"FaceGen SDK viewImages"};
     String8             saveDir = getDirUserAppDataLocalFaceGen({"SDK","viewImages"});
+    Svec<NPT<String8>>  currLmNs;
     GuiPtrs             imgWs;
-    for (AnnotatedImg const & ai : ais) {
-        Affine2F            xf {cIrcsToIucs(ai.img.dims()).asAffine()};
-        Vec2Fs              ptsIucs = mapMul(xf,ai.ptsIrcs);
-        imgWs.push_back(guiImageCtrls(makeIPT(ai.img),makeIPT(ptsIucs),true).win);
+    for (ImageLmsName const & ai : ais) {
+        Affine2F            xf {cIrcsToIucs<float>(ai.img.dims())};
+        NameVec2Fs          ptsIucs = mapMul(xf,ai.lmsIrcs);
+        IPT<NameVec2Fs>     ptsIucsN {ptsIucs};
+        GuiImg              guiImg = guiImageCtrls(makeIPT(ai.img),ptsIucsN,true);
+        auto                fn = [ptsIucsN](size_t const & v) -> String8
+        {
+            if (v < lims<size_t>::max())
+                return ptsIucsN.ref().at(v).name;
+            else
+                return {"none"};
+        };
+        currLmNs.push_back(link1(guiImg.draggingLmN,fn));
+        imgWs.push_back(guiImg.win);
     }
     IPT<size_t>         selN = makeSavedIPTEub<size_t>(0,saveDir+"sel",ais.size());
-    GuiPtr              selW = guiRadio(sliceMember(ais,&AnnotatedImg::name),selN),
+    OPT<String8>        textN = link1(selN,[&](size_t i){return String8{toStr(ais[i])}; });
+    OPT<String8>        lmTextN = linkSelect(currLmNs,selN);
+    GuiPtr              selW = guiRadio(mapMember(ais,&ImageLmsName::name),selN),
+                        infoW = guiGroupbox("Image Info",guiTextLines(textN,80,80)),
                         imgW = guiSelect(selN,imgWs),
-                        mainW = guiSplitH({imgW,selW});
+                        currLmW = guiGroupbox("Landmark",guiText(lmTextN)),
+                        mainL = guiSplitV({guiSplitScroll({selW}),currLmW,infoW}),
+                        mainW = guiSplitH({mainL,imgW});
     guiStartImpl(title,mainW,saveDir);
 }
 
 void                viewImages(ImgRgba8s const & imgs)
 {
     size_t              idx {0};
-    auto                fn = [&](ImgRgba8 const & img){return AnnotatedImg{img,{},toStr(idx++)}; };
-    viewImages(mapCallT<AnnotatedImg>(imgs,fn));
+    auto                fn = [&](ImgRgba8 const & img){return ImageLmsName{img,{},toStr(idx++)}; };
+    viewImages(mapCall(imgs,fn));
 }
 
 NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,Strings const & newLabels)
 {
     FGASSERT(!img.empty());
-    AffineEw2F          iucsToIrcs = cIucsToIrcsXf(img.dims()),
+    AxAffine2F          iucsToIrcs = cIucsToIrcs<float>(img.dims()),
                         ircsToIucs = iucsToIrcs.inverse();
-    Vec2Fs              existingPtsIucs;
-    Strings             labels;
-    for (NameVec2F const & e : existing) {
-        existingPtsIucs.push_back(ircsToIucs * e.vec);
-        labels.push_back(e.name);
-    }
+    Strings             labelsAll = mapMember(existing,&NameVec2F::name);    // defined then to-be-defined labels
     for (String const & nl : newLabels)
-        if (!contains(labels,nl))
-            labels.push_back(nl);
+        if (!contains(existing,nl))
+            labelsAll.push_back(nl);
     String8             store = getDirUserAppDataLocalFaceGen({"SDK","MarkImage"});
-    IPT<size_t>         stepN {0};              // 0 - place points, 1 - confirm
+    IPT<size_t>         stepN {0};                                          // 0 - place points, 1 - confirm
     IPT<ImgRgba8>       imgN {img};
-    IPT<Vec2Fs>         ptsIucsN {existingPtsIucs};
-    auto                textFn = [&labels](Vec2Fs const & ptsIucs)
+    IPT<NameVec2Fs>     ptsIucsN {mapMul(ircsToIucs,existing)};             // combined old then new points
+    auto                textFn = [&](NameVec2Fs const & ptsIucs)
     {
-        if (ptsIucs.size() == labels.size())
+        size_t              idxNew = ptsIucs.size();
+        if (idxNew == labelsAll.size())
             return String8{"Close window to save"};
-        return String8{"Click on "+labels[ptsIucs.size()]};
+        return String8{"Ctrl-click on "+labelsAll[idxNew]};
     };
     auto                backFn = [ptsIucsN]()
     {
-        Vec2Fs &            ptsIucs = ptsIucsN.ref();
+        NameVec2Fs &        ptsIucs = ptsIucsN.ref();
         if (ptsIucs.size() > 0)
             ptsIucs.pop_back();
     };
-    auto                leftClickFn = [&labels,ptsIucsN](Vec2F posIucs,Vec2UI)
+    auto                leftClickFn = [&labelsAll,ptsIucsN](Vec2F posIucs,Vec2UI)
     {
-        Vec2Fs &            ptsIucs = ptsIucsN.ref();
-        if (ptsIucs.size() < labels.size())
-            ptsIucs.push_back(posIucs);
+        NameVec2Fs &        ptsIucs = ptsIucsN.ref();
+        size_t              idx = ptsIucs.size();
+        if (idx < labelsAll.size())
+            ptsIucs.emplace_back(labelsAll[idx],posIucs);
     };
-    OPT<String8>        textN = link1<Vec2Fs,String8>(ptsIucsN,textFn);
+    OPT<String8>        textN = link1(ptsIucsN,textFn);
     GuiPtr              textW = guiText(textN),
                         buttonW = guiButton("Back",backFn),
                         imgW = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn).win,
                         mainW = guiSplitV({textW,buttonW,imgW});
     guiStartImpl(IPT<String8>{"FaceGen Mark Image"},mainW,store);
-    Vec2Fs const &      ptsIucs = ptsIucsN.cref();
-    FGASSERT(ptsIucs.size() <= labels.size());
-    NameVec2Fs         ret; ret.reserve(ptsIucs.size());
-    for (size_t ii=0; ii<ptsIucs.size(); ++ii)
-        ret.emplace_back(labels[ii],iucsToIrcs * ptsIucs[ii]);
-    return ret;
+    return mapMul(iucsToIrcs,ptsIucsN.val());
 }
 
-void                testmGuiImage(CLArgs const &)
+NameVec2Fs          markImageMulti(ImgRgba8 const & img,NameVec2Fs const & existingIrcs,String label)
+{
+    AxAffine2F          ircsToIucs = cIrcsToIucs<float>(img.dims()),
+                        iucsToIrcs = ircsToIucs.inverse();
+    IPT<ImgRgba8>       imgN {img};
+    IPT<NameVec2Fs>     ptsIucsN {mapMul(ircsToIucs,existingIrcs)};
+    auto                leftClickFn = [=](Vec2F iucs,Vec2UI){ptsIucsN.ref().emplace_back(label,iucs); };
+    auto                undoFn = [=]()
+    {
+        NameVec2Fs &        pts = ptsIucsN.ref();
+        if (!pts.empty())
+            pts.pop_back();
+    };
+    GuiPtr              textW = guiText("ctrl-click on points for label "+label),
+                        undoW = guiButton("undo",undoFn),
+                        imgW = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn).win,
+                        mainW = guiSplitV({guiSplitH({textW,undoW}),imgW});
+    String              id = "markImageMulti";
+    guiStartImpl(IPT<String8>{id},mainW,getDirUserAppDataLocalFaceGen({"SDK",id}));
+    return mapMul(iucsToIrcs,ptsIucsN.val());
+}
+
+void                testGuiImageMark(CLArgs const & args)
 {
     NameVec2Fs          pts {
         {"test point",{420.0f,840.0f}},
     };
-    markImage(loadImage(dataDir()+"base/Jane.jpg"),pts,{String{"Label"}});
+    if (!isAutomated(args))
+        markImage(loadImage(dataDir()+"base/Jane.jpg"),pts,{String{"Label"}});
 }
 
 void                compareImages(Img3F const & image0,Img3F const & image1)
@@ -129,7 +192,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
                         img0m1 = mapCall(image0,image1,hdiffFn);
     auto                diffMagFn = [](Arr3F const & l,Arr3F const & r)
     {
-        float               m = pow(cMag(l-r),0.5f);    // gamma correct for better viewing
+        float               m = pow(cMagD(l-r),0.5f);    // gamma correct for better viewing
         return Arr3F{m,m,m};
     };
     Img3F               imgdm = mapCall(image0,image1,diffMagFn);
@@ -141,7 +204,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
         FGASSERT(sel < sels.size());
         return cMipmap(*sels[sel]);
     };
-    NPT<Img3Fs>         pyramidN = link1<size_t,Img3Fs>(selN,selFn);
+    NPT<Img3Fs>         pyramidN = link1(selN,selFn);
     // Image relative view scale is 2^zoom display pixels per image pixel:
     IPT<int>            zoomN = makeSavedIPT(0,store+"zoom");
     IPT<int>            dragAccN {0};
@@ -166,7 +229,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
     auto                dragLeftFn = [=](Vec2I,Vec2I delta)
     {
         int                 zoom = zoomN.val();
-        Img3Fs const &      pyr = pyramidN.cref();
+        Img3Fs const &      pyr = pyramidN.val();
         Vec2UI              imgDims;
         if (zoom <= 0)
             imgDims = pyr[-zoom].dims();
@@ -187,7 +250,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
             return magnify(c4uc,fac);
         }
     };
-    OPT<ImgRgba8>        dispImgN = link2<ImgRgba8,Img3Fs,int>(pyramidN,zoomN,dispImgFn);
+    OPT<ImgRgba8>        dispImgN = link2(pyramidN,zoomN,dispImgFn);
     auto                offsetFn = [](uint imgDim,uint winDim,float & shiftIucs)
     {
         int                 offset = (int(winDim) - int(imgDim)) / 2,       // centre image in window
@@ -205,7 +268,7 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
     };
     auto                getImgFn = [=](Vec2UI winDims)
     {
-        ImgRgba8 const &     img = dispImgN.cref();
+        ImgRgba8 const &     img = dispImgN.val();
         Vec2UI              imgDims = img.dims();
         Vec2F &             shiftIucs = shiftIucsN.ref();
         Vec2I               offset;
@@ -217,11 +280,11 @@ void                compareImages(Img3F const & image0,Img3F const & image1)
     gi.getImgFn = getImgFn;
     gi.wantStretch = {true,true};
     gi.minSizeN = makeIPT(Vec2UI{128});
-    gi.updateFlag = makeUpdateFlag(zoomN);
-    gi.updateNofill = makeUpdateFlag(dispImgN,shiftIucsN);
+    gi.updateFlag = cUpdateFlagT(zoomN);
+    gi.updateNofill = cUpdateFlagT(dispImgN,shiftIucsN);
     gi.mouseMoveFns[1] = dragLeftFn;
     gi.mouseMoveFns[4] = dragRightFn;
-    GuiPtr              imgW = guiMakePtr(gi);
+    GuiPtr              imgW = guiPtr(gi);
     String8s            labels {"A","B","A-B","B-A","|B-A|",};
     GuiPtr              selW = guiRadio(labels,selN),
                         mainW = guiSplitAdj(true,imgW,selW);

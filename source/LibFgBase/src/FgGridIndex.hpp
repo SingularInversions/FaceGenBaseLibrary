@@ -15,11 +15,11 @@ namespace Fg {
 template<typename T>
 struct      GridIndex
 {
-    AffineEw2F          clientToGridPacs;
+    AxAffine2F          clientToGridPacs;
     Img<Svec<T>>        grid;       // Bins of client objects (bins not exactly square)
     Svec<T> const       empty;
 
-    GridIndex(AffineEw2F toGridPacs,Vec2UI gridDims) :
+    GridIndex(AxAffine2F toGridPacs,Vec2UI gridDims) :
         clientToGridPacs{toGridPacs},
         grid{gridDims}
     {}
@@ -71,24 +71,24 @@ struct  TriPoint
 {
     uint                triInd;         // Index of triangle in list
     // Indices of vertices of triangle in winding order (redundant to above; for efficiency):
-    Vec3UI              vertInds;
+    Arr3UI              vertInds;
     // Barycentric coordinate of intersection point in projected coordinates. Note that that
     // harmonic interpolation must be used to linaerly interpolate attributes in the original space:
-    Vec3F               baryCoord;
+    Arr3F               baryCoord;
 };
 typedef Svec<TriPoint>  TriPoints;
 
 struct  GridTriangles
 {
-    AffineEw2F          clientToGridPacs;
+    AxAffine2F          clientToGridPacs;
     Img<Uints>          grid;               // Bins of indices into 'tris'
     Vec2Fs              verts;              // in client CS
-    Vec3UIs             tris;               // indices into 'verts'
+    Arr3UIs             tris;               // indices into 'verts'
 
     GridTriangles() {}
     GridTriangles(
         Vec2Fs const &      verts_,         // tris containing invalid verts [max,max] will not be indexed
-        Vec3UIs const &     tris_,          // indices into 'verts'
+        Arr3UIs const &     tris_,          // indices into 'verts'
         float               binsPerTri=1.0f);
 
     Opt<TriPoint>       nearestIntersect(

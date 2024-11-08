@@ -172,9 +172,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\Fg3dCamera.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\Fg3dCamera.hpp"  />
     <ClCompile Include="..\src\Fg3dDisplay.cpp">
     </ClCompile>
     <ClInclude Include="..\src\Fg3dDisplay.hpp"  />
@@ -212,11 +209,6 @@
     <ClCompile Include="..\src\Fg3dSurface.cpp">
     </ClCompile>
     <ClInclude Include="..\src\Fg3dSurface.hpp"  />
-    <ClCompile Include="..\src\Fg3dTest.cpp">
-    </ClCompile>
-    <ClCompile Include="..\src\FgAffine.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgAffine.hpp"  />
     <ClCompile Include="..\src\FgAnthropometry.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgAnthropometry.hpp"  />
@@ -235,10 +227,12 @@
     </ClCompile>
     <ClCompile Include="..\src\FgBuildVisualStudioSln.cpp">
     </ClCompile>
+    <ClCompile Include="..\src\FgCamera.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgCamera.hpp"  />
     <ClCompile Include="..\src\FgCl.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgCl.hpp"  />
-    <ClInclude Include="..\src\FgCmd.hpp"  />
     <ClCompile Include="..\src\FgCmdBase.cpp">
     </ClCompile>
     <ClCompile Include="..\src\FgCmdImage.cpp">
@@ -249,7 +243,7 @@
     </ClCompile>
     <ClCompile Include="..\src\FgCmdRender.cpp">
     </ClCompile>
-    <ClCompile Include="..\src\FgCmdTestmCpp.cpp">
+    <ClCompile Include="..\src\FgCmdTest.cpp">
     </ClCompile>
     <ClCompile Include="..\src\FgCmdView.cpp">
     </ClCompile>
@@ -297,9 +291,6 @@
     </ClCompile>
     <ClCompile Include="..\src\FgGuiApiText.cpp">
     </ClCompile>
-    <ClCompile Include="..\src\FgHistogram.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgHistogram.hpp"  />
     <ClCompile Include="..\src\FgImage.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgImage.hpp"  />
@@ -316,13 +307,9 @@
     <ClCompile Include="..\src\FgImgDisplay.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgImgDisplay.hpp"  />
-    <ClInclude Include="..\src\FgIter.hpp"  />
     <ClCompile Include="..\src\FgKdTree.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgKdTree.hpp"  />
-    <ClCompile Include="..\src\FgLighting.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgLighting.hpp"  />
     <ClCompile Include="..\src\FgMain.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgMain.hpp"  />
@@ -348,28 +335,18 @@
     <ClCompile Include="..\src\FgParse.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgParse.hpp"  />
-    <ClCompile Include="..\src\FgQuaternion.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgQuaternion.hpp"  />
     <ClCompile Include="..\src\FgRandom.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgRandom.hpp"  />
-    <ClInclude Include="..\src\FgRgba.hpp"  />
-    <ClCompile Include="..\src\FgSampler.cpp">
+    <ClCompile Include="..\src\FgRender.cpp">
     </ClCompile>
-    <ClInclude Include="..\src\FgSampler.hpp"  />
-    <ClInclude Include="..\src\FgScaleTrans.hpp"  />
+    <ClInclude Include="..\src\FgRender.hpp"  />
+    <ClInclude Include="..\src\FgRgba.hpp"  />
     <ClInclude Include="..\src\FgScopeGuard.hpp"  />
     <ClCompile Include="..\src\FgSerial.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgSerial.hpp"  />
     <ClInclude Include="..\src\FgSet.hpp"  />
-    <ClCompile Include="..\src\FgSimilarity.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgSimilarity.hpp"  />
-    <ClCompile Include="..\src\FgSoftRender.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgSoftRender.hpp"  />
     <ClCompile Include="..\src\FgStdExtensions.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgStdExtensions.hpp"  />
@@ -393,6 +370,9 @@
     <ClCompile Include="..\src\FgTopology.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgTopology.hpp"  />
+    <ClCompile Include="..\src\FgTransform.cpp">
+    </ClCompile>
+    <ClInclude Include="..\src\FgTransform.hpp"  />
     <ClCompile Include="..\src\FgTypes.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgTypes.hpp"  />

@@ -10,9 +10,9 @@
 #include "FgMath.hpp"
 #include "FgSerial.hpp"
 #include "FgApproxEqual.hpp"
-
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
+#include "FgBounds.hpp"
 
 #ifdef _MSC_VER
     #pragma warning(push,0)     // Eigen triggers lots of warnings
@@ -111,19 +111,27 @@ MatD                cRandOrthogonal(size_t dim)
     return MatD{vecs};
 }
 
-MatD                cRandMahalanobis(size_t dim,double logScaleStdev)
+MatD                cRandMahalanobis(size_t dim,double lnScaleStdev)
 {
-    Doubles             scales;
-    for (size_t ii=0; ii<dim; ++ii)
-        scales.push_back(exp(randNormal()*logScaleStdev));
+    auto                fn = [=](size_t){return exp(randNormal()*lnScaleStdev); };
+    Doubles             scales = genSvec<double>(dim,fn);
     MatD                R = cRandOrthogonal(dim);
     return cDiagMat(scales) * R;
 }
 
-MatD                cRandSPD(size_t dim,double logScaleStdev)
+MatSD               cMatRandSymm(size_t dim,double eigvalStdev)
 {
-    MatD                M = cRandMahalanobis(dim,logScaleStdev);
-    return transpose(M) * M;
+    Doubles             eigs = cRandNormals(dim,0,eigvalStdev);
+    MatD                R = cRandOrthogonal(dim);
+    return selfDiagTransposeProduct(R,eigs);
+}
+
+MatSD               cMatRandSpd(size_t dim,double lnScaleStdev)
+{
+    auto                fn = [=](size_t){return exp(randNormal()*lnScaleStdev); };
+    Doubles             scales = genSvec<double>(dim,fn);
+    MatD                R = cRandOrthogonal(dim);
+    return selfDiagTransposeProduct(R,scales);
 }
 
 namespace {
@@ -310,6 +318,27 @@ void                testMatCol(CLArgs const &)
     if (eraseCol(M,1) != MatI{2,1, {1,3}}) FGASSERT_FALSE;
 }
 
+void                testMatS(CLArgs const &)
+{
+    {
+        MatSI               S {4, {0,1,2,3, 4,5,6, 7,8, 9 }};
+        MatI                M {4,4, {0,1,2,3, 1,4,5,6, 2,5,7,8, 3,6,8,9}};
+        for (Iter2 it{4}; it.valid(); it.next()) {
+            size_t              cc = it.x(),
+                                rr = it.y();
+            FGASSERT(S.rc(rr,cc) == M.rc(rr,cc));
+        }
+        FGASSERT(S.asMatV() == M);
+        Ints                v {10,11,12,13};
+        FGASSERT(S*v == M*v);
+    }
+    {
+        MatSI           S = cMatSDiag<int>({1,2,3,4,5});
+        MatI            M = cDiagMat<int>({1,2,3,4,5});
+        FGASSERT(M == S.asMatV());
+    }
+}
+
 }
 
 void                testMatrixV(CLArgs const & args)
@@ -319,6 +348,7 @@ void                testMatrixV(CLArgs const & args)
         {testMatMul,"mul","matrix multiplication correctness"},
         {testMatMulSpeed,"mult","matrix multiplication timing"},
         {testMatMulStruct,"muls","matrix multiplcation loop structure"},
+        {testMatS,"symm","symmetri matrix"},
     };
     doMenu(args,cmds,true);
 }

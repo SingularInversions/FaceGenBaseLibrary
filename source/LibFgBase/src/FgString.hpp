@@ -25,6 +25,10 @@ String              toUtf8(std::wstring const & utf16);
 // Default uses standard stream input "lexical conversions".
 // Only valid strings for the given type are accepted, extra characters including whitespace are errors
 // Define fully specialized versions where this behaviour is not desired:
+// old versions of GCC give maybe-uninitialized warning for the 'return {}' below and there is no way to avoid it:
+//#if defined(__GNUC__) && !defined(__clang__)
+//#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+//#endif
 template<class T>
 Opt<T>              fromStr(String const & str)
 {
@@ -32,8 +36,9 @@ Opt<T>              fromStr(String const & str)
     std::istringstream  iss {str};
     iss >> val;
     if (iss.fail())
-        return Opt<T>{};
-    return Opt<T>{val};
+        return {};
+    else
+        return val;
 }
 // Only valid integer representations within the range of int32 will return a valid value.
 // Whitespace returns invalid:
@@ -53,7 +58,7 @@ T                   strTo(String const & str)
 
 // Ensures a minimum number of digits are printed:
 template<class T>
-String              toStrDigits(T val,uint minDigits)
+String              toStrDigits(T val,size_t minDigits)
 {
     std::ostringstream   oss;
     oss << std::setw(minDigits) << std::setfill('0') << val;
@@ -74,12 +79,16 @@ String              toStrPrec(T val,uint numDigits)
 String              toStrFixed(double val,uint fractionalDigits=0);
 // Multiply by 100 and put a percent sign after:
 String              toStrPercent(double val,uint fractionalDigits=0);
+String              toStrRelPercents(double v0,double v1,uint fractionalDigits=0);  // compare two values by relative percents
 String              toLower(String const & s);
 String              toUpper(String const & s);
 // Returned list of strings does NOT include separators but DOES include empty
 // strings where there are consecutive separators:
 Strings             splitAtSeparators(String const & str,char sep);
 String              replaceAll(String const & str,char orig,char repl);
+String              replaceFirst(String const & str,String const & substr,String const & replacement);
+// returns 'true' if any replacement was done, result in 'ret'. Otherwise leaves 'ret' empty:
+bool                replaceAll_(String const & str,String const & find,String const & repl,String & ret);
 // Pad a String to desired len (does not truncate of longer):
 String              padToLen(String const & str,size_t len,char ch=' ');
 // concatenate strings with a separator between them (but not at beginning or end) like Python join():
@@ -225,6 +234,9 @@ uint64              fromHex64(String const & hex);
 String              toHex64Crc(uint64 serialNum);
 // Returns 0 if not a valid hex string or the CRC doesn't match:
 uint64              fromHex64Crc(String const & serialString);
+// Use to auto create labels with numbers appended:
+Strings             cNumberedLabels(String const & baseLabel,size_t num);
+String8s            cNumberedLabels(String8 const & baseLabel,size_t num);
 
 }
 

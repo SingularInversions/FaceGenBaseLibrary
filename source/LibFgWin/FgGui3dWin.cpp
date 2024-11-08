@@ -15,49 +15,23 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-// D3D projection from frustum:
-static Mat44F       calcProjection(const Frustum & f)
-{
-    // Projects from D3VS to D3PS. ie. maps:
-    // * Near plane to Z=0, far plane to Z=1
-    // * Left/right clip planes to X=-1/1
-    // * Bottom/top clip planes to Y=-1/1
-    double              a = f.nearDist / f.nearHalfWidth,
-                        b = f.nearDist / f.nearHalfHeight,
-                        del = f.farDist - f.nearDist,
-                        c = f.farDist / del,
-                        d = -f.nearDist*f.farDist / del;
-    Mat44D            ret
-    {{
-        a, 0, 0, 0,
-        0, b, 0, 0,
-        0, 0, c, d,
-        0, 0, 1, 0
-    }};
-    return Mat44F(ret);
-}
-
 struct  Gui3dWin : public GuiBaseImpl
 {
     HWND                m_hwnd;
     Gui3d               m_api;
-    Vec2UI              m_size;             // Value also stored in m_api.viewportDims but local copy handy
+    Vec2UI              m_size{0};          // Value also stored in m_api.viewportDims but local copy handy
     HDC                 m_hdc;
-    Vec2I               m_lastPos;              // Last mouse position in win32 client coords
-    Arr<Vec2I,3>        lastButtonDownPosLMR;   // Left/Middle/Right buttons in win32 client coords
+    Vec2I               m_lastPos{0};       // Last mouse position in win32 client coords
     ULONGLONG           m_lastGestureVal;   // Need to keep last gesture val to calc differences.
-    DfgFPtr             m_updateBgImg;      // Update BG image ?
+    DfFPtr             m_updateBgImg;      // Update BG image ?
     Mat44F              m_worldToD3ps;      // Transform used for last render (for mouse-surface intersection)
     unique_ptr<D3d>     m_d3d;
-    // Need to track this to avoid random object motion when mouse is dragged into viewport, and also when
-    // file dialogs leak mouse moves into the viewport (MS bug):
-    Arr<bool,3>         buttonIsDownLMR = {{false,false,false}};
 
     Gui3dWin(const Gui3d & api) : m_api(api)
     {
         // Including api.viewBounds, api.pan/tiltDegrees and api.logRelSize in the below caused a feedback
         // issue that broke updates of the other sliders:
-        m_updateBgImg = makeUpdateFlag(api.bgImg.imgN);
+        m_updateBgImg = cUpdateFlagT(api.bgImg.imgN);
         m_api.gpuInfo.set(cat(getGpusDescription(),"\n"));
         m_api.capture->func = bind(&Gui3dWin::capture,this,_1,_2);
     }
@@ -80,7 +54,7 @@ struct  Gui3dWin : public GuiBaseImpl
 
     virtual Vec2UI      getMinSize() const {return {256,256}; }
 
-    virtual Vec2B       wantStretch() const {return {true,true}; }
+    virtual Arr2B       wantStretch() const {return {true,true}; }
 
     virtual void        updateIfChanged()   // Just always render
     {
@@ -157,27 +131,31 @@ struct  Gui3dWin : public GuiBaseImpl
             }
             EndPaint(hwnd,&ps);
         }
+        // handle the mouse button down/up messages. modifier key (shift & ctrl) state is only used
+        // at mouse message events; modifier key events are NOT handled.
         else if (contains(wmButtonsDown,msg)) {
             size_t              buttonIdx = findFirstIdx(wmButtonsDown,msg);
             // Position below is always the same as m_lastPos (tested) since the mouse had to WM_MOUSEMOVE here first.
             // But get 'pos' from params for clarity:
             Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            buttonIsDownLMR[buttonIdx] = true;
-            lastButtonDownPosLMR[buttonIdx] = pos;
-            if ((wParam & MK_CONTROL) != 0)
-                m_api.ctlClick(m_size,pos,m_worldToD3ps);
+            m_api.buttonDown(buttonIdx,m_size,pos,m_worldToD3ps);
             captureCursor(hwnd);
         }
         else if (contains(wmButtonsUp,msg)) {
             size_t              buttonIdx = findFirstIdx(wmButtonsUp,msg);
-            if (buttonIsDownLMR[buttonIdx]) {
-                buttonIsDownLMR[buttonIdx] = false;    // Before any possible throw
-                Vec2I               pos(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)),
-                                    delta = pos - lastButtonDownPosLMR[buttonIdx];
+            // since we capture the cursor while any button is down, we are guaranteed to be notified
+            // when that button comes back up, so if the mouse enters the client area with a button
+            // already down, we can see the last button down is invalid and not call the associated drag
+            // (with invalid button down information):
+            if (m_api.lastButtonDown[buttonIdx].has_value()) {      // button went down in client area
+                LastClick           lc = m_api.lastButtonDown[buttonIdx].value();
+                Vec2I               pos {GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam)},
+                                    delta = pos - lc.pos;
+                m_api.lastButtonDown[buttonIdx].reset();
                 if (cDot(delta,delta) == 0) {       // This was a click not a drag
                     size_t              ctrl = ((wParam & MK_CONTROL) == 0) ? 0 : 1,
                                         shift = ((wParam & MK_SHIFT) == 0) ? 0 : 1;
-                    MouseAction const & action = m_api.clickActions.at(buttonIdx,shift,ctrl);
+                    ClickAction const & action = m_api.clickActions.at(buttonIdx,shift,ctrl);
                     if (action) {                   // If an action is defined for this combo
                         action(m_size,pos,m_worldToD3ps);
                     }
@@ -188,9 +166,31 @@ struct  Gui3dWin : public GuiBaseImpl
                 ClipCursor(NULL);
         }
         else if (msg == WM_MOUSEMOVE) {
-            Vec2I    pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
-            Vec2I    delta = pos-m_lastPos;
-            if ((wParam == MK_LBUTTON) && buttonIsDownLMR[0]) {
+            Vec2I           pos = Vec2I(GET_X_LPARAM(lParam),GET_Y_LPARAM(lParam));
+            Vec2I           delta = pos - m_lastPos;
+            size_t          buttonL = (wParam & MK_LBUTTON) ? 1 : 0,
+                            buttonM = (wParam & MK_MBUTTON) ? 1 : 0,
+                            buttonR = (wParam & MK_RBUTTON) ? 1 : 0,
+                            shift = (wParam & MK_SHIFT) ? 1 : 0,
+                            ctrl = (wParam & MK_CONTROL) ? 1 : 0;
+            auto const &    action = m_api.dragActions.at(buttonL,buttonM,buttonR,shift,ctrl);
+            if (action) {
+                // if more than 1 buttons are down, choose the first valid one in LMR order:
+                Arr<size_t,3>       buttons {buttonL,buttonM,buttonR};
+                for (size_t ii=0; ii<3; ++ii) {
+                    if (buttons[ii] == 1) {     // this button is down
+                        Opt<LastClick> const &  olc = m_api.lastButtonDown[ii];
+                        if (olc.has_value()) {      // and this button was pressed while in the viewport
+                            action(m_size,delta,m_worldToD3ps,olc.value());
+                            break;                  // only take the action once (if more than 1 button down)
+                        }
+                    }
+                }
+            }
+            // Need to check that button went down in viewport to avoid random object motion when mouse
+            // is dragged into viewport with button already down, and also when file dialogs leak mouse
+            // moves into the viewport (MS bug):
+            else if ((wParam == MK_LBUTTON) && m_api.lastButtonDown[0].has_value()) {
                 m_api.panTilt(delta);
             }
             else if (wParam == (MK_LBUTTON | MK_SHIFT)) {
@@ -315,7 +315,7 @@ struct  Gui3dWin : public GuiBaseImpl
     {
         if (m_updateBgImg->checkUpdate())
             m_d3d->setBgImage(m_api.bgImg);
-        Camera const &   camera = m_api.xform.cref();
+        Camera const &   camera = m_api.cameraN.val();
         // A negative determinant matrix as D3D is a LEFT handed coordinate system:
         Mat33D                      oecsToD3vs = 
             {
@@ -324,12 +324,12 @@ struct  Gui3dWin : public GuiBaseImpl
                 0, 0,-1,
             };
         Mat44F                      worldToD3vs = Mat44F(asHomogMat(oecsToD3vs * camera.modelview.asAffine())),
-                                    d3vsToD3ps = calcProjection(camera.frustum);
+                                    d3vsToD3ps = camera.frustum.asD3dProjection();
         m_worldToD3ps = d3vsToD3ps * worldToD3vs;
-        RendOptions               options = m_api.renderOptions.cref();
+        RendOptions               options = m_api.renderOptions.val();
         m_d3d->renderBackBuffer(
             m_api.bgImg,
-            m_api.light.cref(),
+            m_api.lightingN.val(),
             worldToD3vs,
             d3vsToD3ps,
             m_size,

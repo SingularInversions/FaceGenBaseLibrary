@@ -56,12 +56,12 @@ struct      Volume
 
     Volume() {}
     explicit Volume(uint dim) : Volume(Vec3UI{dim}) {}
-    explicit Volume(Vec3UI dims) : m_dims{dims} {m_data.resize(Vec3Z{dims}.cmpntsProduct()); }
-    Volume(Vec3UI dims,T val) : m_dims{dims} {m_data.resize(Vec3Z{dims}.cmpntsProduct(),val); }
+    explicit Volume(Vec3UI dims) : m_dims{dims} {m_data.resize(Vec3Z{dims}.elemsProduct()); }
+    Volume(Vec3UI dims,T val) : m_dims{dims} {m_data.resize(Vec3Z{dims}.elemsProduct(),val); }
     Volume(uint dim,T val) : Volume(Vec3UI{dim},val) {}
     Volume(uint x,uint y,uint z) : Volume(Vec3UI{x,y,z}) {}
     Volume(Vec3UI dims,Svec<T> const & data) : m_dims(dims), m_data(data)
-    {FGASSERT(Vec3Z{dims}.cmpntsProduct() == data.size()); }
+    {FGASSERT(Vec3Z{dims}.elemsProduct() == data.size()); }
 
     void                resize(uint dim) {resize(Vec3UI(dim)); }
     void                resize(Vec3UI dims)
@@ -161,7 +161,7 @@ std::ostream &      operator<<(std::ostream & os,Volume<T> const & v)
         os << "," << fgnl;
     }
     os  << fgnl << "Sum: " << cSum(v.m_data)
-        << fgnl << "Mag: " << cMag(v.m_data)
+        << fgnl << "Mag: " << cMagD(v.m_data)
         << fgnl << "RMS: " << cRms(v.m_data)
         << fgpop;
     return os;
@@ -245,7 +245,7 @@ Vec3UIs             cMaxima(Volume<T> const & vol)   // Empty volumes not allowe
 }
 
 template<class T>
-double              cMag(const Fg::Volume<T> & v) {return cMag(v.m_data); }
+double              cMagD(const Fg::Volume<T> & v) {return cMagD(v.m_data); }
 
 template<class T>
 struct      VolumeZ

@@ -6,25 +6,10 @@
 
 #include "stdafx.h"
 
-#include "FgMatrixC.hpp"
-
-#include "FgMath.hpp"
-#include "FgRandom.hpp"
-#include "FgQuaternion.hpp"
+#include "FgMatrixSolver.hpp"
+#include "FgTransform.hpp"
 #include "FgCommand.hpp"
 #include "FgApproxEqual.hpp"
-
-#ifdef _MSC_VER
-    #pragma warning(push,0)     // Eigen triggers lots of warnings
-#endif
-
-#define EIGEN_MPL2_ONLY         // Only use permissive licensed source files from Eigen
-#include "Eigen/Dense"
-#include "Eigen/Core"
-
-#ifdef _MSC_VER
-    #pragma warning(pop)
-#endif
 
 using namespace std;
 
@@ -55,47 +40,12 @@ Doubles             flattenD(Floatss const & v)
     return ret;
 }
 
-// 2D case allows for simple explicit formula:
-Vec2D               solveLinear(Mat22D const & A,Vec2D const & b)
+Mat33D              cRandPositiveDefinite3D()
 {
-    double              det = A[0]*A[3] - A[1]*A[2];
-    FGASSERT(det != 0.0);
-    return {
-        (b[0]*A[3] - b[1]*A[1])/det,
-        (b[1]*A[0] - b[0]*A[2])/det
-    };
-}
-
-Vec3D               solveLinear(Mat33D const & M,Vec3D const & b)
-{
-    Eigen::Matrix3d         mat;
-    Eigen::Vector3d         vec;
-    for (uint rr=0; rr<3; ++rr)
-        for (uint cc=0; cc<3; ++cc)
-            mat(rr,cc) = M.rc(rr,cc);
-    for (uint rr=0; rr<3; ++rr)
-        vec(rr) = b[rr];
-    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
-    auto                    qr = mat.colPivHouseholderQr();
-    FGASSERT(qr.isInvertible());
-    Eigen::Vector3d         sol = qr.solve(vec);
-    return {sol(0),sol(1),sol(2)};
-}
-
-Vec4D               solveLinear(Mat44D const & M,Vec4D const & b)
-{
-    Eigen::Matrix4d         mat;
-    Eigen::Vector4d         vec;
-    for (uint rr=0; rr<4; ++rr)
-        for (uint cc=0; cc<4; ++cc)
-            mat(rr,cc) = M.rc(rr,cc);
-    for (uint rr=0; rr<4; ++rr)
-        vec(rr) = b[rr];
-    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
-    auto                    qr = mat.colPivHouseholderQr();
-    FGASSERT(qr.isInvertible());
-    Eigen::Vector4d         sol = qr.solve(vec);
-    return {sol(0),sol(1),sol(2),sol(3)};
+    Mat33D              L = QuaternionD::rand().asMatrix(),
+                        R = QuaternionD::rand().asMatrix();
+    Arr3D               lnEigs {randNormal(),randNormal(),randNormal(),};
+    return L * scaleRows(R,mapExp(lnEigs));
 }
 
 MatS2D              MatS2D::randSpd(double lnEigStdev)
@@ -228,12 +178,56 @@ MatS3D              MatS3D::randSpd(double lnEigStdev)
                     M = R.transpose() * D * R;
     // M will have precision-level asymmetry so construct return value from upper triangular values
     // (Eigen's QR decomp fails badly if symmetry is not precise):
-    return MatS3D {{{M[0],M[4],M[8]}},{{M[1],M[2],M[5]}}};
+    return {{M[0],M[4],M[8]},{M[1],M[2],M[5]}};
 }
 
-ostream &           operator<<(ostream & os,MatS3D const & m)
+ostream &           operator<<(ostream & os,MatS3D const & m) {return os << m.asMatC(); }
+
+MatS3D              cCongruentTransform(MatS3D const & S,Mat33D const & M)
 {
-    return os << m.asMatC();
+    Arr3D               diag {0},
+                        offd {0};
+    for (size_t aa=0; aa<3; ++aa)
+        for (size_t bb=0; bb<3; ++bb)
+            for (size_t cc=0; cc<3; ++cc)
+                diag[aa] += S.rc(bb,cc) * M.rc(bb,aa) * M.rc(cc,aa);
+    for (size_t bb=0; bb<3; ++bb) {
+        for (size_t cc=0; cc<3; ++cc) {
+            offd[0] += S.rc(bb,cc) * M.rc(bb,0) * M.rc(cc,1);
+            offd[1] += S.rc(bb,cc) * M.rc(bb,0) * M.rc(cc,2);
+            offd[2] += S.rc(bb,cc) * M.rc(bb,1) * M.rc(cc,2);
+        }
+    }
+    return {diag,offd};
+}
+static void         testCongruentTransform()
+{
+    auto                fn = []()
+    {
+        // only test for PD here since that's all we really care about:
+        MatS3D          S = MatS3D::randSpd(1);
+        Mat33D          M = cRandPositiveDefinite3D(),
+                        tst = cCongruentTransform(S,M).asMatC(),
+                        ref = M.transpose() * S.asMatC() * M;
+        FGASSERT(isApproxEqualPrec(tst,ref,30));
+    };
+    repeat(fn,10);
+}
+
+MatS3D              transposeSelfProduct(Mat33D const & M)
+{
+    return {
+        {
+            sqr(M[0]) + sqr(M[3]) + sqr(M[6]),
+            sqr(M[1]) + sqr(M[4]) + sqr(M[7]),
+            sqr(M[2]) + sqr(M[5]) + sqr(M[8]),
+        },
+        {
+            M[0]*M[1] + M[3]*M[4] + M[6]*M[7],
+            M[0]*M[2] + M[3]*M[5] + M[6]*M[8],
+            M[1]*M[2] + M[4]*M[5] + M[7]*M[8],
+        },
+    };
 }
 
 MeanCov3            cMeanCov(Vec3Ds const & samps)
@@ -262,7 +256,7 @@ MatS3D              MatUT3D::luProduct() const
                 m11 = sqr(m[1]) + sqr(m[3]),
                 m12 = m[1]*m[2] + m[3]*m[4],
                 m22 = sqr(m[2]) + sqr(m[4]) + sqr(m[5]);
-    return MatS3D {{{m00,m11,m22}},{{m01,m02,m12}}};
+    return MatS3D {{m00,m11,m22},{m01,m02,m12}};
 }
 
 MatUT3D             MatUT3D::inverse() const
@@ -284,9 +278,15 @@ std::ostream &      operator<<(std::ostream & os,MatUT3D const & ut)
     return os << "Diag: " << diag << " UT: " << upper;
 }
 
+MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2)
+{
+    Mat33D              toMhlbs {cat(a0.m,a1.m,a2.m)};
+    return cCholesky(transposeSelfProduct(toMhlbs));
+}
+
 MatS3D::MatS3D(Mat33D const & m) :
-    diag {{m[0],m[4],m[8]}},
-    offd {{m[1],m[2],m[5]}}
+    diag {m[0],m[4],m[8]},
+    offd {m[1],m[2],m[5]}
 {
     for (uint rr=0; rr<3; ++rr)
         for (uint cc=rr+1; cc<3; ++cc)
@@ -313,11 +313,11 @@ void                testRotate(CLArgs const &)
     randSeedRepeatable();
     for (uint ii=0; ii<100; ii++)
     {
-        double          angle = randUniform(-pi(),pi());
+        double          angle = randUniform(-pi,pi);
         Vec3D           axis = normalize(Vec3D::randNormal());
         Mat33D          mat = matRotateAxis(angle,axis);
-        double          err = (mat * mat.transpose() - cDiagMat<double,3>(1)).len(),
-                        err2 = (mat * axis - axis).len();
+        double          err = cLenD(mat * mat.transpose() - cDiagMat<double,3>(1)),
+                        err2 = cLenD(mat * axis - axis);
         FGASSERT(err < (lims<double>::epsilon() * 10.0));
         FGASSERT(err2 < (lims<double>::epsilon() * 10.0));
         FGASSERT(cDeterminant(mat) > 0.0);      // Ensure SO(3) not just O(3)
@@ -389,31 +389,20 @@ void                testMatS(CLArgs const &)
             double              tst = cDot(x,TS*x);
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
+        {   // test transposeSelfProduct(MatS)
+            Mat33D              M = Mat33D::randNormal(),
+                                ref = M.transpose() * M;
+            MatS3D              P = transposeSelfProduct(M);
+            Mat33D              tst = P.asMatC();
+            FGASSERT(isApproxEqualPrec(tst,ref,30));
+        }
     }
-}
-
-template<uint D>
-void                testSolveLinearT()
-{
-    for (size_t ii=0; ii<256; ++ii) {
-        Mat<double,D,D>     M = Mat<double,D,D>::randNormal();
-        Mat<double,D,1>     b = Mat<double,D,1>::randNormal(),
-                            x = solveLinear(M,b);
-        if (abs(cDeterminant(M)) < epsBits(20))         // don't test with ill conditioned
-            continue;
-        FGASSERT(isApproxEqualPrec(M*x,b,30));
-    }
-}
-
-void                testSolveLinear(CLArgs const &)
-{
-    randSeedRepeatable();
-    testSolveLinearT<2>();
-    testSolveLinearT<3>();
-    testSolveLinearT<4>();
+    testCongruentTransform();
 }
 
 }
+
+void                testSolveLinear(CLArgs const &);
 
 void                testMatrixC(CLArgs const & args)
 {

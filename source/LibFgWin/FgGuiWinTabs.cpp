@@ -27,7 +27,7 @@ struct  GuiTabsWin : public GuiBaseImpl
     HWND                hwndThis;
     GuiImplPtrs         m_panes;
     uint                m_currPane;
-    Vec2I               m_client;
+    Vec2I               m_client{0};
     RECT                m_dispArea;
     String8             m_store;
 
@@ -99,12 +99,12 @@ struct  GuiTabsWin : public GuiBaseImpl
         return max + Vec2UI{0,37};
     }
 
-    virtual Vec2B       wantStretch() const
+    virtual Arr2B       wantStretch() const
     {
         for (size_t ii=0; ii<m_panes.size(); ++ii)
             if (m_panes[ii]->wantStretch()[0])
-                return Vec2B(true,true);
-        return Vec2B(false,true);
+                return Arr2B(true,true);
+        return Arr2B(false,true);
     }
 
     virtual void        updateIfChanged()

@@ -61,28 +61,28 @@ GuiPtrs             cGuiFileImageWs(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture
 OPT<Vec3Fs>         linkAllVerts(NPT<Mesh>);
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
 OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN);   // Empty filename -> empty mesh
-OPT<MeshNormals>    linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN);  // mesh can be empty
+OPT<Mat32D>         linkMeshBounds(NPT<Mesh> const &);      // returns [max,lowest] if mesh has no verts (for composition)
+OPT<MeshNormals>    linkMeshNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & shapeVertsN);  // mesh can be empty
 
 typedef Svec<NPT<ImgRgba8>>  ImgNs;
 
-struct      PoseVal
-{
-    String8             name;
-    float               val;
-    FG_SER2(name,val)
-};
+typedef std::map<String8,float> MorphValMap;
 
-typedef std::map<String8,float> PoseVals;
+RendMesh            cRendMesh(
+    NPT<Mesh> const &       meshN,
+    NPT<Vec3Fs> const &     allVertsN,
+    NPT<MorphValMap> const & morphValMapN,
+    RendSurfs const &       rss);
 
-struct      GuiPosedMeshes
+struct      GuiMorphMeshes
 {
     RendMeshes          rendMeshes;
     // Aggregates all unique pose labels. Changes in this node trigger re-creation of the expression tab:
-    OPT<PoseDefs>       poseDefsN;
+    OPT<MorphCtrls>     morphCtrlsN;
     // Only contains entries for currently instantiated pose sliders; others are forgotten.
-    IPT<PoseVals>       poseValsN;
+    IPT<MorphValMap>    morphValMapN;
 
-    GuiPosedMeshes();
+    GuiMorphMeshes();
 
     void                addMesh(
         NPT<Mesh>           meshN,          // Name, verts, maps not used. Editing controls if IPT.

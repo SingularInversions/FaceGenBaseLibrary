@@ -3,22 +3,26 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Dataflow graph with lazy updates for handling DAG data dependencies.
+// Directed acyclic computation graph with lazy updates for automatically minimizing recomputation.
 //
+// USE:
+// 
+// * Automate minimal recomputation of values for fixed structure. Structural updates require re-creation of the graph.
+// 
 // DESIGN:
 //
+// * Types used as data must have a default constructor
+// * No need to check for valid data - all nodes should always contain a valid instance of their
+//   type after proper dataflow graph setup.
 // * Not multithread safe.
 // * Originally considered a bipartite graph of Values and Links but if Links have more than one
 //   Value output then they can get invalidated outputs as the DAG changes which is a pain to deal
 //   with. Constraining functions to only 1 output solves this, and can be then be more simply
 //   designed with just a single node type.
-// * Types used as data must have a default constructor
-// * No need to check for valid data - all nodes should always contain a valid instance of their
-//   type after proper dataflow graph setup.
 //
 // INVARIANTS:
 //
-// * Calling 'cref' or 'val' will always return an updated value reflecting the current DAG inputs
+// * Calling 'val' will always return an updated value reflecting the current DAG inputs
 // * If a Node is dirty all of its dependent nodes are also dirty.
 // * If a Node is not dirty all of the nodes it depends on are also not dirty.
 // * Const member functions of Node will never change the DAG structure but the data values
@@ -34,51 +38,51 @@ namespace Fg {
 
 String              cSignature(std::any const &);
 
-struct      DfgDependent;
-typedef std::weak_ptr<DfgDependent> DfgDPtr;
+struct      DfDependent;
+typedef std::weak_ptr<DfDependent> DfDPtr;
 
 // Conceptually this is two interfaces; a dependency ('update') and a data container ('getData*'):
-struct      DfgNode
+struct      DfNode
 {
-    virtual ~DfgNode() {}
+    virtual ~DfNode() {}
     virtual void            update() const = 0;
     virtual std::any const & getDataCref() const = 0;
-    virtual void            addSink(const DfgDPtr &) = 0;
-    // TODO: can't use this until I re-design to get rid of warning about returning a temporary:
+    virtual void            addSink(const DfDPtr &) = 0;
     template<class T>
-    T const &               getValCref() const
+    T const &               getCref() const
     {
-        try {return std::any_cast<T>(getDataCref()); }
+        try {return std::any_cast<T const &>(getDataCref()); }
         catch (std::exception const & e) {fgThrow(e.what(),typeid(T).name()); }
+        return std::any_cast<T const &>(getDataCref());     // never executed; avoid gcc warning
     }
 };
-typedef Sptr<DfgNode>       DfgNPtr;
-typedef Svec<DfgNPtr>       DfgNPtrs;
+typedef Sptr<DfNode>        DfNPtr;
+typedef Svec<DfNPtr>        DfNPtrs;
 
-struct      DfgDependent
+struct      DfDependent
 {
-    virtual ~DfgDependent() {}
+    virtual ~DfDependent() {}
     virtual void            markDirty() const = 0;
 };
-typedef Svec<DfgDPtr>        DfgDPtrs;
+typedef Svec<DfDPtr>        DfDPtrs;
 
-struct      DfgInput : DfgNode
+struct      DfInput : DfNode
 {
 private:
-    mutable std::any          data;
-    std::any                  dataDefault;        // Can be empty if no default
-    DfgDPtrs                    sinks;              // Can be empty
+    mutable std::any        data;
+    std::any                dataDefault;        // Can be empty if no default
+    DfDPtrs                 sinks;              // Can be empty
 public:
     // Called with 'data' on destruct only if non-empty and 'data' non-empty. Can be used to save state:
     Sfun<void(std::any const&)> onDestruct;
 
-    DfgInput() {}
-    template<class T> explicit DfgInput(T const & v) : data(v) {}
+    DfInput() {}
+    template<class T> explicit DfInput(T const & v) : data(v) {}
 
-    virtual                 ~DfgInput();
+    virtual                 ~DfInput();
     virtual void            update() const {}
     virtual std::any const & getDataCref() const;
-    virtual void            addSink(const DfgDPtr & snk);
+    virtual void            addSink(const DfDPtr & snk);
 
     void                    makeDirty() const;
     std::any &              getDataRef() const;
@@ -92,61 +96,63 @@ public:
     }
     void                    setToDefault() const;      // Reset value to default if exists
 };
-typedef Sptr<DfgInput>      DfgIPtr;
+typedef Sptr<DfInput>      DfIPtr;
 
-typedef Sfun<void(DfgNPtrs const &,std::any &)> DfgFunc;
+typedef Sfun<void(DfNPtrs const &,std::any &)> DfFunc;
 
-struct      DfgOutput : DfgNode, DfgDependent
+struct      DfOutput : DfNode, DfDependent
 {
-    DfgNPtrs                    sources;        // Empty only if function takes no args
-    DfgDPtrs                    sinks;          // Empty if this value is a final output
-    DfgFunc                     func;           // Must be defined. Calculate sinks from sources
+    DfNPtrs                     sources;        // Empty only if function takes no args
+    DfDPtrs                     sinks;          // Empty if this value is a final output
+    DfFunc                      func;           // Must be defined. Calculate sinks from sources
     mutable std::any            data;
     // Has data we depend on anywhere above this node in the graph been modified since 'func' last run:
     mutable bool                dirty {true};
     mutable uint64              timeUsedMs {0};
     static bool                 printTime;
+    DfOutput() {}
+    explicit DfOutput(DfNPtrs const & s) : sources{s} {}
 
-    virtual ~DfgOutput();
+    virtual ~DfOutput();
     virtual void update() const;
     virtual void markDirty() const;
     virtual std::any const & getDataCref() const;
-    virtual void addSink(const DfgDPtr & snk);
+    virtual void addSink(const DfDPtr & snk);
 
-    DfgNPtrs const &    getSources() const {return sources; }
+    DfNPtrs const &    getSources() const {return sources; }
     void                clearSources();
-    void                addSource(const DfgNPtr & src);
+    void                addSource(const DfNPtr & src);
 };
-typedef Sptr<DfgOutput>     DfgOPtr;
+typedef Sptr<DfOutput>     DfOPtr;
 
 // Receptors are handles that can point to different node types. They make dataflow creation code
 // simpler since they can be passed as arguments (already allocated) without knowing what type
 // of node they will be connected to. They can also be held by function objects for dynamic
 // updates of the source (but they are not useful for dynamic updates within a DFG).
-struct      DfgReceptor : DfgNode, DfgDependent
+struct      DfReceptor : DfNode, DfDependent
 {
 private:
-    DfgNPtr                     src;            // Null until connected to Node
-    DfgDPtrs                    sinks;          // Empty if nothing depends on this
+    DfNPtr                      src;            // Null until connected to Node
+    DfDPtrs                     sinks;          // Empty if nothing depends on this
     mutable bool                dirty = true;
 
 public:
-    virtual ~DfgReceptor() {}
+    virtual ~DfReceptor() {}
     virtual void            update() const;
     virtual void            markDirty() const;
     virtual std::any const & getDataCref() const;
-    virtual void            addSink(const DfgDPtr & snk);
-    void                    setSource(DfgNPtr const & nptr);
+    virtual void            addSink(const DfDPtr & snk);
+    void                    setSource(DfNPtr const & nptr);
 };
-typedef Sptr<DfgReceptor>   DfgRPtr;
+typedef Sptr<DfReceptor>   DfRPtr;
 
 // Allows client objects to keep track of their own dirty state based on one or more sources:
-struct      DirtyFlag : DfgDependent
+struct      DirtyFlag : DfDependent
 {
-    DfgNPtrs                    sources;        // Cannot be empty
+    DfNPtrs                    sources;        // Cannot be empty
     mutable bool                dirty = true;
 
-    explicit DirtyFlag(DfgNPtrs const & srcs) : sources(srcs) {}
+    explicit DirtyFlag(DfNPtrs const & srcs) : sources(srcs) {}
     virtual ~DirtyFlag() {}
     virtual void            markDirty() const;
 
@@ -154,28 +160,29 @@ struct      DirtyFlag : DfgDependent
     bool                    checkUpdate() const;
 };
 
-typedef Sptr<DirtyFlag>     DfgFPtr;
+typedef Sptr<DirtyFlag>     DfFPtr;
 
-void                addLink(const DfgNPtr & src,const DfgOPtr & snk);
+void                addLink(const DfNPtr & src,const DfOPtr & snk);
 
 // Typed versions for static type checking. Client should always use this form:
 
 // Type-safe inputs:
-// * All constructors allocate DfgInput and contained data so we can never dereference null
+// * All constructors allocate DfInput and contained data so we can never dereference null
 //   (although we may of course need to check if the contained data is empty).
 //   This way we don't have to pass back loads of pointers from the functions creating the GUI parts
 //   and assign them all to the right places; but can just pass them forward instead.
-// * Use 'init' or 'initSaved' to initialize the DfgInput data & default later if default constructed.
+// * Use 'init' or 'initSaved' to initialize the DfInput data & default later if default constructed.
 // * Use value initialization or list initializers (to get around vexing parse) to define them fully
 //   in a single statement.
 template<class T>
 struct      IPT
 {
-    DfgIPtr            ptr;                         // Never null and contained data never null
-    IPT() : ptr(std::make_shared<DfgInput>(T{})) {}
-    explicit IPT(const DfgIPtr & n) : ptr(n) {}
-    explicit IPT(T const & val) : ptr(std::make_shared<DfgInput>(val)) {}
-    explicit IPT(T const & val,T const & defaultVal) : ptr(std::make_shared<DfgInput>(val,defaultVal)) {}
+    typedef T           Type;
+    DfIPtr              ptr;                         // Never null and contained data never null
+    // we cannot have a ctor from type 'DfIPtr' as it will convert integers to an sptr.
+    IPT() : ptr(std::make_shared<DfInput>(T{})) {}
+    explicit IPT(T const & val) : ptr{std::make_shared<DfInput>(val)} {}
+    explicit IPT(T const & val,T const & defaultVal) : ptr{std::make_shared<DfInput>(val,defaultVal)} {}
     // Must use one of these two before attempting to access values as they will allocate the
     // 'any' with the value and also set the default value. If it's an input for a dynamic window
     // then it's possible it could be initialized more than once:
@@ -222,20 +229,19 @@ struct      IPT
             };
         }
     }
-    T const &           cref() const {return std::any_cast<T const&>(ptr->getDataCref()); }
-    T                   val() const {return std::any_cast<T>(ptr->getDataCref()); }
+    T const &           val() const {return std::any_cast<T const &>(ptr->getDataCref()); }
     // Value modification is still const because it's the value pointed to not the smart
     // pointer that is being modified. This is useful because we sometimes need this
     // object to be const - for example in a lambda capture:
     T &                 ref() const {return std::any_cast<T&>(ptr->getDataRef()); }
-    inline void         set(T const & val) const {ref() = val; }    // Prefer assignment below for visual clarity
+    inline void         set(T const & val) const {ref() = val; }
 };
 
 // Can use instead of constructor for type deduction from argument:
 template<class T>
-IPT<T>              makeIPT(T const & val) {return IPT<T>(std::make_shared<DfgInput>(val)); }
+IPT<T>              makeIPT(T const & v) {return IPT<T>{v}; }
 template<class T>
-Svec<IPT<T>>        makeIPTs(Svec<T> const & v) {return mapCallT<IPT<T>>(v,makeIPT<T>); }
+Svec<IPT<T>>        makeIPTs(Svec<T> const & v) {return mapCall(v,makeIPT<T>); }
 
 template<class T>
 IPT<T>              makeSavedIPT(
@@ -256,7 +262,7 @@ IPT<T>              makeSavedIPTEub(
 {
     IPT<T>          ret;
     ret.initSaved(defaultVal,storeFile);
-    if (!(ret.cref() < eub))
+    if (!(ret.val() < eub))
         ret.set(defaultVal);
     return ret;
 }
@@ -281,43 +287,44 @@ void                setIPTs(Svec<IPT<T>> ipts,Svec<T> vals)
 template<class T>
 struct  OPT
 {
-    DfgOPtr            ptr;
+    typedef T           Type;
+    DfOPtr              ptr;
     OPT() {}
-    explicit OPT(const DfgOPtr & o) : ptr(o) {}
-    T const &       cref() const {return std::any_cast<T const&>(ptr->getDataCref()); }
-    T               val() const {return std::any_cast<T>(ptr->getDataCref()); }
+    explicit OPT(const DfOPtr & o) : ptr(o) {}
+    T const &       val() const {return std::any_cast<T const &>(ptr->getDataCref()); }
 };
 
 // Receptors are allocated automatically and 'ptr' should never be changed:
 template<class T>
 struct  RPT
 {
-    DfgRPtr            ptr;                            // Never null but what the DfgReceptor points to may be null.
-    RPT() {ptr = std::make_shared<DfgReceptor>(); }    // Always allocated
-    T const &       cref() const {return std::any_cast<T const&>(ptr->getDataCref()); }
-    T               val() const {return std::any_cast<T>(ptr->getDataCref()); }
+    typedef T           Type;
+    DfRPtr              ptr;                            // Never null but what the DfReceptor points to may be null.
+    RPT() {ptr = std::make_shared<DfReceptor>(); }     // Always allocated
+    T const &           val() const {return std::any_cast<T const &>(ptr->getDataCref()); }
 };
 
 template<class T>
 struct  NPT
 {
-    DfgNPtr            ptr;
+    typedef T           Type;
+    DfNPtr              ptr;
     NPT() {}
     NPT(const IPT<T> & ipt) : ptr(ipt.ptr) {}
     NPT(const OPT<T> & opt) : ptr(opt.ptr) {}
     NPT(const RPT<T> & rpt) : ptr(rpt.ptr) {}
-    explicit NPT(const DfgNPtr & n) : ptr(n) {}
-    T const &       cref() const {return std::any_cast<T const&>(ptr->getDataCref()); }
-    T               val() const {return std::any_cast<T>(ptr->getDataCref()); }
-    // This will only return a valid pointer if the Node happens to be an DfgInput, otherwise, nullptr:
+    explicit NPT(const DfNPtr & n) : ptr(n) {}
+    T const &       val() const {return std::any_cast<T const &>(ptr->getDataCref()); }
+    // This will only return a valid pointer if the Node happens to be an DfInput, otherwise, nullptr:
     T*              valPtr() const
     {
-        DfgInput *     iptr = dynamic_cast<DfgInput*>(ptr.get());
+        DfInput *     iptr = dynamic_cast<DfInput*>(ptr.get());
         if (iptr)
             return &std::any_cast<T&>(iptr->getDataRef());
         else
             return nullptr;
     }
+    bool                valid() const {return bool{ptr}; }
 };
 
 template<class T>
@@ -327,250 +334,199 @@ void                connect(RPT<T> const & rpt,NPT<T> const & npt)
     npt.ptr->addSink(rpt.ptr);
 }
 
-DfgFPtr             makeUpdateFlag(DfgNPtrs const & nptrs);
-// Cannot make use of implicit conversion to NPT because of above overload:
-template<class T> DfgFPtr makeUpdateFlag(const IPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const OPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const NPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
-template<class T> DfgFPtr makeUpdateFlag(const RPT<T> & n) {return makeUpdateFlag(svec<DfgNPtr>(n.ptr)); }
-template<class T0,class T1> DfgFPtr makeUpdateFlag(const T0 & n0,const T1 & n1)
-{return makeUpdateFlag(svec<DfgNPtr>(n0.ptr,n1.ptr)); }
+DfFPtr             cUpdateFlag(DfNPtrs const & nptrs);
+template<class T>
+DfFPtr             cUpdateFlagT(T const & n) {return cUpdateFlag(DfNPtrs{n.ptr}); }
+template<class T,class U>
+DfFPtr             cUpdateFlagT(T const & t,U const & u) {return cUpdateFlag(DfNPtrs{t.ptr,u.ptr}); }
 
 template<class T>
 struct      NPTF
 {
     NPT<T>          node;
-    DfgFPtr         flag;
+    DfFPtr         flag;
 
     NPTF() {}
-    NPTF(NPT<T> const & n) : node{n}, flag{makeUpdateFlag(n)} {}
+    NPTF(NPT<T> const & n) : node{n}, flag{cUpdateFlagT(n)} {}
 
     void            operator=(NPT<T> const & n)
     {
         node = n;
-        flag = makeUpdateFlag(n);
+        flag = cUpdateFlagT(n);
     }
 
     bool            checkUpdate() const {return flag->checkUpdate(); }
 
-    T const &       cref() const
+    T const &       val() const
     {
         flag->checkUpdate();
-        return node.cref();
+        return node.val();
     }
 };
 
 // Traverses up the tree to set all inputs to the default value:
-void                setInputsToDefault(DfgNPtrs const &);
+void                setInputsToDefault(DfNPtrs const &);
 
-template<class T>
-void                adapterCollate(DfgNPtrs const & srcs,std::any & snk)
-{
-    Svec<T> &    out = std::any_cast<Svec<T> &>(snk);
-    out.resize(srcs.size());
-    for (size_t ii=0; ii<out.size(); ++ii)
-        out[ii] = std::any_cast<T const &>(srcs[ii]->getDataCref());
-}
+// in all the linkX classes below, type safety is assured, but also the types must be present in order to
+// properly specify the function call in the lambda that is stored with each node:
 
-template<class T>
-OPT<Svec<T>>        linkCollate(const Svec<NPT<T>> & ins = Svec<NPT<T>>())
+template<class I>
+auto                linkCollate(Svec<I> const & ins)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->data = Svec<T>();
-    op->func = adapterCollate<T>;
+    typedef typename I::Type        T;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>();
+    op->data = Svec<T>{};
+    op->func = [](DfNPtrs const & srcs,std::any & snk)
+    {
+        Svec<T> &           out = std::any_cast<Svec<T> &>(snk);
+        out.resize(srcs.size());
+        for (size_t ii=0; ii<out.size(); ++ii)
+            out[ii] = std::any_cast<T const &>(srcs[ii]->getDataCref());
+    };
     op->sources.reserve(ins.size());
-    for (const NPT<T> & in : ins) {
+    for (auto const & in : ins) {
         op->sources.push_back(in.ptr);
         in.ptr->addSink(op);
     }
     return OPT<Svec<T>>(op);
 }
-template<class T>
-OPT<Svec<T>>        linkCollate(const Svec<IPT<T>> & ins) {return linkCollate(mapConvert<IPT<T>,NPT<T>>(ins)); }
 
-template<class In,class Out>
-void                adapterN(DfgNPtrs const & srcs,std::any & snk,Sfun<Out(const Svec<In> &)> fn)
+template<class I,class C>
+auto                linkN(Svec<I> const & ins,C const & fn)     // makes copies of each input ... don't use for big objects
 {
-    Svec<In>     args;
-    args.reserve(srcs.size());
-    for (const DfgNPtr & src : srcs)
-        args.push_back(std::any_cast<const In &>(src->getDataCref()));
-    snk = fn(args);
-}
-
-template<class In,class Out>
-OPT<Out>            linkN(const Svec<NPT<In>> & ins,const Sfun<Out(const Svec<In> &)> & fn)
-{
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = std::bind(adapterN<In,Out>,std::placeholders::_1,std::placeholders::_2,fn);
+    typedef typename I::Type        T;
+    typedef decltype(fn(Svec<T>{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>();
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
+    {
+        Svec<T>             args; args.reserve(srcs.size());
+        for (DfNPtr const & s : srcs)
+            args.push_back(s->getCref<T>());
+        snk = fn(args);
+    };
     op->sources.reserve(ins.size());
-    for (NPT<In> const & in : ins) {
+    for (auto const & in : ins) {
         op->sources.push_back(in.ptr);
         in.ptr->addSink(op);
     }
-    return OPT<Out>(op);
-}
-template<class In,class Out>
-OPT<Out>            linkN(const Svec<IPT<In>> & ins,const Sfun<Out(const Svec<In> &)> & fn)
-{
-    return linkN(mapConvert<IPT<In>,NPT<In>>(ins),fn);
+    return OPT<R>(op);
 }
 
-template<class In,class Out>
-OPT<Out>            link1(NPT<In> const & in,Sfun<Out(const In &)> const & fn)
+template<class I0,class C>
+auto                link1(const I0 & i0,C const & fn)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
+    typedef typename I0::Type T0;
+    typedef decltype(fn(T0{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>(DfNPtrs{i0.ptr});
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
     {
         FGASSERT(srcs.size() == 1);
-        In const &          in = std::any_cast<const In &>(srcs[0]->getDataCref());
-        snk = fn(in);
+        T0 const &          i0 = srcs[0]->getCref<T0>();
+        snk = fn(i0);
     };
-    op->sources.push_back(in.ptr);
-    in.ptr->addSink(op);
-    return OPT<Out>(op);
+    i0.ptr->addSink(op);
+    return OPT<R>(op);
 }
 
-template<class Out,class In>
-OPT<Out>            link1_(NPT<In> const & in,const Sfun<void(const In &,Out &)> & fn)
+template<class I0,class I1,class C>
+auto                link2(const I0 & i0,const I1 & i1,C const & fn)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->data = Out();       // Must be instantiated for output by reference
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
-    {
-        FGASSERT(srcs.size() == 1);
-        const In &      in = std::any_cast<const In &>(srcs[0]->getDataCref());
-        Out &           out = std::any_cast<Out &>(snk);
-        fn(in,out);
-    };
-    op->sources.push_back(in.ptr);
-    in.ptr->addSink(op);
-    return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1>
-OPT<Out>            link2(const NPT<In0> & in0,const NPT<In1> & in1,const Sfun<Out(const In0 &,const In1 &)> & fn)
-{
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
+    typedef typename I0::Type T0;
+    typedef typename I1::Type T1;
+    typedef decltype(fn(T0{},T1{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>(DfNPtrs{i0.ptr,i1.ptr});
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
     {
         FGASSERT(srcs.size() == 2);
-        const In0 &     in0 = std::any_cast<const In0 &>(srcs[0]->getDataCref());
-        const In1 &     in1 = std::any_cast<const In1 &>(srcs[1]->getDataCref());
-        snk = fn(in0,in1);
+        T0 const &          i0 = srcs[0]->getCref<T0>();
+        T1 const &          i1 = srcs[1]->getCref<T1>();
+        snk = fn(i0,i1);
     };
-    op->sources.push_back(in0.ptr);
-    op->sources.push_back(in1.ptr);
-    in0.ptr->addSink(op);
-    in1.ptr->addSink(op);
-    return OPT<Out>(op);
+    i0.ptr->addSink(op);
+    i1.ptr->addSink(op);
+    return OPT<R>(op);
 }
 
-template<class Out,class In0,class In1>
-OPT<Out>            link2_(
-    const NPT<In0> & in0,const NPT<In1> & in1,
-    const Sfun<void(const In0 &,const In1 &,Out &)> & fn)
+template<class I0,class I1,class I2,class C>
+auto                link3(const I0 & i0,const I1 & i1,const I2 & i2,C const & fn)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->data = Out();       // Must be instantiated for output by reference
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
-    {
-        FGASSERT(srcs.size() == 2);
-        const In0 &     in0 = std::any_cast<const In0 &>(srcs[0]->getDataCref());
-        const In1 &     in1 = std::any_cast<const In1 &>(srcs[1]->getDataCref());
-        Out &           out = std::any_cast<Out &>(snk);
-        fn(in0,in1,out);
-    };
-    op->sources.push_back(in0.ptr);
-    op->sources.push_back(in1.ptr);
-    in0.ptr->addSink(op);
-    in1.ptr->addSink(op);
-    return OPT<Out>(op);
-}
-
-template<class Out,class In0,class In1,class In2>
-OPT<Out>            link3(
-    const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,
-    const Sfun<Out(const In0 &,const In1 &,const In2 &)> & fn)
-{
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
+    typedef typename I0::Type T0;
+    typedef typename I1::Type T1;
+    typedef typename I2::Type T2;
+    typedef decltype(fn(T0{},T1{},T2{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>(DfNPtrs{i0.ptr,i1.ptr,i2.ptr});
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
     {
         FGASSERT(srcs.size() == 3);
-        const In0 &     in0 = std::any_cast<const In0 &>(srcs[0]->getDataCref());
-        const In1 &     in1 = std::any_cast<const In1 &>(srcs[1]->getDataCref());
-        const In2 &     in2 = std::any_cast<const In2 &>(srcs[2]->getDataCref());
-        snk = fn(in0,in1,in2);
+        T0 const &          i0 = srcs[0]->getCref<T0>();
+        T1 const &          i1 = srcs[1]->getCref<T1>();
+        T2 const &          i2 = srcs[2]->getCref<T2>();
+        snk = fn(i0,i1,i2);
     };
-    op->sources.push_back(in0.ptr);
-    op->sources.push_back(in1.ptr);
-    op->sources.push_back(in2.ptr);
-    in0.ptr->addSink(op);
-    in1.ptr->addSink(op);
-    in2.ptr->addSink(op);
-    return OPT<Out>(op);
+    i0.ptr->addSink(op);
+    i1.ptr->addSink(op);
+    i2.ptr->addSink(op);
+    return OPT<R>(op);
 }
 
-template<class Out,class In0,class In1,class In2,class In3>
-OPT<Out>            link4(
-    const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,
-    const Sfun<Out(const In0 &,const In1 &,const In2 &,const In3 &)> & fn)
+template<class I0,class I1,class I2,class I3,class C>
+auto                link4(const I0 & i0,const I1 & i1,const I2 & i2,const I3 & i3,C const & fn)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
+    typedef typename I0::Type T0;
+    typedef typename I1::Type T1;
+    typedef typename I2::Type T2;
+    typedef typename I3::Type T3;
+    typedef decltype(fn(T0{},T1{},T2{},T3{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>(DfNPtrs{i0.ptr,i1.ptr,i2.ptr,i3.ptr});
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
     {
         FGASSERT(srcs.size() == 4);
-        const In0 &     in0 = std::any_cast<const In0 &>(srcs[0]->getDataCref());
-        const In1 &     in1 = std::any_cast<const In1 &>(srcs[1]->getDataCref());
-        const In2 &     in2 = std::any_cast<const In2 &>(srcs[2]->getDataCref());
-        const In3 &     in3 = std::any_cast<const In3 &>(srcs[3]->getDataCref());
-        snk = fn(in0,in1,in2,in3);
+        T0 const &          i0 = srcs[0]->getCref<T0>();
+        T1 const &          i1 = srcs[1]->getCref<T1>();
+        T2 const &          i2 = srcs[2]->getCref<T2>();
+        T3 const &          i3 = srcs[3]->getCref<T3>();
+        snk = fn(i0,i1,i2,i3);
     };
-    op->sources.push_back(in0.ptr);
-    op->sources.push_back(in1.ptr);
-    op->sources.push_back(in2.ptr);
-    op->sources.push_back(in3.ptr);
-    in0.ptr->addSink(op);
-    in1.ptr->addSink(op);
-    in2.ptr->addSink(op);
-    in3.ptr->addSink(op);
-    return OPT<Out>(op);
+    i0.ptr->addSink(op);
+    i1.ptr->addSink(op);
+    i2.ptr->addSink(op);
+    i3.ptr->addSink(op);
+    return OPT<R>(op);
 }
 
-template<class Out,class In0,class In1,class In2,class In3,class In4>
-OPT<Out>            link5(
-    const NPT<In0> & in0,const NPT<In1> & in1,const NPT<In2> & in2,const NPT<In3> & in3,const NPT<In4> & in4,
-    const Sfun<Out(const In0 &,const In1 &,const In2 &,const In3 &,const In4 &)> & fn)
+template<class I0,class I1,class I2,class I3,class I4,class C>
+auto                link5(const I0 & i0,const I1 & i1,const I2 & i2,const I3 & i3,const I4 & i4,C const & fn)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [fn](DfgNPtrs const & srcs,std::any & snk)
+    typedef typename I0::Type T0;
+    typedef typename I1::Type T1;
+    typedef typename I2::Type T2;
+    typedef typename I3::Type T3;
+    typedef typename I4::Type T4;
+    typedef decltype(fn(T0{},T1{},T2{},T3{},T4{})) R;
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>(DfNPtrs{i0.ptr,i1.ptr,i2.ptr,i3.ptr,i4.ptr});
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
     {
         FGASSERT(srcs.size() == 5);
-        const In0 &     in0 = std::any_cast<const In0 &>(srcs[0]->getDataCref());
-        const In1 &     in1 = std::any_cast<const In1 &>(srcs[1]->getDataCref());
-        const In2 &     in2 = std::any_cast<const In2 &>(srcs[2]->getDataCref());
-        const In3 &     in3 = std::any_cast<const In3 &>(srcs[3]->getDataCref());
-        const In4 &     in4 = std::any_cast<const In4 &>(srcs[4]->getDataCref());
-        snk = fn(in0,in1,in2,in3,in4);
+        T0 const &          i0 = srcs[0]->getCref<T0>();
+        T1 const &          i1 = srcs[1]->getCref<T1>();
+        T2 const &          i2 = srcs[2]->getCref<T2>();
+        T3 const &          i3 = srcs[3]->getCref<T3>();
+        T4 const &          i4 = srcs[4]->getCref<T4>();
+        snk = fn(i0,i1,i2,i3,i4);
     };
-    op->sources.push_back(in0.ptr);
-    op->sources.push_back(in1.ptr);
-    op->sources.push_back(in2.ptr);
-    op->sources.push_back(in3.ptr);
-    op->sources.push_back(in4.ptr);
-    in0.ptr->addSink(op);
-    in1.ptr->addSink(op);
-    in2.ptr->addSink(op);
-    in3.ptr->addSink(op);
-    in4.ptr->addSink(op);
-    return OPT<Out>(op);
+    i0.ptr->addSink(op);
+    i1.ptr->addSink(op);
+    i2.ptr->addSink(op);
+    i3.ptr->addSink(op);
+    i4.ptr->addSink(op);
+    return OPT<R>(op);
 }
 
 template<class T>
 OPT<T>              linkSelect(Svec<NPT<T>> const & inNs,NPT<size_t> selN)
 {
-    Sptr<DfgOutput>     op = std::make_shared<DfgOutput>();
-    op->func = [](DfgNPtrs const & srcs,std::any & snk)
+    Sptr<DfOutput>     op = std::make_shared<DfOutput>();
+    op->func = [](DfNPtrs const & srcs,std::any & snk)
         {
             FGASSERT(srcs.size()>1);
             size_t              sz = srcs.size()-1,
@@ -595,7 +551,7 @@ OPT<T>              linkSelect(Svec<NPT<T>> const & inNs,NPT<size_t> selN)
 template<class T>
 OPT<T>              linkOptional(NPT<T> valN,NPT<bool> optN)
 {
-    return link2<T,T,bool>(valN,optN,[](T const & val,bool const & opt){return opt ? val : T{}; });
+    return link2(valN,optN,[](T const & val,bool const & opt){return opt ? val : T{}; });
 }
 
 }

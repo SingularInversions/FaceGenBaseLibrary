@@ -14,6 +14,14 @@ using namespace std;
 
 namespace Fg {
 
+size_t              cNumDigits(size_t val)
+{
+    size_t              ret = 1;
+    while ((val /= 10) > 0)
+        ++ret;
+    return ret;
+}
+
 // Without a hardware nlz (number of leading zeros) instruction, this function has
 // to be iterative (C / C++ doesn't have any keyword for this operator):
 uint                numLeadingZeros(uint32 x)
@@ -86,8 +94,8 @@ Doubles             solveCubicReal(
                         theta3 = acos(rr / pow(-qq,1.5)) / 3.0,
                         c23 = c2 / 3.0;
         retval.push_back(ss * cos(theta3) - c23);
-        retval.push_back(ss * cos(theta3 + 2.0 * pi() / 3.0) - c23);
-        retval.push_back(ss * cos(theta3 - 2.0 * pi() / 3.0) - c23);
+        retval.push_back(ss * cos(theta3 + 2.0 * pi / 3.0) - c23);
+        retval.push_back(ss * cos(theta3 - 2.0 * pi / 3.0) - c23);
     }
     return retval;
 }
@@ -242,22 +250,22 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 typedef union 
 {
-    double   dbl;
-    struct {int32_t  lo,hi;} asInt;
-}  FgExpFast;
+    double                      dbl;
+    struct {int32_t  lo,hi;}    asInt;
+}  ExpFast;
 
 double              expFast(double x)
 {
     x *=  1.4426950408889634074;        // Convert to base 2 exponent
-    double      ipart = floor(x+0.5),
-                fpart = x - ipart;
-    FgExpFast   epart;
+    double              ipart = floor(x+0.5),
+                        fpart = x - ipart;
+    ExpFast             epart;
     epart.asInt.lo = 0;
     epart.asInt.hi = (((int) ipart) + 1023) << 20;
-    double      y = fpart*fpart,
-                px = 2.30933477057345225087e-2;
+    double              y = fpart*fpart,
+                        px = 2.30933477057345225087e-2;
     px = px*y + 2.02020656693165307700e1;
-    double      qx = y + 2.33184211722314911771e2;
+    double              qx = y + 2.33184211722314911771e2;
     px = px*y + 1.51390680115615096133e3;
     qx = qx*y + 4.36821166879210612817e3;
     px = px * fpart;

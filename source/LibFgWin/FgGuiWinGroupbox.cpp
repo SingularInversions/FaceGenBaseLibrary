@@ -63,7 +63,7 @@ struct      GuiGroupboxWin : public GuiBaseImpl
 
     virtual Vec2UI      getMinSize() const {return (m_contents->getMinSize() + Vec2UI(2*padHorz,padTop+padBot)); }
 
-    virtual Vec2B       wantStretch() const {return m_contents->wantStretch(); }
+    virtual Arr2B       wantStretch() const {return m_contents->wantStretch(); }
 
     virtual void        updateIfChanged() {m_contents->updateIfChanged(); }
 

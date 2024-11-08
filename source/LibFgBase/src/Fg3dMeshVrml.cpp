@@ -17,7 +17,7 @@ using namespace std;
 
 namespace Fg {
 
-template<uint dim>
+template<size_t dim>
 void
 writePoint(Ofstream & ofs,Mat<float,dim,1> const & pnt)
 {
@@ -26,7 +26,7 @@ writePoint(Ofstream & ofs,Mat<float,dim,1> const & pnt)
         ofs << " " << pnt[kk];
 }
 
-template<uint dim>
+template<size_t dim>
 void
 writePoints(Ofstream & ofs,vector<Mat<float,dim,1> > const & pts)
 {
@@ -44,9 +44,9 @@ writePoints(Ofstream & ofs,vector<Mat<float,dim,1> > const & pts)
         "\n            ]\n";
 }
 
-template<uint dim>
+template<size_t dim>
 void
-writeIdx(Ofstream & ofs,Mat<uint,dim,1> const & idx)
+writeIdx(Ofstream & ofs,Arr<uint,dim> const & idx)
 {
     ofs << "            ";
     for (uint ii=0; ii<dim; ++ii)
@@ -54,9 +54,9 @@ writeIdx(Ofstream & ofs,Mat<uint,dim,1> const & idx)
     ofs << "-1";
 }
 
-template<uint dim>
+template<size_t dim>
 void
-writeIndices(Ofstream & ofs,vector<Mat<uint,dim,1> > const &  inds)
+writeIndices(Ofstream & ofs,vector<Arr<uint,dim> > const &  inds)
 {
     if (inds.size() == 0)
         return;

@@ -15,17 +15,14 @@ namespace Fg {
 template <class T>
 struct  MatV
 {
-    // the dimensions can't be changed to 'size_t' without breaking existing serialized data
-    // having only one of the dimensions non-zero is valid and can used as a base case for incremental
-    // composition:
-    uint            nrows = 0;      // having only one of these non-zero *is* a valid state
+    // dimensions can't be changed to 'size_t' without breaking existing serialized data
+    uint            nrows = 0;      // only one of these non-zero is valid state; used for incremental construction
     uint            ncols = 0;
     Svec<T>         m_data;         // invariant: m_data.size() == nrows*ncols
-
     FG_SER3(nrows,ncols,m_data)
 
     MatV() {}
-
+    // WARNING unlike Image or Iter, this ctor is in order of the major index then the minor index:
     MatV(size_t rows,size_t cols) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(rows*cols) {}
     MatV(size_t rows,size_t cols,T val) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(rows*cols,val) {}
     MatV(size_t rows,size_t cols,Svec<T> const & v) : nrows{scast<uint>(rows)}, ncols{scast<uint>(cols)}, m_data(v)
@@ -80,6 +77,8 @@ struct  MatV
     }
     T &             operator[](Vec2UI colRow) {return cr(colRow[0],colRow[1]); }
     T const &       operator[](Vec2UI colRow) const {return cr(colRow[0],colRow[1]); }
+    T &             operator[](Vec2UL colRow) {return cr(colRow[0],colRow[1]); }
+    T const &       operator[](Vec2UL colRow) const {return cr(colRow[0],colRow[1]); }
     // these 2 overloads are a bit dangerous but useful when the MatV is a vector (ie ncols==1 or nrows==1)
     T &             operator[](size_t ii) {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
     T const &       operator[](size_t ii) const {FGASSERT_FAST(ii<m_data.size()); return m_data[ii]; }
@@ -142,8 +141,8 @@ struct  MatV
         for (size_t ii=0; ii<nn; ii++)
             this->rc(ii,ii) = T(1);
     }
-    double          mag() const {return cMag(m_data); }
-    double          len() const {return cLen(m_data); }
+    double          magD() const {return cMagD(m_data); }
+    double          len() const {return cLenD(m_data); }
     bool            isVector() const {return ((nrows*ncols>0) && ((nrows==1)||(ncols==1))); }
     Svec<T>         sliceCol(size_t col) const
     {
@@ -214,7 +213,6 @@ template<class T>
 struct Traits<MatV<T>>
 {
     typedef typename Traits<T>::Scalar              Scalar;
-    typedef typename Traits<T>::Accumulator         Accumulator;
     typedef typename Traits<T>::Floating            Floating;
 };
 
@@ -225,13 +223,6 @@ typedef Svec<MatD>          MatDs;
 
 template<class T,class U>
 MatV<T>             mapCast(MatV<U> const & m) {return MatV<T> {m.nrows,m.ncols,mapCast<T>(m.m_data)}; }
-
-template<class T,class F>
-void inline         dcast_(MatV<F> const & f,MatV<T> & t)
-{
-    t.resize(f.dims());
-    dcast_(f.m_data,t.m_data);
-}
 
 template<class T>
 MatV<T>             transpose(MatV<T> const & m)
@@ -287,15 +278,18 @@ std::ostream &      operator<<(std::ostream & ss,MatV<T> const & mm)
     return ss;
 }
 
-// The element type must be static_cast-able from from 0:
-template<class T>
-MatV<T>             matMul(MatV<T> const & lhs,MatV<T> const & rhs)
+// matMul is a multiply-accumulate contraction between the minor index of 'lhs' and the major index of 'rhs'.
+// the return type must support construction from '0'.
+template<class T,class U>
+auto                matMul(MatV<T> const & lhs,MatV<U> const & rhs)
 {
+    typedef decltype(T{}*U{})   R;
     FGASSERT(lhs.ncols == rhs.nrows);
-    // Simple block sub-loop cache optimization, no multithreading or explicit SIMD.
-    // Use eigen instead if speed is important:
-    size_t constexpr    CN = 64 / sizeof(T);    // Number of elements that fit in L1 Cache (est)
-    MatV<T>             ret(lhs.nrows,rhs.ncols,static_cast<T>(0));
+    // block sub-loop cache optimization, no multithreading or explicit SIMD.
+    // use eigen instead if speed is important and elements are scalars.
+    // below we calculate the number of elements that fit in a typical cache line of 64 bytes:
+    size_t constexpr    CN = std::max(std::min(64/sizeof(T),64/sizeof(U)),size_t(2));
+    MatV<R>             ret {lhs.nrows,rhs.ncols,R(0)};
     for (size_t rr=0; rr<ret.nrows; rr+=CN) {
         size_t const        R2 = cMin(CN,ret.nrows-rr);
         for (size_t cc=0; cc<ret.ncols; cc+=CN) {
@@ -333,8 +327,8 @@ MatV<T>             matMul(MatV<T> const & lhs,MatV<T> const & rhs)
     return ret;
 }
 
-template<class T>
-MatV<T>             operator*(MatV<T> const & lhs,MatV<T> const & rhs) {return matMul(lhs,rhs); }
+template<class T,class U>
+auto                operator*(MatV<T> const & lhs,MatV<U> const & rhs) {return matMul(lhs,rhs); }
 
 // treat RHS as a column vector (and assume output type is same as matrix type):
 template<class T,class U>
@@ -380,23 +374,23 @@ template<class T>
 MatV<T>             operator*(T const & lhs,MatV<T> const & rhs) {return (rhs*lhs); }
 
 template<typename T>
-MatV<T>             asColVec(Svec<T> const & v)
+MatV<T>             cColVec(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
-    return MatV<T>(v.size(),1,v.data());
+    return MatV<T>{v.size(),1,v};
 }
 template<typename T>
-MatV<T>             asRowVec(Svec<T> const & v)
+MatV<T>             cRowVec(Svec<T> const & v)
 {
     FGASSERT(!v.empty());
-    return MatV<T>(1,v.size(),&v[0]);
+    return MatV<T>{1,v.size(),v};
 }
 template<class T>
-Svec<Svec<T>>       asVecOfVecs(MatV<T> const & m)
+Svec<Svec<T>>       asSvecSvec(MatV<T> const & m)
 {
     size_t              R = m.numRows(),
                         C = m.numCols();
-    Svec<Svec<T>>       ret; ret.reserve(m.numRows());
+    Svec<Svec<T>>       ret; ret.reserve(R);
     for (size_t rr=0; rr<R; ++rr) {
         auto                it = m.m_data.begin() + rr*C;
         ret.emplace_back(it,it+C);
@@ -676,7 +670,7 @@ MatV<T>             catDiagonal(MatV<T> const & b0,MatV<T> const & b1,MatV<T> co
 Mat<MatD,2,2>       cPartition(MatD const & m,size_t loSize);
 
 template<class T>
-MatV<T>             normalize(MatV<T> const & m) {return m * (1/std::sqrt(m.mag())); }
+MatV<T>             normalize(MatV<T> const & m) {return m * (1/std::sqrt(m.magD())); }
 
 template<class T>
 MatV<T>             cOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFacs)
@@ -691,7 +685,7 @@ MatV<T>             cOuterProduct(Svec<T> const & rowFacs,Svec<T> const & colFac
 MatD                cRelDiff(MatD const & a,MatD const & b,double minAbs=0.0);
 
 template<class T>
-T                   cMag(MatV<T> const & mat) {return mat.mag(); }
+T                   cMagD(MatV<T> const & mat) {return mat.magD(); }
 
 // Return sum of squared values of diagonal elements:
 template<class T>
@@ -724,9 +718,24 @@ double              cRowMag(MatV<T> const & mat,size_t row)
     double              ret {0};
     size_t              off = row * mat.numCols();
     for (size_t cc=off; cc<off+mat.numCols(); ++cc)
-        ret += cMag(mat.m_data[cc]);
+        ret += cMagD(mat.m_data[cc]);
     return ret;
 }
+
+template<class T>
+Svec<T>             cSumRows(MatV<T> const & m)
+{
+    Svec<T>             acc (m.numCols(),0);
+    for (size_t rr=0; rr<m.numRows(); ++rr) {
+        T const *           ptr = m.rowPtr(rr);
+        for (size_t cc=0; cc<acc.size(); ++cc)
+            acc[cc] += ptr[cc];
+    }
+    return acc;
+}
+
+template<class T>
+inline Svec<T>      cMeanRow(MatV<T> const & m) {return cSumRows(m) / m.numRows(); }
 
 template<class T>
 double              cRowDotProd(MatV<T> const & mat,size_t row0,size_t row1)
@@ -736,26 +745,6 @@ double              cRowDotProd(MatV<T> const & mat,size_t row0,size_t row1)
                         *ptr1 = mat.rowPtr(row1);
     for (size_t cc=0; cc<mat.ncols; ++cc)
         ret += cDot(ptr0[cc],ptr1[cc]);
-    return ret;
-}
-
-// row covariance of M == M * M^T using ignorance prior on mean and stdev.
-// if D<3, will still return matrices but they cannot reflect a proper prior:
-template<class T>
-MatD                cRowCovariance(MatV<T> const & mat)
-{
-    size_t                  R = mat.numRows();
-    MatD                    ret {R,R};
-    double                  denom = cMax(1.0,scast<double>(mat.numCols())-2), // be robust for dimensions < 3
-                            fac = 1.0 / denom;
-    for (size_t r0=0; r0<R; ++r0) {
-        ret.rc(r0,r0) = cRowMag(mat,r0) * fac;
-        for (size_t r1=0; r1<r0; ++r1) {
-            double              dot = cRowDotProd(mat,r0,r1) * fac;
-            ret.rc(r0,r1) = dot;
-            ret.rc(r1,r0) = dot;
-        }
-    }
     return ret;
 }
 
@@ -784,14 +773,42 @@ MatD                cRowCorrelation(MatV<T> const & mat,bool utOnly=false)
 }
 
 template<class T>
+MatV<T>             scaleCols(MatV<T> const & mat,Svec<T> const & vals)
+{
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(vals.size() == C);
+    auto                fn = [&,R,C]()
+    {
+        Svec<T>             ret; ret.reserve(R*C);
+        for (size_t rr=0; rr<R; ++rr) {
+            T const *           ptr = mat.rowPtr(rr);
+            for (size_t cc=0; cc<C; ++cc)
+                ret.push_back(ptr[cc] * vals[cc]);
+        }
+        return ret;
+    };
+    return {R,C,fn()};
+}
+
+template<class T>
 MatV<T>             scaleRows(MatV<T> const & mat,Svec<T> const & vals)
 {
-    FGASSERT(mat.numRows() == vals.size());
-    MatV<T>                 ret {mat.dims()};
-    for (size_t rr=0; rr<mat.numRows(); ++rr)
-        for (size_t cc=0; cc<mat.numCols(); ++cc)
-            ret.rc(rr,cc) = mat.rc(rr,cc) * vals[rr];
-    return ret;
+    size_t              R = mat.numRows(),
+                        C = mat.numCols();
+    FGASSERT(vals.size() == R);
+    auto                fn = [&,R,C]()
+    {
+        Svec<T>             ret; ret.reserve(R*C);
+        for (size_t rr=0; rr<R; ++rr) {
+            T const *           ptr = mat.rowPtr(rr);
+            T                   val = vals[rr];
+            for (size_t cc=0; cc<C; ++cc)
+                ret.push_back(ptr[cc] * val);
+        }
+        return ret;
+    };
+    return {R,C,fn()};
 }
 
 template<class T>
@@ -820,52 +837,194 @@ MatD        cRandOrthogonal(size_t dim);
 // D is a diagonal matrix of scales whose logarithms are distributed as N(0,logScaleStdev):
 MatD        cRandMahalanobis(size_t dims,double logScaleStdev);
 
+inline size_t       cTriangular(size_t D) {return (D*(D+1))/2; }    // triangular numbers
+
+// Symmetric matrix. Useful for clarity, type safety, function overloading and avoiding state duplication:
 template<class T>
-struct      MatSV                   // symmetric variable-size matrix
+struct          MatS
 {
-    size_t              dim;        // matrix must be square
-    Svec<T>             data;       // only UT elements are stored, in row major order
-    FG_SER2(dim,data);
+    size_t              dim;
+    Svec<T>             data;   // stored in UT raster order
+    FG_SER2(dim,data)
 
-    MatSV() : dim{0} {}
-    explicit MatSV(size_t s) : dim{s}, data(s*(s+1)/2) {}
-    MatSV(size_t s,Svec<T> const & d) : dim{s}, data{d} {FGASSERT(d.size() == s*(s+1)/2); }
+    MatS() : dim{0} {}
+    explicit MatS(size_t D,T val) : dim{D}, data(cTriangular(D),val) {}     // const value ctor
+    MatS(size_t D,Svec<T> const & d) : dim{D}, data{d} {FGASSERT(d.size() == cTriangular(D)); }
 
-    inline size_t       cIdx(size_t row,size_t col) const
+    T const &           rc(size_t rr,size_t cc) const  {return data[rcToOffset(rr,cc)]; }
+    T &                 rc(size_t rr,size_t cc) {return data[rcToOffset(rr,cc)]; }
+
+    Svec<T>             operator*(Svec<T> const & v) const
     {
-        if (col < row) std::swap(row,col);
-        return row * dim - row*(row-1)/2 + col;
-    }
-    T const &           rc(size_t row,size_t col) const
-    {
-        FGASSERT_FAST((row<dim) && (col<dim));
-        return data[cIdx(row,col)];
-    }
-    T &                 rc(size_t row,size_t col)
-    {
-        FGASSERT_FAST((row<dim) && (col<dim));
-        return data[cIdx(row,col)];
-    }
+        Svec<T>             ret; ret.reserve(dim);
+        // see comments in 'asMatV' below
+        T const *           ptr = &data[0];
+        for (size_t rr=0; rr<dim; ++rr) {
+            T                   acc {0};
+            T const *           ptrM = &data[0]+rr;
+            size_t              step = dim-1;
+            for (size_t cc=0; cc<rr; ++cc) {
+                acc += *ptrM * v[cc];
+                ptrM += step;
+                --step;
+            }
+            for (size_t cc=rr; cc<dim; ++cc)
+                acc += *ptr++ * v[cc];
+            ret.push_back(acc);
+        }
+        return ret;
+    };
+
+    inline void         operator+=(MatS const & rhs) {data += rhs.data; }
+    inline MatS         operator+(MatS const & rhs) const {return {dim,data+rhs.data}; }
+    inline MatS         operator-(MatS const & rhs) const {return {dim,data-rhs.data}; }
+    inline MatS         operator*(T fac) const {return {dim,data*fac}; }
+    inline MatS         operator/(T fac) const {return {dim,data/fac}; }
 
     MatV<T>             asMatV() const
     {
-        MatV<T>             ret {dim,dim};
-        size_t              idx {0};
-        for (size_t rr=0; rr<dim; ++rr) {
-            ret.rc(rr,rr) = data[idx++];
-            for (size_t cc=rr+1; cc<dim; ++cc) {
-                T const &           e = data[idx++];
-                ret.rc(rr,cc) = e;
-                ret.rc(cc,rr) = e;
+        size_t              D = dim;
+        auto                fn = [&,D]() -> Svec<T>
+        {
+            Svec<T>             ret; ret.reserve(D*D);
+            // looping through output may be more cache efficient than looping through input:
+            T const *           ptr = &data[0];
+            for (size_t rr=0; rr<D; ++rr) {
+                T const *           ptrM = &data[0]+rr;     // first column mirrored data for this row
+                size_t              step = D-1;             // step down to next row
+                for (size_t cc=0; cc<rr; ++cc) {
+                    ret.push_back(*ptrM);
+                    ptrM += step;
+                    --step;
+                }
+                for (size_t cc=rr; cc<D; ++cc)
+                    ret.push_back(*ptr++);
             }
-        }
-        return ret;
+            return ret;
+        };
+        return {D,D,fn()};
+    }
+
+    size_t              rcToOffset(size_t rr,size_t cc) const
+    {
+        FGASSERT((rr<dim) && (cc<dim));
+        if (cc<rr) std::swap(rr,cc);
+        return rr*dim + cc - cTriangular(rr);
     }
 };
 
+typedef MatS<double>    MatSD;
+typedef MatS<int>       MatSI;
+typedef Svec<MatSD>     MatSDs;
+
+template <class T>
+std::ostream &      operator<<(std::ostream & os,MatS<T> const & M)
+{
+    std::ios::fmtflags  oldFlag = os.setf(std::ios::fixed | std::ios::showpos | std::ios::right);
+    std::streamsize     oldPrec = os.precision(6);
+    os << fgpush;
+    // just print the LT with the remaining left blank for clarity:
+    for (size_t rr=0; rr<M.dim; rr++) {
+        os << fgnl;
+        os << "[ ";
+        for (size_t cc=0; cc<=rr; cc++)
+            os << M.rc(rr,cc) << " ";
+        for (size_t cc=rr+1; cc<M.dim; ++cc)
+            os << "          ";
+        os << "]";
+    }
+    os << fgpop;
+    os.flags(oldFlag);
+    os.precision(oldPrec);
+    return os;
+}
+
+template<typename T>
+MatS<T>             cMatSDiag(Svec<T> const & diagVals)
+{
+    size_t              D = diagVals.size();
+    auto                fn = [&,D]()
+    {
+        Svec<T>             ret; ret.reserve(cTriangular(D));
+        for (size_t rr=0; rr<D; ++rr) {
+            ret.push_back(diagVals[rr]);
+            for (size_t cc=rr+1; cc<D; ++cc)
+                ret.push_back(0);
+        }
+        return ret;
+    };
+    return MatS<T>{D,fn()};
+}
+
+template<typename T>
+MatS<T>             selfTransposeProduct(MatV<T> const & M)     // returns symmetrix matrix M * M^T
+{
+    size_t              R = M.numRows();
+    auto                fn = [&M,R]() -> Svec<T>
+    {
+        Svec<T>             ret; ret.reserve(cTriangular(R));
+        for (size_t rr=0; rr<R; ++rr)
+            for (size_t cc=rr; cc<R; ++cc)
+                ret.push_back(cRowDotProd(M,rr,cc));
+        return ret;
+    };
+    return {R,fn()};
+}
+
+template<typename T>
+T                   multAcc(size_t D,T const * a0,T const * a1,T const * a2)
+{
+    T                   acc {0};
+    for (size_t ii=0; ii<D; ++ii)
+        acc += a0[ii] * a1[ii] * a2[ii];
+    return acc;
+}
+
+template<typename T>
+MatS<T>             selfDiagTransposeProduct(MatV<T> const & mat,Svec<T> const & diags)     // M * D * M^T
+{
+    size_t              D = diags.size();
+    FGASSERT((mat.numRows() == D) && (mat.numCols() == D));
+    auto                fn = [&mat,&diags,D]() -> Svec<T>
+    {
+        Svec<T>         ret; ret.reserve(cTriangular(D));
+        for (size_t rr=0; rr<D; ++rr)
+            for (size_t cc=rr; cc<D; ++cc)
+                ret.push_back(multAcc(D,mat.rowPtr(rr),mat.rowPtr(cc),&diags[0]));
+        return ret;
+    };
+    return {D,fn()};
+}
+
+template<typename T>
+MatS<T>             outerProductSelf(Svec<T> const & v)
+{
+    size_t              D = v.size();
+    auto                fn = [&,D]()
+    {
+        Svec<T>             ret; ret.reserve(cTriangular(D));
+        for (size_t rr=0; rr<D; ++rr)
+            for (size_t cc=rr; cc<D; ++cc)
+                ret.push_back(v[rr]*v[cc]);
+        return ret;
+    };
+    return {D,fn()};
+}
+
+// row covariance of M == M * M^T using ignorance prior on mean and stdev.
+// if D<3, will still return matrices but they cannot reflect a proper prior:
+template<class T>
+MatS<T>             cRowCovariance(MatV<T> const & mat)
+{
+    double              denom = cMax(1.0,scast<double>(mat.numCols())-1),   // 1D will be degenerate anyway
+                        fac = 1.0 / denom;
+    return selfTransposeProduct(mat) * fac;
+}
+
+MatSD       cMatRandSymm(size_t dim,double eigvalStdev);    // may generate eigvals close to zero
 // Random symmetric positive definite matrix with eigenvalue square roots (scales) whose
-// logarithms are distributed as N(0,logScaleStdev):
-MatD        cRandSPD(size_t dims,double logScaleStdev);
+// logarithms are distributed as N(0,lnScaleStdev):
+MatSD       cMatRandSpd(size_t dim,double lnScaleStdev);
 
 }
 

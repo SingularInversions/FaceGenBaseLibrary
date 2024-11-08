@@ -14,6 +14,19 @@
 
 namespace Fg {
 
+// needed because (uchar*uchar),(uchar+uchar),(ushort*ushort),(ushort+ushort) return (int):
+
+template<class T>
+Arr<T,4>    mapAddCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e+f); }); }
+template<class T>
+Arr<T,4>    mapSubCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e-f); }); }
+template<class T>
+Arr<T,4>    mapMulCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e*f); }); }
+template<class T>
+Arr<T,4>    mapMulCast(Arr<T,4> a,T v) {return mapCall(a,[v](T e){return scast<T>(e*v); }); }
+template<class T>
+Arr<T,4>    mapDivCast(Arr<T,4> a,T v) {return mapCall(a,[v](T e){return scast<T>(e/v); }); }
+
 template<typename T>
 struct      Rgba
 {
@@ -23,13 +36,13 @@ struct      Rgba
     typedef T           ValueType;
 
     Rgba() {};
-    explicit Rgba(T val) : m_c(cArr<T,4>(val)) {}
+    explicit Rgba(T val) : m_c{val} {}
     explicit Rgba(Arr<T,4> const & arr) : m_c(arr) {}
 
     // Otherwise the conversion constuctor would override:
     Rgba(Rgba const &) = default;
     Rgba &          operator=(Rgba const &) = default;
-    Rgba(T r,T g,T b,T a) : m_c {{r,g,b,a}} {}
+    Rgba(T r,T g,T b,T a) : m_c {r,g,b,a} {}
     // Conversion constructor
     template<class U>
     explicit Rgba(Rgba<U> const & val) : m_c(mapCast<T,U,4>(val.m_c))  {}
@@ -45,18 +58,19 @@ struct      Rgba
     T const &       blue() const {return m_c[2]; }
     T const &       alpha() const {return m_c[3]; }
 
-    Arr<T,3>        rgb() const {return {{m_c[0],m_c[1],m_c[2]}}; }
+    Arr<T,3>        rgb() const {return {m_c[0],m_c[1],m_c[2]}; }
     // only use arithmetic with alpha-weighted values !
-    Rgba            operator+(Rgba const & rhs) const {return Rgba(m_c+rhs.m_c); }
-    Rgba            operator-(Rgba const & rhs) const {return Rgba(m_c-rhs.m_c); }
-    Rgba            operator*(Rgba const &rhs) const {return Rgba(mapMul(m_c,rhs.m_c)); }
-    Rgba            operator*(T val) const {return Rgba(m_c * val); }
-    Rgba            operator/(T val) const {return Rgba(m_c/val); }
+    // note that we need to recast the results since arithmetic operations on 8 and 16 bit numbers return 'int':
+    Rgba            operator+(Rgba rhs) const {return Rgba{mapAddCast(m_c,rhs.m_c)}; }
+    Rgba            operator-(Rgba rhs) const {return Rgba{mapSubCast(m_c,rhs.m_c)}; }
+    Rgba            operator*(Rgba rhs) const {return Rgba(mapMulCast(m_c,rhs.m_c)); }
+    Rgba            operator*(T val) const {return Rgba{mapMulCast(m_c,val)}; }
+    Rgba            operator/(T val) const {return Rgba{mapDivCast(m_c,val)}; }
     Rgba const &    operator*=(T v) {m_c*=v; return *this; }
     Rgba const &    operator/=(T v) {m_c/=v; return *this; }
     Rgba const &    operator+=(Rgba rhs) {m_c += rhs.m_c; return *this; }
-    bool            operator==(Rgba const & rhs) const {return m_c == rhs.m_c; }
-    bool            operator!=(Rgba const & rhs) const {return !(m_c == rhs.m_c); }
+    bool            operator==(Rgba rhs) const {return m_c == rhs.m_c; }
+    bool            operator!=(Rgba rhs) const {return !(m_c == rhs.m_c); }
     T               rec709() const                      // Use rec.709 RGB -> CIE L
     {
         return static_cast<T>(0.213 * red() + 0.715 * green() + 0.072 * blue());
@@ -78,14 +92,13 @@ typedef Rgba<uint>      RgbaUI;
 typedef Rgba<float>     RgbaF;
 typedef Rgba<double>    RgbaD;
 
-typedef Svec<Rgba8>     RgbaUCs;
+typedef Svec<Rgba8>     Rgba8s;
 typedef Svec<RgbaF>     RgbaFs;
 
 template<typename T>
 struct      Traits<Rgba<T> >
 {
     typedef typename Traits<T>::Scalar             Scalar;
-    typedef Rgba<typename Traits<T>::Accumulator>  Accumulator;
     typedef Rgba<typename Traits<T>::Floating>     Floating;
     typedef Rgba<typename Traits<T>::Printable>    Printable;
 };

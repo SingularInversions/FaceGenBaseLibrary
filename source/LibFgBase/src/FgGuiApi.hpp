@@ -60,7 +60,7 @@ typedef Svec<GuiPtr>        GuiPtrs;
 typedef Svec<GuiPtrs>       GuiPtrss;
 
 template<class T>
-Sptr<GuiBase>       guiMakePtr(T const & stackVal) {return std::make_shared<T>(stackVal); }
+Sptr<GuiBase>       guiPtr(T const & guiDef) {return std::make_shared<T>(guiDef); }
 
 struct      GuiEvent
 {
@@ -187,7 +187,7 @@ struct      GuiCheckbox : GuiBase
 };
 
 GuiPtr              guiCheckbox(String8 const & label,IPT<bool> const & valInp);
-GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool>> const & selNs);
+GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool>> const & selNs,bool scroll=false);
 
 void                guiDialogMessage(String8 const & caption,String8 const & message);
 
@@ -249,12 +249,12 @@ GuiImplPtr guiGetOsImpl(GuiDynamic const & guiApi);
 struct      GuiDynamic : GuiBase
 {
     Sfun<GuiPtr(void)>  makePane;
-    DfgFPtr             updateFlag;
+    DfFPtr             updateFlag;
 
     virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
 
-inline GuiPtr       guiDynamic(Sfun<GuiPtr(void)> const & makePane,DfgFPtr const & updateFlag)
+inline GuiPtr       guiDynamic(Sfun<GuiPtr(void)> const & makePane,DfFPtr const & updateFlag)
 {
     GuiDynamic     d;
     d.makePane = makePane;
@@ -287,16 +287,16 @@ struct      GuiImage : GuiBase
     struct      Disp
     {
         ImgRgba8 const *    imgPtr;
-        Vec2I               offset;         // from top left of window
+        Vec2I               offset {0};      // from top left of window
     };
     // Callback when image is needed for bitblt to screen.
     // Output node with image data is not sufficient since user controls input state (eg. zoom & offset)
     // need be modified when the window size changes:
     Sfun<Disp(Vec2UI)>  getImgFn;           // Input argument is display win dims in pixels
-    Vec2B               wantStretch;
+    Arr2B               wantStretch;
     NPT<Vec2UI>         minSizeN;           // Minimum display window size (in pixels)
-    DfgFPtr             updateFlag;         // Display update flag when background should be filled
-    DfgFPtr             updateNofill;       // Display update flag when only image pixels need to be updated
+    DfFPtr             updateFlag;         // Display update flag when background should be filled
+    DfFPtr             updateNofill;       // Display update flag when only image pixels need to be updated
 
     // USER ACTION CALLBACKS:
     // don't perform an action on click down but may want to change cursor to show what drag control is enabled
@@ -326,16 +326,17 @@ GuiPtr              guiImage(NPT<ImgRgba8> imageN,Sfun<void(Vec2F)>);   // Arg i
 
 struct      GuiImg
 {
-    GuiPtr              win;
-    Sfun<void(void)>    zoomIn;
-    Sfun<void(void)>    zoomOut;
+    GuiPtr                  win;
+    Sfun<void(void)>        zoomIn;
+    Sfun<void(void)>        zoomOut;
+    IPT<size_t>             draggingLmN;    // if < lims<size_t>::max(), the cursor is close to this LM, by index into 'ptsIucsN' below
 };
 // Zoom-able (by powers of 2), shift-able, click-able image of variable size:
 GuiImg              guiImageCtrls(
     NPT<ImgRgba8> const &       imageN,             // source image for display
     // User-selected points in IUCS will be overlaid on image.
     // NB These are NOT corrected for non-power-of-2 pixel truncation:
-    IPT<Vec2Fs> const &         ptsIucsN,
+    IPT<NameVec2Fs> const &     ptsIucsN,
     // if true, image zoom goes up to 8x for <=2K images.
     // if false, image zoom goes up to 4x for <=2K images.
     bool                        expertMode=false,
@@ -394,7 +395,7 @@ GuiImplPtr guiGetOsImpl(GuiSpacer const & guiApi);
 
 struct      GuiSpacer : GuiBase
 {
-    Vec2UI              size;       // One dim can be zero
+    Vec2UI              size{0};     // One dim can be zero
 
     virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
@@ -414,6 +415,9 @@ GuiImplPtr          guiGetOsImpl(GuiSplit const & guiApi);
 struct      GuiSplit : GuiBase
 {
     Img<GuiPtr>         panes;
+    Vec2UI              gapSize {0};        // gap in pixels between neighbouring panes (horiz / vert resp.)
+
+    Vec2UI              gapTotal() const;   // total number of gap pixels given pane image size
 
     virtual GuiImplPtr  getInstance() {return guiGetOsImpl(*this); }
 };
@@ -450,10 +454,10 @@ GuiImplPtr          guiGetOsImpl(GuiSplitScroll const & guiApi);
 // Vertically scrollable split window (panes thickness is fixed to minimum):
 struct      GuiSplitScroll : GuiBase
 {
-    DfgFPtr                 updateFlag;     // Has the panes info been updated ?
+    DfFPtr                 updateFlag;     // Do we need to re-create the panes ?
     // This function must not depend on the same guigraph node depended on by its children or
     // the windows will be destroyed and recreated with each child update and thus not work:
-    Sfun<GuiPtrs(void)>     getPanes;
+    Sfun<Img<GuiPtr>(void)> getPanes;
     uint                    spacing;        // Insert this spacing above each sub-win
 
     GuiSplitScroll() : spacing(0) {}
@@ -465,10 +469,9 @@ struct      GuiSplitScroll : GuiBase
 GuiPtr              guiSplitScroll(GuiPtrs const & panes,uint spacing=0);
 GuiPtr              guiSplitScroll(Sfun<GuiPtrs(void)> const & getPanes);
 GuiPtr              guiSplitScroll(Img<GuiPtr> const & panes);
-
 GuiPtr              guiSplitScroll(
-    DfgFPtr const &                 updateNodeIdx,  // Must be unique to this object
-    Sfun<GuiPtrs(void)> const &     getPanes,
+    DfFPtr const &                 updateNodeIdx,  // Must be unique to this object
+    Sfun<Img<GuiPtr>(void)> const & getPanes,
     uint                            spacing=0);
 
 struct      GuiTickLabel
@@ -492,7 +495,7 @@ struct      GuiSlider : GuiBase
     Sfun<double(void)>  getValFn;
     Sfun<void(double)>  setValFn;
     // client must provide a private dirty flag for this slider based on above collection:
-    DfgFPtr             updateFlag;
+    DfFPtr             updateFlag;
     String8             label;          // Can be empty
     VecD2               range;
     double              tickSpacing;
@@ -506,14 +509,14 @@ struct      GuiSlider : GuiBase
 typedef Svec<GuiSlider> GuiSliders;
 
 GuiPtr              guiSlider(
-    IPT<double>         valN,
-    String8             label,               // Can be empty
-    VecD2               range,
-    double              tickSpacing,
-    GuiTickLabels const & tl = GuiTickLabels(),
-    GuiTickLabels const & ul = GuiTickLabels(),
-    uint                edgePadding=5,
-    bool                editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
+    IPT<double>             valN,
+    String8                 label,               // Can be empty
+    VecD2                   range,
+    double                  tickSpacing,
+    GuiTickLabels const &   tl={},
+    GuiTickLabels const &   ul={},
+    uint                    edgePadding=5,
+    bool                    editBox=false);     // Numerical edit box on right, clipped to slider range, 2 fractional digits.
 
 // vertical array of windows with labels on left, sliders on right:
 Img<GuiPtr>         guiSliders(
@@ -521,19 +524,16 @@ Img<GuiPtr>         guiSliders(
     String8s const &        labels,     // Must be same size as valNs
     VecD2                   range,
     double                  tickSpacing,
-    GuiTickLabels const &   tickLabels=GuiTickLabels{});
+    GuiTickLabels const &   tickLabels={},
+    bool                    editBox=false);
 
-// Array of panes with labels on left, sliders on right:
-inline GuiPtr       guiSliderBank(
-    Svec<IPT<double>> const & valNs,
-    String8s const &        labels,     // Must be same size as valNs
+// as above but more efficient layout for when sliders values are needed as a single coordinate:
+Img<GuiPtr>         guiSliders(
+    IPT<Doubles> const &    valsN,          // must be initialized
+    String8s const &        labels,         // must be 1-1 with above
     VecD2                   range,
     double                  tickSpacing,
-    GuiTickLabels const &   tickLabels=GuiTickLabels{})
-{return guiSplitScroll(guiSliders(valNs,labels,range,tickSpacing,tickLabels)); }
-
-// Use to auto create labels for above. Labels will have numbers appended:
-String8s            numberedLabels(String8 const & baseLabel,size_t num);
+    GuiTickLabels const &   tickLabels={});
 
 // Generate equispaced tick labels:
 GuiTickLabels       guiTickLabels(VecD2 range,double spacing,double basePos);
@@ -584,7 +584,7 @@ GuiImplPtr guiGetOsImpl(GuiText const & guiApi);
 struct  GuiText : GuiBase
 {
     NPT<String8>        content;
-    Vec2B               wantStretch = {false,false};
+    Arr2B               wantStretch = {false,false};
     // Used to specify a fixed min width for 2D layouts (eg. label - slider lists)
     uint                minWidth = 12;      // in characters
     // Given in lines. When you expect overflow from one line, reserve more:
@@ -598,9 +598,9 @@ struct  GuiText : GuiBase
 };
 
 // Uses the initial text to determine the min width and min height:
-GuiPtr              guiText(NPT<String8> node,Vec2B wantStretch={false,false},bool rich=true);
+GuiPtr              guiText(NPT<String8> node,Arr2B wantStretch={false,false},bool rich=true);
 // If initial text is not indicative use this one to reserve min width and height:
-GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Vec2B wantStretch={false,false});
+GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Arr2B wantStretch={false,false});
 inline GuiPtr       guiText(String8 text) {return guiText(makeIPT(text),{false,false}); }
 
 // This function must be defined in the corresponding OS-specific implementation:
@@ -609,7 +609,7 @@ GuiImplPtr guiGetOsImpl(GuiTextEdit const & guiApi);
 
 struct  GuiTextEdit : GuiBase
 {
-    DfgFPtr                 updateFlag;
+    DfFPtr                 updateFlag;
     Sfun<String8(void)>     getInput;
     Sfun<void(String8)>     setOutput;
     uint                    minWidth;
@@ -622,7 +622,7 @@ struct  GuiTextEdit : GuiBase
 GuiPtr              guiTextEdit(IPT<String8> t,bool wantStretch=true);
 // Fixed-point numerical text edit box with given number of fractional digits and clamp values:
 GuiPtr              guiTextEditFixed(
-    DfgFPtr                 updateFlag,     // Must be unique to each function call
+    DfFPtr                 updateFlag,     // Must be unique to each function call
     Sfun<double(void)>      getVal,
     Sfun<void(double)>      setVal,
     VecD2                   bounds,
@@ -631,7 +631,7 @@ GuiPtr              guiTextEditFixed(
 GuiPtr              guiTextEditFixed(IPT<double> valN,VecD2 bounds,uint numFraction=2);
 // Flaoting-point numerical text edit box with given number of digits and clamp values:
 GuiPtr              guiTextEditFloat(
-    DfgFPtr                 updateFlag,     // Must be unique to each function call
+    DfFPtr                 updateFlag,     // Must be unique to each function call
     Sfun<double()>          getVal,
     Sfun<void(double)>      setVal,
     VecD2                   bounds,

@@ -55,7 +55,7 @@ bool                isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename T
     return true;
 }
 
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 inline bool         isApproxEqual(Mat<T,R,C> const & l,Mat<T,R,C> const & r,T maxDiff)
 {
     return isApproxEqual(l.m,r.m,maxDiff);
@@ -68,9 +68,16 @@ bool                isApproxEqual(MatV<T> const & l,MatV<T> const & r,T maxDiff)
     return isApproxEqual(l.m_data,r.m_data,maxDiff);
 }
 
+template<typename T>
+inline bool         isApproxEqual(MatS<T> const & l,MatS<T> const & r,T tol)
+{
+    FGASSERT(l.dim == r.dim);
+    return isApproxEqual(l.data,r.data,tol);
+}
+
 // Return the epsilon (relative to one) for the given number of bits of precision:
-inline double       epsBits(size_t bits) {return 1.0 / double(1ULL << bits); }
-inline float        epsBitsF(uint bits) {return 1.0f / scast<float>(1UL < bits); }
+inline double constexpr epsBits(size_t bits) {return 1.0 / scast<double>(1ULL << bits); }
+inline float constexpr  epsBitsF(uint bits) {return 1.0f / scast<float>(1ULL < bits); }
 
 template<typename T>
 uint constexpr      defaultPrecisionBits();
@@ -111,7 +118,7 @@ bool                isApproxEqualAbsPrec(T v0,T v1,T scale,uint precisionBits=de
 }
 
 // Ensure the L2 norms are equal to the given number of bits of precision.
-// The arguments must be numerical containers supporting 'cMag' and subtraction:
+// The arguments must be numerical containers supporting 'cMagD' and subtraction:
 template<typename Container>
 bool                isApproxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits=20)
 {
@@ -119,10 +126,10 @@ bool                isApproxEqualRelMag(Container const & lhs,Container const & 
     double              precision = scast<double>(1ULL << precisionBits),
                         precSqr = sqr(precision);
     FGASSERT(precSqr > 0.0);
-    double              mag = cMax(cMag(lhs),cMag(rhs));
+    double              mag = cMax(cMagD(lhs),cMagD(rhs));
     if (mag == 0.0)
         return true;
-    double              rel = cMag(lhs-rhs) / mag;
+    double              rel = cMagD(lhs-rhs) / mag;
     return (rel < precSqr);
 }
 
@@ -153,12 +160,13 @@ bool                isApproxEqualPrec(
     return isApproxEqualPrec(lhs.m_data,rhs.m_data,precisionBits);
 }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T,size_t nrows,size_t ncols>
 bool                isApproxEqualPrec(
     Mat<T,nrows,ncols> const &  lhs,
     Mat<T,nrows,ncols> const &  rhs,
     size_t                      precisionBits=defaultPrecisionBits<T>())
 {
+    FGASSERT(precisionBits > 1);        // catch use of float rel val truncated to size_t without warning (VS22)
     T                   scale = (cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs))) * T(0.5);
     if (scale == 0)
         return true;
@@ -166,7 +174,7 @@ bool                isApproxEqualPrec(
     return isApproxEqual(lhs,rhs,maxDiff);
 }
 
-template<typename T,uint nrows,uint ncols>
+template<typename T,size_t nrows,size_t ncols>
 bool                isApproxEqualPrec(
     Svec<Mat<T,nrows,ncols> > const &   lhs,
     Svec<Mat<T,nrows,ncols> > const &   rhs,

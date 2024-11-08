@@ -61,7 +61,7 @@ struct      GuiBaseImpl
     // Any window size can always be expanded but the contents do not necessarily expand
     // to fill, or even if they do it may not improve anything (eg. a button) so this
     // propertly allows space to be allocated somewhere more beneficial (if possible):
-    virtual Vec2B       wantStretch() const = 0;
+    virtual Arr2B       wantStretch() const = 0;
     virtual void        updateIfChanged() = 0;
     virtual void        moveWindow(Vec2I lo,Vec2I sz) = 0;
     // Visibility is used by GuiSplitScrollWin to avoid drawing fully off-screen sub-windows.

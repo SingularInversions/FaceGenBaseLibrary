@@ -37,17 +37,21 @@ uint64          treeHash(Uint64s const & hashes);
 Bytes               stringToBytes(String const &);
 String              bytesToString(Bytes const &);
 
-// SERIALIZE / DESERIALIZE TO REFLECTION TREE
-// which can also be used for text & json serialization / deserialization
+// SERIALIZE / DESERIALIZE TO REFLECTION TREE:
+//  * class/struct becomes RflStruct
+//  * svec/array becomes RflArray
+//  * builtin types stored as strings
+// This can be used for serialization / deserialization of text formats (simple text, JSON, XML)
 
 struct      RflMember
 {
     String          name;
     std::any        object;
 };
+typedef Svec<RflMember>     RflMembers;
 struct      RflStruct
 {
-    Svec<RflMember> members;
+    RflMembers      members;
 };
 struct      RflArray
 {
@@ -57,17 +61,17 @@ struct      RflArray
 // classes redirect to member function 'cReflect' defined by FG_RFL macros:
 template<class T>
 inline std::any     toReflect(T const & strct) {return strct.cReflect(); }
-// like json, represent all numbers by 'double':
-inline std::any     toReflect(bool v) {return v; }
-inline std::any     toReflect(uchar val) {return scast<double>(val); }
-inline std::any     toReflect(int val) {return scast<double>(val); }
-inline std::any     toReflect(uint val) {return scast<double>(val); }
-inline std::any     toReflect(long val) {return scast<double>(val); }
-inline std::any     toReflect(unsigned long val) {return scast<double>(val); }
-inline std::any     toReflect(long long val) {return scast<double>(val); }
-inline std::any     toReflect(unsigned long long val) {return scast<double>(val); }
-inline std::any     toReflect(float val) {return scast<double>(val); }
-inline std::any     toReflect(double val) {return scast<double>(val); }
+// all builtins are strings:
+inline std::any     toReflect(bool v) {return v ? String{"true"} : String{"false"}; }   // prefer to default "0" : "1"
+inline std::any     toReflect(uchar v) {return toStr(v); }
+inline std::any     toReflect(int v) {return toStr(v); }
+inline std::any     toReflect(uint v) {return toStr(v); }
+inline std::any     toReflect(long v) {return toStr(v); }
+inline std::any     toReflect(unsigned long v) {return toStr(v); }
+inline std::any     toReflect(long long v) {return toStr(v); }
+inline std::any     toReflect(unsigned long long v) {return toStr(v); }
+inline std::any     toReflect(float v) {return toStr(v); }
+inline std::any     toReflect(double v) {return toStr(v); }
 inline std::any     toReflect(String const & v) {return v; }
 inline std::any     toReflect(String8 const & v) {return v.m_str; }
 template<class T> std::any toReflect(Svec<T> const &);        // declare for Arr<Svec<...>...> case
@@ -109,25 +113,53 @@ String              srlzText(T const & v) {return reflectToText(toReflect(v)); }
 #define FG_RFL_8(A,B,C,D,E,F,G,H)   FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M4(E,F,G,H) FG_RFL_END
 
 template<class T>
+T                   fromAny(std::any const & a)
+{
+    if (a.type() != typeid(T))
+        fgThrow("bad any_cast from,to",a.type().name(),typeid(T).name());
+    return std::any_cast<T>(a);
+}
+template<class T>
+T                   fromAnyStr(std::any const & a)
+{
+    String              str = fromAny<String>(a);
+    T                   val;
+    std::istringstream  iss {str};
+    iss >> val;
+    if (iss.fail())
+        fgThrow("bad string deserial from,to",str,typeid(T).name());
+    return val;
+}
+
+template<class T>
 inline void         fromReflect_(std::any const & node,T & strct) {strct.setRflct(node); }
-inline void         fromReflect_(std::any const & node,bool & val) {val = std::any_cast<bool>(node); }
-inline void         fromReflect_(std::any const & node,uchar & val) {val = scast<uchar>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,int & val) {val = scast<int>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,uint & val) {val = scast<uint>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,long & val) {val = scast<long>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,unsigned long & val) {val = scast<unsigned long>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,long long & val) {val = scast<long long>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,unsigned long long & val) {val = scast<unsigned long long>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,float & val) {val = scast<float>(std::any_cast<double>(node)); }
-inline void         fromReflect_(std::any const & node,double & val) {val = std::any_cast<double>(node); }
-inline void         fromReflect_(std::any const & node,String & str) {str = std::any_cast<String>(node); }
-inline void         fromReflect_(std::any const & node,String8 & str) {str = std::any_cast<String>(node); }
+inline void         fromReflect_(std::any const & node,bool & val)
+{
+    String              str = fromAny<String>(node);
+    if (str == "true")
+        val = true;
+    else if (str == "false")
+        val = false;
+    else
+        fgThrow("bad string deserial to bool from",str);
+}
+inline void         fromReflect_(std::any const & node,uchar & val) {val = fromAnyStr<uchar>(node); }
+inline void         fromReflect_(std::any const & node,int & val) {val = fromAnyStr<int>(node); }
+inline void         fromReflect_(std::any const & node,uint & val) {val = fromAnyStr<uint>(node); }
+inline void         fromReflect_(std::any const & node,long & val) {val = fromAnyStr<long>(node); }
+inline void         fromReflect_(std::any const & node,unsigned long & val) {val = fromAnyStr<unsigned long>(node); }
+inline void         fromReflect_(std::any const & node,long long & val) {val = fromAnyStr<long long>(node); }
+inline void         fromReflect_(std::any const & node,unsigned long long & val) {val = fromAnyStr<unsigned long long>(node); }
+inline void         fromReflect_(std::any const & node,float & val) {val = fromAnyStr<float>(node); }
+inline void         fromReflect_(std::any const & node,double & val) {val = fromAnyStr<double>(node); }
+inline void         fromReflect_(std::any const & node,String & str) {str = fromAny<String>(node); }
+inline void         fromReflect_(std::any const & node,String8 & str) {str = fromAny<String>(node); }
 // forward declaration to handle Arr<Svec<...>>:
 template<class T> void fromReflect_(std::any const & node,Svec<T> & val);
 template<class T,size_t S>
 void                fromReflect_(std::any const & node,Arr<T,S> & val)
 {
-    RflArray            arr = std::any_cast<RflArray>(node);
+    RflArray            arr = fromAny<RflArray>(node);
     FGASSERT(arr.elems.size() == S);
     for (size_t ii=0; ii<S; ++ii)
         fromReflect_(arr.elems[ii],val[ii]);
@@ -135,13 +167,13 @@ void                fromReflect_(std::any const & node,Arr<T,S> & val)
 template<class T>
 void                fromReflect_(std::any const & node,Svec<T> & val)
 {
-    RflArray            arr = std::any_cast<RflArray>(node);
+    RflArray            arr = fromAny<RflArray>(node);
     size_t              S = arr.elems.size();
     val.resize(S);
     for (size_t ii=0; ii<S; ++ii)
         fromReflect_(arr.elems[ii],val[ii]);
 }
-template<> inline void fromReflect_(std::any const & node,Bytes & val) {val = stringToBytes(std::any_cast<String>(node)); }
+template<> inline void fromReflect_(std::any const & node,Bytes & val) {val = stringToBytes(fromAny<String>(node)); }
 
 std::any            textToReflect(String const & txt);
 template<class T>
@@ -152,7 +184,8 @@ T                   dsrlzText(String const & txt)
     return ret;
 }
 
-#define FG_DRF_BEG                  void setRflct(std::any const & node) {RflStruct strct = std::any_cast<RflStruct>(node); size_t cnt {0};
+#define FG_DRF_BEG                  void setRflct(std::any const & node) \
+{RflStruct strct = fromAny<RflStruct>(node); size_t cnt {0};
 #define FG_DRF_M1(A)                fromReflect_(strct.members[cnt++].object,A);
 #define FG_DRF_M2(A,B)              FG_DRF_M1(A) FG_DRF_M1(B)
 #define FG_DRF_M4(A,B,C,D)          FG_DRF_M2(A,B) FG_DRF_M2(C,D)
@@ -309,8 +342,8 @@ inline void         dsrlz_(Bytes const & s,size_t & p,int & v) {dsrlzRaw_(s,p,v)
 inline void         dsrlz_(Bytes const & s,size_t & p,uint & v) {dsrlzRaw_(s,p,v); }
 void                dsrlz_(Bytes const & s,size_t & p,long & v);                   // interop w/ bounds checks
 void                dsrlz_(Bytes const & s,size_t & p,unsigned long & v);          // "
-inline void         dsrlz_(Bytes const & s,size_t & p,int64 & v) {dsrlzRaw_(s,p,v); }
-inline void         dsrlz_(Bytes const & s,size_t & p,uint64 & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,long long & v) {dsrlzRaw_(s,p,v); }
+inline void         dsrlz_(Bytes const & s,size_t & p,unsigned long long & v) {dsrlzRaw_(s,p,v); }
 inline void         dsrlz_(Bytes const & s,size_t & p,float & v) {dsrlzRaw_(s,p,v); }
 inline void         dsrlz_(Bytes const & s,size_t & p,double & v) {dsrlzRaw_(s,p,v); }
 void                dsrlz_(Bytes const & s,size_t & p,String & v);

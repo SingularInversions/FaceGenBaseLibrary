@@ -7,11 +7,10 @@
 #include "stdafx.h"
 
 #include "FgGuiApi.hpp"
-#include "FgGuiApi.hpp"
-#include "FgGuiApi.hpp"
-#include "FgGuiApi.hpp"
 #include "FgCommand.hpp"
 #include "FgTime.hpp"
+#include "FgFileSystem.hpp"
+#include "FgBuild.hpp"
 
 using namespace std;
 
@@ -42,17 +41,21 @@ std::ostream &      operator<<(std::ostream & os,GuiCursor cursor)
 
 GuiExceptHandler        g_guiDiagHandler;
 
-void                testGuiDialogSplashScreen(CLArgs const &)
+namespace {
+
+void                testGuiDialogSplashScreen(CLArgs const & args)
 {
-    std::function<void(void)>     f = guiDialogSplashScreen();
-    fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
-    sleepSeconds(3);
-    f();
+    if (!isAutomated(args)) {
+        std::function<void(void)>     f = guiDialogSplashScreen();
+        fgout << fgnl << "Splash screen displayed, waiting 3 seconds ... \n";
+        sleepSeconds(3);
+        f();
+    }
 }
 
-void                testGuiCombo(CLArgs const &)
+void                testGuiCombo(CLArgs const & args)
 {
-    String8                 store = getDirUserAppDataLocalFaceGen({"base","testm gui2"});
+    String8                 store = getDirUserAppDataLocalFaceGen({"base","testGuiCombo"});
     GuiPtr                  checkboxes;
     {
         String8s                labels {"Box 1","Box 2",};
@@ -61,8 +64,8 @@ void                testGuiCombo(CLArgs const &)
     }
     GuiPtr    img;
     {
-        IPT<ImgRgba8>    imgN = makeIPT(loadImage(dataDir()+"base/Jane.jpg"));
-        IPT<Vec2Fs>      ptsN {{Vec2F{0.5,0.5}}};
+        IPT<ImgRgba8>       imgN = makeIPT(loadImage(dataDir()+"base/Jane.jpg"));
+        IPT<NameVec2Fs>     ptsN {{NameVec2F{"",Vec2F{0.5,0.5}}}};
         img = guiImageCtrls(imgN,ptsN).win;
     }
     GuiPtr    radio;
@@ -83,7 +86,7 @@ void                testGuiCombo(CLArgs const &)
     {
         String8s            labs = {"Slider 1","Slider 2"};
         Svec<IPT<double> >  valNs = genSvec<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
-        sliders = guiSliderBank(valNs,labs,VecD2(-1,1),0.1);
+        sliders = guiSplitScroll(guiSliders(valNs,labs,VecD2(-1,1),0.1));
     }
     GuiPtr        scroll;
     {
@@ -92,9 +95,9 @@ void                testGuiCombo(CLArgs const &)
             text1 += "Tab 1 Line " + toStrDigits(ii,3) + "\n";
         for (size_t ii=0; ii<10; ++ii)
             text2 += "Tab 2 Line " + toStrDigits(ii,3) + "\n";
-        GuiTabDef       tab1 {"Tab 1",guiSplitScroll(svec(guiText(text1)))},
-                        tab2 {"Tab 2",guiSplitScroll(svec(guiText(text2)))};
-        scroll = guiTabs(svec(tab1,tab2));
+        GuiTabDef       tab1 {"Tab 1",guiSplitScroll({guiText(text1)})},
+                        tab2 {"Tab 2",guiSplitScroll({guiText(text2)})};
+        scroll = guiTabs({tab1,tab2});
     }
     GuiPtr          left = guiSplitV({checkboxes,radio}),
                     win = guiTabs({
@@ -102,12 +105,11 @@ void                testGuiCombo(CLArgs const &)
         {"Tab2",guiSplitV({txt,sliders})},
         {"Scroll",scroll}
     });
-    guiStartImpl(makeIPT<String8>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen({"Base","GUI2 testm"}));
+    if (!isAutomated(args))
+        guiStartImpl(makeIPT<String8>("GUI2 testm"),win,getDirUserAppDataLocalFaceGen({"Base","GUI2 testm"}));
 }
 
-void                testmGuiImage(CLArgs const &);
-
-void                testmGuiDialogFilesLoad(CLArgs const &)
+void                testGuiDialogFilesLoad(CLArgs const & args)
 {
     // can't call 'guiDialogFilesLoad' directly since COM needs to be initialized:
     auto                selFilesFn = []()
@@ -116,21 +118,46 @@ void                testmGuiDialogFilesLoad(CLArgs const &)
         for (String8 const & str : strs)
             fgout << fgnl << str;
     };
-    guiStartImpl(
-        IPT<String8>("test multi-file select"),
-        guiButton("Select text files",selFilesFn),
-        getDirUserAppDataLocalFaceGen({"testm","files"}));
+    if (!isAutomated(args))
+        guiStartImpl(
+            IPT<String8>("test multi-file select"),
+            guiButton("Select text files",selFilesFn),
+            getDirUserAppDataLocalFaceGen({"testm","files"}));
 }
 
-void                testmGui(CLArgs const & args)
+void                testSliders(CLArgs const & args)
 {
-    Cmds            cmds {
-        {testmGuiImage,"image"},
-        {testGuiCombo,"combo"},
-        {testGuiDialogSplashScreen,"splash"},
-        {testmGuiDialogFilesLoad,"files","files select dialog"}
-    };
-    doMenu(args,cmds);
+    size_t constexpr    S = 16;
+    Svec<IPT<double>>   valNs = genSvec<IPT<double>>(S,[](size_t ii){return makeIPT(ii/8.0);});
+    String8s            labels = genSvec<String8>(S,[](size_t ii){return "label "+ toStr(ii);});
+    labels.back() += " (long label)";
+    VecD2               range {-3,3};
+    double              tickSpacing {1};
+    Img<GuiPtr>         arr0 = guiSliders(cTail(valNs,8),cTail(labels,8),range,tickSpacing),    // fewer elements so we can reduce vert size
+                        arr1 = guiSliders(valNs,labels,range,tickSpacing);  // duplicate required for update flag uniqueness
+    GuiPtr              win0 = guiSplit(arr0),
+                        win1 = guiSplitScroll(arr1),
+                        win = guiSplitH({win0,win1});
+    if (!isAutomated(args))
+        guiStartImpl(makeIPT<String8>("GUI test sliders"),win,getDirUserAppDataLocalFaceGen({"SDK","GuiTestSliders"}));
+}
+
+}
+
+void                testGuiImageMark(CLArgs const &);
+
+void                testGui(CLArgs const & args)
+{
+    if (getCurrentBuildOS() == BuildOS::win) {
+        Cmds            cmds {
+            {testGuiCombo,"combo"},
+            {testGuiImageMark,"image"},
+            {testGuiDialogFilesLoad,"files","files select dialog"},
+            {testSliders,"sliders"},
+            {testGuiDialogSplashScreen,"splash"},
+        };
+        doMenu(args,cmds,true);
+    }
 }
 
 }

@@ -43,8 +43,8 @@ static bool saveMayaAsciiFile(
         Strings const            *morphNames,
         Strings const            *cmts);
 static void buildEdgeList(
-        Vec3UIs const    &triList,
-        const vector<Vec4UI>    &quadList,
+        Arr3UIs const    &triList,
+        const vector<Arr4UI>    &quadList,
         EdgeMapT                    &edgeMap,
         vector<Vec2UI>          &edgeList);
 static bool findEdgeId(
@@ -130,12 +130,12 @@ static void writeEdges(ofstream &ofs, const vector<Vec2UI> &edgeList);
 static void writeFacets(
         ofstream                    &ofs,
         const Vec3Fs    &vtxList,
-        Vec3UIs const    &triList,
-        const vector<Vec4UI>    &quadList,
+        Arr3UIs const    &triList,
+        const vector<Arr4UI>    &quadList,
         const EdgeMapT              &edgeMap,
         const Vec2Fs    &texCoord,
-        Vec3UIs const    &texTriList,
-        const vector<Vec4UI>    &texQuadList);
+        Arr3UIs const    &texTriList,
+        const vector<Arr4UI>    &texQuadList);
 static void writeObjects(
         ofstream                        &ofs,
         const FffMultiObjectC           &model,
@@ -353,8 +353,8 @@ static bool saveMayaAsciiFile(
 //****************************************************************************
 static void buildEdgeList(
 
-    Vec3UIs const    &triList,
-    const vector<Vec4UI>    &quadList,
+    Arr3UIs const    &triList,
+    const vector<Arr4UI>    &quadList,
     EdgeMapT                    &edgeMap,
     vector<Vec2UI>          &edgeList)
 {
@@ -917,12 +917,12 @@ static void writeFacets(
 
     ofstream                    &ofs,
     const Vec3Fs    &vtxList,
-    Vec3UIs const    &triList,
-    const vector<Vec4UI>    &quadList,
+    Arr3UIs const    &triList,
+    const vector<Arr4UI>    &quadList,
     const EdgeMapT              &edgeMap,
     const Vec2Fs    &texCoord,
-    Vec3UIs const    &texTriList,
-    const vector<Vec4UI>    &texQuadList)
+    Arr3UIs const    &texTriList,
+    const vector<Arr4UI>    &texQuadList)
 {
     // Per-facet or per-vertex texture
     bool perFacet = false;
@@ -1041,11 +1041,11 @@ static void writeObjects(
     {
         // Get an alias to the list data
         const Vec3Fs &vtxList = model.getPtList(objId);
-        Vec3UIs const &triList = model.getTriList(objId);
-        const vector<Vec4UI> &quadList = model.getQuadList(objId);
+        Arr3UIs const &triList = model.getTriList(objId);
+        const vector<Arr4UI> &quadList = model.getQuadList(objId);
         const Vec2Fs &texCoord = model.getTextCoord(objId);
-        Vec3UIs const &texTriList = model.getTexTriList(objId);
-        const vector<Vec4UI> &texQuadList = model.getTexQuadList(objId);
+        Arr3UIs const &texTriList = model.getTexTriList(objId);
+        const vector<Arr4UI> &texQuadList = model.getTexQuadList(objId);
 
         // Build an edge list first
         buildEdgeList(triList,quadList,edgeMap[objId],edgeList[objId]);
@@ -1141,11 +1141,11 @@ static void writeObjects(
             const Vec3Fs &mVtxList = 
                 (*morphTargets)[mm].getPtList(objId);
             const Vec3Fs &vtxList = model.getPtList(objId);
-            Vec3UIs const &triList = model.getTriList(objId);
-            const vector<Vec4UI> &quadList = model.getQuadList(objId);
+            Arr3UIs const &triList = model.getTriList(objId);
+            const vector<Arr4UI> &quadList = model.getQuadList(objId);
             const Vec2Fs &texCoord = model.getTextCoord(objId);
-            Vec3UIs const &texTriList = model.getTexTriList(objId);
-            const vector<Vec4UI> &texQuadList=model.getTexQuadList(objId);
+            Arr3UIs const &texTriList = model.getTexTriList(objId);
+            const vector<Arr4UI> &texQuadList=model.getTexQuadList(objId);
 
             size_t  numPolys = triList.size() + quadList.size();
 
@@ -2049,7 +2049,7 @@ testSaveMa(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    saveMa("meshExportMa",svec(mouth,glasses));
+    saveMa("meshExportMa",{mouth,glasses});
     regressFileRel("meshExportMa.ma","base/test/");
     regressFileRel("meshExportMa0.png","base/test/");
     regressFileRel("meshExportMa1.png","base/test/");

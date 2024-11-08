@@ -8,8 +8,8 @@
 #ifndef FG_COMMAND_HPP
 #define FG_COMMAND_HPP
 
-#include "FgFileSystem.hpp"
 #include "FgMain.hpp"
+#include "FgSerial.hpp"
 
 namespace Fg {
 
@@ -83,12 +83,10 @@ struct      Syntax
     void                error() {throwSyntax(); }
     void                error(String const & errMsg);
     void                error(String const & errMsg,String8 const & data);
-    void                incorrectNumArgs();
-    // Throws appropriate syntax error:
+    inline void         errorNumArgs() {error("Incorrect number of arguments"); }
+    // If fname does not have given extension (or one of given extensions) then throw error:
     void                checkExtension(String8 const & fname,String const & ext);
     void                checkExtension(String const & fname,Strings const & exts);
-    // Throws appropriate syntax error if different:
-    void                numArgsMustBe(uint numArgsNotIncludingCommand);
     // Retuns the index number of the user-specified argument in 'validValues', or throws a syntax error
     // referencing 'argDescription':
     uint                nextSelectionIndex(Strings const & validValues,String const & argDescription);

@@ -9,20 +9,20 @@
 #include "FgGuiApi.hpp"
 #include "FgGuiApi.hpp"
 #include "FgImage.hpp"
+#include "FgBestN.hpp"
 
 using namespace std;
 
-
 namespace Fg {
 
-GuiImage::GuiImage(NPT<ImgRgba8> imageN) : updateFlag {makeUpdateFlag(imageN)}
+GuiImage::GuiImage(NPT<ImgRgba8> imageN) : updateFlag {cUpdateFlagT(imageN)}
 {
     updateNofill = updateFlag;
-    wantStretch = Vec2B{false,false};
-    minSizeN = link1<ImgRgba8,Vec2UI>(imageN,[](ImgRgba8 const & img){return img.dims();});
+    wantStretch = Arr2B{false,false};
+    minSizeN = link1(imageN,[](ImgRgba8 const & img){return img.dims();});
     getImgFn = [imageN](Vec2UI)
     {
-        return GuiImage::Disp {&imageN.cref(),Vec2I{0}};
+        return GuiImage::Disp {&imageN.val(),Vec2I{0}};
     };
 }
 
@@ -31,7 +31,7 @@ GuiPtr              guiImage(NPT<ImgRgba8> imageN,Sfun<void(Vec2F)> onClick)
     GuiImage                gi {imageN};
     auto                    clickFn = [imageN,onClick](Vec2I pos)
     {
-        Vec2D           iucs = cIrcsToIucs(imageN.cref().dims()) * Vec2D(pos);
+        Vec2D           iucs = cIrcsToIucs<double>(imageN.val().dims()) * Vec2D(pos);
         onClick(Vec2F(iucs));
     };
     gi.clickActionFns[0] = clickFn;
@@ -56,7 +56,7 @@ ImgRgba8s           cMagmip(ImgRgba8 const & img,uint log2mag)
 
 GuiImg              guiImageCtrls(
     NPT<ImgRgba8> const &       imageN,
-    IPT<Vec2Fs> const &         ptsIucsN,
+    IPT<NameVec2Fs> const &     ptsIucsN,
     bool                        expertMode,
     Sfun<void(Vec2F,Vec2UI)> const & onCtrlClick)
 {
@@ -74,18 +74,18 @@ GuiImg              guiImageCtrls(
             return ImgRgba8s{};
         return cMagmip(img,xprt+2);
     };
-    OPT<ImgRgba8s>          mipmapN = link1<ImgRgba8,ImgRgba8s>(imageN,mipmapFn);
+    OPT<ImgRgba8s>          mipmapN = link1(imageN,mipmapFn);
     IPT<uint>               mipmapIdxN {(expertMode ? 3U : 2U)};
-    auto                    dispImgFn = [=](Vec2Fs const & iucss,ImgRgba8s const & mipmap,uint const & idx)
+    auto                    dispImgFn = [=](NameVec2Fs const & iucss,ImgRgba8s const & mipmap,uint const & idx)
     {
         ImgRgba8            img = mipmap[idx];
-        for (Vec2F iucs : iucss) {
-            Vec2I           ircs {mapFloor(mapMul(iucs,Vec2F{img.dims()}))};
+        for (NameVec2F const & iucs : iucss) {
+            Vec2I           ircs {mapFloor(mapMul(iucs.vec,Vec2F{img.dims()}))};
             paintCrosshair(img,ircs);
         }
         return img;
     };
-    OPT<ImgRgba8>           lmsImageN = link3<ImgRgba8,Vec2Fs,ImgRgba8s,uint>(ptsIucsN,mipmapN,mipmapIdxN,dispImgFn);
+    OPT<ImgRgba8>           lmsImageN = link3(ptsIucsN,mipmapN,mipmapIdxN,dispImgFn);
     // offset of image centre from view area centre in window pixels:
     IPT<Vec2I>              offsetN {Vec2I{0}};
     // save topleft coord used by last draw so we can calculate where user has clicked:
@@ -93,7 +93,7 @@ GuiImg              guiImageCtrls(
     auto                    imgDispFn = [=](Vec2UI winSize)
     {
         uint                mipmapIdx = mipmapIdxN.val();   // don't trigger redraw by using ref()
-        ImgRgba8s const &   mipmap = mipmapN.cref();
+        ImgRgba8s const &   mipmap = mipmapN.val();
         {                   // check if image much smaller than window:
             Vec2UI              imgDims = mipmap[mipmapIdx].dims();
             Vec2F               relDims = mapDiv(Vec2F{winSize},Vec2F{imgDims});
@@ -107,7 +107,7 @@ GuiImg              guiImageCtrls(
                 mipmapIdxN.set(mipmapIdx);          // will trigger another redraw
             }
         }
-        ImgRgba8 const &    dispImg = lmsImageN.cref();
+        ImgRgba8 const &    dispImg = lmsImageN.val();
         // the image can only be translated in directions in which it's larger than the window,
         // and translation is clamped to keep the window filled.
         // This allows us to avoid painting the background for image translation draws, which 
@@ -142,57 +142,62 @@ GuiImg              guiImageCtrls(
         ++mipmapIdxN.ref();     // gets clamped by display function
     };
     IPT<int>                zoomAccN {0};
-    IPT<Valid<uint>>        draggingLmN;
+    IPT<size_t>             draggingLmN {lims<size_t>::max()};
     auto                    dragNoneFn = [=](Vec2I winPosIrcs,Vec2I)
     {
-        Vec2F                   imgDims {mipmapN.cref()[mipmapIdxN.val()].dims()};
+        Vec2F                   imgDims {mipmapN.val()[mipmapIdxN.val()].dims()};
         Vec2I                   topleft = topleftN.val();
-        Vec2Fs const &          ptsIucs = ptsIucsN.cref();
-        for (uint ii=0; ii<ptsIucs.size(); ++ii) {
-            Vec2F               iucs = ptsIucs[ii];
+        NameVec2Fs const &      ptsIucs = ptsIucsN.val();
+        Min<double,size_t>      closestLmIdx;
+        for (size_t ii=0; ii<ptsIucs.size(); ++ii) {
+            Vec2F               iucs = ptsIucs[ii].vec;
             Vec2F               pacs = mapMul(iucs,imgDims);
             Vec2I               winIrcs = mapCast<int>(pacs) + topleft;
-            if (cMag(winIrcs-winPosIrcs) < 17) {
-                draggingLmN.ref() = ii;
-                return GuiCursor::grab;
-            }
+            double              distMagIrcs = cMagD(winIrcs-winPosIrcs);
+            closestLmIdx.update(distMagIrcs,ii);
         }
-        draggingLmN.ref().invalidate();
-        return GuiCursor::arrow;
+        if (closestLmIdx.valid() && (closestLmIdx.key() < 17)) {
+            draggingLmN.set(closestLmIdx.val());
+            return GuiCursor::grab;
+        }
+        else {
+            draggingLmN.set(lims<size_t>::max());
+            return GuiCursor::arrow;
+        }
     };
     auto                    dragRightFn = [=](Vec2I,Vec2I delta)
     {
-        Vec2F               imgDims {imageN.cref().dims()};
+        Vec2F               imgDims {imageN.val().dims()};
         Vec2F               delIucs = mapDiv(Vec2F{delta},imgDims);
-        Vec2Fs &            lms = ptsIucsN.ref();
-        for (Vec2F & lm : lms)
-            lm += delIucs;
+        NameVec2Fs &        lms = ptsIucsN.ref();
+        for (NameVec2F & lm : lms)
+            lm.vec += delIucs;
         return GuiCursor::arrow;
     };
     auto                    shiftDragRightFn = [=](Vec2I,Vec2I delta)
     {
         float               scale = exp(delta[1]/256.0f);
-        Vec2Fs &            lms = ptsIucsN.ref();
-        Vec2F               mean = cMean(lms);
-        for (Vec2F & lm : lms)
-            lm = mean + (lm-mean) * scale;
+        NameVec2Fs &        lms = ptsIucsN.ref();
+        Vec2F               mean = cMean(mapMember(lms,&NameVec2F::vec));
+        for (NameVec2F & lm : lms)
+            lm.vec = mean + (lm.vec-mean) * scale;
         return GuiCursor::arrow;
     };
     auto                    clickDownLFn = [=](Vec2I)
     {
-        if (draggingLmN.cref().valid())
+        if (draggingLmN.val() < lims<size_t>::max())
             return GuiCursor::grab;
         else
             return GuiCursor::translate;
     };
     auto                    dragLeftFn = [=](Vec2I,Vec2I winDelta)
     {
-        Valid<uint>             draggingLm = draggingLmN.val();
-        if (draggingLm.valid()) {
-            Vec2F               imgDims {mipmapN.cref()[mipmapIdxN.val()].dims()};
+        size_t                  draggingLm = draggingLmN.val();
+        if (draggingLm < lims<size_t>::max()) {
+            Vec2F               imgDims {mipmapN.val()[mipmapIdxN.val()].dims()};
             Vec2F               deltaIucs = mapDiv(Vec2F{winDelta},imgDims);
-            Vec2Fs &            ptsIucs = ptsIucsN.ref();
-            ptsIucs[draggingLm.val()] += deltaIucs;
+            NameVec2Fs &        ptsIucs = ptsIucsN.ref();
+            ptsIucs.at(draggingLm).vec += deltaIucs;
         }
         else {
             offsetN.ref() += winDelta;
@@ -203,7 +208,7 @@ GuiImg              guiImageCtrls(
     {
         Vec2I               topleft = topleftN.val(),
                             imgPosIrcs = winPosIrcs - topleft;
-        Vec2UI              imgDims = mipmapN.cref()[mipmapIdxN.val()].dims();
+        Vec2UI              imgDims = mipmapN.val()[mipmapIdxN.val()].dims();
         Vec2F               imgPosPacs = Vec2F{imgPosIrcs} + Vec2F{0.5f},
                             imgPosIucs = mapDiv(imgPosPacs,Vec2F{imgDims});
         if ((cMinElem(imgPosIucs)>0) && (cMaxElem(imgPosIucs)<1))
@@ -211,10 +216,10 @@ GuiImg              guiImageCtrls(
     };
     GuiImage                gi;
     gi.getImgFn = imgDispFn;
-    gi.wantStretch = Vec2B{true,true};
+    gi.wantStretch = Arr2B{true,true};
     gi.minSizeN = makeIPT(Vec2UI{100});
-    gi.updateFlag = makeUpdateFlag(imageN,mipmapIdxN);
-    gi.updateNofill = makeUpdateFlag(ptsIucsN,offsetN);
+    gi.updateFlag = cUpdateFlagT(imageN,mipmapIdxN);
+    gi.updateNofill = cUpdateFlagT(ptsIucsN,offsetN);
     gi.clickDownFns[1] = clickDownLFn;
     gi.clickDownFns[4] = [](Vec2I){return GuiCursor::crosshair; };      // right click
     gi.clickDownFns[12] = [](Vec2I){return GuiCursor::scale; };         // shift right click
@@ -224,7 +229,7 @@ GuiImg              guiImageCtrls(
     gi.mouseMoveFns[12] = shiftDragRightFn;
     if (onCtrlClick)
         gi.clickActionFns[6] = ctrlClickActionLFn;
-    return {make_shared<GuiImage>(gi),zoomInFn,zoomOutFn};
+    return {make_shared<GuiImage>(gi),zoomInFn,zoomOutFn,draggingLmN};
 }
 
 GuiVal<ImgFormat>   guiImgFormatSelector(ImgFormats const & imgFormats,String8 const & store)
@@ -239,7 +244,7 @@ GuiVal<ImgFormat>   guiImgFormatSelector(ImgFormats const & imgFormats,String8 c
     else
         imgFormatIdxN = makeSavedIPTEub<size_t>(0,store+"ImgFormat",imgFormats.size());
     auto                imgFormatFn = [=](size_t const & idx){return imgFormats[idx]; };
-    OPT<ImgFormat>      imgFormatN = link1<size_t,ImgFormat>(imgFormatIdxN,imgFormatFn);
+    OPT<ImgFormat>      imgFormatN = link1(imgFormatIdxN,imgFormatFn);
     GuiPtr              imgFormatSelW = guiRadio(imgFormatDescs,imgFormatIdxN);
     return {imgFormatN,imgFormatSelW};
 }

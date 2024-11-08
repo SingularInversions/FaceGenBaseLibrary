@@ -48,7 +48,7 @@ struct  GuiCheckboxWin : public GuiBaseImpl
         return {scast<uint>(width),24U};
     }
 
-    virtual Vec2B       wantStretch() const {return Vec2B(false,false); }
+    virtual Arr2B       wantStretch() const {return Arr2B(false,false); }
 
     virtual void        updateIfChanged()
     {

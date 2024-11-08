@@ -204,13 +204,7 @@
     </ClCompile>
     <ClCompile Include="..\FgGuiWinSlider.cpp">
     </ClCompile>
-    <ClCompile Include="..\FgGuiWinSpacer.cpp">
-    </ClCompile>
     <ClCompile Include="..\FgGuiWinSplit.cpp">
-    </ClCompile>
-    <ClCompile Include="..\FgGuiWinSplitAdj.cpp">
-    </ClCompile>
-    <ClCompile Include="..\FgGuiWinSplitScroll.cpp">
     </ClCompile>
     <ClCompile Include="..\FgGuiWinTabs.cpp">
     </ClCompile>

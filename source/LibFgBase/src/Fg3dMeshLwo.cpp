@@ -817,10 +817,10 @@ static bool writeVmapTxuvChunks(
             // Build a temporary per-vertex mapping.  Incorrect ones
             // will be remapped by the VMAD chunk.
             const Vec2Fs &txt = model.getTextCoord(obj);
-            Vec3UIs const &tris = model.getTriList(obj);
-            const vector<Vec4UI> &quads = model.getQuadList(obj);
-            Vec3UIs const &txtTris = model.getTexTriList(obj);
-            const vector<Vec4UI> &txtQuads = model.getTexQuadList(obj);
+            Arr3UIs const &tris = model.getTriList(obj);
+            const vector<Arr4UI> &quads = model.getQuadList(obj);
+            Arr3UIs const &txtTris = model.getTexTriList(obj);
+            const vector<Arr4UI> &txtQuads = model.getTexQuadList(obj);
             for (unsigned long tt=0; tt<tris.size(); ++tt)
             {
                 txtCoord[ tris[ tt ][0] ] = txt[ txtTris[ tt ][0] ];
@@ -1070,7 +1070,7 @@ static bool writePolsChunks(
         // Note: Lightwave requires the poly to be posed clockwise.
 
         unsigned short polySize = 3;
-        Vec3UIs const &triList = model.getTriList(obj);
+        Arr3UIs const &triList = model.getTriList(obj);
         for (unsigned long tri=0; tri<triList.size(); ++tri)
         {
             if (!swap2BytesWrite(fptr,&polySize))
@@ -1098,7 +1098,7 @@ static bool writePolsChunks(
         }
 
         polySize = 4;
-        const vector<Vec4UI> &quadList = model.getQuadList(obj);
+        const vector<Arr4UI> &quadList = model.getQuadList(obj);
         for (unsigned long quad=0; quad<quadList.size(); ++quad)
         {
             if (!swap2BytesWrite(fptr,&polySize))
@@ -1261,10 +1261,10 @@ static bool writeVmadChunks(
     Vec2Fs      texList;
     unsigned long obj = objIdx;
 
-    Vec3UIs const &triList = model.getTriList(obj);
-    Vec3UIs const &texTriList = model.getTexTriList(obj);
-    const vector<Vec4UI> &quadList = model.getQuadList(obj);
-    const vector<Vec4UI> &texQuadList = model.getTexQuadList(obj);
+    Arr3UIs const &triList = model.getTriList(obj);
+    Arr3UIs const &texTriList = model.getTexTriList(obj);
+    const vector<Arr4UI> &quadList = model.getQuadList(obj);
+    const vector<Arr4UI> &texQuadList = model.getTexQuadList(obj);
     const Vec2Fs &txList = model.getTextCoord(obj);
 
     // Only needs to do this for per-facet texture data.
@@ -2361,7 +2361,7 @@ testSaveLwo(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    saveLwo("meshExportLwo",svec(mouth,glasses));
+    saveLwo("meshExportLwo",{mouth,glasses});
     regressFileRel("meshExportLwo.lwo","base/test/");
     regressFileRel("meshExportLwo.lws","base/test/",equateFilesText);
     regressFileRel("meshExportLwo0.png","base/test/");

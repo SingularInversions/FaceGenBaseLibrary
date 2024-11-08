@@ -25,7 +25,6 @@
 #define FG3DMESH_HPP
 
 #include "Fg3dSurface.hpp"
-#include "FgSimilarity.hpp"
 
 namespace Fg {
 
@@ -148,20 +147,20 @@ struct      JointDof
 };
 typedef Svec<JointDof>      JointDofs;      // Applied in order given
 
-struct      PoseDef
+struct      MorphCtrl                       // facial expression control definition
 {
     String8             name;
-    Vec2F               bounds;
-    float               neutral;
+    Vec2F               bounds;             // control value bounds
+    float               neutral;            // neutral expression control value
 
-    PoseDef() {}
-    PoseDef(String8 const & n,Vec2F const & b,float u) : name(n), bounds(b), neutral(u) {}
+    MorphCtrl() {}
+    MorphCtrl(String8 const & n,Vec2F const & b,float u) : name(n), bounds(b), neutral(u) {}
 
-    bool                operator==(PoseDef const & rhs) const {return name == rhs.name; }
-    bool                operator<(PoseDef const & rhs) const {return name < rhs.name; }
+    bool                operator==(MorphCtrl const & rhs) const {return name == rhs.name; }
+    bool                operator<(MorphCtrl const & rhs) const {return name < rhs.name; }
     bool                operator==(String8 const & rhsName) const {return (name == rhsName); }
 };
-typedef Svec<PoseDef>          PoseDefs;
+typedef Svec<MorphCtrl>     MorphCtrls;
 
 struct  MarkedVert
 {
@@ -203,7 +202,7 @@ struct  Mesh
         : verts(v), uvs(u), surfaces(s), deltaMorphs(m), targetMorphs{im} {}
     Mesh(String8 const & n,Vec3Fs const & v,Vec2Fs const & u={},Surfs const & s={},DirectMorphs const & m={})
         : name{n}, verts{v}, uvs{u}, surfaces{s}, deltaMorphs{m} {}
-    Mesh(String8 const & n,TriSurf const & ts) : name{n}, verts{ts.verts}, surfaces{{ts.tris,Vec4UIs{}}} {}
+    Mesh(String8 const & n,TriSurf const & ts) : name{n}, verts{ts.verts}, surfaces{{ts.tris,Arr4UIs{}}} {}
 
     void                validate() const;               // Throws a description of problem if the mesh is not valid
     size_t              allVertsSize() const;           // size of below
@@ -212,7 +211,7 @@ struct  Mesh
     void                updateAllVerts(Vec3Fs const &); // Update verts / targetMorphs / joints
     uint                numPolys() const;               // tris plus quads over all surfaces
     uint                numTriEquivs() const;           // tris plus 2*quads over all surfaces
-    Vec3UI              getTriEquivVertInds(uint idx) const;
+    Arr3UI              getTriEquivVertInds(uint idx) const;
     NPolys<3>           getTriEquivs() const;           // Over all surfaces
     size_t              numTris() const;                // Just the number of tris over all surfaces
     size_t              numQuads() const;               // Just the number of quads over all surfaces
@@ -296,7 +295,8 @@ struct  Mesh
     void                addTargMorph(const IndexedMorph & morph);
     // Overwrites any existing morph of the same name:
     void                addTargMorph(String8 const & name,Vec3Fs const & targetShape);
-    Vec3Fs              poseShape(Vec3Fs const & allVerts,std::map<String8,float> const & poseVals) const;
+    // ignores 'morphVals' for which there is no identical name in 'mesh':
+    Vec3Fs              applyMorphs(Vec3Fs const & allVerts,std::map<String8,float> const & morphVals) const;
 
     // EDITING:
     void                addSurface(TriSurf const &,String8 const & surfName="");
@@ -312,13 +312,15 @@ std::ostream &          operator<<(std::ostream &,Meshes const &);
 Mat32F              cBounds(Meshes const & meshes);
 size_t              cNumTriEquivs(Meshes const & meshes);
 std::set<String8>   getMorphNames(Meshes const & meshes);
-PoseDefs            cPoseDefs(Mesh const & mesh);
-PoseDefs            cPoseDefs(Meshes const & meshes);
+MorphCtrls            cPoseDefs(Mesh const & mesh);
+MorphCtrls            cPoseDefs(Meshes const & meshes);
 inline MeshNormals  cNormals(Mesh const & mesh) {return cNormals(mesh.surfaces,mesh.verts); }
 Mesh                transform(Mesh const &,SimilarityD const &);
 
-TriSurf             subdivide(TriSurf const & surf,bool loop);  // Loop subdivision of true, flat subdivision otherwise
-Mesh                subdivide(Mesh const &,bool loop = true);   // If 'loop' not selected then just do flat subdivision
+TriSurf             subdivide(TriSurf const &,bool loop=true);      // Loop subdivision if true, flat subdivision otherwise
+Mesh                subdivide(Mesh const &,bool loop=true);         // "
+TriSurf             subdivideN(TriSurf,size_t N,bool loop=true);    // repeat subdivision N times
+
 // Remove all tris that lie entirely outside the given bounds then remove all unused vertices:
 TriSurf             cullVolume(TriSurf surf,Mat32F const & bounds);
 
@@ -350,8 +352,8 @@ TriSurf         cSphere4(size_t subdivisions);
 TriSurf         cSphere(size_t subdivisions);
 // Square in XY centred at zero forming prism starting at Z=0 with height 'len'
 TriSurf         cSquarePrism(float sideLen,float height);
-// multiple colored spheres:
-Mesh            cSpheres(Vec3Ds const & poss,double radius,Rgba8 color);
+TriSurf         cTube();
+Mesh            cSpheres(Vec3Ds const & poss,double radius,Rgba8 color);    // multiple colored spheres
 
 Mesh            removeDuplicateFacets(Mesh const &);
 // Removes vertices & uvs that are not referenced by a surface or marked vertex.
@@ -379,9 +381,9 @@ Mesh            fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask);
 // The number of overlaps and the coverage are printed out.
 ImgV3F          pixelsToPositions(
     Vec3Fs const &      verts,
-    Vec3UIs const &     vtIndss,        // vertex tri indss
+    Arr3UIs const &     vtIndss,        // vertex tri indss
     Vec2Fs const &      uvs,
-    Vec3UIs const &     uvIndss,        // UV tri indss (must be 1-1 with vtIndss)
+    Arr3UIs const &     uvIndss,        // UV tri indss (must be 1-1 with vtIndss)
     Vec2UI              dims);
 // Binary image of which texels (centre point) are in the mesh UV layout (0 - no map, 255 - map):
 ImgUC           getUvCover(Mesh const & mesh,Vec2UI dims);
@@ -396,20 +398,24 @@ struct  MorphVal
 {
     String8         name;
     float           val;            // 0 - no change, 1 - full application
+    FG_SER2(name,val)
 
     MorphVal() {}
-    MorphVal(String8 const & name_,float val_) : name(name_), val(val_) {}
+    MorphVal(String8 const & n,float v) : name{n}, val{v} {}
 };
 typedef Svec<MorphVal>  MorphVals;
 
-// Only applies those morphs which mesh supports, ignores the rest:
-Vec3Fs          poseMesh(Mesh const & mesh,MorphVals const &  morphVals);
+inline Vec3Fs   applyMorphs(Mesh const & mesh,Vec3Fs const & allVerts,std::map<String8,float> const & morphVals)
+{
+    return mesh.applyMorphs(allVerts,morphVals);
+}
 Vec3Fs          cMirrorX(Vec3Fs const & verts);             // reflect verts in X=0 plane
 inline TriSurf  cMirrorX(TriSurf const & ts) {return {cMirrorX(ts.verts),reverseWinding(ts.tris)}; }
 Surf            cMirrorX(Surf const & surf);        // same as reverseWinding but also modifies surface point names
-// Mirror vertex positions around X=0 plane, reverse poly winding and UV winding
-// swap surface point and marked vertex labels ending in 'L' and 'R'
-// UVs, maps, points left unchanged, morphs removed:
+// Mirror geometry around X=0 (reverse poly winding)
+// Mirror UVs around X=0.5 (reverse UV winding)
+// Mirror and rename surface points and marked vertex labels ending in 'L' <-> 'R'
+// maps, points left unchanged, morphs removed:
 Mesh            cMirrorX(Mesh const &);
 // for all points whose name ends in 'L'/'R', add the mirror point (around X=0) ending in 'R'/'L'.
 // points not ending in 'L' or 'R' have X value set to 0:
@@ -421,9 +427,9 @@ NameVec3Fs      mirrorXFuse(NameVec3Fs const & nvs);
 // Target morphs, etc. discarded.
 Mesh            mirrorXFuse(Mesh const & in);
 // Copy the surface assignment (tris only) between aligned meshes of different topology:
-Mesh            copySurfaceStructure(Mesh const & from,Mesh const & to);
+Mesh            copySurfAssignment(Mesh const & from,Mesh const & to);
 // Merge all surface facets converted to tris:
-Svec<Vec3UI>    meshSurfacesAsTris(Mesh const &);
+Arr3UIs         meshSurfacesAsTris(Mesh const &);
 
 }
 

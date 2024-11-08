@@ -10,7 +10,7 @@
 #include "FgGuiApi.hpp"
 #include "FgGuiWin.hpp"
 #include "FgThrowWindows.hpp"
-#include "FgAffine.hpp"
+#include "FgTransform.hpp"
 
 using namespace std;
 
@@ -25,14 +25,12 @@ struct  GuiSliderWin : public GuiBaseImpl
                         hwndThis;
     Vec2UI              m_client;
 
-    GuiSliderWin(const GuiSlider & apiSlider)
-        : m_api(apiSlider)
+    GuiSliderWin(const GuiSlider & apiSlider) : m_api(apiSlider)
     {
         m_apiToWin = Affine1D {m_api.range.m[0],m_api.range.m[1],0,double(numTicks)};
     }
 
-    virtual void
-    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
+    virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
     {
 //fgout << fgnl << "Slider::create: visible: " << visible << " extStyle: " << extStyle << " ident: " << ident << fgpush;
         WinCreateChild   cc;
@@ -42,27 +40,22 @@ struct  GuiSliderWin : public GuiBaseImpl
 //fgout << fgpop;
     }
 
-    virtual void
-    destroy()
+    virtual void    destroy()
     {
         // Automatically destroys children first:
         DestroyWindow(hwndThis);
     }
 
-    virtual Vec2UI
-    getMinSize() const
+    virtual Vec2UI  getMinSize() const
     {
         return Vec2UI(
             minLabelWid() + minSliderWidth + 2*m_api.edgePadding,
             topSpace() + sliderHeight + botSpace());
     }
 
-    virtual Vec2B
-    wantStretch() const
-    {return Vec2B(true,false); }
+    virtual Arr2B   wantStretch() const {return Arr2B(true,false); }
 
-    void
-    setPos(double newVal)
+    void            setPos(double newVal)
     {
         LPARAM          val = roundT<LPARAM>(m_apiToWin * newVal + 0.5);
         SendMessage(hwndSlider,TBM_SETPOS,
@@ -71,31 +64,25 @@ struct  GuiSliderWin : public GuiBaseImpl
         m_lastVal = val;
     }
 
-    virtual void
-    updateIfChanged()
+    virtual void    updateIfChanged()
     {
         if (m_api.updateFlag->checkUpdate()) {
             double      newVal = m_api.getValFn(),
                         oldVal = m_apiToWin.invert(scast<double>(m_lastVal));
-            // This message does not need to be sent to the slider than initiated this update as
+            // This message does not need to be sent to the slider that initiated this update as
             // Windows has already updated it, along with its graphic. Also of course no update
-            // necessary for sliders than haven't changed. This optimization did little but we leave
+            // necessary for sliders that haven't changed. This optimization did little but we leave
             // it in just in case:
             if (newVal != oldVal)
                 setPos(newVal);
         }
     }
 
-    virtual void
-    moveWindow(Vec2I lo,Vec2I sz)
-    {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],TRUE); }
+    virtual void    moveWindow(Vec2I lo,Vec2I sz) {MoveWindow(hwndThis,lo[0],lo[1],sz[0],sz[1],TRUE); }
 
-    virtual void
-    showWindow(bool s)
-    {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
+    virtual void    showWindow(bool s) {ShowWindow(hwndThis,s ? SW_SHOW : SW_HIDE); }
 
-    LRESULT
-    wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
+    LRESULT         wndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
     {
         if (msg == WM_CREATE) {
             hwndThis = hwnd;
@@ -216,8 +203,7 @@ struct  GuiSliderWin : public GuiBaseImpl
     static const uint tockLabelHeight = 20;
     static const uint firstTickPad = 14;    // Hopefully constant on different windows.
 
-    uint
-    topSpace() const
+    uint            topSpace() const
     {
         if (m_api.tockLabels.empty()) {
             if (m_api.label.empty())
@@ -229,23 +215,13 @@ struct  GuiSliderWin : public GuiBaseImpl
             return tockLabelHeight;
     }
 
-    uint
-    minLabelWid() const
-    {
-        return m_api.label.empty() ? 20 : 100;
-    }
+    uint            minLabelWid() const {return m_api.label.empty() ? 20 : 100; }
 
-    uint
-    botSpace() const
-    {return (m_api.tickLabels.empty() ? 0 : tickLabelHeight); }
+    uint            botSpace() const {return (m_api.tickLabels.empty() ? 0 : tickLabelHeight); }
 
-    uint
-    sliderXSize() const
-    {return (m_client[0] - 2*m_api.edgePadding); }
+    uint            sliderXSize() const {return (m_client[0] - 2*m_api.edgePadding); }
 };
 
-GuiImplPtr
-guiGetOsImpl(const GuiSlider & def)
-{return GuiImplPtr(new GuiSliderWin(def)); }
+GuiImplPtr          guiGetOsImpl(const GuiSlider & def) {return GuiImplPtr(new GuiSliderWin(def)); }
 
 }

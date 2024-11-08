@@ -31,4 +31,5 @@ A simple cross-platform C++17 library for developing computational 3D graphics a
 * Different compiler / configuration object files are kept in different directories for fast switching.
 * Conventions: camelCase, K&R brackets, why-not-what comments.
 * namespace Fg { varNoun, funcVerb, cNoun short for calcNoun, StructName, FG_MACRO }
+* Less code is better code
 

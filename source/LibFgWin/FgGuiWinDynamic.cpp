@@ -22,8 +22,8 @@ struct  GuiDynamicWin : public GuiBaseImpl
     GuiImplPtr              m_win;
     String8                 m_store;
     HWND                    m_hwndParent;
-    Vec2I                   m_lastMoveLo;
-    Vec2I                   m_lastMoveSz;
+    Vec2I                   m_lastMoveLo{0};
+    Vec2I                   m_lastMoveSz{0};
 
     GuiDynamicWin(const GuiDynamic & api) : m_api{api}
     {
@@ -60,12 +60,12 @@ struct  GuiDynamicWin : public GuiBaseImpl
             return Vec2UI(64);
     }
 
-    virtual Vec2B       wantStretch() const
+    virtual Arr2B       wantStretch() const
     {
         if (m_win)
             return m_win->wantStretch();
         else
-            return Vec2B(false);
+            return Arr2B(false);
     }
 
     virtual void        updateIfChanged()

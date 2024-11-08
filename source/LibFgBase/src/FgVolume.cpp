@@ -16,7 +16,7 @@ namespace Fg {
 
 VArray<CoordWgt3,8> lerpCoordsCull(Vec3UI dims,Vec3D ircs)
 {
-    FGASSERT(dims.cmpntsProduct() > 0);
+    FGASSERT(dims.elemsProduct() > 0);
     VArray<CoordWgt3,8> ret;
     Vec3I               lov = Vec3I(mapFloor(ircs)),
                         hiv = lov + Vec3I(1);
@@ -41,7 +41,7 @@ VArray<CoordWgt3,8> lerpCoordsCull(Vec3UI dims,Vec3D ircs)
             cw.coordIrcs[dd] = coords.rc(dd,it()[dd]);
             cw.wgt *= weights.rc(dd,it()[dd]);
         }
-        ret.add(cw);
+        ret.append(cw);
     }
     return ret;
 }

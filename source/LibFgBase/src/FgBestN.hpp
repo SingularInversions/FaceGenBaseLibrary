@@ -3,49 +3,55 @@
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
+// Keep sorted list of best objects based on an associated metric
 
 #ifndef FGBESTN_HPP
 #define FGBESTN_HPP
 
-#include "FgSerial.hpp"
+#include "FgArray.hpp"
 
 namespace Fg {
 
-template<class Key,class Val,size_t N>
-struct      BestN
+template<class O,class M>
+struct      ObjMetric
 {
-    size_t              m_size = 0;          // How many valid values do we have ?
-    std::array<std::pair<Key,Val>,N> m_best;
+    O               object;
+    M               metric;     // must support operator<()
 
-    bool                update(Key key,Val const & val)
+    ObjMetric() {}
+    ObjMetric(O const & o,M m) : object{o}, metric{m} {}
+
+    bool            operator<(ObjMetric const & r) const {return metric < r.metric; }
+};
+
+template<class M,class O,size_t N>
+struct      BestN               // stack-based list of N largest (metric) objects
+{
+    VArray<ObjMetric<O,M>,N> om;
+
+    bool                update(M metric,O const & object)   // returns true if object was added to the best list:
     {
-        for (size_t ii=0; ii<m_size; ++ii) {
-            if (key > m_best[ii].first) {
-                for (uint jj=N-1; jj>ii; --jj)
-                    m_best[jj] = m_best[jj-1];
-                m_best[ii].first = key;
-                m_best[ii].second = val;
-                if (m_size < N)
-                    ++m_size;
+        for (size_t ii=0; ii<om.size(); ++ii) {
+            if (metric > om[ii].metric) {
+                om.insertOverflow(ii,{object,metric});
                 return true;
             }
         }
-        if (m_size < N) {
-            m_best[m_size].first = key;
-            m_best[m_size++].second = val;
+        if (om.size() < N) {
+            om.append({object,metric});
             return true;
         }
         return false;
     }
-    std::pair<Key,Val> const & operator[](size_t idx) const {return m_best[idx]; }
-    bool                empty() const {return (m_size == 0); }
-    size_t              size() const {return m_size; }
-    auto                begin() const {return m_best.begin(); }
-    auto                end() const {return m_best.end() - (N-m_size); }
+    ObjMetric<O,M> const & operator[](size_t idx) const {return om[idx]; }
+    bool                empty() const {return om.empty(); }
+    size_t              size() const {return om.size(); }
+    auto                begin() const {return om.begin(); }
+    auto                end() const {return om.end(); }
 };
 
 template<class Key,class Val,class Cmp=std::less<Key> >
-struct      BestV
+struct      BestV               // Svec based list with variable maximum size
 {
     size_t                      maxNum;     // max value for 'best.size()'
     Svec<std::pair<Key,Val> >   best;
@@ -70,58 +76,59 @@ struct      BestV
         }
         return false;
     }
-    Svec<Val>           vals() const {return sliceMember(best,&std::pair<Key,Val>::second); }
+    Svec<Val>           vals() const {return mapMember(best,&std::pair<Key,Val>::second); }
 };
 
-// Keep the value corresponding to the minimum key:
+// Just keep the min or max value (duplication easier than templating comparison and limits):
 template<class Key,class Val>
-class   Min
+class           Min
 {
-    Key             m_key = std::numeric_limits<Key>::max();
-    Val             m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
+    Key             mKey;
+    Val             mVal;
 
 public:
+    Min() : mKey{lims<Key>::max()}, mVal{} {}            // default init val to avoid gcc maybe-uninitialized warnings
+    Min(Key k,Val const & v) : mKey{k}, mVal{v} {}
+
     void            update(Key key,const Val & val)
     {
-        if (key < m_key) {
-            m_key = key;
-            m_val = val;
+        if (key < mKey) {
+            mKey = key;
+            mVal = val;
         }
     }
-    bool            valid() const {return (m_key != std::numeric_limits<Key>::max()); }
-    Key             key() const {return m_key; }
+    bool            valid() const {return (mKey != lims<Key>::max()); }
+    Key             key() const {return mKey; }
     const Val &     val() const 
     {
         FGASSERT(valid());
-        return m_val;
+        return mVal;
     }
 };
-
 template<class Key,class Val>
-struct      Max
+class           Max
 {
+    Key                 mKey;
+    Val                 mVal;
+
+public:
+    Max() : mKey{lims<Key>::lowest()}, mVal{} {}            // default init val to avoid gcc maybe-uninitialized warnings
+    Max(Key k,Val const & v) : mKey{k}, mVal{v} {}
+
     void            update(Key const & key,Val const & val)
     {
-        if (key > m_key) {
-            m_key = key;
-            m_val = val;
+        if (key > mKey) {
+            mKey = key;
+            mVal = val;
         }
     }
-    bool            valid() const {return (m_key != std::numeric_limits<Key>::lowest()); }
-    Key const &     key() const
-    {
-        FGASSERT(valid());
-        return m_key;
-    }
+    bool            valid() const {return (mKey != lims<Key>::lowest()); }
+    Key const &     key() const {return mKey; }
     Val const &     val() const
     {
         FGASSERT(valid());
-        return m_val;
+        return mVal;
     }
-
-private:
-    Key             m_key = std::numeric_limits<Key>::lowest();
-    Val             m_val {};   // default init to avoid gcc warning -Wmaybe-uninitialized
 };
 
 }

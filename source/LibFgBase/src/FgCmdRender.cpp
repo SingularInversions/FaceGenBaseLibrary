@@ -11,8 +11,8 @@
 #include "FgCommand.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dCamera.hpp"
-#include "FgSoftRender.hpp"
+#include "FgCamera.hpp"
+#include "FgRender.hpp"
 #include "FgTime.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgParse.hpp"
@@ -43,7 +43,7 @@ struct      RenderArgs
                             pan = 0;        // Y axis rotation
     SimilarityD             modelview;      // Transform world to openGL eye coordinate system (OECS)
     // transform from projected coordinates (image tangent CS) to image unit CS (x,y in [0,1]):
-    AffineEw2D              itcsToIucs;
+    AxAffine2D              itcsToIucs;
     Vec2UI                  imagePixelSize = Vec2UI(512,512);
     RenderOptions           options;
     FG_SER8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options)

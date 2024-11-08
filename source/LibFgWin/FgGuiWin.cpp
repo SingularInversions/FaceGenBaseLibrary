@@ -43,7 +43,7 @@ struct      GuiWinMain : GuiMainBase
     NPTF<String8>           titleNF;
     String8                 m_store;            // directory [and prefix] for state storage
     GuiImplPtr              m_win;
-    Vec2UI                  m_size;             // Current size of client area (including maximization)
+    Vec2UI                  m_size{0};          // Current size of client area (including maximization)
     Svec<GuiKeyHandle>      keyHandlers;
     function<void()>        onUpdate;           // Run on each screen update
 
@@ -74,7 +74,7 @@ struct      GuiWinMain : GuiMainBase
     {
     //fgout << fgnl << "s_guiWin.hwndMain: " << s_guiWin.hwndMain << flush;
         if (titleNF.checkUpdate()) {
-            String8 const &     title = titleNF.node.cref();
+            String8 const &     title = titleNF.node.val();
             SetWindowTextW(s_guiWin.hwndMain,title.as_wstring().c_str());
         }
         SendMessage(s_guiWin.hwndMain,WM_USER,0,0);
@@ -264,7 +264,7 @@ void                guiStartImpl(
     // This is done so that the caller can send messages to the child window immediately
     // after calling this function. Note that the WM_CREATE handler sends 'updateWindow'
     // after creation, so that dynamic windows can be created and setting can be udpated:
-    String8 const &     title = win.titleNF.cref();
+    String8 const &     title = win.titleNF.val();
     s_guiWin.hwndMain =
         CreateWindowEx(0,
             className,
@@ -436,5 +436,22 @@ void                guiBusyCursor()
 {
     SetCursor(LoadCursorW(NULL,IDC_WAIT));
 }
+
+struct      GuiSpacerWin : public GuiBaseImpl
+{
+    GuiSpacer           m_api;
+
+    GuiSpacerWin(const GuiSpacer & api) : m_api(api) {}
+
+    virtual void        create(HWND,int,String8 const &,DWORD,bool) {}
+    virtual void        destroy() {}
+    virtual Vec2UI      getMinSize() const {return m_api.size; }
+    virtual Arr2B       wantStretch() const {return Arr2B(false,false); }
+    virtual void        updateIfChanged() {}
+    virtual void        moveWindow(Vec2I,Vec2I) {}
+    virtual void        showWindow(bool) {}
+};
+
+GuiImplPtr          guiGetOsImpl(const GuiSpacer & def) {return GuiImplPtr(new GuiSpacerWin(def)); }
 
 }

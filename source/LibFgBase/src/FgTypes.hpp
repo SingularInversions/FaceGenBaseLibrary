@@ -59,45 +59,118 @@
 #pragma warning(disable:4244)
 #endif
 
+#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
+
 namespace Fg {
 
 // SHORTER ALIASES FOR FUNDAMENTAL TYPES:
-// C++98
-// The C/C++ Standard does not specify whether 'char' is signed  or unsigned.
-// MSVC defaults 'char' to unsigned. char is >= 1 bytes by the C++ standard:
+// * The C/C++ Standard does not specify whether 'char' is signed  or unsigned.
+// * MSVC defaults 'char' to unsigned. char is >= 1 bytes by the C++ standard.
+// * sizeof(int / uint) = 32 is assumed in some of this codebase
+// from C++ 98:
 typedef signed char     schar;
 typedef unsigned char   uchar;
-typedef unsigned short  ushort;     // short is >= 2 bytes >= char by the C++ standard.
-typedef unsigned int    uint;       // int is >= short by the C++ standard.
-typedef unsigned long   ulong;      // long is >= 4 bytes >= int by the C++ standard.
-typedef long long       int64;      // C99 / C++0x but widely supported.
-typedef unsigned long long uint64;  // "
-// C++11
+typedef unsigned short  ushort;     // short is >= 2 bytes >= char by the standard.
+typedef unsigned int    uint;       // int is >= short by the standard.
+typedef unsigned long   ulong;      // long is >= 4 bytes >= int by the standard.
+// from C++11
 typedef std::uint8_t    uint8;
 typedef std::int8_t     int8;
 typedef std::int16_t    int16;
 typedef std::uint16_t   uint16;
 typedef std::int32_t    int32;
 typedef std::uint32_t   uint32;
+typedef std::int64_t    int64;
+typedef std::uint64_t   uint64;
 
 // shorthand for static_cast along with an in-place version. Note that 'using' doesn't work here since
 // 'static_cast' is not a normal function:
-template<class T,class F> inline T      scast(F val) {return static_cast<T>(val); }
-template<class T,class F> inline void   scast_(F from,T & to) {to = static_cast<T>(from); }
+template<class T,class F>
+inline T constexpr      scast(F val) {return static_cast<T>(val); }
 
 template<class T> using lims = std::numeric_limits<T>;
+
+// use instead of std::array to get better constructors:
+// * single-curly-brace element list
+// * single-arg fill ctor
+// * error if wrong number of terms (other than single-arg)
+// * construct using emplace_back
+template<class T,size_t S>
+class       Arr
+{
+    T               m[S];
+
+public:
+    // No initialization is done for types without a default ctor. Default zero-fill is not a solution, be explicit:
+    Arr() {}
+    explicit constexpr Arr(T v) {for (size_t ii=0; ii<S; ++ii) m[ii] = v; }
+    constexpr Arr(T x,T y) : m {x,y}
+    {static_assert(S == 2,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    constexpr Arr(T x,T y,T z) : m {x,y,z}
+    {static_assert(S == 3,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d) : m {a,b,c,d}
+    {static_assert(S == 4,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d,T e) : m {a,b,c,d,e}
+    {static_assert(S == 5,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d,T e,T f) : m {a,b,c,d,e,f}
+    {static_assert(S == 6,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m {a,b,c,d,e,f,g,h,i}
+    {static_assert(S == 9,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l) : m {a,b,c,d,e,f,g,h,i,j,k,l}
+    {static_assert(S == 12,"Number of arguments does not match elements"); }   //-V557
+    constexpr Arr(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p) : m {a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p}
+    {static_assert(S == 16,"Number of arguments does not match elements"); }   //-V557
+
+    size_t constexpr    size() const {return S; }
+    T const *           begin() const {return &m[0]; }
+    T const *           end() const {return &m[0]+S; }
+    T *                 begin() {return &m[0]; }
+    T *                 end() {return &m[0]+S; }
+    T const &           operator[](size_t xx) const {return m[xx]; }
+    T &                 operator[](size_t xx) {return m[xx]; }
+    T const &           back() const {return m[S-1]; }
+    T &                 back() {return m[S-1]; }
+    void                fill(T v) {for (size_t ii=0; ii<S; ++ii) m[ii] = v; }
+    bool                operator==(Arr const & rhs) const
+    {
+        for (size_t ii=0; ii<S; ++ii)
+            if (!(m[ii] == rhs.m[ii]))
+                return false;
+        return true;
+    }
+    bool                operator!=(Arr const & rhs) const {return !(*this == rhs); }
+    bool                operator<(Arr const & rhs) const    // handy when we need a sorted order
+    {
+        for (size_t ii=0; ii<S; ++ii) {    // arbitrarily choose first element as most significant
+            if (m[ii] < rhs.m[ii])
+                return true;
+            if (rhs.m[ii] < m[ii])
+                return false;
+        }
+        return false;           // equal
+    }
+};
 
 // SHORTER ALIASES FOR STANDARD LIBRARY TYPES
 // convenient, but also useful for ensuring successful name lookup for functions overloaded on both
 // untemplated std:: classes and FG classes.
 
-template<class T,size_t S> using Arr = std::array<T,S>;
+template<class T>           using Svec = std::vector<T>;
+template<class T>           using Ptrs = std::vector<T const *>;
 
+typedef Arr<bool,2>             Arr2B;
 typedef Arr<uchar,2>            Arr2UC;
 typedef Arr<int,2>              Arr2I;
+typedef Arr<uint,2>             Arr2UI;
+typedef Arr<uint64,2>           Arr2UL;
+typedef Arr<size_t,2>           Arr2Z;
 typedef Arr<float,2>            Arr2F;
 typedef Arr<double,2>           Arr2D;
+typedef Svec<Arr2UI>            Arr2UIs;
+typedef Svec<Arr2UIs>           Arr2UIss;
+typedef Svec<Arr2UIss>          Arr2UIsss;
 
+typedef Arr<bool,3>             Arr3B;
 typedef Arr<uchar,3>            Arr3UC;
 typedef Arr<schar,3>            Arr3SC;
 typedef Arr<ushort,3>           Arr3US;
@@ -106,8 +179,11 @@ typedef Arr<uint,3>             Arr3UI;
 typedef Arr<uint64,3>           Arr3UL;
 typedef Arr<float,3>            Arr3F;
 typedef Arr<double,3>           Arr3D;
-typedef std::vector<Arr3F>      Arr3Fs;
-typedef std::vector<Arr3D>      Arr3Ds;
+typedef Svec<Arr3B>             Arr3Bs;
+typedef Svec<Arr3UI>            Arr3UIs;
+typedef Svec<Arr3F>             Arr3Fs;
+typedef Svec<Arr3D>             Arr3Ds;
+typedef Svec<Arr3UIs>           Arr3UIss;
 
 typedef Arr<uchar,4>            Arr4UC;
 typedef Arr<int,4>              Arr4I;
@@ -115,9 +191,8 @@ typedef Arr<uint,4>             Arr4UI;
 typedef Arr<float,4>            Arr4F;
 typedef Arr<double,4>           Arr4D;
 typedef Arr<double,5>           Arr5D;
-
-template<class T>   using Svec = std::vector<T>;
-template<class T>   using Ptrs = std::vector<T const *>;
+typedef Svec<Arr4D>             Arr4Ds;
+typedef Svec<Arr4UI>            Arr4UIs;
 
 typedef Svec<bool>              Bools;
 typedef Svec<std::byte>         Bytes;
@@ -146,7 +221,6 @@ typedef Svec<String>            Strings;
 typedef Svec<Strings>           Stringss;
 typedef Svec<Str32>             Str32s;
 
-// shorthand for some std:: containers:
 template<class T> using         Sfun = std::function<T>;
 template<class T> using         Sptr = std::shared_ptr<T>;
 template<class T> using         Uptr = std::unique_ptr<T>;
@@ -189,102 +263,84 @@ std::string         cBitsString();
 // aggregates can be automatically handled in template code:
 template<class T> struct Traits;
 // Scalar - the underlying scalar type of, eg., a std::array of std::vector of Fg::MatrixC
-// Accumulator - same nested type except that Scalar is replaced with an accumulator type
 // Floating - same nested type except that Scalar is replace with 'float'
 // Printable - only affect structures of uchar/schar which don't print numbers with std::ostream
 template<> struct Traits<uchar>
 {
     typedef uchar   Scalar;
-    typedef uint    Accumulator;
     typedef float   Floating;
     typedef uint    Printable;
 };
 template<> struct Traits<schar>
 {
     typedef schar   Scalar;
-    typedef int     Accumulator;
-    typedef float   Floating;
-    typedef int     Printable;
-};
-template<> struct Traits<int>
-{
-    typedef int     Scalar;
-    typedef int64   Accumulator;
     typedef float   Floating;
     typedef int     Printable;
 };
 template<> struct Traits<ushort>
 {
     typedef ushort  Scalar;
-    typedef uint64  Accumulator;
     typedef float   Floating;
     typedef ushort  Printable;
 };
-template<> struct Traits<uint>
+template<> struct Traits<int32>
 {
-    typedef uint    Scalar;
-    typedef uint64  Accumulator;
+    typedef int32   Scalar;
+    typedef float   Floating;
+    typedef int     Printable;
+};
+template<> struct Traits<uint32>
+{
+    typedef uint32  Scalar;
     typedef float   Floating;
     typedef uint    Printable;
-};
-template<> struct Traits<ulong>
-{
-    typedef ulong   Scalar;
-    typedef size_t  Accumulator;
-    typedef double  Floating;
-    typedef ulong   Printable;
 };
 template<> struct Traits<int64>
 {
     typedef int64   Scalar;
-    typedef int64   Accumulator;
     typedef double  Floating;
     typedef int64   Printable;
 };
 template<> struct Traits<uint64>
 {
     typedef uint64  Scalar;
-    typedef uint64  Accumulator;
     typedef double  Floating;
     typedef uint64  Printable;
 };
 template<> struct Traits<float>
 {
     typedef float   Scalar;
-    typedef double  Accumulator;
     typedef float   Floating;
     typedef float   Printable;
 };
 template<> struct Traits<double>
 {
     typedef double  Scalar;
-    typedef double  Accumulator;
     typedef double  Floating;
     typedef double  Printable;
 };
 template<> struct Traits<std::complex<double>>
 {
     typedef std::complex<double>    Scalar;
-    typedef std::complex<double>    Accumulator;
     typedef std::complex<double>    Floating;
     typedef std::complex<double>    Printable;
+};
+template<> struct Traits<bool>
+{
+    typedef bool    Printable;
 };
 template<class T,size_t S>
 struct  Traits<Arr<T,S>>
 {
     typedef typename Traits<T>::Scalar              Scalar;
-    typedef Arr<typename Traits<T>::Accumulator,S>  Accumulator;
     typedef Arr<typename Traits<T>::Floating,S>     Floating;
 };
 template<class T>
 struct Traits<Svec<T>>
 {
     typedef typename Traits<T>::Scalar              Scalar;
-    typedef Svec<typename Traits<T>::Accumulator>   Accumulator;
     typedef Svec<typename Traits<T>::Floating>      Floating;
 };
-
-#define FG_ENABLE_IF(Type,Trait) typename std::enable_if<std::Trait<Type>::value,Type>::type* =nullptr
 
 }
 

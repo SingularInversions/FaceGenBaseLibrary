@@ -103,7 +103,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-                Vec3UI   i = surf.tris.vertInds[tt];
+                Arr3UI   i = surf.tris.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -111,7 +111,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
                 ofs << i[0] << "," << i[1] << "," << int(~i[2]);     // bitwise negation of last index WTF
             }
             for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-                Vec4UI   i = surf.quads.vertInds[tt];
+                Arr4UI   i = surf.quads.vertInds[tt];
                 if (start)
                     start = false;
                 else
@@ -160,7 +160,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
             for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
-                Vec3UI   i = surf.tris.uvInds[tt];
+                Arr3UI   i = surf.tris.uvInds[tt];
                 if (start)
                     start = false;
                 else
@@ -168,7 +168,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
                 ofs << i[0] << "," << i[1] << "," << i[2];
             }
             for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
-                Vec4UI   i = surf.quads.uvInds[tt];
+                Arr4UI   i = surf.quads.uvInds[tt];
                 if (start)
                     start = false;
                 else
@@ -344,7 +344,7 @@ void                testSaveFbxAscii(CLArgs const & args)
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
     saveFbxAscii("meshExportFbx",{mouth,glasses});
-    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+    if (is64Bit() && (getCurrentCompiler()==Compiler::vs22))      // precision differences otherwise
         regressFileRel("meshExportFbx.fbx","base/test/");
     regressFileRel("meshExportFbx0_0.png","base/test/");
     regressFileRel("meshExportFbx1_0.png","base/test/");
@@ -698,7 +698,7 @@ Mesh                parseBinMesh(Sptr<RecordRaw> const & rp1)
         posIndss = splitByMatFn(posInds),
         uvIndss = splitByMatFn(uvInds);
     }
-    auto                toPolyFn = [](VArrayUI4s const & inds,Vec3UIs & tris,Vec4UIs & quads)
+    auto                toPolyFn = [](VArrayUI4s const & inds,Arr3UIs & tris,Arr4UIs & quads)
     {
         for (VArrayUI4 const & idx : inds) {
             if (idx.size() == 3)

@@ -10,12 +10,12 @@
 #include "Fg3dMeshIo.hpp"
 #include "FgImageIo.hpp"
 #include "FgGeometry.hpp"
-#include "FgSimilarity.hpp"
+#include "FgTransform.hpp"
 #include "FgTopology.hpp"
 #include "Fg3dDisplay.hpp"
 #include "FgBestN.hpp"
-#include "FgCmd.hpp"
 #include "FgParse.hpp"
+#include "FgFileSystem.hpp"
 
 using namespace std;
 
@@ -67,7 +67,7 @@ OUTPUT:
         meshes = {mergeMeshes(meshes)};
     Path            out {syn.next()};
     if (meshes.size() > 1) {
-        if (meshFormatSupportsMulti(getMeshFormat(out.ext.m_str)))
+        if (meshFormatSupportsMulti(getMeshFormat(out.baseExt())))
             saveMergeMesh(meshes,out.str());
         else {
             String8s        namesUsed {""};     // contains empty name to force appending a number
@@ -142,7 +142,7 @@ void                copyUvsImv(CLArgs const & args)
     Mesh                in = loadMesh(syn.next());
     Mesh                out = loadMesh(syn.next());
     out.uvs = in.uvs;
-    map<Vec3UI,Vec3UI>  vertIndsToUvInds;
+    map<Arr3UI,Arr3UI>  vertIndsToUvInds;
     for (Surf const & inSurf : in.surfaces) {
         NPolys<3> const &   tris = inSurf.tris;
         if (tris.vertInds.size() == tris.uvInds.size())
@@ -184,8 +184,12 @@ NOTES:
     }
     if (filenames.empty())
         syn.error("no files to edit");
-    for (String8 const & filename : filenames)
-        viewMesh({loadMesh(filename)},false,filename);
+    for (String8 const & filename : filenames) {
+        PushIndent          pind {filename.m_str};
+        Mesh                mesh = loadMesh(filename);
+        fgout << fgnl << mesh;
+        viewMesh({mesh},false,filename);
+    }
 }
 
 void                cmdEmboss(CLArgs const & args)
@@ -448,21 +452,21 @@ void                cmdRtris(CLArgs const & args)
             surf.removeTri(ti);
         else {
             ti -= surf.tris.size();
-            Vec4UI       qvs = surf.quads.vertInds[ti/2];
-            Vec4UI       uvs(0);
+            Arr4UI       qvs = surf.quads.vertInds[ti/2];
+            Arr4UI       uvs(0);
             if (!surf.quads.uvInds.empty())
                 uvs = surf.quads.uvInds[ti/2];
             surf.removeQuad(ti/2);
             // The other tri making up the quad needs to be appended to tris:
             if (ti & 0x1)
-                surf.tris.vertInds.push_back(Vec3UI(qvs[0],qvs[1],qvs[2]));
+                surf.tris.vertInds.push_back(Arr3UI(qvs[0],qvs[1],qvs[2]));
             else
-                surf.tris.vertInds.push_back(Vec3UI(qvs[2],qvs[3],qvs[0]));
+                surf.tris.vertInds.push_back(Arr3UI(qvs[2],qvs[3],qvs[0]));
             if (!surf.tris.uvInds.empty()) {
                 if (ti & 0x1)
-                    surf.tris.uvInds.push_back(Vec3UI(uvs[0],uvs[1],uvs[2]));
+                    surf.tris.uvInds.push_back(Arr3UI(uvs[0],uvs[1],uvs[2]));
                 else
-                    surf.tris.uvInds.push_back(Vec3UI(uvs[2],uvs[3],uvs[0]));
+                    surf.tris.uvInds.push_back(Arr3UI(uvs[2],uvs[3],uvs[0]));
             }
         }
     }
@@ -519,7 +523,7 @@ void                cmdRetopo(CLArgs const & args)
         uint                bestIdx;
         for (size_t vv=0; vv<meshIn.verts.size(); ++vv) {
             Vec3F const &       vi = meshIn.verts[vv];
-            float               mag = cMag(vi-vr);
+            float               mag = cMagD(vi-vr);
             if (mag < bestMag) {
                 bestMag = mag;
                 bestIdx = uint(vv);
@@ -638,7 +642,7 @@ void                cmdSplitContigVerts(CLArgs const & args)
     saveFgmesh(syn.next(),mesh);
 }
 
-void                surfAdd(CLArgs const & args)
+void                cmdSurfAdd(CLArgs const & args)
 {
     Syntax    syn(args,
         "<in>.<ext> <name> <out>.fgmesh\n"
@@ -652,19 +656,32 @@ void                surfAdd(CLArgs const & args)
     saveFgmesh(syn.next(),mesh);
 }
 
-void                surfCopy(CLArgs const & args)
+void                cmdSurfCopy(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<from>.fgmesh <to>.<ext> <out>.fgmesh\n"
-        "    <ext>  - " + getMeshLoadExtsCLDescription() + "\n"
-        " * tris only, uvs not preserved."
-        );
-    Mesh        from = loadFgmesh(syn.next()),
-                    to = loadMesh(syn.next());
-    saveFgmesh(syn.next(),copySurfaceStructure(from,to));
+    Syntax              syn {args,R"(<surfs>.fgmesh <verts>.<ext> <out>.fgmesh
+    <ext>       - )" + getMeshLoadExtsCLDescription() + R"(
+NOTES:
+    Overwrites all surfaces in <verts> with all surfaces from <surfs> and saves to <out>.fgmesh)"
+    };
+    Mesh                meshSurfs = loadFgmesh(syn.next()),
+                        mesh = loadMesh(syn.next());
+    mesh.surfaces = meshSurfs.surfaces;
+    saveFgmesh(syn.next(),mesh);
 }
 
-void                surfDel(CLArgs const & args)
+void                cmdSurfCopyAssign(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<from>.fgmesh <to>.<ext> <out>.fgmesh
+    <ext>       - )" + getMeshLoadExtsCLDescription() + R"(
+NOTES:
+    * tris only, uvs not preserved.)"
+    };
+    Mesh                from = loadFgmesh(syn.next()),
+                        to = loadMesh(syn.next());
+    saveFgmesh(syn.next(),copySurfAssignment(from,to));
+}
+
+void                cmdSurfDel(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh <idx>+\n"
         "    <idx> - surface indices to delete"
@@ -684,7 +701,7 @@ void                surfDel(CLArgs const & args)
     saveMesh(mesh,outName);
 }
 
-void                surfIso(CLArgs const & args)
+void                cmdSurfIso(CLArgs const & args)
 {
     Syntax              syn {args,"<in>.fgmesh <out>.fgmesh (<idx>)+\n"
         "    <idx> - surface index to delete"
@@ -698,7 +715,7 @@ void                surfIso(CLArgs const & args)
             syn.error("Selected surface index out of range",toStr(idx));
         inds.push_back(idx);
     }
-    mesh.surfaces = select(mesh.surfaces,inds);
+    mesh.surfaces = mapIndex(inds,mesh.surfaces);
     saveMesh(mesh,outName);
 }
 
@@ -844,7 +861,7 @@ NOTES:
     for (String const & meshPath : meshPaths) {
         Mesh                mesh = loadMesh(meshPath);
         PushIndent          pind {meshPath};
-        Strings             existing = sliceMember(mesh.surfPointsAsNameVecs(),&NameVec3F::name),
+        Strings             existing = mapMember(mesh.surfPointsAsNameVecs(),&NameVec3F::name),
                             toPlace = setwiseSubtract(lmNames,existing);
         if (!toPlace.empty()) {
             if (useColor && !mesh.surfaces.empty()) {
@@ -1156,7 +1173,7 @@ void                cmdSurfVertInds(CLArgs const & args)
     <surfIdx>       - index of a surface in the mesh (use 'fgbl view mesh' to see surface indices).
                       If none are specified, all surfaces are used.
 OUTPUT:
-    <out>.txt       - space-sparated list of all vertex indices used by the specified surfaces
+    <out>.txt       - space-separated list of all vertex indices used by the specified surfaces
 NOTES:
     * The output vertex indices list can be used with 'fg3t ssmEyeI' to select vertices to transform
       rigidly (as eyes) instead of deformably (as skin) )"
@@ -1175,17 +1192,34 @@ NOTES:
         if (ss >= mesh.surfaces.size())
             syn.error("Surface index is larger than number of surfaces in mesh",toStr(ss));
         Surf const &        surf = mesh.surfaces[ss];
-        for (Vec3UI inds : surf.tris.vertInds)
-            for (uint ind : inds.m)
+        for (Arr3UI inds : surf.tris.vertInds)
+            for (uint ind : inds)
                 vertInds.insert(ind);
-        for (Vec4UI inds : surf.quads.vertInds)
-            for (uint ind : inds.m)
+        for (Arr4UI inds : surf.quads.vertInds)
+            for (uint ind : inds)
                 vertInds.insert(ind);
     }
     String              content;
     for (uint idx : vertInds)
         content += toStr(idx) + " ";
     saveRaw(content,outName);
+}
+
+void                cmdUnify(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<in>.<exti> <out>.<exto>
+    <exti>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <exto>          - )" + getMeshSaveExtsCLDescription()
+    };
+    Mesh                mesh = loadMesh(syn.next());
+    Uints               perm = cUvToVertPermutation(mesh.verts,mesh.uvs,mesh.surfaces);
+    mesh.uvs = mapIndex(perm,mesh.uvs);
+    for (Surf & surf : mesh.surfaces) {
+        surf.tris.uvInds = surf.tris.vertInds;
+        surf.quads.uvInds = surf.quads.vertInds;
+    }
+    saveMesh(mesh,syn.next());
 }
 
 void                cmdVertsCopy(CLArgs const & args)
@@ -1211,7 +1245,7 @@ NOTES:
     Uints               inds;
     if (syn.more()) {
         Strings             tinds = splitWhitespace(loadRawString(syn.next()));
-        inds = mapCallT<uint>(tinds,[](String const & s){return fromStr<uint>(s).value(); });
+        inds = mapCall(tinds,[](String const & s){return fromStr<uint>(s).value(); });
     }
     if (cMaxElem(inds) >= V)
         fgThrow("index values in <inds>.txt exceed vertex count");
@@ -1280,18 +1314,20 @@ void                cmdSurfPoint(CLArgs const & args)
 void                cmdSurf(CLArgs const & args)
 {
     Cmds            cmds {
-        {surfAdd,"add","Add an empty surface to a mesh"},
+        {cmdSurfAdd,"add","Add an empty surface to a mesh"},
         {cmdSurfCombine,"combine","Combine surfaces from meshes with identical vertex lists"},
-        {surfCopy,"copy","Copy surface structure between aligned meshes"},
-        {surfDel,"del","Delete specified surfaces"},
-        {surfIso,"isolate","Delete all surfaces other than specified ones"},
+        {cmdSurfCopy,"copy","Copy the surfaces of a mesh to another (vertex and uv lists must be corresonding)"},
+        {cmdSurfCopyAssign,"copyAssign","Copy surface assignment between aligned meshes of different topology"},
+        {cmdSurfDel,"del","Delete specified surfaces"},
+        {cmdSurfIso,"isolate","Delete all surfaces other than specified ones"},
         {surfList,"list","List surfaces in mesh"},
         {mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"},
         {mergesurfs,"merge","Merge all surfaces in a mesh into one"},
         {cmdSurfPoint,"point","operations on surface points"},
+        {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
+        {surfRen,"ren","Rename a surface in a mesh"},
         {cmdSplitContigVerts,"splitV","Split surfaces by contiguous vertex indices"},
         {cmdSplitSurf,"splitS","Split mesh by surface"},
-        {surfRen,"ren","Rename a surface in a mesh"},
         {cmdSurfVertInds,"vinds","Save a TXT list of all vertex indices referenced by given surfaces"},
     };
     doMenu(args,cmds);
@@ -1348,13 +1384,13 @@ void                cmdMesh(CLArgs const & args)
         {cmdMark,"mark","List and label marked vertices"},
         {cmdMergeMeshes,"merge","Merge multiple meshes into one. No optimization is done"},
         {cmdMeshMirrorFuse,"mirFuse","Mirror the mesh around the X=0 plane and fuse with mirrored"},
-        {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
         {cmdRetopo,"retopo","Rebase a mesh topology with an exactly aligned mesh"},
         {cmdRtris,"rtris","Remove specific tris from a mesh"},
         {cmdRuv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"},
         {cmdRevWind,"rwind","Reverse facet winding of a mesh"},
         {cmdSurf,"surf","Operations on mesh surface structure"},
         {cmdToTris,"toTris","Convert all facets to tris"},
+        {cmdUnify,"unify","Unify ordering of vertices and UVs if possible"},
         {cmdUvs,"uvs","UV-specific commands"},
         {cmdVerts,"verts","vertex-specific commands"},
         {cmdXform,"xform","Create / apply similarity transforms from / to meshes"},

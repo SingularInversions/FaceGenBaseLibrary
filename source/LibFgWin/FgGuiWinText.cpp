@@ -21,14 +21,14 @@ struct  GuiTextWin : public GuiBaseImpl
     GuiText             m_api;
     HWND                hwndText;
     HWND                hwndThis;
-    DfgFPtr             m_updateFlag;   // Track changes in above
+    DfFPtr             m_updateFlag;   // Track changes in above
 
     GuiTextWin(const GuiText & api) : m_api(api)
     {
         FGASSERT(m_api.minWidth > 0);
         FGASSERT(m_api.minHeight > 0);
         static HMODULE hmRichEdit = LoadLibrary(L"RichEd20.dll");
-        m_updateFlag = makeUpdateFlag(m_api.content);
+        m_updateFlag = cUpdateFlagT(m_api.content);
     }
 
     virtual void    create(HWND parentHwnd,int ident,String8 const &,DWORD extStyle,bool visible)
@@ -57,11 +57,11 @@ struct  GuiTextWin : public GuiBaseImpl
 
     }
 
-    virtual Vec2B   wantStretch() const {return m_api.wantStretch; }
+    virtual Arr2B   wantStretch() const {return m_api.wantStretch; }
     
     void            updateText()
     {
-        wstring         content = m_api.content.cref().as_wstring();
+        wstring         content = m_api.content.val().as_wstring();
         BOOL            success = SetWindowTextW(hwndText,content.c_str());     // Update text in window
         FGASSERTWIN(success);
         // Get single line height (16 on my PC):

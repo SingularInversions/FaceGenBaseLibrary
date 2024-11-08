@@ -32,13 +32,13 @@ Arr<GuiPtr,3>       makeSliderBank3(
     Arr<GuiPtr,3>  ret;
     for (size_t ss=0; ss<3; ++ss) {
         GuiSlider        s;
-        s.updateFlag = makeUpdateFlag(valN);
-        s.getValFn = [valN,ss](){return valN.cref()[ss]; };
+        s.updateFlag = cUpdateFlagT(valN);
+        s.getValFn = [valN,ss](){return valN.val()[ss]; };
         s.setValFn = [valN,ss](double v){valN.ref()[ss] = v; };
         s.label = labels[ss];
         s.range = range;
         s.tickSpacing = tickSpacing;
-        ret[ss] = guiMakePtr(s);
+        ret[ss] = guiPtr(s);
     }
     return ret;
 }
@@ -47,8 +47,8 @@ Arr<GuiPtr,3>       makeSliderBank3(
 GuiVal<Vec3F>       makeColorSliders(String8 const & store,double init,double tickSpacing)
 {
     IPT<Vec3F>          valN = makeSavedIPT(Vec3F(init),store);
-    array<GuiPtr,3>     sliders = makeSliderBank3(valN,array<String8,3>(),VecD2(0,1),tickSpacing);
-    array<String8,3>    labels {{"Red","Green","Blue"}};
+    Arr<GuiPtr,3>       sliders = makeSliderBank3(valN,Arr<String8,3>{},VecD2(0,1),tickSpacing);
+    Arr<String8,3>      labels {"Red","Green","Blue"};
     Img<GuiPtr>         wins {2,3};
     for (uint ii=0; ii<3; ++ii) {
         wins.xy(0,ii) = guiText(labels[ii]);
@@ -57,11 +57,11 @@ GuiVal<Vec3F>       makeColorSliders(String8 const & store,double init,double ti
     return GuiVal<Vec3F>(valN,guiSplit(wins));
 }
 
-GuiVal<Vec3F>       makeDirectionSliders(array<IPT<double>,3> inputNs,String8 const & store)
+GuiVal<Vec3F>       makeDirectionSliders(Arr<IPT<double>,3> inputNs,String8 const & store)
 {
     Vec3D               defaultVal(0,0,1);
     VecD2               bounds(-100000,100000);
-    array<string,3>     labels {{"Right:","Up:","Backward:"}};
+    Arr<String,3>       labels {"Right:","Up:","Backward:"};
     GuiPtrs             ctls;
     for (uint xx=0; xx<3; ++xx) {
         inputNs[xx].initSaved(defaultVal[xx],store+toStr(xx));
@@ -69,8 +69,7 @@ GuiVal<Vec3F>       makeDirectionSliders(array<IPT<double>,3> inputNs,String8 co
         ctls.push_back(guiTextEditFloat(inputNs[xx],bounds,6));
     }
     GuiVal<Vec3F> ret;
-    ret.valN = link3<Vec3F,double,double,double>(inputNs[0],inputNs[1],inputNs[2],
-        [](double v0,double v1,double v2){return Vec3F(v0,v1,v2); });
+    ret.valN = link3(inputNs[0],inputNs[1],inputNs[2],[](double v0,double v1,double v2){return Vec3F(v0,v1,v2); });
     ret.win = guiSplitV({
         guiText("Direction vector to light (from viewer's point of view):"),
         guiSplitH(ctls)});
@@ -84,12 +83,12 @@ struct      LightCtrls
     OPT<Light>            light;
 };
 
-LightCtrls          makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBrightness,String8 const & store)
+LightCtrls          makeLightCtrls(Arr<IPT<double>,3> inputNs,double defaultBrightness,String8 const & store)
 {
     LightCtrls              ret;
     GuiVal<Vec3F>     color = makeColorSliders(store+"Color",defaultBrightness,0.1);
     GuiVal<Vec3F>     dir = makeDirectionSliders(inputNs,store+"Direction");
-    ret.light = link2<Light,Vec3F,Vec3F>(color.valN,dir.valN,[](Vec3F c,Vec3F d){return Light(c,d); });
+    ret.light = link2(color.valN,dir.valN,[](Vec3F c,Vec3F d){return Light(c,d); });
     ret.clrSliders = color.win;
     ret.dirSliders = dir.win;
     return ret;
@@ -98,8 +97,8 @@ LightCtrls          makeLightCtrls(array<IPT<double>,3> inputNs,double defaultBr
 void                lightDirectionDrag(
     bool                    shiftKey,
     Vec2I                   pixels,
-    array<IPT<double>,3>    light1,
-    array<IPT<double>,3>    light2)
+    Arr<IPT<double>,3>    light1,
+    Arr<IPT<double>,3>    light2)
 {
     auto const &            lgt = shiftKey ? light2 : light1;
     Vec3D                   dir;
@@ -107,7 +106,7 @@ void                lightDirectionDrag(
         dir[ii] = lgt[ii].val();
     dir = normalize(dir);
     Vec3D                   axis(pixels[1],pixels[0],0);
-    double                  axisLen = axis.len();
+    double                  axisLen = cLenD(axis);
     if (axisLen > 0.0) {
         Mat33D              rot = matRotateAxis(axisLen/500.0,axis/axisLen);
         dir = rot * dir;
@@ -125,20 +124,17 @@ GuiPtr              makeLightingCtrls(
 {
     GuiVal<Vec3F>     ambient = makeColorSliders(store+"Ambient",0.4,0.1);
     String8                sp = store + "Diffuse";
-    array<IPT<double>,3>    dir1Ns,
+    Arr<IPT<double>,3>      dir1Ns,
                             dir2Ns;
     LightCtrls              light1 = makeLightCtrls(dir1Ns,0.6,sp+"1"),
                             light2 = makeLightCtrls(dir2Ns,0.0,sp+"2");
     NPT<Lighting>         lightingN =
-        link3<Lighting,Vec3F,Light,Light>(ambient.valN,light1.light,light2.light,
-            [](Vec3F a,Light l1,Light l2)
-            {return Lighting(a,svec(l1,l2)); }
-        );
+        link3(ambient.valN,light1.light,light2.light,[](Vec3F a,Light l1,Light l2){return Lighting(a,{l1,l2}); });
     connect(lightingR,lightingN);
     bothButtonsDragAction = std::bind(lightDirectionDrag,_1,_2,dir1Ns,dir2Ns);
     auto                    resetLighting = [lightingN,dir1Ns,dir2Ns]()
         {
-            DfgNPtrs       nodes;
+            DfNPtrs       nodes;
             nodes.push_back(lightingN.ptr);
             for (const IPT<double> & i : dir1Ns)
                 nodes.push_back(i.ptr);
@@ -229,11 +225,11 @@ GuiPtr              makeRendCtrls(
         optNs.push_back(makeSavedIPT(opt.defVal,store+opt.store));
         optWs.push_back(guiCheckbox(opt.desc,optNs.back()));
     }
-    NPT<Bools>              optsN = linkCollate<bool>(optNs);
+    NPT<Bools>              optsN = linkCollate(optNs);
     String8s                albedoModeLabels = cAlbedoModeLabels();
     IPT<size_t>             optRcN = makeSavedIPTEub<size_t>(0,store+"albedoMode",albedoModeLabels.size());
     GuiVal<Vec3F>           bgColor = makeColorSliders(store+"BgColor",0.0,0.1);
-    NPT<RendOptions>        rendOptionsN = link3<RendOptions,size_t,Bools,Vec3F>(optRcN,optsN,bgColor.valN,
+    NPT<RendOptions>        rendOptionsN = link3(optRcN,optsN,bgColor.valN,
         [](size_t const & albedoMode,Bools const & opts,Vec3F const & bgColor)    // Elements [0,1]
     {
         RendOptions       r;
@@ -311,7 +307,7 @@ void                assignTri(      // Re-assign a tri (or quad) to a different 
     Vec2I               pos,
     Mat44F              toOics)
 {
-    RendMeshes const &      rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.val();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toOics,rms);
     if (vpt.has_value()) {
         MeshesIntersect         isct = vpt.value();
@@ -369,7 +365,7 @@ void                assignPaint(
     Vec2I               pos,
     Mat44F              toD3ps)
 {
-    RendMeshes const &      rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.val();
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,toD3ps,rms);
     if (vpt.has_value()) {
         MeshesIntersect         isct = vpt.value();
@@ -378,11 +374,11 @@ void                assignPaint(
         Mesh *                  meshPtr = rm.origMeshN.valPtr();
         if (meshPtr) {
             if ((isct.surfIdx != dstSurfIdx) && (dstSurfIdx < meshPtr->surfaces.size())) {
-                Vec3UI          tri = meshPtr->surfaces[isct.surfIdx].getTriEquivVertInds(isct.surfPnt.triEquivIdx);
+                Arr3UI          tri = meshPtr->surfaces[isct.surfIdx].getTriEquivVertInds(isct.surfPnt.triEquivIdx);
                 Surfs           surfs = splitByContiguous(meshPtr->surfaces[isct.surfIdx]);
                 for (size_t ss=0; ss<surfs.size(); ++ss) {
                     if (contains(surfs[ss].tris.vertInds,tri)) {
-                        meshPtr->surfaces[dstSurfIdx].merge(surfs[ss]);
+                        merge_(meshPtr->surfaces[dstSurfIdx],surfs[ss]);
                         surfs.erase(surfs.begin()+ss);
                         Surf                tmp = merge(surfs);
                         // Copy the merged structure and surf point list, preserving name and material:
@@ -398,15 +394,15 @@ void                assignPaint(
     }
 }
 
-GuiPtr              makeEditPoints(Gui3d & api)
+GuiPtr              cMeshEditPointsW(Gui3d & api)
 {
     NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
-    IPT<String8>        pointLabelN = makeIPT(String8());
+    IPT<String8>        pointLabelN {};
     api.clickActions.at(0,1,1) = bind(markSurfacePoint,rendMeshesN,pointLabelN,_1,_2,_3);
     // left-click no modifiers:
     api.clickActions.at(0,0,0) = [rendMeshesN,pointLabelN](Vec2UI winSize,Vec2I screenPos,Mat44F worldToD3ps)
     {
-        RendMeshes const &      rms = rendMeshesN.cref();
+        RendMeshes const &      rms = rendMeshesN.val();
         Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,screenPos,worldToD3ps,rms);
         if (vpt.has_value()) {
             // Perform all calculations in the original mesh coordinates:
@@ -414,7 +410,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
             SurfPoint const &       sp = pt.surfPnt;
             FGASSERT(pt.meshIdx < rms.size());
             RendMesh const &        rm = rms[pt.meshIdx];
-            Mesh const &            origMesh = rm.origMeshN.cref();
+            Mesh const &            origMesh = rm.origMeshN.val();
             FGASSERT(pt.surfIdx < origMesh.surfaces.size());
             Surf const &            origSurf = origMesh.surfaces[pt.surfIdx];
             Vec3F                   origPos = origSurf.surfPointPos(origMesh.verts,sp);
@@ -423,7 +419,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
             for (Surf const & surf : origMesh.surfaces) {
                 for (size_t ss=0; ss<surf.surfPoints.size(); ++ss) {
                     Vec3F               pos = surf.surfPointPos(origMesh.verts,ss);
-                    double              dmag = cMag(pos-origPos);
+                    double              dmag = cMagD(pos-origPos);
                     closest.update(dmag,surf.surfPoints[ss].label);
                 }
             }
@@ -433,7 +429,7 @@ GuiPtr              makeEditPoints(Gui3d & api)
     };
     auto                clearPointsFn = [rendMeshesN]()
     {
-        RendMeshes const &  rms = rendMeshesN.cref();
+        RendMeshes const &  rms = rendMeshesN.val();
         for (RendMesh const & rm : rms) {
             Mesh *          meshPtr = rm.origMeshN.valPtr();
             if (meshPtr) {
@@ -444,10 +440,10 @@ GuiPtr              makeEditPoints(Gui3d & api)
     };
     auto                makeListFn = [rendMeshesN]()
     {
-        RendMeshes const &      rms = rendMeshesN.cref();
+        RendMeshes const &      rms = rendMeshesN.val();
         String8s                labels;
         for (RendMesh const & rm : rms) {
-            Mesh const &            mesh = rm.origMeshN.cref();
+            Mesh const &            mesh = rm.origMeshN.val();
             for (Surf const & surf : mesh.surfaces)
                 for (SurfPointName const & sp : surf.surfPoints)
                     labels.push_back(sp.label);
@@ -458,9 +454,10 @@ GuiPtr              makeEditPoints(Gui3d & api)
             return guiText(cat(labels,"\n"));
     };
     GuiPtr              textW = guiText(
-            "Mark Surface Point: ctrl-shift-left-click on surface.\n"
-            "A point with an identical non-null name will be overwritten"),
-                        listW = guiDynamic(makeListFn,makeUpdateFlag(rendMeshesN)),
+        "View surface point name: left-click on point.\n"
+        "Mark surface point: ctrl-shift-left-click on surface.\n"
+        "A point with an identical non-null name will be overwritten"),
+                        listW = guiDynamic(makeListFn,cUpdateFlagT(rendMeshesN)),
                         listWS = guiSplitScroll(Img<GuiPtr>{{1,1},{listW}});    // there can be many surface points
     GuiPtrs             subWs = {
         textW,
@@ -471,9 +468,9 @@ GuiPtr              makeEditPoints(Gui3d & api)
     return guiSplitV(subWs);
 }
 
-GuiPtr              makeEditFacets(NPT<RendMeshes> rendMeshesN,IPT<size_t> surfChoiceN)
+GuiPtr              cMeshEditFacetsW(NPT<RendMeshes> rendMeshesN,IPT<size_t> surfChoiceN)
 {
-    RendMeshes const &      rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.val();
     FGASSERT(!rms.empty());
     RendMesh const &        rm = rms[0];
     Mesh *                  meshPtr = rm.origMeshN.valPtr();
@@ -505,13 +502,13 @@ struct      MeshSurfsName
 };
 typedef Svec<MeshSurfsName>     MeshSurfsNames;
 
-GuiPtr              makeEditVertsMark(NPT<RendMeshes> const & rendMeshesN,Gui3d & api)
+GuiPtr              cMeshEditVertsMarkW(NPT<RendMeshes> const & rendMeshesN,Gui3d & api)
 {
     IPT<size_t>         vertSelModeN(0);
     api.clickActions.at(2,1,1) = bind(markMeshVertex,rendMeshesN,vertSelModeN,_1,_2,_3);
     auto                markAllFn = [rendMeshesN]()
     {
-        RendMeshes const &      rms = rendMeshesN.cref();
+        RendMeshes const &      rms = rendMeshesN.val();
         for (RendMesh const & rm : rms) {
             Mesh *          meshPtr = rm.origMeshN.valPtr();
             if (meshPtr) {
@@ -526,7 +523,7 @@ GuiPtr              makeEditVertsMark(NPT<RendMeshes> const & rendMeshesN,Gui3d 
     };
     auto                clearAllFn = [rendMeshesN]()
     {
-        RendMeshes const & rms = rendMeshesN.cref();
+        RendMeshes const & rms = rendMeshesN.val();
         for (RendMesh const & rm : rms) {
             Mesh *          meshPtr = rm.origMeshN.valPtr();
             if (meshPtr)
@@ -544,7 +541,7 @@ GuiPtr              makeEditVertsMark(NPT<RendMeshes> const & rendMeshesN,Gui3d 
     return guiSplitV(subWs);
 }
 
-GuiPtr              makeEditVertsDelete(
+GuiPtr              cMeshEditVertsDelW(
     NPT<RendMeshes> const & rendMeshesN,
     Gui3d &                 api,
     String8 const &         store)
@@ -556,22 +553,22 @@ GuiPtr              makeEditVertsDelete(
     auto                delVertsFn = [rendMeshesN,delLnRadiusN,delBackfacingN]
                         (Vec2UI viewportSize,Vec2I posRcs,Mat44F toD3ps)
     {
-        RendMeshes const &  rms = rendMeshesN.cref();
+        RendMeshes const &  rms = rendMeshesN.val();
         if (rms.size() == 1) {      // only support single mesh for now
             double              radius = cMaxElem(viewportSize) * exp(delLnRadiusN.val());
-            AffineEw2F          d3psToRcs = cD3psToRcs(viewportSize);
+            AxAffine2F          d3psToRcs = cD3psToRcs(viewportSize);
             Vec2F               userRcs {posRcs};
             Uints               toRemove;
             RendMesh const &    rm = rms[0];
-            Vec3Fs const &      verts = rm.posedVertsN.cref();
-            MeshNormals const & norms = rm.normalsN.cref();
+            Vec3Fs const &      verts = rm.shapeVertsN.val();
+            MeshNormals const & norms = rm.normalsN.val();
             for (size_t vv=0; vv<verts.size(); ++vv) {
                 Vec3F const &       vert = verts[vv];
                 Vec4F               d3psH = toD3ps * append(vert,1.0f);
                 if (d3psH[3] != 0.0f) {
                     Vec3F           d3ps = projectHomog(d3psH);
                     Vec2F           rcs = d3psToRcs * Vec2F{d3ps[0],d3ps[1]};
-                    if (cLen(rcs-userRcs) < radius) {
+                    if (cLenD(rcs-userRcs) < radius) {
                         Vec4F           normH = toD3ps * append(norms.vert[vv],0.0f);
                         // A negative Z component is forward-facing.
                         // Including zero lets us catch verts not part of any surface (zero norm vec):
@@ -596,7 +593,7 @@ GuiPtr              makeEditVertsDelete(
 }
 
 // Modifies 'api' to add it's hooks:
-GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 const & store)
+GuiPtr              cMeshEditW(Gui3d & api,String8 const & saveName,String8 const & store)
 {
     NPT<RendMeshes>     rendMeshesN = api.rendMeshesN;
     GuiPtr              facetsW;
@@ -604,14 +601,14 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 co
         IPT<size_t>         surfChoiceN(0);
         api.shiftRightDragAction = bind(assignTri,rendMeshesN,surfChoiceN,_1,_2,_3);
         api.clickActions.at(1,1,0) = bind(assignPaint,rendMeshesN,surfChoiceN,_1,_2,_3);
-        facetsW = guiDynamic(bind(makeEditFacets,rendMeshesN,surfChoiceN),makeUpdateFlag(api.rendMeshesN));
+        facetsW = guiDynamic(bind(cMeshEditFacetsW,rendMeshesN,surfChoiceN),cUpdateFlagT(api.rendMeshesN));
     }
     GuiTabDefs          editVertsTabs {
-        {"Mark",makeEditVertsMark(rendMeshesN,api),true},
-        {"Delete",makeEditVertsDelete(rendMeshesN,api,store+"VertsDel"),true},
+        {"Mark",cMeshEditVertsMarkW(rendMeshesN,api),true},
+        {"Delete",cMeshEditVertsDelW(rendMeshesN,api,store+"VertsDel"),true},
     };
     GuiTabDefs          editTabs {
-        {"Points",makeEditPoints(api),true},
+        {"Points",cMeshEditPointsW(api),true},
         {"Verts",guiTabs(editVertsTabs),true},
         {"Facets",facetsW,true},
     };
@@ -619,30 +616,30 @@ GuiPtr              makeEditPane(Gui3d & api,String8 const & saveName,String8 co
     {
         auto                saveFn = [=]()
         {
-            RendMeshes const &      rms = rendMeshesN.cref();
+            RendMeshes const &      rms = rendMeshesN.val();
             if (rms.empty())
                 return;
             Meshes              meshes;
             for (RendMesh const & rm : rms)
-                meshes.push_back(rm.origMeshN.cref());
+                meshes.push_back(rm.origMeshN.val());
             saveMergeMesh(meshes,saveName);
         };
         auto                saveAsFn = [=](string format)
         {
-            RendMeshes const &      rms = rendMeshesN.cref();
+            RendMeshes const &      rms = rendMeshesN.val();
             if (rms.empty())
                 return;
             Opt<String8>            fname = guiDialogFileSave("FaceGen",format);
             if (fname.has_value()) {
                 Meshes              meshes;
                 for (RendMesh const & rm : rms)
-                    meshes.push_back(rm.origMeshN.cref());
+                    meshes.push_back(rm.origMeshN.val());
                 saveMergeMesh(meshes,fname.value());
             }
         };
         auto                reloadFn = [=]()
         {
-            RendMeshes const &      rms = rendMeshesN.cref();
+            RendMeshes const &      rms = rendMeshesN.val();
             if (rms.empty())
                 return;
             Mesh                    *ptr = rms[0].origMeshN.valPtr();
@@ -689,40 +686,35 @@ GuiPtr              makeCameraCtrls(
     CameraParams            defaultCps;     // Use default for lensFovDeg:
     IPT<double>             lensFovDeg = makeSavedIPT(defaultCps.fovMaxDeg,store+"LensFovDeg");
     VecD2                   logScaleRange(log(1.0/5.0),log(5.0));
-    OPT<CameraParams>       camParamsN =
-        link5<CameraParams,Mat32D,QuaternionD,Vec2D,double,double>(
-            viewBoundsN,api.pose,api.trans,api.logRelSize,lensFovDeg,
-            [](const Mat32D & vb,QuaternionD const & p,const Vec2D & t,double const & lrs,double const & lfd)
-            {
-                CameraParams    r;
-                r.modelBounds = vb;
-                r.pose = p;
-                r.relTrans = t;
-                r.logRelScale = lrs;
-                r.fovMaxDeg = lfd;
-                return r;
-            });
-    OPT<Vec2D>              panTiltN = link2<Vec2D,double,double>(api.panDegrees,api.tiltDegrees,
-        [](double const & p,double const & t){return Vec2D(p,t); });
-    api.xform = link4<Camera,CameraParams,size_t,Vec2D,Vec2UI>(
-        camParamsN,api.panTiltMode,panTiltN,api.viewportDims,
-        [](const CameraParams & cp,size_t const & m,const Vec2D & pt,const Vec2UI & v)
-        {
-            CameraParams        cps = cp;
-            if (m == 0) {
-                QuaternionD     pan(degToRad(pt[0]),1),
-                                tilt(degToRad(pt[1]),0);
-                cps.pose = pan*tilt;
-            }
-            return cps.camera(v);
-        });
+    auto                    camPrmFn = [](Mat32D const & vb,QuaternionD const & p,Vec2D t,double lrs,double lfd)
+    {
+        CameraParams        r;
+        r.modelBounds = vb;
+        r.pose = p;
+        r.relTrans = t;
+        r.logRelScale = lrs;
+        r.fovMaxDeg = lfd;
+        return r;
+    };
+    OPT<CameraParams>       camParamsN = link5(viewBoundsN,api.pose,api.trans,api.logRelSize,lensFovDeg,camPrmFn);
+    auto                    cameraFn = [](CameraParams const & cp,size_t m,double panDeg,double tiltDeg,Vec2UI v)
+    {
+        CameraParams        cps = cp;
+        if (m == 0) {
+            QuaternionD     pan {degToRad(panDeg),1},
+                            tilt {degToRad(tiltDeg),0};
+            cps.pose = pan*tilt;
+        }
+        return cps.camera(v);
+    };
+    api.cameraN = link5(camParamsN,api.panTiltMode,api.panDegrees,api.tiltDegrees,api.viewportDims,cameraFn);
     GuiPtr                  viewCtlText =
         guiText(
             "  Rotate: left-click-drag (or touch-drag)\n"
             "  Scale: right-click-drag up/down (or pinch-to-zoom)\n"
             "  Move: shift-left-click-drag (or middle-click-drag)");
-    VecD2        panTiltClip(-360.0,360.0);      // Values are wrapped by viewport impl
-    GuiPtr        viewCtlPanTiltText =
+    VecD2                   panTiltClip(-360.0,360.0);      // Values are wrapped by viewport impl
+    GuiPtr                  viewCtlPanTiltText =
         guiSplitV({
             guiSplitH({
                 guiTextEditFixed(api.panDegrees,panTiltClip),
@@ -740,10 +732,11 @@ GuiPtr              makeCameraCtrls(
                 VecD2(0.0,60.0),
                 15.0,
                 guiTickLabels(VecD2(0.0,60.0),15.0,0.0),
-                svec(
+                {
                     GuiTickLabel(0.0,fgTr("Orthographic")),
                     GuiTickLabel(30.0,fgTr("Normal")),
-                    GuiTickLabel(60.0,fgTr("Wide"))),
+                    GuiTickLabel(60.0,fgTr("Wide")),
+                },
                 30,     // Lots of room required for "Orthographic" at end of slider
                 textEditBoxes
             )
@@ -752,23 +745,24 @@ GuiPtr              makeCameraCtrls(
     auto                    getVal = [=](){return std::exp(lnRelSizeN.val()); };
     auto                    setVal = [=](double val){lnRelSizeN.set(std::log(val)); };
     GuiPtr                  viewCtlScaleTe = guiTextEditFloat(
-        makeUpdateFlag(lnRelSizeN),getVal,setVal,VecD2{exp(-20.0),exp(20.0)},6);
+        cUpdateFlagT(lnRelSizeN),getVal,setVal,VecD2{exp(-20.0),exp(20.0)},6);
     GuiPtr                  viewCtlScale = guiSlider(
                         api.logRelSize,
                         String8(),
                         logScaleRange,
                         (logScaleRange[1]-logScaleRange[0])/4.0,
-                        svec(
+                        {
                             GuiTickLabel(logScaleRange[0],"0.2"),
                             GuiTickLabel(0.0,"1.0"),
-                            GuiTickLabel(logScaleRange[1],"5.0")),
+                            GuiTickLabel(logScaleRange[1],"5.0"),
+                        },
                         vector<GuiTickLabel>(),
                         30      // Match width of slider above
                     );
     if (textEditBoxes)
         viewCtlScale = guiSplitH({viewCtlScale,viewCtlScaleTe});
     viewCtlScale = guiGroupboxTr("Object relative scale",viewCtlScale);
-    DfgNPtrs                resetDeps {
+    DfNPtrs                resetDeps {
         {api.panDegrees.ptr},
         {api.tiltDegrees.ptr},
         {api.pose.ptr},
@@ -785,14 +779,19 @@ GuiPtr              makeCameraCtrls(
 
 OPT<Vec3Fs>         linkAllVerts(NPT<Mesh> meshN)
 {
-    return link1<Mesh,Vec3Fs>(meshN,[](Mesh const & mesh){return mesh.allVerts();});
+    return link1(meshN,[](Mesh const & mesh){return mesh.allVerts();});
 }
 
-OPT<MeshNormals>    linkNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & posedVertsN)
+OPT<Mat32D>         linkMeshBounds(NPT<Mesh> const & meshN)
 {
-    return link2<MeshNormals,Mesh,Vec3Fs>(meshN,posedVertsN,
-        [](Mesh const & mesh,Vec3Fs const & verts)
-        {return cNormals(mesh.surfaces,verts); });
+    auto                fn = [](Mesh const & mesh){return Mat32D{cBounds(mesh.verts)}; };
+    return link1(meshN,fn);
+}
+
+OPT<MeshNormals>    linkMeshNormals(NPT<Mesh> const & meshN,NPT<Vec3Fs> const & shapeVertsN)
+{
+    auto            fn = [](Mesh const & mesh,Vec3Fs const & verts) {return cNormals(mesh.surfaces,verts); };
+    return link2(meshN,shapeVertsN,fn);
 }
 
 OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN)
@@ -806,17 +805,31 @@ OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN)
         else
             return loadTri(pathBase+".tri");
     };
-    return link1<String8,Mesh>(pathBaseN,loadFn);
+    return link1(pathBaseN,loadFn);
 }
 
-GuiPosedMeshes::GuiPosedMeshes() :
-    poseDefsN {linkN<Mesh,PoseDefs>(Svec<NPT<Mesh>>(),[](Meshes const & m){return cPoseDefs(m);})},
+GuiMorphMeshes::GuiMorphMeshes() :
+    morphCtrlsN {linkN(Svec<NPT<Mesh>>(),[](Meshes const & m){return cPoseDefs(m);})},
     // Don't save pose state as it is confusing, even to experienced users for instance when only a small
     // morph is left from a previous session so it appears to be mesh/identity issue:
-    poseValsN {}
+    morphValMapN {}
 {}
 
-void                GuiPosedMeshes::addMesh(
+RendMesh            cRendMesh(
+    NPT<Mesh> const &       meshN,
+    NPT<Vec3Fs> const &     allVertsN,
+    NPT<MorphValMap> const & morphValMapN,
+    RendSurfs const &       rss)
+{
+    RendMesh            ret;
+    ret.origMeshN = meshN;
+    ret.shapeVertsN = link3(meshN,allVertsN,morphValMapN,applyMorphs);
+    ret.normalsN = linkMeshNormals(meshN,ret.shapeVertsN);
+    ret.rendSurfs = rss;
+    return ret;
+}
+
+void                GuiMorphMeshes::addMesh(
         NPT<Mesh>           meshN,
         NPT<Vec3Fs>         allVertsN,
         ImgNs               smoothNs,
@@ -830,73 +843,59 @@ void                GuiPosedMeshes::addMesh(
     // We can't check against mesh surfaces at this time since it may not be selected:
     FGASSERT(smoothNs.size() == modulationNs.size());
     FGASSERT(smoothNs.size() == specularNs.size());
-    addLink(meshN.ptr,poseDefsN.ptr);
-    RendMesh            rm;
-    rm.origMeshN = meshN;
+    addLink(meshN.ptr,morphCtrlsN.ptr);
+    RendSurfs           rendSurfs;
     size_t              S = smoothNs.size();
-    for (size_t ss=0; ss<S; ++ss) {
-        RendSurf            rs;
-        rs.smoothMapN = smoothNs[ss];
-        rs.albedoHasTransparencyN = link1<ImgRgba8,bool>(rs.smoothMapN,
-            [](ImgRgba8 const & img){return usesAlpha(img);});     // Returns false if image empty
-        rs.modulationMapN = modulationNs[ss];
-        rs.specularMapN = specularNs[ss];
-        rm.rendSurfs.push_back(rs);
-    }
-    auto                poseVertsFn = [=](Mesh const & mesh,Vec3Fs const & allVerts,PoseVals const & poseVals)
-    {
-        return mesh.poseShape(allVerts,poseVals);
-    };
-    rm.posedVertsN = link3<Vec3Fs,Mesh,Vec3Fs,PoseVals>(meshN,allVertsN,poseValsN,poseVertsFn);
-    rm.normalsN = linkNormals(meshN,rm.posedVertsN);
-    rendMeshes.push_back(rm);
+    for (size_t ss=0; ss<S; ++ss)
+        rendSurfs.emplace_back(smoothNs[ss],modulationNs[ss],specularNs[ss]);
+    rendMeshes.push_back(cRendMesh(meshN,allVertsN,morphValMapN,rendSurfs));
 }
 
-void                GuiPosedMeshes::addMesh(NPT<Mesh> meshN,NPT<Vec3Fs> vertsN,size_t numSurfs)
+void                GuiMorphMeshes::addMesh(NPT<Mesh> meshN,NPT<Vec3Fs> vertsN,size_t numSurfs)
 {
     ImgNs       albedoNs = ImgNs(numSurfs,makeIPT(ImgRgba8{}));
     addMesh(meshN,vertsN,albedoNs);
 }
 
 // Called by GuiSplitScroll when 'labelsN' changes:
-GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseValsN,bool textEditBoxes)
+GuiPtr              cPoseControlW(NPT<MorphCtrls> morphCtrlsN,IPT<MorphValMap> morphValMapN,bool textEditBoxes)
 {
-    PoseDefs const &        poseDefs = poseDefsN.cref();
-    PoseVals &              poseVals = poseValsN.ref();
-    poseVals.clear();
+    MorphCtrls const &        poseDefs = morphCtrlsN.val();
+    MorphValMap &              morphVals = morphValMapN.ref();
+    morphVals.clear();
     if (poseDefs.empty())
         return {guiText("\nThe currently selected models contain no expression morphs.")};
-    for (PoseDef const & poseDef : poseDefs)
-        poseVals[poseDef.name] = poseDef.neutral;
+    for (MorphCtrl const & poseDef : poseDefs)
+        morphVals[poseDef.name] = poseDef.neutral;
     GuiPtrs             buttonWs {
-        guiButton("Set All Zero",[poseValsN]()
+        guiButton("Set All Zero",[morphValMapN]()
         {
             // Do not alter labels, just values:
-            for (auto & pv : poseValsN.ref())
+            for (auto & pv : morphValMapN.ref())
                 pv.second = 0.0f;
         }),
-        guiButton("Load File",[poseValsN]()
+        guiButton("Load File",[morphValMapN]()
         {
             Opt<String8>                fname = guiDialogFileLoad("TXT expression settings file",{"txt"});
             if (fname.has_value()) {
-                Svec<PoseVal>               data = dsrlzText<Svec<PoseVal>>(loadRawString(fname.value()));
-                PoseVals &                  pvs = poseValsN.ref();
+                Svec<MorphVal>               data = dsrlzText<Svec<MorphVal>>(loadRawString(fname.value()));
+                MorphValMap &                  pvs = morphValMapN.ref();
                 // Do not alter the labels, only update values where labels exist:
-                for (PoseVal const & d : data) {
+                for (MorphVal const & d : data) {
                     auto                    it = pvs.find(d.name);
                     if (it != pvs.end())
                         it->second = d.val;
                 }
             }
         }),
-        guiButton("Save File",[poseValsN]()
+        guiButton("Save File",[morphValMapN]()
         {
             Opt<String8>                fname = guiDialogFileSave("TXT expression settings file",{"txt"});
             if (fname.has_value()) {
-                PoseVals const &            pvs = poseValsN.cref();
-                Svec<PoseVal>               data;
+                MorphValMap const &            pvs = morphValMapN.val();
+                Svec<MorphVal>               data;
                 for (auto const & pv : pvs)
-                    data.push_back(PoseVal{pv.first,pv.second});
+                    data.push_back(MorphVal{pv.first,pv.second});
                 saveRaw(srlzText(data),fname.value());
             }
         }),
@@ -904,18 +903,18 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
     GuiPtr              buttonsW = guiSplitV({guiSplitH(buttonWs),guiSpacer(0,7)});
     GuiPtrs             sliderFacsWs,
                         sliderCompWs;
-    for (PoseDef const & pose : poseDefs) {
+    for (MorphCtrl const & pose : poseDefs) {
         String8 const &     name = pose.name;
         auto                getFn = [=]()
         {
-            PoseVals const &    poseVals = poseValsN.cref();
-            auto                it = poseValsN.cref().find(name);
-            FGASSERT(it != poseVals.end());
+            MorphValMap const &    morphVals = morphValMapN.val();
+            auto                it = morphValMapN.val().find(name);
+            FGASSERT(it != morphVals.end());
             return double(it->second);
         };
-        auto                setFn = [=](double v){poseValsN.ref()[name] = float(v); };
+        auto                setFn = [=](double v){morphValMapN.ref()[name] = float(v); };
         GuiSlider           slider;
-        slider.updateFlag = makeUpdateFlag(poseValsN);
+        slider.updateFlag = cUpdateFlagT(morphValMapN);
         slider.getValFn = getFn;
         slider.setValFn = setFn;
         slider.label = pose.name;
@@ -926,11 +925,11 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
         if (textEditBoxes) {
             auto            getVal = getFn;
             auto            setVal = setFn;
-            GuiPtr          teW = guiTextEditFixed(makeUpdateFlag(poseValsN),getVal,setVal,VecD2{-1,2},2);
-            sliderW = guiSplitH({guiMakePtr(slider),teW});
+            GuiPtr          teW = guiTextEditFixed(cUpdateFlagT(morphValMapN),getVal,setVal,VecD2{-1,2},2);
+            sliderW = guiSplitH({guiPtr(slider),teW});
         }
         else
-            sliderW = guiMakePtr(slider);
+            sliderW = guiPtr(slider);
         if (beginsWith(pose.name.m_str,"AU"))
             sliderFacsWs.push_back(sliderW);
         else
@@ -948,20 +947,19 @@ GuiPtr              cPoseControlW(NPT<PoseDefs> poseDefsN,IPT<PoseVals> poseVals
     return guiSplitV({buttonsW,guiTabs(sliderTs)});
 }
 
-GuiPtr              GuiPosedMeshes::makePoseCtrls(bool editBoxes) const
+GuiPtr              GuiMorphMeshes::makePoseCtrls(bool editBoxes) const
 {
-    auto                makeSliders =  bind(cPoseControlW,poseDefsN,poseValsN,editBoxes);
-    return guiDynamic(makeSliders,makeUpdateFlag(poseDefsN));
+    auto                makeSliders =  bind(cPoseControlW,morphCtrlsN,morphValMapN,editBoxes);
+    return guiDynamic(makeSliders,cUpdateFlagT(morphCtrlsN));
 }
 
 OPT<Mat32D>         linkBounds(RendMeshes const & rms)
 {
     Svec<NPT<Mat32F>>       boundsNs;
     for (RendMesh const & rm : rms) {
-        boundsNs.push_back(link1<Mesh,Mat32F>(rm.origMeshN,
-            [](Mesh const & m){return cBounds(m.verts);}));
+        boundsNs.push_back(link1(rm.origMeshN,[](Mesh const & m){return cBounds(m.verts);}));
     }
-    return linkN<Mat32F,Mat32D>(boundsNs,[](vector<Mat32F> const & bs)
+    return linkN(boundsNs,[](vector<Mat32F> const & bs)
     {
         Mat32F    bounds = cBoundsUnion(bs);
         if (bounds[1] < bounds[0])      // No meshes selected
@@ -981,15 +979,15 @@ OPT<String8>        linkMeshStats(RendMeshes const & rms)
         return String8{oss.str()};
     };
     for (RendMesh const & rm : rms)
-        statsNs.push_back(link1<Mesh,String8>(rm.origMeshN,statsFn));
-    return linkN<String8,String8>(statsNs,[](String8s const & strs){return cat(strs,"");});
+        statsNs.push_back(link1(rm.origMeshN,statsFn));
+    return linkN(statsNs,[](String8s const & strs){return cat(strs,"");});
 }
 
 GuiPtr              makeViewCtrls(Gui3d & gui3d,NPT<Mat32D> viewBoundsN,String8 const & store)
 {
     GuiPtr          cameraW = makeCameraCtrls(gui3d,viewBoundsN,store+"Camera",0,true),
                     renderOptsW = makeRendCtrls(gui3d.renderOptions,gui3d.bgImg,store+"RendOpts",true,true,true),
-                    lightingW = makeLightingCtrls(gui3d.light,gui3d.bothButtonsDragAction,store+"Light");
+                    lightingW = makeLightingCtrls(gui3d.lightingN,gui3d.bothButtonsDragAction,store+"Light");
     GuiTabDefs      viewTabs = {
         {"Camera",cameraW,true},
         {"Render",renderOptsW,true},
@@ -1004,8 +1002,8 @@ GuiPtrs             cGuiFileImageWs(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture
                         hgtN = makeSavedIPT(1024.0,store+"Height");
     IPT<size_t>         szSelN = makeSavedIPTEub<size_t>(0,store+"Manual",2);
     IPT<bool>           bgTransN = makeSavedIPT<bool>(false,store+"Transparent");
-    NPT<String8>        vpDimsN = link1<Vec2UI,String8>(viewportDims,[](Vec2UI dims)
-        {return "(" + toStr(dims[0]) + "," + toStr(dims[1]) + ")"; });
+    auto                fn = [](Vec2UI dims){return String8{"(" + toStr(dims[0]) + "," + toStr(dims[1]) + ")"}; };
+    NPT<String8>        vpDimsN = link1(viewportDims,fn);
     GuiPtr              widW = guiTextEditFixed(widN,VecD2(256,4096),0),
                         hgtW = guiTextEditFixed(hgtN,VecD2(256,4096),0),
                         dimsLW = guiRadio({"Current render size","Custom"},szSelN),
@@ -1013,14 +1011,14 @@ GuiPtrs             cGuiFileImageWs(NPT<Vec2UI> viewportDims,Sptr<Gui3d::Capture
                         dimsRLW = guiSplitH({guiText("Width"),widW,guiText("Height"),hgtW}),
                         dimsRW = guiSplitV({guiSpacer(1,3),dimsRUW,guiSpacer(1,3),dimsRLW}),
                         dims3W = guiSplitH({dimsLW,dimsRW});
-    ImgFormats          imgFormats = sliceMember(getImgFormatsInfo(),&ImgFormatInfo::format);   // support all fmts
+    ImgFormats          imgFormats = mapMember(getImgFormatsInfo(),&ImgFormatInfo::format);   // support all fmts
     GuiVal<ImgFormat>   imgFormat = guiImgFormatSelector(imgFormats,store+"ImgFormat");
     NPT<ImgFormat>      imgFormatN = imgFormat.valN;
     auto                save = [=]()
     {
         if (capture->func) {
             Vec2UI          dims = szSelN.val() ? Vec2UI(widN.val(),hgtN.val()) : viewportDims.val();
-            String          imgExt = getImgFormatInfo(imgFormatN.cref()).extensions.at(0);
+            String          imgExt = getImgFormatInfo(imgFormatN.val()).extensions.at(0);
             Opt<String8>    fname = guiDialogFileSave("",imgExt);
             if (fname.has_value())
                 saveImage(capture->func(dims,bgTransN.val()),fname.value());
@@ -1042,9 +1040,9 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     if (!isFinite(viewBounds))
         fgThrow("viewMesh: Mesh vertices contain invalid floating point values");
     IPT<Mat32D>             viewBoundsN = makeIPT(Mat32D{cBounds(meshes)});
-    GuiPosedMeshes          gpms;
+    GuiMorphMeshes          gpms;
     Svec<IPT<Mesh>>         meshNs;
-    String8s                meshNames = sliceMember(meshes,&Mesh::name);
+    String8s                meshNames = mapMember(meshes,&Mesh::name);
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         if (meshNames[mm].empty())                  // in case client didn't provide names (cmdViewMesh does)
             meshNames[mm] = toStrDigits(mm,2);
@@ -1055,7 +1053,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
             guiDialogMessage("Warning",e.nativeMessage());
         }
         IPT<Mesh>           meshN = makeIPT(mesh);
-        OPT<Vec3Fs>         allVertsN = link1<Mesh,Vec3Fs>(meshN,[](Mesh const & m){return m.allVerts(); });
+        OPT<Vec3Fs>         allVertsN = link1(meshN,[](Mesh const & m){return m.allVerts(); });
         ImgNs               albedoNs,
                             specularNs;
         IPT<ImgRgba8>       emptyImageN = makeIPT(ImgRgba8());
@@ -1090,13 +1088,13 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
                 ret[idx] = true;
             return ret;
         };
-        selsN = link1<size_t,Bools>(selMeshN,selFn);
+        selsN = link1(selMeshN,selFn);
         meshSelect = guiSplitScroll({selMeshRadio});
         auto                filterFn = [](RendMeshes const & rms,Bools const & sels)
         {
-            return findAll(rms,sels);
+            return selectIf(rms,sels);
         };
-        rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,filterFn);
+        rendMeshesN = link2(rmsN,selsN,filterFn);
     }
     else {
         NPT<Bools>              selsN;
@@ -1112,27 +1110,27 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
         selsN = linkCollate(selectNs);
         auto                filterFn = [](RendMeshes const & rms,Bools const & sels)
         {
-            return findAll(rms,sels);
+            return selectIf(rms,sels);
         };
-        rendMeshesN = link2<RendMeshes,RendMeshes,Bools>(rmsN,selsN,filterFn);
+        rendMeshesN = link2(rmsN,selsN,filterFn);
     }
     Gui3d               gui3d {rendMeshesN};
-    NPT<String8>        statsTextN = link1<RendMeshes,String8>(gui3d.rendMeshesN,[](RendMeshes const & rms)
+    NPT<String8>        statsTextN = link1(gui3d.rendMeshesN,[](RendMeshes const & rms)
     {
         size_t              cnt = 0;
         ostringstream       oss;
         for (RendMesh const & rm : rms) {
-            Mesh const &        m = rm.origMeshN.cref();
+            Mesh const &        m = rm.origMeshN.val();
             oss << fgnl << "Mesh " << cnt++ << fgpush << m << fgpop;
         }
-        return oss.str();
+        return String8{oss.str()};
     });
     GuiPtr              statsTextW = guiText(statsTextN);
     GuiTabDefs          mainTabs = {
         {"View",makeViewCtrls(gui3d,viewBoundsN,store+"View")},
         {"Morphs",gpms.makePoseCtrls(true),true},
         {"Select",meshSelect,true},
-        {"Edit",makeEditPane(gui3d,saveName,store+"Edit"),true},
+        {"Edit",cMeshEditW(gui3d,saveName,store+"Edit"),true},
         {"Info",guiSplitScroll({statsTextW}),true},
         {"System",guiTextLines(gui3d.gpuInfo,40,40,{true,true}),true},
     };
@@ -1140,7 +1138,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
         makeIPT<String8>("FaceGen SDK viewMesh"),
         guiSplitAdj(true,make_shared<Gui3d>(gui3d),guiTabs(mainTabs)),
         store);
-    return meshNs[0].cref();
+    return meshNs[0].val();
 }
 
 bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
@@ -1149,7 +1147,7 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
     // the first 'toPlace.size()' steps are for placement, the last is review:
     IPT<Mesh>           meshN = makeIPT(mesh);
     IPT<MeshesIntersects> placedN;
-    OPT<size_t>         stepN = link1<MeshesIntersects,size_t>(placedN,[](MeshesIntersects const & mis){return mis.size(); });
+    OPT<size_t>         stepN = link1(placedN,[](MeshesIntersects const & mis){return mis.size(); });
     GuiPtr              promptW,viewport;
     {
         auto                backFn = [meshN,placedN]()
@@ -1179,9 +1177,9 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
         promptW = guiSelect(stepN,promptWs);
     }
     {
-        OPT<Mat32D>         boundsN = link1<Mesh,Mat32D>(meshN,[](Mesh const & mesh){return Mat32D(cBounds(mesh.verts)); });
-        OPT<Vec3Fs>         vertsN = link1<Mesh,Vec3Fs>(meshN,[](Mesh const & mesh){return mesh.verts; });
-        GuiPosedMeshes      gpms;
+        OPT<Mat32D>         boundsN = link1(meshN,[](Mesh const & mesh){return Mat32D(cBounds(mesh.verts)); });
+        OPT<Vec3Fs>         vertsN = link1(meshN,[](Mesh const & mesh){return mesh.verts; });
+        GuiMorphMeshes      gpms;
         auto                colorPtr = mesh.surfaces[0].material.albedoMap;
         if (colorPtr) {
             IPT<ImgRgba8>       colorN {*colorPtr};
@@ -1196,7 +1194,7 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
         {
             MeshesIntersects &  mis = placedN.ref();
             if (mis.size() < toPlace.size()) {
-                RendMeshes const &      rms = rendMeshesN.cref();
+                RendMeshes const &      rms = rendMeshesN.val();
                 Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,pos,worldToD3ps,rms);
                 if (vpt.has_value()) {
                     MeshesIntersect         pt = vpt.value();
@@ -1210,14 +1208,14 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
                 }
             }
         };
-        gui3d.clickActions.at(0,0,0) = clickFn;     // place points by right-click no drag
+        gui3d.clickActions.at(0,0,0) = clickFn;     // place points by left-click
         viewport = make_shared<Gui3d>(gui3d);
     }
     IPT<String8>            titleN {"FaceGen Place Named Surface Points"};
     GuiPtr                  mainW = guiSplitV({promptW,viewport});
     guiStartImpl(titleN,mainW,store);
     if (stepN.val() == toPlace.size()) {
-        mesh = meshN.cref();
+        mesh = meshN.val();
         return true;
     }
     return false;

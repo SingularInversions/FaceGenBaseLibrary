@@ -4,6 +4,8 @@
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 // Using Posix sockets, which are essentially Berkeley sockets.
+//
+// Interesting: https://brooker.co.za/blog/2024/05/09/nagle.html
 
 #include "stdafx.h"
 #include <stdio.h>

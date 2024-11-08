@@ -48,21 +48,26 @@ struct      D3dSurf
     D3dMap                      albedoMap,          // Can be empty
                                 modulationMap,      // Can be empty
                                 specularMap;        // "
-    DfgFPtr                     albedoMapFlag,      // Can be null. Same lifetime as above
+    // we need private flags to be sure of updates in case maps have other dependencies:
+    DfFPtr                     albedoMapFlag,      // null if there is no map
                                 modulationMapFlag,  // "
                                 specularMapFlag;    // "
-    D3dSurf(NPT<ImgRgba8> const & a,NPT<ImgRgba8> const & m,NPT<ImgRgba8> const & s) :
-        albedoMapFlag {makeUpdateFlag(a)},
-        modulationMapFlag {makeUpdateFlag(m)},
-        specularMapFlag {makeUpdateFlag(s)}
-    {}
+    D3dSurf(NPT<ImgRgba8> const & a,NPT<ImgRgba8> const & m,NPT<ImgRgba8> const & s)
+    {
+        if (a.ptr)
+            albedoMapFlag = cUpdateFlagT(a);
+        if (m.ptr)
+            modulationMapFlag = cUpdateFlagT(m);
+        if (s.ptr)
+            specularMapFlag = cUpdateFlagT(s);
+    }
 };
 
 struct      D3dMesh
 {
     // Currently also flags changes in original mesh (ie. surf points & marked verts) since it's in the
     // same mesh node as base verts:
-    DfgFPtr                     vertsFlag;      // Verts changed ? Has same lifetime as objects below
+    DfFPtr                     vertsFlag;      // Verts changed ? Has same lifetime as objects below
     WinPtr<ID3D11Buffer>        surfPoints;     // 3 verts/tri x 20 tris/icosahedron x numSurfPoints. Null if none.
     WinPtr<ID3D11Buffer>        markedPoints;
     WinPtr<ID3D11Buffer>        allVerts;
@@ -112,7 +117,7 @@ private:
     NPT<RendMeshes>                 rendMeshesN;
     NPTF<double>                    logRelSize;         // Camera control parameter for object relative size
     OPT<Vec3F>                      origMeshesDimsN;    // Bounding box size of original meshes
-    DfgFPtr                         origMeshChangeFlag; // If any of the original meshes are changed
+    DfFPtr                         origMeshChangeFlag; // If any of the original meshes are changed
     ComPtr<ID3D11Device>            pDevice;            // Handle to driver instance for GPU or emulator
     ComPtr<ID3D11DeviceContext>     pContext;
     ComPtr<IDXGISwapChain>          pSwapChain;         // Created by DXGI factor from 'pDevice'
@@ -187,6 +192,7 @@ private:
     WinPtr<ID3D11Buffer>        makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh);
     WinPtr<ID3D11Buffer>        makeAllVerts(Vec3Fs const & verts);
     Verts                       makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum);
+    Verts                       makeFlagVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum);
     WinPtr<ID3D11Texture2D>     loadMap(ImgRgba8 const & map);
     WinPtr<ID3D11ShaderResourceView> makeMapView(ID3D11Texture2D* mapPtr);
     D3dMap                      makeMap(ImgRgba8 const & map);
@@ -198,7 +204,7 @@ private:
     void                        renderBgImg(BackgroundImage const & bgi,Vec2UI viewportSize,bool transparentPass);
     D3dMesh &                   getD3dMesh(RendMesh const & rm) const;
     D3dSurf &                   getD3dSurf(RendSurf const & rs) const;
-    void                        updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out);
+    void                        updateMap_(DfFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out);
     void                        setVertexBuffer(ID3D11Buffer * vertBuff);
     size_t                      selectTintMap(size_t idx,size_t num) const;
     void                        renderTris(RendMeshes const & rendMeshes,RendOptions const & rendOpts,bool transparentPass);

@@ -6,8 +6,9 @@
 
 #include "stdafx.h"
 
-#include "Fg3dMesh.hpp"
-#include "Fg3dCamera.hpp"
+#include "Fg3dDisplay.hpp"
+#include "Fg3dMeshIo.hpp"
+#include "FgCamera.hpp"
 #include "FgGridIndex.hpp"
 #include "FgBestN.hpp"
 #include "FgSerial.hpp"
@@ -16,6 +17,7 @@
 #include "FgTopology.hpp"
 #include "FgMain.hpp"
 #include "FgCommand.hpp"
+#include "FgFileSystem.hpp"
 
 using namespace std;
 
@@ -27,7 +29,7 @@ IdxVec3Fs           toIndexedDeltaMorph(Vec3Fs const & deltas,float distanceThre
     float               magThresh = sqr(distanceThreshold);
     for (size_t vv=0; vv<deltas.size(); ++vv) {
         Vec3F const &       delta = deltas[vv];
-        if (cMag(delta) > magThresh)
+        if (cMagD(delta) > magThresh)
             ret.emplace_back(scast<uint>(vv),delta);
     }
     return ret;
@@ -40,7 +42,7 @@ IdxVec3Fs           toIndexedTargMorph(Vec3Fs const & base,Vec3Fs const & deltas
     IdxVec3Fs           ret;
     for (size_t vv=0; vv<V; ++vv) {
         Vec3F               del = deltas[vv];
-        if (cMag(del) > diffMagThreshold)
+        if (cMagD(del) > diffMagThreshold)
             ret.emplace_back(scast<uint>(vv),base[vv]+del);
     }
     return ret;
@@ -124,7 +126,7 @@ Mesh::Mesh(Vec3Fs const & vts,Surfs const & surfs) : verts(vts), surfaces(surfs)
 
 Mesh::Mesh(TriSurfLms const & tsf) :
     verts {cat(tsf.surf.verts,tsf.landmarks)},
-    surfaces {Surf{tsf.surf.tris,Vec4UIs{}}}
+    surfaces {Surf{tsf.surf.tris,Arr4UIs{}}}
 {
     size_t          V = tsf.surf.verts.size(),
                     F = tsf.landmarks.size();
@@ -178,7 +180,7 @@ uint                Mesh::numTriEquivs() const
     return tot;
 }
 
-Vec3UI              Mesh::getTriEquivVertInds(uint idx) const
+Arr3UI              Mesh::getTriEquivVertInds(uint idx) const
 {
     for (size_t ss=0; ss<surfaces.size(); ++ss) {
         uint        num = surfaces[ss].numTriEquivs();
@@ -188,7 +190,7 @@ Vec3UI              Mesh::getTriEquivVertInds(uint idx) const
             idx -= num;
     }
     FGASSERT_FALSE;
-    return Vec3UI();
+    return Arr3UI();
 }
 
 NPolys<3>           Mesh::getTriEquivs() const
@@ -282,7 +284,7 @@ Vec3Fs              Mesh::markedVertPositions(Strings const & labels) const
     Vec3Fs              ret;
     ret.reserve(labels.size());
     for (String const & label : labels) {
-        MarkedVerts         mvs = findAllByMember(markedVerts,&MarkedVert::label,label);
+        MarkedVerts         mvs = selectEqual(markedVerts,label);
         for (MarkedVert const & mv : mvs)
             ret.push_back(verts[mv.idx]);
     }
@@ -453,7 +455,7 @@ void                Mesh::addDeltaMorphFromTarget(String8 const & name_,Vec3Fs c
 
 void                Mesh::addTargMorph(const IndexedMorph & morph)
 {
-    FGASSERT(cMaxElem(sliceMember(morph.ivs,&IdxVec3F::idx)) < verts.size());
+    FGASSERT(cMaxElem(mapMember(morph.ivs,&IdxVec3F::idx)) < verts.size());
     Valid<size_t>     idx = findTargMorph(morph.name);
     if (idx.valid()) {
         fgout << fgnl << "WARNING: Overwriting existing morph " << morph.name;
@@ -470,30 +472,30 @@ void                Mesh::addTargMorph(String8 const & morphName,Vec3Fs const & 
     Vec3Fs              deltas = targetShape - verts;
     double              maxMag = 0.0;
     for (size_t ii=0; ii<deltas.size(); ++ii)
-        updateMax_(maxMag,deltas[ii].mag());
+        updateMax_(maxMag,deltas[ii].magD());
     if (maxMag == 0.0f) {
         fgout << fgnl << "WARNING: skipping empty morph " << morphName;
         return;
     }
     maxMag *= sqr(0.001f);
     for (size_t ii=0; ii<deltas.size(); ++ii)
-        if (deltas[ii].mag() > maxMag)
+        if (deltas[ii].magD() > maxMag)
             targMorph.ivs.emplace_back(uint(ii),targetShape[ii]);
     addTargMorph(targMorph);
 }
 
-Vec3Fs              Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> const & poseVals) const
+Vec3Fs              Mesh::applyMorphs(Vec3Fs const & allVerts,map<String8,float> const & morphVals) const
 {
     Vec3Fs                  ret = cHead(allVerts,verts.size());
     for (DirectMorph const & morph : deltaMorphs) {
-        auto                    it = poseVals.find(morph.name);
-        if (it != poseVals.end())
+        auto                    it = morphVals.find(morph.name);
+        if (it != morphVals.end())
             mapMulAcc_(morph.verts,it->second,ret);
     }
     size_t                  targIdx = verts.size();
     for (IndexedMorph const & tm : targetMorphs) {
-        auto                    it = poseVals.find(tm.name);
-        if (it != poseVals.end()) {
+        auto                    it = morphVals.find(tm.name);
+        if (it != morphVals.end()) {
             FGASSERT(targIdx + tm.ivs.size() < allVerts.size()+1);
             size_t                  ti = targIdx;
             for (IdxVec3F const & iv : tm.ivs) {
@@ -506,8 +508,8 @@ Vec3Fs              Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> c
     // Accumulate the quaternion component contributions from each joint DOF:
     Vec4Fs                  jointAccs (joints.size(),Vec4F{0});
     for (JointDof const & dof : jointDofs) {
-        auto                    it = poseVals.find(dof.name);
-        if (it != poseVals.end()) {
+        auto                    it = morphVals.find(dof.name);
+        if (it != morphVals.end()) {
             FGASSERT(dof.jointIdx < jointAccs.size());
             float                   val = it->second / 2.0f;
             Vec3F                   a = dof.rotAxis * sin(val);
@@ -517,7 +519,7 @@ Vec3Fs              Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> c
     // For the non-zero accumulants, interpolate and rotate:
     for (size_t pp=0; pp<joints.size(); ++pp) {
         Vec4F const &           acc = jointAccs[pp];
-        if (cMag(acc) > 0) {
+        if (cMagD(acc) > 0) {
             Joint const &           joint = joints[pp];
             QuaternionF             q {acc};        // normalizes
             Mat33F                  rot = q.asMatrix();
@@ -533,7 +535,7 @@ Vec3Fs              Mesh::poseShape(Vec3Fs const & allVerts,map<String8,float> c
 void                Mesh::addSurface(TriSurf const & ts,String8 const & surfName)
 {
     uint                offset = scast<uint>(verts.size());
-    TriInds             tris {mapAdd(ts.tris,Vec3UI{offset})};
+    TriInds             tris {mapAdd(ts.tris,Arr3UI{offset})};
     surfaces.emplace_back(surfName,tris,QuadInds{});
     cat_(verts,ts.verts);
 }
@@ -577,7 +579,7 @@ void                Mesh::validate() const
         FGASSERT(markedVert.idx < numVerts);
 }
 
-Mesh                fg3dMesh(Vec3UIs const & tris,Vec3Fs const & verts)
+Mesh                fg3dMesh(Arr3UIs const & tris,Vec3Fs const & verts)
 {
     Mesh        ret;
     ret.surfaces.resize(1);
@@ -594,17 +596,17 @@ size_t              cNumTriEquivs(Meshes const & meshes)
     return ret;
 }
 
-std::set<String8>   getMorphNames(Meshes const & meshes)
+set<String8>        getMorphNames(Meshes const & meshes)
 {
-    std::set<String8>  ret;
+    set<String8>  ret;
     for (size_t ii=0; ii<meshes.size(); ++ii)
         cUnion_(ret,meshes[ii].morphNames());
     return ret;
 }
 
-PoseDefs            cPoseDefs(Mesh const & mesh)
+MorphCtrls            cPoseDefs(Mesh const & mesh)
 {
-    PoseDefs            ret;
+    MorphCtrls            ret;
     for (DirectMorph const & morph : mesh.deltaMorphs)
         ret.emplace_back(morph.name,Vec2F{0,1},0);
     for (IndexedMorph const & morph : mesh.targetMorphs)
@@ -614,9 +616,9 @@ PoseDefs            cPoseDefs(Mesh const & mesh)
     return ret;
 }
 
-PoseDefs            cPoseDefs(Meshes const & meshes)
+MorphCtrls            cPoseDefs(Meshes const & meshes)
 {
-    PoseDefs                poseDefs;
+    MorphCtrls                poseDefs;
     for (Mesh const & mesh : meshes)
         cat_(poseDefs,cPoseDefs(mesh));
     return cUnique(sortAll(poseDefs));
@@ -629,7 +631,7 @@ Mesh                transform(Mesh const & mesh,SimilarityD const & sim)
     return ret;
 }
 
-std::ostream &      operator<<(std::ostream & os,Mesh const & m)
+ostream &      operator<<(ostream & os,Mesh const & m)
 {
     os  << fgnl << "Name: " << m.name;
     Vec3Fs              allVerts = m.allVerts();
@@ -638,13 +640,13 @@ std::ostream &      operator<<(std::ostream & os,Mesh const & m)
     os  << fgnl << "Verts: " << m.verts.size();
     size_t              numUniqueVerts = cUnique(sortAll(m.verts)).size();
     if (numUniqueVerts < m.verts.size())
-        os << " unique: " << numUniqueVerts;
+        os << " (" << numUniqueVerts << " unique)";
     os  << " with bounds: " << cBounds(m.verts)
         << fgnl << "UVs: " << m.uvs.size();
     if (!m.uvs.empty()) {
         size_t          numUnique = cUnique(sortAll(m.uvs)).size();
         if (numUnique < m.uvs.size())
-            os << " unique: " << numUnique;
+            os << " (" << numUnique << " unique)";
         os << " with bounds: " << cBounds(m.uvs);
     }
     os  << fgnl << "Delta Morphs: " << m.deltaMorphs.size()
@@ -658,59 +660,59 @@ std::ostream &      operator<<(std::ostream & os,Mesh const & m)
     }
     os << fgnl << "Surfaces: " << m.surfaces.size() << fgpush;
     for (size_t ss=0; ss<m.surfaces.size(); ss++) {
-        PushIndent      pind {toStrDigits(ss,2)};
+        os << fgnl << toStrDigits(ss,2) << fgpush;
         Surf const &    surf = m.surfaces[ss];
         os << surf;
         if (surf.material.albedoMap)
             os << fgnl << "Albedo: " << *surf.material.albedoMap;
+        os << fgpop;
     }
     os << fgpop;
-    SurfTopo            topo(m.verts.size(),m.getTriEquivs().vertInds);
-    Vec3UI              te = topo.isManifold();
-    os << fgnl << "Watertight: ";
-    if (te == Vec3UI(0))
-        os << "YES";
-    else
-        os << "NO (" << te[0] << " boundary edges)";
+    SurfTopo            topo {m.verts.size(),m.getTriEquivs().vertInds};
+    auto                boundaries = topo.boundaries();
+    Arr3UI              te = topo.isManifold();
+    os << fgnl << "Watertight: " << ((te == Arr3UI(0)) ? "YES" : "NO");
     os << fgnl << "Manifold: ";
     if ((te[1] == 0) && (te[2] == 0))
         os << "YES";
     else
         os << "NO (" << te[1] << " intersection edges, " << te[2] << " reversed edges)";
-    os << fgnl << "Boundaries: " << topo.boundaries().size()
-        << fgnl << "Unused verts: " << topo.unusedVerts();
+    os << fgnl << "Boundaries: " << boundaries.size();
+    if (!boundaries.empty())
+        os << " with edge sizes " << cSizes(boundaries);
+    os << fgnl << "Unused verts: " << topo.unusedVerts();
     return os;
 }
 
-std::ostream &      operator<<(std::ostream & os,Meshes const & ms)
+ostream &      operator<<(ostream & os,Meshes const & ms)
 {
     for (size_t ii=0; ii<ms.size(); ++ii)
         os << fgnl << "Mesh " << ii << ":" << fgpush << ms[ii] << fgpop;
     return os;
 }
 
-Vec3UIs             subdivideTris(
-    Vec3UIs const &             tris,
+Arr3UIs             subdivideTris(
+    Arr3UIs const &             tris,
     Svec<SurfTopo::Tri> const &   topoTris,
     uint                        newVertsBaseIdx)
 {
-    Vec3UIs             ret;
+    Arr3UIs             ret;
     for (size_t ii=0; ii<tris.size(); ii++) {
-        Vec3UI          vertInds = tris[ii];
-        Vec3UI          edgeInds = topoTris[ii].edgeInds;
+        Arr3UI          vertInds = tris[ii];
+        Arr3UI          edgeInds = topoTris[ii].edgeInds;
         uint            ni0 = newVertsBaseIdx + edgeInds[0],
                         ni1 = newVertsBaseIdx + edgeInds[1],
                         ni2 = newVertsBaseIdx + edgeInds[2];
-        ret.push_back(Vec3UI(vertInds[0],ni0,ni2));
-        ret.push_back(Vec3UI(vertInds[1],ni1,ni0));
-        ret.push_back(Vec3UI(vertInds[2],ni2,ni1));
-        ret.push_back(Vec3UI(ni0,ni1,ni2));
+        ret.push_back(Arr3UI(vertInds[0],ni0,ni2));
+        ret.push_back(Arr3UI(vertInds[1],ni1,ni0));
+        ret.push_back(Arr3UI(vertInds[2],ni2,ni1));
+        ret.push_back(Arr3UI(ni0,ni1,ni2));
     }
     return ret;
 }
 
 Surf                subdivideTris(
-    Vec3UIs const &             tris,
+    Arr3UIs const &             tris,
     Svec<SurfTopo::Tri> const & topoTris,
     uint                        newVertsBaseIdx,
     SurfPointNames const &      sps)
@@ -722,37 +724,37 @@ Surf                subdivideTris(
                     wgtXform0(0),
                     wgtXform1(0),
                     wgtXform2(0);
-    wgtXform.cr(2,0) = -1.0;
-    wgtXform.cr(0,1) = -1.0;
-    wgtXform.cr(1,2) = -1.0;
+    wgtXform.rc(0,2) = -1.0;
+    wgtXform.rc(1,0) = -1.0;
+    wgtXform.rc(2,1) = -1.0;
     wgtXform0[0] = 1.0f;
     wgtXform0[1] = -1.0f;
     wgtXform0[2] = -1.0f;
-    wgtXform0.cr(1,1) = 2;
-    wgtXform0.cr(2,2) = 2;
+    wgtXform0.rc(1,1) = 2;
+    wgtXform0.rc(2,2) = 2;
     wgtXform1[0] = -1.0f;
     wgtXform1[1] = 1.0f;
     wgtXform1[2] = -1.0f;
-    wgtXform1.cr(2,1) = 2;
-    wgtXform1.cr(0,2) = 2;
+    wgtXform1.rc(1,2) = 2;
+    wgtXform1.rc(2,0) = 2;
     wgtXform2[0] = -1.0f;
     wgtXform2[1] = -1.0f;
     wgtXform2[2] = 1.0f;
-    wgtXform2.cr(0,1) = 2;
-    wgtXform2.cr(1,2) = 2;
+    wgtXform2.rc(1,0) = 2;
+    wgtXform2.rc(2,1) = 2;
     // Update surface points:
     for (size_t ii=0; ii<sps.size(); ++ii) {
         uint        facetIdx = sps[ii].point.triEquivIdx * 4;
-        Vec3F       weights = sps[ii].point.weights,
+        Vec3F       weights {sps[ii].point.weights},
                     wgtCentre = wgtXform * weights;
         if (wgtCentre[0] < 0.0)
-            ret.surfPoints.push_back(SurfPointName(facetIdx+2,wgtXform2*weights));
+            ret.surfPoints.push_back(SurfPointName(facetIdx+2,(wgtXform2*weights).m));
         else if (wgtCentre[1] < 0.0)
-            ret.surfPoints.push_back(SurfPointName(facetIdx,wgtXform0*weights));
+            ret.surfPoints.push_back(SurfPointName(facetIdx,(wgtXform0*weights).m));
         else if (wgtCentre[2] < 0.0)
-            ret.surfPoints.push_back(SurfPointName(facetIdx+1,wgtXform1*weights));
+            ret.surfPoints.push_back(SurfPointName(facetIdx+1,(wgtXform1*weights).m));
         else
-            ret.surfPoints.push_back(SurfPointName(facetIdx+3,wgtCentre));
+            ret.surfPoints.push_back(SurfPointName(facetIdx+3,wgtCentre.m));
     }
     return ret;
 }
@@ -812,7 +814,7 @@ Mesh                subdivide(Mesh const & in,bool loop)
                 // Note that there will always be at least 3 neighbours since 
                 // this is not a boundary vertex:
                 const Uints &   neighbours = topo.vertNeighbours(ii);
-                Vec3F           acc;
+                Vec3F           acc {0};
                 for (size_t jj=0; jj<neighbours.size(); ++jj)
                     acc += in.verts[neighbours[jj]];
                 if (neighbours.size() == 3)
@@ -873,6 +875,13 @@ TriSurf             subdivide(TriSurf const & surf,bool loop)
     return TriSurf {mesh.verts,mesh.surfaces[0].tris.vertInds};
 }
 
+TriSurf             subdivideN(TriSurf ts,size_t N,bool loop)
+{
+    for (size_t ii=0; ii<N; ++ii)
+        ts = subdivide(ts,loop);
+    return ts;
+}
+
 TriSurf             cullVolume(TriSurf triSurf,Mat32F const & bounds)
 {
     Bools               vertInBounds;
@@ -884,13 +893,13 @@ TriSurf             cullVolume(TriSurf triSurf,Mat32F const & bounds)
     SurfTopo        topo {triSurf.verts.size(),triSurf.tris};
     for (SurfTopo::Tri const & t : topo.m_tris) {
         bool            inBounds = true;
-        for (uint vertIdx : t.vertInds.m) {
+        for (uint vertIdx : t.vertInds) {
             if (!vertInBounds[vertIdx])
                 inBounds = false;
         }
         triInBounds.push_back(inBounds);
     }
-    Vec3UIs             nTris;
+    Arr3UIs             nTris;
     for (size_t tt=0; tt<triSurf.tris.size(); ++tt)
         if (triInBounds[tt])
             nTris.push_back(triSurf.tris[tt]);
@@ -903,27 +912,17 @@ Mesh                meshFromImage(const ImgD & img)
     Mesh                ret;
     FGASSERT((img.height() > 1) && (img.width() > 1));
     Mat22D              imgIdxBounds(0,img.width()-1,0,img.height()-1);
-    AffineEw2D          imgIdxToSpace {
-        {0,0},
-        {double(img.width()-1),double(img.height()-1)},
-        {0,0},
-        {1,1}
-    },
-                        imgIdxToOtcs {
-        {0,0},
-        {double(img.width()-1),double(img.height()-1)},
-        {0,1},
-        {1,0}
-    };
+    AxAffine2D          pacsToIucs {mapDiv(1.0,mapCast<double>(img.dims())),Vec2D{0}},
+                        pacsToOtcs = cIucsToOtcs<double>() * pacsToIucs;
     Arr2D               domBnds = cBounds(img.dataVec()).m;
     Affine1D            imgValToSpace(domBnds[0],domBnds[1],0,1);
     for (Iter2UI it(img.dims()); it.valid(); it.next()) {
         Vec2D               imgCrd = Vec2D(it()),
-                            xy = imgIdxToSpace * imgCrd;
+                            xy = pacsToIucs * imgCrd;
         ret.verts.push_back(Vec3F(xy[0],xy[1],imgValToSpace * img[it()]));
-        ret.uvs.push_back(Vec2F(imgIdxToOtcs * imgCrd));
+        ret.uvs.push_back(Vec2F(pacsToOtcs * imgCrd));
     }
-    std::vector<Vec4UI>  quads,
+    Arr4UIs                 quads,
                             texInds;
     uint                    w = img.width();
     for (Iter2UI it(img.dims()-Vec2UI(1)); it.valid(); it.next()) {
@@ -931,7 +930,7 @@ Mesh                meshFromImage(const ImgD & img)
                             x1 = x + 1,
                             y = it()[1] * w,
                             y1 = y + w;
-        Vec4UI           inds(x1+y,x+y,x+y1,x1+y1);      // CC winding
+        Arr4UI           inds(x1+y,x+y,x+y1,x1+y1);      // CC winding
         quads.push_back(inds);
         texInds.push_back(inds);
     }
@@ -944,7 +943,7 @@ QuadSurf            cGrid(size_t szll)
     FGASSERT(szll > 0);
     uint                sz = scast<uint>(szll);
     QuadSurf            ret;
-    AffineEw2D          itToCoord {Mat22D(0,sz,0,sz),Mat22D{-1,1,-1,1}};
+    AxAffine2D          itToCoord {Mat22D(0,sz,0,sz),Mat22D{-1,1,-1,1}};
     for (Iter2UI it(sz+1); it.valid(); it.next()) {
         Vec2D           p = itToCoord * Vec2D(it());
         ret.verts.push_back(Vec3F(p[0],p[1],0));
@@ -956,7 +955,7 @@ QuadSurf            cGrid(size_t szll)
                         v1 = i0+i1+1,
                         v2 = i0+i1+1+(sz+1),
                         v3 = i0+i1+(sz+1);
-        ret.quads.push_back(Vec4UI(v0,v1,v2,v3));
+        ret.quads.push_back(Arr4UI(v0,v1,v2,v3));
     }
     return ret;
 }
@@ -968,7 +967,7 @@ TriSurf             cSphere4(size_t subdivisions)
     for (uint ss=0; ss<subdivisions; ss++) {
         tet = subdivide(tet,true);
         for (Vec3F & v : tet.verts)
-            normalize_(v);
+            v = normalize(v);
     }
     return tet;
 }
@@ -980,7 +979,7 @@ TriSurf             cSphere(size_t subdivisions)
     for (size_t ii=0; ii<subdivisions; ++ii) {
         ico = subdivide(ico,true);
         for (Vec3F & v : ico.verts)
-            normalize_(v);
+            v = normalize(v);
     }
     return ico;
 }
@@ -997,7 +996,7 @@ TriSurf         cSquarePrism(float sideLen,float height)
         {-s,s,0},
     };
     verts = cat(verts,mapAdd(verts,Vec3F{0,0,height}));
-    Vec3UIs         base {
+    Arr3UIs         base {
         {0,1,2},
         {0,2,3},
         {0,3,4},
@@ -1025,15 +1024,15 @@ TriSurf         cSquarePrism(float sideLen,float height)
 Mesh            cSpheres(Vec3Ds const & poss,double radius,Rgba8 color)
 {
     Vec3Fs              verts;
-    Vec3UIs             vinds;
+    Arr3UIs             vinds;
     Vec2Fs              uvs {{0.5f,0.5f}};
-    Vec3UIs             tinds;
+    Arr3UIs             tinds;
     for (Vec3D const & pos : poss) {
         ScaleTrans3F        st {ScaleTrans3D{radius,pos}};
         TriSurf             ts = cIcosahedron();
-        cat_(vinds,mapAdd(ts.tris,Vec3UI{scast<uint>(verts.size())}));
+        cat_(vinds,mapAdd(ts.tris,Arr3UI{scast<uint>(verts.size())}));
         cat_(verts,mapMul(st,ts.verts));
-        cat_(tinds,Vec3UIs(ts.tris.size(),Vec3UI{0}));
+        cat_(tinds,Arr3UIs(ts.tris.size(),Arr3UI{0}));
     }
     ImgRgba8            clrMap {2,2,color};
     Material            mtrl {false,make_shared<ImgRgba8>(clrMap)};
@@ -1061,22 +1060,22 @@ Mesh                removeUnused(Mesh const & mesh)
     for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
         Surf const & surf = mesh.surfaces[ss];
         for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-            Vec3UI   v = surf.tris.vertInds[tt];
+            Arr3UI   v = surf.tris.vertInds[tt];
             for (uint ii=0; ii<3; ++ii)
                 vertUsed[v[ii]] = true;
         }
         for (size_t tt=0; tt<surf.quads.size(); ++tt) {
-            Vec4UI   v = surf.quads.vertInds[tt];
+            Arr4UI   v = surf.quads.vertInds[tt];
             for (uint ii=0; ii<4; ++ii)
                 vertUsed[v[ii]] = true;
         }
         for (size_t tt=0; tt<surf.tris.uvInds.size(); ++tt) {
-            Vec3UI   u = surf.tris.uvInds[tt];
+            Arr3UI   u = surf.tris.uvInds[tt];
             for (uint ii=0; ii<3; ++ii)
                 uvsUsed[u[ii]] = true;
         }
         for (size_t tt=0; tt<surf.quads.uvInds.size(); ++tt) {
-            Vec4UI   u = surf.quads.uvInds[tt];
+            Arr4UI   u = surf.quads.uvInds[tt];
             for (uint ii=0; ii<4; ++ii)
                 uvsUsed[u[ii]] = true;
         }
@@ -1169,28 +1168,26 @@ Uints               flagsToIndexMap(Bools const & keepFlags)
     return ret;
 }
 
-template<uint N>
-Svec<Mat<uint,N,1>> removeVerts(
-    Svec<Mat<uint,N,1>> const & polys,
+template<size_t N>
+Svec<Arr<uint,N>> removeVerts(
+    Svec<Arr<uint,N>> const & polys,
     Bools const &           polyKeepFlags,
     Uints const &           vertIndsMap)
 {
     size_t                  P = polys.size();
     FGASSERT(polyKeepFlags.size() == P);
-    Svec<Mat<uint,N,1>>     ret;
+    Svec<Arr<uint,N>>     ret;
     for (size_t pp=0; pp<P; ++pp) {
         if (polyKeepFlags[pp]) {
-            Mat<uint,N,1>       in = polys[pp],
-                                out;
-            for (uint ii=0; ii<N; ++ii)
-                out[ii] = vertIndsMap[in[ii]];
+            Arr<uint,N>       in = polys[pp],
+                              out {mapIndex(in,vertIndsMap)};
             ret.push_back(out);
         }
     }
     return ret;
 }
 
-template<uint N>
+template<size_t N>
 NPolys<N>           removeVerts(
     NPolys<N> const &   in,
     Bools const &       polyKeepFlags,
@@ -1199,7 +1196,7 @@ NPolys<N>           removeVerts(
     NPolys<N>           ret;
     ret.vertInds = removeVerts(in.vertInds,polyKeepFlags,vertIndsMap);
     if (!in.uvInds.empty())
-        ret.uvInds = filter(in.uvInds,polyKeepFlags);       // UV list unchanged
+        ret.uvInds = selectIf(in.uvInds,polyKeepFlags);       // UV list unchanged
     return ret;
 }
 
@@ -1213,8 +1210,8 @@ Surf                removeVerts(
                         Q = orig.quads.vertInds.size();
     Bools               keepTris (T,true);
     for (size_t tt=0; tt<T; ++tt) {
-        Vec3UI              tri = orig.tris.vertInds[tt];
-        for (uint idx : tri.m)
+        Arr3UI              tri = orig.tris.vertInds[tt];
+        for (uint idx : tri)
             if (vertIndsMap[idx] == lims<uint>::max())          // uses a removed vert
                 keepTris[tt] = false;
     }
@@ -1222,8 +1219,8 @@ Surf                removeVerts(
     Bools               keepQuads (Q,true),
                         keepTriEquivs = cat(keepTris,Bools(Q*2,true));
     for (size_t qq=0; qq<Q; ++qq) {
-        Vec4UI              quad = orig.quads.vertInds[qq];
-        for (uint idx : quad.m) {
+        Arr4UI              quad = orig.quads.vertInds[qq];
+        for (uint idx : quad) {
             if (vertIndsMap[idx] == lims<uint>::max()) {        // uses a removed vert
                 keepQuads[qq] = false;
                 keepTriEquivs[T+qq*2] = false;
@@ -1256,7 +1253,7 @@ Mesh            removeVerts(Mesh const & orig,Uints const & vertInds)
     }
     Mesh                ret;
     ret.name = orig.name;
-    ret.verts = filter(orig.verts,vertKeepFlags);
+    ret.verts = selectIf(orig.verts,vertKeepFlags);
     ret.uvs = orig.uvs;
     Uints               vertIndsMap = flagsToIndexMap(vertKeepFlags);
     ret.surfaces.reserve(orig.surfaces.size());
@@ -1293,7 +1290,7 @@ TriSurf             cTetrahedron(bool open)
         {-1, 1,-1},
         { 1,-1,-1},
     };
-    Vec3UIs             tris {
+    Arr3UIs             tris {
         {0,1,3},
         {0,2,1},
         {2,0,3},
@@ -1312,7 +1309,7 @@ TriSurf             cPyramid(bool open)
         { 1, 0, 1},
         { 0, 1, 0},
     };
-    Vec3UIs         tris {
+    Arr3UIs         tris {
         {0, 4, 1},
         {0, 2, 4},
         {2, 3, 4},
@@ -1335,7 +1332,7 @@ TriSurf             cCubeTris(bool open)
                 float((vv >> 1) & 0x01),
                 float((vv >> 2) & 0x01)) * 2.0f -
             Vec3F(1.0f));
-    Vec3UIs             tris {
+    Arr3UIs             tris {
     // X planes:
         {0,4,6},
         {6,2,0},
@@ -1441,15 +1438,41 @@ TriSurf             cNTent(uint nn)
 {
     FGASSERT(nn > 2);
     Vec3Fs              verts {{0,1,0}};
-    float               step = 2.0f * float(pi()) / float(nn);
+    float               step = 2.0f * float(pi) / float(nn);
     for (uint ii=0; ii<nn; ++ii) {
         float               angle = step * float(ii);
-        verts.emplace_back(cos(angle),0.0f,sin(angle));
+        verts.emplace_back(cos(angle),0.0f,-sin(angle));
     }
-    Vec3UIs             tris;
+    Arr3UIs             tris;
     for (uint ii=0; ii<nn; ++ii)
-        tris.emplace_back(0,ii+1,((ii+1)%nn)+1);
+        tris.emplace_back(0,ii+1,((ii+1)%nn+1));    // first vert is centre so must offset that
     return {verts,tris};
+}
+
+TriSurf             cTube()
+{
+    float               i = 1,          // inner radius
+                        o = 2,          // outer radius
+                        h = 4;          // half height
+    Vec2Fs              crossSection {
+        {i,i},{-i,i},{-i,-i},{i,-i},    // inner
+        {o,o},{-o,o},{-o,-o},{o,-o},    // outer
+    };
+    auto                cLayer = [&](float z)
+    {
+        auto                fn = [z](Vec2F p){return Vec3F{p[0],p[1],z}; };
+        return mapCall(crossSection,fn);
+    };
+    Vec3Fs              verts = cat(cLayer(-h),cLayer(0),cLayer(h));
+    uint                v = scast<uint>(crossSection.size());
+    Arr4UIs             quads {{0,1,5,4},{1,2,6,5},{2,3,7,6},{3,0,4,7},},   // cap
+                        innerLo {{0,v,1+v,1},{1,1+v,2+v,2},{2,2+v,3+v,3},{3,3+v,v,0},},
+                        outerLo {{4+v,4,5,5+v},{5+v,5,6,6+v},{6+v,6,7,7+v},{7+v,7,4,4+v},};
+    cat_(quads,innerLo);
+    cat_(quads,outerLo);
+    cat_(quads,mapAdd(innerLo,Arr4UI{v}));          // innerHi
+    cat_(quads,mapAdd(outerLo,Arr4UI{v}));          // outerHi
+    return subdivide({verts,asTris(quads)});
 }
 
 Mesh                mergeSameNameSurfaces(Mesh const & in)
@@ -1461,7 +1484,7 @@ Mesh                mergeSameNameSurfaces(Mesh const & in)
         bool    found = false;
         for (size_t ii=0; ii<surfs.size(); ++ii) {
             if (surfs[ii].name == surf.name) {
-                surfs[ii].merge(surf);
+                merge_(surfs[ii],surf);
                 found = true;
                 continue;
             }
@@ -1492,11 +1515,11 @@ Mesh                fuseIdenticalVerts(Mesh const & mesh)
         }
     }
     for (Surf surf : mesh.surfaces) {
-        for (Vec3UI & tri : surf.tris.vertInds)
-            for (uint & idx : tri.m)
+        for (Arr3UI & tri : surf.tris.vertInds)
+            for (uint & idx : tri)
                 idx = map[idx];
-        for (Vec4UI & quad : surf.quads.vertInds)
-            for (uint & idx : quad.m)
+        for (Arr4UI & quad : surf.quads.vertInds)
+            for (uint & idx : quad)
                 idx = map[idx];
         ret.surfaces.push_back(surf);
     }
@@ -1518,11 +1541,11 @@ Mesh                fuseIdenticalUvs(Mesh const & in)
         }
     }
     for (Surf & surf : ret.surfaces) {
-        for (Vec3UI & tri : surf.tris.uvInds)
-            for (uint & idx : tri.m)
+        for (Arr3UI & tri : surf.tris.uvInds)
+            for (uint & idx : tri)
                 idx = map[idx];
-        for (Vec4UI & quad : surf.quads.uvInds)
-            for (uint & idx : quad.m)
+        for (Arr4UI & quad : surf.quads.uvInds)
+            for (uint & idx : quad)
                 idx = map[idx];
     }
     return ret;
@@ -1547,16 +1570,16 @@ Mesh                selectSurfs(Mesh const & mesh,Strings const & surfNames)
 Mesh                mergeMeshes(Ptrs<Mesh> meshPtrs)
 {
     Mesh                ret;
-    Ptrs<String8>       namePtrs = sliceMemberPP(meshPtrs,&Mesh::name);
-    Ptrs<String8>       neNamePtrs = findAll(namePtrs,[](String8 const * n){return !n->empty(); });
+    Ptrs<String8>       namePtrs = mapPtrsMember(meshPtrs,&Mesh::name);
+    Ptrs<String8>       neNamePtrs = select(namePtrs,[](String8 const * n){return !n->empty(); });
     ret.name = catDeref(neNamePtrs,"+");
-    Ptrs<Vec3Fs>        vertsPtrs = sliceMemberPP(meshPtrs,&Mesh::verts);
+    Ptrs<Vec3Fs>        vertsPtrs = mapPtrsMember(meshPtrs,&Mesh::verts);
     Sizes               voffsets = integrate(cSizes(vertsPtrs));
     ret.verts = catDeref(vertsPtrs);
-    Ptrs<Vec2Fs>        uvsPtrs = sliceMemberPP(meshPtrs,&Mesh::uvs);
+    Ptrs<Vec2Fs>        uvsPtrs = mapPtrsMember(meshPtrs,&Mesh::uvs);
     Sizes               uoffsets = integrate(cSizes(uvsPtrs));
     ret.uvs = catDeref(uvsPtrs);
-    Ptrs<Surfs>         surfsPtrs = sliceMemberPP(meshPtrs,&Mesh::surfaces);
+    Ptrs<Surfs>         surfsPtrs = mapPtrsMember(meshPtrs,&Mesh::surfaces);
     Sizes               soffsets = integrate(cSizes(surfsPtrs));
     ret.surfaces.reserve(soffsets.back());
     map<String8,IdxVec3Fs>  deltaMorphs,
@@ -1604,7 +1627,7 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
 {
     // Make a list of which vertices have UVs that only fall in the excluded regions:
     vector<FatBool>     keep(mesh.verts.size(),false);
-    AffineEw2F          otcsToPacs = cOtcsToPacs(mask.dims());
+    AxAffine2F          otcsToPacs = cOtcsToPacs<float>(mask.dims());
     Mat22UI             clampVal(0,mask.width()-1,0,mask.height()-1);
     for (size_t ii=0; ii<mesh.surfaces.size(); ++ii) {
         Surf const & surf = mesh.surfaces[ii];
@@ -1613,8 +1636,8 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
         if (surf.tris.uvInds.empty())
             fgThrow("No tri facet UVs");
         for (size_t jj=0; jj<surf.tris.uvInds.size(); ++jj) {
-            Vec3UI   uvInd = surf.tris.uvInds[jj];
-            Vec3UI   vtInd = surf.tris.vertInds[jj];
+            Arr3UI   uvInd = surf.tris.uvInds[jj];
+            Arr3UI   vtInd = surf.tris.vertInds[jj];
             for (uint kk=0; kk<3; ++kk) {
                 bool    valid = mask[mapClamp(Vec2UI(otcsToPacs * mesh.uvs[uvInd[kk]]),clampVal)];
                 keep[vtInd[kk]] = keep[vtInd[kk]] || valid;
@@ -1627,7 +1650,7 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
         Surf const & surf = mesh.surfaces[ii];
         Surf         nsurf;
         for (size_t jj=0; jj<surf.tris.uvInds.size(); ++jj) {
-            Vec3UI   vtInd = surf.tris.vertInds[jj];
+            Arr3UI   vtInd = surf.tris.vertInds[jj];
             bool copy = false;
             for (uint kk=0; kk<3; ++kk)
                 copy = copy || keep[vtInd[kk]];
@@ -1642,15 +1665,15 @@ Mesh                fg3dMaskFromUvs(Mesh const & mesh,const Img<FatBool> & mask)
 
 ImgV3F          pixelsToPositions(
     Vec3Fs const &      verts,
-    Vec3UIs const &     vtIndss,
+    Arr3UIs const &     vtIndss,
     Vec2Fs const &      uvs,
-    Vec3UIs const &     uvIndss,
+    Arr3UIs const &     uvIndss,
     Vec2UI              dims)
 {
     float constexpr     invalid {lims<float>::max()};
     GridTriangles       grid {uvs,uvIndss};
     ImgV3F              ret {dims,{invalid,invalid,invalid}};
-    AffineEw2F          ircsToOtcs {cIrcsToOtcs(dims)};
+    AxAffine2F          ircsToOtcs {cIrcsToOtcs<float>(dims)};
     size_t              overlaps {0},
                         unused {0};
     for (Iter2UI it{dims}; it.valid(); it.next()) {
@@ -1662,11 +1685,11 @@ ImgV3F          pixelsToPositions(
             if (tps.size() > 1)
                 ++overlaps;
             TriPoint const &    tp = tps[0];
-            Vec3UI              vtInds = vtIndss[tp.triInd];
+            Arr3UI              vtInds = vtIndss[tp.triInd];
             ret[it()] = indexInterp(vtInds,tp.baryCoord,verts);
         }
     }
-    double              numPix = Vec2D{dims}.cmpntsProduct();
+    double              numPix = Vec2D{dims}.elemsProduct();
     fgout << fgnl
         << "UV coverage: " << toStrPercent(1.0 - unused / numPix)
         << " UV overlaps: " << toStrPercent(overlaps /  numPix);
@@ -1677,18 +1700,18 @@ ImgUC               getUvCover(Mesh const & mesh,Vec2UI dims)
 {
     ImgUC               ret {dims,uchar{0}};
     GridTriangles       grid {mesh.uvs,mesh.getTriEquivs().uvInds};
-    AffineEw2F          ircsToOtcs {cIrcsToOtcs(dims)};
+    AxAffine2F          ircsToOtcs {cIrcsToOtcs<float>(dims)};
     for (Iter2UI it{dims}; it.valid(); it.next())
         if (!grid.intersects(ircsToOtcs * Vec2F{it()}).empty())
             ret[it()] = uchar(255);
     return ret;
 }
 
-ImgRgba8s           cUvWireframeImages(Mesh const & mesh,Rgba8 wireColor)
+ImgRgba8s           cUvWireframeImages(Mesh const & mesh,Rgba8 clr)
 {
     ImgRgba8s           ret; ret.reserve(mesh.surfaces.size());
     for (Surf const & surf : mesh.surfaces)
-        ret.push_back(cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,wireColor));
+        ret.push_back(cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,clr,clr));
     return ret;
 }
 
@@ -1702,7 +1725,7 @@ Vec3Fs              embossMesh(Mesh const & mesh,const ImgUC & logoImg,double va
     MeshNormals         norms = cNormals(mesh);
     for (Surf const & surf : mesh.surfaces) {
         for (size_t ii=0; ii<surf.tris.uvInds.size(); ++ii) {
-            Vec3UI              uvInds = surf.tris.uvInds[ii],
+            Arr3UI              uvInds = surf.tris.uvInds[ii],
                                 vtInds = surf.tris.vertInds[ii];
             for (uint jj=0; jj<3; ++jj) {
                 Vec2F               uv = mesh.uvs[uvInds[jj]];
@@ -1715,7 +1738,7 @@ Vec3Fs              embossMesh(Mesh const & mesh,const ImgUC & logoImg,double va
             }
         }
         for (size_t ii=0; ii<surf.quads.uvInds.size(); ++ii) {
-            Vec4UI              uvInds = surf.quads.uvInds[ii],
+            Arr4UI              uvInds = surf.quads.uvInds[ii],
                                 vtInds = surf.quads.vertInds[ii];
             for (uint jj=0; jj<4; ++jj) {
                 Vec2F               uv = mesh.uvs[uvInds[jj]];
@@ -1728,23 +1751,10 @@ Vec3Fs              embossMesh(Mesh const & mesh,const ImgUC & logoImg,double va
             }
         }
     }
-    float               fac = cMaxElem(cDims(select(mesh.verts,embossedVertInds))) * val;
+    float               fac = cMaxElem(cDims(mapIndex(embossedVertInds,mesh.verts))) * val;
     ret.resize(mesh.verts.size());
     for (size_t ii=0; ii<deltas.size(); ++ii)
         ret[ii] = mesh.verts[ii] + deltas[ii] * fac;
-    return ret;
-}
-
-Vec3Fs              poseMesh(Mesh const & mesh,MorphVals const & expression)
-{
-    Vec3Fs          ret;
-    Floats          coord(mesh.numMorphs(),0);
-    for (size_t ii=0; ii<expression.size(); ++ii) {
-        Valid<size_t>     idx = mesh.findMorph(expression[ii].name);
-        if (idx.valid())
-            coord[idx.val()] = expression[ii].val;
-    }
-    mesh.morph(coord,ret);
     return ret;
 }
 
@@ -1771,7 +1781,7 @@ static String       mirrorLabel(String lab)
 
 Surf                cMirrorX(Surf const & surf)
 {
-    Surf            ret = reverseWinding(surf);
+    Surf                ret = reverseWinding(surf);
     for (SurfPointName & sp : ret.surfPoints)
         mirrorLabel_(sp.label);
     return ret;
@@ -1779,9 +1789,9 @@ Surf                cMirrorX(Surf const & surf)
 
 Mesh                cMirrorX(Mesh const & m)
 {
-    Mesh            ret;
+    Mesh                ret;
     ret.verts = cMirrorX(m.verts);
-    ret.uvs = m.uvs;
+    ret.uvs = mapCall(m.uvs,[](Vec2F uv){return Vec2F{1-uv[0],uv[1]}; });
     ret.surfaces = mapCall(m.surfaces,[](Surf const & s){return cMirrorX(s);});
     ret.markedVerts = m.markedVerts;
     for (MarkedVert & mv : ret.markedVerts)
@@ -1857,14 +1867,14 @@ Mesh                mirrorXFuse(Mesh const & in)
             }
             else                                                // project this SP to saggital plane
             {
-                Vec3F           bary = sp.point.weights;
-                Vec3UI          vertInds = surf.getTriEquivVertInds(sp.point.triEquivIdx);
+                Arr3F           bary = sp.point.weights;
+                Arr3UI          vertInds = surf.getTriEquivVertInds(sp.point.triEquivIdx);
                 for (size_t ii=0; ii<3; ++ii) {
                     uint            idx = vertInds[ii];
                     if (mirrorInds[idx] != idx)                 // non-saggital mirrored vert
                         bary[ii] = 0;
                 }
-                float           sum = cSum(bary.m);
+                float           sum = cSum(bary);
                 if (sum <= 0) {     // no vertices of this tri are on saggital plane or point is off-facet
                     fgout << fgnl << "WARNING: unable to project " << sp.label << " onto saggital plane";
                     surf.surfPoints.push_back(sp);
@@ -1900,28 +1910,28 @@ Mesh                mirrorXFuse(Mesh const & in)
     return Mesh {verts,uvs,surfs,dmorphs,tmorphs};
 }
 
-Mesh                copySurfaceStructure(Mesh const & from,Mesh const & to)
+Mesh                copySurfAssignment(Mesh const & from,Mesh const & to)
 {
     Mesh            ret(to);
     ret.surfaces = {merge(ret.surfaces)};
     Surf            surf = ret.surfaces[0];
     if (!surf.quads.vertInds.empty())
         fgThrow("Quads not supported");
-    Vec3UIs const & tris = surf.tris.vertInds;
+    Arr3UIs const & tris = surf.tris.vertInds;
     ret.surfaces.clear();
     ret.surfaces.resize(from.surfaces.size());
     for (size_t ss=0; ss<ret.surfaces.size(); ++ss)
         ret.surfaces[ss].name = from.surfaces[ss].name;
     for (size_t ii=0; ii<tris.size(); ++ii) {
-        Vec3UI   inds = tris[ii];
+        Arr3UI   inds = tris[ii];
         Vec3F    tpos = (ret.verts[inds[0]] + ret.verts[inds[1]] + ret.verts[inds[2]]) / 3;
         Min<float,size_t>     minSurf;
         for (size_t ss=0; ss<from.surfaces.size(); ++ss) {
             Surf const &     fs = from.surfaces[ss];
             for (size_t jj=0; jj<fs.tris.size(); ++jj) {
-                Vec3UI   fi = fs.tris.vertInds[jj];
+                Arr3UI   fi = fs.tris.vertInds[jj];
                 Vec3F    fpos = (from.verts[fi[0]] + from.verts[fi[1]] + from.verts[fi[2]]) / 3;
-                float       mag = (fpos-tpos).mag();
+                float       mag = (fpos-tpos).magD();
                 minSurf.update(mag,ss);
             }
         }
@@ -1930,17 +1940,120 @@ Mesh                copySurfaceStructure(Mesh const & from,Mesh const & to)
     return ret;
 }
 
-Vec3UIs             meshSurfacesAsTris(Mesh const & m)
+Arr3UIs             meshSurfacesAsTris(Mesh const & m)
 {
-    Vec3UIs   ret;
+    Arr3UIs   ret;
     for (size_t ss=0; ss<m.surfaces.size(); ++ss)
         cat_(ret,m.surfaces[ss].convertToTris().tris.vertInds);
     return ret;
 }
 
-namespace {
+void                testMeshImageMapRend(CLArgs const & args)
+{
+    Vec3Fs              verts {{0,0,0},{1,0,0},{1,1,0},{0,1,0}};
+    Vec2Fs              uvs {{0,0},{1,0},{1,1},{0,1},};
+    Arr4UI              quad {0,1,2,3};
+    Surf                surf {{},QuadInds{{quad},{quad}}};
+    Mesh                mesh {verts,uvs,{surf}};
+    loadImage_(dataDir()+"base/test/TextureMapOrdering.jpg",mesh.surfaces[0].albedoMapRef());
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
 
-void                testRemoveVerts(CLArgs const &)
+void                testSubdFace(CLArgs const & args)
+{
+    Mesh            base = loadMeshMaps(dataDir()+"base/Jane");
+    base.surfaces[0] = base.surfaces[0].convertToTris();
+    Mesh            subd = subdivide(base,true);
+    if (!isAutomated(args))
+        viewMesh({base,subd},true);
+}
+
+void                testSubdShapes(CLArgs const & args)
+{
+    Meshes          meshes;
+    auto            addSubdivisions = [&](TriSurf const & ts,String const & name)
+    {
+        Mesh            mesh {name,ts};
+        meshes.push_back(mesh);
+        for (uint ii=0; ii<5; ++ii) {
+            mesh = subdivide(mesh);
+            mesh.name = name+toStr(ii+1);
+            meshes.push_back(mesh);
+        }
+    };
+    addSubdivisions(cTetrahedron(),"Tetrahedron");
+    addSubdivisions(cTetrahedron(true),"TetrahedronOpen");
+    addSubdivisions(cPyramid(),"Pyramid");
+    addSubdivisions(cPyramid(true),"PyramidOpen");
+    addSubdivisions(cCubeTris(),"Cube");
+    addSubdivisions(cCubeTris(true),"CubeOpen");
+    addSubdivisions(cOctahedron(),"Octahedron");
+    addSubdivisions(cIcosahedron(),"Icosahedron");
+    addSubdivisions(cNTent(5),"5-Tent");
+    addSubdivisions(cNTent(6),"6-Tent");
+    if (!isAutomated(args))
+        viewMesh(meshes,true);
+}
+
+void                testSphere4(CLArgs const & args)
+{
+    Meshes          meshes;
+    for (size_t ii=0; ii<5; ++ii)
+        meshes.emplace_back("TetrahedronSphere",cSphere4(ii));
+    if (!isAutomated(args))
+        viewMesh(meshes,true);
+}
+
+void                testSphere(CLArgs const & args)
+{
+    Meshes          meshes;
+    for (size_t ii=0; ii<4; ++ii)
+        meshes.emplace_back("Sphere",cSphere(ii));
+    if (!isAutomated(args))
+        viewMesh(meshes,true);
+}
+
+void                testSquarePrism(CLArgs const & args)
+{
+    Mesh                mesh {"SquarePrism",cSquarePrism(1,4)};
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void                testTube(CLArgs const & args)
+{
+    Mesh                mesh {"Tube",cTube()};
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void                testInterp(CLArgs const & args)
+{
+    // interpolate colors at every discrete step between two pixel centres
+    ImgRgba8            clrMap {2,1,{{0,255,0,255},{255,0,0,255}}};
+    Vec3Fs              verts {{0,0,0},{0,32,0}};
+    Vec2Fs              uvs;
+    Arr3UIs             vinds;
+    Arr3UIs             tinds;
+    for (uint ii=0; ii<256; ++ii) {
+        verts.emplace_back(ii+1,0,0);
+        verts.emplace_back(ii+1,32,0);
+        uint                i2 = 2*ii;
+        vinds.emplace_back(i2,i2+2,i2+1);
+        vinds.emplace_back(i2+1,i2+2,i2+3);
+        uvs.emplace_back(ii/255.0f,0.5f);
+        tinds.emplace_back(ii);
+        tinds.emplace_back(ii);
+    }
+    Surf                surf {TriInds{vinds,tinds},{}};
+    surf.setAlbedoMap(clrMap);
+    Mesh                mesh {"Interpolated color gradient",verts,uvs,{surf}};
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+static void         testRemoveVerts(CLArgs const &)
 {
     {   // all tris
         Vec3Fs              origVerts {
@@ -1950,7 +2063,7 @@ void                testRemoveVerts(CLArgs const &)
             {2,2,0},
             {2,0,0},
         };
-        Vec3UIs             origTris {
+        Arr3UIs             origTris {
             {0,1,3},
             {1,2,3},
             {3,4,0},
@@ -1963,7 +2076,7 @@ void                testRemoveVerts(CLArgs const &)
             {2,2,0},
             {2,0,0},
         };
-        Vec3UIs             refTris {
+        Arr3UIs             refTris {
             {0,1,2},
             {2,3,0},
         };
@@ -1980,10 +2093,10 @@ void                testRemoveVerts(CLArgs const &)
             {3,1,0},
             {2,0,0},
         };
-        Vec4UIs             origQuads {
+        Arr4UIs             origQuads {
             {0,1,3,5},
         };
-        Vec3UIs             origTris {
+        Arr3UIs             origTris {
             {1,2,3},
             {3,4,5},
         };
@@ -1996,10 +2109,10 @@ void                testRemoveVerts(CLArgs const &)
             {3,1,0},
             {2,0,0},
         };
-        Vec4UIs             refQuads {
+        Arr4UIs             refQuads {
             {0,1,2,4},
         };
-        Vec3UIs             refTris {
+        Arr3UIs             refTris {
             {2,3,4},
         };
         Mesh                ref {refVerts,Surf{refTris}};
@@ -2008,15 +2121,23 @@ void                testRemoveVerts(CLArgs const &)
     }
 }
 
-}
+void                test3dMeshIo(CLArgs const &);
 
-void                test3dMesh(CLArgs const & args)
+void                testMesh(CLArgs const & args)
 {
     Cmds            cmds {
+        {test3dMeshIo, "io", "3D mesh I/O"},
+        {testInterp,"interp","interpolation of color maps"},
+        {testSquarePrism,"prism","Square prism"},
+        {testSubdShapes,"subd0","Loop subdivsion of simple shapes"},
+        {testSubdFace,"subd1","Loop subdivision of textured face"},
+        {testSphere4,"sphere4","Spheres created from tetrahedon"},
+        {testSphere,"sphere","Spheres created from icosahedron"},
+        {testTube,"tube"},
         {testRemoveVerts, "rvs", "remove vertices"},
+        {testMeshImageMapRend,"texmap"},
     };
     doMenu(args,cmds,true,false);
-
 }
 
 }

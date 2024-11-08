@@ -8,6 +8,7 @@
 #include "stdafx.h"
 
 #include "FgString.hpp"
+#include "FgMath.hpp"
 
 #ifdef _MSC_VER
 #pragma warning(disable:4996)   // C11 UTF 8-16-32 conversion functions are deprecated but there is no replacement, so keep using them !
@@ -74,6 +75,12 @@ String              toStrPercent(double val,uint fractionalDigits)
     return toStrFixed(val*100.0,fractionalDigits) + "%";
 }
 
+String              toStrRelPercents(double v0,double v1,uint fractionalDigits)
+{
+    double              tot = v0 + v1;
+    return toStrFixed(100*v0/tot,fractionalDigits) + "-" + toStrFixed(100*v1/tot,fractionalDigits) + "%";
+}
+
 String              toLower(const String & s)
 {
     String  retval;
@@ -125,6 +132,30 @@ String              replaceAll(String const & str,char orig,char repl)
             ret.push_back(ch);
     }
     return ret;
+}
+
+String              replaceFirst(String const & str,String const & sub,String const & rep)
+{
+    size_t              idx = str.find(sub);
+    if (idx == String::npos)
+        return str;
+    else
+        return cHead(str,idx) + rep + cRest(str,idx+sub.size());
+}
+
+bool                replaceAll_(String const & str,String const & fnd,String const & rpl,String & ret)
+{
+    FGASSERT(!fnd.empty());
+    size_t              beg {0},
+                        end;
+    while ((end=str.find(fnd,beg)) != String::npos) {
+        ret += str.substr(beg,end-beg) + rpl;
+        beg = end + fnd.size();     // don't want to find the same string again !
+    }
+    if (beg == 0)
+        return false;
+    ret += cRest(str,beg);
+    return true;
 }
 
 String              padToLen(String const & str,size_t len,char ch)
@@ -476,7 +507,7 @@ String8             replaceCharWithString(String8 const & in,char32_t from,Strin
 
 void                printList(String const & title,Strings const & items,bool numbered)
 {
-    PushIndent      pi {title};
+    PushIndent      pind {title};
     for (size_t ii=0; ii<items.size(); ++ii) {
         fgout << fgnl;
         if (numbered)
@@ -597,6 +628,17 @@ uint64              fromHex64Crc(String const & uk)
     if (chk.valid() && (chk.val() == crc))
         return ret;
     return 0;
+}
+
+Strings             cNumberedLabels(String const & baseLabel,size_t num)
+{
+    size_t              numDigits = cNumDigits(num);
+    return genSvec<String>(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
+}
+String8s            cNumberedLabels(String8 const & baseLabel,size_t num)
+{
+    size_t              numDigits = cNumDigits(num);
+    return genSvec<String8>(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
 }
 
 }

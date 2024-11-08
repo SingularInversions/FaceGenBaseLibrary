@@ -21,7 +21,7 @@ struct      GuiSelectWin : public GuiBaseImpl
     GuiSelect               m_api;
     GuiImplPtrs             m_panes;
     size_t                  m_currPane;     // Which one is Windows currently displaying ?
-    Vec2I                   m_lo,m_sz;
+    Vec2I                   m_lo{0},m_sz{0};
     String8                 m_store;
     HWND                    parentHwnd;
     DWORD                   extStyle;
@@ -41,8 +41,8 @@ struct      GuiSelectWin : public GuiBaseImpl
         m_store = store;
         parentHwnd = parentHwnd_;
         extStyle = extStyle_;
-        FGASSERT(m_api.selection.cref() < m_panes.size());
-        m_currPane = m_api.selection.cref();
+        FGASSERT(m_api.selection.val() < m_panes.size());
+        m_currPane = m_api.selection.val();
         m_panes[m_currPane]->create(parentHwnd,int(m_currPane),m_store+"_"+toStr(m_currPane),extStyle,visible);
     }
 
@@ -56,9 +56,9 @@ struct      GuiSelectWin : public GuiBaseImpl
         return max;
     }
 
-    virtual Vec2B       wantStretch() const
+    virtual Arr2B       wantStretch() const
     {
-        Vec2B               ret {false};
+        Arr2B               ret {false};
         for (auto const & pane : m_panes)
             ret = mapOr(ret,pane->wantStretch());
         return ret;
@@ -67,7 +67,7 @@ struct      GuiSelectWin : public GuiBaseImpl
     virtual void        updateIfChanged()
     {
         if (m_api.selection.checkUpdate()) {
-            size_t              currPane = m_api.selection.cref();
+            size_t              currPane = m_api.selection.val();
             if (currPane != m_currPane) {
                 FGASSERT1(currPane < m_panes.size(),toStr(currPane));
                 m_panes[m_currPane]->destroy();

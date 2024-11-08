@@ -30,7 +30,7 @@ guiRadioLabel(String8s const & labels,IPT<size_t> idxN)
 {
     GuiVal<String8>     ret;
     ret.win = guiRadio(labels,idxN);
-    ret.valN = link1<size_t,String8>(idxN,[labels](size_t const & idx)
+    ret.valN = link1(idxN,[labels](size_t const & idx)
     {
         if (idx < labels.size())
             return labels[idx];

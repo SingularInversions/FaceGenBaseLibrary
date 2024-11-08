@@ -14,33 +14,13 @@
 #include "FgImage.hpp"
 #include "FgFileSystem.hpp"
 #include "Fg3dMeshIo.hpp"
-#include "Fg3dMesh.hpp"
+#include "Fg3dDisplay.hpp"
 #include "FgParse.hpp"
 #include "FgTestUtils.hpp"
 
 using namespace std;
 
 namespace Fg {
-
-//void
-//fgObjTest()
-//{
-//    ofstream    ofs("square.obj");
-//    ofs << 
-//        "v 0.0 0.0 0.0\n"
-//        "v 0.0 1.0 0.0\n"
-//        "v 1.0 1.0 0.0\n"
-//        "v 1.0 0.0 0.0\n"
-//        "vt 0.0 0.0\n"
-//        "vt 0.0 1.0\n"
-//        "vt 1.0 1.0\n"
-//        "vt 1.0 0.0\n"
-//        "g plane\n"
-//        "usemtl plane\n"
-//        "f 1/1 2/2 3/3 4/4\n"
-//        ;
-//    ofs.close();
-//}
 
 namespace {
 
@@ -181,7 +161,7 @@ Mesh                loadWObj(String8 const & fname)
             if (it == surfMap.end())
                 surfMap[currName] = currSurf;
             else
-                surfMap[currName].merge(currSurf);
+                merge_(surfMap[currName],currSurf);
             currSurf = Surf{};
         }
     };
@@ -241,7 +221,7 @@ Mesh                loadWObj(String8 const & fname)
         if (surfMap.find(currName) == surfMap.end())
             surfMap[currName] = currSurf;
         else
-            surfMap[currName].merge(currSurf);
+            merge_(surfMap[currName],currSurf);
     }
     mesh.name = pathToBase(fname);
     Surfs               labelledSurfs;
@@ -273,16 +253,16 @@ struct      Offsets
     Offsets(uint v,uint u,uint m) : vert(v), uv(u), mat(m) {}
 };
 
-template<uint dim>
+template<size_t dim>
 void                writeFacets(
     Ofstream &          ofs,
-    const vector<Mat<uint,dim,1> > &  vertInds,
-    const vector<Mat<uint,dim,1> > &  uvInds,
+    const vector<Arr<uint,dim> > &  vertInds,
+    const vector<Arr<uint,dim> > &  uvInds,
     Offsets             offsets)
 {
     if (uvInds.size() == 0) {
         for (uint jj=0; jj<vertInds.size(); ++jj) {
-            Mat<uint,dim,1>     vert = vertInds[jj];
+            Arr<uint,dim>     vert = vertInds[jj];
             ofs << "f ";
             for (uint kk=0; kk<dim; ++kk) {
                 uint                vi = vert[kk]+offsets.vert;
@@ -294,8 +274,8 @@ void                writeFacets(
     else {
         FGASSERT(vertInds.size() == uvInds.size());
         for (uint jj=0; jj<vertInds.size(); ++jj) {
-            Mat<uint,dim,1>     vert = vertInds[jj];
-            Mat<uint,dim,1>     uv = uvInds[jj];
+            Arr<uint,dim>     vert = vertInds[jj];
+            Arr<uint,dim>     uv = uvInds[jj];
             ofs << "f ";
             for (uint kk=0; kk<dim; ++kk) {
                 uint        vi = vert[kk]+offsets.vert;
@@ -418,8 +398,7 @@ void    injectVertsWObj(String8 const & inName,Vec3Fs const & verts,String8 cons
     saveRaw(cat(lines,"\n"),outName);
 }
 
-void
-testSaveObj(CLArgs const & args)
+void                testSaveObj(CLArgs const & args)
 {
     FGTESTDIR
     String8         dd = dataDir();
@@ -430,13 +409,37 @@ testSaveObj(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh            glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    saveWObj("meshExportObj.obj",svec(mouth,glasses));
-    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+    saveWObj("meshExportObj.obj",{mouth,glasses});
+    if (is64Bit() && (getCurrentCompiler()==Compiler::vs22))      // precision differences otherwise
         regressFileRel("meshExportObj.obj","base/test/");
     regressFileRel("meshExportObj.mtl","base/test/");
     regressFileRel("meshExportObj1.png","base/test/");
     regressFileRel("meshExportObj2.png","base/test/");
 }
+
+void                testLoadObj(CLArgs const & args)
+{
+    TestDir   tmp("readObj");
+    ofstream    ofs("square.obj");
+    ofs << 
+        "v 0.0 0.0 0.0\n"
+        "v 0.0 1.0 0.0\n"
+        "v 1.0 1.0 0.0\n"
+        "v 1.0 0.0 0.0\n"
+        "vt 0.0 0.0\n"
+        "vt 0.0 1.0\n"
+        "vt 1.0 1.0\n"
+        "vt 1.0 0.0\n"
+        "g plane\n"
+        "usemtl plane\n"
+        "f 1/1 2/2 3/3 4/4\n"
+        ;
+    ofs.close();
+    Mesh    mesh = loadWObj("square.obj");
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
 
 }
 

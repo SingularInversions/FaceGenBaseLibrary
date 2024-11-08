@@ -30,7 +30,7 @@ enum struct     MeshFormat
 };
 typedef Svec<MeshFormat>    MeshFormats;
 
-MeshFormat          getMeshFormat(String const & ext);
+MeshFormat          getMeshFormat(String8 const & file);    // throws a descriptive error if not a known mesh format
 bool                meshFormatSupportsMulti(MeshFormat);    // true if format supports multiple vertex lists
 String              getMeshFormatExt(MeshFormat);
 String              getMeshFormatName(MeshFormat);

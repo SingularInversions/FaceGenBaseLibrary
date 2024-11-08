@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include "FgCmd.hpp"
+#include "FgCommand.hpp"
 #include "FgImage.hpp"
 #include "FgTestUtils.hpp"
 #include "FgBuild.hpp"
@@ -26,7 +26,7 @@ void                cmd3dmmImport(CLArgs const & args)
     Syntax              syn {args,R"(<mean>.<ext> <fileList>.txt <out>.MatV3F
     <mean>          - file containing the mean shape base mesh with V vertices
     <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
-    <fileList>.txt  - list of mesh filename with V verts for each of M linear basis modes (each added to the mean shape)
+    <fileList>.txt  - list of mesh filenames with V verts for each of M linear basis modes (each added to the mean shape)
 OUTPUT:
     <out>.MatV3F    - FaceGen binary serialized matrix of Vec3F with V rows and M columns
 NOTES:
@@ -60,7 +60,7 @@ void                cmd3dmmView(CLArgs const & args)
         syn.error("vertex count of base and modes differs",toStr(V)+"!="+toStr(modes.numRows()));
     // GUI:
     String8                 store = getDirUserAppDataLocalFaceGen({"SDK","3dmm view"});
-    GuiPosedMeshes          gpms;
+    GuiMorphMeshes          gpms;
     Mat32F                  bounds = cBounds(base.verts);
     IPT<Mesh>               meshN(base);
     Svec<IPT<double>>       coeffNs = makeIPTs(Doubles(M,0.0));
@@ -73,7 +73,7 @@ void                cmd3dmmView(CLArgs const & args)
     GuiPtr                  randW = guiSplitH({
         guiButton("Random",randFn),
         guiText("iid standard normals to each coeff")});
-    Img<GuiPtr>             sliderWs = guiSliders(coeffNs,numberedLabels("mode",M),VecD2{-5,5},1);
+    Img<GuiPtr>             sliderWs = guiSliders(coeffNs,cNumberedLabels(String8{"mode"},M),VecD2{-5,5},1);
     GuiPtr                  slidersW = guiSplitScroll(sliderWs);
     auto                    identFn = [&,V,M](Doubles const & coord)
     {
@@ -87,7 +87,7 @@ void                cmd3dmmView(CLArgs const & args)
         }
         return ret;
     };
-    OPT<Vec3Fs>             identVertsN = link1<Doubles,Vec3Fs>(coordN,identFn);
+    OPT<Vec3Fs>             identVertsN = link1(coordN,identFn);
     gpms.addMesh(meshN,identVertsN,base.surfaces.size());
     IPT<Mat32D>             viewBoundsN {Mat32D(bounds)};
     Gui3d                   gui3d {makeIPT(gpms.rendMeshes)};
@@ -111,9 +111,6 @@ void                cmd3dmm(CLArgs const & args)
     doMenu(args,cmds);
 }
 
-Cmd testSoftRenderInfo();   // Don't put these in a macro as it generates a clang warning about vexing parse.
-
-void         testmGui(CLArgs const & args);
 
 static void         sysinfo(CLArgs const &)
 {
@@ -131,87 +128,8 @@ static void         sysinfo(CLArgs const &)
         << fgpop;
 }
 
-void testm3d(CLArgs const &);
-void cmdTestmCpp(CLArgs const &);
-void fg3dReadWobjTest(CLArgs const &);
-void testmRandom(CLArgs const &);
-void testmGeometry(CLArgs const &);
-void fgTextureImageMappingRenderTest(CLArgs const &);
-void testmImage(CLArgs const &);
-
-static void         testmBase(CLArgs const & args)
-{
-    Cmds            cmds {
-        {testmGui,"gui"},
-        {testm3d,"3d"},
-        {cmdTestmCpp,"cpp","C++ behaviour tests"},
-        {fg3dReadWobjTest,"readWobj"},
-        {testmRandom,"random"},
-        {testmGeometry,"geometry"},
-        {fgTextureImageMappingRenderTest,"texturemap"},
-        {testmImage,"image"}
-    };
-    doMenu(args,cmds);
-}
-
-void                test3d(CLArgs const &);
-void                testDataflow(CLArgs const &);
-void                testFilesystem(CLArgs const &);
-void                testOpenFile(CLArgs const &);
-void                testGeometry(CLArgs const &);
-void                testGridTriangles(CLArgs const &);
-void                testHash(CLArgs const &);
-void                testImage(CLArgs const &);
-void                testKdTree(CLArgs const &);
-void                testMatrixSolver(CLArgs const &);
-void                testMath(CLArgs const &);
-void                testMatrixC(CLArgs const &);
-void                testMatrixV(CLArgs const &);
-void                testMetaFormat(CLArgs const &);
-void                testMorph(CLArgs const &);
-void                testParse(CLArgs const &);
-void                testPath(CLArgs const &);
-void                testQuaternion(CLArgs const &);
-void                testRenderCmd(CLArgs const &);
-void                testSampler(CLArgs const &);
-void                testSerial(CLArgs const &);
-void                testSimilarity(CLArgs const &);
-void                testSurfTopo(CLArgs const &);
-void                testString(CLArgs const &);
-
-void                testBase(CLArgs const & args)
-{
-    Cmds            cmds {
-        {test3d,"3d"},
-        {testDataflow,"dataflow"},
-        {testFilesystem,"filesystem"},
-        {testOpenFile,"open"},
-        {testGeometry,"geometry"},
-        {testGridTriangles,"gridTriangles"},
-        {testHash,"hash"},
-        {testImage,"image"},
-        {testKdTree,"kd"},
-        {testMatrixSolver,"matSol","Matrix Solver"},
-        {testMath,"math"},
-        {testMatrixC,"matC","MatrixC"},
-        {testMatrixV,"matV","MatrixV"},
-        {testMetaFormat,"metaFormat"},
-        {testMorph,"morph"},
-        {testParse,"parse"},
-        {testPath,"path"},
-        {testQuaternion,"quaternion"},
-        {testRenderCmd,"rendc","render command"},
-        {testSampler,"sampler"},
-        {testSerial,"serial"},
-        {testSimilarity,"sim","similarity transform and solver"},
-        {testSurfTopo,"topo","surface topology analysis"},
-        {testString,"string"},
-    };
-    cmds.push_back(testSoftRenderInfo());
-    doMenu(args,cmds,true);
-}
-
-void                view(CLArgs const & args) {doMenu(args,getViewCmds()); }
+void                testBase(CLArgs const & args);
+void                cmdView(CLArgs const & args);
 
 void                cmdRenExt(CLArgs const & args)
 {
@@ -282,6 +200,30 @@ NOTES:
     }
 }
 
+void                cmdReplace(CLArgs const & args)
+{
+    Syntax              syn {args,R"(<search> <replace> <glob>
+    <search>        - text to find
+    <replace>       - text to replace it with
+    <glob>          - simple file glob (* can only be used for entire base name or extension)
+NOTES:
+    'sed' for windows will not write in place
+    'perl' for windows will not expand CL globs
+    'awk' for windows ... I gave up and wrote this.)"
+    };
+    String              srch = syn.next(),
+                        repl = syn.next();
+    String8s            fileNames = globFiles(Path{syn.next()});
+    if (fileNames.empty())
+        syn.error("no matching files found");
+    for (String8 const & fileName : fileNames) {
+        String              in = loadRawString(fileName),
+                            out;
+        if (replaceAll_(in,srch,repl,out))
+            saveRaw(out,fileName);
+    }
+}
+
 void                cmdRename(CLArgs const & args)
 {
     Cmds            cmds {
@@ -291,31 +233,57 @@ void                cmdRename(CLArgs const & args)
     doMenu(args,cmds);
 }
 
+void                cmdTools(CLArgs const & args)
+{
+    Cmds                cmds {
+        {cmdRename,"rename","rename files according to a pattern"},
+        {cmdReplace,"replace","search and replace simple text in multiple files"},
+        {sysinfo,"system","Show system info"},
+    };
+    doMenu(args,cmds);
+}
+
+void                cmdCons(CLArgs const &);
 void                cmdGraph(CLArgs const &);
 void                cmdImgops(CLArgs const &);
 void                cmdMesh(CLArgs const &);
 void                cmdMorph(CLArgs const &);
 void                cmdRender(CLArgs const &);
 
+void                cmdCompileShaders(CLArgs const &)
+{
+#ifdef _WIN32
+    PushDir             pd {dataDir()+"base/shaders/"};
+    // Seems from online chat that the default optimization /O1 is no different than /O2 or /O3 ...
+    // /WX - warnings as errors
+    // CSO - compiled shader object (.fxc is legacy; effects compiler)
+    clRun("fxc /T vs_5_0 /E VSTransform /WX /Fo dx11_shared_VS.cso dx11_shared.hlsl");
+    clRun("fxc /T vs_5_0 /E VSTransparentPass2 /WX /Fo dx11_transparent_VS.cso dx11_transparent.hlsl");
+    clRun("fxc /T ps_5_0 /E PSOpaque /WX /Fo dx11_opaque_PS.cso dx11_opaque.hlsl");
+    clRun("fxc /T ps_5_0 /E PSTransparentPass1 /WX /Fo dx11_transparent_PS1.cso dx11_transparent.hlsl");
+    clRun("fxc /T ps_5_0 /E PSTransparentPass2 /WX /Fo dx11_transparent_PS2.cso dx11_transparent.hlsl");
+#else
+    fgThrow("Shader compilation not supported on this platform");
+#endif
+}
+
 Cmds                getFgblCmds()
 {
     Cmds        cmds {
         {cmd3dmm,"3dmm","3D morphable model commands"},
+        {cmdCons,"cons","Construct makefiles / solution file / project files"},
         {cmdGraph,"graph","Create simple bar graphs from text data"},
         {cmdImgops,"image","Image operations"},
         {cmdMesh,"mesh","3D Mesh IO and manipulation tools"},
         {cmdMorph,"morph","List, apply or create animation morphs for 3D meshes"},
         {cmdRender,"render","Render meshes with color & specular maps to an image file"},
-        {cmdCons,"cons","Construct makefiles / solution file / project files"},
-        {cmdRename,"rename","rename files according to a pattern"},
-        {sysinfo,"sys","Show system info"},
-        {testBase,"test","Automated tests"},
-        {testmBase,"testm","Manual tests"},
-        {view,"view","Interactive GUI view of images and meshes (Windows only)"}
-    };
+        {testBase,"test","test suite"},
+        {cmdTools,"tools","Command-line tools"},
+        {cmdView,"view","Interactive GUI view of images and meshes (Windows only)"},
 #ifdef _WIN32
-    cmds.push_back(getCompileShadersCmd());
+        {cmdCompileShaders,"d3d","Compile D3D shaders (Windows only)"},
 #endif
+    };
     return cmds;
 }
 
@@ -328,32 +296,6 @@ void                cmdFgbl(CLArgs const & args)
     if (args.size() == 1)
         fgout << fgnl << "FaceGen Base Library CLI " << getSdkVersion(".") << " (" << getCurrentBuildDescription() << ")"; 
     doMenu(args,getFgblCmds());
-}
-
-Cmd                 getCompileShadersCmd()
-{
-    Cmd         ret;
-#ifdef _WIN32
-    ret = Cmd {
-        [](CLArgs const &)
-        {
-            PushDir     pd(dataDir()+"base/shaders/");
-            // Seems from online chat that the default optimization /O1 is no different than /O2 or /O3 ...
-            // /WX - warnings as errors
-            // CSO - compiled shader object (.fxc is legacy; effects compiler)
-            clRun("fxc /T vs_5_0 /E VSTransform /WX /Fo dx11_shared_VS.cso dx11_shared.hlsl");
-            clRun("fxc /T vs_5_0 /E VSTransparentPass2 /WX /Fo dx11_transparent_VS.cso dx11_transparent.hlsl");
-            clRun("fxc /T ps_5_0 /E PSOpaque /WX /Fo dx11_opaque_PS.cso dx11_opaque.hlsl");
-            clRun("fxc /T ps_5_0 /E PSTransparentPass1 /WX /Fo dx11_transparent_PS1.cso dx11_transparent.hlsl");
-            clRun("fxc /T ps_5_0 /E PSTransparentPass2 /WX /Fo dx11_transparent_PS2.cso dx11_transparent.hlsl");
-        },
-        "d3d",
-        "Compile Direct3D shaders (Windows only)"
-    };
-#else
-    fgThrow("Shader compilation not supported on this platform");
-#endif
-    return ret;
 }
 
 }

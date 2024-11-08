@@ -38,7 +38,7 @@
 namespace Fg {
 
 // code base version:
-inline String       getSdkVersion(String const & sep) {return "3" + sep + "V" + sep + "2"; }
+inline String       getSdkVersion(String const & sep) {return "3" + sep + "V" + sep + "3"; }
 
 //! The FaceGen API exception type.
 //! All exceptions raised by FG code are of this type, inherit from this type,

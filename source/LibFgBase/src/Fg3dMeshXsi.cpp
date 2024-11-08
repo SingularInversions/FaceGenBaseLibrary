@@ -275,11 +275,11 @@ static bool saveXsiFile(
 
         // Get aliase names for all the lists.
         const Vec3Fs    &vtxList = model.getPtList(xx);
-        Vec3UIs const    &triList = model.getTriList(xx);
-        const vector<Vec4UI>    &quadList = model.getQuadList(xx);
+        Arr3UIs const    &triList = model.getTriList(xx);
+        const vector<Arr4UI>    &quadList = model.getQuadList(xx);
         const Vec2Fs    &txtList = model.getTextCoord(xx);
-        Vec3UIs const    &txtTriList = model.getTexTriList(xx);
-        const vector<Vec4UI>    &txtQuadList = model.getTexQuadList(xx);
+        Arr3UIs const    &txtTriList = model.getTexTriList(xx);
+        const vector<Arr4UI>    &txtQuadList = model.getTexQuadList(xx);
         MeshNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
         bool perFacet = false;
         bool perVertex = false;
@@ -633,8 +633,8 @@ testSaveXsi(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh    glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    saveXsi("meshExportXsi",svec(mouth,glasses));
-    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+    saveXsi("meshExportXsi",{mouth,glasses});
+    if (is64Bit() && (getCurrentCompiler()==Compiler::vs22))      // precision differences otherwise
         regressFileRel("meshExportXsi.xsi","base/test/");
     regressFileRel("meshExportXsi0.png","base/test/");
     regressFileRel("meshExportXsi1.png","base/test/");

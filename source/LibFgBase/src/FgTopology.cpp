@@ -11,16 +11,18 @@
 #include "Fg3dMeshIo.hpp"
 #include "Fg3dDisplay.hpp"
 #include "FgImgDisplay.hpp"
+#include "FgFileSystem.hpp"
 
 using namespace std;
 
 namespace Fg {
 
+using BoundEdges = SurfTopo::BoundEdges;
+using BoundEdgess = SurfTopo::BoundEdgess;
 
-Vec2UI
-directEdgeVertInds(Vec2UI vertInds,Vec3UI tri)
+Vec2UI              directEdgeVertInds(Vec2UI vertInds,Arr3UI tri)
 {
-    uint            idx0 = findFirstIdx(tri,vertInds[0]),
+    size_t          idx0 = findFirstIdx(tri,vertInds[0]),
                     idx1 = findFirstIdx(tri,vertInds[1]),
                     del = (idx1+3-idx0) % 3;
     if (del == 2)
@@ -30,8 +32,7 @@ directEdgeVertInds(Vec2UI vertInds,Vec3UI tri)
     return vertInds;
 }
 
-Vec2UI
-SurfTopo::Tri::edge(uint relIdx) const
+Vec2UI              SurfTopo::Tri::edge(uint relIdx) const
 {
     if (relIdx == 0)
         return Vec2UI(vertInds[0],vertInds[1]);
@@ -44,8 +45,7 @@ SurfTopo::Tri::edge(uint relIdx) const
     return Vec2UI();
 }
 
-uint
-SurfTopo::Edge::otherVertIdx(uint vertIdx) const
+uint                SurfTopo::Edge::otherVertIdx(uint vertIdx) const
 {
     if (vertIdx == vertInds[0])
         return vertInds[1];
@@ -56,10 +56,10 @@ SurfTopo::Edge::otherVertIdx(uint vertIdx) const
     return 0;       // make compiler happy
 }
 
-struct  EdgeVerts
+struct      EdgeVerts
 {
-    uint        loIdx;
-    uint        hiIdx;
+    uint            loIdx;
+    uint            hiIdx;
 
     EdgeVerts(uint i0,uint i1)
     {
@@ -75,7 +75,7 @@ struct  EdgeVerts
     }
 
     // Comparison operator to use as a key for std::map:
-    bool operator<(const EdgeVerts & rhs) const
+    bool            operator<(const EdgeVerts & rhs) const
     {
         if (loIdx < rhs.loIdx)
             return true;
@@ -85,27 +85,16 @@ struct  EdgeVerts
             return false;
     }
 
-    bool
-    contains(uint idx) const
-    {return ((idx == loIdx) || (idx == hiIdx)); }
+    bool            contains(uint idx) const {return ((idx == loIdx) || (idx == hiIdx)); }
 };
 
-struct  TriVerts
+struct      TriVerts
 {
-    Vec3UI   inds;
+    Arr3UI          inds;
 
-    TriVerts(Vec3UI i)
-    {
-        if (i[1] < i[0])
-            std::swap(i[0],i[1]);
-        if (i[2] < i[1])
-            std::swap(i[1],i[2]);
-        if (i[1] < i[0])
-            std::swap(i[0],i[1]);
-        inds = i;
-    }
+    TriVerts(Arr3UI i) : inds{sortAll(i)} {}
 
-    bool operator<(const TriVerts & rhs) const
+    bool            operator<(const TriVerts & rhs) const
     {
         for (uint ii=0; ii<3; ++ii) {
             if (inds[ii] < rhs.inds[ii])
@@ -119,22 +108,18 @@ struct  TriVerts
     }
 };
 
-SurfTopo::SurfTopo(Vec3UIs const & tris)
+SurfTopo::SurfTopo(Arr3UIs const & tris)
 {
-    setup(0,tris);      // 0 means just use max reference
+    setup(0,tris); // 0 means just use max reference
 }
 
-SurfTopo::SurfTopo(size_t numVerts,Vec3UIs const & tris)
-{
-    setup(uint(numVerts),tris);
-}
+SurfTopo::SurfTopo(size_t numVerts,Arr3UIs const & tris) {setup(uint(numVerts),tris); }
 
-void
-SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
+void                SurfTopo::setup(uint numVerts,Arr3UIs const & tris)
 {
     uint            maxVertReferenced = 0;
-    for (Vec3UI const & tri : tris)
-        for (uint idx : tri.m)
+    for (Arr3UI const & tri : tris)
+        for (uint idx : tri)
             updateMax_(maxVertReferenced,idx);
     if (numVerts == 0)
         numVerts = maxVertReferenced + 1;
@@ -145,15 +130,14 @@ SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
                             nulls = 0;
     set<TriVerts>           vset;
     for (size_t ii=0; ii<tris.size(); ++ii) {
-        Vec3UI           vis = tris[ii];
+        Arr3UI           vis = tris[ii];
         if ((vis[0] == vis[1]) || (vis[1] == vis[2]) || (vis[2] == vis[0]))
             ++nulls;
         else {
             TriVerts            tv(vis);
             if (vset.find(tv) == vset.end()) {
                 vset.insert(tv);
-                Tri             tri;
-                tri.vertInds = vis;
+                Tri             tri {vis,Arr3UI{lims<uint>::max()}};
                 m_tris.push_back(tri);
             }
             else
@@ -167,8 +151,7 @@ SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
     m_verts.resize(numVerts);
     std::map<EdgeVerts,Uints >    edgesToTris;
     for (size_t ii=0; ii<m_tris.size(); ++ii) {
-        Vec3UI       vertInds = m_tris[ii].vertInds;
-        m_tris[ii].edgeInds = Vec3UI(std::numeric_limits<uint>::max());
+        Arr3UI       vertInds = m_tris[ii].vertInds;
         for (uint jj=0; jj<3; ++jj) {
             m_verts[vertInds[jj]].triInds.push_back(uint(ii));
             EdgeVerts        edge(vertInds[jj],vertInds[(jj+1)%3]);
@@ -177,9 +160,10 @@ SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
     }
     for (map<EdgeVerts,Uints >::const_iterator it=edgesToTris.begin(); it!=edgesToTris.end(); ++it) {
         EdgeVerts       edgeVerts = it->first;
-        Edge            edge;
-        edge.vertInds = Vec2UI(edgeVerts.loIdx,edgeVerts.hiIdx);
-        edge.triInds = it->second;
+        Edge            edge {
+            Vec2UI(edgeVerts.loIdx,edgeVerts.hiIdx),
+            it->second
+        };
         m_edges.push_back(edge);
     }
     for (size_t ii=0; ii<m_edges.size(); ++ii) {
@@ -190,7 +174,7 @@ SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
         Uints const &    triInds = edgesToTris.find(edge)->second;
         for (size_t jj=0; jj<triInds.size(); ++jj) {
             uint                triIdx = triInds[jj];
-            Vec3UI           tri = m_tris[triIdx].vertInds;
+            Arr3UI           tri = m_tris[triIdx].vertInds;
             for (uint ee=0; ee<3; ++ee)
                 if ((edge.contains(tri[ee]) && edge.contains(tri[(ee+1)%3])))
                     m_tris[triIdx].edgeInds[ee] = uint(ii);
@@ -210,8 +194,7 @@ SurfTopo::setup(uint numVerts,Vec3UIs const & tris)
         FGASSERT(m_edges[ii].triInds.size() > 0);
 }
 
-Vec2UI
-SurfTopo::edgeFacingVertInds(uint edgeIdx) const
+Vec2UI              SurfTopo::edgeFacingVertInds(uint edgeIdx) const
 {
     Uints const &    triInds = m_edges[edgeIdx].triInds;
     FGASSERT(triInds.size() == 2);
@@ -220,8 +203,7 @@ SurfTopo::edgeFacingVertInds(uint edgeIdx) const
     return Vec2UI(ov0,ov1);
 }
 
-bool
-SurfTopo::vertOnBoundary(uint vertIdx) const
+bool                SurfTopo::vertOnBoundary(uint vertIdx) const
 {
     Uints const &    eis = m_verts[vertIdx].edgeInds;
     // If this vert is unused it is not on a boundary:
@@ -231,8 +213,7 @@ SurfTopo::vertOnBoundary(uint vertIdx) const
     return false;
 }
 
-Uints
-SurfTopo::vertBoundaryNeighbours(uint vertIdx) const
+Uints               SurfTopo::vertBoundaryNeighbours(uint vertIdx) const
 {
     Uints            neighs;
     Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
@@ -244,8 +225,7 @@ SurfTopo::vertBoundaryNeighbours(uint vertIdx) const
     return neighs;
 }
 
-Uints
-SurfTopo::vertNeighbours(uint vertIdx) const
+Uints               SurfTopo::vertNeighbours(uint vertIdx) const
 {
     Uints            ret;
     Uints const &    edgeInds = m_verts[vertIdx].edgeInds;
@@ -254,8 +234,7 @@ SurfTopo::vertNeighbours(uint vertIdx) const
     return ret;
 }
 
-SurfTopo::BoundEdges
-SurfTopo::boundaryContainingEdgeP(uint boundEdgeIdx) const
+BoundEdges          SurfTopo::boundaryContainingEdgeP(uint boundEdgeIdx) const
 {
     BoundEdges      boundEdges;
     bool            moreEdges = false;
@@ -281,8 +260,7 @@ SurfTopo::boundaryContainingEdgeP(uint boundEdgeIdx) const
     return boundEdges;
 }
 
-SurfTopo::BoundEdges
-SurfTopo::boundaryContainingVert(uint vertIdx) const
+BoundEdges          SurfTopo::boundaryContainingVert(uint vertIdx) const
 {
     FGASSERT(vertIdx < m_verts.size());
     Vert const &                vert = m_verts[vertIdx];
@@ -291,13 +269,12 @@ SurfTopo::boundaryContainingVert(uint vertIdx) const
         if (edge.triInds.size() == 1)                           // boundary
             return boundaryContainingEdgeP(edgeIdx);
     }
-    return SurfTopo::BoundEdges{};
+    return BoundEdges{};
 }
 
-Svec<SurfTopo::BoundEdges>
-SurfTopo::boundaries() const
+BoundEdgess         SurfTopo::boundaries() const
 {
-    Svec<BoundEdges>    ret;
+    BoundEdgess         ret;
     auto                alreadyAdded = [&ret](uint edgeIdx)
     {
         for (BoundEdges const & bes : ret)
@@ -313,14 +290,14 @@ SurfTopo::boundaries() const
     return ret;
 }
 
-Bools
-SurfTopo::boundaryVertFlags() const
+Bools               SurfTopo::boundaryVertFlags() const
 {
-    Svec<BoundEdges>    bess = boundaries();
+    BoundEdgess         bess = boundaries();
     Bools               ret (m_verts.size(),false);
     for (BoundEdges const & bes : bess) {
         for (BoundEdge const & be : bes) {
             Edge const &        edge = m_edges[be.edgeIdx];
+            // for a manifold surface we only need to set one of these, but just in case:
             ret[edge.vertInds[0]] = true;
             ret[edge.vertInds[1]] = true;
         }
@@ -328,8 +305,7 @@ SurfTopo::boundaryVertFlags() const
     return ret;
 }
 
-set<uint>
-SurfTopo::traceFold(
+set<uint>           SurfTopo::traceFold(
     MeshNormals const & norms,
     vector<FatBool> &    done,
     uint                vertIdx)
@@ -356,7 +332,7 @@ SurfTopo::traceFold(
 
 uint                SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
 {
-    Vec3UI       tri = m_tris[triIdx].vertInds;
+    Arr3UI       tri = m_tris[triIdx].vertInds;
     Vec2UI       vertInds = m_edges[edgeIdx].vertInds;
     for (uint ii=0; ii<3; ++ii)
         if ((tri[ii] != vertInds[0]) && (tri[ii] != vertInds[1]))
@@ -365,9 +341,9 @@ uint                SurfTopo::oppositeVert(uint triIdx,uint edgeIdx) const
     return 0;
 }
 
-Vec3UI              SurfTopo::isManifold() const
+Arr3UI              SurfTopo::isManifold() const
 {
-    Vec3UI   ret(0);
+    Arr3UI   ret(0);
     for (size_t ee=0; ee<m_edges.size(); ++ee) {
         const Edge &    edge = m_edges[ee];
         if (edge.triInds.size() == 1)
@@ -378,9 +354,9 @@ Vec3UI              SurfTopo::isManifold() const
             // Check that winding directions of the two facets are opposite on this edge:
             Tri         tri0 = m_tris[edge.triInds[0]],
                         tri1 = m_tris[edge.triInds[1]];
-            uint        edgeIdx0 = findFirstIdx(tri0.edgeInds,uint(ee)),
+            size_t      edgeIdx0 = findFirstIdx(tri0.edgeInds,uint(ee)),
                         edgeIdx1 = findFirstIdx(tri1.edgeInds,uint(ee));
-            if (tri0.edge(edgeIdx0) == tri1.edge(edgeIdx1))
+            if (tri0.edge(scast<uint>(edgeIdx0)) == tri1.edge(scast<uint>(edgeIdx1)))
                 ++ret[2];
             // Worked on all 3DP meshes but doesn't work for some screwy input (eg. frameforge base):
             // FGASSERT(tri0.edge(edgeIdx0)[0] == tri1.edge(edgeIdx1)[1]);
@@ -422,7 +398,7 @@ void                SurfTopo::edgeDistanceMap(Vec3Fs const & verts,Floats & vert
                 Uints const &    edges = m_verts[vv].edgeInds;
                 for (size_t ee=0; ee<edges.size(); ++ee) {
                     uint                neighVertIdx = m_edges[edges[ee]].otherVertIdx(uint(vv));
-                    float               neighDist = vertDists[vv] + (verts[neighVertIdx]-verts[vv]).len();
+                    float               neighDist = vertDists[vv] + cLenD(verts[neighVertIdx]-verts[vv]);
                     if (neighDist < vertDists[neighVertIdx]) {
                         vertDists[neighVertIdx] = neighDist;
                         done = false;
@@ -477,7 +453,78 @@ set<uint>           cFillMarkedVertRegion(Mesh const & mesh,SurfTopo const & top
     return ret;
 }
 
-void                testmSurfTopo(CLArgs const & args)
+// TODO: lots of possible optimization:
+TriEdgess           cSharedEdges(Arr3UIs const & tris)
+{
+    TriEdgess           ret (tris.size());
+    uint                T = scast<uint>(tris.size());
+    auto                checkMatch = [&,T](uint tt,uint ee,Arr2UI edge)
+    {
+        for (uint uu=tt+1; uu<T; ++uu) {
+            Arr3UI              tri = tris[uu];
+            for (uint ff=0; ff<3; ++ff) {
+                if (edge == swapElems(getEdge(tri,ff))) {   // shared edge is opposite winding in manifold mesh
+                    ret[tt][ee] = {uu,ff};
+                    ret[uu][ff] = {tt,ee};
+                    return;         // only 1 match for manifold mesh
+                }
+            }
+        }
+    };
+    for (uint tt=0; tt<T; ++tt) {
+        Arr3UI              tri = tris[tt];
+        for (uint ee=0; ee<3; ++ee) {
+            if (!ret[tt][ee].valid()) {     // if this edge has not yet found a match:
+                Arr2UI              edge = getEdge(tri,ee);
+                checkMatch(tt,ee,edge);
+            }
+        }
+    }
+    return ret;
+}
+
+Arr3Bs              cBoundFlags(TriEdgess const & tess)
+{
+    auto                fn = [](TriEdges const & tes) -> Arr3B
+    {
+        return mapCall(tes,[](TriEdge te){return !te.valid(); });
+    };
+    return mapCall(tess,fn);
+}
+void                updateSharedEdges(Bools const & removedTris,TriEdgess & tess)
+{
+    size_t              T = tess.size();
+    FGASSERT(removedTris.size() == T);
+    for (size_t tt=0; tt<T; ++tt) {
+        if (removedTris[tt]) {
+            for (TriEdge & te : tess[tt]) {
+                if (te.valid() && !removedTris[te.triIdx]) {    // shared edge between a removed and non-removed tri
+                    tess[te.triIdx][te.edgeNum].invalidate();
+                    te.invalidate();
+                }
+            }
+        }
+    }
+}
+static void         testSharedEdges(CLArgs const & args)
+{
+    Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
+    Surf &              surf = mesh.surfaces[0];
+    TriEdgess           tess = cSharedEdges(surf.tris.vertInds);
+    surf.edgeFlags = cBoundFlags(tess);
+    if (!isAutomated(args))
+        viewMesh(mesh);
+    size_t              T = surf.tris.vertInds.size();
+    Bools               removeFlags (T,false);
+    for (size_t ii=0; ii<T/4; ++ii)
+        removeFlags[randUniformUint(T)] = true;
+    updateSharedEdges(removeFlags,tess);
+    surf.edgeFlags = cBoundFlags(tess);
+    if (!isAutomated(args))
+        viewMesh(mesh);
+}
+
+void                testTopoBnorm(CLArgs const & args)
 {
     // Test boundary vert normals by adding marked verts along normals and viewing:
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");
@@ -498,7 +545,7 @@ void                testmSurfTopo(CLArgs const & args)
         viewMesh(mesh);
 }
 
-void                testmEdgeDist(CLArgs const & args)
+void                testTopoEdist(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/Jane.tri");
     Surf                surf = merge(mesh.surfaces).convertToTris();
@@ -515,10 +562,10 @@ void                testmEdgeDist(CLArgs const & args)
         if (edgeDists[ii] < lims<float>::max())
             colVals[ii] = uint(distToCol * edgeDists[ii]);
     mesh.surfaces[0].setAlbedoMap(ImgRgba8(128,128,Rgba8(255)));
-    AffineEw2F          otcsToPacs = cOtcsToPacs(Vec2UI(128));
+    AxAffine2F          otcsToPacs = cOtcsToPacs<float>(Vec2UI(128));
     for (size_t tt=0; tt<surf.tris.size(); ++tt) {
-        Vec3UI              vertInds = surf.tris.vertInds[tt];
-        Vec3UI              uvInds = surf.tris.uvInds[tt];
+        Arr3UI              vertInds = surf.tris.vertInds[tt];
+        Arr3UI              uvInds = surf.tris.uvInds[tt];
         for (uint ii=0; ii<3; ++ii) {
             Rgba8           col(255);
             col.red() = colVals[vertInds[ii]];
@@ -530,40 +577,27 @@ void                testmEdgeDist(CLArgs const & args)
         viewMesh(mesh);
 }
 
-void                testmBoundVertFlags(CLArgs const & args)
+void                testTopoBvf(CLArgs const & args)
 {
     Mesh                mesh = loadTri(dataDir()+"base/JaneLoresFace.tri");     // 1 surface, all tris
-    TriInds const &        tris = mesh.surfaces[0].tris;
-    SurfTopo            topo {mesh.verts.size(),tris.vertInds};
+    size_t              V = mesh.verts.size();
+    SurfTopo            topo {V,mesh.surfaces[0].tris.vertInds};
     Bools               boundVertFlags = topo.boundaryVertFlags();
-    Vec2UI              sz {64};
-    ImgRgba8            map {sz,Rgba8{255}};
-    AffineEw2F          otcsToPacs = cOtcsToPacs(sz);
-    auto                paintFn = [&](uint uvIdx)
-    {
-        Vec2F           otcs = mesh.uvs[uvIdx];
-        Vec2UI          ircs = Vec2UI(otcsToPacs * otcs);
-        map.paint(ircs,{255,0,0,255});
-    };
-    for (size_t tt=0; tt<tris.size(); ++tt) {
-        Vec3UI          uv = tris.uvInds[tt],
-                        tri = tris.vertInds[tt];
-        for (uint vv=0; vv<3; ++vv)
-            if (boundVertFlags[tri[vv]])
-                paintFn(uv[vv]);
-    }
-    //viewImage(map);
-    mesh.surfaces[0].setAlbedoMap(map);
+    FGASSERT(boundVertFlags.size() == V);
+    for (size_t vv=0; vv<V; ++vv)
+        if (boundVertFlags[vv])
+            mesh.markedVerts.emplace_back(scast<uint>(vv));
     if (!isAutomated(args))
         viewMesh(mesh);
 }
 
-void                testSurfTopo(CLArgs const & args)
+void                testTopo(CLArgs const & args)
 {
     Cmds                cmds {
-        {testmSurfTopo,"bnorm","view boundary vertex normals"},
-        {testmEdgeDist,"edist","view edge distances"},
-        {testmBoundVertFlags,"bvf","view boundary vertex flags"},
+        {testTopoBnorm,"bnorm","view boundary vertex normals"},
+        {testSharedEdges,"edges","cSharedEges(), cBoundFlags(), updateSharedEdges()"},
+        {testTopoEdist,"edist","view edge distances"},
+        {testTopoBvf,"bvf","view boundary vertex flags"},
     };
     return doMenu(args,cmds,true);
 }

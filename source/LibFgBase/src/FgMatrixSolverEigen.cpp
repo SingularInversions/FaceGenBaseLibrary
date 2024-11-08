@@ -58,9 +58,55 @@ void                convertRsm_(MatD const & rsm,MatrixXd & ret)
     }
 }
 
+MatrixXd            toEigen(MatSD const & rsm)
+{
+    size_t              D = rsm.dim;
+    MatrixXd            ret (D,D);
+    double const *      ptr = &rsm.data[0];
+    for (size_t rr=0; rr<D; ++rr) {
+        double const *      ptrM = &rsm.data[0]+rr;
+        size_t              step = D-1;
+        for (size_t cc=0; cc<rr; ++cc) {
+            ret(rr,cc) = *ptrM;
+            ptrM += step;
+            --step;
+        }
+        for (size_t cc=rr; cc<D; ++cc)
+            ret(rr,cc) = *ptr++;
+    }
+    return ret;
 }
 
-Vec3D               solve(Mat33D A_,Vec3D b_)
+}
+
+// 2D case allows for simple explicit formula:
+Vec2D               solveLinear(Mat22D const & A,Vec2D const & b)
+{
+    double              det = A[0]*A[3] - A[1]*A[2];
+    FGASSERT(det != 0.0);
+    return {
+        (b[0]*A[3] - b[1]*A[1])/det,
+        (b[1]*A[0] - b[0]*A[2])/det
+    };
+}
+
+Vec3D               solveLinear(Mat33D const & M,Vec3D const & b)
+{
+    Eigen::Matrix3d         mat;
+    Eigen::Vector3d         vec;
+    for (uint rr=0; rr<3; ++rr)
+        for (uint cc=0; cc<3; ++cc)
+            mat(rr,cc) = M.rc(rr,cc);
+    for (uint rr=0; rr<3; ++rr)
+        vec(rr) = b[rr];
+    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
+    auto                    qr = mat.colPivHouseholderQr();
+    FGASSERT(qr.isInvertible());
+    Eigen::Vector3d         sol = qr.solve(vec);
+    return {sol(0),sol(1),sol(2)};
+}
+
+Vec3D               solveLinearRobust(Mat33D const & A_,Vec3D const & b_)
 {
     Matrix3d        A;
     Vector3d        b;
@@ -73,6 +119,22 @@ Vec3D               solve(Mat33D A_,Vec3D b_)
     ColPivHouseholderQR<Matrix3d>   alg(A);
     Vector3d        r = alg.solve(b);
     return Vec3D {r[0],r[1],r[2]};
+}
+
+Vec4D               solveLinear(Mat44D const & M,Vec4D const & b)
+{
+    Eigen::Matrix4d         mat;
+    Eigen::Vector4d         vec;
+    for (uint rr=0; rr<4; ++rr)
+        for (uint cc=0; cc<4; ++cc)
+            mat(rr,cc) = M.rc(rr,cc);
+    for (uint rr=0; rr<4; ++rr)
+        vec(rr) = b[rr];
+    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
+    auto                    qr = mat.colPivHouseholderQr();
+    FGASSERT(qr.isInvertible());
+    Eigen::Vector4d         sol = qr.solve(vec);
+    return {sol(0),sol(1),sol(2),sol(3)};
 }
 
 Doubles             cEigvalsRsm(MatD const & rsm)
@@ -88,36 +150,62 @@ Doubles             cEigvalsRsm(MatD const & rsm)
     return ret;
 }
 
-void                cEigsRsm_(MatD const & rsm,Doubles & vals,MatD & vecs)
+RsmEigs             cRsmEigs(MatSD const & rsm)
 {
-    size_t              dim = rsm.ncols;
-    if (dim == 0) {
-        vals.clear();
-        vecs.clear();
-    }
-    else if (dim == 1) {
-        vals = rsm.m_data;
-        vecs = {1,1,1.0};
-    }
-    else {
-        MatrixXd            mat(dim,dim);
-        convertRsm_(rsm,mat);
+    RsmEigs             ret;
+    size_t              D = rsm.dim;
+    if (D > 1) {
+        MatrixXd                mat = toEigen(rsm);
         // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
         // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
-        SelfAdjointEigenSolver<MatrixXd>    es(mat);
-        const MatrixXd &    eigVecs = es.eigenvectors();
-        const VectorXd &    eigVals = es.eigenvalues();
-        vals.resize(dim);
-        vecs.resize(dim,dim);
-        for (size_t rr=0; rr<dim; ++rr)
-            vals[rr] = eigVals(rr);
-        for (size_t rr=0; rr<dim; ++rr)
-            for (size_t cc=0; cc<dim; ++cc)
-                vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
+        SelfAdjointEigenSolver<MatrixXd> es(mat);
+        MatrixXd const &        eigVecs = es.eigenvectors();
+        VectorXd const &        eigVals = es.eigenvalues();
+        ret.vals.resize(D);
+        ret.vecs.resize(D,D);
+        for (size_t rr=0; rr<D; ++rr)
+            ret.vals[rr] = eigVals(rr);
+        for (size_t rr=0; rr<D; ++rr)
+            for (size_t cc=0; cc<D; ++cc)
+                ret.vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
     }
+    else if (D == 1)
+        ret = {{rsm.data[0]},{1,1,Doubles{1.0}}};           // 'Doubles' avoids clang warning
+    return ret;
 }
 
-EigsRsm3            cEigsRsm(MatS3D const & rsm)
+MatSD               cInverse(MatSD const & rsm,double minInvCond)
+{
+    RsmEigs             eigs = cRsmEigs(rsm);
+    VecD2               bounds = cBounds(eigs.vals);
+    FGASSERT(bounds[0]/bounds[1] > minInvCond);
+    return eigs.inverse().asMatS();
+}
+
+RsmEigs             cRsmEigs(MatD const & rsm)
+{
+    size_t              D = rsm.numCols();
+    if (D == 1)
+        return {{rsm.m_data[0]},{1,1,Doubles{1.0}}};        // 'Doubles' prevents clang warning
+    RsmEigs             ret;
+    MatrixXd            mat(D,D);
+    convertRsm_(rsm,mat);
+    // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
+    // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
+    SelfAdjointEigenSolver<MatrixXd>    es(mat);
+    const MatrixXd &    eigVecs = es.eigenvectors();
+    const VectorXd &    eigVals = es.eigenvalues();
+    ret.vals.resize(D);
+    ret.vecs.resize(D,D);
+    for (size_t rr=0; rr<D; ++rr)
+        ret.vals[rr] = eigVals(rr);
+    for (size_t rr=0; rr<D; ++rr)
+        for (size_t cc=0; cc<D; ++cc)
+            ret.vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
+    return ret;
+}
+
+EigsRsm3            cRsmEigs(MatS3D const & rsm)
 {
     for (double v : rsm.diag)
         FGASSERT(isfinite(v));
@@ -145,7 +233,7 @@ EigsRsm3            cEigsRsm(MatS3D const & rsm)
     return ret;
 }
 
-EigsRsm3            cEigsRsm(Mat33D const & rsm)
+EigsRsm3            cRsmEigs(Mat33D const & rsm)
 {
     MatS3D              mat {
         {rsm.rc(0,0),rsm.rc(1,1),rsm.rc(2,2),},
@@ -155,10 +243,10 @@ EigsRsm3            cEigsRsm(Mat33D const & rsm)
             (rsm.rc(1,2)+rsm.rc(2,1)) * 0.5,
         },
     };
-    return cEigsRsm(mat);
+    return cRsmEigs(mat);
 }
 
-EigsRsm4            cEigsRsm(Mat44D const & rsm)
+EigsRsm4            cRsmEigs(Mat44D const & rsm)
 {
     Matrix4d            mat;
     for (size_t rr=0; rr<4; ++rr) {
@@ -215,6 +303,27 @@ EigsC<3>            cEigs(Mat33D const & mat)
 EigsC<4>            cEigs(Mat44D const & mat)
 {
     return fgEigsT<4>(mat);
+}
+
+template<size_t D>
+void                testSolveLinearT()
+{
+    for (size_t ii=0; ii<256; ++ii) {
+        Mat<double,D,D>     M = Mat<double,D,D>::randNormal();
+        Mat<double,D,1>     b = Mat<double,D,1>::randNormal(),
+                            x = solveLinear(M,b);
+        if (abs(cDeterminant(M)) < epsBits(20))         // don't test with ill conditioned
+            continue;
+        FGASSERT(isApproxEqualPrec(M*x,b,30));
+    }
+}
+
+void                testSolveLinear(CLArgs const &)
+{
+    randSeedRepeatable();
+    testSolveLinearT<2>();
+    testSolveLinearT<3>();
+    testSolveLinearT<4>();
 }
 
 }

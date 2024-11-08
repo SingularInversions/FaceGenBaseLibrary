@@ -7,7 +7,7 @@
 #ifndef FGGEOMETRY_HPP
 #define FGGEOMETRY_HPP
 
-#include "FgAffine.hpp"
+#include "FgTransform.hpp"
 
 namespace Fg {
 
@@ -21,13 +21,13 @@ inline double       cArea(Arr<Vec2D,3> const & t) {return cArea(t[0],t[1],t[2]);
 inline Vec3D        cArea(Vec3D p0,Vec3D p1,Vec3D p2) {return crossProduct(p1-p0,p2-p0); }
 
 // hold a vector along with its magnitude
-template<typename T,uint D>
+template<class T,size_t D>
 struct      VecMag
 {
     Mat<T,D,1>      vec;
-    T               mag {lims<T>::max()};       // invalid value if not set
-    VecMag() {}
-    explicit VecMag(Mat<T,D,1> const & v) : vec{v}, mag{cMag(v)} {}
+    T               mag;
+    VecMag() : vec{lims<T>::max()}, mag{lims<T>::max()} {}              // set to invalid values
+    explicit VecMag(Mat<T,D,1> const & v) : vec{v}, mag{cMagD(v)} {}
     VecMag(Mat<T,D,1> const & v,T m) : vec{v}, mag{m} {}                // trust passed values
 
     bool            valid() const {return (mag != lims<T>::max()); }
@@ -35,33 +35,66 @@ struct      VecMag
 typedef VecMag<float,3>     Vec3FMag;
 typedef VecMag<double,3>    Vec3DMag;
 
-// closest point to origin on given line segment:
-template<typename T,uint D>
-Mat<T,D,1>          closestPointOnSegment(Mat<T,D,1> const & begin,Mat<T,D,1> const & end)
+// Returns the interpolation coefficient from P0 to P1 for the closest point on the line running through
+// P0 and P1 to the origin. The coefficient is in [0,1] when the closest point is between P0 and P1.
+// Returns 0 if P0==P1.
+template<class T,size_t D>
+T                   closestCoeffOnSegmentToOrigin(Arr<Mat<T,D,1>,2> const & seg)
 {
-    Mat<T,D,1>          segment = end - begin;
-    T                   lenSqr = cMag(segment);
+    Mat<T,D,1>          delta = seg[1]-seg[0];
+    T                   lenSqr = cMagD(delta);
     if (lenSqr == 0)
-        return begin;
+        return 0;
     // the solution below is obtained by defining alpha [0,1] along the segment and minimizing distance:
-    T                   alpha = -cDot(begin,segment) / lenSqr;
+    T                   alpha = -cDot(seg[0],delta) / lenSqr;
     if (alpha < 0) alpha = 0;
     if (alpha > 1) alpha = 1;
-    return begin + alpha*segment;
+    return alpha;
+}
+// closest point to origin on given line segment:
+template<class T,size_t D>
+Mat<T,D,1>          closestPointOnSegmentToOrigin(Arr<Mat<T,D,1>,2> const & seg)
+{
+    T                   alpha = closestCoeffOnSegmentToOrigin(seg);
+    return seg[0] * (1-alpha) + seg[1] * alpha;
+}
+template<class T,size_t D>
+inline VecMag<double,D> closestPointOnSegment(Mat<T,D,1> query,Arr<Mat<T,D,1>,2> seg)
+{
+    return VecMag<double,D>{closestPointOnSegmentToOrigin(mapSub(seg,query))};
 }
 // closest point to origin on contiguous series of line segments defined by points
 // (just returns point if segments.size()==1):
-template<typename T,uint D>
-VecMag<T,D>         closestPointOnSegments(Svec<Mat<T,D,1>> const & points)
+template<class T,size_t D,size_t S>
+VecMag<T,D>         closestPointOnSegmentsToOrigin(Arr<Mat<T,D,1>,S> const & segs)
 {
-    FGASSERT(!points.empty());
-    VecMag<T,D>         ret {points[0]};
-    for (size_t ii=1; ii<points.size(); ++ii) {
-        VecMag<T,D>         vm {closestPointOnSegment(points[ii-1],points[ii])};
+    VecMag<T,D>         ret {segs[0]};
+    for (size_t ii=1; ii<segs.size(); ++ii) {
+        VecMag<T,D>         vm {closestPointOnSegmentToOrigin<T,D>({segs[ii-1],segs[ii]})};
         if (vm.mag < ret.mag)
             ret = vm;
     }
     return ret;
+}
+// closest point to origin on contiguous series of line segments defined by segs
+// (just returns point if segments.size()==1):
+template<class T,size_t D>
+VecMag<T,D>         closestPointOnSegmentsToOrigin(Svec<Mat<T,D,1>> const & segs)
+{
+    FGASSERT(!segs.empty());
+    VecMag<T,D>         ret {segs[0]};
+    for (size_t ii=1; ii<segs.size(); ++ii) {
+        VecMag<T,D>         vm {closestPointOnSegmentToOrigin<T,D>({segs[ii-1],segs[ii]})};
+        if (vm.mag < ret.mag)
+            ret = vm;
+    }
+    return ret;
+}
+// returns the delta from the query point to the closest point:
+template<class T,size_t D,size_t S>
+inline VecMag<T,D>  closestPointOnSegments(Mat<T,D,1> query,Arr<Mat<T,D,1>,S> const & segs)
+{
+    return closestPointOnSegmentsToOrigin(mapSub(segs,query));
 }
 
 // oriented line to point comparison. For RHR coordinate system (eg. X increases right and Y increases up).
@@ -94,17 +127,24 @@ int                 pointInTriangle(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2);
 
 // Returns the barycentric coord of point relative to triangle.
 // If no valid value, triangle is degenerate.
-// Point is in triangle if all coordinates are positive:
-Opt<Vec3D>          cBarycentricCoord(Vec2D point,Vec2D v0,Vec2D v1,Vec2D v2);
+// Point is in triangle if all coordinates are non-negative:
+template<class T>
+Opt<Arr<T,3>>       cBarycentricCoord(Mat<T,2,1> point,Arr<Mat<T,2,1>,3> tri)
+{
+    Arr<Mat<T,2,1>,3>   u = mapSub(tri,point);      // tri relative to point
+    T                   c0 = u[1][0]*u[2][1] - u[2][0]*u[1][1],
+                        c1 = u[2][0]*u[0][1] - u[0][0]*u[2][1],
+                        c2 = u[0][0]*u[1][1] - u[1][0]*u[0][1],
+                        d = c0+c1+c2;
+    if (d == 0)         // degenerate triangle
+        return {};
+    return Arr<T,3>{c0/d,c1/d,c2/d};
+}
 
 // Returns the barycentric coord of a point relative to a triangle in 3D.
 // Only works for planar points.
 // Returns invalid if triangle degenerate.
-Opt<Vec3D>          cBarycentricCoord(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
-inline Opt<Vec3D>   cBarycentricCoord(Vec2F point,Vec2F v0,Vec2F v1,Vec2F v2)
-{
-    return cBarycentricCoord(Vec2D(point),Vec2D(v0),Vec2D(v1),Vec2D(v2));
-}
+Opt<Arr3D>          cBarycentricCoord(Vec3D point,Vec3D vert0,Vec3D vert1,Vec3D vert2);
 
 struct      Plane               // oriented plane
 {
@@ -114,7 +154,7 @@ struct      Plane               // oriented plane
     Plane() : norm{0}, offset{0} {}
     Plane(Vec3D const & n,double o) : norm{n}, offset{o} {}
 
-    inline bool         invalid() const {return (cMag(norm) == 0); }
+    inline bool         invalid() const {return (cMagD(norm) == 0); }
     // query point to plane signed distance:
     inline double       distance(Vec3D const & q) const {return cDot(norm,q) + offset; }
 };
@@ -122,6 +162,7 @@ typedef Svec<Plane>     Planes;
 
 // oriented plane from 3 points, CC winding norm. Plane invalid if points are colinear or coincident:
 Plane               cPlane(Vec3D p0,Vec3D p1,Vec3D p2);
+inline Plane        cPlane(Arr<Vec3D,3> const & pts) {return cPlane(pts[0],pts[1],pts[2]); }
 
 // tangent surface from query point-to-surface result, oriented in -ve 'delta' direction:
 // (there is no absolute orientation as the surface normal is just the delta and there is no explicit surface)
@@ -143,10 +184,13 @@ Opt<Vec3D>          lineTriIntersect(
     Vec3D        v1,         // "
     Vec3D        v2);        // "
 
+// flip a triangle around an edge. Returns the flipped location of the specified vertex around its opposing edge:
+Vec2D               flipTri(Arr<Vec2D,3> const & tri,size_t flipVertIdx);
+
 inline double       pointToPlaneDistSqr(Vec3D pnt,Vec4D planeH)
 {
     Vec3D    planeN(planeH[0],planeH[1],planeH[2]);
-    return (sqr(cDot(pnt,planeN) + planeH[3]) / planeN.mag());
+    return (sqr(cDot(pnt,planeN) + planeH[3]) / planeN.magD());
 }
 
 // Find axial-aligned mirror symmetry in mesh shape (not topology) to nearest mirror vertex.
@@ -154,6 +198,25 @@ inline double       pointToPlaneDistSqr(Vec3D pnt,Vec4D planeH)
 double              findSaggitalSymmetry(
     Vec3Fs const &      verts,
     Affine3F &          mirror);    // RETURNED: mirror transform
+
+struct      Quadratic               // 1D quadratic in vertex form
+{
+    double          precision;      // second order coefficient
+    double          vertex;         // aka centre
+    double          vertVal;        // value at vertex
+
+    inline double   operator()(double x) const {return 0.5 * precision * sqr(x-vertex) + vertVal; }
+};
+bool                isApproxEqual(Quadratic const &,Quadratic const &,double tol);
+
+struct      QuadraticPD             // 1D positive definite quadratic in vertex form
+{
+    double          rootPrec;       // positive square root of the second order coefficient
+    double          vertex;         // aka centre
+    double          vertVal;        // value at vertex
+
+    inline double   operator()(double x) const {return 0.5 * sqr((x-vertex)*rootPrec) + vertVal; }
+};
 
 struct      QuadPd2D                // positive definite 2D quadratic in vertex form (ie no linear terms)
 {
@@ -164,49 +227,65 @@ struct      QuadPd2D                // positive definite 2D quadratic in vertex 
     QuadPd2D(Vec2D c,MatUT2D q) : centre{c}, qfcut{q} {}
 
     // note that we do not have a 1/2 factor here, so that should be added as required:
-    inline double   operator()(Vec2D p) const {return cMag(qfcut*(p-centre)); }
+    inline double   operator()(Vec2D p) const {return cMagD(qfcut*(p-centre)); }
     inline bool     valid() const {return (qfcut.determinant() != 0.0); }
 };
 typedef Svec<QuadPd2D>   QuadPd2Ds;
 typedef Svec<QuadPd2Ds>  QuadPd2Dss;
 
-struct      Quad2D                  // quadratic in vertex form (ie. no linear terms)
+struct      QuadD               // quadratic in vertex form
 {
-    Vec2D           centre;
-    MatS2D          qform;          // quadratic form matrix
+    Doubles         centre;
+    MatSD           qform;
 
-    Quad2D(Vec2D const & c,MatS2D const & q) : centre{c}, qform{q} {}
+    QuadD(Doubles const & c,MatSD const & q) : centre{c}, qform{q} {FGASSERT(c.size()==q.dim); }
 
     // note that we do not have a 1/2 factor here, so that should be added as required:
-    double          operator()(Vec2D const & p) const
+    double          operator()(Doubles const & x) const
     {
-        Vec2D           d = p - centre;
-        return cDot(d,qform*d);
+        Doubles        p = x - centre;
+        return cDot(p,qform*p);
     }
 };
-typedef Svec<Quad2D>    Quad2Ds;
 
-struct      Quad3D                  // quadratic in vertex form (ie. no linear terms)
+inline double       applyQform(MatS3D const & qform,Vec3D const & pos) {return cDot(pos,qform*pos); }
+
+// 3D quadratic with zero-extrema (ie. the extrema value is always 0) in vertex form:
+struct      QuadraticZ3D
 {
-    Vec3D           centre;
-    MatS3D          qform;          // quadratic form matrix
+    MatS3D              qform;      // Quadratic form
+    Vec3D               centre;
 
-    Quad3D(Vec3D const & c,MatS3D const & q) : centre{c}, qform{q} {}
+    QuadraticZ3D(MatS3D const & q,Vec3D const & c) : qform{q}, centre{c} {}
 
-    // note that we do not have a 1/2 factor here, so that should be added as required:
-    double          operator()(Vec3D const & p) const
-    {
-        Vec3D           d = p - centre;
-        return cDot(d,qform*d);
-    }
+    inline double       operator()(Vec3D x) const {return 0.5 * applyQform(qform,x-centre); }
 };
-typedef Svec<Quad3D>    Quad3Ds;
+typedef Svec<QuadraticZ3D>  QuadraticZ3Ds;
 
-// map evaluation of quadratics at positions:
-inline Doubles      mapQuad(Quad3Ds const & quads,Vec3Ds const & poss)
+// return the quadratic that gives identical results when its inputs have been linearly transformed (transform must be PD):
+QuadraticZ3D        operator*(Mat33D const &,QuadraticZ3D const &);
+// return the quadratic that gives identical results when its inputs have been rigidly transformed:
+QuadraticZ3D        operator*(Rigid3D const &,QuadraticZ3D const &);
+// efficiently apply the above to an array of QuadraticZ3Ds:
+QuadraticZ3Ds       mapTransform(Rigid3D const &,QuadraticZ3Ds const &);
+// calculate the univariate quadratic parameterized by the given ray from the origin through the given quadratic:
+Quadratic           isectRayQuadratic(QuadraticZ3D const & Q,Vec3D ray);
+
+// 3D quadratic in vertex form general case
+struct      Quadratic3D
 {
-    return mapCallT<double>(quads,poss,[](Quad3D const & q,Vec3D const & p){return q(p); });
-}
+    MatS3D              qform;          // Quadratic form
+    Vec3D               centre;
+    double              centreVal;      // Value at vertex
+
+    Quadratic3D(MatS3D const & q,Vec3D const & c) : qform{q}, centre{c}, centreVal{0} {}
+    Quadratic3D(MatS3D const & q,Vec3D const & c,double m) : qform{q}, centre{c}, centreVal{m} {}
+
+    inline double       operator()(Vec3D x) const {return 0.5 * applyQform(qform,x-centre) + centreVal; }
+};
+typedef Svec<Quadratic3D>   Quadratic3Ds;
+// sum of two quadratic functions as a quadratic function:
+Quadratic3D         operator+(Quadratic3D const & l,Quadratic3D const & r);
 
 }
 

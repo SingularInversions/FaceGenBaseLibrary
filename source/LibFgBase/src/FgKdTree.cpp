@@ -11,7 +11,7 @@
 #include "FgKdTree.hpp"
 #include "FgMath.hpp"
 #include "FgCommand.hpp"
-#include "FgIter.hpp"
+#include "FgBounds.hpp"
 
 using namespace std;
 
@@ -54,7 +54,7 @@ uint                createNode(Svec<KdTree::Node> & tree,Vec3Fs const & v,uint d
 KdVal               findClst(Svec<KdTree::Node> const & tree,Vec3F query,KdVal best,uint idx,uint dim)
 {
     KdTree::Node const &    node = tree[idx];
-    float                   distMag = cMag(query-node.vert);
+    float                   distMag = cMagD(query-node.vert);
     if (distMag < best.distMag) {
         best.distMag = distMag;
         best.closest = node.vert;
@@ -76,7 +76,7 @@ double              testClosest(Svec<KdTree::Node> const & tree,Vec3F query)
 {
     float           ret = lims<float>::max();
     for (KdTree::Node const & node : tree) {
-        float           mag = cMag(query - node.vert);
+        float           mag = cMagD(query - node.vert);
         if (mag < ret)
             ret = mag;
     }
@@ -109,7 +109,7 @@ void                testKdTree(CLArgs const &)
     KdTree          kd {targs};
     // Test random query points:
     for (size_t ii=0; ii<512; ++ii) {
-        Vec3F       p = randVecNormal<float,3>();
+        Vec3F       p = Vec3F::randNormal();
         FGASSERT(kd.findClosest(p).distMag == testClosest(kd.m_tree,p));
     }
     // Test exact matches:

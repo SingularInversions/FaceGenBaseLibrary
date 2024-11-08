@@ -21,38 +21,40 @@ namespace Fg {
 
 namespace {
 
-void                testmResize(CLArgs const &)
+void                testResize(CLArgs const & args)
 {
-    string          fname("base/test/testorig.jpg");
-    ImgRgba8         img = loadImage(dataDir()+fname);
-    ImgRgba8         out(img.width()/2+1,img.height()+1);
+    ImgRgba8            img = loadImage(dataDir()+"base/test/testorig.jpg");
+    ImgRgba8            out(img.width()/2+1,img.height()+1);
     imgResize_(img,out);
-    viewImage(out);
+    if (!isAutomated(args))
+        viewImage(out);
 }
 
-void                testResamp(CLArgs const &)
+void                testResamp(CLArgs const & args)
 {
     Img3F                   in = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
     Vec2D                   lo {94.3,37.8};
     for (uint lnSz = 5; lnSz < 10; ++lnSz) {
         uint                    sz = 2 << lnSz;
         Img3F                   out = filterResample(in,lo,309.7f,sz);
-        viewImage(toRgba8(out));
+        if (!isAutomated(args))
+            viewImage(toRgba8(out));
     }
 }
 
-void                testResampRgba8(CLArgs const &)
+void                testResampRgba8(CLArgs const & args)
 {
     ImgRgba8                in = loadImage(dataDir()+"base/Mandrill512.png");
     Vec2F                   lo {94.3,37.8};
     for (uint lnSz=5; lnSz<10; ++lnSz) {
         uint                    sz = 2 << lnSz;
         ImgRgba8                out = filterResample(in,lo,309.7f,sz);
-        viewImage(out);
+        if (!isAutomated(args))
+            viewImage(out);
     }
 }
 
-void                testmSfs(CLArgs const &)
+void                testSmoothFloat(CLArgs const & args)
 {
     Img3F               img = toUnit3F(loadImage(dataDir()+"base/Mandrill512.png"));
     {
@@ -60,55 +62,56 @@ void                testmSfs(CLArgs const &)
         for (uint ii=0; ii<64; ++ii)
             smoothFloat_(img,img,1);
     }
-    viewImage(toRgba8(img));
+    if (!isAutomated(args))
+        viewImage(toRgba8(img));
 }
 
 void                testLerp(CLArgs const &)
 {
     {
-        Lerp                l {0,2};
+        ImgLerp                l {0,2};
         Arr2F               w {1,0};
         FGASSERT(l.lo == 0);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {0.25,2};
+        ImgLerp                l {0.25,2};
         Arr2F               w {0.75,0.25};
         FGASSERT(l.lo == 0);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {-0.25,2};
+        ImgLerp                l {-0.25,2};
         Arr2F               w {0,0.75};
         FGASSERT(l.lo == -1);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {0.5,2};
+        ImgLerp                l {0.5,2};
         Arr2F               w {0.5,0.5};
         FGASSERT(l.lo == 0);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {-0.5,2};
+        ImgLerp                l {-0.5,2};
         Arr2F               w {0,0.5};
         FGASSERT(l.lo == -1);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {1,2};
+        ImgLerp                l {1,2};
         Arr2F               w {1,0};
         FGASSERT(l.lo == 1);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {-1,2};
+        ImgLerp                l {-1,2};
         Arr2F               w {0,0};
         FGASSERT(l.lo == -1);
         FGASSERT(l.wgts == w);
     }
     {
-        Lerp                l {1.5,2};
+        ImgLerp                l {1.5,2};
         Arr2F               w {0.5,0};
         FGASSERT(l.lo == 1);
         FGASSERT(l.wgts == w);
@@ -124,7 +127,7 @@ void                testBlerp(CLArgs const &)
     auto            fn = [&two](Vec2F ircs,float resultZero,float /*resultClamp*/)
     {
         {
-            Blerp           blerp {ircs,two.dims()};
+            ImgBlerp           blerp {ircs,two.dims()};
             float           val = blerp.sampleZero(two);
             FGASSERT(val == resultZero);
         }
@@ -349,13 +352,13 @@ void                testSmooth(CLArgs const &)
 
 void                testTransform(CLArgs const &)
 {
-    AffineEw2F          identity;
+    AxAffine2F          identity;
     Vec2UIs             dimss {{16,32},{19,47}};
     float               maxDiff = scast<float>(epsBits(20));
     for (Vec2UI dims : dimss) {
-        AffineEw2F          xf0 = cIucsToIrcsXf(dims),
+        AxAffine2F          xf0 = cIucsToIrcs<float>(dims),
                             xf0i = xf0.inverse(),
-                            xf1 = cIrcsToIucs(dims),
+                            xf1 = cIrcsToIucs<float>(dims),
                             xf1i = xf1.inverse();
         FGASSERT(isApproxEqual(xf0*xf0i,identity,maxDiff));
         FGASSERT(isApproxEqual(xf0*xf1,identity,maxDiff));
@@ -363,17 +366,6 @@ void                testTransform(CLArgs const &)
     }
 }
 
-}
-
-void                testmImage(CLArgs const & args)
-{
-    Cmds                cmds {
-        {testResamp,"resamp","filter resample RGBF"},
-        {testResampRgba8,"resamp2","filter resample RGBA8"},
-        {testmResize,"resize","change image pixel size by resampling"},
-        {testmSfs,"sfs","smoothFloat speed"},
-    };
-    doMenu(args,cmds);
 }
 
 void                testDecodeJfif(CLArgs const &);
@@ -388,6 +380,10 @@ void                testImage(CLArgs const & args)
         {testDecodeJpeg,"jpg"},
         {testLerp,"lerp"},
         {testResample,"resamp","resample scale/trans"},
+        {testResamp,"resampf","filter resample RGBF"},
+        {testResampRgba8,"resamp2","filter resample RGBA8"},
+        {testResize,"resize","change image pixel size by resampling"},
+        {testSmoothFloat,"sfs","smoothFloat speed"},
         {testShrink,"shrink"},
         {testSmooth,"smooth"},
         {testTransform,"xf"},

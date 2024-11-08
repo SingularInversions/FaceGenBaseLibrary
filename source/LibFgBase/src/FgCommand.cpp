@@ -11,11 +11,11 @@
 #include "FgCommand.hpp"
 #include "FgFileSystem.hpp"
 #include "FgTime.hpp"
-
 #include "FgBuild.hpp"
 #include "FgTestUtils.hpp"
 #include "FgParse.hpp"
 #include "FgConio.hpp"
+#include "FgScopeGuard.hpp"
 
 using namespace std;
 
@@ -78,13 +78,18 @@ void                doMenu(
             }
         }
         else {                                  // top level run all needs to output text and indent:
-            PushIndent          pi0 {"Running all tests","All tests passed"};
+            // if an exception is thrown, print this:
+            String              msg = "TEST FAILURE";
+            ScopeGuard          sg {[&](){fgout << fgnl << msg; }};
+            PushIndent          pind0 {"Running all tests"};
             runningAll = true;
             for (Cmd const & cmd : cmds) {
-                    PushIndent          pind {cmd.name};
+                    PushIndent          pind1 {cmd.name};
                     cmd.func({cmd.name,argl});
             }
             runningAll = false;
+            // if we made it here, no exception was thrown so update the output message:
+            msg = "All tests passed";
         }
     }
     else {
@@ -139,10 +144,6 @@ void                Syntax::error(String const & errMsg,String8 const & data)
     fgout.setDefOut(true);
     fgout << "\nERROR: " << errMsg << ": " << data << '\n';
     throwSyntax();
-}
-void                Syntax::incorrectNumArgs()
-{
-    error("Incorrect number of arguments");
 }
 void                Syntax::checkExtension(String8 const & fname,String const & ext)
 {
@@ -272,11 +273,6 @@ void                Syntax::throwSyntax()
     m_idx = m_args.size()-1;    // Don't print warning for unused args in this case
     fgout << fgnl << formatLines(m_syntax);
     throw FgExceptionCommandSyntax();
-}
-void                Syntax::numArgsMustBe(uint num)
-{
-    if (num+1 != m_args.size())
-        incorrectNumArgs();
 }
 uint                Syntax::nextSelectionIndex(Strings const & validValues,String const & argDescription)
 {

@@ -218,7 +218,7 @@ void                setTestDir(String8 const & path)
     s_testDir = Path{path}.dir();
 }
 
-bool                fileNewer(String8s const & sources,String8s const & sinks)
+bool                filesNewer(String8s const & sources,String8s const & sinks)
 {
     FGASSERT(!sources.empty() && !sinks.empty());
     time_t      srcTime = getLastWriteTime(sources[0]);
@@ -334,7 +334,7 @@ void                mirrorFile(Path const & src,Path const & dst)
         else
             createDirectory(dir);
     }
-    if (fileNewer(src.str(),dst.str()))
+    if (fileNewer({src.str()},dst.str()))
         copyFile(src.str(),dst.str(),true);
 }
 
@@ -439,7 +439,7 @@ void                testRaw(CLArgs const & args)
     FGTESTDIR
     Bytes               data;
     for (size_t ii=0; ii<2000; ++ii)
-        data.push_back(scast<byte>(randUint(256)));
+        data.push_back(scast<byte>(randUniformUint(256U)));
     String8             fname {"raw"};
     saveRaw(data,fname,false);
     Bytes               dataCopy = loadRaw(fname);

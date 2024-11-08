@@ -58,14 +58,17 @@ MeshFormatsInfo const & getMeshFormatsInfo()
     return ret;
 }
 
-MeshFormat          getMeshFormat(String const & ext)
+MeshFormat          getMeshFormat(String8 const & file)
 {
-    String              extl = toLower(ext);
+    Path                path {file};
+    if (path.ext.empty())
+        fgThrow("A 3D mesh format file extension is required for",path.dirBase());
+    String             extl = toLower(path.ext).as_ascii();
     for (MeshFormatInfo const & mfi : getMeshFormatsInfo()) {
         if (contains(mfi.exts,extl))
             return mfi.format;
     }
-    fgThrow("No 3D mesh file format known for extension",extl);
+    fgThrow("Unsupported 3D mesh file format extension for",path.baseExt());
     return MeshFormat::tri;
 }
 bool                meshFormatSupportsMulti(MeshFormat mf)
@@ -174,7 +177,7 @@ Mesh                loadMeshAnyFormat(String8 const & fname)
 
 Mesh                loadMeshMaps(String8 const & dirBase)
 {
-    Mesh            ret = loadMesh(dirBase);
+    Mesh            ret = loadMeshAnyFormat(dirBase);
     if (!ret.surfaces.empty()) {
         {
             Strings         exts = findExts(dirBase,getImgExts());
@@ -193,7 +196,7 @@ Mesh                loadMeshMaps(String8 const & dirBase)
 
 void                saveMesh(Mesh const & mesh,String8 const & fname,String const & imgFmt)
 {
-    MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
+    MeshFormat          fmt = getMeshFormat(fname);
     if (fmt == MeshFormat::tri)
         saveTri(fname,mesh);
     else if (fmt == MeshFormat::fgmesh)
@@ -225,7 +228,7 @@ void                saveMesh(Mesh const & mesh,String8 const & fname,String cons
 }
 void                saveMergeMesh(Meshes const & meshes,String8 const & fname,String const & imgFmt)
 {
-    MeshFormat          fmt = getMeshFormat(pathToExt(fname).m_str);
+    MeshFormat          fmt = getMeshFormat(fname);
     if (fmt == MeshFormat::tri)
         saveTri(fname,mergeMeshes(meshes));
     else if (fmt == MeshFormat::fgmesh)
@@ -427,10 +430,20 @@ void testSaveLwo(CLArgs const &);
 void testSaveMa(CLArgs const &);
 void testSaveFbx(CLArgs const &);
 void testSaveDae(CLArgs const &);
+void testLoadObj(CLArgs const &);
 void testSaveObj(CLArgs const &);
 void testSavePly(CLArgs const &);
 void testSaveXsi(CLArgs const &);
 void testSaveVrml(CLArgs const &);
+
+void                testObj(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testLoadObj,   "load",},
+        {testSaveObj,   "save",},
+    };
+    doMenu(args,cmds,true,false);
+}
 
 void                test3dMeshIo(CLArgs const & args)
 {
@@ -440,7 +453,7 @@ void                test3dMeshIo(CLArgs const & args)
         {testSaveMa,    "ma",   "Maya ASCII file format export"},
         {testSaveFbx,   "fbx",  ".FBX file format export"},
         {testFgmesh,    "fgm",  "FaceGen .fgmesh format"},
-        {testSaveObj,   "obj",  "Wavefront OBJ ASCII file format export"},
+        {testObj,       "obj",  "Wavefront OBJ ASCII file format import / export"},
         {testSavePly,   "ply",  ".PLY file format export"},
         {testSaveVrml,  "vrml", ".WRL file format export"},
         {testSaveDae,   "dae",  "Collada DAE format export"},

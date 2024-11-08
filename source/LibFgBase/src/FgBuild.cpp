@@ -50,7 +50,7 @@ BuildOS             strToBuildOS(string const & str)
 
 BuildOSs            getAllBuildOss()
 {
-    return sliceMember(fgBuildOSStrs(),&pair<BuildOS,string>::first);
+    return mapMember(fgBuildOSStrs(),&pair<BuildOS,string>::first);
 }
 
 BuildOSs            getNativeBuildOSs()
@@ -173,7 +173,7 @@ std::ostream &      operator<<(std::ostream & os,Compiler comp)
 
 Compilers           getAllCompilers()
 {
-    return sliceMember(compilerStrs(),&pair<Compiler,string>::first);
+    return mapMember(compilerStrs(),&pair<Compiler,string>::first);
 }
 
 Compiler strToCompiler(string const & str)
@@ -210,10 +210,13 @@ Compiler            getCurrentCompiler()
         visual_studio_2017_and_earlier_not_supprted;
     #elif(_MSC_VER < 1930)
         return Compiler::vs19;
-    #elif(_MSC_VER < 1940)
+    #elif(_MSC_VER <= 1950)
         return Compiler::vs22;
-    #else
-        visual_studio_version_not_yet_supported;
+    // VS22 is up to 1940 (V17.10) as of 2024.08.05 but keeps releasing updates 
+    #else {
+        return Compiler::vs22;
+#pragma message ("unknown Visual Studio version, assuming part of 2022")
+    }
     #endif
 #elif defined __INTEL_COMPILER
     return Compiler::icpc;

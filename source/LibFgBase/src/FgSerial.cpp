@@ -45,26 +45,16 @@ void                testHash(CLArgs const &)
 
 String              reflectToTxt(std::any const & node,String const & indent)
 {
-    size_t constexpr            maxLen = 110ULL;
+    size_t constexpr    maxLen = 512ULL;
     FGASSERT(node.has_value());
-    if (node.type() == typeid(bool))
-        return any_cast<bool>(node) ? "true" : "false";
-    if (node.type() == typeid(int))
-        return toStr(any_cast<int>(node));
-    if (node.type() == typeid(uint))
-        return toStr(any_cast<uint>(node));
-    if (node.type() == typeid(uint64))
-        return toStr(any_cast<uint64>(node));
-    if (node.type() == typeid(float))
-        return toStr(any_cast<float>(node));
-    if (node.type() == typeid(double))
-        return toStr(any_cast<double>(node));
     if (node.type() == typeid(String)) {
-        // strings must be delimited in order to preserve empty string or include spaces.
-        // TODO: add support for including quotes in a string.
-        return "\"" + any_cast<String>(node) + "\"";
+        String              str = any_cast<String>(node);
+        if (contains(str,' '))  // use quotes because there are spaces. TODO: add support for including quotes in a string.
+            return "\"" + str + "\"";
+        else
+            return str;
     }
-    if (node.type() == typeid(RflArray)) {
+    else if (node.type() == typeid(RflArray)) {
         RflArray            arr = any_cast<RflArray>(node);
         Strings             strs;
         for (any const & elem : arr.elems)
@@ -77,7 +67,7 @@ String              reflectToTxt(std::any const & node,String const & indent)
         else
             return "[ " + cat(strs,indent) + indent + "]";
     }
-    if (node.type() == typeid(RflStruct)) {
+    else if (node.type() == typeid(RflStruct)) {
         RflStruct           arr = any_cast<RflStruct>(node);
         String              indent2 = indent+"  ";
         String              ret = indent + "{ ";
@@ -90,7 +80,9 @@ String              reflectToTxt(std::any const & node,String const & indent)
         }
         return ret + indent + "}";
     }
-    return String{"ERROR: Unhandled node type "} + node.type().name();
+    else
+        fgThrow("reflectToTxt unexpected type",node.type().name());
+    return {};
 }
 
 String              reflectToText(std::any const & node)
@@ -109,11 +101,12 @@ std::any            stringsToReflect(Strings const & tokens,size_t & cnt)
         ++cnt;
         return arr;
     }
-    if (tok == "{") {
+    else if (tok == "{") {
         RflStruct           strct;
         while (tokens[cnt] != "}") {
+            ++cnt;          // must increment here since evaluation order below not specified:
             RflMember           memb {
-                any_cast<String>(tokens[cnt++]),
+                any_cast<String>(tokens[cnt-1]),
                 stringsToReflect(tokens,cnt)
             };
             strct.members.push_back(memb);
@@ -121,15 +114,9 @@ std::any            stringsToReflect(Strings const & tokens,size_t & cnt)
         ++cnt;
         return strct;
     }
-    if (tok == "true")
-        return true;
-    if (tok == "false")
-        return false;
-    Opt<double>             od = fromStr<double>(tok);
-    if (od.has_value())
-        return od.value();
-    // must be a string. Note that 'spliteWhitespace' has removed the quotes around the string:
-    return tok;
+    else {              // must be builtin, keep as string:
+        return tok;
+    }
 }
 
 std::any            textToReflect(String const & txt)
@@ -252,8 +239,8 @@ void                testSerialBin(CLArgs const &)
     testSerialBinT<unsigned long>(42);
     testSerialBinT<long long>(-42);
     testSerialBinT<unsigned long long>(42);
-    testSerialBinT<float>(pi());
-    testSerialBinT<double>(pi());
+    testSerialBinT<float>(pi);
+    testSerialBinT<double>(pi);
     testSerialBinT<String>("forty two");
     testSerialBinT<Arr<String,2>>({"forty two","purple haze"});
     testSerialBinT<Strings>({"forty two","purple haze"});
@@ -270,20 +257,27 @@ void                testTypenames(CLArgs const &)
 
 void                testReflect(CLArgs const &)
 {
-#if !defined(_MSC_VER) || (_MSC_VER >= 1930)    // VS2019 dies with compiler errror here
+    struct      B
+    {
+        bool            hired;
+        Uint64s         codes;
+        FG_SER2(hired,codes)
+        FG_EQ_M2(B,hired,codes)
+    };
     struct      A
     {
         String          name;
         size_t          age;
         float           weight;
         Arr3UI          dims;
-        FG_SER4(name,age,weight,dims)
-
-        bool            operator==(A const & r) const {return (name==r.name) && (age==r.age) && (dims==r.dims); }
+        B               status;
+        FG_SER5(name,age,weight,dims,status)
+        FG_EQ_M5(A,name,age,weight,dims,status)
     };
     Svec<A>             data {
-        {"John",42,12.7,{6,2,1}},
-        {"Mary",27,23.4,{5,1,2}},
+        {"John",42,212.7,{6,2,1},{true,{}}},
+        {"Mary",27,123.4,{5,1,2},{false,{23947324,20345534}}},
+        {"11",12,110,{4,1,1},{true,{1130046}}},
     };
     any                 node = toReflect(data);
     String              text = reflectToText(node);
@@ -295,7 +289,6 @@ void                testReflect(CLArgs const &)
     fromReflect_(textToReflect(text),test1);
     fgout << fgnl << splitLines(reflectToText(toReflect(test1)));
     FGASSERT(test1 == data);
-#endif
 }
 
 }
@@ -303,8 +296,8 @@ void                testReflect(CLArgs const &)
 void                testSerial(CLArgs const & args)
 {
     Cmds            cmds {
-        {testReflect,"ref","object reflection to std::any name-value tree"},
-        {testSerialBin,"ser","binary serialization / deserialization"},
+        {testReflect,"reflect","object reflection to std::any name-value tree"},
+        {testSerialBin,"binary","binary serialization / deserialization"},
         {testTypenames,"type","type name as string"},
     };
     doMenu(args,cmds,true);

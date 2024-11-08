@@ -75,12 +75,12 @@ struct  FffMultiObjectC
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].ptList[0]);
                         }
-        Vec3UI const *triArray(int objId) const
+        Arr3UI const *triArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].triList[0]);
                         }
-        const Vec4UI *quadArray(int objId) const
+        const Arr4UI *quadArray(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return &(m_objs[objId].quadList[0]);
@@ -95,22 +95,22 @@ struct  FffMultiObjectC
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].ptList;
                         }
-        const Svec<Vec3UI> &getTriList(int objId) const
+        const Svec<Arr3UI> &getTriList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].triList;
                         }
-        Svec<Vec3UI> &getTriList(int objId)
+        Svec<Arr3UI> &getTriList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].triList;
                         }
-        const Svec<Vec4UI> &getQuadList(int objId) const
+        const Svec<Arr4UI> &getQuadList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].quadList;
                         }
-        Svec<Vec4UI> &getQuadList(int objId)
+        Svec<Arr4UI> &getQuadList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].quadList;
@@ -125,22 +125,22 @@ struct  FffMultiObjectC
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].textCoord;
                         }
-        const Svec<Vec3UI> &getTexTriList(int objId) const
+        const Svec<Arr3UI> &getTexTriList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texTriList;
                         }
-        Svec<Vec3UI> &getTexTriList(int objId)
+        Svec<Arr3UI> &getTexTriList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texTriList;
                         }
-        const Svec<Vec4UI> &getTexQuadList(int objId) const
+        const Svec<Arr4UI> &getTexQuadList(int objId) const
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texQuadList;
                         }
-        Svec<Vec4UI> &getTexQuadList(int objId)
+        Svec<Arr4UI> &getTexQuadList(int objId)
                         { 
                             FGASSERT(size_t(objId) < m_objs.size());
                             return m_objs[objId].texQuadList;
@@ -187,11 +187,11 @@ struct  FffMultiObjectC
         struct objData
         {
             Svec<Vec3F> ptList;
-            Svec<Vec3UI> triList;
-            Svec<Vec4UI> quadList;
+            Svec<Arr3UI> triList;
+            Svec<Arr4UI> quadList;
             Svec<Vec2F> textCoord;
-            Svec<Vec3UI> texTriList;
-            Svec<Vec4UI> texQuadList;
+            Svec<Arr3UI> texTriList;
+            Svec<Arr4UI> texQuadList;
             std::string             textureFile;
             std::string             modelName;
         };

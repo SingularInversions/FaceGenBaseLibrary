@@ -11,7 +11,7 @@
 #include "FgImage.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgMath.hpp"
-#include "FgAffine.hpp"
+#include "FgTransform.hpp"
 #include "FgMain.hpp"
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
@@ -20,40 +20,25 @@ using namespace std;
 
 namespace Fg {
 
-namespace {
+// 'random_device' uses time and other system information to create a seed:
+static mt19937_64   rng {random_device{}()};
 
-struct      RNG
+uint64              randUniformUint(uint64 eub)
 {
-    random_device       rd;
-    mt19937_64          gen;
-
-    // This will initialize using unique bits from the device, including time:
-    RNG() : gen(rd()) {}
-};
-
-static RNG rng;
-
-}
-
-uint32              randUint() {return uint32(rng.gen()); }
-
-uint                randUint(uint size)
-{
-    FGASSERT(size>0);
-    if (size == 1)
+    FGASSERT(eub > 0);
+    if (eub == 1)
         return 0;
     // Lightweight class, not a performance issue to construct each time:
-    uniform_int_distribution<uint> d(0,size-1);     // Convert from inclusive to exclusive upper bound
-    return d(rng.gen);
+    uniform_int_distribution<uint64> d(0,eub-1);     // Convert from inclusive to exclusive upper bound
+    return d(rng);
 }
-
-uint64              randUint64() {return rng.gen(); }
+uint64              randUint64() {return rng(); }
 
 double              randUniform() {return double(randUint64()) / double(numeric_limits<uint64>::max()); }
 
-void                randSeedRepeatable(uint64 seed) {rng.gen.seed(seed); }
+void                randSeedRepeatable(uint64 seed) {rng.seed(seed); }
 
-void                randSeedTime() {rng.gen.seed(getTimeMs()); }
+void                randSeedTime() {rng.seed(getTimeMs()); }
 
 double              randUniform(double lo,double hi) {return (randUniform() * (hi-lo) + lo); }
 
@@ -82,7 +67,7 @@ Doubles             cRandNormals(size_t num,double mean,double stdev)
 
 static char         randChar()
 {
-    uint    val = randUint(26+26+10);
+    uint    val = randUniformUint(26U+26U+10U);
     if (val < 10)
         return char(48+val);
     val -= 10;
@@ -101,7 +86,7 @@ string              randString(uint numChars)
     return ret;
 }
 
-bool                randBool() {return (rng.gen() & 0x01ULL); }
+bool                randBool() {return (rng() & 0x01ULL); }
 
 double              randNearUnit()
 {
@@ -114,11 +99,24 @@ Doubles             randNearUnits(size_t num)
     return genSvec<double>(num,[](size_t){return randNearUnit(); });
 }
 
+Sizes               cRandPermutation(size_t S)
+{
+    // simplest algorithm since faster ones are complicated:
+    Sizes               ret; ret.reserve(S);
+    Sizes               orig = genIntegers<size_t>(S);
+    while (!orig.empty()) {
+        size_t              idx = randUniformUint(orig.size());
+        ret.push_back(orig[idx]);
+        orig.erase(orig.begin()+idx);
+    }
+    return ret;
+}
+
 namespace {
 
-void                normGraph(CLArgs const &)
+void                normGraph(CLArgs const & args)
 {
-    fgout << fgnl << "sizeof(RNG) = " << sizeof(RNG);
+    fgout << fgnl << "sizeof(RNG) = " << sizeof(rng);
     // Create a histogram of normal samples:
     randSeedRepeatable();
     size_t              numStdevs = 6,
@@ -134,7 +132,7 @@ void                normGraph(CLArgs const &)
     }
     // Make a bar graph of it:
     // S = binScale * stdNormIntegral * binsPerStdev
-    double              binScale = double(S) / (sqrt2Pi() * binsPerStdev),
+    double              binScale = double(S) / (sqrtTau * binsPerStdev),
                         hgtRatio = 0.9;
     ImgRgba8             img {sz,sz,Rgba8{0}};
     for (size_t xx=0; xx<sz; ++xx) {
@@ -151,31 +149,32 @@ void                normGraph(CLArgs const &)
     }
     // Display:
     flipVertical_(img);
-    viewImage(img);
+    if (!isAutomated(args))
+        viewImage(img);
 }
 
 void                normMoments(CLArgs const &)
 {
     for (size_t vv=0; vv<3; ++vv) {
         double                  stdev = pow(2.0,vv);
-        PushIndent              pi {"Stdev "+toStr(stdev)};
+        PushIndent              pind {"Stdev "+toStr(stdev)};
         size_t                  S = 1024;
         Doubles                 vals = cRandNormals(S,0.0,stdev);
         double                  sampleMean = cMean(vals),
-                                sampleStdev = sqrt(cMag(mapSub(vals,sampleMean)) / (S-2));
+                                sampleStdev = sqrt(cMagD(mapSub(vals,sampleMean)) / (S-2));
         fgout << fgnl << S << " std norms gives sample mean: " << sampleMean << " and sample stdev: " << sampleStdev;
     }
 }
 
 }
 
-void                testmRandom(CLArgs const & args)
+void                testRandom(CLArgs const & args)
 {
     Cmds                cmds {
         {normGraph,"graph","graph generated normals against gaussian"},
         {normMoments,"mom","moments of generated normals"},
     };
-    doMenu(args,cmds);
+    doMenu(args,cmds,true);
 }
 
 }

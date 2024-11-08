@@ -340,7 +340,7 @@ void                cmdMorphList(CLArgs const & args)
         "<mesh>.(tri|fgmesh)\n"
         "    Show available delta and target morphs\n");
     if (args.size() != 2)
-        syn.incorrectNumArgs();
+        syn.errorNumArgs();
     string                  inFile = syn.next();
     Mesh                    mesh = loadMesh(inFile);
     DirectMorphs const &    dmorphs = mesh.deltaMorphs;
@@ -402,8 +402,8 @@ OUTPUT:
             syn.error("Invalid morph type",type);
     } while (syn.more());
     Mesh                out = in;
-    out.deltaMorphs = filter(in.deltaMorphs,delts);
-    out.targetMorphs = filter(in.targetMorphs,targs);
+    out.deltaMorphs = selectIf(in.deltaMorphs,delts);
+    out.targetMorphs = selectIf(in.targetMorphs,targs);
     saveMesh(out,outName);
 }
 

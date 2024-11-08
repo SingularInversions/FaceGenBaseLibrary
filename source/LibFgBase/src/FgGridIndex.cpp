@@ -13,7 +13,7 @@ using namespace std;
 
 namespace Fg {
 
-GridTriangles::GridTriangles(Vec2Fs const & vs,Vec3UIs const & ts,float binsPerTri)
+GridTriangles::GridTriangles(Vec2Fs const & vs,Arr3UIs const & ts,float binsPerTri)
     : verts{vs}, tris{ts}
 {
     FGASSERT(tris.size() > 0);
@@ -34,17 +34,17 @@ GridTriangles::GridTriangles(Vec2Fs const & vs,Vec3UIs const & ts,float binsPerT
     Vec2F               domainSz = domainHi - domainLo;
     FGASSERT((domainSz[0] > 0) && (domainSz[1] > 0));
     float               numBins = numValid * binsPerTri;
-    Vec2F               rangeSizef = domainSz * sqrt(numBins/domainSz.cmpntsProduct());
+    Vec2F               rangeSizef = domainSz * sqrt(numBins/domainSz.elemsProduct());
     Vec2UI              rangeSize = Vec2UI(rangeSizef + Vec2F(0.5f));
     rangeSize = mapMax(rangeSize,1U);
     Mat22F              range(0,rangeSize[0],0,rangeSize[1]);
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
-    clientToGridPacs = AffineEw2F(catHoriz(domainLo,domainHi),range);
+    clientToGridPacs = AxAffine2F(catHoriz(domainLo,domainHi),range);
     grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
-        Vec3UI          tri = tris[ii];
+        Arr3UI          tri = tris[ii];
         Vec2F           p0 = verts[tri[0]],
                         p1 = verts[tri[1]],
                         p2 = verts[tri[2]];
@@ -75,18 +75,16 @@ Opt<TriPoint>       GridTriangles::nearestIntersect(
     Vec2UI              binIdx = Vec2UI(gridCoord);
     Uints const &       bin = grid[binIdx];
     float               bestInvDepth = 0.0f;
-    TriPoint            bestTp;
+    TriPoint            bestTp {0,{0,0,0},{0,0,0}};                 // zero fill to avoid warning
     for (size_t ii=0; ii<bin.size(); ++ii) {
-        Vec3UI              tri = tris[bin[ii]];
-        Vec2F               v0 = verts[tri[0]],
-                            v1 = verts[tri[1]],
-                            v2 = verts[tri[2]];
-        Opt<Vec3D>          vbc = cBarycentricCoord(pos,v0,v1,v2);
+        Arr3UI              tri = tris[bin[ii]];
+        Arr<Vec2F,3>        v = mapIndex(tri,verts);
+        Opt<Arr3F>          vbc = cBarycentricCoord(pos,v);
         if (vbc.has_value() && (cMinElem(vbc.value()) >= 0)) {       // We intersect:
-            Vec3F               ids(invDepths[tri[0]],invDepths[tri[1]],invDepths[tri[2]]),
-                                bc = Vec3F(vbc.value());
-            float               invDepth = cDot(bc,ids);        // Interpolation in projected values is harmonic
-            if (invDepth > bestInvDepth) {                      // Closer on same ray
+            Arr3F               ids = mapIndex(tri,invDepths);
+            Arr3F               bc = vbc.value();
+            float               invDepth = multAcc(bc,ids);         // Interpolation in projected values is harmonic
+            if (invDepth > bestInvDepth) {                          // Closer on same ray
                 bestInvDepth = invDepth;
                 bestTp.triInd = bin[ii];
                 bestTp.vertInds = tri;
@@ -114,14 +112,12 @@ void                GridTriangles::intersects_(
         TriPoint            tp;
         tp.triInd = bin[ii];
         tp.vertInds = tris[bin[ii]];
-        Opt<Vec3D>          vbc;
+        Opt<Arr3F>          vbc;
         // All tris in index guaranteed to have valid vertex projection values:
-        Vec2F               p0 = verts[tp.vertInds[0]],
-                            p1 = verts[tp.vertInds[1]],
-                            p2 = verts[tp.vertInds[2]];
-        vbc = cBarycentricCoord(pos,p0,p1,p2);
+        Arr<Vec2F,3>        p = mapIndex(tp.vertInds,verts);
+        vbc = cBarycentricCoord(pos,p);
         if (vbc.has_value()) {
-            tp.baryCoord = Vec3F(vbc.value());
+            tp.baryCoord = vbc.value();
             if (cMinElem(tp.baryCoord) >= 0.0f)
                 ret.push_back(tp);
         }
@@ -136,14 +132,14 @@ void                testGridTriangles(CLArgs const &)
     Img2F               vertImg(dimp,dimp);
     for (Iter2UI vit(dimp); vit.valid(); vit.next())
         vertImg[vit()] = Vec2F(vit());
-    Vec3UIs             tris;
+    Arr3UIs             tris;
     for (uint row=0; row<dim; ++row) {
         uint                col=0;
         for (; col<row; ++col) {
-            tris.push_back(Vec3UI(row*dimp+col,row*dimp+col+1,(row+1)*dimp+col+1));
-            tris.push_back(Vec3UI((row+1)*dimp+col+1,(row+1)*dimp+col,row*dimp+col));
+            tris.push_back(Arr3UI(row*dimp+col,row*dimp+col+1,(row+1)*dimp+col+1));
+            tris.push_back(Arr3UI((row+1)*dimp+col+1,(row+1)*dimp+col,row*dimp+col));
         }
-        tris.push_back(Vec3UI((row+1)*dimp+col+1,(row+1)*dimp+col,row*dimp+col));
+        tris.push_back(Arr3UI((row+1)*dimp+col+1,(row+1)*dimp+col,row*dimp+col));
     }
     // Create the grid and query:
     const Vec2Fs &      verts = vertImg.dataVec();

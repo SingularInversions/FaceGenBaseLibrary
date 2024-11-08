@@ -31,220 +31,115 @@
 
 namespace Fg {
 
-// Declare only due to mutual dependence; Mat and MatV can be constructed
-// from each other:
-template<class T>
-struct      MatV;
-
-template <typename T,uint R,uint C>
+template <typename T,size_t R,size_t C>
 struct      Mat
 {
+    // note that Arr<Arr<T,C>,R> cannot be used since the compiler may add padding to the inner struct:
     Arr<T,R*C>          m;      // elements store by column then by row (row major)
     FG_SER1(m)
 
-    // Auto-initialization of builtins to zero is deprecated, avoid depending on it by using
-    // constant-value initialization constructor below:
-    Mat() : m{} {}
-    explicit Mat(Arr<T,R*C> const & data) : m(data) {}
-
-    // Constant-value initialization constructor:
-    // (unfortunately a pointer-based constructor cannot be added without being ambiguous
-    // to the below which is widely used. Use 'cMat' below instead)
-    explicit Mat(T v)
-    {
-        for (size_t ii=0; ii<R*C; ii++)
-            m[ii] = v;
-    }
-    // Value-set constructors; # args must agree with # elements:
-    Mat(T x,T y) : m {{x,y}}
-    {static_assert(R*C == 2,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
-    Mat(T x,T y,T z) : m {{x,y,z}}
-    {static_assert(R*C == 3,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d) : m {{a,b,c,d}}
-    {static_assert(R*C == 4,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e) : m {{a,b,c,d,e}}
-    {static_assert(R*C == 5,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e,T f) : m {{a,b,c,d,e,f}}
-    {static_assert(R*C == 6,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
-    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m {{a,b,c,d,e,f,g,h,i}}
-    {static_assert(R*C == 9,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
+    // No initialization is done for types without a default ctor. Default zero-fill is not a solution, be explicit:
+    Mat() {}
+    explicit Mat(Arr<T,R*C> const & data) : m{data} {}
+    explicit Mat(T v) : m{v} {}     // fill value ctor
+    // element value constructors; Arr enforces that number of args matches number of elems:
+    Mat(T x,T y) : m{x,y} {}
+    Mat(T x,T y,T z) : m{x,y,z} {}
+    Mat(T a,T b,T c,T d) : m{a,b,c,d} {}
+    Mat(T a,T b,T c,T d,T e) : m{a,b,c,d,e} {}
+    Mat(T a,T b,T c,T d,T e,T f) : m{a,b,c,d,e,f} {}
+    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m{a,b,c,d,e,f,g,h,i} {}
+    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l) : m{a,b,c,d,e,f,g,h,i,j,k,l} {}
+    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p) : m{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p} {}
 
     // default copy constructor (and thus assignment operator) must be explicitly defined to
     // differentiate from (explicit) conversion constructors below:
     Mat(Mat const &) = default;
-    Mat &       operator=(Mat const &) = default;
+    Mat &               operator=(Mat const &) = default;
 
-    // Type conversion constructor very handy for float <-> double:
+    // Type conversion constructor very handy:
     template<class U>
-    explicit Mat(Mat<U,R,C> const & mat) {
-        for (uint ii=0; ii<R*C; ++ii)
-            m[ii] = static_cast<T>(mat[ii]);
-    }
-    explicit Mat(MatV<T> const& mm) {
-        FGASSERT((R == mm.numRows()) && (C == mm.numCols()));
-        for (uint ii=0; ii<R*C; ++ii)
-            m[ii] = mm[ii];
-    }
-    // Initialize from array data. This is done via a proxy type (accessed via a convenient
-    // static member) since compilers interpret '0' as either 'int' or pointer, potentially
-    // resulting in either:
-    // 1. Ambiguity with single-value constructor (compile-time error)
-    // 2. Accidental interpretation of '0' value as a pointer (run-time error)
-    struct      FromPtr
-    {
-        FromPtr(T const * p) : _p(p) {}
-        T const * _p;
-    };
-    explicit Mat(FromPtr p)
-    {
-        for (uint ii=0; ii<R*C; ++ii)
-            m[ii] = *(p._p++);
-    }
-    static Mat      fromPtr(T const * p) {return Mat(FromPtr(p)); }
+    explicit Mat(Mat<U,R,C> const & mat) : m{mapCast<T>(mat.m)} {}
 
-    uint constexpr  numRows() const {return R; }
-    uint constexpr  numCols() const {return C; }
-    uint constexpr  numElems() const {return R*C; }
-    size_t constexpr size() const {return R*C; }
+    size_t constexpr    numRows() const {return R; }
+    size_t constexpr    numCols() const {return C; }
+    size_t constexpr    numElems() const {return R*C; }
+    size_t constexpr    size() const {return R*C; }
     // Element access by (row,column):
-    T &             rc(size_t row,size_t col)
+    T &                 rc(size_t row,size_t col)
     {
         FGASSERT_FAST((row < R) && (col < C));
         return m[row*C+col];
     }
-    T const &       rc(size_t row,size_t col) const
+    T const &           rc(size_t row,size_t col) const
     {
         FGASSERT_FAST((row < R) && (col < C));
         return m[row*C+col];
     }
-    // Element access by (column,row):
-    T &             cr(size_t col,size_t row)
+    T &                 operator[](size_t xx) {return m[xx]; }
+    T const &           operator[](size_t xx) const {return m[xx]; }
+    T &                 operator[](Arr<uint,2> colRow) {return rc(colRow[1],colRow[0]); }
+    T const &           operator[](Arr<uint,2> colRow) const {return rc(colRow[1],colRow[0]); }
+    Mat                 operator-() const {return Mat{-m}; }
+    Mat                 operator+(Mat const & r) const {return Mat{m + r.m}; }
+    Mat                 operator-(Mat const & r) const {return Mat{m - r.m}; }
+    Mat                 operator*(T val) const {return Mat{m * val}; }
+    Mat                 operator/(T val) const {return Mat{m / val}; }
+    void                operator*=(T val) {m *= val; }
+    void                operator/=(T val) {m /= val; }
+    void                operator+=(Mat const & r) {m += r.m; }
+    void                operator-=(Mat const & r) {m -= r.m; }
+    bool                operator==(Mat const & r) const {return (m == r.m); }
+    bool                operator!=(Mat const & r) const {return (m != r.m); }
+    template<size_t SR,size_t SC>
+    Mat<T,SR,SC>        subMatrix(size_t row,size_t col) const
     {
-        FGASSERT_FAST((row < R) && (col < C));
-        return m[row*C+col];
-    }
-    T const &       cr(size_t col,size_t row) const
-    {
-        FGASSERT_FAST((row < R) && (col < C));
-        return m[row*C+col];
-    }
-    T &             operator[](size_t xx)
-    {
-        FGASSERT_FAST(xx < R*C);
-        return m[xx];
-    }
-    T const &       operator[](size_t xx) const
-    {
-        FGASSERT_FAST(xx < R*C);
-        return m[xx];
-    }
-    T &             operator[](Mat<uint,2,1> crd)
-    {
-        FGASSERT_FAST((crd.m[0]<C) && (crd.m[1]<R));
-        return m[crd.m[1]*C+crd.m[0]];
-    }
-    T const &       operator[](Mat<uint,2,1> crd) const
-    {
-        FGASSERT_FAST((crd.m[0]<C) && (crd.m[1]<R));
-        return m[crd.m[1]*C+crd.m[0]];
-    }
-    Mat             operator-() const
-    {
-        Mat           ret;
-        for (uint ii=0; ii<R*C; ++ii)
-            ret.m[ii] = -m[ii];
-        return ret;
-    }
-    Mat             operator+(const Mat & rhs) const {return Mat{m + rhs.m}; }
-    Mat             operator-(const Mat & rhs) const {return Mat{m - rhs.m}; }
-    Mat             operator*(T val) const {return Mat{m * val}; }
-    Mat             operator/(T val) const {return Mat{m / val}; }
-    void            operator*=(T val) {for (uint ii=0; ii<R*C; ++ii) m[ii] *= val; }
-    void            operator/=(T val) {for (uint ii=0; ii<R*C; ++ii) m[ii] /= val; }
-    void            operator+=(const Mat & rhs) {for (uint ii=0; ii<R*C; ++ii) m[ii] += rhs.m[ii]; }
-    void            operator-=(const Mat & rhs) {for (uint ii=0; ii<R*C; ++ii) m[ii] -= rhs.m[ii]; }
-    bool            operator==(const Mat & rhs) const
-    {
-        for (uint ii=0; ii<R*C; ++ii)
-            if (!(m[ii] == rhs.m[ii]))
-                return false;
-        return true;
-    }
-    bool            operator!=(const Mat & rhs) const
-    {
-        for (uint ii=0; ii<R*C; ++ii)
-            if (m[ii] != rhs.m[ii])
-                return true;
-        return false;
-    }
-    template<uint srows,uint scols>
-    Mat<T,srows,scols> subMatrix(uint firstRow,uint firstCol) const
-    {
-        FGASSERT_FAST((firstRow+srows <= R) && (firstCol+scols <= C));
-        Mat<T,srows,scols>    ret;
-        uint                        cnt = 0;
-        for (uint rr=firstRow; rr<firstRow+srows; ++rr)
-            for (uint cc=firstCol; cc<firstCol+scols; ++cc)
+        FGASSERT((row+SR <= R) && (col+SC <= C));
+        Mat<T,SR,SC>        ret;
+        size_t                cnt = 0;
+        for (size_t rr=row; rr<row+SR; ++rr)
+            for (size_t cc=col; cc<col+SC; ++cc)
                 ret[cnt++] = rc(rr,cc);
         return ret;
     }
-    template <uint srows,uint scols>
-    void            setSubMat(const Mat<T,srows,scols> & sub,uint row,uint col)
+    template <size_t SR,size_t SC>
+    void                setSubMat(Mat<T,SR,SC> & sub,size_t row,size_t col)
     {
-        FGASSERT((srows+row <= R) && (scols+col <= C));
-        for (uint rr=0; rr<srows; rr++)
-            for (uint cc=0; cc<scols; cc++)
+        FGASSERT((SR+row <= R) && (SC+col <= C));
+        for (size_t rr=0; rr<SR; rr++)
+            for (size_t cc=0; cc<SC; cc++)
                 rc(rr+row,cc+col) = sub.rc(rr,cc);
     }
-    T               ssv() const         // sum of square values == L2 norm if elements are scalars
+    // recursive squared magnitude, accumulates in double type
+    double              magD() const {return cMagD(m); }
+    Mat<T,C,R>          transpose() const
     {
-        T               ret {0};
-        for (T v : m)
-            ret += v*v;
+        Mat<T,C,R>          ret;
+        for (size_t rr=0; rr<R; ++rr)
+            for (size_t cc=0; cc<C; ++cc)
+                ret.rc(cc,rr) = rc(rr,cc);
         return ret;
     }
-    double          mag() const         // recursive squared magnitude, accumulates in double type
+    Mat<T,R,1>          colVec(size_t col) const
     {
-        double      ret = 0.0;
-        for (uint ii=0; ii<R*C; ++ii)
-            ret += cMag(m[ii]);         // T can be non-scalar (eg. complex)
-        return ret;
-    }
-    double          len() const {return sqrt(mag()); }
-    Mat<T,C,R>      transpose() const
-    {
-        Mat<T,C,R> tMat;
-        for (uint ii=0; ii<R; ii++)
-            for (uint jj=0; jj<C; jj++)
-                tMat.rc(jj,ii) = rc(ii,jj);
-        return tMat;
-    }
-    Mat<T,R,1>      colVec(uint col) const
-    {
-        Mat<T,R,1>    ret;
-        FGASSERT_FAST(col < R);
-        for (uint rr=0; rr<R; rr++)
+        Mat<T,R,1>          ret;
+        FGASSERT_FAST(col < C);
+        for (size_t rr=0; rr<R; ++rr)
             ret[rr] = rc(rr,col);
         return ret;
     }
-    Mat<T,1,C>      rowVec(uint row) const
+    Mat<T,1,C>          rowVec(size_t row) const
     {
-        Mat<T,1,C>    ret;
+        Mat<T,1,C>          ret;
         FGASSERT_FAST(row < R);
-        for (uint cc=0; cc<C; ++cc)
+        for (size_t cc=0; cc<C; ++cc)
             ret[cc] = rc(row,cc);
         return ret;
     }
-    T               cmpntsProduct() const
+    T                   elemsProduct() const {return cProduct(m); }
+    bool                operator<(const Mat & rhs) const      // Useful for putting in a std::map or sorting for unique check
     {
-        T   acc = m[0];
-        for (uint ii=1; ii<C*R; ++ii)
-            acc *= m[ii];
-        return acc;
-    }
-    bool            operator<(const Mat & rhs) const      // Useful for putting in a std::map or sorting for unique check
-    {
-        for (uint ii=0; ii<R*C; ++ii) {
+        for (size_t ii=0; ii<R*C; ++ii) {
             if (m[ii] < rhs[ii])
                 return true;
             if (rhs[ii] < m[ii])
@@ -254,15 +149,14 @@ struct      Mat
     }
 
     // Static creation functions are handy because you can use the type abbreviations below:
-    static Mat      randUniform(T lo,T hi);
-    static Mat      randNormal(T stdev=T(1));
+    static Mat          randUniform(T lo,T hi) {return Mat{randUniformArr<T,R*C>(lo,hi)}; }
+    static Mat          randNormal(T stdev=T(1)) {return Mat{randNormalArr<T,R*C>(0,stdev)}; }
 };
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 struct      Traits<Mat<T,R,C>>
 {
-    typedef typename Traits<T>::Scalar                                Scalar;
-    typedef Mat<typename Traits<T>::Accumulator,R,C>    Accumulator;
+    typedef typename Traits<T>::Scalar                  Scalar;
     typedef Mat<typename Traits<T>::Floating,R,C>       Floating;
 };
 
@@ -272,7 +166,7 @@ typedef Mat<short,2,1>          Vec2S;
 typedef Mat<int,2,1>            Vec2I;
 typedef Mat<uint,2,1>           Vec2UI;
 typedef Mat<size_t,2,1>         Vec2Z;
-typedef Mat<bool,2,1>           Vec2B;
+typedef Mat<uint64,2,1>         Vec2UL;
 
 typedef Mat<float,3,1>          Vec3F;
 typedef Mat<double,3,1>         Vec3D;
@@ -329,6 +223,7 @@ typedef Mat<double,3,3>         Mat33D;
 typedef Svec<Mat33F>            Mat33Fs;
 typedef Svec<Mat33D>            Mat33Ds;
 
+typedef Mat<float,4,2>          Mat42F;
 typedef Mat<float,4,4>          Mat44F;
 typedef Mat<double,4,4>         Mat44D;
 
@@ -343,36 +238,28 @@ typedef Mat<int64,3,2>          Mat32L;
 typedef Mat<uint,3,2>           Mat32UI;
 typedef Mat<double,3,4>         Mat34D;
 
-template<class T,class F,uint R,uint C>
-void inline         dcast_(Mat<F,R,C> const & f,Mat<T,R,C> & t) {dcast_(f.m,t.m); }
+template<class T,class U,size_t R,size_t C>
+inline Mat<T,R,C>   mapCast(Mat<U,R,C> const & mat) {return Mat<T,R,C>(mapCast<T,U,R*C>(mat.m)); }
 
-template<typename To,typename From,uint R,uint C>
-inline Mat<To,R,C>  mapCast(Mat<From,R,C> const & mat)
-{return Mat<To,R,C>(mapCast<To,From,R*C>(mat.m)); }
-
-template <class T,uint R,uint C>
-std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mmIn)
+template <class T,size_t R,size_t C>
+std::ostream &      operator<<(std::ostream & ss,Mat<T,R,C> const & mmIn)
 {
     typedef typename Traits<T>::Printable   P;
     Mat<P,R,C>              mm {mmIn};
-    std::ios::fmtflags
-        oldFlag = ss.setf(
-            std::ios::fixed |
-            std::ios::showpos |
-            std::ios::right);
-    std::streamsize oldPrec = ss.precision(6);
+    std::ios::fmtflags      oldFlag = ss.setf(std::ios::fixed | std::ios::showpos | std::ios::right);
+    std::streamsize         oldPrec = ss.precision(6);
     if (mm.numRows() == 1 || mm.numCols() == 1) {   // Vector prints in single line
         ss << "[" << mm[0];
-        for (uint ii=1; ii<mm.numElems(); ii++)
+        for (size_t ii=1; ii<mm.numElems(); ii++)
             ss << "," << mm[ii];
         ss << "]";
     }
     else {
         ss << fgpush;
-        for (uint row=0; row<mm.numRows(); row++) {
+        for (size_t row=0; row<mm.numRows(); row++) {
             ss << fgnl;
             ss << "[ ";
-            for (uint col=0; col<mm.numCols(); col++)
+            for (size_t col=0; col<mm.numCols(); col++)
                 ss << mm.rc(row,col) << "  ";
             ss << "]";
         }
@@ -383,85 +270,58 @@ std::ostream &      operator<<(std::ostream& ss,Mat<T,R,C> const & mmIn)
     return ss;
 }
 
-// function 'constructors':
+// construct by function
 
-template<typename T,uint R,uint C>
-Mat<T,R,C>          cMat(T * const ptr)
-{
-    Mat<T,R,C>    ret;
-    for (size_t ii=0; ii<R*C; ++ii)
-        ret.m[ii] = *ptr++;
-    return ret;
-}
-
-template<typename T,uint R,uint C>
-Mat<T,R,C>          cMat(Svec<T> const & v)
-{
-    Mat<T,R,C>    ret;
-    FGASSERT(v.size() == R*C);
-    for (size_t ii=0; ii<v.size(); ++ii)
-        ret.m[ii] = v[ii];
-    return ret;
-}
-
-template<class T,uint D>
+template<class T,size_t D>
 Mat<T,D,D>          cDiagMat(T val)         // diagonal matrix of one value. Template arguments required
 {
-    Mat<T,D,D>          ret {scast<T>(0)};  // cast required to prevent ambiguity due to implicit conversion to std::complex
-    for (uint ii=0; ii<D; ++ii)
+    Mat<T,D,D>          ret {0};
+    for (size_t ii=0; ii<D; ++ii)
         ret.rc(ii,ii) = val;
     return ret;
 }
-template<class T,uint D>
-Mat<T,D,D>          cDiagMat(Mat<T,D,1> vec)
+template<class T,size_t D>
+Mat<T,D,D>          cDiagMat(Arr<T,D> diagVals)
 {
-    Mat<T,D,D>          ret {scast<T>(0)};
-    for (uint ii=0; ii<D; ++ii)
-        ret.rc(ii,ii) = vec[ii];
+    Mat<T,D,D>          ret {0};
+    for (size_t ii=0; ii<D; ++ii)
+        ret.rc(ii,ii) = diagVals[ii];
     return ret;
 }
-template<class T>
-Mat<T,2,2>          cDiagMat(T v0,T v1)
-{
-    Mat<T,2,2>    ret(static_cast<T>(0));
-    ret[0] = v0;
-    ret[3] = v1;
-    return ret;
-}
-template<class T>
-Mat<T,3,3>          cDiagMat(T v0,T v1,T v2)
-{
-    Mat<T,3,3>    ret(static_cast<T>(0));
-    ret[0] = v0;
-    ret[4] = v1;
-    ret[8] = v2;
-    return ret;
-}
+template<class T,size_t D>
+Mat<T,D,D>          cDiagMat(Mat<T,D,1> diagVals) {return cDiagMat(diagVals.m); }
 
-template<class T,uint R,uint C>
+template<class T>
+Mat<T,2,2>          cDiagMat(T v0,T v1) {return {v0,0, 0,v1}; }
+
+template<class T>
+Mat<T,3,3>          cDiagMat(T v0,T v1,T v2) {return {v0,0,0, 0,v1,0, 0,0,v2}; }
+
+template<class T,size_t R,size_t C>
 bool                isFinite(Mat<T,R,C> const & mat)
 {
-    for (uint ii=0; ii<R*C; ++ii)
+    for (size_t ii=0; ii<R*C; ++ii)
         if (!std::isfinite(mat[ii]))
             return false;
     return true;
 }
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
+T                   cMag(Mat<T,R,C> const & m) {return cMag(m.m); }
+template<class T,size_t R,size_t C>
 T                   cSsd(Mat<T,R,C> const & l,Mat<T,R,C> const & r) {return cSsd(l.m,r.m); }
-template<class T,uint R,uint C>
-double              cLen(Mat<T,R,C> const & mat) {return cLen(mat.m); }
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Mat<T,R,C>          operator*(T val,Mat<T,R,C> const & mat) {return (mat * val); }
-template <class T,uint R,uint C,uint C2>
+template <class T,size_t R,size_t C,size_t C2>
 Mat<T,R,C2>         operator*(Mat<T,R,C> const & v1,Mat<T,C,C2> const & v2)
 {
-    Mat<T,R,C2>      newMat;
-    for (uint ii=0; ii<R; ii++) {
-        for (uint jj=0; jj<C2; jj++) {
-            newMat[ii*C2+jj] = T(0);
-            for (uint kk=0; kk<C; kk++)
-                newMat[ii*C2+jj] += v1[ii*C+kk] * v2[kk*C2+jj];
+    Mat<T,R,C2>         newMat;
+    for (size_t ii=0; ii<R; ii++) {
+        for (size_t jj=0; jj<C2; jj++) {
+            T               acc {0};
+            for (size_t kk=0; kk<C; kk++)
+                acc += v1[ii*C+kk] * v2[kk*C2+jj];
+            newMat[ii*C2+jj] = acc;
         }
     }
     return newMat;
@@ -555,58 +415,58 @@ T                   cDeterminant(Mat<T,4,4> const & M)
     return M[0]*d0 - M[1]*d1 + M[2]*d2 - M[3]*d3;
 }
 // append an element onto a column vec:
-template<class T,uint dim>
+template<class T,size_t dim>
 Mat<T,dim+1,1>      append(Mat<T,dim,1> const & vec,T val)
 {
     Mat<T,dim+1,1>    ret;
-    for (uint ii=0; ii<dim; ++ii)
+    for (size_t ii=0; ii<dim; ++ii)
         ret[ii] = vec[ii];
     ret[dim] = val;
     return ret;
 }
 // append an element onto a row vec:
-template<class T,uint dim>
+template<class T,size_t dim>
 Mat<T,1,dim+1>      append(const Mat<T,1,dim> & vec,T val)
 {
     Mat<T,1,dim+1>    ret;
-    for (uint ii=0; ii<dim; ++ii)
+    for (size_t ii=0; ii<dim; ++ii)
         ret[ii] = vec[ii];
     ret[dim] = val;
     return ret;
 }
 // Concatenate 2 column vectors:
-template<class T,uint D0,uint D1>
+template<class T,size_t D0,size_t D1>
 Mat<T,D0+D1,1>      cat(Mat<T,D0,1> const & l,Mat<T,D1,1> const & r)
 {
     return Mat<T,D0+D1,1>{cat(l.m,r.m)};
 }
 // create block diagonal square matrix of 2 square matrices. Off diagonals set to 0.
-template<class T,uint D0,uint D1>
+template<class T,size_t D0,size_t D1>
 Mat<T,D0+D1,D0+D1>  catDiagonal(Mat<T,D0,D0> const & l,Mat<T,D1,D1> const & r)
 {
     Mat<T,D0+D1,D0+D1>      ret(0);
-    for (uint rr=0; rr<D0; ++rr)
-        for (uint cc=0; cc<D0; ++cc)
+    for (size_t rr=0; rr<D0; ++rr)
+        for (size_t cc=0; cc<D0; ++cc)
             ret.rc(rr,cc) = l.rc(rr,cc);
-    for (uint rr=0; rr<D1; ++rr)
-        for (uint cc=0; cc<D1; ++cc)
+    for (size_t rr=0; rr<D1; ++rr)
+        for (size_t cc=0; cc<D1; ++cc)
             ret.rc(D0+rr,D0+cc) = r.rc(rr,cc);
     return ret;
 }
 // Flatten a Svec of matrices into a Svec of scalars:
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Svec<T>             flatten(Svec<Mat<T,R,C>> const & ms)
 {
     Svec<T>       ret;
     ret.reserve(ms.size()*R*C);
     for (size_t ii=0; ii<ms.size(); ++ii)
-        for (uint jj=0; jj<R*C; ++jj)
+        for (size_t jj=0; jj<R*C; ++jj)
             ret.push_back(ms[ii].m[jj]);
     return ret;
 }
 
 Doubles             flattenD(Floatss const & v);
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Doubles             flattenD(Mat<T,R,C> const & mat)
 {
     Doubles         ret;
@@ -615,7 +475,7 @@ Doubles             flattenD(Mat<T,R,C> const & mat)
         ret.push_back(scast<double>(e));
     return ret;
 }
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Doubles             flattenD(Svec<Mat<T,R,C>> const & ms)
 {
     Doubles         ret;
@@ -625,7 +485,7 @@ Doubles             flattenD(Svec<Mat<T,R,C>> const & ms)
             ret.push_back(scast<double>(e));
     return ret;
 }
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Doubles             flattenD(const Svec<Svec<Mat<T,R,C>>> & mss)
 {
     size_t          sz = 0;
@@ -640,47 +500,57 @@ Doubles             flattenD(const Svec<Svec<Mat<T,R,C>>> & mss)
     return ret;
 }
 // project a homogenous position vector back to euclidean representation:
-template<class T,uint dim>
+template<class T,size_t dim>
 Mat<T,dim-1,1>      projectHomog(Mat<T,dim,1> v)
 {
     Mat<T,dim-1,1>    ret;
     T                 w = v[dim-1];
     FGASSERT(w != T(0));                // cannot be a direction vector
-    for (uint ii=0; ii<dim-1; ++ii)
+    for (size_t ii=0; ii<dim-1; ++ii)
         ret[ii] = v[ii] / w;
     return ret;
 }
 // Return homogeneous matrix representation of an affine transform:
-template<class T, uint dims>
+template<class T, size_t dims>
 Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,dims> const & linear,Mat<T,dims,1> const & translation)
 {
     Mat<T,dims+1,dims+1>    ret;
-    for (uint rr=0; rr<dims; rr++)
-        for (uint cc=0; cc<dims; cc++)
+    for (size_t rr=0; rr<dims; rr++)
+        for (size_t cc=0; cc<dims; cc++)
             ret.rc(rr,cc) = linear.rc(rr,cc);
-    for (uint rr=0; rr<dims; rr++)
+    for (size_t rr=0; rr<dims; rr++)
         ret.rc(rr,dims) = translation[rr];
     ret.rc(dims,dims) = 1;
     return ret;
 }
 // Return homogeneous matrix representation of a linear transform:
-template<class T, uint dims>
+template<class T, size_t dims>
 Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,dims> const & linear)
 {
-    Mat<T,dims+1,dims+1>    ret;
-    for (uint rr=0; rr<dims; ++rr)
-        for (uint cc=0; cc<dims; ++cc)
+    Mat<T,dims+1,dims+1>    ret {0};        // need zero-init for bottom row
+    for (size_t rr=0; rr<dims; ++rr)
+        for (size_t cc=0; cc<dims; ++cc)
             ret.rc(rr,cc) = linear.rc(rr,cc);
     ret.rc(dims,dims) = T(1);
     return ret;
 }
 // Return homogeneous matrix representation of a translation:
-template<class T, uint dims>
+template<class T, size_t dims>
 Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,1> const & translation)
 {
     auto            ret = cDiagMat<T,dims+1>(1);
-    for (uint rr=0; rr<dims; rr++)
+    for (size_t rr=0; rr<dims; rr++)
         ret.rc(rr,dims) = translation[rr];
+    return ret;
+}
+template<class T,size_t R,size_t C,size_t S>
+Mat<T,R,C>          scaleRows(Mat<T,R,C> const & mat,Arr<T,S> const & scales)
+{
+    static_assert(C==S);            // best we can do until Matrix is changed to use size_t
+    Mat<T,R,C>          ret;
+    for (size_t rr=0; rr<R; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
+            ret.rc(rr,cc) = mat.rc(rr,cc) * scales[rr];
     return ret;
 }
 // returns the inverse of an invertible matrix, throws if not invertible:
@@ -698,322 +568,223 @@ Mat<T,2,2>          cInverse(Mat<T,2,2> const & mat)
     ret.rc(1,1) = mat.rc(0,0) * fac;
     return ret;
 }
-template <class T>
+template <class T,FG_ENABLE_IF(T,is_floating_point)>
 Mat<T,3,3>          cInverse(Mat<T,3,3> const & i)
 {
-    static_assert(std::is_floating_point<T>::value,"Mat inverse requires floating point type");
-    Mat<T,3,3>     r;
-    T   fac = (i.rc(0,0)*i.rc(1,1)*i.rc(2,2) - i.rc(0,0)*i.rc(1,2)*i.rc(2,1) +
-               i.rc(1,0)*i.rc(0,2)*i.rc(2,1) - i.rc(1,0)*i.rc(0,1)*i.rc(2,2) +
-               i.rc(2,0)*i.rc(0,1)*i.rc(1,2) - i.rc(2,0)*i.rc(1,1)*i.rc(0,2));
-    FGASSERT(fac != T(0));
-    r.rc(0,0) = i.rc(1,1) * i.rc(2,2) - i.rc(1,2) * i.rc(2,1);
-    r.rc(0,1) = i.rc(0,2) * i.rc(2,1) - i.rc(0,1) * i.rc(2,2);
-    r.rc(0,2) = i.rc(0,1) * i.rc(1,2) - i.rc(0,2) * i.rc(1,1);
-    r.rc(1,0) = i.rc(1,2) * i.rc(2,0) - i.rc(1,0) * i.rc(2,2);
-    r.rc(1,1) = i.rc(0,0) * i.rc(2,2) - i.rc(0,2) * i.rc(2,0);
-    r.rc(1,2) = i.rc(0,2) * i.rc(1,0) - i.rc(0,0) * i.rc(1,2);
-    r.rc(2,0) = i.rc(1,0) * i.rc(2,1) - i.rc(1,1) * i.rc(2,0);
-    r.rc(2,1) = i.rc(0,1) * i.rc(2,0) - i.rc(0,0) * i.rc(2,1);
-    r.rc(2,2) = i.rc(0,0) * i.rc(1,1) - i.rc(1,0) * i.rc(0,1);
-    r *= T(1) / fac;
-    return r;
+    T                   det = cDeterminant(i);
+    FGASSERT(det != 0);
+    Mat<T,3,3>          r {
+        i.rc(1,1) * i.rc(2,2) - i.rc(1,2) * i.rc(2,1),
+        i.rc(0,2) * i.rc(2,1) - i.rc(0,1) * i.rc(2,2),
+        i.rc(0,1) * i.rc(1,2) - i.rc(0,2) * i.rc(1,1),
+        i.rc(1,2) * i.rc(2,0) - i.rc(1,0) * i.rc(2,2),
+        i.rc(0,0) * i.rc(2,2) - i.rc(0,2) * i.rc(2,0),
+        i.rc(0,2) * i.rc(1,0) - i.rc(0,0) * i.rc(1,2),
+        i.rc(1,0) * i.rc(2,1) - i.rc(1,1) * i.rc(2,0),
+        i.rc(0,1) * i.rc(2,0) - i.rc(0,0) * i.rc(2,1),
+        i.rc(0,0) * i.rc(1,1) - i.rc(1,0) * i.rc(0,1)
+    };
+    return r * (1/det);
 }
-template <class T,uint R,uint C>
+template <class T,size_t R,size_t C>
 T                   cDot(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs) {return cDot(lhs.m,rhs.m); }
-// the 'perp dot product' is the dot product of a 2D vector's perpendicular with another 2D vector, and is equivalent
-// to the signed area of the parallegram they form, the determinant of the matrix formed by the two vectors as columns,
-// and the cross product Z component of the corresponding 3D vectors with Z=0:
-template <class T,uint D>
+// the 'perp dot product' (aka 2D cross product) is the dot product of a 2D vector's perpendicular
+// with another 2D vector, and is equivalent to:
+// * the signed area of the parallegram they form
+// * the determinant of the matrix formed by the two vectors as columns
+// * the cross product Z component of the corresponding 3D vectors with Z=0:
+template <class T,size_t D>
 T                   cPerpDot(Mat<T,D,1> const & lhs,Mat<T,D,1> const & rhs) {return lhs[0]*rhs[1] -  lhs[1]*rhs[0]; }
-template <class T,uint R,uint C>
+template <class T,size_t R,size_t C>
 double              cCos(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
 {
-    double      mag = cMag(lhs) * cMag(rhs);
+    double      mag = cMagD(lhs) * cMagD(rhs);
     FGASSERT(mag > 0.0);
     return cDot(lhs,rhs)/sqrt(mag);
 }
 template<typename T>
 Mat<T,3,1>          crossProduct(Mat<T,3,1> const & v1,Mat<T,3,1> const & v2)
 {
-    Mat<T,3,1>      r;
-    r[0] = v1[1] * v2[2] - v1[2] * v2[1];
-    r[1] = v1[2] * v2[0] - v1[0] * v2[2];
-    r[2] = v1[0] * v2[1] - v1[1] * v2[0];
-    return r;
+    return {
+        v1[1] * v2[2] - v1[2] * v2[1],
+        v1[2] * v2[0] - v1[0] * v2[2],
+        v1[0] * v2[1] - v1[1] * v2[0]
+    };
 }
 // Equivalent to V * Y.transpose() (but more efficient and succinct):
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          outerProduct(Mat<T,R,1> const & lhs,Mat<T,C,1> const & rhs)
 {
     Mat<T,R,C>      ret;
-    for (uint rr=0; rr<R; ++rr)
-        for (uint cc=0; cc<C; ++cc)
+    for (size_t rr=0; rr<R; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
             ret.rc(rr,cc) = lhs[rr] * rhs[cc];
     return ret;
 }
 
 // Maps over Svec<Mat<>>:
 
-template<class T,uint R,uint C>
-Doubles             mapMag(Svec<Mat<T,R,C>> const & v) {return mapCallT<double>(v,[](Mat<T,R,C> const & e){return cMag(e); }); }
-template<class T,uint R,uint C>
-Doubles             mapLen(Svec<Mat<T,R,C>> const & v) {return mapCallT<double>(v,[](Mat<T,R,C> const & e){return cLen(e); }); }
+template<class T,size_t R,size_t C>
+Doubles             mapMag(Svec<Mat<T,R,C>> const & v) {return mapCall(v,[](Mat<T,R,C> const & e){return cMagD(e); }); }
+template<class T,size_t R,size_t C>
+Doubles             mapLen(Svec<Mat<T,R,C>> const & v) {return mapCall(v,[](Mat<T,R,C> const & e){return cLenD(e); }); }
 
 // UNARY & BINARY MAP OPERATIONS:
 
-// type-preserving unary and binary map call:
-template<typename T,uint R,uint C,class F>
-Mat<T,R,C>          mapCall(Mat<T,R,C> const & mat,F const & func)
-{
-    Mat<T,R,C>          ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = func(mat[ii]);
-    return ret;
-}
-template<class T,uint R,uint C,class F>
-Mat<T,R,C>          mapCall(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs,F func)
-{
-    Mat<T,R,C>          ret;
-    for (size_t ii=0; ii<R*C; ++ii)
-        ret[ii] = func(lhs[ii],rhs[ii]);
-    return ret;
-}
-// Subtract same value from each element:
-template<typename T,uint R,uint C>
+template<size_t R,size_t C,class T>
+Mat<T,R,C>          cMat(Arr<T,R*C> const & d) {return Mat<T,R,C>{d}; }                 // helper
+template<class T,size_t R,size_t C,class F>
+auto                mapCall(Mat<T,R,C> const & m,F f) {return cMat<R,C>(mapCall(m.m,f)); }
+template<class T,class U,size_t R,size_t C,class F>
+auto                mapCall(Mat<T,R,C> const & l,Mat<U,R,C> const & r,F f) {return cMat<R,C>(mapCall(l.m,r.m,f)); }
+
+// Add / subtract same value from each element:
+template<typename T,size_t R,size_t C>
+Mat<T,R,C>          mapAdd(Mat<T,R,C> const & lhs,T const & rhs) {return Mat<T,R,C>{mapAdd(lhs.m,rhs)}; }
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          mapSub(Mat<T,R,C> const & lhs,T const & rhs) {return Mat<T,R,C>{mapSub(lhs.m,rhs)}; }
 
 // Element-wise multiplication (aka Hadamard product):
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapMul(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
-{
-    Mat<T,R,C>    ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = lhs[ii] * rhs[ii];
-    return ret;
-}
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapMul(Mat<T,R,C> const & m0,Mat<T,R,C> const & m1,Mat<T,R,C> const & m2)
-{
-    Mat<T,R,C>    ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = m0[ii] * m1[ii] * m2[ii];
-    return ret;
-}
-// Element-wise division:
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapDiv(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
-{
-    Mat<T,R,C>            ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = lhs[ii] / rhs[ii];
-    return ret;
-}
-template<class T,uint R,uint C>
-Mat<T,R,C>          mapSqr(Mat<T,R,C> mat)
-{
-    Mat<T,R,C>    r;
-    for (uint ii=0; ii<R*C; ++ii)
-        r[ii] = sqr(mat[ii]);
-    return r;
-}
-template<class T,uint R,uint C>
-Mat<T,R,C>          mapSqrt(Mat<T,R,C> mat)
-{
-    Mat<T,R,C>    r;
-    for (uint ii=0; ii<R*C; ++ii)
-        r[ii] = sqrt(mat[ii]);
-    return r;
-}
-template<typename T,uint R,uint C>
-Mat<T,R,C>          mapFloor(Mat<T,R,C> const & mat)
-{
-    Mat<T,R,C> ret;
-    for (uint ii=0; ii<mat.numElems(); ++ii)
-        ret[ii] = std::floor(mat[ii]);
-    return ret;
-}
-template<typename Flt,typename Int,uint R,uint C>
+template<typename T,size_t R,size_t C>
+Mat<T,R,C>          mapMul(Mat<T,R,C> const & l,Mat<T,R,C> const & r) {return Mat<T,R,C>{mapMul(l.m,r.m)}; }
+
+// Element-wise division & scalar-vector division:
+template<typename T,size_t R,size_t C>
+Mat<T,R,C>          mapDiv(Mat<T,R,C> const & l,Mat<T,R,C> const & r) {return Mat<T,R,C>{mapDiv(l.m,r.m)}; }
+template<typename T,size_t R,size_t C>
+Mat<T,R,C>          mapDiv(T l,Mat<T,R,C> r) {return Mat<T,R,C>{mapDiv(l,r.m)}; }
+
+template<class T,size_t R,size_t C>
+Mat<T,R,C>          mapSqr(Mat<T,R,C> m) {return Mat<T,R,C>{mapSqr(m.m)}; }
+
+template<typename T,size_t R,size_t C>
+Mat<T,R,C>          mapFloor(Mat<T,R,C> const & mat) {return Mat<T,R,C>{mapFloor(mat.m)}; }
+template<typename Flt,typename Int,size_t R,size_t C>
 void                mapRound_(Mat<Flt,R,C> const & lhs,Mat<Int,R,C> & rhs)
 {
-    for (uint ii=0; ii<rhs.numElems(); ++ii)
+    for (size_t ii=0; ii<rhs.numElems(); ++ii)
         mapRound_(lhs[ii],rhs[ii]);
 }
-template<typename To,typename From,uint R,uint C>
-Mat<To,R,C>         mapRound(Mat<From,R,C> const & mat)
-{
-    Mat<To,R,C>     ret;
-    for (uint ii=0; ii<mat.numElems(); ++ii)
-        ret[ii] = roundT<To>(mat[ii]);
-    return ret;
-}
-template<uint R,uint C>
-Mat<uint,R,C>       mapPow2Ceil(Mat<uint,R,C> const & mat)
-{
-    Mat<uint,R,C>       ret;
-    for (uint ii=0; ii<mat.numElems(); ++ii)
-        ret[ii] = pow2Ceil(mat[ii]);
-    return ret;
-}
+template<class T,class U,size_t R,size_t C>
+Mat<T,R,C>          mapRound(Mat<U,R,C> const & m) {return Mat<T,R,C>{mapRound<T,U>(m.m)}; }
 
-template<typename T,uint R,uint C>
+template<size_t R,size_t C>
+Mat<uint,R,C>       mapPow2Ceil(Mat<uint,R,C> const & m) {return mapCall(m,pow2Ceil); }
+
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          mapMax(Mat<T,R,C> const & lhs,T rhs)
 {
     return mapCall(lhs,[rhs](T l){return cMax(l,rhs); });
 }
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          mapMax(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
 {
     return mapCall(ml,mr,[](T l,T r){return cMax(l,r); });
 }
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          mapMin(Mat<T,R,C> const & lhs,T rhs)
 {
     return mapCall(lhs,[rhs](T l){return cMin(l,rhs); });
 }
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          mapMin(Mat<T,R,C> const & ml,Mat<T,R,C> const & mr)
 {
     return mapCall(ml,mr,[](T l,T r){return cMin(l,r); });
 }
 
-#define FG_MATRIXC_ELEMWISE(matFunc,elemFunc)               \
-    template<class T,uint R,uint C>                 \
-    Mat<T,R,C>      matFunc (Mat<T,R,C> const & mat)          \
-    {                                                       \
-        Mat<T,R,C>    ret;                    \
-        for (uint ii=0; ii<R*C; ++ii)               \
-            ret[ii] = elemFunc (mat[ii]);                   \
-        return ret;                                         \
-    }
+template<class T,size_t R,size_t C>
+Mat<T,R,C>          mapAbs(Mat<T,R,C> m) {return Mat<T,R,C>{mapAbs(m.m)}; }
+template<class T,size_t R,size_t C>
+Mat<T,R,C>          mapExp(Mat<T,R,C> m) {return Mat<T,R,C>{mapExp(m.m)}; }
+template<class T,size_t R,size_t C>
+Mat<T,R,C>          mapLog(Mat<T,R,C> m) {return Mat<T,R,C>{mapLog(m.m)}; }
 
-FG_MATRIXC_ELEMWISE(mapAbs,std::abs)
-FG_MATRIXC_ELEMWISE(mapLog,std::log)
-FG_MATRIXC_ELEMWISE(mapExp,std::exp)
-
-template<uint R,uint C>
-Mat<bool,R,C>       mapOr(Mat<bool,R,C> v0,Mat<bool,R,C> v1)
-{
-    Mat<bool,R,C> ret;
-    for (uint ii=0; ii<R*C; ++ii)
-        ret[ii] = v0[ii] || v1[ii];
-    return ret;
-}
+template<class T,size_t R>
+Mat<T,R,1>          sortAll(Mat<T,R,1> v) {return Mat<T,R,1>{sortAll(v.m)}; }
 
 // Faster equivalent to lhs^T * rhs:
-template<typename T,uint n0,uint n1,uint n2>
+template<typename T,size_t n0,size_t n1,size_t n2>
 Mat<T,n0,n1>        transposeMul(Mat<T,n2,n0> const & lhs,Mat<T,n2,n1> const & rhs)
 {
     Mat<T,n0,n1>      ret(T(0));
-    for (uint i0=0; i0<n0; ++i0)
-        for (uint i1=0; i1<n1; ++i1)
-            for (uint i2=0; i2<n2; ++i2)
+    for (size_t i0=0; i0<n0; ++i0)
+        for (size_t i1=0; i1<n1; ++i1)
+            for (size_t i2=0; i2<n2; ++i2)
                 ret.rc(i0,i1) += lhs.rc(i2,i0) * rhs.rc(i2,i1);
     return ret;
 }
-template<typename T,uint R,uint C>
-Mat<T,R,C>          Mat<T,R,C>::randNormal(T stdev)
-{
-    Mat<T,R,C>        ret;
-    for (size_t ii=0; ii<R*C; ++ii)
-        ret[ii] = static_cast<T>(Fg::randNormal())*stdev;
-    return ret;
-}
-template<typename T,uint R,uint C>
-Mat<T,R,C>          Mat<T,R,C>::randUniform(T lo,T hi)
-{
-    Mat<T,R,C>    ret;
-    for (size_t ii=0; ii<R*C; ++ii)
-        ret[ii] = static_cast<T>(Fg::randUniform(double(lo),double(hi)));
-    return ret;
-}
-template<typename T,uint dim,FG_ENABLE_IF(T,is_floating_point)>
-Mat<T,dim,1>        randVecNormal()
-{
-    Mat<T,dim,1>    ret;
-    for (uint ii=0; ii<dim; ++ii)
-        ret[ii] = scast<T>(randNormal());
-    return ret;
-}
-template<typename T,uint dim,FG_ENABLE_IF(T,is_floating_point)>
+template<typename T,size_t dim,FG_ENABLE_IF(T,is_floating_point)>
 Svec<Mat<T,dim,1>>  randVecNormals(size_t sz,double stdev)
 {
-    Svec<Mat<T,dim,1>>     ret;
-    ret.reserve(sz);
-    for (size_t ii=0; ii<sz; ++ii)
-        ret.push_back(randVecNormal<T,dim>()*stdev);
-    return ret;
+    auto                fn = [stdev](size_t){return Mat<T,dim,1>::randNormal(stdev); };
+    return genSvec<Mat<T,dim,1>>(sz,fn);
 }
+
+// random positive definite linear transform with std normally distributed eigevalue logarithms:
+Mat33D              cRandPositiveDefinite3D();
+
 // Create a wider matrix by concatenating rows from 2 matrices:
-template<class T,uint R,uint ncols1,uint C2>
+template<class T,size_t R,size_t ncols1,size_t C2>
 Mat<T,R,ncols1+C2>  catHoriz(Mat<T,R,ncols1> const & lhs,Mat<T,R,C2> const & rhs)
 {
     Mat<T,R,ncols1+C2>    ret;
-    for (uint row=0; row<R; ++row)
+    for (size_t row=0; row<R; ++row)
     {
-        uint    col=0;
-        for (uint cc=0; cc<ncols1; ++cc)
+        size_t    col=0;
+        for (size_t cc=0; cc<ncols1; ++cc)
             ret.rc(row,col++) = lhs.rc(row,cc);
-        for (uint cc=0; cc<C2; ++cc)
+        for (size_t cc=0; cc<C2; ++cc)
             ret.rc(row,col++) = rhs.rc(row,cc);
     }
     return ret;
 }
 // Create a taller matrix by concatenating cols from 2 matrices:
-template<class T,uint nrows1,uint nrows2,uint C>
+template<class T,size_t nrows1,size_t nrows2,size_t C>
 Mat<T,nrows1+nrows2,C>  catVertical(
     const Mat<T,nrows1,C> & upper,
     const Mat<T,nrows2,C> & lower)
 {
     Mat<T,nrows1+nrows2,C>    ret;
-    for (uint rr=0; rr<nrows1; ++rr)
-        for (uint cc=0; cc<C; ++cc)
+    for (size_t rr=0; rr<nrows1; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
             ret.rc(rr,cc) = upper.rc(rr,cc);
-    for (uint rr=0; rr<nrows2; ++rr)
-        for (uint cc=0; cc<C; ++cc)
+    for (size_t rr=0; rr<nrows2; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
             ret.rc(nrows1+rr,cc) = lower.rc(rr,cc);
     return ret;
 }
 // Create a taller matrix by concatenating a given value to all columns:
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Mat<T,R+1,C>        catVertical(Mat<T,R,C> const & mat,T val)
 {
-    Mat<T,R+1,C>  ret;
-    uint    ii=0;
-    for (; ii<R*C; ++ii)
+    Mat<T,R+1,C>        ret;
+    size_t              off = scast<size_t>(R) * C;
+    for (size_t ii=0; ii<off; ++ii)
         ret[ii] = mat[ii];
-    ret[ii] = val;
+    for (size_t ii=off; ii<off+C; ++ii)
+        ret[ii] = val;
     return ret;
 }
-// Parameterized unmirrored permutation of axes in 3D:
+// create square matrix to rotation permute elements of 3D vectors:
 template<class T>
-Mat<T,3,3>          permuteAxes(uint axisToBecomeX)
+Mat<T,3,3>          cRotationPermuter(size_t axisToBecomeX)
 {
-    Mat<T,3,3>    ret;
-    for (uint ii=0; ii<3; ++ii)
+    FGASSERT(axisToBecomeX < 3);
+    Mat<T,3,3>          ret {0};
+    for (size_t ii=0; ii<3; ++ii)
         ret.rc(ii,(ii+axisToBecomeX)%3) = T(1);
     return ret;
 }
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 bool                isPow2(Mat<T,R,C> const & mat)
 {
-    for (uint ii=0; ii<R*C; ++ii)
+    for (size_t ii=0; ii<R*C; ++ii)
         if (!isPow2(mat[ii]))
             return false;
     return true;
 }
-template<class T,uint R,uint C>
-T                   cMean(Mat<T,R,C> const & mat)
-{
-    typedef typename Traits<T>::Accumulator Acc;
-    typedef typename Traits<T>::Scalar      Scal;
-    Acc     acc = Acc(mat[0]);
-    for (uint ii=1; ii<R*C; ++ii)
-        acc += Acc(mat[ii]);
-    return T(acc / Scal(R*C));
-}
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 double              cDot(Svec<Mat<T,R,C>> const & v0,Svec<Mat<T,R,C>> const & v1)
 {
     FGASSERT(v0.size() == v1.size());
@@ -1023,7 +794,7 @@ double              cDot(Svec<Mat<T,R,C>> const & v0,Svec<Mat<T,R,C>> const & v1
     return acc;
 }
 // Weighted dot product:
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 double              reduceDotWgt(
     Svec<Mat<T,R,C>> const &    v0,
     Svec<Mat<T,R,C>> const &    v1,
@@ -1036,55 +807,43 @@ double              reduceDotWgt(
         acc += cDot(v0[ii],v1[ii]) * w[ii];
     return acc;
 }
-template<typename T,uint dim>
+template<typename T,size_t dim>
 T                   cTrace(const Mat<T,dim,dim> & mat)
 {
     T                   ret(0);
-    uint constexpr      inc = dim+1;    // Increment by a row's worth plus 1
-    for (uint ii=0; ii<mat.numElems(); ii+=inc)
+    size_t constexpr      inc = dim+1;    // Increment by a row's worth plus 1
+    for (size_t ii=0; ii<mat.numElems(); ii+=inc)
         ret += mat[ii];
     return ret;
 }
 // For Mat/Vec use linear interpolation
-template<uint R,uint C>
+template<size_t R,size_t C>
 Mat<double,R,C>     interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val 0: m0, 1: m1
 {
-    return m0*(1.0-val) + m1*(val);
+    return m0*(1.0-val) + m1*val;
 }
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 inline T            cSumElems(Mat<T,R,C> const & mat) {return cSum(mat.m); }
 
-template<typename T,uint R,uint C>
-void                normalize_(Mat<T,R,C> & mat)
-{
-    double              len = mat.len();
-    FGASSERT(len > 0);
-    mat.m /= scast<T>(len);
-}
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 Mat<T,R,C>          normalize(Mat<T,R,C> mat)
 {
-    double              len = mat.len();
+    double              len = cLenD(mat);
     FGASSERT(len > 0);
     return mat / scast<T>(len);
 }
 // Find first index of an element in a Svec. Return 'size' if not found:
-template<typename T,uint R>
-uint                findFirstIdx(Mat<T,R,1> mat,T v)
+template<typename T,size_t R>
+size_t                findFirstIdx(Mat<T,R,1> mat,T v)
 {
-    for (uint ii=0; ii<R; ++ii)
+    for (size_t ii=0; ii<R; ++ii)
         if (mat[ii] == v)
             return ii;
     return R;
 }
 
-// Solve linear system of equations of the form Mx = b. Assumes matrix is well-conditioned:
-Vec2D               solveLinear(Mat22D const & M,Vec2D const & b);
-Vec3D               solveLinear(Mat33D const & M,Vec3D const & b);
-Vec4D               solveLinear(Mat44D const & M,Vec4D const & b);
-
-template<typename T,uint R,uint C>
+template<typename T,size_t R,size_t C>
 bool                noZeroElems(Mat<T,R,C> mat)
 {
     T                   acc = T(1);
@@ -1093,40 +852,33 @@ bool                noZeroElems(Mat<T,R,C> mat)
     return (acc != T(0));
 }
 
-template<class T,uint R,uint C>
-double              cMag(Mat<T,R,C> mat) {return cMag(mat.m); }
+template<class T,size_t R,size_t C>
+double              cMagD(Mat<T,R,C> mat) {return cMagD(mat.m); }
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 double              cRms(Mat<T,R,C> mat) {return cRms(mat.m); }
 
-template<typename T,uint R,uint C>
-inline double       cLen(Svec<Mat<T,R,C>> const & v) {return std::sqrt(cMag(v)); }
+template<typename T,size_t R,size_t C>
+inline double       cLenD(Svec<Mat<T,R,C>> const & v) {return std::sqrt(cMagD(v)); }
 
-template<uint R,uint C>
+template<size_t R,size_t C>
 Mat<double,R,C>     cReal(const Mat<std::complex<double>,R,C> & mat)   // Return real compoments
 {
     Mat<double,R,C>   ret;
-    for (uint ii=0; ii<R*C; ++ii)
+    for (size_t ii=0; ii<R*C; ++ii)
         ret[ii] = mat[ii].real();
     return ret;
 }
 
-template<class T,class U,uint R,uint C>
-void                scast_(Mat<T,R,C> const & i,Mat<U,R,C> & o)
-{
-    for (size_t ii=0; ii<i.numElems(); ++ii)
-        scast_(i[ii],o[ii]);
-}
-
 // Transpose a matrix stored as an array of arrays. All sub-arrays must have same size:
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Mat<Svec<T>,R,C>    transpose(Svec<Mat<T,R,C>> const & v)
 {
     Mat<Svec<T>,R,C>   ret;
-    for (uint ii=0; ii<R*C; ++ii)
+    for (size_t ii=0; ii<R*C; ++ii)
         ret[ii].resize(v.size());
     for (size_t jj=0; jj<v.size(); ++jj) {
-        for (uint ii=0; ii<R*C; ++ii)
+        for (size_t ii=0; ii<R*C; ++ii)
             ret[ii][jj] = v[jj][ii];
     }
     return ret;
@@ -1134,33 +886,33 @@ Mat<Svec<T>,R,C>    transpose(Svec<Mat<T,R,C>> const & v)
 
 // project a vector onto an unnormalized arbitrary axis
 // (ie. find the vector component parallel to that axis):
-template<class T,uint dim>
+template<class T,size_t dim>
 Mat<T,dim,1>        projectVec(Mat<T,dim,1> vec,Mat<T,dim,1> axis)
 {
-    return axis * (cDot(vec,axis) / cMag(axis));
+    return axis * (cDot(vec,axis) / cMagD(axis));
 }
 
 // remap vector indices from the given lookup list:
-template<uint N>
-Mat<uint,N,1>       remapInds(Mat<uint,N,1> inds,Uints const & inToOut)
+template<size_t N>
+Arr<uint,N>       remapInds(Arr<uint,N> inds,Uints const & inToOut)
 {
-    Mat<uint,N,1>           r;
+    Arr<uint,N>           r;
     for (uint ii=0; ii<N; ++ii)
         r[ii] = inToOut[inds[ii]];
     return r;
 }
-template<uint N>
-Svec<Mat<uint,N,1>> remapInds(Svec<Mat<uint,N,1>> const & inds,Uints const & inToOut)
+template<size_t N>
+Svec<Arr<uint,N>> remapInds(Svec<Arr<uint,N>> const & inds,Uints const & inToOut)
 {
-    Svec<Mat<uint,N,1>>     ret; ret.reserve(inds.size());
-    for (Mat<uint,N,1> const & idx : inds)
+    Svec<Arr<uint,N>>     ret; ret.reserve(inds.size());
+    for (Arr<uint,N> const & idx : inds)
         ret.push_back(remapInds(idx,inToOut));
     return ret;
 }
 
 // Change a square matrix representation under a permutation of 2 of the axes:
-template<class T,uint dim>
-Mat<T,dim,dim>      permuteAxes(
+template<class T,size_t dim>
+Mat<T,dim,dim>      cRotationPermuter(
     Mat<T,dim,dim> const &      M,
     Mat<uint,dim,1>             p)  // Permuation map from input index to output index. NOT checked for validity.
 {
@@ -1171,12 +923,12 @@ Mat<T,dim,dim>      permuteAxes(
     return ret;
 }
 
-template<class T,uint R,uint C>
+template<class T,size_t R,size_t C>
 Mat<T,C,R>          cHermitian(Mat<T,R,C> const & mat)
 {
     Mat<T,C,R>        ret;
-    for (uint rr=0; rr<R; ++rr)
-        for (uint cc=0; cc<C; ++cc)
+    for (size_t rr=0; rr<R; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
             ret.rc(cc,rr) = std::conj(mat.rc(rr,cc));
     return ret;
 }
@@ -1214,8 +966,8 @@ struct      MatS3D
     FG_SER2(diag,offd);
 
     MatS3D() {}
-    explicit MatS3D(double fillVal) {diag.fill(fillVal); offd.fill(fillVal); }
-    explicit MatS3D(Mat33D const &);   // Checks for symmetry
+    explicit MatS3D(double fillVal) : diag{fillVal}, offd{fillVal} {}
+    explicit MatS3D(Mat33D const &);   // Checks for exact symmetry
     MatS3D(Arr<double,3> const & d,Arr<double,3> const & o) : diag(d), offd(o)  {}
 
     double              rc(size_t row,size_t col) const
@@ -1251,7 +1003,7 @@ struct      MatS3D
     Vec3D               diagonal() const {return Vec3D{diag}; }
     double              sumElems() const {return cSum(diag) + 2.0 * cSum(offd); }
     // Sum of squares of elements (== square of frobenius norm):
-    double              mag() const {return cMag(diag) + 2.0 * cMag(offd); }
+    double              magD() const {return cMagD(diag) + 2.0 * cMagD(offd); }
     double              dot(MatS3D const & rhs) const {return cDot(diag,rhs.diag) + 2.0 * cDot(offd,rhs.offd); }
     double              determinant() const;
     MatS3D              inverse() const;
@@ -1259,20 +1011,22 @@ struct      MatS3D
     // returns M^T * S * M, so that the action on vectors x^T * S * x acts as if the vectors have been transformed to x' = M * x.
     MatS3D              transform(Mat33D const & M) const;
 
-    static MatS3D       identity() {return { {{1,1,1}} , {{0,0,0}} }; }
+    static MatS3D       identity() {return {{1,1,1},{0,0,0}}; }
     // isotropic random symmetric positive definite matrix with ln eigenvalues ~ N(0,lnEigStdev):
     static MatS3D       randSpd(double lnEigStdev);
 };
 typedef Svec<MatS3D>    MatS3Ds;
 
 std::ostream &      operator<<(std::ostream & os,MatS3D const & mat);
-inline double       cMag(MatS3D const & mat) {return mat.mag(); }
+inline double       cMagD(MatS3D const & mat) {return mat.magD(); }
 inline double       cSum(MatS3D const & mat) {return mat.sumElems(); }
 inline double       cDot(MatS3D const & l,MatS3D const & r) {return l.dot(r); }
 inline double       cDeterminant(MatS3D const & mat) {return mat.determinant(); }
 inline MatS3D       cInverse(MatS3D const & mat) {return mat.inverse(); }
 // apply *only* a quadratic form (no factor of 1/2, no constant):
 inline double       cQuadForm(MatS3D const & Q,Vec3D const & x_m) {return cDot(x_m,Q*x_m); }
+// return the congruent transform of a 3D symmetric matrix, M^T * S * M, which is also symmetric:
+MatS3D              cCongruentTransform(MatS3D const & S,Mat33D const & M);
 inline MatS3D       mapSqr(MatS3D const & mat) {return MatS3D {mapSqr(mat.diag),mapSqr(mat.offd)}; }
 inline MatS3D       mapMul(MatS3D const & mat,MatS3D const & n)
 {
@@ -1281,8 +1035,9 @@ inline MatS3D       mapMul(MatS3D const & mat,MatS3D const & n)
 inline double       sumElems(MatS3D const & mat) {return cSum(mat.diag) + cSum(mat.offd) * 2; }
 inline MatS3D       outerProductSelf(Vec3D v)
 {
-    return          {{mapSqr(v.m)},{{v[0]*v[1],v[0]*v[2],v[1]*v[2]}}};
+    return          {{mapSqr(v.m)},{v[0]*v[1],v[0]*v[2],v[1]*v[2]}};
 }
+MatS3D              transposeSelfProduct(Mat33D const & M);       // returns M^T * M, which is always SPD
 
 struct      MeanCov3
 {
@@ -1299,10 +1054,10 @@ struct      MatUT3D
 
     MatUT3D() {}
     explicit MatUT3D(Arr<double,6> const & data) : m{data} {}
-    MatUT3D(double s0,double s1,double s2) : m{{s0,0,0,s1,0,s2}} {}         // diagonal matrix
-    MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5) : m{{m0,m1,m2,m3,m4,m5}} {}
-    explicit MatUT3D(Arr3D const & s) : m{{s[0],0,0,s[1],0,s[2]}} {}        // diagonal matrix
-    MatUT3D(Arr3D const & diag,Arr3D const & offd) : m{{diag[0],offd[0],offd[1],diag[1],offd[2],diag[2]}} {}
+    MatUT3D(double s0,double s1,double s2) : m{s0,0,0,s1,0,s2} {}         // diagonal matrix
+    MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5) : m{m0,m1,m2,m3,m4,m5} {}
+    explicit MatUT3D(Arr3D const & s) : m{s[0],0,0,s[1],0,s[2]} {}        // diagonal matrix
+    MatUT3D(Arr3D const & diag,Arr3D const & offd) : m{diag[0],offd[0],offd[1],diag[1],offd[2],diag[2]} {}
 
     static MatUT3D  identity()  {return MatUT3D{1,1,1}; }
     static MatUT3D  diagonal(double v) {return MatUT3D{v,v,v}; }
@@ -1326,15 +1081,18 @@ struct      MatUT3D
     double          determinant() const {return m[0]*m[3]*m[5]; }
     Mat33D          asMatrix() const {return Mat33D {m[0],m[1],m[2],0,m[3],m[4],0,0,m[5]}; }
     // Sum of squares of elements (== square of frobenius norm):
-    double          mag() const {return cMag(m); }
+    double          magD() const {return cMagD(m); }
     MatS3D          luProduct() const;
     MatUT3D         inverse() const;
 };
 std::ostream &      operator<<(std::ostream &,MatUT3D const &);
 inline double       cDeterminant(MatUT3D const & mat) {return mat.determinant(); }
-inline double       cMag(MatUT3D const & mat) {return mat.mag(); }
+inline double       cMagD(MatUT3D const & mat) {return mat.magD(); }
+// given the principal axes of a desired positive definite quadratic form, scaled *inversely* to their length,
+// return the precision cholesky upper triangular matrix (pcut) of the quadratic form:
+MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2);     // Axes must be perpendicular. Invariant to order and sign of axes.
 
-template<class T,uint D>
+template<class T,size_t D>
 struct      NameVec
 {
     String          name;
@@ -1342,6 +1100,7 @@ struct      NameVec
     FG_SER2(name,vec)
 
     NameVec() {}
+    explicit NameVec(Mat<T,D,1> const & v) : vec{v} {}
     NameVec(String const & n,Mat<T,D,1> const & v) : name{n}, vec{v} {}
 
     bool            operator==(NameVec const & r) const {return ((name==r.name)&&(vec==r.vec)); }
@@ -1352,19 +1111,25 @@ typedef Svec<NameVec2F>     NameVec2Fs;
 typedef Svec<NameVec2Fs>    NameVec2Fss;
 typedef NameVec<float,3>    NameVec3F;
 typedef Svec<NameVec3F>     NameVec3Fs;
-template<class T,uint D>
-std::ostream &      operator<<(std::ostream & os,NameVec<T,D> const & nv)
-{
-    return os << nv.name << ": " << nv.vec;
-}
+
+template<class T,size_t D>
+std::ostream &      operator<<(std::ostream & os,NameVec<T,D> const & nv) {return os << nv.name << ": " << nv.vec; }
+
+template<class T,size_t D,class U>
+NameVec<T,D>        operator*(U const & xf,NameVec<T,D> const & nv) {return {nv.name,xf*nv.vec}; }
+
 // select nameVecs in order of names and return the vecs. Throws if any of names is not found in nameVecs:
-template<class T,uint D>
+template<class T,size_t D>
 Svec<Mat<T,D,1>>    selectVecsByName(Svec<NameVec<T,D>> const & nameVecs,Strings const & names)
 {
-    Svec<Mat<T,D,1>>    ret; ret.reserve(names.size());
-    for (String const & name : names)
-        ret.push_back(findFirst(nameVecs,name).vec);
-    return ret;
+    auto                fn = [&](String const & name)
+    {
+        size_t              idx = findFirstIdx(nameVecs,name);
+        if (idx == nameVecs.size())
+            fgThrow("Landmark not found",name);
+        return nameVecs[idx].vec;
+    };
+    return mapCall(names,fn);
 }
 
 }

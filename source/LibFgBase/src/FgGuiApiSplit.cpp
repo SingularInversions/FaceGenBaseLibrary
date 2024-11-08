@@ -13,6 +13,16 @@ using namespace std;
 
 namespace Fg {
 
+Vec2UI              GuiSplit::gapTotal() const
+{
+    auto                fn = [](uint dim,uint gap)
+    {
+        uint            num = (dim > 0) ? (dim-1) : 0;
+        return num * gap;
+    };
+    return mapCall(panes.dims(),gapSize,fn);
+}
+
 GuiPtr              guiSplit(Img<GuiPtr> const & panes)
 {
     if (panes.empty())
@@ -27,8 +37,8 @@ GuiPtr              guiSplit(Img<GuiPtr> const & panes)
 GuiPtr              guiSplitScroll(GuiPtrs const & panes,uint spacing)
 {
     GuiSplitScroll     ret;
-    ret.updateFlag = makeUpdateFlag(makeIPT(0));        // dummy node ensures initial one-time setup
-    ret.getPanes = [panes](){return panes; };
+    ret.updateFlag = cUpdateFlagT(makeIPT(0));        // dummy node ensures initial one-time setup
+    ret.getPanes = [panes](){return Img<GuiPtr>(1,panes.size(),panes); };
     ret.spacing = spacing;
     return make_shared<GuiSplitScroll>(ret);
 }
@@ -36,14 +46,14 @@ GuiPtr              guiSplitScroll(GuiPtrs const & panes,uint spacing)
 GuiPtr              guiSplitScroll(Sfun<GuiPtrs(void)> const & getPanes)
 {
     GuiSplitScroll     ret;
-    ret.updateFlag = makeUpdateFlag(makeIPT(0));        // dummy node ensures initial one-time setup
-    ret.getPanes = getPanes;
+    ret.updateFlag = cUpdateFlagT(makeIPT(0));        // dummy node ensures initial one-time setup
+    ret.getPanes = [getPanes](){GuiPtrs ptrs = getPanes(); return Img<GuiPtr>(1,ptrs.size(),ptrs); };
     return make_shared<GuiSplitScroll>(ret);
 }
 
 GuiPtr              guiSplitScroll(
-    DfgFPtr const &                 updateNodeIdx,      // Must be unique to this object
-    Sfun<GuiPtrs(void)> const &     getPanes,           // Dynamic window recreation on updateFlag
+    DfFPtr const &                 updateNodeIdx,      // Must be unique to this object
+    Sfun<Img<GuiPtr>(void)> const & getPanes,           // Dynamic window recreation on updateFlag
     uint                            spacing)
 {
     GuiSplitScroll     ret;
@@ -55,15 +65,10 @@ GuiPtr              guiSplitScroll(
 
 GuiPtr              guiSplitScroll(Img<GuiPtr> const & panes)
 {
-    // TODO: split scroll needs to work with IMG as it's native format:
-    GuiPtrs             merged;
-    for (size_t yy=0; yy<panes.height(); ++yy) {
-        GuiPtrs             row;
-        for (size_t xx=0; xx<panes.width(); ++xx)
-            row.push_back(panes.xy(xx,yy));
-        merged.push_back(guiSplitH(row));
-    }
-    return guiSplitScroll(merged);
+    GuiSplitScroll      gui;
+    gui.updateFlag = cUpdateFlagT(makeIPT(0));
+    gui.getPanes = [panes](){return panes; };
+    return make_shared<GuiSplitScroll>(gui);
 }
 
 }

@@ -10,6 +10,7 @@
 #include "FgImageIo.hpp"
 #include "FgParse.hpp"
 #include "FgImgDisplay.hpp"
+#include "FgFileSystem.hpp"
 
 using namespace std;
 
@@ -80,11 +81,12 @@ void                cmdCompare(CLArgs const & args)
 
 void                cmdComposite(CLArgs const & args)
 {
-    Syntax              syn(args,
-        "<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>\n"
-        "    Composite images of equal pixel dimensions.\n"
-        "    <overlay>.<imgExt> must have an alpha channel\n"
-        "    <imgExt> = " + clOptionsStr(getImgExts()));
+    Syntax              syn {args,R"(<base>.<imgExt> <overlay>.<imgExt> <output>.<imgExt>
+    <imgExt>        - )" + clOptionsStr(getImgExts()) + R"(
+NOTES:
+    * composites images of equal pixel dimensions
+    * <overlay>.<imgExt> must have an alpha channel)"
+    };
     ImgRgba8            base = loadImage(syn.next()),
                         overlay = loadImage(syn.next());
     if (base.dims() != overlay.dims())
@@ -229,13 +231,14 @@ NOTES:
         if (fileExists(lmsFile))
             lms = loadLandmarks(lmsFile);
         if (overwrite)          // remove any existing LMs we want to overwrite:
-            lms = findAll(lms,[&](NameVec2F const & l){return !contains(lmNames,l.name); });
-        Strings             lmsDefined = sliceMember(lms,&NameVec2F::name);
-        if (containsAll(lmsDefined,lmNames)) {
+            lms = select(lms,[&](NameVec2F const & l){return !contains(lmNames,l.name); });
+        Strings             lmsDefined = mapMember(lms,&NameVec2F::name),
+                            lmsToMark = setwiseSubtract(lmNames,lmsDefined);
+        if (lmsToMark.empty()) {
             fgout << "All LMs already defined";
             continue;
         }
-        NameVec2Fs          lmsNew = markImage(img,lms,lmNames);
+        NameVec2Fs          lmsNew = markImage(img,lms,lmsToMark);
         if (lmsNew == lms)
             fgout << "No landmarks placed, nothing saved";
         else {
@@ -260,10 +263,10 @@ NOTES:
     size_t              count = syn.nextAs<uint>();
     if (count < 1)
         syn.error("invalid value for <count>");
-    ImgC4F              lin = mapGamma(toUnitC4F(loadImage(syn.next())),gamma);
+    Img4F               lin = mapGamma(toUnit4F(loadImage(syn.next())),gamma);
     for (size_t ii=0; ii<count; ++ii)
         lin = shrink2(lin);
-    saveImage(toRgba8(mapGamma(lin,1.0f/gamma)),syn.next());
+    saveImage(toRgba8Gamma(lin,1.0f/gamma),syn.next());
 }
 
 }
@@ -272,12 +275,12 @@ void                cmdImgops(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
-        {cmdAnnotate,"anno","Paint landmark points as green crosses on an image"},
+        {cmdAnnotate,"anno","Paint landmarks as green crosses into an image"},
         {cmdCompare,"comp","compare two images of equal pixel dimensions"},
         {cmdComposite,"composite","Composite an image with transparency over another"},
         {cmdConvert,"convert","Convert images between different formats"},
         {cmdCreate,"create","create simple agorithmic images"},
-        {cmdMark,"mark","Place landmark points on an image"},
+        {cmdMark,"mark","Place landmark points on an image, stored in a text file"},
         {cmdShrink,"shrink","Shrink images by factors of 2"},
     };
     doMenu(args,cmds);

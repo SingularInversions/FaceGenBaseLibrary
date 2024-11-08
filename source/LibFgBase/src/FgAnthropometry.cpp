@@ -24,6 +24,22 @@ ostream &           operator<<(ostream & os,FaceView fv)
         FGASSERT_FALSE;
     return os;
 }
+char                toChar(FaceView fv)
+{
+    Arr<char,3>     FLR = {'F','L','R',};
+    size_t          idx = static_cast<size_t>(fv);
+    if (idx >= 3)
+        fgThrow("Invalid FaceView value",idx);
+    return FLR[idx];
+}
+FaceView            toFaceView(char ch)
+{
+    Arr<char,3>     FLR = {'F','L','R',};
+    size_t          idx = findFirstIdx(FLR,ch);
+    if (idx >= 3)
+        fgThrow("Invalid FaceView character",ch);
+    return scast<FaceView>(idx);
+}
 
 FaceLmAtts const &  getFaceLmAtts()
 {
@@ -43,6 +59,8 @@ FaceLmAtts const &  getFaceLmAtts()
         {FaceLm::noseBridgeMiddle,"NoseBridgeMiddle"},
         {FaceLm::noseTip,"NoseTip"},                        // Pronasale
         {FaceLm::subNasale,"SubNasale"},
+        {FaceLm::earJoinUpperL,"EarJoinUpperL"},            {FaceLm::earJoinUpperR,"EarJoinUpperR"},
+        {FaceLm::earJoinLowerL,"EarJoinLowerL"},            {FaceLm::earJoinLowerR,"EarJoinLowerR"},
         {FaceLm::jawOuterL,"JawOuterL"},                    {FaceLm::jawOuterR,"JawOuterR"},
         {FaceLm::mouthCornerL,"MouthCornerL"},              {FaceLm::mouthCornerR,"MouthCornerR"},
         {FaceLm::cristaPhiltriL,"CristaPhiltriL"},          {FaceLm::cristaPhiltriR,"CristaPhiltriR"},
@@ -59,25 +77,6 @@ FaceLmAtts const &  getFaceLmAtts()
     return ret;
 }
 
-Svec<Pair<Gender,char>> cGenderCharList()
-{
-    return {
-        {Gender::female,'f'},
-        {Gender::male,'m'},
-    };
-}
-
-Svec<Pair<RaceGroup,char>> cRaceCharList()
-{
-    return {
-        {RaceGroup::african,'a'},
-        {RaceGroup::caucasian,'c'},
-        {RaceGroup::eAsian,'e'},
-        {RaceGroup::sAsian,'s'},
-        {RaceGroup::other,'o'},
-    };
-}
-
 ostream &           operator<<(std::ostream & os,FaceLm fl)
 {
     return os << findFirst(getFaceLmAtts(),fl).label;
@@ -92,7 +91,44 @@ Opt<FaceLm>         fromStr<FaceLm>(String const & s)
     return {};
 }
 
-FaceLms             getLmsEyelid()
+Svec<Pair<Gender,char>> cGenderCharList()
+{
+    return {
+        {Gender::female,'f'},
+        {Gender::male,'m'},
+    };
+}
+
+std::ostream &      operator<<(std::ostream & os,Gender g)
+{
+    static Strings      gstrs {"female","male"};
+    return os << gstrs[scast<size_t>(g)];
+}
+
+Svec<Pair<RaceGroup,char>> cRaceCharList()
+{
+    return {
+        {RaceGroup::african,'a'},
+        {RaceGroup::caucasian,'c'},
+        {RaceGroup::eAsian,'e'},
+        {RaceGroup::sAsian,'s'},
+        {RaceGroup::other,'o'},
+    };
+}
+
+std::ostream &      operator<<(std::ostream & os,RaceGroup rg)
+{
+    static Strings      rstrs {
+        "African",
+        "Caucasian",
+        "East Asian",
+        "South Asian",
+        "Other",
+    };
+    return os << rstrs[scast<size_t>(rg)];
+}
+
+FaceLms             getLmsEyelid4()
 {
     return {
         FaceLm::endocanthionL,      FaceLm::endocanthionR,
@@ -102,9 +138,9 @@ FaceLms             getLmsEyelid()
     };
 }
 
-FaceLms             getLmsEyelidExt()
+FaceLms             getLmsEyelid8()
 {
-    return cat(getLmsEyelid(),{
+    return cat(getLmsEyelid4(),{
         FaceLm::lidLowerInnerHalfL, FaceLm::lidLowerInnerHalfR,
         FaceLm::lidLowerOuterHalfL, FaceLm::lidLowerOuterHalfR,
         FaceLm::lidUpperInnerHalfL, FaceLm::lidUpperInnerHalfR,
@@ -112,7 +148,7 @@ FaceLms             getLmsEyelidExt()
     });
 }
 
-FaceLms             getLmsMouth()
+FaceLms             getLmsMouth6()
 {
     return {
         FaceLm::mouthCornerL,       FaceLm::mouthCornerR,
@@ -120,30 +156,6 @@ FaceLms             getLmsMouth()
         FaceLm::labialeSuperius,
         FaceLm::labialeInferius,
     };
-}
-
-FaceLms                 getEyeGuideLms(Sagg LR)
-{
-    if (LR == Sagg::left)
-        return {
-            FaceLm::exocanthionL,
-            FaceLm::lidLowerCentreL,
-            FaceLm::lidUpperCentreL,
-            FaceLm::lidLowerInnerHalfL,
-            FaceLm::lidLowerOuterHalfL,
-            FaceLm::lidUpperInnerHalfL,
-            FaceLm::lidUpperOuterHalfL,
-        };
-    else
-        return {
-            FaceLm::exocanthionR,
-            FaceLm::lidLowerCentreR,
-            FaceLm::lidUpperCentreR,
-            FaceLm::lidLowerInnerHalfR,
-            FaceLm::lidLowerOuterHalfR,
-            FaceLm::lidUpperInnerHalfR,
-            FaceLm::lidUpperOuterHalfR,
-        };
 }
 
 Strings             toLabels(FaceLms const & lms)
@@ -198,10 +210,8 @@ Strings             getLmStrsNose()
 static SquareF      cFaceRegion(Vec2Fs const & lms,Vec2F relShift,float relSize)
 {
     Mat22F              bnds = cBounds(lms);
-    Vec2F               lo = bnds.colVec(0),
-                        hi = bnds.colVec(1),
-                        centre = (lo+hi) * 0.5f;
-    float               sz = hi[1]-lo[1];
+    Vec2F               centre = bnds * Vec2F{0.5,0.5};
+    float               sz = (bnds * Vec2F{-1,1})[1];
     return {centre-relShift*sz,relSize*sz};
 }
 SquareF             cFaceRegionFrontal11(Vec2Fs const & lms)
@@ -218,58 +228,6 @@ SquareF             cFaceRegionProfileR9(Vec2Fs const & lms)
 {
     FGASSERT(lms.size() == 9);
     return cFaceRegion(lms,{0.9f,0.8f},1.5f);
-}
-
-FaceLmsV3           parseLmsV3(Vec2Fs const & pacs)
-{
-    FaceLmsV3           ret;
-    auto                ltX = [](Vec2F l,Vec2F r){return l[0] < r[0]; };
-    auto                ltY = [](Vec2F l,Vec2F r){return l[1] < r[1]; };
-    Vec2Fs              ptsY = sortAll(pacs,ltY);
-    if (ptsY.size() == 9) {          // profile
-        bool                right = ptsY[8][0] < ptsY[7][0];        // compare chin front & jaw bottom X
-        ret.lms.emplace_back(FaceLm::lipUpperFront,ptsY[5]);
-        ret.lms.emplace_back(FaceLm::lipLowerFront,ptsY[6]);
-        ret.lms.emplace_back(FaceLm::chinFront,ptsY[7]);
-        ret.lms.emplace_back(FaceLm::jawBottom,ptsY[8]);
-        Vec2Fs              sv05X = sortAll(cSubvec(ptsY,0,5),ltX);
-        if (right) {
-            ret.view = FaceView::right;
-            ret.lms.emplace_back(FaceLm::exocanthionR,sv05X[0]);
-            ret.lms.emplace_back(FaceLm::noseTip,sv05X[4]);
-        }
-        else {
-            ret.view = FaceView::left;
-            ret.lms.emplace_back(FaceLm::noseTip,sv05X[0]);
-            ret.lms.emplace_back(FaceLm::exocanthionL,sv05X[4]);
-        }
-        Vec2Fs              sv05X13Y = sortAll(cSubvec(sv05X,1,3),ltY);
-        ret.lms.emplace_back(FaceLm::sellion,sv05X13Y[0]);
-        ret.lms.emplace_back(FaceLm::noseBridgeMiddle,sv05X13Y[1]);
-        ret.lms.emplace_back(FaceLm::subNasale,sv05X13Y[2]);
-    }
-    else if (ptsY.size() == 11) {    // frontal
-        ret.view = FaceView::front;
-        ret.lms.emplace_back(FaceLm::chinBottom,ptsY.back());
-        Vec2Fs              sv64X = sortAll(cSubvec(ptsY,6,4),ltX);
-        ret.lms.emplace_back(FaceLm::jawOuterR,sv64X[0]);
-        ret.lms.emplace_back(FaceLm::mouthCornerR,sv64X[1]);
-        ret.lms.emplace_back(FaceLm::mouthCornerL,sv64X[2]);
-        ret.lms.emplace_back(FaceLm::jawOuterL,sv64X[3]);
-        Vec2Fs              sv06X = sortAll(cSubvec(ptsY,0,6),ltX);
-        ret.lms.emplace_back(FaceLm::cheekboneR,sv06X[0]);
-        ret.lms.emplace_back(FaceLm::cheekboneL,sv06X[5]);
-        Vec2Fs              sv06X14Y = sortAll(cSubvec(sv06X,1,4),ltY);
-        Vec2Fs              sv06X14Y22X = sortAll(cSubvec(sv06X14Y,2,2),ltX);
-        ret.lms.emplace_back(FaceLm::alarOuterR,sv06X14Y22X[0]);
-        ret.lms.emplace_back(FaceLm::alarOuterL,sv06X14Y22X[1]);
-        Vec2Fs              sv06X14Y02X = sortAll(cSubvec(sv06X14Y,0,2),ltX);
-        ret.lms.emplace_back(FaceLm::pupilCentreR,sv06X14Y02X[0]);
-        ret.lms.emplace_back(FaceLm::pupilCentreL,sv06X14Y02X[1]);
-    }
-    else
-        fgThrow("Not a valid number of landmarks for V3");
-    return ret;
 }
 
 }

@@ -57,12 +57,12 @@ void                savePly(String8 const & fname,Meshes const & meshes,String i
     for (Surf const & surf : mesh.surfaces) {
         NPolys<3>          tris = surf.getTriEquivs();
         for (size_t ii=0; ii<tris.size(); ++ii) {
-            Vec3UI           vinds = tris.vertInds[ii];
+            Arr3UI           vinds = tris.vertInds[ii];
             ofs << "3 " << vinds[0] << " " << vinds[1] << " " << vinds[2] << " 6 ";
             if (surf.tris.uvInds.empty())
                 ofs << "0 0 0 0 0 0 ";
             else {
-                Vec3UI   uvInds = tris.uvInds[ii];
+                Arr3UI   uvInds = tris.uvInds[ii];
                 for (uint vv=0; vv<3; ++vv) {
                     Vec2F    uv = mesh.uvs[uvInds[vv]];
                     ofs << uv[0] << " " << uv[1] << " ";
@@ -84,8 +84,8 @@ void                testSavePly(CLArgs const & args)
     mouth.surfaces[0].setAlbedoMap(loadImage(dd+rd+"MouthSmall.png"));
     Mesh                glasses = loadTri(dd+rd+"Glasses.tri");
     glasses.surfaces[0].setAlbedoMap(loadImage(dd+rd+"Glasses.tga"));
-    savePly("meshExportPly",svec(mouth,glasses));
-    if (isCompiledWithMsvc() && is64Bit())      // precision differences otherwise
+    savePly("meshExportPly",{mouth,glasses});
+    if (is64Bit() && (getCurrentCompiler()==Compiler::vs22))      // precision differences otherwise
         regressFileRel("meshExportPly.ply","base/test/");
     regressFileRel("meshExportPly0.png","base/test/");
     regressFileRel("meshExportPly1.png","base/test/");

@@ -26,14 +26,14 @@ GuiPtr              guiCheckbox(String8 const & label,IPT<bool> const & node)
     return make_shared<GuiCheckbox>(cb);
 }
 
-GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs)
+GuiPtr              guiCheckboxes(String8s const & labels,Svec<IPT<bool> > const & selNs,bool scroll)
 {
     FGASSERT(!labels.empty());
     FGASSERT(selNs.size() == labels.size());
     GuiPtrs                   wins;
     for (size_t ii=0; ii<labels.size(); ++ii)
         wins.push_back(guiCheckbox(labels[ii],selNs[ii]));
-    return guiSplitV(wins);
+    return scroll ? guiSplitScroll(Img{1,wins.size(),wins}) :  guiSplitV(wins);
 }
 
 }

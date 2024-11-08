@@ -15,9 +15,9 @@ using namespace std::placeholders;
 
 namespace Fg {
 
-GuiPtr              guiText(NPT<String8> node,Vec2B wantStretch,bool rich)
+GuiPtr              guiText(NPT<String8> node,Arr2B wantStretch,bool rich)
 {
-    Str32s              lines = splitLines(toUtf32(node.cref().m_str),0,true);
+    Str32s              lines = splitLines(toUtf32(node.val().m_str),0,true);
     size_t              maxWid = clamp<size_t>(cMaxElem(cSizes(lines)),12,90);
     GuiText             gt;
     gt.content = node;
@@ -28,7 +28,7 @@ GuiPtr              guiText(NPT<String8> node,Vec2B wantStretch,bool rich)
     return std::make_shared<GuiText>(gt);
 }
 
-GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Vec2B wantStretch)
+GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,Arr2B wantStretch)
 {
     GuiText             gt;
     gt.content = node;
@@ -41,7 +41,7 @@ GuiPtr              guiTextLines(NPT<String8> node,uint minWidth,uint minHeight,
 GuiPtr              guiTextEdit(IPT<String8> node,bool wantStretch)
 {
     GuiTextEdit         gtr;
-    gtr.updateFlag = makeUpdateFlag(node);
+    gtr.updateFlag = cUpdateFlagT(node);
     gtr.getInput = [node](){return node.val(); };
     gtr.setOutput = [node](String8 s){node.set(s); };
     gtr.minWidth = 100;
@@ -61,7 +61,7 @@ static void         strToSetVal(String8 str,VecD2 bounds,Sfun<void(double)> setV
 };
 
 GuiPtr              guiTextEditFixed(
-    DfgFPtr             updateFlag,
+    DfFPtr             updateFlag,
     Sfun<double()>      getVal,
     Sfun<void(double)>  setVal,
     VecD2               bounds,
@@ -76,18 +76,18 @@ GuiPtr              guiTextEditFixed(
         return toStrFixed(getVal(),numFraction);
     };
     te.setOutput = bind(strToSetVal,_1,bounds,setVal);
-    return guiMakePtr(te);
+    return guiPtr(te);
 }
 
 GuiPtr              guiTextEditFixed(IPT<double> valN,VecD2 bounds,uint numFraction)
 {
     auto            getVal = [=](){return valN.val(); };
     auto            setVal = [=](double val){valN.set(val); };
-    return guiTextEditFixed(makeUpdateFlag(valN),getVal,setVal,bounds,numFraction);
+    return guiTextEditFixed(cUpdateFlagT(valN),getVal,setVal,bounds,numFraction);
 }
 
 GuiPtr              guiTextEditFloat(
-    DfgFPtr             updateFlag,
+    DfFPtr             updateFlag,
     Sfun<double()>      getVal,
     Sfun<void(double)>  setVal,
     VecD2               bounds,
@@ -102,14 +102,14 @@ GuiPtr              guiTextEditFloat(
         return toStrPrec(getVal(),numDigits);
     };
     te.setOutput = bind(strToSetVal,_1,bounds,setVal);
-    return guiMakePtr(te);
+    return guiPtr(te);
 }
 
 GuiPtr              guiTextEditFloat(IPT<double> valN,VecD2 bounds,uint numDigits)
 {
     auto                getVal = [=](){return valN.val(); };
     auto                setVal = [=](double val){valN.set(val); };
-    return guiTextEditFloat(makeUpdateFlag(valN),getVal,setVal,bounds,numDigits);
+    return guiTextEditFloat(cUpdateFlagT(valN),getVal,setVal,bounds,numDigits);
 }
 
 }

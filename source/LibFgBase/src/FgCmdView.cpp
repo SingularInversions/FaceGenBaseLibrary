@@ -11,10 +11,10 @@
 #include "Fg3dDisplay.hpp"
 #include "Fg3dMeshIo.hpp"
 #include "Fg3dMesh.hpp"
-
+#include "FgParse.hpp"
 #include "FgImgDisplay.hpp"
 #include "FgImageDraw.hpp"
-#include "FgAffine.hpp"
+#include "FgTransform.hpp"
 #include "FgBuild.hpp"
 #include "FgApproxEqual.hpp"
 
@@ -26,43 +26,37 @@ namespace {
 
 void                cmdViewImage(CLArgs const & args)
 {
-    Syntax              syn {args,
-        R"((<image>.<ext> [<points>.txt])+
-    <ext>      - ()" + cat(getImgExts(),",") + R"()
-    <points>   - optional points annotation file in simple YOLO format
+    Syntax              syn {args,R"((<imageFilenames>.txt | (<image>.<ext> [<landmarks>.txt]))+
+    <imageFilenames>.txt    - One image filename per line. Lines starting with # are ignored.
+    <ext>                   - ()" + cat(getImgExts(),",") + R"()
+    <landmarks>             - Optional landmarks annotation file in YOLO format
 OUTPUT:
-    displays the image(s) [and landmarks] in a window, allowing for zoom
+    Displays the image(s) [and landmarks] in a window, allowing for zoom
 NOTES:
-    if the file <image>.lms.txt exists (and no <points> is specified),
-    it will be automatically used to load landmarks.)"
+    If no <landmarks>.txt is specified but <image>.lms.txt exists, it will be loaded automatically.)"
     };
-    AnnotatedImgs       ais;
+    ImageLmsNames       ais;
     do {
-        AnnotatedImg        ai;
-        String8             imgFname = syn.next(),
-                            lmsFname = pathToDirBase(imgFname)+".lms.txt";
-        ai.name = pathToBase(imgFname);
-        ai.img = loadImage(imgFname);
-        fgout << fgnl << imgFname << fgpush << ai.img << fgpop;
-        NameVec2Fs          lmsIrcs;
-        if (syn.more() && (toLower(pathToExt(syn.peekNext())) == "txt"))
-            lmsIrcs = loadLandmarks(syn.next());
-        else if (fileExists(lmsFname))
-            lmsIrcs = loadLandmarks(lmsFname);
-        if (!lmsIrcs.empty()) {
-            PushIndent          pind {imgFname.m_str+" Landmarks:"};
-            Mat22F              bnds {0,scast<float>(ai.img.width()),0,scast<float>(ai.img.height())};
-            for (NameVec2F const & lm : lmsIrcs) {
-                fgout << fgnl << lm.name << ": " << lm.vec;
-                if (!isInBounds(bnds,lm.vec))
-                    fgout << " WARNING point not within image boundaries";
-                ai.ptsIrcs.push_back(lm.vec);
+        Path                fpath {syn.next()};
+        if (toLower(fpath.ext) == "txt") {                  // text file with list of filenames with '#' comment line
+            for (String const & imgFile : splitLines(loadRawString(fpath.str()),'#')) {
+                fgout << fgnl << imgFile;
+                ais.emplace_back(imgFile);
             }
         }
-        ais.push_back(ai);
+        else {
+            NameVec2Fs          lmsIrcs;
+            if (syn.more() && (toLower(pathToExt(syn.peekNext())) == "txt"))
+                ais.emplace_back(fpath.str(),syn.next());
+            else
+                ais.emplace_back(fpath.str());
+            fgout << fgnl << fpath.str();
+        }
     } while (syn.more());
-    if (ais.size() == 1)
-        viewImage(ais[0].img,ais[0].ptsIrcs);
+    if (ais.size() == 1) {
+        fgout << ais[0];
+        viewImage(ais[0].img,mapMember(ais[0].lmsIrcs,&NameVec2F::vec));
+    }
     else
         viewImages(ais);
 }
@@ -89,7 +83,7 @@ NOTES:
         fgThrow("<base> and <targ> vertex lists are different sizes");
     float               maxDim = cMaxElem(cDims(base.verts)),
                         thresh = epsBits(bits) * maxDim;
-    TriInds             triInds = merge(sliceMember(base.surfaces,&Surf::tris));
+    TriInds             triInds = merge(mapMember(base.surfaces,&Surf::tris));
     ImgRgba8            map {1024,1024,Rgba8{200,200,200,255}};
     Rgba8               color {255,0,0,255};
     size_t              sigDels {0},
@@ -209,14 +203,14 @@ NOTES:
 
 void                cmdViewUvs(CLArgs const & args)
 {
-    Syntax              syn {args,
-        R"(<mesh>.<ext> [<texImage>]+
+    Syntax              syn {args,R"(<mesh>.<ext> [<texImage>]+
     <ext> = )" + getMeshLoadExtsCLDescription()
     };
     Meshes              meshes = loadMeshes(syn.next());
     String8s            names;
-    AnnotatedImgs       ais;
-    Rgba8               color {0,255,0,255};
+    ImageLmsNames       ais;
+    Rgba8               blue {0,0,255,255},
+                        green {0,255,0,255};
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &        mesh = meshes[mm];
         String              meshName = mesh.name.empty() ? toStrDigits(mm,2) : mesh.name.m_str;
@@ -224,7 +218,7 @@ void                cmdViewUvs(CLArgs const & args)
             meshName += " (" + syn.curr() + ")";
         PushIndent          pind {"Mesh "+meshName};
         if (mesh.uvs.empty()) {
-            fgout << fgnl << "Mesh has no UVs";
+            fgout << fgnl << "WARNING: Mesh has no UVs";
             return;         // errors will result otherwise
         }
         Mat22F              bounds = cBounds(mesh.uvs);
@@ -235,12 +229,12 @@ void                cmdViewUvs(CLArgs const & args)
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const &        surf = mesh.surfaces[ss];
             String              surfName = surf.name.empty() ? toStrDigits(ss,2) : surf.name.m_str;
-            ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,color);
+            ImgRgba8            wi = cUvWireframeImage(mesh.uvs,surf.tris.uvInds,surf.quads.uvInds,blue,green);
             String8             name = meshName + " - " + surfName;
             if (syn.more())
-                ais.push_back({composite(wi,loadImage(syn.next())),Vec2Fs{},name});
+                ais.emplace_back(composite(wi,loadImage(syn.next())),NameVec2Fs{},name);
             else
-                ais.push_back({wi,Vec2Fs{},name});
+                ais.emplace_back(wi,NameVec2Fs{},name);
             fgout << fgnl << surfName << ": tris: " << surf.tris.uvInds.size() << " quads: " << surf.quads.uvInds.size();
         }
         fgout << fgpop;
@@ -250,15 +244,15 @@ void                cmdViewUvs(CLArgs const & args)
 
 }
 
-Cmds                getViewCmds()
+void                cmdView(CLArgs const & args)
 {
-    Cmds            cmds {
+    Cmds                cmds {
         {cmdViewDeltas,"deltas","View vertex deltas between meshes with 1-1 vertices"},
         {cmdViewImage,"image","Basic image viewer"},
         {cmdViewMesh,"mesh","Interactively view 3D meshes"},
         {cmdViewUvs,"uvs","View the UV layout of a 3D mesh"},
     };
-    return cmds;
+    doMenu(args,cmds);
 }
 
 }

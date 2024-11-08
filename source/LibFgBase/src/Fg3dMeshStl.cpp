@@ -22,7 +22,7 @@ saveStl(Ofstream & ff,Mesh const & mesh)
         Surf const &         surf = mesh.surfaces[ss];
         const FacetNormals &    facetNorms = norms.facet[ss];
         for (uint ii=0; ii<surf.numTris(); ++ii) {
-            Vec3UI           tri = surf.tris.vertInds[ii];
+            Arr3UI           tri = surf.tris.vertInds[ii];
             Vec3F            norm = facetNorms.tri[ii];
             for (uint jj=0; jj<3; ++jj)
                 writeBinRaw_(ff,norm[jj]);
@@ -34,7 +34,7 @@ saveStl(Ofstream & ff,Mesh const & mesh)
             writeBinRaw_(ff,uint16(0));
         }
         for (uint ii=0; ii<surf.numQuads(); ++ii) {
-            Vec4UI           quad = surf.quads.vertInds[ii];
+            Arr4UI           quad = surf.quads.vertInds[ii];
             Vec3F            norm = facetNorms.quad[ii];
             for (uint jj=0; jj<3; ++jj)
                 writeBinRaw_(ff,norm[jj]);

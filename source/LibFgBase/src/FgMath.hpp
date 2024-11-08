@@ -11,13 +11,6 @@
 
 namespace Fg {
 
-template <typename T>
-inline constexpr T  sqr(T a) {return (a*a); }
-template <typename T>
-inline T            cube(T a) {return (a*a*a); }
-// Euclidean length (L2 norm):
-template<typename T,size_t S>
-double              cLen(std::array<T,S> const a) {return std::sqrt(cMag(a)); }
 // Dot product is defined here as a recursive multiply-accumulate reduction on binary arguments
 // of the same type that returns a (double) scalar:
 inline double       cDot(double a,double b) {return a*b; }  // adding a float signature results in ambiguity
@@ -42,7 +35,7 @@ double              cDot(Svec<T> const & v0,Svec<T> const & v1)
 template<class T>
 double              cCos(Svec<T> const & v0,Svec<T> const & v1)
 {
-    double          mag = cMag(v0) * cMag(v1);
+    double          mag = cMagD(v0) * cMagD(v1);
     FGASSERT(mag > 0.0);
     return cDot(v0,v1) / sqrt(mag);
 }
@@ -50,6 +43,7 @@ double              cCos(Svec<T> const & v0,Svec<T> const & v1)
 template<typename T,FG_ENABLE_IF(T,is_integral)>
 bool                isPow2(T val) {return ((val > 0) && ((val & (val-1)) == 0)); }
 
+size_t              cNumDigits(size_t val);
 uint                numLeadingZeros(uint32 xx);         // 0 returns 32.
 uint8               numNonzeroBits8(uint8 xx);
 uint16              numNonzeroBits16(uint16 xx);
@@ -90,13 +84,15 @@ T                   cMod(T val,T divisor)
     return val - divisor * div;
 }
 
-// constexpr functions are always inline:
-double constexpr    pi()        {return 3.141592653589793237462643; }
-double constexpr    ln2Pi()     {return 1.837877066409345483560659; }
-double constexpr    sqrt2Pi()   {return 2.506628274631000502415765; }
-double constexpr    exp1()      {return 2.718281828459045235360287; }
-double constexpr    degToRad(double degrees) {return degrees * pi() / 180.0; }
-float  constexpr    degToRad(float degrees) {return degrees * 3.14159265f / 180.0f; }
+// doubles can be converted to 17 decimals and back without error:
+double constexpr    sqrt2 =     1.4142135623730950;
+double constexpr    invSqrt2 =  0.70710678118654752;
+double constexpr    pi =        3.1415926535897932;
+double constexpr    tau =       6.2831853071795865;
+double constexpr    lnTau =     1.8378770664093454;
+double constexpr    sqrtTau =   2.5066282746310006;
+double constexpr    degToRad(double degrees) {return degrees * pi / 180.0; }
+float  constexpr    degToRad(float degrees) {return degrees * scast<float>(pi) / 180.0f; }
 
 struct      Modulo
 {
@@ -130,9 +126,8 @@ inline double       cSsd(double l,double r) {return sqr(l-r); }
 template<class T,size_t S>
 double              cSsd(Arr<T,S> const & l,Arr<T,S> const & r)
 {
-    FGASSERT(l.size() == r.size());
-    double          acc = 0.0;
-    for (size_t ii=0; ii<l.size(); ++ii)
+    double              acc {0};
+    for (size_t ii=0; ii<S; ++ii)
         acc += cSsd(l[ii],r[ii]);
     return acc;
 }
@@ -140,25 +135,16 @@ template<class T>
 double              cSsd(Svec<T> const & v0,Svec<T> const & v1)    // Sum of square differences
 {
     FGASSERT(v0.size() == v1.size());
-    double          acc = 0.0;
+    double              acc {0};
     for (size_t ii=0; ii<v0.size(); ++ii)
         acc += cSsd(v0[ii],v1[ii]);
     return acc;
 }
 
 template<class T>
-double              cRms(Svec<T> const & v) {return std::sqrt(cMag(v) / v.size()); }
+double              cRms(Svec<T> const & v) {return std::sqrt(cMagD(v) / v.size()); }
 template<class T,size_t S>
-double              cRms(Arr<T,S> const & a) {return cMag(a) / double(S); }
-
-template<class T,size_t S>
-Arr<T,S>            mapAbs(const Arr<T,S> & a)
-{
-    Arr<T,S>     ret;
-    for (size_t ii=0; ii<S; ++ii)
-        ret[ii] = std::abs(a[ii]);
-    return ret;
-}
+double              cRms(Arr<T,S> const & a) {return cMagD(a) / double(S); }
 
 // Useful for min/max with different types:
 inline uint64       cMin(uint64 a,uint b) {return std::min(a,uint64(b)); }
@@ -187,10 +173,89 @@ Doubles             solveCubicReal(double c0,double c1,double c2);
 // Z-order curve aka Lebesgue curve aka Morton number
 // interleave bits of v0,v1,v2 respectively right to left. Values must all be < 2^10.
 size_t              zorder(size_t v0,size_t v1,size_t v2);
+
 inline double       logistic(double x) {return 1.0 / (1.0 + exp(-x)); } // Logistic function: x{R} -> (0,1)
 double              logit(double f);                                    // & inverse: f(0,1) -> R
 inline double       sigmoidq(double x) {return x / sqrt(1+sqr(x)); }    // signed quadratic sigmoid: x{R} -> (-1,1)
 double              sigmoidqInv(double f);                              // & inverse: f(-1,1) -> R
+inline double       sigunitq(double x) {return 0.5 + 0.5 * sigmoidq(x); }   // as above but range (0,1)
+inline double       sigunitqInv(double f) {return sigmoidqInv(2*f-1); }     // & inverse
+
+// return the normalized (ie. 1 when x=inf) integral of exp{-1/2 * x^2} from -inf to 'stdPos':
+inline double       integrateGaussian(double stdPos) {return std::erfc(-stdPos*invSqrt2) * 0.5; }
+
+// 1D [121] smooth for any floating point aggregate:
+template<class T>
+Svec<T>             smoothOpen(Svec<T> const & v)       // preserves endpoint values
+{
+    size_t              S = v.size();
+    Svec<T>             ret; ret.reserve(S);
+    if (S==0) return ret;
+    ret.push_back(v[0]);
+    if (S==1) return ret;
+    for (size_t ii=1; ii+1<S; ++ii)
+        ret.push_back(v[ii-1]*0.25+v[ii]*.5+v[ii+1]*0.25);
+    ret.push_back(v[S-1]);
+    return ret;
+}
+
+// 1D closed manifold simple subdivision of sample values returns a vector of twice the size:
+template<class T>
+Svec<T>             subdivideSimpleClosed(Svec<T> const & v)
+{
+    size_t              S = v.size();
+    Svec<T>             ret; ret.reserve(S*2);
+    for (size_t ii=0; ii<S; ++ii) {
+        T const &           e = v[ii];
+        ret.push_back(e);
+        ret.push_back((e + v[(ii+1)%S]) / 2);
+    }
+    return ret;
+}
+// 1D open manifold simple subdivision of sample values returns a vector size 2N-1:
+template<class T>
+Svec<T>             subdivideSimpleOpen(Svec<T> const & v)
+{
+    size_t              S = v.size();
+    Svec<T>             ret;
+    if (S == 0) return ret;
+    ret.reserve(S*2-1);
+    T const             *prev = &v[0],
+                        *next = prev;
+    for (size_t ii=1; ii<S; ++ii) {
+        next = &v[ii];
+        ret.push_back(*prev);
+        ret.push_back((*prev + *next)/2);
+        prev = next;
+    }
+    ret.push_back(*next);
+    return ret;
+}
+// 1D open manifold smoothing subdivision of sample values returns a vector size 2N-1 (end points left fixed):
+template<class T>
+Svec<T>             subdivideSmoothOpen(Svec<T> const & v)
+{
+    size_t              S = v.size();
+    Svec<T>             ret;
+    if (S == 0) return ret;
+    ret.reserve(S*2-1);
+    ret.push_back(v[0]);                        // end point fixed
+    if (S == 1) return ret;
+    T const             *prev = &v[0],
+                        *curr = &v[1],
+                        *next = curr;
+    for (size_t ii=2; ii<S; ++ii) {
+        next = &v[ii];
+        ret.push_back((*prev + *curr)/2);
+        // control points move as [121] smooth with their [11] interpolated neighbours, which yields [161]:
+        ret.push_back((*prev + (*curr)*6 + *next)/8);
+        prev = curr;
+        curr = next;
+    }
+    ret.push_back((*prev + *curr)/2);
+    ret.push_back(*next);                       // end point fixed
+    return ret;
+}
 
 }
 

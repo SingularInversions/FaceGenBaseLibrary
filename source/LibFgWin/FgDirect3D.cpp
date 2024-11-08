@@ -83,11 +83,11 @@ void                PipelineState::attachVertexShader(ComPtr<ID3D11Device> pDevi
     HRESULT             hr;
     hr = pDevice->CreateVertexShader(shaderIR.data(),shaderIR.size(),nullptr,m_pVertexShader.GetAddressOf());
     FG_ASSERT_HR(hr);
-    array<pair<char const *,DXGI_FORMAT>,3>  semantics {{
+    Arr<pair<char const *,DXGI_FORMAT>,3>  semantics {
         {"POSITION",DXGI_FORMAT_R32G32B32_FLOAT},
         {"NORMAL",  DXGI_FORMAT_R32G32B32_FLOAT},
         {"TEXCOORD",DXGI_FORMAT_R32G32_FLOAT}
-    }};
+    };
     vector<D3D11_INPUT_ELEMENT_DESC> inputLayoutDescs;
     D3D11_INPUT_ELEMENT_DESC        elementDesc = {};
     for (auto sem : semantics) {
@@ -144,7 +144,7 @@ void                PipelineState::apply(ComPtr<ID3D11DeviceContext> pContext)
 
 D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMeshesN{rmsN}, logRelSize{lrsN}
 {
-    origMeshesDimsN = link1<RendMeshes,Vec3F>(rendMeshesN,[](RendMeshes const & rms)
+    origMeshesDimsN = link1(rendMeshesN,[](RendMeshes const & rms)
     {
         Mat32F      bounds {
             lims<float>::max(),-lims<float>::max(),
@@ -152,10 +152,10 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMe
             lims<float>::max(),-lims<float>::max()
         };
         for (RendMesh const & rm : rms) {
-            Mat32F      bnds = cBounds(rm.origMeshN.cref().verts);
+            Mat32F      bnds = cBounds(rm.origMeshN.val().verts);
             bounds = cBoundsUnion(bounds,bnds);
         }
-        return bounds.colVec(1) - bounds.colVec(0);
+        return bounds * Vec2F{-1,1};
     });
     HRESULT             hr = 0;
     {
@@ -292,7 +292,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMe
         {
             float constexpr     c = 255;
             Svec<Vec4F>         init {{c,b,b,t},{c,c,b,t},{b,c,b,t},{b,c,c,t},{b,b,c,t},{c,b,c,t},};
-            return mapCast<Vec4UC>(subdivide(subdivide(init)));
+            return mapCast<Vec4UC>(subdivideSimpleClosed(subdivideSimpleClosed(init)));
         };
         Svec<Vec4UC>            colsL = tintFn(200,255),
                                 colsT = tintFn(200,127),
@@ -314,7 +314,7 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMe
 D3d::~D3d()
 {
     // Release any GPU data pointers held outside this object:
-    RendMeshes const &      rms = rendMeshesN.cref();
+    RendMeshes const &      rms = rendMeshesN.val();
     for (RendMesh const & rm : rms) {
         rm.gpuData->reset();
         for (RendSurf const & rs : rm.rendSurfs)
@@ -455,15 +455,15 @@ WinPtr<ID3D11Buffer> D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & 
     // markers too small to see, and use of a very flat face cutout to make them too big.
     float                   sz = cMedian(origMeshesDimsN.val().m) * (1.0f / 160.0f),
                             relSize = float(exp(logRelSize.node.val())),
-                            scale = cMax(1.0f,relSize);
+                            scale = cMax(1.0f,relSize*2);
     sz /= scale;            // Shrink points as they are zoomed in for greater visual accuracy
     Verts                   verts;
-    Vec3Fs const &          rendVerts = rendMesh.posedVertsN.cref();
+    Vec3Fs const &          rendVerts = rendMesh.shapeVertsN.val();
     for (Surf const & origSurf : origMesh.surfaces) {
         for (SurfPointName const & sp : origSurf.surfPoints) {
             Vec3F               pos = origSurf.surfPointPos(rendVerts,sp.point);
-            for (Vec3UI tri : icosahedron.tris) {
-                for (uint idx : tri.m) {
+            for (Arr3UI tri : icosahedron.tris) {
+                for (uint idx : tri) {
                     Vert            v;
                     v.pos = pos + icosahedron.verts[idx] * sz;
                     v.norm = icosahedron.verts[idx];            // icosahedron verts are unit distance from origin
@@ -480,7 +480,7 @@ WinPtr<ID3D11Buffer> D3d::makeSurfPoints(RendMesh const & rendMesh,Mesh const & 
 WinPtr<ID3D11Buffer> D3d::makeMarkedVerts(RendMesh const & rendMesh,Mesh const & origMesh)
 {
     Verts               verts;
-    Vec3Fs const &      rendVerts = rendMesh.posedVertsN.cref();
+    Vec3Fs const &      rendVerts = rendMesh.shapeVertsN.val();
     for (MarkedVert const & mv : origMesh.markedVerts) {
         Vert            v;
         v.pos = rendVerts[mv.idx];
@@ -512,15 +512,15 @@ D3d::Verts          D3d::makeVertList(
 {
     D3d::Verts              vertList;
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    MeshNormals const &     normals = rendMesh.normalsN.cref();
+    MeshNormals const &     normals = rendMesh.normalsN.val();
     Vec3Fs const &          norms = normals.vert;
     FacetNormals const &    normFlats = normals.facet[surfNum];
-    Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
+    Vec3Fs const &          verts = rendMesh.shapeVertsN.val();
     vertList.reserve(3*size_t(origSurf.numTriEquivs()));
     bool                    hasUVs = origSurf.hasUvIndices();
     for (size_t tt=0; tt<origSurf.numTriEquivs(); ++tt) {
-        Vec3UI                  vertInds = origSurf.getTriEquivVertInds(tt),
-                                uvInds = hasUVs ? origSurf.getTriEquivUvInds(tt) : Vec3UI{0};
+        Arr3UI                  vertInds = origSurf.getTriEquivVertInds(tt),
+                                uvInds = hasUVs ? origSurf.getTriEquivUvInds(tt) : Arr3UI{0};
         for (uint ii=2; ii<3; --ii) {   // Reverse order due to D3D LEFT-handed coordinate system
             Vert                v;
             size_t              vertIdx = vertInds[ii];
@@ -541,28 +541,40 @@ D3d::Verts          D3d::makeVertList(
 
 D3d::Verts          D3d::makeLineVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum) {
     D3d::Verts              ret;
-    Vec3Fs const &          verts = rendMesh.posedVertsN.cref();
+    Vec3Fs const &          verts = rendMesh.shapeVertsN.val();
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    Vec3UIs const &         tris = origSurf.tris.vertInds;
-    Vec4UIs const &         quads = origSurf.quads.vertInds;
+    Arr3UIs const &         tris = origSurf.tris.vertInds;
+    Arr4UIs const &         quads = origSurf.quads.vertInds;
     ret.reserve(8*quads.size()+6*tris.size());
-    Vert                        v;
-    v.norm = Vec3F(0,0,1);
-    v.uv = Vec2F(0);
-    for (Vec3UI tri : tris) {
+    for (Arr3UI tri : tris) {
         for (uint ii=0; ii<3; ++ii) {
-            v.pos = verts[tri[ii]];
-            ret.push_back(v);
-            v.pos = verts[tri[(ii+1)%3]];
-            ret.push_back(v);
+            ret.push_back(Vert{verts[tri[ii]],{0,0,1},{0,0}});
+            ret.push_back(Vert{verts[tri[(ii+1)%3]],{0,0,1},{0,0}});
         }
     }
-    for (Vec4UI quad : quads) {
+    for (Arr4UI quad : quads) {
         for (uint ii=0; ii<4; ++ii) {
-            v.pos = verts[quad[ii]];
-            ret.push_back(v);
-            v.pos = verts[quad[(ii+1)%4]];
-            ret.push_back(v);
+            ret.push_back(Vert{verts[quad[ii]],{0,0,1},{0,0}});
+            ret.push_back(Vert{verts[quad[(ii+1)%4]],{0,0,1},{0,0}});
+        }
+    }
+    return ret;
+}
+
+D3d::Verts          D3d::makeFlagVerts(RendMesh const & rendMesh,Mesh const & origMesh,size_t surfNum) {
+    D3d::Verts              ret;
+    Vec3Fs const &          verts = rendMesh.shapeVertsN.val();
+    Surf const &            origSurf = origMesh.surfaces[surfNum];
+    Arr3UIs const &         tris = origSurf.tris.vertInds;
+    size_t                  T = origSurf.tris.size();
+    FGASSERT(origSurf.edgeFlags.size() == T);
+    for (size_t tt=0; tt<T; ++tt) {
+        for (uint ee=0; ee<3; ++ee) {
+            if (origSurf.edgeFlags[tt][ee]) {
+                Arr2UI              edge = getEdge(tris[tt],ee);
+                for (uint idx : edge)
+                    ret.push_back(Vert{verts[idx],{0,0,1},{0,0}});
+            }
         }
     }
     return ret;
@@ -685,7 +697,7 @@ WinPtr<ID3D11Buffer> D3d::makeScene(Vec3F ambient,Mat44F worldToD3vs,Mat44F d3vs
 void                D3d::setBgImage(BackgroundImage const & bgi)
 {
     bgImg.reset();
-    ImgRgba8 const &    img = bgi.imgN.cref();
+    ImgRgba8 const &    img = bgi.imgN.val();
     if (img.empty())
         return;
     Vec2UI              p2dims = mapMin(mapPow2Ceil(img.dims()),maxMapSize);
@@ -763,7 +775,7 @@ D3dMesh &           D3d::getD3dMesh(RendMesh const & rm) const
 {
     Any &               gpuMesh = *rm.gpuData;
     if (!gpuMesh.valid())
-        gpuMesh.reset(D3dMesh{makeUpdateFlag(rm.posedVertsN)});
+        gpuMesh.reset(D3dMesh{cUpdateFlagT(rm.shapeVertsN)});
     return gpuMesh.ref<D3dMesh>();
 }
 
@@ -780,15 +792,12 @@ D3dSurf &           D3d::getD3dSurf(RendSurf const & rs) const
     return gpuSurf.ref<D3dSurf>();
 }
 
-void                D3d::updateMap_(DfgFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
+void                D3d::updateMap_(DfFPtr const & flag,NPT<ImgRgba8> const & in,D3dMap & out)
 {
-    if (flag->checkUpdate()) {
+    if (flag && flag->checkUpdate()) {
         out.reset();
-        if (in.ptr) {
-            ImgRgba8 const &     img = in.cref();
-            if (!img.empty())
-                out = makeMap(img);
-        }
+        if (in.ptr && !in.val().empty())
+            out = makeMap(in.val());
     }
 }
 
@@ -806,9 +815,9 @@ void                D3d::renderBackBuffer(
     if (pRTV == nullptr)
         return;
     // Update 'd3dMeshes' (mesh and map data) if required:
-    RendMeshes const &      rendMeshes = rendMeshesN.cref();
+    RendMeshes const &      rendMeshes = rendMeshesN.val();
     for (RendMesh const & rendMesh : rendMeshes) {
-        Mesh const &        origMesh = rendMesh.origMeshN.cref();
+        Mesh const &        origMesh = rendMesh.origMeshN.val();
         D3dMesh &           d3dMesh = getD3dMesh(rendMesh);
         bool                vertsChanged = d3dMesh.vertsFlag->checkUpdate();
         bool                trisChanged = vertsChanged || (flatShaded != rendOpts.flatShaded);                          
@@ -818,7 +827,7 @@ void                D3d::renderBackBuffer(
             d3dMesh.allVerts.reset();
             d3dMesh.markedPoints.reset();
             if (valid) {
-                d3dMesh.allVerts = makeAllVerts(rendMesh.posedVertsN.cref());
+                d3dMesh.allVerts = makeAllVerts(rendMesh.shapeVertsN.val());
                 d3dMesh.markedPoints = makeMarkedVerts(rendMesh,origMesh);
             }
         }
@@ -864,7 +873,7 @@ void                D3d::renderBackBuffer(
     Arr<float,4>                bgColor {bg[0],bg[1],bg[2],255};
     if (backgroundTransparent)
         bgColor[3] = 0;
-    pContext->ClearRenderTargetView(pRTV.Get(),bgColor.data());
+    pContext->ClearRenderTargetView(pRTV.Get(),bgColor.begin());
     pContext->OMSetRenderTargets(1,dataPtr({pRTV.Get()}),pDSV.Get());
     opaquePassPSO.apply(pContext);
     if (bgImg.valid()) {
@@ -883,7 +892,7 @@ void                D3d::renderBackBuffer(
             rd.CullMode = rendOpts.twoSided ? D3D11_CULL_NONE : D3D11_CULL_BACK;
             if (rendOpts.wireframe || rendOpts.allVerts || rendOpts.surfPoints || rendOpts.markedVerts) {
                 // Increase depth values small amount to wireframe & allverts get shown.
-                // Only do this when necessary just in case some small confusting artifacts result.
+                // Only do this when necessary just in case some small confusing artifacts result.
                 rd.DepthBias = 1000;
                 rd.SlopeScaledDepthBias = 0.5f;
                 rd.DepthBiasClamp = 0.001f;
@@ -929,7 +938,7 @@ void                D3d::renderBackBuffer(
         mapViews[2] = noModulationMap.view.get();
         pContext->PSSetShaderResources(0,3,mapViews);
         for (RendMesh const & rendMesh : rendMeshes) {
-            Mesh const &        origMesh = rendMesh.origMeshN.cref();
+            Mesh const &        origMesh = rendMesh.origMeshN.val();
             if (origMesh.surfPointNum() > 0) {
                 D3dMesh &       d3dMesh = getD3dMesh(rendMesh);
                 if (d3dMesh.surfPoints) {   // Can be null if no surf points
@@ -942,9 +951,9 @@ void                D3d::renderBackBuffer(
     if (rendOpts.wireframe) {
         pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
         if (rendOpts.facets)        // Render wireframe blue over facets, white otherwise:
-            sceneBuff = makeScene(Vec3F(0,0,1),worldToD3vs,d3vsToD3ps);
+            sceneBuff = makeScene({0,0,1},worldToD3vs,d3vsToD3ps);
         else
-            sceneBuff = makeScene(Vec3F(1,1,1),worldToD3vs,d3vsToD3ps);
+            sceneBuff = makeScene({1,1,1},worldToD3vs,d3vsToD3ps);
         WinPtr<ID3D11RasterizerState>   rasterizer;
         {
             D3D11_RASTERIZER_DESC       rd = {};
@@ -956,7 +965,7 @@ void                D3d::renderBackBuffer(
         }
         pContext->RSSetState(rasterizer.get());
         for (RendMesh const & rendMesh : rendMeshes) {
-            Mesh const &        origMesh = rendMesh.origMeshN.cref();
+            Mesh const &        origMesh = rendMesh.origMeshN.val();
             size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size());
             //if (origMesh.surfaces.size() != rendMesh.rendSurfs.size())
             //    fgout << fgnl << "WARNING: wireframe render surf counts differ: "
@@ -967,8 +976,12 @@ void                D3d::renderBackBuffer(
                 Surf const &        origSurf = origMesh.surfaces[ss];
                 if (origSurf.empty())
                     continue;
-                if (!d3dSurf.lineVerts)     // GPU needs updating
-                    d3dSurf.lineVerts = makeVertBuff(makeLineVerts(rendMesh, origMesh, ss));
+                if (!d3dSurf.lineVerts) {   // GPU needs updating
+                    if (origSurf.edgeFlags.empty())
+                        d3dSurf.lineVerts = makeVertBuff(makeLineVerts(rendMesh,origMesh,ss));
+                    else
+                        d3dSurf.lineVerts = makeVertBuff(makeFlagVerts(rendMesh,origMesh,ss));
+                }
                 setVertexBuffer(d3dSurf.lineVerts.get());
                 ID3D11ShaderResourceView* mapViews[3];    // Albedo, specular resp.
                 mapViews[0] = greyMap.view.get();
@@ -987,12 +1000,12 @@ void                D3d::renderBackBuffer(
     pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
     ID3D11ShaderResourceView *  mapViews[3] {whiteMap.view.get(),blackMap.view.get(),noModulationMap.view.get()};
     if (rendOpts.allVerts) {
-        sceneBuff = makeScene(Vec3F{1,1,1},worldToD3vs,d3vsToD3ps);
+        sceneBuff = makeScene({1,1,1},worldToD3vs,d3vsToD3ps);
         for (size_t mm=0; mm<rendMeshes.size(); ++mm) {
             RendMesh const &        rendMesh = rendMeshes[mm];
             D3dMesh const &         d3dMesh = getD3dMesh(rendMesh);
             if (d3dMesh.allVerts) {
-                Mesh const &        origMesh = rendMesh.origMeshN.cref();
+                Mesh const &        origMesh = rendMesh.origMeshN.val();
                 mapViews[0] = tintMaps[selectTintMap(mm,rendMeshes.size())].strong.view.get();
                 pContext->PSSetShaderResources(0,3,mapViews);
                 setVertexBuffer(d3dMesh.allVerts.get());
@@ -1003,9 +1016,9 @@ void                D3d::renderBackBuffer(
     mapViews[0] = whiteMap.view.get();      // modified by allverts render above
     pContext->PSSetShaderResources(0,3,mapViews);
     if (rendOpts.markedVerts) {
-        sceneBuff = makeScene(Vec3F{1,1,0},worldToD3vs,d3vsToD3ps);
+        sceneBuff = makeScene({1,1,0},worldToD3vs,d3vsToD3ps);
         for (RendMesh const & rendMesh : rendMeshes) {
-            Mesh const &        origMesh = rendMesh.origMeshN.cref();
+            Mesh const &        origMesh = rendMesh.origMeshN.val();
             if (!origMesh.markedVerts.empty()) {
                 D3dMesh &       d3dMesh = getD3dMesh(rendMesh);
                 if (d3dMesh.markedPoints) {   // Can be null if no marked verts
@@ -1092,17 +1105,20 @@ void                D3d::renderTris(RendMeshes const & rendMeshes,RendOptions co
     size_t              M = rendMeshes.size();
     for (size_t mm=0; mm<M; ++mm) {
         RendMesh const & rendMesh = rendMeshes[mm];
-        if (rendMesh.posedVertsN.cref().empty())    // Not selected
+        if (rendMesh.shapeVertsN.val().empty())    // Not selected
             continue;
-        Mesh const &        origMesh = rendMesh.origMeshN.cref();
+        Mesh const &        origMesh = rendMesh.origMeshN.val();
         size_t              S = cMin(origMesh.surfaces.size(),rendMesh.rendSurfs.size());
         for (size_t ss=0; ss<S; ++ss) {
             Surf const &        origSurf = origMesh.surfaces[ss];
             if (origSurf.empty())
                 continue;
             RendSurf const &    rendSurf = rendMesh.rendSurfs[ss];
-            bool                transparency =
-                (rendSurf.albedoHasTransparencyN.val() || (rendOpts.albedoMode==AlbedoMode::byMesh));
+            bool                transparency {false};
+            if (rendSurf.albedoHasTransparencyN.valid() && rendSurf.albedoHasTransparencyN.val())
+                transparency = true;
+            if (rendOpts.albedoMode==AlbedoMode::byMesh)
+                transparency = true;
             if (transparentPass == transparency) {
                 D3dSurf &               d3dSurf = getD3dSurf(rendSurf);
                 FGASSERT(d3dSurf.triVerts);

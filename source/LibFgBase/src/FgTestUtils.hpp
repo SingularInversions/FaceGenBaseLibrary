@@ -24,6 +24,7 @@
 #include "FgCommand.hpp"
 #include "FgImageIo.hpp"
 #include "FgBuild.hpp"
+#include "FgFileSystem.hpp"
 
 namespace Fg {
 

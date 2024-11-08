@@ -51,20 +51,19 @@ NameVec2Fs          loadLandmarks(String8 const & fname)
             fgout << fgnl << "WARNING invalid line ignored: " << line;
             continue;
         }
-        NameVec2F           nv;
-        nv.name = objs[0];
+        Vec2F               vec;
         bool                coordsValid = true;
         for (size_t ii=0; ii<2; ++ii) {
             Opt<float>      vo = fromStr<float>(objs[ii+1]);
             if (!vo.has_value()) {
-                fgout << fgnl << "WARNING invalid number for point " << nv.name << ": " << objs[ii+1];
+                fgout << fgnl << "WARNING invalid number for point " << objs[0] << ": " << objs[ii+1];
                 coordsValid = false;
             }
             else
-                nv.vec[ii] = vo.value();
+                vec[ii] = vo.value();
         }
         if (coordsValid)
-            ret.push_back(nv);
+            ret.push_back(NameVec2F{objs[0],vec});
     }
     return ret;
 }

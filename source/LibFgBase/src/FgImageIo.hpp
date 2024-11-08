@@ -10,6 +10,7 @@
 #define FGIMAGEIO_HPP
 
 #include "FgImage.hpp"
+#include "FgFile.hpp"
 
 namespace Fg {
 
@@ -48,6 +49,8 @@ void                    saveImage(ImgRgba8 const & img,String8 const & fname);
 // These should be stored in the file <imgBase>.lms.txt, where the image is in <imgBase>.<ext>
 NameVec2Fs              loadLandmarks(String8 const & fname);
 void                    saveLandmarks(NameVec2Fs const & lmsIrcs,String8 const & fname);
+// swaps the extension and loads landmarks from <basename>.lms.txt (throw if that file doesn't exist):
+inline NameVec2Fs       loadImageLandmarks(String8 const & imgFname) {return loadLandmarks(pathToDirBase(imgFname)+".lms.txt"); }
 
 //  JPEG-specific:
 void                    saveJfif(

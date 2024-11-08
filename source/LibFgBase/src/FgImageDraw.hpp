@@ -14,23 +14,23 @@
 
 namespace Fg {
 
+Arr<Arr3F,6>        cColors6();
+Arr<Rgba8,6>        cColors6Rgba();     // return the 6 colors composed of either 1 or 2 channels max others zero.
+
 // Simple (aliased) filled circle. Radius 0 yields a single pixel (ie. actual radius is 0.5 larger):
-void            drawDotIrcs(ImgRgba8 & img,Vec2I posIrcs,uint radius,Rgba8 color);
-void            drawLineIrcs(ImgRgba8 & img,Vec2I begin,Vec2I end,Rgba8 color);
-void            drawSolidRectangle_(ImgRgba8 & img,Vec2UI posIrcs,Vec2UI szPixels,Rgba8 clr);
+void                drawDotIrcs(ImgRgba8 & img,Vec2I posIrcs,uint radius,Rgba8 color);
+void                drawLineIrcs(ImgRgba8 & img,Vec2I begin,Vec2I end,Rgba8 color);
+void                drawSolidRectangle_(ImgRgba8 & img,Vec2UI posIrcs,Vec2UI szPixels,Rgba8 clr);
 
-// Square bar graph of one or more data series:
-ImgRgba8        cBarGraph(Doubless const & data,uint pixPerBar,uint pixSpacing=0);
-ImgRgba8        cBarGraph(Sizes const & data);
+// Square bar graph of one or more data series, each series colored in order R,G,B, ... repeat
+// data series can be different lengths but are assumed to start at same point and be equispaced
+ImgRgba8            cBarGraph(Doubless data,uint pixPerBar,uint pixSpacing=0);
+ImgRgba8            cBarGraph(Sizes const & data);
 
-void            drawFunction(
-    ImgRgba8 &               img,            // OUTPUT
-    Sfun<double(double)>    func,
-    VecD2                   bounds,         // abscissa value at image x bounds
-    double                  vscale,         // y pixels per unit
-    Rgba8                  colour);
-
-void            drawFunctions(MatD const & funcs);  // Columns are function values
+ImgRgba8            cLineGraph(
+    MatD const &            data,           // rows are measures, cols are series to be graphed
+    uint                    pixPerPnt,      // abscissa pixels per series element
+    Strings const &         labels={});     // if non-empty must be 1-1 with data rows. Print label-color guide to CL
 
 }
 
