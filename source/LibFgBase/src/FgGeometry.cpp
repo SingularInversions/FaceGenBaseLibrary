@@ -570,7 +570,7 @@ void                testTensorArea(CLArgs const &)
 
 void                testFindSaggSymm(CLArgs const & args)
 {
-    Mesh                baseMesh = loadTri(dataDir() + "tools/internal/InternalBaseFace.tri");
+    Mesh                baseMesh = loadTri(dataDir() + "base/Jane.tri");
     Affine3F            mirror;
     findSaggitalSymmetry(baseMesh.verts,mirror);
     Mesh                tmpMesh = baseMesh;
