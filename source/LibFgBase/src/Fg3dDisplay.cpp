@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -208,7 +208,7 @@ GuiPtr              makeRendCtrls(
     bool                pointOptions,
     IPT<bool> *         supportTransparencyNPtr)
 {
-    vector<OptInit>         opts = {
+    Svec<OptInit>           opts = {
         {false,"Shiny","Shiny"},                            // 0
         {false,"Wireframe","Wireframe"},                    // 1
         {false,"FlatShaded","Flat Shaded"},                 // 2
@@ -424,7 +424,7 @@ GuiPtr              cMeshEditPointsW(Gui3d & api)
                 }
             }
             if (closest.valid())
-                pointLabelN.set(closest.val());
+                pointLabelN.set(closest.object);
         }
     };
     auto                clearPointsFn = [rendMeshesN]()
@@ -451,7 +451,7 @@ GuiPtr              cMeshEditPointsW(Gui3d & api)
         if (labels.empty())
             return guiText("No surface points");
         else
-            return guiText(cat(labels,"\n"));
+            return guiText(cat(sortAll(labels),"\n"));
     };
     GuiPtr              textW = guiText(
         "View surface point name: left-click on point.\n"
@@ -561,7 +561,7 @@ GuiPtr              cMeshEditVertsDelW(
             Uints               toRemove;
             RendMesh const &    rm = rms[0];
             Vec3Fs const &      verts = rm.shapeVertsN.val();
-            MeshNormals const & norms = rm.normalsN.val();
+            SurfNormals const & norms = rm.normalsN.val();
             for (size_t vv=0; vv<verts.size(); ++vv) {
                 Vec3F const &       vert = verts[vv];
                 Vec4F               d3psH = toD3ps * append(vert,1.0f);
@@ -784,11 +784,16 @@ OPT<Vec3Fs>         linkAllVerts(NPT<Mesh> meshN)
 
 OPT<Mat32D>         linkMeshBounds(NPT<Mesh> const & meshN)
 {
-    auto                fn = [](Mesh const & mesh){return Mat32D{cBounds(mesh.verts)}; };
+    auto                fn = [](Mesh const & mesh)
+    {
+        Arr<Vec3F,2>        bounds {Vec3F{lims<float>::max()},Vec3F{lims<float>::lowest()}};
+        bounds = updateBounds(mesh.verts,bounds);
+        return Mat32D{catH(bounds)};
+    };
     return link1(meshN,fn);
 }
 
-OPT<MeshNormals>    linkMeshNormals(NPT<Mesh> const & meshN,NPT<Vec3Fs> const & shapeVertsN)
+OPT<SurfNormals>    linkMeshNormals(NPT<Mesh> const & meshN,NPT<Vec3Fs> const & shapeVertsN)
 {
     auto            fn = [](Mesh const & mesh,Vec3Fs const & verts) {return cNormals(mesh.surfaces,verts); };
     return link2(meshN,shapeVertsN,fn);
@@ -955,17 +960,14 @@ GuiPtr              GuiMorphMeshes::makePoseCtrls(bool editBoxes) const
 
 OPT<Mat32D>         linkBounds(RendMeshes const & rms)
 {
-    Svec<NPT<Mat32F>>       boundsNs;
-    for (RendMesh const & rm : rms) {
-        boundsNs.push_back(link1(rm.origMeshN,[](Mesh const & m){return cBounds(m.verts);}));
-    }
-    return linkN(boundsNs,[](vector<Mat32F> const & bs)
+    auto                fn0 = [](Svec<Mesh const *> const & ptrs)
     {
-        Mat32F    bounds = cBoundsUnion(bs);
-        if (bounds[1] < bounds[0])      // No meshes selected
-            bounds = Mat32F(0,1,0,1,0,1);
-        return Mat32D(bounds);
-    });
+        Arr<Vec3F,2>    ret = nullBounds<Vec3F>();
+        for (Mesh const * ptr : ptrs)
+            ret = updateBounds(ptr->verts,ret);
+        return Mat32D{catH(ret)};
+    };
+    return linkNPtrs(mapMember(rms,&RendMesh::origMeshN),fn0);
 }
 
 OPT<String8>        linkMeshStats(RendMeshes const & rms)
@@ -1036,10 +1038,10 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
 {
     FGASSERT(meshes.size() > 0);
     String8                 store = getDirUserAppDataLocalFaceGen({"SDK","viewMesh"});
-    Mat32F                  viewBounds = cBounds(meshes);
+    Mat32F                  viewBounds = catH(updateVertBounds2(meshes));
     if (!isFinite(viewBounds))
         fgThrow("viewMesh: Mesh vertices contain invalid floating point values");
-    IPT<Mat32D>             viewBoundsN = makeIPT(Mat32D{cBounds(meshes)});
+    IPT<Mat32D>             viewBoundsN = makeIPT(Mat32D{catH(updateVertBounds2(meshes))});
     GuiMorphMeshes          gpms;
     Svec<IPT<Mesh>>         meshNs;
     String8s                meshNames = mapMember(meshes,&Mesh::name);
@@ -1098,7 +1100,7 @@ Mesh                viewMesh(Meshes const & meshes,bool compare,String8 const & 
     }
     else {
         NPT<Bools>              selsN;
-        Svec<IPT<bool>>         selectNs = genSvec<IPT<bool>>(meshNames.size(),[](size_t){return makeIPT<bool>(true); });
+        Svec<IPT<bool>>         selectNs = genSvec(meshNames.size(),[](size_t){return makeIPT<bool>(true); });
         auto                    flipFn = [selectNs]()
         {
             for (IPT<bool> const & selN : selectNs) {
@@ -1177,7 +1179,7 @@ bool                guiPlaceSurfPoints_(Strings const & toPlace,Mesh & mesh)
         promptW = guiSelect(stepN,promptWs);
     }
     {
-        OPT<Mat32D>         boundsN = link1(meshN,[](Mesh const & mesh){return Mat32D(cBounds(mesh.verts)); });
+        OPT<Mat32D>         boundsN = link1(meshN,[](Mesh const & mesh){return Mat32D(catH(cBounds(mesh.verts))); });
         OPT<Vec3Fs>         vertsN = link1(meshN,[](Mesh const & mesh){return mesh.verts; });
         GuiMorphMeshes      gpms;
         auto                colorPtr = mesh.surfaces[0].material.albedoMap;

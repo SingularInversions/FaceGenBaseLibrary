@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -633,12 +633,12 @@ uint64              fromHex64Crc(String const & uk)
 Strings             cNumberedLabels(String const & baseLabel,size_t num)
 {
     size_t              numDigits = cNumDigits(num);
-    return genSvec<String>(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
+    return genSvec(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
 }
 String8s            cNumberedLabels(String8 const & baseLabel,size_t num)
 {
     size_t              numDigits = cNumDigits(num);
-    return genSvec<String8>(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
+    return genSvec(num,[&,numDigits](size_t ii){return baseLabel + toStrDigits(ii,numDigits); });
 }
 
 }

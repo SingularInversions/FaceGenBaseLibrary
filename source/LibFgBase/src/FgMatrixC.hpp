@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,7 +27,6 @@
 #define FGMATRIXC_HPP
 
 #include "FgMath.hpp"
-#include "FgRandom.hpp"
 
 namespace Fg {
 
@@ -36,21 +35,27 @@ struct      Mat
 {
     // note that Arr<Arr<T,C>,R> cannot be used since the compiler may add padding to the inner struct:
     Arr<T,R*C>          m;      // elements store by column then by row (row major)
-    FG_SER1(m)
+    FG_SER(m)
 
     // No initialization is done for types without a default ctor. Default zero-fill is not a solution, be explicit:
-    Mat() {}
-    explicit Mat(Arr<T,R*C> const & data) : m{data} {}
-    explicit Mat(T v) : m{v} {}     // fill value ctor
+    constexpr Mat() {}
+    constexpr explicit Mat(Arr<T,R*C> const & data) : m{data} {}
+    explicit constexpr Mat(Arr<Arr<T,C>,R> const & aa)    // input may have padding
+    {
+        for (size_t rr=0; rr<R; ++rr)
+            for (size_t cc=0; cc<C; ++cc)
+                m[rr*C+cc] = aa[rr][cc];
+    }
+    explicit constexpr Mat(T v) : m{v} {}     // fill value ctor
     // element value constructors; Arr enforces that number of args matches number of elems:
-    Mat(T x,T y) : m{x,y} {}
-    Mat(T x,T y,T z) : m{x,y,z} {}
-    Mat(T a,T b,T c,T d) : m{a,b,c,d} {}
-    Mat(T a,T b,T c,T d,T e) : m{a,b,c,d,e} {}
-    Mat(T a,T b,T c,T d,T e,T f) : m{a,b,c,d,e,f} {}
-    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m{a,b,c,d,e,f,g,h,i} {}
-    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l) : m{a,b,c,d,e,f,g,h,i,j,k,l} {}
-    Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p) : m{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p} {}
+    constexpr Mat(T x,T y) : m{x,y} {}
+    constexpr Mat(T x,T y,T z) : m{x,y,z} {}
+    constexpr Mat(T a,T b,T c,T d) : m{a,b,c,d} {}
+    constexpr Mat(T a,T b,T c,T d,T e) : m{a,b,c,d,e} {}
+    constexpr Mat(T a,T b,T c,T d,T e,T f) : m{a,b,c,d,e,f} {}
+    constexpr Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i) : m{a,b,c,d,e,f,g,h,i} {}
+    constexpr Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l) : m{a,b,c,d,e,f,g,h,i,j,k,l} {}
+    constexpr Mat(T a,T b,T c,T d,T e,T f,T g,T h,T i,T j,T k,T l,T m,T n,T o,T p) : m{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p} {}
 
     // default copy constructor (and thus assignment operator) must be explicitly defined to
     // differentiate from (explicit) conversion constructors below:
@@ -149,8 +154,8 @@ struct      Mat
     }
 
     // Static creation functions are handy because you can use the type abbreviations below:
-    static Mat          randUniform(T lo,T hi) {return Mat{randUniformArr<T,R*C>(lo,hi)}; }
-    static Mat          randNormal(T stdev=T(1)) {return Mat{randNormalArr<T,R*C>(0,stdev)}; }
+    static Mat          cRandUniform(T lo,T hi) {return Mat{cRandArrUniform<T,R*C>(lo,hi)}; }
+    static Mat          randNormal(T stdev=T(1)) {return Mat{cRandArrNormal<T,R*C>(0,stdev)}; }
 };
 
 template<class T,size_t R,size_t C>
@@ -203,6 +208,7 @@ typedef Svec<Vec3UI>            Vec3UIs;
 typedef Svec<Vec3D>             Vec3Ds;
 typedef Svec<Vec4UI>            Vec4UIs;
 typedef Svec<Vec4F>             Vec4Fs;
+typedef Svec<Vec4F>             Vec4Ds;
 
 typedef Svec<Vec2Ds>            Vec2Dss;
 typedef Svec<Vec2Fs>            Vec2Fss;
@@ -242,10 +248,8 @@ template<class T,class U,size_t R,size_t C>
 inline Mat<T,R,C>   mapCast(Mat<U,R,C> const & mat) {return Mat<T,R,C>(mapCast<T,U,R*C>(mat.m)); }
 
 template <class T,size_t R,size_t C>
-std::ostream &      operator<<(std::ostream & ss,Mat<T,R,C> const & mmIn)
+std::ostream &      operator<<(std::ostream & ss,Mat<T,R,C> const & mm)
 {
-    typedef typename Traits<T>::Printable   P;
-    Mat<P,R,C>              mm {mmIn};
     std::ios::fmtflags      oldFlag = ss.setf(std::ios::fixed | std::ios::showpos | std::ios::right);
     std::streamsize         oldPrec = ss.precision(6);
     if (mm.numRows() == 1 || mm.numCols() == 1) {   // Vector prints in single line
@@ -273,7 +277,7 @@ std::ostream &      operator<<(std::ostream & ss,Mat<T,R,C> const & mmIn)
 // construct by function
 
 template<class T,size_t D>
-Mat<T,D,D>          cDiagMat(T val)         // diagonal matrix of one value. Template arguments required
+Mat<T,D,D>          cMatDiag(T val)         // diagonal matrix of one value. Template arguments required
 {
     Mat<T,D,D>          ret {0};
     for (size_t ii=0; ii<D; ++ii)
@@ -281,7 +285,7 @@ Mat<T,D,D>          cDiagMat(T val)         // diagonal matrix of one value. Tem
     return ret;
 }
 template<class T,size_t D>
-Mat<T,D,D>          cDiagMat(Arr<T,D> diagVals)
+Mat<T,D,D>          cMatDiag(Arr<T,D> diagVals)
 {
     Mat<T,D,D>          ret {0};
     for (size_t ii=0; ii<D; ++ii)
@@ -289,13 +293,13 @@ Mat<T,D,D>          cDiagMat(Arr<T,D> diagVals)
     return ret;
 }
 template<class T,size_t D>
-Mat<T,D,D>          cDiagMat(Mat<T,D,1> diagVals) {return cDiagMat(diagVals.m); }
+Mat<T,D,D>          cMatDiag(Mat<T,D,1> diagVals) {return cMatDiag(diagVals.m); }
 
 template<class T>
-Mat<T,2,2>          cDiagMat(T v0,T v1) {return {v0,0, 0,v1}; }
+Mat<T,2,2>          cMatDiag(T v0,T v1) {return {v0,0, 0,v1}; }
 
 template<class T>
-Mat<T,3,3>          cDiagMat(T v0,T v1,T v2) {return {v0,0,0, 0,v1,0, 0,0,v2}; }
+Mat<T,3,3>          cMatDiag(T v0,T v1,T v2) {return {v0,0,0, 0,v1,0, 0,0,v2}; }
 
 template<class T,size_t R,size_t C>
 bool                isFinite(Mat<T,R,C> const & mat)
@@ -307,7 +311,7 @@ bool                isFinite(Mat<T,R,C> const & mat)
 }
 
 template<class T,size_t R,size_t C>
-T                   cMag(Mat<T,R,C> const & m) {return cMag(m.m); }
+inline auto         cMag(Mat<T,R,C> const & m) {return cMag(m.m); }
 template<class T,size_t R,size_t C>
 T                   cSsd(Mat<T,R,C> const & l,Mat<T,R,C> const & r) {return cSsd(l.m,r.m); }
 template<class T,size_t R,size_t C>
@@ -415,44 +419,19 @@ T                   cDeterminant(Mat<T,4,4> const & M)
     return M[0]*d0 - M[1]*d1 + M[2]*d2 - M[3]*d3;
 }
 // append an element onto a column vec:
-template<class T,size_t dim>
-Mat<T,dim+1,1>      append(Mat<T,dim,1> const & vec,T val)
-{
-    Mat<T,dim+1,1>    ret;
-    for (size_t ii=0; ii<dim; ++ii)
-        ret[ii] = vec[ii];
-    ret[dim] = val;
-    return ret;
-}
+template<class T,size_t D>
+inline Mat<T,D+1,1> append(Mat<T,D,1> const & vec,T val) {return Mat<T,D+1,1>{append(vec.m,val)}; }
 // append an element onto a row vec:
-template<class T,size_t dim>
-Mat<T,1,dim+1>      append(const Mat<T,1,dim> & vec,T val)
-{
-    Mat<T,1,dim+1>    ret;
-    for (size_t ii=0; ii<dim; ++ii)
-        ret[ii] = vec[ii];
-    ret[dim] = val;
-    return ret;
-}
+template<class T,size_t D>
+inline Mat<T,1,D+1> append(Mat<T,1,D> const & vec,T val) {return Mat<T,1,D+1>{append(vec.m,val)}; }
+
 // Concatenate 2 column vectors:
 template<class T,size_t D0,size_t D1>
 Mat<T,D0+D1,1>      cat(Mat<T,D0,1> const & l,Mat<T,D1,1> const & r)
 {
     return Mat<T,D0+D1,1>{cat(l.m,r.m)};
 }
-// create block diagonal square matrix of 2 square matrices. Off diagonals set to 0.
-template<class T,size_t D0,size_t D1>
-Mat<T,D0+D1,D0+D1>  catDiagonal(Mat<T,D0,D0> const & l,Mat<T,D1,D1> const & r)
-{
-    Mat<T,D0+D1,D0+D1>      ret(0);
-    for (size_t rr=0; rr<D0; ++rr)
-        for (size_t cc=0; cc<D0; ++cc)
-            ret.rc(rr,cc) = l.rc(rr,cc);
-    for (size_t rr=0; rr<D1; ++rr)
-        for (size_t cc=0; cc<D1; ++cc)
-            ret.rc(D0+rr,D0+cc) = r.rc(rr,cc);
-    return ret;
-}
+
 // Flatten a Svec of matrices into a Svec of scalars:
 template<class T,size_t R,size_t C>
 Svec<T>             flatten(Svec<Mat<T,R,C>> const & ms)
@@ -538,7 +517,7 @@ Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,dims> const & linear)
 template<class T, size_t dims>
 Mat<T,dims+1,dims+1> asHomogMat(Mat<T,dims,1> const & translation)
 {
-    auto            ret = cDiagMat<T,dims+1>(1);
+    auto            ret = cMatDiag<T,dims+1>(1);
     for (size_t rr=0; rr<dims; rr++)
         ret.rc(rr,dims) = translation[rr];
     return ret;
@@ -593,8 +572,8 @@ T                   cDot(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs) {return 
 // * the signed area of the parallegram they form
 // * the determinant of the matrix formed by the two vectors as columns
 // * the cross product Z component of the corresponding 3D vectors with Z=0:
-template <class T,size_t D>
-T                   cPerpDot(Mat<T,D,1> const & lhs,Mat<T,D,1> const & rhs) {return lhs[0]*rhs[1] -  lhs[1]*rhs[0]; }
+template <class T>
+T                   cPerpDot(Mat<T,2,1> const & lhs,Mat<T,2,1> const & rhs) {return lhs[0]*rhs[1] -  lhs[1]*rhs[0]; }
 template <class T,size_t R,size_t C>
 double              cCos(Mat<T,R,C> const & lhs,Mat<T,R,C> const & rhs)
 {
@@ -717,54 +696,53 @@ template<typename T,size_t dim,FG_ENABLE_IF(T,is_floating_point)>
 Svec<Mat<T,dim,1>>  randVecNormals(size_t sz,double stdev)
 {
     auto                fn = [stdev](size_t){return Mat<T,dim,1>::randNormal(stdev); };
-    return genSvec<Mat<T,dim,1>>(sz,fn);
+    return genSvec(sz,fn);
 }
 
 // random positive definite linear transform with std normally distributed eigevalue logarithms:
 Mat33D              cRandPositiveDefinite3D();
 
 // Create a wider matrix by concatenating rows from 2 matrices:
-template<class T,size_t R,size_t ncols1,size_t C2>
-Mat<T,R,ncols1+C2>  catHoriz(Mat<T,R,ncols1> const & lhs,Mat<T,R,C2> const & rhs)
+template<class T,size_t R,size_t C>
+Mat<T,R,C*2>        catH(Arr<Mat<T,R,C>,2> const & arrs)
 {
-    Mat<T,R,ncols1+C2>    ret;
-    for (size_t row=0; row<R; ++row)
-    {
-        size_t    col=0;
-        for (size_t cc=0; cc<ncols1; ++cc)
-            ret.rc(row,col++) = lhs.rc(row,cc);
+    Mat<T,R,C*2>        ret;
+    for (size_t rr=0; rr<R; ++rr) {
+        size_t              col=0;
+        for (size_t cc=0; cc<C; ++cc)
+            ret.rc(rr,col++) = arrs[0].rc(rr,cc);
+        for (size_t cc=0; cc<C; ++cc)
+            ret.rc(rr,col++) = arrs[1].rc(rr,cc);
+    }
+    return ret;
+}
+template<class T,size_t R,size_t C1,size_t C2>
+Mat<T,R,C1+C2>      catH(Mat<T,R,C1> const & l,Mat<T,R,C2> const & r)
+{
+    Mat<T,R,C1+C2>      ret;
+    for (size_t rr=0; rr<R; ++rr) {
+        size_t              col=0;
+        for (size_t cc=0; cc<C1; ++cc)
+            ret.rc(rr,col++) = l.rc(rr,cc);
         for (size_t cc=0; cc<C2; ++cc)
-            ret.rc(row,col++) = rhs.rc(row,cc);
+            ret.rc(rr,col++) = r.rc(rr,cc);
     }
     return ret;
 }
 // Create a taller matrix by concatenating cols from 2 matrices:
-template<class T,size_t nrows1,size_t nrows2,size_t C>
-Mat<T,nrows1+nrows2,C>  catVertical(
-    const Mat<T,nrows1,C> & upper,
-    const Mat<T,nrows2,C> & lower)
+template<class T,size_t R1,size_t R2,size_t C>
+Mat<T,R1+R2,C>      catV(Mat<T,R1,C> const & u,Mat<T,R2,C> const & l)
 {
-    Mat<T,nrows1+nrows2,C>    ret;
-    for (size_t rr=0; rr<nrows1; ++rr)
+    Mat<T,R1+R2,C>      ret;
+    for (size_t rr=0; rr<R1; ++rr)
         for (size_t cc=0; cc<C; ++cc)
-            ret.rc(rr,cc) = upper.rc(rr,cc);
-    for (size_t rr=0; rr<nrows2; ++rr)
+            ret.rc(rr,cc) = u.rc(rr,cc);
+    for (size_t rr=0; rr<R2; ++rr)
         for (size_t cc=0; cc<C; ++cc)
-            ret.rc(nrows1+rr,cc) = lower.rc(rr,cc);
+            ret.rc(R1+rr,cc) = l.rc(rr,cc);
     return ret;
 }
-// Create a taller matrix by concatenating a given value to all columns:
-template<class T,size_t R,size_t C>
-Mat<T,R+1,C>        catVertical(Mat<T,R,C> const & mat,T val)
-{
-    Mat<T,R+1,C>        ret;
-    size_t              off = scast<size_t>(R) * C;
-    for (size_t ii=0; ii<off; ++ii)
-        ret[ii] = mat[ii];
-    for (size_t ii=off; ii<off+C; ++ii)
-        ret[ii] = val;
-    return ret;
-}
+
 // create square matrix to rotation permute elements of 3D vectors:
 template<class T>
 Mat<T,3,3>          cRotationPermuter(size_t axisToBecomeX)
@@ -816,12 +794,9 @@ T                   cTrace(const Mat<T,dim,dim> & mat)
         ret += mat[ii];
     return ret;
 }
-// For Mat/Vec use linear interpolation
-template<size_t R,size_t C>
-Mat<double,R,C>     interpolate(Mat<double,R,C> m0,Mat<double,R,C> m1,double val)   // val 0: m0, 1: m1
-{
-    return m0*(1.0-val) + m1*val;
-}
+// defaults to linear interpolation for Mat<float>
+template<class T,size_t R,size_t C,FG_ENABLE_IF(T,is_floating_point)>
+Mat<T,R,C>          interpolate(Mat<T,R,C> a,Mat<T,R,C> b,T c) {return Mat<T,R,C>{interpolate(a.m,b.m,c)}; }
 
 template<class T,size_t R,size_t C>
 inline T            cSumElems(Mat<T,R,C> const & mat) {return cSum(mat.m); }
@@ -853,13 +828,10 @@ bool                noZeroElems(Mat<T,R,C> mat)
 }
 
 template<class T,size_t R,size_t C>
-double              cMagD(Mat<T,R,C> mat) {return cMagD(mat.m); }
+inline double       cMagD(Mat<T,R,C> mat) {return cMagD(mat.m); }
 
 template<class T,size_t R,size_t C>
 double              cRms(Mat<T,R,C> mat) {return cRms(mat.m); }
-
-template<typename T,size_t R,size_t C>
-inline double       cLenD(Svec<Mat<T,R,C>> const & v) {return std::sqrt(cMagD(v)); }
 
 template<size_t R,size_t C>
 Mat<double,R,C>     cReal(const Mat<std::complex<double>,R,C> & mat)   // Return real compoments
@@ -936,7 +908,7 @@ Mat<T,C,R>          cHermitian(Mat<T,R,C> const & mat)
 struct      MatS2D              // Symmetric 2x2 double matrix
 {
     double          m00,m11,m01;
-    FG_SER3(m00,m11,m01)
+    FG_SER(m00,m11,m01)
 
     inline Vec2D    operator*(Vec2D const & v) const {return {m00*v[0]+m01*v[1], m01*v[0]+m11*v[1] }; }
     inline double   determinant() const {return m00 * m11 - m01 * m01; }
@@ -950,7 +922,7 @@ inline MatS2D       outerProductSelf(Vec2D v) {return {sqr(v[0]), sqr(v[1]), v[0
 struct      MatUT2D             // upper triangular 2x2 double matrix
 {
     double          m00,m11,m01;
-    FG_SER3(m00,m11,m01)
+    FG_SER(m00,m11,m01)
 
     inline Vec2D    operator*(Vec2D v) const {return {m00*v[0]+m01*v[1],m11*v[1]}; }    // M * vec
     inline MatUT2D  operator*(double s) const {return {m00*s,m11*s,m01*s}; }            // scale elements of M
@@ -963,7 +935,7 @@ struct      MatS3D
 {
     Arr<double,3>       diag;
     Arr<double,3>       offd;       // In order 01, 02, 12
-    FG_SER2(diag,offd);
+    FG_SER(diag,offd);
 
     MatS3D() {}
     explicit MatS3D(double fillVal) : diag{fillVal}, offd{fillVal} {}
@@ -1000,7 +972,6 @@ struct      MatS3D
     // (however powers of a symmetric matrix are symmetric)
     Mat33D              operator*(MatS3D const & rhs) const;
     Mat33D              operator*(Mat33D const & rhs) const;
-    Vec3D               diagonal() const {return Vec3D{diag}; }
     double              sumElems() const {return cSum(diag) + 2.0 * cSum(offd); }
     // Sum of squares of elements (== square of frobenius norm):
     double              magD() const {return cMagD(diag) + 2.0 * cMagD(offd); }
@@ -1011,7 +982,8 @@ struct      MatS3D
     // returns M^T * S * M, so that the action on vectors x^T * S * x acts as if the vectors have been transformed to x' = M * x.
     MatS3D              transform(Mat33D const & M) const;
 
-    static MatS3D       identity() {return {{1,1,1},{0,0,0}}; }
+    static MatS3D       diagonal(double v) {return {Arr3D{v},Arr3D{0}}; }
+    static MatS3D       identity() {return MatS3D::diagonal(1); }
     // isotropic random symmetric positive definite matrix with ln eigenvalues ~ N(0,lnEigStdev):
     static MatS3D       randSpd(double lnEigStdev);
 };
@@ -1019,23 +991,21 @@ typedef Svec<MatS3D>    MatS3Ds;
 
 std::ostream &      operator<<(std::ostream & os,MatS3D const & mat);
 inline double       cMagD(MatS3D const & mat) {return mat.magD(); }
-inline double       cSum(MatS3D const & mat) {return mat.sumElems(); }
 inline double       cDot(MatS3D const & l,MatS3D const & r) {return l.dot(r); }
 inline double       cDeterminant(MatS3D const & mat) {return mat.determinant(); }
 inline MatS3D       cInverse(MatS3D const & mat) {return mat.inverse(); }
-// apply *only* a quadratic form (no factor of 1/2, no constant):
+// apply only a quadratic form (no factor of 1/2, no constant):
 inline double       cQuadForm(MatS3D const & Q,Vec3D const & x_m) {return cDot(x_m,Q*x_m); }
-// return the congruent transform of a 3D symmetric matrix, M^T * S * M, which is also symmetric:
+// return the congruent transform of a 3D symmetric matrix S, M^T * S * M, which is also symmetric:
 MatS3D              cCongruentTransform(MatS3D const & S,Mat33D const & M);
 inline MatS3D       mapSqr(MatS3D const & mat) {return MatS3D {mapSqr(mat.diag),mapSqr(mat.offd)}; }
 inline MatS3D       mapMul(MatS3D const & mat,MatS3D const & n)
 {
     return {mapMul(mat.diag,n.diag),mapMul(mat.offd,n.offd)};
 }
-inline double       sumElems(MatS3D const & mat) {return cSum(mat.diag) + cSum(mat.offd) * 2; }
-inline MatS3D       outerProductSelf(Vec3D v)
+inline MatS3D       outerProductSelf(Arr3D v)
 {
-    return          {{mapSqr(v.m)},{v[0]*v[1],v[0]*v[2],v[1]*v[2]}};
+    return          {{mapSqr(v)},{v[0]*v[1],v[0]*v[2],v[1]*v[2]}};
 }
 MatS3D              transposeSelfProduct(Mat33D const & M);       // returns M^T * M, which is always SPD
 
@@ -1050,9 +1020,10 @@ MeanCov3            cMeanCov(Vec3Ds const & samps);
 struct      MatUT3D
 {
     Arr<double,6>       m;              // non-zero elements in row-major order
-    FG_SER1(m)
+    FG_SER(m)
 
     MatUT3D() {}
+    explicit MatUT3D(double v) : m{v} {}                                // fill ctor
     explicit MatUT3D(Arr<double,6> const & data) : m{data} {}
     MatUT3D(double s0,double s1,double s2) : m{s0,0,0,s1,0,s2} {}         // diagonal matrix
     MatUT3D(double m0,double m1,double m2,double m3,double m4,double m5) : m{m0,m1,m2,m3,m4,m5} {}
@@ -1061,7 +1032,6 @@ struct      MatUT3D
 
     static MatUT3D  identity()  {return MatUT3D{1,1,1}; }
     static MatUT3D  diagonal(double v) {return MatUT3D{v,v,v}; }
-    static MatUT3D  zeros() {return {0,0,0,0,0,0}; }
 
     MatUT3D         operator-(MatUT3D const & rhs) const {return MatUT3D(m-rhs.m); }
     MatUT3D         operator*(double s) const {return MatUT3D {m*s}; }
@@ -1088,16 +1058,13 @@ struct      MatUT3D
 std::ostream &      operator<<(std::ostream &,MatUT3D const &);
 inline double       cDeterminant(MatUT3D const & mat) {return mat.determinant(); }
 inline double       cMagD(MatUT3D const & mat) {return mat.magD(); }
-// given the principal axes of a desired positive definite quadratic form, scaled *inversely* to their length,
-// return the precision cholesky upper triangular matrix (pcut) of the quadratic form:
-MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2);     // Axes must be perpendicular. Invariant to order and sign of axes.
 
 template<class T,size_t D>
 struct      NameVec
 {
     String          name;
     Mat<T,D,1>      vec;
-    FG_SER2(name,vec)
+    FG_SER(name,vec)
 
     NameVec() {}
     explicit NameVec(Mat<T,D,1> const & v) : vec{v} {}

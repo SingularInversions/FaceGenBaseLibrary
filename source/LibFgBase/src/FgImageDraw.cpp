@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,6 +14,7 @@
 #include "FgFileSystem.hpp"
 #include "FgCommand.hpp"
 #include "FgParse.hpp"
+#include "FgSampler.hpp"
 
 using namespace std;
 
@@ -44,22 +45,6 @@ Arr<Rgba8,6>        cColors6Rgba()
     };
 }
 
-void                drawDotIrcs(ImgRgba8 & img,Vec2I pos,uint radius,Rgba8 color)
-{
-    FGASSERT(!img.empty());
-    int         rad = scast<int>(radius),
-                xlo = cMax(pos[0]-rad,0),
-                xhi = cMin(pos[0]+rad,int(img.width()-1)),
-                ylo = cMax(pos[1]-rad,0),
-                yhi = cMin(pos[1]+rad,int(img.height()-1)),
-                rr = rad * rad;
-    for (int yy=ylo; yy<=yhi; yy++) {
-        for (int xx=xlo; xx<=xhi; xx++) {
-            if ((sqr(yy-pos[1]) + sqr(xx-pos[0])) <= rr)
-                img.xy(xx,yy) = color;
-        }
-    }
-}
 // Simple (aliased) Bresenham line draw, single-pixel thickness. Efficiency could be greatly
 // improved by clippping begin/end points to valid image area, updating 'acc' appropriately,
 // and then calling 'xy' instead of 'paint':
@@ -97,12 +82,13 @@ void                drawSolidRectangle_(ImgRgba8 & img,Vec2UI pos,Vec2UI sz,Rgba
 ImgRgba8            cBarGraph(Doubless datas,uint pixPerBar,uint pixSpacing)
 {
     FGASSERT(!datas.empty());
+    FGASSERT(pixPerBar>0);
     size_t              D = datas.size(),                   // number of data series (may not all may be of same size)
                         S = cMaxElem(cSizes(datas)),        // max number of samples per series
                         P = S*(D*pixPerBar + pixSpacing),   // pixel width of image
                         xx {0};                             // image x coord counter (pixels)
     ImgRgba8            img {P,P,Rgba8{0,0,0,255}};         // make a square image
-    VecD2               bounds = cBounds(flatten(datas));
+    Arr2D               bounds = cBounds(flatten(datas));
     fgout << fgnl << "Data bounds: " << bounds;
     if (bounds[1]-bounds[0] == 0)
         FGASSERT_FALSE1("data has no range");
@@ -136,11 +122,82 @@ ImgRgba8            cBarGraph(Sizes const & data)
     return cBarGraph({dt},1);
 }
 
+ImgRgba8            cGraphFunctions(Svec<Sfun<double(double)>> const & fns,Arr2D boundsX)
+{
+    size_t              S = fns.size();
+    FGASSERT(S>0);
+    uint constexpr      P = 1024;
+    double              loX = boundsX[0],
+                        szX = boundsX[1]-loX;
+    FGASSERT(szX>0);
+    Affine1D            ircsToX = Affine1D{szX/P,loX} * Affine1D{1,0.5};
+    auto                fnGen = [&](Sfun<double(double)> const & fn)
+    {
+        return genSvec(P,[&,ircsToX](size_t pp){return fn(ircsToX*scast<double>(pp)); });
+    };
+    Doubless            data = mapCall(fns,fnGen);
+    Arr2D               boundsY = nullBounds<double>();
+    for (Doubles const & d : data)
+        boundsY = updateBounds(d,boundsY);
+    double              loY = boundsY[0],
+                        szY = boundsY[1]-loY;
+    Affine1D            pacsToY {-szY/P,boundsY[1]},
+                        YtoPacs = pacsToY.inverse();
+    // create image and put in axes if applicable:
+    ImgRgba8            img {P,P,Rgba8{0,0,0,255}};
+    double              zeroX = ircsToX.inverse() * 0.0,
+                        zeroY = YtoPacs * 0.0;
+    int                 zX = scast<int>(zeroX+0.5),
+                        zY = scast<int>(zeroY);
+    if ((zeroX>-0.5)&&(zeroX<P-0.5))    // vertical line
+        drawLineIrcs(img,Vec2I{zX,0},Vec2I{zX,P-1},{127,127,127,255});
+    if ((zeroY>0)&&(zeroY<P))
+        drawLineIrcs(img,Vec2I{0,zY},Vec2I{P-1,zY},{127,127,127,255});
+    for (size_t ss=0; ss<S; ++ss) {
+        Arr3UC              c = mapCast<uchar>(cColors6()[ss%6]*255.0f);
+        Rgba8               clr8 {c[0],c[1],c[2],255};
+        for (uint pp=0; pp<P; ++pp) {
+            double              x = ircsToX * scast<double>(pp),
+                                y = fns[ss](x),
+                                yPacs = YtoPacs * y;
+            if ((yPacs>0)&&(yPacs<P)) {
+                Vec2UI              ircs {pp,scast<uint>(yPacs)};
+                img.paint(ircs,clr8);
+            }
+        }
+    }
+    return img;
+}
+
+Img3F             cScatterPlot(Arr2Ds const & data)
+{
+    Arr<Arr2D,2>        bnds = cBounds(data);
+    Arr2D               dims = multAcc(bnds,Arr2D{-1,1}),
+                        centres = multAcc(bnds,Arr2D{0.5,0.5}),
+                        hszs = dims * 0.6,           // add boundary
+                        los = centres - hszs;
+    size_t constexpr    imgDim = 1024;
+    AxAffine2D          pacsToSamp {Vec2D{hszs}*2/imgDim,Vec2D{los}},
+                        sampToPacs = pacsToSamp.inverse();
+    Vec2Ds              dataPacs = mapCall(data,[&](Arr2D d){return sampToPacs*Vec2D{d};});
+    auto                fnSamp = [&](float const &,Vec2D pacs)
+    {
+        Arr3F               ret {1};
+        for (Vec2D samp : dataPacs) {
+            if (cMag(pacs-samp) < 4)
+                return Arr3F{0};
+        }
+        return ret;
+    };
+    ImgF                grid{1,1};  // not used
+    return sampleAdapt<Arr3F,float>(grid,imgDim,fnSamp,1,3,thread::hardware_concurrency());
+}
+
 ImgRgba8            cLineGraph(MatD const & data,uint pixPerPnt,Strings const & labels)
 {
     FGASSERT(!data.empty());
     FGASSERT(labels.empty() || (labels.size() == data.numRows()));
-    VecD2               bounds = cBounds(data.m_data);
+    Arr2D               bounds = cBounds(data.m_data);
     double              range = bounds[1] - bounds[0];
     FGASSERT(range > 0);
     size_t              S = data.numCols(),     // sample series
@@ -172,18 +229,16 @@ void                cmdGraph(CLArgs const & args)
 {
     Syntax                  syn{args,R"([-b <num>] [-g <num>] [-s] [-z] (<data>.txt)+ [<image>.jpg]
     Creates bar graph of given data sequence(s), display, and optionally save.
-    -b      Pixel thickness of bars (default 6)
-    -g      Pixel thickness of gap between bars (default 6)
+    -b      Pixel thickness of bars (default 3)
+    -g      Pixel thickness of gap between bars (default 1)
     -s      <data>.txt is in text-serialized format (square bracket delimiters)
     -z      Shift the values so that the lowest value is zero
 NOTES:
     * <data>.txt default format is space-separated numbers, newline-separated series.
         - text-serialized format delimits lists with square brackets, using any whitespace to delimit elements)"
     };
-    String                  dataFname,
-                            imgFname;
-    uint                    barThick = 8,
-                            gapThick = 8;
+    uint                    barThick = 3,
+                            gapThick = 1;
     bool                    shiftZero = false,
                             textSerial = false;
     while (syn.peekNext()[0] == '-') {
@@ -198,30 +253,38 @@ NOTES:
         else
             syn.error("Unrecognized option",syn.curr());
     }
-    dataFname = syn.next();
-    if (syn.more())
-        imgFname = syn.next();
-    syn.noMoreArgsExpected();
+    Strings                 dataFnames {syn.next()};
+    String                  imgFname;
+    while (syn.more()) {
+        Path                path {syn.next()};
+        if (contains(getImgExts(),toLower(path.ext).m_str))
+            imgFname = syn.curr();
+        else
+            dataFnames.push_back(syn.curr());
+    }
     Doubless                datas;
-    if (textSerial)
-        datas = dsrlzText<Doubless>(loadRawString(dataFname));
-    else {
-        Strings             lines = splitLines(loadRawString(dataFname));
-        Doubles             data;
-        for (String const & line : lines) {
-            Opt<double>         opt = fromStr<double>(line);
-            if (opt.has_value())
-                data.push_back(opt.value());
-        }
-        if (!data.empty())
-            datas.push_back(data);
-    };
+    for (String const & dataFname : dataFnames) {
+        if (textSerial)
+            cat_(datas,dsrlzText<Doubless>(loadRawString(dataFname)));
+        else {
+            Strings             lines = splitLines(loadRawString(dataFname));
+            Doubles             data;
+            for (String const & line : lines) {
+                Opt<double>         opt = fromStr<double>(line);
+                if (opt.has_value())
+                    data.push_back(opt.value());
+            }
+            if (!data.empty())
+                datas.push_back(data);
+        };
+    }
     if (datas.empty())
-        syn.error("No data could be extracted from",dataFname);
-    double                  minElem = cMinElem(flatten(datas));
-    if (shiftZero)
+        syn.error("No data could be extracted");
+    if (shiftZero) {
+        double                  minElem = cMinElem(flatten(datas));
         for (Doubles & data : datas)
             data = mapSub(data,minElem);
+    }
     viewImage(cBarGraph(datas,barThick,gapThick));
 }
 

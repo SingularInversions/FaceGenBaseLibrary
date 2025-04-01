@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -75,6 +75,7 @@ static Ofstream     s_ofs;
 // Only this single global instance should ever be instantiated.
 // Note that 'fgout' can't be used in global variable constructors since it's not guaranteed to be constructed yet itself:
 FgOut               fgout;
+FgOut               nout {false};
 
 ostream &           fgnl(ostream & ss)
 {
@@ -103,10 +104,12 @@ ostream &           fgreset(ostream & ss)
     return ss << '\n';
 }
 
-FgOut::FgOut()
+FgOut::FgOut(bool enable)
 {
-    m_streams.push_back(OStr{defOut()});
-    m_streams.back().pOStr->precision(9);
+    if (enable) {
+        m_streams.push_back(OStr{defOut()});
+        m_streams.back().pOStr->precision(9);
+    }
 }
 
 FgOut::~FgOut()

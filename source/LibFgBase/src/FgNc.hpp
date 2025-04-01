@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,7 +30,7 @@ struct  NcScript
     // fgPop            - pop back to previous dir for this process
     Strings             cmds;
 
-    FG_SER3(outputBase,title,cmds)
+    FG_SER(outputBase,title,cmds)
 
     static uint64 constexpr typeID() {return 0xFE785A765844B8D1ULL; }
 };

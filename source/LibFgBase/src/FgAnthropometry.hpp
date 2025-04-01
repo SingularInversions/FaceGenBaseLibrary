@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,7 +16,7 @@ template<class T,class E>
 struct      ArrE
 {
     Arr<T,static_cast<size_t>(E::size)> arr;
-    FG_SER1(arr)
+    FG_SER(arr)
 
     T const &           operator[](E e) const
     {
@@ -36,7 +36,7 @@ struct      ArrE
 template<class E>
 Svec<E>             getAllE()
 {
-    return genSvec<E>(scast<size_t>(E::size),[](size_t ii){return scast<E>(ii); });
+    return genSvec(scast<size_t>(E::size),[](size_t ii){return scast<E>(ii); });
 }
 
 enum struct         Sagg { left, right, size };   // subject's saggital left or right half (not viewer's)

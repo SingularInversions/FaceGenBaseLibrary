@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -107,7 +107,7 @@ void                testRvo(CLArgs const &)
         Rvo                 in {vals};
         // I guess the return value constructed first then input to operator=() here
         in = fn(in);
-        FGASSERT(in.data == mapMul(2.72,vals));
+        FGASSERT(in.data == mapMulR(2.72,vals));
     }
 }
 
@@ -342,7 +342,6 @@ void                testCpp(CLArgs const & args)
 
 void                testDataflow(CLArgs const &);
 void                testFilesystem(CLArgs const &);
-void                testOpenFile(CLArgs const &);
 void                testGeometry(CLArgs const &);
 void                testGridTriangles(CLArgs const &);
 void                testGui(CLArgs const & args);
@@ -365,6 +364,7 @@ void                testRenderCmd(CLArgs const &);
 void                testSerial(CLArgs const &);
 void                testSimilarity(CLArgs const &);
 void                testSurf(CLArgs const &);
+void                testThreadDispatcher(CLArgs const &);
 void                testTopo(CLArgs const &);
 void                testString(CLArgs const &);
 
@@ -374,29 +374,29 @@ void                testBase(CLArgs const & args)
         {testCpp,"cpp","C++ behaviour tests"},
         {testDataflow,"dataflow"},
         {testFilesystem,"filesystem"},
-        {testOpenFile,"open"},
-        {testGeometry,"geometry"},
+        {testGeometry,"geom","geometry"},
         {testGui,"gui"},
         {testGridTriangles,"grid","gridTriangles grid index"},
         {testHash,"hash"},
         {testImage,"image"},
-        {testKdTree,"kd"},
+        {testKdTree,"kd","KD tree"},
         {testMatrixSolver,"matSol","Matrix Solver"},
         {testMath,"math"},
         {testMatrixC,"matC","MatrixC"},
         {testMatrixV,"matV","MatrixV"},
         {testMetaFormat,"meta","meta format for serialized data"},
-        {testMesh,"mesh","3D mesh related functionality"},
+        {testMesh,"mesh","3D mesh"},
         {testMorph,"morph"},
         {testParse,"parse"},
         {testPath,"path"},
-        {testQuaternion,"quat","quaterion"},
-        {testRandom,"random"},
+        {testQuaternion,"quat","quaternion"},
+        {testRandom,"rand","pseudo-random number generator"},
         {testRender,"rend","sofware rendering"},
         {testRenderCmd,"rendc","render command"},
-        {testSerial,"serial"},
+        {testSerial,"serial","serialization / deserialization"},
         {testSimilarity,"sim","similarity transform and solver"},
-        {testSurf,"surf","operations on polygonal surfaces"},
+        {testSurf,"surf","polygonal surfaces"},
+        {testThreadDispatcher,"thread","ThreadDispatcher"},
         {testTopo,"topo","surface topology analysis"},
         {testString,"string"},
     };

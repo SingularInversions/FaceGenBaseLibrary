@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -248,6 +248,55 @@ NOTES:
     }
 }
 
+void                cmdMarkMulti(CLArgs const & args)
+{
+    Syntax              syn {args,
+        R"(<landmark> <images>
+    <images>        - ( <list>.txt | (<fileName>.<ext>)+ )
+    <list>.txt      - must contain a whitespace-separated list
+    <landmark>      - cannot contain '.' character
+    <ext>           - )" + clOptionsStr(getImgExts()) + R"(
+OUTPUT:
+    <fileName>.lms.txt  - Updated (not overwritten) for each <fileName> image containing landmarks added
+NOTES:
+    * images will be displayed in order of appearance
+    * the .lms.txt format is one landmark per line each line consisting of <name> <X> <Y>
+      where <X> and <y> are the raster positions (floating point permitted).
+      Lines beginning with # are ignored (comments).
+    * landmarks already existing in <fileName>.lms.txt are unchanged.)"
+    };
+    String              lmName = syn.next();
+    Strings             imgFiles;
+    if (endsWith(syn.peekNext(),".txt"))
+        imgFiles = splitWhitespace(loadRawString(syn.next()));
+    else {
+        do
+            imgFiles.push_back(syn.next());
+        while (syn.more());
+    }
+    if (containsDuplicates(sortAll(imgFiles)))
+        fgout << "WARNING: There are file name duplicates";
+    for (String const & imgFile : imgFiles) {
+        PushIndent          pind {imgFile+": "};
+        ImgRgba8            img = loadImage(imgFile);
+        NameVec2Fs          lmsAll;
+        String8             lmsFile = pathToDirBase(imgFile)+".lms.txt";
+        if (fileExists(lmsFile))
+            lmsAll = loadLandmarks(lmsFile);
+        NameVec2Fs          lmsUnchanged = select(lmsAll,[&](auto l){return (l.name != lmName);}),
+                            lmsPreexisting = select(lmsAll,[&](auto l){return (l.name == lmName);});
+        Vec2Fs              lms = mapMember(lmsPreexisting,&NameVec2F::vec),
+                            lmsNew = markImageMulti(img,lmName,lms);
+        if (lmsNew == lms)
+            fgout << "No landmarks updated, nothing saved";
+        else {
+            NameVec2Fs          lmsAdd = mapCall(lmsNew,[&](auto v){return NameVec2F{lmName,v};});
+            saveLandmarks(cat(lmsUnchanged,lmsAdd),lmsFile);
+            fgout << lmsNew.size() << " landmarks saved in " << lmsFile;
+        }
+    }
+}
+
 void                cmdShrink(CLArgs const & args)
 {
     Syntax              syn {args,R"(<gamma> <count> <in>.<ext> <out>.<ext>
@@ -271,7 +320,7 @@ NOTES:
 
 }
 
-void                cmdImgops(CLArgs const & args)
+void                cmdImage(CLArgs const & args)
 {
     Cmds            cmds {
         {cmdAlpha,"alpha","Add/replace an alpha channel from an another image"},
@@ -280,7 +329,8 @@ void                cmdImgops(CLArgs const & args)
         {cmdComposite,"composite","Composite an image with transparency over another"},
         {cmdConvert,"convert","Convert images between different formats"},
         {cmdCreate,"create","create simple agorithmic images"},
-        {cmdMark,"mark","Place landmark points on an image, stored in a text file"},
+        {cmdMark,"mark","Mark unique landmark points on an image, stored in a text file"},
+        {cmdMarkMulti,"markm","Mark multiple non-unique landmark points on an image, stored in a text file"},
         {cmdShrink,"shrink","Shrink images by factors of 2"},
     };
     doMenu(args,cmds);

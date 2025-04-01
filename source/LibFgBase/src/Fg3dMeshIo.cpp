@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -281,47 +281,6 @@ String              toStr(SpatialUnit u)
     else
         FGASSERT_FALSE;
     return "";
-}
-
-Mesh                loadFgmesh(String8 const & fname)
-{
-    ScopeGuard          sg {[](){g_useSize64=true; }};      // ensure reset to normal
-    g_useSize64 = false;                                    // this formats stores size_t as 32bit
-    Bytes               ser = loadRaw(fname);
-    if (ser.size() < 16)
-        fgThrow("Too short to be a valid .fgmesh file",fname);
-    size_t              pos {0};
-    String              header = dsrlzT_<String>(ser,pos);
-    if (cHead(header,6) != "FgMesh")
-        fgThrow("Invalid header for .fgmesh file",fname);
-    Mesh                ret;
-    if (cRest(header,6) == "01") {
-        try {
-            dsrlz_(ser,pos,ret.verts);
-            dsrlz_(ser,pos,ret.uvs);
-            dsrlz_(ser,pos,ret.surfaces);
-            dsrlz_(ser,pos,ret.deltaMorphs);
-            dsrlz_(ser,pos,ret.targetMorphs);
-            dsrlz_(ser,pos,ret.markedVerts);
-            if (pos<ser.size())                 // ver 1.1
-                dsrlz_(ser,pos,ret.joints);
-        }
-        catch (FgException & e) {e.contexts.emplace_back("invalid .fgmesh V01 file",fname.m_str); }
-        catch (exception const & e) {fgThrow("invalid .fgmesh V01 file",fname.m_str,e.what()); }
-    }
-    else
-        fgThrow("Unrecognized version of .fgmesh file, update to the latest version of this software",fname);
-    return ret;
-}
-
-void                saveFgmesh(String8 const & fname,Mesh const & mesh)
-{
-    ScopeGuard          sg {[](){g_useSize64=true; }};      // ensure reset to normal
-    g_useSize64 = false;                                    // this formats stores size_t as 32bit
-    Bytes               ser;
-    srlz_(String{"FgMesh01"},ser);
-    srlz_(mesh,ser);
-    saveRaw(ser,fname,false);
 }
 
 Mesh                getTestMeshV1()

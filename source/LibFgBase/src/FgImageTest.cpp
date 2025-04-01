@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -223,7 +223,7 @@ void                testResample(CLArgs const &)
 void                testBlockResample(CLArgs const &)
 {
     auto                srcFn = [](size_t ii){float v=scast<float>(ii); return Arr4F{v,v,v,1}; };
-    Img4F               src {{4,4},genSvec<Arr4F>(16,srcFn)},
+    Img4F               src {{4,4},genSvec(16,srcFn)},
                         dst = blockResample(src,{{1.75f,0.5f},3.0f},2,false);
     float               tol = scast<float>(epsBits(20));
     {

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -238,6 +238,7 @@ bool                writeVcxproj(
                 "      <ConformanceMode>true</ConformanceMode>\n"
                 // standard C++17
                 "      <LanguageStandard>stdcpp17</LanguageStandard>\n"
+                "      <MultiProcessorCompilation>true</MultiProcessorCompilation>\n"
                 "    </ClCompile>\n";
             if (proj.isLinked()) {
                 ofs <<

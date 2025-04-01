@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,8 +14,8 @@
 #include "stdafx.h"
 
 #include "FgMath.hpp"
-#include "FgMatrixSolver.hpp"
-#include "FgRandom.hpp"
+#include "FgMatrixV.hpp"
+#include "FgMath.hpp"
 #include "FgMain.hpp"
 #include "FgTime.hpp"
 #include "FgCommand.hpp"
@@ -26,9 +26,8 @@
     #pragma warning(push,0)     // Eigen triggers lots of warnings
 #endif
 
-#define EIGEN_MPL2_ONLY     // Only use permissive licensed source files from Eigen
+#define EIGEN_MPL2_ONLY       // Only use permissive licensed source files from Eigen
 #include "Eigen/Dense"
-#include "Eigen/Core"
 
 #ifdef _MSC_VER
     #pragma warning(pop)
@@ -40,25 +39,7 @@ using namespace Eigen;
 
 namespace Fg {
 
-namespace {
-
-// Ensure exact symmetry and valid finite floating point values while converting to Eigen format
-// (any asymmetry will cause totally incorrect results from RSM solver):
-void                convertRsm_(MatD const & rsm,MatrixXd & ret)
-{
-    size_t          dim = rsm.ncols;
-    FGASSERT(rsm.nrows == dim);
-    for (size_t rr=0; rr<dim; ++rr) {
-        for (size_t cc=rr; cc<dim; ++cc) {
-            double          v = (rsm.rc(rr,cc) + rsm.rc(cc,rr)) * 0.5;
-            FGASSERT(isfinite(v));
-            ret(rr,cc) = v;
-            ret(cc,rr) = v;
-        }
-    }
-}
-
-MatrixXd            toEigen(MatSD const & rsm)
+static MatrixXd     toEigen(MatSD const & rsm)
 {
     size_t              D = rsm.dim;
     MatrixXd            ret (D,D);
@@ -77,8 +58,6 @@ MatrixXd            toEigen(MatSD const & rsm)
     return ret;
 }
 
-}
-
 // 2D case allows for simple explicit formula:
 Vec2D               solveLinear(Mat22D const & A,Vec2D const & b)
 {
@@ -89,7 +68,6 @@ Vec2D               solveLinear(Mat22D const & A,Vec2D const & b)
         (b[1]*A[0] - b[0]*A[2])/det
     };
 }
-
 Vec3D               solveLinear(Mat33D const & M,Vec3D const & b)
 {
     Eigen::Matrix3d         mat;
@@ -104,6 +82,33 @@ Vec3D               solveLinear(Mat33D const & M,Vec3D const & b)
     FGASSERT(qr.isInvertible());
     Eigen::Vector3d         sol = qr.solve(vec);
     return {sol(0),sol(1),sol(2)};
+}
+Vec4D               solveLinear(Mat44D const & M,Vec4D const & b)
+{
+    Eigen::Matrix4d         mat;
+    Eigen::Vector4d         vec;
+    for (uint rr=0; rr<4; ++rr)
+        for (uint cc=0; cc<4; ++cc)
+            mat(rr,cc) = M.rc(rr,cc);
+    for (uint rr=0; rr<4; ++rr)
+        vec(rr) = b[rr];
+    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
+    auto                    qr = mat.colPivHouseholderQr();
+    FGASSERT(qr.isInvertible());
+    Eigen::Vector4d         sol = qr.solve(vec);
+    return {sol(0),sol(1),sol(2),sol(3)};
+}
+template<size_t D>
+static void         testSolveLinearT()
+{
+    for (size_t ii=0; ii<256; ++ii) {
+        Mat<double,D,D>     M = Mat<double,D,D>::randNormal();
+        Mat<double,D,1>     b = Mat<double,D,1>::randNormal(),
+                            x = solveLinear(M,b);
+        if (abs(cDeterminant(M)) < epsBits(20))         // don't test with ill conditioned
+            continue;
+        FGASSERT(isApproxEqualPrec(M*x,b,30));
+    }
 }
 
 Vec3D               solveLinearRobust(Mat33D const & A_,Vec3D const & b_)
@@ -121,33 +126,24 @@ Vec3D               solveLinearRobust(Mat33D const & A_,Vec3D const & b_)
     return Vec3D {r[0],r[1],r[2]};
 }
 
-Vec4D               solveLinear(Mat44D const & M,Vec4D const & b)
+Doubles             cEigvalsRsm(MatSD const & rsm)
 {
-    Eigen::Matrix4d         mat;
-    Eigen::Vector4d         vec;
-    for (uint rr=0; rr<4; ++rr)
-        for (uint cc=0; cc<4; ++cc)
-            mat(rr,cc) = M.rc(rr,cc);
-    for (uint rr=0; rr<4; ++rr)
-        vec(rr) = b[rr];
-    // There are many alternatives to this in Eigen: ParialPivLU, FullPivLU, HouseholderQR etc.
-    auto                    qr = mat.colPivHouseholderQr();
-    FGASSERT(qr.isInvertible());
-    Eigen::Vector4d         sol = qr.solve(vec);
-    return {sol(0),sol(1),sol(2),sol(3)};
-}
-
-Doubles             cEigvalsRsm(MatD const & rsm)
-{
-    size_t              dim = rsm.ncols;
-    MatrixXd            mat(dim,dim);
-    convertRsm_(rsm,mat);
-    SelfAdjointEigenSolver<MatrixXd>    es(mat,EigenvaluesOnly);
-    VectorXd const &                    eigVals = es.eigenvalues();
-    Doubles                             ret(dim);
-    for (size_t rr=0; rr<dim; ++rr)
+    MatrixXd            mat = toEigen(rsm);
+    SelfAdjointEigenSolver<MatrixXd> es(mat,EigenvaluesOnly);
+    VectorXd const &    eigVals = es.eigenvalues();
+    Doubles             ret(rsm.dim);
+    for (size_t rr=0; rr<rsm.dim; ++rr)
         ret[rr] = eigVals(rr);
     return ret;
+}
+
+double              cPdDeterminant(MatSD const & rsm)
+{
+    MatrixXd            mat = toEigen(rsm);
+    LDLT<MatrixXd>      ldlt (mat);             // LDLT handles near semi-definite but LLT does not
+    FGASSERT(ldlt.info() == Success);
+    MatrixXd            diag = ldlt.vectorD();
+    return diag.array().prod();
 }
 
 RsmEigs             cRsmEigs(MatSD const & rsm)
@@ -174,35 +170,12 @@ RsmEigs             cRsmEigs(MatSD const & rsm)
     return ret;
 }
 
-MatSD               cInverse(MatSD const & rsm,double minInvCond)
+MatSD               cInverse(MatSD const & rsm,double ratioELB)
 {
     RsmEigs             eigs = cRsmEigs(rsm);
-    VecD2               bounds = cBounds(eigs.vals);
-    FGASSERT(bounds[0]/bounds[1] > minInvCond);
-    return eigs.inverse().asMatS();
-}
-
-RsmEigs             cRsmEigs(MatD const & rsm)
-{
-    size_t              D = rsm.numCols();
-    if (D == 1)
-        return {{rsm.m_data[0]},{1,1,Doubles{1.0}}};        // 'Doubles' prevents clang warning
-    RsmEigs             ret;
-    MatrixXd            mat(D,D);
-    convertRsm_(rsm,mat);
-    // Eigen runtime is more than 3x faster than equivalent JAMA or NRC function on 1000x1000 random RSM,
-    // but yields slightly larger residual errors than JAMA, which itself is about 2x larger than NRC:
-    SelfAdjointEigenSolver<MatrixXd>    es(mat);
-    const MatrixXd &    eigVecs = es.eigenvectors();
-    const VectorXd &    eigVals = es.eigenvalues();
-    ret.vals.resize(D);
-    ret.vecs.resize(D,D);
-    for (size_t rr=0; rr<D; ++rr)
-        ret.vals[rr] = eigVals(rr);
-    for (size_t rr=0; rr<D; ++rr)
-        for (size_t cc=0; cc<D; ++cc)
-            ret.vecs.rc(rr,cc) = eigVecs(rr,cc);        // MatrixXd takes (row,col) order
-    return ret;
+    Arr2D               bounds = cBounds(mapAbs(eigs.vals));
+    FGASSERT(bounds[0]/bounds[1] > ratioELB);
+    return selfDiagTransposeProduct(eigs.vecs,mapInv(eigs.vals));
 }
 
 EigsRsm3            cRsmEigs(MatS3D const & rsm)
@@ -303,19 +276,6 @@ EigsC<3>            cEigs(Mat33D const & mat)
 EigsC<4>            cEigs(Mat44D const & mat)
 {
     return fgEigsT<4>(mat);
-}
-
-template<size_t D>
-void                testSolveLinearT()
-{
-    for (size_t ii=0; ii<256; ++ii) {
-        Mat<double,D,D>     M = Mat<double,D,D>::randNormal();
-        Mat<double,D,1>     b = Mat<double,D,1>::randNormal(),
-                            x = solveLinear(M,b);
-        if (abs(cDeterminant(M)) < epsBits(20))         // don't test with ill conditioned
-            continue;
-        FGASSERT(isApproxEqualPrec(M*x,b,30));
-    }
 }
 
 void                testSolveLinear(CLArgs const &)

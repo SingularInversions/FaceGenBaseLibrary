@@ -1,12 +1,11 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgGuiApi.hpp"
 #include "FgGuiApi.hpp"
 #include "FgImage.hpp"
 #include "FgBestN.hpp"
@@ -156,8 +155,8 @@ GuiImg              guiImageCtrls(
             double              distMagIrcs = cMagD(winIrcs-winPosIrcs);
             closestLmIdx.update(distMagIrcs,ii);
         }
-        if (closestLmIdx.valid() && (closestLmIdx.key() < 17)) {
-            draggingLmN.set(closestLmIdx.val());
+        if (closestLmIdx.valid() && (closestLmIdx.metric < 17)) {
+            draggingLmN.set(closestLmIdx.object);
             return GuiCursor::grab;
         }
         else {
@@ -234,7 +233,7 @@ GuiImg              guiImageCtrls(
 
 GuiVal<ImgFormat>   guiImgFormatSelector(ImgFormats const & imgFormats,String8 const & store)
 {
-    ImgFormatsInfo      imgFormatInfo = getImgFormatsInfo();
+    ImgFormatInfos      imgFormatInfo = getImgFormatsInfo();
     String8s            imgFormatDescs;     // descriptions
     for (ImgFormat fmt : imgFormats)
         imgFormatDescs.push_back(findFirst(imgFormatInfo,fmt).description);

@@ -93,6 +93,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -117,6 +118,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -140,6 +142,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -166,6 +169,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>

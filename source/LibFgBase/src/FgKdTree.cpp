@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,27 +19,18 @@ namespace Fg {
 
 namespace {
 
-struct  KdLess
-{
-    uint            dim;
-
-    explicit KdLess(uint d) : dim(d) {}
-
-    bool            operator()(Vec3F lhs,Vec3F rhs) {return (lhs[dim] < rhs[dim]); }
-};
-
 uint                createNode(Svec<KdTree::Node> & tree,Vec3Fs const & v,uint dim)
 {
     FGASSERT(!v.empty());
     if (v.size() == 1) {
-        uint        ret = uint(tree.size());
+        uint                ret = uint(tree.size());
         tree.push_back(KdTree::Node{v[0]});
         return ret;
     }
-    Vec3Fs          verts(v);
-    sort(verts.begin(),verts.end(),KdLess(dim));  // Smallest first
-    uint            split = uint(verts.size() / 2),
-                    nextDim = (dim+1)%3;
+    Vec3Fs              verts(v);
+    sort(verts.begin(),verts.end(),[dim](Vec3F l,Vec3F r){return l[dim]<r[dim];});
+    uint                split = uint(verts.size() / 2),
+                        nextDim = (dim+1)%3;
     if (v.size() == 2)
         tree.push_back(KdTree::Node{verts[split],createNode(tree,cHead(verts,split),nextDim)});
     else            // > 2 verts
@@ -53,8 +44,8 @@ uint                createNode(Svec<KdTree::Node> & tree,Vec3Fs const & v,uint d
 
 KdVal               findClst(Svec<KdTree::Node> const & tree,Vec3F query,KdVal best,uint idx,uint dim)
 {
-    KdTree::Node const &    node = tree[idx];
-    float                   distMag = cMagD(query-node.vert);
+    KdTree::Node const & node = tree[idx];
+    float               distMag = cMagD(query-node.vert);
     if (distMag < best.distMag) {
         best.distMag = distMag;
         best.closest = node.vert;
@@ -74,9 +65,9 @@ KdVal               findClst(Svec<KdTree::Node> const & tree,Vec3F query,KdVal b
 
 double              testClosest(Svec<KdTree::Node> const & tree,Vec3F query)
 {
-    float           ret = lims<float>::max();
+    float               ret = lims<float>::max();
     for (KdTree::Node const & node : tree) {
-        float           mag = cMagD(query - node.vert);
+        float               mag = cMagD(query - node.vert);
         if (mag < ret)
             ret = mag;
     }
@@ -88,7 +79,7 @@ double              testClosest(Svec<KdTree::Node> const & tree,Vec3F query)
 KdTree::KdTree(Vec3Fs const & pnts)
 {
     FGASSERT(!pnts.empty());
-    Vec3Fs          noDups = cUnique(sortAll(pnts));
+    Vec3Fs              noDups = cUnique(sortAll(pnts));
     m_tree.reserve(noDups.size());
     createNode(m_tree,noDups,0);
 }
@@ -96,20 +87,20 @@ KdTree::KdTree(Vec3Fs const & pnts)
 KdVal               KdTree::findClosest(Vec3F pos) const
 {
     FGASSERT(!m_tree.empty());
-    KdVal           init {Vec3F{0},std::numeric_limits<float>::max()};
+    KdVal               init {Vec3F{0},std::numeric_limits<float>::max()};
     return findClst(m_tree,pos,init,uint(m_tree.size()-1),0);
 }
 
 void                testKdTree(CLArgs const &)
 {
-    Vec3Fs          targs = randVecNormals<float,3>(512,1.0f);
+    Vec3Fs              targs = randVecNormals<float,3>(512,1.0f);
     // Grid data (challenging for KD tree):
     for (Iter3UI it(4); it.valid(); it.next())
         targs.push_back(Vec3F(it()) * 0.5f - Vec3F(0.75f));
-    KdTree          kd {targs};
+    KdTree              kd {targs};
     // Test random query points:
     for (size_t ii=0; ii<512; ++ii) {
-        Vec3F       p = Vec3F::randNormal();
+        Vec3F               p = Vec3F::randNormal();
         FGASSERT(kd.findClosest(p).distMag == testClosest(kd.m_tree,p));
     }
     // Test exact matches:

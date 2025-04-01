@@ -1,12 +1,12 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
 
 #include "stdafx.h"
 
-#include "FgMatrixSolver.hpp"
+#include "FgMatrixV.hpp"
 #include "FgTransform.hpp"
 #include "FgCommand.hpp"
 #include "FgApproxEqual.hpp"
@@ -44,13 +44,13 @@ Mat33D              cRandPositiveDefinite3D()
 {
     Mat33D              L = QuaternionD::rand().asMatrix(),
                         R = QuaternionD::rand().asMatrix();
-    Arr3D               lnEigs {randNormal(),randNormal(),randNormal(),};
+    Arr3D               lnEigs = cRandArrNormal<double,3>();
     return L * scaleRows(R,mapExp(lnEigs));
 }
 
 MatS2D              MatS2D::randSpd(double lnEigStdev)
 {
-    Mat22D              D = cDiagMat(mapExp(Vec2D::randNormal(lnEigStdev)));
+    Mat22D              D = cMatDiag(mapExp(Vec2D::randNormal(lnEigStdev)));
     Vec2D               r = normalize(Vec2D::randNormal());
     Mat22D              R {r[0],-r[1],r[1],r[0]},
                         M = R.transpose() * D * R;      // will be symmetric within precision
@@ -173,7 +173,7 @@ MatS3D              MatS3D::transform(Mat33D const & M) const
 MatS3D              MatS3D::randSpd(double lnEigStdev)
 {
     // Create a random 3D SPD by generating log-normal eigvals and a random rotation for the eigvecs:
-    Mat33D          D = cDiagMat(mapExp(Vec3D::randNormal(lnEigStdev))),
+    Mat33D          D = cMatDiag(mapExp(Vec3D::randNormal(lnEigStdev))),
                     R = QuaternionD::rand().asMatrix(),
                     M = R.transpose() * D * R;
     // M will have precision-level asymmetry so construct return value from upper triangular values
@@ -202,7 +202,7 @@ MatS3D              cCongruentTransform(MatS3D const & S,Mat33D const & M)
 }
 static void         testCongruentTransform()
 {
-    auto                fn = []()
+    auto                fn = [](size_t)
     {
         // only test for PD here since that's all we really care about:
         MatS3D          S = MatS3D::randSpd(1);
@@ -211,7 +211,7 @@ static void         testCongruentTransform()
                         ref = M.transpose() * S.asMatC() * M;
         FGASSERT(isApproxEqualPrec(tst,ref,30));
     };
-    repeat(fn,10);
+    repeat(10,fn);
 }
 
 MatS3D              transposeSelfProduct(Mat33D const & M)
@@ -236,7 +236,7 @@ MeanCov3            cMeanCov(Vec3Ds const & samps)
     Vec3Ds              zms = mapSub(samps,mean);
     MatS3D              acc {0};
     for (Vec3D const & zm : zms)
-        acc += outerProductSelf(zm);
+        acc += outerProductSelf(zm.m);
     return {mean,acc*(1.0/samps.size())};
 }
 
@@ -278,12 +278,6 @@ std::ostream &      operator<<(std::ostream & os,MatUT3D const & ut)
     return os << "Diag: " << diag << " UT: " << upper;
 }
 
-MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2)
-{
-    Mat33D              toMhlbs {cat(a0.m,a1.m,a2.m)};
-    return cCholesky(transposeSelfProduct(toMhlbs));
-}
-
 MatS3D::MatS3D(Mat33D const & m) :
     diag {m[0],m[4],m[8]},
     offd {m[1],m[2],m[5]}
@@ -304,7 +298,7 @@ void                testInverseT()
     while
         (cDeterminant(mat) < 0.01);
     Mat<double,S,S>     inv = cInverse(mat),
-                        ident = cDiagMat<double,S>(1);
+                        ident = cMatDiag<double,S>(1);
     FGASSERT(isApproxEqualPrec(inv*mat,ident,40));
 }
 
@@ -313,10 +307,10 @@ void                testRotate(CLArgs const &)
     randSeedRepeatable();
     for (uint ii=0; ii<100; ii++)
     {
-        double          angle = randUniform(-pi,pi);
+        double          angle = cRandUniform(-pi,pi);
         Vec3D           axis = normalize(Vec3D::randNormal());
         Mat33D          mat = matRotateAxis(angle,axis);
-        double          err = cLenD(mat * mat.transpose() - cDiagMat<double,3>(1)),
+        double          err = cLenD(mat * mat.transpose() - cMatDiag<double,3>(1)),
                         err2 = cLenD(mat * axis - axis);
         FGASSERT(err < (lims<double>::epsilon() * 10.0));
         FGASSERT(err2 < (lims<double>::epsilon() * 10.0));

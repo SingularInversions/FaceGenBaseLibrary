@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -10,7 +10,7 @@
 #include "FgTime.hpp"
 #include "FgParse.hpp"
 #include "FgCommand.hpp"
-#include "FgRandom.hpp"
+#include "FgMath.hpp"
 #include "FgTestUtils.hpp"
 
 using namespace std;
@@ -439,7 +439,7 @@ void                testRaw(CLArgs const & args)
     FGTESTDIR
     Bytes               data;
     for (size_t ii=0; ii<2000; ++ii)
-        data.push_back(scast<byte>(randUniformUint(256U)));
+        data.push_back(scast<byte>(cRandUint64(256U)));
     String8             fname {"raw"};
     saveRaw(data,fname,false);
     Bytes               dataCopy = loadRaw(fname);
@@ -449,11 +449,14 @@ void                testRaw(CLArgs const & args)
 
 }
 
+void                testOpenFile(CLArgs const &);
+
 void                testFilesystem(CLArgs const & args)
 {
     Cmds            cmds {
         {testCurrentDirectory,"curDir"},
         {testOfstreamUnicode,"ofsUni"},
+        {testOpenFile,"open"},
         {testReadableFile,"readable"},
         {testDeleteDirectory,"delDir"},
         {testRecursiveCopy,"recurseCopy"},

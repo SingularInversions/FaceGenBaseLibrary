@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc.
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 //
 // Authors:     Andrew Beatty
 // Created:     October 25, 2012
@@ -30,10 +30,10 @@ VArray<CoordWgt3,8> lerpCoordsCull(Vec3UI dims,Vec3D ircs)
         indsEub.rc(dd,0) = (lo < 0) ? 1 : 0;
         indsEub.rc(dd,1) = (hi >= eub) ? 1 : 2;
     }
-    Mat32UI             coords(catHoriz(lov,hiv));  // OK to cast to unsigned since negative values won't be used
+    Mat32UI             coords(catH(lov,hiv));  // OK to cast to unsigned since negative values won't be used
     Vec3D               wgtHi = ircs - Vec3D(lov),
                         wgtLo = Vec3D(1) - wgtHi;
-    Mat32D              weights = catHoriz(wgtLo,wgtHi);
+    Mat32D              weights = catH(wgtLo,wgtHi);
     for (Iter3UI it(indsEub); it.valid(); it.next()) {
         CoordWgt3       cw;
         cw.wgt = 1.0;

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -146,16 +146,10 @@ D3d::D3d(HWND hwnd,NPT<RendMeshes> rmsN,NPT<double> lrsN,bool try_11_1) : rendMe
 {
     origMeshesDimsN = link1(rendMeshesN,[](RendMeshes const & rms)
     {
-        Mat32F      bounds {
-            lims<float>::max(),-lims<float>::max(),
-            lims<float>::max(),-lims<float>::max(),
-            lims<float>::max(),-lims<float>::max()
-        };
-        for (RendMesh const & rm : rms) {
-            Mat32F      bnds = cBounds(rm.origMeshN.val().verts);
-            bounds = cBoundsUnion(bounds,bnds);
-        }
-        return bounds * Vec2F{-1,1};
+        Arr<Vec3F,2>        bounds {Vec3F{lims<float>::max()},Vec3F{lims<float>::lowest()}};
+        for (RendMesh const & rm : rms)
+            bounds = updateBounds(rm.origMeshN.val().verts,bounds);
+        return multAcc(bounds,Arr2F{-1,1});
     });
     HRESULT             hr = 0;
     {
@@ -512,7 +506,7 @@ D3d::Verts          D3d::makeVertList(
 {
     D3d::Verts              vertList;
     Surf const &            origSurf = origMesh.surfaces[surfNum];
-    MeshNormals const &     normals = rendMesh.normalsN.val();
+    SurfNormals const &     normals = rendMesh.normalsN.val();
     Vec3Fs const &          norms = normals.vert;
     FacetNormals const &    normFlats = normals.facet[surfNum];
     Vec3Fs const &          verts = rendMesh.shapeVertsN.val();
@@ -760,8 +754,8 @@ void                D3d::renderBgImg(BackgroundImage const & bgi, Vec2UI viewpor
     mapViews[2] = noModulationMap.view.get();
     pContext->PSSetShaderResources(0,3,mapViews);
     Scene                       scene;
-    scene.mvm = cDiagMat<float,4>(1);
-    scene.projection = cDiagMat<float,4>(1);
+    scene.mvm = cMatDiag<float,4>(1);
+    scene.projection = cMatDiag<float,4>(1);
     scene.ambient = Vec4F(1);
     if (transparentPass) {
         double                      ft = clamp(bgi.foregroundTransparency.val(),0.0,1.0);
@@ -993,7 +987,7 @@ void                D3d::renderBackBuffer(
                     mapViews[1] = blackMap.view.get();
                 mapViews[2] = noModulationMap.view.get();
                 pContext->PSSetShaderResources(0,3,mapViews);
-                pContext->Draw(uint(origSurf.numTris() * 6 + origSurf.numQuads() * 8), 0);
+                pContext->Draw(uint(origSurf.tris.size() * 6 + origSurf.quads.size() * 8), 0);
             }
         }
     }

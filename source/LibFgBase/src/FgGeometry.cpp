@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -8,11 +8,11 @@
 
 #include "FgGeometry.hpp"
 #include "FgSerial.hpp"
-#include "FgMatrixSolver.hpp"
+#include "FgMatrixV.hpp"
 #include "FgCommand.hpp"
 #include "FgKdTree.hpp"
 #include "FgBounds.hpp"
-#include "FgRandom.hpp"
+#include "FgMath.hpp"
 #include "FgTransform.hpp"
 #include "FgMath.hpp"
 #include "FgApproxEqual.hpp"
@@ -30,6 +30,18 @@ namespace Fg {
 double              cArea(Vec2D p0,Vec2D p1,Vec2D p2)
 {
     return (p1[0]-p0[0]) * (p2[1]-p0[1]) - (p1[1]-p0[1]) * (p2[0]-p0[0]);
+}
+
+Vec3D               cPerp(Vec3D const & v)
+{
+    Vec3D               vsqr = mapSqr(v);
+    double              vmag = cSumElems(vsqr);
+    FGASSERT(vmag > 0);
+    size_t              idx = cMinIdx(vsqr);
+    Vec3D               ret {0};
+    ret[idx] = 1;
+    ret -= v * v[idx] / vmag;       // v[idx] is dot product of v and ret
+    return ret;
 }
 
 bool                isPointLeftOfLine(Vec2D begin,Vec2D end,Vec2D pnt,double tol)
@@ -55,11 +67,11 @@ void                testIsPointLeftOfLine(CLArgs const &)
     for (Vec2D r : right)
         FGASSERT(!isPointLeftOfLine(line[0],line[1],r,tol));
     for (size_t ii=0; ii<100; ++ii) {
-        double              scale = exp(randNormal());
-        Mat22D              rot = matRotate(randUniform(0,tau)) * scale;
+        double              scale = exp(cRandNormal());
+        Mat22D              rot = matRotate(cRandUniform(0,tau)) * scale;
         Vec2D               trans = Vec2D::randNormal() * scale;
         Affine2D            xf {rot,trans};
-        Arr<Vec2D,2>        lineXf = mapMul(xf,line);
+        Arr<Vec2D,2>        lineXf = mapMulR(xf,line);
         for (Vec2D l : left)
             FGASSERT(isPointLeftOfLine(lineXf[0],lineXf[1],xf*l,tol*scale));
         for (Vec2D r : right)
@@ -75,13 +87,13 @@ void                testIsPointInTri(CLArgs const &)
     Vec2Ds              inside {{eps-1,0},{eps-1,1-2*eps},{0,0.5-2*eps},{0,0},},
                         border {{-1,0},{-1,1},{0,0.5},{1,0},};
     for (size_t ii=0; ii<100; ++ii) {
-        double              scale = exp(randNormal());
-        Mat22D              rot = matRotate(randUniform(0,tau)) * scale;
+        double              scale = exp(cRandNormal());
+        Mat22D              rot = matRotate(cRandUniform(0,tau)) * scale;
         if (ii > 50)
             rot = rot * Mat22D{-1,0,0,1};       // switch to LHR CS
         Vec2D               trans = Vec2D::randNormal() * scale;
         Affine2D            xf {rot,trans};
-        Arr<Vec2D,3>        triXf = mapMul(xf,tri);
+        Arr<Vec2D,3>        triXf = mapMulR(xf,tri);
         if (ii > 50)
             swap(triXf[1],triXf[2]);            // switch to CW winding for LHR CS
         for (Vec2D p : inside)
@@ -120,8 +132,8 @@ void                pit0(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 void                pit1(Vec2D pt,Vec2D v0,Vec2D v1,Vec2D v2,int res)
 {
     for (size_t ii=0; ii<5; ++ii) {
-        Mat22D          rot = matRotate(randUniform()*2.0*pi);
-        Vec2D           trn(randUniform(),randUniform());
+        Mat22D          rot = matRotate(cRandUniform()*2.0*pi);
+        Vec2D           trn(cRandUniform(),cRandUniform());
         Affine2D        s(rot,trn);
         pit0(s*pt,s*v0,s*v1,s*v2,res); }
 }
@@ -249,13 +261,13 @@ static void         testFlipTri(CLArgs const &)
     Vec2D               v0 {-1,0},
                         v1 {1,0};
     for (size_t ii=0; ii<1000; ++ii) {
-        double              x = randUniform(-2,2),
-                            y = randUniform(0.1,10.0);
+        double              x = cRandUniform(-2,2),
+                            y = cRandUniform(0.1,10.0);
         Vec2D               v2 {x,y},
                             vf {x,-y};
-        Mat22D              xf = matRotate(randUniform(-pi,pi));
+        Mat22D              xf = matRotate(cRandUniform(-pi,pi));
         Arr<Vec2D,3>        tri {v0,v1,v2};
-        Vec2D               tst = flipTri(mapMul(xf,tri),2),
+        Vec2D               tst = flipTri(mapMulR(xf,tri),2),
                             ref = xf * vf;
         FGASSERT(isApproxEqual(tst,ref,epsBits(30)));
     }
@@ -286,7 +298,7 @@ double              findSaggitalSymmetry(Vec3Fs const & verts,Affine3F & mirror)
         }
     }
     mirror = bestXform;
-    Mat32F          bounds = cBounds(verts);
+    Mat32F          bounds = catH(cBounds(verts));
     Vec3F           dims = bounds * Vec2F{-1,1};
     double          rmsErr = sqrt(bestErr / double(verts.size()));
     return (rmsErr / cLenD(dims));
@@ -308,7 +320,7 @@ bool                isApproxEqual(Quadratic const & l,Quadratic const & r,double
         isApproxEqual(l.vertVal,r.vertVal,tol);
 }
 
-QuadraticZ3D        operator*(Mat33D const & M,QuadraticZ3D const & Q)
+QuadVZ3D        operator*(Mat33D const & M,QuadVZ3D const & Q)
 {
     return {
         cCongruentTransform(Q.qform,cInverse(M)),
@@ -316,7 +328,7 @@ QuadraticZ3D        operator*(Mat33D const & M,QuadraticZ3D const & Q)
     };
 }
 
-QuadraticZ3D        operator*(Rigid3D const & R,QuadraticZ3D const & Q)
+QuadVZ3D        operator*(Rigid3D const & R,QuadVZ3D const & Q)
 {
     // y = Mx, want S' | x^T S x = y^T S' y = x^T M^T S' M x (for all x)
     // S = M^T S' M
@@ -331,10 +343,10 @@ QuadraticZ3D        operator*(Rigid3D const & R,QuadraticZ3D const & Q)
 }
 static void         testRigid3DMulQuadraticZ3D(CLArgs const &)
 {
-    auto                fn = []()
+    auto                fn = [](size_t)
     {
         Rigid3D             R = Rigid3D::randNormal(1);
-        QuadraticZ3D        Q {MatS3D::randSpd(1),Vec3D::randNormal(1)},
+        QuadVZ3D        Q {MatS3D::randSpd(1),Vec3D::randNormal(1)},
                             S = R * Q;
         for (size_t ii=0; ii<10; ++ii) {
             Vec3D               p = Vec3D::randNormal(1);
@@ -343,23 +355,32 @@ static void         testRigid3DMulQuadraticZ3D(CLArgs const &)
             FGASSERT(isApproxEqualPrec(tst,ref,30));
         }
     };
-    repeat(fn,10);
+    repeat(10,fn);
 }
-QuadraticZ3Ds       mapTransform(Rigid3D const & r,QuadraticZ3Ds const & qs)
+
+QuadVZ3Ds           mapTransform(Rigid3D const & r,QuadVZ3Ds const & qs)
 {
-    Affine3D            ra = r.asAffine();
-    Mat33D              ria = r.rot.inverse().asMatrix();
-    auto                fn = [&](QuadraticZ3D const & q) -> QuadraticZ3D
+    Affine3D            xf = r.asAffine();
+    Mat33D              inv = r.rot.inverse().asMatrix();
+    auto                fn = [&](QuadVZ3D const & q) -> QuadVZ3D
     {
-        return {
-            cCongruentTransform(q.qform,ria),
-            ra * q.centre,
-        };
+        return {cCongruentTransform(q.qform,inv), xf*q.centre};
     };
     return mapCall(qs,fn);
 }
 
-Quadratic           isectRayQuadratic(QuadraticZ3D const & Q,Vec3D ray)
+QuadVZ3Ds           mapTransform(SimilarityD const & sim,QuadVZ3Ds const & qs)
+{
+    Affine3D            xf = sim.asAffine();
+    Mat33D              inv = sim.inverse().linearComponent();
+    auto                fn = [&](QuadVZ3D const & q) -> QuadVZ3D
+    {
+        return {cCongruentTransform(q.qform,inv), xf*q.centre};
+    };
+    return mapCall(qs,fn);
+}
+
+Quadratic           isectRayQuadratic(QuadVZ3D const & Q,Vec3D ray)
 {
     // see Design -> Quadratics:
     double              lambda = applyQform(Q.qform,ray),
@@ -367,14 +388,14 @@ Quadratic           isectRayQuadratic(QuadraticZ3D const & Q,Vec3D ray)
                         b = 0.5 * applyQform(Q.qform,Q.centre);
     return {lambda,na/lambda,b-0.5*sqr(na)/lambda};
 }
-static void         testIsectRayQuadratic(CLArgs const &)
+static void         testQuadratic(CLArgs const &)
 {
     for (size_t ii=0; ii<4; ++ii) {
         // simple test with unit isotropic quadratic where we know what the answer should be:
-        Vec2D               trans {randNormal(),randNormal()};
-        Vec3D               vertex {exp(randNormal()),trans[0],trans[1]},
+        Vec2D               trans {cRandNormal(),cRandNormal()};
+        Vec3D               vertex {exp(cRandNormal()),trans[0],trans[1]},
                             ray {1,0,0};
-        QuadraticZ3D        Q {MatS3D{{1,1,1},{0,0,0}},vertex};
+        QuadVZ3D            Q {MatS3D{{1,1,1},{0,0,0}},vertex};
         Quadratic           tst = isectRayQuadratic(Q,ray),
                             ref {1,vertex[0],0.5*cMag(trans)};
         FGASSERT(isApproxEqual(tst,ref,epsBits(30)));
@@ -387,17 +408,30 @@ static void         testIsectRayQuadratic(CLArgs const &)
     }
 }
 
+MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2)
+{
+    Mat33D              toMhlbs {cat(a0.m,a1.m,a2.m)};
+    return cCholesky(transposeSelfProduct(toMhlbs));
+}
+
+MatUT3D             cSpheroid(Vec3D axis0,double radius)
+{
+    Vec3D               axis1 = normalize(cPerp(axis0))/radius,
+                        axis2 = normalize(crossProduct(axis0,axis1))/radius;
+    return axesToPcut(axis0,axis1,axis2);
+}
+
 namespace {
 
 void                testClosestPointInSegment(CLArgs const &)
 {
-    double constexpr    eps = epsBits(30);
+    double              eps = epsBits(30);
     Vec2D               pB1 {-2,1},
                         pA1 {-1,1},
                         p01 {0,1},
                         p11 {1,1},
                         p21 {1,1};
-    auto                fn = [](Vec2D x,Vec2D y,double ref)
+    auto                fn = [eps](Vec2D x,Vec2D y,double ref)
     {
             FGASSERT(isApproxEqual(cMagD(closestPointOnSegmentToOrigin<double,2>({x,y})),ref,eps));
     };
@@ -422,14 +456,14 @@ void                testBarycentricCoord(CLArgs const &)
                         del2 = v[2]-v[0];
         if ((del1[0]*del2[1]-del1[1]*del2[0]) > 0.001) {
             Arr3D           c;
-            c[0] = randUniform();                       // deterministic order
-            c[1] = randUniform() * (1.0 - c[0]);
+            c[0] = cRandUniform();                       // deterministic order
+            c[1] = cRandUniform() * (1.0 - c[0]);
             c[2] = 1.0 - c[1] - c[0];
             Vec2D           pnt = multAcc(v,c);
             Arr3D           res = cBarycentricCoord(pnt,v).value();
             FGASSERT(cMinElem(res)>=0.0f);     // Inside.
             Vec2D           chk = multAcc(v,res);
-            FGASSERT(isApproxEqualRelMag(pnt,chk,30));
+            FGASSERT(isApproxEqual(pnt,chk,epsBits(20)));
             FGASSERT(isApproxEqualPrec(res[0]+res[1]+res[2],1.0));
         }
     }
@@ -441,15 +475,15 @@ void                testBarycentricCoord(CLArgs const &)
                         del2 = v[2]-v[0];
         if ((del1[0]*del2[1]-del1[1]*del2[0]) > 0.001) {
             Vec3D           c;
-            c[0] = -randUniform();                      // deterministic order
-            c[1] = randUniform() * (1.0 - c[0]);
+            c[0] = -cRandUniform();                      // deterministic order
+            c[1] = cRandUniform() * (1.0 - c[0]);
             c[2] = 1.0 - c[1] - c[0];
             c = cRotationPermuter<double>(ii%3) * c;
             Vec2D           pnt = multAcc(v,c.m);
             Arr3D           res = cBarycentricCoord(pnt,v).value();
             FGASSERT(cMinElem(res)<0.0f);     // Outside
             Vec2D           chk = multAcc(v,res);
-            FGASSERT(isApproxEqualRelMag(pnt,chk,30));
+            FGASSERT(isApproxEqual(pnt,chk,epsBits(20)));
             FGASSERT(isApproxEqualPrec(res[0]+res[1]+res[2],1.0));
         }
     }
@@ -496,10 +530,10 @@ void                testPlane(CLArgs const &)
         SimilarityD         sim = similarityRand();
         Affine3D            xf = sim.asAffine();
         Plane               plane = cPlane(xf*e0,xf*e1,xf*e2);
-        double              a = randUniform(),
-                            b = randUniform(),
+        double              a = cRandUniform(),
+                            b = cRandUniform(),
                             c = 1.0 - a - b,                // a,b,c are trilinear coords
-                            d = randNormal();               // test *signed* distance
+                            d = cRandNormal();              // test *signed* distance
         Vec3D               p0 = e0*a + e1*b + e2*c,        // on plane
                             p1 = p0 + e3 * d,               // off plane
                             query0 = xf * p0,
@@ -514,14 +548,14 @@ void                testLinePlaneIntersect(CLArgs const &)
     Arr<Vec2D,3>        pts {{0,0},{1,0},{0,1},};
     randSeedRepeatable();
     for (size_t ii=0; ii<100; ++ii) {
-        Mat22D              rot = matRotate(randUniform()*2.0*pi);
-        Arr<Vec2D,3>        rs = mapMul(rot,pts);
+        Mat22D              rot = matRotate(cRandUniform()*2.0*pi);
+        Arr<Vec2D,3>        rs = mapMulR(rot,pts);
         Mat33D              rot3 = QuaternionD::rand().asMatrix();
         Arr<Vec3D,3>        ps = mapCall(rs,[rot3](Vec2D p){return rot3 * append(p,1.0); });
-        Vec3D               pt = rot3 * append(Vec2D::randUniform(-0.1,0.1),1.0);
+        Vec3D               pt = rot3 * append(Vec2D::cRandUniform(-0.1,0.1),1.0);
         Plane               pln = cPlane(ps);
-        Vec4D               is = linePlaneIntersect(pt*exp(randNormal()),pln);
-        FGASSERT(isApproxEqualRelMag(pt,projectHomog(is),30));
+        Vec4D               is = linePlaneIntersect(pt*exp(cRandNormal()),pln);
+        FGASSERT(isApproxEqual(pt,projectHomog(is),epsBits(20)));
     }
 }
 
@@ -596,7 +630,7 @@ void                testGeometry(CLArgs const & args)
         {testIsPointInTri,"pitt","point in triangle with tolerance"},
         {testFindSaggSymm,"sagg","find saggital symmetry"},
         {testTensorArea,"tensor","levi-civita tensor area formula"},
-        {testIsectRayQuadratic,"quad","quadratics operations"},
+        {testQuadratic,"quad","quadratics"},
         {testRigid3DMulQuadraticZ3D,"zqr","zero-extrema quadratic rigid transform"},
     };
     doMenu(args,cmds,true);

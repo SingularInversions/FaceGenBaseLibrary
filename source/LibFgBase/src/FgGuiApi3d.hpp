@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -12,7 +12,6 @@
 #include "FgCamera.hpp"
 #include "Fg3dMesh.hpp"
 #include "FgAny.hpp"
-#include "FgMarr.hpp"
 
 namespace Fg {
 
@@ -88,7 +87,7 @@ struct      RendMesh
     // The original mesh will be empty if this mesh is not currently selected:
     NPT<Mesh>               origMeshN;          // Should point to an Input if client wants mesh editing
     NPT<Vec3Fs>             shapeVertsN;        // after application of morphs etc.
-    NPT<MeshNormals>        normalsN;
+    NPT<SurfNormals>        normalsN;
     RendSurfs               rendSurfs;          // must be 1-1 with origMesh.surfaces since GPU needs to store surf data there
     Sptr<Any>               gpuData = std::make_shared<Any>();
 };

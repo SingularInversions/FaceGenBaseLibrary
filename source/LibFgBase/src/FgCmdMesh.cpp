@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -217,11 +217,12 @@ void                cmdEmboss(CLArgs const & args)
 
 void                cmdExport(CLArgs const & args)
 {
-    Syntax          syn {args,
+    Strings             imgExts = getImgExts();
+    Syntax              syn {args,
         R"(<out>.<exto> (<mesh>.<extm> [<image>.<exti>])+
-    <exto>          - )" + getMeshLoadExtsCLDescription() + R"(
-    <extm>          - )" + getMeshSaveExtsCLDescription() + R"(
-    <exti>          - )" + clOptionsStr(getImgExts()) + R"(
+    <exto>          - )" + getMeshSaveExtsCLDescription() + R"(
+    <extm>          - )" + getMeshLoadExtsCLDescription() + R"(
+    <exti>          - )" + clOptionsStr(imgExts) + R"(
 OUTPUT:
     <out>.<exto>    - the combined meshes
     <out>#.png      - related image files are only stored if <exto> supports referencing image files
@@ -229,20 +230,14 @@ NOTES:
     * If the output format does not support multiple meshes they will be merged into one
     * If the output format does not support references to color maps they will be ignored)"
     };
-    String          outFile = syn.next();
-    Meshes          meshes;
+    String              outFile = syn.next();
+    Meshes              meshes;
     do {
-        Mesh            mesh = loadMesh(syn.next());
-        size_t          cnt = 0;
-        while (syn.more() && toLower(pathToExt(syn.peekNext())) != "tri") {
-            String              imgFile(syn.next()),
-                                ext = pathToExt(imgFile);
-            Strings             exts = getImgExts();
-            auto                it = find(exts.begin(),exts.end(),ext);
-            if (it == exts.end())
-                syn.error("Unknown image file type",imgFile);
+        Mesh                mesh = loadMesh(syn.next());
+        size_t              cnt = 0;
+        while (syn.more() && contains(imgExts,toLower(pathToExt(syn.peekNext())))) {
             if (cnt < mesh.surfaces.size())
-                loadImage_(imgFile,mesh.surfaces[cnt++].albedoMapRef());
+                loadImage_(syn.next(),mesh.surfaces[cnt++].albedoMapRef());
             else
                 syn.error("More albedo map images specified than surfaces in",mesh.name);
         }
@@ -482,18 +477,6 @@ void                cmdRuv(CLArgs const & args)
         );
     Mesh    mesh = loadMesh(syn.next());
     mesh = removeUnused(mesh);
-    saveMesh(mesh,syn.next());
-}
-
-void                mergenamedsurfs(CLArgs const & args)
-{
-    Syntax    syn(args,
-        "<in>.<extIn> <out>.<extOut>\n"
-        "    <extIn> = " + getMeshLoadExtsCLDescription() + "\n"
-        "    <extOut> = " + getMeshSaveExtsCLDescription()
-        );
-    Mesh    mesh = loadMesh(syn.next());
-    mesh = mergeSameNameSurfaces(mesh);
     saveMesh(mesh,syn.next());
 }
 
@@ -765,35 +748,27 @@ void                cmdSurfPointCopy(CLArgs const & args)
 
 void                cmdSurfPointDel(CLArgs const & args)
 {
-    Syntax              syn {args,
-        R"(<in>.<ext> (<surfIdx> <pointIdx> | all)
+    Syntax              syn {args,R"(<in>.<ext> (<name> | all)
     <ext>           - (tri | fgmesh)
-    <surfIdx>       - surface index
-    <pointIdx>      - point index within that surface
+    <name>          - all points with this name will be deleted
+    all             - all surface points will be deleted
 OUTPUT:
-    <in>.<ext> is modified to delete the specified surface point(s)
-NOTES:
-    Use 'fgbl mesh surf point list' to see the surface and point indices of all surface points
-)"
+    <in>.<ext> is modified to delete the specified surface point(s))"
     };
     String              meshFname = syn.next();
     Mesh                mesh = loadMesh(meshFname);
-    if (syn.peekNext() == "all") {
-        syn.next();
+    String              name = syn.next();
+    size_t              cnt = mesh.surfPointNum();
+    if (name == "all")
         for (Surf & surf : mesh.surfaces)
             surf.surfPoints.clear();
-    }
-    else {
-        size_t              ss = syn.nextAs<size_t>();
-        if (ss >= mesh.surfaces.size())
-            syn.error("surface index out of bounds",syn.curr());
-        Surf &              surf = mesh.surfaces[ss];
-        size_t              ii = syn.nextAs<size_t>();
-        if (ii >= surf.surfPoints.size())
-            syn.error("point index out of bounds",syn.curr());
-        surf.surfPoints.erase(surf.surfPoints.begin() + ii);
-    }
-    saveMesh(mesh,meshFname);
+    else
+        for (Surf & surf : mesh.surfaces)
+            surf.surfPoints = select(surf.surfPoints,[=](SurfPointName const & spn){return (spn.label!=name);});
+    size_t              del = cnt - mesh.surfPointNum();
+    fgout << fgnl << del << " surface points removed";
+    if (del > 0)
+        saveMesh(mesh,meshFname);
 }
 
 void                cmdSurfPointList(CLArgs const & args)
@@ -878,23 +853,29 @@ NOTES:
 
 void                cmdSurfPointRen(CLArgs const & args)
 {
-    Syntax    syn(args,
-        "<in>.fgmesh <surfIdx> <ptIdx> <name>\n"
-        "   <surfIdx> - Which surface\n"
-        "   <spIdx>   - Which point on that surface\n"
-        "   <name>    - Name"
-        );
-    String8        meshFname = syn.next();
-    Mesh        mesh = loadFgmesh(meshFname);
-    size_t          ss = syn.nextAs<size_t>(),
-                    ii = syn.nextAs<size_t>();
-    if (ss >= mesh.surfaces.size())
-        fgThrow("Surface index value larger than available surfaces");
-    Surf &   surf = mesh.surfaces[ss];
-    if (ii >= surf.surfPoints.size())
-        fgThrow("Point index value larger than availables points");
-    surf.surfPoints[ii].label = syn.next();
-    saveFgmesh(meshFname,mesh);
+    Syntax              syn(args,R"(<mesh>.fgmesh <findName> <newName>
+    <findName>      - find surface point(s) with this name
+    <newName>       - rename to this)"
+    );
+    String8             meshFname = syn.next();
+    String              findName = syn.next(),
+                        newName = syn.next();
+    Mesh                mesh = loadFgmesh(meshFname);
+    size_t              cnt {0};
+    for (Surf & surf : mesh.surfaces) {
+        for (SurfPointName & spn : surf.surfPoints) {
+            if (spn.label == findName) {
+                spn.label = newName;
+                ++cnt;
+            }
+        }
+    }
+    if (cnt == 0)
+        fgout << "No surface points found with name: " << findName;
+    else {
+        saveFgmesh(meshFname,mesh);
+        fgout << cnt << " surface points renamed";
+    }
 }
 
 void                cmdSurfPointToVert(CLArgs const & args)
@@ -1086,7 +1067,7 @@ void                cmdXformCreateMeshes(CLArgs const & args)
     Vec3Ds              bv = mapCast<Vec3D>(base.verts),
                         tv = mapCast<Vec3D>(targ.verts);
     SimilarityD         sim = solveSimilarity(bv,tv);
-    double              ssd = cSsd(mapMul(sim.asAffine(),bv),tv),
+    double              ssd = cSsd(mapMulR(sim.asAffine(),bv),tv),
                         sz = cMaxElem(cDims(tv));
     fgout << fgnl << "Transformed base to target relative RMS delta: " << sqrt(ssd / tv.size()) / sz;
     saveRaw(srlzText(sim),simFname);
@@ -1321,7 +1302,6 @@ void                cmdSurf(CLArgs const & args)
         {cmdSurfDel,"del","Delete specified surfaces"},
         {cmdSurfIso,"isolate","Delete all surfaces other than specified ones"},
         {surfList,"list","List surfaces in mesh"},
-        {mergenamedsurfs,"mergeNamed","Merge surfaces with identical names"},
         {mergesurfs,"merge","Merge all surfaces in a mesh into one"},
         {cmdSurfPoint,"point","operations on surface points"},
         {cmdRdf,"rdf","Remove Duplicate Facets within each surface"},
@@ -1388,7 +1368,7 @@ void                cmdMesh(CLArgs const & args)
         {cmdRtris,"rtris","Remove specific tris from a mesh"},
         {cmdRuv,"ruv","Remove vertices and uvs not referenced by a surface or marked vertex"},
         {cmdRevWind,"rwind","Reverse facet winding of a mesh"},
-        {cmdSurf,"surf","Operations on mesh surface structure"},
+        {cmdSurf,"surf","Operations on mesh surfaces"},
         {cmdToTris,"toTris","Convert all facets to tris"},
         {cmdUnify,"unify","Unify ordering of vertices and UVs if possible"},
         {cmdUvs,"uvs","UV-specific commands"},

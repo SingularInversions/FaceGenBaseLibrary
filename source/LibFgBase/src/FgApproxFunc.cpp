@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgApproxFunc.hpp"
-#include "FgRandom.hpp"
+#include "FgMath.hpp"
 #include "FgMath.hpp"
 #include "FgMain.hpp"
 
@@ -28,15 +28,15 @@ fgApproxFuncTest(CLArgs const &)
     double const        accuracy = 0.0001;
     for (uint ii=0; ii<10; ++ii)
     {
-        double          base = randUniform(-pi,pi),
-                        len = randUniform(0.5,1.5) * pi;
+        double          base = cRandUniform(-pi,pi),
+                        len = cRandUniform(0.5,1.5) * pi;
         Sine            sine;
         FgApproxFunc<double>    af(sine,base,base+len,256);
         double          xx,delta;
         for (uint jj=0; jj<1000; ++jj)
         {
             // Test interpolation:
-            xx = randUniform(base,base+len);
+            xx = cRandUniform(base,base+len);
             delta = std::abs(sine(xx) - af(xx));
             FGASSERT(delta < accuracy);
         }

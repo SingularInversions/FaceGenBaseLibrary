@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -209,8 +209,8 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
     Ofstream            ff(fname);
     ff.write(triIdent.data(),8);
     writeBinRaw_(ff,int32(numBaseVerts));               // V
-    writeBinRaw_(ff,int32(surf.numTris()));             // T
-    writeBinRaw_(ff,int32(surf.numQuads()));            // Q
+    writeBinRaw_(ff,int32(surf.tris.size()));             // T
+    writeBinRaw_(ff,int32(surf.quads.size()));            // Q
     writeBinRaw_(ff,int32(mesh.markedVerts.size()));    // numLabVerts (LV)
     writeBinRaw_(ff,int32(surfPoints.size()));          // numSurfPts (LS)
     int32               numUvs = hasUvs ? int32(mesh.uvs.size()) : 0;   // In case mesh is inconsistent
@@ -235,9 +235,9 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
             writeBinRaw_(ff,iv.vec);
     }
     // Facets:
-    for (uint ii=0; ii<surf.numTris(); ++ii)
+    for (uint ii=0; ii<surf.tris.size(); ++ii)
         writeBinRaw_(ff,surf.tris.vertInds[ii]);
-    for (uint ii=0; ii<surf.numQuads(); ++ii)
+    for (uint ii=0; ii<surf.quads.size(); ++ii)
         writeBinRaw_(ff,surf.quads.vertInds[ii]);
     // Marked Verts:
     for (size_t ii=0; ii<mesh.markedVerts.size(); ++ii) {
@@ -266,7 +266,8 @@ void        saveTri(String8 const & fname,Mesh const & mesh)
         DirectMorph const &   morph = mesh.deltaMorphs[ii];
         FGASSERT(!morph.verts.empty());
         writeLabel(ff,morph.name.as_ascii());
-        float           scale = float(numeric_limits<short>::max()-1) / cMaxElem(mapAbs(cBounds(morph.verts)));
+        float           scale = float(numeric_limits<short>::max()-1) /
+            cMaxElem(mapAbs(catH(cBounds(morph.verts))));
         writeBinRaw_(ff,1.0f/scale);
         for (size_t jj=0; jj<morph.verts.size(); ++jj)
             for (size_t kk=0; kk<3; ++kk)

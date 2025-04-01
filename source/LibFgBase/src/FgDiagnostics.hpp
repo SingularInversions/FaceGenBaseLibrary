@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -142,7 +142,7 @@ std::ostream &          operator<<(std::ostream &,Svec<T> const &);
 
 struct  FgOut
 {
-    FgOut();
+    explicit FgOut(bool enable=true);
     ~FgOut();
 
     // This is a unique global object:
@@ -211,17 +211,20 @@ private:
     std::ostream *      defOut();
 };
 
-extern FgOut      fgout;
+extern FgOut        fgout;
+extern FgOut        nout;           // null output
 
 struct  PushIndent
 {
     String              endMessage;
+    FgOut &             out;
 
-    explicit PushIndent(String const & label={},String const & endMsg={}) : endMessage{endMsg}
+    explicit PushIndent(String const & label={},String const & endMsg={},FgOut & os=fgout)
+        : endMessage{endMsg}, out{os}
     {
         if (!label.empty())
-            fgout << fgnl << label << std::flush;
-        fgout << fgpush;
+            out << fgnl << label << std::flush;
+        out << fgpush;
     }
 
     ~PushIndent() {pop(); }
@@ -230,16 +233,16 @@ struct  PushIndent
     {
         if (!label.empty()) {   // can't throw an error yet ... FGASSERT not defined
             pop();
-            fgout << fgnl << label << std::flush << fgpush;
+            out << fgnl << label << std::flush << fgpush;
         }
     }
 
 private:
     void                pop() const
     {
-        fgout << fgpop;
+        out << fgpop;
         if (!endMessage.empty())
-            fgout << fgnl << endMessage << std::flush;
+            out << fgnl << endMessage << std::flush;
     }
 };
 

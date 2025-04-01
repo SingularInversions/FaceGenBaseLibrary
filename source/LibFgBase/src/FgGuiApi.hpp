@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,8 +14,8 @@
 // * IPTs are easy to create by the client inline in the function arguments and can be
 //   passed forward for assignment because the dataflow node is allocated by default construction.
 
-#ifndef FGGUIAPIBASE_HPP
-#define FGGUIAPIBASE_HPP
+#ifndef FGGUIAPI_HPP
+#define FGGUIAPI_HPP
 
 #include "FgDataflow.hpp"
 #include "FgImageIo.hpp"

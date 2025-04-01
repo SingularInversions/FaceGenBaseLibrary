@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -69,7 +69,7 @@ void                viewImages(ImageLmsNames const & ais)
     GuiPtrs             imgWs;
     for (ImageLmsName const & ai : ais) {
         Affine2F            xf {cIrcsToIucs<float>(ai.img.dims())};
-        NameVec2Fs          ptsIucs = mapMul(xf,ai.lmsIrcs);
+        NameVec2Fs          ptsIucs = mapMulR(xf,ai.lmsIrcs);
         IPT<NameVec2Fs>     ptsIucsN {ptsIucs};
         GuiImg              guiImg = guiImageCtrls(makeIPT(ai.img),ptsIucsN,true);
         auto                fn = [ptsIucsN](size_t const & v) -> String8
@@ -113,7 +113,7 @@ NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,S
     String8             store = getDirUserAppDataLocalFaceGen({"SDK","MarkImage"});
     IPT<size_t>         stepN {0};                                          // 0 - place points, 1 - confirm
     IPT<ImgRgba8>       imgN {img};
-    IPT<NameVec2Fs>     ptsIucsN {mapMul(ircsToIucs,existing)};             // combined old then new points
+    IPT<NameVec2Fs>     ptsIucsN {mapMulR(ircsToIucs,existing)};             // combined old then new points
     auto                textFn = [&](NameVec2Fs const & ptsIucs)
     {
         size_t              idxNew = ptsIucs.size();
@@ -140,29 +140,40 @@ NameVec2Fs          markImage(ImgRgba8 const & img,NameVec2Fs const & existing,S
                         imgW = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn).win,
                         mainW = guiSplitV({textW,buttonW,imgW});
     guiStartImpl(IPT<String8>{"FaceGen Mark Image"},mainW,store);
-    return mapMul(iucsToIrcs,ptsIucsN.val());
+    return mapMulR(iucsToIrcs,ptsIucsN.val());
 }
 
-NameVec2Fs          markImageMulti(ImgRgba8 const & img,NameVec2Fs const & existingIrcs,String label)
+Vec2Fs              markImageMulti(ImgRgba8 const & img,String label,Vec2Fs existing)
 {
     AxAffine2F          ircsToIucs = cIrcsToIucs<float>(img.dims()),
                         iucsToIrcs = ircsToIucs.inverse();
     IPT<ImgRgba8>       imgN {img};
-    IPT<NameVec2Fs>     ptsIucsN {mapMul(ircsToIucs,existingIrcs)};
-    auto                leftClickFn = [=](Vec2F iucs,Vec2UI){ptsIucsN.ref().emplace_back(label,iucs); };
+    IPT<NameVec2Fs>     ptsIucsN;
+    for (Vec2F e : existing)
+        ptsIucsN.ref().emplace_back(label,ircsToIucs*e);
+    auto                leftClickFn = [=](Vec2F iucs,Vec2UI)
+    {
+        ptsIucsN.ref().emplace_back(label,iucs);
+    };
     auto                undoFn = [=]()
     {
         NameVec2Fs &        pts = ptsIucsN.ref();
         if (!pts.empty())
             pts.pop_back();
     };
-    GuiPtr              textW = guiText("ctrl-click on points for label "+label),
+    GuiImg              gic = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn);
+    GuiPtr              zoomW = guiSplitH({
+            guiText("Zoom:"),
+            guiButton(String8("+"),gic.zoomIn),
+            guiButton(String8("-"),gic.zoomOut),
+    }),
+                        textW = guiText("ctrl-click on points for: "+label),
                         undoW = guiButton("undo",undoFn),
-                        imgW = guiImageCtrls(imgN,ptsIucsN,false,leftClickFn).win,
-                        mainW = guiSplitV({guiSplitH({textW,undoW}),imgW});
+                        imgW = gic.win,
+                        mainW = guiSplitH({guiSplitV({textW,undoW,zoomW}),imgW});
     String              id = "markImageMulti";
     guiStartImpl(IPT<String8>{id},mainW,getDirUserAppDataLocalFaceGen({"SDK",id}));
-    return mapMul(iucsToIrcs,ptsIucsN.val());
+    return mapMulR(iucsToIrcs,mapMember(ptsIucsN.val(),&NameVec2F::vec));
 }
 
 void                testGuiImageMark(CLArgs const & args)
@@ -177,10 +188,10 @@ void                testGuiImageMark(CLArgs const & args)
 void                compareImages(Img3F const & image0,Img3F const & image1)
 {
     FGASSERT(image0.dims() == image1.dims());
-    Mat32F              bnds0 = cBounds(image0.m_data),
+    Arr<Arr3F,2>        bnds0 = cBounds(image0.m_data),
                         bnds1 = cBounds(image1.m_data);
-    FGASSERT((cMinElem(bnds0) >= 0) && (cMaxElem(bnds0) <= 1));
-    FGASSERT((cMinElem(bnds1) >= 0) && (cMaxElem(bnds1) <= 1));
+    FGASSERT((cMinElem(bnds0[0]) >= 0) && (cMaxElem(bnds0[1]) <= 1));
+    FGASSERT((cMinElem(bnds1[0]) >= 0) && (cMaxElem(bnds1[1]) <= 1));
     auto                hdiffFn = [](Arr3F const & l,Arr3F const & r)
     {
         Arr3F           ret;

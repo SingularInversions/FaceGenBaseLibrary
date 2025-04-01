@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -30,13 +30,15 @@ inline bool         isApproxEqual(T l,T r,T maxDiff)
 template<class T,FG_ENABLE_IF(T,is_floating_point)>
 inline bool         isApproxEqual(T l,T r,T maxDiff)
 {
+    // must check for valid FP values since INF and NAN will just return true for all comparisons (UB):
+    FGASSERT(std::isfinite(l) && std::isfinite(r));
     return (std::abs(l-r) <= maxDiff);
 }
 
 // forward declare to handle Arr<Svec<...>>
-template<typename T> bool isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename Traits<T>::Scalar maxDiff);
+template<class T> bool isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename Traits<T>::Scalar maxDiff);
 
-template<typename T,size_t S>
+template<class T,size_t S>
 bool                isApproxEqual(Arr<T,S> const & l,Arr<T,S> const & r,typename Traits<T>::Scalar maxDiff)
 {
     for (size_t ii=0; ii<S; ++ii)
@@ -45,7 +47,7 @@ bool                isApproxEqual(Arr<T,S> const & l,Arr<T,S> const & r,typename
     return true;
 }
 
-template<typename T>
+template<class T>
 bool                isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename Traits<T>::Scalar maxDiff)
 {
     FGASSERT(l.size() == r.size());
@@ -55,134 +57,79 @@ bool                isApproxEqual(Svec<T> const & l,Svec<T> const & r,typename T
     return true;
 }
 
-template<typename T,size_t R,size_t C>
+template<class T,size_t R,size_t C>
 inline bool         isApproxEqual(Mat<T,R,C> const & l,Mat<T,R,C> const & r,T maxDiff)
 {
     return isApproxEqual(l.m,r.m,maxDiff);
 }
 
-template<typename T>
+template<class T>
 bool                isApproxEqual(MatV<T> const & l,MatV<T> const & r,T maxDiff)
 {
     FGASSERT(l.dims() == r.dims());
     return isApproxEqual(l.m_data,r.m_data,maxDiff);
 }
 
-template<typename T>
+template<class T>
 inline bool         isApproxEqual(MatS<T> const & l,MatS<T> const & r,T tol)
 {
     FGASSERT(l.dim == r.dim);
     return isApproxEqual(l.data,r.data,tol);
 }
 
-// Return the epsilon (relative to one) for the given number of bits of precision:
-inline double constexpr epsBits(size_t bits) {return 1.0 / scast<double>(1ULL << bits); }
-inline float constexpr  epsBitsF(uint bits) {return 1.0f / scast<float>(1ULL < bits); }
+template<class T> uint constexpr defPrecBits();
+template<> uint constexpr defPrecBits<float>() {return 18;}
+template<> uint constexpr defPrecBits<double>() {return 30;}
 
-template<typename T>
-uint constexpr      defaultPrecisionBits();
-
-template<> uint constexpr defaultPrecisionBits<float>() {return 20;}
-template<> uint constexpr defaultPrecisionBits<double>() {return 40;}
-
-// Are two numbers approximately equal relative to their absolute sizes ?
-template<typename T,
-    FG_ENABLE_IF(T,is_floating_point)>
-bool                isApproxEqualRel(T v0,T v1,double maxRelDiff)
+// express the tolerance relative to the absolute sizes of the values:
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+bool                isApproxEqualRel(T l,T r,double maxRelDiff)
 {
-    double              d0 = scast<double>(v0),
-                        d1 = scast<double>(v1),
-                        denom = std::abs(d0) + std::abs(d1);
-    if (denom == 0.0)
-        return true;
-    double              rel = (2.0 * std::abs(d1-d0)) / (std::abs(d0) + std::abs(d1));
-    return (rel < maxRelDiff);
+    return isApproxEqual(l,r,maxRelDiff*0.5*(std::abs(l)+std::abs(r)));
 }
 
-template<typename T,
-    FG_ENABLE_IF(T,is_floating_point)>
-bool                isApproxEqualPrec(T v0,T v1,size_t precisionBits=defaultPrecisionBits<T>())
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+bool                isApproxEqualPrec(T v0,T v1,size_t precBits=defPrecBits<T>())
 {
-    FGASSERT(precisionBits <= defaultPrecisionBits<T>());   // Close to max
-    double              maxRelDiff = 1.0 / scast<double>(1ULL << precisionBits);
-    return isApproxEqualRel(v0,v1,maxRelDiff);
+    return isApproxEqualRel(v0,v1,epsBits(precBits));
 }
 
-template<typename T,
-    FG_ENABLE_IF(T,is_floating_point)>
-bool                isApproxEqualAbsPrec(T v0,T v1,T scale,uint precisionBits=defaultPrecisionBits<T>())
+template<class T>
+bool                isApproxEqualPrec(Svec<T> const & l,Svec<T> const & r,size_t precBits=defPrecBits<T>())
 {
-    FGASSERT(precisionBits <= defaultPrecisionBits<T>());   // default close to max
-    T                   precision = T(1) / T(1ULL << precisionBits);
-    return isApproxEqual(v0,v1,scale*precision);
+    T                   scale = cMaxElem(mapAbs(l)) + cMaxElem(mapAbs(r));
+    return isApproxEqual(l,r,epsBits(precBits+1)*scale);
 }
 
-// Ensure the L2 norms are equal to the given number of bits of precision.
-// The arguments must be numerical containers supporting 'cMagD' and subtraction:
-template<typename Container>
-bool                isApproxEqualRelMag(Container const & lhs,Container const & rhs,uint precisionBits=20)
+template<class T,size_t S>
+bool                isApproxEqualPrec(Arr<T,S> const & l,Arr<T,S> const & r,size_t precBits=defPrecBits<T>())
 {
-    FGASSERT(lhs.size() == rhs.size());
-    double              precision = scast<double>(1ULL << precisionBits),
-                        precSqr = sqr(precision);
-    FGASSERT(precSqr > 0.0);
-    double              mag = cMax(cMagD(lhs),cMagD(rhs));
-    if (mag == 0.0)
-        return true;
-    double              rel = cMagD(lhs-rhs) / mag;
-    return (rel < precSqr);
+    T                   scale = cMaxElem(mapAbs(l))+cMaxElem(mapAbs(r));
+    return isApproxEqual(l,r,epsBits(precBits+1)*scale);
 }
 
-template<typename T>
-bool                isApproxEqualPrec(
-    Svec<T> const &             lhs,
-    Svec<T> const &             rhs,
-    size_t                      precisionBits=defaultPrecisionBits<T>())
+template<class T>
+bool                isApproxEqualPrec(MatV<T> const & l,MatV<T> const & r,size_t precBits=defPrecBits<T>())
 {
-    FGASSERT(lhs.size() == rhs.size());
-    T                   scale = cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs));
-    if (scale == 0)
-        return true;
-    T                   maxDiff = scale / T(2ULL << precisionBits);     // 2 gives extra 1/2 factor for 'scale' sum
-    for (size_t ii=0; ii<lhs.size(); ++ii)
-        if (std::abs(rhs[ii]-lhs[ii]) > maxDiff)
-            return false;
-    return true;
+    FGASSERT(l.dims() == r.dims());
+    return isApproxEqualPrec(l.m_data,r.m_data,precBits);
 }
 
-template<typename T>
-bool                isApproxEqualPrec(
-    MatV<T> const &             lhs,
-    MatV<T> const &             rhs,
-    size_t                      precisionBits=defaultPrecisionBits<T>())
+template<class T,size_t R,size_t C>
+inline bool         isApproxEqualPrec(Mat<T,R,C> const & l,Mat<T,R,C> const & r,size_t precBits=defPrecBits<T>())
 {
-    FGASSERT(lhs.dims() == rhs.dims());
-    return isApproxEqualPrec(lhs.m_data,rhs.m_data,precisionBits);
+    return isApproxEqualPrec(l.m,r.m,precBits);
 }
 
-template<typename T,size_t nrows,size_t ncols>
-bool                isApproxEqualPrec(
-    Mat<T,nrows,ncols> const &  lhs,
-    Mat<T,nrows,ncols> const &  rhs,
-    size_t                      precisionBits=defaultPrecisionBits<T>())
-{
-    FGASSERT(precisionBits > 1);        // catch use of float rel val truncated to size_t without warning (VS22)
-    T                   scale = (cMaxElem(mapAbs(lhs)) + cMaxElem(mapAbs(rhs))) * T(0.5);
-    if (scale == 0)
-        return true;
-    T                   maxDiff = scale * epsBits(precisionBits);
-    return isApproxEqual(lhs,rhs,maxDiff);
-}
-
-template<typename T,size_t nrows,size_t ncols>
+template<class T,size_t nrows,size_t ncols>
 bool                isApproxEqualPrec(
     Svec<Mat<T,nrows,ncols> > const &   lhs,
     Svec<Mat<T,nrows,ncols> > const &   rhs,
-    size_t                              precisionBits=defaultPrecisionBits<T>())
+    size_t                              precBits=defPrecBits<T>())
 {
     FGASSERT(lhs.size() == rhs.size());
     T                   scale = cMaxElem((mapAbs(cDims(lhs)) + mapAbs(cDims(rhs))) * T(0.5)),
-                        precision = epsBits(precisionBits),
+                        precision = epsBits(precBits),
                         maxDiff = scale * precision;
     for (size_t ii=0; ii<lhs.size(); ++ii)
         if (!isApproxEqual(lhs[ii],rhs[ii],maxDiff))

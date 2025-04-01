@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -19,6 +19,9 @@ inline double       cArea(Arr<Vec2D,3> const & t) {return cArea(t[0],t[1],t[2]);
 // Returns the vector area of the parallelogram defined by the points (RHR)
 // which is twice the vector area of the triangle defined by the points (CC winding):
 inline Vec3D        cArea(Vec3D p0,Vec3D p1,Vec3D p2) {return crossProduct(p1-p0,p2-p0); }
+
+// create a (unnormalized) vector perpendicular to the given vector:
+Vec3D               cPerp(Vec3D const & v);
 
 // hold a vector along with its magnitude
 template<class T,size_t D>
@@ -209,15 +212,6 @@ struct      Quadratic               // 1D quadratic in vertex form
 };
 bool                isApproxEqual(Quadratic const &,Quadratic const &,double tol);
 
-struct      QuadraticPD             // 1D positive definite quadratic in vertex form
-{
-    double          rootPrec;       // positive square root of the second order coefficient
-    double          vertex;         // aka centre
-    double          vertVal;        // value at vertex
-
-    inline double   operator()(double x) const {return 0.5 * sqr((x-vertex)*rootPrec) + vertVal; }
-};
-
 struct      QuadPd2D                // positive definite 2D quadratic in vertex form (ie no linear terms)
 {
     Vec2D           centre;
@@ -248,28 +242,31 @@ struct      QuadD               // quadratic in vertex form
     }
 };
 
-inline double       applyQform(MatS3D const & qform,Vec3D const & pos) {return cDot(pos,qform*pos); }
+inline double       applyQform(MatS3D const & qform,Vec3D const & relPos) {return cDot(relPos,qform*relPos); }
 
-// 3D quadratic with zero-extrema (ie. the extrema value is always 0) in vertex form:
-struct      QuadraticZ3D
+// quadratic, vertex-form, zero-extrema (value at centre is zero), 3D, type double:
+struct      QuadVZ3D
 {
-    MatS3D              qform;      // Quadratic form
+    MatS3D              qform;      // quadratic form
     Vec3D               centre;
 
-    QuadraticZ3D(MatS3D const & q,Vec3D const & c) : qform{q}, centre{c} {}
+    QuadVZ3D(MatS3D const & q,Vec3D const & c) : qform{q}, centre{c} {}
+    QuadVZ3D(double invVar,Vec3D const & c) : qform{Arr3D{invVar},Arr3D{0}}, centre{c} {}   // isotropic ctor
 
-    inline double       operator()(Vec3D x) const {return 0.5 * applyQform(qform,x-centre); }
+    inline double       at(Vec3D const & x) const {return applyQform(qform,x-centre); }     // no 0.5 factor
+    inline double       operator()(Vec3D const & x) const {return 0.5 * applyQform(qform,x-centre); }
 };
-typedef Svec<QuadraticZ3D>  QuadraticZ3Ds;
+typedef Svec<QuadVZ3D>  QuadVZ3Ds;
 
 // return the quadratic that gives identical results when its inputs have been linearly transformed (transform must be PD):
-QuadraticZ3D        operator*(Mat33D const &,QuadraticZ3D const &);
+QuadVZ3D            operator*(Mat33D const &,QuadVZ3D const &);
 // return the quadratic that gives identical results when its inputs have been rigidly transformed:
-QuadraticZ3D        operator*(Rigid3D const &,QuadraticZ3D const &);
-// efficiently apply the above to an array of QuadraticZ3Ds:
-QuadraticZ3Ds       mapTransform(Rigid3D const &,QuadraticZ3Ds const &);
+QuadVZ3D            operator*(Rigid3D const &,QuadVZ3D const &);
+// efficiently apply transforms to an array of QuadVZ3Ds:
+QuadVZ3Ds           mapTransform(Rigid3D const &,QuadVZ3Ds const &);
+QuadVZ3Ds           mapTransform(SimilarityD const &,QuadVZ3Ds const &);
 // calculate the univariate quadratic parameterized by the given ray from the origin through the given quadratic:
-Quadratic           isectRayQuadratic(QuadraticZ3D const & Q,Vec3D ray);
+Quadratic           isectRayQuadratic(QuadVZ3D const & Q,Vec3D ray);
 
 // 3D quadratic in vertex form general case
 struct      Quadratic3D
@@ -286,6 +283,13 @@ struct      Quadratic3D
 typedef Svec<Quadratic3D>   Quadratic3Ds;
 // sum of two quadratic functions as a quadratic function:
 Quadratic3D         operator+(Quadratic3D const & l,Quadratic3D const & r);
+
+// given the principal axes of a desired positive definite quadratic form, scaled *inversely* to their length,
+// return the precision cholesky upper triangular matrix (pcut) of the quadratic form.
+// Axes must be perpendicular. Invariant to order and sign of axes.
+MatUT3D             axesToPcut(Vec3D a0,Vec3D a1,Vec3D a2);
+
+MatUT3D             cSpheroid(Vec3D axis,double radius);
 
 }
 

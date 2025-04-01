@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -119,11 +119,31 @@ struct      DfOutput : DfNode, DfDependent
     virtual std::any const & getDataCref() const;
     virtual void addSink(const DfDPtr & snk);
 
-    DfNPtrs const &    getSources() const {return sources; }
+    DfNPtrs const &     getSources() const {return sources; }
     void                clearSources();
     void                addSource(const DfNPtr & src);
 };
 typedef Sptr<DfOutput>     DfOPtr;
+
+//struct      DfSelect : DfNode, DfDependent
+//{
+//    DfNPtr                      selN;           // must point to a node containing size_t to select between the below:
+//    DfNPtrs                     sources;        // Must have size >= 1
+//    DfDPtrs                     sinks;          // Empty if this value is a final output
+//    // Has data we depend on anywhere above this node in the graph been modified since 'func' last run:
+//    mutable bool                dirty {true};
+//    DfSelect() {}
+//    explicit DfSelect(DfNPtrs const & s) : sources{s} {}
+//
+//    virtual ~DfSelect() {};
+//    virtual void update() const;
+//    virtual void markDirty() const;
+//    virtual std::any const & getDataCref() const;
+//    virtual void addSink(const DfDPtr & snk);
+//
+//    DfNPtrs const &     getSources() const {return sources; }
+//};
+//typedef Sptr<DfOutput>     DfOPtr;
 
 // Receptors are handles that can point to different node types. They make dataflow creation code
 // simpler since they can be passed as arguments (already allocated) without knowing what type
@@ -391,8 +411,9 @@ auto                linkCollate(Svec<I> const & ins)
     return OPT<Svec<T>>(op);
 }
 
+// makes copies of each input, don't use for big objects:
 template<class I,class C>
-auto                linkN(Svec<I> const & ins,C const & fn)     // makes copies of each input ... don't use for big objects
+auto                linkN(Svec<I> const & ins,C const & fn)
 {
     typedef typename I::Type        T;
     typedef decltype(fn(Svec<T>{})) R;
@@ -402,6 +423,28 @@ auto                linkN(Svec<I> const & ins,C const & fn)     // makes copies 
         Svec<T>             args; args.reserve(srcs.size());
         for (DfNPtr const & s : srcs)
             args.push_back(s->getCref<T>());
+        snk = fn(args);
+    };
+    op->sources.reserve(ins.size());
+    for (auto const & in : ins) {
+        op->sources.push_back(in.ptr);
+        in.ptr->addSink(op);
+    }
+    return OPT<R>(op);
+}
+
+// as above but passes pointers so better for big objects:
+template<class I,class C>
+auto                linkNPtrs(Svec<I> const & ins,C const & fn)
+{
+    typedef typename I::Type        T;
+    typedef decltype(fn(Svec<T const *>{})) R;
+    Sptr<DfOutput>      op = std::make_shared<DfOutput>();
+    op->func = [fn](DfNPtrs const & srcs,std::any & snk)
+    {
+        Svec<T const *>     args; args.reserve(srcs.size());
+        for (DfNPtr const & s : srcs)
+            args.push_back(&(s->getCref<T>()));
         snk = fn(args);
     };
     op->sources.reserve(ins.size());

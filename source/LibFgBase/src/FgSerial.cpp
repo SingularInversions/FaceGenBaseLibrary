@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -41,6 +41,11 @@ void                testHash(CLArgs const &)
     // Test determinism on all platforms:
     FGASSERT(out0 == 0x960D9C0EDFDE4928ULL);
     FGASSERT(out1 == 0x888931C0760EFC53ULL);
+}
+
+Strings             splitCommas(String const & csvs)
+{
+    return splitChar(csvs,',');
 }
 
 String              reflectToTxt(std::any const & node,String const & indent)
@@ -126,37 +131,15 @@ std::any            textToReflect(String const & txt)
     return stringsToReflect(splitWhitespace(txt),cnt);
 }
 
-void                srlzSizet_(size_t val,Bytes & ser)
-{
-    if (g_useSize64)
-        srlz_(scast<uint64>(val),ser);
-    else {
-#ifdef FG_64
-        FGASSERT(val <= lims<uint32>::max());
-#endif
-        srlz_(scast<uint32>(val),ser);
-    }
-}
-
 void                dsrlzSizet_(Bytes const & ser,size_t & pos,size_t & val)
 {
-    if (g_useSize64) {
         uint64              sz;
         dsrlzRaw_(ser,pos,sz);
 #ifndef FG_64
         FGASSERT(sz <= lims<size_t>::max());
 #endif
         val = scast<size_t>(sz);
-    }
-    else {
-        uint32              sz;
-        dsrlzRaw_(ser,pos,sz);
-        val = scast<size_t>(sz);
-    }
-    
 }
-
-bool                g_useSize64 = true;
 
 Bytes               stringToBytes(String const & str)
 {
@@ -244,6 +227,15 @@ void                testSerialBin(CLArgs const &)
     testSerialBinT<String>("forty two");
     testSerialBinT<Arr<String,2>>({"forty two","purple haze"});
     testSerialBinT<Strings>({"forty two","purple haze"});
+    
+    struct          S {
+        int             a;
+        String          b;
+        FG_SER(a,b)
+        bool            operator==(S const & r) const {return ((a==r.a) && (b==r.b)); }
+    };
+    S               s {-42,"hello"};
+    testSerialBinT(s);
 }
 
 void                testTypenames(CLArgs const &)
@@ -261,7 +253,7 @@ void                testReflect(CLArgs const &)
     {
         bool            hired;
         Uint64s         codes;
-        FG_SER2(hired,codes)
+        FG_SER(hired,codes)
         FG_EQ_M2(B,hired,codes)
     };
     struct      A
@@ -271,7 +263,7 @@ void                testReflect(CLArgs const &)
         float           weight;
         Arr3UI          dims;
         B               status;
-        FG_SER5(name,age,weight,dims,status)
+        FG_SER(name,age,weight,dims,status)
         FG_EQ_M5(A,name,age,weight,dims,status)
     };
     Svec<A>             data {
@@ -291,13 +283,33 @@ void                testReflect(CLArgs const &)
     FGASSERT(test1 == data);
 }
 
+void                testRefl2(CLArgs const &)
+{
+    struct              A
+    {
+        int             sval;
+        Svec<uint>      uvals;
+        FG_MNAMES(sval,uvals)
+        FG_TOREFL(sval,uvals)
+        FG_FRMRFL(sval,uvals)
+
+        bool            operator==(A const & r) const {return ((sval==r.sval) && (uvals==r.uvals)); }
+    };
+    A               a {-42,{3,5,8}};
+    String          ser = srlzText(a);
+    fgout << fgnl << ser;
+    A               b = dsrlzText<A>(ser);
+    FGASSERT(a==b);
+}
+
 }
 
 void                testSerial(CLArgs const & args)
 {
     Cmds            cmds {
-        {testReflect,"reflect","object reflection to std::any name-value tree"},
         {testSerialBin,"binary","binary serialization / deserialization"},
+        {testReflect,"reflect","object reflection to std::any name-value tree"},
+        {testRefl2,"refl2",""},
         {testTypenames,"type","type name as string"},
     };
     doMenu(args,cmds,true);

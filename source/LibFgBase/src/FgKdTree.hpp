@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -14,13 +14,13 @@
 
 namespace Fg {
 
-struct  KdVal
+struct          KdVal
 {
     Vec3F               closest;
     float               distMag;    // squared magnitude of distance from query point to 'closest' above
 };
 
-struct  KdTree
+struct          KdTree
 {
     struct  Node
     {
@@ -34,6 +34,7 @@ struct  KdTree
     };
     Svec<Node>          m_tree;                 // Last node is root
 
+    KdTree() {}
     explicit KdTree(Vec3Fs const & pnts);       // Can't be empty. Duplicates are ignored.
 
     // If multiple points are exactly equidistant 1 is arbirarily chosen:

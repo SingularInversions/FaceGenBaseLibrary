@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,7 +11,7 @@
 #include "FgTopology.hpp"
 #include "FgTransform.hpp"
 #include "FgGeometry.hpp"
-#include "FgMatrixSolver.hpp"
+#include "FgMatrixV.hpp"
 
 using namespace std;
 
@@ -223,32 +223,29 @@ void                markSurfacePoint(
     Opt<MeshesIntersect>    vpt = intersectMeshes(winSize,viewportPos,worldToD3ps,rms);
     if (vpt.has_value()) {
         MeshesIntersect         pt = vpt.value();
-        SurfPoint const &       sp = pt.surfPnt;
         FGASSERT(pt.meshIdx < rms.size());
         RendMesh const &        rm = rms[pt.meshIdx];
         Mesh *                  origMeshPtr = rm.origMeshN.valPtr();
-        FGASSERT(pt.surfIdx < origMeshPtr->surfaces.size());
-        Surf &                  surf = origMeshPtr->surfaces[pt.surfIdx];
-        Vec3F                   pos = surf.surfPointPos(origMeshPtr->verts,sp);
+        Surfs &                 surfs = origMeshPtr->surfaces;
+        FGASSERT(pt.surfIdx < surfs.size());
+        Surf &                  surf = surfs[pt.surfIdx];
+        Vec3F                   pos = surf.surfPointPos(origMeshPtr->verts,pt.surfPnt);
         fgout << fgnl << "Surf point selected: surf " << pt.surfIdx
-            << " tri equiv: " << sp.triEquivIdx
+            << " tri equiv: " << pt.surfPnt.triEquivIdx
             << " coord: " << pos;
         FGASSERT(pointLabelN.ptr);
         String                  label = pointLabelN.val().as_ascii();
         if (label.empty())
             fgout << " NOT ADDED; empty label";
         else if (origMeshPtr) {      // If original mesh is an input node (ie. modifiable):
-            SurfPointNames &        surfPoints =  surf.surfPoints;
-            for (size_t ii=0; ii<surfPoints.size(); ++ii) {
-                if (surfPoints[ii].label == label) {            // Replace SPs of same name:
-                    surfPoints[ii].point = pt.surfPnt;
-                    fgout << " REPLACED existing point";
-                    return;
-                }
+            SurfPointIdx            spi = findSurfPoint(surfs,label);
+            if (spi.valid()) {                                              // if already exists (in any surface)
+                removeElem_(spi.pointIdx,surfs[spi.surfIdx].surfPoints);    // remove old
+                fgout << " REPLACED";
             }
-            // Add new SP only if there is a non-empty name:
-            surfPoints.emplace_back(pt.surfPnt,label);
-            fgout << " ADDED";
+            else
+                fgout << " ADDED";
+            surf.surfPoints.emplace_back(pt.surfPnt,label);
         }
         else
             fgout << " NOT ADDED; mesh cannot be modified";

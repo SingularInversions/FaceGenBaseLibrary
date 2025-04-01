@@ -93,6 +93,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -117,6 +118,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -140,6 +142,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -166,6 +169,7 @@
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Lib>
       <AdditionalOptions>/IGNORE:4221 %(AdditionalOptions)</AdditionalOptions>
@@ -183,6 +187,8 @@
     <ClCompile Include="..\src\Fg3dMeshDae.cpp">
     </ClCompile>
     <ClCompile Include="..\src\Fg3dMeshFbx.cpp">
+    </ClCompile>
+    <ClCompile Include="..\src\Fg3dMeshFgmesh.cpp">
     </ClCompile>
     <ClCompile Include="..\src\Fg3dMeshIo.cpp">
     </ClCompile>
@@ -314,17 +320,13 @@
     </ClCompile>
     <ClInclude Include="..\src\FgMain.hpp"  />
     <ClInclude Include="..\src\FgMap.hpp"  />
-    <ClInclude Include="..\src\FgMarr.hpp"  />
     <ClCompile Include="..\src\FgMath.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgMath.hpp"  />
     <ClCompile Include="..\src\FgMatrixC.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgMatrixC.hpp"  />
-    <ClCompile Include="..\src\FgMatrixSolver.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgMatrixSolver.hpp"  />
-    <ClCompile Include="..\src\FgMatrixSolverEigen.cpp">
+    <ClCompile Include="..\src\FgMatrixEigen.cpp">
     </ClCompile>
     <ClCompile Include="..\src\FgMatrixV.cpp">
     </ClCompile>
@@ -335,13 +337,10 @@
     <ClCompile Include="..\src\FgParse.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgParse.hpp"  />
-    <ClCompile Include="..\src\FgRandom.cpp">
-    </ClCompile>
-    <ClInclude Include="..\src\FgRandom.hpp"  />
     <ClCompile Include="..\src\FgRender.cpp">
     </ClCompile>
     <ClInclude Include="..\src\FgRender.hpp"  />
-    <ClInclude Include="..\src\FgRgba.hpp"  />
+    <ClInclude Include="..\src\FgSampler.hpp"  />
     <ClInclude Include="..\src\FgScopeGuard.hpp"  />
     <ClCompile Include="..\src\FgSerial.cpp">
     </ClCompile>

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -33,7 +33,7 @@ struct      DirectMorph
 {
     String8             name;
     Vec3Fs              verts;      // 1-1 correspondence with base verts
-    FG_SER2(name,verts)
+    FG_SER(name,verts)
 
     DirectMorph() {}
     explicit DirectMorph(String8 const & n) : name(n) {}
@@ -49,7 +49,7 @@ struct      IdxVec3
 {
     uint                idx;            // index into vertex list
     Mat<T,3,1>          vec;            // delta or absolute position depending on use
-    FG_SER2(idx,vec)
+    FG_SER(idx,vec)
 
     IdxVec3() : idx{0}, vec{0} {}
     IdxVec3(uint i,Mat<T,3,1> v) : idx{i}, vec{v} {}
@@ -85,7 +85,7 @@ struct      IndexedMorph
 {
     String8             name;
     IdxVec3Fs           ivs;        // element for each vertex which moves with this morph
-    FG_SER2(name,ivs)
+    FG_SER(name,ivs)
 
     IndexedMorph() {}
     IndexedMorph(String8 const & n,IdxVec3Fs const & i) : name{n}, ivs{i} {}
@@ -118,7 +118,7 @@ struct      SkinWeight
 {
     uint                vertIdx;
     float               weight;
-    FG_SER2(vertIdx,weight)
+    FG_SER(vertIdx,weight)
 };
 typedef Svec<SkinWeight>    SkinWeights;
 
@@ -132,7 +132,7 @@ struct      Joint
     // Don't keep this as idx into verts since it doesn't morph like verts:
     Vec3F               pos;
     SkinWeights         skin;               // If empty, applies to entire mesh
-    FG_SER4(name,parentIdx,pos,skin)
+    FG_SER(name,parentIdx,pos,skin)
 
     bool                operator==(String const & n) const {return (n==name); }
 };
@@ -166,7 +166,7 @@ struct  MarkedVert
 {
     uint                idx;
     String              label;
-    FG_SER2(idx,label)
+    FG_SER(idx,label)
 
     MarkedVert() : idx {0} {}
     explicit MarkedVert(uint i) : idx(i) {}
@@ -191,11 +191,12 @@ struct  Mesh
     MarkedVerts             markedVerts;
     Joints                  joints;
     JointDofs               jointDofs;
-    FG_SER7(verts,uvs,surfaces,deltaMorphs,targetMorphs,markedVerts,joints)
+    FG_SER(verts,uvs,surfaces,deltaMorphs,targetMorphs,markedVerts,joints)
 
     Mesh() {}
     explicit Mesh(Vec3Fs const & vts) : verts(vts) {}
     explicit Mesh(TriSurfLms const & tsf);
+    explicit Mesh(TriSurf const & ts) : verts{ts.verts}, surfaces{Surf{ts.tris}} {}
     Mesh(Vec3Fs const & vts,Surf const & surf);             // removes any UV indices in 'surfs'
     Mesh(Vec3Fs const & vts,Surfs const & surfs);           // removes any UV indices in 'surfs'
     Mesh(Vec3Fs const & v,Vec2Fs const & u,Surfs const & s,DirectMorphs const & m={},IndexedMorphs const & im={})
@@ -209,18 +210,20 @@ struct  Mesh
     // Return base verts plus all target morph verts plus all animPart bones:
     Vec3Fs              allVerts() const;
     void                updateAllVerts(Vec3Fs const &); // Update verts / targetMorphs / joints
-    uint                numPolys() const;               // tris plus quads over all surfaces
-    uint                numTriEquivs() const;           // tris plus 2*quads over all surfaces
+    size_t              numPolys() const {return fold<size_t>(surfaces,0,[](Surf const & s,size_t & acc){acc += s.numPolys(); }); }
+    size_t              numTriEquivs() const {return fold<size_t>(surfaces,0,[](Surf const & s,size_t & acc){acc += s.numTriEquivs(); }); }
     Arr3UI              getTriEquivVertInds(uint idx) const;
     NPolys<3>           getTriEquivs() const;           // Over all surfaces
-    size_t              numTris() const;                // Just the number of tris over all surfaces
-    size_t              numQuads() const;               // Just the number of quads over all surfaces
+    size_t              numTris() const {return sumSizesMember(surfaces,&Surf::tris); }
+    size_t              numQuads() const {return sumSizesMember(surfaces,&Surf::quads); }
     Surf const &        surface(String8 const & surfName) const {return findFirst(surfaces,surfName); }
-    size_t              surfPointNum() const;           // Over all surfaces
+    size_t              surfPointNum() const {return sumSizesMember(surfaces,&Surf::surfPoints); }
     Vec3F               surfPointPos(Vec3Fs const & verts,size_t num) const;
     Vec3F               surfPointPos(size_t num) const {return surfPointPos(verts,num); }
-    Opt<Vec3F>          surfPointPos(String const & label) const;
+    // return the first surf point with the given label. Throws if no such surf point exists:
+    Vec3F               surfPointPos(String const & label) const;
     NameVec3Fs          surfPointsAsNameVecs() const {return surfPointsToNameVecs(surfaces,verts); }
+    // returns the first surf point for each given name. Throws if any do not exist:
     Vec3Fs              surfPointPositions(Strings const & labels) const;
     Vec3Fs              surfPointPositions() const;
     Vec3F               markedVertPos(String const & name_) const {return verts[findFirst(markedVerts,name_).idx]; }
@@ -309,12 +312,12 @@ typedef Svec<Mesh>      Meshes;
 std::ostream &          operator<<(std::ostream &,Mesh const &);
 std::ostream &          operator<<(std::ostream &,Meshes const &);
 
-Mat32F              cBounds(Meshes const & meshes);
+Arr<Vec3F,2>        updateVertBounds2(Meshes const & meshes);
 size_t              cNumTriEquivs(Meshes const & meshes);
 std::set<String8>   getMorphNames(Meshes const & meshes);
 MorphCtrls            cPoseDefs(Mesh const & mesh);
 MorphCtrls            cPoseDefs(Meshes const & meshes);
-inline MeshNormals  cNormals(Mesh const & mesh) {return cNormals(mesh.surfaces,mesh.verts); }
+inline SurfNormals  cNormals(Mesh const & mesh) {return cNormals(mesh.surfaces,mesh.verts); }
 Mesh                transform(Mesh const &,SimilarityD const &);
 
 TriSurf             subdivide(TriSurf const &,bool loop=true);      // Loop subdivision if true, flat subdivision otherwise
@@ -362,7 +365,6 @@ Mesh            removeUnused(Mesh const &);
 // Removes the given vertices (by index, can be specified in any order), along with any marked verts,
 // polys, surface points that depend on them. Morphs updated. Joint information discarded.
 Mesh            removeVerts(Mesh const & orig,Uints const & vertInds);
-Mesh            mergeSameNameSurfaces(Mesh const &);
 Mesh            fuseIdenticalVerts(Mesh const &);       // morphs and marked verts are discarded
 Mesh            fuseIdenticalUvs(Mesh const &);
 Mesh            splitSurfsContiguousUvs(Mesh);
@@ -398,7 +400,7 @@ struct  MorphVal
 {
     String8         name;
     float           val;            // 0 - no change, 1 - full application
-    FG_SER2(name,val)
+    FG_SER(name,val)
 
     MorphVal() {}
     MorphVal(String8 const & n,float v) : name{n}, val{v} {}

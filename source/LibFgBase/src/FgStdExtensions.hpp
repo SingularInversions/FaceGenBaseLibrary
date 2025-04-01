@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -11,14 +11,104 @@
 
 namespace Fg {
 
+// Multidimensional static size (stack-based) arrays.
+// Use a single Arr<> rather than nested Arr<>'s to ensure no padding and keep the access
+// interface to a single function (easier to read).
+template <typename T,size_t Z,size_t Y,size_t X>
+struct      D3Arr
+{
+    Arr<T,Z*Y*X>            data;
+
+    D3Arr() {}
+    explicit D3Arr(Arr<T,Z*Y*X> const & d) : data(d) {}
+
+    Arr3UI                  dims() const {return {Z,Y,X}; }
+    size_t constexpr        numElems() const {return Z*Y*X; }
+    T const &               at(size_t z,size_t y,size_t x) const
+    {
+        FGASSERT((z<Z) && (y<Y) && (x<X));
+        return data[z*Y*X + y*X + x];
+    }
+    T &                     at(size_t z,size_t y,size_t x)
+    {
+        FGASSERT((z<Z) && (y<Y) && (x<X));
+        return data[z*Y*X + y*X + x];
+    }
+    T const &               operator[](Arr3UI c) const {return data[c[0]+c[1]*X+c[2]*X*Y]; }
+    T &                     operator[](Arr3UI c) {return data[c[0]+c[1]*X+c[2]*X*Y]; }
+};
+
+template <typename T,size_t A,size_t Z,size_t Y,size_t X>
+struct      D4Arr
+{
+    Arr<T,A*Z*Y*X>          data;
+
+    D4Arr() {}
+    explicit D4Arr(Arr<T,A*Z*Y*X> const & d) : data(d) {}
+
+    Arr4UI                  dims() const {return {A,Z,Y,X}; }
+    size_t constexpr        numElems() const {return A*Z*Y*X; }
+    T const &               at(size_t a,size_t z,size_t y,size_t x) const
+    {
+        FGASSERT((a<A) && (z<Z) && (y<Y) && (x<X));
+        return data[a*Z*Y*X + z*Y*X + y*X + x];
+    }
+    T &                     at(size_t a,size_t z,size_t y,size_t x)
+    {
+        FGASSERT((a<A) && (z<Z) && (y<Y) && (x<X));
+        return data[a*Z*Y*X + z*Y*X + y*X + x];
+    }
+};
+
+template <typename T,size_t B,size_t A,size_t Z,size_t Y,size_t X>
+struct      D5Arr
+{
+    Arr<T,B*A*Z*Y*X>        data;
+
+    D5Arr() {}
+    explicit D5Arr(Arr<T,B*A*Z*Y*X> const & d) : data(d) {}
+
+    Arr5UI                  dims() const {return {B,A,Z,Y,X}; }
+    size_t constexpr        numElems() const {return B*A*Z*Y*X; }
+    T const &               at(size_t b,size_t a,size_t z,size_t y,size_t x) const
+    {
+        FGASSERT((b<B) && (a<A) && (z<Z) && (y<Y) && (x<X));
+        return data[b*A*Z*Y*X + a*Z*Y*X + z*Y*X + y*X + x];
+    }
+    T &                     at(size_t b,size_t a,size_t z,size_t y,size_t x)
+    {
+        FGASSERT((b<B) && (a<A) && (z<Z) && (y<Y) && (x<X));
+        return data[b*A*Z*Y*X + a*Z*Y*X + z*Y*X + y*X + x];
+    }
+};
+
+// this is not an iterator, it only holds information about an array with stride, not a place in the array:
+template<class T>
+struct      PArr
+{
+    T const *       ptr;
+    size_t          S,      // size (num elements)
+                    R;      // stride (step between elements)
+
+    constexpr PArr() : ptr{nullptr}, S{0}, R{1} {}
+    PArr(T const * p,size_t s) : ptr{p}, S{s}, R{1} {}
+    PArr(T const * p,size_t s,size_t r) : ptr{p}, S{s}, R{r} {}
+
+    bool                valid() const {return (ptr!=nullptr); }
+};
+
 // STD CONTAINERS TO OUTPUT STREAMS:
+
+// we want to see 'uchar'/'schar' values as numbers, not as characters (the default):
+inline std::ostream & operator<<(std::ostream & os,uchar uc) {return os << scast<uint>(uc); }
+inline std::ostream & operator<<(std::ostream & os,schar uc) {return os << scast<int>(uc); }
 
 template<class T,size_t S>
 std::ostream &      operator<<(std::ostream & os,Arr<T,S> const & arr)
 {
     os << "[";
     for (T const & e : arr)
-        os << typename Traits<T>::Printable (e) << " ";
+        os << e << " ";
     return os << "]";
 }
 template<class T>
@@ -67,13 +157,15 @@ typedef Svec<std::thread>   Threads;
 // Simple blocking thread dispatcher - limits running threads to hardware capacity.
 struct      ThreadDispatcher
 {
-    ThreadDispatcher();
-    ~ThreadDispatcher() {finish(); }      // threads terminate if destructed before join()
+    explicit ThreadDispatcher(bool enable=true);    // true: use all available threads. false: no threading
+    explicit ThreadDispatcher(size_t maxThreads);   // 0,1: no threading.
+    ~ThreadDispatcher();                            // threads terminate if destructed before join()
 
     void            dispatch(std::function<void()> const & fn);
     void            finish();
 
 private:
+    size_t const            numThreads;     // 0 if disabled
     Threads                 threads;
     // thread provides no non-blocking way if testing if it's done so use flags.
     // vector requires copyable which atomic is not so use unique pointers to flags.
@@ -81,9 +173,32 @@ private:
     // if any of these are non-empty, the respective thread threw an exception:
     Strings                 errors;
 
-    void                    worker(Sfun<void()> const & fn,size_t tt);
+    void                    worker(Sfun<void()> fn,size_t tt);
+    void                    reserve();
 };
 
+// Like C++17 std::data() but better named:
+template <class _Elem>
+static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
+{return _Ilist.begin(); }
+
+// copy a sequence of objects from one pointer to another and return the updated destination pointer:
+template<class T>
+T *                 copy_(T const * from,T * to,size_t num)
+{
+    std::copy(from,from+num,to);
+    return to + num;
+}
+
+template<class T,size_t S>
+Arr<T,S>            asArr(Svec<T> const & v)
+{
+    FGASSERT(v.size() == S);
+    Arr<T,S>            ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = v[ii];
+    return ret;
+}
 template<class T,size_t S>
 Svec<T>             asSvec(Arr<T,S> const & arr)
 {
@@ -92,16 +207,12 @@ Svec<T>             asSvec(Arr<T,S> const & arr)
     return ret;
 }
 
-// Like C++17 std::data() but better named:
-template <class _Elem>
-static constexpr const _Elem* dataPtr(std::initializer_list<_Elem> _Ilist) noexcept
-{return _Ilist.begin(); }
-
+// repeat a function call R times, passing an index from 0 to R-1:
 template<class C>
-void                repeat(C const & fn,size_t reps)
+void                repeat(size_t R,C const & fn)
 {
-    for (size_t ii=0; ii<reps; ++ii)
-        fn();
+    for (size_t ii=0; ii<R; ++ii)
+        fn(ii);
 }
 // range-based for loops can't handle parallel arrays so use this with lambdas instead:
 template<class A,class B,size_t S,class F>
@@ -139,6 +250,21 @@ void                iterate(Svec<A> const & a,Svec<B> const & b,Svec<C> const & 
     for (size_t ii=0; ii<S; ++ii)
         fn(a[ii],b[ii],c[ii],d[ii]);
 }
+template<class A,class B,class F>
+void                iterate_(Svec<A> & a,Svec<B> & b,F const & fn)
+{
+    FGASSERT(a.size() == b.size());
+    for (size_t ii=0; ii<a.size(); ++ii)
+        fn(a[ii],b[ii]);
+}
+template<class A,class B,class C,class F>
+void                iterate_(Svec<A> & a,Svec<B> & b,Svec<C> & c,F const & fn)
+{
+    size_t              S = a.size();
+    FGASSERT((b.size() == S) && (c.size() == S));
+    for (size_t ii=0; ii<S; ++ii)
+        fn(a[ii],b[ii],c[ii]);
+}
 
 // Generate elements using a callable type that accepts a 'size_t' argument and returns a T:
 template<class T,size_t S,class C>
@@ -149,17 +275,131 @@ Arr<T,S>            genArr(C const & fn)
         ret[ii] = fn(ii);
     return ret;
 }
-template<class T,class C>
-Svec<T>             genSvec(size_t num,C const & callable)
+template<class C>
+auto                genSvec(size_t S,C const & fn)        // 'fn' must accept a 'size_t' argument
 {
-    Svec<T>             ret; ret.reserve(num);
-    for (size_t ii=0; ii<num; ++ii)
-        ret.push_back(callable(ii));
+    typedef decltype(fn(0))   R;
+    Svec<R>             ret; ret.reserve(S);
+    for (size_t ii=0; ii<S; ++ii)
+        ret.push_back(fn(ii));
+    return ret;
+}
+template<class C>
+auto                genSvecMT(size_t S,C const & fn)
+{
+    typedef decltype(fn(0))   R;
+    Svec<R>             ret(S);
+    ThreadDispatcher    td;
+    for (size_t ii=0; ii<S; ++ii) {
+        auto            tf = [&,ii](){ret[ii] = fn(ii); };
+        td.dispatch(tf);
+    }
+    td.finish();
     return ret;
 }
 // generate sequential integers starting at zero. Requires explicit template:
 template<class T>
-Svec<T>             genIntegers(size_t num) {return genSvec<T>(num,[](size_t i){return scast<T>(i); }); }
+Svec<T>             genIntegers(size_t num) {return genSvec(num,[](size_t i){return scast<T>(i); }); }
+
+// Map callable over Arr elements.
+// The callable is passed by value for the same reasons as in the standard library,
+// and large objects can be explicitly referenced using std::ref:
+template<class T,size_t S,class F>
+auto                mapCall(Arr<T,S> const & a,F f)
+{
+    typedef decltype(f(a[0]))   R;
+    Arr<R,S>                    ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = f(a[ii]);
+    return ret;
+}
+template<class T,class U,size_t S,class F>
+auto                mapCall(Arr<T,S> const & l,Arr<U,S> const & r,F f)
+{
+    typedef decltype(f(l[0],r[0]))  R;
+    Arr<R,S>                        ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = f(l[ii],r[ii]);
+    return ret;
+}
+template<class T,class U,class V,size_t S,class F>
+auto                mapCall(Arr<T,S> const & l,Arr<U,S> const & c,Arr<V,S> const & r,F f)
+{
+    typedef decltype(f(l[0],c[0],r[0])) R;
+    Arr<R,S>                        ret;
+    for (size_t ii=0; ii<S; ++ii)
+        ret[ii] = f(l[ii],c[ii],r[ii]);
+    return ret;
+}
+
+// Unary map callable over std::vector elements (functional version of std::transform):
+template<class T,class C>
+auto                mapCall(Svec<T> const & v,C f)
+{
+    typedef decltype(f(v[0]))   R;
+    Svec<R>                     ret; ret.reserve(v.size());
+    // std::transform is smart enough to avoid output (index < size) checks at each iteration:
+    std::transform(v.cbegin(),v.cend(),std::back_inserter(ret),f);
+    return ret;
+}
+// Map callable binary operation to same type
+template<class T,class U,class C>
+auto                mapCall(Svec<T> const & l,Svec<U> const & r,C f)
+{
+    typedef decltype(f(l[0],r[0]))  R;
+    FGASSERT(l.size() == r.size());
+    Svec<R>                         ret; ret.reserve(l.size());
+    for (size_t ii=0; ii<l.size(); ++ii)
+        ret.push_back(f(l[ii],r[ii]));
+    return ret;
+}
+// Map callable ternary operation to same type
+template<class T,class U,class V,class C>
+auto                mapCall(Svec<T> const & t,Svec<U> const & u,Svec<V> const & v,C c)
+{
+    typedef decltype(c(t[0],u[0],v[0])) R;
+    size_t              S = t.size();
+    FGASSERT(u.size() == S);
+    FGASSERT(v.size() == S);
+    Svec<R>             ret; ret.reserve(S);
+    for (size_t ii=0; ii<S; ++ii)
+        ret.push_back(c(t[ii],u[ii],v[ii]));
+    return ret;
+}
+// Multithreaded versions require T to have default intializer:
+template<class T,class C>
+auto                mapCallMT(Svec<T> const & v,C f)
+{
+    typedef decltype(f(v[0]))   R;
+    Svec<R>                     ret (v.size());
+    ThreadDispatcher            td;
+    for (size_t ii=0; ii<v.size(); ++ii)
+        td.dispatch([&,ii](){ret[ii]=f(v[ii]);});
+    return ret;
+}
+template<class T,class U,class C>
+auto                mapCallMT(Svec<T> const & l,Svec<U> const & r,C f)
+{
+    typedef decltype(f(l[0],r[0]))  R;
+    FGASSERT(l.size() == r.size());
+    Svec<R>                         ret (l.size());
+    ThreadDispatcher                td;
+    for (size_t ii=0; ii<l.size(); ++ii)
+        td.dispatch([&,ii](){ret[ii]=f(l[ii],r[ii]);});
+    return ret;
+}
+
+template<class T,class U,class V,class W,class C>
+Svec<T>             mapCallT_(Svec<U> const & in0,Svec<V> & in1,Svec<W> & in2,C fn)
+{
+    size_t              S = in0.size();
+    FGASSERT(in1.size() == S);
+    FGASSERT(in2.size() == S);
+    Svec<T>             ret; ret.reserve(S);
+    for (size_t ii=0; ii<S; ++ii)
+        ret.push_back(fn(in0[ii],in1[ii],in2[ii]));
+    return ret;
+}
 
 // Alias for min/max to allow overloading and avoid collisions (eg. when windows.h is included with its min/max macros):
 template<class T,
@@ -252,25 +492,32 @@ inline T            roundT(F v) {return scast<T>(v); }
 template<class T,class F>
 void                mapRound_(F from,T & to) {to = roundT<T,F>(from); }
 
-// interpolation defaults to linear interpolation (lerp) on scalars & arrays but not for some other types.
-// Can dispatch to std::lerp once upgraded C++20.
+// std::lerp is C++20.
+// linear interpolation with a base case for any class that supports operator*(scalar) and operator+(T,T):
 template<class T,FG_ENABLE_IF(T,is_floating_point)>
-inline T            interpolate(T v0,T v1,T coeff)    // coeff 0: v0, 1: v1
-{
-    return v0 * (1-coeff) + v1 * coeff;
-}
+inline T            lerp(T a,T b,T c) {return a*(1-c) + b*c; }          // c==0 ? a, c==1 ? b
+template<class T,class U,FG_ENABLE_IF(T,is_class),FG_ENABLE_IF(U,is_floating_point)>
+inline T            lerp(T const & a,T const & b,U c) {return a*(1-c) + b*c; }
+ 
+// 'interpolate' is linear for scalars and aggregates but not eg. Quaternions so we do not define a
+// templated base case using operator*(scalar) & operator+(T,T), but instead overload 'interpolate'
+// for each specific class we need:
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+inline T            interpolate(T a,T b,T c) {return lerp(a,b,c); }
+// aggregates of floating point are linearly interpolated:
 template<class T,size_t S,FG_ENABLE_IF(T,is_floating_point)>
-Arr<T,S>            interpolate(Arr<T,S> a0,Arr<T,S> a1,T coeff)
+Arr<T,S>            interpolate(Arr<T,S> const & as,Arr<T,S> const & bs,T c)
 {
-    T                   omv = 1 - coeff;
-    return mapCall(a0,a1,[coeff,omv](T l,T r){return l*omv + r*coeff; });
+    T                   omc = 1 - c;
+    return mapCall(as,bs,[c,omc](T a,T b){return a*omc + b*c; });
 }
 template<class T,FG_ENABLE_IF(T,is_floating_point)>
-Svec<T>             interpolate(Svec<T> const & v0,Svec<T> const & v1,T coeff)
+Svec<T>             interpolate(Svec<T> const & as,Svec<T> const & bs,T c)
 {
-    T                   omv = 1 - coeff;
-    return mapCall(v0,v1,[coeff,omv](T l,T r){return l*omv + r*coeff; });
+    T                   omc = 1 - c;
+    return mapCall(as,bs,[c,omc](T a,T b){return a*omc + b*c; });
 }
+// dispatch type signature with endpoints combined in an array:
 template<class T,class U,FG_ENABLE_IF(U,is_floating_point)>
 inline T            interpolate(Arr<T,2> const & vals,U coeff) {return interpolate(vals[0],vals[1],coeff); }
 
@@ -279,47 +526,60 @@ inline constexpr T  sqr(T a) {return (a*a); }
 template <typename T>
 inline constexpr T  cube(T a) {return (a*a*a); }
 
-// Recursive squared magnitude operator returns same type
-template<class T>
+// Recursive squared magnitude operator returns same type as underlying scalar ("arithmetic"):
+template<class T,FG_ENABLE_IF(T,is_arithmetic)>
 inline T            cMag(T v) {return v*v; }
 template<class T,size_t S>
-inline T            cMag(Arr<T,S> const & c)
+auto                cMag(Arr<T,S> const & arr)
 {
-    T                   acc {0};
-    for (T const & v : c)               // std::inner_product would requires 2 dereferences for the same value
-        acc += cMag(v);
+    typedef decltype(cMag(T{})) R;
+    R                   acc {0};
+    for (T const & e : arr)
+        acc += cMag(e);
     return acc;
 }
 template<class T>
-inline T            cMag(Svec<T> const & c)
+auto                cMag(PArr<T> const & parr)
 {
-    T                   acc {0};
-    for (T v : c)                       // "
-        acc += cMag(v);
+    typedef decltype(cMag(T{})) R;
+    R                   acc {0};
+    for (size_t ii=0; ii<parr.S*parr.R; ii+=parr.R)
+        acc += cMag(parr.ptr[ii]);
     return acc;
 }
+template<class T>
+auto                cMag(Svec<T> const & vec)
+{
+    typedef decltype(cMag(T{})) R;
+    R                   acc {0};
+    for (T const & e : vec)
+        acc += cMag(e);
+    return acc;
+}
+template<class T>
+inline auto         cLen(T const & a){return std::sqrt(cMag(a)); }
 
 // Recursive squared magnitude operator always accumulates and returns type double:
 inline double       cMagD(double v) {return sqr(v); }       // catches smaller types and automatically upgrades them
 inline double       cMagD(std::complex<double> v) {return std::norm(v); }
-template<class T> double  cMagD(Svec<T> const & v);          // forward declare to handle Arr<Svec<...>>
+// must forward declare as there are instances of bot cMagD(Arr<Svec<...>>) and cMagD(Svec<Arr<...>>)
+template<class T> double  cMagD(Svec<T> const & v);
 template<class T,size_t S>
 double              cMagD(Arr<T,S> const & arr)
 {
-    double          acc {0};
+    double              acc {0};
     for (T const & e : arr)
         acc += cMagD(e);
     return acc;
 }
 template<class T>
-double              cMagD(Svec<T> const & arr)
+double              cMagD(Svec<T> const & vec)
 {
-    double          acc {0};
-    for (T const & e : arr)
+    double              acc {0};
+    for (T const & e : vec)
         acc += cMagD(e);
     return acc;
 }
-// and related length operator:
 template<class T>
 double              cLenD(T const & v) {return std::sqrt(cMagD(v)); }
 
@@ -364,85 +624,6 @@ inline size_t       countEqual(Arr<T,S> const & arr,T const & val) {return count
 template<class T>
 inline size_t       countEqual(Svec<T> const & v,T const & val) {return count(v.cbegin(),v.cend(),val); }
 
-// Unary map callable over Arr elements:
-template<class T,size_t S,class F>
-auto                mapCall(Arr<T,S> const & a,F f)
-{
-    typedef decltype(f(a[0]))   R;
-    Arr<R,S>                    ret;
-    for (size_t ii=0; ii<S; ++ii)
-        ret[ii] = f(a[ii]);
-    return ret;
-}
-// Binary map callable over Arr elements:
-template<class T,class U,size_t S,class F>
-auto                mapCall(Arr<T,S> const & l,Arr<U,S> const & r,F f)
-{
-    typedef decltype(f(l[0],r[0]))  R;
-    Arr<R,S>                        ret;
-    for (size_t ii=0; ii<S; ++ii)
-        ret[ii] = f(l[ii],r[ii]);
-    return ret;
-}
-
-// Unary map callable over std::vector elements (functional version of std::transform):
-template<class T,class C>
-auto                mapCall(Svec<T> const & v,C f)
-{
-    typedef decltype(f(v[0]))   R;
-    Svec<R>                     ret; ret.reserve(v.size());
-    // std::transform is smart enough to avoid output (index < size) checks at each iteration:
-    std::transform(v.cbegin(),v.cend(),std::back_inserter(ret),f);
-    return ret;
-}
-// Multithreaded version requires T to have default intializer which is run single threaded; only simple way:
-template<class T,class C>
-auto                mapCallMT(Svec<T> const & v,C f)
-{
-    typedef decltype(f(v[0]))   R;
-    Svec<R>                     ret(v.size());
-    ThreadDispatcher            td;
-    for (size_t ii=0; ii<v.size(); ++ii)
-        td.dispatch([&,ii](){ret[ii]=f(v[ii]);});
-    return ret;
-}
-// Map callable binary operation to same type
-template<class T,class U,class C>
-auto                mapCall(Svec<T> const & l,Svec<U> const & r,C f)
-{
-    typedef decltype(f(l[0],r[0]))  R;
-    FGASSERT(l.size() == r.size());
-    Svec<R>                         ret; ret.reserve(l.size());
-    for (size_t ii=0; ii<l.size(); ++ii)
-        ret.push_back(f(l[ii],r[ii]));
-    return ret;
-}
-// Map callable ternary operation to same type
-template<class T,class U,class V,class C>
-Svec<T>             mapCall(Svec<T> const & l,Svec<U> const & m,Svec<V> const & r,C f)
-{
-    typedef decltype(f(l[0],m[0],r[0])) R;
-    size_t              S = l.size();
-    FGASSERT(m.size() == S);
-    FGASSERT(r.size() == S);
-    Svec<R>             ret; ret.reserve(S);
-    for (size_t ii=0; ii<S; ++ii)
-        ret.push_back(f(l[ii],m[ii],r[ii]));
-    return ret;
-}
-
-template<class T,class U,class V,class W,class C>
-Svec<T>             mapCallT_(Svec<U> const & in0,Svec<V> & in1,Svec<W> & in2,C fn)
-{
-    size_t              S = in0.size();
-    FGASSERT(in1.size() == S);
-    FGASSERT(in2.size() == S);
-    Svec<T>             ret; ret.reserve(S);
-    for (size_t ii=0; ii<S; ++ii)
-        ret.push_back(fn(in0[ii],in1[ii],in2[ii]));
-    return ret;
-}
-
 // forward declarations to handle arr<svec<T>>:
 template<class T> Svec<T> operator+(Svec<T> const &  l,Svec<T> const &  r);
 template<class T> Svec<T> operator-(Svec<T> const &  l,Svec<T> const &  r);
@@ -481,8 +662,12 @@ void            operator/=(Arr<T,S> & l,T r) {for (size_t ii=0; ii<S; ++ii) l[ii
 
 template<class T,size_t S>
 Arr<T,S>            mapAbs(Arr<T,S> a) {return mapCall(a,[](T e){return std::abs(e); }); }
+template<class T>
+Svec<T>             mapExp(Svec<T> const & v) {return mapCall(v,[](T e){return std::exp(e); }); }
 template<class T,size_t S>
 Arr<T,S>            mapExp(Arr<T,S> a) {return mapCall(a,[](T e){return std::exp(e); }); }
+template<class T>
+Svec<T>             mapLog(Svec<T> const & v) {return mapCall(v,[](T e){return std::log(e); }); }
 template<class T,size_t S>
 Arr<T,S>            mapLog(Arr<T,S> a) {return mapCall(a,[](T e){return std::log(e); }); }
 
@@ -497,6 +682,14 @@ Arr<T,S>            mapMin(Arr<T,S> const & lhs,Arr<T,S> const & rhs)
     return mapCall(lhs,rhs,[](T l,T r){return cMin(l,r); });
 }
 
+template<size_t S>
+bool                anyTrue(Arr<bool,S> a)
+{
+    for (bool e : a)
+        if (e)
+            return true;
+    return false;
+}
 template<size_t S>
 bool                allTrue(Arr<bool,S> a)
 {
@@ -530,6 +723,14 @@ bool                allGtZero(Arr<T,S> const & a)      // are all elements > zer
             return false;
     return true;
 }
+template<class T>
+bool                allGtZero(Svec<T> const & v)
+{
+    for (T e : v)
+        if (e <= 0)
+            return false;
+    return true;
+}
 template<size_t S>
 Arr<bool,S>         mapOr(Arr<bool,S> a0,Arr<bool,S> a1) {return mapCall(a0,a1,[](bool l,bool r){return l || r; }); }
 
@@ -546,11 +747,29 @@ void                mapCast_(Arr<F,S> const & from,Arr<T,S> & to)
         to[ii] = scast<T>(from[ii]);
 }
 
-template<typename T,typename U>
-Svec<T>            mapCtor(Svec<U> const & v) {return mapCall(v,[](U e){return T{e}; }); }
+template<class T,class U,size_t S>
+Arr<T,S>            mapCtor(Arr<U,S> const & v) {return mapCall(v,[](U const & e){return T{e};}); }
+template<class T,class U>
+Svec<T>             mapCtor(Svec<U> const & v) {return mapCall(v,[](U const & e){return T{e};}); }
+template<class T,class U,class V>
+Svec<T>             mapCtor(Svec<U> const & u,Svec<V> const & v)
+{
+    return mapCall(u,v,[](U const & ue,V const & ve){return T{ue,ve};});
+}
 
 template<class T,size_t S>
 Arr<T,S>            mapSqr(Arr<T,S> const & arr) {return mapCall(arr,[](T v){return v*v;}); }
+template<class T>
+Svec<T>             mapSqr(Svec<T> const & v) {return mapCall(v,[](T e){return e*e; }); }
+template<class T,size_t S,FG_ENABLE_IF(T,is_floating_point)>
+Arr<T,S>            mapSqrt(Arr<T,S> const & a) {return mapCall(a,[](T e){FGASSERT(e>=0); return std::sqrt(e);}); }
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+Svec<T>             mapSqrt(Svec<T> const & v) {return mapCall(v,[](T e){FGASSERT(e>=0); return std::sqrt(e); }); }
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+Svec<T>             mapInv(Svec<T> const & v) {return mapCall(v,[](T e){FGASSERT(e!=0); return 1/e; }); }
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+Svec<T>             mapInvSqrt(Svec<T> const & v) {return mapCall(v,[](T e){FGASSERT(e>0); return std::sqrt(1/e); }); }
+
 template<class T,size_t S>
 Arr<T,S>            mapFloor(Arr<T,S> const & a) {return mapCall(a,[](T v){return std::floor(v); }); }
 template<class To,class From,size_t S>
@@ -589,6 +808,13 @@ Svec<Arr<T,S>>      mapMapIndex(Svec<Arr<I,S>> const & tris,Svec<T> const & vert
     return mapCall(tris,fn);
 }
 
+template<class T,class U,class C>
+T               fold(Svec<U> const & l,T val,C const & fn_)
+{
+    for (U const & e : l)
+        fn_(e,val);
+    return val;
+}
 template<class T,class U,class V,class C>
 T               fold(Svec<U> const & l,Svec<V> const & r,T val,C const & fn_)
 {
@@ -606,27 +832,12 @@ T               cSum(Arr<T,S> const & a)
         acc += a[ii];
     return acc;
 }
-template<class T,size_t S>
-T               cMean(Arr<T,S> const & a)
-{
-    typedef typename Traits<T>::Scalar   Scalar;
-    return cSum(a) / scast<Scalar>(a.size());
-}
 template<class T,size_t S>                                  // S > 0
 T               cProd(Arr<T,S> const & a)
 {
     return std::accumulate(a.begin()+1,a.end(),a[0],std::multiplies<T>{});  // avoids requiring T{1}
 }
 
-template<class T,size_t S>
-Arr<T,S>        normalize(Arr<T,S> const & arr)
-{
-    // can't use cMagD() since we don't want double type if T is float:
-    T               acc {0};
-    for (size_t ii=0; ii<S; ++ii)
-        acc += arr[ii] * arr[ii];
-    return arr / std::sqrt(acc);
-}
 template<class T,size_t S>
 size_t              cMinIdx(const Arr<T,S> & v)
 {
@@ -867,9 +1078,9 @@ Svec<T>             prepend(T const & val,Svec<T> const & vec)
     ret.insert(ret.end(),vec.begin(),vec.end());
     return ret;
 }
-// append from pointer and size:
+// concatenate from pointer and size:
 template<class T>
-void                append_(Svec<T> & vec,T const * vals,size_t num)
+void                cat_(Svec<T> & vec,T const * vals,size_t num)
 {
     vec.reserve(vec.size()+num);
     for (size_t ii=0; ii<num; ++ii)
@@ -918,6 +1129,13 @@ Svec<T>             catDeref(Svec<Svec<T> const *> const & tsPtrs)
         cat_(ret,*tsPtr);
     return ret;
 }
+// improved version of std::vector::erase:
+template<class T>
+void                removeElem_(size_t idx,Svec<T> & v)
+{
+    FGASSERT(idx < v.size());
+    v.erase(v.begin()+idx);
+}
 // Functional version of vector::erase for single element:
 template<class T,size_t S>
 Arr<T,S-1>          removeElem(Arr<T,S> const & a,size_t idx)
@@ -941,7 +1159,7 @@ Svec<T>             removeElem(Svec<T> const & v,size_t idx)
         ret.insert(ret.end(),src+idx+1,v.cend());
     return ret;
 }
-// Not recursive; only flattens vector<vector> to vector<>:
+// Not recursive; only flattens outermost aggregate:
 template<class T>
 Svec<T>             flatten(Svec<Svec<T>> const & v)
 {
@@ -953,6 +1171,15 @@ Svec<T>             flatten(Svec<Svec<T>> const & v)
     for (size_t ii=0; ii<v.size(); ++ii)
         ret.insert(ret.end(),v[ii].begin(),v[ii].end());
     return ret;       
+}
+template<class T,size_t R,size_t C>
+Arr<T,R*C>          flatten(Arr<Arr<T,C>,R> const & a)
+{
+    Arr<T,R*C>          ret;
+    for (size_t rr=0; rr<R; ++rr)
+        for (size_t cc=0; cc<C; ++cc)
+            ret[rr*C+cc] = a[rr][cc];
+    return ret;
 }
 // Like std::find except it returns index rather than iterator of first occurance.
 // If not found, returns v.size() or throws:
@@ -1000,6 +1227,15 @@ T &                 findFirst(Svec<T> & vec,U const & rhs)              // Allow
     auto            it = std::find(vec.begin(),vec.end(),rhs);
     FGASSERT(it != vec.end());
     return *it;
+}
+// finds only the first instance of each desired item, throws if any of them cannot be found:
+template<class T,class U>
+Svec<T>             findEach(Svec<T> const & lookIn,Svec<U> const & lookFor)
+{
+    Svec<T>             ret; ret.reserve(lookFor.size());
+    for (U const & lf : lookFor)
+        ret.push_back(findFirst(lookIn,lf));
+    return ret;
 }
 // Functional specialization of std::find_if. Throws if no match found.
 // Use 'U' instead of Sfun<bool(T)> to match lambdas and args by ref (like std::find_if):
@@ -1265,26 +1501,30 @@ T                   cProductT(Arr<U,S> const & v)
         acc *= scast<T>(v[ii]);
     return acc;
 }
+
+template<class T,size_t S>
+T                   cMean(Arr<T,S> const & a)
+{
+    typedef typename Traits<T>::Scalar   U;
+    return cSum(a) / scast<U>(a.size());            // size() always > 0
+}
 // The value is accumulated in the templated type:
 template<class T>
 T                   cMean(Svec<T> const & v)
 {
-    FGASSERT(!v.empty());       // 'mean' has no meaning in this case
+    FGASSERT(!v.empty());                           // 'mean' has no meaning in this case
     typedef typename Traits<T>::Scalar    S;
     return cSum(v) / scast<S>(v.size());
 }
 
 template<class T>
-double              cLenD(Svec<T> const & v) {return std::sqrt(cMagD(v)); }
-template<typename T,size_t S>
-double              cLenD(Arr<T,S> const a) {return std::sqrt(cMagD(a)); }
-
-template<class T>
-Svec<T>             normalize(Svec<T> const & v)
+T                   normalize(T const & vals)
 {
-    T           len = scast<T>(cLenD(v));
-    FGASSERT(len > 0.0f);
-    return v * (1.0f/len);
+    typedef typename Traits<T>::Scalar  S;
+    static_assert(std::is_floating_point_v<S>,"normalize requires floating point type");
+    S                   len = cLen(vals);
+    FGASSERT(len > 0);
+    return vals * (scast<S>(1)/len);
 }
 
 // be sure that 'v' below remains valid for the lifetime of the returned pointers:
@@ -1300,16 +1540,16 @@ template<class T,class U,size_t S>
 auto                mapMul(Arr<T,S> const & lh,Arr<U,S> const & rh) {return mapCall(lh,rh,[](T l,U r){return l*r;}); }
 template<class T,class U>
 auto                mapMul(Svec<T> const & l,Svec<U> const & r) {return mapCall(l,r,[](T l,U r){return l*r;}); }
-// single value to elements:
+// single value to array must have a different name to disambiguate all possible cases from above:
 template<class T,class U,size_t S>
-auto                mapMul(T lh,Arr<U,S> const & rh) {return mapCall(rh,[lh](U r){return lh*r;}); }
+auto                mapMulR(T lh,Arr<U,S> const & rh) {return mapCall(rh,[lh](U r){return lh*r;}); }
 template<class T,class U>
-auto                mapMul(T lh,Svec<U> const & rh) {return mapCall(rh,[lh](U r){return lh*r;}); }
+auto                mapMulR(T lh,Svec<U> const & rh) {return mapCall(rh,[lh](U r){return lh*r;}); }
 // elements to single value (the implicit operator* only accepts the same type for array elements and RHS):
 template<class T,class U,size_t S>
-auto                mapMul(Arr<T,S> const & lh,U rh) {return mapCall(lh,[rh](T l){return l*rh;}); }
+auto                mapMulL(Arr<T,S> const & lh,U rh) {return mapCall(lh,[rh](T l){return l*rh;}); }
 template<class T,class U>
-auto                mapMul(Svec<T> const & lh,U rh) {return mapCall(lh,[rh](T l){return l*rh;}); }
+auto                mapMulL(Svec<T> const & lh,U rh) {return mapCall(lh,[rh](T l){return l*rh;}); }
 
 // Non-functional version:
 template<class T,class U,class Op>
@@ -1346,8 +1586,6 @@ template<class T>
 Svec<T>             mapSub(T val,Svec<T> const & vec) {return mapCall(vec,[val](T e){return val-e; }); }
 template<class T>
 Svec<T>             mapSub(Svec<T> const & vec,T val) {return mapCall(vec,[val](T e){return e-val; }); }
-template<class T>
-Svec<T>             mapSqr(Svec<T> const & v) {return mapCall(v,[](T e){return e*e; }); }
 
 // Add a weighted vector of values to an existing vector of values: acc += val * vec
 // aka multiply-accumulate loop:
@@ -1383,31 +1621,55 @@ bool                reduceOr(Arr<bool,S> a)    // aka disjunction
     return false;
 }
 
-template<class R,class U,class V,size_t S,class Callable>
-R                   reduceSum(Arr<U,S> const & l,Arr<V,S> const & r,Callable const & fn)
+// map then sum in a single pass:
+template<class T,class U,size_t S,class C>
+auto                mapSum(Arr<T,S> const & l,Arr<U,S> const & r,C const & fn)
 {
+    typedef decltype(fn(l[0],r[0])) R;
     R                   acc {0};
     for (size_t ii=0; ii<S; ++ii)
         acc += fn(l[ii],r[ii]);
     return acc;
 }
-template<class R,class U,class V,class W,size_t S,class Callable>
-R                   reduceSum(Arr<U,S> const & a0,Arr<V,S> const & a1,Arr<W,S> const & a2,Callable const & fn)
+template<class T,class U,class V,size_t S,class C>
+auto                mapSum(Arr<T,S> const & a,Arr<U,S> const & b,Arr<V,S> const & c,C const & fn)
 {
+    typedef decltype(fn(a[0],b[0],c[0])) R;
     R                   acc {0};
     for (size_t ii=0; ii<S; ++ii)
-        acc += fn(a0[ii],a1[ii],a2[ii]);
+        acc += fn(a[ii],b[ii],c[ii]);
     return acc;
 }
-
-template<class R,class U,class V,class Callable>
-R                   reduceSum(Svec<U> const & l,Svec<V> const & r,Callable const & fn)
+template<class T,class C>
+auto                mapSum(Svec<T> const & v,C const & fn)
+{
+    typedef decltype(fn(v[0]))  R;
+    R                   acc {0};
+    for (T const & e : v)
+        acc += fn(e);
+    return acc;
+}
+template<class T,class U,class C>
+auto                mapSum(Svec<T> const & l,Svec<U> const & r,C const & fn)
 {
     size_t              S = l.size();
+    FGASSERT(S>0);
     FGASSERT(r.size() == S);
-    R                   acc {0};
-    for (size_t ii=0; ii<S; ++ii)
+    auto                acc = fn(l[0],r[0]);
+    for (size_t ii=1; ii<S; ++ii)
         acc += fn(l[ii],r[ii]);
+    return acc;
+}
+template<class T,class U,class V,class C>
+auto                mapSum(Svec<T> const & l,Svec<U> const & m,Svec<V> const & r,C const & fn)
+{
+    size_t              S = l.size();
+    FGASSERT(S>0);
+    FGASSERT(m.size() == S);
+    FGASSERT(r.size() == S);
+    auto                acc = fn(l[0],m[0],r[0]);
+    for (size_t ii=1; ii<S; ++ii)
+        acc += fn(l[ii],m[ii],r[ii]);
     return acc;
 }
 
@@ -1421,14 +1683,40 @@ auto                multAcc(Arr<T,D> const & lhs,Arr<U,D> const & rhs)
     return ret;
 }
 template<class T,class U>
+auto                multAcc(PArr<T> l,PArr<U> r)
+{
+    size_t              S = l.S;
+    FGASSERT(S>0);
+    FGASSERT(r.S == S);
+    auto                acc = l.ptr[0]*r.ptr[0];
+    for (size_t ii=1; ii<S; ++ii)
+        acc += l.ptr[ii*l.R] * r.ptr[ii*r.R];
+    return acc;
+}
+template<class T,class U>
+auto                multAccPtr(T const * a,U const * b,size_t D)
+{
+    FGASSERT(D>0);
+    auto                acc = a[0]*b[0];
+    for (size_t ii=1; ii<D; ++ii)
+        acc += a[ii] * b[ii];
+    return acc;
+}
+template<class T,class U,class V>
+auto                multAccPtr(T const * a,U const * b,V const * c,size_t D)
+{
+    FGASSERT(D>0);
+    auto                acc = a[0]*b[0]*c[0];
+    for (size_t ii=1; ii<D; ++ii)
+        acc += a[ii]*b[ii]*c[ii];
+    return acc;
+}
+template<class T,class U>
 auto                multAcc(Svec<T> const & lhs,Svec<U> const & rhs)
 {
     FGASSERT(!lhs.empty());
     FGASSERT(lhs.size() == rhs.size());
-    auto                ret = lhs[0] * rhs[0];
-    for (size_t ii=1; ii<lhs.size(); ++ii)
-        ret += lhs[ii] * rhs[ii];
-    return ret;
+    return multAccPtr(&lhs[0],&rhs[0],lhs.size());
 }
 
 // matMul is a contraction of the next-to-outer index of the left arg with the outer index
@@ -1509,12 +1797,12 @@ Sizes               sortInds(Svec<T> const & v)
     std::sort(ret.begin(),ret.end(),[&v](size_t l,size_t r){return C{}(v[l],v[r]); });
     return ret;
 }
-template<class T,class C=std::less<T>>
-void                insertSorted_(Svec<T> & vec,T const & val)
+template<class T,class C>
+void                insertSorted_(Svec<T> & vec,T const & val,C const & cmp)    // 'vec' must be in sorted order
 {
     auto                it = vec.begin();
     while (it != vec.end()) {
-        if (C{}(val,*it)) {
+        if (cmp(val,*it)) {
             vec.insert(it,val);
             return;
         }
@@ -1522,6 +1810,9 @@ void                insertSorted_(Svec<T> & vec,T const & val)
     }
     vec.push_back(val);
 }
+// default comparison version. Like STL, cannot be combined with above:
+template<class T>
+inline void         insertSorted_(Svec<T> & vec,T const & val) {insertSorted_(vec,val,std::less<T>{}); }
 template<class T>
 bool                containsDuplicates(Svec<T> const & mustBeSorted)
 {
@@ -1583,6 +1874,22 @@ Svec<Svec<T>>       transpose(Svec<Svec<T>> const & v)
     }
     return ret;
 }
+template<class T,size_t R,size_t C>
+Arr<Arr<T,R>,C>     transpose(Arr<Arr<T,C>,R> const & a)
+{
+    Arr<Arr<T,R>,C>     ret;
+    for (size_t cc=0; cc<R; ++cc)
+        for (size_t rr=0; rr<C; ++rr)
+            ret[rr][cc] = a[cc][rr];
+    return ret;
+}
+// similar to Python zip, when one of the sizes is compile-time fixed:
+template<class T>
+Svec<Arr<T,2>>      zip(Svec<T> const & l,Svec<T> const & r)
+{
+    return mapCall(l,r,[](T le,T re){return Arr<T,2>{le,re}; });
+}
+
 // Inject all elements of domain 'src' into codomain 'dst' in order at true values of 'where'.
 // REQUIRED: where.size() == dst.size()
 // REQUIRED: number of 'true' values in where == src.size()
@@ -1606,32 +1913,32 @@ Svec<T>             inject(Svec<T> const & src,Svec<T> const & dst,Bools const &
 }
 
 template<class T,size_t S>
-Arr<size_t,S>       cSizes(Arr<T,S> const & vss) {return mapCall(vss,[](T const & v){return v.size(); }); }
+Arr<size_t,S>       cSizes(Arr<T,S> const & vss)
+{
+    return mapCall(vss,[](T const & v){return v.size(); });
+}
 template<class T>
 Sizes               cSizes(Svec<T> const & vss)
 {
-    Sizes               ret; ret.reserve(vss.size());
-    for (T const & vs : vss)
-        ret.push_back(vs.size());
-    return ret;
+    return mapCall(vss,[](T const & vs){return vs.size(); });
 }
-// Specialization for vector of pointers to vector:
+// overload for vector of pointers to vector:
 template<class T>
-Sizes               cSizes(Svec<Svec<T> const *> const & vsPtrs)
+Sizes               cSizes(Svec<Svec<T> const *> const & vPtrs)
 {
-    Sizes               ret; ret.reserve(vsPtrs.size());
-    for (Svec<T> const * vsPtr : vsPtrs)
-        ret.push_back(vsPtr->size());
-    return ret;
+    return mapCall(vPtrs,[](Svec<T> const * vPtr){return vPtr->size(); });
 }
 template<class T>
 size_t              sumSizes(Svec<T> const & vss)
 {
-    size_t              ret {0};
-    for (T const & vs : vss)
-        ret += vs.size();
-    return ret;
+    return fold<size_t>(vss,0,[](T const & vs,size_t & acc){acc += vs.size(); });
 }
+template<class T,class U>
+size_t              sumSizesMember(Svec<T> const & v,U T::*m)
+{
+    return fold<size_t>(v,0,[m](T const & e,size_t & acc){acc += (e.*m).size(); });
+}
+
 // Set intersection with vector containers; ignores duplicates returns intersection of uniques:
 template<class T>
 Svec<T>             setwiseIntersect(Svec<T> const & v0,Svec<T> const & v1)

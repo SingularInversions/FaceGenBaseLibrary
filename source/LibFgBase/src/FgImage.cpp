@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -22,7 +22,7 @@ std::ostream &      operator<<(std::ostream & os,ImgRgba8 const & img)
     else
         os
         << fgnl << "Dimensions: " << img.dims()
-        << fgnl << "Channel bounds: " << cBounds(img.m_data);
+        << fgnl << "Channel bounds: " << updateBounds(img.m_data);
     return os;
 }
 
@@ -31,7 +31,7 @@ std::ostream &      operator<<(std::ostream & os,ImgC4F const & img)
     if (img.empty())
         return os << "Empty image";
     Mat<float,4,1>    init {img.xy(0,0).m_c};
-    Mat<float,4,2>    bounds = catHoriz(init,init);
+    Mat<float,4,2>    bounds = catH(init,init);
     for (Iter2UI it(img.dims()); it.next(); it.valid()) {
         RgbaF         pix = img[it()];
         for (uint cc=0; cc<4; ++cc) {
@@ -124,7 +124,7 @@ Img4F               resample(Img4F const & src,SquareF regionPacs,uint dstSize,b
         Vec2F               srcIrcs = dstToSrcIrcs * Vec2F{scast<float>(xx),scast<float>(yy)};
         return sampleBlerpZero(src,srcIrcs);
     };
-    return generateImg<Arr4F>(Vec2UI{dstSize},fn,mt);
+    return genImg<Arr4F>(Vec2UI{dstSize},fn,mt);
 }
 
 ImgRgba8            resampleAffine(ImgRgba8 const & in,Vec2UI dims,AxAffine2F const & outToInIrcs)
@@ -202,7 +202,7 @@ Img4F               blockResample(Img4F const & src,SquareF regionPacs,uint retS
         // weighted mean channel values over block of source image, with pixels outside source implicitly zero:
         return acc / accW;      // accW is guaranteed to be > 1
     };
-    return generateImg<Arr4F>(Vec2UI{retSize},fn,mt);
+    return genImg<Arr4F>(Vec2UI{retSize},fn,mt);
 }
 
 void                shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
@@ -231,25 +231,24 @@ void                shrink2_(ImgRgba8 const & src,ImgRgba8 & dst)
 
 ImgRgba8            expand2(ImgRgba8 const & src)
 {
-    ImgRgba8     dst(src.dims()*2);
-    Vec2F        off(-0.5f,-0.5f);
-    Vec2I        srcMax(src.dims()-Vec2UI(1));
+    ImgRgba8            dst(src.dims()*2);
+    Vec2I               srcMax(src.dims()-Vec2UI(1));
     for (uint yy=0; yy<dst.height(); ++yy) {
         // Keep interim values positive to avoid rounding bias around origin:
-        int     syl = int(yy+1) / 2 - 1,
-                syh = syl + 1;
+        int                 syl = int(yy+1) / 2 - 1,
+                            syh = syl + 1;
         syl = (syl < 0 ? 0 : syl);
         syh = (syh > srcMax[1] ? srcMax[1] : syh);
-        uint    wyl = 1 + 2 * (yy & 1),
-                wyh = 4 - wyl;
+        uint                wyl = 1 + 2 * (yy & 1),
+                            wyh = 4 - wyl;
         for (uint xx=0; xx<dst.width(); ++xx) {
-            int     sxl = int(xx+1) / 2 - 1,
-                    sxh = sxl + 1;
+            int                 sxl = int(xx+1) / 2 - 1,
+                                sxh = sxl + 1;
             sxl = (sxl < 0 ? 0 : sxl);
             sxh = (sxh > srcMax[0] ? srcMax[0] : sxh);
-            uint    wxl = 1 + 2 * (xx & 1),
-                    wxh = 4 - wxl;
-            Rgba16    acc =
+            uint                wxl = 1 + 2 * (xx & 1),
+                                wxh = 4 - wxl;
+            Rgba16              acc =
                 Rgba16(src.xy(sxl,syl)) * wxl * wyl +
                 Rgba16(src.xy(sxh,syl)) * wxh * wyl +
                 Rgba16(src.xy(sxl,syh)) * wxl * wyh +
@@ -608,7 +607,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
             }
             return out;
         };
-        ret = generateImg<Rgba8>(imgMod.dims(),fn,true);
+        ret = genImg<Rgba8>(imgMod.dims(),fn,true);
     }
     else {
         AxAffine2F      ircsToIucs = cIrcsToIucs<float>(imgIn.dims());
@@ -627,7 +626,7 @@ ImgRgba8            imgModulate(ImgRgba8 const & imgIn,ImgRgba8 const & imgMod,f
             }
             return out;
         };
-        ret = generateImg<Rgba8>(imgIn.dims(),fn,mt);
+        ret = genImg<Rgba8>(imgIn.dims(),fn,mt);
     }
     return ret;
 }
@@ -725,6 +724,27 @@ ImgRgba8            smoothUint(ImgRgba8 const & src,uchar borderPolicy)
     smoothUint_(src,ret,borderPolicy);
     return ret;
 }
+
+ImgRgba8            visualize(MatD const & mat)
+{
+    Arr2D               bounds = cBounds(mat.m_data);
+    auto                fn = [bounds](double v)
+    {
+        Rgba8               ret {0,0,0,255};
+        if (v<0)
+            ret[0] = scast<uchar>(255*pow(v/bounds[0],1/2.2));      // if v<0, bounds[0]<0 as well
+        else
+            ret[1] = scast<uchar>(255*pow(v/bounds[1],1/2.2));
+        return ret;
+    };
+    Rgba8s              data8 = mapCall(mat.m_data,fn);
+    Vec2UI              dims = mat.dims();
+    ImgRgba8            img {dims[0],dims[1],data8};
+    uint                mag = cMax(1024U/cMaxElem(dims),1U);
+    fgout << "-ve shown in red, +ve in green, element bounds: " << bounds;
+    return magnify(img,mag);
+}
+
 
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -315,7 +315,7 @@ Offsets             writeMesh(
         Vec2F               uv = mesh.uvs[ii];
         ofs << "vt " << uv[0] << " " << uv[1] << "\n";
     }
-    MeshNormals         norms = cNormals(mesh.surfaces,mesh.verts);
+    SurfNormals         norms = cNormals(mesh.surfaces,mesh.verts);
     for (size_t ii=0; ii<norms.vert.size(); ++ii) {
         Vec3F               n = norms.vert[ii];
         ofs << "vn " << n[0] << " " << n[1] << " " << n[2] << "\n";

@@ -1,24 +1,35 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Vector transformations of all kinds
+// Transformation operators
 //
 // operator*(transform,vector) is overloaded to application of the transform; v' = T(v)
-// operator*(transform,transform) is overloaded to composition of transforms st C(x) := L(R(x))
+// operator*(transform,transform) is overloaded to composition of transforms from right to left
 // Note that composition of non-linear transformations is not commutative.
 //
 
-#ifndef FGAFFINEC_HPP
-#define FGAFFINEC_HPP
+#ifndef FGTRANSFORM_HPP
+#define FGTRANSFORM_HPP
 
 #include "FgApproxEqual.hpp"
 
 namespace Fg {
 
+// axial scale operator. Separate scale for each axis. Equivalent to diagonal matrix.
+// aka anisotropic or nonuniform scaling.
 template<class T,size_t D>
-struct      Trans   // translation operator is trivial but useful in mapping operations and operator composition
+struct      AxScale
+{
+    Arr<T,D>            scales;
+    explicit AxScale(Arr<T,D> const & s) : scales{s} {}
+};
+typedef AxScale<double,3>   AxScale3D;
+
+// translation operator is trivial but useful in specifying behaviour in operator application and composition
+template<class T,size_t D>
+struct      Trans
 {
     Mat<T,D,1>          delta;
     explicit Trans(Mat<T,D,1> const & d) : delta{d} {}
@@ -92,9 +103,17 @@ typedef ScaleTrans<float,2>     ScaleTrans2F;
 typedef ScaleTrans<double,2>    ScaleTrans2D;
 typedef ScaleTrans<float,3>     ScaleTrans3F;
 typedef ScaleTrans<double,3>    ScaleTrans3D;
+typedef Svec<ScaleTrans3D>      ScaleTrans3Ds;
 
 template<class T,size_t D>
 ScaleTrans<T,D>     operator*(Trans<T,D> t,ScaleTrans<T,D> st) {return {st.scale,t.delta+st.trans}; }
+
+template<class T,size_t D>
+ScaleTrans<T,D>     cScaleAroundPoint(T scale,Mat<T,D,1> const & pnt)
+{
+    // (x-pnt)*scale + pnt = x*scale - pnt*scale + pnt = x*scale + (pnt-pnt*scale)
+    return {scale,pnt-pnt*scale};
+}
 
 // least squares scale and translation relative to means, for 1-1 corresponding points:
 template<typename T,size_t D>
@@ -118,7 +137,7 @@ struct      Affine1
 {
     T               m_scale;            // applied first. Cannot be zero.
     T               m_trans;            // applied second
-    FG_SER2(m_scale,m_trans)
+    FG_SER(m_scale,m_trans)
 
     Affine1() : m_scale{1}, m_trans{0} {}
     Affine1(T scale,T trans) : m_scale{scale}, m_trans{trans} {FGASSERT(m_scale != 0); }
@@ -189,11 +208,19 @@ struct      AxAffine
 {
     Mat<T,D,1>          scales;         // applied first
     Mat<T,D,1>          trans;          // applied second
-    FG_SER2(scales,trans)
+    FG_SER(scales,trans)
 
     AxAffine() : scales{1}, trans{0} {}
     explicit AxAffine(ScaleTrans<T,D> const & st) : scales{st.scale}, trans{st.trans} {}
-    AxAffine(Mat<T,D,1> const & s,Mat<T,D,1> const & t) : scales{s}, trans{t} {}
+    AxAffine(Arr<T,D> const & s,Arr<T,D> const & t)             // scale then translate
+        : scales{s}, trans{t} {}
+    AxAffine(Mat<T,D,1> const & s,Mat<T,D,1> const & t)         // scale then translate
+        : scales{s}, trans{t} {}
+    AxAffine(Trans<T,D> const & t,AxScale<T,D> const & s) :       // translate then scale
+        // y = s(x+t) = sx + st
+        scales{s.scales},
+        trans{mapMul(s.scales,t.delta.m)}
+    {}
     AxAffine(Rect<T,D> domain,Rect<T,D> range) :
         scales{mapDiv(range.dims,domain.dims)}, trans{0}
     {
@@ -262,6 +289,9 @@ template<class T,size_t D>
 inline std::ostream &   operator<<(std::ostream & os,const AxAffine<T,D> & v) {return os  << v.aff; }
 
 template<class T,size_t D>
+inline AxAffine<T,D>    operator*(AxScale<T,D> l,Trans<T,D> r) {return {r,l}; }
+
+template<class T,size_t D>
 AxAffine<T,D>           operator*(Trans<T,D> l,AxAffine<T,D> const & r) {return {r.scales,r.trans+l.delta}; }
 
 template<size_t D>
@@ -287,14 +317,14 @@ struct      Affine
 {
     Mat<T,D,D>          linear;           // Applied first
     Mat<T,D,1>          translation;      // Applied second
-    FG_SER2(linear,translation)
+    FG_SER(linear,translation)
 
-    Affine() : linear{cDiagMat<T,D>(1)}, translation{0} {}
+    Affine() : linear{cMatDiag<T,D>(1)}, translation{0} {}
     // Construct from translation: f(x) = x + b
-    explicit Affine(Mat<T,D,1> const & trans) : linear {cDiagMat<T,D>(1)}, translation(trans) {}
+    explicit Affine(Mat<T,D,1> const & trans) : linear {cMatDiag<T,D>(1)}, translation(trans) {}
     explicit Affine(const Mat<T,D,D> & lin) : linear(lin), translation{0} {}
-    explicit Affine(ScaleTrans<T,D> const & st) : linear{cDiagMat<T,D>(st.scale)}, translation{st.trans} {}
-    explicit Affine(AxAffine<T,D> const & a) : linear{cDiagMat(a.scales)}, translation{a.trans} {}
+    explicit Affine(ScaleTrans<T,D> const & st) : linear{cMatDiag<T,D>(st.scale)}, translation{st.trans} {}
+    explicit Affine(AxAffine<T,D> const & a) : linear{cMatDiag(a.scales)}, translation{a.trans} {}
     // Construct from native form: f(x) = Mx + b
     Affine(Mat<T,D,D> const & lin,Mat<T,D,1> const & trans) : linear(lin), translation(trans) {}
     // Construct from opposite order form: f(x) = M(x+b) = Mx + Mb
@@ -351,6 +381,12 @@ Affine<T,D>       operator*(const Mat<T,D,D> & lhs,const Affine<T,D> & rhs)
 {
     return Affine<T,D>(lhs*rhs.linear,lhs*rhs.translation);
 }
+// operator composition: Affine * ScaleTrans:
+template<class T,size_t D>
+Affine<T,D>         operator*(Affine<T,D> const & l,ScaleTrans<T,D> const & r)
+{
+    return l * Affine<T,D>{r};
+}
 
 template<class T,size_t D>
 std::ostream &      operator<<(std::ostream & os,const Affine<T,D> & v)
@@ -381,12 +417,13 @@ struct      Quaternion
     // Imaginary components. Direction is rotation axis (RHR) and length (when quaternion is normalized)
     // is twice the rotation in radians for small values (tangent rotations):
     Mat<T,3,1>          imag;
-    FG_SER2(real,imag)
+    FG_SER(real,imag)
 
     Quaternion() : real{1}, imag{0} {}      // Default constructor is identity
     Quaternion(T r,Mat<T,3,1> i) : real{r}, imag{i} {normalizeP(); }
+    // RHR tangent rotation around an arbitrary axis:
     Quaternion(T r,T rotAxisX,T rotAxisY,T rotAxisZ) : real{r}, imag{rotAxisX,rotAxisY,rotAxisZ} {normalizeP(); }
-    // Create a RHR rotation around a coordinate axis (0: X, 1: Y, 2: Z):
+    // RHR rotation around a coordinate axis (0: X, 1: Y, 2: Z):
     Quaternion(T radians,size_t axis) : real{std::cos(radians/2)}, imag{0}
     {
         FGASSERT(axis < 3);
@@ -455,6 +492,9 @@ inline QuaternionD  cRotateX(double radians) {return {radians,0}; }
 inline QuaternionD  cRotateY(double radians) {return {radians,1}; }
 inline QuaternionD  cRotateZ(double radians) {return {radians,2}; }
 
+// if the distrubution is well clustered, this gives a good mean. If not, results will be unstable:
+QuaternionD         cMean(QuaternionDs const &);
+
 // Return the tangent magnitude of the difference between two quaternions (in double-radians squared).
 // Useful for rotation prior.
 double              tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs);
@@ -471,7 +511,7 @@ struct  Rigid3D
 {
     QuaternionD         rot;            // Applied first
     Vec3D               trans {0};      // Applied last
-    FG_SER2(rot,trans)
+    FG_SER(rot,trans)
 
     Rigid3D() {}
     explicit Rigid3D(QuaternionD const & r) : rot{r} {}
@@ -516,7 +556,7 @@ struct  SimilarityD
     double              scale {1};      // Scale and rotation applied first
     QuaternionD         rot;
     Vec3D               trans {0};      // Translation applied last
-    FG_SER3(scale,rot,trans)
+    FG_SER(scale,rot,trans)
 
     SimilarityD() {}
     explicit SimilarityD(double s) : scale(s) {}
@@ -561,7 +601,7 @@ struct  SimilarityRD
     Vec3D           trans {0};          // Translation applied first
     QuaternionD     rot;
     double          scale {1};          // Scale and rotation applied last
-    FG_SER3(trans,rot,scale)
+    FG_SER(trans,rot,scale)
 
     SimilarityRD() {}
     SimilarityRD(Vec3D const & t,QuaternionD const & r,double s) : trans {t}, rot {r}, scale {s} {FGASSERT(s > 0.0); }
@@ -584,7 +624,9 @@ typedef Svec<SimilarityRD>   SimilarityRDs;
 
 std::ostream &      operator<<(std::ostream & os,SimilarityRD const & v);
 
-inline Vec3Ds       transform(SimilarityD const & sim,Vec3Ds const & poss) {return mapMul(sim.asAffine(),poss); }
+inline Vec3Ds       transform(SimilarityD const & sim,Vec3Ds const & poss) {return mapMulR(sim.asAffine(),poss); }
+
+Uints               cHistogram(Doubles const & data,size_t numBuckets);
 
 }
 

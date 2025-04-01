@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -112,19 +112,19 @@ NOTES:
 void                cmdViewMesh(CLArgs const & args)
 {
     Syntax            syn {args,
-        R"([-c] [-r] (<mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+ )+
+        R"([-c] [-r] (<filenames>.txt | <meshes>+)
     -c         - Compare meshes rather than view all at once (use 'Select' tab to toggle)
     -r         - Remove unused vertices for viewing
-    <mesh>     - Mesh to view
-    <ext>      - )" + getMeshLoadExtsCLDescription() + R"(
-    <color>    - Color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.
-    <transparency> - Transparency map
-    <specular> - Specularity map
-    <img>      - " + clOptionsStr(getImgExts())
+    <filenames>.txt - each line is the file path of a mesh file with extension <ext>
+    <meshes>        - <mesh>.<ext> [<color>.<img> [-t <transparency>.<img>] [-s <specular>.<img>]]+
+    <ext>           - )" + getMeshLoadExtsCLDescription() + R"(
+    <color>         - color / albedo map (can contain transparency in alpha channel). Can specify one for each surface.
+    <transparency>  - Transparency map
+    <specular>      - Specularity map
+    <img>           - )" + clOptionsStr(getImgExts()) + R"(
 NOTES:
     * If only one mesh is selected, the Edit tab will allow selection of surface points and
-      marked vertices, along with a Save option.)"
-    };
+      marked vertices, along with a Save option.)"};
     bool            compare = false,
                     ruFlag = false;
     while (syn.peekNext()[0] == '-') {
@@ -136,65 +136,72 @@ NOTES:
             syn.error("Unrecognized option: ",syn.curr());
     }
     Meshes           all;
-    while (syn.more()) {
-        Path            path(syn.next());
-        PushIndent      pind {path.baseExt().m_str};
-        Meshes          meshes = loadMeshes(path.str());
-        size_t          idx {0};
-        for (Mesh & mesh : meshes) {
-            if (mesh.name.empty()) {            // multi-mesh files can load mesh names
-                if (meshes.size() > 1)          // but in this case didn't
-                    mesh.name = path.base + "-" + toStr(idx);
-                else
-                    mesh.name = path.base;
+    if (pathToExt(syn.peekNext()) == "txt") {           // file of filenames
+        Strings         fnames = splitLines(loadRawString(syn.next()));
+        for (String const & fname : fnames)
+            all.push_back(loadMesh(fname));
+    }
+    else {
+        while (syn.more()) {
+            Path            path(syn.next());
+            PushIndent      pind {path.baseExt().m_str};
+            Meshes          meshes = loadMeshes(path.str());
+            size_t          idx {0};
+            for (Mesh & mesh : meshes) {
+                if (mesh.name.empty()) {            // multi-mesh files can load mesh names
+                    if (meshes.size() > 1)          // but in this case didn't
+                        mesh.name = path.base + "-" + toStr(idx);
+                    else
+                        mesh.name = path.base;
+                }
+                if (ruFlag) {
+                    size_t          origVerts = mesh.verts.size();
+                    mesh = removeUnused(mesh);
+                    if (mesh.verts.size() < origVerts)
+                        fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
+                }
+                fgout << fgnl << toStrDigits(idx++,2) << fgpush << mesh << fgpop;
             }
-            if (ruFlag) {
-                size_t          origVerts = mesh.verts.size();
-                mesh = removeUnused(mesh);
-                if (mesh.verts.size() < origVerts)
-                    fgout << fgnl << origVerts-mesh.verts.size() << " unused vertices removed for viewing";
-            }
-            fgout << fgnl << toStrDigits(idx++,2) << fgpush << mesh << fgpop;
-        }
-        if (syn.more() && hasImgFileExt(syn.peekNext())) {
-            size_t              meshIdx = 0,
-                                surfIdx = 0;
-            while (syn.more() && hasImgFileExt(syn.peekNext())) {
-                ImgRgba8            albedo = loadImage(syn.next()),
-                                    specular;
-                if (meshes[meshIdx].uvs.empty())
-                    fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
-                fgout << fgnl << syn.curr() << " mesh " << meshIdx << " surf " << surfIdx
-                    << fgpush << albedo << fgpop;
-                if (syn.more() && (syn.peekNext()[0] == '-')) {
-                    if(syn.next() == "-t") {
-                        ImgRgba8         trans = loadImage(syn.next());
-                        fgout << fgnl << syn.curr() << fgpush << trans << fgpop;
-                        albedo = applyTransparencyPow2(albedo,trans);
+            if (syn.more() && hasImgFileExt(syn.peekNext())) {
+                size_t              meshIdx = 0,
+                                    surfIdx = 0;
+                while (syn.more() && hasImgFileExt(syn.peekNext())) {
+                    ImgRgba8            albedo = loadImage(syn.next()),
+                                        specular;
+                    if (meshes[meshIdx].uvs.empty())
+                        fgout << fgnl << "WARNING: " << syn.curr() << " has no UVs, color maps will not be seen.";
+                    fgout << fgnl << syn.curr() << " mesh " << meshIdx << " surf " << surfIdx
+                        << fgpush << albedo << fgpop;
+                    if (syn.more() && (syn.peekNext()[0] == '-')) {
+                        if(syn.next() == "-t") {
+                            ImgRgba8         trans = loadImage(syn.next());
+                            fgout << fgnl << syn.curr() << fgpush << trans << fgpop;
+                            albedo = applyTransparencyPow2(albedo,trans);
+                        }
+                        else if (syn.curr() == "-s") {
+                            loadImage_(syn.next(),specular);
+                            fgout << fgnl << syn.curr() << fgpush << specular << fgpop;
+                        }
+                        else
+                            syn.error("Unrecognized image map option",syn.curr());
                     }
-                    else if (syn.curr() == "-s") {
-                        loadImage_(syn.next(),specular);
-                        fgout << fgnl << syn.curr() << fgpush << specular << fgpop;
+                    if ((meshIdx < meshes.size()) && (surfIdx < meshes[meshIdx].surfaces.size())) {
+                        Surf &              surf = meshes[meshIdx].surfaces[surfIdx];
+                        surf.setAlbedoMap(albedo);
+                        if (!specular.empty())
+                            surf.material.specularMap = make_shared<ImgRgba8>(specular);
                     }
                     else
-                        syn.error("Unrecognized image map option",syn.curr());
-                }
-                if ((meshIdx < meshes.size()) && (surfIdx < meshes[meshIdx].surfaces.size())) {
-                    Surf &              surf = meshes[meshIdx].surfaces[surfIdx];
-                    surf.setAlbedoMap(albedo);
-                    if (!specular.empty())
-                        surf.material.specularMap = make_shared<ImgRgba8>(specular);
-                }
-                else
-                    fgout << fgnl << "WARNING: more maps than surfaces";
-                ++surfIdx;
-                if (surfIdx >= meshes[meshIdx].surfaces.size()) {
-                    ++meshIdx;
-                    surfIdx = 0;
+                        fgout << fgnl << "WARNING: more maps than surfaces";
+                    ++surfIdx;
+                    if (surfIdx >= meshes[meshIdx].surfaces.size()) {
+                        ++meshIdx;
+                        surfIdx = 0;
+                    }
                 }
             }
+            cat_(all,meshes);
         }
-        cat_(all,meshes);
     }
     if (all.empty())
         syn.error("No meshes specified");
@@ -221,7 +228,7 @@ void                cmdViewUvs(CLArgs const & args)
             fgout << fgnl << "WARNING: Mesh has no UVs";
             return;         // errors will result otherwise
         }
-        Mat22F              bounds = cBounds(mesh.uvs);
+        Mat22F              bounds = catH(cBounds(mesh.uvs));
         fgout << fgnl << "UV Bounds (" << mesh.uvs.size() << " uvs):" << bounds;
         if ((cMinElem(bounds) < 0) || (cMaxElem(bounds) > 1))
             fgout << fgnl << "WARNING: UVs outside [0,1] were not drawn";

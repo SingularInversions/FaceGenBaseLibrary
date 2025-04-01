@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -173,7 +173,13 @@ struct      PushLogFile
     {
         fgout.logFile(fname.m_str,append,false);
     }
-    ~PushLogFile() {fgout.logFileClose(); }
+    ~PushLogFile()
+    {
+        // there is no way to reference an existing exception, so just don't close the log file
+        // and if the hander is using 'fgout' the exception will be logged:
+        if (std::uncaught_exceptions() == 0)
+            fgout.logFileClose();
+    }
 };
 
 // Operations on multiple files and searching for files:

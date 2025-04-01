@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,8 +7,10 @@
 #include "stdafx.h"
 
 #include "FgMath.hpp"
-#include "FgRandom.hpp"
 #include "FgCommand.hpp"
+#include "FgImgDisplay.hpp"
+#include "FgImageDraw.hpp"
+#include "FgTime.hpp"
 
 using namespace std;
 
@@ -169,16 +171,6 @@ size_t              zorder(size_t v0,size_t v1,size_t v2)
     return ret;
 }
 
-static void         testZorder()
-{
-    size_t      v0 = 0x01,
-                v1 = 0x02,
-                v2 = 0x04,
-                r0 = zorder(v0,v1,v2),
-                r1 = v0 | (v1 << 3) | (v2 << 6);
-    FGASSERT(r0 == r1);
-}
-
 double              logit(double f)
 {
     FGASSERT((f > 0.0) && (f < 1.0));
@@ -189,37 +181,6 @@ double              sigmoidqInv(double f)
     double          ff = sqr(f);
     FGASSERT(ff < 1.0);
     return f / sqrt(1-ff);
-}
-
-// Test by generating 1M numbers and taking the average (should be 1/2) and RMS (should be 1/3).
-static void         testFgRand()
-{
-    randSeedRepeatable();
-    const uint      numSamples = 1000000;
-    double const    num = double(numSamples);
-    vector<double>  vals(numSamples);
-    double          mean = 0.0;
-    for (uint ii=0; ii<numSamples; ii++)
-    {
-        vals[ii] = randUniform();
-        mean += vals[ii];
-    }
-    mean /= num;
-    double          rms = 0.0;
-    for (uint ii=0; ii<numSamples; ii++)
-        rms += sqr(vals[ii]);
-    rms = (rms / num);
-
-    fgout << fgnl << "Mean: " << mean << fgnl << "RMS: " << rms;
-    FGASSERT(std::abs(mean * 2.0 - 1.0) < 0.01);    // Should be good to 1 in sqrt(1M)
-    FGASSERT(std::abs(rms * 3.0 - 1.0) < 0.01);
-}
-
-void                testMath(CLArgs const &)
-{
-    PushIndent       op("Testing rand");
-    testFgRand();
-    testZorder();
 }
 
 // The following code is a modified part of the 'fastermath' library:
@@ -253,7 +214,6 @@ typedef union
     double                      dbl;
     struct {int32_t  lo,hi;}    asInt;
 }  ExpFast;
-
 double              expFast(double x)
 {
     x *=  1.4426950408889634074;        // Convert to base 2 exponent
@@ -271,6 +231,208 @@ double              expFast(double x)
     px = px * fpart;
     y = 1.0 + 2.0*(px/(qx-px));
     return epart.dbl*y;
+}
+// End of 'fastermath' library.
+
+
+// 'random_device' uses time and other system information to create a seed:
+static mt19937_64   rng {random_device{}()};
+
+uint64              cRandUint64(uint64 eub)
+{
+    if (eub==0)
+        return rng();
+    else if (eub==1)
+        return 0;
+    // Lightweight class, not a performance issue to construct each time:
+    uniform_int_distribution<uint64> d(0,eub-1);     // Convert from inclusive to exclusive upper bound
+    return d(rng);
+}
+void                randSeedRepeatable(uint64 seed) {rng.seed(seed); }
+void                randSeedTime() {rng.seed(getTimeMs()); }
+
+double              cRandUniform(double lo,double hi)
+{
+    double              rat = scast<double>(rng()) / scast<double>(numeric_limits<uint64>::max());
+    return (rat * (hi-lo) + lo);
+}
+
+double              cRandNormal()
+{
+    // Polar (Box-Muller) method; See Knuth v2, 3rd ed, p122.
+    double  x, y, r2;
+    do {
+        x = -1 + 2 * cRandUniform();
+        y = -1 + 2 * cRandUniform();
+        // see if it is in the unit circle:
+        r2 = x * x + y * y;
+    }
+    while (r2 > 1.0 || r2 == 0);
+    // Box-Muller transform:
+    return y * sqrt (-2.0 * log (r2) / r2);
+}
+
+static char         randChar()
+{
+    uint    val = cRandUint64(26U+26U+10U);
+    if (val < 10)
+        return char(48+val);
+    val -= 10;
+    if (val < 26)
+        return char(65+val);
+    val -= 26;
+    FGASSERT(val < 26);
+    return char(97+val);
+}
+
+string              randString(uint numChars)
+{
+    string  ret;
+    for (uint ii=0; ii<numChars; ++ii)
+        ret = ret + randChar();
+    return ret;
+}
+
+bool                randBool() {return (rng() & 0x01ULL); }
+
+double              randNearUnit()
+{
+    double              unit = randBool() ? 1.0 : -1.0;
+    return unit + cRandNormal()*0.125;
+}
+
+Doubles             randNearUnits(size_t num)
+{
+    return genSvec(num,[](size_t){return randNearUnit(); });
+}
+
+Sizes               cRandPermutation(size_t S)
+{
+    // simplest algorithm since faster ones are complicated:
+    Sizes               ret; ret.reserve(S);
+    Sizes               orig = genIntegers<size_t>(S);
+    while (!orig.empty()) {
+        size_t              idx = cRandUint64(orig.size());
+        ret.push_back(orig[idx]);
+        orig.erase(orig.begin()+idx);
+    }
+    return ret;
+}
+
+namespace {
+
+void                testGauss(CLArgs const &)
+{
+    PushIndent          pind {"Gaussian with mean 0, stdev 1 : exp(-1/2 x^2)"};
+    fgout << std::fixed << std::setprecision(7);
+    for (size_t ii=0; ii<7; ++ii)
+        fgout << fgnl << "X: " << ii << " stdev: " <<  exp(-0.5*sqr(ii))
+            << " cumulative: " << erf(1.0*ii) * pi/4
+            << " normalized cumulative: " << erf(1.0*ii)/2
+            << " std::erf: " << erf(1.0*ii);
+}
+
+void                testLogistic(CLArgs const & args)
+{
+    if (isAutomated(args))
+        return;
+    viewImage(cGraphFunctions({logistic,logistic2,logistic2Slope},Arr2D{-5,5}));
+}
+
+void                testRand(CLArgs const &)
+{
+    randSeedRepeatable();
+    size_t constexpr    S = 1ULL << 20;                 // ~1M samps
+    Doubles             vals = genSvec(S,[](size_t){return cRandUniform(); });
+    double              mean = cMean(vals),
+                        meanSqr = cMag(vals)/vals.size();
+    fgout << fgnl << "Mean: " << mean << fgnl << "MeanSqr: " << meanSqr;
+    FGASSERT(isApproxEqual(mean,0.5,epsBits(7)));           // mean should be ~1/2 (+/- ~epsBits(10))
+    FGASSERT(isApproxEqual(meanSqr,1/3.0,epsBits(7)));      // mean sqr should be ~1/3
+}
+
+void                testZorder(CLArgs const &)
+{
+    size_t      v0 = 0x01,
+                v1 = 0x02,
+                v2 = 0x04,
+                r0 = zorder(v0,v1,v2),
+                r1 = v0 | (v1 << 3) | (v2 << 6);
+    FGASSERT(r0 == r1);
+}
+
+void                normGraph(CLArgs const & args)
+{
+    fgout << fgnl << "sizeof(RNG) = " << sizeof(rng);
+    // Create a histogram of normal samples:
+    randSeedRepeatable();
+    size_t              numStdevs = 6,
+                        binsPerStdev = 50,
+                        S = 1000000,
+                        sz = numStdevs * 2 * binsPerStdev;
+    Sizes               histogram(sz,0);
+    Affine1D            randToHist {-double(numStdevs),double(numStdevs),0,double(sz)};
+    for (size_t ii=0; ii<S; ++ii) {
+        int                 rnd = roundT<int>(randToHist * cRandNormal());
+        if ((rnd >= 0) && (rnd < int(sz)))
+            ++histogram[rnd];
+    }
+    // Make a bar graph of it:
+    // S = binScale * stdNormIntegral * binsPerStdev
+    double              binScale = double(S) / (sqrtTau * binsPerStdev),
+                        hgtRatio = 0.9;
+    ImgRgba8             img {sz,sz,Rgba8{0}};
+    for (size_t xx=0; xx<sz; ++xx) {
+        size_t              hgt = roundT<int>(histogram[xx] * sz * hgtRatio / binScale);
+        for (size_t yy=0; yy<hgt; ++yy)
+            img.xy(xx,yy) = Rgba8{255};
+    }
+    // Superimpose a similarly scaled Gaussian:
+    Affine1D            histToRand = randToHist.inverse();
+    for (size_t xx=0; xx<sz; ++xx) {
+        double              val = std::exp(-0.5 * sqr(histToRand * (xx + 0.5)));
+        size_t              hgt = roundT<int>(val * sz * hgtRatio);
+        img.xy(xx,hgt) = Rgba8(255,0,0,255);
+    }
+    // Display:
+    flipVertical_(img);
+    if (!isAutomated(args))
+        viewImage(img);
+}
+
+void                normMoments(CLArgs const &)
+{
+    for (size_t vv=0; vv<3; ++vv) {
+        double                  stdev = pow(2.0,vv);
+        PushIndent              pind {"Stdev "+toStr(stdev)};
+        size_t                  S = 4096;
+        Doubles                 vals = cRandNormals(S,0,stdev);
+        double                  sampleMean = cMean(vals),
+                                sampleStdev = sqrt(cMag(mapSub(vals,sampleMean)) / (S-1));
+        fgout << fgnl << S << " std norms gives sample mean: " << sampleMean << " and sample stdev: " << sampleStdev;
+    }
+}
+
+}
+
+void                testMath(CLArgs const & args)
+{
+    Cmds            cmds {
+        {testGauss,"gauss","view stdev values for Gaussian"},
+        {testLogistic,"logit","logistic, logit and related functions"},
+        {testRand,"rand","basic random function"},
+        {testZorder,"zorder",""},
+    };
+    doMenu(args,cmds,true);
+}
+
+void                testRandom(CLArgs const & args)
+{
+    Cmds                cmds {
+        {normGraph,"graph","graph generated normals against gaussian"},
+        {normMoments,"mom","moments of generated normals"},
+    };
+    doMenu(args,cmds,true);
 }
 
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -61,14 +61,14 @@ void                cmd3dmmView(CLArgs const & args)
     // GUI:
     String8                 store = getDirUserAppDataLocalFaceGen({"SDK","3dmm view"});
     GuiMorphMeshes          gpms;
-    Mat32F                  bounds = cBounds(base.verts);
+    Mat32F                  bounds = catH(cBounds(base.verts));
     IPT<Mesh>               meshN(base);
     Svec<IPT<double>>       coeffNs = makeIPTs(Doubles(M,0.0));
     OPT<Doubles>            coordN = linkCollate(coeffNs);
     auto                    randFn = [coeffNs,M]()
     {
         for (size_t mm=0; mm<M; ++mm)
-            coeffNs[mm].set(randNormal());
+            coeffNs[mm].set(cRandNormal());
     };
     GuiPtr                  randW = guiSplitH({
         guiButton("Random",randFn),
@@ -245,7 +245,7 @@ void                cmdTools(CLArgs const & args)
 
 void                cmdCons(CLArgs const &);
 void                cmdGraph(CLArgs const &);
-void                cmdImgops(CLArgs const &);
+void                cmdImage(CLArgs const &);
 void                cmdMesh(CLArgs const &);
 void                cmdMorph(CLArgs const &);
 void                cmdRender(CLArgs const &);
@@ -273,7 +273,7 @@ Cmds                getFgblCmds()
         {cmd3dmm,"3dmm","3D morphable model commands"},
         {cmdCons,"cons","Construct makefiles / solution file / project files"},
         {cmdGraph,"graph","Create simple bar graphs from text data"},
-        {cmdImgops,"image","Image operations"},
+        {cmdImage,"image","Image operations"},
         {cmdMesh,"mesh","3D Mesh IO and manipulation tools"},
         {cmdMorph,"morph","List, apply or create animation morphs for 3D meshes"},
         {cmdRender,"render","Render meshes with color & specular maps to an image file"},

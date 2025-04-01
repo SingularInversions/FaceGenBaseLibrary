@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -306,7 +306,7 @@ Bools               SurfTopo::boundaryVertFlags() const
 }
 
 set<uint>           SurfTopo::traceFold(
-    MeshNormals const & norms,
+    SurfNormals const & norms,
     vector<FatBool> &    done,
     uint                vertIdx)
     const
@@ -517,7 +517,7 @@ static void         testSharedEdges(CLArgs const & args)
     size_t              T = surf.tris.vertInds.size();
     Bools               removeFlags (T,false);
     for (size_t ii=0; ii<T/4; ++ii)
-        removeFlags[randUniformUint(T)] = true;
+        removeFlags[cRandUint64(T)] = true;
     updateSharedEdges(removeFlags,tess);
     surf.edgeFlags = cBoundFlags(tess);
     if (!isAutomated(args))

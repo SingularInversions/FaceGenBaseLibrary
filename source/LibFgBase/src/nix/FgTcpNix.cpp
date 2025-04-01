@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -82,7 +82,7 @@ bool                runTcpClient_(
             nBytes = read(clientSock,buff,sizeof(buff));
             FGASSERT(nBytes >= 0);
             if (nBytes > 0)
-                append_(*responsePtr,reinterpret_cast<std::byte const *>(buff),nBytes);
+                cat_(*responsePtr,reinterpret_cast<std::byte const *>(buff),nBytes);
         }
         while (nBytes > 0);
         FGASSERT(nBytes == 0);
@@ -186,7 +186,7 @@ void                runTcpServer(uint16 port,bool respond,TcpHandlerFunc handler
             bytesRecvd = read(dataSockFd,buffer,sizeof(buffer));
             fgout << ".";
             if (bytesRecvd > 0)
-                append_(dataBuff,reinterpret_cast<std::byte const *>(buffer),bytesRecvd);
+                cat_(dataBuff,reinterpret_cast<std::byte const *>(buffer),bytesRecvd);
         }
         while ((bytesRecvd > 0) && (dataBuff.size() <= maxRecvBytes));
         fgout << " " << dataBuff.size() << "B ";

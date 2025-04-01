@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -40,8 +40,9 @@ NameVec2Fs          markImage(
     // Any of these not included in 'initial' will be prompted in order for user to place:
     Strings const &         labels);
 
-// make multiple landmarks with the same label. Return value includes existing. Inputs and outputs in IRCS:
-NameVec2Fs          markImageMulti(ImgRgba8 const & img,NameVec2Fs const & existing,String label);
+// Make multiple landmarks with the same label. Pass any already existing (IRCS) with that label.
+// Return modified LMS in IRCS:
+Vec2Fs              markImageMulti(ImgRgba8 const & img,String label,Vec2Fs existing);
 
 // Images analysis / comparison.
 // Image pixel values must be [0,1] per channel and have same pixel dimensions:

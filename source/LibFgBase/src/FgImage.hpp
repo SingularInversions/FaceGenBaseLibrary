@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -45,7 +45,6 @@
 #ifndef FGIMAGE_HPP
 #define FGIMAGE_HPP
 
-#include "FgRgba.hpp"
 #include "FgGeometry.hpp"
 
 namespace Fg {
@@ -75,12 +74,139 @@ AxAffine<T,2>       cOtcsToPacs(Mat<uint,2,1> dims) {return cIucsToPacs<T>(dims)
 template<class T>
 AxAffine<T,2>       cOtcsToIrcs(Mat<uint,2,1> dims) {return cPacsToIrcs<T,2>() * cOtcsToPacs<T>(dims); }
 
+// needed because (uchar*uchar),(uchar+uchar),(ushort*ushort),(ushort+ushort) return (int):
+template<class T>
+Arr<T,4>    mapAddCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e+f); }); }
+template<class T>
+Arr<T,4>    mapSubCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e-f); }); }
+template<class T>
+Arr<T,4>    mapMulCast(Arr<T,4> l,Arr<T,4> r) {return mapCall(l,r,[](T e,T f){return scast<T>(e*f); }); }
+template<class T>
+Arr<T,4>    mapMulCast(Arr<T,4> a,T v) {return mapCall(a,[v](T e){return scast<T>(e*v); }); }
+template<class T>
+Arr<T,4>    mapDivCast(Arr<T,4> a,T v) {return mapCall(a,[v](T e){return scast<T>(e/v); }); }
+
+template<typename T>
+struct      Rgba
+{
+    Arr<T,4>            m_c;
+    FG_SER(m_c)
+
+    typedef T           ValueType;
+
+    Rgba() {};
+    explicit Rgba(T val) : m_c{val} {}
+    explicit Rgba(Arr<T,4> const & arr) : m_c(arr) {}
+
+    // Otherwise the conversion constuctor would override:
+    Rgba(Rgba const &) = default;
+    Rgba &          operator=(Rgba const &) = default;
+    Rgba(T r,T g,T b,T a) : m_c {r,g,b,a} {}
+    // Conversion constructor
+    template<class U>
+    explicit Rgba(Rgba<U> const & val) : m_c(mapCast<T,U,4>(val.m_c))  {}
+
+    T const &       operator[](size_t idx) const {return m_c[idx]; }
+    T &             operator[](size_t idx) {return m_c[idx]; }
+    T &             red() {return m_c[0]; }
+    T &             green() {return m_c[1]; }
+    T &             blue() {return m_c[2]; }
+    T &             alpha() {return m_c[3]; }
+    T const &       red() const {return m_c[0]; }
+    T const &       green() const {return m_c[1]; }
+    T const &       blue() const {return m_c[2]; }
+    T const &       alpha() const {return m_c[3]; }
+
+    Arr<T,3>        rgb() const {return {m_c[0],m_c[1],m_c[2]}; }
+    // only use arithmetic with alpha-weighted values !
+    // note that we need to recast the results since arithmetic operations on 8 and 16 bit numbers return 'int':
+    Rgba            operator+(Rgba rhs) const {return Rgba{mapAddCast(m_c,rhs.m_c)}; }
+    Rgba            operator-(Rgba rhs) const {return Rgba{mapSubCast(m_c,rhs.m_c)}; }
+    Rgba            operator*(T val) const {return Rgba{mapMulCast(m_c,val)}; }
+    Rgba            operator/(T val) const {return Rgba{mapDivCast(m_c,val)}; }
+    Rgba const &    operator*=(T v) {m_c*=v; return *this; }
+    Rgba const &    operator/=(T v) {m_c/=v; return *this; }
+    Rgba const &    operator+=(Rgba rhs) {m_c += rhs.m_c; return *this; }
+    bool            operator==(Rgba rhs) const {return m_c == rhs.m_c; }
+    bool            operator!=(Rgba rhs) const {return !(m_c == rhs.m_c); }
+    T               rec709() const                      // Use rec.709 RGB -> CIE L
+    {
+        return static_cast<T>(0.213 * red() + 0.715 * green() + 0.072 * blue());
+    }
+    void            alphaWeight()
+    {
+        uint        a = uint(m_c[3]);
+        m_c[0] = uchar((uint(m_c[0]) * a + 127) / 255);
+        m_c[1] = uchar((uint(m_c[1]) * a + 127) / 255);
+        m_c[2] = uchar((uint(m_c[2]) * a + 127) / 255);
+    }
+
+    static Rgba<T>  fromRgbaPtr(T const * v) {return Rgba<T>(v[0],v[1],v[2],v[3]); }
+};
+
+typedef Rgba<uchar>     Rgba8;
+typedef Rgba<ushort>    Rgba16;
+typedef Rgba<uint>      RgbaUI;
+typedef Rgba<float>     RgbaF;
+typedef Rgba<double>    RgbaD;
+
+typedef Svec<Rgba8>     Rgba8s;
+typedef Svec<RgbaF>     RgbaFs;
+
+template<typename T>
+struct      Traits<Rgba<T> >
+{
+    typedef typename Traits<T>::Scalar             Scalar;
+    typedef Rgba<typename Traits<T>::Floating>     Floating;
+};
+
+template<typename T>
+Rgba<T>             operator*(Rgba<T> lhs, T rhs)
+{
+    lhs *= rhs;
+    return lhs;
+}
+
+template<typename To,typename From>
+void                mapRound_(Rgba<From> const & in,Rgba<To> & out) {mapRound_(in.m_c,out.m_c); }
+
+template<typename T>
+std::ostream &      operator<<(std::ostream & out,Rgba<T> p) {return out << p.m_c; }
+
+template<class T>
+inline void         updateMin_(Rgba<T> & mvs,Rgba<T> vs)
+{
+    for (size_t ii=0; ii<4; ++ii)
+        updateMin_(mvs[ii],vs[ii]);
+}
+template<class T>
+inline void         updateMax_(Rgba<T> & mvs,Rgba<T> vs)
+{
+    for (size_t ii=0; ii<4; ++ii)
+        updateMax_(mvs[ii],vs[ii]);
+}
+
+template<class To,class From>
+Rgba<To>            mapCast(Rgba<From> const & from) {return Rgba<To>{mapCast<To,From>(from.m_c)}; }
+
+template<typename To,typename From>
+inline void         mapCast_(Rgba<From> const & from,Rgba<To> & to) {mapCast_(from.m_c,to.m_c); }
+
+template<typename T>
+double              cDot(Rgba<T> const & l,Rgba<T> const & r) {return cDot(l.m_c,r.m_c); }
+
+template<typename T>
+double              cSsd(Rgba<T> const & l,Rgba<T> const & r) {return cSsd(l.m_c,r.m_c); }
+
+template<class T>
+inline bool         isApproxEqual(Rgba<T> l,Rgba<T> r,T maxDiff) {return isApproxEqual(l.m_c,r.m_c,maxDiff); }
+
 template<typename T>
 struct      Img
 {
     Vec2UI          m_dims;         // [width,height]
     Svec<T>         m_data;         // Pixels stored left to right, top to bottom. size() == m_dims[0]*m_dims[1]
-    FG_SER2(m_dims,m_data)
+    FG_SER(m_dims,m_data)
 
     typedef T PixelType;
 
@@ -190,6 +316,37 @@ std::ostream &      operator<<(std::ostream & os,Img<T> const & img)
 }
 std::ostream &      operator<<(std::ostream &,ImgRgba8 const &);
 std::ostream &      operator<<(std::ostream &,ImgC4F const &);
+
+template<typename T,typename C>
+Img<T>              genImg(
+    Vec2UI              dims,           // [width,height]
+    C const &           callable,       // (size_t x,size_t y) -> T over [x,y] < dims. Must be re-entrant if multithreaded.
+    bool                multithread)    // set to false if calling from multithreaded context
+{
+    Img<T>              ret {dims};
+    size_t              X = dims[0],
+                        Y = dims[1];
+    auto                fn = [&callable,&ret,X](size_t ylo,size_t yeub)
+    {
+        for (size_t yy=ylo; yy<yeub; ++yy)
+            for (size_t xx=0; xx<X; ++xx)
+                ret.xy(xx,yy) = callable(xx,yy);
+    };
+    if (multithread) {
+        size_t              nt = cMin(std::thread::hardware_concurrency(),Y);
+        Svec<std::thread>   threads; threads.reserve(nt);
+        for (size_t tt=0; tt<nt; ++tt) {
+            size_t              ylo = (tt * Y) / nt,
+                                yeub = ((tt+1) * Y) / nt;
+            threads.emplace_back(fn,ylo,yeub);
+        }
+        for (std::thread & thread : threads)
+            thread.join();
+    }
+    else
+        fn(0,Y);
+    return ret;
+}
 
 // SAMPLING & INTERPOLATION:
  
@@ -374,7 +531,16 @@ template<class T,FG_ENABLE_IF(T,is_floating_point)>
 inline Rgba8        toRgba8(Rgba<T> const & a) {return toRgba8(a.m_c); }
 template<class T>
 ImgRgba8            toRgba8(Img<T> const & img) {return mapCall(img,[](T const & p){return toRgba8(p); }); }
-
+template<class T,FG_ENABLE_IF(T,is_floating_point)>
+ImgRgba8            toRgba8Gamma(Img<Arr<T,3>> const & img,T g=1/T(2.2))
+{
+    auto                fn = [g](Arr<T,3> v)
+    {
+        Arr3UC              c = mapCast<uchar>(mapPow(v,g)*255.99f);
+        return Rgba8{c[0],c[1],c[2],255};
+    };
+    return mapCall(img,fn);
+}
 // Combine gamma with Rgba8 conversion since it's so commonly used together. Input must be PMA with channel values [0,1]:
 template<class T,FG_ENABLE_IF(T,is_floating_point)>
 inline Rgba8        toRgba8Gamma(Arr<T,4> const & pma,T gamma)
@@ -413,37 +579,6 @@ double              cSsd(Img<T> const & lhs,Img<T> const & rhs)
 {
     FGASSERT(lhs.dims() == rhs.dims());
     return cSsd(lhs.m_data,rhs.m_data);
-}
-
-template<typename T,typename C>
-Img<T>              generateImg(
-    Vec2UI              dims,           // [width,height]
-    C const &           callable,       // (size_t x,size_t y) -> T over [x,y] < dims
-    bool                multithread)    // set to false if calling from multithreaded context
-{
-    Img<T>              ret {dims};
-    size_t              X = dims[0],
-                        Y = dims[1];
-    auto                fn = [&callable,&ret,X](size_t ylo,size_t yeub)
-    {
-        for (size_t yy=ylo; yy<yeub; ++yy)
-            for (size_t xx=0; xx<X; ++xx)
-                ret.xy(xx,yy) = callable(xx,yy);
-    };
-    if (multithread) {
-        size_t              nt = cMin(std::thread::hardware_concurrency(),Y);
-        Svec<std::thread>   threads; threads.reserve(nt);
-        for (size_t tt=0; tt<nt; ++tt) {
-            size_t              ylo = (tt * Y) / nt,
-                                yeub = ((tt+1) * Y) / nt;
-            threads.emplace_back(fn,ylo,yeub);
-        }
-        for (std::thread & thread : threads)
-            thread.join();
-    }
-    else
-        fn(0,Y);
-    return ret;
 }
 
 template<class T,class U>
@@ -783,10 +918,10 @@ Img<T>              resampleAffine(Img<T> const & in,Vec2UI dims,AxAffine2D cons
     Img<T>                  ret {dims};
     for (Iter2UI it {dims}; it.valid(); it.next()) {
         Vec2D               inIrcs = outToInIrcs * Vec2D(it());
-        auto                lerp = cBlerpClampIrcs(in.dims(),inIrcs);
+        auto                lerpv = cBlerpClampIrcs(in.dims(),inIrcs);
         T                   p {0};
         for (uint ii=0; ii<4; ++ii) {
-            CoordWgt const &    cw = lerp[ii];
+            CoordWgt const &    cw = lerpv[ii];
             p += in[cw.coordIrcs] * scast<S>(cw.wgt);
         }
         ret[it()] = p;
@@ -841,92 +976,49 @@ inline Img4F        adaptResample(Img4F const & img,SquareF regionPacs,uint sz,b
         return resample(img,regionPacs,sz,mt);          // oversampling
 }
 
-template<class T>
-Img<T>              catHoriz(Img<T> const & left,Img<T> const & right)
+template <class T>
+Img<T>              catH(Img<T> const & l,Img<T> const & r)
 {
-    Img<T>              ret;        // RVE (return value elision)
-    if (left.empty())
-        ret = right;
-    else if (right.empty())
-        ret = left;
-    else {
-        FGASSERT(left.height() == right.height());
-        ret.resize(left.width()+right.width(),left.height());
-        Vec2UI       off {0};
-        for (Iter2UI it(left.dims()); it.valid(); it.next())
-            ret[it()] = left[it()];
-        off[0] += left.dims()[0];
-        for (Iter2UI it(right.dims()); it.valid(); it.next())
-            ret[it()+off] = right[it()];
-    }
-    return ret;
-}
-template<class T>
-Img<T>              catHoriz(Img<T> const & i0,Img<T> const & i1,Img<T> const & i2)
-{
-    Img<T>              ret;        // RVE
-    if (i0.empty())
-        ret = catHoriz(i1,i2);
-    else if (i1.empty())
-        ret = catHoriz(i0,i2);
-    else if (i2.empty())
-        ret = catHoriz(i0,i1);
-    else {
-        FGASSERT((i0.height() == i1.height()) && (i1.height() == i2.height()));
-        ret.resize(i0.width()+i1.width()+i2.width(),i0.height());
-        Vec2UI   off {0};
-        for (Iter2UI it(i0.dims()); it.valid(); it.next())
-            ret[it()] = i0[it()];
-        off[0] += i0.dims()[0];
-        for (Iter2UI it(i1.dims()); it.valid(); it.next())
-            ret[it()+off] = i1[it()];
-        off[0] += i1.dims()[0];
-        for (Iter2UI it(i2.dims()); it.valid(); it.next())
-            ret[it()+off] = i2[it()];
-    }
-    return ret;
-}
-
-// concatenate vertically:
-template<class T>
-void                catVertical_(Img<T> & top,Img<T> const & append)
-{
-    if (top.empty())
-        top = append;
-    else if (!append.empty()) {
-        FGASSERT(top.width() == append.width());
-        // No need to re-arrange data for vertical concatenation:
-        top.m_dims[1] += append.m_dims[1];
-        cat_(top.m_data,append.m_data);
-    }
-}
-// concatenate vertically:
-template<class T>
-Img<T>              catVertical(Img<T> const & top,Img<T> const & bottom)
-{
-    if (top.empty())
-        return bottom;
-    if (bottom.empty())
-        return top;
-    FGASSERT(top.width() == bottom.width());
-    // No need to re-arrange data for vertical concatenation:
-    return Img<T>(top.width(),top.height()+bottom.height(),cat(top.m_data,bottom.m_data));
-}
-template<class T>
-Img<T>              catVertical(Svec<Img<T> > const & imgs)
-{
-    Img<T>              ret;        // RVE
-    if (imgs.empty())
+    size_t              H = l.height(),
+                        W = l.width() + r.width();
+    FGASSERT(r.height() == H);
+    auto                fn = [&,H,W]()
+    {
+        Svec<T>             ret(H*W);
+        T *                 retPtr = ret.data();
+        for (size_t rr=0; rr<H; ++rr) {
+            retPtr = copy_(l.rowPtr(rr),retPtr,l.width());
+            retPtr = copy_(r.rowPtr(rr),retPtr,r.width());
+        }
         return ret;
-    ret = imgs[0];
-    for (size_t ii=1; ii<imgs.size(); ++ii) {
-        Img<T> const &      img = imgs[ii];
-        FGASSERT(img.width() == ret.width());
-        ret.m_dims[1] += img.height();
-        // No need to re-arrange data for vertical concatenation:
-        cat_(ret.m_data,img.m_data);
+    };
+    return Img<T>{W,H,fn()};
+}
+template<class T>
+Img<T>              catV(Img<T> const & u,Img<T> const & l)
+{
+    size_t              H = u.height() + l.height(),
+                        W = u.width();
+    FGASSERT(l.width() == W);
+    return Img<T>{W,H,cat(u.m_data,l.m_data)};
+}
+template<class T>
+Img<T>              catV(Svec<Img<T>> const & imgs)
+{
+    size_t              H {0},
+                        W = imgs.empty() ? 0 : imgs[0].width();
+    for (Img<T> const & img : imgs) {
+        H += img.height();
+        FGASSERT(img.width() == W);
     }
-    return ret;
+    auto                fn = [&,H,W]()
+    {
+        Svec<T>             ret; ret.reserve(H*W);
+        for (Img<T> const & img : imgs)
+            cat_(ret,img.m_data);
+        return ret;
+    };
+    return Img<T>{W,H,fn()};
 }
 
 template<class T>
@@ -1042,6 +1134,9 @@ Img<T>              outerProductImg(Svec<T> const & x,Svec<T> const & y)
         ret[it()] = x[it.x()] * y[it.y()];
     return ret;
 }
+
+// visualize a matrix:
+ImgRgba8            visualize(MatD const &);
 
 }
 

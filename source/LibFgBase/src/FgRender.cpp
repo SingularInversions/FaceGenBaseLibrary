@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -155,7 +155,7 @@ struct  RayCaster
     Materialss              materialss;     // By mesh, by surface
     Vec3Fss                 vertss;         // By mesh, in OECS
     Svec<Vec2Fs const *>    uvsPtrs;        // By mesh, in OTCS
-    MeshNormalss            normss;         // By mesh, in OECS
+    SurfNormalss            normss;         // By mesh, in OECS
     AxAffine2D              itcsToIucs;
     Vec3Fss                 iucsVertss;     // By mesh, X,Y in IUCS, Z component is inverse FCCS depth
     GridIndex<TriIdxSM>     grid;           // Index from IUCS to bin of TriIdxSMs
@@ -202,7 +202,7 @@ struct  RayCaster
                 materials.push_back(mesh.surfaces[ss].material);
             }
             Vec3Fs &           verts = vertss[mm];
-            verts = mapMul(Affine3F{modelview.asAffine()},mesh.verts);
+            verts = mapMulR(Affine3F{modelview.asAffine()},mesh.verts);
             uvsPtrs[mm] = &mesh.uvs;
             normss[mm] = cNormals(mesh.surfaces,verts);
             Vec3Fs &           iucsVerts = iucsVertss[mm];
@@ -240,7 +240,7 @@ struct  RayCaster
             Intersect           isct = best[ii-1].object;
             TriInds const &     tris = trisss[isct.triInd.meshIdx][isct.triInd.surfIdx];
             Material            material = materialss[isct.triInd.meshIdx][isct.triInd.surfIdx];
-            MeshNormals const & norms = normss[isct.triInd.meshIdx];
+            SurfNormals const & norms = normss[isct.triInd.meshIdx];
             Arr3UI              vis = tris.vertInds[isct.triInd.triIdx];
             Arr<Vec3F,3>        triNorms = mapIndex(vis,norms.vert);
             // TODO: Use perspective-correct normal and UV interpolation (makes very little difference for small tris):
@@ -322,7 +322,7 @@ struct  RayCaster
                     Arr3D           invDepths = mapCall(verts,[](Vec3F v){return scast<double>(v[2]); });
                     double          invDepth = multAcc(bc,invDepths);
                     Arr3D           bcm = mapMul(bc,invDepths) / invDepth;
-                    best.update(invDepth,Intersect(ti,bcm));
+                    best.update(scast<float>(invDepth),Intersect(ti,bcm));
                 }
             }
         }
@@ -348,7 +348,7 @@ ImgRgba8            renderSoft(
     AxAffine2D              itcsToIucs,
     RenderOptions const &   options)
 {
-    VecF2                   colorBounds = cBounds(options.backgroundColor.m_c);
+    Arr2F                   colorBounds = cBounds(options.backgroundColor.m_c);
     FGASSERT((colorBounds[0] >= 0.0f) && (colorBounds[1] <= 255.0f));
     RayCaster               rc {meshes,modelview,itcsToIucs,
         options.lighting,
@@ -367,7 +367,7 @@ ImgRgba8            renderSoft(
     for (size_t mm=0; mm<meshes.size(); ++mm) {
         Mesh const &            mesh = meshes[mm];
         Vec3Fs const &          verts = rc.vertss[mm];
-        MeshNormals const &     norms = rc.normss[mm];
+        SurfNormals const &     norms = rc.normss[mm];
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const &            surf = mesh.surfaces[ss];
             for (size_t ii=0; ii<surf.surfPoints.size(); ++ii) {
@@ -419,7 +419,7 @@ ImgRgba8            renderSoft(
 
 ImgRgba8            renderSoft(Vec2UI pixelSize,Meshes const & meshes,RgbaF bgColor)
 {
-    CameraParams        camPrms {Mat32D(cBounds(meshes))};
+    CameraParams        camPrms {Mat32D(catH(updateVertBounds2(meshes)))};
     Camera              camera = camPrms.camera(pixelSize);
     RenderOptions       ro;
     ro.backgroundColor = bgColor / 255.0f;
@@ -555,10 +555,10 @@ void                testRendMesh(CLArgs const &)
     Vec2UI              renderDims {renderDim};
     double              halfFovTanMax = 0.125;
     Rigid3D             toFhcsAngle = cRotateY(pi*0.3) * Trans3D{Vec3D{-cMean(mesh.verts)}};
-    mesh.verts = mapMul(Affine3F{toFhcsAngle.asAffine()},mesh.verts);
-    Rigid3D             toFccs = moveFmcsToFccs(Mat32D{cBounds(mesh.verts)},halfFovTanMax*.75);
+    mesh.verts = mapMulR(Affine3F{toFhcsAngle.asAffine()},mesh.verts);
+    Rigid3D             toFccs = moveFmcsToFccs(Mat32D{catH(cBounds(mesh.verts))},halfFovTanMax*.75);
     ScaleTrans2D        itcsToPacs = cItcsToPacs(halfFovTanMax,renderDims);
-    Vec3Ds              shapeFccs = mapMul(toFccs.asAffine(),mapCast<Vec3D>(mesh.verts));
+    Vec3Ds              shapeFccs = mapMulR(toFccs.asAffine(),mapCast<Vec3D>(mesh.verts));
     ProjVerts           pvs = projectVerts(shapeFccs,itcsToPacs);
 
 }

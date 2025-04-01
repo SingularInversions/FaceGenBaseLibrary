@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,26 +13,26 @@ using namespace std;
 
 namespace Fg {
 
-GridTriangles::GridTriangles(Vec2Fs const & vs,Arr3UIs const & ts,float binsPerTri)
-    : verts{vs}, tris{ts}
+GridTriangles::GridTriangles(
+    Vec2Fs const &      vs,
+    Arr3UIs const &     ts,
+    float               binsPerTri)
+    :
+    verts{vs}, tris{ts}
 {
     FGASSERT(tris.size() > 0);
-    Vec2F               domainLo(lims<float>::max()),
-                        domainHi(-lims<float>::max()),
-                        invalid(lims<float>::max());
+    Arr<Vec2F,2>        bounds = nullBounds<Vec2F>();
+    Vec2F const         invalid(lims<float>::max());
     size_t              numValid = 0;
-    for (size_t ii=0; ii<verts.size(); ++ii) {
-        Vec2F               v = verts[ii];
+    for (Vec2F v : verts) {
         if (v != invalid) {
-            for (uint dd=0; dd<2; ++dd) {
-                updateMin_(domainLo[dd],v[dd]);
-                updateMax_(domainHi[dd],v[dd]);
-            }
+            updateMin_(bounds[0],v);
+            updateMax_(bounds[1],v);
             ++numValid;
         }
     }
-    Vec2F               domainSz = domainHi - domainLo;
-    FGASSERT((domainSz[0] > 0) && (domainSz[1] > 0));
+    Vec2F               domainSz = bounds[1] - bounds[0];
+    FGASSERT(allGtZero(domainSz.m));
     float               numBins = numValid * binsPerTri;
     Vec2F               rangeSizef = domainSz * sqrt(numBins/domainSz.elemsProduct());
     Vec2UI              rangeSize = Vec2UI(rangeSizef + Vec2F(0.5f));
@@ -41,18 +41,13 @@ GridTriangles::GridTriangles(Vec2Fs const & vs,Arr3UIs const & ts,float binsPerT
     // We could in theory intersect the client's desired sampling domain with the verts domain but
     // this optimization currently represents an unlikely case; we usually want to fit what we're
     // rendering on the image. This would change for more general-purpose ray casting.
-    clientToGridPacs = AxAffine2F(catHoriz(domainLo,domainHi),range);
+    clientToGridPacs = AxAffine2F(catH(bounds),range);
     grid.resize(rangeSize);
     for (size_t ii=0; ii<tris.size(); ++ii) {
         Arr3UI          tri = tris[ii];
-        Vec2F           p0 = verts[tri[0]],
-                        p1 = verts[tri[1]],
-                        p2 = verts[tri[2]];
-        if ((p0 != invalid) && (p1 != invalid) && (p2 != invalid)) {
-            Mat22F          projBounds = iubToEub(cBounds(
-                clientToGridPacs * p0,
-                clientToGridPacs * p1,
-                clientToGridPacs * p2));
+        Arr<Vec2F,3>    tvs = mapIndex(tri,verts);
+        if ((tvs[0] != invalid) && (tvs[1] != invalid) && (tvs[2] != invalid)) {
+            Mat22F          projBounds = iubToEub(catH(cBounds(mapMulR(clientToGridPacs,tvs))));
             projBounds = intersectBounds(projBounds,range);
             if (!isBoundEubEmpty(projBounds)) {
                 Mat22UI         bnds = Mat22UI(projBounds);
@@ -145,7 +140,7 @@ void                testGridTriangles(CLArgs const &)
     const Vec2Fs &      verts = vertImg.dataVec();
     GridTriangles       gts {verts,tris};
     for (uint ii=0; ii<100; ++ii) {
-        Vec2D               posd(randUniform(),randUniform());
+        Vec2D               posd(cRandUniform(),cRandUniform());
         Vec2F               pos = Vec2F(posd) * 10.0f;
         vector<TriPoint>    res = gts.intersects(pos);
         if (pos[0] < pos[1]) {
@@ -156,7 +151,7 @@ void                testGridTriangles(CLArgs const &)
                     verts[isect.vertInds[1]] * isect.baryCoord[1] +
                     verts[isect.vertInds[2]] * isect.baryCoord[2]
             };
-            FGASSERT(isApproxEqualRelMag(pos,rpos,30));
+            FGASSERT(isApproxEqual(pos.m,rpos.m,epsBits(20)));
         }
         else
             FGASSERT(res.size() == 0);

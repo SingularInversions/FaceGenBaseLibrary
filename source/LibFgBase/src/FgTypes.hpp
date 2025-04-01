@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -102,7 +102,7 @@ class       Arr
 
 public:
     // No initialization is done for types without a default ctor. Default zero-fill is not a solution, be explicit:
-    Arr() {}
+    constexpr Arr() {}
     explicit constexpr Arr(T v) {for (size_t ii=0; ii<S; ++ii) m[ii] = v; }
     constexpr Arr(T x,T y) : m {x,y}
     {static_assert(S == 2,"Number of arguments does not match elements"); }   //-V557 (for PVS-Studio)
@@ -141,7 +141,7 @@ public:
     bool                operator!=(Arr const & rhs) const {return !(*this == rhs); }
     bool                operator<(Arr const & rhs) const    // handy when we need a sorted order
     {
-        for (size_t ii=0; ii<S; ++ii) {    // arbitrarily choose first element as most significant
+        for (size_t ii=0; ii<S; ++ii) {    // first element is most significant
             if (m[ii] < rhs.m[ii])
                 return true;
             if (rhs.m[ii] < m[ii])
@@ -169,6 +169,8 @@ typedef Arr<double,2>           Arr2D;
 typedef Svec<Arr2UI>            Arr2UIs;
 typedef Svec<Arr2UIs>           Arr2UIss;
 typedef Svec<Arr2UIss>          Arr2UIsss;
+typedef Svec<Arr2F>             Arr2Fs;
+typedef Svec<Arr2D>             Arr2Ds;
 
 typedef Arr<bool,3>             Arr3B;
 typedef Arr<uchar,3>            Arr3UC;
@@ -177,6 +179,7 @@ typedef Arr<ushort,3>           Arr3US;
 typedef Arr<int,3>              Arr3I;
 typedef Arr<uint,3>             Arr3UI;
 typedef Arr<uint64,3>           Arr3UL;
+typedef Arr<size_t,3>           Arr3Z;
 typedef Arr<float,3>            Arr3F;
 typedef Arr<double,3>           Arr3D;
 typedef Svec<Arr3B>             Arr3Bs;
@@ -193,6 +196,8 @@ typedef Arr<double,4>           Arr4D;
 typedef Arr<double,5>           Arr5D;
 typedef Svec<Arr4D>             Arr4Ds;
 typedef Svec<Arr4UI>            Arr4UIs;
+
+typedef Arr<uint,5>             Arr5UI;
 
 typedef Svec<bool>              Bools;
 typedef Svec<std::byte>         Bytes;
@@ -264,70 +269,55 @@ std::string         cBitsString();
 template<class T> struct Traits;
 // Scalar - the underlying scalar type of, eg., a std::array of std::vector of Fg::MatrixC
 // Floating - same nested type except that Scalar is replace with 'float'
-// Printable - only affect structures of uchar/schar which don't print numbers with std::ostream
 template<> struct Traits<uchar>
 {
     typedef uchar   Scalar;
     typedef float   Floating;
-    typedef uint    Printable;
 };
 template<> struct Traits<schar>
 {
     typedef schar   Scalar;
     typedef float   Floating;
-    typedef int     Printable;
 };
 template<> struct Traits<ushort>
 {
     typedef ushort  Scalar;
     typedef float   Floating;
-    typedef ushort  Printable;
 };
 template<> struct Traits<int32>
 {
     typedef int32   Scalar;
     typedef float   Floating;
-    typedef int     Printable;
 };
 template<> struct Traits<uint32>
 {
     typedef uint32  Scalar;
     typedef float   Floating;
-    typedef uint    Printable;
 };
 template<> struct Traits<int64>
 {
     typedef int64   Scalar;
     typedef double  Floating;
-    typedef int64   Printable;
 };
 template<> struct Traits<uint64>
 {
     typedef uint64  Scalar;
     typedef double  Floating;
-    typedef uint64  Printable;
 };
 template<> struct Traits<float>
 {
     typedef float   Scalar;
     typedef float   Floating;
-    typedef float   Printable;
 };
 template<> struct Traits<double>
 {
     typedef double  Scalar;
     typedef double  Floating;
-    typedef double  Printable;
 };
 template<> struct Traits<std::complex<double>>
 {
     typedef std::complex<double>    Scalar;
     typedef std::complex<double>    Floating;
-    typedef std::complex<double>    Printable;
-};
-template<> struct Traits<bool>
-{
-    typedef bool    Printable;
 };
 template<class T,size_t S>
 struct  Traits<Arr<T,S>>

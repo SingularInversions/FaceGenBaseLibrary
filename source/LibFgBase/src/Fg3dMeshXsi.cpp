@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -280,7 +280,7 @@ static bool saveXsiFile(
         const Vec2Fs    &txtList = model.getTextCoord(xx);
         Arr3UIs const    &txtTriList = model.getTexTriList(xx);
         const vector<Arr4UI>    &txtQuadList = model.getTexQuadList(xx);
-        MeshNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
+        SurfNormals                 norms = cNormals({Surf{triList,quadList}},vtxList);
         bool perFacet = false;
         bool perVertex = false;
         if (vtxList.size() == txtList.size() &&
@@ -506,7 +506,7 @@ static bool saveXsiFile(
                     FffMultiObjectC const & mobj = (*morphTargets)[mm-1];
                     if (mm > 0)
                         mvtxList = &(mobj.getPtList(xx));
-                    MeshNormals         mnorms = cNormals({Surf{triList,quadList}},*mvtxList);
+                    SurfNormals         mnorms = cNormals({Surf{triList,quadList}},*mvtxList);
 
                     ofs << "\n";
                     ofs << "         SI_Shape SHP-" << objName 

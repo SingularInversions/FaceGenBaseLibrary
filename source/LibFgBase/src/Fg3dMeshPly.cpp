@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -47,7 +47,7 @@ void                savePly(String8 const & fname,Meshes const & meshes,String i
         "property list uchar float texcoord\n"
         "property int texnumber\n"
         "end_header\n";
-    MeshNormals         norms = cNormals(mesh);
+    SurfNormals         norms = cNormals(mesh);
     for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
         Vec3F               pos = mesh.verts[vv],
                             nrm = norms.vert[vv];

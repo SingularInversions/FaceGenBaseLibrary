@@ -1,9 +1,9 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
-// Very simple basic binary serialization to/from std::string that:
+// Simple by-value serialization and related functionality
 //
 // * Is 32/64 bit build portable on LLP64 and LP64 architectures
 // * Is NOT endian independent (all supported architectures are little-endian)
@@ -97,20 +97,19 @@ String              reflectToText(std::any const & reflectTree);
 template<class T>
 String              srlzText(T const & v) {return reflectToText(toReflect(v)); }
 
-#define FG_RFL_BEG                  std::any cReflect() const {RflStruct ret;
-#define FG_RFL_M1(A)                ret.members.push_back(RflMember{#A,toReflect(A)});
-#define FG_RFL_M2(A,B)              FG_RFL_M1(A) FG_RFL_M1(B)
-#define FG_RFL_M4(A,B,C,D)          FG_RFL_M2(A,B) FG_RFL_M2(C,D)
-#define FG_RFL_END                  return ret; }
-
-#define FG_RFL_1(A)                 FG_RFL_BEG FG_RFL_M1(A) FG_RFL_END
-#define FG_RFL_2(A,B)               FG_RFL_BEG FG_RFL_M2(A,B) FG_RFL_END
-#define FG_RFL_3(A,B,C)             FG_RFL_BEG FG_RFL_M2(A,B) FG_RFL_M1(C) FG_RFL_END
-#define FG_RFL_4(A,B,C,D)           FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_END
-#define FG_RFL_5(A,B,C,D,E)         FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M1(E) FG_RFL_END
-#define FG_RFL_6(A,B,C,D,E,F)       FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M2(E,F) FG_RFL_END
-#define FG_RFL_7(A,B,C,D,E,F,G)     FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M2(E,F) FG_RFL_M1(G) FG_RFL_END
-#define FG_RFL_8(A,B,C,D,E,F,G,H)   FG_RFL_BEG FG_RFL_M4(A,B,C,D) FG_RFL_M4(E,F,G,H) FG_RFL_END
+template<class... Args>
+std::any            toreflAggregate(Strings const & mnames,Args const & ... args)
+{
+    size_t              cnt {0};
+    auto                fn = [&](auto arg) -> RflMember
+    {
+        return {mnames[cnt++],toReflect(arg)};
+    };
+    return RflStruct{RflMembers{fn(args) ... }};
+}
+Strings             splitCommas(String const & csvs);
+#define FG_MNAMES(...)  static Strings memberNames() {static Strings ret = splitCommas( #__VA_ARGS__ ); return ret; }
+#define FG_TOREFL(...)  std::any cReflect() const {return toreflAggregate(memberNames(), __VA_ARGS__ ); }
 
 template<class T>
 T                   fromAny(std::any const & a)
@@ -184,36 +183,27 @@ T                   dsrlzText(String const & txt)
     return ret;
 }
 
-#define FG_DRF_BEG                  void setRflct(std::any const & node) \
-{RflStruct strct = fromAny<RflStruct>(node); size_t cnt {0};
-#define FG_DRF_M1(A)                fromReflect_(strct.members[cnt++].object,A);
-#define FG_DRF_M2(A,B)              FG_DRF_M1(A) FG_DRF_M1(B)
-#define FG_DRF_M4(A,B,C,D)          FG_DRF_M2(A,B) FG_DRF_M2(C,D)
-#define FG_DRF_END                  }
-
-#define FG_DRF_1(A)                 FG_DRF_BEG FG_DRF_M1(A) FG_DRF_END
-#define FG_DRF_2(A,B)               FG_DRF_BEG FG_DRF_M2(A,B) FG_DRF_END
-#define FG_DRF_3(A,B,C)             FG_DRF_BEG FG_DRF_M2(A,B) FG_DRF_M1(C) FG_DRF_END
-#define FG_DRF_4(A,B,C,D)           FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_END
-#define FG_DRF_5(A,B,C,D,E)         FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M1(E) FG_DRF_END
-#define FG_DRF_6(A,B,C,D,E,F)       FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M2(E,F) FG_DRF_END
-#define FG_DRF_7(A,B,C,D,E,F,G)     FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M2(E,F) FG_DRF_M1(G) FG_DRF_END
-#define FG_DRF_8(A,B,C,D,E,F,G,H)   FG_DRF_BEG FG_DRF_M4(A,B,C,D) FG_DRF_M4(E,F,G,H) FG_DRF_END
+// TODO: use the following along with SFINAE (or concepts) to create a variadic template for comparison operators:
+template<class... Args>
+void                setrflAggregate(std::any const & n,Args & ... args)
+{
+    RflStruct           strct = fromAny<RflStruct>(n);
+    size_t              cnt {0};
+    auto                fn = [&](auto & a)
+    {
+        fromReflect_(strct.members[cnt++].object,a);
+    };
+    (fn(args), ...);
+}
+#define FG_FRMRFL(...)  void setRflct(std::any const & n) {setrflAggregate(n, __VA_ARGS__ ); }
 
 // COMPARISONS:
-
-enum struct Cmp { lt=-1, eq=0, gt=1 };
-
-// Default for compound types is to redirect to member operation:
-template<typename T,FG_ENABLE_IF(T,is_compound)>
-inline Cmp          cmp(T const & l,T const & r) {return l.cmp(r); }
-
-// Base cases include all scalars:
-template<typename T,FG_ENABLE_IF(T,is_scalar)>
-Cmp                 cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cmp::eq); }
-
-#define FG_CMP_M1(T,A)                                                                      \
-    bool cmp(T const & r) const {return cmp(A,r.A); }
+template<class... Args>
+auto                makeCrefTuple(Args const & ... args)
+{
+    return std::make_tuple(std::cref(args) ...);
+}
+#define FG_ASCTPL(...)  auto asCrefTuple() const {return makeCrefTuple(__VA_ARGS__); }
 
 #define FG_LTE_M1(T,A)                                                                                  \
     bool operator<(T const & r) const {return (A < r.A); }                                              \
@@ -252,9 +242,6 @@ Cmp                 cmp(T l,T r) {return (l<r) ? Cmp::lt : ((r<l) ? Cmp::gt : Cm
 
 // BINARY SERIALIZATION / DESERIALIATION helper functions:
 
-// determines whether size_t is serialized to uint32 or uint64. Default true (uint64). Not threadsafe.
-extern bool         g_useSize64;        // Never change this without a ScopeGuard to ensure it's reset to default
-
 // Raw binary serialization (just copy the bytes). T must be fundamental type:
 template<class T>
 void                srlzRaw_(T val,Bytes & ser)
@@ -266,7 +253,7 @@ void                srlzRaw_(T val,Bytes & ser)
     for (size_t ii=0; ii<S; ++ii)                           
         ser.push_back(vPtr[ii]);
 }
-void                srlzSizet_(size_t val,Bytes & ser);
+
 template<class T>
 void                srlzRawOverwrite_(T val,Bytes & ser,size_t pos)  // random access overwrite version
 {
@@ -288,9 +275,14 @@ void                dsrlzRaw_(Bytes const & ser,size_t & pos,T & val)
 void                dsrlzSizet_(Bytes const & ser,size_t & pos,size_t & val);
 
 // BINARY SERIALIZATION:
-// Default case redirects serialization to class member serialization, which has a different name
-// to avoid confusing errors (ie. when global can't be resolved it tries to call itself but has
-// wrong number of arguments):
+// * The default global function redirects serialization to class member serialization, which has a different name
+// to avoid ambiguity. 
+// * The member function redirects back to the global function for each member object
+// * The global functions catch the builtin and std library types (vector, array)
+// * this back-and-forth has 2 important impliciations:
+//   1. the member functions to not have to be visible to the global functions so the recursion does not require
+//      declaring all member functions before the globals.
+//   2. you can override the member functions by creating a global function that accepts that structure
 template<class T>
 void                srlz_(T const & v,Bytes & s) {v.srlzm_(s); }
 // full specializations for builtins and string:
@@ -306,6 +298,7 @@ inline void         srlz_(long long v,Bytes & s) {srlzRaw_(v,s); }              
 inline void         srlz_(unsigned long long v,Bytes & s) {srlzRaw_(v,s); }        // "
 inline void         srlz_(float v,Bytes & s) {srlzRaw_(v,s); }                     // Assume always IEEE 754
 inline void         srlz_(double v,Bytes & s) {srlzRaw_(v,s); }                    // "
+inline void         srlzSizet_(size_t val,Bytes & ser) {srlz_(scast<uint64>(val),ser); }
 void                srlz_(String const & v,Bytes & s);
 // can't be handled by base case above since String8 is defined BEFORE serialization:
 inline void         srlz_(String8 const & s,Bytes & b) {srlz_(s.m_str,b); }
@@ -386,96 +379,70 @@ template<class T> T dsrlzT_(Bytes const & bytes,size_t & pos)
 // of serialized data after code modifications; The signature is unaffected by name changes
 // but any change in ordering, number or type of structure members wil give a different
 // signature (as it will also serialize differently).
-//
 // Implementation requires a dummy struct since the function takes no arguments, only a
 // type template, and thus cannot be overloaded, and function templates do not support partial
 // specialization which means we cannot support standard library partial template specializations:
-
-// Base case handles struct with macro-defined static function 'typeSig()':
-template<class T> struct TypeSig    {static uint64 typeSig() {return T::typeSig(); } };
+template<class Struct> struct TS        // base case handles struct:
+{
+    static uint64   typeSig()
+    {
+        // get the type of the tuple of member variables:
+        typedef std::invoke_result_t<decltype(&Struct::asTuple),Struct> Tuple;
+        // dispatch to a function with an argument type reflecting the tuple size:
+        return typsigAggregate<Tuple>(std::make_index_sequence<std::tuple_size_v<Tuple>>{});
+    }
+    template<class Tuple,size_t... Inds>
+    static uint64   typsigAggregate(std::index_sequence<Inds...>)
+    {
+        // hash the initializer list of type signatures for each of the tuple types:
+        return treeHash({TS<std::tuple_element_t<Inds,Tuple>>::typeSig() ... });
+    }
+};
 // Builtin type (full) specializations (signatures chosen randomly):
-template<> struct TypeSig<std::byte>{ static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
-template<> struct TypeSig<uchar>    { static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };   // equivalent to above
-template<> struct TypeSig<int>      { static uint64 typeSig() {return 0x6E78D0CA3F3EE2EAULL; } };
-template<> struct TypeSig<uint>     { static uint64 typeSig() {return 0x10609B64EE938647ULL; } };
-template<> struct TypeSig<long>     { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
-template<> struct TypeSig<unsigned long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
-template<> struct TypeSig<long long> { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
-template<> struct TypeSig<unsigned long long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
-template<> struct TypeSig<float>    { static uint64 typeSig() {return 0x2692A71030495B97ULL; } };
-template<> struct TypeSig<double>   { static uint64 typeSig() {return 0x75629296874859D5ULL; } };
-template<> struct TypeSig<bool>     { static uint64 typeSig() {return 0xCF7ECE5FAEA76F77ULL; } };
+template<> struct TS<std::byte>{ static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+template<> struct TS<uchar>    { static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };   // equivalent to above
+template<> struct TS<int>      { static uint64 typeSig() {return 0x6E78D0CA3F3EE2EAULL; } };
+template<> struct TS<uint>     { static uint64 typeSig() {return 0x10609B64EE938647ULL; } };
+template<> struct TS<long>     { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
+template<> struct TS<unsigned long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
+template<> struct TS<long long> { static uint64 typeSig() {return 0x72ED76724A8186F5ULL; } };
+template<> struct TS<unsigned long long> { static uint64 typeSig() {return 0x502B9EB2981463C0ULL; } };
+template<> struct TS<float>    { static uint64 typeSig() {return 0x2692A71030495B97ULL; } };
+template<> struct TS<double>   { static uint64 typeSig() {return 0x75629296874859D5ULL; } };
+template<> struct TS<bool>     { static uint64 typeSig() {return 0xCF7ECE5FAEA76F77ULL; } };
 // Library type (partial & full) specializations:
-template<class T,size_t S> struct TypeSig<Arr<T,S>>
+template<class T,size_t S> struct TS<Arr<T,S>>
 {
-    static uint64 typeSig() {return treeHash({TypeSig<T>::typeSig(),scast<uint64>(S),0x7DA6DF3E1C1BF4BBULL}); }
+    static uint64 typeSig() {return treeHash({TS<T>::typeSig(),scast<uint64>(S),0x7DA6DF3E1C1BF4BBULL}); }
 };
-template<class T> struct TypeSig<Svec<T>>
+template<class T> struct TS<Svec<T>>
 {
-    static uint64 typeSig() {return treeHash({TypeSig<T>::typeSig(),0xC9D2B190616B768AULL}); }
+    static uint64 typeSig() {return treeHash({TS<T>::typeSig(),0xC9D2B190616B768AULL}); }
 };
-template<> struct TypeSig<String> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };
-template<> struct TypeSig<String8> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };    // String/String8 same typesig
+template<> struct TS<String> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };
+template<> struct TS<String8> { static uint64 typeSig() {return 0x8EF74E84679AD006ULL; } };    // String/String8 same typesig
+// macros cannot be used recursively so there is no way to annotate each element of a variadic macro;
+// they only come as a single blob of text. So in order to make a static type sig function we need to
+// have a member function returning a tuple of all the members and statically make use of that return
+// value type:
+#define FG_ASTUPL(...)  auto asTuple() const {return std::make_tuple( __VA_ARGS__ ); }
 
-// Binary serialization macros:
-#define FG_SER_BEG                  void srlzm_(Bytes & s) const {
-#define FG_SER_M1(A)                srlz_(A,s);
-#define FG_SER_M2(A,B)              FG_SER_M1(A) FG_SER_M1(B)
-#define FG_SER_M4(A,B,C,D)          FG_SER_M2(A,B) FG_SER_M2(C,D)
-
-#define FG_SER_1(A)                 FG_SER_BEG FG_SER_M1(A) }
-#define FG_SER_2(A,B)               FG_SER_BEG FG_SER_M2(A,B) }
-#define FG_SER_3(A,B,C)             FG_SER_BEG FG_SER_M2(A,B) FG_SER_M1(C) }
-#define FG_SER_4(A,B,C,D)           FG_SER_BEG FG_SER_M4(A,B,C,D) }
-#define FG_SER_5(A,B,C,D,E)         FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M1(E) }
-#define FG_SER_6(A,B,C,D,E,F)       FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M2(E,F) }
-#define FG_SER_7(A,B,C,D,E,F,G)     FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M2(E,F) FG_SER_M1(G) }
-#define FG_SER_8(A,B,C,D,E,F,G,H)   FG_SER_BEG FG_SER_M4(A,B,C,D) FG_SER_M4(E,F,G,H) }
-
-// Binary deserialization macros:
-#define FG_DSR_BEG                  void dsrlzm_(Bytes const & s,size_t & p) {
-#define FG_DSR_M1(A)                dsrlz_(s,p,A);
-#define FG_DSR_M2(A,B)              FG_DSR_M1(A) FG_DSR_M1(B)
-#define FG_DSR_M4(A,B,C,D)          FG_DSR_M2(A,B) FG_DSR_M2(C,D)
-
-#define FG_DSR_1(A)                 FG_DSR_BEG FG_DSR_M1(A) }
-#define FG_DSR_2(A,B)               FG_DSR_BEG FG_DSR_M2(A,B) }
-#define FG_DSR_3(A,B,C)             FG_DSR_BEG FG_DSR_M2(A,B) FG_DSR_M1(C) }
-#define FG_DSR_4(A,B,C,D)           FG_DSR_BEG FG_DSR_M4(A,B,C,D) }
-#define FG_DSR_5(A,B,C,D,E)         FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M1(E) }
-#define FG_DSR_6(A,B,C,D,E,F)       FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M2(E,F) }
-#define FG_DSR_7(A,B,C,D,E,F,G)     FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M2(E,F) FG_DSR_M1(G) }
-#define FG_DSR_8(A,B,C,D,E,F,G,H)   FG_DSR_BEG FG_DSR_M4(A,B,C,D) FG_DSR_M4(E,F,G,H) }
-
-// Type hash signature macros:
-#define FG_THS_BEG                  static uint64 typeSig() { return treeHash({
-#define FG_THS_M1(A)                TypeSig<decltype(A)>::typeSig(),
-#define FG_THS_M2(A,B)              FG_THS_M1(A) FG_THS_M1(B)
-#define FG_THS_M4(A,B,C,D)          FG_THS_M2(A,B) FG_THS_M2(C,D)
-#define FG_THS_END                  }); }
-
-#define FG_THS_1(A)                 FG_THS_BEG FG_THS_M1(A) FG_THS_END
-#define FG_THS_2(A,B)               FG_THS_BEG FG_THS_M2(A,B) FG_THS_END
-#define FG_THS_3(A,B,C)             FG_THS_BEG FG_THS_M2(A,B) FG_THS_M1(C) FG_THS_END
-#define FG_THS_4(A,B,C,D)           FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_END
-#define FG_THS_5(A,B,C,D,E)         FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M1(E) FG_THS_END
-#define FG_THS_6(A,B,C,D,E,F)       FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M2(E,F) FG_THS_END
-#define FG_THS_7(A,B,C,D,E,F,G)     FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M2(E,F) FG_THS_M1(G) FG_THS_END
-#define FG_THS_8(A,B,C,D,E,F,G,H)   FG_THS_BEG FG_THS_M4(A,B,C,D) FG_THS_M4(E,F,G,H) FG_THS_END
+template<typename... Args>
+void                srlzAggregate_(Bytes & s,Args const & ... args)
+{
+    (srlz_(args,s), ...);
+}
+template<typename... Args>
+void                dsrlzAggregate_(Bytes const & s,size_t & p,Args & ... args)
+{
+    (dsrlz_(s,p,args), ...);
+}
+#define FG_BINSER(...)              void srlzm_(Bytes & s) const {srlzAggregate_(s, __VA_ARGS__ ); }
+#define FG_BINDSR(...)              void dsrlzm_(Bytes const & s,size_t & p) {dsrlzAggregate_(s,p, __VA_ARGS__ ); }
 
 // COMBINED MACROS:
 
-#define FG_SER1(A)  FG_SER_1(A) FG_DSR_1(A) FG_THS_1(A) FG_RFL_1(A) FG_DRF_1(A)
-#define FG_SER2(A,B) FG_SER_2(A,B) FG_DSR_2(A,B) FG_THS_2(A,B) FG_RFL_2(A,B) FG_DRF_2(A,B)
-#define FG_SER3(A,B,C) FG_SER_3(A,B,C) FG_DSR_3(A,B,C) FG_THS_3(A,B,C) FG_RFL_3(A,B,C) FG_DRF_3(A,B,C)
-#define FG_SER4(A,B,C,D) FG_SER_4(A,B,C,D) FG_DSR_4(A,B,C,D) FG_THS_4(A,B,C,D) FG_RFL_4(A,B,C,D) FG_DRF_4(A,B,C,D)
-#define FG_SER5(A,B,C,D,E) FG_SER_5(A,B,C,D,E) FG_DSR_5(A,B,C,D,E) FG_THS_5(A,B,C,D,E) FG_RFL_5(A,B,C,D,E) FG_DRF_5(A,B,C,D,E)
-#define FG_SER6(A,B,C,D,E,F) FG_SER_6(A,B,C,D,E,F) FG_DSR_6(A,B,C,D,E,F) FG_THS_6(A,B,C,D,E,F) FG_RFL_6(A,B,C,D,E,F) \
-FG_DRF_6(A,B,C,D,E,F)
-#define FG_SER7(A,B,C,D,E,F,G) FG_SER_7(A,B,C,D,E,F,G) FG_DSR_7(A,B,C,D,E,F,G) FG_THS_7(A,B,C,D,E,F,G) FG_RFL_7(A,B,C,D,E,F,G) \
-FG_DRF_7(A,B,C,D,E,F,G)
-#define FG_SER8(A,B,C,D,E,F,G,H) FG_SER_8(A,B,C,D,E,F,G,H) FG_DSR_8(A,B,C,D,E,F,G,H) FG_THS_8(A,B,C,D,E,F,G,H) FG_RFL_8(A,B,C,D,E,F,G,H) \
-FG_DRF_8(A,B,C,D,E,F,G,H)
+#define FG_SER(...) FG_BINSER(__VA_ARGS__) FG_BINDSR(__VA_ARGS__) FG_MNAMES(__VA_ARGS__) FG_TOREFL(__VA_ARGS__) FG_FRMRFL(__VA_ARGS__) FG_ASTUPL(__VA_ARGS__)
 
 // Client direct usage of binary serialization (no message packaging):
 template<class T>
@@ -504,7 +471,7 @@ Bytes               toMessage(T const & v,uint64 typeSig)
 }
 // Serialize to message using the default-defined tree hash type signature:
 template<class T>
-inline Bytes        toMessage(T const & v) {return toMessage(v,TypeSig<T>::typeSig()); }
+inline Bytes        toMessage(T const & v) {return toMessage(v,TS<T>::typeSig()); }
 // Serialize to message using the type signature manually-defined by T::typeID()
 template<class T>
 inline Bytes        toMessageExplicit(T const & v) {return toMessage(v,T::typeID()); }
@@ -520,7 +487,7 @@ void                fromMessage_(Bytes const & msg,uint64 typeSig,T & v)
 }
 // Deserialize from message validating the default tree hash type signature:
 template<class T>
-inline void         fromMessage_(Bytes const & msg,T & v) {fromMessage_(msg,TypeSig<T>::typeSig(),v); }
+inline void         fromMessage_(Bytes const & msg,T & v) {fromMessage_(msg,TS<T>::typeSig(),v); }
 template<class T>
 T                   fromMessage(Bytes const & s)
 {

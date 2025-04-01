@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 #include "FgTransform.hpp"
-#include "FgMatrixSolver.hpp"
+#include "FgMatrixV.hpp"
 #include "FgCommand.hpp"
 
 using namespace std;
@@ -33,6 +33,20 @@ solveAffine(Vec3Ds const & base,Vec3Ds const & targ)
         tb += t * b.transpose();
     }
     return Affine3D{tmean} * Affine3D{tb*cInverse(bb)} * Affine3D{-bmean};
+}
+
+QuaternionD         cMean(QuaternionDs const & qs)
+{
+    FGASSERT(!qs.empty());
+    Vec4D               acc = qs[0].asVec4();
+    for (size_t ii=1; ii<qs.size(); ++ii) {
+        Vec4D               v = qs[ii].asVec4();
+        if (cDot(v,acc) > 0)
+            acc += v;
+        else
+            acc -= v;
+    }
+    return QuaternionD{acc};
 }
 
 double              tanDeltaMag(QuaternionD const & lhs,QuaternionD const & rhs)
@@ -75,7 +89,7 @@ void                testQuaternion(CLArgs const &)
     QuaternionD const   id;
     // Axis rotations:
     for (size_t ii=0; ii<5; ++ii) {
-        double          r = randNormal();
+        double          r = cRandNormal();
         Mat33D          qx = cRotateX(r).asMatrix(),
                         mx = matRotateX(r);
         FGASSERT(isApproxEqual(qx,mx,prec));
@@ -90,7 +104,7 @@ void                testQuaternion(CLArgs const &)
     for (size_t ii=0; ii<5; ++ii) {
         QuaternionD     q = QuaternionD::rand();
         Mat33D          m = q.asMatrix(),
-                        del = m * m.transpose() - cDiagMat<double,3>(1);
+                        del = m * m.transpose() - cMatDiag<double,3>(1);
         FGASSERT(cMaxElem(mapAbs(del.m)) < lims<double>::epsilon()*8);
     }
     // Composition:
@@ -157,7 +171,7 @@ SimilarityD         similarityRand()
 {
     return
         SimilarityD(
-            std::exp(randNormal()),
+            std::exp(cRandNormal()),
             QuaternionD::rand(),
             Vec3D::randNormal());
 }
@@ -320,11 +334,24 @@ bool                isApproxEqual(SimilarityD const & l,SimilarityD const & r,do
     );
 }
 
+Uints               cHistogram(Doubles const & data,size_t numBuckets)
+{
+    FGASSERT(numBuckets > 1);
+    Arr2D               bounds = cBounds(data);
+    double              dim = bounds[1]-bounds[0];
+    FGASSERT(dim>0);
+    double              fac = numBuckets / dim;
+    Uints               ret (numBuckets,0);
+    for (double d : data)
+        ++ret[scast<size_t>((d-bounds[0])*fac)];
+    return ret;
+}
+
 namespace {
 
 SimilarityD         randSim()
 {
-    double              scale = exp(randNormal());
+    double              scale = exp(cRandNormal());
     QuaternionD         rot = QuaternionD::rand();
     Vec3D               trans = Vec3D::randNormal();
     return {scale,rot,trans};
@@ -343,7 +370,7 @@ void                testSim(CLArgs const &)
         FGASSERT(isApproxEqual(id.trans,Vec3D{0},prec));
     }
     for (size_t ii=0; ii<10; ++ii) {
-        double              scale = exp(randNormal());
+        double              scale = exp(cRandNormal());
         QuaternionD         rot = QuaternionD::rand();
         Vec3D               trans = Vec3D::randNormal();
         SimilarityRD        sim = {trans,rot,scale},
@@ -365,13 +392,13 @@ void                testSolve(CLArgs const &)
         for (size_t jj=0; jj<10; ++jj) {
             Vec3Ds              domain = randVecNormals<double,3>(V,1.0);
             SimilarityD         simRef = randSim();
-            Vec3Ds              range = mapMul(simRef.asAffine(),domain);
+            Vec3Ds              range = mapMulR(simRef.asAffine(),domain);
             {   // unweighted:
                 SimilarityD         simTst = solveSimilarity(domain,range);
                 FGASSERT(isApproxEqual(simTst,simRef,prec));
             }
             if (V > 3) {       // weighted can have low precision with only 3 points:
-                Doubles             weights = genSvec<double>(V,[](size_t){return sqr(randNormal()); });
+                Doubles             weights = genSvec(V,[](size_t){return sqr(cRandNormal()); });
                 SimilarityD         simTst = solveSimilarity(domain,range,weights);
                 FGASSERT(isApproxEqual(simTst,simRef,prec));
             }
@@ -385,13 +412,13 @@ void                testSolve(CLArgs const &)
         SimilarityD         simRef = randSim();
         Vec3Ds              domain = randVecNormals<double,3>(V,1.0),
                             noise = randVecNormals<double,3>(V,0.01),
-                            range = mapMul(simRef,domain);
+                            range = mapMulR(simRef,domain);
         {   // unweighted:
             SimilarityD         simTst = solveSimilarity(domain,range);
             FGASSERT(isApproxEqual(simTst,simRef,prec));
         }
         {   // weighted:
-            Doubles             weights = genSvec<double>(V,[](size_t){return sqr(randNormal()); });
+            Doubles             weights = genSvec(V,[](size_t){return sqr(cRandNormal()); });
             SimilarityD         simTst = solveSimilarity(domain,range,weights);
             FGASSERT(isApproxEqual(simTst,simRef,prec));
         }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -16,9 +16,9 @@ using namespace std;
 
 namespace Fg {
 
-ImgFormatsInfo const &  getImgFormatsInfo()     // first is default for writing
+ImgFormatInfos const &  getImgFormatsInfo()     // first is default for writing
 {
-    static ImgFormatsInfo ret {
+    static ImgFormatInfos ret {
         {ImgFormat::png,{"png"},        "PNG: lossless, medium file size"},
         {ImgFormat::jpg,{"jpg","jpeg"}, "JPG: good quality, small file size, no transparency"},
         {ImgFormat::tga,{"tga"},        "TGA: lossless, large file size"},
@@ -27,11 +27,9 @@ ImgFormatsInfo const &  getImgFormatsInfo()     // first is default for writing
     return ret;
 }
 
-Strings             getImgExts()
+Strings const &     getImgExts()
 {
-    Strings         ret;
-    for (ImgFormatInfo const & ifi : getImgFormatsInfo())
-        cat_(ret,ifi.extensions);
+    static Strings      ret = flatten(mapMember(getImgFormatsInfo(),&ImgFormatInfo::extensions));
     return ret;
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -13,14 +13,17 @@
 #include "FgImgDisplay.hpp"
 
 #ifdef _MSC_VER
-#define STBI_MSC_SECURE_CRT             // STB use MS fopen_s instead of fopen
+#define _CRT_SECURE_NO_WARNINGS         // STB use MS fopen_s instead of fopen
+#pragma warning(disable: 4996)          // above define strangely doesn't cover this one
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_TRUETYPE_IMPLEMENTATION
 
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
+#include "stb/stb_truetype.h"
 
 using namespace std;
 
@@ -29,7 +32,7 @@ namespace Fg {
 struct      StbiFree
 {
     uchar       *data;
-    StbiFree(uchar * d) : data(d) {}
+    explicit StbiFree(uchar * d) : data(d) {}
     ~StbiFree() {stbi_image_free(data); }
 };
 
@@ -170,6 +173,57 @@ void                testDecodeJfif(CLArgs const &)
     ImgRgba8            tst = decodeJpeg(blob),
                         ref = loadImage(pathBase+"-jpeg.png");  // baseline jpg encoding using STB on windows
     FGASSERT(isApproxEqual(tst,ref,uchar(3)));
+}
+
+void                testFontRender(CLArgs const & args)
+{
+    if (isAutomated(args))
+        return;
+    Syntax              syn {args,"<font>.ttf"};
+    Bytes               ttf = loadRaw(syn.next());
+    stbtt_fontinfo      font;
+    if (!stbtt_InitFont(&font,reinterpret_cast<uchar const *>(ttf.data()), 0))
+        return;
+    int constexpr       fontSize = 32;
+    float               scale = stbtt_ScaleForPixelHeight(&font,fontSize);
+    int                 ascent,
+                        descent,
+                        lineGap;
+    stbtt_GetFontVMetrics(&font,&ascent,&descent,&lineGap);
+    ascent = (int)(ascent * scale);
+    descent = (int)(descent * scale);
+    // Render alphabet
+    int                 x = 10;
+    int                 y = ascent + 10;
+    ImgUC               img {512,128,0};
+    auto                fn = [&](string const & chars)
+    {
+        for (char ch : chars) {
+            int                 advance,
+                                lsb;
+            stbtt_GetCodepointHMetrics(&font,ch,&advance, &lsb);
+            int                 c_x1,
+                                c_y1,
+                                c_x2,
+                                c_y2;
+            stbtt_GetCodepointBitmapBox(&font,ch,scale,scale,&c_x1,&c_y1,&c_x2,&c_y2);
+            stbtt_MakeCodepointBitmap(&font, 
+                &img.m_data[x + (y + c_y1) * img.width()],
+                c_x2-c_x1, c_y2-c_y1,
+                img.width(),
+                scale, scale,
+                ch);
+            x += (int)(advance * scale);
+            size_t              idx = scast<size_t>(ch) + 1;
+            if (idx < chars.length())
+                x += stbtt_GetCodepointKernAdvance(&font,ch,chars[idx]) * scale;
+        }
+    };
+    fn("abcdefghijklmnopqrstuvwxyz");
+    x = 10;
+    y += ascent + 10;
+    fn("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    viewImage(toRgba8(img));
 }
 
 }

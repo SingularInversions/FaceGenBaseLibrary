@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,12 +27,12 @@ struct          ImgFormatInfo
 
     bool            operator==(ImgFormat rhs) const {return (format==rhs); }
 };
-typedef Svec<ImgFormatInfo>     ImgFormatsInfo;
+typedef Svec<ImgFormatInfo>     ImgFormatInfos;
 
-ImgFormatsInfo const &  getImgFormatsInfo();    // first is default for writing
+ImgFormatInfos const &  getImgFormatsInfo();    // first is default for writing
 inline ImgFormatInfo    getImgFormatInfo(ImgFormat f) {return findFirst(getImgFormatsInfo(),f); }
-// List of supported image file format extensions in lower case, including synonyms:
-Strings                 getImgExts();
+// List of supported image file format extensions in lower case, including synonyms (all formats can be read & written):
+Strings const &         getImgExts();
 // true if the file extension is a read/write supported image file format:
 bool                    hasImgFileExt(String8 const & fname);
 // Load an image from any supported format based on filename extension.

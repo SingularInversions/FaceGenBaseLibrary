@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -85,7 +85,7 @@ void                testGuiCombo(CLArgs const & args)
     GuiPtr    sliders;
     {
         String8s            labs = {"Slider 1","Slider 2"};
-        Svec<IPT<double> >  valNs = genSvec<IPT<double> >(labs.size(),[](size_t){return makeIPT<double>(0.0); });
+        Svec<IPT<double> >  valNs = genSvec(labs.size(),[](size_t){return makeIPT<double>(0.0); });
         sliders = guiSplitScroll(guiSliders(valNs,labs,VecD2(-1,1),0.1));
     }
     GuiPtr        scroll;
@@ -128,8 +128,8 @@ void                testGuiDialogFilesLoad(CLArgs const & args)
 void                testSliders(CLArgs const & args)
 {
     size_t constexpr    S = 16;
-    Svec<IPT<double>>   valNs = genSvec<IPT<double>>(S,[](size_t ii){return makeIPT(ii/8.0);});
-    String8s            labels = genSvec<String8>(S,[](size_t ii){return "label "+ toStr(ii);});
+    Svec<IPT<double>>   valNs = genSvec(S,[](size_t ii){return makeIPT(ii/8.0);});
+    String8s            labels = genSvec(S,[](size_t ii){return String8{"label "}+ toStr(ii);});
     labels.back() += " (long label)";
     VecD2               range {-3,3};
     double              tickSpacing {1};
@@ -144,20 +144,26 @@ void                testSliders(CLArgs const & args)
 
 }
 
+void                testFontRender(CLArgs const &);
 void                testGuiImageMark(CLArgs const &);
 
 void                testGui(CLArgs const & args)
 {
+    Cmds            cmds {
+        {testFontRender,"font","dispay a roman alphabet font atlas for a TTF file"},
+    };
     if (getCurrentBuildOS() == BuildOS::win) {
-        Cmds            cmds {
-            {testGuiCombo,"combo"},
-            {testGuiImageMark,"image"},
-            {testGuiDialogFilesLoad,"files","files select dialog"},
-            {testSliders,"sliders"},
-            {testGuiDialogSplashScreen,"splash"},
-        };
-        doMenu(args,cmds,true);
+        cat_(cmds,
+            {
+                {testGuiCombo,"combo"},
+                {testGuiImageMark,"image"},
+                {testGuiDialogFilesLoad,"files","files select dialog"},
+                {testSliders,"sliders"},
+                {testGuiDialogSplashScreen,"splash"},
+            }
+        );
     }
+    doMenu(args,cmds,true);
 }
 
 }

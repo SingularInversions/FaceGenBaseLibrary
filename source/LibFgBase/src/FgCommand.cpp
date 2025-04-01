@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -32,6 +32,8 @@ static string       cmdStr(Cmd const & cmd)
     return si;
 }
 
+// there is no way to know if the command being called is another menu vs. a test, thus there is no way
+// to bracket tests without also bracketing menus :(
 void                doMenu(
     CLArgs              args,
     Cmds const &        cmdsUnsorted,

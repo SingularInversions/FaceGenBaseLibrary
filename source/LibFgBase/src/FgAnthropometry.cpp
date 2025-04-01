@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -209,7 +209,7 @@ Strings             getLmStrsNose()
 
 static SquareF      cFaceRegion(Vec2Fs const & lms,Vec2F relShift,float relSize)
 {
-    Mat22F              bnds = cBounds(lms);
+    Mat22F              bnds = catH(cBounds(lms));
     Vec2F               centre = bnds * Vec2F{0.5,0.5};
     float               sz = (bnds * Vec2F{-1,1})[1];
     return {centre-relShift*sz,relSize*sz};

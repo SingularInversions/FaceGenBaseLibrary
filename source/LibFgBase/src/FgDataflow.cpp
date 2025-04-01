@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -27,12 +27,10 @@ String              cSignature(any const & data)
 
 DfInput::~DfInput()
 {
-    // boost serialization doesn't work properly in an exception and we shouldn't call another
-    // function that could throw (ie. the file save) in this context anyway:
-    if (uncaught_exceptions() == 0) {
+    if (uncaught_exceptions() == 0) {       // Don't attempt to save state if we're in an exception
         if (data.has_value() && onDestruct) {
             try {onDestruct(data);}
-            catch (...) {}      // Destructors cannot throw
+            catch (...) {}                  // Destructors cannot throw
         }
     }
 }
@@ -79,7 +77,7 @@ DfOutput::~DfOutput()
             string      sig;
             for (DfNPtr const & source : sources)
                 sig += cSignature(source->getDataCref()) + " ";
-            fgout << fgnl << timeUsedMs << " : " << sig ;
+            fgout << fgnl << timeUsedMs << "ms : " << sig ;
         }
     }
 }
@@ -152,6 +150,41 @@ void                DfOutput::addSink(const DfDPtr & snk)
 {
     sinks.push_back(snk);
 }
+
+//void                DfSelect::update() const
+//{
+//    if (!dirty)
+//        return;
+//    dirty = false;
+////fgout << fgnl << "Update DfSelect: " << fgpush;
+//    size_t              sel = selN->getCref<size_t>();
+//    FGASSERT(sel < sources.size());
+//    sources[sel]->update();
+////fgout << fgpop;
+//}
+//void                DfSelect::markDirty() const
+//{
+//    if (dirty)
+//        return;
+//    dirty = true;
+////fgout << fgnl << "Dirty DfSelect: " << fgpush;
+//    for (DfDPtr const & snk : sinks)
+//        // Structure is dynamic so some of the sinks may have expired (all cannot be or this node won't exist):
+//        if (!snk.expired())
+//            snk.lock()->markDirty();
+////fgout << fgpop;
+//}
+//any const &         DfSelect::getDataCref() const
+//{
+//    dirty = false;
+//    size_t              sel = selN->getCref<size_t>();
+//    FGASSERT(sel < sources.size());
+//    return sources[sel]->getDataCref();
+//}
+//void                DfSelect::addSink(const DfDPtr & snk)
+//{
+//    sinks.push_back(snk);
+//}
 
 void                DfReceptor::update() const
 {

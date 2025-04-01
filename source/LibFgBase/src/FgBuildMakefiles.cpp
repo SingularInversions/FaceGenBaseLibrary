@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -443,7 +443,6 @@ bool                consMakefileOsArch(
 //    cflags.push_back("--target="+targetStr+"${API_VERSION}");
 //    cflags.push_back("--sysroot=${NDK_ROOT}/toolchains/llvm/prebuilt/"+hostStr+"-x86_64/sysroot");
 //    cxxflags.push_back("-std=c++17");
-//    cxxflags.push_back("-ftemplate-depth=1024");    // boost annoyance
 //    cxxflags.push_back("-stdlib=libc++");           // From android toolchain
 //    ostringstream   ofs;
 //    ofs << "ifndef NDK_ROOT" << lf

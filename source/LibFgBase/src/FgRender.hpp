@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -9,6 +9,7 @@
 #ifndef FG_SOFTRENDER_HPP
 #define FG_SOFTRENDER_HPP
 
+#include "FgSampler.hpp"
 #include "Fg3dMesh.hpp"
 #include "FgCamera.hpp"
 
@@ -33,11 +34,94 @@ ImgC4F              sampleAdaptiveF(
 enum class RenderSurfPoints { never, whenVisible, always };
 std::any            toReflect(RenderSurfPoints r);
 void                fromReflect_(std::any const & a,RenderSurfPoints & r);
-template<> struct TypeSig<RenderSurfPoints> {static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
+template<> struct TS<RenderSurfPoints> {static uint64 typeSig() {return 0x5E92C9783665A77AULL; } };
 inline void         srlz_(RenderSurfPoints r,Bytes & b) {srlzRaw_(static_cast<uint>(r),b); }
 inline void         dsrlz_(Bytes const & b,size_t & p,RenderSurfPoints & r)
 {
     r = scast<RenderSurfPoints>(dsrlzT_<uint>(b,p));
+}
+
+template<class T>
+struct      ProjTri                     // projected triangle
+{
+    Arr<Vec2D,3>        pacs;           // projected vertex coordinates in PACS
+    Arr3D               invDepths;      // respective inverse depth values
+    T                   td;             // application-specific triangle data
+};
+
+// 'triIdx' is required for looking up UVs if applicable, 'triVertInds' is just a cache:
+template<class T> using FnTriDat = Sfun<T(uint triIdx,Arr3UI triVertInds)>;
+
+template<class T>
+void                accProjTriIndex_(
+    uint                pixPerBin,      // linear factor for pixels per grid bin
+    Arr3UIs const &     tris,           // elements are indices into 'projVerts' below
+    ProjVerts const &   projVerts,      // verts on or behind the camera plane must be invalid
+    FnTriDat<T> const & cTriDat,        // given tri indices, return required client data
+    Img<Svec<ProjTri<T>>> & grid)       // accumulate valid projected tris into grid index
+{
+    double              binsPerPix = 1.0 / pixPerBin;
+    for (size_t ii=0; ii<tris.size(); ++ii) {
+        Arr3UI              tri = tris[ii];
+        Arr<ProjVert,3>     pvt = mapIndex(tri,projVerts);
+        if (isRendered(pvt)) {          // discard back-facing and tris that cross the camera plane
+            Arr<Vec2D,3>        pacs = mapMember(pvt,&ProjVert::pacs);
+            Arr3D               invDepths = mapMember(pvt,&ProjVert::invDepth);
+            ProjTri<T>          pt {pacs,invDepths,cTriDat(scast<uint>(ii),tri)};
+            Mat22D              bounds = catH(cBounds(pacs));
+            Mat22UI             boundsEub {intersectBoundsToImage(bounds*binsPerPix,grid.dims())};
+            for (Iter2 it{boundsEub}; it.valid(); it.next())
+                grid[it()].push_back(pt);
+        }
+    }
+}
+
+template<class T>
+Img<Svec<ProjTri<T>>>   cProjTriIndex(
+    Vec2UI              dims,
+    uint                pixPerBin,
+    Arr3UIs const &     tris,
+    ProjVerts const &   pvs,
+    FnTriDat<T> const & cTriDat)
+{
+    Img<Svec<ProjTri<T>>>   ret {dims};
+    accProjTriIndex_(pixPerBin,tris,pvs,cTriDat,ret);
+    return ret;
+}
+
+template<class T>                       // triangle application-specific data type
+struct          RayIsct
+{
+    ProjTri<T> const *  prjTri;         // nullptr if not yet set
+    double              invDepth;       // 0 if not yet set
+    Arr3D               bcs;            // screen-space barycentric coordinate of intersection
+
+    RayIsct() : prjTri{nullptr}, invDepth{0} {}      // invalid and at infinite depth
+    RayIsct(ProjTri<T> const & p,double i,Arr3D const & b) : prjTri{&p}, invDepth{i}, bcs{b} {}
+
+    bool                valid() const {return (prjTri != nullptr); }
+    // get camera (model) space barycentric coordinate of intersection (gridTri must be valid):
+    Arr3D               bcm() const {return mapMul(bcs,prjTri->invDepths) / invDepth; }
+};
+
+// find the closest ray intersect (above an optional minimum depth) in the given list of tris.
+// return value invalid if no intersections found.
+template<class T>
+RayIsct<T>          cClosestIsct(
+    Svec<ProjTri<T>> const & prjTris,       // All must have non-null tris and invDepths > 0 (neither are checked)
+    Vec2D               rayPacs,
+    double              maxInvDepth=lims<double>::max())
+{
+    RayIsct<T>          closest;
+    for (ProjTri<T> const & pt : prjTris) {
+        Arr3D               bcs = cBarycentricCoord(rayPacs,pt.pacs).value();
+        if (allGteZero(bcs)) {          // intersection
+            double              invDepth = multAcc(bcs,pt.invDepths);
+            if ((invDepth > closest.invDepth) && (invDepth < maxInvDepth))
+                closest = {pt,invDepth,bcs};
+        }
+    }
+    return closest;
 }
 
 template<class GT>                  // type containing information about the intersected tri
@@ -98,7 +182,7 @@ struct  RenderOptions
     Sptr<ProjectedSurfPoints> projSurfPoints;
     bool                useMaps = true;     // Turn off to see raw geometry
     bool                allShiny = false;
-    FG_SER6(lighting,backgroundColor,antiAliasBitDepth,renderSurfPoints,useMaps,allShiny)
+    FG_SER(lighting,backgroundColor,antiAliasBitDepth,renderSurfPoints,useMaps,allShiny)
 };
 
 struct  RenderXform

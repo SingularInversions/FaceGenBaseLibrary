@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -31,7 +31,7 @@ struct      ModelFile
     String              meshFilename;
     Strings             imgFilenames;
     bool                shiny = false;
-    FG_SER3(meshFilename,imgFilenames,shiny)
+    FG_SER(meshFilename,imgFilenames,shiny)
 };
 typedef Svec<ModelFile>     ModelFiles;
 
@@ -46,7 +46,7 @@ struct      RenderArgs
     AxAffine2D              itcsToIucs;
     Vec2UI                  imagePixelSize = Vec2UI(512,512);
     RenderOptions           options;
-    FG_SER8(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options)
+    FG_SER(models,roll,tilt,pan,modelview,itcsToIucs,imagePixelSize,options)
 };
 
 Meshes              loadMeshes(ModelFiles const & mfs)
@@ -128,7 +128,7 @@ NOTES:
     }
     // Load data from files to validate and set modelview:
     Meshes              meshes = loadMeshes(rend.models);
-    Mat32F              bounds = cBounds(meshes);
+    Mat32F              bounds = catH(updateVertBounds2(meshes));
     CameraParams        cps {Mat32D{bounds}};
     cps.logRelScale = std::log(0.9);
     cps.fovMaxDeg = 17.0;

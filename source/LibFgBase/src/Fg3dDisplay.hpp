@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -62,7 +62,7 @@ OPT<Vec3Fs>         linkAllVerts(NPT<Mesh>);
 // Load from pathBase + '.tri'. TODO: Support '.fgmesh'.
 OPT<Mesh>           linkLoadMesh(NPT<String8> pathBaseN);   // Empty filename -> empty mesh
 OPT<Mat32D>         linkMeshBounds(NPT<Mesh> const &);      // returns [max,lowest] if mesh has no verts (for composition)
-OPT<MeshNormals>    linkMeshNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & shapeVertsN);  // mesh can be empty
+OPT<SurfNormals>    linkMeshNormals(const NPT<Mesh> & meshN,const NPT<Vec3Fs> & shapeVertsN);  // mesh can be empty
 
 typedef Svec<NPT<ImgRgba8>>  ImgNs;
 

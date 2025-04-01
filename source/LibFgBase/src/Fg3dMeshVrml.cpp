@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -130,14 +130,14 @@ saveVrml(
             "        [\n";
         for (size_t ss=0; ss<mesh.surfaces.size(); ++ss) {
             Surf const & surf = mesh.surfaces[ss];
-            if (surf.numTris() > 0) {
+            if (surf.tris.size() > 0) {
                 writeIndices(ofs,surf.tris.vertInds);
-                if (surf.numQuads() > 0)
+                if (surf.quads.size() > 0)
                     ofs << ",\n";
                 else
                     ofs << "\n";
             }
-            if (surf.numQuads() > 0) {
+            if (surf.quads.size() > 0) {
                 writeIndices(ofs,surf.quads.vertInds);
                 ofs << "\n";
             }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -129,7 +129,7 @@ R"(    Model: )" << idModel(mm) << R"(, "Model::)" << mesh.name << R"(", "Mesh" 
             "            ReferenceInformationType: \"Direct\"\n"
             "            Normals: *" << mesh.verts.size()*3 << " {\n"
             "                a: ";
-        MeshNormals     norms = cNormals(mesh);
+        SurfNormals     norms = cNormals(mesh);
         for (size_t vv=0; vv<mesh.verts.size(); ++vv) {
             Vec3F    n = norms.vert[vv];
             if (vv > 0)

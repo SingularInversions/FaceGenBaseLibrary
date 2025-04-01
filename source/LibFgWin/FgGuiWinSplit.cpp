@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2023 Singular Inversions Inc. (facegen.com)
+// Copyright (c) 2025 Singular Inversions Inc. (facegen.com)
 // Use, modification and distribution is subject to the MIT License,
 // see accompanying file LICENSE.txt or facegen.com/base_library_license.txt
 //
@@ -28,7 +28,7 @@ Uints               cRowMinHeights(Img<Vec2UI> const & minSizes)
                 updateMax_(ret,minSizes.xy(cc,rr)[1]);
             return ret;
         };
-        return genSvec<uint>(minSizes.height(),cMinRowHgt);
+        return genSvec(minSizes.height(),cMinRowHgt);
 }
 
 Uints               cColMinWidths(Img<Vec2UI> const & minSizes)
@@ -41,7 +41,7 @@ Uints               cColMinWidths(Img<Vec2UI> const & minSizes)
                 updateMax_(ret,minSizes.xy(cc,rr)[0]);
             return ret;
         };
-        return genSvec<uint>(minSizes.width(),cMinColWid);
+        return genSvec(minSizes.width(),cMinColWid);
 }
 
 Bools               cRowStrets(Img<Arr2B> const & wantStrets)
@@ -54,7 +54,7 @@ Bools               cRowStrets(Img<Arr2B> const & wantStrets)
                 return true;
         return false;
     };
-    return genSvec<bool>(wantStrets.height(),cRowStret);
+    return genSvec(wantStrets.height(),cRowStret);
 };
 
 Bools               cColStrets(Img<Arr2B> const & wantStrets)
@@ -67,7 +67,7 @@ Bools               cColStrets(Img<Arr2B> const & wantStrets)
                 return true;
         return false;
     };
-    return genSvec<bool>(wantStrets.width(),cColStret);
+    return genSvec(wantStrets.width(),cColStret);
 };
 
 uint                calcPadBetween(Uints const & maxDims)
